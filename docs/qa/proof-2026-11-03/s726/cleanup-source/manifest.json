@@ -1,0 +1,88 @@
+{
+  "at": "2026-11-03T14:12:23.099Z",
+  "normalization": "CRLF to LF only; original bytes reconstructed and verified",
+  "files": [
+    {
+      "file": "s726-cleanup-final.mjs.txt",
+      "sourceSha256": "f9453e71280d43be66b5197e35dc0865373fc921e2d0ad517ab77c4e72cb27eb",
+      "storedSha256": "66719d51bade20f0b34da84b71f903bbd91ad38cb01e37620fb82ba34aa674c2",
+      "zeroBasedCrlfLineIndices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21
+      ]
+    },
+    {
+      "file": "s726-db-cleanup-final.mjs.txt",
+      "sourceSha256": "d6da52ecd1342d40ba0d6da14887a5b869fadcafe4157557a885708832faa31b",
+      "storedSha256": "f776da542789884cbb6e9c59ae2ebf1eb561dca9c47586dd057d8e0602991e49",
+      "zeroBasedCrlfLineIndices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    {
+      "file": "s726-final-session-cleanup.mjs.txt",
+      "sourceSha256": "497ff8865ffd4dcc0b0b915f50ec68121f12b82b748d3ce0ab92bf5576fc8a4c",
+      "storedSha256": "497ff8865ffd4dcc0b0b915f50ec68121f12b82b748d3ce0ab92bf5576fc8a4c",
+      "zeroBasedCrlfLineIndices": []
+    },
+    {
+      "file": "s726-retire-printers.mjs.txt",
+      "sourceSha256": "4446d9358a48ea94e289ffcced3d15e90eb8f9978fa07f52c13a2adfa969a06f",
+      "storedSha256": "4446d9358a48ea94e289ffcced3d15e90eb8f9978fa07f52c13a2adfa969a06f",
+      "zeroBasedCrlfLineIndices": []
+    },
+    {
+      "file": "s726-env.mjs.txt",
+      "sourceSha256": "3d002eb9c29c15474b12f6f3c40d52fd8ac0cc9f1bc3d513865abc767166a240",
+      "storedSha256": "3d002eb9c29c15474b12f6f3c40d52fd8ac0cc9f1bc3d513865abc767166a240",
+      "zeroBasedCrlfLineIndices": []
+    },
+    {
+      "file": "s726-print-followup.mjs.txt",
+      "sourceSha256": "fc643551bb19e40904980792780f8212d388782116b70e682b09b8245937c506",
+      "storedSha256": "fc643551bb19e40904980792780f8212d388782116b70e682b09b8245937c506",
+      "zeroBasedCrlfLineIndices": []
+    },
+    {
+      "file": "s726-card-final.mjs.txt",
+      "sourceSha256": "30efaf05501d1dd50c8e195a1e45c0defab38ea4215fee24d091418423d2b8ae",
+      "storedSha256": "2806169ef19e632373f1c2585ef8e2cfcbdcb9929b7422a7cd2038665761d5a6",
+      "zeroBasedCrlfLineIndices": [
+        6
+      ]
+    },
+    {
+      "file": "s726-report-final.mjs.txt",
+      "sourceSha256": "c03a39fe1d055af13eb7b5f318ac68548a94b06b19d2d9e5aaf3b97d64f936aa",
+      "storedSha256": "59fd59895dc815731a1846603b3eb8f4ab40056c91c0a0c849129c01172e8b00",
+      "zeroBasedCrlfLineIndices": [
+        18
+      ]
+    }
+  ]
+}

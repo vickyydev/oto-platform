@@ -1,0 +1,101 @@
+{
+  "jobId": "job-dbkr45bncjis73f4ad6g",
+  "source": "5069944660dfd43571d39f097aa90a77b1092c36",
+  "startedAt": "2026-11-03T10:06:12.677Z",
+  "status": "succeeded",
+  "result": {
+    "event": "s726_print_census",
+    "at": "2026-11-03T10:07:01.257Z",
+    "readOnly": true,
+    "counts": [
+      {
+        "status": "printed",
+        "n": 474
+      },
+      {
+        "status": "skipped",
+        "n": 2
+      }
+    ],
+    "outstanding": [
+      {
+        "id": "01a19f07-fba6-703b-ba94-050051f4ae3d",
+        "status": "skipped",
+        "fields": [
+          "id",
+          "kind",
+          "role",
+          "box_id",
+          "copies",
+          "status",
+          "attempts",
+          "action_id",
+          "branch_id",
+          "device_id",
+          "queued_at",
+          "created_at",
+          "error_code",
+          "reprint_of",
+          "started_at",
+          "station_id",
+          "subject_id",
+          "updated_at",
+          "finished_at",
+          "operator_id",
+          "template_id",
+          "subject_type",
+          "error_message",
+          "reprint_reason",
+          "template_version",
+          "requested_by_account_id"
+        ],
+        "details": {
+          "kind": "receipt",
+          "role": "receipt",
+          "attempts": 1,
+          "created_at": "2026-11-03T01:31:02.886382+00:00",
+          "updated_at": "2026-11-03T01:31:07.125+00:00"
+        }
+      },
+      {
+        "id": "01a19f07-fbab-792c-a985-ed7a01cb35c6",
+        "status": "skipped",
+        "fields": [
+          "id",
+          "kind",
+          "role",
+          "box_id",
+          "copies",
+          "status",
+          "attempts",
+          "action_id",
+          "branch_id",
+          "device_id",
+          "queued_at",
+          "created_at",
+          "error_code",
+          "reprint_of",
+          "started_at",
+          "station_id",
+          "subject_id",
+          "updated_at",
+          "finished_at",
+          "operator_id",
+          "template_id",
+          "subject_type",
+          "error_message",
+          "reprint_reason",
+          "template_version",
+          "requested_by_account_id"
+        ],
+        "details": {
+          "kind": "kitchen_ticket",
+          "role": "kitchen",
+          "attempts": 1,
+          "created_at": "2026-11-03T01:31:02.886382+00:00",
+          "updated_at": "2026-11-03T01:31:07.171+00:00"
+        }
+      }
+    ]
+  }
+}

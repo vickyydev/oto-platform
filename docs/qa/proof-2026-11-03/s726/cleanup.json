@@ -1,0 +1,75 @@
+{
+  "at": "2026-11-03T14:04:05.713Z",
+  "source": "5069944660dfd43571d39f097aa90a77b1092c36",
+  "steps": [
+    "Every exact test display revoked",
+    "Station retired 01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "Station retired 01a19f07-f5bb-79c0-91d9-240a1744a0b0",
+    "Station retired 01a19f3a-6c4c-7bed-829a-81fe7dfdfcd3",
+    "Station retired 01a19f3a-726a-7a3b-be03-d61d8e233ec2",
+    "Station retired 01a19f3e-3433-7d4f-a67b-49f0ce5df81c",
+    "Station retired 01a19f3e-3a44-78e3-a70a-2fe321223688",
+    "Station retired 01a19f41-c2fd-7f71-907e-bfba4d909004",
+    "Station retired 01a19f41-c8dc-796e-9dba-3a3fd08c4898",
+    "Station retired 01a19f45-8aa2-72d5-b9e2-e0a978353ca5",
+    "Station retired 01a19f45-90b4-7a3c-b04e-fb2ff6f8f539",
+    "Station retired 01a19f45-9662-7be6-b395-6501be05be5d",
+    "Station retired 01a19f45-9c39-755a-a302-2f405775e7f5",
+    "Station retired 01a19f49-22a0-7a60-b46f-6b57a47faac0",
+    "Station retired 01a19f49-28e8-72a2-ab4a-a0017baab2c1",
+    "Station retired 01a19f49-2f25-76bc-acca-de66f55a7aa5",
+    "Station retired 01a19f49-3507-7e07-b1fe-42b7b33bd71f",
+    "Station retired 01a19f49-3ab1-74b9-a4fa-bd1a1f01552a",
+    "Station retired 01a19f49-4068-7c2d-b56e-c83ea37dbf14",
+    "Station retired 01a19f49-4622-78b6-b6b6-48013e28b518",
+    "Station retired 01a19f49-4c2d-791c-aabf-d49e7b7132e4",
+    "Station retired 01a19f49-5270-737d-9e87-6ced7f312616",
+    "Station retired 01a19f49-5875-7cfe-9d9b-da4001408d5a",
+    "Station retired 01a19f49-717d-746f-949f-43dc5f332830",
+    "Station retired 01a19f49-7706-7789-9e1b-3d4ad85faaa0",
+    "Station retired 01a19f4d-38f0-7ae3-81df-387b243129ab",
+    "Station retired 01a19f4d-3e70-7b87-8617-bb832761eb8f",
+    "Station retired 01a19f4d-442d-7dcc-83f2-73d6ac46f7cb",
+    "Station retired 01a19f4d-4997-7a3a-ac91-24984fad9f74",
+    "Station retired 01a19f4d-4f55-72b2-ae86-4c388adf5ddc",
+    "Station retired 01a19f4d-54eb-7ef5-9405-59029681079f",
+    "Station retired 01a19f4d-5a86-7473-b889-d3e84a67ad9c",
+    "Station retired 01a19f4d-6168-762e-941e-a5d89681c002",
+    "Station retired 01a19e88-2a5d-7685-989b-22601c493045",
+    "Station retired 01a19f3a-7858-7adf-b2d8-ecb5607395b9",
+    "Station retired 01a19f41-ce8a-7633-9560-3fdf4a9a8235",
+    "Station retired 01a19f45-a22d-72c4-ac04-2a0417369e08",
+    "Station retired 01a19f49-7cae-7b65-bb05-8166685d6ee8",
+    "Station retired 01a19f49-8a95-716a-84a6-71d81f00bc45",
+    "Station retired 01a19f49-987e-759a-81af-8669779d861d",
+    "Station retired 01a19f49-a6a2-7f5a-a08d-ffa2d0218e12",
+    "Station retired 01a19f4d-6742-7c41-ac0f-33407658b8f7",
+    "Station retired 01a19f4d-86a9-73d7-a62c-7b0e702653de",
+    "Station retired 01a19f4d-9486-78e5-9a8d-856bf234f6e6",
+    "Exact test box disabled and archived",
+    "Own product and category withdrawn",
+    "Cleanup session signed out and refusal read back"
+  ],
+  "printCheck": {
+    "at": "2026-11-03T14:04:05.713Z",
+    "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+    "statuses": {
+      "queued": 0,
+      "failed": 0,
+      "skipped": 2
+    },
+    "knownTerminalSkips": [
+      {
+        "id": "01a19f07-fba6-703b-ba94-050051f4ae3d",
+        "kind": "receipt",
+        "role": "receipt"
+      },
+      {
+        "id": "01a19f07-fbab-792c-a985-ed7a01cb35c6",
+        "kind": "kitchen_ticket",
+        "role": "kitchen"
+      }
+    ]
+  },
+  "completedAt": "2026-11-03T14:04:13.494Z"
+}

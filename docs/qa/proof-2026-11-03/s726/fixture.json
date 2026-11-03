@@ -826,6 +826,34 @@
       "kind": "admin",
       "stationId": null,
       "recordedAt": "2026-11-03T10:00:43.684Z"
+    },
+    {
+      "id": "01a1a0e1-2852-7109-bfe1-7966037a5750",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "print-census",
+      "stationId": null,
+      "recordedAt": "2026-11-03T10:07:52.682Z"
+    },
+    {
+      "id": "01a1a0e2-4f3f-7a3c-a510-474b816620ac",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "print-census",
+      "stationId": null,
+      "recordedAt": "2026-11-03T10:09:08.161Z"
+    },
+    {
+      "id": "01a1a1b9-6c8b-7d75-a019-1bd83fb6fba9",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "admin",
+      "stationId": null,
+      "recordedAt": "2026-11-03T14:04:05.712Z"
+    },
+    {
+      "id": "01a1a1bb-8070-7837-8449-4c88ec5decba",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "admin",
+      "stationId": null,
+      "recordedAt": "2026-11-03T14:06:21.878Z"
     }
   ],
   "sources": {
