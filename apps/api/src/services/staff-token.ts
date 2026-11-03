@@ -208,6 +208,7 @@ export async function mintStaffToken(
       sta: input.stationId,
       box: row.boxId,
       iat: Math.floor(now.getTime() / 1000),
+      iatMs: now.getTime(),
       exp: Math.floor(expiresAt.getTime() / 1000),
     },
     { kid: settings.kid, privateKeyPem: settings.privateKeyPem },
@@ -265,9 +266,9 @@ export type StaffTokenScope =
 /**
  * End tokens, by whatever names them.
  *
- * Live tokens and tokens in the thirty-day fresh-sign-in window are ended.
- * Natural expiry alone cannot end OD-6 access; the cache must still know that
- * a manager or sign-out ended this shift. Returns the jtis that moved.
+ * Manager/account revocation includes the thirty-day recognition window.
+ * Ordinary sign-out and station changes revoke only a live token. Natural
+ * expiry cannot erase a manager decision. Returns the jtis that moved.
  */
 export async function revokeStaffTokens(
   exec: Exec,
@@ -297,7 +298,8 @@ export async function revokeStaffTokens(
     })
     .where(and(where, isNull(staffToken.revokedAt), or(
       gt(staffToken.expiresAt, sql`now()`),
-      gt(staffToken.issuedAt, sql`now() - ${`${STAFF_OFFLINE_SIGN_IN_DAYS} days`}::interval`),
+      (reason === 'admin' || reason === 'account_revoked')
+        ? gt(staffToken.issuedAt, sql`now() - ${`${STAFF_OFFLINE_SIGN_IN_DAYS} days`}::interval`) : undefined,
     )))
     .returning({ jti: staffToken.jti });
   return ended.map((r) => r.jti);
@@ -306,9 +308,9 @@ export async function revokeStaffTokens(
 // --- What the cache bundle asks ---------------------------------------------
 
 /**
- * Revocations remain while a token is live or could qualify for OD-6 (30 days).
- * Otherwise leaving out a revoked token, or waiting for its expiry, would
- * turn an ended shift into a fresh sign-in.
+ * Ordinary sign-out/re-pick ids remain for their token life. Manager/account
+ * revocations remain through OD-6 recognition; the staff record also carries
+ * the explicit account-wide manager-end time.
  */
 export async function revokedStaffTokenIds(db: Db, operatorId: string): Promise<string[]> {
   const rows = await db
@@ -319,7 +321,8 @@ export async function revokedStaffTokenIds(db: Db, operatorId: string): Promise<
         eq(staffToken.operatorId, operatorId),
         isNotNull(staffToken.revokedAt),
         or(gt(staffToken.expiresAt, sql`now()`),
-          gt(staffToken.issuedAt, sql`now() - ${`${STAFF_OFFLINE_SIGN_IN_DAYS} days`}::interval`)),
+          and(inArray(staffToken.revokedReason, ['admin', 'account_revoked']),
+            gt(staffToken.issuedAt, sql`now() - ${`${STAFF_OFFLINE_SIGN_IN_DAYS} days`}::interval`))),
       ),
     );
   return rows.map((r) => r.jti);
@@ -336,7 +339,7 @@ export async function revokedStaffTokenIds(db: Db, operatorId: string): Promise<
 export async function lastTokenByAccountOnBox(
   db: Db,
   boxId: string,
-): Promise<Map<string, { issuedAt: Date; jti: string; revoked: boolean }>> {
+): Promise<Map<string, { issuedAt: Date; jti: string; revoked: boolean; managerEndedAt: Date | null }>> {
   const rows = await db
     .select({ accountId: staffToken.accountId, issuedAt: staffToken.issuedAt, jti: staffToken.jti, revokedAt: staffToken.revokedAt })
     .from(staffToken)
@@ -354,8 +357,21 @@ export async function lastTokenByAccountOnBox(
       ),
     )
     .orderBy(desc(staffToken.issuedAt), desc(staffToken.jti));
-  const seen = new Map<string, { issuedAt: Date; jti: string; revoked: boolean }>();
-  for (const row of rows) if (!seen.has(row.accountId)) seen.set(row.accountId, { issuedAt: row.issuedAt, jti: row.jti, revoked: row.revokedAt !== null });
+  const seen = new Map<string, { issuedAt: Date; jti: string; revoked: boolean; managerEndedAt: Date | null }>();
+  for (const row of rows) if (!seen.has(row.accountId)) seen.set(row.accountId, { issuedAt: row.issuedAt, jti: row.jti, revoked: row.revokedAt !== null, managerEndedAt: null });
+  // Account-wide manager decisions survive later tokens and either station.
+  // Ordinary sign-out and re-picks never set this timestamp.
+  if (seen.size) {
+    const ends = await db.select({ accountId: staffToken.accountId, endedAt: staffToken.revokedAt })
+      .from(staffToken).where(and(inArray(staffToken.accountId, [...seen.keys()]),
+        eq(staffToken.revokedReason, 'admin'),
+        gt(staffToken.revokedAt, sql`now() - ${`${STAFF_OFFLINE_SIGN_IN_DAYS} days`}::interval`)))
+      .orderBy(desc(staffToken.revokedAt));
+    for (const row of ends) {
+      const held = seen.get(row.accountId)!;
+      if (!held.managerEndedAt) held.managerEndedAt = row.endedAt;
+    }
+  }
   return seen;
 }
 
@@ -467,7 +483,7 @@ async function snapshotForBox(
     staff: items as OfflineStaffRecord[],
     deny,
     cachedAt: staffBundle.appliedAt,
-    denyCachedAt: denyBundle?.appliedAt ?? null,
+    denyCachedAt: typeof denyBundle?.payload.confirmedAt === 'string' ? denyBundle.payload.confirmedAt : denyBundle?.appliedAt ?? null,
   };
 }
 

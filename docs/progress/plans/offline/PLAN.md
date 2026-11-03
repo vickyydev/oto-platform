@@ -243,12 +243,24 @@ SCRUM-727 implements this provisional decision through one API setting,
 `STAFF_OFFLINE_SIGN_IN` (default true; explicit false disables it), delivered
 as `staffOfflineSignIn` in every box configuration and read on each unlock by
 physical and virtual agents. Confirmation remains the owner's; no real box
-address is introduced. Ended shifts and forged/foreign tokens cannot use this
+address is introduced. An explicit per-account manager-ended timestamp later
+than its latest online issue blocks fresh access; a new online issue restores it.
+Ordinary sign-out and re-picks revoke only the individual live token. A valid
+token is judged by its own ID and signed issue time. Forged/foreign tokens cannot use this
 path. A valid expired token retains its verified identity and station binding;
-revocations remain for the 30-day recognition window. The 72-hour deny-list
+manager/account revocations remain for the 30-day recognition window. The 72-hour deny-list
 bound, `offlineFresh` fact/session marker and offline banner remain required.
-An older staff cache without latest-shift ID and revocation state cannot
-authorize fresh sign-in; a complete pull must restore that evidence first.
+Successful unchanged pulls refresh the 72-hour confirmation age without changing
+the data-applied timestamp. A pulled manager end closes an older fresh box session.
+An older staff cache without explicit manager-end state cannot authorize fresh sign-in; a complete pull must restore that evidence first.
+
+**Q727-1 [owner, open].** Does a manager ending a shift also end the person's
+platform session? Existing behavior leaves it open; reloading may mint a new
+online token. No platform-session revocation is added pending the ruling.
+
+**Q727-2 [owner, open].** Must fresh box sign-in respect the station's named-staff
+scope? Existing box behavior does not read `accessScope`; it is retained pending
+the ruling. Token authentication remains bound to its issued station.
 
 **OD-7. How does a member created offline merge?** As the code already does (`sync.ts:857-939`):
 the same phone at two counters, the first to arrive survives and the second is recorded as a merge

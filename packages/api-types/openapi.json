@@ -20235,6 +20235,11 @@
                             "nullable": true,
                             "default": null
                           },
+                          "bridgeWarning": {
+                            "type": "string",
+                            "nullable": true,
+                            "default": null
+                          },
                           "agentVersion": {
                             "type": "string",
                             "nullable": true
@@ -20419,6 +20424,11 @@
                           "nullable": true
                         },
                         "bridgeOrigin": {
+                          "type": "string",
+                          "nullable": true,
+                          "default": null
+                        },
+                        "bridgeWarning": {
                           "type": "string",
                           "nullable": true,
                           "default": null
@@ -20614,6 +20624,11 @@
                           "nullable": true
                         },
                         "bridgeOrigin": {
+                          "type": "string",
+                          "nullable": true,
+                          "default": null
+                        },
+                        "bridgeWarning": {
                           "type": "string",
                           "nullable": true,
                           "default": null

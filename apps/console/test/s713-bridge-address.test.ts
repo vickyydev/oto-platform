@@ -17,6 +17,11 @@ describe('counter bridge setup', () => {
     expect(draw({}, false)).toContain('disabled');
     expect(draw({}, false)).not.toContain('Save bridge address');
   });
+  it('shows why a rejected saved address is not in use, including for a read-only administrator', () => {
+    const html = draw({ bridgeOrigin: null, bridgeWarning: 'The saved address is not trusted and is not in use.' }, false);
+    expect(html).toContain('role="alert"'); expect(html).toContain('not trusted');
+    expect(html).toContain('dedicated DNS zone'); expect(html).toContain('never a shared hosting suffix');
+  });
   it('offers no external address for a virtual box, including an older record', () => {
     expect(draw({ role: 'virtual', bridgeOrigin: undefined })).toContain('uses the platform address');
     expect(draw({ role: 'virtual' })).not.toContain('<input');

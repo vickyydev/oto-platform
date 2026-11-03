@@ -8,7 +8,7 @@ export function trustedBoxBridgeOrigin(
   const dnsName = (name: string) => name.length <= 253
     && name.split('.').every(label => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(label))
     && !/^[0-9.]+$/.test(name);
-  if (!dnsName(zone)) return null;
+  if (!dnsName(zone) || (!zone.includes('.') && !(allowLocalHttp && zone === 'localhost'))) return null;
   let url: URL;
   try { url = new URL(value); } catch { return null; }
   if (value !== url.origin && value !== `${url.origin}/`) return null;

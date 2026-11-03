@@ -462,6 +462,7 @@ interface HeldSession {
   offlineFresh: boolean;
   jti: string | null;
   expiresAt: number;
+  issuedAt?: number;
   permissions: ReadonlySet<string>;
 }
 
@@ -1220,7 +1221,9 @@ export class StationBridge {
      * `offline_sign_in` path.
      */
     const allowFreshSignIn = this.host.freshSignInAllowed?.() ?? this.options.allowFreshSignIn;
-    const denyAgeS = ageOf(denyBundle?.appliedAt ?? null, now);
+    const denyConfirmedAt = typeof denyBundle?.payload.confirmedAt === 'string'
+      ? denyBundle.payload.confirmedAt : denyBundle?.appliedAt ?? null;
+    const denyAgeS = ageOf(denyConfirmedAt, now);
     const denyFreshEnough = denyAgeS !== null && denyAgeS <= policy.freshSignInDenyListMaxAgeS;
 
     const auth = new OfflineAuth({
@@ -1228,7 +1231,7 @@ export class StationBridge {
       branchId: station.branchId,
       stationId,
       snapshot: async () =>
-        staffBundle ? { keys, staff, deny, cachedAt: staffBundle.appliedAt, denyCachedAt: denyBundle?.appliedAt ?? null } : null,
+        staffBundle ? { keys, staff, deny, cachedAt: staffBundle.appliedAt, denyCachedAt: denyConfirmedAt } : null,
       verifyPassword: (hash, password) => this.host.verifyPassword(hash, password),
       now: () => this.host.now(),
       throttle,
@@ -1330,6 +1333,7 @@ export class StationBridge {
       jti: result.claims?.jti ?? null,
     };
     const session = this.issue(stationId, {
+      issuedAt: result.claims ? (result.claims.iatMs ?? result.claims.iat * 1000) : now.getTime(),
       accountId: result.accountId,
       method: result.method,
       offlineFresh,
@@ -1357,7 +1361,7 @@ export class StationBridge {
   /** Mint an opaque session. Only its hash is kept. */
   issue(stationId: string, held: Omit<HeldSession, 'stationId'>): string {
     const token = `${BOX_SESSION_PREFIX}${randomBytes(32).toString('base64url')}`;
-    this.held.set(sha256(token), { ...held, stationId });
+    this.held.set(sha256(token), { ...held, issuedAt: held.issuedAt ?? this.host.now().getTime(), stationId });
     return token;
   }
 
@@ -1381,8 +1385,11 @@ export class StationBridge {
       return null;
     }
     const deny = (itemsOf(await this.bundle('deny_list'))[0] as StaffDenyList | undefined) ?? null;
+    const record = (itemsOf(await this.bundle('staff')) as OfflineStaffRecord[]).find(row => row.accountId === held.accountId);
+    const endedAt = Date.parse(record?.managerEndedAt ?? '');
     if (
       !deny ||
+      (Number.isFinite(endedAt) && endedAt > (held.issuedAt ?? 0)) ||
       deny.revokedAccountIds.includes(held.accountId) ||
       (held.jti !== null && deny.revokedTokenIds.includes(held.jti))
     ) {

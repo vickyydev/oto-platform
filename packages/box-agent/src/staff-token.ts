@@ -86,6 +86,7 @@ export const STAFF_OFFLINE_SIGN_IN_DAYS = 30;
 export const STAFF_TOKEN_REFUSALS = {
   EXPIRED: 'STAFF_TOKEN_EXPIRED',
   INVALID: 'STAFF_TOKEN_INVALID',
+  CLOCK_BEHIND: 'STAFF_TOKEN_CLOCK_BEHIND',
   UNKNOWN_KEY: 'STAFF_TOKEN_UNKNOWN_KEY',
   REVOKED: 'STAFF_TOKEN_REVOKED',
   /**
@@ -118,6 +119,7 @@ export interface StaffTokenClaims {
   /** The box that station sits on. */
   box: string;
   iat: number;
+  iatMs?: number;
   exp: number;
 }
 
@@ -306,9 +308,13 @@ export function verifyStaffToken(
   // without NTP. Refusing on `exp` alone would let that box unlock; refusing
   // on `iat` with no leeway would stop it unlocking for the first minute.
   if (!Number.isSafeInteger(claims.iat) || !Number.isSafeInteger(claims.exp)
-    || claims.iat < 0 || claims.exp <= claims.iat || claims.iat - leeway > nowS) {
+    || claims.iat < 0 || claims.exp <= claims.iat
+    || (claims.iatMs !== undefined && (!Number.isSafeInteger(claims.iatMs)
+      || Math.floor(claims.iatMs / 1000) !== claims.iat))) {
     return { ok: false, refusal: STAFF_TOKEN_REFUSALS.INVALID };
   }
+
+  if (claims.iat - leeway > nowS) return { ok: false, refusal: STAFF_TOKEN_REFUSALS.CLOCK_BEHIND };
 
   // Not being able to check revocation is not the same as nothing being
   // revoked. A box with no deny-list refuses here rather than admitting a
@@ -345,6 +351,8 @@ export interface OfflineStaffRecord {
   /** Latest shift on this box, including its revocation after natural expiry. */
   lastTokenId?: string | null;
   lastTokenRevoked?: boolean;
+  /** Explicit manager end, independent of ordinary sign-out or station changes. */
+  managerEndedAt?: string | null;
 }
 
 /** What the box has cached about who may work here. */
@@ -709,7 +717,11 @@ export class OfflineAuth {
       };
     }
 
-    if (record.lastTokenRevoked || (record.lastTokenId && snapshot.deny.revokedTokenIds.includes(record.lastTokenId))) {
+    const endedAt = Date.parse(record.managerEndedAt ?? '');
+    const issuedAt = claims ? (claims.iatMs ?? claims.iat * 1000) : Date.parse(record.lastTokenAt ?? '');
+    if ((Number.isFinite(endedAt) && endedAt > issuedAt)
+      || (!claims && record.managerEndedAt === undefined && (record.lastTokenRevoked
+        || (record.lastTokenId && snapshot.deny.revokedTokenIds.includes(record.lastTokenId))))) {
       return { ok: false, refusal: STAFF_TOKEN_REFUSALS.REVOKED, message: refusalMessage(STAFF_TOKEN_REFUSALS.REVOKED) };
     }
 
@@ -743,7 +755,9 @@ export class OfflineAuth {
       }
       // Older caches knew the last issue date but could not tie an ended
       // shift to its account. They cannot authorize a fresh sign-in.
-      if (!record.lastTokenId || typeof record.lastTokenRevoked !== 'boolean') {
+      if (!record.lastTokenId || typeof record.lastTokenRevoked !== 'boolean'
+        || record.managerEndedAt === undefined
+        || (record.managerEndedAt !== null && !Number.isFinite(endedAt))) {
         return { ok: false, refusal: OFFLINE_UNLOCK_REFUSALS.REVOCATION_UNKNOWN,
           message: "This counter's staff copy cannot confirm whether this shift ended. Connect to refresh it, then sign in." };
       }
@@ -786,7 +800,9 @@ export function refusalMessage(refusal: StaffTokenRefusal): string {
     case STAFF_TOKEN_REFUSALS.EXPIRED:
       return 'Shift token expired, connect to sign in';
     case STAFF_TOKEN_REFUSALS.REVOKED:
-      return 'This shift was ended by a manager — connect to sign in';
+      return 'This shift is no longer valid — connect to sign in';
+    case STAFF_TOKEN_REFUSALS.CLOCK_BEHIND:
+      return 'This box clock is behind the shift token. Connect it to the internet to correct its time, then try again';
     case STAFF_TOKEN_REFUSALS.REVOCATION_UNKNOWN:
       // Not "your shift was ended": the box does not know that and must not
       // say it. What it knows is that it cannot check, and the fix is a pull.

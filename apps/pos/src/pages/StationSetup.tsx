@@ -34,6 +34,7 @@ import {
   type StationInput,
   type StationKind,
 } from '@/api/platform';
+import { bridgeConfigurationWarning } from '@/api/bridge';
 import { isMissingRoute } from '@/api/client';
 import { useStation } from '@/station/StationContext';
 import { useOperator } from '@/auth/OperatorContext';
@@ -160,7 +161,8 @@ export default function StationSetup() {
     // it remembers while the API is unreachable knows its name and nothing
     // else, and editing from that would write a station rather than change one.
     if (!active) return <StationPicker />;
-    return <StationEditor wizard={false} />;
+    const bridgeWarning = bridgeConfigurationWarning(active.bridgeOrigin);
+    return <>{bridgeWarning && <p role="alert" className="m-4 rounded border border-amber-400 p-3 text-sm">{bridgeWarning}</p>}<StationEditor wizard={false} /></>;
   }
 
   return <StationPicker />;

@@ -9600,6 +9600,8 @@ export interface paths {
                                 hostname: string | null;
                                 /** @default null */
                                 bridgeOrigin: string | null;
+                                /** @default null */
+                                bridgeWarning: string | null;
                                 agentVersion: string | null;
                                 currentEpoch: number;
                                 registeredAt: string | null;
@@ -9668,6 +9670,8 @@ export interface paths {
                                 hostname: string | null;
                                 /** @default null */
                                 bridgeOrigin: string | null;
+                                /** @default null */
+                                bridgeWarning: string | null;
                                 agentVersion: string | null;
                                 currentEpoch: number;
                                 registeredAt: string | null;
@@ -9778,6 +9782,8 @@ export interface paths {
                                 hostname: string | null;
                                 /** @default null */
                                 bridgeOrigin: string | null;
+                                /** @default null */
+                                bridgeWarning: string | null;
                                 agentVersion: string | null;
                                 currentEpoch: number;
                                 registeredAt: string | null;

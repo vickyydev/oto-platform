@@ -27,7 +27,7 @@ test('SCRUM-727 HIGH: the complete local-agent session matrix; no rejected token
   const { port } = await server.listen();
   const url = `http://127.0.0.1:${port}/box/v1/station/${STATION_ID}/unlock`;
   const record = { accountId, passwordHash: await hash(password), status: 'active', mustChangePassword: false,
-    lastTokenAt: new Date(now - 86400000).toISOString(), lastTokenId: jti, lastTokenRevoked: false };
+    lastTokenAt: new Date(now - 86400000).toISOString(), lastTokenId: jti, lastTokenRevoked: false, managerEndedAt: null };
   const write = (scope: 'staff' | 'deny_list', items: unknown[], appliedAt = new Date().toISOString()) =>
     rig.harness.store.writeBundle(BOX_ID, { scope, schemaVersion: 1, cursorSeq: 0, payload: { items }, appliedAt });
   type Row = { name: string; body: object; status: number; code?: string; fresh?: boolean; origin?: string;
@@ -55,7 +55,7 @@ test('SCRUM-727 HIGH: the complete local-agent session matrix; no rejected token
     { name: 'expired revoked token', body: { token: expired, password, accountId }, revokedToken: true, status: 401, code: 'STAFF_TOKEN_REVOKED' },
     { name: 'ended shift with token left out', body: { password, accountId }, ended: true, status: 401, code: 'STAFF_TOKEN_REVOKED' },
     { name: 'ended shift with token', body: { token, password }, ended: true, status: 401, code: 'STAFF_TOKEN_REVOKED' },
-    { name: 'cached latest token revoked, token left out', body: { password, accountId }, revokedToken: true, status: 401, code: 'STAFF_TOKEN_REVOKED' },
+    { name: 'cached manager-ended token, token left out', body: { password, accountId }, revokedToken: true, ended: true, status: 401, code: 'STAFF_TOKEN_REVOKED' },
     { name: 'account revoked, token left out', body: { password, accountId }, revokedAccount: true, status: 401, code: 'OFFLINE_ACCOUNT_INACTIVE' },
     { name: 'account revoked with token', body: { token, password }, revokedAccount: true, status: 401, code: 'STAFF_TOKEN_REVOKED' },
     { name: 'stale deny-list and fresh sign-in', body: { password, accountId }, stale: true, status: 401, code: 'OFFLINE_DENY_LIST_STALE' },
@@ -64,7 +64,7 @@ test('SCRUM-727 HIGH: the complete local-agent session matrix; no rejected token
   ];
   try {
     for (const row of rows) await t.test(row.name, async () => {
-      const cached: OfflineStaffRecord = { ...record, lastTokenRevoked: !!row.ended,
+      const cached: OfflineStaffRecord = { ...record, lastTokenRevoked: !!row.ended, managerEndedAt: row.ended ? new Date(now + 1).toISOString() : null,
         ...(row.oldStaff ? { lastTokenAt: new Date(now - 31 * 86400000).toISOString() } : {}) };
       if (row.legacyStaff) { delete cached.lastTokenId; delete cached.lastTokenRevoked; }
       await write('staff', [cached]);

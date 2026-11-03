@@ -17,3 +17,13 @@ export function boxBridgeOrigin(value: string | null | undefined, env?: BoxBridg
     'Enter an HTTPS box address below the configured box DNS zone, without a path, query, IP address or sign-in details.');
   return origin;
 }
+
+/** Administrator-facing reason; never returns the rejected destination. */
+export function boxBridgeWarning(value: string | null | undefined, env?: BoxBridgePolicy): string | null {
+  if (!env?.BOX_BRIDGE_ZONE) return 'Local box addresses are disabled because the box DNS zone is not configured.';
+  if (value && !readBoxBridgeOrigin(value, env)) return 'The saved address is not trusted by the current box DNS zone. It is not in use; replace or clear it. Other box settings can still be changed.';
+  if (['onrender.com', 'vercel.app', 'netlify.app', 'github.io', 'co.uk'].includes(env.BOX_BRIDGE_ZONE.toLowerCase())) {
+    return 'This zone is shared by unrelated sites. Configure a dedicated DNS zone controlled by the park before using a box address.';
+  }
+  return null;
+}

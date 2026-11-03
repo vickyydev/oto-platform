@@ -1,4 +1,4 @@
-import { readBoxBridgeOrigin } from '../lib/box-bridge-origin';
+import { boxBridgeWarning, readBoxBridgeOrigin } from '../lib/box-bridge-origin';
 import { z } from 'zod';
 import {
   BOX_COMMAND_KINDS,
@@ -209,6 +209,7 @@ const BoxBaseSchema = z.object({
   status: z.enum(BOX_STATUSES),
   hostname: z.string().nullable(),
   bridgeOrigin: z.string().nullable().default(null),
+  bridgeWarning: z.string().nullable().default(null),
   agentVersion: z.string().nullable(),
   currentEpoch: z.number().int(),
   registeredAt: z.string().nullable(),
@@ -329,7 +330,10 @@ export async function fleetRoutes(app: App): Promise<void> {
   // A stored idempotency answer may outlive a zone change. Recheck at serialization too.
   const bridgeOrigin = z.string().nullable().default(null).transform(value => readBoxBridgeOrigin(value, app.env));
   const StationSchema = StationBaseSchema.extend({ bridgeOrigin });
-  const BoxSchema = BoxBaseSchema.extend({ bridgeOrigin });
+  const BoxSchema = BoxBaseSchema.transform(value => ({ ...value,
+    bridgeOrigin: value.role === 'virtual' ? null : readBoxBridgeOrigin(value.bridgeOrigin, app.env),
+    bridgeWarning: value.role === 'virtual' ? null : boxBridgeWarning(value.bridgeOrigin, app.env) ?? value.bridgeWarning,
+  }));
   // A replay may predate these fields, or its setup may have changed since.
   // Keep the stored write result and compute only today's readiness afresh.
   app.addHook('preSerialization', async (req, reply, payload) => {

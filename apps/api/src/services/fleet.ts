@@ -41,7 +41,7 @@ import {
 } from '@oto/shared';
 import { TerminalCommandPayloadSchema } from '@oto/box-agent';
 import { AppError } from '../lib/errors';
-import { boxBridgeOrigin, readBoxBridgeOrigin, type BoxBridgePolicy } from '../lib/box-bridge-origin';
+import { boxBridgeOrigin, boxBridgeWarning, readBoxBridgeOrigin, type BoxBridgePolicy } from '../lib/box-bridge-origin';
 import { pgErrorOf } from '../lib/scrub';
 import { holdsGrantAt } from './access-control';
 import { resolveEffectivePermissions } from './permissions';
@@ -159,6 +159,7 @@ export interface BoxView {
   status: BoxStatus;
   hostname: string | null;
   bridgeOrigin: string | null;
+  bridgeWarning: string | null;
   agentVersion: string | null;
   currentEpoch: number;
   registeredAt: string | null;
@@ -1461,6 +1462,7 @@ function boxView(
     status: row.status,
     hostname: row.hostname,
     bridgeOrigin: row.role === 'virtual' ? null : readBoxBridgeOrigin(row.bridgeOrigin, env),
+    bridgeWarning: row.role === 'virtual' ? null : boxBridgeWarning(row.bridgeOrigin, env),
     agentVersion: row.agentVersion,
     currentEpoch: row.currentEpoch,
     registeredAt: row.registeredAt?.toISOString() ?? null,
@@ -1623,8 +1625,9 @@ export async function updateBox(
   patch: { name?: string; slot?: string; role?: BoxRole; status?: BoxStatus; bridgeOrigin?: string | null },
   env?: BoxBridgePolicy,
 ): Promise<{ box: BoxView }> {
-  const bridgeOrigin = boxBridgeOrigin(patch.bridgeOrigin === undefined ? before.bridgeOrigin : patch.bridgeOrigin, env);
-  if ((patch.role ?? before.role) === 'virtual' && bridgeOrigin) throw new AppError(400, 'VIRTUAL_BOX_BRIDGE', 'A virtual box uses the platform address. Clear its bridge address first.');
+  const bridgeOrigin = patch.bridgeOrigin === undefined
+    ? before.bridgeOrigin : boxBridgeOrigin(patch.bridgeOrigin, env);
+  if ((patch.bridgeOrigin !== undefined || patch.role !== undefined) && (patch.role ?? before.role) === 'virtual' && bridgeOrigin) throw new AppError(400, 'VIRTUAL_BOX_BRIDGE', 'A virtual box uses the platform address. Clear its bridge address first.');
   if (patch.status !== undefined && patch.status !== 'disabled' && patch.status !== 'offline') {
     throw new AppError(
       400,

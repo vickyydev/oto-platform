@@ -2928,13 +2928,17 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       method: 'GET',
       headers: cacheBundleVersion ? { 'if-none-match': `"${cacheBundleVersion}"` } : {},
     });
-    // Nothing moved since the copy this box holds. Not a pull, so no fault is
-    // recorded or cleared and no timestamp is stamped: the cache is exactly as
-    // old as it was, and the till's banner should say so. The cloud HAS just
-    // confirmed the copy is current, which is a different fact and the one the
-    // Console's box drawer paints its tone from (SCRUM-323).
+    // A 304 confirms the held security copy is current. Keep the actual data
+    // application timestamp for diagnostics and persist confirmation separately.
     if (status === 304) {
-      cacheCheckedAt = new Date(clock()).toISOString();
+      const confirmedAt = new Date(clock()).toISOString();
+      for (const scope of ['deny_list', 'staff'] as const) {
+        const held = await store.readBundle(boxId, scope);
+        if (!held) { cacheBundleVersion = null; return []; }
+        try { await store.writeBundle(boxId, { ...held, payload: { ...held.payload, confirmedAt } }); }
+        catch { recordCacheFault('write_failed', scope); return []; }
+      }
+      cacheCheckedAt = confirmedAt;
       return [];
     }
     if (status === 401) {

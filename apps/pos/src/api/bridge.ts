@@ -56,6 +56,13 @@ export function setBridgeOrigin(value: string | null): void {
   origin = next;
 }
 
+/** Visible in station settings when this build refuses a configured box. */
+export function bridgeConfigurationWarning(value: string | null | undefined): string | null {
+  return value && !trustedBoxBridgeOrigin(value, import.meta.env.VITE_BOX_BRIDGE_ZONE,
+    import.meta.env.VITE_BOX_BRIDGE_ALLOW_LOOPBACK === 'true')
+    ? 'This till build cannot use the saved box address. Ask an administrator to configure its matching box DNS zone, then reload the till.' : null;
+}
+
 export function hasBridgeOrigin(): boolean { return origin !== null; }
 
 /** The box session from the last unlock, held in memory only: a lock or a reload ends it. */
@@ -116,7 +123,7 @@ async function request<T>(
       credentials: origin || rest.startsWith('display/') ? 'omit' : 'same-origin',
       cache: 'no-store',
       // A trusted box must not redirect the password to a different origin.
-      redirect: 'error',
+      ...(origin ? { redirect: 'error' as const } : {}),
       headers: {
         ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
         ...(bearer ? { authorization: `Bearer ${bearer}` } : {}),

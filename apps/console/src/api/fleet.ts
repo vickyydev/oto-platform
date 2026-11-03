@@ -108,6 +108,7 @@ export interface BoxRow {
   /** The position on site — "counter-1", "gate-north". Survives a Pi being swapped. */
   slot: string;
   bridgeOrigin?: string | null;
+  bridgeWarning?: string | null;
   role: BoxRole | string;
   status: BoxStatus | string;
   agentVersion?: string | null;

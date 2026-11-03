@@ -28,6 +28,8 @@ test('HIGH: an injected hostname or env line is refused without executing or pri
     writeFileSync(env, good);
     const valid = run(`bridge_read_env "$2"; test "$OTO_DNS_PROVIDER" = cloudflare; bash -c 'test -z "\${OTO_DNS_API_TOKEN+x}"'`, [env]);
     assert.equal(valid.status, 0, valid.stderr); assert.equal(valid.stdout, '');
+    writeFileSync(env, good.replace('OTO_DNS_MODULE=github.com/caddy-dns/cloudflare\n', ''));
+    assert.equal(run('bridge_read_env "$2"', [env]).status, 0, 'a pinned binary does not require the legacy module hint');
     for (const bad of [good + 'OTO_DNS_PROVIDER=other\n', good.replace('synthetic-secret-713', ''), good + `BAD=$(touch ${shellPath(marker)})\n`, good.replace('synthetic-secret-713', `$(touch ${shellPath(marker)})`)]) {
       writeFileSync(env, bad);
       const refused = run('bridge_read_env "$2"', [env]);

@@ -110,7 +110,7 @@ test('a token from the future is refused, but a Pi whose clock is a minute behin
 
   const far = Math.floor(NOW.getTime() / 1000) + 3600;
   const outside = verifyStaffToken(token({ iat: far, exp: far + 3600 }), base);
-  assert.equal(outside.ok === false && outside.refusal, STAFF_TOKEN_REFUSALS.INVALID);
+  assert.equal(outside.ok === false && outside.refusal, STAFF_TOKEN_REFUSALS.CLOCK_BEHIND);
 });
 
 test('changed claims do not verify', () => {
@@ -240,7 +240,7 @@ function snapshot(over: Partial<OfflineAuthSnapshot> = {}): OfflineAuthSnapshot 
         mustChangePassword: false,
         lastTokenAt: NOW.toISOString(),
         lastTokenId: claims().jti,
-        lastTokenRevoked: false,
+        lastTokenRevoked: false, managerEndedAt: null,
       },
     ],
     deny: { revokedAccountIds: [], revokedTokenIds: [] },
@@ -386,9 +386,11 @@ test('with offline sign-in on, somebody the box has seen this month gets in by p
 });
 
 test('a revoked token is never a way into the thirty-day sign-in (offline plan OD-6)', async () => {
+  const held = snapshot({ deny: { revokedAccountIds: [], revokedTokenIds: [claims().jti] } });
+  held.staff = [{ ...held.staff[0]!, lastTokenAt: new Date(NOW.getTime() - 1_000).toISOString(), managerEndedAt: NOW.toISOString() }];
   const guard = auth(
     { allowOfflineSignIn: true },
-    snapshot({ deny: { revokedAccountIds: [], revokedTokenIds: [claims().jti] } }),
+    held,
   );
   const refused = await guard.unlock({ token: token(), password: 'correct-horse', accountId: ACCOUNT });
   assert.equal(refused.ok === false && refused.refusal, STAFF_TOKEN_REFUSALS.REVOKED);
@@ -450,4 +452,25 @@ test('a shared throttle is used when one is given, and the memory one is not', a
   await guard.unlock({ token: token(), password: 'guess' });
   await guard.unlock({ token: token(), password: 'correct-horse' });
   assert.deepEqual(calls, ['check', 'fail', 'check', 'clear']);
+});
+
+
+test('HIGH: precise issue time is signed and consistent; clock skew has an actionable message', () => {
+  const original = claims();
+  assert.equal(verifyStaffToken(token({ iatMs: original.iat * 1000 + 123 }), base).ok, true);
+  const wrong = verifyStaffToken(token({ iatMs: (original.iat + 1) * 1000 }), base);
+  assert.equal(wrong.ok === false && wrong.refusal, STAFF_TOKEN_REFUSALS.INVALID);
+  assert.match(refusalMessage(STAFF_TOKEN_REFUSALS.CLOCK_BEHIND), /clock is behind/);
+  assert.doesNotMatch(refusalMessage(STAFF_TOKEN_REFUSALS.REVOKED), /manager/);
+});
+
+
+test('HIGH: a legacy latest-token record cannot revoke a different valid token', async () => {
+  const held = snapshot();
+  held.staff = [{ ...held.staff[0]!, lastTokenId: '018f0000-0000-7000-8000-0000000000a9', lastTokenRevoked: true }];
+  delete held.staff[0]!.managerEndedAt;
+  const answer = await auth({ allowOfflineSignIn: true }, held).unlock({ token: token(), password: 'correct-horse' });
+  assert.equal(answer.ok, true); assert.equal(answer.ok && answer.method, 'offline_token');
+  const fresh = await auth({ allowOfflineSignIn: true }, held).unlock({ accountId: ACCOUNT, password: 'correct-horse' });
+  assert.equal(fresh.ok, false);
 });

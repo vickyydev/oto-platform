@@ -281,7 +281,8 @@ export function BridgeAddress({ box, canUpdate, onChanged }: { box: BoxRow; canU
     } finally { if (working.isCurrent()) setBusy(false); }
   };
   return <div className="mt-4 space-y-2">
-    <Field label="Counter bridge address" hint="The HTTPS address tills use to reach this box without the internet. Leave empty until its network address is ready.">
+    {box.bridgeWarning && <p role="alert" className="text-sm text-warning">{box.bridgeWarning}</p>}
+    <Field label="Counter bridge address" hint="The HTTPS address tills use to reach this box without the internet. Use a dedicated DNS zone controlled by the park, never a shared hosting suffix. Leave empty until its network address is ready.">
       <TextInput value={value} onChange={(next) => { setValue(next); setSaved(false); }} disabled={!canUpdate || busy} placeholder="https://counter-1.example.com" maxLength={2048} />
     </Field>
     {canUpdate && <Button variant="outline" size="sm" disabled={busy} onClick={() => void save()}>{busy ? 'Saving…' : 'Save bridge address'}</Button>}

@@ -456,3 +456,22 @@ it('SCRUM-727 HIGH: online bridge unlock refuses redirects and makes one attempt
   expect(fetch).toHaveBeenCalledTimes(1);
   expect(fetch.mock.calls[0]?.[1]).toMatchObject({ redirect: 'error', credentials: 'omit', method: 'POST' });
 });
+
+
+it('SCRUM-727: same-origin virtual calls retain the browser redirect default', async () => {
+  const fetch = vi.fn(async () => new Response(JSON.stringify({ link: { lane: 'platform' } }), { status: 200 }));
+  vi.stubGlobal('fetch', fetch);
+  const { bridgeApi, setBridgeOrigin } = await import('@/api/bridge');
+  setBridgeOrigin(null); await bridgeApi.status('station');
+  expect(fetch.mock.calls.length).toBe(1);
+  expect((fetch.mock.calls as unknown as Array<[unknown, RequestInit]>)[0]?.[1].redirect).toBeUndefined();
+});
+
+it('SCRUM-727: an unusable build-time zone is visible in station settings', async () => {
+  const { bridgeConfigurationWarning } = await import('@/api/bridge');
+  vi.stubEnv('VITE_BOX_BRIDGE_ZONE', '');
+  expect(bridgeConfigurationWarning('https://counter.example.test')).toContain('matching box DNS zone');
+  expect(bridgeConfigurationWarning(null)).toBeNull();
+  vi.stubEnv('VITE_BOX_BRIDGE_ZONE', 'example.test');
+  expect(bridgeConfigurationWarning('https://counter.example.test')).toBeNull();
+});
