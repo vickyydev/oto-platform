@@ -78541,7 +78541,7 @@
     },
     "/console/support/lookup": {
       "get": {
-        "description": "The cross-app support lookup: one phone, band, receipt number, booking reference, voucher code, account id or action id (`kind` names it; otherwise every kind it could be is searched). Each section is answered by its own app’s route as the caller, so each keeps its own permission, scope and masking: a section the caller may not read says `denied`, one with no safe reader says `not_built`, one whose app failed says `unavailable`. Member and child records are masked unless the caller holds admin:audit:read_sensitive operator-wide. One data_access audit row per lookup, naming the kinds and which sections answered, never a value.",
+        "description": "The cross-app support lookup: one phone, band, receipt number, booking reference, voucher code, account id or action id (`kind` names it; otherwise every kind it could be is searched). Each section is answered by its own app’s route as the caller (the OTO App’s through the suite hand-off), so each keeps its own permission, scope and masking: a section the caller may not read says `denied`, one with no safe reader says `not_built`, one whose app failed says `unavailable`. Member, child and OTO App records are masked unless the caller holds admin:audit:read_sensitive operator-wide. One data_access audit row per lookup, naming the kinds and which sections answered, never a value.",
         "parameters": [
           {
             "schema": {

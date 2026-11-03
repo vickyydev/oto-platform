@@ -7,6 +7,7 @@ import {
   alert, auditLog, band, bandEvent, redemptionThrottle, schema as s, station, syncEvent, ticketPackage, voucher, voucherDefinition, voucherMiss,
 } from '@oto/db';
 import { bandShortCode, mintBoothCode, newId } from '@oto/shared';
+import { FakeOtoApp, OTOAPP_WORDS, fakeUser, seedFakeOtoAppWorld, type FakeOtoAppWorld } from './fake-otoapp';
 import {
   ADMIN, BRANCH_MANAGER, CENTRAL_BRANCH_CODE, CHALONG_BRANCH_CODE, CHALONG_MANAGER, OTO_OPERATOR_NAME, RECEPTION, SECOND_OPERATOR_ADMIN,
   SECOND_OPERATOR_BRANCH_CODE, SECOND_OPERATOR_NAME, boxBySlot, branchIdByCode, createTestContext, operatorIdByName, signInAs, takeStation, teardownAll, type TestContext,
@@ -22,6 +23,8 @@ import {
  */
 
 const PASSWORD = 'supportreaders1234';
+const KID = 'k1';
+const SECRET = 'support-readers-handoff-secret-0123456789abcdef';
 
 let ctx: TestContext;
 let oto: string, central: string, chalong: string, foreignBranch: string;
@@ -32,6 +35,8 @@ let doorOnly: string;
 let centralReader: string;
 let centralLane: string, chalongLane: string;
 let boxId: string;
+let fake: FakeOtoApp;
+let world: FakeOtoAppWorld;
 
 type Res = { status: number; body: any; raw: string }; // eslint-disable-line @typescript-eslint/no-explicit-any -- asserted field by field
 async function get(cookie: string | null, url: string): Promise<Res> {
@@ -79,7 +84,16 @@ async function pass(bandId: string, kind: 'entry' | 'exit' | 'denied' | 'timeout
 }
 
 beforeAll(async () => {
-  ctx = await createTestContext({ env: { PROCESS_ROLES: 'api' } });
+  fake = await FakeOtoApp.start();
+  ctx = await createTestContext({ env: {
+    PROCESS_ROLES: 'api',
+    HANDOFF_SIGNING_KEY: `${KID}:${SECRET}`,
+    HANDOFF_APP_ORIGINS: `oto_app=${fake.origin}`,
+    // The fake exchanges with its own Origin, which the api's write check must allow.
+    ALLOWED_ORIGINS: fake.origin,
+  } });
+  fake.platform = ctx.app;
+  world = seedFakeOtoAppWorld(fake);
   oto = await operatorIdByName(ctx.db, OTO_OPERATOR_NAME);
   central = await branchIdByCode(ctx.db, CENTRAL_BRANCH_CODE);
   chalong = await branchIdByCode(ctx.db, CHALONG_BRANCH_CODE);
@@ -101,7 +115,7 @@ beforeAll(async () => {
     { id: chalongLane, operatorId: oto, branchId: chalong, boxId, name: 'ZZ TEST Chalong lane', kind: 'gate' },
   ]);
 }, 300_000);
-afterAll(async () => { try { await ctx?.close(); } finally { await teardownAll(); } });
+afterAll(async () => { try { await ctx?.close(); await fake?.stop(); } finally { await teardownAll(); } });
 
 describe('SCRUM-674 one band’s gate journal', () => {
   it('answers a band’s passages at one park, newest first, by full or short code, and never its signed code', async () => {
@@ -321,5 +335,126 @@ describe('SCRUM-674 one voucher code', () => {
     const reader = readFileSync(new URL('../src/services/voucher-ledger.ts', import.meta.url), 'utf8');
     const readerCode = reader.replace(/\/\*[\s\S]*?\*\//g, '');
     for (const write of ['recordVoucherMiss', 'findForRedemption', 'lookupVoucher', 'redemptionThrottle', 'voucherMiss']) expect(readerCode).not.toContain(write);
+  });
+});
+
+describe('SCRUM-674 the OTO App’s records by phone', () => {
+  const PHONE = '+66810674099';
+  const accountOf = async (phone: string) => (await ctx.db.select().from(s.account).where(eq(s.account.phone, phone)))[0]!.id;
+  /** A person who may search and open the OTO App, held at this scope. */
+  let tileHolder: string, tileHolderId: string, noUser: string, disabledUser: string, staffUser: string, centralUser: string;
+
+  beforeAll(async () => {
+    const grants = [{ permissions: ['app:console:access', 'console:support:lookup', 'app:oto_app:access'], scopeType: 'operator' as const, scopeId: oto }];
+    tileHolder = await person('+66810674010', grants);
+    tileHolderId = await accountOf('+66810674010');
+    noUser = await person('+66810674011', grants);
+    disabledUser = await person('+66810674012', grants);
+    staffUser = await person('+66810674013', grants);
+    centralUser = await person('+66810674014', grants);
+    fakeUser(fake, world, { platformAccountId: tileHolderId, role: 'manager', branchId: null });
+    fakeUser(fake, world, { platformAccountId: await accountOf('+66810674012'), role: 'manager', branchId: null, isActive: false });
+    fakeUser(fake, world, { platformAccountId: await accountOf('+66810674013'), role: 'staff', branchId: world.central });
+    fakeUser(fake, world, { platformAccountId: await accountOf('+66810674014'), role: 'manager', branchId: world.central });
+    fake.data.supportRecords.push(
+      { phone: PHONE, tenantId: world.tenantId, branchId: world.central, row: { record: 'person', id: 'zz-person-central', personKind: 'employee', name: 'ZZ TEST Central Person', nickname: 'ZZ', status: 'active', park: 'ZZ Central' } },
+      { phone: PHONE, tenantId: world.tenantId, branchId: world.chalong, row: { record: 'event', id: 'zz-event-chalong', name: 'ZZ TEST Chalong Party', guardianName: 'ZZ TEST Parent', status: 'upcoming', park: 'ZZ Chalong' } },
+      { phone: PHONE, tenantId: newId(), branchId: world.central, row: { record: 'person', id: 'zz-person-foreign', name: 'ZZ TEST Other Group' } },
+    );
+  });
+
+  const recordsOf = async (cookie: string, q = PHONE) => {
+    const res = await lookup(cookie, q, 'phone');
+    expect(res.status, res.raw).toBe(200);
+    return { res, section: sectionOf(res, 'oto_app.records') };
+  };
+
+  it('answers as the person asking, masked for a reader without the sensitive permission, and logs the app session out', async () => {
+    fake.resetObservations();
+    const { res, section } = await recordsOf(tileHolder);
+    expect(section).toMatchObject({ app: 'oto_app', status: 'found', rowCount: 2, permission: 'app:oto_app:access', note: null });
+    expect(section.rows.map(row => row.id)).toEqual(['zz-person-central', 'zz-event-chalong']);
+    expect(section.rows[0]).toMatchObject({ record: 'person', name: '[redacted]', nickname: '[redacted]', status: 'active', park: 'ZZ Central' });
+    expect(section.rows[1]).toMatchObject({ record: 'event', name: '[redacted]', guardianName: '[redacted]' });
+    expect(res.raw).not.toContain('ZZ TEST');
+    expect(res.body.masked).toBe(true);
+    // The app was asked once, GET only, with the phone the platform normalised; the session it opened is gone.
+    const reads = fake.requests.filter(r => r.path === '/api/support/by-phone');
+    expect(reads).toEqual([expect.objectContaining({ method: 'GET', query: `?phone=${encodeURIComponent(PHONE)}`, status: 200 })]);
+    expect(fake.requests.filter(r => r.method === 'POST').map(r => r.path).sort()).toEqual(['/api/auth/handoff', '/api/logout']);
+    expect(fake.logouts).toHaveLength(1);
+    expect(fake.sessions.size).toBe(0);
+  });
+
+  it('finds the record however the phone was typed, with one data-access row that names no value', async () => {
+    const before = (await lookupAudits()).length;
+    const { res, section } = await recordsOf(tileHolder, '081-067-4099');
+    expect(section.status).toBe('found');
+    const rows = await lookupAudits();
+    expect(rows.length).toBe(before + 1);
+    expect(rows[0]!.entityType).toBe('data_access');
+    expect((rows[0]!.after as { sections: unknown[] }).sections).toContainEqual({ key: 'oto_app.records', app: 'oto_app', kind: 'phone', status: 'found', rows: 2 });
+    const written = JSON.stringify(rows[0]);
+    expect(written).not.toContain('0674099');
+    expect(written).not.toContain('ZZ TEST');
+    expect(res.raw).not.toContain('0674099');
+    // The hand-off row is the seam's own, correlated with this lookup and in its own category.
+    const [issue] = await ctx.db.select().from(auditLog).where(and(eq(auditLog.action, 'auth.handoff_issue'), eq(auditLog.requestId, rows[0]!.requestId!)));
+    expect(issue).toBeDefined();
+    expect(JSON.stringify(issue)).not.toContain('0674099');
+  });
+
+  it('answers empty when the app has nobody by that phone', async () => {
+    expect((await recordsOf(tileHolder, '+66810674098')).section).toMatchObject({ status: 'empty', rowCount: 0, note: null });
+  });
+
+  it('answers only what the app’s own fences let this person see: another park and another park group are not there', async () => {
+    const { res, section } = await recordsOf(centralUser);
+    expect(section.rows.map(row => row.id)).toEqual(['zz-person-central']);
+    expect(res.raw).not.toContain('zz-event-chalong');
+    expect(res.raw).not.toContain('zz-person-foreign');
+    expect((await recordsOf(tileHolder)).res.raw).not.toContain('zz-person-foreign');
+  });
+
+  it('says denied, in the app’s or the launcher’s own words, and reads nothing', async () => {
+    fake.resetObservations();
+    // No tile on the platform: refused before the app is contacted.
+    const noTile = (await recordsOf(doorOnly)).section;
+    expect(noTile).toMatchObject({ status: 'denied', rowCount: 0 });
+    expect(noTile.note).toContain('app:oto_app:access');
+    expect(fake.requests).toEqual([]);
+    // The tile but no user in the app, and a disabled one: the app's sentence.
+    expect((await recordsOf(noUser)).section).toMatchObject({ status: 'denied', rowCount: 0, note: OTOAPP_WORDS.notProvisioned });
+    expect((await recordsOf(disabledUser)).section).toMatchObject({ status: 'denied', rowCount: 0, note: OTOAPP_WORDS.disabled });
+    // A staff rank in the app: the reader's own refusal, and the session is still logged out.
+    fake.resetObservations();
+    expect((await recordsOf(staffUser)).section).toMatchObject({ status: 'denied', rowCount: 0, note: OTOAPP_WORDS.insufficient });
+    expect(fake.logouts).toHaveLength(1);
+  });
+
+  it('says unavailable when the app fails, and logs the session out', async () => {
+    fake.data.supportBroken = true;
+    fake.resetObservations();
+    try {
+      const { res, section } = await recordsOf(tileHolder);
+      expect(section).toMatchObject({ status: 'unavailable', rowCount: 0, note: 'The OTO App answered 500, so its records could not be searched.' });
+      expect(fake.logouts).toHaveLength(1);
+      // The other apps still answer.
+      expect(sectionOf(res, 'crm.member').status).not.toBe('unavailable');
+    } finally {
+      fake.data.supportBroken = false;
+    }
+  });
+
+  it('never reads an OTO App table and never carries the hand-off or the app’s cookie out', async () => {
+    fake.resetObservations();
+    const { res } = await recordsOf(tileHolder);
+    for (const secret of [...fake.tokensSeen, ...fake.sidsIssued]) expect(res.raw).not.toContain(secret);
+    const lines = await ctx.db.select().from(auditLog).where(eq(auditLog.requestId, (await lookupAudits())[0]!.requestId!));
+    for (const secret of [...fake.tokensSeen, ...fake.sidsIssued]) expect(JSON.stringify(lines)).not.toContain(secret);
+    for (const file of ['../src/services/support-lookup.ts', '../src/services/support-otoapp.ts']) {
+      const source = readFileSync(new URL(file, import.meta.url), 'utf8');
+      expect(source).not.toMatch(/(?<![-/\w])otoapp\.|otoapp_v|\bfetch\s*\(/);
+    }
   });
 });

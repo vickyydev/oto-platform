@@ -126,7 +126,8 @@ describe('SCRUM-648 cross-app lookup', () => {
       expect(byKey[key]?.status, key).toBe('denied');
       expect(byKey[key]?.rowCount, key).toBe(0);
     }
-    expect(byKey['oto_app.records']).toMatchObject({ app: 'oto_app', status: 'not_built' });
+    // This deployment names no OTO App origin: said, never read as nobody there (support-readers.test.ts has the app).
+    expect(byKey['oto_app.records']).toMatchObject({ app: 'oto_app', status: 'unavailable', rowCount: 0 });
     expect(res.body.masked).toBe(true);
 
     // One data_access row: the kinds and which sections answered, never the searched or returned values.
@@ -151,7 +152,7 @@ describe('SCRUM-648 cross-app lookup', () => {
     expect(member.rows[0].phone).toBe(MEMBER_PHONE);
     expect(JSON.stringify(member.rows[0].children)).toContain('Peanut');
     expect(new Set(sections.map(sec => sec.app))).toEqual(new Set(['crm', 'pos', 'inbox', 'platform', 'oto_app']));
-    for (const sec of sections) expect(['found', 'empty', 'not_built'], sec.key).toContain(sec.status);
+    for (const sec of sections) expect(sec.key === 'oto_app.records' ? ['unavailable'] : ['found', 'empty'], sec.key).toContain(sec.status);
     expect(res.body.masked).toBe(false);
     const [row] = await audits('console.support.lookup');
     expect(row!.actorAccountId).toBe(adminId);

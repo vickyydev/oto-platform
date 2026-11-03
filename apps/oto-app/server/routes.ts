@@ -994,6 +994,9 @@ export async function registerRoutes(
     return (await managedUserTenant(req.user.id)) === tenantId ? tenantId : undefined;
   };
 
+  // SCRUM-674: the platform Console's support lookup reads this app by phone, as the person asking.
+  const supportLookupRoutes = await import("./support-lookup-routes");
+  app.use(supportLookupRoutes.supportLookupRouter(parkGroupOnly(userManagementTenant)));
 
   // These guards run after each route's existing authentication and ownership checks.
   // Entity ownership stays explicit: an unassigned record does not inherit a tenant flag.

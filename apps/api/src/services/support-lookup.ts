@@ -22,12 +22,14 @@ import { withTx, type OpContext } from './tx';
  * route, run in process through `callPlatform` with the caller's own session
  * cookie — the same sanctioned seam the internal assistant uses, so the
  * route's declared guard, its handler's checks, its scope and its own masking
- * all apply exactly as they do on the screen that owns them. A section the
+ * all apply exactly as they do on the screen that owns them. The OTO App is a
+ * separate service, so its section is that app's own route, reached as the
+ * caller through the suite hand-off (`support-otoapp.ts`). A section the
  * caller may not read answers `denied` (never silently missing); one whose
  * domain has no safe reader for this kind of key answers `not_built` and says
- * why; an app that failed answers `unavailable`. Member and child records are
- * additionally passed through the audit read's mask unless the caller holds
- * `admin:audit:read_sensitive` operator-wide.
+ * why; an app that failed answers `unavailable`. Member, child and OTO App
+ * records are additionally passed through the audit read's mask unless the
+ * caller holds `admin:audit:read_sensitive` operator-wide.
  *
  * Every lookup writes ONE audit row in the data_access category naming the
  * kinds searched and which sections answered with how many rows — never the
@@ -147,10 +149,6 @@ function section(input: Omit<SupportSection, 'rowCount' | 'masked'> & { masked?:
   return { ...input, masked: input.masked ?? false, rowCount: input.rows.length };
 }
 
-function notBuilt(key: string, app: SupportSectionApp, kind: SupportQueryKind, label: string, note: string): SupportSection {
-  return section({ key, app, kind, label, status: 'not_built', permission: null, rows: [], note });
-}
-
 // --- The lookup -----------------------------------------------------------------------
 
 export interface SupportLookupInput {
@@ -162,6 +160,8 @@ export interface SupportLookupInput {
   requestId: string;
   /** Resolves an action id to the trace's anchor, or answers why it cannot (permission, nothing found). */
   traceAnchor: (actionId: string) => Promise<{ status: 'found' | 'empty' | 'denied'; rows: Rows; note: string | null }>;
+  /** What the OTO App's own reader says this caller may see for one E.164 phone (`support-otoapp.ts`). */
+  otoAppRecords: (phone: string) => Promise<{ status: SupportSectionStatus; rows: Rows; note: string | null }>;
 }
 
 export async function supportLookup(app: FastifyInstance, input: SupportLookupInput): Promise<SupportLookupAnswer> {
@@ -208,8 +208,9 @@ export async function supportLookup(app: FastifyInstance, input: SupportLookupIn
       sections.push(section({ key: 'platform.accounts', app: 'platform', kind, label: 'Staff sign-in accounts', ...accounts,
         permission: 'admin:account:read' }));
 
-      sections.push(notBuilt('oto_app.records', 'oto_app', kind, 'OTO App records',
-        'The OTO App offers no reader that finds a person, an event or a check-in by phone. Search the staff account id to see its OTO App identity.'));
+      const records = phone === null ? { status: 'empty' as const, rows: [], note: null } : await input.otoAppRecords(phone);
+      sections.push(section({ key: 'oto_app.records', app: 'oto_app', kind, label: 'OTO App records', ...records,
+        permission: 'app:oto_app:access', rows: shield(records.rows), masked: !sensitive && records.rows.length > 0 }));
     } else if (kind === 'band') {
       const sales = outcomeOf(await get(caller, `/sales/lookup?band=${enc}`, 'GET /sales/lookup'), body => listAt(body, 'sales'));
       sections.push(section({ key: 'pos.sales', app: 'pos', kind, label: 'Sales and payments', ...sales, permission: 'pos:sale:read' }));

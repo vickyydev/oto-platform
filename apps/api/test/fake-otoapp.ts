@@ -24,6 +24,10 @@ import { newId } from '@oto/shared';
  *   GET /api/branches        the asker's parks as the app lists them (the allowed
  *                            ones plus the employee record's, or every park):
  *                            the rota screen's list, whose first is its default.
+ *   GET /api/support/by-phone  the support lookup's reader (SCRUM-674), with the
+ *                            app's manager rank, park group and park fences;
+ *                            its own fences are proved natively by
+ *                            `apps/oto-app/tests/support-lookup.check.ts`.
  *   the tool routes          the nine GET routes the registry's seven tools
  *                            name, with the app's own fences — the person
  *                            fence of SCRUM-595 on the two leave-balance
@@ -166,7 +170,18 @@ export interface PlatformHandle {
   }): Promise<{ statusCode: number; body: string; headers: Record<string, unknown> }>;
 }
 
+/** One row of the support reader, and the fences it sits behind. */
+export interface FakeOtoAppSupportRecord {
+  phone: string;
+  tenantId: string;
+  branchId: string | null;
+  row: Record<string, unknown>;
+}
+
 export interface FakeOtoAppData {
+  supportRecords: FakeOtoAppSupportRecord[];
+  /** The support reader answers 500 while set. */
+  supportBroken: boolean;
   branches: Map<string, { id: string; name: string; tenantId: string }>;
   users: Map<string, FakeOtoAppUser>;
   employees: FakeOtoAppEmployee[];
@@ -275,6 +290,8 @@ function platformTokenOf(setCookie: unknown): string | null {
 
 export class FakeOtoApp {
   readonly data: FakeOtoAppData = {
+    supportRecords: [],
+    supportBroken: false,
     branches: new Map(),
     users: new Map(),
     employees: [],
@@ -699,6 +716,17 @@ export class FakeOtoApp {
           employee: { id: mine.id, name: mine.nickname || mine.fullName },
           payslips: this.data.payslips.get(mine.id) ?? [],
         });
+      }
+
+      case url.pathname === '/api/support/by-phone': {
+        if (!requireManager()) return;
+        if (this.data.supportBroken) return json(res, 500, { message: 'fake OTO App: the reader failed' });
+        const phone = url.searchParams.get('phone');
+        const records = this.data.supportRecords
+          .filter((r) => r.phone === phone && r.tenantId === user.tenantId)
+          .filter((r) => user.hasAllBranchesAccess || (r.branchId !== null && user.allowedBranchIds.includes(r.branchId)))
+          .map((r) => r.row);
+        return json(res, 200, { records, limit: 20, truncated: records.length > 20 });
       }
 
       default:

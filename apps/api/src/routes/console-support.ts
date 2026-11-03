@@ -12,6 +12,7 @@ import { approveImpersonationApproval } from '../services/suite-control-approval
 import {
   recordSupportRead, SUPPORT_QUERY_KINDS, SUPPORT_SECTION_APPS, SUPPORT_SECTION_STATUSES, supportLookup,
 } from '../services/support-lookup';
+import { otoAppRecordsByPhone } from '../services/support-otoapp';
 import { resolveTraceAnchor, TRACE_KINDS, TRACE_STAGES, TRACE_STEP_STATUSES, traceOf } from '../services/support-trace';
 import { opCtx } from '../services/tx';
 import { ImpersonationHistoryShape } from './me';
@@ -86,7 +87,7 @@ export async function consoleSupportRoutes(app: App): Promise<void> {
   app.get('/console/support/lookup', {
     config: { permission: 'console:support:lookup', target: { operator: true } },
     schema: {
-      description: 'The cross-app support lookup: one phone, band, receipt number, booking reference, voucher code, account id or action id (`kind` names it; otherwise every kind it could be is searched). Each section is answered by its own app’s route as the caller, so each keeps its own permission, scope and masking: a section the caller may not read says `denied`, one with no safe reader says `not_built`, one whose app failed says `unavailable`. Member and child records are masked unless the caller holds admin:audit:read_sensitive operator-wide. One data_access audit row per lookup, naming the kinds and which sections answered, never a value.',
+      description: 'The cross-app support lookup: one phone, band, receipt number, booking reference, voucher code, account id or action id (`kind` names it; otherwise every kind it could be is searched). Each section is answered by its own app’s route as the caller (the OTO App’s through the suite hand-off), so each keeps its own permission, scope and masking: a section the caller may not read says `denied`, one with no safe reader says `not_built`, one whose app failed says `unavailable`. Member, child and OTO App records are masked unless the caller holds admin:audit:read_sensitive operator-wide. One data_access audit row per lookup, naming the kinds and which sections answered, never a value.',
       querystring: z.object({ q: z.string().trim().min(1).max(200), kind: z.enum(SUPPORT_QUERY_KINDS).optional() }).strict(),
       response: { 200: SupportLookupSchema },
     },
@@ -108,6 +109,10 @@ export async function consoleSupportRoutes(app: App): Promise<void> {
         return { status: 'found', note: null, rows: [{ kind: 'action', id: actionId, saleId: anchor.saleId,
           receiptNumber: anchor.receiptNumber, href: `/support?${new URLSearchParams({ trace: actionId, kind: 'action' }).toString()}` }] };
       },
+      otoAppRecords: (phone) => otoAppRecordsByPhone({
+        db: app.db, ctx: opCtx(req), handoff: settings().handoff, auth, effective, token, requestId: req.id,
+        timeoutMs: app.env.OTOAPP_DIRECTORY_TIMEOUT_MS, phone, log: req.log,
+      }),
     });
     await recordSupportRead(app.db, { ...opCtx(req), requestId: req.id, actorAccountId: auth.accountId }, {
       action: 'console.support.lookup',
