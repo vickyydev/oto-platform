@@ -1,0 +1,2785 @@
+{
+  "at": "2026-11-03T10:00:06.612Z",
+  "sources": {
+    "srv-danh2ljtqb8s73bt9en0": "5069944660dfd43571d39f097aa90a77b1092c36",
+    "srv-dbk7qu8n74is73bm894g": "5069944660dfd43571d39f097aa90a77b1092c36"
+  },
+  "assumptions": {
+    "normalTills": 6,
+    "normalDisplays": 6,
+    "normalBoards": 2,
+    "lookupsPerTillPerMinute": 2,
+    "cashPerTillPerMinute": 0.5,
+    "countsEstimated": true,
+    "sharedSeededAdminSessions": true
+  },
+  "phases": [
+    {
+      "name": "background_hosted_agent",
+      "outcome": "passed",
+      "startedAt": "2026-11-03T01:32:32.525Z",
+      "finishedAt": "2026-11-03T01:35:33.319Z",
+      "seconds": 180.794,
+      "calls": 0,
+      "requestsPerMinute": 0,
+      "errorCount": 0,
+      "errorRate": 0,
+      "p50Ms": null,
+      "p95Ms": null,
+      "sharedDatabaseRowChangesPerMinute": 183.67409621901652,
+      "databaseSnapshotSeconds": 195.346,
+      "serverStreams": {
+        "min": 0,
+        "max": 0,
+        "mean": 0,
+        "p50": 0,
+        "p95": 0
+      },
+      "workingDatabaseConnections": {
+        "min": 7,
+        "max": 17,
+        "mean": 11.083333333333334,
+        "p50": 10,
+        "p95": 17
+      },
+      "poolWaitingMax": 0,
+      "leaseRenewals": 0,
+      "loadGenerator": {
+        "hostCpuPercent": {
+          "min": 5.3238707561863885,
+          "max": 7.072401121816241,
+          "mean": 6.186251351710692,
+          "p50": 6.0994891609676305,
+          "p95": 7.072401121816241
+        },
+        "nodeCpuPercentOfOneCore": {
+          "min": 0,
+          "max": 1.0252283902938668,
+          "mean": 0.34200908280575026,
+          "p50": 0.21119603090851274,
+          "p95": 1.0252283902938668
+        },
+        "nodeRssBytes": {
+          "min": 101662720,
+          "max": 108871680,
+          "mean": 105808554.66666667,
+          "p50": 105508864,
+          "p95": 108871680
+        },
+        "eventLoopUtilization": {
+          "min": 0.0011327762712031383,
+          "max": 0.007378738138227326,
+          "mean": 0.0023390026813576905,
+          "p50": 0.0017056673361622297,
+          "p95": 0.007378738138227326
+        }
+      },
+      "cashVerification": {
+        "at": "2026-11-03T01:35:35.463Z",
+        "attempts": 0,
+        "sales": 0,
+        "cashAttempts": 0,
+        "passed": true
+      },
+      "displayLatency": {
+        "samples": 0,
+        "p50": null,
+        "p95": null
+      },
+      "nativeDisplayLatency": null,
+      "scriptedDisplayLatency": null,
+      "resources": [
+        {
+          "id": "srv-danh2ljtqb8s73bt9en0",
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "samples": {
+            "cpu": 12,
+            "memory": 12
+          },
+          "cpuCores": {
+            "min": 0.005707633,
+            "max": 0.035525568,
+            "mean": 0.0131081224,
+            "p50": 0.009521,
+            "p95": 0.035525568
+          },
+          "memoryBytes": {
+            "min": 332742660,
+            "max": 353075200,
+            "mean": 349858815.8333333,
+            "p50": 350973950,
+            "p95": 353075200
+          },
+          "cpuPercentPeak": 3.5525568,
+          "memoryPercentPeak": 16.44134558233646,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": null
+        },
+        {
+          "id": "srv-dbk7qu8n74is73bm894g",
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "samples": {
+            "cpu": 12,
+            "memory": 12
+          },
+          "cpuCores": {
+            "min": 0.00017066667,
+            "max": 0.0003892,
+            "mean": 0.00026946944083333337,
+            "p50": 0.00027276666,
+            "p95": 0.0003892
+          },
+          "memoryBytes": {
+            "min": 114188290,
+            "max": 114212860,
+            "mean": 114207745,
+            "p50": 114208770,
+            "p95": 114212860
+          },
+          "cpuPercentPeak": 0.07783999999999999,
+          "memoryPercentPeak": 21.273803441386,
+          "memoryLimitBytes": 536870900,
+          "databaseConnections": null
+        },
+        {
+          "id": "dpg-dangso3m8hqs73b9ir80-a",
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "samples": {
+            "cpu": 12,
+            "memory": 12
+          },
+          "cpuCores": {
+            "min": 0.014300266,
+            "max": 0.0411049,
+            "mean": 0.021729633291666665,
+            "p50": 0.018486867,
+            "p95": 0.0411049
+          },
+          "memoryBytes": {
+            "min": 639762400,
+            "max": 685879300,
+            "mean": 653008205,
+            "p50": 650280960,
+            "p95": 685879300
+          },
+          "cpuPercentPeak": 4.11049,
+          "memoryPercentPeak": 31.93874449145968,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": {
+            "min": 8,
+            "max": 8,
+            "mean": 8,
+            "p50": 8,
+            "p95": 8
+          }
+        }
+      ]
+    },
+    {
+      "name": "idle_till",
+      "outcome": "passed",
+      "startedAt": "2026-11-03T01:36:06.266Z",
+      "finishedAt": "2026-11-03T01:39:06.370Z",
+      "seconds": 180.104,
+      "calls": 180,
+      "requestsPerMinute": 59.96535335139696,
+      "errorCount": 0,
+      "errorRate": 0,
+      "p50Ms": 73.07219999999506,
+      "p95Ms": 88.81630000000587,
+      "sharedDatabaseRowChangesPerMinute": 181.00952740098268,
+      "databaseSnapshotSeconds": 180.322,
+      "serverStreams": {
+        "min": 1,
+        "max": 1,
+        "mean": 1,
+        "p50": 1,
+        "p95": 1
+      },
+      "workingDatabaseConnections": {
+        "min": 7,
+        "max": 11,
+        "mean": 9.25,
+        "p50": 9,
+        "p95": 11
+      },
+      "poolWaitingMax": 0,
+      "leaseRenewals": 0,
+      "loadGenerator": {
+        "hostCpuPercent": {
+          "min": 6.031274488017679,
+          "max": 7.606095096513432,
+          "mean": 6.756363649241817,
+          "p50": 6.726839723743749,
+          "p95": 7.606095096513432
+        },
+        "nodeCpuPercentOfOneCore": {
+          "min": 0.1056532114792586,
+          "max": 4.704570019316741,
+          "mean": 0.7795392645988796,
+          "p50": 0.3100761692213646,
+          "p95": 4.704570019316741
+        },
+        "nodeRssBytes": {
+          "min": 104316928,
+          "max": 110784512,
+          "mean": 108639573.33333333,
+          "p50": 108642304,
+          "p95": 110784512
+        },
+        "eventLoopUtilization": {
+          "min": 0.002328017096587634,
+          "max": 0.011118352017505601,
+          "mean": 0.003707609829486399,
+          "p50": 0.0028939598271290313,
+          "p95": 0.011118352017505601
+        }
+      },
+      "cashVerification": {
+        "at": "2026-11-03T01:39:08.316Z",
+        "attempts": 0,
+        "sales": 0,
+        "cashAttempts": 0,
+        "passed": true
+      },
+      "displayLatency": {
+        "samples": 0,
+        "p50": null,
+        "p95": null
+      },
+      "nativeDisplayLatency": null,
+      "scriptedDisplayLatency": null,
+      "resources": [
+        {
+          "id": "srv-danh2ljtqb8s73bt9en0",
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "samples": {
+            "cpu": 12,
+            "memory": 12
+          },
+          "cpuCores": {
+            "min": 0.017270133,
+            "max": 0.045003,
+            "mean": 0.03694253883333334,
+            "p50": 0.041468132,
+            "p95": 0.045003
+          },
+          "memoryBytes": {
+            "min": 336015360,
+            "max": 365662200,
+            "mean": 348997635.8333333,
+            "p50": 345206800,
+            "p95": 365662200
+          },
+          "cpuPercentPeak": 4.5003,
+          "memoryPercentPeak": 17.02747345777169,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": null
+        },
+        {
+          "id": "srv-dbk7qu8n74is73bm894g",
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "samples": {
+            "cpu": 12,
+            "memory": 12
+          },
+          "cpuCores": {
+            "min": 0.00032266666,
+            "max": 0.003917867,
+            "mean": 0.0022052112050000004,
+            "p50": 0.0020535,
+            "p95": 0.003917867
+          },
+          "memoryBytes": {
+            "min": 114212860,
+            "max": 115138560,
+            "mean": 114719401.66666667,
+            "p50": 114536450,
+            "p95": 115138560
+          },
+          "cpuPercentPeak": 0.7835734000000001,
+          "memoryPercentPeak": 21.446228506704312,
+          "memoryLimitBytes": 536870900,
+          "databaseConnections": null
+        },
+        {
+          "id": "dpg-dangso3m8hqs73b9ir80-a",
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "samples": {
+            "cpu": 12,
+            "memory": 12
+          },
+          "cpuCores": {
+            "min": 0.007867834,
+            "max": 0.0417301,
+            "mean": 0.02276202508333333,
+            "p50": 0.022962667,
+            "p95": 0.0417301
+          },
+          "memoryBytes": {
+            "min": 652587000,
+            "max": 662515700,
+            "mean": 657965730.8333334,
+            "p50": 658829300,
+            "p95": 662515700
+          },
+          "cpuPercentPeak": 4.17301,
+          "memoryPercentPeak": 30.850792061927738,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": {
+            "min": 8,
+            "max": 9,
+            "mean": 8.333333333333334,
+            "p50": 8,
+            "p95": 9
+          }
+        }
+      ]
+    },
+    {
+      "name": "idle_display",
+      "outcome": "passed",
+      "startedAt": "2026-11-03T01:39:39.229Z",
+      "finishedAt": "2026-11-03T01:42:39.444Z",
+      "seconds": 180.215,
+      "calls": 0,
+      "requestsPerMinute": 0,
+      "errorCount": 0,
+      "errorRate": 0,
+      "p50Ms": null,
+      "p95Ms": null,
+      "sharedDatabaseRowChangesPerMinute": 217.6022714039339,
+      "databaseSnapshotSeconds": 180.329,
+      "serverStreams": {
+        "min": 1,
+        "max": 1,
+        "mean": 1,
+        "p50": 1,
+        "p95": 1
+      },
+      "workingDatabaseConnections": {
+        "min": 7,
+        "max": 15,
+        "mean": 9.75,
+        "p50": 9,
+        "p95": 15
+      },
+      "poolWaitingMax": 0,
+      "leaseRenewals": 0,
+      "loadGenerator": {
+        "hostCpuPercent": {
+          "min": 5.342207033006563,
+          "max": 7.1780418845095895,
+          "mean": 6.152967831256032,
+          "p50": 6.114552060512624,
+          "p95": 7.1780418845095895
+        },
+        "nodeCpuPercentOfOneCore": {
+          "min": 0,
+          "max": 1.6289384167614411,
+          "mean": 0.37332340893214117,
+          "p50": 0.16124616437576114,
+          "p95": 1.6289384167614411
+        },
+        "nodeRssBytes": {
+          "min": 108826624,
+          "max": 112508928,
+          "mean": 110019584,
+          "p50": 109223936,
+          "p95": 112508928
+        },
+        "eventLoopUtilization": {
+          "min": 0.0009536702843517959,
+          "max": 0.01116896782811693,
+          "mean": 0.002347603299124775,
+          "p50": 0.0013375631337293468,
+          "p95": 0.01116896782811693
+        }
+      },
+      "cashVerification": {
+        "at": "2026-11-03T01:42:41.330Z",
+        "attempts": 0,
+        "sales": 0,
+        "cashAttempts": 0,
+        "passed": true
+      },
+      "displayLatency": {
+        "samples": 0,
+        "p50": null,
+        "p95": null
+      },
+      "nativeDisplayLatency": null,
+      "scriptedDisplayLatency": null,
+      "resources": [
+        {
+          "id": "srv-danh2ljtqb8s73bt9en0",
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "samples": {
+            "cpu": 12,
+            "memory": 12
+          },
+          "cpuCores": {
+            "min": 0.0032588667,
+            "max": 0.036848366,
+            "mean": 0.017855711008333334,
+            "p50": 0.014933533,
+            "p95": 0.036848366
+          },
+          "memoryBytes": {
+            "min": 331104260,
+            "max": 362524670,
+            "mean": 355186002.5,
+            "p50": 360022000,
+            "p95": 362524670
+          },
+          "cpuPercentPeak": 3.6848366,
+          "memoryPercentPeak": 16.88137082862938,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": null
+        },
+        {
+          "id": "srv-dbk7qu8n74is73bm894g",
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "samples": {
+            "cpu": 12,
+            "memory": 12
+          },
+          "cpuCores": {
+            "min": 0.00028596667,
+            "max": 0.0036336,
+            "mean": 0.0007480722258333333,
+            "p50": 0.0003959,
+            "p95": 0.0036336
+          },
+          "memoryBytes": {
+            "min": 114720770,
+            "max": 114958340,
+            "mean": 114745000.83333333,
+            "p50": 114724860,
+            "p95": 114958340
+          },
+          "cpuPercentPeak": 0.7267199999999999,
+          "memoryPercentPeak": 21.412659915074556,
+          "memoryLimitBytes": 536870900,
+          "databaseConnections": null
+        },
+        {
+          "id": "dpg-dangso3m8hqs73b9ir80-a",
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "samples": {
+            "cpu": 12,
+            "memory": 12
+          },
+          "cpuCores": {
+            "min": 0.016136734,
+            "max": 0.0490102,
+            "mean": 0.028700305583333335,
+            "p50": 0.0233486,
+            "p95": 0.0490102
+          },
+          "memoryBytes": {
+            "min": 637452300,
+            "max": 686870500,
+            "mean": 655582203.3333334,
+            "p50": 644812800,
+            "p95": 686870500
+          },
+          "cpuPercentPeak": 4.90102,
+          "memoryPercentPeak": 31.984900839289296,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": {
+            "min": 8,
+            "max": 8,
+            "mean": 8,
+            "p50": 8,
+            "p95": 8
+          }
+        }
+      ]
+    },
+    {
+      "name": "idle_pair",
+      "outcome": "passed",
+      "startedAt": "2026-11-03T01:43:15.112Z",
+      "finishedAt": "2026-11-03T01:46:16.078Z",
+      "seconds": 180.966,
+      "calls": 191,
+      "requestsPerMinute": 63.32681277145983,
+      "errorCount": 0,
+      "errorRate": 0,
+      "p50Ms": 74.26919999998063,
+      "p95Ms": 92.5631000000285,
+      "sharedDatabaseRowChangesPerMinute": 226.9248685699075,
+      "databaseSnapshotSeconds": 180.324,
+      "serverStreams": {
+        "min": 3,
+        "max": 3,
+        "mean": 3,
+        "p50": 3,
+        "p95": 3
+      },
+      "workingDatabaseConnections": {
+        "min": 7,
+        "max": 17,
+        "mean": 10,
+        "p50": 9,
+        "p95": 17
+      },
+      "poolWaitingMax": 0,
+      "leaseRenewals": 11,
+      "loadGenerator": {
+        "hostCpuPercent": {
+          "min": 6.478071682928488,
+          "max": 8.657927022715828,
+          "mean": 7.369737371262725,
+          "p50": 7.090317235839027,
+          "p95": 8.657927022715828
+        },
+        "nodeCpuPercentOfOneCore": {
+          "min": 0.0985879406994327,
+          "max": 1.0407586047840254,
+          "mean": 0.4292125234308835,
+          "p50": 0.2046677585361466,
+          "p95": 1.0407586047840254
+        },
+        "nodeRssBytes": {
+          "min": 111243264,
+          "max": 115826688,
+          "mean": 112799402.66666667,
+          "p50": 112607232,
+          "p95": 115826688
+        },
+        "eventLoopUtilization": {
+          "min": 0.0022153958739329345,
+          "max": 0.0097177685447115,
+          "mean": 0.0033804879544053344,
+          "p50": 0.00255706395696196,
+          "p95": 0.0097177685447115
+        }
+      },
+      "cashVerification": {
+        "at": "2026-11-03T01:46:18.084Z",
+        "attempts": 0,
+        "sales": 0,
+        "cashAttempts": 0,
+        "passed": true
+      },
+      "displayLatency": {
+        "samples": 0,
+        "p50": null,
+        "p95": null
+      },
+      "nativeDisplayLatency": null,
+      "scriptedDisplayLatency": null,
+      "resources": [
+        {
+          "id": "srv-danh2ljtqb8s73bt9en0",
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "samples": {
+            "cpu": 12,
+            "memory": 12
+          },
+          "cpuCores": {
+            "min": 0.0066023,
+            "max": 0.06521027,
+            "mean": 0.034668192583333333,
+            "p50": 0.0205363,
+            "p95": 0.06521027
+          },
+          "memoryBytes": {
+            "min": 338432000,
+            "max": 360038400,
+            "mean": 354298194.1666667,
+            "p50": 358588400,
+            "p95": 360038400
+          },
+          "cpuPercentPeak": 6.521027,
+          "memoryPercentPeak": 16.76559485716212,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": null
+        },
+        {
+          "id": "srv-dbk7qu8n74is73bm894g",
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "samples": {
+            "cpu": 12,
+            "memory": 12
+          },
+          "cpuCores": {
+            "min": 0.00037986666,
+            "max": 0.0042937333,
+            "mean": 0.0024073888783333335,
+            "p50": 0.0020644334,
+            "p95": 0.0042937333
+          },
+          "memoryBytes": {
+            "min": 114565120,
+            "max": 115167230,
+            "mean": 114957993.33333333,
+            "p50": 115064830,
+            "p95": 115167230
+          },
+          "cpuPercentPeak": 0.85874666,
+          "memoryPercentPeak": 21.45156871046652,
+          "memoryLimitBytes": 536870900,
+          "databaseConnections": null
+        },
+        {
+          "id": "dpg-dangso3m8hqs73b9ir80-a",
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "samples": {
+            "cpu": 12,
+            "memory": 12
+          },
+          "cpuCores": {
+            "min": 0.0149959,
+            "max": 0.049958732,
+            "mean": 0.027341016166666666,
+            "p50": 0.0247138,
+            "p95": 0.049958732
+          },
+          "memoryBytes": {
+            "min": 639787000,
+            "max": 698925060,
+            "mean": 656728746.6666666,
+            "p50": 656322560,
+            "p95": 698925060
+          },
+          "cpuPercentPeak": 4.9958732,
+          "memoryPercentPeak": 32.54623504458893,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": {
+            "min": 8,
+            "max": 8,
+            "mean": 8,
+            "p50": 8,
+            "p95": 8
+          }
+        }
+      ]
+    },
+    {
+      "name": "idle_board",
+      "outcome": "passed",
+      "startedAt": "2026-11-03T01:46:50.804Z",
+      "finishedAt": "2026-11-03T01:49:50.992Z",
+      "seconds": 180.188,
+      "calls": 62,
+      "requestsPerMinute": 20.645104002486292,
+      "errorCount": 0,
+      "errorRate": 0,
+      "p50Ms": 78.40700000000652,
+      "p95Ms": 163.55550000001676,
+      "sharedDatabaseRowChangesPerMinute": 187.01022122887676,
+      "databaseSnapshotSeconds": 180.311,
+      "serverStreams": {
+        "min": 0,
+        "max": 0,
+        "mean": 0,
+        "p50": 0,
+        "p95": 0
+      },
+      "workingDatabaseConnections": {
+        "min": 9,
+        "max": 15,
+        "mean": 10.166666666666666,
+        "p50": 9,
+        "p95": 15
+      },
+      "poolWaitingMax": 0,
+      "leaseRenewals": 0,
+      "loadGenerator": {
+        "hostCpuPercent": {
+          "min": 5.052979822412262,
+          "max": 6.879269704643686,
+          "mean": 6.053506061293208,
+          "p50": 5.978357682256141,
+          "p95": 6.879269704643686
+        },
+        "nodeCpuPercentOfOneCore": {
+          "min": 0,
+          "max": 1.0214923095085258,
+          "mean": 0.3927812738003628,
+          "p50": 0.3002713219026533,
+          "p95": 1.0214923095085258
+        },
+        "nodeRssBytes": {
+          "min": 115482624,
+          "max": 120573952,
+          "mean": 117570901.33333333,
+          "p50": 117321728,
+          "p95": 120573952
+        },
+        "eventLoopUtilization": {
+          "min": 0.0013422167449678862,
+          "max": 0.005925267202948001,
+          "mean": 0.002303224523103305,
+          "p50": 0.0017558169495556827,
+          "p95": 0.005925267202948001
+        }
+      },
+      "cashVerification": {
+        "at": "2026-11-03T01:49:52.935Z",
+        "attempts": 0,
+        "sales": 0,
+        "cashAttempts": 0,
+        "passed": true
+      },
+      "displayLatency": {
+        "samples": 0,
+        "p50": null,
+        "p95": null
+      },
+      "nativeDisplayLatency": null,
+      "scriptedDisplayLatency": null,
+      "resources": [
+        {
+          "id": "srv-danh2ljtqb8s73bt9en0",
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "samples": {
+            "cpu": 12,
+            "memory": 12
+          },
+          "cpuCores": {
+            "min": 0.0116511,
+            "max": 0.058386866,
+            "mean": 0.02768222766666667,
+            "p50": 0.0189709,
+            "p95": 0.058386866
+          },
+          "memoryBytes": {
+            "min": 345759740,
+            "max": 354418700,
+            "mean": 351267495,
+            "p50": 352686080,
+            "p95": 354418700
+          },
+          "cpuPercentPeak": 5.8386866,
+          "memoryPercentPeak": 16.503907177684617,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": null
+        },
+        {
+          "id": "srv-dbk7qu8n74is73bm894g",
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "samples": {
+            "cpu": 12,
+            "memory": 12
+          },
+          "cpuCores": {
+            "min": 0.0007567,
+            "max": 0.0065085664,
+            "mean": 0.0024889443749999992,
+            "p50": 0.0009167,
+            "p95": 0.0065085664
+          },
+          "memoryBytes": {
+            "min": 114319360,
+            "max": 115376130,
+            "mean": 115246422.5,
+            "p50": 115355650,
+            "p95": 115376130
+          },
+          "cpuPercentPeak": 1.30171328,
+          "memoryPercentPeak": 21.490479368503674,
+          "memoryLimitBytes": 536870900,
+          "databaseConnections": null
+        },
+        {
+          "id": "dpg-dangso3m8hqs73b9ir80-a",
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "samples": {
+            "cpu": 12,
+            "memory": 12
+          },
+          "cpuCores": {
+            "min": 0.006476367,
+            "max": 0.047778968,
+            "mean": 0.03119988083333333,
+            "p50": 0.027483,
+            "p95": 0.047778968
+          },
+          "memoryBytes": {
+            "min": 649875460,
+            "max": 679874560,
+            "mean": 658012837.5,
+            "p50": 656039940,
+            "p95": 679874560
+          },
+          "cpuPercentPeak": 4.7778968,
+          "memoryPercentPeak": 31.65912698937491,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": {
+            "min": 8,
+            "max": 15,
+            "mean": 11.5,
+            "p50": 10,
+            "p95": 15
+          }
+        }
+      ]
+    },
+    {
+      "name": "idle_locked_till",
+      "outcome": "passed",
+      "startedAt": "2026-11-03T01:52:35.066Z",
+      "finishedAt": "2026-11-03T01:55:35.858Z",
+      "seconds": 180.792,
+      "calls": 0,
+      "requestsPerMinute": 0,
+      "errorCount": 0,
+      "errorRate": 0,
+      "p50Ms": null,
+      "p95Ms": null,
+      "sharedDatabaseRowChangesPerMinute": 187.96068796068795,
+      "databaseSnapshotSeconds": 195.36,
+      "serverStreams": {
+        "min": 0,
+        "max": 0,
+        "mean": 0,
+        "p50": 0,
+        "p95": 0
+      },
+      "workingDatabaseConnections": {
+        "min": 7,
+        "max": 15,
+        "mean": 9.25,
+        "p50": 9,
+        "p95": 15
+      },
+      "poolWaitingMax": 0,
+      "leaseRenewals": 0,
+      "loadGenerator": {
+        "hostCpuPercent": {
+          "min": 5.8473587735377475,
+          "max": 6.543104016885426,
+          "mean": 6.309918296888991,
+          "p50": 6.3389354385624985,
+          "p95": 6.543104016885426
+        },
+        "nodeCpuPercentOfOneCore": {
+          "min": 0,
+          "max": 1.030311697489959,
+          "mean": 0.3268284903920882,
+          "p50": 0.19440285216325962,
+          "p95": 1.030311697489959
+        },
+        "nodeRssBytes": {
+          "min": 108855296,
+          "max": 119128064,
+          "mean": 115501738.66666667,
+          "p50": 115761152,
+          "p95": 119128064
+        },
+        "eventLoopUtilization": {
+          "min": 0.000876572003266721,
+          "max": 0.0029976520603637825,
+          "mean": 0.0018253726063913631,
+          "p50": 0.0012295886149947435,
+          "p95": 0.0029976520603637825
+        }
+      },
+      "cashVerification": {
+        "at": "2026-11-03T01:55:37.818Z",
+        "attempts": 0,
+        "sales": 0,
+        "cashAttempts": 0,
+        "passed": true
+      },
+      "displayLatency": {
+        "samples": 0,
+        "p50": null,
+        "p95": null
+      },
+      "nativeDisplayLatency": null,
+      "scriptedDisplayLatency": null,
+      "resources": [
+        {
+          "id": "srv-danh2ljtqb8s73bt9en0",
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "samples": {
+            "cpu": 12,
+            "memory": 12
+          },
+          "cpuCores": {
+            "min": 0.0075094667,
+            "max": 0.04126543,
+            "mean": 0.019501766675,
+            "p50": 0.019053,
+            "p95": 0.04126543
+          },
+          "memoryBytes": {
+            "min": 328581120,
+            "max": 353239040,
+            "mean": 344670893.3333333,
+            "p50": 348835840,
+            "p95": 353239040
+          },
+          "cpuPercentPeak": 4.126543,
+          "memoryPercentPeak": 16.44897497703824,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": null
+        },
+        {
+          "id": "srv-dbk7qu8n74is73bm894g",
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "samples": {
+            "cpu": 12,
+            "memory": 12
+          },
+          "cpuCores": {
+            "min": 0.0001655,
+            "max": 0.0016971333,
+            "mean": 0.0004575444375,
+            "p50": 0.0003003,
+            "p95": 0.0016971333
+          },
+          "memoryBytes": {
+            "min": 115363840,
+            "max": 115388420,
+            "mean": 115368962.5,
+            "p50": 115367940,
+            "p95": 115388420
+          },
+          "cpuPercentPeak": 0.33942666,
+          "memoryPercentPeak": 21.49276855944325,
+          "memoryLimitBytes": 536870900,
+          "databaseConnections": null
+        },
+        {
+          "id": "dpg-dangso3m8hqs73b9ir80-a",
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "samples": {
+            "cpu": 12,
+            "memory": 12
+          },
+          "cpuCores": {
+            "min": 0.0124716,
+            "max": 0.0480382,
+            "mean": 0.024994094416666668,
+            "p50": 0.0193389,
+            "p95": 0.0480382
+          },
+          "memoryBytes": {
+            "min": 639541250,
+            "max": 691142660,
+            "mean": 652587696.6666666,
+            "p50": 647807000,
+            "p95": 691142660
+          },
+          "cpuPercentPeak": 4.80382,
+          "memoryPercentPeak": 32.18383879625437,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": {
+            "min": 8,
+            "max": 8,
+            "mean": 8,
+            "p50": 8,
+            "p95": 8
+          }
+        }
+      ]
+    },
+    {
+      "name": "ramp_1",
+      "outcome": "passed",
+      "startedAt": "2026-11-03T02:18:58.897Z",
+      "finishedAt": "2026-11-03T02:21:59.201Z",
+      "seconds": 180.304,
+      "mix": {
+        "tills": 1,
+        "displays": 1,
+        "boards": 1,
+        "nativeTills": 1,
+        "nativeBoards": 1
+      },
+      "calls": 275,
+      "requestsPerMinute": 91.5121128760316,
+      "errorCount": 0,
+      "errorRate": 0,
+      "p50Ms": 79.5619000000006,
+      "p95Ms": 140.09820000000764,
+      "sharedDatabaseRowChangesPerMinute": 265.1863846588956,
+      "databaseSnapshotSeconds": 180.326,
+      "serverStreams": {
+        "min": 3,
+        "max": 3,
+        "mean": 3,
+        "p50": 3,
+        "p95": 3
+      },
+      "workingDatabaseConnections": {
+        "min": 9,
+        "max": 16,
+        "mean": 12.666666666666666,
+        "p50": 14,
+        "p95": 16
+      },
+      "poolWaitingMax": 0,
+      "leaseRenewals": 11,
+      "loadGenerator": {
+        "hostCpuPercent": {
+          "min": 5.668969117331768,
+          "max": 11.333310046108702,
+          "mean": 6.896208014008952,
+          "p50": 6.399148391926879,
+          "p95": 11.333310046108702
+        },
+        "nodeCpuPercentOfOneCore": {
+          "min": 0.20423770844764066,
+          "max": 7.78756559401602,
+          "mean": 1.3195783442972704,
+          "p50": 0.589748419535406,
+          "p95": 7.78756559401602
+        },
+        "nodeRssBytes": {
+          "min": 111439872,
+          "max": 120741888,
+          "mean": 116778666.66666667,
+          "p50": 117411840,
+          "p95": 120741888
+        },
+        "eventLoopUtilization": {
+          "min": 0.003123734849658645,
+          "max": 0.04475504633888817,
+          "mean": 0.007893024233608721,
+          "p50": 0.0036011871286810576,
+          "p95": 0.04475504633888817
+        }
+      },
+      "cashVerification": {
+        "at": "2026-11-03T02:22:16.367Z",
+        "sampleAt": "2026-11-03T02:22:11.495Z",
+        "attempts": 2,
+        "sales": 2,
+        "cashAttempts": 2,
+        "allBoxSales": 14,
+        "knownUnpaidVoids": 1,
+        "unexpectedBoxSales": 0,
+        "passed": true
+      },
+      "displayLatency": {
+        "samples": 2,
+        "p50": 449.8368999999948,
+        "p95": 475.77449999999953
+      },
+      "nativeDisplayLatency": {
+        "min": 449.8368999999948,
+        "max": 475.77449999999953,
+        "mean": 462.80569999999716,
+        "p50": 449.8368999999948,
+        "p95": 475.77449999999953
+      },
+      "scriptedDisplayLatency": null,
+      "resources": [
+        {
+          "id": "srv-danh2ljtqb8s73bt9en0",
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.020533834,
+            "max": 0.0681552,
+            "mean": 0.049119378272727277,
+            "p50": 0.044442132,
+            "p95": 0.0681552
+          },
+          "memoryBytes": {
+            "min": 351203330,
+            "max": 380026880,
+            "mean": 368220348.1818182,
+            "p50": 363139070,
+            "p95": 380026880
+          },
+          "cpuPercentPeak": 6.81552,
+          "memoryPercentPeak": 17.696381010779312,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": null
+        },
+        {
+          "id": "srv-dbk7qu8n74is73bm894g",
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.0011877,
+            "max": 0.0074110664,
+            "mean": 0.0036155908454545455,
+            "p50": 0.0024613,
+            "p95": 0.0074110664
+          },
+          "memoryBytes": {
+            "min": 116510720,
+            "max": 118575100,
+            "mean": 118098478.18181819,
+            "p50": 118304770,
+            "p95": 118575100
+          },
+          "cpuPercentPeak": 1.48221328,
+          "memoryPercentPeak": 22.086333977125598,
+          "memoryLimitBytes": 536870900,
+          "databaseConnections": null
+        },
+        {
+          "id": "dpg-dangso3m8hqs73b9ir80-a",
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.018661333,
+            "max": 0.060705833,
+            "mean": 0.0430182,
+            "p50": 0.048065633,
+            "p95": 0.060705833
+          },
+          "memoryBytes": {
+            "min": 653991940,
+            "max": 707702800,
+            "mean": 680495661.8181819,
+            "p50": 664924160,
+            "p95": 707702800
+          },
+          "cpuPercentPeak": 6.0705833,
+          "memoryPercentPeak": 32.95498042453037,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": {
+            "min": 10,
+            "max": 16,
+            "mean": 12.181818181818182,
+            "p50": 10,
+            "p95": 16
+          }
+        }
+      ]
+    },
+    {
+      "name": "ramp_2",
+      "outcome": "passed",
+      "startedAt": "2026-11-03T02:22:50.581Z",
+      "finishedAt": "2026-11-03T02:25:50.903Z",
+      "seconds": 180.322,
+      "mix": {
+        "tills": 2,
+        "displays": 2,
+        "boards": 1,
+        "nativeTills": 1,
+        "nativeBoards": 1
+      },
+      "calls": 467,
+      "requestsPerMinute": 155.38869355929947,
+      "errorCount": 0,
+      "errorRate": 0,
+      "p50Ms": 78.39689999999246,
+      "p95Ms": 132.51510000001872,
+      "sharedDatabaseRowChangesPerMinute": 586.2650281708886,
+      "databaseSnapshotSeconds": 180.328,
+      "serverStreams": {
+        "min": 6,
+        "max": 6,
+        "mean": 6,
+        "p50": 6,
+        "p95": 6
+      },
+      "workingDatabaseConnections": {
+        "min": 9,
+        "max": 16,
+        "mean": 10.75,
+        "p50": 9,
+        "p95": 16
+      },
+      "poolWaitingMax": 0,
+      "leaseRenewals": 23,
+      "loadGenerator": {
+        "hostCpuPercent": {
+          "min": 6.037372075592662,
+          "max": 7.650696068075813,
+          "mean": 6.753361099668299,
+          "p50": 6.628820308829797,
+          "p95": 7.650696068075813
+        },
+        "nodeCpuPercentOfOneCore": {
+          "min": 0.4107227847895145,
+          "max": 4.720292300585587,
+          "mean": 1.248789506370638,
+          "p50": 0.7298895261401886,
+          "p95": 4.720292300585587
+        },
+        "nodeRssBytes": {
+          "min": 119214080,
+          "max": 129085440,
+          "mean": 125283669.33333333,
+          "p50": 125087744,
+          "p95": 129085440
+        },
+        "eventLoopUtilization": {
+          "min": 0.0051769845913666145,
+          "max": 0.03430715356023361,
+          "mean": 0.008911633496906345,
+          "p50": 0.006719564461328785,
+          "p95": 0.03430715356023361
+        }
+      },
+      "cashVerification": {
+        "at": "2026-11-03T02:26:02.792Z",
+        "sampleAt": "2026-11-03T02:25:56.894Z",
+        "attempts": 3,
+        "sales": 3,
+        "cashAttempts": 3,
+        "allBoxSales": 17,
+        "knownUnpaidVoids": 1,
+        "unexpectedBoxSales": 0,
+        "passed": true
+      },
+      "displayLatency": {
+        "samples": 5,
+        "p50": 94.20370000001276,
+        "p95": 469.0052999999607
+      },
+      "nativeDisplayLatency": {
+        "min": 453.4234000000288,
+        "max": 469.0052999999607,
+        "mean": 461.21434999999474,
+        "p50": 453.4234000000288,
+        "p95": 469.0052999999607
+      },
+      "scriptedDisplayLatency": {
+        "min": 87.12220000004163,
+        "max": 94.20370000001276,
+        "mean": 91.10410000001623,
+        "p50": 91.98639999999432,
+        "p95": 94.20370000001276
+      },
+      "resources": [
+        {
+          "id": "srv-danh2ljtqb8s73bt9en0",
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.027929133,
+            "max": 0.0533578,
+            "mean": 0.03676019263636364,
+            "p50": 0.03500093,
+            "p95": 0.0533578
+          },
+          "memoryBytes": {
+            "min": 362831870,
+            "max": 372174850,
+            "mean": 364933122.72727275,
+            "p50": 363352060,
+            "p95": 372174850
+          },
+          "cpuPercentPeak": 5.33578,
+          "memoryPercentPeak": 17.330742362828754,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": null
+        },
+        {
+          "id": "srv-dbk7qu8n74is73bm894g",
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.0026824668,
+            "max": 0.0059805666,
+            "mean": 0.004132833309090908,
+            "p50": 0.0032676666,
+            "p95": 0.0059805666
+          },
+          "memoryBytes": {
+            "min": 116764670,
+            "max": 117108740,
+            "mean": 116957928.18181819,
+            "p50": 117018620,
+            "p95": 117108740
+          },
+          "cpuPercentPeak": 1.19611332,
+          "memoryPercentPeak": 21.81320313691802,
+          "memoryLimitBytes": 536870900,
+          "databaseConnections": null
+        },
+        {
+          "id": "dpg-dangso3m8hqs73b9ir80-a",
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.011202866,
+            "max": 0.09760353,
+            "mean": 0.05416630818181818,
+            "p50": 0.050515767,
+            "p95": 0.09760353
+          },
+          "memoryBytes": {
+            "min": 650842100,
+            "max": 710778900,
+            "mean": 668340600,
+            "p50": 661049340,
+            "p95": 710778900
+          },
+          "cpuPercentPeak": 9.760352999999999,
+          "memoryPercentPeak": 33.09822249632081,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": {
+            "min": 10,
+            "max": 16,
+            "mean": 12.181818181818182,
+            "p50": 10,
+            "p95": 16
+          }
+        }
+      ]
+    },
+    {
+      "name": "ramp_4",
+      "outcome": "passed",
+      "startedAt": "2026-11-03T02:26:41.721Z",
+      "finishedAt": "2026-11-03T02:29:42.492Z",
+      "seconds": 180.771,
+      "mix": {
+        "tills": 4,
+        "displays": 4,
+        "boards": 2,
+        "nativeTills": 1,
+        "nativeBoards": 2
+      },
+      "calls": 935,
+      "requestsPerMinute": 310.3373881872646,
+      "errorCount": 0,
+      "errorRate": 0,
+      "p50Ms": 76.52119999995921,
+      "p95Ms": 131.31939999992028,
+      "sharedDatabaseRowChangesPerMinute": 415.9064820411581,
+      "databaseSnapshotSeconds": 180.329,
+      "serverStreams": {
+        "min": 12,
+        "max": 12,
+        "mean": 12,
+        "p50": 12,
+        "p95": 12
+      },
+      "workingDatabaseConnections": {
+        "min": 9,
+        "max": 14,
+        "mean": 10.583333333333334,
+        "p50": 10,
+        "p95": 14
+      },
+      "poolWaitingMax": 0,
+      "leaseRenewals": 48,
+      "loadGenerator": {
+        "hostCpuPercent": {
+          "min": 5.749659583719524,
+          "max": 9.301974254387012,
+          "mean": 6.9116096136943845,
+          "p50": 6.659875266707194,
+          "p95": 9.301974254387012
+        },
+        "nodeCpuPercentOfOneCore": {
+          "min": 1.0305771446052745,
+          "max": 9.645858463445311,
+          "mean": 2.308450712184388,
+          "p50": 1.5484479222061776,
+          "p95": 9.645858463445311
+        },
+        "nodeRssBytes": {
+          "min": 132567040,
+          "max": 145678336,
+          "mean": 140849834.66666666,
+          "p50": 140677120,
+          "p95": 145678336
+        },
+        "eventLoopUtilization": {
+          "min": 0.008604813938073112,
+          "max": 0.035340974294393375,
+          "mean": 0.012595153785757053,
+          "p50": 0.010264674615349136,
+          "p95": 0.035340974294393375
+        }
+      },
+      "cashVerification": {
+        "at": "2026-11-03T02:30:10.756Z",
+        "sampleAt": "2026-11-03T02:29:57.328Z",
+        "attempts": 6,
+        "sales": 6,
+        "cashAttempts": 6,
+        "allBoxSales": 23,
+        "knownUnpaidVoids": 1,
+        "unexpectedBoxSales": 0,
+        "passed": true
+      },
+      "displayLatency": {
+        "samples": 14,
+        "p50": 100.39599999994971,
+        "p95": 457.2909000000218
+      },
+      "nativeDisplayLatency": {
+        "min": 355.42169999994803,
+        "max": 457.2909000000218,
+        "mean": 406.3562999999849,
+        "p50": 355.42169999994803,
+        "p95": 457.2909000000218
+      },
+      "scriptedDisplayLatency": {
+        "min": 83.500400000019,
+        "max": 110.43989999999758,
+        "mean": 96.2033249999998,
+        "p50": 94.90830000001006,
+        "p95": 110.43989999999758
+      },
+      "resources": [
+        {
+          "id": "srv-danh2ljtqb8s73bt9en0",
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.027070533,
+            "max": 0.08993137,
+            "mean": 0.06259975581818181,
+            "p50": 0.06444553,
+            "p95": 0.08993137
+          },
+          "memoryBytes": {
+            "min": 360554500,
+            "max": 379772930,
+            "mean": 370103760,
+            "p50": 370892800,
+            "p95": 379772930
+          },
+          "cpuPercentPeak": 8.993136999999999,
+          "memoryPercentPeak": 17.684555542123814,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": null
+        },
+        {
+          "id": "srv-dbk7qu8n74is73bm894g",
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.0050412333,
+            "max": 0.009270133,
+            "mean": 0.006301297027272727,
+            "p50": 0.005819867,
+            "p95": 0.009270133
+          },
+          "memoryBytes": {
+            "min": 119234560,
+            "max": 119926780,
+            "mean": 119438988.18181819,
+            "p50": 119246850,
+            "p95": 119926780
+          },
+          "cpuPercentPeak": 1.8540266,
+          "memoryPercentPeak": 22.338104002284346,
+          "memoryLimitBytes": 536870900,
+          "databaseConnections": null
+        },
+        {
+          "id": "dpg-dangso3m8hqs73b9ir80-a",
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.0421981,
+            "max": 0.093782336,
+            "mean": 0.05562550963636363,
+            "p50": 0.048390634,
+            "p95": 0.093782336
+          },
+          "memoryBytes": {
+            "min": 665428000,
+            "max": 695496700,
+            "mean": 676451054.5454545,
+            "p50": 665919500,
+            "p95": 695496700
+          },
+          "cpuPercentPeak": 9.3782336,
+          "memoryPercentPeak": 32.386589587925144,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": {
+            "min": 10,
+            "max": 14,
+            "mean": 11.454545454545455,
+            "p50": 10,
+            "p95": 14
+          }
+        }
+      ]
+    },
+    {
+      "name": "ramp_6",
+      "outcome": "passed",
+      "startedAt": "2026-11-03T02:30:45.823Z",
+      "finishedAt": "2026-11-03T02:33:46.136Z",
+      "seconds": 180.313,
+      "mix": {
+        "tills": 6,
+        "displays": 6,
+        "boards": 2,
+        "nativeTills": 1,
+        "nativeBoards": 2
+      },
+      "calls": 1337,
+      "requestsPerMinute": 444.8930470903374,
+      "errorCount": 0,
+      "errorRate": 0,
+      "p50Ms": 75.3066000000108,
+      "p95Ms": 128.874599999981,
+      "sharedDatabaseRowChangesPerMinute": 502.3955283470854,
+      "databaseSnapshotSeconds": 180.336,
+      "serverStreams": {
+        "min": 18,
+        "max": 18,
+        "mean": 18,
+        "p50": 18,
+        "p95": 18
+      },
+      "workingDatabaseConnections": {
+        "min": 9,
+        "max": 15,
+        "mean": 11,
+        "p50": 10,
+        "p95": 15
+      },
+      "poolWaitingMax": 0,
+      "leaseRenewals": 71,
+      "loadGenerator": {
+        "hostCpuPercent": {
+          "min": 5.763709058296806,
+          "max": 11.763988316432217,
+          "mean": 7.2403589323923425,
+          "p50": 6.0298192110666005,
+          "p95": 11.763988316432217
+        },
+        "nodeCpuPercentOfOneCore": {
+          "min": 0.9108769090817177,
+          "max": 8.358425718377534,
+          "mean": 2.3775196376442245,
+          "p50": 1.8846153096895915,
+          "p95": 8.358425718377534
+        },
+        "nodeRssBytes": {
+          "min": 148357120,
+          "max": 182849536,
+          "mean": 167419221.33333334,
+          "p50": 163115008,
+          "p95": 182849536
+        },
+        "eventLoopUtilization": {
+          "min": 0.010275841095716375,
+          "max": 0.041496642772758566,
+          "mean": 0.01472750529356863,
+          "p50": 0.011709945504528974,
+          "p95": 0.041496642772758566
+        }
+      },
+      "cashVerification": {
+        "at": "2026-11-03T02:34:04.063Z",
+        "sampleAt": "2026-11-03T02:33:57.768Z",
+        "attempts": 9,
+        "sales": 9,
+        "cashAttempts": 9,
+        "allBoxSales": 32,
+        "knownUnpaidVoids": 1,
+        "unexpectedBoxSales": 0,
+        "passed": true
+      },
+      "displayLatency": {
+        "samples": 23,
+        "p50": 107.13199999998324,
+        "p95": 358.5613000000594
+      },
+      "nativeDisplayLatency": {
+        "min": 358.5613000000594,
+        "max": 463.0354000000516,
+        "mean": 410.7983500000555,
+        "p50": 358.5613000000594,
+        "p95": 463.0354000000516
+      },
+      "scriptedDisplayLatency": {
+        "min": 86.78830000001471,
+        "max": 335.3573000000324,
+        "mean": 138.07752380950842,
+        "p50": 104.80509999999776,
+        "p95": 302.139899999951
+      },
+      "resources": [
+        {
+          "id": "srv-danh2ljtqb8s73bt9en0",
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.0445279,
+            "max": 0.105188966,
+            "mean": 0.0688261177272727,
+            "p50": 0.052266434,
+            "p95": 0.105188966
+          },
+          "memoryBytes": {
+            "min": 377872400,
+            "max": 386015230,
+            "mean": 381064660.90909094,
+            "p50": 380600320,
+            "p95": 386015230
+          },
+          "cpuPercentPeak": 10.5188966,
+          "memoryPercentPeak": 17.975235293997123,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": null
+        },
+        {
+          "id": "srv-dbk7qu8n74is73bm894g",
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.0030557667,
+            "max": 0.009759166,
+            "mean": 0.007008521263636363,
+            "p50": 0.0073432666,
+            "p95": 0.009759166
+          },
+          "memoryBytes": {
+            "min": 117460990,
+            "max": 119894020,
+            "mean": 118015069.0909091,
+            "p50": 117944320,
+            "p95": 119894020
+          },
+          "cpuPercentPeak": 1.9518331999999998,
+          "memoryPercentPeak": 22.332001976639077,
+          "memoryLimitBytes": 536870900,
+          "databaseConnections": null
+        },
+        {
+          "id": "dpg-dangso3m8hqs73b9ir80-a",
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.015680267,
+            "max": 0.10502803,
+            "mean": 0.09020653745454545,
+            "p50": 0.09770194,
+            "p95": 0.10502803
+          },
+          "memoryBytes": {
+            "min": 662773760,
+            "max": 710864900,
+            "mean": 679895792.7272727,
+            "p50": 677400600,
+            "p95": 710864900
+          },
+          "cpuPercentPeak": 10.502803,
+          "memoryPercentPeak": 33.10222718348117,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": {
+            "min": 10,
+            "max": 15,
+            "mean": 11.818181818181818,
+            "p50": 10,
+            "p95": 15
+          }
+        }
+      ]
+    },
+    {
+      "name": "ramp_8",
+      "outcome": "passed",
+      "startedAt": "2026-11-03T02:34:42.407Z",
+      "finishedAt": "2026-11-03T02:37:42.419Z",
+      "seconds": 180.012,
+      "mix": {
+        "tills": 8,
+        "displays": 8,
+        "boards": 3,
+        "nativeTills": 1,
+        "nativeBoards": 3
+      },
+      "calls": 1803,
+      "requestsPerMinute": 600.9599360042664,
+      "errorCount": 0,
+      "errorRate": 0,
+      "p50Ms": 73.53499999991618,
+      "p95Ms": 116.15810000000056,
+      "sharedDatabaseRowChangesPerMinute": 639.8092439071727,
+      "databaseSnapshotSeconds": 180.335,
+      "serverStreams": {
+        "min": 24,
+        "max": 24,
+        "mean": 24,
+        "p50": 24,
+        "p95": 24
+      },
+      "workingDatabaseConnections": {
+        "min": 9,
+        "max": 16,
+        "mean": 11.666666666666666,
+        "p50": 10,
+        "p95": 16
+      },
+      "poolWaitingMax": 0,
+      "leaseRenewals": 95,
+      "loadGenerator": {
+        "hostCpuPercent": {
+          "min": 5.248859861494282,
+          "max": 7.778785776544462,
+          "mean": 6.159811155314455,
+          "p50": 6.0136828973216705,
+          "p95": 7.778785776544462
+        },
+        "nodeCpuPercentOfOneCore": {
+          "min": 0.8277123004742406,
+          "max": 4.650411962002686,
+          "mean": 2.7172726181208753,
+          "p50": 2.3667206639370315,
+          "p95": 4.650411962002686
+        },
+        "nodeRssBytes": {
+          "min": 163258368,
+          "max": 198025216,
+          "mean": 184835413.33333334,
+          "p50": 183242752,
+          "p95": 198025216
+        },
+        "eventLoopUtilization": {
+          "min": 0.01229795709057081,
+          "max": 0.04031801784064893,
+          "mean": 0.01723685032266051,
+          "p50": 0.013837259622823984,
+          "p95": 0.04031801784064893
+        }
+      },
+      "cashVerification": {
+        "at": "2026-11-03T02:38:08.882Z",
+        "sampleAt": "2026-11-03T02:37:58.206Z",
+        "attempts": 12,
+        "sales": 12,
+        "cashAttempts": 12,
+        "allBoxSales": 44,
+        "knownUnpaidVoids": 1,
+        "unexpectedBoxSales": 0,
+        "passed": true
+      },
+      "displayLatency": {
+        "samples": 32,
+        "p50": 99.76219999999739,
+        "p95": 376.7612000000663
+      },
+      "nativeDisplayLatency": {
+        "min": 376.7612000000663,
+        "max": 478.1298999999417,
+        "mean": 427.445550000004,
+        "p50": 376.7612000000663,
+        "p95": 478.1298999999417
+      },
+      "scriptedDisplayLatency": {
+        "min": 83.6811999999918,
+        "max": 113.2414000001736,
+        "mean": 99.20355666669008,
+        "p50": 99.57180000003427,
+        "p95": 111.59920000005513
+      },
+      "resources": [
+        {
+          "id": "srv-danh2ljtqb8s73bt9en0",
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.0653592,
+            "max": 0.11157423,
+            "mean": 0.09003394363636365,
+            "p50": 0.090828165,
+            "p95": 0.11157423
+          },
+          "memoryBytes": {
+            "min": 365682700,
+            "max": 429432830,
+            "mean": 406905950,
+            "p50": 426745860,
+            "p95": 429432830
+          },
+          "cpuPercentPeak": 11.157423,
+          "memoryPercentPeak": 19.99702488996889,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": null
+        },
+        {
+          "id": "srv-dbk7qu8n74is73bm894g",
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.0026754,
+            "max": 0.0128915,
+            "mean": 0.009083684854545455,
+            "p50": 0.0124016,
+            "p95": 0.0128915
+          },
+          "memoryBytes": {
+            "min": 117989380,
+            "max": 118874110,
+            "mean": 118435840,
+            "p50": 118468610,
+            "p95": 118874110
+          },
+          "cpuPercentPeak": 2.5783,
+          "memoryPercentPeak": 22.142028930977634,
+          "memoryLimitBytes": 536870900,
+          "databaseConnections": null
+        },
+        {
+          "id": "dpg-dangso3m8hqs73b9ir80-a",
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.0582593,
+            "max": 0.1571098,
+            "mean": 0.1112977890909091,
+            "p50": 0.12260363,
+            "p95": 0.1571098
+          },
+          "memoryBytes": {
+            "min": 668528640,
+            "max": 724938750,
+            "mean": 690704386.3636364,
+            "p50": 678866940,
+            "p95": 724938750
+          },
+          "cpuPercentPeak": 15.71098,
+          "memoryPercentPeak": 33.75759190896731,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": {
+            "min": 11,
+            "max": 16,
+            "mean": 13.181818181818182,
+            "p50": 12,
+            "p95": 16
+          }
+        }
+      ]
+    },
+    {
+      "name": "ramp_12",
+      "outcome": "passed",
+      "startedAt": "2026-11-03T02:38:53.236Z",
+      "finishedAt": "2026-11-03T02:41:53.999Z",
+      "seconds": 180.763,
+      "mix": {
+        "tills": 12,
+        "displays": 12,
+        "boards": 4,
+        "nativeTills": 1,
+        "nativeBoards": 4
+      },
+      "calls": 2674,
+      "requestsPerMinute": 887.5710184053153,
+      "errorCount": 0,
+      "errorRate": 0,
+      "p50Ms": 74.37129999999888,
+      "p95Ms": 121.57750000013039,
+      "sharedDatabaseRowChangesPerMinute": 876.857290228116,
+      "databaseSnapshotSeconds": 180.303,
+      "serverStreams": {
+        "min": 36,
+        "max": 36,
+        "mean": 36,
+        "p50": 36,
+        "p95": 36
+      },
+      "workingDatabaseConnections": {
+        "min": 10,
+        "max": 16,
+        "mean": 13.333333333333334,
+        "p50": 14,
+        "p95": 16
+      },
+      "poolWaitingMax": 0,
+      "leaseRenewals": 143,
+      "loadGenerator": {
+        "hostCpuPercent": {
+          "min": 5.899618084329983,
+          "max": 8.790187697454,
+          "mean": 6.560176741987669,
+          "p50": 6.288302753913566,
+          "p95": 8.790187697454
+        },
+        "nodeCpuPercentOfOneCore": {
+          "min": 2.02122375427001,
+          "max": 7.400619640599306,
+          "mean": 3.8159259838898674,
+          "p50": 3.1258061114055167,
+          "p95": 7.400619640599306
+        },
+        "nodeRssBytes": {
+          "min": 184803328,
+          "max": 222318592,
+          "mean": 207474346.66666666,
+          "p50": 211005440,
+          "p95": 222318592
+        },
+        "eventLoopUtilization": {
+          "min": 0.016391309003755156,
+          "max": 0.0488525628187885,
+          "mean": 0.021210995245158442,
+          "p50": 0.017347943532565267,
+          "p95": 0.0488525628187885
+        }
+      },
+      "cashVerification": {
+        "at": "2026-11-03T02:42:07.242Z",
+        "sampleAt": "2026-11-03T02:41:58.610Z",
+        "attempts": 18,
+        "sales": 18,
+        "cashAttempts": 18,
+        "allBoxSales": 62,
+        "knownUnpaidVoids": 1,
+        "unexpectedBoxSales": 0,
+        "passed": true
+      },
+      "displayLatency": {
+        "samples": 50,
+        "p50": 96.61299999989569,
+        "p95": 166.58499999996275
+      },
+      "nativeDisplayLatency": {
+        "min": 346.9476999999024,
+        "max": 357.5378000000492,
+        "mean": 352.2427499999758,
+        "p50": 346.9476999999024,
+        "p95": 357.5378000000492
+      },
+      "scriptedDisplayLatency": {
+        "min": 81.43449999997392,
+        "max": 166.58499999996275,
+        "mean": 100.19443333335221,
+        "p50": 96.28630000003614,
+        "p95": 122.05380000011064
+      },
+      "resources": [
+        {
+          "id": "srv-danh2ljtqb8s73bt9en0",
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.025419466,
+            "max": 0.18827507,
+            "mean": 0.09682122600000001,
+            "p50": 0.0923164,
+            "p95": 0.18827507
+          },
+          "memoryBytes": {
+            "min": 371351550,
+            "max": 434352130,
+            "mean": 403547601.8181818,
+            "p50": 395313150,
+            "p95": 434352130
+          },
+          "cpuPercentPeak": 18.827506999999997,
+          "memoryPercentPeak": 20.226097652154362,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": null
+        },
+        {
+          "id": "srv-dbk7qu8n74is73bm894g",
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.0081109,
+            "max": 0.015486167,
+            "mean": 0.012339800045454546,
+            "p50": 0.0143350335,
+            "p95": 0.015486167
+          },
+          "memoryBytes": {
+            "min": 118894590,
+            "max": 120430590,
+            "mean": 119942792.72727273,
+            "p50": 120213500,
+            "p95": 120430590
+          },
+          "cpuPercentPeak": 3.0972334,
+          "memoryPercentPeak": 22.431945929645284,
+          "memoryLimitBytes": 536870900,
+          "databaseConnections": null
+        },
+        {
+          "id": "dpg-dangso3m8hqs73b9ir80-a",
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.03291343,
+            "max": 0.2029122,
+            "mean": 0.14629340181818182,
+            "p50": 0.1643221,
+            "p95": 0.2029122
+          },
+          "memoryBytes": {
+            "min": 669810700,
+            "max": 718024700,
+            "mean": 701139873.6363636,
+            "p50": 712781800,
+            "p95": 718024700
+          },
+          "cpuPercentPeak": 20.29122,
+          "memoryPercentPeak": 33.43563135941993,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": {
+            "min": 11,
+            "max": 16,
+            "mean": 13.090909090909092,
+            "p50": 12,
+            "p95": 16
+          }
+        }
+      ]
+    },
+    {
+      "name": "ramp_24",
+      "outcome": "passed",
+      "startedAt": "2026-11-03T02:43:16.420Z",
+      "finishedAt": "2026-11-03T02:46:17.216Z",
+      "seconds": 180.796,
+      "mix": {
+        "tills": 24,
+        "displays": 24,
+        "boards": 8,
+        "nativeTills": 1,
+        "nativeBoards": 8
+      },
+      "calls": 5368,
+      "requestsPerMinute": 1781.4553419323438,
+      "errorCount": 0,
+      "errorRate": 0,
+      "p50Ms": 76.7554999999702,
+      "p95Ms": 151.66889999993145,
+      "sharedDatabaseRowChangesPerMinute": 1528.8044050860335,
+      "databaseSnapshotSeconds": 180.337,
+      "serverStreams": {
+        "min": 72,
+        "max": 72,
+        "mean": 72,
+        "p50": 72,
+        "p95": 72
+      },
+      "workingDatabaseConnections": {
+        "min": 15,
+        "max": 16,
+        "mean": 15.583333333333334,
+        "p50": 16,
+        "p95": 16
+      },
+      "poolWaitingMax": 0,
+      "leaseRenewals": 289,
+      "loadGenerator": {
+        "hostCpuPercent": {
+          "min": 5.9205859587102445,
+          "max": 9.185295578738206,
+          "mean": 6.704199997120636,
+          "p50": 6.4366878064636595,
+          "p95": 9.185295578738206
+        },
+        "nodeCpuPercentOfOneCore": {
+          "min": 4.136548045614508,
+          "max": 9.59913807799893,
+          "mean": 5.8700569985865565,
+          "p50": 5.576652918626677,
+          "p95": 9.59913807799893
+        },
+        "nodeRssBytes": {
+          "min": 221528064,
+          "max": 268443648,
+          "mean": 247581013.33333334,
+          "p50": 250048512,
+          "p95": 268443648
+        },
+        "eventLoopUtilization": {
+          "min": 0.02436157324641979,
+          "max": 0.07147582093824874,
+          "mean": 0.03274596385669916,
+          "p50": 0.02930967927433752,
+          "p95": 0.07147582093824874
+        }
+      },
+      "cashVerification": {
+        "at": "2026-11-03T02:46:34.932Z",
+        "sampleAt": "2026-11-03T02:46:29.118Z",
+        "attempts": 36,
+        "sales": 36,
+        "cashAttempts": 36,
+        "allBoxSales": 98,
+        "knownUnpaidVoids": 1,
+        "unexpectedBoxSales": 0,
+        "passed": true
+      },
+      "displayLatency": {
+        "samples": 104,
+        "p50": 101.10050000017509,
+        "p95": 276.17210000008345
+      },
+      "nativeDisplayLatency": {
+        "min": 364.91030000010505,
+        "max": 553.1089000001084,
+        "mean": 459.00960000010673,
+        "p50": 364.91030000010505,
+        "p95": 553.1089000001084
+      },
+      "scriptedDisplayLatency": {
+        "min": 78.10129999998026,
+        "max": 520.2250999999233,
+        "mean": 121.08031960786549,
+        "p50": 100.63659999985248,
+        "p95": 252.05830000014976
+      },
+      "resources": [
+        {
+          "id": "srv-danh2ljtqb8s73bt9en0",
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.0819539,
+            "max": 0.27545342,
+            "mean": 0.1914344263636364,
+            "p50": 0.23049156,
+            "p95": 0.27545342
+          },
+          "memoryBytes": {
+            "min": 397406200,
+            "max": 439394300,
+            "mean": 420262630.90909094,
+            "p50": 436703230,
+            "p95": 439394300
+          },
+          "cpuPercentPeak": 27.545342,
+          "memoryPercentPeak": 20.460891994704873,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": null
+        },
+        {
+          "id": "srv-dbk7qu8n74is73bm894g",
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.013456733,
+            "max": 0.026566533,
+            "mean": 0.02076832418181818,
+            "p50": 0.0215107,
+            "p95": 0.026566533
+          },
+          "memoryBytes": {
+            "min": 119984130,
+            "max": 122081280,
+            "mean": 121418472.72727273,
+            "p50": 121364480,
+            "p95": 122081280
+          },
+          "cpuPercentPeak": 5.3133066,
+          "memoryPercentPeak": 22.739410908656065,
+          "memoryLimitBytes": 536870900,
+          "databaseConnections": null
+        },
+        {
+          "id": "dpg-dangso3m8hqs73b9ir80-a",
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.122652136,
+            "max": 0.3631281,
+            "mean": 0.26403583872727276,
+            "p50": 0.31940612,
+            "p95": 0.3631281
+          },
+          "memoryBytes": {
+            "min": 726052860,
+            "max": 770752500,
+            "mean": 745411307.2727273,
+            "p50": 744816640,
+            "p95": 770752500
+          },
+          "cpuPercentPeak": 36.31281,
+          "memoryPercentPeak": 35.89096093679132,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": {
+            "min": 16,
+            "max": 16,
+            "mean": 16,
+            "p50": 16,
+            "p95": 16
+          }
+        }
+      ]
+    },
+    {
+      "name": "ramp_32",
+      "outcome": "passed",
+      "startedAt": "2026-11-03T02:47:34.244Z",
+      "finishedAt": "2026-11-03T02:50:34.817Z",
+      "seconds": 180.573,
+      "mix": {
+        "tills": 32,
+        "displays": 32,
+        "boards": 11,
+        "nativeTills": 1,
+        "nativeBoards": 11
+      },
+      "calls": 7177,
+      "requestsPerMinute": 2384.7419049359537,
+      "errorCount": 0,
+      "errorRate": 0,
+      "p50Ms": 79.6284999998752,
+      "p95Ms": 150.02010000008158,
+      "sharedDatabaseRowChangesPerMinute": 1935.1726050187162,
+      "databaseSnapshotSeconds": 180.325,
+      "serverStreams": {
+        "min": 96,
+        "max": 96,
+        "mean": 96,
+        "p50": 96,
+        "p95": 96
+      },
+      "workingDatabaseConnections": {
+        "min": 15,
+        "max": 16,
+        "mean": 15.5,
+        "p50": 15,
+        "p95": 16
+      },
+      "poolWaitingMax": 2,
+      "leaseRenewals": 384,
+      "loadGenerator": {
+        "hostCpuPercent": {
+          "min": 5.801001077225953,
+          "max": 9.93041277874427,
+          "mean": 7.074382205750184,
+          "p50": 6.584183472095173,
+          "p95": 9.93041277874427
+        },
+        "nodeCpuPercentOfOneCore": {
+          "min": 4.77240532626396,
+          "max": 11.260759675695308,
+          "mean": 6.880790231435015,
+          "p50": 6.406584235889909,
+          "p95": 11.260759675695308
+        },
+        "nodeRssBytes": {
+          "min": 269815808,
+          "max": 312483840,
+          "mean": 292543488,
+          "p50": 293838848,
+          "p95": 312483840
+        },
+        "eventLoopUtilization": {
+          "min": 0.03290092479787627,
+          "max": 0.05955846009708854,
+          "mean": 0.03920440792547097,
+          "p50": 0.03631383506086174,
+          "p95": 0.05955846009708854
+        }
+      },
+      "cashVerification": {
+        "at": "2026-11-03T02:51:00.891Z",
+        "sampleAt": "2026-11-03T02:50:44.578Z",
+        "attempts": 48,
+        "sales": 48,
+        "cashAttempts": 48,
+        "allBoxSales": 146,
+        "knownUnpaidVoids": 1,
+        "unexpectedBoxSales": 0,
+        "passed": true
+      },
+      "displayLatency": {
+        "samples": 140,
+        "p50": 94.09410000010394,
+        "p95": 125.11579999979585
+      },
+      "nativeDisplayLatency": {
+        "min": 353.64240000001155,
+        "max": 376.6806000000797,
+        "mean": 365.16150000004563,
+        "p50": 353.64240000001155,
+        "p95": 376.6806000000797
+      },
+      "scriptedDisplayLatency": {
+        "min": 78.25109999999404,
+        "max": 378.2898999999743,
+        "mean": 99.61216884057806,
+        "p50": 94.09239999996498,
+        "p95": 123.24890000000596
+      },
+      "resources": [
+        {
+          "id": "srv-danh2ljtqb8s73bt9en0",
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.1342828,
+            "max": 0.3329733,
+            "mean": 0.24085211454545458,
+            "p50": 0.22522877,
+            "p95": 0.3329733
+          },
+          "memoryBytes": {
+            "min": 436228100,
+            "max": 446607360,
+            "mean": 442587697.27272725,
+            "p50": 446357500,
+            "p95": 446607360
+          },
+          "cpuPercentPeak": 33.29733,
+          "memoryPercentPeak": 20.796776282715268,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": null
+        },
+        {
+          "id": "srv-dbk7qu8n74is73bm894g",
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.018155133,
+            "max": 0.036538832,
+            "mean": 0.029219150909090906,
+            "p50": 0.033171132,
+            "p95": 0.036538832
+          },
+          "memoryBytes": {
+            "min": 121733120,
+            "max": 122953730,
+            "mean": 122371350.9090909,
+            "p50": 122380290,
+            "p95": 122953730
+          },
+          "cpuPercentPeak": 7.3077664,
+          "memoryPercentPeak": 22.901917388333025,
+          "memoryLimitBytes": 536870900,
+          "databaseConnections": null
+        },
+        {
+          "id": "dpg-dangso3m8hqs73b9ir80-a",
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "samples": {
+            "cpu": 11,
+            "memory": 11
+          },
+          "cpuCores": {
+            "min": 0.07619996,
+            "max": 0.5059833,
+            "mean": 0.3458164609090909,
+            "p50": 0.43421203,
+            "p95": 0.5059833
+          },
+          "memoryBytes": {
+            "min": 749912060,
+            "max": 761200640,
+            "mean": 755739552.7272727,
+            "p50": 755236860,
+            "p95": 761200640
+          },
+          "cpuPercentPeak": 50.598330000000004,
+          "memoryPercentPeak": 35.446167784471086,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": {
+            "min": 16,
+            "max": 16,
+            "mean": 16,
+            "p50": 16,
+            "p95": 16
+          }
+        }
+      ]
+    },
+    {
+      "name": "soak_2h",
+      "outcome": "passed",
+      "startedAt": "2026-11-03T07:58:39.533Z",
+      "finishedAt": "2026-11-03T09:58:40.130Z",
+      "seconds": 7200.597,
+      "calls": 10952,
+      "requestsPerMinute": 91.25909976631105,
+      "errorCount": 0,
+      "errorRate": 0,
+      "p50Ms": 76.91749999998137,
+      "p95Ms": 162.07689999975264,
+      "sharedDatabaseRowChangesPerMinute": 256.08487041350406,
+      "databaseSnapshotSeconds": 7198.551,
+      "serverStreams": {
+        "min": 2,
+        "max": 3,
+        "mean": 2.997840172786177,
+        "p50": 3,
+        "p95": 3
+      },
+      "workingDatabaseConnections": {
+        "min": 8,
+        "max": 17,
+        "mean": 11.198704103671707,
+        "p50": 10,
+        "p95": 16
+      },
+      "poolWaitingMax": 0,
+      "leaseRenewals": 451,
+      "loadGenerator": {
+        "hostCpuPercent": {
+          "min": 5.769199802164682,
+          "max": 99.88474801305574,
+          "mean": 35.93569616874429,
+          "p50": 36.65536379813214,
+          "p95": 72.53349850033806
+        },
+        "nodeCpuPercentOfOneCore": {
+          "min": 0,
+          "max": 13.242110654113153,
+          "mean": 1.0169065129802832,
+          "p50": 0.6062482889609783,
+          "p95": 3.5290596481209735
+        },
+        "nodeRssBytes": {
+          "min": 37298176,
+          "max": 330457088,
+          "mean": 199548467.97408208,
+          "p50": 197632000,
+          "p95": 321413120
+        },
+        "eventLoopUtilization": {
+          "min": 0.0023628264815668994,
+          "max": 0.039813616667659285,
+          "mean": 0.006596761703652419,
+          "p50": 0.004975840745570716,
+          "p95": 0.015048802019245553
+        }
+      },
+      "cashVerification": {
+        "at": "2026-11-03T09:58:53.329Z",
+        "sampleAt": "2026-11-03T09:58:51.495Z",
+        "attempts": 60,
+        "sales": 60,
+        "cashAttempts": 60,
+        "allBoxSales": 239,
+        "knownUnpaidVoids": 1,
+        "unexpectedBoxSales": 0,
+        "passed": true
+      },
+      "displayLatency": {
+        "samples": 60,
+        "p50": 387.3384999996051,
+        "p95": 498.994399999734
+      },
+      "nativeDisplayLatency": {
+        "min": 331.72939999960363,
+        "max": 999.3652999997139,
+        "mean": 419.2378166666521,
+        "p50": 387.3384999996051,
+        "p95": 498.994399999734
+      },
+      "scriptedDisplayLatency": null,
+      "resources": [
+        {
+          "id": "srv-danh2ljtqb8s73bt9en0",
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "samples": {
+            "cpu": 471,
+            "memory": 471
+          },
+          "cpuCores": {
+            "min": 0.006383,
+            "max": 0.081134565,
+            "mean": 0.03397879973248407,
+            "p50": 0.0326281,
+            "p95": 0.062412232
+          },
+          "memoryBytes": {
+            "min": 336986100,
+            "max": 386523140,
+            "mean": 364941346.49681526,
+            "p50": 366821380,
+            "p95": 376573950
+          },
+          "cpuPercentPeak": 8.1134565,
+          "memoryPercentPeak": 17.99888669696942,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": null
+        },
+        {
+          "id": "srv-dbk7qu8n74is73bm894g",
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "samples": {
+            "cpu": 471,
+            "memory": 471
+          },
+          "cpuCores": {
+            "min": 0.00073503336,
+            "max": 0.0049948664,
+            "mean": 0.0023698978064118923,
+            "p50": 0.0023161666,
+            "p95": 0.0038258333
+          },
+          "memoryBytes": {
+            "min": 106545150,
+            "max": 113446910,
+            "mean": 110344526.70912951,
+            "p50": 111865860,
+            "p95": 112640000
+          },
+          "cpuPercentPeak": 0.99897328,
+          "memoryPercentPeak": 21.13113413299175,
+          "memoryLimitBytes": 536870900,
+          "databaseConnections": null
+        },
+        {
+          "id": "dpg-dangso3m8hqs73b9ir80-a",
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "samples": {
+            "cpu": 471,
+            "memory": 471
+          },
+          "cpuCores": {
+            "min": 0.0079413,
+            "max": 0.0829535,
+            "mean": 0.03864514410828022,
+            "p50": 0.035855066,
+            "p95": 0.06650753
+          },
+          "memoryBytes": {
+            "min": 649809900,
+            "max": 717738000,
+            "mean": 673100470.1273885,
+            "p50": 665432060,
+            "p95": 709181440
+          },
+          "cpuPercentPeak": 8.29535,
+          "memoryPercentPeak": 33.42228085001441,
+          "memoryLimitBytes": 2147483600,
+          "databaseConnections": {
+            "min": 10,
+            "max": 16,
+            "mean": 11.887473460721868,
+            "p50": 10,
+            "p95": 16
+          }
+        }
+      ]
+    }
+  ],
+  "soakMemoryTrends": [
+    {
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "name": "oto-api-staging",
+      "plan": "standard",
+      "samples": 471,
+      "first20MinutesMiB": {
+        "min": 322.6679801940918,
+        "max": 364.58593368530273,
+        "mean": 347.03018262788845,
+        "p50": 349.4921875,
+        "p95": 355.07421493530273
+      },
+      "last20MinutesMiB": {
+        "min": 321.3749885559082,
+        "max": 362.76171684265137,
+        "mean": 347.5272448062897,
+        "p50": 350.16016006469727,
+        "p95": 357.55078315734863
+      },
+      "meanChangeMiB": 0.49706217840122235,
+      "regressionMiBPerHour": -0.7563674625282809,
+      "first": {
+        "at": 1793692719591,
+        "value": 343105540
+      },
+      "last": {
+        "at": 1793699920130,
+        "value": 365297660
+      }
+    },
+    {
+      "id": "srv-dbk7qu8n74is73bm894g",
+      "name": "oto-pos-web-staging",
+      "plan": "starter",
+      "samples": 471,
+      "first20MinutesMiB": {
+        "min": 105.48437118530273,
+        "max": 107.39453315734863,
+        "mean": 106.52881424148362,
+        "p50": 106.88281059265137,
+        "p95": 107.38672256469727
+      },
+      "last20MinutesMiB": {
+        "min": 101.86327934265137,
+        "max": 102.86328315734863,
+        "mean": 102.13559651374817,
+        "p50": 102.11718559265137,
+        "p95": 102.60937690734863
+      },
+      "meanChangeMiB": -4.393217727735447,
+      "regressionMiBPerHour": -3.1207517416896535,
+      "first": {
+        "at": 1793692719591,
+        "value": 111063040
+      },
+      "last": {
+        "at": 1793699920130,
+        "value": 107073540
+      }
+    },
+    {
+      "id": "dpg-dangso3m8hqs73b9ir80-a",
+      "name": "oto-db-staging",
+      "plan": "1c-2g",
+      "samples": 471,
+      "first20MinutesMiB": {
+        "min": 635.3398323059082,
+        "max": 683.9218711853027,
+        "mean": 656.980416929567,
+        "p50": 655.7656288146973,
+        "p95": 681.8554878234863
+      },
+      "last20MinutesMiB": {
+        "min": 621.4687347412109,
+        "max": 680.1328086853027,
+        "mean": 638.8457989692688,
+        "p50": 633.69140625,
+        "p95": 666.6796684265137
+      },
+      "meanChangeMiB": -18.134617960298215,
+      "regressionMiBPerHour": -10.171962177204925,
+      "first": {
+        "at": 1793692719591,
+        "value": 713080800
+      },
+      "last": {
+        "at": 1793699920130,
+        "value": 663797760
+      }
+    }
+  ],
+  "bend": null,
+  "maximumCompletedTills": 32,
+  "allCash": {
+    "at": "2026-11-03T09:59:15.585Z",
+    "sampleAt": "2026-11-03T09:59:06.523Z",
+    "attempts": 238,
+    "sales": 238,
+    "cashAttempts": 238,
+    "allBoxSales": 239,
+    "knownUnpaidVoids": 1,
+    "unexpectedBoxSales": 0,
+    "passed": true
+  },
+  "closedStreams": {
+    "at": "2026-11-03T09:59:33.828Z",
+    "nativeOpen": 0,
+    "scriptedOpen": 0,
+    "nativeOpened": 6,
+    "nativeClosed": 6,
+    "scriptedOpened": 0,
+    "scriptedClosed": 0,
+    "server": {
+      "stations": 0,
+      "connections": 0,
+      "perStation": {}
+    }
+  }
+}

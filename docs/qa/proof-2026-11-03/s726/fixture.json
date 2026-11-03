@@ -248,7 +248,8 @@
     "01a19f4d-6467-7eba-8e2c-d12706f54368",
     "01a1a002-24a2-732f-8e5b-9708a1a4ce4c",
     "01a1a00c-450d-712a-9ba2-ee2c466d2a22",
-    "01a1a025-769c-72dc-9cb3-05115f878a89"
+    "01a1a025-769c-72dc-9cb3-05115f878a89",
+    "01a1a06a-62e0-7f6c-9afe-e39fca634a55"
   ],
   "voidedDrafts": [
     {
@@ -797,6 +798,34 @@
       "kind": "admin",
       "stationId": null,
       "recordedAt": "2026-11-03T07:46:56.565Z"
+    },
+    {
+      "id": "01a1a069-ab7c-740d-898b-d5f6eb7442cb",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "admin",
+      "stationId": null,
+      "recordedAt": "2026-11-03T07:57:22.020Z"
+    },
+    {
+      "id": "01a1a06a-5a97-7119-9ebe-a6e103bfc5bd",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "native",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "recordedAt": "2026-11-03T07:58:08.073Z"
+    },
+    {
+      "id": "01a1a06a-6eb0-74ba-9b4b-7262f2b75330",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "native",
+      "stationId": "01a19e88-2a5d-7685-989b-22601c493045",
+      "recordedAt": "2026-11-03T07:58:13.117Z"
+    },
+    {
+      "id": "01a1a0da-9c8d-7c7d-8103-e2e2f631a8b7",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "admin",
+      "stationId": null,
+      "recordedAt": "2026-11-03T10:00:43.684Z"
     }
   ],
   "sources": {
@@ -2204,6 +2233,237 @@
       "postCount": 1,
       "finalised": true,
       "receiptNumber": "Z72601-000036"
+    },
+    {
+      "id": "01a1a025-f7dd-7ba5-9f68-cb7aa3e3a051",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T06:43:25.559Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000038"
+    },
+    {
+      "id": "01a1a027-cc19-7396-b800-768ac16563a8",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T06:45:25.516Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000039"
+    },
+    {
+      "id": "01a1a029-a160-77ce-b4f7-374f7063d71c",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T06:47:25.646Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000040"
+    },
+    {
+      "id": "01a1a02b-762d-7f1a-afcd-5671c40623bc",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T06:49:25.658Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000041"
+    },
+    {
+      "id": "01a1a02d-4bdc-7353-a64f-e2d23d5bfc77",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T06:51:25.799Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000042"
+    },
+    {
+      "id": "01a1a02f-20a3-7d3d-8d38-4663a96b5829",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T06:53:25.898Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000043"
+    },
+    {
+      "id": "01a1a030-f5f5-7b94-9a0f-fbb819cb09f1",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T06:55:25.950Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000044"
+    },
+    {
+      "id": "01a1a032-cb0c-7ac1-ae40-6ddf18469f1c",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T06:57:26.137Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000045"
+    },
+    {
+      "id": "01a1a034-a087-78c8-aa18-2933d5d1a11f",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T06:59:26.221Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000046"
+    },
+    {
+      "id": "01a1a036-753b-7b7a-876b-5903b928783e",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T07:01:26.315Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000047"
+    },
+    {
+      "id": "01a1a038-4adf-79d5-beaf-bba1d042437d",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T07:03:26.544Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000048"
+    },
+    {
+      "id": "01a1a03a-1fc3-78a5-88a1-68e998d7a14f",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T07:05:26.460Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000049"
+    },
+    {
+      "id": "01a1a03b-f494-7d49-a7fb-b3e4dd08ae77",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T07:07:26.491Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000050"
+    },
+    {
+      "id": "01a1a03d-c9d2-72b1-acdb-523adba5c006",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T07:09:26.622Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000051"
+    },
+    {
+      "id": "01a1a03f-9f2e-7c43-bb96-1e34fee8cd1e",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T07:11:26.773Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000052"
+    },
+    {
+      "id": "01a1a041-7421-7bbf-afb8-37fbf950e16b",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T07:13:26.826Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000053"
+    },
+    {
+      "id": "01a1a043-4980-79ce-b2c2-7797f3b2820e",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T07:15:26.971Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000054"
+    },
+    {
+      "id": "01a1a045-1ef0-7f40-a5e5-81c29d23d3d6",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T07:17:27.153Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000055"
+    },
+    {
+      "id": "01a1a046-f3d9-73a4-a21a-3c5dc552e741",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T07:19:27.296Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000056"
+    },
+    {
+      "id": "01a1a048-ca69-79b4-bf16-b4a5f5522d61",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T07:21:28.095Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000057"
+    },
+    {
+      "id": "01a1a04a-9ddd-7ed1-96d9-59b2af6cfb2d",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T07:23:27.361Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000058"
     }
   ],
   "previousFamilies": [
@@ -2290,20 +2550,34 @@
       "pickupPhotoId": "24d973e8-358c-49d9-8492-f5808208bed0",
       "releasedAt": "2026-11-03T06:21:17.645Z",
       "releaseId": "2b32ee84-c06c-41c5-86b5-0d3c5b660035"
+    },
+    {
+      "registrationId": "7384613c-7c98-42a4-a184-a7e5580aa2e0",
+      "checkinId": "7a3058eb-78a6-45ba-b92a-a0c8af72ec1f",
+      "saleId": "4f37b62b-8883-4e83-ab97-fc6a536c2c93",
+      "childName": "ZZ TEST SCRUM-726 mvzv6zgu child 7",
+      "photoId": "e333449a-a8bc-444b-a24d-b7e2f5a0f297",
+      "grossSatang": 111500,
+      "receiptNumber": "Z72601-000037",
+      "bandId": "01a1a024-f671-713e-bf6b-44bb9f2ad345",
+      "inPark": false,
+      "pickupPhotoId": "8cb1a203-c1ba-42dd-91e6-856f4444b642",
+      "releasedAt": "2026-11-03T07:46:58.462Z",
+      "releaseId": "4ea3a275-5289-4da3-927b-71e71dd49b45"
     }
   ],
   "family": {
-    "registrationId": "7384613c-7c98-42a4-a184-a7e5580aa2e0",
-    "checkinId": "7a3058eb-78a6-45ba-b92a-a0c8af72ec1f",
-    "saleId": "4f37b62b-8883-4e83-ab97-fc6a536c2c93",
-    "childName": "ZZ TEST SCRUM-726 mvzv6zgu child 7",
-    "photoId": "e333449a-a8bc-444b-a24d-b7e2f5a0f297",
+    "registrationId": "49ed38a2-0b07-4870-bd03-0d08ff362b04",
+    "checkinId": "80dd1882-eee9-4e62-a334-d2fc662b1d7a",
+    "saleId": "6303095c-1f00-40b7-8a5e-2bf4b7a579a9",
+    "childName": "ZZ TEST SCRUM-726 mvzv6zgu child 8",
+    "photoId": "aadae38c-d4f1-4cff-b9f0-41eaec7fde61",
     "grossSatang": 111500,
-    "receiptNumber": "Z72601-000037",
-    "bandId": "01a1a024-f671-713e-bf6b-44bb9f2ad345",
+    "receiptNumber": "Z72601-000059",
+    "bandId": "01a1a069-f998-7f41-93c7-f7febbe31924",
     "inPark": false,
-    "pickupPhotoId": "8cb1a203-c1ba-42dd-91e6-856f4444b642",
-    "releasedAt": "2026-11-03T07:46:58.462Z",
-    "releaseId": "4ea3a275-5289-4da3-927b-71e71dd49b45"
+    "pickupPhotoId": "e504293f-dad9-4f26-bda3-2ab82b58b610",
+    "releasedAt": "2026-11-03T09:59:17.700Z",
+    "releaseId": "c3c4f45e-fdbc-443a-9dcf-836bf4c8dd11"
   }
 }

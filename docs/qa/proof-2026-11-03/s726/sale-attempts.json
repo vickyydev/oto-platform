@@ -1,233 +1,662 @@
 [
   {
-    "id": "01a1a025-f7dd-7ba5-9f68-cb7aa3e3a051",
+    "id": "01a1a06a-e1a0-7bd0-8583-050b403e042b",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T06:43:25.559Z",
+    "at": "2026-11-03T07:58:41.833Z",
     "phase": "soak_2h",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000038"
+    "receiptNumber": "Z72601-000060"
   },
   {
-    "id": "01a1a027-cc19-7396-b800-768ac16563a8",
+    "id": "01a1a06c-b650-77d5-a69d-4b48c1a7580c",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T06:45:25.516Z",
+    "at": "2026-11-03T08:00:41.815Z",
     "phase": "soak_2h",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000039"
+    "receiptNumber": "Z72601-000061"
   },
   {
-    "id": "01a1a029-a160-77ce-b4f7-374f7063d71c",
+    "id": "01a1a06e-8b02-75a0-bd23-b03be8299282",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T06:47:25.646Z",
+    "at": "2026-11-03T08:02:41.795Z",
     "phase": "soak_2h",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000040"
+    "receiptNumber": "Z72601-000062"
   },
   {
-    "id": "01a1a02b-762d-7f1a-afcd-5671c40623bc",
+    "id": "01a1a070-605e-7911-ae02-4c2bf27f18a1",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T06:49:25.658Z",
+    "at": "2026-11-03T08:04:41.951Z",
     "phase": "soak_2h",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000041"
+    "receiptNumber": "Z72601-000063"
   },
   {
-    "id": "01a1a02d-4bdc-7353-a64f-e2d23d5bfc77",
+    "id": "01a1a072-361d-727d-bba5-6bf71d00605e",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T06:51:25.799Z",
+    "at": "2026-11-03T08:06:42.215Z",
     "phase": "soak_2h",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000042"
+    "receiptNumber": "Z72601-000064"
   },
   {
-    "id": "01a1a02f-20a3-7d3d-8d38-4663a96b5829",
+    "id": "01a1a074-0b51-77fc-af3f-2892a615d426",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T06:53:25.898Z",
+    "at": "2026-11-03T08:08:42.376Z",
     "phase": "soak_2h",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000043"
+    "receiptNumber": "Z72601-000065"
   },
   {
-    "id": "01a1a030-f5f5-7b94-9a0f-fbb819cb09f1",
+    "id": "01a1a075-df74-73e1-b72a-0e1a565d1532",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T06:55:25.950Z",
+    "at": "2026-11-03T08:10:42.266Z",
     "phase": "soak_2h",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000044"
+    "receiptNumber": "Z72601-000066"
   },
   {
-    "id": "01a1a032-cb0c-7ac1-ae40-6ddf18469f1c",
+    "id": "01a1a077-b449-760b-a147-2bf3c0b07d18",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T06:57:26.137Z",
+    "at": "2026-11-03T08:12:42.193Z",
     "phase": "soak_2h",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000045"
+    "receiptNumber": "Z72601-000067"
   },
   {
-    "id": "01a1a034-a087-78c8-aa18-2933d5d1a11f",
+    "id": "01a1a079-89e0-7cb6-b2e6-836268724f22",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T06:59:26.221Z",
+    "at": "2026-11-03T08:14:42.504Z",
     "phase": "soak_2h",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000046"
+    "receiptNumber": "Z72601-000068"
   },
   {
-    "id": "01a1a036-753b-7b7a-876b-5903b928783e",
+    "id": "01a1a07b-5f3b-7fd2-b39f-7192666dafb5",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T07:01:26.315Z",
+    "at": "2026-11-03T08:16:42.583Z",
     "phase": "soak_2h",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000047"
+    "receiptNumber": "Z72601-000069"
   },
   {
-    "id": "01a1a038-4adf-79d5-beaf-bba1d042437d",
+    "id": "01a1a07d-3416-7620-95ff-2656dbb88af7",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T07:03:26.544Z",
+    "at": "2026-11-03T08:18:42.591Z",
     "phase": "soak_2h",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000048"
+    "receiptNumber": "Z72601-000070"
   },
   {
-    "id": "01a1a03a-1fc3-78a5-88a1-68e998d7a14f",
+    "id": "01a1a07f-08e7-755b-9569-a4ce5ac2cdcd",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T07:05:26.460Z",
+    "at": "2026-11-03T08:20:42.594Z",
     "phase": "soak_2h",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000049"
+    "receiptNumber": "Z72601-000071"
   },
   {
-    "id": "01a1a03b-f494-7d49-a7fb-b3e4dd08ae77",
+    "id": "01a1a080-ddbd-7443-87ad-a2a304d9d15b",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T07:07:26.491Z",
+    "at": "2026-11-03T08:22:42.734Z",
     "phase": "soak_2h",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000050"
+    "receiptNumber": "Z72601-000072"
   },
   {
-    "id": "01a1a03d-c9d2-72b1-acdb-523adba5c006",
+    "id": "01a1a082-b328-7025-8f9a-05d515c7fcbe",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T07:09:26.622Z",
+    "at": "2026-11-03T08:24:42.904Z",
     "phase": "soak_2h",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000051"
+    "receiptNumber": "Z72601-000073"
   },
   {
-    "id": "01a1a03f-9f2e-7c43-bb96-1e34fee8cd1e",
+    "id": "01a1a084-8878-70a7-87cd-fcf8b5312a0c",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T07:11:26.773Z",
+    "at": "2026-11-03T08:26:42.964Z",
     "phase": "soak_2h",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000052"
+    "receiptNumber": "Z72601-000074"
   },
   {
-    "id": "01a1a041-7421-7bbf-afb8-37fbf950e16b",
+    "id": "01a1a086-5d00-7adf-8414-db39697b1876",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T07:13:26.826Z",
+    "at": "2026-11-03T08:28:42.899Z",
     "phase": "soak_2h",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000053"
+    "receiptNumber": "Z72601-000075"
   },
   {
-    "id": "01a1a043-4980-79ce-b2c2-7797f3b2820e",
+    "id": "01a1a088-3223-7ef0-8c8c-f2f9741ec1e8",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T07:15:26.971Z",
+    "at": "2026-11-03T08:30:43.013Z",
     "phase": "soak_2h",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000054"
+    "receiptNumber": "Z72601-000076"
   },
   {
-    "id": "01a1a045-1ef0-7f40-a5e5-81c29d23d3d6",
+    "id": "01a1a08a-0719-77c6-b036-479785bea6d3",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T07:17:27.153Z",
+    "at": "2026-11-03T08:32:43.092Z",
     "phase": "soak_2h",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000055"
+    "receiptNumber": "Z72601-000077"
   },
   {
-    "id": "01a1a046-f3d9-73a4-a21a-3c5dc552e741",
+    "id": "01a1a08b-dbd5-7053-91ef-d2d233191473",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T07:19:27.296Z",
+    "at": "2026-11-03T08:34:43.160Z",
     "phase": "soak_2h",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000056"
+    "receiptNumber": "Z72601-000078"
   },
   {
-    "id": "01a1a048-ca69-79b4-bf16-b4a5f5522d61",
+    "id": "01a1a08d-b18a-79f4-a59a-10d4fa1796ea",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T07:21:28.095Z",
+    "at": "2026-11-03T08:36:43.329Z",
     "phase": "soak_2h",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000057"
+    "receiptNumber": "Z72601-000079"
   },
   {
-    "id": "01a1a04a-9ddd-7ed1-96d9-59b2af6cfb2d",
+    "id": "01a1a08f-8678-75eb-8a03-fdca9ae914fe",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T07:23:27.361Z",
+    "at": "2026-11-03T08:38:43.366Z",
     "phase": "soak_2h",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000058"
+    "receiptNumber": "Z72601-000080"
+  },
+  {
+    "id": "01a1a091-5b8c-70ac-b5b4-d8ff837c2454",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T08:40:43.445Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000081"
+  },
+  {
+    "id": "01a1a093-3075-7cd6-a131-46eb5ac6fbbd",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T08:42:43.486Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000082"
+  },
+  {
+    "id": "01a1a095-0510-79de-92de-a7740dfe223f",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T08:44:43.511Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000083"
+  },
+  {
+    "id": "01a1a096-da9f-7966-850a-6914196e8d83",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T08:46:43.637Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000084"
+  },
+  {
+    "id": "01a1a098-b0ba-761f-8e82-fa6f9945c308",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T08:48:44.158Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000085"
+  },
+  {
+    "id": "01a1a09a-8484-7cef-9fdf-c6509de5663a",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T08:50:43.756Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000086"
+  },
+  {
+    "id": "01a1a09c-5956-70e6-96e9-5c89a17ad5f4",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T08:52:43.792Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000087"
+  },
+  {
+    "id": "01a1a09e-2fbf-723a-b5d8-a86fd9643779",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T08:54:44.224Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000088"
+  },
+  {
+    "id": "01a1a0a0-0472-7c40-9163-cfd1d3746afc",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T08:56:44.202Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000089"
+  },
+  {
+    "id": "01a1a0a1-d8b1-7278-b91d-3c1c185b7b3e",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T08:58:44.056Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000090"
+  },
+  {
+    "id": "01a1a0a3-aefc-7373-95c1-a0b21bc949ab",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:00:44.467Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000091"
+  },
+  {
+    "id": "01a1a0a5-8464-7840-b41a-1a387bec036e",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:02:44.658Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000092"
+  },
+  {
+    "id": "01a1a0a7-585d-7b9a-88b0-70d936b94547",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:04:44.485Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000093"
+  },
+  {
+    "id": "01a1a0a9-2d44-7bd0-960e-1d372b708f2c",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:06:44.420Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000094"
+  },
+  {
+    "id": "01a1a0ab-0286-7f04-b13f-8a3a855ce3fb",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:08:44.569Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000095"
+  },
+  {
+    "id": "01a1a0ac-d7fe-78c3-b1c1-4bdbb7602181",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:10:44.794Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000096"
+  },
+  {
+    "id": "01a1a0ae-aca2-7664-bdc4-cbe06ac78adf",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:12:44.810Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000097"
+  },
+  {
+    "id": "01a1a0b0-8203-7c34-8847-5f6c3b330491",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:14:44.971Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000098"
+  },
+  {
+    "id": "01a1a0b2-57a1-7a3e-8b4a-346fc5a3b464",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:16:45.119Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000099"
+  },
+  {
+    "id": "01a1a0b4-2ce0-7545-a009-edb310b049d7",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:18:45.222Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000100"
+  },
+  {
+    "id": "01a1a0b6-0140-7b59-a4ba-b6b208b7aa99",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:20:45.147Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000101"
+  },
+  {
+    "id": "01a1a0b7-d6b2-7af7-86c6-460c76733104",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:22:45.314Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000102"
+  },
+  {
+    "id": "01a1a0b9-ab90-71a3-abaa-784433b2e20a",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:24:45.354Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000103"
+  },
+  {
+    "id": "01a1a0bb-80dd-72c3-bf81-f7ca4dc04c65",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:26:45.513Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000104"
+  },
+  {
+    "id": "01a1a0bd-55f3-7558-bb89-075c68f5ef6a",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:28:45.648Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000105"
+  },
+  {
+    "id": "01a1a0bf-2b6c-76c4-865c-eff9499d1dd0",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:30:45.787Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000106"
+  },
+  {
+    "id": "01a1a0c0-ff11-71e3-b9d2-7961056761f5",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:32:45.463Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000107"
+  },
+  {
+    "id": "01a1a0c2-d41a-7645-b063-b9c3c3c4160f",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:34:45.562Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000108"
+  },
+  {
+    "id": "01a1a0c4-a957-74c5-b8b5-fbb9fa3833cc",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:36:45.690Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000109"
+  },
+  {
+    "id": "01a1a0c6-7e91-7199-ab66-b5a8c4937426",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:38:45.826Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000110"
+  },
+  {
+    "id": "01a1a0c8-53b9-75ac-ad5d-5af10b513766",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:40:45.893Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000111"
+  },
+  {
+    "id": "01a1a0ca-2921-771e-b33f-02301053ddab",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:42:46.160Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000112"
+  },
+  {
+    "id": "01a1a0cb-fe4d-777e-b9fb-b6542b21b3e7",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:44:46.364Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000113"
+  },
+  {
+    "id": "01a1a0cd-d3ae-70fa-8e63-cd9e8e3590b8",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:46:46.448Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000114"
+  },
+  {
+    "id": "01a1a0cf-a85d-7de7-9dfa-e81c5a5dffea",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:48:46.314Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000115"
+  },
+  {
+    "id": "01a1a0d1-7dc2-79f1-86f3-3d8fa018c6c4",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:50:46.510Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000116"
+  },
+  {
+    "id": "01a1a0d3-5399-74a1-849c-8f1d205a0421",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:52:46.799Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000117"
+  },
+  {
+    "id": "01a1a0d5-2ac2-7c94-981f-093fdf2ec0cf",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:54:47.391Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000118"
+  },
+  {
+    "id": "01a1a0d6-fd84-70c3-b69e-5680bbd911b1",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T09:56:46.968Z",
+    "phase": "soak_2h",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000119"
   }
 ]
