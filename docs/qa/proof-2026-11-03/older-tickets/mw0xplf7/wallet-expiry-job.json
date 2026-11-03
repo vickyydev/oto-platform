@@ -1,0 +1,56 @@
+{
+  "jobId": "job-dbl1cj95efls73fv48tg",
+  "source": "2e5ff3f1d2f1aa093e9edd7b003a16d0d9b5118e",
+  "startedAt": "2026-11-03T17:13:48.343Z",
+  "status": "succeeded",
+  "result": {
+    "event": "old_wallet_expiry",
+    "at": "2026-11-03T17:14:53.502Z",
+    "testFixtureAging": true,
+    "scope": "01a1a260-64f5-7fb7-b0a9-272c85215239",
+    "walletId": "01a1a265-aeb7-7b2e-8ee8-7d20dbba6dd5",
+    "originalGrant": {
+      "expiresAt": "2026-11-03T22:00:00.000Z",
+      "businessDate": "2026-11-03T00:00:00.000Z"
+    },
+    "agedBusinessDate": "2026-11-01",
+    "result": {
+      "branchId": "01a1a260-64f5-7fb7-b0a9-272c85215239",
+      "businessDate": "2026-11-01",
+      "ended": true,
+      "expiredWallets": 1,
+      "expiredSatang": 35000,
+      "closedAtZero": 0
+    },
+    "wallet": {
+      "id": "01a1a265-aeb7-7b2e-8ee8-7d20dbba6dd5",
+      "holder_name": "ZZ TEST older proof mw0xplf7 wallet",
+      "balance_satang": "0",
+      "status": "expired"
+    },
+    "ledger": [
+      {
+        "kind": "grant",
+        "source": "ticket_sale",
+        "amount_satang": "35000",
+        "balance_after": "35000",
+        "business_date": "2026-11-01T00:00:00.000Z"
+      },
+      {
+        "kind": "expire",
+        "source": "expiry",
+        "amount_satang": "-35000",
+        "balance_after": "0",
+        "business_date": "2026-11-01T00:00:00.000Z"
+      }
+    ],
+    "cashPayments": [
+      {
+        "method": "cash",
+        "status": "approved",
+        "amount_satang": "35000"
+      }
+    ],
+    "passed": true
+  }
+}

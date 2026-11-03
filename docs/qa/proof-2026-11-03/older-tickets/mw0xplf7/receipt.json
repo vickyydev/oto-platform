@@ -1,0 +1,332 @@
+{
+  "startedAt": "2026-11-03T17:01:06.355Z",
+  "name": "ZZ TEST older proof mw0xplf7",
+  "deployments": [
+    {
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "name": "oto-api-staging",
+      "sha": "2e5ff3f1d2f1aa093e9edd7b003a16d0d9b5118e",
+      "deployId": "dep-dbl0uhjbc2fs738gbic0",
+      "liveAt": "2026-11-03T16:47:35.214609Z"
+    },
+    {
+      "id": "srv-dbk7qu8n74is73bm894g",
+      "name": "oto-pos-web-staging",
+      "sha": "2e5ff3f1d2f1aa093e9edd7b003a16d0d9b5118e",
+      "deployId": "dep-dbl0uhjbc2fs738gbje0",
+      "liveAt": "2026-11-03T16:46:11.348061Z"
+    },
+    {
+      "id": "srv-danh2mf40ujc73bu80j0",
+      "name": "oto-pos-staging",
+      "sha": "2e5ff3f1d2f1aa093e9edd7b003a16d0d9b5118e",
+      "deployId": "dep-dbl0uhrbc2fs738gbjl0",
+      "liveAt": "2026-11-03T16:45:19.979612Z"
+    },
+    {
+      "id": "srv-danng2p42hec73f38e3g",
+      "name": "oto-console-staging",
+      "sha": "2e5ff3f1d2f1aa093e9edd7b003a16d0d9b5118e",
+      "deployId": "dep-dbl0uhrbc2fs738gbjo0",
+      "liveAt": "2026-11-03T16:45:06.865073Z"
+    }
+  ],
+  "checks": [
+    {
+      "what": "Manual 10 percent discount persisted and the 90 baht cash sale finalised",
+      "saleId": "01a1a25e-4980-7d06-b54b-a6073e0b4c69",
+      "grossSatang": 9000,
+      "at": "2026-11-03T17:05:34.649Z"
+    },
+    {
+      "what": "Five printer roles saved through the native Console and read back",
+      "stationId": "01a1a25c-89ff-7c8b-9d2e-fc43c123c453",
+      "roles": [
+        {
+          "role": "adult_band",
+          "deviceId": "01a1a25b-df79-741f-a88e-deac7b0d8ccd"
+        },
+        {
+          "role": "bar",
+          "deviceId": "01a1a25b-dbce-79e1-8433-95a134772063"
+        },
+        {
+          "role": "kids_band",
+          "deviceId": "01a1a25b-df79-741f-a88e-deac7b0d8ccd"
+        },
+        {
+          "role": "kitchen",
+          "deviceId": "01a1a25b-dda8-702d-87bb-822f8350958a"
+        },
+        {
+          "role": "receipt",
+          "deviceId": "01a1a25b-dbce-79e1-8433-95a134772063"
+        }
+      ],
+      "at": "2026-11-03T17:08:08.965Z"
+    },
+    {
+      "what": "A cash ticket at the dedicated ZZ TEST branch granted wallet credit",
+      "saleId": "0c2b016c-e3a2-46b1-b9aa-5365a9d7e4ad",
+      "walletId": "01a1a265-aeb7-7b2e-8ee8-7d20dbba6dd5",
+      "amountSatang": 35000,
+      "at": "2026-11-03T17:12:14.852Z"
+    },
+    {
+      "what": "Expired wallet credit reactivated once through the native screen with a typed reason",
+      "walletId": "01a1a265-aeb7-7b2e-8ee8-7d20dbba6dd5",
+      "amountSatang": 35000,
+      "at": "2026-11-03T17:25:26.926Z"
+    },
+    {
+      "what": "Pickup relationship edited through the native sheet",
+      "at": "2026-11-03T17:30:48.073Z"
+    },
+    {
+      "what": "Pickup removed from the active list through the native sheet; retained audit read pending",
+      "at": "2026-11-03T17:32:36.882Z"
+    },
+    {
+      "what": "Wallet and Promo shows three own wallet movements; Discounts and Comps shows the own 10 baht manual-discount row",
+      "walletId": "01a1a265-aeb7-7b2e-8ee8-7d20dbba6dd5",
+      "saleId": "01a1a25e-4980-7d06-b54b-a6073e0b4c69",
+      "at": "2026-11-03T17:35:11.246Z"
+    }
+  ],
+  "fixtures": {
+    "boxId": "01a1a25b-d9fe-7647-bb2d-17a2c1936d87",
+    "devices": [
+      {
+        "id": "01a1a25b-dbce-79e1-8433-95a134772063",
+        "kind": "receipt_printer",
+        "label": "ZZ TEST older proof mw0xplf7 receipt"
+      },
+      {
+        "id": "01a1a25b-dda8-702d-87bb-822f8350958a",
+        "kind": "kitchen_printer",
+        "label": "ZZ TEST older proof mw0xplf7 kitchen"
+      },
+      {
+        "id": "01a1a25b-df79-741f-a88e-deac7b0d8ccd",
+        "kind": "band_printer",
+        "label": "ZZ TEST older proof mw0xplf7 bands"
+      }
+    ],
+    "stationId": "01a1a25c-89ff-7c8b-9d2e-fc43c123c453",
+    "stationName": "ZZ TEST older proof mw0xplf7 till",
+    "categoryId": "01a1a25c-8be9-79f4-ab3d-fe65fef035fd",
+    "productId": "01a1a25c-8dad-78a7-a260-4e6c6b1df9fd",
+    "productName": "ZZ TEST older proof mw0xplf7 item",
+    "discountSaleId": "01a1a25e-4980-7d06-b54b-a6073e0b4c69",
+    "walletBranch": "01a1a260-64f5-7fb7-b0a9-272c85215239",
+    "walletBox": "01a1a260-66c7-7c44-a3b6-b6f5195f22c1",
+    "walletStation": "01a1a260-689a-7548-8650-62fced9dcbe3",
+    "walletPackage": "01a1a260-6a6a-73a0-8f51-84e33e6062b0",
+    "walletSale": "0c2b016c-e3a2-46b1-b9aa-5365a9d7e4ad",
+    "walletId": "01a1a265-aeb7-7b2e-8ee8-7d20dbba6dd5",
+    "registrationId": "928d1e45-1f6c-4e69-ae89-9ad7107d0646",
+    "checkinId": "00384e7d-fc18-46fe-aca9-0753e843e554",
+    "childName": "ZZ TEST older proof mw0xplf7 child",
+    "pickupId": "01a1a273-7331-7c3d-bc35-6860cc2d61e3"
+  },
+  "screens": [
+    {
+      "file": "s50-discount-applied.png",
+      "keys": [
+        "SCRUM-50",
+        "SCRUM-47"
+      ],
+      "at": "2026-11-03T17:04:10.287Z",
+      "url": "https://oto-pos-web-staging.onrender.com/order-station"
+    },
+    {
+      "file": "s50-cash-confirmed.png",
+      "keys": [
+        "SCRUM-50",
+        "SCRUM-47"
+      ],
+      "at": "2026-11-03T17:05:34.648Z",
+      "url": "https://oto-pos-web-staging.onrender.com/order-station"
+    },
+    {
+      "file": "s57-printer-role-picker.png",
+      "keys": [
+        "SCRUM-57",
+        "SCRUM-56"
+      ],
+      "at": "2026-11-03T17:08:08.962Z",
+      "url": "https://oto-console-staging.onrender.com/devices"
+    },
+    {
+      "file": "s91-wallet-expired.png",
+      "keys": [
+        "SCRUM-91",
+        "SCRUM-88"
+      ],
+      "url": "https://oto-console-staging.onrender.com/wallets",
+      "at": "2026-11-03T17:16:18.720Z"
+    },
+    {
+      "file": "s91-wallet-reactivated.png",
+      "keys": [
+        "SCRUM-91",
+        "SCRUM-88"
+      ],
+      "url": "https://oto-console-staging.onrender.com/wallets",
+      "at": "2026-11-03T17:25:26.924Z"
+    },
+    {
+      "file": "s77-pickup-added.png",
+      "keys": [
+        "SCRUM-77"
+      ],
+      "at": "2026-11-03T17:27:20.816Z",
+      "url": "https://oto-pos-web-staging.onrender.com/drop-off"
+    },
+    {
+      "file": "s77-pickup-edited.png",
+      "keys": [
+        "SCRUM-77"
+      ],
+      "at": "2026-11-03T17:30:48.072Z",
+      "url": "https://oto-pos-web-staging.onrender.com/drop-off"
+    },
+    {
+      "file": "s77-pickup-removed.png",
+      "keys": [
+        "SCRUM-77"
+      ],
+      "at": "2026-11-03T17:32:36.881Z",
+      "url": "https://oto-pos-web-staging.onrender.com/drop-off"
+    },
+    {
+      "file": "s99-wallet-promo-rows.png",
+      "keys": [
+        "SCRUM-99"
+      ],
+      "url": "https://oto-console-staging.onrender.com/reports-wallet-promo",
+      "at": "2026-11-03T17:32:52.301Z"
+    },
+    {
+      "file": "s99-discounts-comps-row.png",
+      "keys": [
+        "SCRUM-99"
+      ],
+      "at": "2026-11-03T17:35:11.245Z",
+      "url": "https://oto-console-staging.onrender.com/reports-discounts"
+    }
+  ],
+  "outcome": "incomplete",
+  "ci": [
+    {
+      "conclusion": "success",
+      "databaseId": 41672927125,
+      "headSha": "2e5ff3f1d2f1aa093e9edd7b003a16d0d9b5118e",
+      "status": "completed"
+    }
+  ],
+  "identity": {
+    "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "saleWrites": [
+    {
+      "path": "/api/sales/01a1a25e-4980-7d06-b54b-a6073e0b4c69/finalise",
+      "status": 200,
+      "at": "2026-11-03T17:05:31.764Z"
+    }
+  ],
+  "discountSale": {
+    "id": "01a1a25e-4980-7d06-b54b-a6073e0b4c69",
+    "status": "finalised",
+    "totals": {
+      "subtotalSatang": 10000,
+      "manualDiscountSatang": 1000,
+      "promoDiscountSatang": 0,
+      "discountSatang": 1000,
+      "netSatang": 8411,
+      "serviceChargeSatang": 0,
+      "taxInclusiveSatang": 589,
+      "taxExclusiveSatang": 0,
+      "grossSatang": 9000,
+      "unappliedDiscountSatang": 0,
+      "refundedSatang": 0
+    }
+  },
+  "printerRoles": [
+    {
+      "role": "adult_band",
+      "deviceId": "01a1a25b-df79-741f-a88e-deac7b0d8ccd"
+    },
+    {
+      "role": "bar",
+      "deviceId": "01a1a25b-dbce-79e1-8433-95a134772063"
+    },
+    {
+      "role": "kids_band",
+      "deviceId": "01a1a25b-df79-741f-a88e-deac7b0d8ccd"
+    },
+    {
+      "role": "kitchen",
+      "deviceId": "01a1a25b-dda8-702d-87bb-822f8350958a"
+    },
+    {
+      "role": "receipt",
+      "deviceId": "01a1a25b-dbce-79e1-8433-95a134772063"
+    }
+  ],
+  "unwrittenWalletSale": "df283faa-9af0-4ccc-b8eb-419dd7049167",
+  "wallet": {
+    "amountSatang": 35000,
+    "sourceSale": "0c2b016c-e3a2-46b1-b9aa-5365a9d7e4ad",
+    "method": "cash",
+    "fixtureBranch": "01a1a260-64f5-7fb7-b0a9-272c85215239"
+  },
+  "boardInterruption": {
+    "at": "2026-11-03T17:18:50.619Z",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "stationId": "01a1a25c-89ff-7c8b-9d2e-fc43c123c453",
+    "registrationStatus": [
+      "registered"
+    ],
+    "screen": "C:/oto-lanes/codex-old-ticket-proofs-20261103/docs/qa/proof-2026-11-03/older-tickets/mw0xplf7/diagnostic-idle-lock.png"
+  },
+  "walletReactivated": {
+    "status": "active",
+    "balanceSatang": 35000,
+    "reasonTyped": "ZZ TEST older proof mw0xplf7 reactivation proof",
+    "reasonStorageVerification": "pending independent audit read; ledger API does not expose the stored reason",
+    "ledger": [
+      {
+        "kind": "grant",
+        "source": "ticket_sale",
+        "amountSatang": 35000,
+        "balanceAfterSatang": 35000
+      },
+      {
+        "kind": "expire",
+        "source": "expiry",
+        "amountSatang": -35000,
+        "balanceAfterSatang": 0
+      },
+      {
+        "kind": "reactivate",
+        "source": "reactivation",
+        "amountSatang": 35000,
+        "balanceAfterSatang": 35000
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "file": "diagnostic-idle-lock.png",
+      "keys": [
+        "SCRUM-77"
+      ],
+      "at": "2026-11-03T17:18:50.618Z",
+      "url": "https://oto-pos-web-staging.onrender.com/drop-off",
+      "notAcceptanceEvidence": true,
+      "observation": "Image shows the idle lock, not the earlier board warning. Fresh native sign-in and Check-in navigation then passed pickup add, edit and removal."
+    }
+  ]
+}

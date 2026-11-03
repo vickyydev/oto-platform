@@ -1,0 +1,120 @@
+{
+  "jobId": "job-dbl1qbff3r2c73873cb0",
+  "source": "2e5ff3f1d2f1aa093e9edd7b003a16d0d9b5118e",
+  "startedAt": "2026-11-03T17:43:08.247Z",
+  "status": "succeeded",
+  "result": {
+    "event": "old_proof_readback",
+    "at": "2026-11-03T17:43:51.604Z",
+    "readOnly": true,
+    "sales": [
+      {
+        "id": "01a1a25e-4980-7d06-b54b-a6073e0b4c69",
+        "status": "finalised",
+        "gross": 9000,
+        "attempts": 1,
+        "matching_cash": 1
+      },
+      {
+        "id": "0c2b016c-e3a2-46b1-b9aa-5365a9d7e4ad",
+        "status": "finalised",
+        "gross": 35000,
+        "attempts": 1,
+        "matching_cash": 1
+      }
+    ],
+    "wallet": {
+      "id": "01a1a265-aeb7-7b2e-8ee8-7d20dbba6dd5",
+      "holder_name": "ZZ TEST older proof mw0xplf7 wallet",
+      "balance": 35000,
+      "status": "active"
+    },
+    "entries": [
+      {
+        "id": "01a1a265-aec1-7cdf-9a2d-eda87e54bb4c",
+        "kind": "grant",
+        "source": "ticket_sale",
+        "amount": 35000,
+        "balance": 35000
+      },
+      {
+        "id": "01a1a268-18b1-7134-8880-d7dcfd7a5a23",
+        "kind": "expire",
+        "source": "expiry",
+        "amount": -35000,
+        "balance": 0
+      },
+      {
+        "id": "01a1a26b-fd5f-79c7-bd96-f83383c3ff11",
+        "kind": "reactivate",
+        "source": "reactivation",
+        "amount": 35000,
+        "balance": 35000,
+        "reasonMatches": true
+      }
+    ],
+    "guardian": {
+      "id": "01a1a273-7331-7c3d-bc35-6860cc2d61e3",
+      "revoked": true,
+      "reasonChanged": true,
+      "actorMatches": true
+    },
+    "family": [
+      {
+        "registrationId": "928d1e45-1f6c-4e69-ae89-9ad7107d0646",
+        "checkinId": "00384e7d-fc18-46fe-aca9-0753e843e554",
+        "status": "registered",
+        "unpaid": true
+      }
+    ],
+    "auditTables": [
+      {
+        "table_schema": "core",
+        "table_name": "audit_log"
+      },
+      {
+        "table_schema": "otoapp",
+        "table_name": "payroll_run_audit"
+      },
+      {
+        "table_schema": "otoapp",
+        "table_name": "payroll_statutory_audit"
+      },
+      {
+        "table_schema": "otoapp",
+        "table_name": "schedule_audit_log"
+      }
+    ],
+    "printJobs": [
+      {
+        "id": "01a1a25f-8915-76d7-91ad-97529c7a559a",
+        "kind": "receipt",
+        "status": "queued",
+        "attempts": 0,
+        "error_code": null
+      },
+      {
+        "id": "01a1a25f-891b-7d3b-851c-969c72d88d44",
+        "kind": "kitchen_ticket",
+        "status": "skipped",
+        "attempts": 0,
+        "error_code": "NO_DEVICE_FOR_ROLE"
+      },
+      {
+        "id": "01a1a265-af0b-7069-a21f-3f4f30c3091b",
+        "kind": "receipt",
+        "status": "skipped",
+        "attempts": 0,
+        "error_code": "NO_DEVICE_FOR_ROLE"
+      },
+      {
+        "id": "01a1a265-af0f-75c8-a90f-694e4707427a",
+        "kind": "adult_wristband",
+        "status": "skipped",
+        "attempts": 0,
+        "error_code": "NO_DEVICE_FOR_ROLE"
+      }
+    ],
+    "passed": true
+  }
+}
