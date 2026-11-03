@@ -124,6 +124,9 @@ const MACHINE_CALLERS: Array<{ prefix: string; exact?: boolean; except?: string;
  */
 const NOT_YET_CALLED = new Map<string, string>([
   ['POST /auth/unlock-offline', '2026-11-03 SCRUM-728: deprecated compatibility route for older virtual tills; the current till authenticates its box directly, and removal waits for verified retirement of older clients'],
+  // 2026-11-03, SCRUM-674: the Console's support lookup reads these in process, as the caller, through its own route.
+  ['GET /branches/{id}/gate-events', 'GET /console/support/lookup reads it per park through callPlatform; no screen calls it on its own'],
+  ['GET /vouchers/by-code', 'GET /console/support/lookup reads it through callPlatform; no screen calls it on its own'],
   // 2026-10-25, SCRUM-637: one Overview read composes the native services; these bounded routes have no separate browser caller.
   ['GET /aggregates/members', 'Overview v2 composes this native service in GET /overview; the bounded period route has no separate browser caller'],
   ['GET /aggregates/bookings', 'Overview v2 composes this native service in GET /overview; the bounded period route has no separate browser caller'],
