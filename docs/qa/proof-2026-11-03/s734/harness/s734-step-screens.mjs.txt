@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+export default async function(proof){
+ const {p,r,f,api,save,expect,snap,CONSOLE}=proof,target=f.branches[1];assert.ok(r.clone);
+ r.targetConfig=await api('GET',`/checkin/config?branchId=${target.id}`);
+ assert.deepEqual(r.targetConfig,r.sourceConfig);
+ await p.goto(CONSOLE+'/catalogue/care');await p.getByRole('combobox',{name:'Park',exact:true}).selectOption(target.id);
+ await expect(p.getByRole('textbox',{name:'Band label',exact:true}).first()).toHaveValue('ZZ TEST young');
+ await expect(p.getByRole('textbox',{name:'Confirmation text',exact:true}).first()).toHaveValue('ZZ TEST required confirmation');
+ await snap('s734-copied-care-settings.png');
+ await p.goto(CONSOLE+'/catalogue/inventory');await p.getByRole('combobox',{name:'Park',exact:true}).selectOption(target.id);
+ await expect(p.getByRole('button',{name:'Edit '+proof.name+' cups',exact:true})).toBeVisible();await snap('s734-copied-stock.png');
+ await p.getByRole('button',{name:'Edit '+proof.name+' cups',exact:true}).click();await expect(p.getByRole('heading',{name:'Edit inventory item',exact:true})).toBeVisible();
+ const values=await p.getByRole('dialog').locator('input').evaluateAll(nodes=>nodes.map(n=>n.value));assert.ok(values.includes('ZZ TEST case of 12'));assert.ok(values.includes('12'));await snap('s734-copied-stock-pack.png');await p.getByRole('dialog').getByRole('button',{name:'Cancel',exact:true}).click();
+ r.nativeProofCompletedAt=new Date().toISOString();save();return {nativeScreens:r.screens.length,independentReadAndRetirementPending:true};
+}

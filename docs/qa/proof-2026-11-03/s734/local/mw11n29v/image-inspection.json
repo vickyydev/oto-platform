@@ -1,0 +1,28 @@
+{
+  "at": "2026-11-03T18:53:47.972Z",
+  "source": "3e076ae4527c6618dfbcf8e0a875284b7473eef4",
+  "staging": false,
+  "opened": [
+    {
+      "file": "s734-clone-preview.png",
+      "sha256": "68e6501dbe584de00ecafac5c1cbae83d83731d08ab7a04ba176ddce561b51ab"
+    },
+    {
+      "file": "s734-clone-completed.png",
+      "sha256": "88a52a3355ec73088579bbcc68145255d847024e56e670ac541bfde4d183251d"
+    },
+    {
+      "file": "s734-copied-care-settings.png",
+      "sha256": "5b30cd80e118e7cb5a6352e6a93dc3f58e491755517dea82ca5d7b40fc30362e"
+    },
+    {
+      "file": "s734-copied-stock.png",
+      "sha256": "c1d1a53b5332598ccf463c871e6814b89901863c316d6083314768e9a58d4c8c"
+    },
+    {
+      "file": "s734-copied-stock-pack.png",
+      "sha256": "69404d582bd86d19ddb3a4cf9e736ff258cfab62fab937c61e38ac4342ef26c4"
+    }
+  ],
+  "observed": "Native preview lists the new rows; the copy succeeds; target care settings and the zero-stock item with a 12-each pack are visible. OTO App is not installed in this disposable local database."
+}
