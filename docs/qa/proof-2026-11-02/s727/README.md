@@ -4,9 +4,11 @@
 
 Release source: `4e515c61217770396da4dd86119cc0666cdc1d29`.
 [CI 41659700598](https://github.com/vickyydev/oto-platform/actions/runs/41659700598)
-passed all six jobs. Jira is Testing. The matching clean agent is built; no staging
-fixture or temporary setting has been created yet. Exact-source Render builds
-are running; the [CI receipt](ci.json) records every job and step outcome.
+passed all six jobs. Jira is Testing. The matching clean agent is built. Initial API/POS/Console deployments are
+live and healthy on that source. The temporary test-only zone and policy
+settings have been applied with every unrelated value unchanged; matching
+API/POS rebuilds are running. No fixture exists yet. The
+[restore baseline](settings-enable.json) and [CI receipt](ci.json) are recorded.
 
 ## Current review candidate
 
