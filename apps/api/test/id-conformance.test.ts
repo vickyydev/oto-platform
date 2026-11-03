@@ -252,6 +252,8 @@ const CALLER_NAMED = [
   'POST /assistant/asks',
   'POST /members',
   'POST /members/:id/children',
+  // SCRUM-728: one verification identity survives a lost online answer and box replay.
+  'POST /members/:id/tier-verification',
   'POST /operators',
   'POST /operators/:id/administrators',
   'POST /public/bookings',
@@ -325,8 +327,6 @@ const PLATFORM_NAMED: Record<string, string> = {
   // only; a fresh decision supersedes the one in force, so no client names it.
   'POST /ops/alert-mutes':
     'a Console decision on a fingerprint, online only; a fresh mute supersedes the one in force, one press per Idempotency-Key',
-  'POST /members/:id/tier-verification':
-    'the evidence row behind a tier change; round 3 makes it the till’s `member.tier_changed` fact (plan §2.3, OD-11)',
   'POST /menu/categories': NEXT_PASS,
   'POST /menu/discounts': NEXT_PASS,
   'POST /menu/modifier-groups': NEXT_PASS,
@@ -360,7 +360,7 @@ const MINTS_ITS_ID = (body: string): boolean =>
 
 /** A create that reads the caller's id: the shared claim, or the sale's and booking's own. */
 const READS_A_BODY_ID = (body: string): boolean =>
-  /\bclaimClientId\s*\(|\binput\.id\s*\?\?|\breq\.body\.id\s*\?\?/.test(body);
+  /\bclaimClientId\s*\(|\binput\.id\s*\?\?|\breq\.body\.(?:id|verificationId)\s*\?\?/.test(body);
 
 describe('every create names its record where OD-12 says (SCRUM-270)', () => {
   let app: App;
@@ -468,6 +468,14 @@ describe('every create names its record where OD-12 says (SCRUM-270)', () => {
       return !route || !reachesText(route.handlerText, READS_A_BODY_ID, functions, 2);
     });
     expect(blind, 'declared caller-named, but the handler never reads a body id').toEqual([]);
+  });
+
+  it('SCRUM-728 tier verification names its evidence with the caller id and checks scoped replay', () => {
+    const route = routes.find(r => r.method === 'POST' && r.path === '/members/:id/tier-verification');
+    expect(route?.optionsText).toContain('verificationId: ClientIdSchema.optional()');
+    expect(route?.handlerText).toContain('const id = req.body.verificationId ?? newId()');
+    expect(route?.handlerText).toContain("tierVerificationReplay(tx, req.body.verificationId, m.id, 'upgrade')");
+    expect(route?.handlerText).toContain(".for('update')");
   });
 
   it('every other create that mints its own id is named, with why', () => {
