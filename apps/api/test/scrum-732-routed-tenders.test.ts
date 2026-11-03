@@ -782,6 +782,24 @@ describe('where a party tender is refused before anything is asked of anyone', (
     expect((read.body as unknown as { error: { code: string } }).error.code).toBe('PARTY_PAYMENT_NOT_TAKEN');
   });
 
+  it('a QR paid after its time waits for a person: not on the bill, the balance still spoken for, until they say', async () => {
+    const owed = await owedOn(ev.fourth);
+    const started = await startPartyTender(ev.fourth, tenderBody({ amount: 100_000, expected: owed }));
+    expect(started.status, JSON.stringify(started.body)).toBe(200);
+    const attemptId = started.body.attempt!.id;
+    const late = await simulateGatewayEvent(ctx.db, ctx.app.env, ctx.app.log, { attemptId, event: 'late_paid', operatorId });
+    expect(late.webhookOutcome).toBe('late_paid');
+    const [flagged] = await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.id, attemptId));
+    expect(flagged!.status).toBe('awaiting_staff_confirmation');
+    expect(await owedOn(ev.fourth)).toBe(owed);
+    const blocked = await startPartyTender(ev.fourth, tenderBody({ amount: owed, expected: owed }));
+    expect(blocked.status).toBe(409);
+    expect((blocked.body as unknown as { error: { code: string } }).error.code).toBe('PAYMENT_IN_FLIGHT');
+    const said = await call<{ attempt: { status: string } }>('POST', `/payments/attempts/${attemptId}/confirm`, { took: true });
+    expect(said.status, JSON.stringify(said.body)).toBe(200);
+    expect(await owedOn(ev.fourth)).toBe(owed - 100_000);
+  });
+
   it('a QR walked away from frees the balance for the next press', async () => {
     const owed = await owedOn(ev.fourth);
     const started = await startPartyTender(ev.fourth, tenderBody({ amount: owed, expected: owed }));
