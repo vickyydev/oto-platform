@@ -1,70 +1,142 @@
 {
-  "at": "2026-11-03T09:51:23.454Z",
+  "at": "2026-11-03T09:53:20.273Z",
   "sourceManifest": "../harness-manifest.json",
+  "normalization": "CRLF to LF only; original bytes are reconstructed and hash-verified",
   "files": [
     {
       "file": "s726-browser.mjs.txt",
-      "sha256": "79a1cb0ce1b2dd4ad54de08eb9ef55e2a0576c8ab3ab36470b8158de9f3f1723"
+      "sourceSha256": "79a1cb0ce1b2dd4ad54de08eb9ef55e2a0576c8ab3ab36470b8158de9f3f1723",
+      "storedSha256": "25bd8de157537d0ef43543a6e1bf313fb7c9f66fbce5a13b269194133eaae696",
+      "sourceLineEndings": "CRLF"
     },
     {
       "file": "s726-traffic.mjs.txt",
-      "sha256": "051c42e07cf4a3fc8f0a9196ed10e31f3d872067c1754d885373d7886ea1c3f9"
+      "sourceSha256": "051c42e07cf4a3fc8f0a9196ed10e31f3d872067c1754d885373d7886ea1c3f9",
+      "storedSha256": "7f4e2b0c17b2882f74291d533e9911db649622ca9119ac63ad158cef0a3f6852",
+      "sourceLineEndings": "CRLF"
     },
     {
       "file": "s726-phase.mjs.txt",
-      "sha256": "3ae3f8e158bfedfc897b68b746a0eeffdb158de2bb3303293061792f6f2c6efa"
+      "sourceSha256": "3ae3f8e158bfedfc897b68b746a0eeffdb158de2bb3303293061792f6f2c6efa",
+      "storedSha256": "bdfacee2914e699319d4e0b71aef1d41c3f7094565dadc82b23f9006f320208a",
+      "sourceLineEndings": "CRLF"
     },
     {
       "file": "s726-load.mjs.txt",
-      "sha256": "42d19d1fcc4e3d4ea53aaa9d529a890977f1d8aa7ea0a85a119be995da71c180"
+      "sourceSha256": "42d19d1fcc4e3d4ea53aaa9d529a890977f1d8aa7ea0a85a119be995da71c180",
+      "storedSha256": "901b9bc7b9a036f3868f32ff4e64cc323374cb597d5e79dff89b79c81686a337",
+      "sourceLineEndings": "CRLF"
     },
     {
       "file": "s726-idle.mjs.txt",
-      "sha256": "3bc7200f243cc80f73f3647a67470fb8ebc1c57114634e98536afb41d2303afb"
+      "sourceSha256": "3bc7200f243cc80f73f3647a67470fb8ebc1c57114634e98536afb41d2303afb",
+      "storedSha256": "6eb06a64e7ffd20d0c8370dacbf4039648cca8d05a9ab8ab431bd0e64d0cdb12",
+      "sourceLineEndings": "CRLF"
     },
     {
       "file": "s726-monitor.mjs.txt",
-      "sha256": "60238e9cd7a81be71b3d2322edf6adce822bab102822e1ac105170a1c5418f65"
+      "sourceSha256": "60238e9cd7a81be71b3d2322edf6adce822bab102822e1ac105170a1c5418f65",
+      "storedSha256": "60238e9cd7a81be71b3d2322edf6adce822bab102822e1ac105170a1c5418f65",
+      "sourceLineEndings": "LF"
     },
     {
       "file": "s726-remote-monitor.mjs.txt",
-      "sha256": "789dbc2c3b3c45dc938cf5ace063a83e10a6a5710fcce27a41e38b1f249bca65"
+      "sourceSha256": "789dbc2c3b3c45dc938cf5ace063a83e10a6a5710fcce27a41e38b1f249bca65",
+      "storedSha256": "25229ea85e0909cfb0ed741a4bb761271a2cae32388be62b51f9233bb800e7ed",
+      "sourceLineEndings": "mixed",
+      "crlfLineNumbers": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ]
     },
     {
       "file": "s726-family.mjs.txt",
-      "sha256": "aafd7a5555446972c23eb7c4f4d72236eb1f25335aeb0f35549fe35515593f73"
+      "sourceSha256": "aafd7a5555446972c23eb7c4f4d72236eb1f25335aeb0f35549fe35515593f73",
+      "storedSha256": "fe7f41c93053dfc5b9e37c1c4b0a87e907ac4e869e993c21edd29b2110fea50c",
+      "sourceLineEndings": "CRLF"
     },
     {
       "file": "s726-stream-retest.mjs.txt",
-      "sha256": "a5a40fbf98d49a087a108e8ef728ee966f558cee84bf71da215dac5a310de0f7"
+      "sourceSha256": "a5a40fbf98d49a087a108e8ef728ee966f558cee84bf71da215dac5a310de0f7",
+      "storedSha256": "7542ad3c5c9b1e0ad4ac514c443899f3a952814eda9e5c464db0c46d1acd4fd0",
+      "sourceLineEndings": "CRLF"
     },
     {
       "file": "s726-mixed-smoke.mjs.txt",
-      "sha256": "8f1e963a6751fe31ccf95ffdca0940493d9ee229174ee3d9d8b6ce694b598b87"
+      "sourceSha256": "8f1e963a6751fe31ccf95ffdca0940493d9ee229174ee3d9d8b6ce694b598b87",
+      "storedSha256": "96f858c01470fb6d8afb582fff03aca51a439dadd2900a31ef9a8fd43a275f60",
+      "sourceLineEndings": "CRLF"
     },
     {
       "file": "s726-cleanup.mjs.txt",
-      "sha256": "08df4fe961dfdc7ba97327281bd775979930f0e0965fdf4c57bbf0f8558d0c2a"
+      "sourceSha256": "08df4fe961dfdc7ba97327281bd775979930f0e0965fdf4c57bbf0f8558d0c2a",
+      "storedSha256": "b990072f18edcdf57b8d58e25ab7eeb981f2912b8e9ab3c894e2bc4f7be67742",
+      "sourceLineEndings": "CRLF"
     },
     {
       "file": "s726-db-cleanup.mjs.txt",
-      "sha256": "d2cfee46cea0736cffc461abb6d6b2ed57a63e5204295665dbe1fa4722d4209d"
+      "sourceSha256": "d2cfee46cea0736cffc461abb6d6b2ed57a63e5204295665dbe1fa4722d4209d",
+      "storedSha256": "7b194097037a5444d2c3c5fef91486b04caf1abb93e4dadc4a39d1fd58b96e43",
+      "sourceLineEndings": "CRLF"
     },
     {
       "file": "s726-env.mjs.txt",
-      "sha256": "3d002eb9c29c15474b12f6f3c40d52fd8ac0cc9f1bc3d513865abc767166a240"
+      "sourceSha256": "3d002eb9c29c15474b12f6f3c40d52fd8ac0cc9f1bc3d513865abc767166a240",
+      "storedSha256": "3d002eb9c29c15474b12f6f3c40d52fd8ac0cc9f1bc3d513865abc767166a240",
+      "sourceLineEndings": "LF"
     },
     {
       "file": "s726-soak-only.mjs.txt",
-      "sha256": "91acb2288e112f84ec2866d611ffe18543da6ee412d6e7a4a97ff5f3bd6fa498"
+      "sourceSha256": "91acb2288e112f84ec2866d611ffe18543da6ee412d6e7a4a97ff5f3bd6fa498",
+      "storedSha256": "6cef5a8a068f03259e5342d8e388bceabc3df199108284e727436c2ad8f7d574",
+      "sourceLineEndings": "mixed",
+      "crlfLineNumbers": [
+        2,
+        3,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ]
     },
     {
       "file": "s726-render-read.mjs.txt",
-      "sha256": "dcebc58b7d416fbaa90a2a1b1070c485b11f7e423bcd7448934440ba77c14178"
+      "sourceSha256": "dcebc58b7d416fbaa90a2a1b1070c485b11f7e423bcd7448934440ba77c14178",
+      "storedSha256": "8e7ec7520237a0d5a3367a4b8afe87aef2768c209d230f546b8bff56eebab9e4",
+      "sourceLineEndings": "mixed",
+      "crlfLineNumbers": [
+        2
+      ]
     },
     {
       "file": "s726-repeat-smoke.mjs.txt",
-      "sha256": "8c8eb77a3cc0e34d4fe75a0eaedf414b92472ee808cad652511bce43e37548c2"
+      "sourceSha256": "8c8eb77a3cc0e34d4fe75a0eaedf414b92472ee808cad652511bce43e37548c2",
+      "storedSha256": "f28824e81558c74db8e0890243f1b2617a6ba1bb2d0abadc10a1f7878aafb36b",
+      "sourceLineEndings": "mixed",
+      "crlfLineNumbers": [
+        6
+      ]
     }
   ]
 }
