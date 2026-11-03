@@ -13,6 +13,7 @@ interface ScreenKeyboardProps {
   onDone: () => void;
   doneLabel: string;
   spaceLabel?: string;
+  backspaceLabel?: string;
   /** The same bound the display's intent accepts for a nickname. */
   maxLength?: number;
 }
@@ -23,7 +24,7 @@ interface ScreenKeyboardProps {
  * capital and carries on in lower case. The number keypad's companion, in its
  * design language.
  */
-export function ScreenKeyboard({ value, onChange, onDone, doneLabel, spaceLabel = 'Space', maxLength = 100 }: ScreenKeyboardProps) {
+export function ScreenKeyboard({ value, onChange, onDone, doneLabel, spaceLabel = 'Space', backspaceLabel = 'Backspace', maxLength = 100 }: ScreenKeyboardProps) {
   const add = (text: string) => {
     if (value.length + text.length > maxLength) return;
     onChange(value + text);
@@ -52,7 +53,7 @@ export function ScreenKeyboard({ value, onChange, onDone, doneLabel, spaceLabel 
         <button
           type="button"
           onClick={backspace}
-          aria-label="Backspace"
+          aria-label={backspaceLabel}
           className={cn(KEY, 'flex-[2] flex items-center justify-center text-foreground/70')}
         >
           <Delete className="w-6 h-6" />

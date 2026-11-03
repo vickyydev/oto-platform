@@ -252,6 +252,7 @@ export function NicknameField({
           onDone={() => setOpen(false)}
           doneLabel={t('common.done')}
           spaceLabel={t('display.keyboard.space')}
+          backspaceLabel={t('display.keyboard.backspace')}
         />
       )}
     </div>
@@ -734,7 +735,7 @@ export function CustomerDisplay({
             </div>
             <h2 className="text-4xl font-black mb-6">{t('till.payment.scanToPay')}</h2>
             <div className="bg-white rounded-3xl p-6 shadow-2xl shadow-violet-500/20">
-              {payment ? <PaymentQr payload={payment.online ? payment.qrPayload : null} imageUrl={payment.online ? payment.qrImageUrl : null} className="w-64 h-64" />
+              {payment ? <PaymentQr payload={payment.online ? payment.qrPayload : null} imageUrl={payment.online ? payment.qrImageUrl : null} className="w-64 h-64" label={t('display.qr.ready')} waitingLabel={t('display.qr.waiting')} />
                 : <QrCode seed={`promptpay-${sale.id}-${sale.total}`} className="w-64 h-64" />}
             </div>
             <div className="text-6xl font-black text-(--cd-violet) mt-8">

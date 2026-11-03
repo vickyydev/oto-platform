@@ -37,7 +37,7 @@ export function MobileCheckInConsent({
   onMayOrderFoodChange,
   onConsentAckChange,
 }: MobileCheckInConsentProps) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   return (
     <div className="min-h-full flex flex-col bg-gradient-to-b from-sky-950 via-slate-950 to-slate-950 text-white relative">
       <div className="absolute top-4 right-4 z-40">
@@ -68,6 +68,7 @@ export function MobileCheckInConsent({
             {t('dropoff.consent.photoInstructions')}
           </p>
           <CameraCapture
+            lang={lang}
             value={photoUrl}
             onCapture={onPhotoCapture}
             onClear={onPhotoClear}

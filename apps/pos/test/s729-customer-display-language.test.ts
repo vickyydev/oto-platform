@@ -14,20 +14,26 @@ import {
 import { cartQuote } from './support/fixtures';
 import { FnbCustomerDisplay } from '@/components/fnb/FnbCustomerDisplay';
 import { MerchCustomerDisplay } from '@/components/merch/MerchCustomerDisplay';
+import { MobileCheckInConsent } from '@/components/mobile/dropoff/MobileCheckInConsent';
+import { MobileOrderQrScreen, MobileOrderReviewScreen } from '@/components/mobile/order-station/MobileOrderCustomerScreens';
 import { PublicMerchCustomerDisplay } from '@/components/merch/PublicMerchCustomerDisplay';
 import { PartySettlementCustomerScreen } from '@/components/parties/PartySettlementCustomerScreen';
 import { CameraCapture } from '@/components/shared/CameraCapture';
 import { ChildDobPicker } from '@/components/shared/ChildDobPicker';
 import { ChildFoodProvisionPicker } from '@/components/shared/ChildFoodProvisionPicker';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
+import { CountryRows, PhoneInput } from '@/components/shared/PhoneInput';
 import { PromptPayCustomerScreen } from '@/components/shared/PromptPayCustomerScreen';
 import { PublicSavedChildrenReview } from '@/components/shared/PublicSavedChildrenReview';
 import { SavedChildrenReview } from '@/components/shared/SavedChildrenReview';
 import { ConsentCapture } from '@/components/till/ConsentCapture';
 import { CustomerDisplay } from '@/components/till/CustomerDisplay';
+import { NumberKeypad } from '@/components/till/NumberKeypad';
 import { OrderSummary } from '@/components/till/OrderSummary';
+import { PaymentQr } from '@/components/till/PaymentQr';
 import { ScreenKeyboard } from '@/components/till/ScreenKeyboard';
 import { StepAddTicket } from '@/components/till/StepAddTicket';
+import { COUNTRIES, countryName, filterCountries } from '@/data/countries';
 import { LanguageProvider, tFor } from '@/i18n/LanguageContext';
 import { DICTIONARY } from '@/i18n/dictionary';
 import type { SupportedLang } from '@/i18n/types';
@@ -397,8 +403,10 @@ describe.each(['ru', 'th'] as const)('the supervised-child screens on the custom
   it('the on-screen keyboard’s space bar and the language pill’s name', () => {
     const keyboard = renderToStaticMarkup(createElement(ScreenKeyboard, {
       value: '', onChange: () => undefined, onDone: () => undefined, doneLabel: t('common.done'), spaceLabel: t('display.keyboard.space'),
+      backspaceLabel: t('display.keyboard.backspace'),
     }));
     expect(keyboard).toContain(t('display.keyboard.space'));
+    expect(keyboard).toContain(`aria-label="${t('display.keyboard.backspace')}"`);
     expect(under(lang, createElement(LanguageSwitcher, { variant: 'dark' }))).toContain(`aria-label="${t('common.changeLanguage')}"`);
   });
 
@@ -415,6 +423,141 @@ describe.each(['ru', 'th'] as const)('the supervised-child screens on the custom
       } as never,
     }));
     expect(review).toContain(t('party.review.extraFnb'));
+  });
+});
+
+const SEEN: Record<'en' | 'ru' | 'th', {
+  clear: string; backspace: string; turning: string; thailand: string; france: string;
+  yourOrder: string; review: string; pickup: string; credit: string; available: string; total: string; scan: string; fries: string; waitingQr: string;
+}> = {
+  en: { clear: 'Clear', backspace: 'Backspace', turning: 'turning 6', thailand: 'Thailand', france: 'France',
+    yourOrder: 'Your Order', review: 'Please review your items and total below.', pickup: 'Pick-up code', credit: 'Credit', available: '฿50 available', total: 'Total', scan: 'Scan to pay', fries: 'Fries', waitingQr: 'Waiting for payment QR' },
+  ru: { clear: 'Очистить', backspace: 'Стереть', turning: 'исполняется 6', thailand: 'Таиланд', france: 'Франция',
+    yourOrder: 'Ваш заказ', review: 'Пожалуйста, проверьте позиции и итог ниже.', pickup: 'Код получения', credit: 'Кредит', available: 'Доступно ฿50', total: 'Итого', scan: 'Сканируйте для оплаты', fries: 'Картофель фри', waitingQr: 'Ожидание QR-кода для оплаты' },
+  th: { clear: 'ล้าง', backspace: 'ลบตัวอักษร', turning: 'อายุครบ 6 ปี', thailand: 'ไทย', france: 'ฝรั่งเศส',
+    yourOrder: 'คำสั่งซื้อของคุณ', review: 'กรุณาตรวจสอบรายการและยอดรวมด้านล่าง', pickup: 'รหัสรับสินค้า', credit: 'เครดิต', available: 'ใช้ได้ ฿50', total: 'ยอดรวม', scan: 'สแกนเพื่อชำระเงิน', fries: 'เฟรนช์ฟรายส์', waitingQr: 'กำลังรอคิวอาร์สำหรับชำระเงิน' },
+};
+
+describe.each(['en', 'ru', 'th'] as const)('the keys and hand-over screens a family touches, in %s', (lang) => {
+  const words = SEEN[lang];
+  const t = tFor(lang);
+  const qrPayment = { saleId: 's', amountSatang: 9_000, qrPayload: null, qrImageUrl: null, expiresAt: null, status: 'pending', offline: false, online: true } as const;
+
+  it.each(['identify', 'input'] as const)('the phone keypad on the %s stage', (stage) => {
+    const html = under(lang, createElement(CustomerDisplay, {
+      stage, sale, phone: '', nickname: '', member: null, totals, showGrantQr: false,
+      onPhoneChange: () => undefined, onNicknameChange: () => undefined, onIdentify: () => undefined,
+      onSkipIdentify: () => undefined, onCustomerDone: () => undefined,
+    }));
+    expect(html).toContain(`>${words.clear}</button>`);
+    expect(html).toContain(`aria-label="${words.backspace}"`);
+    if (lang !== 'en') {
+      expect(html.includes('>Clear<')).toBe(false);
+      expect(html.includes('aria-label="Backspace"')).toBe(false);
+    }
+  });
+
+  it('the party bill says who is turning what', () => {
+    const html = under(lang, createElement(PartySettlementCustomerScreen, {
+      stage: 'review', amount: 100,
+      party: { id: 'p', title: 'Mali party', childName: 'Mali', kidAge: 6, basePrice: 100, deposit: 0, partyPayments: [], lineItems: [], packageName: 'Party', partyExtraCharges: [] } as never,
+    }));
+    expect(html).toContain(`Mali · ${words.turning}`);
+    if (lang !== 'en') expect(html.includes('turning')).toBe(false);
+  });
+
+  it('a party with no age says none', () => {
+    const html = under(lang, createElement(PartySettlementCustomerScreen, {
+      stage: 'review', amount: 100,
+      party: { id: 'p', title: 'Mali party', childName: 'Mali', basePrice: 100, deposit: 0, partyPayments: [], lineItems: [], packageName: 'Party', partyExtraCharges: [] } as never,
+    }));
+    expect(html.includes(words.turning)).toBe(false);
+    expect(html.includes('Mali · ')).toBe(false);
+  });
+
+  it('the parent’s check-in on a handed-over phone: the camera follows the heading', () => {
+    const html = under(lang, createElement(MobileCheckInConsent, {
+      checkIn: { childName: 'Mai', childAge: 6 } as never, mayOrderFood: false, consentAck: false,
+      onPhotoCapture: () => undefined, onPhotoClear: () => undefined, onMayOrderFoodChange: () => undefined, onConsentAckChange: () => undefined,
+    }));
+    expect(html).toContain(t('dropoff.consent.photoTitle'));
+    for (const key of ['camera.noPhoto', 'camera.start']) expect(html, key).toContain(t(key));
+    if (lang !== 'en') for (const word of ['No photo yet', 'Start camera']) expect(html.includes(word), word).toBe(false);
+  });
+
+  it('the order station’s review on a handed-over phone', () => {
+    const html = under(lang, createElement(MobileOrderReviewScreen, {
+      pickupCode: '042', creditBalance: 50, total: 90,
+      lines: [{ id: 'l', qty: 2, lineTotal: 90, selectedModifiers: [], note: 'no salt', menuItem: {
+        id: 'm', name: 'Fries', translations: { ru: { name: 'Картофель фри' }, th: { name: 'เฟรนช์ฟรายส์' } },
+      } }] as never,
+    }));
+    for (const word of [words.yourOrder, words.review, words.pickup, words.credit, words.available, words.total, words.fries]) expect(html, word).toContain(word);
+    expect(html).toContain('042');
+    // What a guest typed is printed as they typed it.
+    expect(html).toContain('no salt');
+    if (lang !== 'en') {
+      for (const word of ['Your Order', 'Please review', 'Pick-up code', '>Credit<', 'available', '>Total<', 'Fries']) expect(html.includes(word), word).toBe(false);
+    }
+  });
+
+  it('no credit, no pick-up code: those rows stay away', () => {
+    const html = under(lang, createElement(MobileOrderReviewScreen, { pickupCode: '', creditBalance: 0, total: 0, lines: [] }));
+    for (const word of [words.pickup, words.credit, words.available]) expect(html.includes(word), word).toBe(false);
+  });
+
+  it('the order station’s QR on a handed-over phone, the code’s name included', () => {
+    const html = under(lang, createElement(MobileOrderQrScreen, { pickupCode: '042', payment: qrPayment, showCode: true }));
+    for (const word of [words.scan, words.pickup, t('fnb.payment.waiting')]) expect(html, word).toContain(word);
+    expect(html).toContain(`aria-label="${words.waitingQr}"`);
+    if (lang !== 'en') {
+      for (const word of ['Scan to pay', 'Pick-up code', 'Waiting for payment QR']) expect(html.includes(word), word).toBe(false);
+    }
+  });
+
+  it('with no attempt running, the QR screen shows no code', () => {
+    const html = under(lang, createElement(MobileOrderQrScreen, { pickupCode: '', payment: { ...qrPayment, status: 'idle' }, showCode: false }));
+    expect(html.includes('payment-qr')).toBe(false);
+    expect(html).toContain(t('till.payment.checking'));
+  });
+
+  it('the QR on the till’s customer display is named in that language', () => {
+    const html = under(lang, createElement(CustomerDisplay, {
+      stage: 'payment', sale: { ...sale, paymentMethod: 'promptpay' }, phone: '', nickname: '', member: null, totals, showGrantQr: false,
+      payment: { ...qrPayment, qrImageUrl: 'https://example.test/qr.png' },
+      onPhoneChange: () => undefined, onNicknameChange: () => undefined, onIdentify: () => undefined,
+      onSkipIdentify: () => undefined, onCustomerDone: () => undefined,
+    } as never));
+    expect(html).toContain(`alt="${t('display.qr.ready')}"`);
+    if (lang !== 'en') expect(html.includes('alt="Payment QR"')).toBe(false);
+  });
+
+  it('the country picker’s rows, ordered and searched in that language', () => {
+    const html = under(lang, createElement(CountryRows, {
+      query: '', lang, selected: COUNTRIES[0]!, noResultsLabel: t('phoneInput.noResults'), onSelect: () => undefined,
+    }));
+    for (const word of [words.thailand, words.france]) expect(html, word).toContain(word);
+    expect(html.indexOf(words.thailand)).toBeLessThan(html.indexOf(words.france));
+    expect(filterCountries('', lang)[0]?.iso2, 'Thailand first and the default').toBe('TH');
+    for (const query of [words.france, 'France', '+33']) {
+      expect(filterCountries(query, lang).map((country) => country.iso2), query).toContain('FR');
+    }
+    const empty = under(lang, createElement(CountryRows, {
+      query: 'zzzz', lang, selected: COUNTRIES[0]!, noResultsLabel: t('phoneInput.noResults'), onSelect: () => undefined,
+    }));
+    expect(empty).toContain(t('phoneInput.noResults'));
+  });
+});
+
+describe('a country the runtime cannot name', () => {
+  it('keeps the list’s own name, and the English list keeps its order after another language is read', () => {
+    const before = COUNTRIES.map((country) => country.iso2);
+    filterCountries('', 'ru');
+    filterCountries('', 'th');
+    expect(COUNTRIES.map((country) => country.iso2)).toEqual(before);
+    expect(filterCountries('', 'en').map((country) => country.iso2)).toEqual(before);
+    expect(countryName({ name: 'Nowhere', dialCode: '0', flag: '', iso2: 'not-a-region' }, 'ru')).toBe('Nowhere');
+    expect(countryName({ name: 'Nowhere', dialCode: '0', flag: '', iso2: 'ZZ' }, 'en')).toBe('Nowhere');
   });
 });
 
@@ -453,6 +596,31 @@ describe('the staff screen stays in English under a Russian or Thai provider (SC
     expect(html).toContain(inMarkup("Child's name"));
     expect(html).toContain('yrs');
     expect(html.includes(tFor(lang)('superviseConsent.childName'))).toBe(false);
+  });
+
+  it.each(['ru', 'th'] as const)('the keypad and the phone field on a staff screen, in %s', (lang) => {
+    const keypad = under(lang, createElement(NumberKeypad, { value: '', onChange: () => undefined }));
+    expect(keypad).toContain('>Clear</button>');
+    expect(keypad).toContain('aria-label="Backspace"');
+    const phone = under(lang, createElement(PhoneInput, { value: '', onChange: () => undefined, showKeypad: true }));
+    expect(phone).toContain('>Clear</button>');
+    expect(phone).toContain('aria-label="Backspace"');
+    expect(phone).toContain('Phone Number');
+    expect(phone.includes(SEEN[lang].clear)).toBe(false);
+    const source = readFileSync(path.resolve(import.meta.dirname, '..', 'src/components/shared/PhoneInput.tsx'), 'utf8');
+    expect(source).toContain("lang={translate ? lang : 'en'}");
+  });
+
+  it.each(['ru', 'th'] as const)('the QR on the staff panel names itself in English, in %s', (lang) => {
+    expect(under(lang, createElement(PaymentQr, {}))).toContain('aria-label="Waiting for payment QR"');
+    expect(under(lang, createElement(PaymentQr, { imageUrl: 'https://example.test/qr.png' }))).toContain('alt="Payment QR"');
+  });
+
+  it('the order station draws the hand-over from the customer’s screens', () => {
+    const station = readFileSync(path.resolve(import.meta.dirname, '..', 'src/components/mobile/order-station/MobileOrderStation.tsx'), 'utf8');
+    expect(station).toContain('<MobileOrderReviewScreen');
+    expect(station).toContain('<MobileOrderQrScreen');
+    for (const word of ['Please review your items', 'Scan to pay</p>', '>Pick-up code<']) expect(station.includes(word), word).toBe(false);
   });
 
   it('nothing on the staff panel’s path reads the language, and the rows it reads stay English', () => {
@@ -508,6 +676,7 @@ describe('the words themselves', () => {
       'components/shared/PublicSavedChildrenReview.tsx', 'components/shared/SavedChildrenReview.tsx', 'components/shared/PromptPayCustomerScreen.tsx',
       'components/parties/PartySettlementCustomerScreen.tsx', 'components/shared/PhoneInput.tsx', 'components/shared/ChildDobPicker.tsx',
       'components/shared/ChildFoodProvisionPicker.tsx', 'components/shared/CameraCapture.tsx', 'pages/Display.tsx', 'lib/customerDisplayCopy.ts',
+      'components/mobile/order-station/MobileOrderCustomerScreens.tsx', 'components/mobile/dropoff/MobileCheckInConsent.tsx',
     ];
     const keys = new Set<string>();
     for (const file of files) {
@@ -537,18 +706,26 @@ describe('the words themselves', () => {
       'components/till/CustomerDisplay.tsx', 'components/fnb/FnbCustomerDisplay.tsx', 'components/merch/MerchCustomerDisplay.tsx',
       'components/merch/PublicMerchCustomerDisplay.tsx', 'components/till/PublicConsentCapture.tsx',
       'components/shared/PublicSavedChildrenReview.tsx', 'components/shared/PromptPayCustomerScreen.tsx',
-      'components/parties/PartySettlementCustomerScreen.tsx',
+      'components/parties/PartySettlementCustomerScreen.tsx', 'components/till/NumberKeypad.tsx', 'components/till/PaymentQr.tsx',
+      'components/mobile/order-station/MobileOrderCustomerScreens.tsx', 'components/mobile/dropoff/MobileCheckInConsent.tsx',
     ];
     const jsxWord = /(?<=[>}])\s*([A-Z]?[a-z]{2,}(?: [a-z']+)*)\s*(?=[<{])/g;
+    // A word inside a template literal, once class lists and the expressions it holds are set aside.
+    const templateWords = (source: string): string[] => [...source.replace(/className=\{`[^`]*`\}/g, '').matchAll(/`([^`]*)`/g)]
+      .flatMap((match) => match[1]!.replace(/\$\{[^}]*\}/g, ' ').match(/(?<![-\w])[A-Za-z]{3,}(?![-\w])/g) ?? []);
     // It would have found what this ticket fixed.
     expect([...'<div>฿{price} each</div>'.matchAll(jsxWord)].map((match) => match[1])).toEqual(['each']);
     expect([...'<p>Please wait</p>'.matchAll(jsxWord)].map((match) => match[1])).toEqual(['Please wait']);
+    expect([...'<button>\n  Clear\n</button>'.matchAll(jsxWord)].map((match) => match[1])).toEqual(['Clear']);
+    expect(templateWords('{age ? ` · turning ${age}` : ""}')).toEqual(['turning']);
+    expect(templateWords('<div className={`flex gap-4 ${on ? 1 : 2}`} seed={`promptpay-${id}`} />')).toEqual([]);
     for (const file of files) {
       const raw = readFileSync(path.resolve(import.meta.dirname, '..', 'src', file), 'utf8');
       // Comments and the code above the first JSX are not drawn.
       const drawn = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/=>\s*\w+[^<\n]*</g, '');
       const found = [...drawn.matchAll(jsxWord)].map((match) => match[1]!.trim()).filter((word) => !/^(?:div|span|const|return|key|typeof)$/.test(word));
       expect(found, file).toEqual([]);
+      expect(templateWords(raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')), file).toEqual([]);
     }
   });
 });

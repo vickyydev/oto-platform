@@ -17,7 +17,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { filterCountries, type CountryOption } from '@/data/countries';
+import { countryName, filterCountries, type CountryOption } from '@/data/countries';
+import type { SupportedLang } from '@/i18n/types';
 import { parseInternationalPhone, composePhone, storedPhoneHint } from '@/lib/phoneUtils';
 import { NumberKeypad } from '@/components/till/NumberKeypad';
 import type { ContactChannel } from '@/types';
@@ -95,6 +96,49 @@ function ChannelSelector({
 }
 
 // ---------------------------------------------------------------------------
+// The picker's rows, named in the language the picker was asked to speak
+// ---------------------------------------------------------------------------
+export function CountryRows({
+  query,
+  lang,
+  selected,
+  noResultsLabel,
+  onSelect,
+}: {
+  query: string;
+  lang: SupportedLang;
+  selected: CountryOption;
+  noResultsLabel: string;
+  onSelect: (c: CountryOption) => void;
+}) {
+  const filtered = filterCountries(query, lang);
+  if (filtered.length === 0) {
+    return <p className="text-sm text-muted-foreground text-center py-6">{noResultsLabel}</p>;
+  }
+  return (
+    <>
+      {filtered.map((c) => (
+        <button
+          key={c.iso2}
+          type="button"
+          onClick={() => onSelect(c)}
+          className={cn(
+            'w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors hover:bg-muted',
+            c.iso2 === selected.iso2 && 'bg-primary/10 text-primary font-semibold',
+          )}
+        >
+          <span className="text-lg shrink-0">{c.flag}</span>
+          <span className="flex-1 truncate">{countryName(c, lang)}</span>
+          <span className="text-muted-foreground tabular-nums shrink-0">
+            +{c.dialCode}
+          </span>
+        </button>
+      ))}
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Country picker — a button that toggles a searchable dropdown
 // ---------------------------------------------------------------------------
 function CountryPicker({
@@ -108,7 +152,7 @@ function CountryPicker({
   kiosk: boolean;
   translate: boolean;
 }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const searchPlaceholder = translate ? t('phoneInput.searchCountry') : 'Search country or code…';
   const noResultsLabel = translate ? t('phoneInput.noResults') : 'No results';
   const selectCountryLabel = translate ? t('phoneInput.selectCountry') : 'Select country code';
@@ -116,8 +160,6 @@ function CountryPicker({
   const [query, setQuery] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const filtered = filterCountries(query);
 
   useEffect(() => {
     if (open) {
@@ -189,27 +231,13 @@ function CountryPicker({
 
           {/* List */}
           <div className="overflow-y-auto flex-1">
-            {filtered.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">{noResultsLabel}</p>
-            ) : (
-              filtered.map((c) => (
-                <button
-                  key={c.iso2}
-                  type="button"
-                  onClick={() => handleSelect(c)}
-                  className={cn(
-                    'w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors hover:bg-muted',
-                    c.iso2 === selected.iso2 && 'bg-primary/10 text-primary font-semibold',
-                  )}
-                >
-                  <span className="text-lg shrink-0">{c.flag}</span>
-                  <span className="flex-1 truncate">{c.name}</span>
-                  <span className="text-muted-foreground tabular-nums shrink-0">
-                    +{c.dialCode}
-                  </span>
-                </button>
-              ))
-            )}
+            <CountryRows
+              query={query}
+              lang={translate ? lang : 'en'}
+              selected={selected}
+              noResultsLabel={noResultsLabel}
+              onSelect={handleSelect}
+            />
           </div>
         </div>
       )}
@@ -289,6 +317,8 @@ export function PhoneInput({
           value={nationalNumber}
           onChange={handleNationalNumberChange}
           maxLength={15}
+          clearLabel={translate ? t('display.keypad.clear') : 'Clear'}
+          backspaceLabel={translate ? t('display.keyboard.backspace') : 'Backspace'}
         />
 
         {showChannelSelector && (

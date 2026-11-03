@@ -1,3 +1,5 @@
+import type { SupportedLang } from '@/i18n/types';
+
 export interface CountryOption {
   name: string;
   dialCode: string;
@@ -218,12 +220,50 @@ export function findCountryByDialCode(dialCode: string): CountryOption | undefin
   return COUNTRIES.find((c) => c.dialCode === dialCode);
 }
 
-export function filterCountries(query: string): CountryOption[] {
+const regionNames = new Map<SupportedLang, Intl.DisplayNames>();
+const orderedFor = new Map<SupportedLang, CountryOption[]>();
+
+/**
+ * A country's name in the language on the customer's screen (SCRUM-729). The
+ * runtime knows every region's name, so there is no table to keep. English is the
+ * list's own name, and so is a region the runtime cannot name.
+ */
+export function countryName(country: CountryOption, lang: SupportedLang = 'en'): string {
+  if (lang === 'en') return country.name;
+  try {
+    let names = regionNames.get(lang);
+    if (!names) {
+      names = new Intl.DisplayNames([lang], { type: 'region', fallback: 'none' });
+      regionNames.set(lang, names);
+    }
+    return names.of(country.iso2) ?? country.name;
+  } catch {
+    return country.name;
+  }
+}
+
+/** The list in that language's order: Thailand first and the default, as always. */
+function countriesIn(lang: SupportedLang): CountryOption[] {
+  if (lang === 'en') return COUNTRIES;
+  let ordered = orderedFor.get(lang);
+  if (!ordered) {
+    const collator = new Intl.Collator(lang);
+    const [first, ...rest] = COUNTRIES;
+    ordered = [first!, ...rest.sort((a, b) => collator.compare(countryName(a, lang), countryName(b, lang)))];
+    orderedFor.set(lang, ordered);
+  }
+  return ordered;
+}
+
+/** A search matches the name on the screen, the English name, or the dial code. */
+export function filterCountries(query: string, lang: SupportedLang = 'en'): CountryOption[] {
   const q = query.trim().toLowerCase();
-  if (!q) return COUNTRIES;
-  return COUNTRIES.filter(
+  const countries = countriesIn(lang);
+  if (!q) return countries;
+  return countries.filter(
     (c) =>
       c.name.toLowerCase().includes(q) ||
+      countryName(c, lang).toLowerCase().includes(q) ||
       c.dialCode.includes(q) ||
       (`+${c.dialCode}`).includes(q),
   );

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 
-export function PaymentQr({ payload, imageUrl, className }: { payload?: string | null; imageUrl?: string | null; className?: string }) {
+/** `label` and `waitingLabel` name the code on a customer's screen. Left out, English: the staff panel. */
+export function PaymentQr({ payload, imageUrl, className, label = 'Payment QR', waitingLabel = 'Waiting for payment QR' }: { payload?: string | null; imageUrl?: string | null; className?: string; label?: string; waitingLabel?: string }) {
   const [encoded, setEncoded] = useState<{ payload: string; url: string } | null>(null);
   useEffect(() => {
     let current = true;
@@ -13,8 +14,8 @@ export function PaymentQr({ payload, imageUrl, className }: { payload?: string |
     return () => { current = false; };
   }, [payload]);
   const src = payload ? encoded?.payload === payload ? encoded.url : null : imageUrl;
-  return src ? <img src={src} alt="Payment QR" className={className} data-testid="payment-qr" />
-    : <div className={className} role="status" aria-label="Waiting for payment QR" data-testid="payment-qr-waiting" />;
+  return src ? <img src={src} alt={label} className={className} data-testid="payment-qr" />
+    : <div className={className} role="status" aria-label={waitingLabel} data-testid="payment-qr-waiting" />;
 }
 
 export function PaymentExpiry({ expiresAt }: { expiresAt: string | null }) {

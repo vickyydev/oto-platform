@@ -392,7 +392,7 @@ export function FnbCustomerDisplay({
             </div>
             <h2 className="text-4xl font-black mb-6">{t('fnb.payment.scanToPay')}</h2>
             <div className="bg-white rounded-3xl p-6 shadow-2xl shadow-violet-500/20">
-              <PaymentQr payload={payment.qrPayload} imageUrl={payment.qrImageUrl} className="w-64 h-64" />
+              <PaymentQr payload={payment.qrPayload} imageUrl={payment.qrImageUrl} className="w-64 h-64" label={t('display.qr.ready')} waitingLabel={t('display.qr.waiting')} />
             </div>
             <div className="text-6xl font-black text-(--cd-violet) mt-8 tabular-nums">฿{amountToPay}</div>
             {creditUsed > 0 && (

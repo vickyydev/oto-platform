@@ -33,7 +33,6 @@ import { useSaleWriter, type SaleWriteOutcome } from '@/lib/saleWriter';
 import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
 import { setPaymentContextLocked } from '@/pwa/openSale';
 import { PriceSourceNote } from '@/components/till/SaleWriteStatus';
-import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
 import { toast } from '@/hooks/use-toast';
 
 import { ScanWristband, useHeldBandOnBox } from '@/components/fnb/ScanWristband';
@@ -49,14 +48,12 @@ import { ManualDiscountModal } from '@/components/shared/ManualDiscountModal';
 import { HandToCustomer } from '@/components/mobile/HandToCustomer';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { MobileFnbCartSheet } from './MobileFnbCartSheet';
+import { MobileOrderQrScreen, MobileOrderReviewScreen } from './MobileOrderCustomerScreens';
 
 import { Button } from '@/components/ui/button';
 import {
   Ban,
-  Hash,
-  Wallet,
   StickyNote,
-  CheckCircle2,
   Gift,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -470,88 +467,6 @@ export function MobileOrderStation() {
 
   const balance = wristband?.creditBalanceTHB ?? 0;
 
-  // ── Customer-facing review content (no allergy info ever) ─────────────────
-
-  const customerReviewContent = (
-    <div className="min-h-full flex flex-col bg-slate-950 text-white p-6">
-      <div className="flex flex-col items-center text-center mb-6">
-        <div className="w-16 h-16 rounded-full bg-primary/20 text-primary flex items-center justify-center mb-3">
-          <CheckCircle2 className="w-9 h-9" />
-        </div>
-        <h2 className="text-2xl font-black tracking-tight">Your Order</h2>
-        <p className="text-muted-foreground text-sm mt-1">
-          Please review your items and total below.
-        </p>
-      </div>
-
-      {pickupCode && (
-        <div className="flex items-center justify-center gap-2 mb-5 px-4 py-2 rounded-full border border-white/20 bg-white/10 self-center">
-          <Hash className="w-4 h-4 text-white/70" />
-          <span className="text-sm text-white/70">Pick-up code</span>
-          <span className="font-black text-white tracking-widest">{pickupCode}</span>
-        </div>
-      )}
-
-      <div className="flex-1 space-y-2 mb-4">
-        {displayLines.map((line) => (
-          <div key={line.id} className="flex items-center justify-between gap-3 py-2 border-b border-white/10">
-            <div className="min-w-0 flex-1">
-              <span className="font-bold tabular-nums mr-1">{line.qty}×</span>
-              <span className="font-medium">{line.menuItem.name}</span>
-              {line.note && (
-                <div className="flex items-start gap-1 mt-0.5 text-xs text-amber-300">
-                  <StickyNote className="w-3 h-3 mt-px shrink-0" />
-                  {line.note}
-                </div>
-              )}
-            </div>
-            <span className="font-bold tabular-nums shrink-0">฿{line.lineTotal}</span>
-          </div>
-        ))}
-      </div>
-
-      {wristband && balance > 0 && (
-        <div className="flex items-center justify-between py-2 text-sm text-white/70 border-t border-white/10">
-          <span className="flex items-center gap-1.5">
-            <Wallet className="w-4 h-4" />
-            Credit
-          </span>
-          <span className="tabular-nums">฿{balance} available</span>
-        </div>
-      )}
-
-      <div className="flex items-center justify-between pt-3 border-t border-white/20">
-        <span className="text-xl font-black">Total</span>
-        <span className="text-3xl font-black tabular-nums text-primary">฿{total}</span>
-      </div>
-    </div>
-  );
-
-  const qrContent = (
-    <div className="min-h-full flex flex-col items-center justify-center bg-slate-950 text-white p-8">
-      <div className="text-center mb-6">
-        <p className="text-muted-foreground text-sm mb-1">Scan to pay</p>
-        <div className="text-4xl font-black tabular-nums text-primary">
-          ฿{paymentStage.display.amountSatang / 100}
-        </div>
-        {pickupCode && (
-          <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full border border-white/20 bg-white/10 text-sm text-white/70">
-            <Hash className="w-3.5 h-3.5" />
-            Pick-up code{' '}
-            <span className="font-black text-white tracking-widest">{pickupCode}</span>
-          </div>
-        )}
-      </div>
-      {qrAttemptId && <div className="rounded-2xl bg-white p-4 mb-6 shadow-xl">
-        <PaymentQr payload={paymentStage.display.qrPayload} imageUrl={paymentStage.display.qrImageUrl} className="h-56 w-56" />
-      </div>}
-      {qrAttemptId && <PaymentExpiry expiresAt={paymentStage.display.expiresAt} />}
-      <p className="text-center text-sm text-muted-foreground max-w-xs">
-        {!paymentStage.display.online ? t('till.payment.reconnect') : paymentStage.display.status === 'paid' ? t('till.payment.received') : paymentStage.display.status === 'pending' ? t('fnb.payment.waiting') : t('till.payment.checking')}
-      </p>
-    </div>
-  );
-
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
@@ -737,7 +652,7 @@ export function MobileOrderStation() {
           onDone={handleReviewDone}
           onCancel={() => setHandoffMode(null)}
         >
-          {customerReviewContent}
+          <MobileOrderReviewScreen pickupCode={pickupCode} lines={displayLines} creditBalance={balance} total={total} />
         </HandToCustomer>
       )}
 
@@ -749,7 +664,7 @@ export function MobileOrderStation() {
           onDone={() => setHandoffMode(null)}
           onCancel={() => setHandoffMode(null)}
         >
-          {qrContent}
+          <MobileOrderQrScreen pickupCode={pickupCode} payment={paymentStage.display} showCode={Boolean(qrAttemptId)} />
         </HandToCustomer>
       )}
 

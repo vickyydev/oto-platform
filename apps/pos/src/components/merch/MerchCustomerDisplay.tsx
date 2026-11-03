@@ -281,7 +281,7 @@ export function MerchCustomerDisplay({
             <h2 className="text-4xl font-black mb-6">{t('merch.payment.scanToPay')}</h2>
             <div className="bg-white rounded-3xl p-6 shadow-2xl shadow-violet-500/20">
               {payment ? (
-                <PaymentQr payload={payment.qrPayload} imageUrl={payment.qrImageUrl} className="w-64 h-64" />
+                <PaymentQr payload={payment.qrPayload} imageUrl={payment.qrImageUrl} className="w-64 h-64" label={t('display.qr.ready')} waitingLabel={t('display.qr.waiting')} />
               ) : (
                 <QrCode seed={`merch-promptpay-${promptpayAmount}`} className="w-64 h-64" />
               )}

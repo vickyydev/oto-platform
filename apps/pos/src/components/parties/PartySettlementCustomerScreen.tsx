@@ -125,7 +125,7 @@ export function PartySettlementCustomerScreen({
             <div className="text-3xl font-black tracking-tight">{party.title}</div>
             <div className="text-lg text-foreground/55 mt-1">
               {party.childName}
-              {party.kidAge ? ` · turning ${party.kidAge}` : ''}
+              {party.kidAge ? ` · ${t('party.review.turning', { age: party.kidAge })}` : ''}
             </div>
           </div>
 

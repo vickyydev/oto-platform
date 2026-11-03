@@ -4,9 +4,12 @@ interface NumberKeypadProps {
   value: string;
   onChange: (next: string) => void;
   maxLength?: number;
+  /** The two keys' words, on a customer's screen. Left out, English: the staff screens. */
+  clearLabel?: string;
+  backspaceLabel?: string;
 }
 
-export function NumberKeypad({ value, onChange, maxLength = 10 }: NumberKeypadProps) {
+export function NumberKeypad({ value, onChange, maxLength = 10, clearLabel = 'Clear', backspaceLabel = 'Backspace' }: NumberKeypadProps) {
   const press = (digit: string) => {
     if (value.length >= maxLength) return;
     onChange(value + digit);
@@ -32,7 +35,7 @@ export function NumberKeypad({ value, onChange, maxLength = 10 }: NumberKeypadPr
         onClick={() => onChange('')}
         className="h-20 rounded-2xl bg-foreground/5 border border-foreground/10 text-xl font-semibold text-foreground/70 transition-transform active:scale-95 hover:bg-foreground/10"
       >
-        Clear
+        {clearLabel}
       </button>
       <button
         type="button"
@@ -45,7 +48,7 @@ export function NumberKeypad({ value, onChange, maxLength = 10 }: NumberKeypadPr
         type="button"
         onClick={backspace}
         className="h-20 rounded-2xl bg-foreground/5 border border-foreground/10 flex items-center justify-center text-foreground/70 transition-transform active:scale-95 hover:bg-foreground/10"
-        aria-label="Backspace"
+        aria-label={backspaceLabel}
       >
         <Delete className="w-8 h-8" />
       </button>

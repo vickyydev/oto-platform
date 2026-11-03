@@ -647,12 +647,14 @@ test('separate display guest F&B uses the captured order through lock, cash paym
     // The display rehydrates and retries; prove the eventual accepted response.
     expect((await (await languageSet).json()).document?.language === 'fr').toBe(true);
     await expect(publicFnb.getByText('Frites', { exact: true })).toBeVisible();
-    await publicFnb.getByLabel('Change language').click();
+    // The pill's own name follows the language it has just been set to (SCRUM-729).
+    await publicFnb.getByLabel('Changer de langue').click();
     const languageReset = fixture.display.waitForResponse(response => response.url().endsWith('/display/intents')
       && response.request().postDataJSON()?.type === 'display.set_language'
       && response.request().postDataJSON()?.payload?.language === 'en' && response.status() === 200);
     await publicFnb.getByRole('button', { name: 'English', exact: true }).click();
     expect((await (await languageReset).json()).document?.language === 'en').toBe(true);
+    await expect(publicFnb.getByLabel('Change language')).toBeVisible();
 
     const payment = fnbSession('payment');
     await page.getByRole('button', { name: `Charge ฿${document.totals.total}`, exact: true }).click();
