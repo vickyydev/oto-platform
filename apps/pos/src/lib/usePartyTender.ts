@@ -11,7 +11,7 @@ import {
   type PartyWriteIds,
 } from '@/api/parties';
 import type { PartyBooking, PartyPaymentMethod } from '@/types';
-import { findPaymentMethod } from './payments';
+import { findPaymentMethod, getEnabledPaymentMethods } from './payments';
 import { paymentStageText, type PaymentStageController, type PaymentStageState } from './usePaymentStage';
 
 /**
@@ -51,10 +51,34 @@ const unresolved = (attempt: PaymentAttemptView | null): boolean =>
   Boolean(attempt && (attempt.reversalPending || !PAYMENT_ATTEMPT_TERMINAL_STATUSES.includes(attempt.status)));
 const supportsInquiry = (attempt: PaymentAttemptView): boolean =>
   attempt.inquirySupported ?? (attempt.provider !== 'ghl' && Boolean(attempt.terminalRef));
+/**
+ * Waiting for a person: a QR paid after its time or for another amount, a card
+ * nobody can ask about. No machine moves it, so nothing is gained by holding the
+ * counter on it: the amount stays reserved on the platform, and any counter that
+ * presses over the rest of the balance is brought back here to answer it.
+ */
+const needsAPerson = (attempt: PaymentAttemptView | null): boolean =>
+  attempt?.status === 'awaiting_staff_confirmation' && !attempt.reversalPending;
 /** The refusals that say the bill has moved under the till: nothing to retry on this screen. */
 const BILL_MOVED: readonly string[] = ['PARTY_BALANCE_CHANGED', 'PARTY_NOTHING_OWED'];
 
 const satang = (baht: number): number => Math.round(baht * 100);
+
+/** What the screens say is being collected: the tender on screen, once there is one. */
+export function partyTenderShown(
+  stage: Pick<PaymentStageController, 'state'>,
+  amount: number,
+  method: PartyPaymentMethod,
+): { amount: number; method: PartyPaymentMethod } {
+  const attempt = stage.state.attempt;
+  return attempt ? { amount: attempt.amountSatang / 100, method: stage.state.method ?? method } : { amount, method };
+}
+
+/** The tender a press opened or found waiting, in the till's words for its method. */
+function methodOfAttempt(attempt: PaymentAttemptView): Pick<PaymentStageState, 'method' | 'kind'> {
+  const method = findPaymentMethod(attempt.method) ?? getEnabledPaymentMethods().find((m) => m.kind === attempt.method);
+  return { method: method?.id ?? attempt.method, kind: method?.kind ?? null };
+}
 
 function initial(options: Pick<PartyTenderOptions, 'amount' | 'method'>): PaymentStageState {
   const amount = satang(options.amount);
@@ -97,6 +121,11 @@ export function usePartyTender(options: PartyTenderOptions): PaymentStageControl
     stateRef.current = { ...stateRef.current, ...patch };
     setState(stateRef.current);
   };
+  /** No tender on screen: back to what this collect step froze. */
+  const noTender = (): Partial<PaymentStageState> => {
+    const { method, kind, amountSatang } = initial(optionsRef.current);
+    return { method, kind, amountSatang, attempt: null, route: null, qr: emptyQr };
+  };
 
   useEffect(() => {
     generation.current += 1;
@@ -134,11 +163,10 @@ export function usePartyTender(options: PartyTenderOptions): PaymentStageControl
       .then(() => (generation.current === at ? operation() : undefined))
       .catch((err: unknown) => {
         if (generation.current !== at || stateRef.current.phase === 'complete') return;
-        const reserved = err instanceof ApiError && err.code === 'PAYMENT_IN_FLIGHT';
         const retryable =
           err instanceof NetworkError || !(err instanceof ApiError) || err.status >= 500 || err.code === 'IDEMPOTENCY_IN_FLIGHT';
         update({
-          phase: retryable || reserved ? 'blocked' : 'failed',
+          phase: retryable ? 'blocked' : 'failed',
           retryable,
           error: err instanceof Error ? err.message : 'The payment answer could not be confirmed.',
         });
@@ -168,7 +196,7 @@ export function usePartyTender(options: PartyTenderOptions): PaymentStageControl
     }
     retryOperation.current = null;
     pressRef.current = null;
-    update({ phase: 'ready', error: null, retryable: false, attempt: null, route: null, qr: emptyQr });
+    update({ phase: 'ready', error: null, retryable: false, ...noTender() });
     optionsRef.current.onRefused();
   };
 
@@ -192,9 +220,7 @@ export function usePartyTender(options: PartyTenderOptions): PaymentStageControl
       retryOperation.current = null;
       update({
         phase: 'ready',
-        attempt: null,
-        route: null,
-        qr: emptyQr,
+        ...noTender(),
         error: `Payment ${attempt.status.replaceAll('_', ' ')}. Press again or go back to choose another payment method.`,
       });
     } else {
@@ -238,21 +264,22 @@ export function usePartyTender(options: PartyTenderOptions): PaymentStageControl
         pressRef.current = null;
         retryOperation.current = null;
         /**
-         * A tender already waiting at this counter: a reload lost it, or the
-         * press crossed with it. It is this till's to finish, so it comes back
-         * on screen rather than leaving staff with nothing to press.
+         * A tender this till may finish (`inFlightTenderOf`): one a reload lost,
+         * or that the press crossed with. It comes back on screen, as itself: its
+         * own amount and method, not those of the press that found it.
          */
         const waiting = inFlightTenderOf(outcome.details, o.stationId);
         if (outcome.code === 'PAYMENT_IN_FLIGHT' && waiting) {
           pressRef.current = { id: waiting.paymentId, actionId: newId() };
           const read = await paymentsApi.read(waiting.attemptId);
           if (generation.current !== at) return;
-          update({ route: read.route ?? null, amountSatang: read.attempt.amountSatang });
+          update({ route: read.route ?? null, amountSatang: read.attempt.amountSatang, ...methodOfAttempt(read.attempt) });
           retryOperation.current = () => refresh(waiting.attemptId);
           await adopt(pressRef.current, read.attempt, read);
           return;
         }
-        update({ phase: outcome.code === 'PAYMENT_IN_FLIGHT' ? 'blocked' : 'failed', retryable: false, error: outcome.message });
+        // Refused with nothing on screen to wait for: staff are told, and keep Back.
+        update({ phase: 'failed', retryable: false, error: outcome.message });
         if (outcome.code && BILL_MOVED.includes(outcome.code)) o.onRefused();
         return;
       }
@@ -279,7 +306,9 @@ export function usePartyTender(options: PartyTenderOptions): PaymentStageControl
 
   const canInquire = state.route === 'card_terminal' && Boolean(state.attempt && supportsInquiry(state.attempt)
     && ['unknown', 'awaiting_staff_confirmation'].includes(state.attempt.status));
-  const canConfirm = state.route === 'card_terminal' && state.attempt?.status === 'awaiting_staff_confirmation';
+  // Whatever its route: a party has one bill, so this is the only door a tender
+  // waiting for a person has, a gateway QR's included (the panel says which it is).
+  const canConfirm = state.attempt?.status === 'awaiting_staff_confirmation';
 
   const inquire = (): Promise<void> => {
     const attempt = stateRef.current.attempt;
@@ -296,12 +325,20 @@ export function usePartyTender(options: PartyTenderOptions): PaymentStageControl
 
   const confirm = (took: boolean, details: Omit<PaymentConfirmationBody, 'took'> = {}): Promise<void> => {
     const attempt = stateRef.current.attempt;
-    if (!online || stateRef.current.route !== 'card_terminal' || attempt?.status !== 'awaiting_staff_confirmation') {
-      return Promise.resolve();
-    }
+    if (!online || attempt?.status !== 'awaiting_staff_confirmation') return Promise.resolve();
     const actionId = newId();
     return perform(async () => {
-      const result = await paymentsApi.confirm(attempt.id, { ...details, took }, actionId);
+      let result;
+      try {
+        result = await paymentsApi.confirm(attempt.id, { ...details, took }, actionId);
+      } catch (err) {
+        if (!(err instanceof ApiError) || err.status >= 500) throw err;
+        // Refused: its words stay beside the attempt, which every poll clears from `error`.
+        update({ cancelRefusal: err.message });
+        retryOperation.current = () => refresh(attempt.id);
+        await refresh(attempt.id);
+        return;
+      }
       update({ attempt: result.attempt });
       retryOperation.current = () => refresh(attempt.id);
       await refresh(attempt.id);
@@ -344,7 +381,7 @@ export function usePartyTender(options: PartyTenderOptions): PaymentStageControl
       retryOperation.current = null;
       pressRef.current = null;
       cancelled = true;
-      update({ phase: 'ready', attempt: null, route: null, qr: emptyQr, error: null, retryable: false, cancelRefusal: null });
+      update({ phase: 'ready', ...noTender(), error: null, retryable: false, cancelRefusal: null });
     }).then(() => cancelled);
   };
 
@@ -372,7 +409,8 @@ export function usePartyTender(options: PartyTenderOptions): PaymentStageControl
   }, [online, options.paused, options.active, options.scope, state.attempt?.id, state.attempt?.status, state.attempt?.reversalPending, state.phase, state.retryable]);
 
   const busy = state.phase === 'busy';
-  const locked = Boolean(options.paused) || busy || unresolved(state.attempt) || state.phase === 'blocked';
+  const locked =
+    Boolean(options.paused) || busy || (!needsAPerson(state.attempt) && (unresolved(state.attempt) || state.phase === 'blocked'));
   const canCancel = state.route === 'gateway' && Boolean(state.attempt && CANCELLABLE_QR_STATUSES.includes(state.attempt.status))
     && !busy && online && !options.paused && state.phase !== 'complete';
   return {
@@ -381,7 +419,7 @@ export function usePartyTender(options: PartyTenderOptions): PaymentStageControl
     online,
     locked,
     canBack: !locked && state.phase !== 'complete',
-    canSubmit: !locked && online && Boolean(state.method) && (state.phase === 'ready' || state.phase === 'failed'),
+    canSubmit: !locked && !unresolved(state.attempt) && online && Boolean(state.method) && (state.phase === 'ready' || state.phase === 'failed'),
     creditCoversAll: false,
     creditPendingSatang: 0,
     creditRefusal: null,
@@ -394,7 +432,7 @@ export function usePartyTender(options: PartyTenderOptions): PaymentStageControl
       qrPayload: state.qr.qrPayload,
       qrImageUrl: state.qr.qrImageUrl,
       expiresAt: state.qr.expiresAt,
-      status: state.phase === 'complete' ? 'paid' : locked ? (state.phase === 'blocked' ? 'blocked' : 'pending') : state.phase === 'failed' ? 'failed' : 'idle',
+      status: state.phase === 'complete' ? 'paid' : state.phase === 'blocked' ? 'blocked' : locked ? 'pending' : state.phase === 'failed' ? 'failed' : 'idle',
       offline: false,
       online,
     },

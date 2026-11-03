@@ -8,7 +8,7 @@ import type {
   SelectedAddOn,
   TicketType,
 } from '@/types';
-import type { TaxBreakdown as EngineTaxBreakdown } from '@oto/shared';
+import { eventPassService, type TaxBreakdown as EngineTaxBreakdown } from '@oto/shared';
 import { isVoucherDiscount, type ApiSaleDetail, type ApiSaleDiscount, type ApiSaleLine } from '@/api/history';
 import type { CartQuote, OrderTotals } from '@/api/sales';
 import type { CartQuoteState } from '@/lib/cartQuote';
@@ -64,6 +64,8 @@ export interface ResumedCart {
   cart: CartQuoteState;
   /** True when a line is a supervised child's: its registration is on the Drop-Off board. */
   supervised: boolean;
+  /** SCRUM-732 — an event pass rung up for a QR or a card: its child waits on this sale. */
+  eventPass: boolean;
 }
 
 /** The ledger kinds a ticket cart line is made of; anything else is another counter's. */
@@ -339,5 +341,7 @@ export function rebuildResumedSale(detail: ApiSaleDetail, catalogue: ResumeCatal
       if (promo) discounts.push(promo);
     }
   }
-  return { tier, lines, discounts, manualDiscounts, cart: resumedCart(detail), supervised };
+  const passLines = [eventPassService('camp').serviceId, eventPassService('event').serviceId];
+  const eventPass = (detail.lines ?? []).some((row) => row.componentKey !== null && passLines.includes(row.componentKey));
+  return { tier, lines, discounts, manualDiscounts, cart: resumedCart(detail), supervised, eventPass };
 }

@@ -178,7 +178,7 @@ export function AddAttendeeModal({
   routedPass,
 }: AddAttendeeModalProps) {
   const isCamp = event.type === 'camp';
-  const { locked: operatorLocked, offlineUnlock } = useOperator();
+  const { locked: operatorLocked } = useOperator();
   // Reuse the app-wide customer-display toggle (same one the Till split harness
   // uses) so it behaves like every other secondary screen.
   const [showCustomerDisplay, setShowCustomerDisplay] = useCustomerDisplayPref();
@@ -237,7 +237,11 @@ export function AddAttendeeModal({
     scope,
     isCurrentScope: (s) => s === scopeRef.current,
     active: open && phase === 'payment',
-    paused: operatorLocked || Boolean(offlineUnlock),
+    // A staff lock, as at the ticket till. An unlock taken through the box stands
+    // long after the link is back; it does not freeze a screen that is working.
+    paused: operatorLocked,
+    // A child waits on the answer, and this form holds the counter until there is one.
+    reviewGatewayQr: true,
     totalSatang: Math.round(doorFeeTHB * 100),
     prepareSale: async (): Promise<SaleWriteOutcome> => {
       const ids = (routedPass.idsRef.current ??= { attendeeId: newId(), saleId: newId(), actionId: newId() });

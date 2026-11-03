@@ -311,19 +311,24 @@ export async function startPartyTenderOnPlatform(args: {
 }
 
 /**
- * The tender a 409 PAYMENT_IN_FLIGHT names, when it was opened at this counter:
- * the one this till may bring back on screen and finish. Another counter's is
- * that counter's, as a colleague's unpaid sale is theirs.
+ * The tender a 409 PAYMENT_IN_FLIGHT names that this till may bring back on screen
+ * and finish. One waiting for a person, from any counter: nothing but a person
+ * closes it, and the counter that opened it may be gone. Otherwise the one tender
+ * opened at this counter; another counter's is that counter's, as a colleague's
+ * unpaid sale is theirs.
  */
 export function inFlightTenderOf(
   details: unknown,
   stationId: string | null | undefined,
 ): { attemptId: string; paymentId: string } | null {
   const waiting = (details as { waiting?: unknown } | null | undefined)?.waiting;
-  if (!Array.isArray(waiting) || waiting.length !== 1) return null;
-  const only = waiting[0] as { attemptId?: unknown; paymentId?: unknown; stationId?: unknown };
-  if (typeof only.attemptId !== 'string' || typeof only.paymentId !== 'string' || only.stationId !== stationId) return null;
-  return { attemptId: only.attemptId, paymentId: only.paymentId };
+  if (!Array.isArray(waiting)) return null;
+  const tenders = waiting as { attemptId?: unknown; paymentId?: unknown; stationId?: unknown; status?: unknown }[];
+  const chosen =
+    tenders.find((t) => t.status === 'awaiting_staff_confirmation') ??
+    (tenders.length === 1 && tenders[0]?.stationId === stationId ? tenders[0] : undefined);
+  if (typeof chosen?.attemptId !== 'string' || typeof chosen.paymentId !== 'string') return null;
+  return { attemptId: chosen.attemptId, paymentId: chosen.paymentId };
 }
 
 /**

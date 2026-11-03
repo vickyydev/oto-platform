@@ -19,7 +19,7 @@ import {
   paymentMethodKind,
 } from '@/lib/payments';
 import { PARTY_TENDER_HINT, type PartyPaymentConfirmation, type PartyTenderPress } from '@/api/parties';
-import { usePartyTender } from '@/lib/usePartyTender';
+import { partyTenderShown, usePartyTender } from '@/lib/usePartyTender';
 import { PaymentTenderPanel, paymentSubmitLabel } from '@/components/till/PaymentTenderPanel';
 import { PartySettlementCustomerScreen } from './PartySettlementCustomerScreen';
 import {
@@ -164,6 +164,8 @@ export function PartyBalanceModal({
   });
   // Staff cannot leave a tender that is waiting for its answer, as at the ticket till.
   const collecting = open && stage === 'collect' && routed && tender.locked;
+  // A tender a reload left waiting comes back as itself, not as the press that found it.
+  const shown = routed ? partyTenderShown(tender, collectAmount, collectMethod) : { amount: collectAmount, method: collectMethod };
 
   const handleReceived = async () => {
     if (collectAmount <= 0 || recording) return;
@@ -188,7 +190,7 @@ export function PartyBalanceModal({
     stage === 'review'
       ? 'Reviewing the bill'
       : stage === 'collect'
-        ? `Collecting ฿${collectAmount} by ${paymentMethodLabel(collectMethod)}`
+        ? `Collecting ฿${shown.amount} by ${paymentMethodLabel(shown.method)}`
         : 'Payment recorded';
 
   return (
@@ -367,17 +369,17 @@ export function PartyBalanceModal({
                   <div className="flex flex-col items-center text-center pt-6">
                     <div className="w-20 h-20 rounded-full bg-violet-500/15 text-violet-400 flex items-center justify-center mb-6">
                       {(() => {
-                        const Icon = paymentMethodIcon(paymentMethodKind(collectMethod));
+                        const Icon = paymentMethodIcon(paymentMethodKind(shown.method));
                         return <Icon className="w-10 h-10" />;
                       })()}
                     </div>
                     <h2 className="text-2xl font-bold mb-1">
-                      {paymentMethodLabel(collectMethod)} payment
+                      {paymentMethodLabel(shown.method)} payment
                     </h2>
                     <p className="text-muted-foreground mb-6">{party.title}</p>
-                    <div className="text-5xl font-black tabular-nums mb-6">฿{collectAmount}</div>
+                    <div className="text-5xl font-black tabular-nums mb-6">฿{shown.amount}</div>
                     <p className="text-muted-foreground max-w-sm mb-8">
-                      {collectHint(collectMethod)}
+                      {collectHint(shown.method)}
                     </p>
                     {routed && (
                       <div className="w-full max-w-md text-left mb-6">
@@ -465,8 +467,8 @@ export function PartyBalanceModal({
               <PartySettlementCustomerScreen
                 stage={customerStage}
                 party={party}
-                amount={stage === 'review' ? amount : collectAmount}
-                method={stage === 'review' ? (method || undefined) : collectMethod}
+                amount={stage === 'review' ? amount : stage === 'collect' ? shown.amount : collectAmount}
+                method={stage === 'review' ? (method || undefined) : stage === 'collect' ? shown.method : collectMethod}
                 qr={tender.display}
               />
             </div>

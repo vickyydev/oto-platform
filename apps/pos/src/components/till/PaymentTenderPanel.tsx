@@ -27,6 +27,8 @@ export function paymentSubmitLabel(stage: PaymentStageController, confirmationLa
 export function PaymentTenderPanel({ stage, showSubmit = true, fixedAmount = false }: { stage: PaymentStageController; showSubmit?: boolean; fixedAmount?: boolean }) {
   const { state } = stage;
   const kind = state.method ? findPaymentMethod(state.method)?.kind : null;
+  // A person answering a gateway QR has no terminal to read: it says what they do have.
+  const review = (key: string) => label(state.route === 'gateway' ? `${key}Qr` : key);
   const [field, setField] = useState<'amount' | 'cash' | null>(null);
   const [text, setText] = useState('');
   const [approvalCode, setApprovalCode] = useState('');
@@ -93,11 +95,11 @@ export function PaymentTenderPanel({ stage, showSubmit = true, fixedAmount = fal
       {state.retryable && <Button variant="outline" disabled={stage.busy || !stage.online} onClick={() => { void stage.retry(); }}>{label('checkAgain')}</Button>}
       {stage.canCancel && <Button variant="outline" data-testid="payment-cancel-qr" onClick={() => { void stage.cancel(); }}>{label('cancelQr')}</Button>}
       {stage.canInquire && <Button variant="outline" onClick={() => { void stage.inquire(); }}>{label('askTerminal')}</Button>}
-      {stage.canConfirm && <AlertDialog><AlertDialogTrigger asChild><Button variant="outline">{label('review')}</Button></AlertDialogTrigger>
-        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{label('confirmTitle')}</AlertDialogTitle>
-          <AlertDialogDescription>{label('confirmDescription')}</AlertDialogDescription></AlertDialogHeader>
+      {stage.canConfirm && <AlertDialog><AlertDialogTrigger asChild><Button variant="outline">{review('review')}</Button></AlertDialogTrigger>
+        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{review('confirmTitle')}</AlertDialogTitle>
+          <AlertDialogDescription>{review('confirmDescription')}</AlertDialogDescription></AlertDialogHeader>
           <Label htmlFor="payment-confirm-note">{label('checkNote')}</Label><Input id="payment-confirm-note" value={note} onChange={(event) => setNote(event.target.value)} maxLength={200} />
-          <label className="flex gap-2 items-center"><input type="checkbox" checked={checked} onChange={(event) => setChecked(event.target.checked)} />{label('checkBox')}</label>
+          <label className="flex gap-2 items-center"><input type="checkbox" checked={checked} onChange={(event) => setChecked(event.target.checked)} />{review('checkBox')}</label>
           <AlertDialogFooter><AlertDialogCancel>{label('back')}</AlertDialogCancel>
             <AlertDialogAction disabled={!checked || !note.trim()} onClick={() => { void stage.confirm(false, { note }); }}>{label('noMoney')}</AlertDialogAction>
             <AlertDialogAction disabled={!checked || !note.trim()} onClick={() => { void stage.confirm(true, { note }); }}>{label('moneyTaken')}</AlertDialogAction>

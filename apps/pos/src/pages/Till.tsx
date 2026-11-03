@@ -326,7 +326,7 @@ export default function Till() {
    * any other unpaid sale here is offered the void alone, as before. The
    * order of a resumed sale cannot be changed: Pay it, or Cancel voids it.
    */
-  const [resumed, setResumed] = useState<{ saleId: string; occurredAt: string; cart: CartQuoteState } | null>(null);
+  const [resumed, setResumed] = useState<{ saleId: string; occurredAt: string; cart: CartQuoteState; eventPass: boolean } | null>(null);
   const resumingRef = useRef(false);
   const RESUMED_ORDER_FROZEN =
     'This sale was rung up before the page reloaded. Take the payment, or Cancel to void it and ring up a new order.';
@@ -879,7 +879,7 @@ export default function Till() {
         engineVersion: sale.engineVersion ?? rebuilt.cart.quote.engineVersion,
       };
       if (!saleWriter.adopt(adopted)) return;
-      setResumed({ saleId, occurredAt: sale.occurredAt, cart: rebuilt.cart });
+      setResumed({ saleId, occurredAt: sale.occurredAt, cart: rebuilt.cart, eventPass: rebuilt.eventPass });
       setTier(rebuilt.tier);
       setLines(rebuilt.lines);
       setDiscounts(rebuilt.discounts);
@@ -3015,6 +3015,8 @@ export default function Till() {
     // A resumed sale: the money already taken on it is read from the platform
     // before anything more is collected, as a lost-reply retry reads it.
     ...(resumed ? { resumeSaleId: resumed.saleId } : {}),
+    // SCRUM-732 — a pass left behind brings its door with it: a child waits on this sale.
+    ...(resumed?.eventPass ? { reviewGatewayQr: true } : {}),
     prepareSale: () => preparePaymentSale(paymentEpoch, paymentScope),
     finaliseSale: saleWriter.finalise,
     onComplete: completeSale,

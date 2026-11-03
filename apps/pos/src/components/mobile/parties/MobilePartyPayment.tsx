@@ -13,7 +13,7 @@ import {
   paymentMethodKind,
 } from '@/lib/payments';
 import { PARTY_TENDER_HINT, type PartyPaymentConfirmation, type PartyTenderPress } from '@/api/parties';
-import { usePartyTender } from '@/lib/usePartyTender';
+import { partyTenderShown, usePartyTender } from '@/lib/usePartyTender';
 import { PaymentTenderPanel, paymentSubmitLabel } from '@/components/till/PaymentTenderPanel';
 import { PartySettlementCustomerScreen } from '@/components/parties/PartySettlementCustomerScreen';
 import { HandToCustomer } from '@/components/mobile/HandToCustomer';
@@ -147,6 +147,9 @@ export function MobilePartyPayment({
     },
   });
 
+  // A tender a reload left waiting comes back as itself, not as the press that found it.
+  const shown = routed ? partyTenderShown(tender, collectAmount, collectMethod) : { amount: collectAmount, method: collectMethod };
+
   const handleReceived = async () => {
     if (collectAmount <= 0 || recording) return;
     setRecording(true);
@@ -207,15 +210,15 @@ export function MobilePartyPayment({
         <div className={`flex-1 flex flex-col items-center px-6 text-center ${routed ? 'overflow-y-auto justify-start py-4' : 'justify-center'}`}>
           <div className="w-20 h-20 shrink-0 rounded-full bg-violet-500/15 text-violet-400 flex items-center justify-center mb-6">
             {(() => {
-              const Icon = paymentMethodIcon(paymentMethodKind(collectMethod));
+              const Icon = paymentMethodIcon(paymentMethodKind(shown.method));
               return <Icon className="w-10 h-10" />;
             })()}
           </div>
-          <h2 className="text-2xl font-bold mb-1">{paymentMethodLabel(collectMethod)}</h2>
+          <h2 className="text-2xl font-bold mb-1">{paymentMethodLabel(shown.method)}</h2>
           <p className="text-muted-foreground mb-4">{party.title}</p>
-          <div className="text-5xl font-black tabular-nums mb-4">฿{collectAmount}</div>
+          <div className="text-5xl font-black tabular-nums mb-4">฿{shown.amount}</div>
           <p className="text-muted-foreground max-w-xs text-sm mb-8">
-            {collectHint(collectMethod)}
+            {collectHint(shown.method)}
           </p>
           {routed && (
             <div className="w-full max-w-sm text-left">

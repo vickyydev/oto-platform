@@ -77,8 +77,9 @@ export interface PaymentStageState {
   /** S2-14a round 3 — counts refusals, so a second identical refusal still takes the toggle off. */
   creditRefusalSeq?: number;
   /**
-   * Why the platform would not cancel the pending QR, in its words
-   * (`ATTEMPT_ALREADY_PAID`, `ATTEMPT_NEEDS_A_PERSON`, ...). Kept beside the
+   * Why the platform would not cancel the pending QR, or take a person's answer
+   * on a party's tender, in its words (`ATTEMPT_ALREADY_PAID`,
+   * `ATTEMPT_NEEDS_A_PERSON`, ...). Kept beside the
    * attempt rather than in `error`, which every poll of the attempt clears;
    * gone once another method is chosen or the cancel goes through.
    */
@@ -105,6 +106,13 @@ export interface PaymentStageOptions {
    * (the ticket till, for its customer display) lets it go here.
    */
   onTenderCancelled?: (saleId: string | null) => void;
+  /**
+   * SCRUM-732 — a person may answer, here, a gateway QR that waits for one. For a
+   * pass: its child waits on that answer. Off everywhere else: a ticket sale that
+   * reaches this state is left and another rung up, and this stage never offers a
+   * gateway anomaly the terminal's own confirmation.
+   */
+  reviewGatewayQr?: boolean;
 }
 export interface PaymentStageController {
   state: PaymentStageState;
@@ -610,7 +618,8 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
   };
   const canInquire = state.route === 'card_terminal' && Boolean(state.attempt && supportsInquiry(state.attempt)
     && ['unknown', 'awaiting_staff_confirmation'].includes(state.attempt.status));
-  const canConfirm = state.route === 'card_terminal' && state.attempt?.status === 'awaiting_staff_confirmation';
+  const canConfirm = (state.route === 'card_terminal' || (state.route === 'gateway' && options.reviewGatewayQr === true))
+    && state.attempt?.status === 'awaiting_staff_confirmation';
   const inquire = (): Promise<void> => {
     if (!onlineRef.current || stateRef.current.route !== 'card_terminal' || !stateRef.current.attempt
       || !supportsInquiry(stateRef.current.attempt)
@@ -627,7 +636,9 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
     }, ctx);
   };
   const confirm = (took: boolean, details: Omit<PaymentConfirmationBody, 'took'> = {}): Promise<void> => {
-    if (!onlineRef.current || stateRef.current.route !== 'card_terminal' || stateRef.current.attempt?.status !== 'awaiting_staff_confirmation') return Promise.resolve();
+    const route = stateRef.current.route;
+    if (!onlineRef.current || (route !== 'card_terminal' && !(route === 'gateway' && optionsRef.current.reviewGatewayQr))
+      || stateRef.current.attempt?.status !== 'awaiting_staff_confirmation') return Promise.resolve();
     const ctx = context();
     const attemptId = stateRef.current.attempt.id;
     const actionId = newId();
