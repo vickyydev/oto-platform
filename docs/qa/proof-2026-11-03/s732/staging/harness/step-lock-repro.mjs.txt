@@ -1,0 +1,25 @@
+export default async function (S) {
+  const { page, POS, shot, need, expect } = S;
+  const out = { startedAt: new Date().toISOString() };
+  await page.goto(POS + '/parties');
+  await page.waitForLoadState('networkidle').catch(() => undefined);
+  await page.waitForTimeout(140000);
+  out.lockedAfterIdle = await page.getByRole('heading', { name: 'Locked', exact: true }).isVisible().catch(() => false);
+  await page.goto(POS + '/parties');
+  await page.waitForLoadState('networkidle').catch(() => undefined);
+  await page.waitForTimeout(2000);
+  const locked = page.getByRole('heading', { name: 'Locked', exact: true });
+  out.lockedAfterReload = await locked.isVisible().catch(() => false);
+  out.reloadShot = await shot('debug-repro-1-after-reload');
+  if (out.lockedAfterReload) {
+    await page.locator('input[type="password"]').fill(need('STAGING_RECEPTION_PASSWORD'));
+    await page.getByRole('button', { name: /Unlock/ }).click();
+    await page.waitForTimeout(5000);
+    out.afterUnlock = { picker: await page.getByRole('heading', { name: 'Which station are you on?' }).isVisible().catch(() => false), staleLocked: await page.getByText('This session is locked — unlock to continue').count(), noStation: await page.getByText('No station here is yours to work').count() };
+    out.unlockShot = await shot('debug-repro-2-after-unlock');
+    await page.waitForTimeout(10000);
+    out.after15s = { picker: await page.getByRole('heading', { name: 'Which station are you on?' }).isVisible().catch(() => false), staleLocked: await page.getByText('This session is locked — unlock to continue').count() };
+    out.laterShot = await shot('debug-repro-3-after-15s');
+  }
+  return out;
+}

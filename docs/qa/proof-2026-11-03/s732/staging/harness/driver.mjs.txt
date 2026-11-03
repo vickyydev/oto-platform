@@ -1,0 +1,68 @@
+// SCRUM-732 staging proof driver: one real browser (Edge) kept open, steps run on request.
+import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
+import { createRequire } from 'node:module';
+import { randomUUID } from 'node:crypto';
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+import { need } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs';
+const root = 'C:/oto-lanes/passqr732-20261103';
+const { chromium, expect, request } = createRequire(root + '/apps/pos/package.json')('@playwright/test');
+const POS = 'https://oto-pos-web-staging.onrender.com';
+const shots = root + '/docs/qa/proof-2026-11-03/s732/staging';
+mkdirSync(shots, { recursive: true });
+const receiptFile = shots + '/receipt.json';
+const st = existsSync(receiptFile) ? JSON.parse(readFileSync(receiptFile, 'utf8')) : { unit: 'SCRUM-732', source: '65c22edf1832e5927536c28ea3db94222ef681e3', startedAt: new Date().toISOString(), fixture: {}, steps: {}, images: [], network: [] };
+const save = () => writeFileSync(receiptFile, JSON.stringify(st, null, 2) + '\n');
+save();
+const browser = await chromium.launch({ channel: 'msedge' });
+const tillCtx = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
+tillCtx.setDefaultTimeout(20000);
+const page = await tillCtx.newPage();
+const shrink = (v) => JSON.parse(JSON.stringify(v ?? null, (k, x) => (typeof x === 'string' && x.length > 160 ? x.slice(0, 60) + '…(' + x.length + ' chars)' : x)));
+const watched = /\/api\/(payments\/attempts|events\/[^/]+\/passes|parties\/[^/]+\/payments|sales\/[^/]+\/finalise)/;
+page.on('response', async (res) => {
+  const req = res.request();
+  if (req.method() !== 'POST' || !watched.test(res.url())) return;
+  let body = null; try { body = await res.json(); } catch {}
+  let reqBody = null; try { reqBody = req.postDataJSON(); } catch {}
+  st.network.push({ at: new Date().toISOString(), path: new URL(res.url()).pathname, status: res.status(), request: shrink(reqBody), response: shrink(body) });
+  save();
+});
+const admin = await request.newContext({ baseURL: POS });
+const adminIn = await admin.post('/api/auth/sign-in', { data: { phone: need('STAGING_ADMIN_PHONE'), password: need('STAGING_ADMIN_PASSWORD') } });
+assert.equal(adminIn.status(), 200, 'admin sign-in');
+const call = async (ctxReq, method, path, data, okStatus = 200) => {
+  const action = randomUUID();
+  const res = await ctxReq.fetch(POS + '/api' + path, { method, ...(data ? { data } : {}), headers: method === 'GET' ? {} : { 'idempotency-key': action, 'x-oto-action-id': action } });
+  let body = null; try { body = await res.json(); } catch {}
+  return { status: res.status(), body };
+};
+const adminApi = (m, p, d) => call(admin, m, p, d);
+const tillApi = (m, p, d) => call(page.request, m, p, d);
+const shot = async (name, opts = {}) => {
+  const file = shots + '/' + name + '.png';
+  await page.screenshot({ path: file, animations: 'disabled', mask: [page.locator('input[type=password]'), page.locator('[data-testid="display-pairing-code"]')], ...opts });
+  st.images.push({ file: 'docs/qa/proof-2026-11-03/s732/staging/' + name + '.png', at: new Date().toISOString(), url: page.url() });
+  save();
+  return file;
+};
+const S = { st, save, page, tillCtx, browser, admin, adminApi, tillApi, shot, expect, need, POS, root, shots, randomUUID };
+const server = createServer(async (req, res) => {
+  let data = ''; for await (const c of req) data += c;
+  const file = data.trim();
+  let out;
+  try {
+    if (file === 'STOP') { out = { stopping: true }; res.end(JSON.stringify(out)); await admin.dispose(); await browser.close(); server.close(); return; }
+    assert.match(file, /^C:\/oto-lanes\/s732-proof\/step-[a-z0-9-]+\.mjs$/);
+    const step = await import(pathToFileURL(file).href + '?at=' + Date.now());
+    out = { file, result: await step.default(S) };
+  } catch (e) {
+    out = { file, error: e.name, message: String(e.message).slice(0, 3000) };
+    try { await shot('debug-' + Date.now()); } catch {}
+  }
+  save();
+  res.setHeader('content-type', 'application/json');
+  res.end(JSON.stringify(out, null, 1));
+});
+server.listen(47320, '127.0.0.1', () => console.log('driver ready'));

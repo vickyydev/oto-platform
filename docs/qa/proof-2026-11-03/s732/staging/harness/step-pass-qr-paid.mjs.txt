@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import { roster, sale } from './lib.mjs?v=2';
+export default async function (S) {
+  const { st, save, page, expect, shot, adminApi } = S;
+  const step = st.steps.passQr, ev = st.fixture.events.workshop;
+  const before = await adminApi('GET', '/webhooks/2c2p/simulator');
+  step.simulatorBefore = { status: before.status, provider: before.body?.provider ?? before.body?.gateway ?? null, waiting: (before.body?.waiting ?? before.body?.attempts ?? []).filter?.((a) => a.id === step.attemptId || a.attemptId === step.attemptId).length ?? null };
+  step.paidPressAt = new Date().toISOString();
+  const paid = await adminApi('POST', '/webhooks/2c2p/simulator', { attemptId: step.attemptId, event: 'paid' });
+  step.paidPress = { status: paid.status, body: paid.body };
+  save();
+  assert.equal(paid.status, 200, JSON.stringify(paid.body));
+  await expect(page.getByText('Pass paid — check in now?')).toBeVisible({ timeout: 60000 });
+  step.paidSeenAt = new Date().toISOString();
+  await shot('staging-04-pass-qr-paid-check-in-choice');
+  const r = await roster(S, ev.id), s = await sale(S, step.saleId);
+  step.paidReadback = { at: new Date().toISOString(), rosterStats: r.stats, rosterGroups: r.groups, childOnRoster: r.mentions(step.child), sale: s };
+  save();
+  return { simulatorBefore: step.simulatorBefore, paidPress: step.paidPress, paidReadback: step.paidReadback };
+}

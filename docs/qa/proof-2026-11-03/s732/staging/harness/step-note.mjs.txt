@@ -1,0 +1,8 @@
+export default async function (S) {
+  const { st, save } = S;
+  st.cleanup.adminApiReadback = { at: '2026-11-03T22:22:18.923Z', ownEventsListedOnTheDay: 0, eventsListStatus: 200, adminSignOut: 200, adminMeAfter: 401, note: 'The station and device listings did not carry an archivedAt field; their archive is read from the database below.' };
+  st.cleanup.retained = 'Four finalised pass sales (Z70-000001..4, 350 baht each, simulated or cash), their eight approved payment attempts including the party ones, three party payments on the first party and two on party B, the pass holds and roster links, the four children written to the OTO App roster of the archived workshop, and the audit history. These are business records and stay.';
+  st.deployDuringCleanup = { at: '2026-11-03T22:16:03Z', source: 'e978578f71a219f4f0cee64c423d39fc81fece17', why: 'Render redeployed every staging service on the earlier SCRUM-743 test-only commit after its CI finished; apps/api, apps/pos and packages are byte-identical to 65c22edf. Every proof screen was taken before it, on 65c22edf.' };
+  save();
+  return { ok: true };
+}

@@ -1,0 +1,13 @@
+export default async function (S) {
+  const { st, page, expect, POS, shot } = S;
+  const f = st.fixture;
+  await page.goto(POS + '/');
+  await expect(page.getByText('Membership Check', { exact: true })).toBeVisible({ timeout: 30000 });
+  const digits = f.memberPhone.replace(/^\+66/, '');
+  for (const d of digits) await page.getByRole('button', { name: d, exact: true }).first().click();
+  await shot('debug-phone-typed');
+  await page.getByRole('button', { name: 'Find my membership' }).click();
+  await page.waitForTimeout(4000);
+  await shot('debug-after-find');
+  return { url: page.url() };
+}

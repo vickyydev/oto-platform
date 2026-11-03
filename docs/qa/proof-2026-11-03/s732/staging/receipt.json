@@ -1,0 +1,1998 @@
+{
+  "unit": "SCRUM-732",
+  "source": "65c22edf1832e5927536c28ea3db94222ef681e3",
+  "startedAt": "2026-11-03T21:59:37.121Z",
+  "fixture": {
+    "stamp": "mw18diqh",
+    "name": "ZZ TEST SCRUM-732 mw18diqh",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "boxName": "Virtual box 1",
+    "terminalId": "01a1a36c-d07d-7f9c-978e-3a4571009a5e",
+    "terminalLabel": "ZZ TEST SCRUM-732 mw18diqh terminal",
+    "stationId": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+    "stationName": "ZZ TEST SCRUM-732 mw18diqh till",
+    "codePrefix": "Z70",
+    "paymentRouting": {
+      "qr": "gateway",
+      "card": "card_terminal"
+    },
+    "stationDevices": [
+      {
+        "deviceId": "01a1a36c-d07d-7f9c-978e-3a4571009a5e",
+        "role": "card_terminal"
+      }
+    ],
+    "events": {
+      "workshop": {
+        "id": "053874f2-49f7-4ac9-b430-d4dbfb982b40",
+        "title": "ZZ TEST SCRUM-732 mw18diqh workshop",
+        "type": "workshop"
+      },
+      "party": {
+        "id": "5a0e7031-8311-44cc-b885-d3b782b80f7e",
+        "title": "ZZ TEST SCRUM-732 mw18diqh party",
+        "type": "birthday"
+      },
+      "partyB": {
+        "id": "e0d91944-b4d3-4e43-87d6-e959bd09a63d",
+        "title": "ZZ TEST SCRUM-732 mw18diqh party B",
+        "type": "birthday"
+      }
+    },
+    "eventsJob": {
+      "jobId": "job-dbl5ismi0phs738idcmg",
+      "at": "2026-11-03T22:01:19.676Z",
+      "appBranchId": "540f6e5e-e94b-4ce9-a79a-5947e841e1fb",
+      "date": "2026-11-04",
+      "view": [
+        {
+          "id": "053874f2-49f7-4ac9-b430-d4dbfb982b40",
+          "branch_id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "type": "event",
+          "title": "ZZ TEST SCRUM-732 mw18diqh workshop",
+          "status": "upcoming",
+          "archived": false,
+          "entry_price_weekday_satang": "35000",
+          "total_value_satang": null,
+          "deposit_satang": null
+        },
+        {
+          "id": "5a0e7031-8311-44cc-b885-d3b782b80f7e",
+          "branch_id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "type": "party",
+          "title": "ZZ TEST SCRUM-732 mw18diqh party",
+          "status": "upcoming",
+          "archived": false,
+          "entry_price_weekday_satang": null,
+          "total_value_satang": "1200000",
+          "deposit_satang": "300000"
+        },
+        {
+          "id": "e0d91944-b4d3-4e43-87d6-e959bd09a63d",
+          "branch_id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "type": "party",
+          "title": "ZZ TEST SCRUM-732 mw18diqh party B",
+          "status": "upcoming",
+          "archived": false,
+          "entry_price_weekday_satang": null,
+          "total_value_satang": "100000",
+          "deposit_satang": "0"
+        }
+      ]
+    },
+    "memberId": "01a1a36f-bd2c-73f0-b191-136d554ae707",
+    "memberPhone": "+66897307321",
+    "memberNickname": "ZZ TEST SCRUM-732 May",
+    "children": [
+      {
+        "name": "ZZ TEST Lin",
+        "id": "01a1a36f-bdc4-7fc5-bedb-a2b81f4ab8a0"
+      },
+      {
+        "name": "ZZ TEST Ploy",
+        "id": "01a1a36f-be52-79ae-9f53-9388bf807267"
+      },
+      {
+        "name": "ZZ TEST Tam",
+        "id": "01a1a36f-bea6-7fe5-b623-5414d4cc92b0"
+      }
+    ]
+  },
+  "steps": {
+    "passQr": {
+      "startedAt": "2026-11-03T22:04:32.466Z",
+      "child": "ZZ TEST Lin",
+      "noCodeYet": {
+        "at": "2026-11-03T22:04:35.557Z",
+        "placeholderQrCount": 0
+      },
+      "pendingAt": "2026-11-03T22:04:36.070Z",
+      "attendeeId": "01a1a371-53f5-7947-a922-1d8d9f895418",
+      "saleId": "01a1a371-53f5-7947-a922-1d8e50907bf1",
+      "attemptId": "01a1a371-58a3-79ec-9f9c-8d18119607ec",
+      "attempt": {
+        "status": "sent_to_terminal",
+        "method": "qr",
+        "provider": "simulator",
+        "amountSatang": 35000,
+        "hasQrPayload": true
+      },
+      "pendingReadback": {
+        "at": "2026-11-03T22:04:36.360Z",
+        "rosterStatus": 200,
+        "rosterStats": {
+          "arrived": 0,
+          "expected": 0,
+          "currentlyIn": 0,
+          "outstanding": 0,
+          "all": 0
+        },
+        "rosterGroups": {
+          "in": [],
+          "out": [],
+          "outstanding": [],
+          "notToday": []
+        },
+        "childOnRoster": 0,
+        "sale": {
+          "status": 200,
+          "saleStatus": "tendering",
+          "code": null,
+          "grossSatang": 35000,
+          "payments": []
+        }
+      },
+      "simulatorBefore": {
+        "status": 200,
+        "provider": "simulator",
+        "waiting": 1
+      },
+      "paidPressAt": "2026-11-03T22:04:51.546Z",
+      "paidPress": {
+        "status": 200,
+        "body": {
+          "event": "paid",
+          "attemptId": "01a1a371-58a3-79ec-9f9c-8d18119607ec",
+          "invoiceNo": "SBXZ70261104000001",
+          "webhookOutcome": "settled",
+          "gatewayState": "paid"
+        }
+      },
+      "paidSeenAt": "2026-11-03T22:04:52.166Z",
+      "paidReadback": {
+        "at": "2026-11-03T22:04:52.469Z",
+        "rosterStats": {
+          "arrived": 0,
+          "expected": 1,
+          "currentlyIn": 0,
+          "outstanding": 1,
+          "all": 1
+        },
+        "rosterGroups": {
+          "in": [],
+          "out": [],
+          "outstanding": [
+            "01a1a371-53f5-7947-a922-1d8d9f895418"
+          ],
+          "notToday": []
+        },
+        "childOnRoster": 1,
+        "sale": {
+          "status": 200,
+          "saleStatus": "finalised",
+          "code": null,
+          "grossSatang": 35000,
+          "payments": []
+        }
+      }
+    },
+    "passCash": {
+      "startedAt": "2026-11-03T22:05:18.039Z",
+      "child": "ZZ TEST Ploy",
+      "tenderPanels": 0,
+      "passCall": {
+        "status": 200,
+        "tender": {
+          "method": "cash",
+          "kind": "cash"
+        },
+        "saleId": "01a1a371-fe1c-7c60-b67c-d8380ed2d64a",
+        "attendeeId": "01a1a371-fe1c-7c60-b67c-d83718cb5bc6"
+      },
+      "sellBody": {
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "attendeeId": "01a1a371-fe1c-7c60-b67c-d83718cb5bc6",
+        "actionId": "01a1a371-fe1c-7c60-b67c-d83917f524bd",
+        "attendee": {
+          "name": "ZZ TEST Ploy",
+          "parentName": "ZZ TEST SCRUM-732 May",
+          "age": 6,
+          "parentPhone": "+66897307321"
+        },
+        "registerProperly": false,
+        "stationId": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+        "memberId": "01a1a36f-bd2c-73f0-b191-136d554ae707",
+        "childId": "01a1a36f-be52-79ae-9f53-9388bf807267",
+        "saleId": "01a1a371-fe1c-7c60-b67c-d8380ed2d64a",
+        "tender": {
+          "method": "cash",
+          "kind": "cash"
+        },
+        "expectedTotalSatang": 35000
+      },
+      "readback": {
+        "at": "2026-11-03T22:05:19.843Z",
+        "rosterStats": {
+          "arrived": 0,
+          "expected": 2,
+          "currentlyIn": 0,
+          "outstanding": 2,
+          "all": 2
+        },
+        "childOnRoster": 1,
+        "sale": {
+          "status": 200,
+          "saleStatus": "finalised",
+          "code": null,
+          "grossSatang": 35000,
+          "payments": []
+        }
+      }
+    },
+    "passCard": {
+      "startedAt": "2026-11-03T22:05:19.844Z",
+      "child": "ZZ TEST Tam",
+      "sentAt": "2026-11-03T22:05:21.320Z",
+      "saleId": "01a1a372-04d6-729f-9b93-fde3ee2f3117",
+      "attendeeId": "01a1a372-04d6-729f-9b93-fde2691927b9",
+      "attemptId": "01a1a372-0960-798f-8031-6e094e8a61b8",
+      "attempt": {
+        "status": "sent_to_terminal",
+        "method": "card",
+        "provider": "simulator",
+        "amountSatang": 35000
+      },
+      "pendingReadback": {
+        "at": "2026-11-03T22:05:21.661Z",
+        "childOnRoster": 0,
+        "sale": {
+          "status": 200,
+          "saleStatus": "tendering",
+          "code": null,
+          "grossSatang": 35000,
+          "payments": []
+        }
+      },
+      "paidSeenAt": "2026-11-03T22:05:26.609Z",
+      "paidReadback": {
+        "at": "2026-11-03T22:05:26.861Z",
+        "rosterStats": {
+          "arrived": 0,
+          "expected": 3,
+          "currentlyIn": 0,
+          "outstanding": 3,
+          "all": 3
+        },
+        "childOnRoster": 1,
+        "sale": {
+          "status": 200,
+          "saleStatus": "finalised",
+          "code": null,
+          "grossSatang": 35000,
+          "payments": []
+        }
+      }
+    },
+    "party": {
+      "startedAt": "2026-11-03T22:05:58.943Z",
+      "before": {
+        "at": "2026-11-03T22:05:58.943Z",
+        "bill": {
+          "status": 200,
+          "outstandingSatang": 900000,
+          "payments": []
+        },
+        "eod": {
+          "status": 200,
+          "partyPrepaySatang": 0,
+          "promptpaySatang": 35000,
+          "cardSatang": 0,
+          "channels": [
+            "cash",
+            "promptpay",
+            "card:SIMTID01",
+            "card:65703235",
+            "card:54355548",
+            "ewallet",
+            "bank_transfer",
+            "party_prepay",
+            "credit"
+          ]
+        }
+      },
+      "qrPendingAt": "2026-11-03T22:06:01.342Z",
+      "qrAttemptId": "01a1a372-a5ea-7d42-a3b0-be3041b4a90e",
+      "qrPaymentId": "01a1a372-a1bf-7090-9511-742c149f81e4",
+      "qrAttempt": {
+        "status": "sent_to_terminal",
+        "method": "qr",
+        "provider": "simulator",
+        "amountSatang": 500000
+      },
+      "qrPending": {
+        "at": "2026-11-03T22:06:01.428Z",
+        "bill": {
+          "status": 200,
+          "outstandingSatang": 900000,
+          "payments": []
+        },
+        "eod": {
+          "status": 200,
+          "partyPrepaySatang": 0,
+          "promptpaySatang": 35000,
+          "cardSatang": 0,
+          "channels": [
+            "cash",
+            "promptpay",
+            "card:SIMTID01",
+            "card:65703235",
+            "card:54355548",
+            "ewallet",
+            "bank_transfer",
+            "party_prepay",
+            "credit"
+          ]
+        }
+      },
+      "qrPaidPressAt": "2026-11-03T22:06:01.614Z",
+      "qrPaidPress": {
+        "status": 200,
+        "body": {
+          "event": "paid",
+          "attemptId": "01a1a372-a5ea-7d42-a3b0-be3041b4a90e",
+          "invoiceNo": "SBXZ70261104000002",
+          "webhookOutcome": "settled",
+          "gatewayState": "paid"
+        }
+      },
+      "qrPaid": {
+        "at": "2026-11-03T22:06:03.150Z",
+        "bill": {
+          "status": 200,
+          "outstandingSatang": 400000,
+          "payments": [
+            {
+              "amountSatang": 500000,
+              "method": "promptpay"
+            }
+          ]
+        },
+        "eod": {
+          "status": 200,
+          "partyPrepaySatang": 500000,
+          "promptpaySatang": 35000,
+          "cardSatang": 0,
+          "channels": [
+            "cash",
+            "promptpay",
+            "card:SIMTID01",
+            "card:65703235",
+            "card:54355548",
+            "ewallet",
+            "bank_transfer",
+            "party_prepay",
+            "credit"
+          ]
+        }
+      },
+      "cardStartedAt": "2026-11-03T22:06:04.082Z",
+      "cardAttemptId": "01a1a372-b159-79a7-bd49-e95708842c5f",
+      "cardPaymentId": "01a1a372-ad2e-7184-a49a-354b32667cd2",
+      "cardPending": {
+        "at": "2026-11-03T22:06:04.893Z",
+        "bill": {
+          "status": 200,
+          "outstandingSatang": 0,
+          "payments": [
+            {
+              "amountSatang": 500000,
+              "method": "promptpay"
+            },
+            {
+              "amountSatang": 400000,
+              "method": "card"
+            }
+          ]
+        }
+      },
+      "cardPaid": {
+        "at": "2026-11-03T22:06:06.412Z",
+        "bill": {
+          "status": 200,
+          "outstandingSatang": 0,
+          "payments": [
+            {
+              "amountSatang": 500000,
+              "method": "promptpay"
+            },
+            {
+              "amountSatang": 400000,
+              "method": "card"
+            }
+          ]
+        },
+        "eod": {
+          "status": 200,
+          "partyPrepaySatang": 900000,
+          "promptpaySatang": 35000,
+          "cardSatang": 0,
+          "channels": [
+            "cash",
+            "promptpay",
+            "card:SIMTID01",
+            "card:65703235",
+            "card:54355548",
+            "ewallet",
+            "bank_transfer",
+            "party_prepay",
+            "credit"
+          ]
+        }
+      }
+    },
+    "refusals": {
+      "startedAt": "2026-11-03T22:06:44.517Z",
+      "pass": [
+        {
+          "label": "qr",
+          "status": 409,
+          "code": "EVENT_PASS_TENDER_ROUTED",
+          "message": "A card or QR pass is taken on the terminal or through the gateway, so nothing was recorded here",
+          "saleId": "01a1a373-4b81-7f97-888f-c900ae90a4c0",
+          "attendeeId": "01a1a373-4b81-7b2b-827f-93ad58275e51",
+          "saleAfter": 404
+        },
+        {
+          "label": "card",
+          "status": 409,
+          "code": "EVENT_PASS_TENDER_ROUTED",
+          "message": "A card or QR pass is taken on the terminal or through the gateway, so nothing was recorded here",
+          "saleId": "01a1a373-4c45-77f6-8af7-c4a8916a2eec",
+          "attendeeId": "01a1a373-4c45-7961-ba98-172edd7e296e",
+          "saleAfter": 404
+        },
+        {
+          "label": "cash",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "saleId": "01a1a373-4ce2-7651-b4e4-ba7d0373548d",
+          "attendeeId": "01a1a373-4ce2-76a2-bf07-ab4438eaf6c4"
+        }
+      ],
+      "party": [
+        {
+          "label": "qr",
+          "status": 409,
+          "code": "PARTY_TENDER_ROUTED",
+          "message": "A card or QR payment is taken on the terminal or through the gateway, so nothing was recorded here",
+          "paymentId": "01a1a373-4e59-7a1c-b9a0-61af2060289d",
+          "outstandingAfter": 100000
+        },
+        {
+          "label": "card-no-slip",
+          "status": 409,
+          "code": "PARTY_TENDER_ROUTED",
+          "message": "A card or QR payment is taken on the terminal or through the gateway, so nothing was recorded here",
+          "paymentId": "01a1a373-4f61-7878-afa3-cbeaf52cb14b",
+          "outstandingAfter": 100000
+        },
+        {
+          "label": "cash",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "paymentId": "01a1a373-5064-7332-b328-fd7ed132992d",
+          "outstandingAfter": 50000
+        }
+      ],
+      "rosterBefore": {
+        "arrived": 0,
+        "expected": 3,
+        "currentlyIn": 0,
+        "outstanding": 3,
+        "all": 3
+      },
+      "rosterAfter": {
+        "arrived": 0,
+        "expected": 4,
+        "currentlyIn": 0,
+        "outstanding": 4,
+        "all": 4
+      },
+      "walkupOnRoster": 1,
+      "partyBOutstandingBefore": 100000
+    },
+    "partyBQr": {
+      "startedAt": "2026-11-03T22:10:59.036Z",
+      "attemptId": "01a1a377-3935-766a-9e64-137c5a38244d",
+      "pending": {
+        "bill": 50000,
+        "eodPartyPrepay": 950000,
+        "performance": {
+          "event": "s732_facts_mid",
+          "at": "2026-11-03T22:11:53.511Z",
+          "facts": {
+            "count": 2,
+            "payments": [
+              {
+                "amountSatang": 500000,
+                "hour": 5
+              },
+              {
+                "amountSatang": 400000,
+                "hour": 5
+              },
+              {
+                "amountSatang": 50000,
+                "hour": 5
+              }
+            ]
+          },
+          "attempt": {
+            "status": "sent_to_terminal",
+            "amount_satang": "50000",
+            "paid_at": null
+          },
+          "passed": true
+        },
+        "jobId": "job-dbl5nton74is73ef2jj0"
+      },
+      "paidPressAt": "2026-11-03T22:12:08.714Z",
+      "paidPress": {
+        "status": 200,
+        "body": {
+          "event": "paid",
+          "attemptId": "01a1a377-3935-766a-9e64-137c5a38244d",
+          "invoiceNo": "SBXZ70261104000003",
+          "webhookOutcome": "settled",
+          "gatewayState": "paid"
+        }
+      },
+      "paid": {
+        "bill": 0,
+        "eodPartyPrepay": 1000000,
+        "performance": {
+          "event": "s732_facts_after",
+          "at": "2026-11-03T22:12:18.870Z",
+          "facts": {
+            "count": 2,
+            "payments": [
+              {
+                "amountSatang": 500000,
+                "hour": 5
+              },
+              {
+                "amountSatang": 400000,
+                "hour": 5
+              },
+              {
+                "amountSatang": 50000,
+                "hour": 5
+              },
+              {
+                "amountSatang": 50000,
+                "hour": 5
+              }
+            ]
+          },
+          "attempt": {
+            "status": "approved",
+            "amount_satang": "50000",
+            "paid_at": "2026-11-03T22:12:09.777Z"
+          },
+          "passed": true
+        },
+        "jobId": "job-dbl5oeoae00c73bsvo50"
+      }
+    }
+  },
+  "images": [
+    {
+      "file": "docs/qa/proof-2026-11-03/s732/staging/staging-01-pass-who-is-attending.png",
+      "at": "2026-11-03T22:04:34.996Z",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-03/s732/staging/staging-02-pass-qr-chosen-no-code-yet.png",
+      "at": "2026-11-03T22:04:35.680Z",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-03/s732/staging/staging-03-pass-qr-pending-real-code.png",
+      "at": "2026-11-03T22:04:36.180Z",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-03/s732/staging/staging-04-pass-qr-paid-check-in-choice.png",
+      "at": "2026-11-03T22:04:52.267Z",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-03/s732/staging/staging-05-pass-cash-unchanged.png",
+      "at": "2026-11-03T22:05:19.243Z",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-03/s732/staging/staging-06-pass-cash-paid.png",
+      "at": "2026-11-03T22:05:19.655Z",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-03/s732/staging/staging-07-pass-card-sent-to-terminal.png",
+      "at": "2026-11-03T22:05:21.400Z",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-03/s732/staging/staging-08-pass-card-approved.png",
+      "at": "2026-11-03T22:05:26.679Z",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-03/s732/staging/staging-09-party-qr-before-start.png",
+      "at": "2026-11-03T22:06:01.132Z",
+      "url": "https://oto-pos-web-staging.onrender.com/parties"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-03/s732/staging/staging-10-party-qr-pending-real-code.png",
+      "at": "2026-11-03T22:06:01.427Z",
+      "url": "https://oto-pos-web-staging.onrender.com/parties"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-03/s732/staging/staging-11-party-qr-paid-recorded.png",
+      "at": "2026-11-03T22:06:03.149Z",
+      "url": "https://oto-pos-web-staging.onrender.com/parties"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-03/s732/staging/staging-12-party-card-before-start.png",
+      "at": "2026-11-03T22:06:04.058Z",
+      "url": "https://oto-pos-web-staging.onrender.com/parties"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-03/s732/staging/staging-13-party-card-recorded.png",
+      "at": "2026-11-03T22:06:06.411Z",
+      "url": "https://oto-pos-web-staging.onrender.com/parties"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-03/s732/staging/staging-14-party-bill-balance-zero.png",
+      "at": "2026-11-03T22:06:08.208Z",
+      "url": "https://oto-pos-web-staging.onrender.com/parties"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-03/s732/staging/staging-15-party-b-qr-pending.png",
+      "at": "2026-11-03T22:11:01.264Z",
+      "url": "https://oto-pos-web-staging.onrender.com/parties"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-03/s732/staging/staging-16-party-b-qr-paid-recorded.png",
+      "at": "2026-11-03T22:12:09.725Z",
+      "url": "https://oto-pos-web-staging.onrender.com/parties"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-03/s732/staging/finding-repro-1-after-reload.png",
+      "at": "2026-11-03T22:15:06.877Z",
+      "url": "https://oto-pos-web-staging.onrender.com/parties"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-03/s732/staging/finding-repro-2-after-unlock.png",
+      "at": "2026-11-03T22:15:11.967Z",
+      "url": "https://oto-pos-web-staging.onrender.com/parties"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-03/s732/staging/finding-repro-3-after-15s.png",
+      "at": "2026-11-03T22:15:22.051Z",
+      "url": "https://oto-pos-web-staging.onrender.com/parties"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-03/s732/staging/finding-repro-4-after-try-again.png",
+      "at": "2026-11-03T22:15:40.033Z",
+      "url": "https://oto-pos-web-staging.onrender.com/parties"
+    }
+  ],
+  "network": [
+    {
+      "at": "2026-11-03T22:04:35.847Z",
+      "path": "/api/events/053874f2-49f7-4ac9-b430-d4dbfb982b40/passes/open",
+      "status": 200,
+      "request": {
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "attendeeId": "01a1a371-53f5-7947-a922-1d8d9f895418",
+        "actionId": "01a1a371-53f5-7947-a922-1d8fbcace532",
+        "attendee": {
+          "name": "ZZ TEST Lin",
+          "parentName": "ZZ TEST SCRUM-732 May",
+          "age": 7,
+          "parentPhone": "+66897307321"
+        },
+        "registerProperly": false,
+        "stationId": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+        "saleId": "01a1a371-53f5-7947-a922-1d8e50907bf1",
+        "expectedTotalSatang": 35000,
+        "memberId": "01a1a36f-bd2c-73f0-b191-136d554ae707",
+        "childId": "01a1a36f-bdc4-7fc5-bedb-a2b81f4ab8a0"
+      },
+      "response": {
+        "attendeeId": "01a1a371-53f5-7947-a922-1d8d9f895418",
+        "replayed": false,
+        "sale": {
+          "id": "01a1a371-53f5-7947-a922-1d8e50907bf1",
+          "status": "tendering",
+          "totals": {
+            "grossSatang": 35000,
+            "subtotalSatang": 35000,
+            "manualDiscountSatang": 0,
+            "promoDiscountSatang": 0,
+            "discountSatang": 0,
+            "netSatang": 32710,
+            "serviceChargeSatang": 0,
+            "taxInclusiveSatang": 2290,
+            "taxExclusiveSatang": 0,
+            "unappliedDiscountSatang": 0,
+            "refundedSatang": 0
+          },
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "stationId": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+          "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+          "memberId": null,
+          "visitId": null,
+          "businessDate": "2026-11-04",
+          "occurredAt": "2026-11-03T22:04:36.752Z",
+          "salesChannel": "till",
+          "pricingMode": "weekday",
+          "pricingModeReason": "Weekday pricing",
+          "customerTier": "tourist",
+          "engineVersion": "2026.10.06-1",
+          "receiptNumber": null,
+          "receiptSeries": null,
+          "receiptSeq": null,
+          "finalisedAt": null,
+          "note": null,
+          "voidedAt": null,
+          "voidedByAccountId": null,
+          "voidedByName": null,
+          "voidReason": null
+        }
+      }
+    },
+    {
+      "at": "2026-11-03T22:04:35.955Z",
+      "path": "/api/payments/attempts",
+      "status": 200,
+      "request": {
+        "saleId": "01a1a371-53f5-7947-a922-1d8e50907bf1",
+        "actionId": "01a1a371-53f3-7da7-b105-6d92e194e364",
+        "method": "promptpay",
+        "kind": "qr",
+        "tender": "qr",
+        "amountSatang": 35000,
+        "requestQrPayload": true,
+        "qrDirection": "show"
+      },
+      "response": {
+        "route": "gateway",
+        "attempt": {
+          "id": "01a1a371-58a3-79ec-9f9c-8d18119607ec",
+          "saleId": "01a1a371-53f5-7947-a922-1d8e50907bf1",
+          "method": "qr",
+          "provider": "simulator",
+          "status": "sent_to_terminal",
+          "amountSatang": 35000,
+          "tenderedSatang": null,
+          "changeSatang": null,
+          "terminalRef": null,
+          "inquirySupported": false,
+          "tid": null,
+          "approvalCode": null,
+          "last4": null,
+          "invoiceNo": "SBXZ70261104000001",
+          "tranRef": "SIM639C17C37C535AC883",
+          "actionId": "01a1a371-53f3-7da7-b105-6d92e194e364",
+          "offline": false,
+          "paidAt": null,
+          "createdAt": "2026-11-03T22:04:36.887Z"
+        },
+        "replayed": false,
+        "outstandingSatang": 35000,
+        "qrPayload": "00020101021229390016A000000677010111031500000000000000053037645406350.005802TH5918OTO PARK SIMULATOR6006PHUKET62220118SBXZ702611040000016304B91C",
+        "qrImageUrl": null,
+        "expiresAt": "2026-11-03T22:24:36.904Z",
+        "expiryTimerMs": 1199989
+      }
+    },
+    {
+      "at": "2026-11-03T22:04:51.986Z",
+      "path": "/api/sales/01a1a371-53f5-7947-a922-1d8e50907bf1/finalise",
+      "status": 200,
+      "request": {
+        "method": "none",
+        "kind": "other",
+        "amountSatang": 0,
+        "tenderedSatang": 0,
+        "changeSatang": 0,
+        "actionId": "01a1a371-9330-7591-819f-2b30f3ccb819",
+        "tender": {
+          "method": "none",
+          "kind": "other",
+          "amountSatang": 0,
+          "tenderedSatang": 0,
+          "changeSatang": 0
+        }
+      },
+      "response": {
+        "replay": true,
+        "replayed": true,
+        "finalised": true,
+        "outstandingSatang": 0,
+        "attempt": null,
+        "pickupCode": null,
+        "sale": {
+          "id": "01a1a371-53f5-7947-a922-1d8e50907bf1",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "stationId": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+          "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+          "memberId": null,
+          "visitId": null,
+          "businessDate": "2026-11-04",
+          "occurredAt": "2026-11-03T22:04:36.752Z",
+          "status": "finalised",
+          "salesChannel": "till",
+          "pricingMode": "weekday",
+          "pricingModeReason": "Weekday pricing",
+          "customerTier": "tourist",
+          "engineVersion": "2026.10.06-1",
+          "receiptNumber": "Z70-000001",
+          "receiptSeries": "Z70",
+          "receiptSeq": 1,
+          "finalisedAt": "2026-11-03T22:04:52.608Z",
+          "note": null,
+          "voidedAt": null,
+          "voidedByAccountId": null,
+          "voidedByName": null,
+          "voidReason": null,
+          "totals": {
+            "subtotalSatang": 35000,
+            "manualDiscountSatang": 0,
+            "promoDiscountSatang": 0,
+            "discountSatang": 0,
+            "netSatang": 32710,
+            "serviceChargeSatang": 0,
+            "taxInclusiveSatang": 2290,
+            "taxExclusiveSatang": 0,
+            "grossSatang": 35000,
+            "unappliedDiscountSatang": 0,
+            "refundedSatang": 0
+          }
+        },
+        "redeemedVoucherIds": [],
+        "printing": null,
+        "receiptCollision": null,
+        "grants": []
+      }
+    },
+    {
+      "at": "2026-11-03T22:05:19.530Z",
+      "path": "/api/events/053874f2-49f7-4ac9-b430-d4dbfb982b40/passes",
+      "status": 200,
+      "request": {
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "attendeeId": "01a1a371-fe1c-7c60-b67c-d83718cb5bc6",
+        "actionId": "01a1a371-fe1c-7c60-b67c-d83917f524bd",
+        "attendee": {
+          "name": "ZZ TEST Ploy",
+          "parentName": "ZZ TEST SCRUM-732 May",
+          "age": 6,
+          "parentPhone": "+66897307321"
+        },
+        "registerProperly": false,
+        "stationId": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+        "memberId": "01a1a36f-bd2c-73f0-b191-136d554ae707",
+        "childId": "01a1a36f-be52-79ae-9f53-9388bf807267",
+        "saleId": "01a1a371-fe1c-7c60-b67c-d8380ed2d64a",
+        "tender": {
+          "method": "cash",
+          "kind": "cash"
+        },
+        "expectedTotalSatang": 35000
+      },
+      "response": {
+        "attendee": {
+          "id": "01a1a371-fe1c-7c60-b67c-d83718cb5bc6",
+          "eventId": "053874f2-49f7-4ac9-b430-d4dbfb982b40",
+          "eventType": "event",
+          "otoappAttendeeId": "01a1a371-fe1c-7c60-b67c-d83718cb5bc6",
+          "merged": false,
+          "billing": "sale",
+          "priceSatang": 35000,
+          "attendanceDays": [],
+          "parentAttending": false,
+          "syncState": "synced",
+          "syncError": null,
+          "createdAt": "2026-11-03T22:05:20.303Z"
+        },
+        "replayed": false,
+        "sale": {
+          "id": "01a1a371-fe1c-7c60-b67c-d8380ed2d64a",
+          "receiptNumber": "Z70-000002",
+          "grossSatang": 35000,
+          "status": "finalised"
+        },
+        "printingNotes": [
+          "Receipt not printed — no receipt printer at this station"
+        ]
+      }
+    },
+    {
+      "at": "2026-11-03T22:05:21.089Z",
+      "path": "/api/events/053874f2-49f7-4ac9-b430-d4dbfb982b40/passes/open",
+      "status": 200,
+      "request": {
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "attendeeId": "01a1a372-04d6-729f-9b93-fde2691927b9",
+        "actionId": "01a1a372-04d6-729f-9b93-fde48f298f2c",
+        "attendee": {
+          "name": "ZZ TEST Tam",
+          "parentName": "ZZ TEST SCRUM-732 May",
+          "age": 8,
+          "parentPhone": "+66897307321"
+        },
+        "registerProperly": false,
+        "stationId": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+        "saleId": "01a1a372-04d6-729f-9b93-fde3ee2f3117",
+        "expectedTotalSatang": 35000,
+        "memberId": "01a1a36f-bd2c-73f0-b191-136d554ae707",
+        "childId": "01a1a36f-bea6-7fe5-b623-5414d4cc92b0"
+      },
+      "response": {
+        "attendeeId": "01a1a372-04d6-729f-9b93-fde2691927b9",
+        "replayed": false,
+        "sale": {
+          "id": "01a1a372-04d6-729f-9b93-fde3ee2f3117",
+          "status": "tendering",
+          "totals": {
+            "grossSatang": 35000,
+            "subtotalSatang": 35000,
+            "manualDiscountSatang": 0,
+            "promoDiscountSatang": 0,
+            "discountSatang": 0,
+            "netSatang": 32710,
+            "serviceChargeSatang": 0,
+            "taxInclusiveSatang": 2290,
+            "taxExclusiveSatang": 0,
+            "unappliedDiscountSatang": 0,
+            "refundedSatang": 0
+          },
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "stationId": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+          "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+          "memberId": null,
+          "visitId": null,
+          "businessDate": "2026-11-04",
+          "occurredAt": "2026-11-03T22:05:22.021Z",
+          "salesChannel": "till",
+          "pricingMode": "weekday",
+          "pricingModeReason": "Weekday pricing",
+          "customerTier": "tourist",
+          "engineVersion": "2026.10.06-1",
+          "receiptNumber": null,
+          "receiptSeries": null,
+          "receiptSeq": null,
+          "finalisedAt": null,
+          "note": null,
+          "voidedAt": null,
+          "voidedByAccountId": null,
+          "voidedByName": null,
+          "voidReason": null
+        }
+      }
+    },
+    {
+      "at": "2026-11-03T22:05:21.321Z",
+      "path": "/api/payments/attempts",
+      "status": 200,
+      "request": {
+        "saleId": "01a1a372-04d6-729f-9b93-fde3ee2f3117",
+        "actionId": "01a1a372-04d5-7fac-affd-64b9bffffb58",
+        "method": "card",
+        "kind": "card",
+        "tender": "card",
+        "amountSatang": 35000
+      },
+      "response": {
+        "route": "card_terminal",
+        "attempt": {
+          "id": "01a1a372-0960-798f-8031-6e094e8a61b8",
+          "saleId": "01a1a372-04d6-729f-9b93-fde3ee2f3117",
+          "method": "card",
+          "provider": "simulator",
+          "status": "sent_to_terminal",
+          "amountSatang": 35000,
+          "tenderedSatang": null,
+          "changeSatang": null,
+          "terminalRef": null,
+          "inquirySupported": false,
+          "tid": null,
+          "approvalCode": null,
+          "last4": null,
+          "invoiceNo": null,
+          "tranRef": null,
+          "actionId": "01a1a372-04d5-7fac-affd-64b9bffffb58",
+          "offline": false,
+          "paidAt": null,
+          "createdAt": "2026-11-03T22:05:22.127Z"
+        },
+        "replayed": false,
+        "outstandingSatang": 35000,
+        "qrPayload": null,
+        "qrImageUrl": null,
+        "expiresAt": null,
+        "expiryTimerMs": null
+      }
+    },
+    {
+      "at": "2026-11-03T22:05:26.060Z",
+      "path": "/api/sales/01a1a372-04d6-729f-9b93-fde3ee2f3117/finalise",
+      "status": 200,
+      "request": {
+        "method": "none",
+        "kind": "other",
+        "amountSatang": 0,
+        "tenderedSatang": 0,
+        "changeSatang": 0,
+        "actionId": "01a1a372-185a-79ac-809a-799edaadad79",
+        "tender": {
+          "method": "none",
+          "kind": "other",
+          "amountSatang": 0,
+          "tenderedSatang": 0,
+          "changeSatang": 0
+        }
+      },
+      "response": {
+        "replay": true,
+        "replayed": true,
+        "finalised": true,
+        "outstandingSatang": 0,
+        "attempt": null,
+        "pickupCode": null,
+        "sale": {
+          "id": "01a1a372-04d6-729f-9b93-fde3ee2f3117",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "stationId": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+          "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+          "memberId": null,
+          "visitId": null,
+          "businessDate": "2026-11-04",
+          "occurredAt": "2026-11-03T22:05:22.021Z",
+          "status": "finalised",
+          "salesChannel": "till",
+          "pricingMode": "weekday",
+          "pricingModeReason": "Weekday pricing",
+          "customerTier": "tourist",
+          "engineVersion": "2026.10.06-1",
+          "receiptNumber": "Z70-000003",
+          "receiptSeries": "Z70",
+          "receiptSeq": 3,
+          "finalisedAt": "2026-11-03T22:05:25.861Z",
+          "note": null,
+          "voidedAt": null,
+          "voidedByAccountId": null,
+          "voidedByName": null,
+          "voidReason": null,
+          "totals": {
+            "subtotalSatang": 35000,
+            "manualDiscountSatang": 0,
+            "promoDiscountSatang": 0,
+            "discountSatang": 0,
+            "netSatang": 32710,
+            "serviceChargeSatang": 0,
+            "taxInclusiveSatang": 2290,
+            "taxExclusiveSatang": 0,
+            "grossSatang": 35000,
+            "unappliedDiscountSatang": 0,
+            "refundedSatang": 0
+          }
+        },
+        "redeemedVoucherIds": [],
+        "printing": null,
+        "receiptCollision": null,
+        "grants": []
+      }
+    },
+    {
+      "at": "2026-11-03T22:06:01.273Z",
+      "path": "/api/parties/5a0e7031-8311-44cc-b885-d3b782b80f7e/payments/tender",
+      "status": 200,
+      "request": {
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "stationId": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+        "paymentId": "01a1a372-a1bf-7090-9511-742c149f81e4",
+        "actionId": "01a1a372-a1bf-7090-9511-742ddab00dc6",
+        "amountSatang": 500000,
+        "tender": {
+          "method": "promptpay",
+          "kind": "qr"
+        },
+        "expectedOutstandingSatang": 900000,
+        "requestQrPayload": true,
+        "qrDirection": "show"
+      },
+      "response": {
+        "route": "gateway",
+        "attempt": {
+          "id": "01a1a372-a5ea-7d42-a3b0-be3041b4a90e",
+          "saleId": null,
+          "method": "qr",
+          "provider": "simulator",
+          "status": "sent_to_terminal",
+          "amountSatang": 500000,
+          "tenderedSatang": null,
+          "changeSatang": null,
+          "terminalRef": null,
+          "inquirySupported": false,
+          "tid": null,
+          "approvalCode": null,
+          "last4": null,
+          "invoiceNo": "SBXZ70261104000002",
+          "tranRef": "SIM40EDD1BF166D48679F",
+          "actionId": "party-payment:01a1a372-a1bf-7090-9511-742c149f81e4",
+          "offline": false,
+          "paidAt": null,
+          "createdAt": "2026-11-03T22:06:02.207Z"
+        },
+        "replayed": false,
+        "outstandingSatang": 900000,
+        "qrPayload": "00020101021229390016A0000006770101110315000000000000000530376454075000.005802TH5918OTO PARK SIMULATOR6006PHUKET62220118SBXZ7026110400000263048A3A",
+        "qrImageUrl": null,
+        "expiresAt": "2026-11-03T22:26:02.224Z",
+        "expiryTimerMs": 1199992
+      }
+    },
+    {
+      "at": "2026-11-03T22:06:02.998Z",
+      "path": "/api/parties/5a0e7031-8311-44cc-b885-d3b782b80f7e/payments",
+      "status": 200,
+      "request": {
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "stationId": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+        "paymentId": "01a1a372-a1bf-7090-9511-742c149f81e4",
+        "actionId": "01a1a372-a1bf-7090-9511-742ddab00dc6",
+        "amountSatang": 500000,
+        "tender": {
+          "method": "promptpay",
+          "kind": "qr"
+        },
+        "expectedOutstandingSatang": 900000
+      },
+      "response": {
+        "replayed": true,
+        "party": {
+          "id": "5a0e7031-8311-44cc-b885-d3b782b80f7e",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "type": "party",
+          "appEventType": "birthday",
+          "status": "upcoming",
+          "appStatus": "upcoming",
+          "archived": false,
+          "title": "ZZ TEST SCRUM-732 mw18diqh party",
+          "startDate": "2026-11-04",
+          "endDate": "2026-11-04",
+          "cancelledDays": [],
+          "startTime": "13:00",
+          "endTime": "16:00",
+          "location": "ZZ TEST party room",
+          "expectedKids": 12,
+          "expectedAdults": 10,
+          "entryPrice": null,
+          "party": {
+            "childName": "ZZ TEST Mali",
+            "kidTurningAge": 6,
+            "bookingName": null,
+            "parentName": "ZZ TEST SCRUM-732 Nok",
+            "parentPhone": null,
+            "activities": null,
+            "decoration": null,
+            "totalValueSatang": 1200000,
+            "depositSatang": 300000,
+            "depositDate": "2026-11-04",
+            "walkUpCharges": [],
+            "charges": [],
+            "payments": [
+              {
+                "id": "01a1a372-a1bf-7090-9511-742c149f81e4",
+                "amountSatang": 500000,
+                "method": "promptpay",
+                "kind": "qr",
+                "takenBy": "Som",
+                "takenById": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+                "takenAt": "2026-11-03T22:06:02.666Z",
+                "businessDate": "2026-11-04",
+                "attemptId": "01a1a372-a5ea-7d42-a3b0-be3041b4a90e"
+              }
+            ],
+            "lastEdited": null,
+            "editSync": null,
+            "bill": {
+              "baseSatang": 1200000,
+              "chargesSatang": 0,
+              "totalSatang": 1200000,
+              "depositSatang": 300000,
+              "paidSatang": 500000,
+              "outstandingSatang": 400000
+            }
+          },
+          "attendeeCount": 0,
+          "attendees": [],
+          "roster": {
+            "arrived": 0,
+            "expected": 0,
+            "currentlyIn": 0,
+            "outstanding": 0,
+            "all": 0
+          }
+        },
+        "payment": {
+          "id": "01a1a372-a1bf-7090-9511-742c149f81e4",
+          "amountSatang": 500000,
+          "method": "promptpay",
+          "kind": "qr",
+          "takenBy": "Som",
+          "takenById": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+          "takenAt": "2026-11-03T22:06:02.666Z",
+          "businessDate": "2026-11-04",
+          "attemptId": "01a1a372-a5ea-7d42-a3b0-be3041b4a90e"
+        }
+      }
+    },
+    {
+      "at": "2026-11-03T22:06:04.192Z",
+      "path": "/api/parties/5a0e7031-8311-44cc-b885-d3b782b80f7e/payments/tender",
+      "status": 200,
+      "request": {
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "stationId": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+        "paymentId": "01a1a372-ad2e-7184-a49a-354b32667cd2",
+        "actionId": "01a1a372-ad2e-7184-a49a-354c50b74679",
+        "amountSatang": 400000,
+        "tender": {
+          "method": "card",
+          "kind": "card"
+        },
+        "expectedOutstandingSatang": 400000
+      },
+      "response": {
+        "route": "card_terminal",
+        "attempt": {
+          "id": "01a1a372-b159-79a7-bd49-e95708842c5f",
+          "saleId": null,
+          "method": "card",
+          "provider": "simulator",
+          "status": "sent_to_terminal",
+          "amountSatang": 400000,
+          "tenderedSatang": null,
+          "changeSatang": null,
+          "terminalRef": null,
+          "inquirySupported": false,
+          "tid": "SIMTID01",
+          "approvalCode": null,
+          "last4": null,
+          "invoiceNo": null,
+          "tranRef": null,
+          "actionId": "party-payment:01a1a372-ad2e-7184-a49a-354b32667cd2",
+          "offline": false,
+          "paidAt": null,
+          "createdAt": "2026-11-03T22:06:05.131Z"
+        },
+        "replayed": false,
+        "outstandingSatang": 400000,
+        "qrPayload": null,
+        "qrImageUrl": null,
+        "expiresAt": null,
+        "expiryTimerMs": null
+      }
+    },
+    {
+      "at": "2026-11-03T22:06:05.896Z",
+      "path": "/api/parties/5a0e7031-8311-44cc-b885-d3b782b80f7e/payments",
+      "status": 200,
+      "request": {
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "stationId": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+        "paymentId": "01a1a372-ad2e-7184-a49a-354b32667cd2",
+        "actionId": "01a1a372-ad2e-7184-a49a-354c50b74679",
+        "amountSatang": 400000,
+        "tender": {
+          "method": "card",
+          "kind": "card"
+        },
+        "expectedOutstandingSatang": 400000
+      },
+      "response": {
+        "replayed": true,
+        "party": {
+          "id": "5a0e7031-8311-44cc-b885-d3b782b80f7e",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "type": "party",
+          "appEventType": "birthday",
+          "status": "upcoming",
+          "appStatus": "upcoming",
+          "archived": false,
+          "title": "ZZ TEST SCRUM-732 mw18diqh party",
+          "startDate": "2026-11-04",
+          "endDate": "2026-11-04",
+          "cancelledDays": [],
+          "startTime": "13:00",
+          "endTime": "16:00",
+          "location": "ZZ TEST party room",
+          "expectedKids": 12,
+          "expectedAdults": 10,
+          "entryPrice": null,
+          "party": {
+            "childName": "ZZ TEST Mali",
+            "kidTurningAge": 6,
+            "bookingName": null,
+            "parentName": "ZZ TEST SCRUM-732 Nok",
+            "parentPhone": null,
+            "activities": null,
+            "decoration": null,
+            "totalValueSatang": 1200000,
+            "depositSatang": 300000,
+            "depositDate": "2026-11-04",
+            "walkUpCharges": [],
+            "charges": [],
+            "payments": [
+              {
+                "id": "01a1a372-a1bf-7090-9511-742c149f81e4",
+                "amountSatang": 500000,
+                "method": "promptpay",
+                "kind": "qr",
+                "takenBy": "Som",
+                "takenById": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+                "takenAt": "2026-11-03T22:06:02.666Z",
+                "businessDate": "2026-11-04",
+                "attemptId": "01a1a372-a5ea-7d42-a3b0-be3041b4a90e"
+              },
+              {
+                "id": "01a1a372-ad2e-7184-a49a-354b32667cd2",
+                "amountSatang": 400000,
+                "method": "card",
+                "kind": "card",
+                "takenBy": "Som",
+                "takenById": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+                "takenAt": "2026-11-03T22:06:05.747Z",
+                "businessDate": "2026-11-04",
+                "attemptId": "01a1a372-b159-79a7-bd49-e95708842c5f"
+              }
+            ],
+            "lastEdited": null,
+            "editSync": null,
+            "bill": {
+              "baseSatang": 1200000,
+              "chargesSatang": 0,
+              "totalSatang": 1200000,
+              "depositSatang": 300000,
+              "paidSatang": 900000,
+              "outstandingSatang": 0
+            }
+          },
+          "attendeeCount": 0,
+          "attendees": [],
+          "roster": {
+            "arrived": 0,
+            "expected": 0,
+            "currentlyIn": 0,
+            "outstanding": 0,
+            "all": 0
+          }
+        },
+        "payment": {
+          "id": "01a1a372-ad2e-7184-a49a-354b32667cd2",
+          "amountSatang": 400000,
+          "method": "card",
+          "kind": "card",
+          "takenBy": "Som",
+          "takenById": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+          "takenAt": "2026-11-03T22:06:05.747Z",
+          "businessDate": "2026-11-04",
+          "attemptId": "01a1a372-b159-79a7-bd49-e95708842c5f"
+        }
+      }
+    },
+    {
+      "at": "2026-11-03T22:11:01.123Z",
+      "path": "/api/parties/e0d91944-b4d3-4e43-87d6-e959bd09a63d/payments/tender",
+      "status": 200,
+      "request": {
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "stationId": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+        "paymentId": "01a1a377-34f7-7c1d-8c34-9e8912131d21",
+        "actionId": "01a1a377-34f7-7c1d-8c34-9e8a45a4319a",
+        "amountSatang": 50000,
+        "tender": {
+          "method": "promptpay",
+          "kind": "qr"
+        },
+        "expectedOutstandingSatang": 50000,
+        "requestQrPayload": true,
+        "qrDirection": "show"
+      },
+      "response": {
+        "route": "gateway",
+        "attempt": {
+          "id": "01a1a377-3935-766a-9e64-137c5a38244d",
+          "saleId": null,
+          "method": "qr",
+          "provider": "simulator",
+          "status": "sent_to_terminal",
+          "amountSatang": 50000,
+          "tenderedSatang": null,
+          "changeSatang": null,
+          "terminalRef": null,
+          "inquirySupported": false,
+          "tid": null,
+          "approvalCode": null,
+          "last4": null,
+          "invoiceNo": "SBXZ70261104000003",
+          "tranRef": "SIM5AACF9569E1FB3594D",
+          "actionId": "party-payment:01a1a377-34f7-7c1d-8c34-9e8912131d21",
+          "offline": false,
+          "paidAt": null,
+          "createdAt": "2026-11-03T22:11:02.057Z"
+        },
+        "replayed": false,
+        "outstandingSatang": 50000,
+        "qrPayload": "00020101021229390016A000000677010111031500000000000000053037645406500.005802TH5918OTO PARK SIMULATOR6006PHUKET62220118SBXZ7026110400000363044F17",
+        "qrImageUrl": null,
+        "expiresAt": "2026-11-03T22:31:02.076Z",
+        "expiryTimerMs": 1199990
+      }
+    },
+    {
+      "at": "2026-11-03T22:12:09.413Z",
+      "path": "/api/parties/e0d91944-b4d3-4e43-87d6-e959bd09a63d/payments",
+      "status": 200,
+      "request": {
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "stationId": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+        "paymentId": "01a1a377-34f7-7c1d-8c34-9e8912131d21",
+        "actionId": "01a1a377-34f7-7c1d-8c34-9e8a45a4319a",
+        "amountSatang": 50000,
+        "tender": {
+          "method": "promptpay",
+          "kind": "qr"
+        },
+        "expectedOutstandingSatang": 50000
+      },
+      "response": {
+        "replayed": true,
+        "party": {
+          "id": "e0d91944-b4d3-4e43-87d6-e959bd09a63d",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "type": "party",
+          "appEventType": "birthday",
+          "status": "upcoming",
+          "appStatus": "upcoming",
+          "archived": false,
+          "title": "ZZ TEST SCRUM-732 mw18diqh party B",
+          "startDate": "2026-11-04",
+          "endDate": "2026-11-04",
+          "cancelledDays": [],
+          "startTime": "16:00",
+          "endTime": "18:00",
+          "location": "ZZ TEST party room",
+          "expectedKids": 5,
+          "expectedAdults": 5,
+          "entryPrice": null,
+          "party": {
+            "childName": "ZZ TEST Fah",
+            "kidTurningAge": 5,
+            "bookingName": null,
+            "parentName": "ZZ TEST SCRUM-732 Dao",
+            "parentPhone": null,
+            "activities": null,
+            "decoration": null,
+            "totalValueSatang": 100000,
+            "depositSatang": 0,
+            "depositDate": null,
+            "walkUpCharges": [],
+            "charges": [],
+            "payments": [
+              {
+                "id": "01a1a373-5064-7332-b328-fd7ed132992d",
+                "amountSatang": 50000,
+                "method": "cash",
+                "kind": "cash",
+                "takenBy": "Som",
+                "takenById": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+                "takenAt": "2026-11-03T22:06:46.980Z",
+                "businessDate": "2026-11-04",
+                "attemptId": "01a1a373-54d2-7ab0-b934-45e70c9e415e"
+              },
+              {
+                "id": "01a1a377-34f7-7c1d-8c34-9e8912131d21",
+                "amountSatang": 50000,
+                "method": "promptpay",
+                "kind": "qr",
+                "takenBy": "Som",
+                "takenById": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+                "takenAt": "2026-11-03T22:12:09.777Z",
+                "businessDate": "2026-11-04",
+                "attemptId": "01a1a377-3935-766a-9e64-137c5a38244d"
+              }
+            ],
+            "lastEdited": null,
+            "editSync": null,
+            "bill": {
+              "baseSatang": 100000,
+              "chargesSatang": 0,
+              "totalSatang": 100000,
+              "depositSatang": 0,
+              "paidSatang": 100000,
+              "outstandingSatang": 0
+            }
+          },
+          "attendeeCount": 0,
+          "attendees": [],
+          "roster": {
+            "arrived": 0,
+            "expected": 0,
+            "currentlyIn": 0,
+            "outstanding": 0,
+            "all": 0
+          }
+        },
+        "payment": {
+          "id": "01a1a377-34f7-7c1d-8c34-9e8912131d21",
+          "amountSatang": 50000,
+          "method": "promptpay",
+          "kind": "qr",
+          "takenBy": "Som",
+          "takenById": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+          "takenAt": "2026-11-03T22:12:09.777Z",
+          "businessDate": "2026-11-04",
+          "attemptId": "01a1a377-3935-766a-9e64-137c5a38244d"
+        }
+      }
+    }
+  ],
+  "adminActorId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+  "till": {
+    "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+    "role": "reception",
+    "stationId": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+    "signedInAt": "2026-11-03T22:02:38.162Z"
+  },
+  "dbReadback": {
+    "jobId": "job-dbl5mb8ae00c73bsptag",
+    "status": "succeeded",
+    "result": {
+      "event": "s732_db_readback",
+      "at": "2026-11-03T22:08:32.455Z",
+      "sales": [
+        {
+          "id": "01a1a371-53f5-7947-a922-1d8e50907bf1",
+          "status": "finalised",
+          "created_at": "2026-11-03T22:04:36.768298+00:00",
+          "station_id": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+          "finalised_at": "2026-11-03T22:04:52.608+00:00",
+          "gross_satang": 35000,
+          "business_date": "2026-11-04",
+          "receipt_number": "Z70-000001"
+        },
+        {
+          "id": "01a1a371-fe1c-7c60-b67c-d8380ed2d64a",
+          "status": "finalised",
+          "created_at": "2026-11-03T22:05:20.315488+00:00",
+          "station_id": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+          "finalised_at": "2026-11-03T22:05:20.303+00:00",
+          "gross_satang": 35000,
+          "business_date": "2026-11-04",
+          "receipt_number": "Z70-000002"
+        },
+        {
+          "id": "01a1a372-04d6-729f-9b93-fde3ee2f3117",
+          "status": "finalised",
+          "created_at": "2026-11-03T22:05:22.031444+00:00",
+          "station_id": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+          "finalised_at": "2026-11-03T22:05:25.861+00:00",
+          "gross_satang": 35000,
+          "business_date": "2026-11-04",
+          "receipt_number": "Z70-000003"
+        },
+        {
+          "id": "01a1a373-4ce2-7651-b4e4-ba7d0373548d",
+          "status": "finalised",
+          "created_at": "2026-11-03T22:06:46.008633+00:00",
+          "station_id": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+          "finalised_at": "2026-11-03T22:06:46+00:00",
+          "gross_satang": 35000,
+          "business_date": "2026-11-04",
+          "receipt_number": "Z70-000004"
+        }
+      ],
+      "stationSales": [
+        "01a1a371-53f5-7947-a922-1d8e50907bf1",
+        "01a1a371-fe1c-7c60-b67c-d8380ed2d64a",
+        "01a1a372-04d6-729f-9b93-fde3ee2f3117",
+        "01a1a373-4ce2-7651-b4e4-ba7d0373548d"
+      ],
+      "refusedSalesFound": 0,
+      "attempts": [
+        {
+          "id": "01a1a371-58a3-79ec-9f9c-8d18119607ec",
+          "method": "qr",
+          "status": "approved",
+          "paid_at": "2026-11-03T22:04:52.602+00:00",
+          "sale_id": "01a1a371-53f5-7947-a922-1d8e50907bf1",
+          "provider": "simulator",
+          "device_id": null,
+          "created_at": "2026-11-03T22:04:36.887028+00:00",
+          "station_id": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+          "updated_at": "2026-11-03T22:04:52.603+00:00",
+          "amount_satang": 35000,
+          "business_date": "2026-11-04"
+        },
+        {
+          "id": "01a1a372-025a-7724-92a9-277d7b2c3ddb",
+          "method": "cash",
+          "status": "approved",
+          "paid_at": "2026-11-03T22:05:20.303+00:00",
+          "sale_id": "01a1a371-fe1c-7c60-b67c-d8380ed2d64a",
+          "provider": "manual",
+          "device_id": null,
+          "created_at": "2026-11-03T22:05:20.315488+00:00",
+          "station_id": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+          "updated_at": "2026-11-03T22:05:20.349+00:00",
+          "amount_satang": 35000,
+          "business_date": "2026-11-04"
+        },
+        {
+          "id": "01a1a372-0960-798f-8031-6e094e8a61b8",
+          "method": "card",
+          "status": "approved",
+          "paid_at": "2026-11-03T22:05:25.806+00:00",
+          "sale_id": "01a1a372-04d6-729f-9b93-fde3ee2f3117",
+          "provider": "simulator",
+          "device_id": "01a1a36c-d07d-7f9c-978e-3a4571009a5e",
+          "created_at": "2026-11-03T22:05:22.127327+00:00",
+          "station_id": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+          "updated_at": "2026-11-03T22:05:25.851+00:00",
+          "amount_satang": 35000,
+          "business_date": "2026-11-04"
+        },
+        {
+          "id": "01a1a372-a5ea-7d42-a3b0-be3041b4a90e",
+          "method": "qr",
+          "status": "approved",
+          "paid_at": "2026-11-03T22:06:02.666+00:00",
+          "sale_id": null,
+          "provider": "simulator",
+          "device_id": null,
+          "created_at": "2026-11-03T22:06:02.207762+00:00",
+          "station_id": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+          "updated_at": "2026-11-03T22:06:02.667+00:00",
+          "amount_satang": 500000,
+          "business_date": "2026-11-04"
+        },
+        {
+          "id": "01a1a372-b159-79a7-bd49-e95708842c5f",
+          "method": "card",
+          "status": "approved",
+          "paid_at": "2026-11-03T22:06:05.747+00:00",
+          "sale_id": null,
+          "provider": "simulator",
+          "device_id": "01a1a36c-d07d-7f9c-978e-3a4571009a5e",
+          "created_at": "2026-11-03T22:06:05.131301+00:00",
+          "station_id": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+          "updated_at": "2026-11-03T22:06:05.803+00:00",
+          "amount_satang": 400000,
+          "business_date": "2026-11-04"
+        },
+        {
+          "id": "01a1a373-510f-745d-a440-7c8151f2b7da",
+          "method": "cash",
+          "status": "approved",
+          "paid_at": "2026-11-03T22:06:46+00:00",
+          "sale_id": "01a1a373-4ce2-7651-b4e4-ba7d0373548d",
+          "provider": "manual",
+          "device_id": null,
+          "created_at": "2026-11-03T22:06:46.008633+00:00",
+          "station_id": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+          "updated_at": "2026-11-03T22:06:46.032+00:00",
+          "amount_satang": 35000,
+          "business_date": "2026-11-04"
+        },
+        {
+          "id": "01a1a373-54d2-7ab0-b934-45e70c9e415e",
+          "method": "cash",
+          "status": "approved",
+          "paid_at": "2026-11-03T22:06:46.98+00:00",
+          "sale_id": null,
+          "provider": "manual",
+          "device_id": null,
+          "created_at": "2026-11-03T22:06:46.985258+00:00",
+          "station_id": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+          "updated_at": "2026-11-03T22:06:47.019+00:00",
+          "amount_satang": 50000,
+          "business_date": "2026-11-04"
+        }
+      ],
+      "holds": [
+        {
+          "id": "01a1a371-53f5-7947-a922-1d8d9f895418",
+          "status": "applied",
+          "sale_id": "01a1a371-53f5-7947-a922-1d8e50907bf1",
+          "child_id": "01a1a36f-bdc4-7fc5-bedb-a2b81f4ab8a0",
+          "applied_at": "2026-11-03T22:04:52.608+00:00",
+          "created_at": "2026-11-03T22:04:36.752+00:00"
+        },
+        {
+          "id": "01a1a372-04d6-729f-9b93-fde2691927b9",
+          "status": "applied",
+          "sale_id": "01a1a372-04d6-729f-9b93-fde3ee2f3117",
+          "child_id": "01a1a36f-bea6-7fe5-b623-5414d4cc92b0",
+          "applied_at": "2026-11-03T22:05:25.861+00:00",
+          "created_at": "2026-11-03T22:05:22.021+00:00"
+        }
+      ],
+      "links": [
+        {
+          "id": "01a1a371-53f5-7947-a922-1d8d9f895418",
+          "billing": "sale",
+          "sale_id": "01a1a371-53f5-7947-a922-1d8e50907bf1",
+          "child_id": "01a1a36f-bdc4-7fc5-bedb-a2b81f4ab8a0",
+          "created_at": "2026-11-03T22:04:52.608+00:00",
+          "price_snapshot_satang": 35000
+        },
+        {
+          "id": "01a1a371-fe1c-7c60-b67c-d83718cb5bc6",
+          "billing": "sale",
+          "sale_id": "01a1a371-fe1c-7c60-b67c-d8380ed2d64a",
+          "child_id": "01a1a36f-be52-79ae-9f53-9388bf807267",
+          "created_at": "2026-11-03T22:05:20.303+00:00",
+          "price_snapshot_satang": 35000
+        },
+        {
+          "id": "01a1a372-04d6-729f-9b93-fde2691927b9",
+          "billing": "sale",
+          "sale_id": "01a1a372-04d6-729f-9b93-fde3ee2f3117",
+          "child_id": "01a1a36f-bea6-7fe5-b623-5414d4cc92b0",
+          "created_at": "2026-11-03T22:05:25.861+00:00",
+          "price_snapshot_satang": 35000
+        },
+        {
+          "id": "01a1a373-4ce2-76a2-bf07-ab4438eaf6c4",
+          "billing": "sale",
+          "sale_id": "01a1a373-4ce2-7651-b4e4-ba7d0373548d",
+          "child_id": null,
+          "created_at": "2026-11-03T22:06:46+00:00",
+          "price_snapshot_satang": 35000
+        }
+      ],
+      "partyPayments": [
+        {
+          "id": "01a1a372-a1bf-7090-9511-742c149f81e4",
+          "created_at": "2026-11-03T22:06:02.193+00:00",
+          "party_date": "2026-11-04",
+          "station_id": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+          "otoapp_event_id": "5a0e7031-8311-44cc-b885-d3b782b80f7e",
+          "payment_attempt_id": "01a1a372-a5ea-7d42-a3b0-be3041b4a90e"
+        },
+        {
+          "id": "01a1a372-ad2e-7184-a49a-354b32667cd2",
+          "created_at": "2026-11-03T22:06:05.124+00:00",
+          "party_date": "2026-11-04",
+          "station_id": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+          "otoapp_event_id": "5a0e7031-8311-44cc-b885-d3b782b80f7e",
+          "payment_attempt_id": "01a1a372-b159-79a7-bd49-e95708842c5f"
+        },
+        {
+          "id": "01a1a373-5064-7332-b328-fd7ed132992d",
+          "created_at": "2026-11-03T22:06:46.98+00:00",
+          "party_date": "2026-11-04",
+          "station_id": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+          "otoapp_event_id": "e0d91944-b4d3-4e43-87d6-e959bd09a63d",
+          "payment_attempt_id": "01a1a373-54d2-7ab0-b934-45e70c9e415e"
+        }
+      ],
+      "refusedPartyPaymentsFound": 0,
+      "terminalCommands": [
+        {
+          "id": "01a1a372-0964-73cc-8714-42bb8d0938f2",
+          "kind": "terminal_sale",
+          "created_at": "2026-11-03T22:05:22.127327+00:00",
+          "for_terminal": true
+        },
+        {
+          "id": "01a1a372-b15c-72c4-a96e-16c9c5ae3480",
+          "kind": "terminal_sale",
+          "created_at": "2026-11-03T22:06:05.131301+00:00",
+          "for_terminal": true
+        }
+      ],
+      "performanceFacts": {
+        "count": 2,
+        "payments": [
+          {
+            "amountSatang": 500000,
+            "hour": 5
+          },
+          {
+            "amountSatang": 400000,
+            "hour": 5
+          },
+          {
+            "amountSatang": 50000,
+            "hour": 5
+          }
+        ]
+      },
+      "passed": true
+    },
+    "errors": []
+  },
+  "cleanup": {
+    "startedAt": "2026-11-03T22:16:27.797Z",
+    "actions": [
+      {
+        "what": "archive child ZZ TEST Lin",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive child ZZ TEST Ploy",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive child ZZ TEST Tam",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive member",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "till sign-out",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive station",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive terminal",
+        "status": 200,
+        "code": null
+      }
+    ],
+    "tillMeAfter": 401,
+    "eventsJob": {
+      "jobId": "job-dbl5si67bikc73f37drg",
+      "status": "succeeded",
+      "result": {
+        "event": "s732_cleanup_events",
+        "at": "2026-11-03T22:21:42.096Z",
+        "archived": [
+          {
+            "id": "053874f2-49f7-4ac9-b430-d4dbfb982b40",
+            "title": "ZZ TEST SCRUM-732 mw18diqh workshop"
+          },
+          {
+            "id": "5a0e7031-8311-44cc-b885-d3b782b80f7e",
+            "title": "ZZ TEST SCRUM-732 mw18diqh party"
+          },
+          {
+            "id": "e0d91944-b4d3-4e43-87d6-e959bd09a63d",
+            "title": "ZZ TEST SCRUM-732 mw18diqh party B"
+          }
+        ],
+        "view": [
+          {
+            "id": "053874f2-49f7-4ac9-b430-d4dbfb982b40",
+            "title": "ZZ TEST SCRUM-732 mw18diqh workshop",
+            "archived": true
+          },
+          {
+            "id": "5a0e7031-8311-44cc-b885-d3b782b80f7e",
+            "title": "ZZ TEST SCRUM-732 mw18diqh party",
+            "archived": true
+          },
+          {
+            "id": "e0d91944-b4d3-4e43-87d6-e959bd09a63d",
+            "title": "ZZ TEST SCRUM-732 mw18diqh party B",
+            "archived": true
+          }
+        ],
+        "appAttendeesOnWorkshop": 4,
+        "passed": true
+      },
+      "errors": []
+    },
+    "readback": {
+      "at": "2026-11-03T22:24:42.446Z",
+      "firstPass": {},
+      "api": {
+        "station": null,
+        "terminal": null
+      },
+      "db": {
+        "jobId": "job-dbl5ub15efls73fbsn10",
+        "status": "succeeded",
+        "result": {
+          "event": "s732_cleanup_readback",
+          "at": "2026-11-03T22:25:27.593Z",
+          "member": {
+            "archived": true
+          },
+          "childrenArchived": {
+            "a": 3,
+            "n": 3
+          },
+          "station": {
+            "archived": true
+          },
+          "terminal": {
+            "archived": true
+          },
+          "liveSessionsOnStation": 0,
+          "terminalCommandStatuses": [
+            {
+              "state": "succeeded",
+              "n": 2
+            }
+          ],
+          "stationAttemptStatuses": [
+            {
+              "status": "approved",
+              "n": 8
+            }
+          ],
+          "events": {
+            "archived": 3,
+            "n": 3
+          },
+          "passed": true
+        },
+        "errors": []
+      }
+    },
+    "adminApiReadback": {
+      "at": "2026-11-03T22:22:18.923Z",
+      "ownEventsListedOnTheDay": 0,
+      "eventsListStatus": 200,
+      "adminSignOut": 200,
+      "adminMeAfter": 401,
+      "note": "The station and device listings did not carry an archivedAt field; their archive is read from the database below."
+    },
+    "retained": "Four finalised pass sales (Z70-000001..4, 350 baht each, simulated or cash), their eight approved payment attempts including the party ones, three party payments on the first party and two on party B, the pass holds and roster links, the four children written to the OTO App roster of the archived workshop, and the audit history. These are business records and stay."
+  },
+  "deployDuringCleanup": {
+    "at": "2026-11-03T22:16:03Z",
+    "source": "e978578f71a219f4f0cee64c423d39fc81fece17",
+    "why": "Render redeployed every staging service on the earlier SCRUM-743 test-only commit after its CI finished; apps/api, apps/pos and packages are byte-identical to 65c22edf. Every proof screen was taken before it, on 65c22edf."
+  },
+  "finding": {
+    "summary": "After the till locks and the page is reloaded, Unlock lands on Which station are you on? showing This session is locked twice and No station here is yours to work; Try again lists the stations but one stale lock line stays. Not part of SCRUM-732.",
+    "images": [
+      "finding-repro-1-after-reload.png",
+      "finding-repro-2-after-unlock.png",
+      "finding-repro-3-after-15s.png",
+      "finding-repro-4-after-try-again.png"
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+import { job } from './job.mjs';
+export default async function (S) {
+  const { st, save, adminApi, admin } = S;
+  const f = st.fixture;
+  const c = st.cleanup;
+  const rb = (c.readback = { at: new Date().toISOString() });
+  const stations = (await adminApi('GET', `/branches/${f.branchId}/stations?includeArchived=true`)).body?.stations ?? [];
+  const mine = stations.find((s) => s.id === f.stationId);
+  rb.station = { archivedAt: mine?.archivedAt ?? null };
+  const devices = (await adminApi('GET', `/boxes/${f.boxId}/devices?includeArchived=true`)).body?.devices ?? [];
+  rb.terminal = { archivedAt: devices.find((d) => d.id === f.terminalId)?.archivedAt ?? null };
+  const events = await adminApi('GET', `/events?branchId=${f.branchId}&date=${f.eventsJob.date}`);
+  rb.eventsListStatus = events.status;
+  rb.ownEventsStillListed = JSON.stringify(events.body ?? {}).split('ZZ TEST SCRUM-732 ' + f.stamp).length - 1;
+  const spec = { member: f.memberId, children: f.children.map((k) => k.id), station: f.stationId, terminal: f.terminalId, box: f.boxId, since: st.steps.passQr.startedAt, ids: Object.values(f.events).map((e) => e.id) };
+  const program = `(async()=>{const {Client}=require('pg');const s=${JSON.stringify(spec)},c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();try{await c.query('BEGIN READ ONLY');const one=async(q,p)=>(await c.query(q,p)).rows;const out={event:'s732_cleanup_readback',at:new Date().toISOString()};out.member=(await one('SELECT archived_at IS NOT NULL AS archived FROM core.member WHERE id=$1',[s.member]))[0];out.childrenArchived=(await one('SELECT count(*) FILTER (WHERE archived_at IS NOT NULL)::int a, count(*)::int n FROM core.child WHERE id = ANY($1::uuid[])',[s.children]))[0];out.station=(await one('SELECT archived_at IS NOT NULL AS archived FROM core.station WHERE id=$1',[s.station]))[0];out.terminal=(await one('SELECT archived_at IS NOT NULL AS archived FROM core.device WHERE id=$1',[s.terminal]))[0];out.liveSessionsOnStation=(await one('SELECT count(*)::int n FROM core.session WHERE station_id=$1 AND expires_at > now()',[s.station]))[0].n;out.pendingTerminalCommands=(await one("SELECT count(*)::int n FROM edge.box_command WHERE box_id=$1 AND created_at >= $2::timestamptz AND kind='terminal_sale' AND (payload->>'deviceId')=$3 AND status NOT IN ('done','succeeded','completed','acked','failed','expired','cancelled')",[s.box,s.since,s.terminal]))[0].n;out.terminalCommandStatuses=(await one("SELECT status, count(*)::int n FROM edge.box_command WHERE box_id=$1 AND created_at >= $2::timestamptz AND kind='terminal_sale' AND (payload->>'deviceId')=$3 GROUP BY status",[s.box,s.since,s.terminal]));out.waitingQrAttempts=(await one("SELECT count(*)::int n FROM pos.payment_attempt WHERE station_id=$1 AND status NOT IN ('approved','declined','cancelled','expired','failed','voided','reversed')",[s.station]))[0].n;out.events=(await one('SELECT count(*) FILTER (WHERE is_archived)::int archived, count(*)::int n FROM otoapp.core_events WHERE id::text = ANY($1::text[])',[s.ids]))[0];await c.query('COMMIT');out.passed=true;console.log(JSON.stringify(out));}catch(e){await c.query('ROLLBACK').catch(()=>{});console.error(JSON.stringify({event:'s732_cleanup_readback_error',message:String(e.message).slice(0,300)}));process.exitCode=1;}finally{await c.end();}})();`;
+  const r = await job(program, 's732_cleanup_readback', 'e978578f71a219f4f0cee64c423d39fc81fece17');
+  rb.db = { jobId: r.jobId, status: r.status, result: r.result, errors: r.errors };
+  save();
+  const out = await admin.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } });
+  rb.adminSignOut = out.status();
+  rb.adminMeAfter = (await admin.get('/api/me')).status();
+  save();
+  return rb;
+}

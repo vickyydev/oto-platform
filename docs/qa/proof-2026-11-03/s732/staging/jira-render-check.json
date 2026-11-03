@@ -1,0 +1,71 @@
+{
+ "commentId": "13348",
+ "imgTags": 15,
+ "rows": [
+  {
+   "file": "staging-02-pass-qr-chosen-no-code-yet.png",
+   "id": "12395",
+   "rendered": true
+  },
+  {
+   "file": "staging-03-pass-qr-pending-real-code.png",
+   "id": "12396",
+   "rendered": true
+  },
+  {
+   "file": "staging-04-pass-qr-paid-check-in-choice.png",
+   "id": "12397",
+   "rendered": true
+  },
+  {
+   "file": "staging-05-pass-cash-unchanged.png",
+   "id": "12398",
+   "rendered": true
+  },
+  {
+   "file": "staging-06-pass-cash-paid.png",
+   "id": "12399",
+   "rendered": true
+  },
+  {
+   "file": "staging-07-pass-card-sent-to-terminal.png",
+   "id": "12400",
+   "rendered": true
+  },
+  {
+   "file": "staging-08-pass-card-approved.png",
+   "id": "12401",
+   "rendered": true
+  },
+  {
+   "file": "staging-10-party-qr-pending-real-code.png",
+   "id": "12403",
+   "rendered": true
+  },
+  {
+   "file": "staging-11-party-qr-paid-recorded.png",
+   "id": "12404",
+   "rendered": true
+  },
+  {
+   "file": "staging-13-party-card-recorded.png",
+   "id": "12406",
+   "rendered": true
+  },
+  {
+   "file": "staging-14-party-bill-balance-zero.png",
+   "id": "12407",
+   "rendered": true
+  },
+  {
+   "file": "staging-15-party-b-qr-pending.png",
+   "id": "12408",
+   "rendered": true
+  },
+  {
+   "file": "staging-16-party-b-qr-paid-recorded.png",
+   "id": "12409",
+   "rendered": true
+  }
+ ]
+}

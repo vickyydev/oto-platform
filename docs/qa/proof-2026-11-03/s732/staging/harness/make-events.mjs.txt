@@ -1,0 +1,26 @@
+import assert from 'node:assert/strict';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { job } from './job.mjs';
+const receiptFile = 'C:/oto-lanes/passqr732-20261103/docs/qa/proof-2026-11-03/s732/staging/receipt.json';
+const st = JSON.parse(readFileSync(receiptFile, 'utf8'));
+const f = st.fixture; assert.match(f.name, /^ZZ TEST SCRUM-732 /);
+const bkk = new Date(Date.now() + 7 * 3600e3 - 5 * 3600e3).toISOString().slice(0, 10);
+assert.equal(bkk, '2026-11-04', 'business date');
+const spec = {
+  branch: f.branchId, date: bkk, name: f.name,
+  events: [
+    { id: randomUUID(), key: 'workshop', type: 'workshop', title: f.name + ' workshop', start: '09:00', end: '20:00', location: 'ZZ TEST room', kids: 10, adults: 5, fee: 350 },
+    { id: randomUUID(), key: 'party', type: 'birthday', title: f.name + ' party', start: '13:00', end: '16:00', location: 'ZZ TEST party room', kids: 12, adults: 10, total: 12000, deposit: 3000, child: 'ZZ TEST Mali', age: 6, parent: 'ZZ TEST SCRUM-732 Nok' },
+    { id: randomUUID(), key: 'partyB', type: 'birthday', title: f.name + ' party B', start: '16:00', end: '18:00', location: 'ZZ TEST party room', kids: 5, adults: 5, total: 1000, deposit: 0, child: 'ZZ TEST Fah', age: 5, parent: 'ZZ TEST SCRUM-732 Dao' },
+  ],
+};
+const program = `(async()=>{const assert=require('node:assert/strict'),{Client}=require('pg');const s=${JSON.stringify(spec)},c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();try{assert.ok(s.name.startsWith('ZZ TEST SCRUM-732 '));await c.query('BEGIN');await c.query("SET LOCAL statement_timeout='15s'");const b=(await c.query('SELECT id, tenant_id FROM otoapp.branches WHERE core_branch_id=$1',[s.branch])).rows;assert.equal(b.length,1);const made=[];for(const e of s.events){assert.ok(e.title.startsWith('ZZ TEST SCRUM-732 '));const r=await c.query("INSERT INTO otoapp.core_events (id, tenant_id, branch_id, event_type, title, event_date, start_time, end_time, location_text, num_children, num_adults, entry_price_weekday_thb, entry_price_weekend_thb, child_name, kid_turning_age, parent_name, whatsapp_phone_e164, total_value, prepayment_amount, prepayment_date, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,NULL,$17,$18,$19,'upcoming') RETURNING id, title, event_type, event_date, status, is_archived",[e.id,b[0].tenant_id,b[0].id,e.type,e.title,s.date,e.start,e.end,e.location,e.kids,e.adults,e.fee??null,e.fee??null,e.child??null,e.age??null,e.parent??null,e.total??null,e.deposit??null,e.deposit?s.date:null]);made.push({key:e.key,...r.rows[0]});}const v=(await c.query('SELECT id, branch_id, type, title, status, archived, entry_price_weekday_satang, total_value_satang, deposit_satang FROM otoapp_v.events WHERE id = ANY($1::text[]::uuid[])',[s.events.map(e=>e.id)])).rows;assert.equal(v.length,3);await c.query('COMMIT');console.log(JSON.stringify({event:'s732_fixture_events',at:new Date().toISOString(),appBranchId:b[0].id,made,view:v,passed:true}));}catch(e){await c.query('ROLLBACK').catch(()=>{});console.error(JSON.stringify({event:'s732_fixture_events_error',name:e.name,code:e.code??'ASSERTION',message:String(e.message).slice(0,300)}));process.exitCode=1;}finally{await c.end();}})();`;
+const r = await job(program, 's732_fixture_events', st.source);
+console.log(JSON.stringify(r, null, 1));
+if (r.result?.passed) {
+  const st2 = JSON.parse(readFileSync(receiptFile, 'utf8'));
+  st2.fixture.events = Object.fromEntries(spec.events.map((e) => [e.key, { id: e.id, title: e.title, type: e.type }]));
+  st2.fixture.eventsJob = { jobId: r.jobId, at: r.result.at, appBranchId: r.result.appBranchId, date: spec.date };
+  writeFileSync(receiptFile, JSON.stringify(st2, null, 2) + '\n');
+}

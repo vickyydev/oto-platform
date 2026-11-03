@@ -1,0 +1,225 @@
+{
+  "at": "2026-11-03T21:58:37.555Z",
+  "source": "65c22edf1832e5927536c28ea3db94222ef681e3",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "deployId": "dep-dbl59tjl550s73ehsv90",
+      "source": "65c22edf1832e5927536c28ea3db94222ef681e3",
+      "liveAt": "2026-11-03T21:43:59.974225Z"
+    },
+    {
+      "name": "oto-pos-web-staging",
+      "serviceId": "srv-dbk7qu8n74is73bm894g",
+      "deployId": "dep-dbl59tjl550s73eht090",
+      "source": "65c22edf1832e5927536c28ea3db94222ef681e3",
+      "liveAt": "2026-11-03T21:43:25.683937Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "serviceId": "srv-danh2mf40ujc73bu80j0",
+      "deployId": "dep-dbl59tjl550s73eht0f0",
+      "source": "65c22edf1832e5927536c28ea3db94222ef681e3",
+      "liveAt": "2026-11-03T21:43:40.809359Z"
+    }
+  ],
+  "ci": {
+    "run": 41720268210,
+    "headSha": "65c22edf1832e5927536c28ea3db94222ef681e3",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "ci",
+        "conclusion": "success"
+      },
+      {
+        "name": "oto-app",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (2)",
+        "conclusion": "success"
+      },
+      {
+        "name": "pos-tests",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (1)",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (3)",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "gatewayIsSimulator": true,
+  "apiSettingNames": 57,
+  "apiHealth": 200,
+  "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+  "virtualBox": {
+    "id": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "name": "Virtual box 1",
+    "role": "virtual",
+    "status": "online",
+    "lastSeenAt": null
+  },
+  "virtualBoxSimulatedTerminals": [
+    {
+      "id": "01a0be8c-89b8-7153-bd24-678c65024de8",
+      "label": "EDC 1",
+      "protocol": "ghl_linkpos",
+      "status": null
+    },
+    {
+      "id": "01a0be8c-89bb-7f43-b557-b0e8e876ccac",
+      "label": "EDC 3",
+      "protocol": "digio_tlv",
+      "status": null
+    },
+    {
+      "id": "01a0ecb6-1010-7ab1-a3a0-0709287b53dc",
+      "label": "Native payment shop-inquiry-confirm 0d008153 terminal",
+      "protocol": "digio_tlv",
+      "status": null
+    },
+    {
+      "id": "01a0ecb8-8cd6-77b3-a999-e41386a6cba1",
+      "label": "Native payment shop-partial-refused 0d008153 terminal",
+      "protocol": "ghl_linkpos",
+      "status": null
+    },
+    {
+      "id": "01a199dd-cf6c-7962-a74d-872b990ef805",
+      "label": "ZZ TEST setup traps terminal 20261102",
+      "protocol": "digio_tlv",
+      "status": null
+    }
+  ],
+  "virtualBoxDeviceTransports": [
+    "simulated"
+  ],
+  "existingS732Stations": [],
+  "usedPrefixes": [
+    "B2",
+    "B3",
+    "B3",
+    "C3ECD5",
+    "C9A6FA",
+    "CC0889",
+    "T2",
+    "D17C6C",
+    "D5C355",
+    "D9587A",
+    "DA24D7",
+    "FW",
+    "B1",
+    "D88B11",
+    "DB3BB2",
+    "HBK",
+    "CWX",
+    "JYY",
+    "3B8",
+    "3PJ",
+    "4A5",
+    "RLE",
+    "QP4",
+    "6GM",
+    "61S",
+    "4N8",
+    "IDH",
+    "VBC",
+    "YM2",
+    "6BI",
+    "GBFFE3",
+    "GC5DEB",
+    "IBFFE3",
+    "IC5DEB",
+    "D9M",
+    "P0A68B0",
+    "P0A68B1",
+    "P276DE1",
+    "P276DE0",
+    "P29BBE0",
+    "PA54D30",
+    "T1",
+    "H4U",
+    "IWW",
+    "18",
+    "TC",
+    "QT",
+    "4B",
+    "O5",
+    "PI1",
+    "PI2",
+    "Z5",
+    "Z5",
+    "Z5",
+    "Z5",
+    "Z5",
+    "Z0",
+    "Z4C7",
+    "ZEF8",
+    "Z0D8",
+    "ZBD6",
+    "Z502",
+    "Z503",
+    "Z710",
+    "Z713",
+    "Z717",
+    "Z718",
+    "Z723",
+    "Z725",
+    "B72601",
+    "B72610",
+    "B72611",
+    "B72602",
+    "B72603",
+    "B72604",
+    "B72605",
+    "B72606",
+    "B72607",
+    "B72608",
+    "B72609",
+    "Z72601",
+    "Z72610",
+    "Z72611",
+    "Z72612",
+    "Z72613",
+    "Z72614",
+    "Z72615",
+    "Z72616",
+    "Z72617",
+    "Z72618",
+    "Z72619",
+    "Z72602",
+    "Z72620",
+    "Z72621",
+    "Z72622",
+    "Z72623",
+    "Z72624",
+    "Z72625",
+    "Z72626",
+    "Z72627",
+    "Z72628",
+    "Z72629",
+    "Z72603",
+    "Z72630",
+    "Z72631",
+    "Z72632",
+    "Z72604",
+    "Z72605",
+    "Z72606",
+    "Z72607",
+    "Z72608",
+    "Z72609",
+    "Z727",
+    "Z728",
+    "Z730",
+    "Z1",
+    "Z703"
+  ],
+  "adminSignOut": 200
+}

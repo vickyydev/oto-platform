@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+export default async function (S) {
+  const { st, save, adminApi } = S;
+  const f = st.fixture;
+  const BRANCH = '01a0bbdc-8c42-7753-b7e3-5ae19fb66d33', BOX = '01a0be8c-89a0-74fa-9495-fb4a4acb65bc';
+  f.stamp = f.stamp ?? Date.now().toString(36);
+  f.name = 'ZZ TEST SCRUM-732 ' + f.stamp;
+  f.branchId = BRANCH; f.boxId = BOX; f.boxName = 'Virtual box 1';
+  save();
+  const me = await adminApi('GET', '/me');
+  assert.equal(me.status, 200); assert.equal(me.body.operatorContext.branchId, BRANCH);
+  st.adminActorId = me.body.account.id;
+  if (!f.terminalId) {
+    const d = await adminApi('POST', `/boxes/${BOX}/devices`, { kind: 'terminal', label: f.name + ' terminal', transport: 'simulated', address: 'zz-s732-' + f.stamp + '-terminal', model: 'Simulated EDC', protocol: 'digio_tlv' });
+    assert.equal(d.status, 200, JSON.stringify(d.body));
+    f.terminalId = d.body.device.id; f.terminalLabel = d.body.device.label; save();
+  }
+  if (!f.stationId) {
+    const stations = (await adminApi('GET', `/branches/${BRANCH}/stations?includeArchived=true`)).body.stations;
+    const used = new Set(stations.map((s) => s.codePrefix));
+    const prefix = Array.from('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', (c) => 'Z7' + c).find((c) => !used.has(c));
+    assert.ok(prefix);
+    const s = await adminApi('POST', `/branches/${BRANCH}/stations`, { name: f.name + ' till', kind: 'till', boxId: BOX, codePrefix: prefix, accessScope: 'all_staff', paymentRouting: { card: 'card_terminal', qr: 'gateway' }, capabilities: [], devices: [{ deviceId: f.terminalId, role: 'card_terminal' }] });
+    assert.equal(s.status, 200, JSON.stringify(s.body));
+    f.stationId = s.body.station.id; f.stationName = s.body.station.name; f.codePrefix = prefix;
+    f.paymentRouting = s.body.station.paymentRouting; f.stationDevices = s.body.station.devices?.map(({ deviceId, role }) => ({ deviceId, role }));
+    save();
+  }
+  return { fixture: f };
+}

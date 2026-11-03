@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import { job } from './job.mjs';
+export default async function (S) {
+  const { st, save, page, tillApi, adminApi, POS, admin } = S;
+  const f = st.fixture;
+  const c = (st.cleanup = st.cleanup ?? { startedAt: new Date().toISOString(), actions: [] });
+  const act = (what, r) => { c.actions.push({ what, status: r.status, code: r.body?.error?.code ?? null }); save(); return r; };
+  // Children, then the member, through the till's own session on its own station.
+  for (const k of f.children) act('archive child ' + k.name, await tillApi('DELETE', `/members/children/${k.id}`));
+  act('archive member', await tillApi('DELETE', `/members/${f.memberId}`));
+  // The till signs out.
+  act('till sign-out', await tillApi('POST', '/auth/sign-out'));
+  c.tillMeAfter = (await tillApi('GET', '/me')).status;
+  // Admin retires the station, then its terminal.
+  act('archive station', await adminApi('DELETE', `/stations/${f.stationId}`));
+  act('archive terminal', await adminApi('DELETE', `/devices/${f.terminalId}`));
+  save();
+  // The events, archived in the OTO App's own table (its soft archive).
+  const spec = { ids: Object.values(f.events).map((e) => e.id), workshop: f.events.workshop.id };
+  const program = `(async()=>{const assert=require('node:assert/strict'),{Client}=require('pg');const s=${JSON.stringify(spec)},c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();try{await c.query('BEGIN');await c.query("SET LOCAL statement_timeout='15s'");const r=await c.query("UPDATE otoapp.core_events SET is_archived = true, updated_at = now() WHERE id::text = ANY($1::text[]) AND title LIKE 'ZZ TEST SCRUM-732 %' AND is_archived = false RETURNING id, title",[s.ids]);assert.ok(r.rowCount<=3);const v=(await c.query('SELECT id, title, archived FROM otoapp_v.events WHERE id::text = ANY($1::text[])',[s.ids])).rows;await c.query('COMMIT');let att=null;try{att=(await c.query('SELECT count(*)::int n FROM otoapp.event_attendees WHERE event_id::text=$1',[s.workshop])).rows[0].n;}catch(e){att='unreadable';}console.log(JSON.stringify({event:'s732_cleanup_events',at:new Date().toISOString(),archived:r.rows,view:v,appAttendeesOnWorkshop:att,passed:true}));}catch(e){await c.query('ROLLBACK').catch(()=>{});console.error(JSON.stringify({event:'s732_cleanup_events_error',message:String(e.message).slice(0,300)}));process.exitCode=1;}finally{await c.end();}})();`;
+  const r = await job(program, 's732_cleanup_events', st.source);
+  c.eventsJob = { jobId: r.jobId, status: r.status, result: r.result, errors: r.errors };
+  save();
+  return c;
+}

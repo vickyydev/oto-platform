@@ -1,0 +1,27 @@
+export const card = (page, title) => page.getByText(title, { exact: true }).locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " p-4 ")][1]');
+export async function toTill(S) {
+  const { page, expect, POS } = S;
+  await page.goto(POS + '/');
+  await expect(page.getByText('Membership Check', { exact: true })).toBeVisible({ timeout: 30000 });
+}
+export async function memberIn(S) {
+  const { st, page, expect } = S;
+  const digits = st.fixture.memberPhone.replace(/^\+66/, '');
+  for (const d of digits) await page.getByRole('button', { name: d, exact: true }).first().click();
+  await page.getByRole('button', { name: 'Find my membership' }).click();
+  const skip = page.getByRole('button', { name: 'Skip for now' });
+  await expect(skip).toBeVisible({ timeout: 20000 });
+  await skip.click();
+  await expect(page.getByText('Select Customer Type')).toBeVisible({ timeout: 20000 });
+}
+export async function roster(S, eventId) {
+  const r = await S.tillApi('GET', `/events/${eventId}/roster?branchId=${S.st.fixture.branchId}`);
+  const text = JSON.stringify(r.body ?? {});
+  return { status: r.status, stats: r.body?.stats ?? null, groups: r.body?.groups ?? null, mentions: (name) => text.split(name).length - 1, text };
+}
+export async function sale(S, id) {
+  const r = await S.tillApi('GET', `/sales/${id}`);
+  const s = r.body?.sale ?? r.body;
+  return { status: r.status, saleStatus: s?.status ?? null, code: s?.code ?? s?.receiptCode ?? null, grossSatang: s?.totals?.grossSatang ?? null, payments: (s?.payments ?? []).map((p) => ({ method: p.method ?? p.methodToken ?? null, amountSatang: p.amountSatang ?? null, status: p.status ?? null })) };
+}
+export const lastNet = (S, re) => [...S.st.network].reverse().find((n) => re.test(n.path));

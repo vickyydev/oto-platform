@@ -1,0 +1,9 @@
+export default async function (S) {
+  const { page, shot, st } = S;
+  const out = {};
+  await page.getByRole('button', { name: 'Try again' }).click();
+  await page.waitForTimeout(4000);
+  out.afterTryAgain = { staleLocked: await page.getByText('This session is locked — unlock to continue').count(), stationListed: await page.getByRole('button', { name: new RegExp(st.fixture.stationName) }).count(), picker: await page.getByRole('heading', { name: 'Which station are you on?' }).isVisible().catch(() => false) };
+  out.shot = await shot('debug-repro-4-after-try-again');
+  return out;
+}

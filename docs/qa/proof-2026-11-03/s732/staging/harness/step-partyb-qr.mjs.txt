@@ -1,0 +1,42 @@
+import assert from 'node:assert/strict';
+import { lastNet } from './lib.mjs?v=6';
+import { job } from './job.mjs';
+const factsProgram = (spec, ev) => `(async()=>{require('tsx/cjs');const {Client}=require('pg'),{drizzle}=require('drizzle-orm/node-postgres'),{partyFactsOf}=require('./src/services/analytics-parties.ts');const s=${JSON.stringify(spec)},c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();try{await c.query('BEGIN READ ONLY');const op=(await c.query('SELECT operator_id FROM core.branch WHERE id=$1',[s.branch])).rows[0].operator_id;const facts=await partyFactsOf(drizzle(c),{id:s.branch,operatorId:op,timezone:'Asia/Bangkok'},s.date);const att=(await c.query('SELECT status, amount_satang, paid_at FROM pos.payment_attempt WHERE id=$1',[s.attempt])).rows[0]??null;await c.query('COMMIT');console.log(JSON.stringify({event:'${ev}',at:new Date().toISOString(),facts,attempt:att,passed:true}));}catch(e){console.error(JSON.stringify({event:'${ev}_error',message:String(e.message).slice(0,300)}));process.exitCode=1;}finally{await c.end();}})();`;
+export default async function (S) {
+  const { st, save, page, expect, shot, tillApi, adminApi, POS } = S;
+  const f = st.fixture, pb = f.events.partyB, date = f.eventsJob.date;
+  const step = (st.steps.partyBQr = { startedAt: new Date().toISOString() });
+  const eod = async () => { const r = await tillApi('GET', `/branches/${f.branchId}/end-of-day?date=${date}`); return (r.body?.lines ?? []).find((l) => l.channel === 'party_prepay')?.expectedSatang ?? 0; };
+  const bill = async () => (await tillApi('GET', `/parties/${pb.id}?branchId=${f.branchId}`)).body?.event?.party?.bill?.outstandingSatang ?? null;
+  await page.goto(POS + '/parties');
+  await page.waitForLoadState('networkidle').catch(() => undefined);
+  const locked = page.getByRole('heading', { name: 'Locked', exact: true });
+  if (await locked.isVisible().catch(() => false)) { await page.locator('input[type="password"]').fill(S.need('STAGING_RECEPTION_PASSWORD')); await page.getByRole('button', { name: /Unlock/ }).click(); await expect(locked).toBeHidden({ timeout: 30000 }); }
+  await page.getByText(pb.title, { exact: true }).first().click({ timeout: 30000 });
+  await page.getByRole('button', { name: /Take balance ฿/ }).click({ timeout: 30000 });
+  await page.getByRole('button', { name: 'PromptPay', exact: true }).click();
+  await page.getByRole('button', { name: /Take ฿500 by PromptPay/ }).click();
+  await page.getByRole('button', { name: 'Show payment QR' }).click();
+  await expect(page.getByTestId('payment-qr')).toHaveCount(2, { timeout: 30000 });
+  await shot('staging-15-party-b-qr-pending');
+  const tender = lastNet(S, /\/parties\/[^/]+\/payments\/tender$/);
+  assert.ok(tender && tender.status === 200);
+  step.attemptId = tender.response?.attempt?.id;
+  const spec = { branch: f.branchId, date, attempt: step.attemptId };
+  step.pending = { bill: await bill(), eodPartyPrepay: await eod() };
+  const mid = await job(factsProgram(spec, 's732_facts_mid'), 's732_facts_mid', st.source);
+  step.pending.performance = mid.result; step.pending.jobId = mid.jobId;
+  save();
+  step.paidPressAt = new Date().toISOString();
+  const paid = await adminApi('POST', '/webhooks/2c2p/simulator', { attemptId: step.attemptId, event: 'paid' });
+  step.paidPress = { status: paid.status, body: paid.body };
+  assert.equal(paid.status, 200);
+  await expect(page.getByRole('heading', { name: 'Payment recorded' })).toBeVisible({ timeout: 60000 });
+  await shot('staging-16-party-b-qr-paid-recorded');
+  step.paid = { bill: await bill(), eodPartyPrepay: await eod() };
+  const after = await job(factsProgram(spec, 's732_facts_after'), 's732_facts_after', st.source);
+  step.paid.performance = after.result; step.paid.jobId = after.jobId;
+  save();
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  return step;
+}

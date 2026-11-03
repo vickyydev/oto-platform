@@ -1,0 +1,36 @@
+import { commentWithImages, jget } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/jira.mjs';
+import { writeFileSync } from 'node:fs';
+const files = ['staging-02-pass-qr-chosen-no-code-yet.png', 'staging-03-pass-qr-pending-real-code.png', 'staging-04-pass-qr-paid-check-in-choice.png', 'staging-05-pass-cash-unchanged.png', 'staging-06-pass-cash-paid.png', 'staging-07-pass-card-sent-to-terminal.png', 'staging-08-pass-card-approved.png', 'staging-10-party-qr-pending-real-code.png', 'staging-11-party-qr-paid-recorded.png', 'staging-13-party-card-recorded.png', 'staging-14-party-bill-balance-zero.png', 'staging-15-party-b-qr-pending.png', 'staging-16-party-b-qr-paid-recorded.png'];
+const text = `Staging proof, done. 4 November 2026, 05:04 to 05:12 Bangkok, on the live version 65c22edf (main CI 41720268210 passed all six jobs; it went live at 04:43). A real browser at the staging POS (oto-pos-web-staging), signed in as reception on our own ZZ TEST till on Virtual box 1. Only the payment simulator and a simulated card terminal were used, so no real money moved.
+
+What a person can do now
+* Sell an event pass by PromptPay: the till shows the real payment code on the staff screen and on the customer screen. The pass waits as pending. The child goes on the roster, and the money is recorded, only once the payment is really confirmed.
+* Sell an event pass by card: it goes to the card terminal and is recorded when the terminal approves.
+* Take a party balance, all of it or part, by PromptPay or card in the same way: the bill does not move until the money is really taken.
+* Cash is unchanged: one press, paid straight away.
+
+What the pictures below show, in order
+* 1. PromptPay chosen but not started: nothing to scan yet on the customer side ("Your payment code will appear here").
+* 2. Started: the real code on both sides, waiting. Checked at that moment: the child was not on the roster yet and the sale was still open.
+* 3. The simulator said "Customer paid": only then "Pass paid, check in now?". Checked after: one finished sale (Z70-000001, 350 baht) and one roster entry.
+* 4 and 5. Cash: one press, no QR panel, paid at once.
+* 6 and 7. Card: sent to the terminal, then paid when it approved.
+* 8. A party with 9,000 baht left: 5,000 by PromptPay, the real code, waiting. The bill still said 9,000 owed and the End of Day party line had not moved.
+* 9. Paid: 5,000 recorded, 4,000 left. The End of Day party line went up by 5,000.
+* 10 and 11. The other 4,000 by card on the terminal: recorded, nothing left, the party reads Fully paid.
+* 12 and 13. A second test party, 500 baht by PromptPay: while it waited, the Performance party figures and End of Day did not count it; after "Customer paid" they did.
+
+Also checked on staging: a QR or a card sent down the old one-press route is refused for a pass and for a party, and nothing is recorded; a cash press on each still records. Party payments are party payments only, with no sale behind them.
+
+Not done yet. Both are filed and wait for this landing:
+* A customer display running as its own device does not show the code yet (SCRUM-738).
+* A ticket, F&B or shop QR that needs a person still has no answer button (SCRUM-739).
+
+How to retest: on staging, open the POS on a ZZ TEST till whose QR goes through the gateway and whose card goes to a simulated terminal. Sell a pass for a ZZ TEST event with a door fee by PromptPay and press Show payment QR. In the Console, open Integrations, find the waiting QR under QR payment gateway and press Customer paid. The pass turns paid only then. For a party, open Events, the ZZ TEST party, Take balance, and do the same.
+
+Cleaned up: our test till, its terminal, the test member with three children and the three test events are retired, and both sessions are signed out. The test sales and payments stay as records. Evidence: docs/qa/proof-2026-11-03/s732/staging in the repository.`;
+const r = await commentWithImages('SCRUM-732', text, files);
+console.log(r.status);
+const id = JSON.parse(r.body.replace(/…$/, '') + (r.body.length >= 600 ? '"}' : '')).id ?? null;
+writeFileSync('C:/oto-lanes/s732-proof/jira-comment-result.json', JSON.stringify({ status: r.status, head: r.body.slice(0, 120) }, null, 1));
+console.log(r.body.slice(0, 160));

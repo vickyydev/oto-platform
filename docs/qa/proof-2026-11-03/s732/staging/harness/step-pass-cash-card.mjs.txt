@@ -1,0 +1,61 @@
+import assert from 'node:assert/strict';
+import { card, roster, sale, lastNet } from './lib.mjs?v=3';
+async function toPayment(S, child) {
+  const { st, page, expect } = S;
+  const ev = st.fixture.events.workshop;
+  const leave = page.getByRole('button', { name: /Leave as booked/ });
+  if (await leave.isVisible().catch(() => false)) await leave.click();
+  const c = card(S.page, ev.title);
+  await expect(c.getByRole('button', { name: 'Sell pass' })).toBeVisible({ timeout: 30000 });
+  await c.scrollIntoViewIfNeeded();
+  await c.getByRole('button', { name: 'Sell pass' }).click();
+  await expect(page.getByText('Who is attending?').first()).toBeVisible({ timeout: 20000 });
+  await page.getByText(child, { exact: true }).first().click();
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(page.getByText('Sell event pass').first()).toBeVisible();
+  await page.getByRole('button', { name: /Continue to payment/ }).click();
+  await expect(page.getByText('Take entry payment').first()).toBeVisible({ timeout: 20000 });
+}
+export default async function (S) {
+  const { st, save, page, expect, shot } = S;
+  const ev = st.fixture.events.workshop;
+  // --- Cash, unchanged ---
+  const cash = (st.steps.passCash = { startedAt: new Date().toISOString(), child: 'ZZ TEST Ploy' });
+  await toPayment(S, cash.child);
+  await page.getByRole('heading', { name: 'Cash', exact: true }).click();
+  await expect(page.getByTestId('payment-stage')).toHaveCount(0);
+  cash.tenderPanels = await page.getByTestId('payment-stage').count();
+  await shot('staging-05-pass-cash-unchanged');
+  await page.getByRole('button', { name: 'Confirm Payment Received' }).click();
+  await expect(page.getByText('Pass paid — check in now?')).toBeVisible({ timeout: 30000 });
+  await shot('staging-06-pass-cash-paid');
+  const sold = lastNet(S, /\/events\/[^/]+\/passes$/);
+  assert.ok(sold && sold.status === 200, 'cash pass call');
+  cash.passCall = { status: sold.status, tender: sold.request?.tender ?? null, saleId: sold.request?.saleId, attendeeId: sold.request?.attendeeId ?? sold.response?.attendee?.id ?? null };
+  cash.sellBody = sold.request;
+  const r1 = await roster(S, ev.id), s1 = await sale(S, cash.passCall.saleId);
+  cash.readback = { at: new Date().toISOString(), rosterStats: r1.stats, childOnRoster: r1.mentions(cash.child), sale: s1 };
+  save();
+  // --- Card, on the simulated terminal behind the virtual box ---
+  const cardStep = (st.steps.passCard = { startedAt: new Date().toISOString(), child: 'ZZ TEST Tam' });
+  await toPayment(S, cardStep.child);
+  await page.getByRole('heading', { name: 'Card', exact: true }).click();
+  await page.getByRole('button', { name: 'Start card payment' }).click();
+  await expect(page.getByTestId('payment-attempt-status')).toBeVisible({ timeout: 30000 });
+  cardStep.sentAt = new Date().toISOString();
+  await shot('staging-07-pass-card-sent-to-terminal');
+  const open = lastNet(S, /\/passes\/open$/), att = lastNet(S, /\/payments\/attempts$/);
+  cardStep.saleId = open?.response?.sale?.id; cardStep.attendeeId = open?.response?.attendeeId; cardStep.attemptId = att?.response?.attempt?.id;
+  cardStep.attempt = { status: att?.response?.attempt?.status, method: att?.response?.attempt?.method ?? null, provider: att?.response?.attempt?.provider ?? null, amountSatang: att?.response?.attempt?.amountSatang ?? null };
+  const r2 = await roster(S, ev.id), s2 = await sale(S, cardStep.saleId);
+  cardStep.pendingReadback = { at: new Date().toISOString(), childOnRoster: r2.mentions(cardStep.child), sale: s2 };
+  save();
+  await expect(page.getByText('Pass paid — check in now?')).toBeVisible({ timeout: 120000 });
+  cardStep.paidSeenAt = new Date().toISOString();
+  await shot('staging-08-pass-card-approved');
+  const r3 = await roster(S, ev.id), s3 = await sale(S, cardStep.saleId);
+  cardStep.paidReadback = { at: new Date().toISOString(), rosterStats: r3.stats, childOnRoster: r3.mentions(cardStep.child), sale: s3 };
+  save();
+  await page.getByRole('button', { name: /Leave as booked/ }).click();
+  return { cash: { passCall: cash.passCall, readback: cash.readback, tenderPanels: cash.tenderPanels }, card: cardStep };
+}

@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+export default async function (S) {
+  const { st, save, page, expect, need, POS, tillApi, shot } = S;
+  const f = st.fixture;
+  await page.goto(POS + '/');
+  await expect(page.getByRole('heading', { name: 'Oto POS is locked' })).toBeVisible({ timeout: 60000 });
+  await page.locator('input[inputmode="tel"], input[type="tel"]').first().fill(need('STAGING_RECEPTION_PHONE').replace(/^\+66/, '0'));
+  await page.locator('input[type="password"][autocomplete="current-password"]').fill(need('STAGING_RECEPTION_PASSWORD'));
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  const picker = page.getByRole('heading', { name: 'Which station are you on?' });
+  await expect(picker).toBeVisible({ timeout: 30000 });
+  await page.getByRole('button', { name: new RegExp(f.stationName) }).click();
+  await expect(page.getByText('Membership Check', { exact: true })).toBeVisible({ timeout: 30000 });
+  const me = await tillApi('GET', '/me');
+  assert.equal(me.status, 200);
+  st.till = { accountId: me.body.account.id, role: 'reception', stationId: me.body.session?.stationId ?? me.body.operatorContext?.stationId ?? null, signedInAt: new Date().toISOString() };
+  save();
+  await shot('debug-signed-in');
+  return { till: st.till, meKeys: Object.keys(me.body), session: me.body.session ?? null };
+}

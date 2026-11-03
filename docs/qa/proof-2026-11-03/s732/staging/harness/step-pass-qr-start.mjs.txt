@@ -1,0 +1,38 @@
+import assert from 'node:assert/strict';
+import { card, toTill, memberIn, roster, sale, lastNet } from './lib.mjs?v=1';
+export default async function (S) {
+  const { st, save, page, expect, shot } = S;
+  const f = st.fixture, ev = f.events.workshop, child = 'ZZ TEST Lin';
+  const step = (st.steps.passQr = { startedAt: new Date().toISOString(), child });
+  await toTill(S);
+  await memberIn(S);
+  const c = card(page, ev.title);
+  await c.scrollIntoViewIfNeeded();
+  await c.getByRole('button', { name: 'Sell pass' }).click();
+  await expect(page.getByText('Who is attending?').first()).toBeVisible({ timeout: 20000 });
+  await page.getByText(child, { exact: true }).first().click();
+  await shot('staging-01-pass-who-is-attending');
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(page.getByText('Sell event pass').first()).toBeVisible();
+  await page.getByRole('button', { name: /Continue to payment/ }).click();
+  await expect(page.getByText('Take entry payment').first()).toBeVisible({ timeout: 20000 });
+  await page.getByRole('heading', { name: 'PromptPay', exact: true }).click();
+  await expect(page.getByTestId('payment-qr-waiting')).toBeVisible();
+  await expect(page.getByText('Your payment code will appear here.')).toBeVisible();
+  step.noCodeYet = { at: new Date().toISOString(), placeholderQrCount: await page.getByTestId('payment-qr').count() };
+  await shot('staging-02-pass-qr-chosen-no-code-yet');
+  await page.getByRole('button', { name: 'Show payment QR' }).click();
+  await expect(page.getByTestId('payment-attempt-status')).toBeVisible({ timeout: 30000 });
+  await expect(page.getByTestId('payment-qr')).toHaveCount(2, { timeout: 30000 });
+  await expect(page.getByText('Pass paid — check in now?')).toHaveCount(0);
+  step.pendingAt = new Date().toISOString();
+  await shot('staging-03-pass-qr-pending-real-code');
+  const open = lastNet(S, /\/passes\/open$/), att = lastNet(S, /\/payments\/attempts$/);
+  assert.ok(open && att, 'pass open and attempt calls seen');
+  step.attendeeId = open.response?.attendeeId; step.saleId = open.response?.sale?.id; step.attemptId = att.response?.attempt?.id;
+  step.attempt = { status: att.response?.attempt?.status, method: att.response?.attempt?.method ?? att.request?.method ?? null, provider: att.response?.attempt?.provider ?? null, amountSatang: att.response?.attempt?.amountSatang ?? null, hasQrPayload: Boolean(att.response?.attempt?.qrPayload ?? att.response?.qrPayload) };
+  const r = await roster(S, ev.id), s = await sale(S, step.saleId);
+  step.pendingReadback = { at: new Date().toISOString(), rosterStatus: r.status, rosterStats: r.stats, rosterGroups: r.groups, childOnRoster: r.mentions(child), sale: s };
+  save();
+  return step;
+}

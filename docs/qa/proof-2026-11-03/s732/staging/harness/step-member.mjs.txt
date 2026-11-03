@@ -1,0 +1,27 @@
+import assert from 'node:assert/strict';
+export default async function (S) {
+  const { st, save, tillApi, page } = S;
+  const f = st.fixture;
+  await page.setViewportSize({ width: 1600, height: 1150 });
+  if (f.memberId) return { already: f.memberId };
+  let phone;
+  for (const n of [7321, 7322, 7323, 7324, 7325, 7326]) {
+    const p = '+668973' + String(n).padStart(5, '0');
+    const look = await tillApi('GET', '/members/lookup?phone=' + encodeURIComponent(p));
+    if (look.status === 200 && !look.body.member) { phone = p; break; }
+    if (look.status === 404) { phone = p; break; }
+  }
+  assert.ok(phone, 'no free test phone');
+  const m = await tillApi('POST', '/members', { id: undefined, phone, nickname: 'ZZ TEST SCRUM-732 May', createdVia: 'pos' });
+  assert.equal(m.status, 200, JSON.stringify(m.body));
+  f.memberId = m.body.member.id; f.memberPhone = m.body.member.phone; f.memberNickname = m.body.member.nickname; save();
+  const kids = [];
+  for (const [name, age] of [['ZZ TEST Lin', 7], ['ZZ TEST Ploy', 6], ['ZZ TEST Tam', 8]]) {
+    const c = await tillApi('POST', `/members/${f.memberId}/children`, { name, ageYears: age });
+    assert.equal(c.status, 200, JSON.stringify(c.body));
+    const child = (c.body.member?.children ?? []).find((x) => x.name === name) ?? c.body.child ?? null;
+    kids.push({ name, id: child?.id ?? null });
+  }
+  f.children = kids; save();
+  return { memberId: f.memberId, phone: f.memberPhone, children: kids };
+}

@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict';
+import { randomBytes } from 'node:crypto';
+import { roster } from './lib.mjs?v=5';
+const v7 = () => { const b = randomBytes(16); const t = BigInt(Date.now()); for (let i = 0; i < 6; i++) b[i] = Number((t >> BigInt(8 * (5 - i))) & 0xffn); b[6] = (b[6] & 0x0f) | 0x70; b[8] = (b[8] & 0x3f) | 0x80; const h = b.toString('hex'); return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`; };
+export default async function (S) {
+  const { st, save, tillApi } = S;
+  const f = st.fixture, ev = f.events.workshop, pb = f.events.partyB;
+  const step = (st.steps.refusals = { startedAt: new Date().toISOString(), pass: [], party: [] });
+  const base = st.steps.passCash.sellBody;
+  const passBody = (tender) => ({ branchId: base.branchId, attendeeId: v7(), actionId: v7(), attendee: { name: 'ZZ TEST Walkup 732', parentName: base.attendee.parentName, age: 6, parentPhone: base.attendee.parentPhone }, registerProperly: false, stationId: base.stationId, saleId: v7(), tender, expectedTotalSatang: 35000 });
+  const before = await roster(S, ev.id);
+  step.rosterBefore = before.stats;
+  for (const [label, tender] of [['qr', { method: 'promptpay', kind: 'qr' }], ['card', { method: 'card', kind: 'card' }], ['cash', { method: 'cash', kind: 'cash' }]]) {
+    const body = passBody(tender);
+    const r = await tillApi('POST', `/events/${ev.id}/passes`, body);
+    const row = { label, status: r.status, code: r.body?.error?.code ?? null, message: r.body?.error?.message ?? null, saleId: body.saleId, attendeeId: body.attendeeId };
+    if (label !== 'cash') { const sale = await tillApi('GET', `/sales/${body.saleId}`); row.saleAfter = sale.status; }
+    step.pass.push(row); save();
+  }
+  const after = await roster(S, ev.id);
+  step.rosterAfter = after.stats; step.walkupOnRoster = after.mentions('ZZ TEST Walkup 732');
+  const bill = async () => (await tillApi('GET', `/parties/${pb.id}?branchId=${f.branchId}`)).body?.event?.party?.bill?.outstandingSatang ?? null;
+  step.partyBOutstandingBefore = await bill();
+  for (const [label, tender] of [['qr', { method: 'promptpay', kind: 'qr' }], ['card-no-slip', { method: 'card', kind: 'card' }], ['cash', { method: 'cash', kind: 'cash', tenderedSatang: 50000 }]]) {
+    const body = { branchId: f.branchId, paymentId: v7(), actionId: v7(), stationId: f.stationId, amountSatang: 50000, tender, expectedOutstandingSatang: await bill() };
+    const r = await tillApi('POST', `/parties/${pb.id}/payments`, body);
+    step.party.push({ label, status: r.status, code: r.body?.error?.code ?? null, message: r.body?.error?.message ?? null, paymentId: body.paymentId, outstandingAfter: await bill() });
+    save();
+  }
+  return step;
+}

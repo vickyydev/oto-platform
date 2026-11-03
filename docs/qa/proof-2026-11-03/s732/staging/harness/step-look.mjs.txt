@@ -1,0 +1,14 @@
+export default async function (S) {
+  const { page, POS, shot } = S;
+  const out = [];
+  for (const path of ['/', '/parties']) {
+    await page.goto(POS + path);
+    await page.waitForLoadState('networkidle').catch(() => undefined);
+    await page.waitForTimeout(3000);
+    const file = await shot('debug-look-' + path.replace(/\W/g, '') + '-' + Date.now());
+    out.push({ path, file, locked: await page.getByRole('heading', { name: 'Locked', exact: true }).isVisible().catch(() => false), picker: await page.getByRole('heading', { name: 'Which station are you on?' }).isVisible().catch(() => false) });
+  }
+  const me = await S.tillApi('GET', '/me');
+  out.push({ me: me.status, sessionLocked: me.body?.sessionLocked ?? null });
+  return out;
+}

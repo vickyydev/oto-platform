@@ -1,0 +1,26 @@
+{
+  "at": "2026-11-03T22:26:02.052Z",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "status": "live",
+      "source": "e978578f71a219f4f0cee64c423d39fc81fece17",
+      "deployId": "dep-dbl5q8p42hec73c9k3bg"
+    },
+    {
+      "name": "oto-pos-web-staging",
+      "status": "live",
+      "source": "e978578f71a219f4f0cee64c423d39fc81fece17",
+      "deployId": "dep-dbl5q9142hec73c9k4sg"
+    },
+    {
+      "name": "oto-pos-staging",
+      "status": "live",
+      "source": "e978578f71a219f4f0cee64c423d39fc81fece17",
+      "deployId": "dep-dbl5q9142hec73c9k4og"
+    }
+  ],
+  "gatewayIsSimulator": true,
+  "apiSettingNames": 57,
+  "apiHealth": 200
+}
