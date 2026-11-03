@@ -590,6 +590,8 @@ export interface BoxConfigBundle {
    * "print every applicable field", which is what a new branch does.
    */
   printTemplates?: PrintTemplateWire[];
+  /** OD-6, from STAFF_OFFLINE_SIGN_IN. Missing on older bundles keeps OD-6 enabled. */
+  staffOfflineSignIn?: boolean;
   /** PUBLIC halves only — what a box needs to verify a staff token offline. */
   signingKeys: Array<{ purpose: string; kid: string; algorithm: string; publicKey: string }>;
   /**

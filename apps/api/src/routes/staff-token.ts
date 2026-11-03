@@ -37,11 +37,9 @@ import { opCtx, withTx } from '../services/tx';
  *     the password against the box's cached hash. **It is still an api
  *     route** — the session plugin reads `core.session` joined to
  *     `core.account` before the handler runs — so a till with no route to the
- *     cloud cannot reach it today. The verifier that would serve such a till
- *     is in `@oto/box-agent`; what it needs is a local HTTP surface on the
- *     box to call it, which is the next ticket's work and is recorded in
- *     SPRINT_2_PROGRESS.md. Nothing here should be built against as though a
- *     Raspberry Pi already answered it.
+ *     cloud cannot reach it. The actual local HTTP bridge lives in the box
+ *     agent and runs the same verifier against its own bundles. This legacy
+ *     API route is not the local box endpoint.
  *   - **`GET /accounts/:id/staff-tokens`** and **`DELETE /staff-tokens/:jti`**
  *     — the Console's view and an administrator ending a shift by hand. Both
  *     permissioned; neither is reachable from the till.
@@ -50,7 +48,7 @@ import { opCtx, withTx } from '../services/tx';
  * answer different questions. The online one asks the database whether this
  * password matches this account, right now, and is the truth. The offline one
  * asks a copy of the staff list that a box took some hours ago, which is a
- * weaker statement and is recorded as one — `auth_method=offline_token`, with
+ * weaker statement and is recorded as one — `auth_method=offline_token` or `offline_sign_in`, with
  * the age of the cache on the audit row. Folding them into one route would
  * make "how did this person get in" a thing you work out from absence.
  */
@@ -155,7 +153,7 @@ export async function staffTokenRoutes(app: App): Promise<void> {
       config: { auth: 'session' },
       schema: {
         description:
-          'Unlock a locked till from the box’s cached copy: the shift token is verified against the box’s cached signing key and deny-list, and the password against the box’s cached hash — no account row decides anything. This route still needs to be reachable, so it serves a till whose box is offline, not one that cannot reach the api at all. Recorded as session.unlock with auth_method=offline_token. Refuses an expired token with "shift token expired, connect to sign in"; refuses when the box holds no deny-list and so cannot check whether the shift was ended; five wrong passwords share the online cooldown.',
+          'Unlock from the cached staff and revocation data through the legacy cloud route, which still requires API access. The local box bridge uses the same verifier independently. A valid token and password record offline_token. With STAFF_OFFLINE_SIGN_IN enabled, no token or otherwise valid expiry may record offline_sign_in after recent-recognition and complete, fresh revocation checks. Forged, foreign and ended-shift tokens refuse. Five wrong passwords share the online cooldown.',
         body: z.object({
           /** Absent is allowed: with STAFF_OFFLINE_SIGN_IN on, recognition decides. */
           token: z.string().min(1).max(4096).optional(),
@@ -302,7 +300,7 @@ export async function staffTokenRoutes(app: App): Promise<void> {
           entityType: 'staff_token',
           entityId: token.jti,
           // Whose shift, and whether this call is what ended it: a token
-          // already revoked or already expired answers 0, and the row says so
+          // already revoked or outside the recognition window answers 0; the row says so
           // rather than reading as a second revocation.
           after: { accountId: token.accountId, reason: 'admin', ended: ended.length },
           requestId: req.id,

@@ -100,6 +100,7 @@ import { withTx, type Exec, type OpContext, type Tx } from './tx';
  */
 export interface BoxSettings {
   heartbeatIntervalS: number;
+  staffOfflineSignIn: boolean;
   /** Silence longer than this makes a box offline. Three missed beats. */
   offlineAfterS: number;
   minAgentVersion: string;
@@ -132,6 +133,7 @@ function num(name: string, fallback: number): number {
 export function boxSettings(): BoxSettings {
   return {
     heartbeatIntervalS: num('BOX_HEARTBEAT_INTERVAL_S', 60),
+    staffOfflineSignIn: process.env.STAFF_OFFLINE_SIGN_IN !== 'false',
     offlineAfterS: num('BOX_OFFLINE_AFTER_S', 180),
     minAgentVersion: process.env.BOX_MIN_AGENT_VERSION || '0.1.0',
     maxClockSkewS: num('BOX_MAX_CLOCK_SKEW_S', 900),
@@ -732,6 +734,7 @@ export async function recordHeartbeat(
   auth: BoxAuth,
   input: BoxHeartbeatRequest,
   ctx: OpContext,
+  env?: Pick<Env, 'STAFF_OFFLINE_SIGN_IN'>,
 ): Promise<BoxHeartbeatAck> {
   const settings = boxSettings();
   const receivedAt = new Date();
@@ -1018,7 +1021,7 @@ export async function recordHeartbeat(
       .where(eq(box.id, auth.boxId));
   });
 
-  const bundle = await configBundle(db, auth);
+  const bundle = await configBundle(db, auth, env);
   const pending = await countPendingCommands(db, auth.boxId);
 
   /**
@@ -1095,7 +1098,7 @@ function readWatermark(lastStatus: Record<string, unknown> | null): number | nul
  * there and still shown: that is the number a person reads on the Console,
  * and this is the one a machine compares.
  */
-export async function configBundle(db: Db, auth: BoxAuth): Promise<BoxConfigBundle> {
+export async function configBundle(db: Db, auth: BoxAuth, env?: Pick<Env, 'STAFF_OFFLINE_SIGN_IN'>): Promise<BoxConfigBundle> {
   const settings = boxSettings();
 
   const [branchRow] = await db.select().from(branch).where(eq(branch.id, auth.branchId)).limit(1);
@@ -1249,6 +1252,7 @@ export async function configBundle(db: Db, auth: BoxAuth): Promise<BoxConfigBund
      */
     printTemplates,
     signingKeys,
+    staffOfflineSignIn: env?.STAFF_OFFLINE_SIGN_IN ?? settings.staffOfflineSignIn,
     ...(bandKey ? { bandKey } : {}),
     heartbeatIntervalS: settings.heartbeatIntervalS,
     minSupportedAgentVersion: settings.minAgentVersion,

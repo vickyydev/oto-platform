@@ -5207,7 +5207,9 @@ export async function cacheBundle(
           passwordHash: a.passwordHash,
           status: a.status,
           mustChangePassword: a.mustChangePassword,
-          lastTokenAt: lastToken.get(a.id)?.toISOString() ?? null,
+          lastTokenAt: lastToken.get(a.id)?.issuedAt.toISOString() ?? null,
+          lastTokenId: lastToken.get(a.id)?.jti ?? null,
+          lastTokenRevoked: lastToken.get(a.id)?.revoked ?? false,
           /**
            * What this account may do at THIS branch (offline plan §2.3, OD-11):
            * the permission strings its grants cover here, resolved exactly as
