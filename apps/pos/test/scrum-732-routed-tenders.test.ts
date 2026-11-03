@@ -6,11 +6,13 @@ import type { PaymentAttemptView } from '@oto/shared';
 import { api, ApiError, NetworkError } from '@/api/client';
 import { readPaidPass } from '@/api/events';
 import { inFlightTenderOf, startPartyTenderOnPlatform } from '@/api/parties';
+import type { ApiSaleDetail } from '@/api/history';
 import { paymentsApi } from '@/api/payments';
 import { AddAttendeeModal } from '@/components/parties/AddAttendeeModal';
 import { AttendeeFormFields } from '@/components/shared/AttendeeFormFields';
 import { PromptPayCustomerScreen } from '@/components/shared/PromptPayCustomerScreen';
 import { StepPayment } from '@/components/till/StepPayment';
+import { rebuildResumedSale } from '@/lib/resumeSale';
 import { usePartyTender, type PartyTenderOptions } from '@/lib/usePartyTender';
 import type { PaymentStageController } from '@/lib/usePaymentStage';
 import type { EventAttendee, OtoEvent, PartyBooking } from '@/types';
@@ -483,5 +485,44 @@ describe("a party's balance by QR or card", () => {
     const outcome = await startPartyTenderOnPlatform({ party, amount: 900, method: 'promptpay', outstanding: 900, stationId: null, ids: { id: 'a', actionId: 'b' } });
     expect(outcome.ok).toBe(false);
     expect(postMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('a pass sale a reload left unpaid at the till', () => {
+  /**
+   * The sale waits in `tendering` with its child held, so the till's left-behind
+   * card lists it like any unpaid sale. The ledger has one `kids` row at the
+   * event's flat fee, labelled One-time, and no ticket package.
+   */
+  const passSale = {
+    sale: {
+      id: 'sale-pass', branchId: HKT_CENTRAL, stationId: TILL, memberId: null, visitId: null,
+      businessDate: '2026-11-03', occurredAt: '2026-11-03T03:10:00.000Z', status: 'tendering',
+      pricingMode: 'weekday', pricingModeReason: 'Weekday pricing', customerTier: 'tourist', engineVersion: 'engine-1',
+      receiptNumber: null, receiptSeries: null, receiptSeq: null, finalisedAt: null, note: null,
+      totals: {
+        subtotalSatang: 35_000, manualDiscountSatang: 0, promoDiscountSatang: 0, discountSatang: 0,
+        netSatang: 32_710, serviceChargeSatang: 0, taxInclusiveSatang: 2_290, taxExclusiveSatang: 0,
+        grossSatang: 35_000, unappliedDiscountSatang: 0, refundedSatang: 0,
+      },
+    },
+    taxBreakdown: null,
+    lines: [{
+      id: 'row-pass', lineNo: 1, kind: 'kids', cartLineId: 'attendee-1', componentKey: 'event-pass', ticketPackageId: null,
+      label: 'Event pass', revenueCategory: 'tickets', taxableCategory: 'tickets', quantity: 1, unitSatang: 35_000,
+      baseSatang: 35_000, discountSatang: 0, netSatang: 32_710, serviceChargeSatang: 0, taxSatang: 2_290, grossSatang: 35_000,
+      taxMode: 'inclusive', taxRateBp: 700, taxName: 'VAT', customerTier: 'tourist', kidCount: 1, adultCount: 0,
+      freeAdultCount: 0, stayHours: 0, stayDurationLabel: 'One-time',
+    }],
+    discounts: [],
+    attempts: [],
+  } as unknown as ApiSaleDetail;
+
+  it("comes back as one line at its fee, on the sale's own figures, so the tender closes that sale and lands its child", () => {
+    const rebuilt = rebuildResumedSale(passSale, { ticketTypes: [], addOns: [], discountByCode: () => null });
+    expect(rebuilt?.lines).toHaveLength(1);
+    expect(rebuilt?.lines[0]).toMatchObject({ id: 'attendee-1', kids: 1, adults: 0, socks: 0, lineTotal: 350 });
+    expect(rebuilt?.cart.totals.total).toBe(350);
+    expect(rebuilt?.cart.quote.source).toBe('platform');
   });
 });
