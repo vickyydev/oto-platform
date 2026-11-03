@@ -1,0 +1,87 @@
+{
+  "unit": "SCRUM-735",
+  "source": "8dee9f447ff486c7a2d5dc038ab7f34d00718137",
+  "startedAt": "2026-11-03T23:43:14.432Z",
+  "name": "ZZ TEST SCRUM-735 mw1c2qrj",
+  "code": "7359394431",
+  "fixtures": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "categoryId": "01a1a3cb-ca79-7714-949b-d5f3e312bdac",
+    "productName": "ZZ TEST SCRUM-735 mw1c2qrj rice",
+    "productId": "01a1a3cb-cc44-7468-9f0b-088b6d2cb8a8",
+    "stationId": "01a1a3cb-d062-7298-95ba-ba8285a8afb9",
+    "stationName": "ZZ TEST SCRUM-735 mw1c2qrj till"
+  },
+  "screens": [
+    "numeric-code-search.png"
+  ],
+  "cleanup": {
+    "at": "2026-11-03T23:43:32.481Z",
+    "productArchived": true,
+    "categoryArchived": true,
+    "stationArchived": true,
+    "absentFromActiveMenu": true,
+    "boxSettingsUntouched": true
+  },
+  "outcome": "numeric code and name search passed in native staging browser; cleanup follows",
+  "deployments": [
+    {
+      "name": "oto-pos-web-staging",
+      "commit": "8dee9f447ff486c7a2d5dc038ab7f34d00718137",
+      "deployId": "dep-dbl71as9v7es73ccb240",
+      "finishedAt": "2026-11-03T23:41:58.644556Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "commit": "8dee9f447ff486c7a2d5dc038ab7f34d00718137",
+      "deployId": "dep-dbl71as9v7es73ccb2bg",
+      "finishedAt": "2026-11-03T23:40:26.60021Z"
+    },
+    {
+      "name": "oto-launcher-staging",
+      "commit": "8dee9f447ff486c7a2d5dc038ab7f34d00718137",
+      "deployId": "dep-dbl71as9v7es73ccb2fg",
+      "finishedAt": "2026-11-03T23:40:13.414083Z"
+    },
+    {
+      "name": "oto-api-staging",
+      "commit": "8dee9f447ff486c7a2d5dc038ab7f34d00718137",
+      "deployId": "dep-dbl71as9v7es73ccb150",
+      "finishedAt": "2026-11-03T23:43:05.30212Z"
+    }
+  ],
+  "ci": {
+    "conclusion": "success",
+    "databaseId": 41737710922,
+    "headSha": "8dee9f447ff486c7a2d5dc038ab7f34d00718137",
+    "status": "completed"
+  },
+  "numericMatch": {
+    "at": "2026-11-03T23:43:28.559Z",
+    "productId": "01a1a3cb-cc44-7468-9f0b-088b6d2cb8a8",
+    "code": "7359394431",
+    "searchByNameImpossible": true
+  },
+  "nameSearchStillWorks": true,
+  "proofFinishedAt": "2026-11-03T23:43:29.020Z",
+  "sessions": [
+    {
+      "app": "oto-pos-web-staging.onrender.com",
+      "signedOut": true
+    },
+    {
+      "app": "oto-launcher-staging.onrender.com",
+      "signedOut": true
+    },
+    {
+      "app": "oto-console-staging.onrender.com",
+      "signedOut": true
+    },
+    {
+      "app": "oto-launcher-staging.onrender.com",
+      "signedOut": true
+    }
+  ],
+  "finishedAt": "2026-11-03T23:43:35.485Z"
+}

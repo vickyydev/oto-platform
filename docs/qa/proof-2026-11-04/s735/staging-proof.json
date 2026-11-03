@@ -1,0 +1,48 @@
+{
+  "source": "8dee9f447ff486c7a2d5dc038ab7f34d00718137",
+  "ci": {
+    "databaseId": 41737710922,
+    "headSha": "8dee9f447ff486c7a2d5dc038ab7f34d00718137",
+    "conclusion": "success",
+    "url": "https://github.com/vickyydev/oto-platform/actions/runs/41737710922"
+  },
+  "capturedAt": "2026-11-03T23:43:28.559Z",
+  "imagesOpenedAt": "2026-11-03T23:43:58.155Z",
+  "screens": [
+    "s735-numeric-code-search.png"
+  ],
+  "imageSha256": "72954ebadef7bc15b0c877e71acaeab3767bf8854a7128e5a2be286ce9cd71d5",
+  "numericCode": "7359394431",
+  "cleanupVerified": true,
+  "deployments": [
+    {
+      "name": "oto-pos-web-staging",
+      "commit": "8dee9f447ff486c7a2d5dc038ab7f34d00718137",
+      "deployId": "dep-dbl71as9v7es73ccb240",
+      "finishedAt": "2026-11-03T23:41:58.644556Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "commit": "8dee9f447ff486c7a2d5dc038ab7f34d00718137",
+      "deployId": "dep-dbl71as9v7es73ccb2bg",
+      "finishedAt": "2026-11-03T23:40:26.60021Z"
+    },
+    {
+      "name": "oto-launcher-staging",
+      "commit": "8dee9f447ff486c7a2d5dc038ab7f34d00718137",
+      "deployId": "dep-dbl71as9v7es73ccb2fg",
+      "finishedAt": "2026-11-03T23:40:13.414083Z"
+    },
+    {
+      "name": "oto-api-staging",
+      "commit": "8dee9f447ff486c7a2d5dc038ab7f34d00718137",
+      "deployId": "dep-dbl71as9v7es73ccb150",
+      "finishedAt": "2026-11-03T23:43:05.30212Z"
+    }
+  ],
+  "nativeReceipt": "docs/qa/proof-2026-11-04/s735/staging/mw1c2qrj/receipt.json",
+  "limitations": [
+    "Camera scanner portion is unchanged and awaits the owner decision.",
+    "No sale or payment was part of this search proof."
+  ]
+}
