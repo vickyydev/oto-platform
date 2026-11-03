@@ -16,82 +16,82 @@
 @oto/assistant:typecheck: cache miss, executing 09a681bcee18c0eb
 @oto/box-agent:typecheck: cache miss, executing bf50555b832b2f98
 @oto/print:typecheck: cache hit, replaying logs ab1249401e7863fa
-@oto/print:typecheck: 
+@oto/print:typecheck:
 @oto/print:typecheck: > @oto/print@0.1.0 typecheck C:\oto-lanes\codex-display-20261102\packages\print
 @oto/print:typecheck: > tsc -p tsconfig.json
-@oto/print:typecheck: 
+@oto/print:typecheck:
 @oto/admin-screens:typecheck: cache miss, executing 9797b085b00cbfa8
 @oto/messaging:typecheck: cache hit, replaying logs e448a0b9bafdbc03
-@oto/messaging:typecheck: 
+@oto/messaging:typecheck:
 @oto/messaging:typecheck: > @oto/messaging@0.1.0 typecheck C:\w\pb-foundation\packages\messaging
 @oto/messaging:typecheck: > tsc -p tsconfig.json
-@oto/messaging:typecheck: 
+@oto/messaging:typecheck:
 @oto/pos:typecheck: cache miss, executing 80e493e026d48029
 @oto/telemetry:typecheck: cache hit, replaying logs 2173b47779e7cd96
-@oto/telemetry:typecheck: 
+@oto/telemetry:typecheck:
 @oto/telemetry:typecheck: > @oto/telemetry@0.1.0 typecheck C:\oto-lanes\codex-first-print-20261103\packages\telemetry
 @oto/telemetry:typecheck: > tsc -p tsconfig.json
-@oto/telemetry:typecheck: 
+@oto/telemetry:typecheck:
 @oto/inbox:typecheck: cache miss, executing 61d9a475c592a9fe
-@oto/shared:typecheck: 
+@oto/shared:typecheck:
 @oto/shared:typecheck: > @oto/shared@0.1.0 typecheck C:\oto-lanes\codex-qr-review-20261104\packages\shared
 @oto/shared:typecheck: > tsc -p tsconfig.json
-@oto/shared:typecheck: 
-@oto/payments-2c2p:typecheck: 
+@oto/shared:typecheck:
+@oto/payments-2c2p:typecheck:
 @oto/payments-2c2p:typecheck: > @oto/payments-2c2p@0.1.0 typecheck C:\oto-lanes\codex-qr-review-20261104\packages\payments-2c2p
 @oto/payments-2c2p:typecheck: > tsc -p tsconfig.json
-@oto/payments-2c2p:typecheck: 
-@oto/db:typecheck: 
+@oto/payments-2c2p:typecheck:
+@oto/db:typecheck:
 @oto/db:typecheck: > @oto/db@0.1.0 typecheck C:\oto-lanes\codex-qr-review-20261104\packages\db
 @oto/db:typecheck: > tsc -p tsconfig.json
-@oto/db:typecheck: 
-@oto/api-types:typecheck: 
+@oto/db:typecheck:
+@oto/api-types:typecheck:
 @oto/api-types:typecheck: > @oto/api-types@0.1.0 typecheck C:\oto-lanes\codex-qr-review-20261104\packages\api-types
 @oto/api-types:typecheck: > tsc -p tsconfig.json
-@oto/api-types:typecheck: 
-@oto/booth:typecheck: 
+@oto/api-types:typecheck:
+@oto/booth:typecheck:
 @oto/booth:typecheck: > @oto/booth@0.1.0 typecheck C:\oto-lanes\codex-qr-review-20261104\apps\booth
 @oto/booth:typecheck: > tsc -p tsconfig.json --noEmit
-@oto/booth:typecheck: 
-@oto/assistant:typecheck: 
+@oto/booth:typecheck:
+@oto/assistant:typecheck:
 @oto/assistant:typecheck: > @oto/assistant@0.1.0 typecheck C:\oto-lanes\codex-qr-review-20261104\packages\assistant
 @oto/assistant:typecheck: > tsc -p tsconfig.json
-@oto/assistant:typecheck: 
-@oto/box-agent:typecheck: 
+@oto/assistant:typecheck:
+@oto/box-agent:typecheck:
 @oto/box-agent:typecheck: > @oto/box-agent@0.1.0 typecheck C:\oto-lanes\codex-qr-review-20261104\packages\box-agent
 @oto/box-agent:typecheck: > tsc -p tsconfig.json && tsc -p tsconfig.test.json
-@oto/box-agent:typecheck: 
-@oto/admin-screens:typecheck: 
+@oto/box-agent:typecheck:
+@oto/admin-screens:typecheck:
 @oto/admin-screens:typecheck: > @oto/admin-screens@0.1.0 typecheck C:\oto-lanes\codex-qr-review-20261104\packages\admin-screens
 @oto/admin-screens:typecheck: > tsc -p tsconfig.json --noEmit
-@oto/admin-screens:typecheck: 
-@oto/pos:typecheck: 
+@oto/admin-screens:typecheck:
+@oto/pos:typecheck:
 @oto/pos:typecheck: > @oto/pos@0.1.0 typecheck C:\oto-lanes\codex-qr-review-20261104\apps\pos
 @oto/pos:typecheck: > tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit && tsc -p server/tsconfig.json --noEmit
-@oto/pos:typecheck: 
-@oto/inbox:typecheck: 
+@oto/pos:typecheck:
+@oto/inbox:typecheck:
 @oto/inbox:typecheck: > @oto/inbox@0.1.0 typecheck C:\oto-lanes\codex-qr-review-20261104\apps\inbox
 @oto/inbox:typecheck: > tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit
-@oto/inbox:typecheck: 
+@oto/inbox:typecheck:
 @oto/launcher:typecheck: cache miss, executing 93268a0cdfa8f67d
 @oto/api:typecheck: cache miss, executing cb1f38ce1957034b
 @oto/console:typecheck: cache miss, executing 22d725fe90f32884
-@oto/launcher:typecheck: 
+@oto/launcher:typecheck:
 @oto/launcher:typecheck: > @oto/launcher@0.1.0 typecheck C:\oto-lanes\codex-qr-review-20261104\apps\launcher
 @oto/launcher:typecheck: > tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit
-@oto/launcher:typecheck: 
-@oto/api:typecheck: 
+@oto/launcher:typecheck:
+@oto/api:typecheck:
 @oto/api:typecheck: > @oto/api@0.1.0 typecheck C:\oto-lanes\codex-qr-review-20261104\apps\api
 @oto/api:typecheck: > tsc -p tsconfig.json
-@oto/api:typecheck: 
-@oto/console:typecheck: 
+@oto/api:typecheck:
+@oto/console:typecheck:
 @oto/console:typecheck: > @oto/console@0.1.0 typecheck C:\oto-lanes\codex-qr-review-20261104\apps\console
 @oto/console:typecheck: > tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit && tsc -p e2e/tsconfig.json --noEmit
-@oto/console:typecheck: 
+@oto/console:typecheck:
 
  Tasks:    16 successful, 16 total
 Cached:    3 cached, 16 total
-  Time:    2m0.821s 
+  Time:    2m0.821s
 
 
 > oto-platform@0.1.0 lint C:\oto-lanes\codex-qr-review-20261104
