@@ -1,0 +1,14 @@
+{
+  "source": "4e515c61217770396da4dd86119cc0666cdc1d29",
+  "ciRun": "41659700598",
+  "at": "2026-11-03T15:45:14.427Z",
+  "status": "Deployed",
+  "commentId": "13219",
+  "commentUrl": "https://oto-suite-dev.atlassian.net/browse/SCRUM-727?focusedCommentId=13219",
+  "renderedImages": 4,
+  "cleanupDeploymentsHealthy": true,
+  "completeEnvironmentRestored": true,
+  "signingKeyPreserved": true,
+  "testSlotAbsent": true,
+  "next": "Rebase SCRUM-728 from lane/codex-box-outage-20261103-r2; coordinate its later source landing with live STATUS and main CI"
+}

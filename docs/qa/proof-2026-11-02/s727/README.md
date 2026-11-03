@@ -1,6 +1,6 @@
 # SCRUM-727 release evidence
 
-## Staging proof passed; cleanup deployment pending
+## Deployed; staging proof and cleanup complete
 
 Source: `4e515c61217770396da4dd86119cc0666cdc1d29`.
 [CI 41659700598](https://github.com/vickyydev/oto-platform/actions/runs/41659700598)
@@ -31,9 +31,13 @@ and both browser sessions signed out. Its private cache stays outside Git.
 
 The [temporary settings](settings-enable.json) are [restored](settings-restore.json)
 to their complete original fingerprints: API 57 names and POS four. The signing
-key stays and BOX_AGENT_TEST_SLOT remains absent. Same-source cleanup deployments
-are still running; their live/healthy readback and the inline Jira image comment
-remain before Deployed. Jira remains Testing at this checkpoint.
+key stays and BOX_AGENT_TEST_SLOT remains absent. The [same-source cleanup deployments](deploy-restored.json) are live and healthy.
+The [post-deploy readback](settings-restored-readback.json) matches the complete
+original environment. All four images are rendered inside
+[Jira comment 13219](https://oto-suite-dev.atlassian.net/browse/SCRUM-727?focusedCommentId=13219).
+The [image receipt](jira-images.json) records their attachment IDs and rendered
+comment check. `jira.mjs walk` moved the ticket to Deployed, confirmed by
+[readback](release-result.json); never Done. The source/proof window is closed.
 
 Limits: Windows local agent and a test-only localhost zone; no real address,
 physical Pi/iPad, private HTTPS/certificate, printer or power-cut acceptance.
@@ -42,21 +46,17 @@ SCRUM-728. The notice clearing after a fresh online sign-in was proven in the
 local rehearsal. Q727-1 (platform session termination) and Q727-2 (named-staff
 scope) remain open and unbuilt in the offline plan.
 
-## Current review candidate
+## Complete local gates
 
-The complete review gates pass on `0f400710`, with the rebased candidate on
-`lane/codex-box-unlock-review-20261103-r2` product-identical.
-[Final API counts](review-local/final-api-gate.json) and
-[all completion receipts](review-local/completed-checks.json) bind the results
-to their source and complete logs. The earlier Windows cleanup failure is
-retained; the complete unchanged workspace rerun passed.
+The full review source `0f400710` and release product files are identical.
+[Final API inventory](review-local/final-api-gate.json) records 6,160 passes,
+zero failures, 401 existing skips and four TODOs across 442 files. All three
+processes exited zero. [Complete receipts](review-local/completed-checks.json)
+record all 15 other workspace tasks, 16 typechecks, lint, contracts, builds,
+seven native smoke journeys and the local real-agent rehearsal. The original
+Windows cleanup failure is retained; the full unchanged rerun passed.
 
-The [local real-agent rehearsal](review-local/README.md) and independent
-cleanup passed. Staging proof is still pending. 726 has released the window
-to 727. Q727-1 and Q727-2 remain open and unbuilt. 728 remains backed up at
-`afbefec2` and resumes after 727 is Deployed with an opened image shown inline
-in its Jira comment. The prepared proof and restoration helpers are archived
-under `staging-harness/`; those files are not deployment evidence.
+728 remains separate and resumes from its saved branch after this acceptance.
 
 ## Earlier candidate evidence
 

@@ -1,0 +1,21 @@
+{
+  "source": "4e515c61217770396da4dd86119cc0666cdc1d29",
+  "at": "2026-11-03T15:44:12.446Z",
+  "services": [
+    {
+      "name": "oto-api-staging",
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "count": 57,
+      "completeBaselineMatched": true,
+      "testSlotAbsent": true,
+      "signingKeyPreserved": true
+    },
+    {
+      "name": "oto-pos-web-staging",
+      "id": "srv-dbk7qu8n74is73bm894g",
+      "count": 4,
+      "completeBaselineMatched": true,
+      "testSlotAbsent": true
+    }
+  ]
+}

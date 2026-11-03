@@ -1,0 +1,28 @@
+{
+  "source": "4e515c61217770396da4dd86119cc0666cdc1d29",
+  "at": "2026-11-03T15:42:37.716Z",
+  "images": [
+    {
+      "id": "12346",
+      "name": "s727-mw0ulb5n-configured-test-zone.png"
+    },
+    {
+      "id": "12347",
+      "name": "s727-mw0ulb5n-fresh-sign-in-desktop.png"
+    },
+    {
+      "id": "12348",
+      "name": "s727-mw0ulb5n-fresh-sign-in-mobile.png"
+    },
+    {
+      "id": "12349",
+      "name": "s727-mw0ulb5n-ended-shift-refused.png"
+    }
+  ],
+  "statusBefore": "Testing",
+  "commentId": "13219",
+  "renderedImageCount": 4,
+  "renderedBodySha256": "ac8171dcecaa87597431c0261ccd9c815812ea6eb61ebb605c67dc4ff2cc5cf9",
+  "commentUrl": "https://oto-suite-dev.atlassian.net/browse/SCRUM-727?focusedCommentId=13219",
+  "inlineImagesVerifiedAt": "2026-11-03T15:42:38.898Z"
+}
