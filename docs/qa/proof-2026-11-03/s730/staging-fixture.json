@@ -13,7 +13,7 @@
     "child": "ZZ TEST SCRUM-730 Ploy",
     "phone": "+66897301001",
     "visitDate": "2026-11-03",
-    "orderTextOnOldCode": "Current Order | TOURIST | ZZ TEST SCRUM-730 Ploy | EDITING | \u2014 | Choose length | Drop-off service | Configure | Apply | Redeem | Issue a voucher\u2026 | Add manual discount | Subtotal | \u2014 | Total | \u2014 | Priced on this till. A drop-off child has no play length chosen yet. | Cancel | Pay \u2014",
+    "orderTextOnOldCode": "Current Order | TOURIST | ZZ TEST SCRUM-730 Ploy | EDITING | — | Choose length | Drop-off service | Configure | Apply | Redeem | Issue a voucher… | Add manual discount | Subtotal | — | Total | — | Priced on this till. A drop-off child has no play length chosen yet. | Cancel | Pay —",
     "capturedAt": "2026-11-03T16:02:13.050Z",
     "liveSource": "4e515c61217770396da4dd86119cc0666cdc1d29",
     "bookingStatusAfterCancel": "paid",
@@ -26,5 +26,174 @@
     "qr": "none",
     "card": "manual"
   },
-  "devicesAreSimulated": true
+  "devicesAreSimulated": true,
+  "after": {
+    "bookings": {
+      "nanny": {
+        "bookingId": "01a1a259-855e-7cbd-89ad-b3c3d822a741",
+        "reference": "OTO-FMC9-RIVN",
+        "parent": "ZZ TEST SCRUM-730 Dao",
+        "child": "ZZ TEST SCRUM-730 Tam",
+        "phone": "+66897301002",
+        "totalSatang": 102000,
+        "route": "booking site routes, hosted page in a browser (no nanny start times left on the page after 21:00)"
+      },
+      "picker": {
+        "bookingId": "01a1a259-d2dd-75ee-97e6-7a47acf18c8c",
+        "reference": "OTO-CF20-HA1S",
+        "parent": "ZZ TEST SCRUM-730 Ying",
+        "child": "ZZ TEST SCRUM-730 Bua",
+        "phone": "+66897301003",
+        "totalSatang": 91500,
+        "route": "booking site page, hosted page in a browser"
+      },
+      "phone": {
+        "bookingId": "01a1a25a-194f-7e3e-8a39-ba8377ca7d93",
+        "reference": "OTO-I5TP-DT02",
+        "parent": "ZZ TEST SCRUM-730 Fon",
+        "child": "ZZ TEST SCRUM-730 Mint",
+        "phone": "+66897301004",
+        "totalSatang": 91500,
+        "route": "booking site page, hosted page in a browser"
+      }
+    },
+    "steps5to8partial": {
+      "error": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByPlaceholder('Search child, parent or phone...')\u001b[22m\n",
+      "at": "2026-11-03T17:01:14.744Z"
+    },
+    "steps5to8": {
+      "step5": {
+        "drop": " LINE |  | Stored as: +66897301001 |  | Save & re-send | Resend | Sim: parent confirms | Couldn't reach | Z | ZZ TEST SCRUM-730 Ploy | 6 yrs | DROP-OFF | No arrival time set | Booked & paid · no payment needed | Check in",
+        "nanny": "legram | LINE |  | Stored as: +66897301002 |  | Save & re-send | Resend | Sim: parent confirms | Couldn't reach | Z | ZZ TEST SCRUM-730 Tam | 3 yrs | NANNY | Overdue · 23:30 | Booked & paid · no payment needed | Check in"
+      },
+      "step6": {
+        "dialog": "Redeem Online Booking |  | Scan or type the booking reference from the customer's QR code. |  | OTO-06IT-O26H | Tourist | Drop-off: ZZ TEST SCRUM-730 Ploy | Card | ฿915 paid |  | Will issue at the door: |  | • 1 child wristband | • Drop-off check-in for ZZ TEST SCRUM-730 Ploy | After confirming, you'll be prompted to check in the drop-off child via the registration flow. | Back | Confirm & Issue | Close",
+        "behind": {
+          "noItems": 1,
+          "total": "Total฿0",
+          "pay": "Pay ฿0",
+          "amountDue": 0
+        }
+      },
+      "step7a": "Check in drop-off child? |  | This booking includes a registered drop-off: ZZ TEST SCRUM-730 Ploy. Payment is complete. Open the Drop-Off board to confirm the visit photo, assign a nanny where needed and check in without paying again. |  | Skip for now | Check in now | Close",
+      "step7b": "Check in child |  | ZZ TEST SCRUM-730 Mali · already booked & paid — no payment needed. |  | ZZ TEST SCRUM-730 Ploy | 6 yrs | Drop-Off | No prepaid food |  | Consent & photo needed before check-in |  | ZZ TEST SCRUM-730 Ploy's photo (with parent / guardian in the shot) | No photo yet | Start camera | Check in & issue band | Close",
+      "step7c": {
+        "status": 200,
+        "body": "{\"saleId\":\"01a1a25c-1b15-7743-ae1f-a64aed410474\",\"saleIds\":[\"01a1a25c-1b15-7743-ae1f-a64aed410474\"],\"children\":[{\"id\":\"01a1a224-494c-7c4e-8c82-33e6c148cf8a\",\"registrationId\":\"01a1a224-4948-7671-a2fa-2624758e6c16\",\"childId\":null,\"childName\":\"ZZ TEST SCRUM-730 Ploy\",\"childAgeYears\":6,\"dateOfBirth\":\"2020-01-15\",\"allergies\":null,\"foodRestrictions\":null,\"mayOrderFood\":false,\"foodProvision\":{\"mode\":\"none\",\"paidSatang\":0},\"service\":\"drop_off\",\"status\":\"in_park\",\"scheduledFor\":null,\"bookedMinutes\":60,\"nannyId\":null,\"checkedInAt\":\"2026-11-03T17:01:55.279Z\",\"saleId\":\"01a1a25c-1b15-7743-ae1f-a64aed410474\",\"bandId\":\"01a1a25c-38e1-73b0-a0bb-6aca21608a20\",\"visitId\":null,\"photoFileId\":\"01a1a25c-3338-7206-b"
+      },
+      "step7d": "1 | in park | no gate | Oto Play Park, Central Floresta | Tickets | F&B | Shop | Events | Check-in | History | Today | 7 | Messages | Cash | Weekday pricing | Som | 13 out of stock · 1 low | Glow Band, Locker Rental, Mascot Keyring, Oto Mascot Plush +10 more | Drop-off | Events | 4 overdue | Review → | All | Nanny | Drop-Off | Unconfirmed | 21 | Upcoming | 11 | In Park | 5 | Out | 9 | No nannies free right now. |  | No children in this list. |  | IN PARK NOW | Adults | 0 | Kids | 1 | Total | 1 |  | No gate is reporting at this branch.",
+      "step8": {
+        "dialog": "Redeem Online Booking |  | Scan or type the booking reference from the customer's QR code. |  | OTO-FMC9-RIVN | Tourist | Drop-off: ZZ TEST SCRUM-730 Tam | Card | ฿1,020 paid |  | Will issue at the door: |  | • 1 child wristband | • Drop-off check-in for ZZ TEST SCRUM-730 Tam | After confirming, you'll be prompted to check in the drop-off child via the registration flow. | Back | Confirm & Issue | Close",
+        "refusals": 0,
+        "behind": {
+          "noItems": 1,
+          "total": "Total฿0",
+          "pay": "Pay ฿0",
+          "amountDue": 0
+        }
+      },
+      "liveSource": "2e5ff3f1d2f1aa093e9edd7b003a16d0d9b5118e",
+      "capturedAt": "2026-11-03T17:02:34.226Z"
+    },
+    "step7Read": {
+      "bookingStatus": "redeemed",
+      "bookingTotalSatang": 91500,
+      "receipt": "Z730-000001",
+      "saleStatus": "finalised",
+      "saleGrossSatang": 91500,
+      "paymentsOnTheSale": 1,
+      "salesAtTheTestTillWhenRead": 1,
+      "readAt": "2026-11-03T17:03:53.815Z"
+    },
+    "step9partial": {
+      "error": "locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('button, [role=tab]').filter({ hasText: /^In Parks*d+$/ }).first()\u001b[22m\n",
+      "at": "2026-11-03T17:05:37.859Z"
+    },
+    "step9": {
+      "buttonDisabled": true,
+      "paidOnlineLabels": 2,
+      "familyText": "ZZ TEST SCRUM-730 Ying's booking | +66897301003 | Paid online | ZZ TEST SCRUM-730 Bua · 6y | Paid online | Add sibling",
+      "orderText": "Current Order | TOURIST | ZZ TEST SCRUM-730 Nok | EDITING | ฿915 | 1 Hour Play | ฿690 | Drop-off service | ฿225 | Configure | Apply | Redeem | Issue a voucher… | Add manual discount | Subtotal | ฿915 | VAT included | ฿59.86 | Total | ฿915 | Cancel | Pay ฿915",
+      "siblingOnSale": 1,
+      "paidChildOnSale": 0,
+      "pay": "Pay ฿915",
+      "sibling": "ZZ TEST SCRUM-730 Nok",
+      "liveSource": "2e5ff3f1d2f1aa093e9edd7b003a16d0d9b5118e",
+      "capturedAt": "2026-11-03T17:06:13.782Z",
+      "tookNoPayment": true
+    },
+    "step10": {
+      "family": "1 | no gate | Oto Play Park, Central Floresta | Som | ZZ TEST SCRUM-730 Mint | ZZ TEST SCRUM-730 Fon |  | +66897301004 |  | WHATSAPP CONNECTION | Awaiting confirmation |  | Waiting for the parent to tap \"Confirm received\" in WhatsApp. |  | Parent's number | 🇹🇭 | +66 | WhatsApp | Telegram | LINE |  | Stored as: +66897301004 |  | Save & re-send | Resend confirmation | Sim: parent confirms | Couldn't reach | Z | ZZ TEST SCRUM-730 Mint | 6 yrs | DROP-OFF | May order food | No | Message | Pickups |",
+      "noItems": 1,
+      "amountDue": 0,
+      "dialog": "Redeem Online Booking |  | Scan or type the booking reference from the customer's QR code. |  | OTO-I5TP-DT02 | Tourist | Drop-off: ZZ TEST SCRUM-730 Mint | Card | ฿915 paid |  | Will issue at the door: |  | • 1 child wristband | • Drop-off check-in for ZZ TEST SCRUM-730 Mint | After confirming, you'll be prompted to check in the drop-off child via the registration flow. | Back | Confirm & Issue | Close",
+      "liveSource": "2e5ff3f1d2f1aa093e9edd7b003a16d0d9b5118e",
+      "capturedAt": "2026-11-03T17:06:58.794Z"
+    },
+    "nannyAdded": {
+      "name": "ZZ TEST SCRUM-730 Nanny",
+      "id": "01a1a263-8d62-77fe-9c89-10b6b98994b3",
+      "shifts": [
+        {
+          "id": "01a1a263-8d63-7172-b441-dc060dadf015",
+          "source": "manual",
+          "startsAt": "2026-11-03T16:00:00.000Z",
+          "endsAt": "2026-11-03T21:30:00.000Z",
+          "syncedAt": null,
+          "addedByAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d"
+        }
+      ],
+      "at": "2026-11-03T17:09:55.012Z"
+    },
+    "closeoutPartial": {
+      "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('div.rounded-xl, [class*=\"bg-card\"]').filter({ hasText: 'ZZ TEST SCRUM-730 Ying' }).filter({ has: getByRole('button', { name: 'Check in', exact: true }) }).last() to be visible\u001b[22m\n",
+      "at": "2026-11-03T17:12:00.012Z"
+    },
+    "closeout": {
+      "phone": {
+        "saleIds": [
+          "01a1a265-e8af-7e96-a120-4840cb190878"
+        ],
+        "stay": [
+          {
+            "id": "01a1a25a-1dba-7ad9-b6fc-2099c73b3ffc",
+            "status": "in_park",
+            "bandId": "01a1a265-fe33-7ec3-9230-fa1ab3b27f7d",
+            "nannyId": null
+          }
+        ]
+      },
+      "nanny": {
+        "saleIds": [
+          "01a1a266-084a-7bb9-a387-91b0c76f276b"
+        ],
+        "stay": [
+          {
+            "id": "01a1a259-8a53-7b8c-9fcd-9bb7f1dc32a9",
+            "status": "in_park",
+            "bandId": "01a1a266-23bf-7faf-a728-8ffb58edc858",
+            "nannyId": "01a1a263-8d62-77fe-9c89-10b6b98994b3"
+          }
+        ]
+      },
+      "dropOut": 200,
+      "pickerOut": 200,
+      "phoneOut": 200,
+      "nannyOut": 200,
+      "at": "2026-11-03T17:13:07.680Z"
+    },
+    "readbackFile": "staging-after-readback.json",
+    "cleanupApi": {
+      "shiftOffStatus": 200,
+      "tillArchiveStatus": 200,
+      "tillStillListed": 0,
+      "at": "2026-11-03T17:15:11.731Z"
+    },
+    "harnessStops": "steps5to8partial, step9partial and closeoutPartial record script selector stops. Each stopped before pressing anything on a record, except closeoutPartial, whose first family had completed; the rerun carried on from the next family.",
+    "closeWriteRefused": {
+      "jobId": "job-dbl1dlijnfac73a7ktug",
+      "refusedBy": "checkin_in_park_check",
+      "note": "A first close-out job tried to mark the unused sibling stay out. The database refuses out for a child who never entered the park; the transaction rolled back and nothing was forced. The stay stays registered, with no sale and no money."
+    }
+  }
 }

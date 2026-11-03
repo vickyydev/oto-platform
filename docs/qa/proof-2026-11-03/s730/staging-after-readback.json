@@ -1,0 +1,301 @@
+{
+  "capturedAt": "2026-11-03T17:22:33.965Z",
+  "families": {
+    "drop": {
+      "reference": "OTO-06IT-O26H",
+      "bookingStatus": "redeemed",
+      "bookingTotalSatang": 91500,
+      "memberId": null,
+      "registrationId": "01a1a224-4948-7671-a2fa-2624758e6c16",
+      "stays": [
+        {
+          "id": "01a1a224-494c-7c4e-8c82-33e6c148cf8a",
+          "name": "ZZ TEST SCRUM-730 Ploy",
+          "service": "drop_off",
+          "status": "out",
+          "saleId": "01a1a25c-1b15-7743-ae1f-a64aed410474",
+          "bandId": "01a1a25c-38e1-73b0-a0bb-6aca21608a20",
+          "photo": true,
+          "nannyId": null
+        }
+      ],
+      "sales": [
+        {
+          "id": "01a1a25c-1b15-7743-ae1f-a64aed410474",
+          "receipt": "Z730-000001",
+          "status": "finalised",
+          "channel": "booking",
+          "note": "Online booking OTO-06IT-O26H",
+          "grossSatang": 91500,
+          "refundedSatang": 0,
+          "payments": [
+            {
+              "provider": "manual",
+              "method": "transfer",
+              "status": "approved",
+              "amountSatang": 91500
+            }
+          ],
+          "bands": [
+            {
+              "code": "Z730-JQD4DR",
+              "status": "active"
+            }
+          ],
+          "printJobs": [
+            {
+              "kind": "kids_wristband",
+              "status": "printed",
+              "device": "Band Printer (kids)"
+            },
+            {
+              "kind": "receipt",
+              "status": "printed",
+              "device": "Receipt Printer 1"
+            }
+          ],
+          "lines": [
+            {
+              "label": "Kids",
+              "grossSatang": 69000
+            },
+            {
+              "label": "Drop-off",
+              "grossSatang": 22500
+            }
+          ]
+        }
+      ]
+    },
+    "nanny": {
+      "reference": "OTO-FMC9-RIVN",
+      "bookingStatus": "redeemed",
+      "bookingTotalSatang": 102000,
+      "memberId": null,
+      "registrationId": "01a1a259-8a51-72bd-aa2f-6db34275f1f9",
+      "stays": [
+        {
+          "id": "01a1a259-8a53-7b8c-9fcd-9bb7f1dc32a9",
+          "name": "ZZ TEST SCRUM-730 Tam",
+          "service": "nanny",
+          "status": "out",
+          "saleId": "01a1a266-084a-7bb9-a387-91b0c76f276b",
+          "bandId": "01a1a266-23bf-7faf-a728-8ffb58edc858",
+          "photo": true,
+          "nannyId": "01a1a263-8d62-77fe-9c89-10b6b98994b3"
+        }
+      ],
+      "sales": [
+        {
+          "id": "01a1a266-084a-7bb9-a387-91b0c76f276b",
+          "receipt": "Z730-000004",
+          "status": "finalised",
+          "channel": "booking",
+          "note": "Online booking OTO-FMC9-RIVN",
+          "grossSatang": 102000,
+          "refundedSatang": 0,
+          "payments": [
+            {
+              "provider": "manual",
+              "method": "transfer",
+              "status": "approved",
+              "amountSatang": 102000
+            }
+          ],
+          "bands": [
+            {
+              "code": "Z730-M53HCA",
+              "status": "active"
+            }
+          ],
+          "printJobs": [
+            {
+              "kind": "kids_wristband",
+              "status": "printed",
+              "device": "Band Printer (kids)"
+            },
+            {
+              "kind": "receipt",
+              "status": "printed",
+              "device": "Receipt Printer 1"
+            }
+          ],
+          "lines": [
+            {
+              "label": "Kids",
+              "grossSatang": 69000
+            },
+            {
+              "label": "Nanny",
+              "grossSatang": 33000
+            }
+          ]
+        }
+      ]
+    },
+    "picker": {
+      "reference": "OTO-CF20-HA1S",
+      "bookingStatus": "redeemed",
+      "bookingTotalSatang": 91500,
+      "memberId": null,
+      "registrationId": "01a1a259-d770-7803-a0e5-e08c52b6c3dd",
+      "stays": [
+        {
+          "id": "01a1a259-d775-7e82-833d-eefd1f65ea28",
+          "name": "ZZ TEST SCRUM-730 Bua",
+          "service": "drop_off",
+          "status": "out",
+          "saleId": "01a1a263-e1d6-72b6-affa-7f7f17feb413",
+          "bandId": "01a1a263-f9f6-7a9e-ae74-69c59d693599",
+          "photo": true,
+          "nannyId": null
+        },
+        {
+          "id": "01a1a260-181a-714b-846a-6c46bada1539",
+          "name": "ZZ TEST SCRUM-730 Nok",
+          "service": "drop_off",
+          "status": "registered",
+          "saleId": null,
+          "bandId": null,
+          "photo": false,
+          "nannyId": null
+        }
+      ],
+      "sales": [
+        {
+          "id": "01a1a263-e1d6-72b6-affa-7f7f17feb413",
+          "receipt": "Z730-000002",
+          "status": "finalised",
+          "channel": "booking",
+          "note": "Online booking OTO-CF20-HA1S",
+          "grossSatang": 91500,
+          "refundedSatang": 0,
+          "payments": [
+            {
+              "provider": "manual",
+              "method": "transfer",
+              "status": "approved",
+              "amountSatang": 91500
+            }
+          ],
+          "bands": [
+            {
+              "code": "Z730-7SZ49S",
+              "status": "active"
+            }
+          ],
+          "printJobs": [
+            {
+              "kind": "kids_wristband",
+              "status": "printed",
+              "device": "Band Printer (kids)"
+            },
+            {
+              "kind": "receipt",
+              "status": "printed",
+              "device": "Receipt Printer 1"
+            }
+          ],
+          "lines": [
+            {
+              "label": "Kids",
+              "grossSatang": 69000
+            },
+            {
+              "label": "Drop-off",
+              "grossSatang": 22500
+            }
+          ]
+        }
+      ]
+    },
+    "phone": {
+      "reference": "OTO-I5TP-DT02",
+      "bookingStatus": "redeemed",
+      "bookingTotalSatang": 91500,
+      "memberId": null,
+      "registrationId": "01a1a25a-1db9-7e12-b7ba-8ab3dbcc09f2",
+      "stays": [
+        {
+          "id": "01a1a25a-1dba-7ad9-b6fc-2099c73b3ffc",
+          "name": "ZZ TEST SCRUM-730 Mint",
+          "service": "drop_off",
+          "status": "out",
+          "saleId": "01a1a265-e8af-7e96-a120-4840cb190878",
+          "bandId": "01a1a265-fe33-7ec3-9230-fa1ab3b27f7d",
+          "photo": true,
+          "nannyId": null
+        }
+      ],
+      "sales": [
+        {
+          "id": "01a1a265-e8af-7e96-a120-4840cb190878",
+          "receipt": "Z730-000003",
+          "status": "finalised",
+          "channel": "booking",
+          "note": "Online booking OTO-I5TP-DT02",
+          "grossSatang": 91500,
+          "refundedSatang": 0,
+          "payments": [
+            {
+              "provider": "manual",
+              "method": "transfer",
+              "status": "approved",
+              "amountSatang": 91500
+            }
+          ],
+          "bands": [
+            {
+              "code": "Z730-B2ZGKH",
+              "status": "active"
+            }
+          ],
+          "printJobs": [
+            {
+              "kind": "kids_wristband",
+              "status": "printed",
+              "device": "Band Printer (kids)"
+            },
+            {
+              "kind": "receipt",
+              "status": "printed",
+              "device": "Receipt Printer 1"
+            }
+          ],
+          "lines": [
+            {
+              "label": "Kids",
+              "grossSatang": 69000
+            },
+            {
+              "label": "Drop-off",
+              "grossSatang": 22500
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "salesAtTheTestTill": [
+    {
+      "id": "01a1a266-084a-7bb9-a387-91b0c76f276b",
+      "status": "finalised",
+      "receipt": "Z730-000004"
+    },
+    {
+      "id": "01a1a265-e8af-7e96-a120-4840cb190878",
+      "status": "finalised",
+      "receipt": "Z730-000003"
+    },
+    {
+      "id": "01a1a263-e1d6-72b6-affa-7f7f17feb413",
+      "status": "finalised",
+      "receipt": "Z730-000002"
+    },
+    {
+      "id": "01a1a25c-1b15-7743-ae1f-a64aed410474",
+      "status": "finalised",
+      "receipt": "Z730-000001"
+    }
+  ]
+}

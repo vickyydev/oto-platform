@@ -1,6 +1,10 @@
-# SCRUM-730 paid online drop-off: local proof
+# SCRUM-730 paid online drop-off: proof
 
-Taken 2026-11-03 on a disposable local database with the real API and till in a browser (`apps/pos/e2e/run.mjs`). Nothing here touched staging. The staging proof with a ZZ TEST booking is still to do, and the ticket asks for its first half before this lands; the steps are at the end. Keep the ticket short of Deployed until those screens are attached.
+Staging proof done: SCRUM-730 is Deployed, with the before and after screens shown inside [Jira comment 13251](https://oto-suite-dev.atlassian.net/browse/SCRUM-730?focusedCommentId=13251). The local proof comes first below, then staging before the change, then staging after it.
+
+## Local proof
+
+Taken 2026-11-03 on a disposable local database with the real API and till in a browser (`apps/pos/e2e/run.mjs`).
 
 ## Before the change (source at 234636a3)
 
@@ -57,7 +61,60 @@ Captured 3 November 2026, 16:00 to 16:02 UTC, on staging's live source `4e515c61
 | [Check in pressed](./s730/staging-before-02-check-in-loads-a-line-to-charge.png) | The till holds the child as a line to charge: "Drop-off service", "Choose length", the tier step, and Pay |
 | [Cancel pressed](./s730/staging-before-03-cancelled-no-payment.png) | Back on an empty till. No payment taken, and the booking still reads paid |
 
-## Staging proof
+## Staging after the change
+
+Captured 3 November 2026, 16:58 to 17:14 UTC (23:58 to 00:14 Bangkok), after the deploys went live at 16:47 UTC, on source `2e5ff3f1d2f1aa093e9edd7b003a16d0d9b5118e`, green [CI 41672927125](https://github.com/vickyydev/oto-platform/actions/runs/41672927125). API `dep-dbl0uhjbc2fs738gbic0` and POS web `dep-dbl0uhjbc2fs738gbje0` were live on that exact commit. PAYMENTS_SIMULATOR read back as on and no setting changed. A real Chromium at `oto-pos-web-staging`, signed in as reception, on the dedicated `ZZ TEST SCRUM-730 till` on Virtual box 1. Every image below was opened and read.
+
+| Step | What a person sees |
+|---|---|
+| 4 | The nanny family [on the simulated page](./s730/staging-after-00a-nanny-simulated-hosted-page.png), booking OTO-FMC9-RIVN, ฿1,020. No real money moves |
+| 5 | [Drop-off family](./s730/staging-after-01-board-dropoff-booked-and-paid.png) and [nanny family](./s730/staging-after-02-board-nanny-booked-and-paid.png): each card reads "Booked & paid · no payment needed" |
+| 6 | [Check in pressed](./s730/staging-after-03-check-in-opens-the-booking.png) on the same booking as the before screens, OTO-06IT-O26H: the redeem dialog, ฿915 paid, Confirm & Issue. Behind it, "No items added yet", Total ฿0, Pay ฿0 |
+| 7 | [Confirm & Issue](./s730/staging-after-04-redeemed-no-payment.png): "Payment is complete". [The board's check-in](./s730/staging-after-05-board-checks-in-with-no-payment.png): "already booked & paid, no payment needed". [Photo taken](./s730/staging-after-06-visit-photo-taken.png), Check in & issue band answered 200, and [the child is in the park](./s730/staging-after-07-child-in-the-park.png) with band Z730-JQD4DR printed |
+| 7, the money | [History](./s730/staging-after-07b-history-one-sale.png) has one line for the booking. [The sale](./s730/staging-after-07c-the-sale-the-booking-paid.png) is Z730-000001, ฿915, "Online booking OTO-06IT-O26H", with one payment marked Paid online |
+| 8 | [Check in on the nanny family](./s730/staging-after-08-nanny-check-in-opens-the-booking.png): the redeem dialog at ฿1,020 paid, not "has not been paid for yet". Behind it, Total ฿0 |
+| 9 | [Add drop-off child](./s730/staging-after-09-picker-paid-online.png): the paid families read Paid online, with the button greyed out. [The sibling alone on the sale](./s730/staging-after-10-picker-sibling-on-the-sale.png) at the till's ฿915; the paid child is not on it. Cancel pressed, no payment taken |
+| 10 | Phone width, a third paid family: [the family screen](./s730/staging-after-11-phone-family-booked-and-paid.png) reads Booked & paid, and [Check In](./s730/staging-after-12-phone-check-in-opens-the-booking.png) opens the redeem dialog with "No items yet ฿0" behind it |
+
+Beyond the plan: the nanny child was also [checked in with a test nanny, with no payment](./s730/staging-after-13-nanny-child-checks-in-with-no-payment.png), band issued, and picked up. Every family then went through pick-up, so the path is walked to the end for all four paid bookings.
+
+Read back in [staging-after-readback.json](./s730/staging-after-readback.json) and independently, read-only, in [staging-cleanup-read.json](./s730/staging-cleanup-read.json):
+
+| Booking | Status | Booking total | Sale | Sale total | Payments | Child |
+|---|---|---|---|---|---|---|
+| OTO-06IT-O26H | redeemed | ฿915 | Z730-000001 | ฿915 | 1, ฿915 | out, 1 release |
+| OTO-CF20-HA1S | redeemed | ฿915 | Z730-000002 | ฿915 | 1, ฿915 | out, 1 release |
+| OTO-I5TP-DT02 | redeemed | ฿915 | Z730-000003 | ฿915 | 1, ฿915 | out, 1 release |
+| OTO-FMC9-RIVN | redeemed | ฿1,020 | Z730-000004 | ฿1,020 | 1, ฿1,020 | out, 1 release |
+
+The test till holds exactly those four sales, no other sale names these bookings, and all eight print jobs (four kids' bands, four receipts) finished on simulated printers.
+
+Limits of this proof:
+
+- The photos came from Chromium's fake camera, and the bands and receipts from simulated printers. No real camera or printer was used.
+- The nanny booking went through the routes the booking site itself calls, then the simulated page in a browser. After 21:00 the site offers no nanny start time for today (`generateTimeSlots` in `BookTickets.tsx`). The two drop-off bookings walked the booking site's pages.
+- A real Pi box gets the box-side refusal only from its next box release. No box release was shipped or installed, and no park device was used.
+
+### Clean-up
+
+- Stays: Ploy, Bua, Mint and Tam are out through the real pick-up, one release each. All four bookings are redeemed.
+- The till: archived with `DELETE /stations/:id`, 200, and off the branch's list. Its devices belong to Virtual box 1 and were not touched.
+- The nanny: the shift was cut short at 17:15 UTC with `DELETE /branches/:id/nannies/shifts/:shiftId`. The Console has no control to archive a nanny, so the row was archived by exact id in [job-dbl1fijm8hqs738ru5o0](./s730/staging-cleanup-write.json), as the SCRUM-699 proof did. The roster is back to Aor, Bow, Jum and Pim.
+- Sign-ins: every run signed out. One session from the pre-landing run, on this till, had stayed open; the same job ended it through the normal sign-out service. The read-only check reads zero live sessions on the till.
+- **One record is left:** ZZ TEST SCRUM-730 Nok, the sibling from step 9, is still registered under Upcoming, on family OTO-CF20-HA1S, with no sale, no band and no money. Nothing in the product removes a waiting child. A first job tried to mark him out and the database refused it (`checkin_in_park_check`, job-dbl1dlijnfac73a7ktug): a child who never entered the park cannot be out. It rolled back, and the guard was not worked around.
+- Kept for the record, as on other proofs: the four sales and their receipts, the bands, the registrations and the audit rows. The bookings created no member rows.
+
+### Notes for the owner
+
+None of these stopped the proof. Each is a decision, not something this change was meant to settle.
+
+1. **A child paid for at the till and left as booked is still offered Add to sale in Add drop-off child.** Seen on staging for another family's child, who is on a paid sale. It was not pressed, because the record is not this proof's. From the code, a second sale would take the money and then Check in now would refuse with "was paid for on another sale". The prototype lists every waiting child the same way. This change covers families who paid online, not this case.
+2. **A family with a paid child and an unpaid sibling** shows [one Booked & paid label and two Check in buttons with the same name](./s730/staging-after-14-family-with-paid-child-and-sibling.png). The first opens the booking and the second takes the unpaid child to the till. Neither charges the paid child, but the label reads for the whole family.
+3. **The redeem dialog calls a nanny child "Drop-off"**: "Drop-off: Tam" and "Drop-off check-in for Tam". This is the prototype's wording and it is unchanged.
+4. **Nothing removes a waiting child from the board.** A sibling added at the door whose sale is then cancelled stays under Upcoming and in the picker. The prototype has no way either.
+5. **Real Pi boxes** get the box-side refusal only from their next box release, and the planner decides when that goes out.
+
+## The plan this followed
 
 Before landing, while staging still runs the earlier source:
 

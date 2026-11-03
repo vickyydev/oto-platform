@@ -1,0 +1,14 @@
+{
+  "jobId": "job-dbl1fijm8hqs738ru5o0",
+  "status": "succeeded",
+  "startedAt": "2026-11-03T17:20:20Z",
+  "source": "2e5ff3f1d2f1aa093e9edd7b003a16d0d9b5118e",
+  "result": {
+    "event": "s730_closeout_write",
+    "at": "2026-11-03T17:21:09.532Z",
+    "nannyArchived": 1,
+    "sessionWasActive": true,
+    "sessionRevoked": true,
+    "normalSignOutService": true
+  }
+}

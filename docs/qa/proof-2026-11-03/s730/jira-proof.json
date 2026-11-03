@@ -1,0 +1,73 @@
+{
+  "issue": "SCRUM-730",
+  "commentId": "13251",
+  "attachments": [
+    {
+      "id": "12350",
+      "name": "staging-before-01-board.png"
+    },
+    {
+      "id": "12351",
+      "name": "staging-before-02-check-in-loads-a-line-to-charge.png"
+    },
+    {
+      "id": "12352",
+      "name": "staging-after-01-board-dropoff-booked-and-paid.png"
+    },
+    {
+      "id": "12353",
+      "name": "staging-after-03-check-in-opens-the-booking.png"
+    },
+    {
+      "id": "12354",
+      "name": "staging-after-04-redeemed-no-payment.png"
+    },
+    {
+      "id": "12355",
+      "name": "staging-after-05-board-checks-in-with-no-payment.png"
+    },
+    {
+      "id": "12356",
+      "name": "staging-after-07-child-in-the-park.png"
+    },
+    {
+      "id": "12357",
+      "name": "staging-after-07b-history-one-sale.png"
+    },
+    {
+      "id": "12358",
+      "name": "staging-after-07c-the-sale-the-booking-paid.png"
+    },
+    {
+      "id": "12359",
+      "name": "staging-after-02-board-nanny-booked-and-paid.png"
+    },
+    {
+      "id": "12360",
+      "name": "staging-after-08-nanny-check-in-opens-the-booking.png"
+    },
+    {
+      "id": "12361",
+      "name": "staging-after-09-picker-paid-online.png"
+    },
+    {
+      "id": "12362",
+      "name": "staging-after-10-picker-sibling-on-the-sale.png"
+    },
+    {
+      "id": "12363",
+      "name": "staging-after-11-phone-family-booked-and-paid.png"
+    },
+    {
+      "id": "12364",
+      "name": "staging-after-12-phone-check-in-opens-the-booking.png"
+    },
+    {
+      "id": "12365",
+      "name": "staging-after-14-family-with-paid-child-and-sibling.png"
+    }
+  ],
+  "imagesRendered": 17,
+  "liveSource": "2e5ff3f1d2f1aa093e9edd7b003a16d0d9b5118e",
+  "postedAt": "2026-11-03T17:24:03.856Z"
+}

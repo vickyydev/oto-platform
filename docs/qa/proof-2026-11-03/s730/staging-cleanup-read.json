@@ -1,0 +1,140 @@
+{
+  "jobId": "job-dbl1g795efls73fvdejg",
+  "status": "succeeded",
+  "startedAt": "2026-11-03T17:21:34Z",
+  "source": "2e5ff3f1d2f1aa093e9edd7b003a16d0d9b5118e",
+  "result": {
+    "event": "s730_cleanup_read",
+    "at": "2026-11-03T17:22:16.642Z",
+    "station": {
+      "name": "ZZ TEST SCRUM-730 till",
+      "archived": true
+    },
+    "activeSessionsOnTill": 0,
+    "nanny": {
+      "name": "ZZ TEST SCRUM-730 Nanny",
+      "archived": true,
+      "shifts": 1,
+      "live_shifts": 0
+    },
+    "bookings": [
+      {
+        "reference": "OTO-06IT-O26H",
+        "status": "redeemed",
+        "total": 91500
+      },
+      {
+        "reference": "OTO-CF20-HA1S",
+        "status": "redeemed",
+        "total": 91500
+      },
+      {
+        "reference": "OTO-FMC9-RIVN",
+        "status": "redeemed",
+        "total": 102000
+      },
+      {
+        "reference": "OTO-I5TP-DT02",
+        "status": "redeemed",
+        "total": 91500
+      }
+    ],
+    "stays": [
+      {
+        "child_name": "ZZ TEST SCRUM-730 Bua",
+        "service": "drop_off",
+        "status": "out",
+        "on_sale": true,
+        "band": true,
+        "releases": 1
+      },
+      {
+        "child_name": "ZZ TEST SCRUM-730 Mint",
+        "service": "drop_off",
+        "status": "out",
+        "on_sale": true,
+        "band": true,
+        "releases": 1
+      },
+      {
+        "child_name": "ZZ TEST SCRUM-730 Nok",
+        "service": "drop_off",
+        "status": "registered",
+        "on_sale": false,
+        "band": false,
+        "releases": 0
+      },
+      {
+        "child_name": "ZZ TEST SCRUM-730 Ploy",
+        "service": "drop_off",
+        "status": "out",
+        "on_sale": true,
+        "band": true,
+        "releases": 1
+      },
+      {
+        "child_name": "ZZ TEST SCRUM-730 Tam",
+        "service": "nanny",
+        "status": "out",
+        "on_sale": true,
+        "band": true,
+        "releases": 1
+      }
+    ],
+    "sales": [
+      {
+        "receipt": "Z730-000001",
+        "status": "finalised",
+        "channel": "booking",
+        "gross": 91500,
+        "reference": "OTO-06IT-O26H",
+        "booking_total": 91500,
+        "payments": 1,
+        "approved": 91500
+      },
+      {
+        "receipt": "Z730-000002",
+        "status": "finalised",
+        "channel": "booking",
+        "gross": 91500,
+        "reference": "OTO-CF20-HA1S",
+        "booking_total": 91500,
+        "payments": 1,
+        "approved": 91500
+      },
+      {
+        "receipt": "Z730-000003",
+        "status": "finalised",
+        "channel": "booking",
+        "gross": 91500,
+        "reference": "OTO-I5TP-DT02",
+        "booking_total": 91500,
+        "payments": 1,
+        "approved": 91500
+      },
+      {
+        "receipt": "Z730-000004",
+        "status": "finalised",
+        "channel": "booking",
+        "gross": 102000,
+        "reference": "OTO-FMC9-RIVN",
+        "booking_total": 102000,
+        "payments": 1,
+        "approved": 102000
+      }
+    ],
+    "salesNamingOurBookingsElsewhere": 0,
+    "printJobs": [
+      {
+        "kind": "kids_wristband",
+        "status": "printed",
+        "n": 4
+      },
+      {
+        "kind": "receipt",
+        "status": "printed",
+        "n": 4
+      }
+    ]
+  }
+}
