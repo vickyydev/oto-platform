@@ -1,0 +1,9 @@
+{
+  "originalCommit": "a1f0d25f",
+  "originalSha256": "4a2750660f9296867e43560f05b1df5ca24bc7125ec295679f9307a4c5756ab7",
+  "originalEncoding": "UTF-16LE emitted by Windows PowerShell",
+  "displayNormalization": "UTF-8, LF, trailing whitespace removed; original bytes remain in the named commit",
+  "exitCode": 1,
+  "passed": 1,
+  "failed": 1
+}
