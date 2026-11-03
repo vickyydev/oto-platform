@@ -24,6 +24,7 @@ import {
   REVOKE_REASON_MIN,
   isTierRevocation,
   revokeTierVerification,
+  tierVerificationReplay,
 } from '../services/member-tier';
 import { recordChange } from '../services/sync';
 import { opCtx, withTx } from '../services/tx';
@@ -79,6 +80,16 @@ const ChildBody = z.object({
   foodRestrictions: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
 });
+
+const MemberAnswer = z.object({ member: z.object({
+  id: z.string().uuid(), phone: z.string(), nickname: z.string(), name: z.string().nullable(),
+  email: z.string().nullable(), tierCode: z.string(), preferredChannel: z.string().nullable(),
+  notes: z.string().nullable(), childrenReviewSince: z.string().nullable(),
+  children: z.array(ChildBody.extend({ id: z.string().uuid(), lastConfirmedAt: z.string().nullable() })),
+  tierVerification: z.object({ tier: z.string(), proofType: z.string(), note: z.string().nullable(),
+    verifiedAt: z.string(), verifiedBy: z.string().nullable(), expiresAt: z.string().nullable(),
+    reverifyDue: z.boolean() }).nullable(),
+}).nullable() });
 
 function serializeChild(c: typeof child.$inferSelect) {
   return {
@@ -502,9 +513,11 @@ export async function memberRoutes(app: App): Promise<void> {
       config: { permission: 'pos:member:update', stationTrading: true },
       schema: {
         description: 'Record a checked tier proof document (verifier stamped from the session)',
+        response: { 200: MemberAnswer },
         params: z.object({ id: z.string().uuid() }),
         body: z
           .object({
+            verificationId: ClientIdSchema.optional(),
             toTier: z.string().min(1),
             /**
              * One of the four choices, not free text (SCRUM-315, SCRUM-697).
@@ -544,10 +557,8 @@ export async function memberRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
-      const noteProblem = tierProofNoteProblem(req.body.note, req.body.evidenceType);
-      if (noteProblem) throw new AppError(400, 'TIER_PROOF_NOTE', noteProblem);
-      const note = req.body.note?.trim() || null;
-      const [m] = await app.db
+      await withTx(app.db, opCtx(req), 'member.tier_verify', async (tx) => {
+      const [m] = await tx
         .select()
         .from(member)
         .where(
@@ -557,11 +568,16 @@ export async function memberRoutes(app: App): Promise<void> {
             isNull(member.archivedAt),
           ),
         )
+        .for('update')
         .limit(1);
       if (!m) throw errors.notFound('Member not found');
+      if (await tierVerificationReplay(tx, req.body.verificationId, m.id, 'upgrade')) return;
+      const noteProblem = tierProofNoteProblem(req.body.note, req.body.evidenceType);
+      if (noteProblem) throw new AppError(400, 'TIER_PROOF_NOTE', noteProblem);
+      const note = req.body.note?.trim() || null;
 
       // Tiers are data (D2) — the target tier must exist for this operator.
-      const [tierRow] = await app.db
+      const [tierRow] = await tx
         .select()
         .from(tier)
         .where(and(eq(tier.operatorId, auth.operatorId), eq(tier.code, req.body.toTier)))
@@ -576,10 +592,9 @@ export async function memberRoutes(app: App): Promise<void> {
         );
       }
 
-      const id = newId();
+      const id = req.body.verificationId ?? newId();
       // The evidence and the tier it grants are one act: a member must never
       // hold a discounted tier with no document behind it, or the reverse.
-      await withTx(app.db, opCtx(req), 'member.tier_verify', async (tx) => {
         await tx.insert(memberTierVerification).values({
           id,
           memberId: m.id,
@@ -609,7 +624,7 @@ export async function memberRoutes(app: App): Promise<void> {
           requestId: req.id,
         });
       });
-      return { member: await memberWithChildren(app, m.id, auth.operatorId) };
+      return { member: await memberWithChildren(app, req.params.id, auth.operatorId) };
     },
   );
 
@@ -635,6 +650,7 @@ export async function memberRoutes(app: App): Promise<void> {
       schema: {
         description:
           "End a member's verified tier: back to the operator's baseline, with the reason filed",
+        response: { 200: MemberAnswer },
         params: z.object({ id: z.string().uuid() }),
         body: z
           .object({
@@ -642,6 +658,7 @@ export async function memberRoutes(app: App): Promise<void> {
              * Required, because a revocation has no document behind it: this
              * note is the entire record of why the rate ended.
              */
+            verificationId: ClientIdSchema.optional(),
             reason: z.string().trim().min(REVOKE_REASON_MIN).max(REVOKE_REASON_MAX),
           })
           .strict(),
@@ -676,6 +693,7 @@ export async function memberRoutes(app: App): Promise<void> {
           },
           m.id,
           req.body.reason,
+          req.body.verificationId,
         );
       });
       return { member: await memberWithChildren(app, m.id, auth.operatorId) };

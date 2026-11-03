@@ -71,6 +71,17 @@ export function isTierRevocation(row: { evidenceType: string } | null | undefine
 export const REVOKE_REASON_MIN = 3;
 export const REVOKE_REASON_MAX = 200;
 
+/** The durable verification id is scoped to this member and this direction. */
+export async function tierVerificationReplay(tx: Tx, id: string | undefined, memberId: string, direction: 'upgrade' | 'downgrade') {
+  if (!id) return null;
+  const [row] = await tx.select().from(memberTierVerification).where(eq(memberTierVerification.id, id)).limit(1);
+  if (!row) return null;
+  if (row.memberId !== memberId || isTierRevocation(row) !== (direction === 'downgrade')) {
+    throw errors.conflict('ID_IN_USE', 'That verification id already names another record');
+  }
+  return row;
+}
+
 export interface TierRevokeActor {
   /** The session's account — who is accountable for this. Never from the body. */
   accountId: string;
@@ -109,6 +120,7 @@ export async function revokeTierVerification(
   actor: TierRevokeActor,
   memberId: string,
   reason: string,
+  verificationId?: string,
 ): Promise<TierRevokeResult> {
   const [m] = await tx
     .select()
@@ -119,6 +131,9 @@ export async function revokeTierVerification(
   // The route has already answered 404 for a member outside this operator;
   // this is the same predicate held on the row the write actually touches.
   if (!m) throw errors.notFound('Member not found');
+
+  const replay = await tierVerificationReplay(tx, verificationId, m.id, 'downgrade');
+  if (replay) return { verificationId: replay.id, fromTier: replay.fromTier, toTier: replay.toTier };
 
   const [baseline] = await tx
     .select()
@@ -153,7 +168,7 @@ export async function revokeTierVerification(
     );
   }
 
-  const id = newId();
+  const id = verificationId ?? newId();
   await tx.insert(memberTierVerification).values({
     id,
     memberId: m.id,

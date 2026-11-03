@@ -280,6 +280,14 @@ export const OfflineVisitCreatedSchema = z.object({
 });
 export type OfflineVisitCreated = z.infer<typeof OfflineVisitCreatedSchema>;
 
+export const OfflineVisitChildrenAddedSchema = z.object({
+  operationId: Uuid,
+  visitId: Uuid,
+  memberId: Uuid,
+  childIds: z.array(Uuid).min(1).max(20),
+  offlineFresh: OfflineFresh,
+});
+
 /**
  * The intents a till sends the bridge to write a record, and the fact each
  * becomes. The intent's payload is the fact's payload less `offlineFresh`,
@@ -292,6 +300,7 @@ export const BRIDGE_RECORD_INTENTS = {
   'child.create': 'child.created',
   'child.update': 'child.updated',
   'visit.create': 'visit.created',
+  'visit.children_add': 'visit.children_added',
 } as const;
 export type BridgeRecordIntent = keyof typeof BRIDGE_RECORD_INTENTS;
 
