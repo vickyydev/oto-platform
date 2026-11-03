@@ -3150,6 +3150,8 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
+                        /** Format: uuid */
+                        verificationId?: string;
                         toTier: string;
                         /** @enum {string} */
                         evidenceType: "Passport" | "Residence certificate" | "School card" | "Other";
@@ -3164,7 +3166,45 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            member: {
+                                /** Format: uuid */
+                                id: string;
+                                phone: string;
+                                nickname: string;
+                                name: string | null;
+                                email: string | null;
+                                tierCode: string;
+                                preferredChannel: string | null;
+                                notes: string | null;
+                                childrenReviewSince: string | null;
+                                children: {
+                                    name: string;
+                                    dateOfBirth?: string | null;
+                                    ageYears?: number | null;
+                                    allergies?: string | null;
+                                    medicalNotes?: string | null;
+                                    medicalAlert?: boolean;
+                                    dietary?: string | null;
+                                    foodRestrictions?: string | null;
+                                    notes?: string | null;
+                                    /** Format: uuid */
+                                    id: string;
+                                    lastConfirmedAt: string | null;
+                                }[];
+                                tierVerification: {
+                                    tier: string;
+                                    proofType: string;
+                                    note: string | null;
+                                    verifiedAt: string;
+                                    verifiedBy: string | null;
+                                    expiresAt: string | null;
+                                    reverifyDue: boolean;
+                                } | null;
+                            } | null;
+                        };
+                    };
                 };
             };
         };
@@ -3181,6 +3221,8 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
+                        /** Format: uuid */
+                        verificationId?: string;
                         reason: string;
                     };
                 };
@@ -3191,7 +3233,45 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            member: {
+                                /** Format: uuid */
+                                id: string;
+                                phone: string;
+                                nickname: string;
+                                name: string | null;
+                                email: string | null;
+                                tierCode: string;
+                                preferredChannel: string | null;
+                                notes: string | null;
+                                childrenReviewSince: string | null;
+                                children: {
+                                    name: string;
+                                    dateOfBirth?: string | null;
+                                    ageYears?: number | null;
+                                    allergies?: string | null;
+                                    medicalNotes?: string | null;
+                                    medicalAlert?: boolean;
+                                    dietary?: string | null;
+                                    foodRestrictions?: string | null;
+                                    notes?: string | null;
+                                    /** Format: uuid */
+                                    id: string;
+                                    lastConfirmedAt: string | null;
+                                }[];
+                                tierVerification: {
+                                    tier: string;
+                                    proofType: string;
+                                    note: string | null;
+                                    verifiedAt: string;
+                                    verifiedBy: string | null;
+                                    expiresAt: string | null;
+                                    reverifyDue: boolean;
+                                } | null;
+                            } | null;
+                        };
+                    };
                 };
             };
         };
@@ -3426,6 +3506,8 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
+                        /** Format: uuid */
+                        operationId?: string;
                         childIds: string[];
                     };
                 };
@@ -36967,7 +37049,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Hand over a batch of facts. Each event is validated and applied on its own, under its own SAVEPOINT: a duplicate is dropped, and a conflict, a malformed envelope or a poison payload is quarantined without costing the rest of the batch. An old journal epoch is refused. Types this api applies: band.gate_event, booking.redeemed, booth.spin_recorded, booth.voucher_printed, checkin.created, checkin.updated, child.created, child.updated, event.checked_in, event.checked_out, guardian.created, member.created, member.tier_changed, member.updated, payment.recorded, promo.voucher_issued, release.created, sale.finalised, station.takeover, supervision_waiver.created, visit.created, wallet.spent. */
+        /** @description Hand over a batch of facts. Each event is validated and applied on its own, under its own SAVEPOINT: a duplicate is dropped, and a conflict, a malformed envelope or a poison payload is quarantined without costing the rest of the batch. An old journal epoch is refused. Types this api applies: band.gate_event, booking.redeemed, booth.spin_recorded, booth.voucher_printed, checkin.created, checkin.updated, child.created, child.updated, event.checked_in, event.checked_out, guardian.created, member.created, member.tier_changed, member.updated, payment.recorded, promo.voucher_issued, release.created, sale.finalised, station.takeover, supervision_waiver.created, visit.children_added, visit.created, wallet.spent. */
         post: {
             parameters: {
                 query?: never;
