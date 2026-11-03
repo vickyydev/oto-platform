@@ -1,5 +1,20 @@
 const VIDEO_EXTENSIONS = [".mp4", ".mov", ".webm", ".m4v"];
 
+// The types and size the server's /api/fix-reports/upload accepts, checked
+// before anything is sent so a refusal names the file instead of failing late.
+export const FIX_MEDIA_ACCEPT = "image/jpeg,image/png,image/webp,video/mp4,video/quicktime";
+export const FIX_MEDIA_TYPES = new Set(FIX_MEDIA_ACCEPT.split(","));
+export const MAX_FIX_MEDIA = 10;
+export const MAX_FIX_MEDIA_SIZE = 20 * 1024 * 1024;
+// A comment can also carry a PDF; a report's own media cannot.
+export const FIX_COMMENT_MEDIA_ACCEPT = `${FIX_MEDIA_ACCEPT},application/pdf`;
+export const FIX_COMMENT_MEDIA_TYPES = new Set(FIX_COMMENT_MEDIA_ACCEPT.split(","));
+
+export function isPdfUrl(url: string | undefined | null): boolean {
+  if (!url) return false;
+  return url.split("?")[0].toLowerCase().endsWith(".pdf");
+}
+
 export function isVideoUrl(url: string | undefined | null): boolean {
   if (!url) return false;
   const clean = url.split("?")[0].toLowerCase();

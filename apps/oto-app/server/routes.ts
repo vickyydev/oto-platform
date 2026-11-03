@@ -521,7 +521,9 @@ const fixMediaUpload = multer({
   },
   fileFilter: (req, file, cb) => {
     const allowedTypes = ["image/jpeg", "image/png", "image/webp", "video/mp4", "video/quicktime"];
-    if (allowedTypes.includes(file.mimetype)) {
+    // A PDF may go on a comment (SCRUM-641), never on a report: a report's media
+    // is shown as pictures on the board, its card and the supplier's link.
+    if (allowedTypes.includes(file.mimetype) || (file.mimetype === "application/pdf" && req.query.purpose === "comment")) {
       cb(null, true);
     } else {
       cb(new Error("Invalid file type. Only images and videos are allowed."));
@@ -24112,13 +24114,19 @@ ${context}`;
       .digest("hex");
   };
 
-  const verifyFixMediaClaims = (urls: unknown, tenantId: string, userId: string): string[] | null => {
+  const verifyFixMediaClaims = (
+    urls: unknown,
+    tenantId: string,
+    userId: string,
+    { allowPdf = false }: { allowPdf?: boolean } = {},
+  ): string[] | null => {
     if (!Array.isArray(urls) || urls.length > 10 || urls.some(url => typeof url !== "string")) return null;
     const canonical: string[] = [];
     for (const supplied of urls as string[]) {
       const match = /^(\/api\/files\/fix-media\/[a-zA-Z0-9._-]+)\?claim=(\d{13})\.([a-f0-9]{64})$/.exec(supplied);
       if (!match) return null;
       const [, url, expiry, signature] = match;
+      if (!allowPdf && url.toLowerCase().endsWith(".pdf")) return null;
       const expiresAt = Number(expiry);
       if (expiresAt < Date.now() || expiresAt > Date.now() + 30 * 60_000) return null;
       const expected = Buffer.from(fixMediaClaim(url, tenantId, userId, expiresAt), "hex");
@@ -24548,12 +24556,17 @@ ${context}`;
       if (!files || files.length === 0) {
         return res.status(400).json({ message: "No files uploaded" });
       }
+      const isPdf = (file: Express.Multer.File) => file.mimetype === "application/pdf";
+      const notPdf = files.find(file => isPdf(file) && file.buffer.toString("latin1", 0, 5) !== "%PDF-");
+      if (notPdf) {
+        return res.status(400).json({ message: `${notPdf.originalname} is not a PDF file` });
+      }
 
       const urls: string[] = [];
       const expiresAt = Date.now() + 30 * 60_000;
       for (const file of files) {
         const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const ext = path.extname(file.originalname);
+        const ext = isPdf(file) ? ".pdf" : path.extname(file.originalname);
         const filename = `fix_${uniqueSuffix}${ext}`;
         const url = await uploadToObjectStorage(file.buffer, "fix-media", filename, file.mimetype);
         urls.push(`${url}?claim=${expiresAt}.${fixMediaClaim(url, tenantId, user.id, expiresAt)}`);
@@ -24574,7 +24587,7 @@ ${context}`;
       const tenantId = await resolveTenantId((req.user as UserWithBranchAccess).tenantId);
       const currentUrl = `/api/files/fix-media/${filename}`;
       const legacyUrl = `/fix-media/${filename}`;
-      const [owner] = await db.select({ id: fixReports.id }).from(fixReports).where(and(
+      const [reportOwner] = await db.select({ id: fixReports.id }).from(fixReports).where(and(
         eq(fixReports.tenantId, tenantId),
         isNull(fixReports.archivedAt),
         or(
@@ -24582,6 +24595,15 @@ ${context}`;
           sql`${fixReports.media} @> ${JSON.stringify([legacyUrl])}::jsonb`,
         ),
       )).limit(1);
+      // A comment's attachment (SCRUM-641) belongs to the comment's report.
+      const [commentOwner] = reportOwner ? [] : await db.select({ id: fixReports.id }).from(fixComments)
+        .innerJoin(fixReports, eq(fixComments.fixId, fixReports.id))
+        .where(and(
+          eq(fixReports.tenantId, tenantId),
+          isNull(fixReports.archivedAt),
+          sql`${fixComments.media} @> ${JSON.stringify([currentUrl])}::jsonb`,
+        )).limit(1);
+      const owner = reportOwner ?? commentOwner;
       if (!owner) return res.status(404).json({ message: "Media not found" });
       const access = await authorizedFixReport(req, owner.id);
       if (!access.report) return res.status(access.status).json({ message: access.message });
@@ -24593,7 +24615,7 @@ ${context}`;
       // Thumbnail/poster request: serve a small, fast-loading JPEG preview
       // instead of the full-resolution original (falls through to the full
       // file below if a thumbnail can't be produced).
-      if (req.query.thumb === "1") {
+      if (req.query.thumb === "1" && ext !== ".pdf") {
         const localFallbackPath = path.join(fixMediaDir, filename);
         const thumbBuffer = await getOrCreateFixMediaThumbnail(filename, isVideo, localFallbackPath);
         if (thumbBuffer) {
@@ -25044,23 +25066,33 @@ ${context}`;
     }
   });
 
-  // Add a comment to a fix report (open to original reporter + branch members)
+  // Add a comment to a fix report (open to original reporter + branch members).
+  // Words, attachments or both (SCRUM-641); who wrote it is the session's alone.
+  const createFixCommentSchema = z.object({
+    message: z.string().optional().default(""),
+    media: z.array(z.string()).optional().default([]),
+  });
+
   app.post("/api/fix-reports/:id/comments", requireAuth, async (req, res, next) => {
     try {
       const user = req.user as UserWithBranchAccess;
       const access = await authorizedFixReport(req, req.params.id);
       if (!access.report) return res.status(access.status).json({ message: access.message });
 
-      const { message } = req.body;
-      if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      const parsed = createFixCommentSchema.safeParse(req.body);
+      const message = parsed.success ? parsed.data.message.trim() : "";
+      if (!parsed.success || (!message && parsed.data.media.length === 0)) {
         return res.status(400).json({ message: "Comment message is required" });
       }
+      const media = verifyFixMediaClaims(parsed.data.media, access.report.tenantId, user.id, { allowPdf: true });
+      if (!media) return res.status(400).json({ message: "Upload the Fix media before adding the update" });
 
       const comment = await storage.createFixComment({
         fixId: req.params.id,
         authorType: 'staff_user',
         authorUserId: user.id,
-        message: message.trim(),
+        message,
+        media,
       } as any);
 
       res.status(201).json(comment);
@@ -25353,11 +25385,11 @@ ${context}`;
   const supplierCanAccessReport = (token: { tenantId: string; allowedBranchIds: string[] }, report: FixReport) =>
     report.tenantId === token.tenantId && token.allowedBranchIds.includes(report.branchId);
 
-  const supplierMediaUrls = (report: FixReport, rawToken: string) =>
-    report.media.flatMap(url => {
+  const supplierMediaUrls = (reportId: string, media: string[], rawToken: string) =>
+    media.flatMap(url => {
       const filename = /^\/api\/files\/fix-media\/([a-zA-Z0-9._-]+)$/.exec(url)?.[1];
       return filename
-        ? [`/api/supplier-portal/fix-reports/${report.id}/media/${filename}?token=${rawToken}`]
+        ? [`/api/supplier-portal/fix-reports/${reportId}/media/${filename}?token=${rawToken}`]
         : [];
     });
 
@@ -25404,7 +25436,7 @@ ${context}`;
 
       res.json(reports.map(report => ({
         ...report,
-        mediaUrls: supplierMediaUrls(report, req.query.token as string),
+        mediaUrls: supplierMediaUrls(report.id, report.media, req.query.token as string),
       })));
     } catch (error) {
       next(error);
@@ -25430,10 +25462,12 @@ ${context}`;
 
       res.json({
         ...details.report,
-        mediaUrls: supplierMediaUrls(details.report, req.query.token as string),
+        mediaUrls: supplierMediaUrls(details.report.id, details.report.media, req.query.token as string),
         locationDetails: details.location ?? null,
         comments: details.comments.map(comment => ({
           ...comment,
+          // A comment's attachments are seen by whoever sees the comment (SCRUM-641).
+          media: supplierMediaUrls(details.report.id, comment.media, req.query.token as string),
           supplierToken: comment.supplierTokenId === supplierToken.id
             ? { id: supplierToken.id, name: supplierToken.name }
             : null,
@@ -25455,8 +25489,14 @@ ${context}`;
         return res.status(403).json({ message: "Access denied to this report" });
       }
       const filename = req.params.filename;
-      if (!/^[a-zA-Z0-9._-]+$/.test(filename) || !report.media.includes(`/api/files/fix-media/${filename}`)) {
-        return res.status(404).json({ message: "Media not found" });
+      const mediaUrl = `/api/files/fix-media/${filename}`;
+      if (!/^[a-zA-Z0-9._-]+$/.test(filename)) return res.status(404).json({ message: "Media not found" });
+      if (!report.media.includes(mediaUrl)) {
+        const [onComment] = await db.select({ id: fixComments.id }).from(fixComments).where(and(
+          eq(fixComments.fixId, report.id),
+          sql`${fixComments.media} @> ${JSON.stringify([mediaUrl])}::jsonb`,
+        )).limit(1);
+        if (!onComment) return res.status(404).json({ message: "Media not found" });
       }
       const file = await getFileRangeFromObjectStorage("fix-media", filename, req.headers.range);
       if (!file) return res.status(404).json({ message: "Media not found" });

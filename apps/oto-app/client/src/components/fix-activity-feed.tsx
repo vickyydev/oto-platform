@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Wrench, ArrowRight, MessageSquare } from "lucide-react";
+import { Wrench, ArrowRight, FileText, MessageSquare, PlayCircle } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { getMediaThumbUrl, isPdfUrl, isVideoUrl } from "@/lib/media";
 
 export interface FixActivityEntry {
   id: string;
@@ -11,6 +12,8 @@ export interface FixActivityEntry {
   author?: { id: string; fullName?: string | null; email: string } | null;
   authorType?: string;
   currentUserId?: string;
+  /** A comment's attachments. */
+  media?: string[];
 }
 
 interface FixActivityFeedProps {
@@ -20,6 +23,8 @@ interface FixActivityFeedProps {
   reportedByName?: string | null;
   reportTitle?: string;
   currentUserId?: string;
+  /** Opens a comment's photo or video, from among that comment's photos and videos. */
+  onOpenMedia?: (media: string[], index: number) => void;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -57,12 +62,59 @@ function parseStatusChange(message: string): { from: string; to: string; label: 
   };
 }
 
+function CommentAttachments({
+  media,
+  onOpenMedia,
+}: {
+  media: string[];
+  onOpenMedia?: (media: string[], index: number) => void;
+}) {
+  const viewable = media.filter((url) => !isPdfUrl(url));
+  return (
+    <div className="flex flex-wrap items-start gap-2 mt-2" data-testid="fix-comment-attachments">
+      {media.map((url, index) =>
+        isPdfUrl(url) ? (
+          <a
+            key={url}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs hover:bg-muted"
+            data-testid={`link-comment-file-${index}`}
+          >
+            <FileText className="w-4 h-4 text-muted-foreground" />
+            PDF document
+          </a>
+        ) : (
+          <button
+            key={url}
+            type="button"
+            onClick={() => onOpenMedia?.(viewable, viewable.indexOf(url))}
+            aria-label={`View attachment ${index + 1}`}
+            className="relative w-24 h-24 rounded-md overflow-hidden bg-muted"
+            data-testid={`button-comment-media-${index}`}
+          >
+            <img src={getMediaThumbUrl(url)} alt={`Attachment ${index + 1}`} loading="lazy" className="w-full h-full object-cover" />
+            {isVideoUrl(url) && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <PlayCircle className="w-6 h-6 text-white drop-shadow" />
+              </div>
+            )}
+          </button>
+        ),
+      )}
+    </div>
+  );
+}
+
 function ActivityRow({
   entry,
   currentUserId,
+  onOpenMedia,
 }: {
   entry: FixActivityEntry;
   currentUserId?: string;
+  onOpenMedia?: (media: string[], index: number) => void;
 }) {
   const isMe = entry.authorUserId && entry.authorUserId === currentUserId;
   const name = entry.author?.fullName || entry.author?.email || "System";
@@ -120,7 +172,8 @@ function ActivityRow({
             {formatFixDateTime(entry.createdAt)}
           </span>
         </div>
-        <p className="text-sm text-foreground/80 mt-0.5">{entry.message}</p>
+        {entry.message && <p className="text-sm text-foreground/80 mt-0.5">{entry.message}</p>}
+        {entry.media && entry.media.length > 0 && <CommentAttachments media={entry.media} onOpenMedia={onOpenMedia} />}
       </div>
     </div>
   );
@@ -131,6 +184,7 @@ export function FixActivityFeed({
   createdAt,
   reportedByName,
   currentUserId,
+  onOpenMedia,
 }: FixActivityFeedProps) {
   const allEntries: FixActivityEntry[] = [
     ...(createdAt
@@ -162,7 +216,7 @@ export function FixActivityFeed({
       ) : (
         <div className="space-y-3">
           {allEntries.map((entry) => (
-            <ActivityRow key={entry.id} entry={entry} currentUserId={currentUserId} />
+            <ActivityRow key={entry.id} entry={entry} currentUserId={currentUserId} onOpenMedia={onOpenMedia} />
           ))}
         </div>
       )}
@@ -178,6 +232,7 @@ export function rawCommentToActivityEntry(comment: {
   author?: { id: string; fullName?: string | null; email: string } | null;
   authorType?: string;
   supplierToken?: { id: string; name: string } | null;
+  media?: string[] | null;
 }): FixActivityEntry {
   const isStatusChange = isStatusChangeMessage(comment.message);
   return {
@@ -191,5 +246,6 @@ export function rawCommentToActivityEntry(comment: {
       ? { id: comment.supplierToken?.id || "", fullName: comment.supplierToken?.name || "Supplier", email: "" }
       : comment.author,
     authorType: comment.authorType,
+    media: comment.media ?? [],
   };
 }

@@ -34,6 +34,10 @@
 //      leaves every list, by-id read, media read, supplier read and checklist
 //      read; the row and its comments stay, and one activity row records it.
 //      Reporters, Fix Department members and all-branch staff are refused.
+//  10. A comment can carry the author's own fresh uploads, photos, videos or
+//      a PDF; they are served only under the owning report's access, shown in
+//      the thread, and reach the supplier who can read the comment. A PDF
+//      cannot go on a report itself, and a file that is not one is refused.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built:
@@ -567,6 +571,174 @@ try {
     assert.deepEqual(await linkedIds(), { source: [linked.body.id], run: [linked.body.id] });
     assert.equal((await remove(managerA, linked.body.id)).status, 204);
     assert.deepEqual(await linkedIds(), { source: [], run: [] });
+  });
+
+  const PDF = Buffer.from("%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF\n");
+  const uploadAs = async (who: Login, files: Array<{ bytes: Buffer; type: string; name: string }>, query = "?purpose=comment") => {
+    const form = new FormData();
+    for (const f of files) form.append("media", new Blob([f.bytes], { type: f.type }), f.name);
+    return call("POST", `/api/fix-reports/upload${query}`, { cookie: cookie[who.label], form });
+  };
+  const photo = { bytes: JPEG, type: "image/jpeg", name: "photo.jpg" };
+  const pdfFile = { bytes: PDF, type: "application/pdf", name: "quote.pdf" };
+  const attached = await report(author, `ZZ TEST attachments ${run}`, "normal", branchA.id);
+  const commentOn = (who: Login, id: string, body: unknown) =>
+    call("POST", `/api/fix-reports/${id}/comments`, { cookie: cookie[who.label], body });
+  const bytesOf = async (path: string, cookieValue?: string) => {
+    const res = await fetch(`${ORIGIN}${path}`, { headers: cookieValue ? { cookie: cookieValue } : {} });
+    return { status: res.status, type: res.headers.get("content-type"), sniff: res.headers.get("x-content-type-options"), bytes: Buffer.from(await res.arrayBuffer()) };
+  };
+
+  let photoUrl = "";
+  let pdfUrl = "";
+  await check("641: a comment carries a photo and a PDF, stored without their claims", async () => {
+    const upload = await uploadAs(fixerA, [photo, pdfFile]);
+    assert.equal(upload.status, 200, show(upload));
+    const res = await commentOn(fixerA, attached.id, { message: "ZZ two attached", media: upload.body.urls });
+    assert.equal(res.status, 201, show(res));
+    assert.equal(res.body.authorUserId, fixerA.id);
+    assert.equal(res.body.media.length, 2);
+    [photoUrl, pdfUrl] = res.body.media;
+    assert.match(photoUrl, /^\/api\/files\/fix-media\/[a-zA-Z0-9._-]+\.jpg$/);
+    assert.match(pdfUrl, /^\/api\/files\/fix-media\/[a-zA-Z0-9._-]+\.pdf$/);
+    const opened = await details(author, attached.id);
+    assert.deepEqual(opened.comments[0].media, [photoUrl, pdfUrl]);
+    assert.equal((opened.report.media as string[]).includes(photoUrl), false, "the report's own media took a comment's file");
+  });
+
+  await check("641: an attachment alone makes a comment; nothing at all is refused", async () => {
+    const upload = await uploadAs(author, [photo]);
+    const res = await commentOn(author, attached.id, { media: upload.body.urls });
+    assert.equal(res.status, 201, show(res));
+    assert.equal(res.body.message, "");
+    for (const body of [{}, { message: "   " }, { message: "   ", media: [] }, { message: 5 }, { media: "x" }]) {
+      const refused = await commentOn(author, attached.id, body);
+      assert.equal(refused.status, 400, `${JSON.stringify(body)}: ${show(refused)}`);
+    }
+  });
+
+  await check("641: a comment can only claim its author's own fresh upload", async () => {
+    const upload = await uploadAs(fixerA, [photo]);
+    const [claimed] = upload.body.urls as string[];
+    const bare = claimed.split("?")[0];
+    const tampered = claimed.replace(/.$/, (c) => (c === "0" ? "1" : "0"));
+    const eleven = Array.from({ length: 11 }, () => claimed);
+    const cases: Array<[Login, unknown]> = [
+      [author, [claimed]],
+      [fixerA, [bare]],
+      [fixerA, [tampered]],
+      [fixerA, [photoUrl]],
+      [fixerA, ["/api/files/fix-media/../../secret.jpg?claim=9999999999999.00"]],
+      [fixerA, eleven],
+      [fixerA, [claimed, claimed]],
+    ];
+    for (const [who, media] of cases) {
+      const res = await commentOn(who, attached.id, { message: "ZZ", media });
+      assert.equal(res.status, 400, `${who.label} ${JSON.stringify(media).slice(0, 80)}: ${show(res)}`);
+    }
+  });
+
+  await check("641: an attachment is served only under the owning report's access", async () => {
+    const full = await bytesOf(photoUrl, cookie[fixerA.label]);
+    assert.equal(full.status, 200);
+    assert.ok(full.bytes.equals(JPEG), "the photo's bytes changed");
+    const thumb = await bytesOf(`${photoUrl}?thumb=1`, cookie[fixerA.label]);
+    assert.equal(thumb.status, 200);
+    assert.equal(thumb.type, "image/jpeg");
+    assert.equal((await bytesOf(photoUrl, cookie[author.label])).status, 200, "the report's author reads it");
+    assert.equal((await bytesOf(photoUrl, cookie[outsider.label])).status, 403, "outside the report");
+    assert.equal((await bytesOf(photoUrl)).status, 401, "not signed in");
+    const atOtherBranch = await report(author, `ZZ TEST attachments at B ${run}`, "normal", branchB.id);
+    const upload = await uploadAs(author, [photo]);
+    const res = await commentOn(author, atOtherBranch.id, { media: upload.body.urls });
+    assert.equal(res.status, 201, show(res));
+    assert.equal((await bytesOf(res.body.media[0], cookie[managerA.label])).status, 403, "a manager of another branch");
+    assert.equal((await bytesOf("/api/files/fix-media/fix_nothing.jpg", cookie[admin.label])).status, 404, "an unattached name");
+  });
+
+  await check("641: a PDF opens as one, and only a real PDF goes up", async () => {
+    const opened = await bytesOf(pdfUrl, cookie[fixerA.label]);
+    assert.equal(opened.status, 200);
+    assert.equal(opened.type, "application/pdf");
+    assert.equal(opened.sniff, "nosniff");
+    assert.ok(opened.bytes.equals(PDF), "the PDF's bytes changed");
+    assert.equal((await bytesOf(`${pdfUrl}?thumb=1`, cookie[fixerA.label])).type, "application/pdf");
+    const fake = await uploadAs(fixerA, [{ bytes: JPEG, type: "application/pdf", name: "fake.pdf" }]);
+    assert.equal(fake.status, 400, show(fake));
+    assert.ok(String(fake.body.message).includes("fake.pdf"), show(fake));
+  });
+
+  await check("641: a PDF never reaches a report's own media", async () => {
+    const plain = await uploadAs(fixerA, [pdfFile], "");
+    assert.notEqual(plain.status, 200, show(plain));
+    const upload = await uploadAs(fixerA, [pdfFile]);
+    const created = await call("POST", "/api/fix-reports", {
+      cookie: cookie[fixerA.label],
+      body: { media: upload.body.urls, title: "ZZ", priority: "normal", branchId: branchA.id, tags: [] },
+    });
+    assert.equal(created.status, 400, show(created));
+    const completed = await call("PATCH", `/api/fix-reports/${attached.id}/update`, {
+      cookie: cookie[fixerA.label],
+      body: { status: "in_progress", appendMedia: upload.body.urls },
+    });
+    assert.equal(completed.status, 400, show(completed));
+  });
+
+  await check("641: a video goes up on a comment as on a report", async () => {
+    const video = readFileSync(join(APP_DIR, "tests", "fixtures", "media", "checklist-evidence.mp4"));
+    const upload = await uploadAs(fixerA, [{ bytes: video, type: "video/mp4", name: "clip.mp4" }]);
+    assert.equal(upload.status, 200, show(upload));
+    const res = await commentOn(fixerA, attached.id, { message: "ZZ video", media: upload.body.urls });
+    assert.equal(res.status, 201, show(res));
+    assert.match(res.body.media[0], /\.mp4$/);
+    assert.equal((await bytesOf(res.body.media[0], cookie[author.label])).status, 200);
+  });
+
+  await check("641: the thread shows attachments directly, and no empty line for an attachment alone", async () => {
+    const opened = await details(admin, attached.id);
+    const html = renderToStaticMarkup(React.createElement(FixActivityFeed, {
+      entries: opened.comments.map(rawCommentToActivityEntry),
+      createdAt: opened.report.createdAt,
+      reportedByName: opened.reporter.name,
+    }));
+    assert.ok(html.includes(`src="${photoUrl}?thumb=1"`), html);
+    assert.ok(html.includes(`href="${pdfUrl}"`), html);
+    assert.ok(html.includes("PDF document"), html);
+    assert.ok(!html.includes(`src="${pdfUrl}`), "a PDF was drawn as a picture");
+    const alone = opened.comments.find((c: { message: string }) => c.message === "");
+    const row = renderToStaticMarkup(React.createElement(FixActivityFeed, { entries: [rawCommentToActivityEntry(alone)] }));
+    assert.ok(row.includes("fix-comment-attachments"), row);
+    assert.ok(!row.includes('<p class="text-sm text-foreground/80'), row);
+  });
+
+  await check("641: a supplier who can read the comment can open its attachments", async () => {
+    const opened = await call("GET", `/api/supplier-portal/fix-reports/${attached.id}?token=${supplierToken}`);
+    assert.equal(opened.status, 200, show(opened));
+    const comment = (opened.body.comments as Array<{ message: string; media: string[] }>).find((c) => c.message === "ZZ two attached");
+    assert.equal(comment?.media.length, 2);
+    const [supplierPhoto, supplierPdf] = comment!.media;
+    assert.ok(supplierPhoto.startsWith(`/api/supplier-portal/fix-reports/${attached.id}/media/`), supplierPhoto);
+    const photoBytes = await bytesOf(supplierPhoto);
+    assert.equal(photoBytes.status, 200);
+    assert.ok(photoBytes.bytes.equals(JPEG), "the photo's bytes changed");
+    assert.equal((await bytesOf(supplierPdf)).type, "application/pdf");
+    // Another report's route does not serve this comment's file, and a link
+    // for the other branch does not reach this report.
+    const filename = photoUrl.split("/").pop();
+    assert.equal((await bytesOf(`/api/supplier-portal/fix-reports/${threaded.id}/media/${filename}?token=${supplierToken}`)).status, 404);
+    const otherToken = randomBytes(32).toString("hex");
+    await q(
+      "insert into fix_supplier_tokens (tenant_id, name, token_hash, allowed_branch_ids, created_by_user_id) values ($1, $2, $3, $4::jsonb, $5)",
+      [tenant, `ZZ TEST other supplier ${run}`, createHash("sha256").update(otherToken).digest("hex"), JSON.stringify([branchB.id]), admin.id],
+    );
+    assert.equal((await bytesOf(`/api/supplier-portal/fix-reports/${attached.id}/media/${filename}?token=${otherToken}`)).status, 403);
+  });
+
+  await check("641: a deleted report's attachments go with it", async () => {
+    assert.equal((await remove(managerA, attached.id)).status, 204);
+    assert.equal((await bytesOf(photoUrl, cookie[admin.label])).status, 404);
+    const stored = await q<{ media: string[] }>("select media from fix_comments where fix_id = $1 and message = 'ZZ two attached'", [attached.id]);
+    assert.deepEqual(stored[0].media, [photoUrl, pdfUrl], "the comment's record of them stays");
   });
 
   console.log(`fix-module.check: ${checks} checks passed`);

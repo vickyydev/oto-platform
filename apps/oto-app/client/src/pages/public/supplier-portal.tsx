@@ -26,10 +26,12 @@ import {
   Building2,
   AlertCircle,
   ShieldAlert,
+  FileText,
 } from "lucide-react";
 import { format, parseISO, formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { isPdfUrl, isVideoUrl } from "@/lib/media";
 
 interface SupplierInfo {
   id: string;
@@ -65,6 +67,7 @@ interface FixComment {
   fixReportId: string;
   authorType: string;
   message: string;
+  media?: string[];
   createdAt: string;
   author?: { id: string; fullName?: string | null; email: string } | null;
   supplierToken?: { id: string; name: string } | null;
@@ -455,7 +458,23 @@ export default function SupplierPortalPage() {
                             {formatDistanceToNow(parseISO(comment.createdAt), { addSuffix: true })}
                           </span>
                         </div>
-                        <p>{comment.message}</p>
+                        {comment.message && <p>{comment.message}</p>}
+                        {comment.media && comment.media.length > 0 && (
+                          <div className="flex flex-wrap items-start gap-2 mt-2" data-testid={`supplier-comment-attachments-${comment.id}`}>
+                            {comment.media.map((url, idx) => isPdfUrl(url) ? (
+                              <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-md border bg-background px-2.5 py-1.5 text-xs">
+                                <FileText className="w-4 h-4" />
+                                PDF document
+                              </a>
+                            ) : isVideoUrl(url) ? (
+                              <video key={idx} src={url} controls preload="metadata" className="w-32 h-24 rounded-md object-cover" />
+                            ) : (
+                              <a key={idx} href={url} target="_blank" rel="noopener noreferrer">
+                                <img src={url} alt={`Attachment ${idx + 1}`} loading="lazy" className="w-24 h-24 rounded-md object-cover" />
+                              </a>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

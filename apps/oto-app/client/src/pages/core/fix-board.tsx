@@ -5,7 +5,6 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -34,7 +33,6 @@ import {
   AlertTriangle,
   Filter,
   X,
-  Send,
   Image,
   Camera,
   MessageSquare,
@@ -42,7 +40,6 @@ import {
   ChevronLeft,
   User,
   Building2,
-  Paperclip,
   Eye,
   CalendarDays,
   ZoomIn,
@@ -58,6 +55,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { FixActivityFeed, formatFixDateTime, rawCommentToActivityEntry } from "@/components/fix-activity-feed";
+import { FixCommentComposer } from "@/components/fix-comment-composer";
 import { FixReportDelete } from "@/components/fix-report-delete";
 import { getMediaThumbUrl, isVideoUrl } from "@/lib/media";
 
@@ -112,6 +110,7 @@ interface FixComment {
   authorUserId?: string | null;
   authorSupplierTokenId?: string | null;
   message: string;
+  media?: string[];
   createdAt: string;
   author?: {
     id: string;
@@ -530,11 +529,10 @@ interface ReportDetailDialogProps {
 
 function ReportDetailDialog({ report, open, onClose, onUpdate }: ReportDetailDialogProps) {
   const { toast } = useToast();
-  const [newComment, setNewComment] = useState("");
   const [scheduledDate, setScheduledDate] = useState<Date | undefined>();
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryMedia, setGalleryMedia] = useState<string[]>([]);
   const [galleryIndex, setGalleryIndex] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Completion photo flow state
   const [completionSheetOpen, setCompletionSheetOpen] = useState(false);
@@ -551,20 +549,6 @@ function ReportDetailDialog({ report, open, onClose, onUpdate }: ReportDetailDia
   
   const reportDetails = detailsResponse?.report;
   const comments = detailsResponse?.comments || [];
-  
-  const addCommentMutation = useMutation({
-    mutationFn: async (message: string) => {
-      return apiRequest("POST", `/api/fix-reports/${report?.id}/comments`, { message });
-    },
-    onSuccess: () => {
-      toast({ title: "Update added" });
-      setNewComment("");
-      queryClient.invalidateQueries({ queryKey: ['/api/fix-reports', report?.id, 'details'] });
-    },
-    onError: () => {
-      toast({ title: "Failed to add update", variant: "destructive" });
-    },
-  });
   
   const updateStatusMutation = useMutation({
     mutationFn: async (data: { status: string; scheduledAt?: string; appendMedia?: string[] }) => {
@@ -674,7 +658,8 @@ function ReportDetailDialog({ report, open, onClose, onUpdate }: ReportDetailDia
     updateScheduleMutation.mutate({ scheduledAt: date.toISOString() });
   };
   
-  const openGallery = (index: number) => {
+  const openGallery = (media: string[], index: number) => {
+    setGalleryMedia(media);
     setGalleryIndex(index);
     setGalleryOpen(true);
   };
@@ -688,6 +673,7 @@ function ReportDetailDialog({ report, open, onClose, onUpdate }: ReportDetailDia
     author: c.author || null,
     authorType: c.authorType,
     supplierToken: c.supplierToken,
+    media: c.media,
   }));
   
   const reportedByName = detailsResponse?.reporter?.name || details.reportedByName;
@@ -807,38 +793,40 @@ function ReportDetailDialog({ report, open, onClose, onUpdate }: ReportDetailDia
 
       <Dialog open={open} onOpenChange={(o) => !o && !galleryOpen && onClose()}>
         <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0" data-testid="dialog-fix-report-detail">
-          <div className="flex items-start justify-between gap-4 p-4 pb-3 pr-12 border-b">
-            <div className="flex-1 min-w-0">
-              <h2 className="text-lg font-semibold leading-tight truncate" data-testid="text-fix-title">
-                {details.title || "Fix Report"}
-              </h2>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1 flex-wrap">
-                {locationText && (
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5" />
-                    {locationText}
-                  </span>
-                )}
-                {tagText && (
-                  <Badge variant="outline" className="text-xs font-normal">
-                    {tagText}
-                  </Badge>
-                )}
+          <div className="p-4 pb-3 pr-12 border-b">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-semibold leading-tight truncate" data-testid="text-fix-title">
+                  {details.title || "Fix Report"}
+                </h2>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1 flex-wrap">
+                  {locationText && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5" />
+                      {locationText}
+                    </span>
+                  )}
+                  {tagText && (
+                    <Badge variant="outline" className="text-xs font-normal">
+                      {tagText}
+                    </Badge>
+                  )}
+                </div>
               </div>
-              <p className="flex items-center gap-1 text-xs text-muted-foreground mt-1" data-testid="text-fix-reported-by">
-                <User className="w-3 h-3 shrink-0" />
-                <span>
-                  {reportedByName ? `Reported by ${reportedByName} · ` : "Reported "}
-                  {formatFixDateTime(details.createdAt)}
-                </span>
-              </p>
+              <StatusPill 
+                status={details.status}
+                scheduledAt={details.scheduledAt}
+                onStatusChange={handleStatusChange}
+                onSchedule={handleSchedule}
+              />
             </div>
-            <StatusPill 
-              status={details.status}
-              scheduledAt={details.scheduledAt}
-              onStatusChange={handleStatusChange}
-              onSchedule={handleSchedule}
-            />
+            <p className="flex items-center gap-1 text-xs text-muted-foreground mt-1" data-testid="text-fix-reported-by">
+              <User className="w-3 h-3 shrink-0" />
+              <span>
+                {reportedByName ? `Reported by ${reportedByName} · ` : "Reported "}
+                {formatFixDateTime(details.createdAt)}
+              </span>
+            </p>
           </div>
           
           {loadingDetails ? (
@@ -870,7 +858,7 @@ function ReportDetailDialog({ report, open, onClose, onUpdate }: ReportDetailDia
                           className={`relative rounded-lg overflow-hidden bg-muted cursor-pointer group ${
                             details.media!.length === 1 ? 'aspect-video' : 'aspect-square'
                           }`}
-                          onClick={(e) => { e.stopPropagation(); openGallery(idx); }}
+                          onClick={(e) => { e.stopPropagation(); openGallery(details.media!, idx); }}
                           data-testid={`photo-thumbnail-${idx}`}
                         >
                           <img src={getMediaThumbUrl(url)} alt={`Photo ${idx + 1}`} loading="lazy" className="w-full h-full object-cover pointer-events-none" />
@@ -903,6 +891,7 @@ function ReportDetailDialog({ report, open, onClose, onUpdate }: ReportDetailDia
                   createdAt={details.createdAt}
                   reportedByName={reportedByName}
                   currentUserId={authUser?.id}
+                  onOpenMedia={openGallery}
                 />
               </div>
 
@@ -910,51 +899,18 @@ function ReportDetailDialog({ report, open, onClose, onUpdate }: ReportDetailDia
             </div>
           )}
           
-          <div className="p-3 border-t bg-background">
-            <div className="flex items-center gap-2">
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept="image/*"
-                onChange={() => {}}
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="shrink-0"
-                onClick={() => fileInputRef.current?.click()}
-                data-testid="button-attach-photo"
-              >
-                <Paperclip className="w-4 h-4" />
-              </Button>
-              <Input
-                placeholder="Add update or photo..."
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                className="flex-1"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && newComment.trim()) {
-                    addCommentMutation.mutate(newComment.trim());
-                  }
-                }}
-                data-testid="input-activity-comment"
-              />
-              <Button 
-                size="icon"
-                onClick={() => newComment.trim() && addCommentMutation.mutate(newComment.trim())}
-                disabled={!newComment.trim() || addCommentMutation.isPending}
-                data-testid="button-send-update"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
+          <FixCommentComposer
+            key={report.id}
+            reportId={report.id}
+            placeholder="Add update or photo..."
+            inputTestId="input-activity-comment"
+            sendTestId="button-send-update"
+          />
         </DialogContent>
       </Dialog>
       
       <PhotoGalleryModal
-        media={details.media || []}
+        media={galleryMedia}
         initialIndex={galleryIndex}
         open={galleryOpen}
         onClose={() => setGalleryOpen(false)}

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { FixActivityFeed, formatFixDateTime, rawCommentToActivityEntry } from "@/components/fix-activity-feed";
+import { FixCommentComposer } from "@/components/fix-comment-composer";
 import { FixReportDelete } from "@/components/fix-report-delete";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -22,7 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useBranchContext } from "@/hooks/use-branch-context";
 import { useAuth } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { getMediaThumbUrl, isVideoUrl } from "@/lib/media";
+import { FIX_MEDIA_ACCEPT, FIX_MEDIA_TYPES, MAX_FIX_MEDIA, MAX_FIX_MEDIA_SIZE, getMediaThumbUrl, isVideoUrl } from "@/lib/media";
 import type { Location } from "@shared/schema";
 import { 
   Camera, 
@@ -59,12 +60,6 @@ const QUICK_TAGS = [
   { id: "urgent", label: "Urgent", icon: AlertTriangle },
 ];
 
-// The types and size the server's /api/fix-reports/upload accepts, checked
-// before anything is sent so a refusal names the file instead of failing late.
-const FIX_MEDIA_ACCEPT = "image/jpeg,image/png,image/webp,video/mp4,video/quicktime";
-const FIX_MEDIA_TYPES = new Set(FIX_MEDIA_ACCEPT.split(","));
-const MAX_FIX_MEDIA = 10;
-const MAX_FIX_MEDIA_SIZE = 20 * 1024 * 1024;
 type SelectedMedia = { file: File; url: string };
 
 type Step = "capture" | "details" | "success";
@@ -85,6 +80,7 @@ interface FixComment {
   authorUserId?: string | null;
   authorType: string;
   message: string;
+  media?: string[];
   createdAt: string;
   author?: { id: string; fullName?: string | null; email: string } | null;
   supplierToken?: { id: string; name: string } | null;
@@ -132,8 +128,6 @@ interface ReportDetailSheetProps {
 
 function ReportDetailSheet({ reportId, open, onClose }: ReportDetailSheetProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [comment, setComment] = useState("");
   const [viewingMedia, setViewingMedia] = useState<string | null>(null);
 
   const { data: detail, isLoading, isError } = useQuery<ReportDetail>({
@@ -144,23 +138,6 @@ function ReportDetailSheet({ reportId, open, onClose }: ReportDetailSheetProps) 
       return res.json();
     },
     enabled: !!reportId && open,
-  });
-
-  const addCommentMutation = useMutation({
-    mutationFn: async (message: string) => {
-      const res = await apiRequest("POST", `/api/fix-reports/${reportId}/comments`, { message });
-      if (!res.ok) throw new Error("Failed to add comment");
-      return res.json();
-    },
-    onSuccess: () => {
-      setComment("");
-      queryClient.invalidateQueries({ queryKey: ['/api/fix-reports', reportId, 'details'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/fix-reports'] });
-      toast({ title: "Update added" });
-    },
-    onError: () => {
-      toast({ title: "Failed to add update", variant: "destructive" });
-    },
   });
 
   const report = detail?.report;
@@ -262,10 +239,12 @@ function ReportDetailSheet({ reportId, open, onClose }: ReportDetailSheetProps) 
                   author: c.author,
                   authorType: c.authorType,
                   supplierToken: c.supplierToken,
+                  media: c.media,
                 }))}
                 createdAt={report?.createdAt}
                 reportedByName={detail?.reporter?.name}
                 currentUserId={user?.id}
+                onOpenMedia={(media, index) => setViewingMedia(media[index])}
               />
             </div>
 
@@ -279,30 +258,16 @@ function ReportDetailSheet({ reportId, open, onClose }: ReportDetailSheetProps) 
         )}
 
         {/* Comment input */}
-        {!isError && <div className="p-3 border-t bg-background">
-          <div className="flex items-center gap-2">
-            <Input
-              placeholder="Add an update..."
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              className="flex-1"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && comment.trim()) {
-                  addCommentMutation.mutate(comment.trim());
-                }
-              }}
-              data-testid="input-staff-comment"
-            />
-            <Button
-              size="icon"
-              onClick={() => comment.trim() && addCommentMutation.mutate(comment.trim())}
-              disabled={!comment.trim() || addCommentMutation.isPending}
-              data-testid="button-send-staff-comment"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>}
+        {!isError && reportId && (
+          <FixCommentComposer
+            key={reportId}
+            reportId={reportId}
+            placeholder="Add an update..."
+            inputTestId="input-staff-comment"
+            sendTestId="button-send-staff-comment"
+            onPosted={() => queryClient.invalidateQueries({ queryKey: ['/api/fix-reports'] })}
+          />
+        )}
         {viewingMedia && (
           <Dialog open onOpenChange={() => setViewingMedia(null)}>
             <DialogContent className="max-w-3xl" data-testid="dialog-fix-report-media">
