@@ -1,0 +1,46 @@
+{
+  "at": "2026-11-03T19:43:06.847Z",
+  "head": "d926a519fd8812aa8d54d5641e08036d405f8da5",
+  "base": "e7fda4d0794dd4544b314311a3fa78e29f6f90a8",
+  "ownedBytesMatch": "f4c101ad05e1a241974b9acbd5cc73312a804083",
+  "owned": [
+    "apps/api/src/services/catalog-clone.ts",
+    "apps/api/test/s734-branch-clone-review.test.ts",
+    "packages/admin-screens/src/lifted/api/platform.ts",
+    "packages/admin-screens/src/lifted/components/admin/branches/BranchesPanel.tsx"
+  ],
+  "preserved": [
+    {
+      "file": "docs/progress/STATUS.md",
+      "from": "f4c101ad05e1a241974b9acbd5cc73312a804083",
+      "lines": 2104
+    },
+    {
+      "file": "docs/progress/STATUS.md",
+      "from": "origin/main",
+      "lines": 2120
+    },
+    {
+      "file": "docs/handover/CODEX_HANDOVER.md",
+      "from": "f4c101ad05e1a241974b9acbd5cc73312a804083",
+      "lines": 1451
+    },
+    {
+      "file": "docs/handover/CODEX_HANDOVER.md",
+      "from": "origin/main",
+      "lines": 1467
+    },
+    {
+      "file": "docs/handover/CLOUD_HANDOVER.md",
+      "from": "f4c101ad05e1a241974b9acbd5cc73312a804083",
+      "lines": 1301
+    },
+    {
+      "file": "docs/handover/CLOUD_HANDOVER.md",
+      "from": "origin/main",
+      "lines": 1317
+    }
+  ],
+  "stagingProof": false,
+  "prerequisite": "SCRUM-707 Deployed before landing and another rebase"
+}
