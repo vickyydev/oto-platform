@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {Rig} from './s726-browser.mjs';
+import {Traffic,POS} from './s726-traffic.mjs';
+import {retireFamily} from './s726-family.mjs';
+import {job} from './qa-render-job.mjs';
+const dir='C:/oto-lanes/codex-pos-path-20261102/docs/qa/proof-2026-11-03/s726';
+const f=JSON.parse(readFileSync(dir+'/fixture.json','utf8')),r=await new Rig(f,new Traffic()).init(),receipt={at:new Date().toISOString(),source:f.source,steps:[]};
+assert.match(f.name,/^ZZ TEST SCRUM-726 /);const save=()=>writeFileSync(dir+'/cleanup.json',JSON.stringify(receipt,null,2)+'\n');
+try{
+ if(f.family?.inPark){const p=await r.browser.newPage();await p.setContent('<body>ZZ TEST SCRUM-726 pickup - synthetic image, no person</body>');r.photo=await p.screenshot();await p.close();await retireFamily(r);receipt.steps.push('Exact synthetic child released and read back out');save();}
+ const spec={boxId:f.boxId,name:f.name};
+ const program=`(async()=>{const assert=require('node:assert/strict'),{Client}=require('pg'),s=${JSON.stringify(spec)},c=new Client({connectionString:process.env.DATABASE_URL,options:'-c default_transaction_read_only=on -c statement_timeout=5000'});await c.connect();try{const b=(await c.query('SELECT name FROM core.box WHERE id=$1',[s.boxId])).rows[0];assert.equal(b.name,s.name);let pending;for(let n=0;n<31;n++){pending=(await c.query("SELECT count(*)::int n FROM edge.print_job WHERE box_id=$1 AND status<>'printed'",[s.boxId])).rows[0].n;if(!pending)break;await new Promise(r=>setTimeout(r,3000));}assert.equal(pending,0);console.log(JSON.stringify({event:'s726_print_cleanup',at:new Date().toISOString(),readOnly:true,pendingJobs:0,passed:true}));}finally{await c.end();}})().catch(e=>{console.error(JSON.stringify({event:'s726_print_cleanup_error',name:e.name,code:e.code??'ASSERTION'}));process.exitCode=1;});`;
+ receipt.printCheck=await job(program,'s726_print_cleanup',f.source);save();
+ const credentials=(await r.api(r.admin,'GET','/branches/'+f.branchId+'/credentials?includeRevoked=true')).credentials;for(const id of f.displayIds??[]){const c=credentials.find(x=>x.id===id);assert.ok(c);assert.ok([...f.stations,...(f.boards??[])].some(x=>x.id===c.stationId));if(!c.revokedAt)await r.api(r.admin,'POST','/credentials/'+id+'/revoke',{reason:'ZZ TEST SCRUM-726 finished'});}receipt.steps.push('Every exact test display revoked');save();
+ for(const s of [...f.stations,...(f.boards??[])]){assert.ok(s.name.startsWith(f.name));const row=(await r.api(r.admin,'GET','/stations/'+s.id)).station;assert.equal(row.name,s.name);assert.equal(row.boxId,f.boxId);if(!row.archived)await r.api(r.admin,'DELETE','/stations/'+s.id);receipt.steps.push('Station retired '+s.id);save();}
+ const boxes=await r.api(r.admin,'GET','/branches/'+f.branchId+'/boxes');const box=boxes.boxes.find(x=>x.id===f.boxId);assert.ok(box);assert.equal(box.name,f.name);if(box.status!=='disabled')await r.api(r.admin,'PATCH','/boxes/'+f.boxId,{status:'disabled'});if(!box.archived)await r.api(r.admin,'DELETE','/boxes/'+f.boxId);receipt.steps.push('Exact test box disabled and archived');save();
+ const menu=await r.api(r.admin,'GET','/branches/'+f.branchId+'/menu');const product=menu.products.find(x=>x.id===f.productId);if(product){assert.equal(product.name,f.productName);assert.equal(product.categoryId,f.categoryId);if(!product.archivedAt)await r.api(r.admin,'DELETE','/branches/'+f.branchId+'/menu/products/'+f.productId);}await r.api(r.admin,'DELETE','/menu/categories/'+f.categoryId);receipt.steps.push('Own product and category withdrawn');save();
+ await r.api(r.admin,'POST','/auth/sign-out',{});assert.equal((await r.admin.get(POS+'/api/me')).status(),401);receipt.steps.push('Cleanup session signed out and refusal read back');receipt.completedAt=new Date().toISOString();save();
+}finally{await r.admin.dispose();await r.browser.close();}
+console.log(JSON.stringify({cleanupCompleted:!!receipt.completedAt,steps:receipt.steps.length}));

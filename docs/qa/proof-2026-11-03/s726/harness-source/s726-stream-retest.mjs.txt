@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {Rig} from './s726-browser.mjs';
+import {Traffic,POS} from './s726-traffic.mjs';import {connectMonitor} from './s726-monitor.mjs';import {quiet} from './s726-phase.mjs';
+import {render} from 'file:///C:/oto-lanes/codex-pos-path-20261102/scripts/agent/render.mjs';
+const dir='C:/oto-lanes/codex-pos-path-20261102/docs/qa/proof-2026-11-03/s726';
+const f=JSON.parse(readFileSync(dir+'/fixture.json','utf8')),t=new Traffic();
+const result={startedAt:new Date().toISOString(),sources:f.sources,navigationCycles:[],abortCycles:[],outcome:'incomplete'};
+const save=()=>writeFileSync(dir+'/stream-retest.json',JSON.stringify(result,null,2)+'\n');
+const ready=async()=>{const response=await fetch(POS+'/api/ready',{signal:AbortSignal.timeout(10000)});assert.equal(response.status,200);const data=await response.json();return data.checks?.stationChannels??data.stationChannels;};
+for(const [id,sha] of Object.entries(f.sources)){const d=(await render('GET','/services/'+id+'/deploys?limit=1'))[0].deploy;assert.equal(d.status,'live');assert.equal(d.commit.id,sha);}
+result.before=await ready();assert.equal(result.before.connections,0);
+const m=await connectMonitor({reuse:true}),r=await new Rig(f,t).init();m.ownSessions=()=>f.testSessions.map(x=>x.id);m.ownStations=()=>[...f.stations,...(f.boards??[])].map(x=>x.id);
+try{
+ await quiet(m,t);assert.ok(!t.stopReason);const n=await r.native(f.boards[0],true);
+ for(let i=0;i<10;i++){
+  await quiet(m,t);assert.ok(!t.stopReason);
+  await n.page.goto(POS);
+  await n.page.getByText('Membership Check',{exact:true}).waitFor();
+  await n.page.goto(POS+'/drop-off');
+  await n.page.getByRole('button',{name:/^Upcoming/}).waitFor();
+  await n.page.waitForTimeout(500);
+  const count=await ready();assert.equal(count.connections,0);
+  result.navigationCycles.push({at:new Date().toISOString(),cycle:i+1,server:count});save();
+ }
+ const path='/api/stations/'+f.boards[0].id+'/channel?view=staff';
+ for(let i=0;i<40;i++){
+  if(i%10===0){await quiet(m,t);assert.ok(!t.stopReason);}
+  const delay=[1,10,30,100][i%4];
+  const observed=await n.page.evaluate(async({path,delay})=>{const ac=new AbortController();const timer=setTimeout(()=>ac.abort(),delay);try{const response=await fetch(path,{signal:ac.signal});const reader=response.body.getReader();try{while(!(await reader.read()).done){}}finally{await reader.cancel().catch(()=>{});}return{status:response.status};}catch(e){return{name:e.name};}finally{clearTimeout(timer);ac.abort();}},{path,delay});
+  assert.ok(observed.name==='AbortError'||observed.status===200);
+  result.abortCycles.push({cycle:i+1,delayMs:delay,...observed});
+  await n.page.waitForTimeout(250);
+ }
+ await r.closeNative(n);await new Promise(resolve=>setTimeout(resolve,5000));
+ result.after=await ready();assert.equal(result.after.connections,0);
+ result.native={opened:t.nativeOpened,closed:t.nativeClosed,open:t.nativeStreams};assert.equal(t.nativeStreams,0);assert.equal(t.nativeOpened,t.nativeClosed);
+ result.outcome='passed';result.finishedAt=new Date().toISOString();save();
+}catch(e){result.error={name:e.name,message:String(e.message).split('\n')[0].slice(0,180)};result.outcome='stopped';save();process.exitCode=1;}finally{await r.finish();}
+console.log(JSON.stringify({outcome:result.outcome,navigationCycles:result.navigationCycles.length,abortCycles:result.abortCycles.length,serverBefore:result.before,serverAfter:result.after}));

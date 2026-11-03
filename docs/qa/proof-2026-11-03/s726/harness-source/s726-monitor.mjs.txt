@@ -1,0 +1,53 @@
+import assert from 'node:assert/strict';
+import {need} from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs';
+import {createRequire} from 'node:module';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {startRemoteMonitor,readyRemote,remoteSnapshot} from './s726-remote-monitor.mjs';
+import {render,envValue} from 'file:///C:/oto-lanes/codex-pos-path-20261102/scripts/agent/render.mjs';
+const {Client}=createRequire('C:/oto-lanes/codex-pos-path-20261102/apps/api/package.json')('pg');
+export const POS='https://oto-pos-web-staging.onrender.com';
+export const API_ID='srv-danh2ljtqb8s73bt9en0',POS_ID='srv-dbk7qu8n74is73bm894g';
+export async function connectMonitor({boxId=null,durationSeconds=240,reuse=false}={}){
+ const api=await render('GET','/services/'+API_ID),pos=await render('GET','/services/'+POS_ID);assert.equal(api.ownerId,pos.ownerId);
+ const uri=await envValue(API_ID,'DATABASE_URL');assert.ok(uri);const host=new URL(uri).hostname;const all=await render('GET','/postgres?'+new URLSearchParams({ownerId:api.ownerId,limit:'100'}));const database=all.map(x=>x.postgres??x).find(x=>host===x.id||host.startsWith(x.id+'.'));assert.ok(database);const id=database.id;assert.equal(typeof database.owner==='string'?database.owner:database.owner.id,api.ownerId);assert.ok(/staging/.test(database.name));
+ const file='C:/oto-lanes/codex-pos-path-20261102/docs/qa/proof-2026-11-03/s726/monitor-handle.json';const handle=reuse?JSON.parse(readFileSync(file,'utf8')):await startRemoteMonitor(api.ownerId,boxId,durationSeconds);if(reuse)assert.equal(handle.ownerId,api.ownerId);const initial=await readyRemote(handle);writeFileSync(file,JSON.stringify({...handle,last:null},null,2)+'\n');const max=initial.maxConnections;assert.ok(max>0);
+ return {c:{end:async()=>{}},handle,databaseId:id,maxConnections:max,services:[{id:API_ID,name:api.name,plan:api.serviceDetails?.plan},{id:POS_ID,name:pos.name,plan:pos.serviceDetails?.plan},{id,name:database.name,plan:database.plan}],ownerId:api.ownerId};
+}
+export async function snapshot(m,ownSessionIds=[],ownStationIds=[]){
+ if(m.handle)return remoteSnapshot(m.handle);
+ await m.c.query('BEGIN READ ONLY');try{
+ const tables=(await m.c.query("SELECT schemaname||'.'||relname AS name,n_tup_ins::float8 inserted,n_tup_upd::float8 updated,n_tup_del::float8 deleted FROM pg_stat_user_tables WHERE schemaname IN ('core','pos','crm','edge','ops','otoapp') ORDER BY 1")).rows;
+ const connections=(await m.c.query("SELECT count(*)::int total,count(*) FILTER (WHERE state='active')::int active,count(*) FILTER (WHERE wait_event_type='Lock')::int waiting_on_lock FROM pg_stat_activity WHERE datname=current_database()")).rows[0];
+ const nonTest=(await m.c.query("SELECT count(*)::int n FROM core.session s JOIN core.station t ON t.id=s.station_id WHERE s.last_seen_at>now()-interval '90 seconds' AND s.expires_at>now() AND s.revoked_at IS NULL AND NOT(s.id=ANY($1::uuid[])) AND NOT(s.station_id=ANY($2::uuid[])) AND t.name NOT LIKE 'ZZ TEST %'",[ownSessionIds,ownStationIds])).rows[0].n;
+ const realSales=(await m.c.query("SELECT count(*)::int n FROM pos.sale s JOIN core.station t ON t.id=s.station_id WHERE s.created_at>now()-interval '5 minutes' AND t.name NOT LIKE 'ZZ TEST %'")).rows[0].n;
+ return {at:new Date().toISOString(),tables,connections,nonTestRecentStationSessions:nonTest,nonTestRecentSales:realSales,maxConnections:m.maxConnections};
+ }finally{await m.c.query('ROLLBACK');}
+}
+export function rowDelta(a,b){const prior=new Map(a.tables.map(x=>[x.name,x]));return b.tables.map(x=>{const p=prior.get(x.name)??{inserted:0,updated:0,deleted:0};return{name:x.name,inserted:x.inserted-p.inserted,updated:x.updated-p.updated,deleted:x.deleted-p.deleted};}).filter(x=>x.inserted||x.updated||x.deleted);}
+async function metricRead(path,out){
+ for(let attempt=0;attempt<3;attempt++){
+  let status=null,data,errorName=null,headers={};
+  try{const response=await fetch('https://api.render.com/v1'+path,{headers:{authorization:'Bearer '+need('RENDER_API_KEY'),accept:'application/json'},signal:AbortSignal.timeout(15000)});status=response.status;headers=Object.fromEntries([...response.headers].filter(([k])=>/ratelimit|retry-after/i.test(k)));data=await response.json().catch(()=>null);}catch(e){errorName=e.name;}
+  (out.metricReads??=[]).push({at:new Date().toISOString(),metric:path.split('?')[0],attempt:attempt+1,status,errorName,headers});
+  if(status===200&&Array.isArray(data))return data;
+  let delay=1000*(attempt+1);if(status===429){const raw=Number(headers['retry-after']??headers['ratelimit-reset']);if(Number.isFinite(raw)&&raw>0)delay=raw>1e8?Math.max(1000,raw*1000-Date.now()+100):raw*1000+100;else delay=10000;}
+  const retryable=status===null||status===429||status>=500;
+  assert.ok(retryable&&attempt<2&&delay<=10000,'Render metric GET unavailable within bounded reads: status '+status);
+  await new Promise(r=>setTimeout(r,delay));
+ }
+}
+export async function metrics(m,startTime,endTime=new Date().toISOString()){
+ if(m.metricCache&&Date.now()-m.metricCacheAt<20000)return {...m.metricCache,reusedAt:new Date().toISOString()};
+ const out={startTime,endTime,at:new Date().toISOString(),series:{},summary:{}};
+ for(const metric of ['cpu','cpu-limit','memory','memory-limit','active-connections']){
+  const ids=metric==='active-connections'?[m.databaseId]:[POS_ID,API_ID,m.databaseId],q=new URLSearchParams({startTime,endTime,resolutionSeconds:'30'});for(const id of ids)q.append('resource',id);
+  const data=await metricRead('/metrics/'+metric+'?'+q,out);out.series[metric]=data.map(series=>{const id=series.labels?.find(x=>x.field==='resource')?.value;assert.ok(ids.includes(id),'Metric resource label missing or unexpected');return{...series,resourceId:id};});
+  for(const id of ids)assert.ok(out.series[metric].some(series=>series.resourceId===id&&(series.values??[]).some(v=>Number.isFinite(Number(v.value))&&Date.parse(v.timestamp)>=Date.parse(startTime)&&Date.parse(v.timestamp)<=Date.parse(endTime))),'Missing fresh '+metric+' for '+id);
+ }
+ for(const service of m.services){const s={name:service.name,plan:service.plan};for(const metric of ['cpu','cpu-limit','memory','memory-limit','active-connections']){const v=(out.series[metric]??[]).filter(x=>x.resourceId===service.id).flatMap(x=>x.values??[]).map(x=>Number(x.value)).filter(Number.isFinite);if(v.length)s[metric]={samples:v.length,min:Math.min(...v),max:Math.max(...v),mean:v.reduce((a,x)=>a+x,0)/v.length};}if(s.cpu&&s['cpu-limit'])s.cpuPercentMax=100*s.cpu.max/s['cpu-limit'].min;if(s.memory&&s['memory-limit'])s.memoryPercentMax=100*s.memory.max/s['memory-limit'].min;out.summary[service.id]=s;}
+ m.metricCache=out;m.metricCacheAt=Date.now();return out;
+}
+export async function verifySales(m,attempts){
+ const all=m.allAttempts?m.allAttempts():attempts;if(!all.length)return{at:new Date().toISOString(),attempts:0,sales:0,cashAttempts:0,passed:true};
+ const voids=m.knownVoids??[],ids=attempts.map(x=>x.id),allIds=[...all.map(x=>x.id),...voids.map(x=>x.id)];assert.equal(new Set(ids).size,ids.length);assert.equal(new Set(allIds).size,allIds.length);const now=Date.now();let snap;for(let n=0;n<18;n++){snap=await snapshot(m);if(Date.parse(snap.at)>=now)break;await new Promise(r=>setTimeout(r,2500));}assert.ok(Date.parse(snap.at)>=now,'No post-step database sample');assert.deepEqual(snap.sales.map(x=>x.id).sort(),[...allIds].sort(),'Unexpected or missing sale at the dedicated test box');for(const row of snap.sales){const voided=voids.find(x=>x.id===row.id);if(voided){assert.equal(row.status,'voided');assert.equal(row.payments,0);assert.equal(row.gross,voided.grossSatang);continue;}const a=all.find(x=>x.id===row.id);assert.equal(row.status,'finalised');assert.equal(row.payments,1);assert.equal(row.matching_cash,1);assert.equal(row.gross,a.grossSatang);if(a.native)assert.equal(a.postCount,1);}const rows=snap.sales.filter(x=>ids.includes(x.id));assert.equal(rows.length,ids.length);return{at:new Date().toISOString(),sampleAt:snap.at,attempts:ids.length,sales:rows.length,cashAttempts:rows.reduce((a,x)=>a+x.payments,0),allBoxSales:snap.sales.length,knownUnpaidVoids:voids.length,unexpectedBoxSales:0,passed:true};
+}

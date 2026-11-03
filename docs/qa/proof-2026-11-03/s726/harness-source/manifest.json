@@ -1,0 +1,70 @@
+{
+  "at": "2026-11-03T09:51:23.454Z",
+  "sourceManifest": "../harness-manifest.json",
+  "files": [
+    {
+      "file": "s726-browser.mjs.txt",
+      "sha256": "79a1cb0ce1b2dd4ad54de08eb9ef55e2a0576c8ab3ab36470b8158de9f3f1723"
+    },
+    {
+      "file": "s726-traffic.mjs.txt",
+      "sha256": "051c42e07cf4a3fc8f0a9196ed10e31f3d872067c1754d885373d7886ea1c3f9"
+    },
+    {
+      "file": "s726-phase.mjs.txt",
+      "sha256": "3ae3f8e158bfedfc897b68b746a0eeffdb158de2bb3303293061792f6f2c6efa"
+    },
+    {
+      "file": "s726-load.mjs.txt",
+      "sha256": "42d19d1fcc4e3d4ea53aaa9d529a890977f1d8aa7ea0a85a119be995da71c180"
+    },
+    {
+      "file": "s726-idle.mjs.txt",
+      "sha256": "3bc7200f243cc80f73f3647a67470fb8ebc1c57114634e98536afb41d2303afb"
+    },
+    {
+      "file": "s726-monitor.mjs.txt",
+      "sha256": "60238e9cd7a81be71b3d2322edf6adce822bab102822e1ac105170a1c5418f65"
+    },
+    {
+      "file": "s726-remote-monitor.mjs.txt",
+      "sha256": "789dbc2c3b3c45dc938cf5ace063a83e10a6a5710fcce27a41e38b1f249bca65"
+    },
+    {
+      "file": "s726-family.mjs.txt",
+      "sha256": "aafd7a5555446972c23eb7c4f4d72236eb1f25335aeb0f35549fe35515593f73"
+    },
+    {
+      "file": "s726-stream-retest.mjs.txt",
+      "sha256": "a5a40fbf98d49a087a108e8ef728ee966f558cee84bf71da215dac5a310de0f7"
+    },
+    {
+      "file": "s726-mixed-smoke.mjs.txt",
+      "sha256": "8f1e963a6751fe31ccf95ffdca0940493d9ee229174ee3d9d8b6ce694b598b87"
+    },
+    {
+      "file": "s726-cleanup.mjs.txt",
+      "sha256": "08df4fe961dfdc7ba97327281bd775979930f0e0965fdf4c57bbf0f8558d0c2a"
+    },
+    {
+      "file": "s726-db-cleanup.mjs.txt",
+      "sha256": "d2cfee46cea0736cffc461abb6d6b2ed57a63e5204295665dbe1fa4722d4209d"
+    },
+    {
+      "file": "s726-env.mjs.txt",
+      "sha256": "3d002eb9c29c15474b12f6f3c40d52fd8ac0cc9f1bc3d513865abc767166a240"
+    },
+    {
+      "file": "s726-soak-only.mjs.txt",
+      "sha256": "91acb2288e112f84ec2866d611ffe18543da6ee412d6e7a4a97ff5f3bd6fa498"
+    },
+    {
+      "file": "s726-render-read.mjs.txt",
+      "sha256": "dcebc58b7d416fbaa90a2a1b1070c485b11f7e423bcd7448934440ba77c14178"
+    },
+    {
+      "file": "s726-repeat-smoke.mjs.txt",
+      "sha256": "8c8eb77a3cc0e34d4fe75a0eaedf414b92472ee808cad652511bce43e37548c2"
+    }
+  ]
+}
