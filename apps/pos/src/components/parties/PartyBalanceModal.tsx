@@ -20,6 +20,8 @@ import {
 } from '@/lib/payments';
 import { PARTY_TENDER_HINT, type PartyPaymentConfirmation, type PartyTenderPress } from '@/api/parties';
 import { partyTenderShown, usePartyTender } from '@/lib/usePartyTender';
+import { useTenderPresentation } from '@/lib/tenderDisplay';
+import type { StationDisplayHandoff } from '@/lib/displaySession';
 import { PaymentTenderPanel, paymentSubmitLabel } from '@/components/till/PaymentTenderPanel';
 import { PartySettlementCustomerScreen } from './PartySettlementCustomerScreen';
 import {
@@ -31,6 +33,7 @@ import {
 } from 'lucide-react';
 
 interface PartyBalanceModalProps {
+  displayHandoff?: StationDisplayHandoff;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   party: PartyBooking;
@@ -79,6 +82,7 @@ export function PartyBalanceModal({
   stationId,
   paused,
   onBillMoved,
+  displayHandoff,
 }: PartyBalanceModalProps) {
   const total = computePartyTotal(party);
   const outstanding = computePartyOutstanding(party);
@@ -166,6 +170,7 @@ export function PartyBalanceModal({
   const collecting = open && stage === 'collect' && routed && tender.locked;
   // A tender a reload left waiting comes back as itself, not as the press that found it.
   const shown = routed ? partyTenderShown(tender, collectAmount, collectMethod) : { amount: collectAmount, method: collectMethod };
+  useTenderPresentation(displayHandoff, 'party_balance', shown.method, tender.display, open && stage === 'collect');
 
   const handleReceived = async () => {
     if (collectAmount <= 0 || recording) return;

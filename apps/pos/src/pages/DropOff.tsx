@@ -1,4 +1,6 @@
 import { useBoardPhotos } from '@/hooks/useBoardPhotos';
+import { useOperator } from '@/auth/OperatorContext';
+import { useTenderDisplay } from '@/lib/tenderDisplay';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import { CheckIn, CheckInStatus, ContactChannel, DropOffServiceType, OtoEvent, EventAttendee, AuthorizedPickupSource } from '@/types';
@@ -141,6 +143,8 @@ function checkInToEdits(c: CheckIn): CheckInEdits {
 
 export default function DropOff() {
   const { station } = useStation();
+  const { locked } = useOperator();
+  const linkedDisplay = useTenderDisplay(station?.stationId ?? null, !locked);
   const [, navigate] = useLocation();
   const search = useSearch();
   const dueParam = new URLSearchParams(search).get('due') === '1';
@@ -1131,6 +1135,7 @@ export default function DropOff() {
 
       {selectedEvent && (
         <AddAttendeeModal
+          displayHandoff={linkedDisplay.handover}
           open={showAddAttendee}
           onOpenChange={(o) => {
             setShowAddAttendee(o);
