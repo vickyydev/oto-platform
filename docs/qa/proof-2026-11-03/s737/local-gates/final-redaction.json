@@ -1,0 +1,11 @@
+{
+  "key": "redaction",
+  "sha": "e186b0ad5ddf9006f13e3ac1f8a0ab8e5fbb5173",
+  "start": "2026-11-03T17:39:31.499Z",
+  "end": "2026-11-03T17:42:14.072Z",
+  "command": "pnpm --filter @oto/telemetry test\npnpm --filter @oto/telemetry typecheck\npnpm exec eslint packages/telemetry/src/redact.ts packages/telemetry/test/redact.test.ts\nnode apps/oto-app/server/lib/telemetry/check-sync.mjs\npnpm --filter @oto/api exec tsx C:/oto-lanes/s737-api-gate.mts test/s217b-r4b.test.ts",
+  "log": "C:/oto-lanes/s737-redaction.log",
+  "exitCode": 0,
+  "signal": null,
+  "rawLogSha256": "04aa98db6a6152e4ed91599af6f70df474f38d068a181f9701a55b2fd557c2ff"
+}

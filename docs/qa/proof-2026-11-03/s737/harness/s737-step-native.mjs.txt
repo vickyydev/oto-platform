@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+export default async function(proof){
+ const {p,expect,r,f,out,CONSOLE,live,save}=proof;
+ assert.deepEqual(await live(),r.deployments);
+ await p.goto(CONSOLE+'/devices');await p.getByRole('button',{name:'Boxes',exact:true}).click();
+ await p.getByPlaceholder('Name, identifier or type').fill(r.name+' box');
+ await p.getByText(r.name+' box',{exact:true}).waitFor();await p.getByRole('button',{name:'Open →',exact:true}).click();
+ const panel=p.locator('section').filter({has:p.getByRole('heading',{name:'Printing',exact:true})});
+ await expect(panel.getByText('printed',{exact:true})).toHaveCount(2);
+ for(const d of f.devices)await expect(panel.getByText(d.label,{exact:false}).first()).toBeVisible();
+ await panel.scrollIntoViewIfNeeded();assert.deepEqual(await live(),r.deployments);
+ const file='s737-native-print-jobs.png';await panel.screenshot({path:out+'/'+file});r.screens.push({file,at:new Date().toISOString(),url:p.url(),kind:'native Console printing record'});save();
+ return {file,out,printedJobs:2};
+}

@@ -1,0 +1,17 @@
+import { spawn } from 'node:child_process';
+import { createTestDatabase, stopTestServer } from './codex-first-print-20261103/packages/db/src/testing.ts';
+const database = await createTestDatabase();
+let code = 1;
+try {
+  const server = new URL(database.url);
+  server.pathname = '/postgres';
+  code = await new Promise<number>((resolve, reject) => {
+    const child = spawn('pnpm', ['--filter', '@oto/console', 'e2e'], {
+      cwd: 'C:/oto-lanes/codex-first-print-20261103', shell: true, windowsHide: true, stdio: 'inherit',
+      env: { ...process.env, CONSOLE_E2E_SERVER_URL: server.toString(), CONSOLE_E2E_BROWSER: 'msedge', CONSOLE_E2E_BUILT: '1' },
+    });
+    child.once('error', reject);
+    child.once('exit', value => resolve(value ?? 1));
+  });
+} finally { await database.drop(); await stopTestServer(); }
+process.exit(code);

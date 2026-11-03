@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+export default async function(proof){
+ const {api,f,r,save,agent,credentials,ctx,CONSOLE,LAUNCHER}=proof;
+ const read=JSON.parse(readFileSync(proof.out+'/independent-readback.json','utf8'));assert.equal(read.result.passed,true);
+ agent.stop();await credentials.clear();r.retirement={startedAt:new Date().toISOString(),steps:[]};save();
+ await api('DELETE','/stations/'+f.stationId);r.retirement.steps.push('station archived');save();
+ for(const d of f.devices){await api('DELETE','/devices/'+d.deviceId);r.retirement.steps.push('device archived: '+d.deviceId);save();}
+ await api('PATCH','/boxes/'+f.boxId,{status:'disabled'});await api('DELETE','/boxes/'+f.boxId);r.retirement.steps.push('box disabled and archived; secret and claim cleared');save();
+ await api('DELETE',`/branches/${r.identity.branchId}/menu/products/${f.productId}`);await api('DELETE','/menu/categories/'+f.categoryId);r.retirement.steps.push('test menu archived');save();
+ for(const origin of [CONSOLE,LAUNCHER]){const res=await ctx.request.post(origin+'/api/auth/sign-out');assert.ok([200,204].includes(res.status()));assert.equal((await ctx.request.get(origin+'/api/me')).status(),401);}
+ r.retirement.steps.push('owned Console and launcher sessions signed out');r.retirement.browserFinishedAt=new Date().toISOString();save();return {retired:true,independentCleanupReadStillRequired:true};
+}
