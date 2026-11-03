@@ -1815,12 +1815,16 @@ async function actOn(
   const closedWithoutMoney = attempt.status === 'cancelled';
   if ((facts.state === 'late_paid' || (facts.state === 'paid' && closedWithoutMoney)) && !paysABooking) {
     const abandoned = closedWithoutMoney && cancelledByOf(attempt.payload) !== null;
+    // SCRUM-732 — a party's balance has no sale: its next step is on the party's own screen.
+    const remedy = (attempt.payload as { partyPayment?: unknown } | null)?.partyPayment === true
+      ? "Say on the party's payment screen whether the money was taken, or refund it."
+      : 'Apply it to the sale if it is still open, or refund it.';
     await flagForAPerson(db, env, attempt, {
       reason: 'late_payment',
       subject: abandoned ? 'A QR was paid after it was cancelled' : 'A QR was paid after it expired',
       summary: abandoned
-        ? `Invoice ${attempt.invoiceNo} was paid after it was cancelled at the till. Apply it to the sale if it is still open, or refund it.`
-        : `Invoice ${attempt.invoiceNo} was paid after it expired. Apply it to the sale if it is still open, or refund it.`,
+        ? `Invoice ${attempt.invoiceNo} was paid after it was cancelled at the till. ${remedy}`
+        : `Invoice ${attempt.invoiceNo} was paid after it expired. ${remedy}`,
       detail: { respCode: facts.respCode, tranRef: facts.tranRef },
       respCode: facts.respCode,
     });

@@ -29,6 +29,7 @@ import {
   requestInquiry,
   type TenderActor,
 } from '../services/payments/terminal';
+import { writeBackSalePass } from '../services/booking-event-passes';
 import { cancelQrAttempt } from '../services/payments/gateway';
 import { startPaymentTender } from '../services/payments/routing';
 
@@ -390,6 +391,8 @@ export async function paymentRoutes(app: App): Promise<void> {
           startedAt,
         });
       }
+      // SCRUM-732 — a pass this money closed goes to the OTO App now, till or no till.
+      if (!recorded.replayed && recorded.attempt.saleId) await writeBackSalePass(app.db, req.log, recorded.attempt.saleId);
       return { attempt: recorded.attempt, replayed: recorded.replayed, phase: recorded.phase };
     },
   );
@@ -439,16 +442,24 @@ export async function paymentRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const actor = actorOf(req, 'pos:payment:confirm');
-      return withTx(app.db, opCtx(req), 'payment.attempt.confirm', async (tx) => ({
-        attempt: await confirmAttempt(tx, actor, req.params.id, {
-          took: req.body.took,
-          approvalCode: req.body.approvalCode ?? null,
-          tid: req.body.tid ?? null,
-          last4: req.body.last4 ?? null,
-          note: req.body.note ?? null,
-          actionId: actionIdOf(req.headers),
-        }),
+      const answer = await withTx(app.db, opCtx(req), 'payment.attempt.confirm', async (tx) => ({
+        attempt: await confirmAttempt(
+          tx,
+          actor,
+          req.params.id,
+          {
+            took: req.body.took,
+            approvalCode: req.body.approvalCode ?? null,
+            tid: req.body.tid ?? null,
+            last4: req.body.last4 ?? null,
+            note: req.body.note ?? null,
+            actionId: actionIdOf(req.headers),
+          },
+          req.log,
+        ),
       }));
+      if (answer.attempt.saleId) await writeBackSalePass(app.db, req.log, answer.attempt.saleId);
+      return answer;
     },
   );
 

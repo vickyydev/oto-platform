@@ -4,6 +4,7 @@ import pg from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   account,
+  alert,
   auditLog,
   branch,
   eventAttendeeLink,
@@ -489,6 +490,50 @@ describe('an event pass paid by card', () => {
     expect(await attemptsOfSale(saleId)).toHaveLength(1);
   });
 
+  it('approved with the till gone: the sale closes and the child lands, and a till that comes back finds it done', async () => {
+    await cardWill('approved');
+    const attendeeId = newId();
+    const saleId = newId();
+    expect((await openPass(openBody({ attendeeId, saleId, name: 'ZZ TEST No Till' }))).status).toBe(200);
+    expect((await startCard(saleId)).status).toBe(200);
+    expect(await linkOf(attendeeId)).toBeNull();
+
+    // Nobody presses anything more: only the box answers.
+    await runBox();
+    expect(await saleOf(saleId)).toMatchObject({ status: 'finalised' });
+    expect((await saleOf(saleId))!.receiptNumber).toBeTruthy();
+    expect(await linkOf(attendeeId)).toMatchObject({ saleId, billing: 'sale', syncState: 'synced' });
+    expect(await holdOf(attendeeId)).toMatchObject({ status: 'applied' });
+    const [row] = await attemptsOfSale(saleId);
+    expect(row).toMatchObject({ method: 'card', status: 'approved' });
+    const [sold] = await ctx.db.select().from(auditLog).where(and(eq(auditLog.action, 'event.pass_sell'), eq(auditLog.entityId, attendeeId)));
+    expect(sold!.actorAccountId).toBe(receptionId);
+
+    const closed = await closeSale(saleId);
+    expect(closed.status, JSON.stringify(closed.body)).toBe(200);
+    expect(closed.body).toMatchObject({ finalised: true, replay: true });
+    expect(await attemptsOfSale(saleId)).toHaveLength(1);
+    expect((await ctx.db.select().from(auditLog).where(and(eq(auditLog.action, 'event.pass_sell'), eq(auditLog.entityId, attendeeId))))).toHaveLength(1);
+    const answer = await passAnswer(attendeeId);
+    expect(answer.body).toMatchObject({ attendee: { id: attendeeId }, sale: { id: saleId, status: 'finalised' } });
+  });
+
+  it('a sale with no pass on it is still closed by its till', async () => {
+    await cardWill('approved');
+    const attendeeId = newId();
+    const saleId = newId();
+    expect((await openPass(openBody({ attendeeId, saleId, name: 'ZZ TEST Released' }))).status).toBe(200);
+    // The same sale with its hold let go, as a ticket sale has none: nothing here to land.
+    await ctx.db.update(eventPassHold).set({ status: 'released' }).where(eq(eventPassHold.id, attendeeId));
+    expect((await startCard(saleId)).status).toBe(200);
+    await runBox();
+    const [row] = await attemptsOfSale(saleId);
+    expect(row).toMatchObject({ method: 'card', status: 'approved' });
+    expect(await saleOf(saleId)).toMatchObject({ status: 'tendering' });
+    expect(await linkOf(attendeeId)).toBeNull();
+    expect((await closeSale(saleId)).body.finalised).toBe(true);
+  });
+
   it('a decline leaves the sale unpaid and no child; cash then pays the same sale, once', async () => {
     await cardWill('declined');
     const attendeeId = newId();
@@ -568,6 +613,47 @@ describe('a pass whose QR is walked away from', () => {
 // =============================================================================
 // A party's balance
 // =============================================================================
+
+describe('a pass whose QR waits for a person', () => {
+  async function flagged(name: string) {
+    const attendeeId = newId();
+    const saleId = newId();
+    expect((await openPass(openBody({ attendeeId, saleId, name }))).status).toBe(200);
+    const started = await startQr(saleId);
+    expect(started.status, JSON.stringify(started.body)).toBe(200);
+    const attemptId = started.body.attempt!.id;
+    const late = await simulateGatewayEvent(ctx.db, ctx.app.env, ctx.app.log, { attemptId, event: 'late_paid', operatorId });
+    expect(late.webhookOutcome).toBe('late_paid');
+    const [row] = await attemptsOfSale(saleId);
+    expect(row!.status).toBe('awaiting_staff_confirmation');
+    expect(await saleOf(saleId)).toMatchObject({ status: 'tendering' });
+    expect(await linkOf(attendeeId)).toBeNull();
+    return { attendeeId, saleId, attemptId };
+  }
+
+  it('Money taken closes the sale and lands the child, whoever is at the till', async () => {
+    const { attendeeId, saleId, attemptId } = await flagged('ZZ TEST Late Paid');
+    const said = await call<{ attempt: { status: string } }>('POST', `/payments/attempts/${attemptId}/confirm`, { took: true, note: 'Saw the bank slip' });
+    expect(said.status, JSON.stringify(said.body)).toBe(200);
+    expect(said.body.attempt.status).toBe('approved');
+    expect(await saleOf(saleId)).toMatchObject({ status: 'finalised' });
+    expect(await linkOf(attendeeId)).toMatchObject({ saleId, billing: 'sale', syncState: 'synced' });
+    const [row] = await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.id, attemptId));
+    expect(row!.staffConfirmedByAccountId).toBe(receptionId);
+  });
+
+  it('No money taken leaves the sale unpaid with no child, free to be voided or paid another way', async () => {
+    const { attendeeId, saleId, attemptId } = await flagged('ZZ TEST Not Paid');
+    const said = await call<{ attempt: { status: string } }>('POST', `/payments/attempts/${attemptId}/confirm`, { took: false, note: 'Nothing on the bank slip' });
+    expect(said.status, JSON.stringify(said.body)).toBe(200);
+    expect(said.body.attempt.status).toBe('declined');
+    expect(await saleOf(saleId)).toMatchObject({ status: 'tendering' });
+    expect(await linkOf(attendeeId)).toBeNull();
+    const voided = await call<{ sale: { status: string } }>('POST', `/sales/${saleId}/void`, { reason: 'Event pass left unpaid at the till', actionId: newId() });
+    expect(voided.status, JSON.stringify(voided.body)).toBe(200);
+    expect(await holdOf(attendeeId)).toMatchObject({ status: 'released' });
+  });
+});
 
 describe('a pass whose QR runs out', () => {
   it('leaves the sale open and nobody on the roster; a new QR on the same sale can still pay it', async () => {
@@ -718,6 +804,11 @@ describe("a party's balance paid by card", () => {
       .innerJoin(paymentAttempt, eq(paymentAttempt.id, partyPayment.paymentAttemptId))
       .where(eq(partyPayment.id, paymentId));
     expect(row!.attempt).toMatchObject({ provider: 'manual', approvalCode: '654321', tid: 'TID9', status: 'approved' });
+    // A slip keyed in is the record of the money, named as the ticket till's manual route names it.
+    expect(row!.attempt.payload).toMatchObject({ takenByAccountId: receptionId, manual: { accountId: receptionId } });
+    const [recorded] = await ctx.db.select().from(auditLog).where(and(eq(auditLog.action, 'party.payment'), eq(auditLog.entityId, paymentId)));
+    expect(recorded!.actorAccountId).toBe(receptionId);
+    expect(recorded!.after).toMatchObject({ provider: 'manual', approvalCode: '654321', tid: 'TID9', takenByAccountId: receptionId });
   });
 });
 
@@ -738,10 +829,14 @@ describe("what a party's payment route will not take on the till's word", () => 
 
   it('cash is unchanged: taken and on the bill in one press', async () => {
     const owed = await owedOn(ev.fourth);
-    const res = await payParty(ev.fourth, { ...tenderBody({ amount: 50_000, expected: owed }), tender: { method: 'cash', kind: 'cash', tenderedSatang: 60_000 } });
+    const paymentId = newId();
+    const res = await payParty(ev.fourth, { ...tenderBody({ paymentId, amount: 50_000, expected: owed }), tender: { method: 'cash', kind: 'cash', tenderedSatang: 60_000 } });
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect(res.body).toMatchObject({ replayed: false, payment: { amountSatang: 50_000, method: 'cash' } });
     expect(await owedOn(ev.fourth)).toBe(owed - 50_000);
+    const [recorded] = await ctx.db.select().from(auditLog).where(and(eq(auditLog.action, 'party.payment'), eq(auditLog.entityId, paymentId)));
+    expect(recorded!.after).not.toHaveProperty('approvalCode');
+    expect(recorded!.after).not.toHaveProperty('provider');
   });
 });
 
@@ -792,12 +887,33 @@ describe('where a party tender is refused before anything is asked of anyone', (
     const [flagged] = await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.id, attemptId));
     expect(flagged!.status).toBe('awaiting_staff_confirmation');
     expect(await owedOn(ev.fourth)).toBe(owed);
+    const [raised] = await ctx.db.select().from(alert).where(eq(alert.key, `payments.late_payment:${attemptId}`));
+    expect(raised!.summary).toContain("the party's payment screen");
+    expect(raised!.summary).not.toContain('sale');
     const blocked = await startPartyTender(ev.fourth, tenderBody({ amount: owed, expected: owed }));
     expect(blocked.status).toBe(409);
-    expect((blocked.body as unknown as { error: { code: string } }).error.code).toBe('PAYMENT_IN_FLIGHT');
+    const refused = (blocked.body as unknown as { error: { code: string; details: { waiting: unknown[] } } }).error;
+    expect(refused.code).toBe('PAYMENT_IN_FLIGHT');
+    // The till reads this to bring the tender back at any counter, for a person to answer.
+    expect(refused.details.waiting).toEqual([expect.objectContaining({ attemptId, status: 'awaiting_staff_confirmation', stationId: till })]);
     const said = await call<{ attempt: { status: string } }>('POST', `/payments/attempts/${attemptId}/confirm`, { took: true });
     expect(said.status, JSON.stringify(said.body)).toBe(200);
     expect(await owedOn(ev.fourth)).toBe(owed - 100_000);
+  });
+
+  it('a person saying no money was taken frees the balance, and nothing is on the bill', async () => {
+    const owed = await owedOn(ev.fourth);
+    const started = await startPartyTender(ev.fourth, tenderBody({ amount: owed, expected: owed }));
+    expect(started.status, JSON.stringify(started.body)).toBe(200);
+    const attemptId = started.body.attempt!.id;
+    await simulateGatewayEvent(ctx.db, ctx.app.env, ctx.app.log, { attemptId, event: 'late_paid', operatorId });
+    const said = await call<{ attempt: { status: string } }>('POST', `/payments/attempts/${attemptId}/confirm`, { took: false, note: 'Nothing on the bank slip' });
+    expect(said.status, JSON.stringify(said.body)).toBe(200);
+    expect(said.body.attempt.status).toBe('declined');
+    expect(await owedOn(ev.fourth)).toBe(owed);
+    const next = await startPartyTender(ev.fourth, tenderBody({ amount: owed, expected: owed }));
+    expect(next.status, JSON.stringify(next.body)).toBe(200);
+    expect((await call<{ attempt: { status: string } }>('POST', `/payments/attempts/${next.body.attempt!.id}/cancel`, {})).status).toBe(200);
   });
 
   it('a QR walked away from frees the balance for the next press', async () => {

@@ -3,6 +3,7 @@ import {
   box,
   boxCommand,
   device,
+  eventPassHold,
   paymentAttempt,
   sale,
   station,
@@ -36,6 +37,7 @@ import { assertSalePromoUsesLeft } from '../promo-codes';
 import { assertSaleExtensionCollectable } from '../sale-extension-lifecycle';
 import { assertSaleBenefitsLive } from '../benefit-checkout';
 import { settleRefundSlice } from '../refund-slices';
+import { finaliseSale } from '../sale';
 import {
   attemptView,
   failAttempt,
@@ -830,6 +832,61 @@ export async function sendTenderToTerminal(
   return stamped;
 }
 
+// --- A pass waiting on this money ---------------------------------------------
+
+/**
+ * SCRUM-732 — A PASS DOES NOT WAIT FOR ITS TILL. A completed payment always lands
+ * a roster entry, and a card answers the platform whether or not the till that
+ * pressed it is still on screen. A sale whose tender a till pressed is otherwise
+ * closed by that till; a pass is closed here, as a gateway QR's sale is closed
+ * when the gateway answers (`settleWithin`), so the child lands with the money.
+ * The till's own close afterwards is answered as the replay it then is.
+ *
+ * ONLY WHEN THE BALANCE IS ZERO: `finaliseSale` with no tender takes what is still
+ * owed in cash. In a savepoint, because the money is the fact to keep: a close
+ * that fails leaves the sale for the till, and never undoes the settlement.
+ */
+async function closeHeldPass(
+  tx: Tx,
+  settled: typeof paymentAttempt.$inferSelect,
+  requestId: string | null | undefined,
+  log?: OpContext['log'],
+): Promise<void> {
+  const saleId = settled.saleId;
+  if (!saleId) return;
+  const [hold] = await tx
+    .select({ id: eventPassHold.id })
+    .from(eventPassHold)
+    .where(and(eq(eventPassHold.saleId, saleId), eq(eventPassHold.status, 'pending')))
+    .limit(1);
+  if (!hold) return;
+  const accountId = (settled.payload as AttemptPayload | null)?.takenByAccountId;
+  if (!accountId) return;
+  const [saleRow] = await tx
+    .select({ id: sale.id, grossSatang: sale.grossSatang, status: sale.status })
+    .from(sale)
+    .where(eq(sale.id, saleId))
+    .limit(1);
+  if (saleRow?.status !== 'tendering' || (await outstandingAfter(tx, saleRow)) > 0) return;
+  try {
+    await tx.transaction((sp) =>
+      finaliseSale(
+        sp,
+        {
+          accountId,
+          operatorId: settled.operatorId,
+          branchId: settled.branchId,
+          ...(requestId ? { requestId } : {}),
+        },
+        saleId,
+        { actionId: settled.actionId },
+      ),
+    );
+  } catch (err) {
+    log?.error({ err, attemptId: settled.id, saleId }, 'a paid pass could not close its sale here; the till closes it');
+  }
+}
+
 // --- The box's answer --------------------------------------------------------
 
 export interface RecordResultOutput {
@@ -1101,6 +1158,7 @@ export async function recordTerminalResult(
         after: { status: settled.status, source: 'terminal', amountSatang: settled.amountSatang, saleId: null },
       });
     }
+    await closeHeldPass(tx, settled, ctx.requestId, ctx.log);
     return { attempt: attemptView(settled), replayed: false, phase, run };
   }
 
@@ -1417,6 +1475,7 @@ export async function confirmAttempt(
   actor: TenderActor,
   attemptId: string,
   input: ConfirmInput,
+  log?: OpContext['log'],
 ): Promise<PaymentAttemptView> {
   const [current] = await tx
     .select()
@@ -1476,6 +1535,7 @@ export async function confirmAttempt(
       ...(input.note ? { note: input.note } : {}),
     },
   });
+  if (input.took) await closeHeldPass(tx, row, actor.requestId, log);
   return attemptView(row);
 }
 

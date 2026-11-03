@@ -339,14 +339,20 @@ async function assessPayment(
   const waiting = await waitingOn(tx, branchId, eventId);
   const reserved = waiting.reduce((sum, a) => sum + a.amountSatang, 0);
   if (reserved > 0 && amount > bill.outstandingSatang - reserved) {
-    // Named, so the counter that opened it can bring it back after a reload.
+    // Named, so the counter that opened it can bring it back after a reload, and
+    // any counter one waiting for a person, whose answer can come from anywhere.
     throw errors.conflict(
       'PAYMENT_IN_FLIGHT',
       'A payment on this party is still waiting for an answer. Resolve it before charging this balance again.',
       {
         reservedSatang: reserved,
         outstandingSatang: bill.outstandingSatang,
-        waiting: waiting.map((a) => ({ attemptId: a.attemptId, paymentId: a.paymentId, stationId: a.stationId })),
+        waiting: waiting.map((a) => ({
+          attemptId: a.attemptId,
+          paymentId: a.paymentId,
+          stationId: a.stationId,
+          status: a.status,
+        })),
       },
     );
   }
@@ -489,6 +495,16 @@ export async function payParty(
         ...(tender.reference ? { reference: tender.reference } : {}),
         takenByAccountId: actor.accountId,
         ...(actionId ? { actionId } : {}),
+        // A slip keyed in is the record of the money, as `recordManualTender` keeps it.
+        ...(tender.approvalCode
+          ? {
+              manual: {
+                accountId: actor.accountId,
+                at: now.toISOString(),
+                ...(tender.reference ? { reference: tender.reference } : {}),
+              },
+            }
+          : {}),
       },
     });
     await settleAttempt(tx, opened.id, {
@@ -534,6 +550,15 @@ export async function payParty(
         ...(tender.tenderedSatang === undefined ? {} : { tenderedSatang: tender.tenderedSatang, changeSatang }),
         stationId: counter.id,
         boxId: counter.boxId,
+        // The slip, named here and on the attempt: there is no terminal answer behind it.
+        ...(tender.approvalCode
+          ? {
+              provider: 'manual',
+              approvalCode: tender.approvalCode,
+              tid: tender.tid ?? null,
+              takenByAccountId: actor.accountId,
+            }
+          : {}),
       },
     });
     // Cash in the till opens the till (S2-10a O-4), once the money has committed.
