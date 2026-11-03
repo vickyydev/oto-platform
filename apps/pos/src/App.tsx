@@ -1,3 +1,4 @@
+import { OfflineSignInBanner } from '@/components/auth/OfflineSignInBanner';
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -181,6 +182,7 @@ function StaffApp() {
               <StaffToaster />
               {/* SCRUM-648: a support administrator's view-as window, named over every staff screen. */}
               <ImpersonationBanner />
+              <OfflineSignInBanner />
               {/* Renders nothing. Registers the service worker that makes the
                   shell load with no internet, and applies a waiting build only
                   at the lock screen with no open sale (S2-06). */}

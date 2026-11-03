@@ -317,6 +317,8 @@ export interface BridgeHost {
   branch(): BridgeBranch | null;
   /** The PUBLIC staff-token keys: the config bundle's on a Pi, `core.signing_key` in the api. */
   signingKeys(): Promise<readonly StaffSigningKey[]> | readonly StaffSigningKey[];
+  /** Read on each attempt, so a fresh config takes effect without an agent restart. */
+  freshSignInAllowed?(): boolean;
   /** The box's link: the agent's `linkUp` and the Console's switch. */
   link(): { up: boolean; offline: boolean };
   /**
@@ -1217,20 +1219,22 @@ export class StationBridge {
      * the till has no token the box can verify, which is `OfflineAuth`'s
      * `offline_sign_in` path.
      */
+    const allowFreshSignIn = this.host.freshSignInAllowed?.() ?? this.options.allowFreshSignIn;
     const denyAgeS = ageOf(denyBundle?.appliedAt ?? null, now);
     const denyFreshEnough = denyAgeS !== null && denyAgeS <= policy.freshSignInDenyListMaxAgeS;
 
     const auth = new OfflineAuth({
       boxId: this.host.boxId,
       branchId: station.branchId,
+      stationId,
       snapshot: async () =>
-        staffBundle ? { keys, staff, deny, cachedAt: staffBundle.appliedAt } : null,
+        staffBundle ? { keys, staff, deny, cachedAt: staffBundle.appliedAt, denyCachedAt: denyBundle?.appliedAt ?? null } : null,
       verifyPassword: (hash, password) => this.host.verifyPassword(hash, password),
       now: () => this.host.now(),
       throttle,
       maxFailures: this.options.maxFailures,
       cooldownS: this.options.cooldownS,
-      allowOfflineSignIn: this.options.allowFreshSignIn && denyFreshEnough,
+      allowOfflineSignIn: allowFreshSignIn && denyFreshEnough,
       offlineSignInDays: policy.freshSignInDays,
     });
     const result = await auth.unlock({
@@ -1271,7 +1275,7 @@ export class StationBridge {
       // somebody the box has seen yesterday looking for the wrong fix.
       const staleDeny =
         !denyFreshEnough &&
-        this.options.allowFreshSignIn &&
+        allowFreshSignIn &&
         (result.refusal === OFFLINE_UNLOCK_REFUSALS.NO_TOKEN ||
           result.refusal === 'STAFF_TOKEN_EXPIRED' ||
           result.refusal === OFFLINE_UNLOCK_REFUSALS.NOT_RECOGNISED);

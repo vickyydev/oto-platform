@@ -222,7 +222,7 @@ const quietLog = { info() {}, warn() {}, error() {} };
  */
 export async function openTestAgent(
   cloud: FakeBoxCloud,
-  options: Pick<BoxAgentOptions, 'bands' | 'terminal' | 'scanners' | 'storage' | 'storageReadLimitMs' | 'printing'> = {},
+  options: Pick<BoxAgentOptions, 'bands' | 'terminal' | 'scanners' | 'storage' | 'storageReadLimitMs' | 'printing' | 'bridge'> = {},
   existingStore?: TestStore,
 ): Promise<{ agent: BoxAgent; harness: TestStore; close(): void }> {
   const harness = existingStore ?? openTestStore();

@@ -6,6 +6,12 @@ DNS, a real certificate, physical printers or power recovery. Keep the ticket
 at Testing until the owner schedules those checks. No park device is switched
 by this work.
 
+SCRUM-727 requires a complete staff-cache pull before fresh password sign-in
+if the saved cache predates latest-shift ID and revocation state. Until then,
+the box refuses that path with `OFFLINE_REVOCATION_UNKNOWN`; a missing token
+must never hide an ended shift. The existing Clear cache command requests
+a complete refresh if a damaged copy still carries a current bundle version.
+
 The software stage passed staging proof on source `f3b793dcc35d296a03582d617a9a94a3b555da60`
 with [the receipts and inspected images](../qa/proof-2026-11-02/s713/README.md).
 The staff signing key is configured; the temporary loopback flag is removed.
@@ -14,7 +20,11 @@ The test box/station are archived. The physical checks below remain open.
 ## What this release adds
 
 Console > Devices > the counter box > Bridge address records a bare HTTPS
-origin. A station pick carries it to the till, which remembers it with that
+origin below `BOX_BRIDGE_ZONE`; with no configured zone no address is accepted.
+IP literals are always refused. Reads recheck saved addresses under the current
+zone, and the till independently checks `VITE_BOX_BRIDGE_ZONE` from its own build.
+Both zones must name the same approved DNS parent. A station pick carries the
+validated address to the till, which remembers it with that
 station. Leaving the station, changing account/park or changing the address
 clears the in-memory box session. Re-pick after changing the address. Virtual
 boxes and older responses with no field retain the same-origin route.
@@ -65,17 +75,28 @@ changed; installing a bridge does not change it.
    The supplied Caddyfile supports a provider with one API-token argument.
    Check the chosen module's documentation before the bench; multi-field
    providers need an explicit reviewed configuration change. The installer
-   downloads a custom build from Caddy's official endpoint, checks the module
-   and validates configuration without printing it. See [Caddy custom builds](https://caddyserver.com/docs/build)
+   takes a reviewed custom binary URL for the chosen architecture. Record its
+   exact Caddy version and SHA-256 before installation; the installer refuses
+   missing pins, verifies the digest before executing the download, then checks
+   its version, module and configuration. Do not use the checksum of a standard
+   Caddy binary for a custom DNS build. The DNS token is never exported to apt,
+   curl or other installer children; only Caddy's validation subprocess receives
+   it, and the service later reads the private EnvironmentFile. See [Caddy custom builds](https://caddyserver.com/docs/build)
    and [DNS TLS configuration](https://caddyserver.com/docs/caddyfile/directives/tls).
 4. With the owner's bench approval, install the reviewed release:
-   `sudo bash install.sh oto-box-<build>.tgz --bridge-host <box-name>`.
+   `sudo bash install.sh oto-box-<build>.tgz --bridge-host <box-name>
+   --bridge-origins <https-till-origin-list> --bridge-caddy-url <reviewed-binary-url>
+   --bridge-caddy-version <vX.Y.Z> --bridge-caddy-sha256 <reviewed-sha256>`.
+   Supply these on one command line. Use a reviewed immutable custom artifact
+   built with the chosen DNS module; [xcaddy's versioned build instructions](https://caddyserver.com/docs/build)
+   describe how to prepare it. No artifact or DNS provider is selected for a real
+   park by this software change.
    Without this option, no Caddy action or bridge-origin edit occurs. An
    unrelated existing Caddyfile/service is refused. The optional service is
    `oto-box-bridge`; the binary is `/usr/local/lib/oto-box/caddy`. Certificate
    state is private under `/var/lib/oto-box-caddy`.
 5. The installer preserves existing `OTO_BOX_BRIDGE_ORIGINS` entries and adds
-   both staging POS origins once. It preserves other box settings, including
+   only the explicitly supplied `--bridge-origins` entries once. It preserves other box settings, including
    the kiosk URL and mirror. After inspecting the first certificate and its
    hostname/expiry, set this counter box's Console bridge address to the HTTPS
    origin. Pick that station again. Do not set a loopback address on an iPad.
@@ -87,7 +108,7 @@ changed; installing a bridge does not change it.
 After setting or changing the bridge, pick the station again and use the normal
 lock/unlock once to authorise its local display. Online unlock keeps the platform
 as authority and sends the same shift token and entered password to the local
-box in a bounded background call. It never saves the password, delays online
+box in one bounded background call, without retries or redirects. It never saves the password, delays online
 access or changes the trading lane. An unavailable box leaves online access
 working; a late response cannot restore a credential after lock or station change.
 
@@ -99,7 +120,11 @@ working; a late response cannot restore a credential after lock or station chang
   the permitted origin; record OS/browser versions and the permission prompt.
 - Pick the ready ZZ TEST counter online and lock it. Pull WAN while keeping
   the router/LAN alive. Unlock with the issued shift token **and password**;
-  wrong password and missing/expired/revoked token must refuse.
+  wrong passwords and revoked, forged or foreign tokens must refuse. With
+  `STAFF_OFFLINE_SIGN_IN=true`, a missing token or an otherwise valid expired
+  token may use OD-6: recognised here within 30 days, deny-list at most 72 hours
+  old, no ended shift or revoked account. Check the offline banner and fresh
+  session marker. With the setting false, missing/expired tokens refuse.
 - Ring cash, a terminal card with a final answer, and PAX QR awaiting settlement
   only when separately approved for the bench. Confirm physical receipt and
   bands, numbering, and drawer. Refuse 2C2P QR, vouchers, refunds and voids in
@@ -118,17 +143,32 @@ working; a late response cannot restore a credential after lock or station chang
 Its public half is published in `core.signing_key` and box bundles. Station
 picks and the existing staff-token endpoint then issue bound shift tokens;
 existing expiry, session/account revocation and cached deny-list rules apply.
-`STAFF_OFFLINE_SIGN_IN` stays absent/false: tokenless offline sign-in stays off.
-`BOX_BRIDGE_ALLOW_LOOPBACK=true` is only a temporary local/staging proof flag,
-refused in production validation. Remove it after proof and redeploy the same
-green commit. A missing flag defaults to false; existing old stations still work.
+`STAFF_OFFLINE_SIGN_IN` is the single OD-6 setting: true by default, explicit
+false disables fresh sign-in. The API delivers it as `staffOfflineSignIn` in
+the versioned box configuration; both the physical and virtual mounts read it.
+The owner's OD-6 confirmation remains open. A fresh sign-in requires staff seen
+on this box within 30 days and a deny-list pulled within 72 hours; its session
+and facts carry `offlineFresh` and the till shows its offline-unlock banner.
+Ended shifts stay ended even without the token. Only a verified token whose
+sole failure is expiry may enter that path; it stays bound to its station,
+box, branch and person.
+
+`BOX_BRIDGE_ZONE` and the till's build-time `VITE_BOX_BRIDGE_ZONE` default empty:
+no external address is saved or returned, and no password leaves the page for
+an external box. A local proof may use a DNS child such as `zz-test.localhost`,
+zone `localhost`, and explicit `BOX_BRIDGE_ALLOW_LOOPBACK=true` plus build-time
+`VITE_BOX_BRIDGE_ALLOW_LOOPBACK=true`. Even that exception refuses IP literals.
+The API ignores its loopback exception in production. Remove temporary API
+flags after proof and redeploy the same green source. No real address is part
+of the proof. The signing key stays configured.
 
 Production go-live list (not authorized by this stage): create a separate
 Ed25519 key, store it through a read-guarded single-key write, privately retain
 the recovery material, redeploy the same approved source, confirm the public
 fingerprint in the database and each intended box's bundle, and test revocation.
-Do not copy staging's private key, enable tokenless sign-in, or set the loopback
-flag. Add only the approved production POS origin to the box allow-list at the
+Production refuses startup without `STAFF_TOKEN_PRIVATE_KEY`. Do not copy
+staging's private key or set a loopback flag. Apply the owner's OD-6 ruling
+through `STAFF_OFFLINE_SIGN_IN` before go-live. Add only the approved production POS origin to the box allow-list at the
 owner's switch, then complete the real iPad/Pi checklist above.
 
 ## Way back
