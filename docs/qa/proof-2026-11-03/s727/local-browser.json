@@ -1,0 +1,68 @@
+{
+  "unit": "SCRUM-727",
+  "mode": "local",
+  "source": "57e806045a761e0a246581c5c9b688e5fd2c655a",
+  "version": "oto-box 0.1.0-20261103-57e80604 built 2026-11-03T06:43:40.857Z",
+  "startedAt": "2026-11-03T06:44:53.851Z",
+  "checks": [
+    {
+      "name": "API save refuses unrelated DNS names and every tested IP literal",
+      "at": "2026-11-03T06:44:54.765Z",
+      "passed": true
+    },
+    {
+      "name": "One configured policy and the existing public signing key reach the real agent",
+      "at": "2026-11-03T06:44:56.586Z",
+      "passed": true
+    },
+    {
+      "name": "Online unlock sends one token-and-password request to the validated host, with no retry",
+      "requests": 1,
+      "at": "2026-11-03T06:46:00.222Z",
+      "passed": true
+    },
+    {
+      "name": "During the outage a token alone is refused; the native token-and-password unlock works",
+      "at": "2026-11-03T06:46:01.337Z",
+      "passed": true
+    },
+    {
+      "name": "OD-6 password-only sign-in remains visibly marked after unlock on desktop and mobile",
+      "at": "2026-11-03T06:46:02.428Z",
+      "passed": true
+    },
+    {
+      "name": "The ended test shift is refused with its token and with the token omitted",
+      "at": "2026-11-03T06:46:58.031Z",
+      "passed": true
+    },
+    {
+      "name": "Test bridge cleared, exact ZZ TEST box and till archived, sessions signed out",
+      "at": "2026-11-03T06:46:58.122Z",
+      "passed": true
+    }
+  ],
+  "outcome": "passed",
+  "limitations": [
+    "Windows local agent and test-only localhost zone; no real box address",
+    "No physical Pi, private HTTPS, certificate, printer or power-cut acceptance",
+    "No sale, payment or SMS created"
+  ],
+  "local": {
+    "bridgeOrigin": "http://zz-test-s727.localhost:59894",
+    "home": "C:/oto-lanes/s727-agent-mw0bp596"
+  },
+  "fixture": {
+    "name": "ZZ TEST SCRUM-727 mw0bp596",
+    "boxId": "01a1a027-5435-7f84-8464-0fd3f2a1a9eb",
+    "branchId": "01a1a027-4a50-7524-a410-6ae206c86628",
+    "printerId": "01a1a027-551c-74f3-b946-b7c88aa6f8b5",
+    "stationId": "01a1a027-552c-7ef1-b973-2c5127d49a65",
+    "shiftId": "01a1a027-61e9-79f2-aac5-50c279744e74"
+  },
+  "tillSignedOutAt": "2026-11-03T06:46:58.058Z",
+  "adminSignedOutAt": "2026-11-03T06:46:58.122Z",
+  "cleanedAt": "2026-11-03T06:46:58.122Z",
+  "finishedAt": "2026-11-03T06:46:58.381Z",
+  "fixtureRetained": false
+}

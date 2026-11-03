@@ -1,0 +1,8 @@
+{
+  "mode": "local",
+  "fixture": "ZZ TEST SCRUM-727 mw0bp596",
+  "path": "C:/oto-lanes/s727-agent-mw0bp596",
+  "removed": false,
+  "reason": "Automatic approval review rejected deletion: blocked by policy",
+  "scope": "Private local test-agent cache outside Git. Agent stopped; disposable API database and exact fixture retired. No staging access."
+}
