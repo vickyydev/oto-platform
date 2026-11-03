@@ -943,7 +943,9 @@ describe('payment request identities', () => {
     expect(onLeftBehind).toHaveBeenCalledWith('sale-1');
   });
 
-  it('never offers terminal confirmation for a gateway anomaly or releases it at QR expiry', async () => {
+  // SCRUM-739 deliberately replaces the old no-review pin. A gateway anomaly
+  // now has the shared QR review door; expiry still cannot release its money.
+  it('offers QR review after expiry while holding the sale, then completes the same payment once', async () => {
     const test = mountPayment();
     const anomaly = attempt('awaiting_staff_confirmation', { provider: '2c2p', method: 'qr' });
     test.start.mockResolvedValueOnce({ ...qr, expiresAt: new Date(Date.now() - 1).toISOString(), route: 'gateway', attempt: anomaly, outstandingSatang: 54_000, replayed: false });
@@ -952,12 +954,112 @@ describe('payment request identities', () => {
     await test.result.current.submit();
     await vi.advanceTimersByTimeAsync(2000);
     expect(test.result.current.locked).toBe(true);
-    expect(test.result.current.canConfirm).toBe(false);
+    expect(test.result.current.canConfirm).toBe(true);
+    expect(test.result.current.canBack).toBe(false);
+    expect(test.result.current.canCancel).toBe(false);
+    expect(test.result.current.canSubmit).toBe(false);
     expect(test.result.current.canInquire).toBe(false);
-    await test.result.current.confirm(true, { note: 'Checked' });
-    await test.result.current.inquire();
+    test.result.current.selectMethod('park-cash');
+    await test.result.current.submit();
+    expect(test.result.current.state.method).toBe('park-qr');
+    expect(test.start).toHaveBeenCalledTimes(1);
+    expect(test.finaliseSale).not.toHaveBeenCalled();
     expect(test.confirm).not.toHaveBeenCalled();
+    await test.result.current.inquire();
     expect(test.inquire).not.toHaveBeenCalled();
+
+    const approved = { ...anomaly, status: 'approved' as const };
+    test.confirm.mockResolvedValue({ attempt: approved });
+    test.reading.mockResolvedValue(read(approved, 0));
+    await Promise.all([
+      test.result.current.confirm(true, { note: 'Checked the bank slip and gateway report' }),
+      test.result.current.confirm(true, { note: 'Checked the bank slip and gateway report' }),
+    ]);
+    await vi.advanceTimersByTimeAsync(5000);
+    await test.result.current.confirm(true, { note: 'Pressed again' });
+    expect(test.confirm).toHaveBeenCalledTimes(1);
+    expect(test.confirm).toHaveBeenCalledWith(anomaly.id,
+      { took: true, note: 'Checked the bank slip and gateway report' }, expect.any(String));
+    expect(test.finaliseSale).toHaveBeenCalledTimes(1);
+    expect(test.finaliseSale.mock.calls[0]![0]).toBeUndefined();
+    expect(test.result.current.state.settlements).toHaveLength(1);
+    expect(test.result.current.state.settlements[0]).toMatchObject({ attemptId: anomaly.id, method: 'park-qr', amountSatang: 54_000 });
+    expect(test.onComplete).toHaveBeenCalledTimes(1);
+    expect(test.result.current.state.phase).toBe('complete');
+  });
+
+  it('returns a reviewed QR with no money to selection without closing or paying the sale', async () => {
+    const test = mountPayment();
+    const anomaly = attempt('awaiting_staff_confirmation', { provider: '2c2p', method: 'qr' });
+    test.start.mockResolvedValueOnce({ ...qr, route: 'gateway', attempt: anomaly, outstandingSatang: 54_000, replayed: false });
+    test.result.current.selectMethod('park-qr');
+    await test.result.current.submit();
+    const declined = { ...anomaly, status: 'declined' as const };
+    test.confirm.mockResolvedValue({ attempt: declined });
+    test.reading.mockResolvedValue(read(declined, 54_000));
+    await test.result.current.confirm(false, { note: 'No money on the bank slip or gateway report' });
+    expect(test.confirm).toHaveBeenCalledWith(anomaly.id,
+      { took: false, note: 'No money on the bank slip or gateway report' }, expect.any(String));
+    expect(test.result.current.state).toMatchObject({ phase: 'ready', method: null, outstandingSatang: 54_000, settlements: [] });
+    expect(test.result.current.locked).toBe(false);
+    expect(test.result.current.canConfirm).toBe(false);
+    expect(test.finaliseSale).not.toHaveBeenCalled();
+    expect(test.onComplete).not.toHaveBeenCalled();
+  });
+
+  it('keeps an unresolved gateway QR held when the confirmation permission is refused', async () => {
+    const test = mountPayment();
+    const anomaly = attempt('awaiting_staff_confirmation', { provider: '2c2p', method: 'qr' });
+    test.start.mockResolvedValueOnce({ ...qr, route: 'gateway', attempt: anomaly, outstandingSatang: 54_000, replayed: false });
+    test.reading.mockResolvedValue(read(anomaly, 54_000));
+    test.result.current.selectMethod('park-qr');
+    await test.result.current.submit();
+    test.confirm.mockRejectedValue(new ApiError(403, 'FORBIDDEN', 'This account cannot confirm payments.'));
+    await test.result.current.confirm(true, { note: 'Checked' });
+    expect(test.confirm).toHaveBeenCalledTimes(1);
+    expect(test.result.current.state.error).toBe('This account cannot confirm payments.');
+    expect(test.result.current.state.retryable).toBe(false);
+    expect(test.result.current.locked).toBe(true);
+    expect(test.result.current.canBack).toBe(false);
+    expect(test.result.current.canCancel).toBe(false);
+    expect(test.result.current.state.settlements).toEqual([]);
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(test.result.current.state.attempt?.status).toBe('awaiting_staff_confirmation');
+    expect(test.result.current.locked).toBe(true);
+    expect(test.finaliseSale).not.toHaveBeenCalled();
+    expect(test.onComplete).not.toHaveBeenCalled();
+  });
+
+  it('keeps a gateway review paused behind the staff lock', async () => {
+    const test = mountPayment();
+    const anomaly = attempt('awaiting_staff_confirmation', { provider: '2c2p', method: 'qr' });
+    test.start.mockResolvedValueOnce({ ...qr, route: 'gateway', attempt: anomaly, outstandingSatang: 54_000, replayed: false });
+    test.result.current.selectMethod('park-qr');
+    await test.result.current.submit();
+    expect(test.result.current.canConfirm).toBe(true);
+    test.rerender({ ...test.options, paused: true });
+    expect(test.result.current.canConfirm).toBe(false);
+    await test.result.current.confirm(true, { note: 'A stale review press' });
+    expect(test.confirm).not.toHaveBeenCalled();
+    expect(test.finaliseSale).not.toHaveBeenCalled();
+    expect(test.result.current.state.attempt?.id).toBe(anomaly.id);
+  });
+
+  it('resumes the original gateway anomaly with its review and no replacement collection', async () => {
+    const anomaly = attempt('awaiting_staff_confirmation', { provider: '2c2p', method: 'qr' });
+    const get = vi.spyOn(api, 'get').mockResolvedValue({ sale: apiSale(), attempts: [anomaly] });
+    const test = mountPayment({ resumeSaleId: 'sale-1' });
+    test.reading.mockResolvedValue({ ...read(anomaly, 54_000), route: 'gateway' });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(test.result.current.state.attempt?.id).toBe(anomaly.id);
+    expect(test.result.current.canConfirm).toBe(true);
+    expect(test.result.current.locked).toBe(true);
+    expect(test.result.current.canCancel).toBe(false);
+    test.result.current.selectMethod('park-cash');
+    await test.result.current.submit();
+    expect(test.start).not.toHaveBeenCalled();
+    expect(test.finaliseSale).not.toHaveBeenCalled();
+    get.mockRestore();
   });
 
   it.each([

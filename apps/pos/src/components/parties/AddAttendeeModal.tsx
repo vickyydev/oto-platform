@@ -241,7 +241,6 @@ export function AddAttendeeModal({
     // long after the link is back; it does not freeze a screen that is working.
     paused: operatorLocked,
     // A child waits on the answer, and this form holds the counter until there is one.
-    reviewGatewayQr: true,
     totalSatang: Math.round(doorFeeTHB * 100),
     prepareSale: async (): Promise<SaleWriteOutcome> => {
       const ids = (routedPass.idsRef.current ??= { attendeeId: newId(), saleId: newId(), actionId: newId() });
