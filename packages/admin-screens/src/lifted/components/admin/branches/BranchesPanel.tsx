@@ -30,6 +30,11 @@ const CLONE_ROWS: Array<{ entity: ApiCloneEntity; label: string }> = [
   { entity: 'discountCodes', label: 'Branch discount codes' },
   { entity: 'printTemplates', label: 'Print templates' },
   { entity: 'stockLocations', label: 'Stockrooms' },
+  { entity: 'stockItems', label: 'Stock items' },
+  { entity: 'stockUnits', label: 'Stock pack sizes' },
+  { entity: 'supervisionPolicy', label: 'Supervision policy' },
+  { entity: 'confirmationItems', label: 'Guardian confirmations' },
+  { entity: 'dropOffPricing', label: 'Drop-off and nanny prices' },
 ];
 
 const total = (counts: Record<ApiCloneEntity, ApiCloneCounts>, of: keyof ApiCloneCounts): number =>
@@ -577,6 +582,10 @@ export function BranchesPanelWithPorts({ ports }: { ports: BranchesPanelPorts })
                   <p className="text-xs text-foreground/40">
                     Shared with the whole operator and pointed at rather than copied:{' '}
                     {plan.shared.join(', ')}.
+                  </p>
+                  <p className="text-xs text-foreground/40">
+                    Stock quantities and trading history are not copied. Boxes and stations stay at their own branch;
+                    configure and publish each new booth separately.
                   </p>
 
                   <div className="flex gap-2">

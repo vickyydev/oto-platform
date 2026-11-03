@@ -110,7 +110,12 @@ export type ApiCloneEntity =
   | 'discountCodes'
   | 'taxOverrides'
   | 'printTemplates'
-  | 'stockLocations';
+  | 'stockLocations'
+  | 'supervisionPolicy'
+  | 'confirmationItems'
+  | 'dropOffPricing'
+  | 'stockItems'
+  | 'stockUnits';
 
 
 export interface ApiClonePreview {
