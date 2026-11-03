@@ -14,6 +14,8 @@ import {
 } from '@/lib/payments';
 import { PARTY_TENDER_HINT, type PartyPaymentConfirmation, type PartyTenderPress } from '@/api/parties';
 import { partyTenderShown, usePartyTender } from '@/lib/usePartyTender';
+import { useTenderPresentation } from '@/lib/tenderDisplay';
+import type { StationDisplayHandoff } from '@/lib/displaySession';
 import { PaymentTenderPanel, paymentSubmitLabel } from '@/components/till/PaymentTenderPanel';
 import { PartySettlementCustomerScreen } from '@/components/parties/PartySettlementCustomerScreen';
 import { HandToCustomer } from '@/components/mobile/HandToCustomer';
@@ -38,6 +40,7 @@ const collectHint = (method: PartyPaymentMethod): string => {
 };
 
 interface MobilePartyPaymentProps {
+  displayHandoff?: StationDisplayHandoff;
   party: PartyBooking;
   operatorName: string;
   /**
@@ -70,6 +73,7 @@ export function MobilePartyPayment({
   stationId,
   paused,
   onBillMoved,
+  displayHandoff,
 }: MobilePartyPaymentProps) {
   const { t } = useLanguage();
   const total = computePartyTotal(party);
@@ -149,6 +153,7 @@ export function MobilePartyPayment({
 
   // A tender a reload left waiting comes back as itself, not as the press that found it.
   const shown = routed ? partyTenderShown(tender, collectAmount, collectMethod) : { amount: collectAmount, method: collectMethod };
+  useTenderPresentation(displayHandoff, 'party_balance', shown.method, tender.display, step === 'collect');
 
   const handleReceived = async () => {
     if (collectAmount <= 0 || recording) return;

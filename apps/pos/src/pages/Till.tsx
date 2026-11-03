@@ -3846,6 +3846,7 @@ export default function Till() {
       {/* Event-pass sell flow — flat-priced camp/event entry (non-party). */}
       {eventPassFor && (
         <AddAttendeeModal
+          displayHandoff={linkedDisplay.handover}
           open={eventPassFor !== null}
           onOpenChange={(o) => { if (!o) closeEventPass(); }}
           event={eventPassFor}
