@@ -1,3 +1,5 @@
+Historical first local checkpoint. Current evidence is in [the release report](../../proof-2026-11-02/s727/README.md).
+
 # SCRUM-727 evidence
 
 Status: **In Progress**. This is a local checkpoint, not staging acceptance.

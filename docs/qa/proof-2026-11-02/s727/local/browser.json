@@ -1,0 +1,82 @@
+{
+  "unit": "SCRUM-727",
+  "mode": "local",
+  "source": "2a714b783d703925ae9b715af9fbd4f426f01dea",
+  "version": "oto-box 0.1.0-20261103-2a714b78 built 2026-11-03T08:21:47.840Z",
+  "startedAt": "2026-11-03T08:24:33.325Z",
+  "checks": [
+    {
+      "name": "API save refuses unrelated DNS names and every tested IP literal",
+      "at": "2026-11-03T08:24:34.248Z",
+      "passed": true
+    },
+    {
+      "name": "One configured policy and the existing public signing key reach the real agent",
+      "at": "2026-11-03T08:24:35.902Z",
+      "passed": true
+    },
+    {
+      "name": "Online unlock sends one token-and-password request to the validated host, with no retry",
+      "requests": 1,
+      "at": "2026-11-03T08:25:39.499Z",
+      "passed": true
+    },
+    {
+      "name": "A forged token with the correct password and account is refused",
+      "at": "2026-11-03T08:25:40.568Z",
+      "passed": true
+    },
+    {
+      "name": "During the outage a token alone is refused; the native token-and-password unlock works",
+      "at": "2026-11-03T08:25:40.631Z",
+      "passed": true
+    },
+    {
+      "name": "OD-6 password-only sign-in remains visibly marked after unlock on desktop and mobile",
+      "at": "2026-11-03T08:25:41.734Z",
+      "passed": true
+    },
+    {
+      "name": "A new online sign-in clears the prior offline sign-in notice",
+      "at": "2026-11-03T08:25:42.979Z",
+      "passed": true
+    },
+    {
+      "name": "The ended test shift is refused with its token and with the token omitted",
+      "at": "2026-11-03T08:26:36.492Z",
+      "passed": true
+    },
+    {
+      "name": "Test bridge cleared, exact ZZ TEST box and till archived, sessions signed out",
+      "at": "2026-11-03T08:26:36.599Z",
+      "passed": true
+    }
+  ],
+  "outcome": "passed",
+  "limitations": [
+    "Windows local agent and test-only localhost zone; no real box address",
+    "No physical Pi, private HTTPS, certificate, printer or power-cut acceptance",
+    "No sale, payment or SMS created"
+  ],
+  "local": {
+    "bridgeOrigin": "http://zz-test-s727.localhost:61877",
+    "home": "C:/oto-lanes/s727-agent-mw0f9b1p"
+  },
+  "fixture": {
+    "name": "ZZ TEST SCRUM-727 mw0f9b1p",
+    "boxId": "01a1a082-919b-7a2a-9af4-f844329506c1",
+    "branchId": "01a1a082-87a9-7d72-87c0-632809583246",
+    "printerId": "01a1a082-926c-7d71-bfa4-1d781f7bb6c7",
+    "stationId": "01a1a082-9282-775e-b6ea-10911a734e8b",
+    "shiftId": "01a1a083-9e7a-7b49-bd24-55d1491257d7"
+  },
+  "signingKey": {
+    "kid": "79515fc998323272",
+    "publicFingerprint": "79515fc9983232720776051ab20c7348dc8f3bed52deb72511b966f02ca9ab53"
+  },
+  "tillSignedOutAt": "2026-11-03T08:26:36.521Z",
+  "adminSignedOutAt": "2026-11-03T08:26:36.598Z",
+  "cleanedAt": "2026-11-03T08:26:36.599Z",
+  "finishedAt": "2026-11-03T08:26:36.864Z",
+  "fixtureRetained": false
+}

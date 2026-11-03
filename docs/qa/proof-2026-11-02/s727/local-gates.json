@@ -1,0 +1,178 @@
+{
+  "source": "2a714b783d703925ae9b715af9fbd4f426f01dea",
+  "workspaceTestExitCode": 0,
+  "tasks": {
+    "successful": 15,
+    "total": 15,
+    "cached": 2
+  },
+  "typecheckTasks": {
+    "successful": 16,
+    "total": 16
+  },
+  "lint": {
+    "errors": 0,
+    "existingWarnings": 8
+  },
+  "apiContracts": "matched after description regeneration",
+  "packages": [
+    {
+      "package": "apps/booth",
+      "summary": [
+        "# tests 38",
+        "# pass 38",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0",
+        "# duration_ms 611.8638"
+      ],
+      "logSha256": "07c3af49a91bd6c4851ebf3e69188a86448b8c5baa5c0e6ed56a5aa4c3dc5396"
+    },
+    {
+      "package": "apps/console",
+      "summary": [
+        " Test Files  60 passed (60)",
+        "      Tests  588 passed | 3 todo (591)",
+        "   Duration  5.87s (transform 10.60s, setup 0ms, collect 91.04s, tests 4.16s, environment 12ms, prepare 20.87s)"
+      ],
+      "logSha256": "86a91df1cd691e0fcba8a4b47abb270a4235aea7d51e38cd1e5a69c1ee06c605"
+    },
+    {
+      "package": "apps/inbox",
+      "summary": [
+        " Test Files  11 passed (11)",
+        "      Tests  218 passed (218)",
+        "   Duration  1.84s (transform 1.91s, setup 0ms, collect 6.88s, tests 637ms, environment 2ms, prepare 3.82s)"
+      ],
+      "logSha256": "f280faf45801a85ffbc4b86acdea8387639c9969a4d078a080dafadaa36e5964"
+    },
+    {
+      "package": "apps/launcher",
+      "summary": [
+        " Test Files  7 passed (7)",
+        "      Tests  88 passed (88)",
+        "   Duration  3.94s (transform 671ms, setup 0ms, collect 1.91s, tests 346ms, environment 5.64s, prepare 1.94s)"
+      ],
+      "logSha256": "32058de84d3667985b6e9167d0361f174e28b0ebf24709792917e8a6eb9245e8"
+    },
+    {
+      "package": "apps/pos",
+      "summary": [
+        " Test Files  124 passed (124)",
+        "      Tests  1673 passed (1673)",
+        "   Duration  53.29s (transform 19.25s, setup 0ms, collect 213.08s, tests 129.85s, environment 32ms, prepare 42.41s)"
+      ],
+      "logSha256": "ba621a0ce347090f6ce12efee506c6169a5699a7468cd07ba92cfc5b883312e8"
+    },
+    {
+      "package": "packages/admin-screens",
+      "summary": [
+        " Test Files  17 passed (17)",
+        "      Tests  157 passed (157)",
+        "   Duration  3.79s (transform 5.45s, setup 0ms, collect 28.26s, tests 1.88s, environment 3ms, prepare 8.63s)"
+      ],
+      "logSha256": "3d3c06450ced8217bfaf3f2c1c5c05056565de2003bcd8c93da1166c7c6439eb"
+    },
+    {
+      "package": "packages/api-types",
+      "summary": [
+        " Test Files  1 passed (1)",
+        "      Tests  10 passed (10)",
+        "   Duration  3.46s (transform 469ms, setup 0ms, collect 2.99s, tests 22ms, environment 0ms, prepare 178ms)"
+      ],
+      "logSha256": "938e8d40e4a83b73ab44d2aafb3379f769f81724ba87bc7296de7c40ec73415f"
+    },
+    {
+      "package": "packages/assistant",
+      "summary": [
+        " Test Files  17 passed (17)",
+        "      Tests  678 passed (678)",
+        "   Duration  2.66s (transform 1.86s, setup 0ms, collect 24.12s, tests 1.56s, environment 3ms, prepare 7.74s)"
+      ],
+      "logSha256": "725349452e8136298ae897c14208abfa5bcc5cb6fe1e42d22c155fdff37bde8a"
+    },
+    {
+      "package": "packages/box-agent",
+      "summary": [
+        "# tests 877",
+        "# pass 877",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0",
+        "# duration_ms 18916.5851"
+      ],
+      "logSha256": "1401ad234471b8fdf2d75630ec91826d3bb973131c0f7bc7f4bbcc7755f5ee70"
+    },
+    {
+      "package": "packages/db",
+      "summary": [
+        " Test Files  55 passed (55)",
+        "      Tests  384 passed (384)",
+        "   Duration  591.37s (transform 1.19s, setup 0ms, collect 25.97s, tests 553.12s, environment 7ms, prepare 5.36s)"
+      ],
+      "logSha256": "73f5e8b35f85e1608f9420cc037cdb3260ba2344752ebf24e5a15628f7411a69"
+    },
+    {
+      "package": "packages/messaging",
+      "summary": [
+        " Test Files  6 passed (6)",
+        "      Tests  79 passed (79)",
+        "   Duration  2.67s (transform 793ms, setup 0ms, collect 1.94s, tests 271ms, environment 3ms, prepare 4.66s)"
+      ],
+      "logSha256": "6d086edd2a62dca63810775b8b808c89f977b3d4ae0ee6aa9b2c845b4bfc5592"
+    },
+    {
+      "package": "packages/payments-2c2p",
+      "summary": [
+        " Test Files  6 passed (6)",
+        "      Tests  86 passed (86)",
+        "   Duration  1.72s (transform 816ms, setup 0ms, collect 1.92s, tests 303ms, environment 1ms, prepare 1.76s)"
+      ],
+      "logSha256": "41ef8f10cf959b19435e1a0f18b7895c7c4e9efab75c2edcfe0005fc6b1f8ea8"
+    },
+    {
+      "package": "packages/print",
+      "summary": [
+        " Test Files  12 passed (12)",
+        "      Tests  283 passed (283)",
+        "   Duration  22.13s (transform 237ms, setup 0ms, collect 3.84s, tests 15.78s, environment 1ms, prepare 1.11s)"
+      ],
+      "logSha256": "fa227dd42b3385887d4b341ca5a7e5a8e31168988231608a97d85aee2b1d5eea"
+    },
+    {
+      "package": "packages/shared",
+      "summary": [
+        " Test Files  58 passed (58)",
+        "      Tests  883 passed (883)",
+        "   Duration  4.38s (transform 4.43s, setup 0ms, collect 49.94s, tests 2.88s, environment 11ms, prepare 24.25s)"
+      ],
+      "logSha256": "c2d80ab49516b8b17f3608141b09e20198b8521ca4720ea53970b16f8d96433a"
+    },
+    {
+      "package": "packages/telemetry",
+      "summary": [
+        " Test Files  4 passed (4)",
+        "      Tests  36 passed (36)",
+        "   Duration  12.17s (transform 1.50s, setup 0ms, collect 9.82s, tests 1.23s, environment 18ms, prepare 9.53s)"
+      ],
+      "logSha256": "c4c32f8e061b683d3cc2b0a6d5cf77c9e2a41d90269c2d519e1640da4a2b012d"
+    }
+  ],
+  "builds": {
+    "apps": 5,
+    "display": true,
+    "runner": true
+  },
+  "nativeSmoke": {
+    "passed": 7,
+    "skipped": 0,
+    "database": "disposable, removed"
+  },
+  "installer": {
+    "bashSyntax": "passed",
+    "shellcheckErrorGate": "passed"
+  },
+  "finalApiGate": "running in three isolated shards"
+}
