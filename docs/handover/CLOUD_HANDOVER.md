@@ -17,6 +17,9 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+**3 November 2026, SCRUM-737 TYPECHECK FIXTURE CORRECTED; GATES CONTINUE:** The first whole typecheck passed 15 tasks and found one missing header reader on the new test transport's simulated 503 response. Added that required stub method; no assertion or product behavior changed. The original failure log and exit 2 remain at C:/oto-lanes/s737-workspace.log and its receipt. Repeat the complete workspace gate with serial package work to limit local memory use; all three complete API shards continue on the same product code. No source has landed, no staging setting changed, and 730 retains its slot. The source and test are backed up after this correction.
+
+
 **3 November 2026, 23:30 Bangkok, SCRUM-737 FIXED LOCALLY; RELEASE GATES NEXT:** The seven-case real API/agent review passes after a narrow command-boundary fix: a cloud-assigned printer missing or changed in the cached route prompts one configuration read before printing. Matching routes add no request; unread configuration reports CONFIG_UNAVAILABLE with zero attempts; deliberate missing roles still skip. Cash remains exactly once and a second poll sends no duplicate paper. The review now also asserts simulator output directly. The original red evidence is preserved and documented. Full release gates, exact deploy, native staging proof and cleanup remain; no physical printer acceptance is claimed. 730 still holds the source/API/proof slot. This checkpoint backs up the fix only; no main source push, setting or staging change. 737 remains In Progress.
 
 
