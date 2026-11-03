@@ -135,7 +135,7 @@ export function MenuGrid({ items, quantities, onAdd }: MenuGridProps) {
   const [search, setSearch] = useState('');
   const query = search.trim();
   const searchResults = useMemo(
-    () => (query ? items.filter((item) => matchesQuery(item.name, query)) : []),
+    () => (query ? items.filter((item) => matchesQuery(item.name, query) || matchesQuery(item.code ?? '', query)) : []),
     [items, query]
   );
   // Snapshot categories at mount (admin edits flow in on the next route mount),

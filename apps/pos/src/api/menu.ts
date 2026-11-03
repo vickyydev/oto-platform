@@ -154,6 +154,7 @@ export function apiProductToMenuItem(p: ApiProduct, inline: ApiModifierGroup[]):
   return {
     id: p.id,
     name: p.name,
+    ...(p.code != null ? { code: p.code } : {}),
     category: p.categoryId ?? '',
     price: {
       weekday: baht(p.priceSatang),
