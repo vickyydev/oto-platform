@@ -106,13 +106,6 @@ export interface PaymentStageOptions {
    * (the ticket till, for its customer display) lets it go here.
    */
   onTenderCancelled?: (saleId: string | null) => void;
-  /**
-   * SCRUM-732 — a person may answer, here, a gateway QR that waits for one. For a
-   * pass: its child waits on that answer. Off everywhere else: a ticket sale that
-   * reaches this state is left and another rung up, and this stage never offers a
-   * gateway anomaly the terminal's own confirmation.
-   */
-  reviewGatewayQr?: boolean;
 }
 export interface PaymentStageController {
   state: PaymentStageState;
@@ -618,7 +611,9 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
   };
   const canInquire = state.route === 'card_terminal' && Boolean(state.attempt && supportsInquiry(state.attempt)
     && ['unknown', 'awaiting_staff_confirmation'].includes(state.attempt.status));
-  const canConfirm = (state.route === 'card_terminal' || (state.route === 'gateway' && options.reviewGatewayQr === true))
+  // Every sale uses the shared review panel. A gateway QR keeps its own words
+  // and remains held until the platform accepts the permitted staff answer.
+  const canConfirm = (state.route === 'card_terminal' || state.route === 'gateway')
     && state.attempt?.status === 'awaiting_staff_confirmation';
   const inquire = (): Promise<void> => {
     if (!onlineRef.current || stateRef.current.route !== 'card_terminal' || !stateRef.current.attempt
@@ -637,7 +632,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
   };
   const confirm = (took: boolean, details: Omit<PaymentConfirmationBody, 'took'> = {}): Promise<void> => {
     const route = stateRef.current.route;
-    if (!onlineRef.current || (route !== 'card_terminal' && !(route === 'gateway' && optionsRef.current.reviewGatewayQr))
+    if (!onlineRef.current || (route !== 'card_terminal' && route !== 'gateway')
       || stateRef.current.attempt?.status !== 'awaiting_staff_confirmation') return Promise.resolve();
     const ctx = context();
     const attemptId = stateRef.current.attempt.id;
