@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync,copyFileSync} from 'node:fs';
+import {job} from './s728-release-render-job.mjs';
+assert.equal(process.env.S728_WINDOW_RELEASED,'true');
+const out='C:/oto-lanes/codex-box-outage-release-20261104/docs/qa/proof-2026-11-02/s728';
+const proof=JSON.parse(readFileSync(out+'/staging/mw122192/browser-mw122192.json','utf8'));
+assert.equal(proof.outcome,'passed');assert.ok(proof.cleanedAt);
+const prior=JSON.parse(readFileSync(out+'/queue-cleanup.json','utf8'));
+assert.deepEqual(prior.result.counts,{pending_prints:0,box_print_queue:0,pending_commands:0,station_leases:1});
+copyFileSync(out+'/queue-cleanup.json',out+'/queue-before-cleanup.json');
+const spec={...proof.fixture,accountId:proof.staff.accountId,saleId:proof.offlineSale.id};
+assert.equal(spec.name,'ZZ TEST SCRUM-728 mw122192');
+const program=`(async()=>{
+require('tsx/cjs');const assert=require('node:assert/strict'),{Client}=require('pg'),{drizzle}=require('drizzle-orm/node-postgres'),{audit}=require('./src/services/audit.ts');const s=${JSON.stringify(spec)},c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();
+try{await c.query('BEGIN');await c.query("SET LOCAL statement_timeout='15s'");
+const b=(await c.query("SELECT id,name,operator_id,branch_id,status,archived_at IS NOT NULL archived,bridge_origin IS NULL bridge_cleared FROM core.box WHERE id=$1 FOR UPDATE",[s.boxId])).rows[0];assert.equal(b.name,s.name);assert.ok(b.archived&&b.bridge_cleared);assert.equal(b.status,'disabled');
+const station=(await c.query('SELECT name,box_id,archived_at IS NOT NULL archived FROM core.station WHERE id=$1 FOR UPDATE',[s.stationId])).rows[0];assert.equal(station.name,s.name+' till');assert.equal(station.box_id,s.boxId);assert.ok(station.archived);
+const account=(await c.query('SELECT status FROM core.account WHERE id=$1',[s.accountId])).rows[0];assert.equal(account.status,'inactive');assert.equal((await c.query('SELECT count(*)::int n FROM core.session WHERE account_id=$1 AND revoked_at IS NULL AND expires_at>now()',[s.accountId])).rows[0].n,0);
+const row=(await c.query("SELECT station_id,box_id,stage,sequence::text,lease_id IS NOT NULL AND lease_expires_at>now() AS live_lease,member IS NULL AS no_member,payment IS NULL AS no_payment FROM edge.station_session WHERE station_id=$1 FOR UPDATE",[s.stationId])).rows;assert.equal(row.length,1);assert.equal(row[0].box_id,s.boxId);assert.ok(!row[0].live_lease&&row[0].no_member&&row[0].no_payment,'Only an inactive empty test document may be removed');
+const sale=(await c.query("SELECT count(*)::int n FROM pos.sale WHERE id=$1 AND station_id=$2 AND status='finalised'",[s.saleId,s.stationId])).rows[0].n;assert.equal(sale,1);
+assert.equal((await c.query('DELETE FROM edge.station_session WHERE station_id=$1 AND box_id=$2',[s.stationId,s.boxId])).rowCount,1);
+const auditId=await audit.record(drizzle(c),{actorAccountId:null,operatorId:b.operator_id,branchId:b.branch_id,action:'qa.station_session.retire',entityType:'station',entityId:s.stationId,sourceApp:'console',origin:'job',reason:'SCRUM-728: retire only the inactive working document of the archived ZZ TEST till; retain cash history',before:{workingRows:1,stage:row[0].stage,sequence:row[0].sequence,liveLease:false},after:{workingRows:0,saleRetained:true}});
+await c.query('COMMIT');console.log(JSON.stringify({event:'s728_working_document_retired',at:new Date().toISOString(),stationId:s.stationId,boxId:s.boxId,removedWorkingRows:1,liveLease:false,memberAbsent:true,paymentAbsent:true,saleRetained:true,auditId,passed:true}));
+}catch(e){await c.query('ROLLBACK');throw e;}finally{await c.end();}})().catch(e=>{console.error(JSON.stringify({event:'s728_working_document_retired_error',name:e.name,code:e.code??'ASSERTION'}));process.exitCode=1;});`;
+const receipt=await job(program,'s728_working_document_retired',proof.source);
+assert.ok(receipt.result.passed);
+writeFileSync(out+'/working-document-retirement.json',JSON.stringify(receipt,null,2)+'\n');
+console.log(JSON.stringify(receipt.result));

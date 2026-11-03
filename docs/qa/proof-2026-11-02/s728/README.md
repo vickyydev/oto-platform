@@ -1,23 +1,43 @@
 # SCRUM-728 release evidence
 
-## Testing: exact source live, isolated proof settings deploying
+## Testing: native staging proof and exact cleanup passed
 
 Source `00f414ba0f78d91b0e87813924c3c53a64dddf5b` is on main and backed
 up on `lane/codex-box-outage-20261104-r9`.
 [Main CI 41693411235](https://github.com/vickyydev/oto-platform/actions/runs/41693411235)
-passed all six jobs for that exact SHA. The changed-area tests, types, lint,
+passed all six jobs for that exact SHA. Changed-area tests, types, lint,
 builds and native till/Console browser gates ran and passed. Unchanged OTO App
-and migration steps were path-gated; full step outcomes are in [ci.json](ci.json).
-All local gates and the complete branch CI also passed.
+and migration steps were path-gated; [ci.json](ci.json) records the complete
+outcomes. All local gates and complete branch CI also passed.
 SCRUM-727 is Deployed with [its separate evidence](../s727/README.md).
-SCRUM-728 retains the source, API, proof and cleanup slot released by 730.
-API, POS web and Console are live and healthy on that SHA. The temporary
-localhost proof zone, explicit loopback permission and password-only test
-policy are recorded in [settings-enable.json](settings-enable.json); all
-unrelated setting fingerprints match the baseline. Same-source API/POS
-deployments are applying them. The native staging proof is running with the dedicated ZZ TEST fixture
-`mw122192`. Its before-save warning and saved test-zone images were opened.
-Complete behavior, cash reconciliation and cleanup remain required.
+
+The [native staging proof](staging/mw122192/browser-mw122192.json) passed all
+twelve checks on the exact source with Edge and the clean real bundled agent.
+API, POS web and Console were [live and healthy](deploy-enabled.json).
+All twelve [native images were opened and inspected](staging/mw122192/image-inspection.json).
+The cold till required a fresh password, the display recovered from temporary
+startup failures and an actual agent restart, online display presence returned,
+one 90-baht cash sale reconciled once, and an ended shift was refused both with
+and without a token. The Console warning appeared before saving only the
+dedicated localhost test-zone address.
+
+[Independent database proof](database-proof.json) confirms one finalised sale,
+one approved manual cash payment of 9,000 satang, no sync anomalies, archived
+test box/till/printer, cleared bridge, inactive dedicated staff, no grants or
+active sessions, and revoked shift/display credentials. The initial extra
+[queue check](queue-before-cleanup.json) found one retained station working
+document. The guarded [retirement](working-document-retirement.json) removed
+only that archived test till's inactive, empty working row inside an audited
+transaction; the sale and cash history remain. The unchanged [queue check](queue-cleanup.json)
+then passed with all four counts zero. The [local agent check](local-agent-cleanup.json)
+confirms zero pending prints/outbox entries and the bridge process stopped.
+
+The [temporary settings](settings-enable.json) have been [restored](settings-restore.json)
+to every original fingerprint: API 57 settings, POS four. The signing key and
+BOX_AGENT_TEST_SLOT are unchanged. Same-source restoration deployments are
+still being verified. Inline Jira images and the required Deployed walk follow
+healthy restoration and audit readback. Until then 728 remains Testing and
+retains the source/API/proof/cleanup slot.
 
 ## Behavior and review
 
@@ -120,20 +140,16 @@ tests. [Earlier rehearsal hashes and reasons](local-gates/earlier-browser-attemp
 retain the failures. Later harness corrections account
 for the real generic display label, fresh password after an agent restart,
 and cutting both internet paths for the ended-shift case. The completed local
-run above supersedes them; staging acceptance remains required.
+run above supersedes them. The later native staging proof also passes.
 
 ## Release conditions and limits
 
-The explicit STATUS release and reservation are recorded, and all local
-gates plus full branch CI pass. Rebase over the later documentation-only
-closeout, inspect main CI, push the lane and main, and watch the exact full SHA.
-Only after the exact API, POS web and Console deployments are live: take the
-read-only staging census, apply the isolated test zone, and prove the native
-flows with one new ZZ TEST box, local agent, dedicated staff and cash only.
-Retire the exact fixtures, independently verify the one sale and cleanup,
-restore all original setting fingerprints, and verify same-source deployments.
-Open the native proof images and show them inside a Jira `commentWithImages`
-comment before walking the ticket to Deployed. Never Done.
+The explicit STATUS release and reservation preceded source landing. Full
+local gates, complete branch CI, exact-SHA main CI and the live staging proof
+pass. Fixture and queue cleanup pass; original settings are restored and their
+same-source deployments are being verified. The opened native images must be
+shown inside a Jira `commentWithImages` comment before walking to Deployed.
+Never Done.
 
 No real box address, park device, SMS or electronic payment is authorized by
 this proof. Physical Pi/iPad, private HTTPS/certificate, printer and power-cut

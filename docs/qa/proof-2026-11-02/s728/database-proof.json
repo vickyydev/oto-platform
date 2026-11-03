@@ -1,0 +1,33 @@
+{
+  "unit": "SCRUM-728",
+  "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
+  "jobId": "job-dbl333ec6qcc73bqp5o0",
+  "startedAt": "2026-11-03T19:10:05.426Z",
+  "readOnly": true,
+  "status": "succeeded",
+  "result": {
+    "event": "s728_database_proof",
+    "at": "2026-11-03T19:10:15.659Z",
+    "readOnly": true,
+    "kid": "ddc53eda85cb9a78",
+    "publicFingerprint": "ddc53eda85cb9a7892aa764a4c8b1dd2e537db16a8c8f6abd448b6a458315866",
+    "publicKeyRows": 1,
+    "boxArchived": true,
+    "printerArchived": true,
+    "stationArchived": true,
+    "bridgeCleared": true,
+    "staffInactive": true,
+    "staffRoleGrants": 0,
+    "staffActiveSessions": 0,
+    "shiftRevoked": true,
+    "revokedReason": "admin",
+    "saleRows": 1,
+    "saleId": "01a1a2cf-3b9b-70e0-8bf0-4bd219513dd5",
+    "receiptNumber": "Z728-000001",
+    "grossSatang": 9000,
+    "cashPayments": 1,
+    "activeDisplayCredentials": 0,
+    "syncAnomalies": 0,
+    "passed": true
+  }
+}

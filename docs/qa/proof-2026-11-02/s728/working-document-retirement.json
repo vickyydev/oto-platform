@@ -1,0 +1,18 @@
+{
+  "jobId": "job-dbl34bpsrm7s73bi3is0",
+  "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
+  "startedAt": "2026-11-03T19:12:46.387Z",
+  "status": "succeeded",
+  "result": {
+    "event": "s728_working_document_retired",
+    "at": "2026-11-03T19:13:30.945Z",
+    "stationId": "01a1a2cc-0473-7e93-9697-64bad8f06202",
+    "boxId": "01a1a2cb-fe65-751f-9ebf-698aba639cb6",
+    "removedWorkingRows": 1,
+    "liveLease": false,
+    "memberAbsent": true,
+    "paymentAbsent": true,
+    "saleRetained": true,
+    "passed": true
+  }
+}
