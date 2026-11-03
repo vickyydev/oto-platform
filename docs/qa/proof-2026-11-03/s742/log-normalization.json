@@ -1,0 +1,10 @@
+{
+  "at": "2026-11-03T19:30:16.880Z",
+  "file": "docs/qa/proof-2026-11-03/s742/local-after.log",
+  "originalCommit": "4757ed1c7bf9ba85acb3ac8a008f36fc35987da8",
+  "originalGitBlob": "4b809856d3d4c501c3f17ad361f5346f2c744a7c",
+  "originalGitBytesSha256": "c396baeafca9870c7cb4cdc2cf5df969edd2fa07046509874db73198d2dad543",
+  "normalizedLfSha256": "2221de02853ff053f32b8a6148af7319e21e28ab3d6a00f78fd45bc093cac985",
+  "originalTrailingNewlines": 2,
+  "change": "Remove the surplus final blank line only. Append the recorded trailing newline count to the newline-trimmed normalized file to reconstruct the original Git bytes."
+}
