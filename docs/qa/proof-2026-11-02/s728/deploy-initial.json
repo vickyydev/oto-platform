@@ -1,34 +1,48 @@
 {
   "unit": "SCRUM-728",
-  "at": "2026-11-03T18:50:25.665Z",
+  "at": "2026-11-03T18:55:50.164Z",
   "phase": "initial",
   "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
   "ciRun": "41693411235",
-  "ready": false,
+  "ready": true,
   "deployments": [
     {
       "name": "oto-api-staging",
       "id": "srv-danh2ljtqb8s73bt9en0",
       "deployId": "dep-dbl2pkrbc2fs738jij5g",
-      "status": "build_in_progress",
+      "status": "live",
       "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
-      "finishedAt": null
+      "finishedAt": "2026-11-03T18:53:43.617881Z"
     },
     {
       "name": "oto-pos-web-staging",
       "id": "srv-dbk7qu8n74is73bm894g",
       "deployId": "dep-dbl2pl3bc2fs738jika0",
-      "status": "build_in_progress",
+      "status": "live",
       "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
-      "finishedAt": null
+      "finishedAt": "2026-11-03T18:52:37.477746Z"
     },
     {
       "name": "oto-console-staging",
       "id": "srv-danng2p42hec73f38e3g",
       "deployId": "dep-dbl2pl3bc2fs738jikqg",
-      "status": "build_in_progress",
+      "status": "live",
       "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
-      "finishedAt": null
+      "finishedAt": "2026-11-03T18:55:21.303167Z"
+    }
+  ],
+  "health": [
+    {
+      "url": "https://oto-api-staging.onrender.com/health",
+      "status": 200
+    },
+    {
+      "url": "https://oto-pos-web-staging.onrender.com/healthz",
+      "status": 200
+    },
+    {
+      "url": "https://oto-console-staging.onrender.com/",
+      "status": 200
     }
   ]
 }
