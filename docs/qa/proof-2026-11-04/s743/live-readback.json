@@ -1,0 +1,41 @@
+{
+  "capturedAt": "2026-11-03T22:20:24.985Z",
+  "services": [
+    {
+      "name": "oto-pos-web-staging",
+      "serviceId": "srv-dbk7qu8n74is73bm894g",
+      "liveCommit": "e978578f71a219f4f0cee64c423d39fc81fece17",
+      "liveDeploy": "dep-dbl5q9142hec73c9k4sg",
+      "liveFinishedAt": "2026-11-03T22:18:30.978839Z",
+      "latestStatus": "live",
+      "latestCommit": "e978578f71a219f4f0cee64c423d39fc81fece17"
+    },
+    {
+      "name": "oto-console-staging",
+      "serviceId": "srv-danng2p42hec73f38e3g",
+      "liveCommit": "e978578f71a219f4f0cee64c423d39fc81fece17",
+      "liveDeploy": "dep-dbl5q8p42hec73c9k4l0",
+      "liveFinishedAt": "2026-11-03T22:18:14.937724Z",
+      "latestStatus": "live",
+      "latestCommit": "e978578f71a219f4f0cee64c423d39fc81fece17"
+    },
+    {
+      "name": "oto-pos-staging",
+      "serviceId": "srv-danh2mf40ujc73bu80j0",
+      "liveCommit": "e978578f71a219f4f0cee64c423d39fc81fece17",
+      "liveDeploy": "dep-dbl5q9142hec73c9k4og",
+      "liveFinishedAt": "2026-11-03T22:16:56.2242Z",
+      "latestStatus": "live",
+      "latestCommit": "e978578f71a219f4f0cee64c423d39fc81fece17"
+    },
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "liveCommit": "e978578f71a219f4f0cee64c423d39fc81fece17",
+      "liveDeploy": "dep-dbl5q8p42hec73c9k3bg",
+      "liveFinishedAt": "2026-11-03T22:20:20.143971Z",
+      "latestStatus": "live",
+      "latestCommit": "e978578f71a219f4f0cee64c423d39fc81fece17"
+    }
+  ]
+}

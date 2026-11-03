@@ -1,0 +1,136 @@
+{
+  "capturedAt": "2026-11-03T22:20:34.820Z",
+  "source": "e978578f71a219f4f0cee64c423d39fc81fece17",
+  "ciRun": "41724399041",
+  "ciUrl": "https://github.com/vickyydev/oto-platform/actions/runs/41724399041",
+  "testSha256": "382aac2ab6c778cf34ebeecf12b38a3fc09bb32ae0744ae196d968536455badd",
+  "localAcceptanceSource": "82d16a2d8b00c020ad0230e51b08e86a594d5f1d",
+  "fileRuns": 10,
+  "fileChecks": 60,
+  "fullConsoleChecks": 357,
+  "ciJobs": 6,
+  "images": [
+    "s743-route-proof.png",
+    "s743-staging-console.png"
+  ],
+  "readOnly": true,
+  "fixturesCreated": 0,
+  "settingsChanged": 0,
+  "limits": "Harness correction; no staging business journey claimed.",
+  "before": {
+    "at": "2026-11-03T21:00:16.587Z",
+    "mode": "unroute",
+    "events": [
+      {
+        "at": "2026-11-03T21:00:11.560Z",
+        "kind": "handler started",
+        "path": "/api/booths/second/a"
+      },
+      {
+        "at": "2026-11-03T21:00:11.561Z",
+        "kind": "handler started",
+        "path": "/api/booths/second/b"
+      },
+      {
+        "at": "2026-11-03T21:00:11.567Z",
+        "kind": "server received",
+        "path": "/api/booths/first/a"
+      },
+      {
+        "at": "2026-11-03T21:00:11.567Z",
+        "kind": "server received",
+        "path": "/api/booths/first/b"
+      },
+      {
+        "at": "2026-11-03T21:00:11.567Z",
+        "kind": "teardown started",
+        "path": "unroute"
+      },
+      {
+        "at": "2026-11-03T21:00:11.573Z",
+        "kind": "handler fulfilled",
+        "path": "/api/booths/second/a"
+      },
+      {
+        "at": "2026-11-03T21:00:11.575Z",
+        "kind": "server received",
+        "path": "/api/booths/second/b"
+      },
+      {
+        "at": "2026-11-03T21:00:11.579Z",
+        "kind": "handler failed",
+        "path": "/api/booths/second/b"
+      }
+    ],
+    "errors": [
+      {
+        "path": "/api/booths/second/b",
+        "name": "Error",
+        "message": "route.fulfill: Route is already handled!"
+      }
+    ],
+    "barrierError": "Probe barrier timed out: teardown",
+    "passed": false
+  },
+  "after": {
+    "at": "2026-11-03T21:01:51.476Z",
+    "mode": "drain",
+    "playwrightVersion": "1.63.0",
+    "events": [
+      {
+        "at": "2026-11-03T21:01:51.457Z",
+        "kind": "handler started",
+        "path": "/api/booths/second/a"
+      },
+      {
+        "at": "2026-11-03T21:01:51.458Z",
+        "kind": "handler started",
+        "path": "/api/booths/second/b"
+      },
+      {
+        "at": "2026-11-03T21:01:51.465Z",
+        "kind": "server received",
+        "path": "/api/booths/first/a"
+      },
+      {
+        "at": "2026-11-03T21:01:51.465Z",
+        "kind": "server received",
+        "path": "/api/booths/first/b"
+      },
+      {
+        "at": "2026-11-03T21:01:51.465Z",
+        "kind": "teardown started",
+        "path": "drain"
+      },
+      {
+        "at": "2026-11-03T21:01:51.470Z",
+        "kind": "handler fulfilled",
+        "path": "/api/booths/second/a"
+      },
+      {
+        "at": "2026-11-03T21:01:51.474Z",
+        "kind": "handler fulfilled",
+        "path": "/api/booths/second/b"
+      }
+    ],
+    "errors": [],
+    "values": [
+      {
+        "path": "/api/booths/second/a",
+        "body": {
+          "path": "/api/booths/first/a",
+          "source": "forwarded"
+        }
+      },
+      {
+        "path": "/api/booths/second/b",
+        "body": {
+          "path": "/api/booths/first/b",
+          "source": "forwarded"
+        }
+      }
+    ],
+    "passed": true
+  },
+  "imagesOpenedAt": "2026-11-03T22:21:14.183Z"
+}
