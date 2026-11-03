@@ -83,6 +83,12 @@
       "zeroBasedCrlfLineIndices": [
         18
       ]
+    },
+    {
+      "file": "s726-window-close-read.mjs.txt",
+      "sourceSha256": "edfa9d8e6370f3646f779603c8da6fb20760941f5bb1cc165c560ace8a650575",
+      "storedSha256": "edfa9d8e6370f3646f779603c8da6fb20760941f5bb1cc165c560ace8a650575",
+      "zeroBasedCrlfLineIndices": []
     }
   ]
 }

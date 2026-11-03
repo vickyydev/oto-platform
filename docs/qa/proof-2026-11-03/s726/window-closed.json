@@ -1,0 +1,12 @@
+{
+  "at": "2026-11-03T14:14:53.464Z",
+  "monitor": {
+    "id": "job-dbkp4ck9v7es73f0a9u0",
+    "status": "succeeded",
+    "finishedAt": "2026-11-03T10:51:15Z"
+  },
+  "serverStreams": 0,
+  "source": "5069944660dfd43571d39f097aa90a77b1092c36",
+  "cleanupDeploy": "dep-dbkumptg1s2s73dqokng",
+  "windowClosed": true
+}
