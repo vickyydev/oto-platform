@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {render} from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/render.mjs';
+const out='C:/oto-lanes/codex-box-outage-release-20261104/docs/qa/proof-2026-11-02/s728';
+const baseline=JSON.parse(readFileSync(out+'/settings-enable.json','utf8'));
+const restored=JSON.parse(readFileSync(out+'/deploy-restored.json','utf8'));assert.equal(restored.ready,true);assert.equal(restored.source,baseline.source);
+const hash=value=>createHash('sha256').update(value).digest('hex');
+const receipt={at:new Date().toISOString(),source:baseline.source,readOnly:true,services:[]};
+for(const service of baseline.services){
+ const raw=await render('GET',`/services/${service.id}/env-vars?limit=100`);assert.ok(Array.isArray(raw)&&raw.length<100);
+ const values=Object.fromEntries(raw.map(row=>{const v=row.envVar??row;assert.equal(typeof v.value,'string');return [v.key,v.value];}));
+ const fingerprints=Object.fromEntries(Object.entries(values).map(([k,v])=>[k,hash(v)]));assert.deepEqual(fingerprints,service.beforeFingerprints);
+ const result={name:service.name,count:Object.keys(values).length,allOriginalFingerprintsMatch:true,fingerprints};
+ if(service.name==='oto-api-staging'){assert.ok(values.STAFF_TOKEN_PRIVATE_KEY?.trim());assert.equal(values.BOX_AGENT_TEST_SLOT,undefined);result.signingKeyUnchanged=true;result.boxAgentTestSlotAbsent=true;}
+ receipt.services.push(result);
+}
+receipt.passed=true;writeFileSync(out+'/settings-restored-readback.json',JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify({at:receipt.at,source:receipt.source,passed:true,services:receipt.services.map(({fingerprints,...s})=>s)}));

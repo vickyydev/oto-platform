@@ -1,0 +1,49 @@
+{
+  "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
+  "at": "2026-11-03T19:20:01.340Z",
+  "images": [
+    {
+      "id": "12381",
+      "name": "s728-mw122192-before-save-display-warning.png"
+    },
+    {
+      "id": "12382",
+      "name": "s728-mw122192-first-sale-lock.png"
+    },
+    {
+      "id": "12383",
+      "name": "s728-mw122192-cold-till-unlocked.png"
+    },
+    {
+      "id": "12384",
+      "name": "s728-mw122192-display-starting.png"
+    },
+    {
+      "id": "12385",
+      "name": "s728-mw122192-display-cold-restart.png"
+    },
+    {
+      "id": "12386",
+      "name": "s728-mw122192-online-display-connected.png"
+    },
+    {
+      "id": "12387",
+      "name": "s728-mw122192-cash-receipt.png"
+    },
+    {
+      "id": "12388",
+      "name": "s728-mw122192-ended-shift-refused.png"
+    }
+  ],
+  "statusBefore": "Testing",
+  "commentId": "13296",
+  "commentUrl": "https://oto-suite-dev.atlassian.net/browse/SCRUM-728?focusedCommentId=13296",
+  "renderedImageCount": 8,
+  "totalRenderedImageElements": 9,
+  "eachProofAttachmentRenderedExactlyOnce": true,
+  "decorativeImagePaths": [
+    "https://oto-suite-dev.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10316"
+  ],
+  "renderedBodySha256": "df7ee2f72b89cefb7093d9dd770303a44e4a218af3b4f79fcb9c4c267707895f",
+  "inlineImagesVerifiedAt": "2026-11-03T19:22:30.916Z"
+}

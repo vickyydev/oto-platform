@@ -1,6 +1,6 @@
 # SCRUM-728 release evidence
 
-## Testing: native staging proof and exact cleanup passed
+## Deployed: native staging proof, cleanup and restoration complete
 
 Source `00f414ba0f78d91b0e87813924c3c53a64dddf5b` is on main and backed
 up on `lane/codex-box-outage-20261104-r9`.
@@ -28,16 +28,37 @@ active sessions, and revoked shift/display credentials. The initial extra
 [queue check](queue-before-cleanup.json) found one retained station working
 document. The guarded [retirement](working-document-retirement.json) removed
 only that archived test till's inactive, empty working row inside an audited
-transaction; the sale and cash history remain. The unchanged [queue check](queue-cleanup.json)
+transaction; the sale and cash history remain. Independent [audit readback](working-document-audit-readback.json)
+confirms audit 01a1a2d4-b336-705d-91b0-a4c387c8c379 and no working row.
+The unchanged [queue check](queue-cleanup.json)
 then passed with all four counts zero. The [local agent check](local-agent-cleanup.json)
 confirms zero pending prints/outbox entries and the bridge process stopped.
 
 The [temporary settings](settings-enable.json) have been [restored](settings-restore.json)
 to every original fingerprint: API 57 settings, POS four. The signing key and
-BOX_AGENT_TEST_SLOT are unchanged. Same-source restoration deployments are
-still being verified. Inline Jira images and the required Deployed walk follow
-healthy restoration and audit readback. Until then 728 remains Testing and
-retains the source/API/proof/cleanup slot.
+BOX_AGENT_TEST_SLOT are unchanged. The [restored deployments](deploy-restored.json)
+are live and healthy on the exact source, with all three health responses 200.
+An independent [setting readback](settings-restored-readback.json) matches every
+original fingerprint after deployment.
+
+Eight opened proof images are shown inside [Jira comment 13296](https://oto-suite-dev.atlassian.net/browse/SCRUM-728?focusedCommentId=13296).
+[Rendered readback](jira-images.json) verifies each attachment ID appears exactly
+once. The initial all-image count stopped before transition because Jira also
+renders its issue icon; [that failed helper check](jira-inline-initial-check.json)
+is retained. The existing comment was verified without reposting. The required
+`jira.mjs walkTo` then moved SCRUM-728 to [Deployed](jira-deployed.json), never
+Done. The source/API/proof/cleanup slot is released to the planner's queue.
+
+| Native staging image | Visible result |
+| --- | --- |
+| [Before-save warning](staging/mw122192/s728-before-save-display-warning.png) | Display URL warning before the test address is saved. |
+| [First-action lock](staging/mw122192/s728-first-sale-lock.png) | A box-required action opens the native password screen. |
+| [Cold-page sign-in](staging/mw122192/s728-cold-till-unlocked.png) | Fresh offline sign-in is visibly marked. |
+| [Display startup](staging/mw122192/s728-display-starting.png) | Temporary startup state before bounded recovery. |
+| [Display after restart](staging/mw122192/s728-display-cold-restart.png) | Paired order survives an actual local-agent restart. |
+| [Online display](staging/mw122192/s728-online-display-connected.png) | Connected presence after online recovery. |
+| [Cash receipt](staging/mw122192/s728-cash-receipt.png) | Receipt Z728-000001, one 90-baht cash sale. |
+| [Ended-shift refusal](staging/mw122192/s728-ended-shift-refused.png) | Password sign-in refused after the dedicated shift ends. |
 
 ## Behavior and review
 
@@ -146,16 +167,17 @@ run above supersedes them. The later native staging proof also passes.
 
 The explicit STATUS release and reservation preceded source landing. Full
 local gates, complete branch CI, exact-SHA main CI and the live staging proof
-pass. Fixture and queue cleanup pass; original settings are restored and their
-same-source deployments are being verified. The opened native images must be
-shown inside a Jira `commentWithImages` comment before walking to Deployed.
-Never Done.
+pass. Fixture and queue cleanup, audit readback, restored settings and healthy
+same-source deployments all pass. The opened native images are shown inside
+the Jira `commentWithImages` comment and the required Deployed walk is
+complete. Owner acceptance remains separate; the ticket is never moved to Done.
 
 No real box address, park device, SMS or electronic payment is authorized by
 this proof. Physical Pi/iPad, private HTTPS/certificate, printer and power-cut
 acceptance are separate. The signing key stays, BOX_AGENT_TEST_SLOT stays
 untouched, and OD-4 plus open Q727-1/Q727-2 retain their existing behavior.
-Physical boxes need the corresponding agent release; these checks do not
+The receipt image proves the screen and cash reconciliation; it does not prove
+physical printing. Physical boxes need the corresponding agent release; these checks do not
 install anything on a park device.
 
 The read-only [staging census](unboxed-station-census.json) found all five

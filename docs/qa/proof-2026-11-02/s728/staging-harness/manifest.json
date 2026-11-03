@@ -200,7 +200,43 @@
       "originalTrailingWhitespace": "\n",
       "reconstruction": "Remove final archive LF, append originalTrailingWhitespace, restore CRLF at zero-based crlfNewlineIndexes",
       "reconstructedSha256": "af77b595cbed55b86210f99209bff5f02a7cfbb07a0704aa093b44370ef6acc2"
+    },
+    {
+      "name": "s728-settings-restoration-readback.mjs",
+      "sourceSha256": "515eb6cb73f348853acc38810c851266fa1c48a22c7ae0f88aedd3f7c2b3e682",
+      "archiveSha256": "515eb6cb73f348853acc38810c851266fa1c48a22c7ae0f88aedd3f7c2b3e682",
+      "crlfNewlineIndexes": [],
+      "originalTrailingWhitespace": "\n",
+      "reconstruction": "Remove final archive LF, append originalTrailingWhitespace, restore CRLF at zero-based crlfNewlineIndexes",
+      "reconstructedSha256": "515eb6cb73f348853acc38810c851266fa1c48a22c7ae0f88aedd3f7c2b3e682"
+    },
+    {
+      "name": "s728-finish-restoration.mjs",
+      "sourceSha256": "5a70b95f36cb9f3bd9d9fcf560c725fdac2095d8262b8fb812be5aabcbbaee77",
+      "archiveSha256": "5a70b95f36cb9f3bd9d9fcf560c725fdac2095d8262b8fb812be5aabcbbaee77",
+      "crlfNewlineIndexes": [],
+      "originalTrailingWhitespace": "\n",
+      "reconstruction": "Remove final archive LF, append originalTrailingWhitespace, restore CRLF at zero-based crlfNewlineIndexes",
+      "reconstructedSha256": "5a70b95f36cb9f3bd9d9fcf560c725fdac2095d8262b8fb812be5aabcbbaee77"
+    },
+    {
+      "name": "s728-publish-inline-proof.mjs",
+      "sourceSha256": "5a3593a78a850ef96bcca6e5411dfcda5852a529ed08b14d356fad012c7f4ed4",
+      "archiveSha256": "5a3593a78a850ef96bcca6e5411dfcda5852a529ed08b14d356fad012c7f4ed4",
+      "crlfNewlineIndexes": [],
+      "originalTrailingWhitespace": "\n",
+      "reconstruction": "Remove final archive LF, append originalTrailingWhitespace, restore CRLF at zero-based crlfNewlineIndexes",
+      "reconstructedSha256": "5a3593a78a850ef96bcca6e5411dfcda5852a529ed08b14d356fad012c7f4ed4"
+    },
+    {
+      "name": "s728-verify-inline-and-walk.mjs",
+      "sourceSha256": "27a1e908559d8c3405d51ab10bbd9a37d3735f6e87e1b46aefcaec8f27c3d524",
+      "archiveSha256": "27a1e908559d8c3405d51ab10bbd9a37d3735f6e87e1b46aefcaec8f27c3d524",
+      "crlfNewlineIndexes": [],
+      "originalTrailingWhitespace": "\n",
+      "reconstruction": "Remove final archive LF, append originalTrailingWhitespace, restore CRLF at zero-based crlfNewlineIndexes",
+      "reconstructedSha256": "27a1e908559d8c3405d51ab10bbd9a37d3735f6e87e1b46aefcaec8f27c3d524"
     }
   ],
-  "updatedAt": "2026-11-03T19:17:57.573Z"
+  "updatedAt": "2026-11-03T19:23:53.769Z"
 }

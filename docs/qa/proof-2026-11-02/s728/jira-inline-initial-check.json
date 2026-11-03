@@ -1,0 +1,13 @@
+{
+  "at": "2026-11-03T19:22:30.914Z",
+  "commentId": "13296",
+  "initialCheck": "All HTML img elements must total eight",
+  "expected": 8,
+  "actual": 9,
+  "outcome": "Stopped before status transition",
+  "reason": "The ninth image is the Jira issue-type icon. All eight proof attachment IDs render exactly once; the comment is reused without reposting.",
+  "proofImages": 8,
+  "otherImagePaths": [
+    "https://oto-suite-dev.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10316"
+  ]
+}

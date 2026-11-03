@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {commentWithImages,jget,statusOf,walkTo} from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/jira.mjs';
+const out='C:/oto-lanes/codex-box-outage-notes-20261104/docs/qa/proof-2026-11-02/s728';
+const live='C:/oto-lanes/codex-box-outage-release-20261104/docs/qa/proof-2026-11-02/s728';
+const get=name=>JSON.parse(readFileSync(live+'/'+name,'utf8'));
+const source='00f414ba0f78d91b0e87813924c3c53a64dddf5b';
+assert.equal(get('deploy-restored.json').ready,true);assert.equal(get('deploy-restored.json').source,source);
+assert.equal(get('settings-restored-readback.json').passed,true);
+for(const name of ['database-proof.json','queue-cleanup.json','working-document-audit-readback.json'])assert.equal(get(name).result.passed,true);
+assert.equal(get('local-agent-cleanup.json').passed,true);
+const proof=get('staging/mw122192/browser-mw122192.json');assert.equal(proof.outcome,'passed');assert.ok(proof.cleanedAt);assert.equal(proof.checks.length,12);
+const receipt=JSON.parse(readFileSync(out+'/jira-images.json','utf8'));assert.equal(receipt.source,source);assert.ok(!receipt.commentId,'Do not duplicate the inline proof');assert.equal(receipt.images.length,8);
+const filenames=receipt.images.map(x=>x.name);const before=await statusOf('SCRUM-728');assert.equal(before.status,'Testing');
+const body=`Staging proof passed for SCRUM-728 on source ${source}. Main CI 41693411235 passed all six jobs: https://github.com/vickyydev/oto-platform/actions/runs/41693411235 . The complete local gates and full branch CI also pass. Unchanged OTO App and migration steps were path-gated in the main run; the report retains full results and earlier failed attempts.
+
+At the dedicated ZZ TEST till, a cold page now restores behind a password screen. The first box-required action opens that same screen, and fresh offline sign-in is visibly marked. The customer display recovers from temporary startup failures and an actual local-agent restart without losing its paired order. A real build mismatch still asks for Reload. After internet returns, normal online sign-in restores the selected station and connected display. An ended shift is refused with and without its old token. The Console warns before saving that the display must use the box address. Only a localhost test-zone address was saved.
+
+The native receipt below shows one 90-baht cash sale, Z728-000001. Independent database readback confirms one finalised sale, one approved manual cash payment and no sync anomalies. This is screen and reconciliation proof, not a physical-printer claim. The exact test box, till and simulated printer are archived, bridge cleared, test staff inactive with no grants or active sessions, shift and display revoked, and the local agent stopped. One inactive empty working document found by the extra queue check was retired with an audit entry; the unchanged check then passed with all four counts zero. Cash history remains.
+
+API, POS web and Console are now live and healthy on the same source after restoring every original setting fingerprint. The signing key is unchanged and BOX_AGENT_TEST_SLOT remains absent. No real box, park device, SMS or electronic payment was used. The staging census found all active stations boxed; production has not been counted. Physical Pi/iPad, private HTTPS/certificates, physical printing and power-cut acceptance remain separate. OD-4 and open Q727-1/Q727-2 are unchanged.
+
+All twelve native images were opened and inspected. The eight images shown below, in order, are the before-save warning, first-action lock, fresh cold-page sign-in, temporary display startup, display after actual restart, online connected display, cash receipt and ended-shift refusal. Their filenames are ${filenames.join(', ')}. Report: docs/qa/proof-2026-11-02/s728/README.md . Evidence is backed up on lane/codex-box-outage-notes-20261104-r4. The ticket is ready for the required Deployed walk, never Done.`;
+const sent=await commentWithImages('SCRUM-728',body,filenames);assert.equal(sent.status,201);
+const page=await jget('/rest/api/2/issue/SCRUM-728/comment?orderBy=-created&maxResults=5&expand=renderedBody');
+const saved=page.comments?.find(c=>c.body?.includes('Staging proof passed for SCRUM-728 on source '+source)&&filenames.every(f=>c.body.includes(f)));
+assert.ok(saved?.id);const count=(saved.renderedBody?.match(/<img\b/g)||[]).length;assert.equal(count,8);assert.ok(filenames.every(f=>saved.renderedBody.includes(f)));
+Object.assign(receipt,{commentId:saved.id,commentUrl:'https://oto-suite-dev.atlassian.net/browse/SCRUM-728?focusedCommentId='+saved.id,renderedImageCount:count,renderedBodySha256:createHash('sha256').update(saved.renderedBody).digest('hex'),inlineImagesVerifiedAt:new Date().toISOString()});
+writeFileSync(out+'/jira-images.json',JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify({commentId:saved.id,renderedImageCount:count,verified:true}));
+assert.equal(await walkTo('SCRUM-728','Deployed'),'Deployed');const after=await statusOf('SCRUM-728');assert.equal(after.status,'Deployed');
+writeFileSync(out+'/jira-deployed.json',JSON.stringify({at:new Date().toISOString(),source,ciRun:'41693411235',status:after.status,inlineProof:receipt.commentUrl,renderedImageCount:count},null,2)+'\n');console.log(JSON.stringify({status:after.status,proof:receipt.commentUrl}));

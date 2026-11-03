@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+const out='C:/oto-lanes/codex-box-outage-release-20261104/docs/qa/proof-2026-11-02/s728';
+let ready=false;
+for(let i=0;i<30;i++){
+ execFileSync(process.execPath,['C:/oto-lanes/s728-release-deploy-read.mjs','00f414ba0f78d91b0e87813924c3c53a64dddf5b','41693411235','restored'],{stdio:'inherit'});
+ ready=JSON.parse(readFileSync(out+'/deploy-restored.json','utf8')).ready;
+ if(ready)break;await new Promise(r=>setTimeout(r,20000));
+}
+assert.ok(ready,'Restored deployments must be live and healthy');
+execFileSync(process.execPath,['C:/oto-lanes/s728-settings-restoration-readback.mjs'],{stdio:'inherit'});
+execFileSync(process.execPath,['C:/oto-lanes/s728-working-document-audit-read.mjs'],{stdio:'inherit'});

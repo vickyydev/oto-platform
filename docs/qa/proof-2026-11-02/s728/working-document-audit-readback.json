@@ -1,0 +1,33 @@
+{
+  "jobId": "job-dbl3835bedkc73ev03bg",
+  "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
+  "startedAt": "2026-11-03T19:20:43.639Z",
+  "status": "succeeded",
+  "result": {
+    "event": "s728_working_document_audit_read",
+    "at": "2026-11-03T19:21:25.897Z",
+    "readOnly": true,
+    "audit": {
+      "id": "01a1a2d4-b336-705d-91b0-a4c387c8c379",
+      "action": "qa.station_session.retire",
+      "entity_id": "01a1a2cc-0473-7e93-9697-64bad8f06202",
+      "origin": "job",
+      "source_app": "console",
+      "reason": "SCRUM-728: retire only the inactive working document of the archived ZZ TEST till; retain cash history",
+      "before": {
+        "stage": "identify",
+        "sequence": "0",
+        "liveLease": false,
+        "workingRows": 1
+      },
+      "after": {
+        "workingRows": 0,
+        "saleRetained": true
+      },
+      "created_at": "2026-11-03T19:13:30.918Z"
+    },
+    "workingRows": 0,
+    "saleRetained": true,
+    "passed": true
+  }
+}
