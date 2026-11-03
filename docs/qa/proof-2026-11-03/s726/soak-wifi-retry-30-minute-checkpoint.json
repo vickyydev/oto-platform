@@ -1,0 +1,116 @@
+{
+  "at": "2026-11-03T08:28:52.101Z",
+  "checkpointMinutes": 30,
+  "startedAt": "2026-11-03T07:58:39.533Z",
+  "elapsedMinutes": 30.209466666666668,
+  "outcome": "running_not_complete",
+  "source": "5069944660dfd43571d39f097aa90a77b1092c36",
+  "calls": 2734,
+  "errors": 0,
+  "p50Ms": 76.92070000001695,
+  "p95Ms": 155.6374000000069,
+  "serverStreams": 3,
+  "leases": 111,
+  "workingDatabaseConnections": 9,
+  "poolWaiting": 0,
+  "otherStationSessions": 0,
+  "otherUnboundSessions": 0,
+  "resources": {
+    "srv-danh2ljtqb8s73bt9en0": {
+      "name": "oto-api-staging",
+      "plan": "standard",
+      "cpu": {
+        "samples": 4,
+        "min": 0.036567032,
+        "max": 0.05346187,
+        "mean": 0.0446941585
+      },
+      "cpu-limit": {
+        "samples": 4,
+        "min": 1,
+        "max": 1,
+        "mean": 1
+      },
+      "memory": {
+        "samples": 4,
+        "min": 360398850,
+        "max": 374108160,
+        "mean": 368160767.5
+      },
+      "memory-limit": {
+        "samples": 4,
+        "min": 2147483600,
+        "max": 2147483600,
+        "mean": 2147483600
+      },
+      "cpuPercentMax": 5.3461870000000005,
+      "memoryPercentMax": 17.4207691271775
+    },
+    "srv-dbk7qu8n74is73bm894g": {
+      "name": "oto-pos-web-staging",
+      "plan": "starter",
+      "cpu": {
+        "samples": 4,
+        "min": 0.0017325333,
+        "max": 0.0030788668,
+        "mean": 0.002710125075
+      },
+      "cpu-limit": {
+        "samples": 4,
+        "min": 0.5,
+        "max": 0.5,
+        "mean": 0.5
+      },
+      "memory": {
+        "samples": 4,
+        "min": 112115710,
+        "max": 112340990,
+        "mean": 112230397.5
+      },
+      "memory-limit": {
+        "samples": 4,
+        "min": 536870900,
+        "max": 536870900,
+        "mean": 536870900
+      },
+      "cpuPercentMax": 0.6157733599999999,
+      "memoryPercentMax": 20.925140476043683
+    },
+    "dpg-dangso3m8hqs73b9ir80-a": {
+      "name": "oto-db-staging",
+      "plan": "1c-2g",
+      "cpu": {
+        "samples": 4,
+        "min": 0.017135566,
+        "max": 0.051907666,
+        "mean": 0.032506016
+      },
+      "cpu-limit": {
+        "samples": 4,
+        "min": 1,
+        "max": 1,
+        "mean": 1
+      },
+      "memory": {
+        "samples": 4,
+        "min": 659828740,
+        "max": 696459260,
+        "mean": 669049850
+      },
+      "memory-limit": {
+        "samples": 4,
+        "min": 2147483600,
+        "max": 2147483600,
+        "mean": 2147483600
+      },
+      "active-connections": {
+        "samples": 4,
+        "min": 10,
+        "max": 16,
+        "mean": 13
+      },
+      "cpuPercentMax": 5.1907666,
+      "memoryPercentMax": 32.4314122817981
+    }
+  }
+}
