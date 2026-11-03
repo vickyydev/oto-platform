@@ -378,14 +378,17 @@ export async function planBranchClone(
       .select({ id: stockLocation.id, name: stockLocation.name, sellPoint: stockLocation.sellPoint, archivedAt: stockLocation.archivedAt })
       .from(stockLocation)
       .where(eq(stockLocation.branchId, targetBranchId));
-    const taken = new Set(targetRows.map((r) => r.name));
+    // The database's unique key is lower(name), including names whose case
+    // differs between branches. Preserve that shelf and map its identity.
+    const nameKey = (name: string) => name.toLowerCase();
+    const taken = new Set(targetRows.map((r) => nameKey(r.name)));
     // One sell point per branch (`stock_location_sell_point_unique`): a target
     // that already has one keeps it, and the copies come across as storage.
     let targetHasSellPoint = targetRows.some((r) => r.sellPoint && !r.archivedAt);
     for (const row of sourceRows) {
-      if (taken.has(row.name)) {
+      if (taken.has(nameKey(row.name))) {
         plan.stockLocations.exists.push(row.name);
-        const existing = targetRows.find(t => t.name === row.name && !t.archivedAt);
+        const existing = targetRows.find(t => nameKey(t.name) === nameKey(row.name) && !t.archivedAt);
         if (existing) locationIdAtTarget.set(row.id, existing.id);
         continue;
       }
