@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {job} from './s728-release-render-job.mjs';
+const out='C:/oto-lanes/codex-box-outage-release-20261104/docs/qa/proof-2026-11-02/s728';
+const proof=JSON.parse(readFileSync(out+'/staging/mw122192/browser-mw122192.json','utf8'));
+assert.equal(proof.outcome,'passed');
+const s={stationId:proof.fixture.stationId,boxId:proof.fixture.boxId,name:proof.fixture.name,saleId:proof.offlineSale.id};
+assert.equal(s.name,'ZZ TEST SCRUM-728 mw122192');
+const program=`(async()=>{
+const assert=require('node:assert/strict'),{Client}=require('pg'),s=${JSON.stringify(s)},c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();
+try{await c.query('BEGIN READ ONLY');await c.query("SET LOCAL statement_timeout='15s'");
+const box=(await c.query('SELECT name,archived_at IS NOT NULL archived FROM core.box WHERE id=$1',[s.boxId])).rows[0];assert.equal(box.name,s.name);assert.ok(box.archived);
+const rows=(await c.query('SELECT id,action,entity_id,origin,source_app,reason,"before","after",created_at FROM core.audit_log WHERE entity_id=$1 AND action=$2',[s.stationId,'qa.station_session.retire'])).rows;assert.equal(rows.length,1);const a=rows[0];assert.equal(a.origin,'job');assert.equal(a.source_app,'console');assert.equal(a.before.workingRows,1);assert.equal(a.before.liveLease,false);assert.equal(a.after.workingRows,0);assert.equal(a.after.saleRetained,true);
+assert.equal((await c.query('SELECT count(*)::int n FROM edge.station_session WHERE station_id=$1',[s.stationId])).rows[0].n,0);
+assert.equal((await c.query("SELECT count(*)::int n FROM pos.sale WHERE id=$1 AND station_id=$2 AND status='finalised'",[s.saleId,s.stationId])).rows[0].n,1);
+await c.query('ROLLBACK');console.log(JSON.stringify({event:'s728_working_document_audit_read',at:new Date().toISOString(),readOnly:true,audit:a,workingRows:0,saleRetained:true,passed:true}));
+}finally{await c.end();}})().catch(e=>{console.error(JSON.stringify({event:'s728_working_document_audit_read_error',name:e.name,code:e.code??'ASSERTION'}));process.exitCode=1;});`;
+const result=await job(program,'s728_working_document_audit_read',proof.source);
+assert.ok(result.result.passed);writeFileSync(out+'/working-document-audit-readback.json',JSON.stringify(result,null,2)+'\n');
+console.log(JSON.stringify(result.result));

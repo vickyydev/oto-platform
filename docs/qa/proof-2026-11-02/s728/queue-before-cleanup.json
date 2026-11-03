@@ -1,0 +1,19 @@
+{
+  "jobId": "job-dbl3339srm7s73bi0lcg",
+  "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
+  "startedAt": "2026-11-03T19:10:04.795Z",
+  "status": "succeeded",
+  "result": {
+    "event": "s728_queue_read",
+    "at": "2026-11-03T19:10:58.042Z",
+    "readOnly": true,
+    "prints": [],
+    "counts": {
+      "pending_prints": 0,
+      "box_print_queue": 0,
+      "pending_commands": 0,
+      "station_leases": 1
+    },
+    "passed": false
+  }
+}

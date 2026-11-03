@@ -1,0 +1,15 @@
+{
+  "at": "2026-11-03T19:11:23.510Z",
+  "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
+  "readOnly": true,
+  "printQueue": 0,
+  "unacknowledgedOutbox": 0,
+  "outboxStates": [
+    {
+      "state": "acked",
+      "n": 1
+    }
+  ],
+  "agentStopped": true,
+  "passed": true
+}

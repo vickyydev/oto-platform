@@ -1,0 +1,62 @@
+{
+  "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
+  "at": "2026-11-03T19:17:57.568Z",
+  "attachments": [
+    {
+      "name": "s728-before-save-display-warning.png",
+      "sha256": "e2ee2527ae3ab3ca54886ae1c07e5e0ec4fdd386d7a30ca92e1fd4cf5002f615",
+      "openedAndInspected": true,
+      "openedAt": "2026-11-03T19:05:36.437Z",
+      "filename": "s728-mw122192-before-save-display-warning.png"
+    },
+    {
+      "name": "s728-first-sale-lock.png",
+      "sha256": "330bf044779231ae020f8697a591ec08218f7ab678076a39e4fe825d9ab30275",
+      "openedAndInspected": true,
+      "openedAt": "2026-11-03T19:07:53.448Z",
+      "filename": "s728-mw122192-first-sale-lock.png"
+    },
+    {
+      "name": "s728-cold-till-unlocked.png",
+      "sha256": "cdbbe7ae511e5f7764aa97ad6de53baac08e8722a087b0655a5452872f97258a",
+      "openedAndInspected": true,
+      "openedAt": "2026-11-03T19:07:53.448Z",
+      "filename": "s728-mw122192-cold-till-unlocked.png"
+    },
+    {
+      "name": "s728-display-starting.png",
+      "sha256": "f6888f5e1401f55281095333c3e497b47200c4ff3770758565f55c47f9417ac8",
+      "openedAndInspected": true,
+      "openedAt": "2026-11-03T19:07:53.445Z",
+      "filename": "s728-mw122192-display-starting.png"
+    },
+    {
+      "name": "s728-display-cold-restart.png",
+      "sha256": "2a55388bd151b0c0da4384fdd39fc5add6f0eb32d16366f93d87679d724587e5",
+      "openedAndInspected": true,
+      "openedAt": "2026-11-03T19:08:52.547Z",
+      "filename": "s728-mw122192-display-cold-restart.png"
+    },
+    {
+      "name": "s728-online-display-connected.png",
+      "sha256": "221fae489671afb61b684677de857972cf119e82c523711587c36cd0a56887aa",
+      "openedAndInspected": true,
+      "openedAt": "2026-11-03T19:07:53.449Z",
+      "filename": "s728-mw122192-online-display-connected.png"
+    },
+    {
+      "name": "s728-cash-receipt.png",
+      "sha256": "39b91ed0619cbfb6dd3f428697bbef422f0287fb7665313f821f6075edf03063",
+      "openedAndInspected": true,
+      "openedAt": "2026-11-03T19:08:52.552Z",
+      "filename": "s728-mw122192-cash-receipt.png"
+    },
+    {
+      "name": "s728-ended-shift-refused.png",
+      "sha256": "f2f17110986711683709f1dc04259fd20591d9e6eef973355c992f276f7eb93b",
+      "openedAndInspected": true,
+      "openedAt": "2026-11-03T19:10:34.560Z",
+      "filename": "s728-mw122192-ended-shift-refused.png"
+    }
+  ]
+}
