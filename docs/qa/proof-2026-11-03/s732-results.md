@@ -17,8 +17,18 @@ payment was taken, and staging was not touched. The staging proof follows when t
 
 The party run took ฿5,000 of its ฿9,000 balance by QR and the remaining ฿4,000 by card.
 
-Automated: `apps/api/test/scrum-732-routed-tenders.test.ts` (33 cases),
-`apps/pos/test/scrum-732-routed-tenders.test.ts` (17 cases) and
+A tender the gateway flags for a person, and a press refused because another tender waits, driven the same way:
+
+| Screenshot | What it shows |
+| --- | --- |
+| `12-pass-qr-waits-for-a-person.png`, `13-pass-review-dialog.png` | A pass's QR paid after its time: nothing on the roster yet, and a review in the QR's own words |
+| `14-pass-money-taken-check-in-choice.png` | "Money taken": the sale closes, the child lands, the check-in choice follows |
+| `15-party-refused-another-counter-keeps-back.png`, `16-party-back-on-the-bill.png` | A press over a QR waiting at another counter: told so, and Back works |
+| `17-party-brought-back-as-itself-with-its-door.png` | That QR once it waits for a person: a Card press for ฿9,000 brings back the ฿5,000 QR as itself, with its review and Back |
+| `18-party-money-taken-recorded.png` | "Money taken": ฿5,000 recorded on the bill |
+
+Automated: `apps/api/test/scrum-732-routed-tenders.test.ts` (38 cases),
+`apps/pos/test/scrum-732-routed-tenders.test.ts` (37 cases) and
 `packages/db/test/s732-event-pass-hold-migration.test.ts` (4 cases).
 
 These two screens draw the real code on the customer pane beside the till and on the staff panel. A
