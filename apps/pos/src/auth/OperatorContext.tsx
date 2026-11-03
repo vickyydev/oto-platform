@@ -315,6 +315,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     setHeld(new Set(permissions.map((p) => p.permission)));
     setMustChangePassword(me.account.mustChangePassword);
     setViewAs(me.impersonation ?? null);
+    setOfflineUnlock(null);
     setOperator(op);
     applyThemePrefs(op.id, me);
     return { operator: op, sessionLocked: me.sessionLocked };
@@ -494,6 +495,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     if (!operator) return;
     const onUnauthorized = () => {
       clearTimers();
+      setOfflineUnlock(null);
       setWarningActive(false);
       setLocked(false);
       setOperator(null);

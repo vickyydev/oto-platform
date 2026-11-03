@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, isNotNull, isNull, or, sql } from 'drizzle-orm';
 import {
   OfflineAuth,
   encodeStaffToken,
@@ -265,10 +265,9 @@ export type StaffTokenScope =
 /**
  * End tokens, by whatever names them.
  *
- * Only the ones still inside their own expiry are touched: a token past `exp`
- * is refused on the timestamp alone, and marking it revoked would add it to a
- * deny-list that is deliberately bounded by expiry. Returns the jtis that
- * moved, so a caller can say how many shifts it just ended.
+ * Live tokens and tokens in the thirty-day fresh-sign-in window are ended.
+ * Natural expiry alone cannot end OD-6 access; the cache must still know that
+ * a manager or sign-out ended this shift. Returns the jtis that moved.
  */
 export async function revokeStaffTokens(
   exec: Exec,
@@ -296,7 +295,10 @@ export async function revokeStaffTokens(
       revokedReason: reason,
       revokedByAccountId: byAccountId ?? null,
     })
-    .where(and(where, isNull(staffToken.revokedAt), gt(staffToken.expiresAt, sql`now()`)))
+    .where(and(where, isNull(staffToken.revokedAt), or(
+      gt(staffToken.expiresAt, sql`now()`),
+      gt(staffToken.issuedAt, sql`now() - ${`${STAFF_OFFLINE_SIGN_IN_DAYS} days`}::interval`),
+    )))
     .returning({ jti: staffToken.jti });
   return ended.map((r) => r.jti);
 }
@@ -304,11 +306,9 @@ export async function revokeStaffTokens(
 // --- What the cache bundle asks ---------------------------------------------
 
 /**
- * The jtis a box must refuse: revoked, and not yet expired.
- *
- * Bounded by expiry rather than by history — past `exp` the token says it is
- * dead on its own, and keeping it on the list would make the list grow for
- * ever to repeat that.
+ * Revocations remain while a token is live or could qualify for OD-6 (30 days).
+ * Otherwise leaving out a revoked token, or waiting for its expiry, would
+ * turn an ended shift into a fresh sign-in.
  */
 export async function revokedStaffTokenIds(db: Db, operatorId: string): Promise<string[]> {
   const rows = await db
@@ -318,7 +318,8 @@ export async function revokedStaffTokenIds(db: Db, operatorId: string): Promise<
       and(
         eq(staffToken.operatorId, operatorId),
         isNotNull(staffToken.revokedAt),
-        gt(staffToken.expiresAt, sql`now()`),
+        or(gt(staffToken.expiresAt, sql`now()`),
+          gt(staffToken.issuedAt, sql`now() - ${`${STAFF_OFFLINE_SIGN_IN_DAYS} days`}::interval`)),
       ),
     );
   return rows.map((r) => r.jti);
@@ -335,9 +336,9 @@ export async function revokedStaffTokenIds(db: Db, operatorId: string): Promise<
 export async function lastTokenByAccountOnBox(
   db: Db,
   boxId: string,
-): Promise<Map<string, Date>> {
+): Promise<Map<string, { issuedAt: Date; jti: string; revoked: boolean }>> {
   const rows = await db
-    .select({ accountId: staffToken.accountId, issuedAt: staffToken.issuedAt })
+    .select({ accountId: staffToken.accountId, issuedAt: staffToken.issuedAt, jti: staffToken.jti, revokedAt: staffToken.revokedAt })
     .from(staffToken)
     .where(
       and(
@@ -352,9 +353,9 @@ export async function lastTokenByAccountOnBox(
         ),
       ),
     )
-    .orderBy(desc(staffToken.issuedAt));
-  const seen = new Map<string, Date>();
-  for (const row of rows) if (!seen.has(row.accountId)) seen.set(row.accountId, row.issuedAt);
+    .orderBy(desc(staffToken.issuedAt), desc(staffToken.jti));
+  const seen = new Map<string, { issuedAt: Date; jti: string; revoked: boolean }>();
+  for (const row of rows) if (!seen.has(row.accountId)) seen.set(row.accountId, { issuedAt: row.issuedAt, jti: row.jti, revoked: row.revokedAt !== null });
   return seen;
 }
 
@@ -417,12 +418,9 @@ export function sharedThrottle(
  * because `SqlBoxStore` has nowhere to keep a config bundle yet (see the note
  * at the keys below).
  *
- * **Which process this runs in.** The api's, always. There is no Raspberry Pi
- * running this today: the box agent has no local HTTP surface, so nothing on a
- * Pi calls `OfflineAuth` and every offline unlock in the park goes through the
- * cloud route. What that route proves is the half that has to be right — that
- * the CHECK needs nothing but what the box holds. Making it reachable with the
- * mall link down is a box-side server, and is the next ticket's work.
+ * This snapshot serves the legacy cloud unlock route. The local box HTTP
+ * bridge and virtual bridge use the same OfflineAuth verifier with their
+ * own bundle snapshots; the physical agent does not call this cloud route.
  */
 async function snapshotForBox(
   db: Db,
@@ -469,6 +467,7 @@ async function snapshotForBox(
     staff: items as OfflineStaffRecord[],
     deny,
     cachedAt: staffBundle.appliedAt,
+    denyCachedAt: denyBundle?.appliedAt ?? null,
   };
 }
 
@@ -535,6 +534,7 @@ export async function offlineUnlock(
   const auth = new OfflineAuth({
     boxId: stationRow.boxId,
     branchId: stationRow.branchId,
+    stationId: input.stationId,
     snapshot: () => snapshotForBox(db, store, stationRow.boxId!, input.operatorId),
     verifyPassword: (hash, password) => verifyArgon(hash, password),
     allowOfflineSignIn: env.STAFF_OFFLINE_SIGN_IN,

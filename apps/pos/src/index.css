@@ -212,3 +212,12 @@ html.view-as-active .h-screen { height: calc(100vh - var(--view-as-offset)); }
 html.view-as-active .min-h-screen { min-height: calc(100vh - var(--view-as-offset)); }
 html.view-as-active .h-\[100dvh\] { height: calc(100dvh - var(--view-as-offset)); }
 html.view-as-active .min-h-\[100dvh\] { min-height: calc(100dvh - var(--view-as-offset)); }
+
+/* OD-6: keep the sign-in notice above every till, without covering its controls.
+   A simultaneous support banner keeps its own row above this one. */
+html.offline-sign-in-active { --staff-banner-offset: calc(2.25rem + var(--view-as-offset, 0px)); }
+html.offline-sign-in-active body { padding-top: var(--staff-banner-offset); }
+html.offline-sign-in-active .h-screen { height: calc(100vh - var(--staff-banner-offset)); }
+html.offline-sign-in-active .min-h-screen { min-height: calc(100vh - var(--staff-banner-offset)); }
+html.offline-sign-in-active .h-\[100dvh\] { height: calc(100dvh - var(--staff-banner-offset)); }
+html.offline-sign-in-active .min-h-\[100dvh\] { min-height: calc(100dvh - var(--staff-banner-offset)); }

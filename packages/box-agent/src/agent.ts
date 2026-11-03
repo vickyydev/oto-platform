@@ -2233,6 +2233,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
           };
         },
         signingKeys: () => bundle?.signingKeys ?? [],
+        freshSignInAllowed: () => bundle?.staffOfflineSignIn ?? true,
         link: () => ({ up: state.linkUp, offline: state.offline }),
         sealer: () => {
           const key = syncPrivateKeyPem;

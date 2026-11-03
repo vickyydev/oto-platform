@@ -30,7 +30,7 @@ bridge_read_env() {
     [[ "$seen" != *",$key,"* && -n "$value" ]] || return 1
     seen="$seen$key,"
     [[ "$value" != *[!A-Za-z0-9._~+/:=@-]* ]] || return 1
-    export "$key=$value"
+    printf -v "$key" '%s' "$value"
   done <"$file"
   [[ "${OTO_DNS_PROVIDER:-}" =~ ^[a-z][a-z0-9_]*$ ]] || return 1
   [[ "${OTO_DNS_MODULE:-}" =~ ^github\.com/caddy-dns/[a-zA-Z0-9_-]+(@v[0-9][A-Za-z0-9.+-]*)?$ ]] || return 1
@@ -39,8 +39,8 @@ bridge_read_env() {
 }
 
 bridge_append_origins() {
-  # The existing line is data too. Preserve every existing origin, add the two
-  # staging POS origins once, and leave every other line byte-identical.
+  # Preserve every existing origin, add the supplied POS origins once,
+  # and leave every other line byte-identical.
   local file="$1" line value='' count=0 origin
   while IFS= read -r line || [ -n "$line" ]; do
     if [[ "$line" == OTO_BOX_BRIDGE_ORIGINS=* ]]; then
@@ -49,7 +49,10 @@ bridge_append_origins() {
   done <"$file"
   [ "$count" -le 1 ] || return 1
   [[ "$value" != *[!A-Za-z0-9._:/,-]* ]] || return 1
-  for origin in https://oto-pos-staging.onrender.com https://oto-pos-web-staging.onrender.com; do
+  bridge_origins_valid "${BRIDGE_ORIGINS:-}" || return 1
+  local -a requested
+  IFS=, read -r -a requested <<<"$BRIDGE_ORIGINS"
+  for origin in "${requested[@]}"; do
     case ",$value," in *",$origin,"*) ;; *) value="${value:+$value,}$origin" ;; esac
   done
   if [ "$count" -eq 1 ]; then
@@ -59,7 +62,40 @@ bridge_append_origins() {
   fi
 }
 
+bridge_origins_valid() {
+  local origin host
+  local -a requested
+  [[ -n "$1" && "$1" != ,* && "$1" != *, && "$1" != *,,* ]] || return 1
+  IFS=, read -r -a requested <<<"$1"
+  for origin in "${requested[@]}"; do
+    [[ "$origin" =~ ^https://([A-Za-z0-9.-]+)(:[0-9]{1,5})?$ ]] || return 1
+    host="${BASH_REMATCH[1]}"
+    bridge_host_valid "$host" || return 1
+  done
+}
+
+bridge_artifact_valid() {
+  [[ "${BRIDGE_CADDY_VERSION:-}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || return 1
+  [[ "${BRIDGE_CADDY_SHA256:-}" =~ ^[a-fA-F0-9]{64}$ ]] || return 1
+  # An immutable, reviewed custom build for this architecture and DNS module.
+  [[ "${BRIDGE_CADDY_URL:-}" =~ ^https://[A-Za-z0-9.-]+/[^[:space:]\\]+$ ]] || return 1
+}
+
+bridge_download_caddy() {
+  bridge_artifact_valid || die 'bridge Caddy requires an HTTPS artifact URL, exact version and SHA-256'
+  curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+    --connect-timeout 20 --max-time 240 "$BRIDGE_CADDY_URL" -o "$WORK/oto-caddy"
+  local actual version
+  actual="$(sha256sum <"$WORK/oto-caddy")"; actual="${actual%% *}"
+  [[ "$actual" == "${BRIDGE_CADDY_SHA256,,}" ]] || die 'Caddy checksum mismatch; no downloaded code was executed'
+  chmod 0755 "$WORK/oto-caddy"
+  version="$("$WORK/oto-caddy" version)"
+  [[ "${version%% *}" == "$BRIDGE_CADDY_VERSION" ]] || die 'Caddy version mismatch'
+}
+
 bridge_preflight() {
+  bridge_origins_valid "${BRIDGE_ORIGINS:-}" || die '--bridge-origins needs a comma-separated list of HTTPS till origins'
+  bridge_artifact_valid || die 'supply --bridge-caddy-url, --bridge-caddy-version and --bridge-caddy-sha256 from the reviewed release'
   bridge_host_valid "$BRIDGE_HOST" || die '--bridge-host needs a DNS hostname, without a scheme, path, wildcard or IP address'
   [ ! -L /etc/caddy ] && [ ! -L /etc/caddy/env ] && [ -f /etc/caddy/env ] \
     || die 'prepare /etc/caddy/env first; see BOX_BRIDGE_BENCH.md'
@@ -85,20 +121,14 @@ bridge_preflight() {
 
 bridge_install() {
   say 'Installing the optional HTTPS station bridge (bench proof still required)'
-  # Same custom-build endpoint used by Caddy's own add-package command.
-  # No token is sent to the download service or put on a command line.
-  curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
-    --connect-timeout 20 --max-time 240 --get 'https://caddyserver.com/api/download' \
-    --data-urlencode 'os=linux' --data-urlencode "arch=$USERLAND" \
-    --data-urlencode "p=$OTO_DNS_MODULE" -o "$WORK/oto-caddy"
-  chmod 0755 "$WORK/oto-caddy"
+  bridge_download_caddy
   "$WORK/oto-caddy" list-modules >"$WORK/caddy-modules"
   grep -qx "dns.providers.$OTO_DNS_PROVIDER" "$WORK/caddy-modules" \
     || die 'the downloaded Caddy has no requested DNS provider'
-  export OTO_BRIDGE_HOST="$BRIDGE_HOST"
+  OTO_BRIDGE_HOST="$BRIDGE_HOST"
   # Validation can mention provider configuration on failure. Keep its output
   # private and delete it with WORK; never echo it or Caddy's adapted JSON.
-  (umask 077; "$WORK/oto-caddy" validate --config "$SOURCE/pi/Caddyfile" --adapter caddyfile >"$WORK/caddy-validation" 2>&1) \
+  (umask 077; export OTO_DNS_PROVIDER OTO_DNS_API_TOKEN OTO_ACME_EMAIL OTO_BRIDGE_HOST; "$WORK/oto-caddy" validate --config "$SOURCE/pi/Caddyfile" --adapter caddyfile >"$WORK/caddy-validation" 2>&1) \
     || die 'Caddy rejected the provider configuration; check the provider instructions privately'
   if ! id oto-caddy >/dev/null 2>&1; then
     useradd --system --home-dir /var/lib/oto-box-caddy --shell /usr/sbin/nologin oto-caddy
