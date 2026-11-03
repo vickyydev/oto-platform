@@ -1,0 +1,16 @@
+{
+  "key": "api2",
+  "sha": "8306bca8f1a98cd5cc972d6342f5b75c1c866179",
+  "start": "2026-11-03T16:30:48.721Z",
+  "end": "2026-11-03T17:25:15.797Z",
+  "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s728-final-api-gate.mts --shard=2/3 --reporter=default --reporter=json --outputFile=C:/oto-lanes/s728-final-v4-api2.json",
+  "log": "C:/oto-lanes/s728-gates-v4-api2.log",
+  "exitCode": 0,
+  "signal": null,
+  "logSha256": "8f8bf9e2e928ea5a7d69cef1da4b220cdaa658b8f85b37b85f76f176a8ab8c43",
+  "logBytes": 348008,
+  "summary": [
+    "Test Files  144 passed | 4 skipped (148)",
+    "Tests  2102 passed | 174 skipped | 3 todo (2279)"
+  ]
+}

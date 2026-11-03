@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-03T17:14:58.862Z",
+  "at": "2026-11-03T17:27:22.476Z",
   "gates": [
     {
       "key": "v1-api1",
@@ -24,6 +24,24 @@
       "source": "78a754063bb102b41f1b108d72452ca8346fa89b",
       "exitCode": 1,
       "receipt": "local-gates/v1-workspace.json"
+    },
+    {
+      "key": "v4-api1",
+      "source": "8306bca8f1a98cd5cc972d6342f5b75c1c866179",
+      "exitCode": 1,
+      "receipt": "local-gates/v4-api1.json"
+    },
+    {
+      "key": "v4-api2",
+      "source": "8306bca8f1a98cd5cc972d6342f5b75c1c866179",
+      "exitCode": 0,
+      "receipt": "local-gates/v4-api2.json"
+    },
+    {
+      "key": "v4-api3",
+      "source": "8306bca8f1a98cd5cc972d6342f5b75c1c866179",
+      "exitCode": 0,
+      "receipt": "local-gates/v4-api3.json"
     },
     {
       "key": "v4-workspace",

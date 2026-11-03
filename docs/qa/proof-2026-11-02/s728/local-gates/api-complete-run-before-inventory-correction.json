@@ -1,0 +1,3591 @@
+{
+  "at": "2026-11-03T17:30:35.994Z",
+  "totals": {
+    "files": 444,
+    "passed": 6173,
+    "failed": 1,
+    "skipped": 401,
+    "todo": 4
+  },
+  "shards": [
+    {
+      "shard": 1,
+      "source": "8306bca8f1a98cd5cc972d6342f5b75c1c866179",
+      "exitCode": 1,
+      "reportSha256": "2ad94fd41daec24fe21e4c7af1d64d95d14df67db37674b56efdffdd9b9ba432",
+      "files": [
+        {
+          "file": "test/access-review.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/aggregates-domain.test.ts",
+          "passed": 17,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/analytics-r2.test.ts",
+          "passed": 20,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/app-identities.test.ts",
+          "passed": 22,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/arrival-r1-gate.test.ts",
+          "passed": 14,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/arrival-r1-gate3.test.ts",
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/assistant-feedback.test.ts",
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/assistant-registry.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/assistant-settings-review.test.ts",
+          "passed": 53,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/audit-read.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/auth-enumeration.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/auth.test.ts",
+          "passed": 24,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/benefits-r4.test.ts",
+          "passed": 25,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/booking-paid-online-no-second-charge.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/booth-admin.test.ts",
+          "passed": 30,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/booth-pairing.test.ts",
+          "passed": 18,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/booth-voucher-slip.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/box-api.test.ts",
+          "passed": 26,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/box-cache-survives.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/box-clock.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/box-epoch-regressed-resend.test.ts",
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/branch-scoping.test.ts",
+          "passed": 17,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/bridge-convergence.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/catalog.test.ts",
+          "passed": 24,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/checkin-board.test.ts",
+          "passed": 14,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/console-analytics-review.test.ts",
+          "passed": 17,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/console-analytics-sources-review.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/console-branch-scope.test.ts",
+          "passed": 27,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/console-configuration-entries.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/console-drift-review.test.ts",
+          "passed": 13,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/console-otoapp.test.ts",
+          "passed": 34,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/eod-r2.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/eod-r3-settlement.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/events-e2.test.ts",
+          "passed": 34,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/events-e3-offline.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/events-e5.test.ts",
+          "passed": 18,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/handoff-department.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/health-evidence.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/inbox-ai-coherence.test.ts",
+          "passed": 20,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/inbox-ai-examples-import.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/inbox-ai-golden.test.ts",
+          "passed": 30,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/inbox-i1b-demo.test.ts",
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/inbox-send-media.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/integration-controls.test.ts",
+          "passed": 13,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/integration-expiry.test.ts",
+          "passed": 14,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/integration-read-availability.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/members-children-archive.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/members-fields.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/members-register.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/menu-sheet.test.ts",
+          "passed": 24,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/menu-tax-seam.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/nanny-duty.test.ts",
+          "passed": 20,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/occupancy-gate-attacks.test.ts",
+          "passed": 14,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/occupancy-gate-recheck.test.ts",
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/offline-wallet-gate-r4.test.ts",
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/operator-switch-audit-context-review.test.ts",
+          "passed": 20,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/operator-switch-handoff-review.test.ts",
+          "passed": 25,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/ops-api.test.ts",
+          "passed": 34,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/oto-app-branch-mapping.test.ts",
+          "passed": 18,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/payments-2c2p.test.ts",
+          "passed": 45,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/payments-cash.test.ts",
+          "passed": 26,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/permissions.test.ts",
+          "passed": 26,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/platform-review.test.ts",
+          "passed": 18,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/print-preview-samples.test.ts",
+          "passed": 16,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/public.test.ts",
+          "passed": 21,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/release-r92-gate.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/routes-guarded.test.ts",
+          "passed": 25,
+          "failed": 1,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": [
+            "route guards (S2-01b) the station bridge is only what it should be, and refuses a caller with neither credential"
+          ]
+        },
+        {
+          "file": "test/s216-demofix-review-recheck.test.ts",
+          "passed": 11,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s216-demofix-review.test.ts",
+          "passed": 13,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s216-r3-fix.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s216-r3-review-recheck.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s216-r45-review.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r1-review.test.ts",
+          "passed": 22,
+          "failed": 0,
+          "skipped": 20,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r3-review.test.ts",
+          "passed": 23,
+          "failed": 0,
+          "skipped": 21,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r4b.test.ts",
+          "passed": 32,
+          "failed": 0,
+          "skipped": 4,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r6.test.ts",
+          "passed": 34,
+          "failed": 0,
+          "skipped": 2,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r7-access-review.test.ts",
+          "passed": 1,
+          "failed": 0,
+          "skipped": 17,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r7-finance-access-cross-review.test.ts",
+          "passed": 0,
+          "failed": 0,
+          "skipped": 8,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r7-finance-review.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r8-review.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217c-employee-history-review.test.ts",
+          "passed": 1,
+          "failed": 0,
+          "skipped": 27,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217c-fix-preview-review.test.ts",
+          "passed": 0,
+          "failed": 0,
+          "skipped": 7,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217c-sop-navigation-review.test.ts",
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s220-e1-review.test.ts",
+          "passed": 21,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s220-e2-review-2.test.ts",
+          "passed": 12,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s220-e3-review-2-offline.test.ts",
+          "passed": 19,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s220-e3-review-3-offline.test.ts",
+          "passed": 29,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s220-e3-review.test.ts",
+          "passed": 23,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s220-e4-review-recheck.test.ts",
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s220-e4-review-silentzero.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s220-e4-review.test.ts",
+          "passed": 21,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s220-e5-acceptance.test.ts",
+          "passed": 18,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s220-e5-review-2.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s220-e5-review.test.ts",
+          "passed": 22,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s221-r3-review.test.ts",
+          "passed": 34,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s221-r4-review.test.ts",
+          "passed": 24,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s494-final-gate-offline-registration.test.ts",
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s494-food-gate-r2.test.ts",
+          "passed": 14,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s494-food.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s498-review.test.ts",
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s502-review-prepaid-index.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s503-demo-controls.test.ts",
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s506-revocation-lag.test.ts",
+          "passed": 14,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s518-import-preview-review.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s609-admin-navigation-review.test.ts",
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s611-accounts-review.test.ts",
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s613-app-access-review.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s617-login-users-review.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s620-organisation-review.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s621-catalogue-review.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s622-menu-contracts.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s622-menu-review.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s623-money-contracts.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s627-pos-admin-redirect-review.test.ts",
+          "passed": 12,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s629-role-mapping-review.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s631-department-seam-view.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s631-department-source.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s633-account-lifecycle-serialization-review.test.ts",
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s633-account-reactivation-review.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s637-digest-review.test.ts",
+          "passed": 19,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s638-pricing-review.test.ts",
+          "passed": 20,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s722-consent-control-review.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s723-forced-offline-review.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s726-channel-close-review.test.ts",
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/sale-supervision-gate.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/sale-tier.test.ts",
+          "passed": 25,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/sales.test.ts",
+          "passed": 68,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/scanning-product.test.ts",
+          "passed": 14,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/scanning-staff-token.test.ts",
+          "passed": 24,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/scrum-606-guard-targets.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/scrum-607-reach.test.ts",
+          "passed": 11,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/session-branch-station.test.ts",
+          "passed": 16,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/staff-scope.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/station-scans.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/stock-r1-gate.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/stock-r2-gate-final.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/stock-r2.test.ts",
+          "passed": 28,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/stock-r3-gate.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/stock-r4.test.ts",
+          "passed": 19,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/sync-api.test.ts",
+          "passed": 57,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/voucher-definitions.test.ts",
+          "passed": 13,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/vouchers-r5-gate.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/wallet-gate-r1.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/wallet-gate-r2-recheck.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/wallet-gate-r2.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/wallet-r3-lots.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/wallet.test.ts",
+          "passed": 13,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/watchdog-fallback-review.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        }
+      ]
+    },
+    {
+      "shard": 2,
+      "source": "8306bca8f1a98cd5cc972d6342f5b75c1c866179",
+      "exitCode": 0,
+      "reportSha256": "ab5995289e0635ff1a8dcd6710b2e5d93ea098d0808537faaf6c4ef170b6df6f",
+      "files": [
+        {
+          "file": "test/archived-tenancy.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/arrival-r1-gate2.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/assistant-golden.test.ts",
+          "passed": 41,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/assistant-otoapp.test.ts",
+          "passed": 47,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/audit-response-review.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/auth-codes.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/benefits-r1.test.ts",
+          "passed": 22,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/benefits-r2.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/booking-supervised.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/bookings-redeem.test.ts",
+          "passed": 37,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/booth-duty.test.ts",
+          "passed": 16,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/booth-health.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/box-agent.test.ts",
+          "passed": 11,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/checkin-board-gate-r2.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/checkin-board-gate.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/console-money.test.ts",
+          "passed": 16,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/demo-reset.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/departments.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/eod-r1-gate-recheck.test.ts",
+          "passed": 13,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/eod-r1.test.ts",
+          "passed": 18,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/eod-r2-gate.test.ts",
+          "passed": 21,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/events-e1.test.ts",
+          "passed": 22,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/events-e4.test.ts",
+          "passed": 31,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/health-integrations-response-review.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/health-read-availability-review.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/inbox-ai-cancel.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/inbox-ai-replay.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/inbox-ai-rethink.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/inbox-ai-rules-prompt.test.ts",
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/inbox-ai-rules.test.ts",
+          "passed": 14,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/inbox-ai-teach.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/inbox-mirror.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/inbox-read.test.ts",
+          "passed": 44,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/latent-gaps.test.ts",
+          "passed": 11,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/leaks-and-trail.test.ts",
+          "passed": 21,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/member-tier-revoke.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/members-visits.test.ts",
+          "passed": 32,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/menu-api.test.ts",
+          "passed": 48,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/occupancy-freshness.test.ts",
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/occupancy-gate-final.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/occupancy.test.ts",
+          "passed": 12,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/offline-booking-redeem.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/offline-checkin-gate-r4.test.ts",
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/offline-checkin.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/offline-wallet-gate-r4-recheck.test.ts",
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/operator-switch-idempotency-review.test.ts",
+          "passed": 21,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/operator-switch-lifecycle-review.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/operator-switch-review.test.ts",
+          "passed": 29,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/ops-jobs.test.ts",
+          "passed": 24,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/otoapp-directory.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/overview.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/payments-qr-cancel.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/print-api.test.ts",
+          "passed": 29,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/print-restart.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/print-test-target.test.ts",
+          "passed": 18,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/printing-box.test.ts",
+          "passed": 16,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/promo-codes.test.ts",
+          "passed": 39,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/roles-console.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/route-scope-target.test.ts",
+          "passed": 24,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/route-write-conformance.test.ts",
+          "passed": 26,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s216-demo-day.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s216-r5-booth.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s216-r6-legacy.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s216-r6-review.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r1.test.ts",
+          "passed": 30,
+          "failed": 0,
+          "skipped": 1,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r2-review.test.ts",
+          "passed": 30,
+          "failed": 0,
+          "skipped": 3,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r2.test.ts",
+          "passed": 31,
+          "failed": 0,
+          "skipped": 2,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r4a-review.test.ts",
+          "passed": 25,
+          "failed": 0,
+          "skipped": 12,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r4a.test.ts",
+          "passed": 26,
+          "failed": 0,
+          "skipped": 2,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r5.test.ts",
+          "passed": 17,
+          "failed": 0,
+          "skipped": 1,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r6-review.test.ts",
+          "passed": 14,
+          "failed": 0,
+          "skipped": 51,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r7-access-cross-review.test.ts",
+          "passed": 0,
+          "failed": 0,
+          "skipped": 15,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r7-readers-review.test.ts",
+          "passed": 0,
+          "failed": 0,
+          "skipped": 4,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-scheduling-review.test.ts",
+          "passed": 0,
+          "failed": 0,
+          "skipped": 32,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217c-presence-recovery-ui.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217c-sop-history-review.test.ts",
+          "passed": 1,
+          "failed": 0,
+          "skipped": 15,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s220-e3-review-2.test.ts",
+          "passed": 14,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s220-e3-review-offline.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s220-k2-kiosk-surface.test.ts",
+          "passed": 21,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s220-k2-review.test.ts",
+          "passed": 21,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s221-r2-review-recheck.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s221-r4-closing-audit.test.ts",
+          "passed": 33,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 3,
+          "failedTests": []
+        },
+        {
+          "file": "test/s494-checkin-sync.test.ts",
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s494-checkin.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s494-gate-offline.test.ts",
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s494-gate.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s494-money.test.ts",
+          "passed": 12,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s495-review-partial-refund.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s496-review-booking.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s498-offline-food.test.ts",
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s502-payment-uncertainty-review.test.ts",
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s502-review-demo.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s502-review-offline-switch.test.ts",
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s516-attendance-review.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s520-attendance-evidence-review.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s539-suite-sign-in.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s548-qa-reports-review.test.ts",
+          "passed": 0,
+          "failed": 0,
+          "skipped": 36,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s610-overview-review.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s614-employees-review.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s615-departments-review.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s620-organisation-routes.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s621-catalogue-contracts.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s624-care-print-review.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s626-routing-review.test.ts",
+          "passed": 27,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s629-handoff-role.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s630-salary-permission-review.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s631-department-mirror-review.test.ts",
+          "passed": 26,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s631-seed-replay-review.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s633-missing-route-navigation-review.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s634-staff-summary-review.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s637-decisions-review.test.ts",
+          "passed": 17,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s637-registration-review.test.ts",
+          "passed": 24,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s644-alert-mute-routing.test.ts",
+          "passed": 14,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s644-audit-filters-export.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s680-tax-reference-review.test.ts",
+          "passed": 16,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s682-ops-contracts-review.test.ts",
+          "passed": 21,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s703-station-readiness-review.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s704-terminal-readiness-review.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s713-offline-last-mile-review.test.ts",
+          "passed": 18,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s715-readiness-lease-review.test.ts",
+          "passed": 25,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s718-pos-web-review.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s720-display-record.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s727-box-unlock-review.test.ts",
+          "passed": 18,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s728-box-outage-review.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/safeguards.test.ts",
+          "passed": 12,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/sales-fnb.test.ts",
+          "passed": 32,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/sales-ledger-schema.test.ts",
+          "passed": 19,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/sales-reach.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/security.test.ts",
+          "passed": 22,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/station-session-api.test.ts",
+          "passed": 53,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/stock-fix-gate.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/stock-fix.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/stock-fix2.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/stock-fix3-gate.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/stock-r1-recheck.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/stock-r2-gate-recheck.test.ts",
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/stock-r4-gate-recheck.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/stock-r4-gate.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/suite-controls-integration.test.ts",
+          "passed": 13,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/sync-keyring.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/sync-ledger.test.ts",
+          "passed": 33,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/telemetry.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/transactions.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/twilio-verify-auth.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/vouchers-r5-promotions.test.ts",
+          "passed": 22,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/vouchers.test.ts",
+          "passed": 108,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/wallet-r3-figures.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/wallet-spend.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        }
+      ]
+    },
+    {
+      "shard": 3,
+      "source": "8306bca8f1a98cd5cc972d6342f5b75c1c866179",
+      "exitCode": 0,
+      "reportSha256": "2790303f0afcd717223427c717b04f1a06800a0b24999454baa06c1a0815bb3f",
+      "files": [
+        {
+          "file": "test/access-restore.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/accounts-console.test.ts",
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/accounts-operators-tx.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/aggregates-ai.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/aggregates-members.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/analytics-parties-review.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/analytics-r1.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/archive-races.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/assistant-asks.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/assistant-engine.test.ts",
+          "passed": 59,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/auth-handoff-files-tx.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/benefits-r3.test.ts",
+          "passed": 20,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/booking-checkout.test.ts",
+          "passed": 28,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/boot-guard.test.ts",
+          "passed": 22,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/booth-api.test.ts",
+          "passed": 21,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/booth-attribution.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/booth-duty-refute.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/booth-setup-publish.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/booth-sync.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/box-epoch-adopt-race.test.ts",
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/box-epoch-regressed-note.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/box-epoch-regressed-sale.test.ts",
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/box-scanner.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/branch-clone.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/catalog-payment-methods.test.ts",
+          "passed": 24,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/checkin.test.ts",
+          "passed": 26,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/console-configuration-review.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/console-staff.test.ts",
+          "passed": 25,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/employees.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/eod-r1-gate.test.ts",
+          "passed": 14,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/events-e3.test.ts",
+          "passed": 31,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/events-e5-audit.test.ts",
+          "passed": 12,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/files.test.ts",
+          "passed": 3,
+          "failed": 0,
+          "skipped": 2,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/fixture-tenancy.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/fleet-api.test.ts",
+          "passed": 70,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/g17-round0-review-2.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/g17-round0-review.test.ts",
+          "passed": 28,
+          "failed": 0,
+          "skipped": 4,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/gate-sync.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/handoff.test.ts",
+          "passed": 23,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/id-conformance.test.ts",
+          "passed": 27,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/inbox-actions.test.ts",
+          "passed": 47,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/inbox-ai-engine.test.ts",
+          "passed": 48,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/inbox-ai-examples-import-review.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/inbox-ai-kb.test.ts",
+          "passed": 20,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/inbox-ai-playbook.test.ts",
+          "passed": 54,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/inbox-ingest.test.ts",
+          "passed": 24,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/inbox-privacy.test.ts",
+          "passed": 16,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/inbox-reply.test.ts",
+          "passed": 21,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/kiosk-k1.test.ts",
+          "passed": 20,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/me-preferences.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/money-fields.test.ts",
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/offline-capability.test.ts",
+          "passed": 22,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 1,
+          "failedTests": []
+        },
+        {
+          "file": "test/offline-selling.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/offline-stock.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/offline-wallet-gate-r4-final.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/offline-wallet.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/operator-switch-request-race-review.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/operator-switch-route-review.test.ts",
+          "passed": 26,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/operator-switch-seat-review.test.ts",
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/operator-switch-session-review.test.ts",
+          "passed": 39,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/oto-app-branch-seam.test.ts",
+          "passed": 12,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/otoapp-events-seam.test.ts",
+          "passed": 20,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/payments-redaction.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/payments-terminal.test.ts",
+          "passed": 34,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/platform-sync.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/rate-limit-public.test.ts",
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/receipt-hwm.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/release-r3-recheck.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/release.test.ts",
+          "passed": 12,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s216-r3-review.test.ts",
+          "passed": 12,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s216-r3-summary.test.ts",
+          "passed": 14,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s216-r4-reports.test.ts",
+          "passed": 13,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s216-r6-sweep.test.ts",
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s216-review.test.ts",
+          "passed": 13,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r1-review-recheck.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 10,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r3.test.ts",
+          "passed": 32,
+          "failed": 0,
+          "skipped": 9,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r4b-review.test.ts",
+          "passed": 18,
+          "failed": 0,
+          "skipped": 11,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r5-review.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 20,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r7-finance-cross-review.test.ts",
+          "passed": 2,
+          "failed": 0,
+          "skipped": 2,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r7-finance.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 3,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r7-payroll-cross-review.test.ts",
+          "passed": 0,
+          "failed": 0,
+          "skipped": 25,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r7b-documents-review.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217b-r8-finance-cross-review.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217c-camp-sms-review.test.ts",
+          "passed": 0,
+          "failed": 0,
+          "skipped": 23,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s217c-presence-delivery-review.test.ts",
+          "passed": 3,
+          "failed": 0,
+          "skipped": 12,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s220-e2-review.test.ts",
+          "passed": 27,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s220-e4-review-readday.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s220-e5-hazards.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s220-k1-review.test.ts",
+          "passed": 20,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s221-r1-review.test.ts",
+          "passed": 16,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s221-r2-review.test.ts",
+          "passed": 24,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s221-r3-review-recheck.test.ts",
+          "passed": 17,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s221-r4-acceptance.test.ts",
+          "passed": 16,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s494-food-gate.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s494-money-gate.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s495-review.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s496-review-stock.test.ts",
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s504-review-recheck.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s504-review.test.ts",
+          "passed": 14,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s612-roles-review.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s616-access-review-review.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s619-admin-screen-lift-review.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s623-money-review.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s625-reports-review.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s629-employee-role.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s629-role-mapping.test.ts",
+          "passed": 17,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s632-administration-review.test.ts",
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s633-lifecycle-identity-review.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s633-lifecycle-link-concurrency-review.test.ts",
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s633-provisioning-boundary-review.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s636-aggregates-review.test.ts",
+          "passed": 60,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s637-overview-review.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s654-console-theme-review.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s684-nullable-response-contract-review.test.ts",
+          "passed": 14,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s697-tier-proof-other.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s706-photo-renewal-review.test.ts",
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s708-consent-review.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s710-display-channel-review.test.ts",
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s712-storage-review.test.ts",
+          "passed": 12,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s717-box-routing-review.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s717-virtual-host-review.test.ts",
+          "passed": 13,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s719-recovery-review.test.ts",
+          "passed": 16,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s720-display-channel-rate.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/s725-staging-links-review.test.ts",
+          "passed": 14,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/sales-printing-box-seam.test.ts",
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/sales-printing.test.ts",
+          "passed": 17,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/sms.test.ts",
+          "passed": 44,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/station-scans-poll.test.ts",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/stock-fix2-gate.test.ts",
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/stock-r1.test.ts",
+          "passed": 18,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/stock-r2-gate.test.ts",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/stock-r3.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/stock-r4-closing.test.ts",
+          "passed": 11,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/stock-r4-gate-facts.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/suite-control-approvals-review.test.ts",
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/suite-controls-review.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/supervised-band-print.test.ts",
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/support-tools.test.ts",
+          "passed": 17,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/sync-sales.test.ts",
+          "passed": 36,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/throttle-keys.test.ts",
+          "passed": 12,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/trust-proxy.test.ts",
+          "passed": 13,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/virtual-box-lease.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/wallet-gate-r1-recheck.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/wallet-gate-r3-final.test.ts",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/wallet-gate-r3-recheck.test.ts",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/wallet-gate-r3.test.ts",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/wallet-r3.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        },
+        {
+          "file": "test/wallet-r5-closing-audit.test.ts",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "failedTests": []
+        }
+      ]
+    }
+  ],
+  "correction": "The route inventory was corrected in 82388b08. Its complete 26-test file and four review cases passed in the targeted rerun; a full replacement of shard 1 is now running. Do not call this original run green."
+}

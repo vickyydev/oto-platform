@@ -1,0 +1,16 @@
+{
+  "at": "2026-11-03T17:25:31.110Z",
+  "source": "3fa77e0613f3a2d0ce87a2782d54a0915b405830",
+  "exitCode": 0,
+  "independentCleanup": true,
+  "disposableDatabaseRemoved": true,
+  "executedHarnessSha256": "759cf1091f602a5aa4eeea497ac326485b7bf3ca80efb3c08c31de0888120bcb",
+  "inspectedImages": [
+    {
+      "name": "s728-before-save-display-warning.png",
+      "sha256": "479d918f7fe2567dbe76f6ef342e9bc1a7c0701e4af230d240949efcb294f81a",
+      "openedAndInspected": true
+    }
+  ],
+  "scope": "Second complete local rehearsal; only the additional warning image is archived here. The eleven core images from the preceding completed run were opened and are recorded separately."
+}

@@ -100,6 +100,7 @@ try {
   await consolePage.goto(CONSOLE+'/devices');await consolePage.getByRole('button',{name,exact:true}).click();const drawer=consolePage.getByRole('dialog');await drawer.getByPlaceholder('https://counter-1.example.com').fill(bridge);
   await expect(drawer.getByRole('alert').filter({hasText:'A display still open on the web address will stop updating.'})).toBeVisible();
   await capture(consolePage,'s728-before-save-display-warning.png');
+  check('Console warns before saving that a web-hosted display must move to the box');
   const saved=consolePage.waitForResponse(r=>r.url().endsWith('/api/boxes/'+boxId)&&r.request().method()==='PATCH');await drawer.getByRole('button',{name:'Save bridge address',exact:true}).click();assert.equal((await saved).status(),200);await drawer.getByPlaceholder('https://counter-1.example.com').scrollIntoViewIfNeeded();await capture(consolePage,'s728-configured-test-zone.png');start();
   await until('staff and station cache',async()=>cache('staff')&&cache('station_config'));
   const config=JSON.parse(readFileSync(home+'/config-bundle.json','utf8'));assert.equal(config.staffOfflineSignIn,true);assert.ok(config.signingKeys.some(k=>k.purpose==='staff_token'));

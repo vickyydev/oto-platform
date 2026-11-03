@@ -2,6 +2,7 @@ import {readFileSync,writeFileSync,openSync,closeSync} from 'node:fs';
 import {spawn,execFileSync} from 'node:child_process';
 const root='C:/oto-lanes/codex-box-outage-final-20261103';
 const commands={
+  api1:'pnpm --filter @oto/api exec tsx C:/oto-lanes/s728-final-api-gate.mts --shard=1/3 --reporter=default --reporter=json --outputFile=C:/oto-lanes/s728-final-completion-api1.json',
   pos:'pnpm --filter @oto/pos exec vitest run --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=C:/oto-lanes/s728-final-pos-serial.json',
   workspace:'pnpm exec turbo run test --filter="!@oto/api" --filter="!@oto/pos" --concurrency=1',
 };
