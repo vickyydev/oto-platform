@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { generateKeyPairSync, randomBytes } from 'node:crypto';
 import { and, desc, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
@@ -1234,6 +1234,7 @@ describe('a production deployment will not quietly run a pretend gateway', () =>
     MINIO_SECRET_KEY: 'not-the-dev-default',
     // S2-11: a live park signs its bands with a key of its own.
     BAND_HMAC_KEY: 'a-real-band-key-of-sufficient-length',
+    STAFF_TOKEN_PRIVATE_KEY: generateKeyPairSync('ed25519').privateKey.export({ type: 'pkcs8', format: 'pem' }).toString(),
   } as const;
 
   it('refuses to boot with PGW_PROVIDER=2c2p and no credentials', () => {

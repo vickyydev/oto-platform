@@ -1848,9 +1848,12 @@ describe('the cache bundle', () => {
      * way the platform would. The booth's `pinHash`, `pinExpiresAt`,
      * `displayName` and `staffCode` went with booth sign-in (SCRUM-694).
      */
+    // Latest shift ID and revocation state intentionally travel; no staff identity fields do.
     expect(Object.keys(staff[0]!).sort()).toEqual([
       'accountId',
       'lastTokenAt',
+      'lastTokenId',
+      'lastTokenRevoked',
       'mustChangePassword',
       'passwordHash',
       'permissions',

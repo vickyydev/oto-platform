@@ -9,7 +9,8 @@ is re-read before a round. The cluster follows S2-11 (`AGENTS.md`) and lets SCRU
 ## 1. Offline selling, in the park's terms
 
 SCRUM-713 first stage (2 November 2026): the counter bridge integration is
-being implemented after 721/725. The boxed display is bundled with the agent
+software passed staging proof after 721/725; physical acceptance remains open.
+The boxed display is bundled with the agent
 so an empty asset cache can cold-start offline; a different page build refuses
 to start until reloaded. Nullable box origins preserve the older/virtual path.
 The configured-bridge-only forwarder-502 fallback keeps the original sale and
@@ -237,6 +238,17 @@ this box in the last 30 days, with an offline banner. Added: the box must hold a
 within 72 h, so a dismissal still reaches the counter (the design review's freshness bound, never
 adopted until now). Facts from such a session are marked `offline_fresh`. **[owner]** Confirm it;
 `PROJECT_CONTEXT.md` §5 still marks it Open.
+
+SCRUM-727 implements this provisional decision through one API setting,
+`STAFF_OFFLINE_SIGN_IN` (default true; explicit false disables it), delivered
+as `staffOfflineSignIn` in every box configuration and read on each unlock by
+physical and virtual agents. Confirmation remains the owner's; no real box
+address is introduced. Ended shifts and forged/foreign tokens cannot use this
+path. A valid expired token retains its verified identity and station binding;
+revocations remain for the 30-day recognition window. The 72-hour deny-list
+bound, `offlineFresh` fact/session marker and offline banner remain required.
+An older staff cache without latest-shift ID and revocation state cannot
+authorize fresh sign-in; a complete pull must restore that evidence first.
 
 **OD-7. How does a member created offline merge?** As the code already does (`sync.ts:857-939`):
 the same phone at two counters, the first to arrive survives and the second is recorded as a merge

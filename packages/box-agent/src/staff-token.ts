@@ -1,3 +1,4 @@
+import { OFFLINE_POLICY, StaffTokenClaimsSchema } from '@oto/shared';
 import { createPublicKey, sign, timingSafeEqual, verify } from 'node:crypto';
 
 /**
@@ -32,8 +33,8 @@ import { createPublicKey, sign, timingSafeEqual, verify } from 'node:crypto';
  * until the box next pulls its cache — and that is a property of offline
  * working rather than a defect in this file. The honest statement is the one
  * the code makes: a revocation is effective on a box from the moment the box
- * learns of it, and until then the token's own expiry is the only bound. That
- * is why the expiry is hours rather than days, why the deny-list is pulled
+ * learns of it. Token unlock is bounded by expiry; OD-6 fresh sign-in also
+ * requires a deny-list at most 72 hours old. That is why the deny-list is pulled
  * with every cache refresh rather than on a schedule of its own, and why a
  * box that has not pulled for longer than the token lifetime is visibly stale
  * on the Console's Health page.
@@ -58,10 +59,9 @@ import { createPublicKey, sign, timingSafeEqual, verify } from 'node:crypto';
  * wall-clock hour, so a shift that starts at 16:00 and ends at 02:00 is inside
  * one token. What sixteen hours does NOT survive is a person who picked a
  * station at 09:00, left the till offline, and came back the following
- * morning: that token is dead, the till says "shift token expired, connect to
- * sign in", and the fix is one minute of internet. The alternative — a token
- * long enough that this never happens — is a credential sitting on a disk for
- * days, which is the failure with no floor.
+ * morning: that token is dead. OD-6 may allow a fresh password sign-in under
+ * STAFF_OFFLINE_SIGN_IN, with recent recognition and a complete, bounded-age
+ * revocation cache. That is recorded separately and never extends the token.
  */
 
 // --- Mirrored from `@oto/shared/staff-token` --------------------------------
@@ -221,6 +221,9 @@ export function decodeStaffToken(token: string): DecodedStaffToken | null {
 }
 
 export interface StaffTokenVerifyOptions {
+  /** When unlocking, bind even an expired token to this station and person. */
+  stationId?: string;
+  accountId?: string | null;
   /** The public halves from the config bundle. Usually one; two during a rotation. */
   keys: readonly StaffSigningKey[];
   /** This box. A token minted for another box is refused however well it verifies. */
@@ -243,12 +246,12 @@ export interface StaffTokenVerifyOptions {
 
 export type StaffTokenVerification =
   | { ok: true; claims: StaffTokenClaims; expiresAt: Date }
-  | { ok: false; refusal: StaffTokenRefusal };
+  | { ok: false; refusal: StaffTokenRefusal; expiredClaims?: StaffTokenClaims };
 
 /**
  * Check a token against this box, in the order that makes a refusal cheapest
- * and most honest: shape, version, key, signature, audience, expiry,
- * revocation. The signature is checked BEFORE anything the claims say, because
+ * and most honest: shape, version, key, signature, audience, revocation,
+ * expiry. The signature is checked BEFORE anything the claims say, because
  * until it has been, the claims are just a string somebody handed us.
  */
 export function verifyStaffToken(
@@ -258,6 +261,7 @@ export function verifyStaffToken(
   const decoded = decodeStaffToken(token);
   if (!decoded) return { ok: false, refusal: STAFF_TOKEN_REFUSALS.INVALID };
   const { header, claims } = decoded;
+  if (!StaffTokenClaimsSchema.safeParse(claims).success) return { ok: false, refusal: STAFF_TOKEN_REFUSALS.INVALID };
 
   if (header.v > STAFF_TOKEN_SCHEMA_VERSION) {
     return { ok: false, refusal: STAFF_TOKEN_REFUSALS.SCHEMA_TOO_NEW };
@@ -288,7 +292,9 @@ export function verifyStaffToken(
   }
   if (!signatureOk) return { ok: false, refusal: STAFF_TOKEN_REFUSALS.INVALID };
 
-  if (claims.box !== options.boxId || claims.aud !== options.branchId) {
+  if (claims.box !== options.boxId || claims.aud !== options.branchId
+    || (options.stationId && claims.sta !== options.stationId)
+    || (options.accountId && claims.sub !== options.accountId)) {
     return { ok: false, refusal: STAFF_TOKEN_REFUSALS.WRONG_AUDIENCE };
   }
 
@@ -299,8 +305,10 @@ export function verifyStaffToken(
   // the cloud's, which is the ordinary state of a Pi that has just booted
   // without NTP. Refusing on `exp` alone would let that box unlock; refusing
   // on `iat` with no leeway would stop it unlocking for the first minute.
-  if (claims.iat - leeway > nowS) return { ok: false, refusal: STAFF_TOKEN_REFUSALS.EXPIRED };
-  if (claims.exp <= nowS) return { ok: false, refusal: STAFF_TOKEN_REFUSALS.EXPIRED };
+  if (!Number.isSafeInteger(claims.iat) || !Number.isSafeInteger(claims.exp)
+    || claims.iat < 0 || claims.exp <= claims.iat || claims.iat - leeway > nowS) {
+    return { ok: false, refusal: STAFF_TOKEN_REFUSALS.INVALID };
+  }
 
   // Not being able to check revocation is not the same as nothing being
   // revoked. A box with no deny-list refuses here rather than admitting a
@@ -310,6 +318,9 @@ export function verifyStaffToken(
   if (deny.revokedTokenIds.includes(claims.jti) || deny.revokedAccountIds.includes(claims.sub)) {
     return { ok: false, refusal: STAFF_TOKEN_REFUSALS.REVOKED };
   }
+
+  // Only expiry may fall through to OD-6. Every other check must have passed.
+  if (claims.exp <= nowS) return { ok: false, refusal: STAFF_TOKEN_REFUSALS.EXPIRED, expiredClaims: claims };
 
   return { ok: true, claims, expiresAt: new Date(claims.exp * 1000) };
 }
@@ -331,6 +342,9 @@ export interface OfflineStaffRecord {
    * answer cannot disagree with the revocation, which is on the same row.
    */
   lastTokenAt?: string | null;
+  /** Latest shift on this box, including its revocation after natural expiry. */
+  lastTokenId?: string | null;
+  lastTokenRevoked?: boolean;
 }
 
 /** What the box has cached about who may work here. */
@@ -345,6 +359,7 @@ export interface OfflineAuthSnapshot {
   deny: StaffDenyList | null;
   /** When the cache was applied. What the till's "working offline" banner reads. */
   cachedAt: string | null;
+  denyCachedAt?: string | null;
 }
 
 /**
@@ -373,6 +388,7 @@ export interface OfflineThrottle {
 export interface OfflineAuthOptions {
   boxId: string;
   branchId: string;
+  stationId?: string;
   /** Reads the cached bundles. Called per attempt: a pull mid-shift must count. */
   snapshot: () => Promise<OfflineAuthSnapshot | null>;
   /** argon2id verification. Injected so this package needs no native dependency. */
@@ -387,11 +403,10 @@ export interface OfflineAuthOptions {
    * Whether somebody the box has seen in the last 30 days may unlock with the
    * password alone once their token has expired.
    *
-   * **Off by default, and that is the acceptance criterion**: an expired token
-   * is refused with "shift token expired, connect to sign in". Turning it on
-   * trades that for a till that keeps working through a long outage, and the
-   * unlock is then recorded as `offline_sign_in` rather than `offline_token`
-   * so the two are never confused in the record.
+   * This low-level helper requires an explicit opt-in. Both runtime hosts
+   * supply STAFF_OFFLINE_SIGN_IN through current box configuration (OD-6,
+   * default true pending the owner's ruling; explicit false disables it).
+   * Fresh access is recorded as `offline_sign_in`, never `offline_token`.
    */
   allowOfflineSignIn?: boolean;
   offlineSignInDays?: number;
@@ -429,6 +444,7 @@ export const OFFLINE_UNLOCK_REFUSALS = {
    * the wrong fix.
    */
   NO_TOKEN: 'OFFLINE_NO_TOKEN',
+  STALE_DENY_LIST: 'OFFLINE_DENY_LIST_STALE',
 } as const;
 export type OfflineUnlockRefusal =
   | (typeof OFFLINE_UNLOCK_REFUSALS)[keyof typeof OFFLINE_UNLOCK_REFUSALS]
@@ -569,9 +585,9 @@ export class OfflineAuth {
    *
    *  - a token that still verifies, plus the password → `offline_token`. This
    *    is the ordinary path and the one the acceptance criterion names;
-   *  - no usable token, but this box minted one for the account inside the
+   *  - no token or an otherwise valid expired token, and this box minted one inside the
    *    30-day window and `allowOfflineSignIn` is on → `offline_sign_in`, with
-   *    the banner. Off by default, so an expired token is refused.
+   *    the banner. Invalid, foreign or revoked tokens always refuse.
    *
    * The password is checked in BOTH, always. A token is a statement about a
    * shift, not about the person standing at the till.
@@ -613,6 +629,7 @@ export class OfflineAuth {
 
     const now = this.now();
     let claims: StaffTokenClaims | null = null;
+    let expiredClaims: StaffTokenClaims | null = null;
     let tokenRefusal: StaffTokenRefusal | null = null;
 
     if (request.token) {
@@ -620,22 +637,28 @@ export class OfflineAuth {
         keys: snapshot.keys,
         boxId: this.options.boxId,
         branchId: this.options.branchId,
+        stationId: this.options.stationId,
+        accountId: request.accountId,
         deny: snapshot.deny,
         now,
       });
       if (verified.ok) claims = verified.claims;
-      else tokenRefusal = verified.refusal;
+      else {
+        tokenRefusal = verified.refusal;
+        expiredClaims = verified.expiredClaims ?? null;
+      }
     }
 
     /**
      * A REVOKED token is a decision somebody made — a manager ended that
      * shift — and it is never a way into the thirty-day sign-in below, which
-     * exists for a token that merely ran out (offline plan OD-6). Without this
+     * exists for a token that merely ran out (offline plan OD-6). Every other failed
+     * token is also final. Without this
      * a person whose shift had been ended could type their password and be
      * let straight back in as a "fresh" sign-in, which is the deny-list
      * refusing nothing.
      */
-    if (tokenRefusal === STAFF_TOKEN_REFUSALS.REVOKED) {
+    if (tokenRefusal && tokenRefusal !== STAFF_TOKEN_REFUSALS.EXPIRED) {
       return { ok: false, refusal: tokenRefusal, message: refusalMessage(tokenRefusal) };
     }
 
@@ -648,7 +671,7 @@ export class OfflineAuth {
      * which cached account to attack would hand an attacker the pick of the
      * staff list and a fresh throttle bucket for each name.
      */
-    const accountId = claims?.sub ?? request.accountId ?? null;
+    const accountId = claims?.sub ?? expiredClaims?.sub ?? request.accountId ?? null;
     if (!accountId) {
       return {
         ok: false,
@@ -686,6 +709,10 @@ export class OfflineAuth {
       };
     }
 
+    if (record.lastTokenRevoked || (record.lastTokenId && snapshot.deny.revokedTokenIds.includes(record.lastTokenId))) {
+      return { ok: false, refusal: STAFF_TOKEN_REFUSALS.REVOKED, message: refusalMessage(STAFF_TOKEN_REFUSALS.REVOKED) };
+    }
+
     const method: 'offline_token' | 'offline_sign_in' = claims ? 'offline_token' : 'offline_sign_in';
     if (!claims) {
       // No usable token. Either the ticket's expiry message, or — with the
@@ -701,6 +728,11 @@ export class OfflineAuth {
         }
         return { ok: false, refusal: tokenRefusal, message: refusalMessage(tokenRefusal) };
       }
+      const denyAt = Date.parse((snapshot.denyCachedAt === undefined ? snapshot.cachedAt : snapshot.denyCachedAt) ?? '');
+      if (!Number.isFinite(denyAt) || now.getTime() - denyAt > OFFLINE_POLICY.freshSignInDenyListMaxAgeS * 1000) {
+        return { ok: false, refusal: OFFLINE_UNLOCK_REFUSALS.STALE_DENY_LIST,
+          message: 'This counter has not checked who may sign in for over three days — connect it to the internet once, then sign in.' };
+      }
       if (!this.recognises(record, now)) {
         return {
           ok: false,
@@ -708,6 +740,12 @@ export class OfflineAuth {
           message:
             'This till has not seen you in the last 30 days — connect to the internet to sign in.',
         };
+      }
+      // Older caches knew the last issue date but could not tie an ended
+      // shift to its account. They cannot authorize a fresh sign-in.
+      if (!record.lastTokenId || typeof record.lastTokenRevoked !== 'boolean') {
+        return { ok: false, refusal: OFFLINE_UNLOCK_REFUSALS.REVOCATION_UNKNOWN,
+          message: "This counter's staff copy cannot confirm whether this shift ended. Connect to refresh it, then sign in." };
       }
     }
 

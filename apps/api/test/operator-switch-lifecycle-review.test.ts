@@ -25,7 +25,7 @@ async function fixture() {
     otherBranch: newId(), employee: newId(), actor: newId(), otherActor: newId(),
     role: newId(), grant: newId(), box: newId(), station: newId(), live: newId(),
     sibling: newId(), expired: newId(), history: newId(), otherSession: newId(),
-    token: newId(), siblingToken: newId(), expiredToken: newId() };
+    token: newId(), siblingToken: newId(), expiredToken: newId(), ancientToken: newId() };
   await ctx.db.insert(operator).values([
     { id: ids.home, name: 'ZZ TEST 640 lifecycle home' },
     { id: ids.target, name: 'ZZ TEST 640 lifecycle selected' },
@@ -70,8 +70,10 @@ async function fixture() {
     { jti: ids.token, sessionId: ids.live, expiresAt: future },
     { jti: ids.siblingToken, sessionId: ids.sibling, expiresAt: future },
     { jti: ids.expiredToken, sessionId: ids.expired, expiresAt: past },
+    { jti: ids.ancientToken, sessionId: ids.expired, expiresAt: new Date(Date.now() - 31 * 86_400_000) },
   ].map(row => ({ ...row, operatorId: ids.home, branchId: ids.homeBranch, accountId: ids.actor,
-    boxId: ids.box, stationId: ids.station, kid: 'zz-test-640-lifecycle', issuedAt })));
+    boxId: ids.box, stationId: ids.station, kid: 'zz-test-640-lifecycle',
+    issuedAt: row.jti === ids.ancientToken ? new Date(Date.now() - 32 * 86_400_000) : issuedAt })));
   return { ...ids, cookie: `oto_session=${raw}`, cookieHash };
 }
 
@@ -87,7 +89,7 @@ const tokens = () => ctx.db.select({ jti: staffToken.jti, sessionId: staffToken.
   stationId: staffToken.stationId, boxId: staffToken.boxId, issuedAt: staffToken.issuedAt,
   expiresAt: staffToken.expiresAt, revokedAt: staffToken.revokedAt, revokedReason: staffToken.revokedReason,
   revokedByAccountId: staffToken.revokedByAccountId }).from(staffToken)
-  .where(inArray(staffToken.jti, [f.token, f.siblingToken, f.expiredToken])).orderBy(asc(staffToken.jti));
+  .where(inArray(staffToken.jti, [f.token, f.siblingToken, f.expiredToken, f.ancientToken])).orderBy(asc(staffToken.jti));
 const identities = async () => ({
   accounts: await ctx.db.select({ id: account.id, operatorId: account.operatorId, employeeId: account.employeeId,
     status: account.status, mustChangePassword: account.mustChangePassword }).from(account)
@@ -199,9 +201,10 @@ describe('SCRUM-640 Q22 native lifecycle house review', () => {
       ...before.find(row => row.id === id), operatorOverride: null, revokedAt: expect.any(Date), revokedReason: 'ZZ TEST account reset' });
     for (const id of [f.history, f.otherSession]) expect(after.find(row => row.id === id)).toEqual(before.find(row => row.id === id));
     const tokenAfter = await tokens();
-    for (const jti of [f.token, f.siblingToken]) expect(tokenAfter.find(row => row.jti === jti)).toEqual({
+    for (const jti of [f.token, f.siblingToken, f.expiredToken]) expect(tokenAfter.find(row => row.jti === jti)).toEqual({
       ...tokenBefore.find(row => row.jti === jti), revokedAt: expect.any(Date), revokedReason: 'account_revoked', revokedByAccountId: null });
-    expect(tokenAfter.find(row => row.jti === f.expiredToken)).toEqual(tokenBefore.find(row => row.jti === f.expiredToken));
+    // Recent expiry retains OD-6 authority; history outside that window does not.
+    expect(tokenAfter.find(row => row.jti === f.ancientToken)).toEqual(tokenBefore.find(row => row.jti === f.ancientToken));
     expect(await identities()).toEqual(identityBefore); expect(await originalCookieStillBound()).toBe(true);
   });
 

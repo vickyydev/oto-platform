@@ -1,5 +1,6 @@
 import {
   STATION_BRIDGE_BASE,
+  trustedBoxBridgeOrigin,
   StationSessionDocumentSchema,
   type BridgeStatus,
   type BridgeUnlockRequest,
@@ -49,7 +50,8 @@ export function answeredByBox(err: unknown): boolean {
  * box), or a Pi's LAN origin once the platform names one.
  */
 export function setBridgeOrigin(value: string | null): void {
-  const next = value ? value.replace(/\/$/, '') : null;
+  const next = trustedBoxBridgeOrigin(value, import.meta.env.VITE_BOX_BRIDGE_ZONE,
+    import.meta.env.VITE_BOX_BRIDGE_ALLOW_LOOPBACK === 'true');
   if (next !== origin) holdBoxSession(null);
   origin = next;
 }
@@ -113,6 +115,8 @@ async function request<T>(
       // The platform cookie on a virtual box; nothing ambient on a Pi.
       credentials: origin || rest.startsWith('display/') ? 'omit' : 'same-origin',
       cache: 'no-store',
+      // A trusted box must not redirect the password to a different origin.
+      redirect: 'error',
       headers: {
         ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
         ...(bearer ? { authorization: `Bearer ${bearer}` } : {}),
