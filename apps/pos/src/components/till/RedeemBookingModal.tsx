@@ -40,7 +40,8 @@ interface RedeemBookingModalProps {
    * for after checking the signature, or the raw code a scanner on this
    * device read, which the platform checks before anything opens. When set as
    * the dialog opens, it goes straight to that booking's summary instead of
-   * waiting for a typed reference.
+   * waiting for a typed reference. SCRUM-730: the board's Check in for a family
+   * who paid online opens it the same way, with nothing scanned.
    */
   scannedBooking?: ScannedBooking | null;
 }
@@ -63,6 +64,32 @@ function paymentMethodLabel(pm: string): string {
 function paymentMethodIcon(pm: string) {
   if (pm === 'promptpay') return <Smartphone className="w-4 h-4" />;
   return <CreditCard className="w-4 h-4" />;
+}
+
+/** One sentence a person on reception can act on, for each way the platform can fail. */
+function readFailure(err: unknown, subject: string): string {
+  if (err instanceof NetworkError) {
+    return `No connection to the platform, so ${subject} cannot be checked. Nothing has been issued.`;
+  }
+  if (isMissingRoute(err)) {
+    return `This deployment has no booking lookup yet (SCRUM-234), so ${subject} cannot be checked here.`;
+  }
+  if (err instanceof ApiError) return err.message;
+  return `${subject.charAt(0).toUpperCase()}${subject.slice(1)} could not be checked.`;
+}
+
+/**
+ * Why the booking this dialog was opened on cannot be shown. A scan opens it, and
+ * so does the board's Check in (SCRUM-730) with nothing scanned, so the words name
+ * the booking and never a QR. The dialog stays on the lookup, where staff can still
+ * type the reference.
+ */
+export function openedBookingFailure(err: unknown): string {
+  if (err instanceof ApiError && err.code === BOOKING_QR_SIGNATURE_INVALID) return err.message;
+  if (err instanceof ApiError && err.status === 404 && !isMissingRoute(err)) {
+    return 'This booking could not be found.';
+  }
+  return readFailure(err, 'this booking');
 }
 
 /**
@@ -103,18 +130,6 @@ export function RedeemBookingModal({
   const [lookingUp, setLookingUp] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  /** One sentence a person on reception can act on, for each way the platform can fail. */
-  const readFailure = useCallback((err: unknown, subject: string): string => {
-    if (err instanceof NetworkError) {
-      return `No connection to the platform, so ${subject} cannot be checked. Nothing has been issued.`;
-    }
-    if (isMissingRoute(err)) {
-      return `This deployment has no booking lookup yet (SCRUM-234), so ${subject} cannot be checked here.`;
-    }
-    if (err instanceof ApiError) return err.message;
-    return `${subject} could not be checked.`;
-  }, []);
 
   const show = useCallback((p: PlatformBooking) => {
     const mapped = toPosBooking(p);
@@ -166,7 +181,7 @@ export function RedeemBookingModal({
     return () => {
       live = false;
     };
-  }, [open, branchId, readFailure]);
+  }, [open, branchId]);
 
   async function lookup(ref: string) {
     const trimmed = ref.trim().toUpperCase();
@@ -196,7 +211,7 @@ export function RedeemBookingModal({
     }
   }
 
-  // A scanned QR opened this dialog: go straight to that booking.
+  // A scanned QR or the board's Check in opened this dialog: go straight to that booking.
   useEffect(() => {
     if (!open || !scannedBooking) return;
     let live = true;
@@ -210,13 +225,7 @@ export function RedeemBookingModal({
       })
       .catch((err: unknown) => {
         if (!live) return;
-        if (err instanceof ApiError && err.code === BOOKING_QR_SIGNATURE_INVALID) {
-          setError(err.message);
-        } else if (err instanceof ApiError && err.status === 404 && !isMissingRoute(err)) {
-          setError('No booking found for the scanned QR.');
-        } else {
-          setError(readFailure(err, 'the scanned booking'));
-        }
+        setError(openedBookingFailure(err));
       })
       .finally(() => {
         if (live) setLookingUp(false);
@@ -224,7 +233,7 @@ export function RedeemBookingModal({
     return () => {
       live = false;
     };
-  }, [open, scannedBooking, show, readFailure]);
+  }, [open, scannedBooking, show]);
 
   function handleLookup() {
     void lookup(refInput);

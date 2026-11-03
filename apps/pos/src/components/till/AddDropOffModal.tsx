@@ -19,7 +19,7 @@ import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import { Baby, AlertTriangle, UserPlus, Phone, X, CheckCircle2, HandHeart, UserCheck } from 'lucide-react';
 
 /** One waiting registration as the picker lists it (prototype `RegistrationGroup`). */
-interface RegistrationGroup {
+export interface RegistrationGroup {
   registrationId: string;
   parentName: string;
   phone: string;
@@ -40,6 +40,89 @@ interface AddDropOffModalProps {
   /** Attach the chosen registered children to the sale as drop-off lines. The
    *  optional service forces Drop-off vs Nanny for a just-added sibling. */
   onAttach: (children: CheckIn[], service?: DropOffServiceType) => void;
+}
+
+/**
+ * One family on the picker: who they are, the button that adds them to the sale,
+ * and each waiting child. SCRUM-730 — a child paid for online stays listed, so a
+ * sibling can still join the family, and is never added to a sale.
+ */
+export function WaitingFamily({
+  group,
+  attached,
+  onAddToSale,
+}: {
+  group: RegistrationGroup;
+  attached: ReadonlySet<string>;
+  onAddToSale: (children: CheckIn[]) => void;
+}) {
+  const chargeable = group.children.filter((c) => !c.paidOnline);
+  const fresh = chargeable.filter((c) => !attached.has(c.id));
+  const allPaidOnline = group.children.length > 0 && chargeable.length === 0;
+  return (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="font-bold truncate">
+            {group.parentName || 'Booking'}'s booking
+          </div>
+          {group.phone && (
+            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+              <Phone className="w-3 h-3" />
+              {group.phone}
+            </div>
+          )}
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          disabled={fresh.length === 0}
+          onClick={() => {
+            if (fresh.length > 0) onAddToSale(fresh);
+          }}
+          className="shrink-0"
+        >
+          {allPaidOnline ? 'Paid online' : fresh.length === 0 ? 'Added' : 'Add to sale'}
+        </Button>
+      </div>
+
+      <div className="space-y-1.5">
+        {group.children.map((c) => {
+          const isAttached = attached.has(c.id);
+          return (
+            <div
+              key={c.id}
+              className="flex items-center justify-between gap-3 rounded-lg border bg-card/50 px-3 py-2"
+            >
+              <span className="flex items-center gap-2 min-w-0">
+                {isAttached ? (
+                  <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                ) : (
+                  <Baby className="w-4 h-4 text-muted-foreground shrink-0" />
+                )}
+                <span className="truncate">
+                  {c.childName}
+                  <span className="text-muted-foreground"> · {c.childAge}y</span>
+                </span>
+                {c.allergiesMedical && (
+                  <span className="inline-flex items-center gap-1 text-xs text-amber-300 shrink-0">
+                    <AlertTriangle className="w-3 h-3" />
+                    {c.allergiesMedical}
+                  </span>
+                )}
+              </span>
+              {isAttached && (
+                <span className="text-xs text-muted-foreground shrink-0">In sale</span>
+              )}
+              {c.paidOnline && (
+                <span className="text-xs text-emerald-400 shrink-0">Paid online</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
 }
 
 /**
@@ -177,12 +260,6 @@ export function AddDropOffModal({
     }
   };
 
-  const attachGroup = (group: RegistrationGroup) => {
-    const fresh = group.children.filter((c) => !c.paidOnline && !attached.has(c.id));
-    if (fresh.length === 0) return;
-    onAttach(fresh);
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
@@ -206,165 +283,102 @@ export function AddDropOffModal({
         ) : (
           <ScrollArea className="max-h-[60vh] -mx-2 px-2">
             <div className="space-y-3">
-              {groups.map((group) => {
-                // SCRUM-730 — a child paid for online stays listed, so a sibling can
-                // still join the family, and is never added to a sale.
-                const chargeable = group.children.filter((c) => !c.paidOnline);
-                const allAttached = chargeable.every((c) => attached.has(c.id));
-                return (
-                  <Card key={group.registrationId} className="p-4 space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="font-bold truncate">
-                          {group.parentName || 'Booking'}'s booking
-                        </div>
-                        {group.phone && (
-                          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                            <Phone className="w-3 h-3" />
-                            {group.phone}
-                          </div>
-                        )}
-                      </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        disabled={allAttached}
-                        onClick={() => attachGroup(group)}
-                        className="shrink-0"
-                      >
-                        {chargeable.length === 0 ? 'Paid online' : allAttached ? 'Added' : 'Add to sale'}
-                      </Button>
-                    </div>
+              {groups.map((group) => (
+                <Card key={group.registrationId} className="p-4 space-y-3">
+                  <WaitingFamily group={group} attached={attached} onAddToSale={onAttach} />
 
-                    <div className="space-y-1.5">
-                      {group.children.map((c) => {
-                        const isAttached = attached.has(c.id);
-                        return (
-                          <div
-                            key={c.id}
-                            className="flex items-center justify-between gap-3 rounded-lg border bg-card/50 px-3 py-2"
-                          >
-                            <span className="flex items-center gap-2 min-w-0">
-                              {isAttached ? (
-                                <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
-                              ) : (
-                                <Baby className="w-4 h-4 text-muted-foreground shrink-0" />
-                              )}
-                              <span className="truncate">
-                                {c.childName}
-                                <span className="text-muted-foreground"> · {c.childAge}y</span>
-                              </span>
-                              {c.allergiesMedical && (
-                                <span className="inline-flex items-center gap-1 text-xs text-amber-300 shrink-0">
-                                  <AlertTriangle className="w-3 h-3" />
-                                  {c.allergiesMedical}
-                                </span>
-                              )}
-                            </span>
-                            {isAttached && (
-                              <span className="text-xs text-muted-foreground shrink-0">In sale</span>
-                            )}
-                            {c.paidOnline && (
-                              <span className="text-xs text-emerald-400 shrink-0">Paid online</span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {addingFor === group.registrationId ? (
-                      <div className="space-y-3 rounded-lg border border-primary/40 p-3">
-                        {/* A drop-off child is always a named individual; pick its
-                            service (plain drop-off fee or nanny). Anonymous
-                            normal-ticket kids/adults are added via the ticket grid. */}
-                        <div className="grid grid-cols-2 gap-2">
-                          {(
-                            [
-                              { k: 'drop_off' as AddKind, label: 'Drop-Off', icon: HandHeart },
-                              { k: 'nanny' as AddKind, label: 'Nanny', icon: UserCheck },
-                            ]
-                          ).map(({ k, label, icon: Icon }) => (
-                            <Button
-                              key={k}
-                              type="button"
-                              size="sm"
-                              variant={kind === k ? 'default' : 'outline'}
-                              className="h-12 flex-col gap-0.5"
-                              onClick={() => setKind(k)}
-                            >
-                              <Icon className="w-4 h-4" />
-                              <span className="text-xs">{label}</span>
-                            </Button>
-                          ))}
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                          <Input
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="Child name"
-                            className="h-10 sm:col-span-2"
-                          />
-                          <ChildDobPicker
-                            dateOfBirth={dateOfBirth}
-                            age={age.trim() ? Number(age) : null}
-                            childName={name}
-                            onChange={({ dateOfBirth: dob, age: a }) => {
-                              setDateOfBirth(dob);
-                              setAge(String(a));
-                            }}
+                  {addingFor === group.registrationId ? (
+                    <div className="space-y-3 rounded-lg border border-primary/40 p-3">
+                      {/* A drop-off child is always a named individual; pick its
+                          service (plain drop-off fee or nanny). Anonymous
+                          normal-ticket kids/adults are added via the ticket grid. */}
+                      <div className="grid grid-cols-2 gap-2">
+                        {(
+                          [
+                            { k: 'drop_off' as AddKind, label: 'Drop-Off', icon: HandHeart },
+                            { k: 'nanny' as AddKind, label: 'Nanny', icon: UserCheck },
+                          ]
+                        ).map(({ k, label, icon: Icon }) => (
+                          <Button
+                            key={k}
+                            type="button"
                             size="sm"
-                          />
-                        </div>
+                            variant={kind === k ? 'default' : 'outline'}
+                            className="h-12 flex-col gap-0.5"
+                            onClick={() => setKind(k)}
+                          >
+                            <Icon className="w-4 h-4" />
+                            <span className="text-xs">{label}</span>
+                          </Button>
+                        ))}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <Input
-                          value={details}
-                          onChange={(e) => setDetails(e.target.value)}
-                          placeholder="Allergies / medical (optional)"
-                          className="h-10"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="Child name"
+                          className="h-10 sm:col-span-2"
                         />
-
-                        <div className="flex gap-2">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="gap-1.5"
-                            onClick={() => {
-                              setAddingFor(null);
-                              resetForm();
-                            }}
-                          >
-                            <X className="w-4 h-4" />
-                            Cancel
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            disabled={!name.trim() || !age.trim() || saving}
-                            onClick={() => void handleAddSibling(group.registrationId)}
-                          >
-                            Add &amp; attach
-                          </Button>
-                        </div>
+                        <ChildDobPicker
+                          dateOfBirth={dateOfBirth}
+                          age={age.trim() ? Number(age) : null}
+                          childName={name}
+                          onChange={({ dateOfBirth: dob, age: a }) => {
+                            setDateOfBirth(dob);
+                            setAge(String(a));
+                          }}
+                          size="sm"
+                        />
                       </div>
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="gap-1.5"
-                        onClick={() => {
-                          setAddingFor(group.registrationId);
-                          resetForm();
-                        }}
-                      >
-                        <UserPlus className="w-4 h-4" />
-                        Add sibling
-                      </Button>
-                    )}
-                  </Card>
-                );
-              })}
+                      <Input
+                        value={details}
+                        onChange={(e) => setDetails(e.target.value)}
+                        placeholder="Allergies / medical (optional)"
+                        className="h-10"
+                      />
+
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={() => {
+                            setAddingFor(null);
+                            resetForm();
+                          }}
+                        >
+                          <X className="w-4 h-4" />
+                          Cancel
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={!name.trim() || !age.trim() || saving}
+                          onClick={() => void handleAddSibling(group.registrationId)}
+                        >
+                          Add &amp; attach
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => {
+                        setAddingFor(group.registrationId);
+                        resetForm();
+                      }}
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      Add sibling
+                    </Button>
+                  )}
+                </Card>
+              ))}
             </div>
           </ScrollArea>
         )}

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import React, { createElement } from 'react';
+import React, { createElement, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -9,7 +9,12 @@ import {
   type ApiCheckin,
   type ApiRegistration,
 } from '@/api/checkin';
+import { BOOKING_QR_SIGNATURE_INVALID } from '@/api/bookings';
+import { ApiError, NetworkError } from '@/api/client';
 import { FamilyCheckInCard } from '@/components/dropoff/FamilyCheckInCard';
+import { WaitingFamily, type RegistrationGroup } from '@/components/till/AddDropOffModal';
+import { openedBookingFailure } from '@/components/till/RedeemBookingModal';
+import { Button } from '@/components/ui/button';
 import { familyCheckInActions } from '@/lib/dropoff';
 import {
   setBookingRedeemHandoff,
@@ -210,9 +215,101 @@ describe('s730 — the hand-over', () => {
       expect(src).toContain('onRedeemBooking={handleRedeemBooking}');
     },
   );
+});
 
-  it('the Add drop-off picker never adds a child paid for online to a sale', () => {
-    const src = source('../src/components/till/AddDropOffModal.tsx');
-    expect(src).toContain('group.children.filter((c) => !c.paidOnline && !attached.has(c.id))');
+describe('s730 — the Add drop-off picker', () => {
+  const paid = shape(stay('c-paid', { paidOnline: PAID }));
+  const sibling = shape(stay('c-sibling', { childName: 'Nok', allergies: null }));
+
+  type PickerButton = ReactElement<{ disabled?: boolean; onClick?: () => void }>;
+  const buttonIn = (node: ReactNode): PickerButton | null => {
+    if (Array.isArray(node)) {
+      for (const item of node as ReactNode[]) {
+        const found = buttonIn(item);
+        if (found) return found;
+      }
+      return null;
+    }
+    if (!isValidElement(node)) return null;
+    if (node.type === Button) return node as PickerButton;
+    return buttonIn((node.props as { children?: ReactNode }).children);
+  };
+
+  /** The family's row, rendered as a person reads it, and its one button pressed through its own handler. */
+  const picker = (children: CheckIn[], attached: string[] = []) => {
+    const added = vi.fn<(children: CheckIn[]) => void>();
+    const group: RegistrationGroup = {
+      registrationId: REG,
+      parentName: 'Khun Mali',
+      phone: '+66812345678',
+      children,
+    };
+    const props = { group, attached: new Set(attached), onAddToSale: added };
+    return {
+      html: renderToStaticMarkup(createElement(WaitingFamily, props)),
+      press: () => buttonIn(WaitingFamily(props))?.props.onClick?.(),
+      added,
+    };
+  };
+  const enabled = (label: string) => new RegExp(`<button(?![^>]* disabled="")[^>]*>${label}</button>`);
+  const disabled = (label: string) => new RegExp(`<button[^>]* disabled=""[^>]*>${label}</button>`);
+
+  it('a family who all paid online reads Paid online, and its button adds nobody', () => {
+    const { html, press, added } = picker([paid]);
+    expect(html).toMatch(disabled('Paid online'));
+    expect(html.match(/Paid online/g)).toHaveLength(2);
+    press();
+    expect(added).not.toHaveBeenCalled();
+  });
+
+  it('a sibling beside a paid child stays addable, and the press adds the sibling alone', () => {
+    const { html, press, added } = picker([paid, sibling]);
+    expect(html).toMatch(enabled('Add to sale'));
+    expect(html.match(/Paid online/g)).toHaveLength(1);
+    expect(html.indexOf('Paid online')).toBeLessThan(html.indexOf('Nok'));
+    press();
+    expect(added).toHaveBeenCalledTimes(1);
+    expect(added).toHaveBeenCalledWith([sibling]);
+  });
+
+  it('once the sibling is on the sale there is nothing left to add', () => {
+    const { html, press, added } = picker([paid, sibling], [sibling.id]);
+    expect(html).toMatch(disabled('Added'));
+    expect(html).toContain('In sale');
+    press();
+    expect(added).not.toHaveBeenCalled();
+  });
+
+  it('a family with nothing paid online reads as it did', () => {
+    const { html, press, added } = picker([sibling]);
+    expect(html).toMatch(enabled('Add to sale'));
+    expect(html).not.toContain('Paid online');
+    press();
+    expect(added).toHaveBeenCalledWith([sibling]);
+  });
+});
+
+describe('s730 — the redeem dialog, opened with nothing scanned', () => {
+  it.each([
+    ['a booking this till cannot find', new ApiError(404, 'BOOKING_NOT_FOUND', 'Not here'), 'This booking could not be found.'],
+    [
+      'no connection',
+      new NetworkError(),
+      'No connection to the platform, so this booking cannot be checked. Nothing has been issued.',
+    ],
+    [
+      'a deployment with no such route',
+      new ApiError(404, 'ROUTE_NOT_FOUND', 'Not here'),
+      'This deployment has no booking lookup yet (SCRUM-234), so this booking cannot be checked here.',
+    ],
+    ['anything else', new Error('boom'), 'This booking could not be checked.'],
+  ])('%s is said without naming a scan', (_case, err, words) => {
+    expect(openedBookingFailure(err)).toBe(words);
+    expect(words).not.toMatch(/scan|QR/i);
+  });
+
+  it('a QR that fails its signature check still says what the platform said', () => {
+    const refused = new ApiError(400, BOOKING_QR_SIGNATURE_INVALID, 'That QR did not come from OTO.');
+    expect(openedBookingFailure(refused)).toBe('That QR did not come from OTO.');
   });
 });
