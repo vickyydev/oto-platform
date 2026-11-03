@@ -65,7 +65,7 @@ beforeAll(async () => {
     if (url.endsWith('/box/v1/config')) {
       configReads += 1;
       if (configFault === 'network') throw new Error('ZZ TEST unavailable configuration connection');
-      if (configFault === '503') return { status: 503, json: async () => null, text: async () => '' };
+      if (configFault === '503') return { status: 503, json: async () => null, text: async () => '', header: () => null };
     }
     const res = await ctx.app.inject({
       method: init.method as 'GET', url: url.replace(/^https?:\/\/[^/]+/, ''),
