@@ -130,15 +130,14 @@ export type StaffTokenClaims = z.infer<typeof StaffTokenClaimsSchema>;
  * it. Writing it down here is the point: two sides now parse the same
  * definition instead of agreeing by memory.
  *
- * **`revokedTokenIds` is bounded by expiry, not by history.** It carries the
- * jti of every token that was revoked and has not yet expired — past its `exp`
- * a box refuses it on the timestamp alone, so keeping it on the list would make
- * the list grow for ever to say something the token already says about itself.
+ * Revoked tokens remain while live or inside the thirty-day OD-6 recognition
+ * window. Expiry cannot erase a manager's decision when an expired token may
+ * otherwise qualify for a fresh sign-in.
  */
 export const StaffDenyListSchema = z.object({
   /** Accounts that are no longer `active`. Refused offline from the next pull. */
   revokedAccountIds: z.array(z.string().uuid()),
-  /** Individually revoked tokens that have not yet expired. */
+  /** Individually revoked tokens still live or inside the OD-6 recognition window. */
   revokedTokenIds: z.array(z.string().uuid()),
 });
 export type StaffDenyList = z.infer<typeof StaffDenyListSchema>;
@@ -158,7 +157,7 @@ export type StaffTokenRevokeReason = (typeof STAFF_TOKEN_REVOKE_REASONS)[number]
 
 /** Why an offline unlock or sign-in was refused. One code per distinguishable cause. */
 export const STAFF_TOKEN_REFUSALS = {
-  /** Past `exp`. The till says "shift token expired, connect to sign in". */
+  /** Past `exp`. Only otherwise valid expiry may fall through to OD-6 fresh sign-in. */
   EXPIRED: 'STAFF_TOKEN_EXPIRED',
   /** Signature did not verify against any known public key. */
   INVALID: 'STAFF_TOKEN_INVALID',

@@ -80,7 +80,7 @@ let heldToken = '';
 let heldJti = '';
 
 beforeAll(async () => {
-  ctx = await createTestContext({ env: { STAFF_TOKEN_PRIVATE_KEY: PRIVATE_KEY } });
+  ctx = await createTestContext({ env: { STAFF_TOKEN_PRIVATE_KEY: PRIVATE_KEY, STAFF_OFFLINE_SIGN_IN: 'false' } });
   receptionCookie = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
   adminCookie = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
 

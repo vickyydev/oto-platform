@@ -13218,7 +13218,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Unlock a locked till from the box’s cached copy: the shift token is verified against the box’s cached signing key and deny-list, and the password against the box’s cached hash — no account row decides anything. This route still needs to be reachable, so it serves a till whose box is offline, not one that cannot reach the api at all. Recorded as session.unlock with auth_method=offline_token. Refuses an expired token with "shift token expired, connect to sign in"; refuses when the box holds no deny-list and so cannot check whether the shift was ended; five wrong passwords share the online cooldown. */
+        /** @description Unlock from the cached staff and revocation data through the legacy cloud route, which still requires API access. The local box bridge uses the same verifier independently. A valid token and password record offline_token. With STAFF_OFFLINE_SIGN_IN enabled, no token or otherwise valid expiry may record offline_sign_in after recent-recognition and complete, fresh revocation checks. Forged, foreign and ended-shift tokens refuse. Five wrong passwords share the online cooldown. */
         post: {
             parameters: {
                 query?: never;

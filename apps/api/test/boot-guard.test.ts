@@ -1,3 +1,4 @@
+import { generateKeyPairSync } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { assertProductionSafe, type Env } from '../src/env';
 
@@ -13,6 +14,7 @@ const productionEnv = (overrides: Partial<Env> = {}): Env =>
     DEPLOY_ENV: 'production',
     DATABASE_URL: 'postgres://oto_app:s3cret@dpg-xyz.singapore-postgres.render.com:5432/oto',
     COOKIE_SECURE: true,
+    STAFF_TOKEN_PRIVATE_KEY: generateKeyPairSync('ed25519').privateKey.export({ type: 'pkcs8', format: 'pem' }).toString(),
     MINIO_ENDPOINT: 'abc123.r2.cloudflarestorage.com',
     MINIO_PORT: 443,
     MINIO_USE_SSL: true,
@@ -51,6 +53,10 @@ describe('production boot guard (S2-01b)', () => {
         productionEnv({ PGW_PROVIDER: '2c2p', PGW_MERCHANT_ID: 'M1', PGW_SECRET_KEY: 'k'.repeat(32) }),
       ),
     ).not.toThrow();
+  });
+
+  it('refuses production without its staff signing key', () => {
+    expect(() => assertProductionSafe(productionEnv({ STAFF_TOKEN_PRIVATE_KEY: '' }))).toThrow(/STAFF_TOKEN_PRIVATE_KEY is not set/);
   });
 
   it('refuses a database on localhost', () => {

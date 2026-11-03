@@ -50,7 +50,7 @@ function claims(over: Partial<StaffTokenClaims> = {}): StaffTokenClaims {
   const iat = Math.floor(NOW.getTime() / 1000);
   return {
     v: 1,
-    jti: '018f0000-0000-7000-8000-0000000000t1',
+    jti: '018f0000-0000-7000-8000-0000000000f1',
     sub: ACCOUNT,
     aud: BRANCH_ID,
     sid: SESSION,
@@ -110,7 +110,7 @@ test('a token from the future is refused, but a Pi whose clock is a minute behin
 
   const far = Math.floor(NOW.getTime() / 1000) + 3600;
   const outside = verifyStaffToken(token({ iat: far, exp: far + 3600 }), base);
-  assert.equal(outside.ok === false && outside.refusal, STAFF_TOKEN_REFUSALS.EXPIRED);
+  assert.equal(outside.ok === false && outside.refusal, STAFF_TOKEN_REFUSALS.INVALID);
 });
 
 test('changed claims do not verify', () => {
@@ -142,7 +142,7 @@ test('a rotation keeps the old tokens working while both keys are shipped', () =
   const next = keypair();
   const NEW_KID = 'aaaa111122223333';
   const older = token();
-  const newer = encodeStaffToken(claims({ jti: '018f0000-0000-7000-8000-0000000000t2' }), {
+  const newer = encodeStaffToken(claims({ jti: '018f0000-0000-7000-8000-0000000000f2' }), {
     kid: NEW_KID,
     privateKeyPem: next.privateKeyPem,
   });
@@ -193,13 +193,13 @@ test('a box that cannot check revocation refuses, and says which', () => {
   );
 });
 
-test('an expired token is still named expired on a box with no deny-list', () => {
+test('an expired token cannot qualify for OD-6 without a deny-list', () => {
   // Order matters for the message the till shows: the cheaper, more useful
   // refusal comes first, and "connect to sign in" is the fix for both.
   const iat = Math.floor(NOW.getTime() / 1000) - 20 * 3600;
   const { deny: _dropped, ...withoutList } = base;
   const result = verifyStaffToken(token({ iat, exp: iat + 16 * 3600 }), withoutList);
-  assert.equal(result.ok === false && result.refusal, STAFF_TOKEN_REFUSALS.EXPIRED);
+  assert.equal(result.ok === false && result.refusal, STAFF_TOKEN_REFUSALS.REVOCATION_UNKNOWN);
 });
 
 test('a token from a newer platform is refused by name', () => {
@@ -239,6 +239,8 @@ function snapshot(over: Partial<OfflineAuthSnapshot> = {}): OfflineAuthSnapshot 
         status: 'active',
         mustChangePassword: false,
         lastTokenAt: NOW.toISOString(),
+        lastTokenId: claims().jti,
+        lastTokenRevoked: false,
       },
     ],
     deny: { revokedAccountIds: [], revokedTokenIds: [] },
@@ -390,9 +392,9 @@ test('a revoked token is never a way into the thirty-day sign-in (offline plan O
   );
   const refused = await guard.unlock({ token: token(), password: 'correct-horse', accountId: ACCOUNT });
   assert.equal(refused.ok === false && refused.refusal, STAFF_TOKEN_REFUSALS.REVOKED);
-  // With no token at all the same person is still the sign-in path's to judge.
+  // Omitting the token cannot reopen the same ended shift.
   const fresh = await guard.unlock({ password: 'correct-horse', accountId: ACCOUNT });
-  assert.equal(fresh.ok && fresh.method, 'offline_sign_in');
+  assert.equal(fresh.ok === false && fresh.refusal, STAFF_TOKEN_REFUSALS.REVOKED);
 });
 
 test('and somebody the box has not seen for thirty-one days does not', async () => {

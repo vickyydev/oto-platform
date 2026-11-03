@@ -45,6 +45,10 @@
 #                         Requires root-only /etc/caddy/env; see
 #                         BOX_BRIDGE_BENCH.md. This option has not yet been run
 #                         on a real Pi. Without it no bridge setting changes.
+#   --bridge-origins LIST  comma-separated HTTPS till origins (no staging default)
+#   --bridge-caddy-url URL reviewed custom Caddy binary for this architecture
+#   --bridge-caddy-version vX.Y.Z  required exact version of that artifact
+#   --bridge-caddy-sha256 HASH  reviewed SHA-256, checked before execution
 #   --printer-direct      the receipt printer plugs by network cable straight into
 #                         the Pi's Ethernet socket, no router between them: gives
 #                         eth0 a fixed address for it (192.168.192.10), runs a
@@ -109,6 +113,10 @@ MIRROR_UUID=""
 MIRROR_MOUNT="/mnt/oto-mirror"
 MIRROR_DIR="$MIRROR_MOUNT/box"
 BRIDGE_HOST=""
+BRIDGE_ORIGINS=""
+BRIDGE_CADDY_URL=""
+BRIDGE_CADDY_VERSION=""
+BRIDGE_CADDY_SHA256=""
 
 say() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 warn() { printf '\033[33mwarning:\033[0m %s\n' "$*" >&2; }
@@ -131,6 +139,10 @@ while [ $# -gt 0 ]; do
     --tailscale-hostname) TS_HOSTNAME="${2:?--tailscale-hostname needs a name}"; shift 2 ;;
     --mirror-uuid) MIRROR_UUID="${2:?--mirror-uuid needs the UUID of the drive, from sudo blkid}"; shift 2 ;;
     --bridge-host) BRIDGE_HOST="${2:?--bridge-host needs a DNS hostname}"; shift 2 ;;
+    --bridge-origins) BRIDGE_ORIGINS="${2:?--bridge-origins needs HTTPS origins}"; shift 2 ;;
+    --bridge-caddy-url) BRIDGE_CADDY_URL="${2:?--bridge-caddy-url needs a reviewed artifact URL}"; shift 2 ;;
+    --bridge-caddy-version) BRIDGE_CADDY_VERSION="${2:?--bridge-caddy-version needs vX.Y.Z}"; shift 2 ;;
+    --bridge-caddy-sha256) BRIDGE_CADDY_SHA256="${2:?--bridge-caddy-sha256 needs the reviewed SHA-256}"; shift 2 ;;
     -h|--help) sed -n '2,/^$/p' "$0"; exit 0 ;;
     *.tgz|*.tar.gz) TARBALL="$1"; shift ;;
     *) die "unknown option: $1" ;;

@@ -1,3 +1,4 @@
+import { readBoxBridgeOrigin } from '../lib/box-bridge-origin';
 import { z } from 'zod';
 import {
   BOX_COMMAND_KINDS,
@@ -128,7 +129,7 @@ const StationDeviceViewSchema = z.object({
  */
 const RoutingSchema = z.record(z.string(), z.unknown());
 
-const StationSchema = z.object({
+const StationBaseSchema = z.object({
   ready: z.boolean(),
   reasons: z.array(z.string()),
   id: z.string().uuid(),
@@ -199,7 +200,7 @@ const StationWriteSchema = z.object({
   offlineWalletCapSatang: z.number().int().min(0).nullable().optional(),
 });
 
-const BoxSchema = z.object({
+const BoxBaseSchema = z.object({
   id: z.string().uuid(),
   branchId: z.string().uuid(),
   name: z.string(),
@@ -325,6 +326,10 @@ const codeExpiry = z.string().optional();
 const ACTION_ID = /^[A-Za-z0-9._-]{8,64}$/;
 
 export async function fleetRoutes(app: App): Promise<void> {
+  // A stored idempotency answer may outlive a zone change. Recheck at serialization too.
+  const bridgeOrigin = z.string().nullable().default(null).transform(value => readBoxBridgeOrigin(value, app.env));
+  const StationSchema = StationBaseSchema.extend({ bridgeOrigin });
+  const BoxSchema = BoxBaseSchema.extend({ bridgeOrigin });
   // A replay may predate these fields, or its setup may have changed since.
   // Keep the stored write result and compute only today's readiness afresh.
   app.addHook('preSerialization', async (req, reply, payload) => {
@@ -440,7 +445,7 @@ export async function fleetRoutes(app: App): Promise<void> {
           operatorId: auth.operatorId,
           branchId: req.params.branchId,
           includeArchived: req.query.includeArchived,
-        }),
+        }, app.env),
       };
     },
   );
@@ -467,7 +472,7 @@ export async function fleetRoutes(app: App): Promise<void> {
     async (req, reply) => {
       const auth = req.requireAuth();
       await loadBranchForOperator(app.db, auth.operatorId, req.params.branchId);
-      const result = await createStation(app.db, opCtx(req), auth, req.params.branchId, req.body);
+      const result = await createStation(app.db, opCtx(req), auth, req.params.branchId, req.body, app.env);
       if (wasReplay(result)) reply.header(REPLAY_HEADER, 'true');
       return result;
     },
@@ -490,7 +495,7 @@ export async function fleetRoutes(app: App): Promise<void> {
       // than "not allowed" — a refusal must not confirm what exists.
       const row = await loadStation(app.db, auth.operatorId, req.params.id);
       await req.requirePermission('admin:station:read', { branchId: row.branchId });
-      return { station: await getStationView(app.db, row) };
+      return { station: await getStationView(app.db, row, app.env) };
     },
   );
 
@@ -510,7 +515,7 @@ export async function fleetRoutes(app: App): Promise<void> {
       const auth = req.requireAuth();
       const row = await loadStation(app.db, auth.operatorId, req.params.id);
       await req.requirePermission('admin:station:update', { branchId: row.branchId });
-      return updateStation(app.db, opCtx(req), auth, row, req.body);
+      return updateStation(app.db, opCtx(req), auth, row, req.body, app.env);
     },
   );
 
@@ -586,7 +591,7 @@ export async function fleetRoutes(app: App): Promise<void> {
           operatorId: auth.operatorId,
           branchId: req.params.branchId,
           includeArchived: req.query.includeArchived,
-        }),
+        }, app.env),
       };
     },
   );
