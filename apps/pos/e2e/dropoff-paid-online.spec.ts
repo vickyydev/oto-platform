@@ -36,7 +36,7 @@ async function shot(page: Page, name: string): Promise<void> {
   if (!SHOTS) return;
   await mkdir(SHOTS, { recursive: true });
   // A dialog still fading is not what the person at the counter reads.
-  await page.evaluate(() => Promise.allSettled(document.getAnimations().map((a) => a.finished)));
+  await page.waitForTimeout(500);
   await page.screenshot({ path: resolve(SHOTS, `${name}.png`) });
 }
 
@@ -141,4 +141,34 @@ test('Check in on a paid online nanny family opens the booking too, and is not r
   await expect(dialog.getByText(booking.reference)).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText(/has not been paid for yet/)).toHaveCount(0);
   await shot(page, '06-nanny-check-in-opens-the-booking');
+});
+
+test.describe('on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('Check In on a paid online family opens the booking on the phone till', async ({ page, request }) => {
+    requireFixture();
+    const parent = 'ZZ TEST Khun Fon';
+    const booking = await paidBooking(request, parent, { childName: 'ZZ TEST Mint', ageYears: 6 });
+
+    await page.goto('/');
+    await page.locator('input[inputmode="tel"], input[type="tel"]').first().fill(PHONE);
+    await page.locator('input[type="password"]').first().fill(PASSWORD);
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+    const picker = page.getByRole('heading', { name: 'Which station are you on?' });
+    if (await picker.waitFor({ state: 'visible', timeout: 15_000 }).then(() => true).catch(() => false)) {
+      await page.getByRole('button', { name: /Reception Till 1/ }).first().click();
+    }
+
+    await page.getByRole('link', { name: 'Check-in' }).click();
+    await page.getByRole('button', { name: new RegExp(parent) }).click();
+    await expect(page.getByText('Booked & paid · no payment needed')).toBeVisible({ timeout: 20_000 });
+    await shot(page, '07-phone-family-booked-and-paid');
+
+    await page.getByRole('button', { name: 'Check In', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByText(booking.reference)).toBeVisible({ timeout: 20_000 });
+    await expect(dialog.getByRole('button', { name: 'Confirm & Issue' })).toBeVisible();
+    await shot(page, '08-phone-check-in-opens-the-booking');
+  });
 });
