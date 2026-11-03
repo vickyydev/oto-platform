@@ -3016,7 +3016,6 @@ export default function Till() {
     // before anything more is collected, as a lost-reply retry reads it.
     ...(resumed ? { resumeSaleId: resumed.saleId } : {}),
     // SCRUM-732 — a pass left behind brings its door with it: a child waits on this sale.
-    ...(resumed?.eventPass ? { reviewGatewayQr: true } : {}),
     prepareSale: () => preparePaymentSale(paymentEpoch, paymentScope),
     finaliseSale: saleWriter.finalise,
     onComplete: completeSale,
