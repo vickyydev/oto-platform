@@ -62,6 +62,14 @@ vi.mock('@/auth/OperatorContext', () => ({
   useOperator: () => ({ operator: { id: 'acc-som', name: 'Som (Reception)' }, ...operatorState }),
 }));
 vi.mock('@/lib/customerDisplayPref', () => ({ useCustomerDisplayPref: () => [true, () => undefined] }));
+// The customer's QR screen reads the language its display is set to (SCRUM-729). These
+// tests call that screen as a plain function, outside React, so it reads the display's
+// default language, English, from the real dictionary; its words in every language are
+// pinned in s729-customer-display-language.
+vi.mock('@/i18n/LanguageContext', async (importOriginal) => {
+  const real = await importOriginal<typeof import('@/i18n/LanguageContext')>();
+  return { ...real, useLanguage: () => ({ lang: 'en' as const, setLang: () => undefined, t: real.tFor('en') }) };
+});
 
 const postMock = vi.mocked(api.post);
 const getMock = vi.mocked(api.get);

@@ -411,10 +411,16 @@ describe.each(['ru', 'th'] as const)('the supervised-child screens on the custom
   });
 
   it('a party’s Thai QR screen and the extra-charge subtotal', () => {
-    const qr = under(lang, createElement(PromptPayCustomerScreen, { amount: 100, seed: 'zz' }));
+    const qr = under(lang, createElement(PromptPayCustomerScreen, { amount: 100, qrPayload: 'zz' }));
     for (const key of ['fnb.payment.thaiQrPromptpay', 'till.payment.scanToPay', 'till.payment.openBankingApp', 'till.payment.waitingConfirmation']) {
       expect(qr, key).toContain(t(key));
     }
+    expect(qr).toContain(`aria-label="${t('display.qr.waiting')}"`);
+    expect(qr.includes(t('till.payment.codePending'))).toBe(false);
+    // Before the payment route has answered there is no code yet, and the screen says so in the same language.
+    const pending = under(lang, createElement(PromptPayCustomerScreen, { amount: 100 }));
+    expect(pending).toContain(t('till.payment.codePending'));
+    expect(pending.includes(t('till.payment.openBankingApp'))).toBe(false);
     const review = under(lang, createElement(PartySettlementCustomerScreen, {
       stage: 'review', amount: 100,
       party: {
