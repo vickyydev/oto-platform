@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type Route } from '@playwright/test';
 import { signInAndWait } from './console';
 
 const secondId = '018f1d2c-0000-7000-8000-000000009998';
@@ -7,6 +7,12 @@ const version = (note: string, number: number) => ({ id: `018f1d2c-0000-7000-800
 const frames = async (page: Page) => page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
 
 test('AUDIT: late booth A version history cannot replace selected booth B history', async ({ page }) => {
+  const inFlight = new Set<Promise<void>>();
+  const track = (handler: (route: Route) => Promise<void>) => (route: Route) => {
+    const pending = handler(route);
+    inFlight.add(pending);
+    return pending.finally(() => inFlight.delete(pending));
+  };
   let firstId = '';
   let armed = false;
   let heldRequests = 0;
@@ -14,20 +20,20 @@ test('AUDIT: late booth A version history cannot replace selected booth B histor
   let answered!: () => void;
   const waiting = new Promise<void>(resolve => { release = resolve; });
   const completed = new Promise<void>(resolve => { answered = resolve; });
-  await page.route(/\/api\/branches\/[^/]+\/booths(?:\?|$)/, async route => {
+  await page.route(/\/api\/branches\/[^/]+\/booths(?:\?|$)/, track(async route => {
     const response = await route.fetch();
     const body = await response.json();
     expect(body.booths.length).toBeGreaterThan(0);
     firstId = body.booths[0].id;
     await route.fulfill({ response, json: { ...body, booths: [body.booths[0], { ...body.booths[0], id: secondId, name: 'ZZ TEST Audit second booth' }] } });
-  });
-  await page.route(new RegExp(`/api/booths/${secondId}/`), async route => {
+  }));
+  await page.route(new RegExp(`/api/booths/${secondId}/`), track(async route => {
     const response = await route.fetch({ url: route.request().url().replace(secondId, firstId) });
     if (!response.headers()['content-type']?.includes('json')) return route.fulfill({ response });
     const body = await response.json();
     await route.fulfill({ response, json: body.booth ? { ...body, booth: { ...body.booth, id: secondId, name: 'ZZ TEST Audit second booth' } } : body });
-  });
-  await page.route(/\/api\/booths\/[^/]+\/versions(?:\?|$)/, async route => {
+  }));
+  await page.route(/\/api\/booths\/[^/]+\/versions(?:\?|$)/, track(async route => {
     const target = new URL(route.request().url()).pathname.split('/').at(-2);
     if (target === secondId) return route.fulfill({ json: { versions: [version('ZZ TEST Current booth history', 2)] } });
     if (armed) {
@@ -38,7 +44,7 @@ test('AUDIT: late booth A version history cannot replace selected booth B histor
       return;
     }
     await route.fulfill({ json: { versions: [version('ZZ TEST Initial booth history', 1)] } });
-  });
+  }));
   await signInAndWait(page);
   await page.goto('/devices/booths');
   await expect(page.getByText(/ZZ TEST Initial booth history/)).toBeVisible();
@@ -55,8 +61,10 @@ test('AUDIT: late booth A version history cannot replace selected booth B histor
     await expect(page.getByText(/ZZ TEST Previous booth late history/)).toHaveCount(0);
   } finally {
     release();
-    // The booth panels also fetch their own records. Let those forwarded
-    // responses finish before Playwright disposes this test's request context.
+    // Keep interception registered until every forwarded response is answered.
+    // Removing routes first can continue another pending request to the network
+    // when one handler finishes, even with unrouteAll's wait behavior.
+    while (inFlight.size) await Promise.all([...inFlight]);
     await page.unrouteAll({ behavior: 'wait' });
   }
 });

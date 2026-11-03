@@ -1,0 +1,60 @@
+{
+  "at": "2026-11-03T21:01:51.476Z",
+  "mode": "drain",
+  "playwrightVersion": "1.63.0",
+  "events": [
+    {
+      "at": "2026-11-03T21:01:51.457Z",
+      "kind": "handler started",
+      "path": "/api/booths/second/a"
+    },
+    {
+      "at": "2026-11-03T21:01:51.458Z",
+      "kind": "handler started",
+      "path": "/api/booths/second/b"
+    },
+    {
+      "at": "2026-11-03T21:01:51.465Z",
+      "kind": "server received",
+      "path": "/api/booths/first/a"
+    },
+    {
+      "at": "2026-11-03T21:01:51.465Z",
+      "kind": "server received",
+      "path": "/api/booths/first/b"
+    },
+    {
+      "at": "2026-11-03T21:01:51.465Z",
+      "kind": "teardown started",
+      "path": "drain"
+    },
+    {
+      "at": "2026-11-03T21:01:51.470Z",
+      "kind": "handler fulfilled",
+      "path": "/api/booths/second/a"
+    },
+    {
+      "at": "2026-11-03T21:01:51.474Z",
+      "kind": "handler fulfilled",
+      "path": "/api/booths/second/b"
+    }
+  ],
+  "errors": [],
+  "values": [
+    {
+      "path": "/api/booths/second/a",
+      "body": {
+        "path": "/api/booths/first/a",
+        "source": "forwarded"
+      }
+    },
+    {
+      "path": "/api/booths/second/b",
+      "body": {
+        "path": "/api/booths/first/b",
+        "source": "forwarded"
+      }
+    }
+  ],
+  "passed": true
+}
