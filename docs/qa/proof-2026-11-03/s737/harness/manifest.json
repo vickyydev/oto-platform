@@ -4,38 +4,38 @@
     {
       "file": "s737-staging-live.mjs.txt",
       "originalPath": "C:/oto-lanes/s737-staging-live.mjs",
-      "archivedLfSha256": "34e8c88fa9c0f256398a66f1b7d91c3497b6e69e59a05599be9c227d0d69908c",
-      "state": "prepared; not run on staging; all seven services must be live on the source",
-      "previousPreparedBytesSha256": "678c68a87290ef4c47c76723f1bdba9e45a819bde78fc4d2854ccf24d0407861",
-      "sourceBytesSha256": "34e8c88fa9c0f256398a66f1b7d91c3497b6e69e59a05599be9c227d0d69908c"
+      "archivedLfSha256": "609a059380b2e68bb3261c578e251611aa1cb669657a29f87f740d57d981e666",
+      "state": "prepared; waits for successful handoff exchange before any fixture; failed setup signs out its own sessions",
+      "previousPreparedBytesSha256": "34e8c88fa9c0f256398a66f1b7d91c3497b6e69e59a05599be9c227d0d69908c",
+      "sourceBytesSha256": "609a059380b2e68bb3261c578e251611aa1cb669657a29f87f740d57d981e666"
     },
     {
       "file": "s737-staging-read.mjs.txt",
       "originalPath": "C:/oto-lanes/s737-staging-read.mjs",
-      "executedBytesSha256": "214b80d80353d368ba6524494b719f3404e6e99034d06b506692e80c547c9977",
       "archivedLfSha256": "214b80d80353d368ba6524494b719f3404e6e99034d06b506692e80c547c9977",
-      "state": "prepared; not run on staging"
+      "state": "prepared; not run on staging",
+      "sourceBytesSha256": "214b80d80353d368ba6524494b719f3404e6e99034d06b506692e80c547c9977"
     },
     {
       "file": "s737-step-native.mjs.txt",
       "originalPath": "C:/oto-lanes/s737-step-native.mjs",
-      "executedBytesSha256": "0bce3e476b2e1e2231abe6fd1f9c46550cc662ff7274e5fb607cc514e7260f98",
       "archivedLfSha256": "0bce3e476b2e1e2231abe6fd1f9c46550cc662ff7274e5fb607cc514e7260f98",
-      "state": "prepared; not run on staging"
+      "state": "prepared; not run on staging",
+      "sourceBytesSha256": "0bce3e476b2e1e2231abe6fd1f9c46550cc662ff7274e5fb607cc514e7260f98"
     },
     {
       "file": "s737-step-cards.mjs.txt",
       "originalPath": "C:/oto-lanes/s737-step-cards.mjs",
-      "executedBytesSha256": "d7dc001caf3d2d480e54c0c5addd93f4c221d4e3024ab2c39499c0d0469cd6c7",
       "archivedLfSha256": "d7dc001caf3d2d480e54c0c5addd93f4c221d4e3024ab2c39499c0d0469cd6c7",
-      "state": "prepared; not run on staging"
+      "state": "prepared; not run on staging",
+      "sourceBytesSha256": "d7dc001caf3d2d480e54c0c5addd93f4c221d4e3024ab2c39499c0d0469cd6c7"
     },
     {
       "file": "s737-step-retire.mjs.txt",
       "originalPath": "C:/oto-lanes/s737-step-retire.mjs",
-      "executedBytesSha256": "837f518e4b338a98c2b2309f1b440065a343b2383c9b91b2ca5d94851260ffd1",
       "archivedLfSha256": "837f518e4b338a98c2b2309f1b440065a343b2383c9b91b2ca5d94851260ffd1",
-      "state": "prepared; not run on staging"
+      "state": "prepared; not run on staging",
+      "sourceBytesSha256": "837f518e4b338a98c2b2309f1b440065a343b2383c9b91b2ca5d94851260ffd1"
     },
     {
       "file": "qa-render-job.mjs.txt",
@@ -92,7 +92,13 @@
       "sourceBytesSha256": "dc1ed980d2778a5a7ed727bb1d783fd1dfbbc4effdfeb39192243da25947c9e4",
       "archivedLfSha256": "dc1ed980d2778a5a7ed727bb1d783fd1dfbbc4effdfeb39192243da25947c9e4",
       "state": "read-only deploy metadata helper"
+    },
+    {
+      "file": "s737-deploy-verified.mjs.txt",
+      "originalPath": "C:/oto-lanes/s737-deploy-verified.mjs",
+      "sourceBytesSha256": "0dabc8076fafe7c814999ea28923cb881fc1eeed16b6276ce3b4457429eff579",
+      "state": "prepared; exact-source existing-service deployments only; no setting write"
     }
   ],
-  "updatedAt": "2026-11-03T19:54:45.868Z"
+  "updatedAt": "2026-11-03T20:07:58.613Z"
 }

@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
+import {readFileSync,writeFileSync} from 'node:fs';
+import 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs';
+import {render,service} from 'file:///C:/oto-lanes/codex-first-print-release-20261104/scripts/agent/render.mjs';
+const root='C:/oto-lanes/codex-printer-notes-20261104',sha='773fd25f5436bf07f663af183761481b3197a3ef',file='C:/oto-lanes/s737-deployment-actions.json';
+const names=['oto-api-staging','oto-pos-web-staging','oto-pos-staging','oto-console-staging','oto-launcher-staging','oto-booth-staging','oto-app-staging'];
+const ci=JSON.parse(execFileSync('gh',['run','view','41704476807','--json','headSha,status,conclusion,jobs,url'],{cwd:root,encoding:'utf8'}));
+assert.equal(ci.headSha,sha);assert.equal(ci.status,'completed');assert.equal(ci.conclusion,'success');assert.equal(ci.jobs.length,6);assert.ok(ci.jobs.every(j=>j.conclusion==='success'));
+execFileSync('git',['fetch','origin'],{cwd:root,stdio:'ignore'});execFileSync('git',['merge-base','--is-ancestor',sha,'origin/main'],{cwd:root,stdio:'ignore'});
+const status=execFileSync('git',['show','origin/main:docs/progress/STATUS.md'],{cwd:root,encoding:'utf8',maxBuffer:16777216}).split(/\r?\n\r?\n/)[0];
+assert.match(status,/737/);assert.match(status,/retain.*(?:slot|window)/i);
+const receipt={source:sha,startedAt:new Date().toISOString(),settingsChanged:false,actions:[]};
+const save=()=>writeFileSync(file,JSON.stringify(receipt,null,2)+'\n');
+const api=await service('oto-api-staging');assert.equal(api.id,'srv-danh2ljtqb8s73bt9en0');
+const vars=await render('GET',`/services/${api.id}/env-vars?limit=100`);assert.ok(Array.isArray(vars));
+receipt.apiSettingNames=vars.map(v=>(v.envVar??v).key).sort();assert.equal(receipt.apiSettingNames.length,57);save();
+for(const name of names){
+ const s=await service(name);assert.ok(s?.id);assert.equal(s.ownerId,api.ownerId);
+ const latest=(await render('GET',`/services/${s.id}/deploys?limit=1`))[0]?.deploy;assert.ok(latest);
+ if(latest.commit?.id===sha&&['live','created','build_in_progress','pre_deploy_in_progress','update_in_progress','queued'].includes(latest.status)){
+  receipt.actions.push({name,serviceId:s.id,deployId:latest.id,status:latest.status,action:'existing exact-source deployment'});save();continue;
+ }
+ assert.equal(latest.status,'live','Refusing to interrupt another deployment: '+name);
+ assert.ok(['00f414ba0f78d91b0e87813924c3c53a64dddf5b','629714f266253c4b6951b68237da7db13c8cf26e'].includes(latest.commit?.id),'Unexpected preceding source: '+name);
+ const made=await render('POST',`/services/${s.id}/deploys`,{commitId:sha});
+ if(!made?.id){const message=JSON.stringify(made);receipt.failure={name,buildMinutesExhausted:/minutes|build.*limit|quota/i.test(message),responseSha256:(await import('node:crypto')).createHash('sha256').update(message).digest('hex')};save();throw new Error(receipt.failure.buildMinutesExhausted?'Render build limit reported; no further deploys requested':'Render refused deployment; sanitized response fingerprint saved');}
+ receipt.actions.push({name,serviceId:s.id,deployId:made.id,status:made.status,previousSource:latest.commit.id,action:'requested existing-service same-source deployment'});save();
+}
+receipt.finishedAt=new Date().toISOString();save();console.log(JSON.stringify(receipt));
