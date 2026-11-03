@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { FixActivityFeed, formatFixDateTime, rawCommentToActivityEntry } from "@/components/fix-activity-feed";
+import { FixReportDelete } from "@/components/fix-report-delete";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
@@ -135,7 +136,7 @@ function ReportDetailSheet({ reportId, open, onClose }: ReportDetailSheetProps) 
   const [comment, setComment] = useState("");
   const [viewingMedia, setViewingMedia] = useState<string | null>(null);
 
-  const { data: detail, isLoading } = useQuery<ReportDetail>({
+  const { data: detail, isLoading, isError } = useQuery<ReportDetail>({
     queryKey: ['/api/fix-reports', reportId, 'details'],
     queryFn: async () => {
       const res = await fetch(`/api/fix-reports/${reportId}/details`, { credentials: 'include' });
@@ -193,7 +194,11 @@ function ReportDetailSheet({ reportId, open, onClose }: ReportDetailSheetProps) 
           </div>
         </div>
 
-        {isLoading ? (
+        {isError ? (
+          <p className="p-6 text-sm text-center text-muted-foreground" data-testid="text-report-unavailable">
+            This report is not available.
+          </p>
+        ) : isLoading ? (
           <div className="flex justify-center py-12">
             <LoadingSpinner />
           </div>
@@ -263,11 +268,18 @@ function ReportDetailSheet({ reportId, open, onClose }: ReportDetailSheetProps) 
                 currentUserId={user?.id}
               />
             </div>
+
+            {reportId && (
+              <FixReportDelete
+                reportId={reportId}
+                onDeleted={() => { setViewingMedia(null); onClose(); }}
+              />
+            )}
           </div>
         )}
 
         {/* Comment input */}
-        <div className="p-3 border-t bg-background">
+        {!isError && <div className="p-3 border-t bg-background">
           <div className="flex items-center gap-2">
             <Input
               placeholder="Add an update..."
@@ -290,7 +302,7 @@ function ReportDetailSheet({ reportId, open, onClose }: ReportDetailSheetProps) 
               <Send className="w-4 h-4" />
             </Button>
           </div>
-        </div>
+        </div>}
         {viewingMedia && (
           <Dialog open onOpenChange={() => setViewingMedia(null)}>
             <DialogContent className="max-w-3xl" data-testid="dialog-fix-report-media">

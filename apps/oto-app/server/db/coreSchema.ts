@@ -998,6 +998,11 @@ export const fixReports = pgTable(
     closedBySupplierTokenId: uuid("closed_by_supplier_token_id"), // Will reference fix_supplier_tokens
     doneNote: text("done_note"),
 
+    // Deleted from the Fix module (SCRUM-641): a report made by mistake or a
+    // duplicate is hidden everywhere; the row, its comments and its media stay.
+    archivedAt: timestamp("archived_at"),
+    archivedByUserId: varchar("archived_by_user_id").references(() => users.id, { onDelete: "set null" }),
+
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -1032,12 +1037,16 @@ export const fixComments = pgTable(
     supplierTokenId: uuid("supplier_token_id"), // Will reference fix_supplier_tokens
     
     message: text("message").notNull(),
+    // Attachments (SCRUM-641), as fix_reports.media: canonical Fix media URLs,
+    // served only after the owning report's access check.
+    media: jsonb("media").$type<string[]>().notNull().default([]),
     
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => [
     index("idx_fix_comments_fix").on(t.fixId),
     index("idx_fix_comments_created").on(t.createdAt),
+    index("idx_fix_comments_media").using("gin", t.media),
   ]
 );
 

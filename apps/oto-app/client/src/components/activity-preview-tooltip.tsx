@@ -11,6 +11,7 @@ interface ActivityPreviewTooltipProps {
 }
 
 const activityTypeLabels: Record<string, string> = {
+  fix_report_deleted: "Fix Report Deleted",
   contract_created: "Contract Created",
   contract_finalized: "Contract Finalized",
   contract_sent: "Contract Sent",

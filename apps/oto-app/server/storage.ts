@@ -1681,6 +1681,7 @@ export interface IStorage {
                 },
         ): Promise<FixReport[]>;
         getFixReport(id: string): Promise<FixReport | undefined>;
+        archiveFixReport(id: string, deletedBy: { id: string; name: string }): Promise<FixReport | undefined>;
         getFixReportWithDetails(
                 id: string,
         ): Promise<
@@ -11486,7 +11487,7 @@ export class DatabaseStorage implements IStorage {
                         completedTo?: Date;
                 },
         ): Promise<FixReport[]> {
-                const conditions = [eq(fixReports.tenantId, tenantId)];
+                const conditions = [eq(fixReports.tenantId, tenantId), isNull(fixReports.archivedAt)];
 
                 if (filters?.branchId) {
                         conditions.push(eq(fixReports.branchId, filters.branchId));
@@ -11534,11 +11535,12 @@ export class DatabaseStorage implements IStorage {
                         );
         }
 
+        // A deleted report (SCRUM-641) is not there for anything that reads it.
         async getFixReport(id: string): Promise<FixReport | undefined> {
                 const [report] = await db
                         .select()
                         .from(fixReports)
-                        .where(eq(fixReports.id, id));
+                        .where(and(eq(fixReports.id, id), isNull(fixReports.archivedAt)));
                 return report;
         }
 
@@ -11555,7 +11557,7 @@ export class DatabaseStorage implements IStorage {
                 const [report] = await db
                         .select()
                         .from(fixReports)
-                        .where(eq(fixReports.id, id));
+                        .where(and(eq(fixReports.id, id), isNull(fixReports.archivedAt)));
 
                 if (!report) return undefined;
 
@@ -11610,9 +11612,46 @@ export class DatabaseStorage implements IStorage {
                                 and(
                                         eq(fixReports.tenantId, tenantId),
                                         inArray(fixReports.branchId, branchIds),
+                                        isNull(fixReports.archivedAt),
                                 ),
                         )
                         .orderBy(desc(fixReports.createdAt));
+        }
+
+        /**
+         * Deletes a Fix report from the module (SCRUM-641): the row, its comments
+         * and its media stay, and the delete and its activity row commit together.
+         * Undefined when it was already deleted, so a repeat writes nothing.
+         */
+        async archiveFixReport(
+                id: string,
+                deletedBy: { id: string; name: string },
+        ): Promise<FixReport | undefined> {
+                return db.transaction(async (tx) => {
+                        const now = new Date();
+                        const [archived] = await tx
+                                .update(fixReports)
+                                .set({ archivedAt: now, archivedByUserId: deletedBy.id, updatedAt: now })
+                                .where(and(eq(fixReports.id, id), isNull(fixReports.archivedAt)))
+                                .returning();
+                        if (!archived) return undefined;
+                        await this.createActivityLog({
+                                tenantId: archived.tenantId,
+                                branchId: archived.branchId,
+                                activityType: "fix_report_deleted",
+                                createdBy: deletedBy.id,
+                                summaryText: `Fix report "${archived.title}" deleted by ${deletedBy.name}`,
+                                metadataJson: JSON.stringify({
+                                        fixReportId: archived.id,
+                                        title: archived.title,
+                                        status: archived.status,
+                                        priority: archived.priority,
+                                        reportedBy: archived.reportedBy,
+                                        reportedAt: archived.createdAt,
+                                }),
+                        }, tx);
+                        return archived;
+                });
         }
 
         async closeFixReport(

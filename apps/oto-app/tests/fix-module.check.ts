@@ -30,6 +30,10 @@
 //   8. Opening a report names who reported it and when, and every comment
 //      names its author and when; the author is the session's, never the
 //      request's, and a supplier signs with the name on their link.
+//   9. A manager or admin, at a branch they reach, deletes a report once: it
+//      leaves every list, by-id read, media read, supplier read and checklist
+//      read; the row and its comments stay, and one activity row records it.
+//      Reporters, Fix Department members and all-branch staff are refused.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built:
@@ -419,6 +423,150 @@ try {
       currentUserId: fixerA.id,
     }));
     assert.ok(own.includes(`ZZ TEST FixerA ${run} (you)`), own);
+  });
+
+  const reportRow = async (id: string) =>
+    (await q<{ archived_at: Date | null; archived_by_user_id: string | null }>(
+      "select archived_at, archived_by_user_id from fix_reports where id = $1",
+      [id],
+    ))[0];
+  const deletionRows = (id: string) =>
+    q<{ branch_id: string; tenant_id: string; created_by: string; summary_text: string; metadata_json: string }>(
+      "select branch_id, tenant_id, created_by, summary_text, metadata_json from activity_log where activity_type = 'fix_report_deleted' and metadata_json::jsonb->>'fixReportId' = $1",
+      [id],
+    );
+  const remove = (who: Login, id: string) => call("DELETE", `/api/fix-reports/${id}`, { cookie: cookie[who.label] });
+
+  const duplicateTitle = `ZZ TEST duplicate ${run}`;
+  const duplicate = await report(author, duplicateTitle, "normal", branchA.id);
+  await call("POST", `/api/fix-reports/${duplicate.id}/comments`, { cookie: cookie[fixerA.label], body: { message: "ZZ kept with the report" } });
+  const [duplicateMedia] = (await details(admin, duplicate.id)).report.media as string[];
+
+  await check("641: the reporter, Fix Department members and all-branch staff cannot delete a report", async () => {
+    for (const who of [author, fixerA, fixerAll]) {
+      const res = await remove(who, duplicate.id);
+      assert.equal(res.status, 403, `${who.label}: ${show(res)}`);
+    }
+    assert.equal((await reportRow(duplicate.id)).archived_at, null);
+    assert.deepEqual(await deletionRows(duplicate.id), []);
+  });
+
+  await check("641: a manager cannot delete a report at a branch they do not reach", async () => {
+    const res = await remove(managerA, atB.id);
+    assert.equal(res.status, 403, show(res));
+    assert.equal((await reportRow(atB.id)).archived_at, null);
+  });
+
+  await check("641: a manager deletes a report at their branch, and the row and comments stay", async () => {
+    const res = await remove(managerA, duplicate.id);
+    assert.equal(res.status, 204, show(res));
+    const row = await reportRow(duplicate.id);
+    assert.ok(row.archived_at, "archived_at was not set");
+    assert.equal(row.archived_by_user_id, managerA.id);
+    const comments = await q("select id from fix_comments where fix_id = $1", [duplicate.id]);
+    assert.equal(comments.length, 1);
+  });
+
+  await check("641: the delete is recorded once, naming the report and who deleted it", async () => {
+    const rows = await deletionRows(duplicate.id);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].branch_id, branchA.id);
+    assert.equal(rows[0].tenant_id, tenant);
+    assert.equal(rows[0].created_by, managerA.id);
+    assert.ok(rows[0].summary_text.includes(duplicateTitle), rows[0].summary_text);
+    assert.ok(rows[0].summary_text.includes(`ZZ TEST ManagerA ${run}`), rows[0].summary_text);
+    const meta = JSON.parse(rows[0].metadata_json);
+    assert.equal(meta.title, duplicateTitle);
+    assert.equal(meta.reportedBy, author.id);
+  });
+
+  await check("641: a deleted report leaves every list and by-id read", async () => {
+    const paths = [`/api/fix-reports?branchId=${branchA.id}`, "/api/fix-reports", "/api/fix-reports?myQueue=true", "/api/fix-reports?myReports=true"];
+    for (const who of [admin, fixerAll, author]) {
+      for (const path of paths) {
+        if (who === author && path !== "/api/fix-reports?myReports=true") continue;
+        const res = await call("GET", path, { cookie: cookie[who.label] });
+        assert.equal(res.status, 200, `${who.label} ${path}: ${show(res)}`);
+        assert.ok(!(res.body as Array<{ id: string }>).some((r) => r.id === duplicate.id), `${who.label} ${path} still lists it`);
+      }
+    }
+    const reads: Array<[string, string, unknown?]> = [
+      ["GET", `/api/fix-reports/${duplicate.id}`],
+      ["GET", `/api/fix-reports/${duplicate.id}/details`],
+      ["GET", `/api/fix-reports/${duplicate.id}/comments`],
+      ["POST", `/api/fix-reports/${duplicate.id}/comments`, { message: "ZZ too late" }],
+      ["PATCH", `/api/fix-reports/${duplicate.id}/update`, { status: "in_progress" }],
+      ["PATCH", `/api/fix-reports/${duplicate.id}`, { status: "in_progress" }],
+      ["PATCH", `/api/fix-reports/${duplicate.id}/close`, {}],
+      ["DELETE", `/api/fix-reports/${duplicate.id}`],
+      ["GET", duplicateMedia],
+    ];
+    for (const [method, path, body] of reads) {
+      const res = await call(method, path, { cookie: cookie[admin.label], body });
+      assert.equal(res.status, 404, `${method} ${path}: ${show(res)}`);
+    }
+  });
+
+  await check("641: a deleted report is gone from the supplier's link too", async () => {
+    const list = await call("GET", `/api/supplier-portal/fix-reports?token=${supplierToken}`);
+    assert.equal(list.status, 200, show(list));
+    assert.ok(!(list.body as Array<{ id: string }>).some((r) => r.id === duplicate.id), "the supplier list still has it");
+    const filename = duplicateMedia.split("/").pop();
+    const reads: Array<[string, string, unknown?]> = [
+      ["GET", `/api/supplier-portal/fix-reports/${duplicate.id}?token=${supplierToken}`],
+      ["GET", `/api/supplier-portal/fix-reports/${duplicate.id}/media/${filename}?token=${supplierToken}`],
+      ["POST", `/api/supplier-portal/fix-reports/${duplicate.id}/comments?token=${supplierToken}`, { message: "ZZ too late" }],
+      ["PATCH", `/api/supplier-portal/fix-reports/${duplicate.id}/close?token=${supplierToken}`, {}],
+    ];
+    for (const [method, path, body] of reads) {
+      const res = await call(method, path, { body });
+      assert.equal(res.status, 404, `${method} ${path}: ${show(res)}`);
+    }
+  });
+
+  await check("641: deleting twice at once deletes once and records once", async () => {
+    const twice = await report(author, `ZZ TEST twice ${run}`, "normal", branchA.id);
+    const answers = await Promise.all([remove(admin, twice.id), remove(managerA, twice.id)]);
+    assert.deepEqual(answers.map((a) => a.status).sort(), [204, 404], answers.map(show).join(" | "));
+    assert.equal((await deletionRows(twice.id)).length, 1);
+  });
+
+  await check("641: a report deleted from a checklist item no longer shows on that item", async () => {
+    const [template] = await q<{ id: string }>(
+      "insert into checklist_templates (tenant_id, branch_id, name, checklist_type) values ($1, $2, $3, 'operational') returning id",
+      [tenant, branchA.id, `ZZ TEST checklist ${run}`],
+    );
+    const [templateItem] = await q<{ id: string }>(
+      "insert into checklist_template_items (tenant_id, template_id, title, linked_to_fix) values ($1, $2, 'ZZ TEST handrail', true) returning id",
+      [tenant, template.id],
+    );
+    const [checklistRun] = await q<{ id: string }>(
+      "insert into checklist_runs (tenant_id, branch_id, template_id, status) values ($1, $2, $3, 'in_progress') returning id",
+      [tenant, branchA.id, template.id],
+    );
+    const [runItem] = await q<{ id: string }>(
+      "insert into checklist_run_items (tenant_id, run_id, template_item_id) values ($1, $2, $3) returning id",
+      [tenant, checklistRun.id, templateItem.id],
+    );
+    const form = new FormData();
+    form.append("media", new Blob([JPEG], { type: "image/jpeg" }), "photo.jpg");
+    const upload = await call("POST", "/api/fix-reports/upload", { cookie: cookie[managerA.label], form });
+    const linked = await call("POST", "/api/fix-reports", {
+      cookie: cookie[managerA.label],
+      body: { media: upload.body.urls, title: "ZZ", sourceChecklistRunItemId: runItem.id, tags: [] },
+    });
+    assert.equal(linked.status, 201, show(linked));
+    const linkedIds = async () => {
+      const source = await call("GET", `/api/fix-reports/checklist-source/${runItem.id}`, { cookie: cookie[managerA.label] });
+      assert.equal(source.status, 200, show(source));
+      const opened = await call("GET", `/api/checklist-runs/${checklistRun.id}`, { cookie: cookie[managerA.label] });
+      assert.equal(opened.status, 200, show(opened));
+      const item = (opened.body.items as Array<{ id: string; linkedFixReports?: Array<{ id: string }> }>).find((i) => i.id === runItem.id);
+      return { source: source.body.reports.map((r: { id: string }) => r.id), run: (item?.linkedFixReports ?? []).map((r) => r.id) };
+    };
+    assert.deepEqual(await linkedIds(), { source: [linked.body.id], run: [linked.body.id] });
+    assert.equal((await remove(managerA, linked.body.id)).status, 204);
+    assert.deepEqual(await linkedIds(), { source: [], run: [] });
   });
 
   console.log(`fix-module.check: ${checks} checks passed`);

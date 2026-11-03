@@ -1372,6 +1372,7 @@ export const activityTypes = [
   "profile_photo_set",
   "camp_attendance_days_updated",
   "checklist_status_overridden", // SCRUM-544: a manager's checklist status override
+  "fix_report_deleted", // SCRUM-641: a manager or admin deleted a Fix report
 ] as const;
 export type ActivityType = typeof activityTypes[number];
 

@@ -58,6 +58,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { FixActivityFeed, formatFixDateTime, rawCommentToActivityEntry } from "@/components/fix-activity-feed";
+import { FixReportDelete } from "@/components/fix-report-delete";
 import { getMediaThumbUrl, isVideoUrl } from "@/lib/media";
 
 interface FixReport {
@@ -904,6 +905,8 @@ function ReportDetailDialog({ report, open, onClose, onUpdate }: ReportDetailDia
                   currentUserId={authUser?.id}
                 />
               </div>
+
+              <FixReportDelete reportId={report.id} onDeleted={onClose} />
             </div>
           )}
           
@@ -962,6 +965,7 @@ function ReportDetailDialog({ report, open, onClose, onUpdate }: ReportDetailDia
 
 export default function FixBoardPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { activeBranchId, branches, setActiveBranchId, isLoading: branchLoading } = useBranchContext();
   const SESSION_KEY = "fix-board-status-filter";
@@ -1020,7 +1024,7 @@ export default function FixBoardPage() {
 
   // SCRUM-656: a notification opens its report here (?reportId=), once.
   const [linkedReportId, setLinkedReportId] = useState(() => new URLSearchParams(window.location.search).get('reportId'));
-  const { data: linkedReport } = useQuery<FixReport>({
+  const { data: linkedReport, isError: linkedReportUnavailable } = useQuery<FixReport>({
     queryKey: ['/api/fix-reports', linkedReportId],
     enabled: !!linkedReportId,
   });
@@ -1030,6 +1034,13 @@ export default function FixBoardPage() {
     setLinkedReportId(null);
     window.history.replaceState(null, '', window.location.pathname);
   }, [linkedReport]);
+  // SCRUM-641: an older notification can name a report since deleted.
+  useEffect(() => {
+    if (!linkedReportUnavailable) return;
+    toast({ title: "This report is not available" });
+    setLinkedReportId(null);
+    window.history.replaceState(null, '', window.location.pathname);
+  }, [linkedReportUnavailable]);
 
   // Check if user is a Fix Department member
   const { data: queueInfo } = useQuery<{ isFixDeptMember: boolean; fixDeptId: string | null; userDeptIds: string[] }>({

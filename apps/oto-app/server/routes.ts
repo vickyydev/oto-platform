@@ -22386,6 +22386,7 @@ OTO Company Limited`,
           .from(fixReports)
           .where(and(
             eq(fixReports.tenantId, tenantId),
+            isNull(fixReports.archivedAt),
             inArray(fixReports.sourceChecklistRunItemId, runItemIds),
           ))
           .orderBy(desc(fixReports.createdAt))
@@ -24226,6 +24227,7 @@ ${context}`;
 
         const conditions = [
           eq(fixReports.tenantId, tenantId),
+          isNull(fixReports.archivedAt),
           inArray(fixReports.assignedDepartmentId as any, userDeptIds),
         ];
         const reach = fixReportReach(user);
@@ -24255,6 +24257,7 @@ ${context}`;
       if (myReports) {
         const conditions = [
           eq(fixReports.tenantId, tenantId),
+          isNull(fixReports.archivedAt),
           eq(fixReports.reportedBy, user.id),
         ];
         if (status) conditions.push(inArray(fixReports.status, resolveFixReportStatusFilter(status) as any));
@@ -24418,6 +24421,7 @@ ${context}`;
         createdAt: fixReports.createdAt,
       }).from(fixReports).where(and(
         eq(fixReports.tenantId, tenantId),
+        isNull(fixReports.archivedAt),
         eq(fixReports.sourceChecklistRunItemId, sourceChecklistRunItemId),
       )).orderBy(desc(fixReports.createdAt)),
     ]);
@@ -24572,6 +24576,7 @@ ${context}`;
       const legacyUrl = `/fix-media/${filename}`;
       const [owner] = await db.select({ id: fixReports.id }).from(fixReports).where(and(
         eq(fixReports.tenantId, tenantId),
+        isNull(fixReports.archivedAt),
         or(
           sql`${fixReports.media} @> ${JSON.stringify([currentUrl])}::jsonb`,
           sql`${fixReports.media} @> ${JSON.stringify([legacyUrl])}::jsonb`,
@@ -25149,6 +25154,28 @@ ${context}`;
       }
 
       res.json(updatedReport);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Delete a Fix report made by mistake or a duplicate (SCRUM-641): managers and
+  // admins, at a branch they reach. By role alone, unlike the board's reading of
+  // "manager" (all-branch staff stay staff), and the row and its history stay.
+  app.delete("/api/fix-reports/:id", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as UserWithBranchAccess;
+      const access = await authorizedFixReport(req, req.params.id);
+      if (!access.report) return res.status(access.status).json({ message: access.message });
+      if (!['manager', 'admin', 'operator_admin', 'global_admin'].includes(user.role || '')) {
+        return res.status(403).json({ message: "Only managers and admins can delete Fix reports" });
+      }
+      const deleted = await storage.archiveFixReport(access.report.id, {
+        id: user.id,
+        name: user.fullName || user.email,
+      });
+      if (!deleted) return res.status(404).json({ message: "Fix report not found" });
+      res.status(204).send();
     } catch (error) {
       next(error);
     }

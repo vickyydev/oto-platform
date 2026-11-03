@@ -61,9 +61,11 @@ const activityTypeLabels: Record<string, string> = {
   attention_item_resolved: "Attention Item Resolved",
   template_created: "Template Created",
   template_updated: "Template Updated",
+  fix_report_deleted: "Fix Report Deleted",
 };
 
 const activityTypeColors: Record<string, string> = {
+  fix_report_deleted: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   promotion: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   salary_change: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
   incentive_change: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
