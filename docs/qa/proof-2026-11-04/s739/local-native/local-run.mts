@@ -1,0 +1,31 @@
+import { createServer } from 'node:net';
+import { spawn, spawnSync } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
+import { createTestContext, teardownAll, ADMIN } from './codex-qr-review-phone-20261104/apps/api/test/helpers.ts';
+
+const root = 'C:/oto-lanes/codex-qr-review-phone-20261104';
+const free = () => new Promise<number>((resolve, reject) => { const s = createServer(); s.on('error', reject); s.listen(0, '127.0.0.1', () => { const a = s.address(); if (!a || typeof a === 'string') throw Error('port'); s.close(() => resolve(a.port)); }); });
+const [apiPort, posPort] = await Promise.all([free(), free()]);
+const origin = (port: number) => `http://127.0.0.1:${port}`;
+const ctx = await createTestContext({ env: { DEPLOY_ENV: 'local', PGW_PROVIDER: 'simulator',
+  PGW_MERCHANT_ID: 'ZZTEST739', PGW_SECRET_KEY: randomBytes(32).toString('hex'),
+  PGW_WEBHOOK_SECRET: randomBytes(24).toString('hex'),
+  ALLOWED_ORIGINS: origin(posPort), COOKIE_SECURE: 'false' } });
+const base = Object.fromEntries(['PATH', 'Path', 'SystemRoot', 'TEMP', 'TMP', 'LOCALAPPDATA', 'USERPROFILE'].filter(k => process.env[k]).map(k => [k, process.env[k]]));
+let server: ReturnType<typeof spawn> | undefined;
+let code = 1;
+try {
+  await ctx.app.listen({ port: apiPort, host: '127.0.0.1' });
+  server = spawn(process.execPath, [root + '/apps/pos/server/dist/index.js'], { cwd: root + '/apps/pos',
+    env: { ...base, PORT: String(posPort), API_UPSTREAM: origin(apiPort) }, windowsHide: true, stdio: 'ignore' });
+  let ready = false;
+  for (let i = 0; i < 80; i++) { if (await fetch(origin(posPort)).then(r => r.ok).catch(() => false)) { ready = true; break; } await new Promise(r => setTimeout(r, 500)); }
+  if (!ready) throw Error('POS forwarder unavailable');
+  const proof = spawn(process.execPath, ['C:/oto-lanes/s739-phone-browser-proof.mjs'], { cwd: root, windowsHide: true, stdio: 'inherit',
+    env: { ...base, S739_MODE: 'local', S739_POS: origin(posPort), S739_API: origin(apiPort), S739_PHONE: ADMIN.phone, S739_PASSWORD: ADMIN.password } });
+  code = await new Promise<number>(resolve => proof.once('exit', c => resolve(c ?? 1)));
+} finally {
+  if (server?.pid && server.exitCode === null) spawnSync('taskkill', ['/pid', String(server.pid), '/t', '/f'], { windowsHide: true, stdio: 'ignore' });
+  await ctx.close(); await teardownAll();
+}
+process.exit(code);

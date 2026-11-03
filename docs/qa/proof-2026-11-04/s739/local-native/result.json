@@ -1,0 +1,160 @@
+{
+  "mode": "local",
+  "source": "2cc09fb05d7830e42b0bb6cf81778de72d1f82af",
+  "sourceFiles": {
+    "apps/pos/src/App.tsx": "40c15d560980e97efd09aceff8c61699a0c23918441d4cbf07a8e46d7c94f0ea",
+    "apps/pos/src/components/mobile/MobileShell.tsx": "464689c46ae2f83fda48c0da3aaef5aad46d375b792c76757eb7c32140c40bd0",
+    "apps/pos/src/pages/MerchStation.tsx": "1e3d737e4b2d09c52653c61bd603c84bc9068182b6d28bcb520921eefc28b1a6",
+    "apps/pos/src/lib/usePaymentStage.ts": "1865fd0cbeeb2fb1ee41e9a5b9e6518af4a6ce3f4d74fa5884bf0127705a762a",
+    "apps/pos/dist/public/index.html": "0d50b4db9a983c6431a1feabc5db375f6722ebfb5257380ff37f4f2180724cb5"
+  },
+  "cases": [
+    {
+      "kind": "food",
+      "mobile": false,
+      "saleId": "01a1a355-7cfc-7494-b86a-915e86bf8940",
+      "attemptId": "01a1a355-7ec7-7b47-84f8-ace5db18f792",
+      "readback": {
+        "saleId": "01a1a355-7cfc-7494-b86a-915e86bf8940",
+        "status": "finalised",
+        "receiptNumber": "Z39-000001",
+        "attempts": [
+          {
+            "id": "01a1a355-7ec7-7b47-84f8-ace5db18f792",
+            "status": "approved",
+            "amountSatang": 9000
+          }
+        ]
+      }
+    },
+    {
+      "kind": "shop",
+      "mobile": false,
+      "saleId": "01a1a355-91c6-7968-aaea-5e961dfa5d0f",
+      "attemptId": "01a1a355-929b-7163-a27f-0e294705992b",
+      "readback": {
+        "saleId": "01a1a355-91c6-7968-aaea-5e961dfa5d0f",
+        "status": "finalised",
+        "receiptNumber": "Z39-000002",
+        "attempts": [
+          {
+            "id": "01a1a355-929b-7163-a27f-0e294705992b",
+            "status": "approved",
+            "amountSatang": 12000
+          }
+        ]
+      }
+    },
+    {
+      "kind": "tickets",
+      "mobile": false,
+      "saleId": "01a1a355-a7c0-7531-83bb-45d7a9e7265b",
+      "attemptId": "01a1a355-a8a9-7cd4-b250-52c84848408c",
+      "readback": {
+        "saleId": "01a1a355-a7c0-7531-83bb-45d7a9e7265b",
+        "status": "finalised",
+        "receiptNumber": "Z39-000003",
+        "attempts": [
+          {
+            "id": "01a1a355-a8a9-7cd4-b250-52c84848408c",
+            "status": "approved",
+            "amountSatang": 35000
+          }
+        ]
+      }
+    },
+    {
+      "kind": "food",
+      "mobile": true,
+      "saleId": "01a1a355-bf8e-7c02-a03a-4e8c0f7bcc54",
+      "attemptId": "01a1a355-bff2-7ae6-9183-6980bf35ff71",
+      "readback": {
+        "saleId": "01a1a355-bf8e-7c02-a03a-4e8c0f7bcc54",
+        "status": "finalised",
+        "receiptNumber": "Z39-000004",
+        "attempts": [
+          {
+            "id": "01a1a355-bff2-7ae6-9183-6980bf35ff71",
+            "status": "approved",
+            "amountSatang": 9000
+          }
+        ]
+      }
+    },
+    {
+      "kind": "shop",
+      "mobile": true,
+      "saleId": "01a1a355-ceb0-732a-8546-ad330bd34cb0",
+      "attemptId": "01a1a355-cf7a-796b-b392-1ff52510a4c4",
+      "staffLockPreservedAttempt": true,
+      "readback": {
+        "saleId": "01a1a355-ceb0-732a-8546-ad330bd34cb0",
+        "status": "finalised",
+        "receiptNumber": "Z39-000005",
+        "attempts": [
+          {
+            "id": "01a1a355-cf7a-796b-b392-1ff52510a4c4",
+            "status": "approved",
+            "amountSatang": 12000
+          }
+        ]
+      }
+    },
+    {
+      "kind": "tickets",
+      "mobile": true,
+      "saleId": "01a1a355-e626-7bb5-b534-750f3c33d710",
+      "attemptId": "01a1a355-e6a4-7c33-bac6-40e73c0d801f",
+      "readback": {
+        "saleId": "01a1a355-e626-7bb5-b534-750f3c33d710",
+        "status": "finalised",
+        "receiptNumber": "Z39-000006",
+        "attempts": [
+          {
+            "id": "01a1a355-e6a4-7c33-bac6-40e73c0d801f",
+            "status": "approved",
+            "amountSatang": 35000
+          }
+        ]
+      }
+    }
+  ],
+  "images": [
+    "C:/oto-lanes/s739-native-local/mw17go14/food-desktop-01-payment.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/food-desktop-02-held.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/food-desktop-03-review-locked.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/food-desktop-04-review-ready.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/food-desktop-05-completed.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/shop-desktop-01-payment.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/shop-desktop-02-held.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/shop-desktop-03-review-locked.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/shop-desktop-04-review-ready.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/shop-desktop-05-completed.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/tickets-desktop-01-payment.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/tickets-desktop-02-held.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/tickets-desktop-03-review-locked.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/tickets-desktop-04-review-ready.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/tickets-desktop-05-completed.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/food-phone-01-payment.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/food-phone-02-held.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/food-phone-03-review-locked.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/food-phone-04-review-ready.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/food-phone-05-completed.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/shop-phone-01-payment.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/shop-phone-02-held.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/shop-phone-02b-staff-locked.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/shop-phone-03-review-locked.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/shop-phone-04-review-ready.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/shop-phone-05-completed.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/tickets-phone-01-payment.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/tickets-phone-02-held.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/tickets-phone-03-review-locked.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/tickets-phone-04-review-ready.png",
+    "C:/oto-lanes/s739-native-local/mw17go14/tickets-phone-05-completed.png"
+  ],
+  "failures": [],
+  "fixture": {
+    "boxId": "01a1a355-738b-7292-8459-7758d327efbf",
+    "stationId": "01a1a355-73b6-7b7c-a129-3f7a4bebdb0c"
+  }
+}

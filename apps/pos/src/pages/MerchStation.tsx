@@ -53,6 +53,7 @@ import { PublicMerchCustomerDisplay } from '@/components/merch/PublicMerchCustom
 import { ManualDiscountModal } from '@/components/shared/ManualDiscountModal';
 import { useOperator } from '@/auth/OperatorContext';
 import { toast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { announceSalePrinting } from '@/lib/printRouting';
 import { Button } from '@/components/ui/button';
 import { Monitor } from 'lucide-react';
@@ -63,6 +64,7 @@ let orderCounter = 1;
 let lineCounter = 1;
 
 export default function MerchStation() {
+  const mobile = useIsMobile();
   const { operator, locked, offlineUnlock } = useOperator();
   const staffLocked = useRef(locked);
   staffLocked.current = locked;
@@ -628,7 +630,7 @@ export default function MerchStation() {
     lines, manualDiscounts, quote: sale.quote, pending: sale.pending, quoteFailed: !!sale.error,
     payment: paymentStage.display, completedOrder, platformSale,
   }, !locked && (!stationOffline() || hasBridgeOrigin()));
-  const inlineDisplay = showCustomerDisplay && (!separateDisplay.connected.length || !separateDisplay.supported || !!separateDisplay.error);
+  const inlineDisplay = !mobile && showCustomerDisplay && (!separateDisplay.connected.length || !separateDisplay.supported || !!separateDisplay.error);
 
   // Preserve the sale hooks across a lock without staff controls or portals.
   if (locked) return null;
@@ -646,8 +648,8 @@ export default function MerchStation() {
         )}
 
         {stage === 'order' && (
-          <div className="flex h-full min-h-0">
-            <div className="flex-1 min-w-0 flex flex-col p-6 border-r bg-card/20">
+          <div className={`flex h-full min-h-0 ${mobile ? 'flex-col overflow-y-auto' : ''}`}>
+            <div className={`min-w-0 flex flex-col bg-card/20 ${mobile ? 'h-[45dvh] min-h-72 shrink-0 p-4 border-b' : 'flex-1 p-6 border-r'}`}>
               {(!stockIsServerBacked() || !shopFromPlatform) && (
                 <div role="status" className="mb-4 shrink-0 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-foreground/15 bg-foreground/5 px-4 py-2 text-xs text-muted-foreground">
                   {!stockIsServerBacked() && <span>Live stock counts are unavailable. Check availability before taking an order.</span>}
@@ -660,7 +662,7 @@ export default function MerchStation() {
               </div>
             </div>
             {/* Scrolls as a column on a short screen, as the ticket till's panel does. */}
-            <div className="w-[380px] shrink-0 bg-sidebar p-6 overflow-y-auto">
+            <div className={`shrink-0 bg-sidebar ${mobile ? 'w-full p-4' : 'w-[380px] p-6 overflow-y-auto'}`}>
               <MerchCart
                 wristband={wristband}
                 lines={displayLines}
@@ -768,7 +770,8 @@ export default function MerchStation() {
   );
 
   return (
-    <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
+    <div className={`${mobile ? 'h-full' : 'h-[100dvh]'} w-full flex flex-col bg-background overflow-hidden`}>
+      {!mobile && <>
       {/* Test-harness banner */}
       <div className="shrink-0 flex items-center justify-between gap-4 px-4 py-2 bg-amber-500/10 border-b border-amber-500/30 text-amber-300 text-sm">
         <div className="flex items-center gap-2 min-w-0">
@@ -791,6 +794,7 @@ export default function MerchStation() {
       </div>
 
       <div className="shrink-0" inert={stage === 'payment' && !paymentStage.canBack}><StationHeader active="merch" /></div>
+      </>}
 
       <div className="flex-1 flex min-h-0">
         <div
