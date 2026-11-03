@@ -1,115 +1,129 @@
 {
-  "startedAt": "2026-11-03T06:36:32.869Z",
+  "startedAt": "2026-11-03T07:51:45.678Z",
   "requiredQuietSeconds": 300,
   "maxWatchSeconds": 600,
   "samples": [
     {
-      "at": "2026-11-03T06:36:18.252Z",
+      "at": "2026-11-03T07:51:37.108Z",
       "otherStation": 0,
       "otherUnbound": 0,
       "nonTestSessions": 0,
       "nonTestSales": 0
     },
     {
-      "at": "2026-11-03T06:36:48.307Z",
+      "at": "2026-11-03T07:51:52.136Z",
       "otherStation": 0,
       "otherUnbound": 0,
       "nonTestSessions": 0,
       "nonTestSales": 0
     },
     {
-      "at": "2026-11-03T06:37:03.335Z",
+      "at": "2026-11-03T07:52:07.166Z",
       "otherStation": 0,
       "otherUnbound": 0,
       "nonTestSessions": 0,
       "nonTestSales": 0
     },
     {
-      "at": "2026-11-03T06:37:33.390Z",
+      "at": "2026-11-03T07:52:22.199Z",
       "otherStation": 0,
       "otherUnbound": 0,
       "nonTestSessions": 0,
       "nonTestSales": 0
     },
     {
-      "at": "2026-11-03T06:37:48.420Z",
+      "at": "2026-11-03T07:52:37.237Z",
       "otherStation": 0,
       "otherUnbound": 0,
       "nonTestSessions": 0,
       "nonTestSales": 0
     },
     {
-      "at": "2026-11-03T06:38:18.476Z",
+      "at": "2026-11-03T07:52:52.271Z",
       "otherStation": 0,
       "otherUnbound": 0,
       "nonTestSessions": 0,
       "nonTestSales": 0
     },
     {
-      "at": "2026-11-03T06:38:33.504Z",
+      "at": "2026-11-03T07:53:22.327Z",
       "otherStation": 0,
       "otherUnbound": 0,
       "nonTestSessions": 0,
       "nonTestSales": 0
     },
     {
-      "at": "2026-11-03T06:38:48.534Z",
+      "at": "2026-11-03T07:53:37.354Z",
       "otherStation": 0,
       "otherUnbound": 0,
       "nonTestSessions": 0,
       "nonTestSales": 0
     },
     {
-      "at": "2026-11-03T06:39:03.562Z",
+      "at": "2026-11-03T07:54:07.409Z",
       "otherStation": 0,
       "otherUnbound": 0,
       "nonTestSessions": 0,
       "nonTestSales": 0
     },
     {
-      "at": "2026-11-03T06:39:18.586Z",
+      "at": "2026-11-03T07:54:22.433Z",
       "otherStation": 0,
       "otherUnbound": 0,
       "nonTestSessions": 0,
       "nonTestSales": 0
     },
     {
-      "at": "2026-11-03T06:39:48.646Z",
+      "at": "2026-11-03T07:54:37.463Z",
       "otherStation": 0,
       "otherUnbound": 0,
       "nonTestSessions": 0,
       "nonTestSales": 0
     },
     {
-      "at": "2026-11-03T06:40:03.669Z",
+      "at": "2026-11-03T07:54:52.489Z",
       "otherStation": 0,
       "otherUnbound": 0,
       "nonTestSessions": 0,
       "nonTestSales": 0
     },
     {
-      "at": "2026-11-03T06:40:18.698Z",
+      "at": "2026-11-03T07:55:07.516Z",
       "otherStation": 0,
       "otherUnbound": 0,
       "nonTestSessions": 0,
       "nonTestSales": 0
     },
     {
-      "at": "2026-11-03T06:40:48.758Z",
+      "at": "2026-11-03T07:55:22.547Z",
       "otherStation": 0,
       "otherUnbound": 0,
       "nonTestSessions": 0,
       "nonTestSales": 0
     },
     {
-      "at": "2026-11-03T06:41:03.784Z",
+      "at": "2026-11-03T07:55:37.578Z",
       "otherStation": 0,
       "otherUnbound": 0,
       "nonTestSessions": 0,
       "nonTestSales": 0
     },
     {
-      "at": "2026-11-03T06:41:33.865Z",
+      "at": "2026-11-03T07:56:07.625Z",
+      "otherStation": 0,
+      "otherUnbound": 0,
+      "nonTestSessions": 0,
+      "nonTestSales": 0
+    },
+    {
+      "at": "2026-11-03T07:56:22.655Z",
+      "otherStation": 0,
+      "otherUnbound": 0,
+      "nonTestSessions": 0,
+      "nonTestSales": 0
+    },
+    {
+      "at": "2026-11-03T07:56:52.715Z",
       "otherStation": 0,
       "otherUnbound": 0,
       "nonTestSessions": 0,
@@ -117,6 +131,6 @@
     }
   ],
   "outcome": "quiet_window_passed",
-  "quietSeconds": 302.066,
-  "finishedAt": "2026-11-03T06:41:36.249Z"
+  "quietSeconds": 312.315,
+  "finishedAt": "2026-11-03T07:56:59.329Z"
 }
