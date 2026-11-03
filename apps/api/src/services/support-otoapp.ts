@@ -40,6 +40,8 @@ export interface OtoAppRecordsOutcome {
   status: 'found' | 'empty' | 'denied' | 'unavailable';
   rows: Record<string, unknown>[];
   note: string | null;
+  /** The app refused, in its own words, a person the platform let through. */
+  refusedByApp?: boolean;
 }
 
 export interface OtoAppRecordsInput {
@@ -101,7 +103,7 @@ export async function otoAppRecordsByPhone(input: OtoAppRecordsInput): Promise<O
   } catch (err) {
     return failed(err);
   }
-  if (!opened.ok) return { status: 'denied', rows: [], note: opened.refusal.message };
+  if (!opened.ok) return { status: 'denied', rows: [], note: opened.refusal.message, refusedByApp: opened.refusal.system === 'oto_app' };
 
   const { session } = opened;
   try {
@@ -112,7 +114,7 @@ export async function otoAppRecordsByPhone(input: OtoAppRecordsInput): Promise<O
       remainingMs: Math.max(0, deadline - Date.now()),
     });
     if (res.status === 401 || res.status === 403) {
-      return { status: 'denied', rows: [], note: otoAppEnvelope(res.body).message ?? 'The OTO App refused this search.' };
+      return { status: 'denied', rows: [], note: otoAppEnvelope(res.body).message ?? 'The OTO App refused this search.', refusedByApp: true };
     }
     if (res.status !== 200 || !isRecord(res.body) || !Array.isArray(res.body.records)) {
       return unavailable(`The OTO App answered ${res.status}, so its records could not be searched.`);

@@ -1,7 +1,9 @@
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { branch, type Db } from '@oto/db';
-import { normalizePhone, parseBandCode, parseBandShortCode, type Permission } from '@oto/shared';
+import {
+  hasBoothCodeShape, isLegacyBoothCode, normaliseBoothCode, normalizePhone, parseBandCode, parseBandShortCode, type Permission,
+} from '@oto/shared';
 import { audit } from './audit';
 import { maskPersonal } from './audit-mask';
 import { branchReach } from './access-control';
@@ -31,6 +33,10 @@ import { withTx, type OpContext } from './tx';
  * records are additionally passed through the audit read's mask unless the
  * caller holds `admin:audit:read_sensitive` operator-wide.
  *
+ * A ROW LEADS WITH WHAT THE PERSON AT THE DESK ASKS. The Console lists the first
+ * eight scalar facts of a row (`rowFacts`), so the readers added for this lookup
+ * have their rows ordered for it, and a nested answer flattened, here (`deskFirst`).
+ *
  * Every lookup writes ONE audit row in the data_access category naming the
  * kinds searched and which sections answered with how many rows — never the
  * searched value and never a returned value — and the answer is handed over
@@ -50,7 +56,7 @@ export interface SupportSection {
   kind: SupportQueryKind;
   label: string;
   status: SupportSectionStatus;
-  /** The permission the owning route asks for; null where no route was called. */
+  /** The permission the owning route asks for; null where no route was called, or where the owning app itself refused and `note` is its own reason. */
   permission: string | null;
   rowCount: number;
   masked: boolean;
@@ -82,6 +88,8 @@ export function detectQueryKinds(raw: string): SupportQueryKind[] {
   if (parseBandCode(q) || parseBandShortCode(q)) kinds.push('band');
   if (RECEIPT.test(q)) kinds.push('receipt');
   if (SHORT_KEY.test(q)) kinds.push('booking', 'voucher');
+  // A booth code as people read it off the screen: `B1 RT7K MQ4X Z`. A check character that does not add up is still a voucher search, which then finds nothing.
+  else if (hasBoothCodeShape(normaliseBoothCode(q)) || isLegacyBoothCode(q)) kinds.push('voucher');
   if (ACTION_ID.test(q) && !kinds.includes('band')) kinds.push('action');
   return kinds;
 }
@@ -128,16 +136,25 @@ function errorCode(body: unknown): string {
   return typeof error?.code === 'string' ? ` (${error.code})` : '';
 }
 
-/** One call per live park, for the readers that answer one park at a time. */
+/**
+ * One call per live park, for the readers that answer one park at a time.
+ * `limited` names the bound of a reader that says `truncated` when it cut its
+ * answer, so the note names only the parks where something was left out.
+ */
 async function perBranch(caller: Caller, branches: readonly { id: string; name: string }[],
-  urlOf: (branchId: string) => string, route: GetRouteTemplate, rowsOf: (body: unknown) => Rows): Promise<Outcome> {
-  const answers = await Promise.all(branches.map(async b => ({ b, out: outcomeOf(await get(caller, urlOf(b.id), route), rowsOf) })));
+  urlOf: (branchId: string) => string, route: GetRouteTemplate, rowsOf: (body: unknown) => Rows, limited?: number): Promise<Outcome> {
+  const answers = await Promise.all(branches.map(async b => {
+    const res = await get(caller, urlOf(b.id), route);
+    return { b, out: outcomeOf(res, rowsOf), cut: res.status === 200 && isRecord(res.body) && res.body.truncated === true };
+  }));
   const rows = answers.flatMap(({ b, out }) => out.rows.map(row => ({ ...row, park: b.name })));
   const denied = answers.filter(a => a.out.status === 'denied').map(a => a.b.name);
   const failed = answers.filter(a => a.out.status === 'unavailable').map(a => a.b.name);
+  const cut = answers.filter(a => a.cut).map(a => a.b.name);
   const notes = [
     ...(denied.length > 0 ? [`Not readable at ${denied.join(', ')}.`] : []),
     ...(failed.length > 0 ? [`Could not be read at ${failed.join(', ')}.`] : []),
+    ...(limited !== undefined && cut.length > 0 ? [`Showing the newest ${limited} at ${cut.join(', ')}.`] : []),
   ];
   const status: SupportSectionStatus = rows.length > 0 ? 'found'
     : denied.length === answers.length && answers.length > 0 ? 'denied'
@@ -148,6 +165,63 @@ async function perBranch(caller: Caller, branches: readonly { id: string; name: 
 function section(input: Omit<SupportSection, 'rowCount' | 'masked'> & { masked?: boolean }): SupportSection {
   return { ...input, masked: input.masked ?? false, rowCount: input.rows.length };
 }
+
+// --- A row as the Console lists it ------------------------------------------------
+
+/**
+ * The row with the facts named in `order` at its front, those with a value and
+ * in that order; every other fact stays behind them. Nothing is dropped, so the
+ * order alone decides what reaches the Console's compact list.
+ */
+function deskFirst(row: Rows[number], order: readonly string[]): Rows[number] {
+  const first = order.filter(key => row[key] !== null && row[key] !== undefined);
+  const rest = Object.keys(row).filter(key => !first.includes(key));
+  return Object.fromEntries([...first, ...rest].map(key => [key, row[key]]));
+}
+
+/** One passage: when, which way, through which lane at which park, what the reader said of it, and a clock it could not trust. */
+function gateRow(row: Rows[number]): Rows[number] {
+  const clock = row.clockTrusted === false ? ['clockTrusted'] : [];
+  const flags = ['exitWithoutEntry', 'revoked', 'offline'].filter(key => row[key] === true);
+  return deskFirst(row, ['at', 'kind', 'direction', 'stationName', 'park', 'reason', 'alarm', ...clock, ...flags, 'bandShortCode', 'bandKind']);
+}
+
+/**
+ * One code: what it is, what it is worth, whether it was used and where. The
+ * reader's nested type, value and redemption are flat here because the compact
+ * list shows scalars.
+ */
+function voucherRow(row: Rows[number]): Rows[number] {
+  const field = (object: unknown, key: string): unknown => (isRecord(object) ? object[key] ?? null : null);
+  const common = {
+    record: row.record, id: row.id, codeLast4: row.codeLast4,
+    type: field(row.type, 'nameEn'), typeKind: field(row.type, 'kind'), value: field(row.value, 'text'),
+  };
+  if (row.record === 'voucher_type') return deskFirst({ ...common, state: row.state }, ['record', 'state', 'type', 'value', 'codeLast4']);
+  const where = [field(row.redeemed, 'branchName'), field(row.redeemed, 'stationName')].filter(Boolean).join(', ');
+  return deskFirst({
+    ...common, status: row.status, park: row.branchName, branchId: row.branchId, businessDate: row.businessDate,
+    redeemedAt: field(row.redeemed, 'at'), redeemedWhere: where || null, receiptNumber: field(row.redeemed, 'receiptNumber'),
+    saleId: field(row.redeemed, 'saleId'), redeemedSatang: field(row.value, 'redeemedSatang'),
+    expiresAt: row.expiresAt, prize: field(row.prize, 'nameEn'), issuedAt: row.issuedAt, issuedFrom: field(row.place, 'name'),
+    printCount: row.printCount, source: row.source,
+  }, ['status', 'type', 'value', 'codeLast4', 'park', 'redeemedAt', 'redeemedWhere', 'receiptNumber', 'expiresAt', 'prize', 'issuedAt', 'issuedFrom']);
+}
+
+/** What tells a person which of the OTO App's records this is, by the kind of record it says it is. */
+const OTO_APP_DESK: Readonly<Record<string, readonly string[]>> = {
+  person: ['personKind', 'name', 'nickname', 'status', 'park'],
+  event: ['eventType', 'name', 'guardianName', 'date', 'startTime', 'status', 'park'],
+  event_registration: ['registrationKind', 'eventType', 'name', 'guardianName', 'date', 'park'],
+  checkin: ['checkinKind', 'serviceType', 'status', 'name', 'guardianName', 'children', 'park', 'date', 'checkedInAt', 'checkedOutAt', 'createdAt', 'pickedUpAt'],
+};
+function otoAppRow(row: Rows[number]): Rows[number] {
+  const order = typeof row.record === 'string' ? OTO_APP_DESK[row.record] : undefined;
+  return order ? deskFirst(row, order) : row;
+}
+
+/** Said only when nothing was found, where "nothing" would otherwise read as "no such code". */
+const PROMO_CODES_NOT_SEARCHED = 'Searches voucher codes and shared voucher-type codes. A park promo code that a till takes as a discount is not searched here.';
 
 // --- The lookup -----------------------------------------------------------------------
 
@@ -161,7 +235,7 @@ export interface SupportLookupInput {
   /** Resolves an action id to the trace's anchor, or answers why it cannot (permission, nothing found). */
   traceAnchor: (actionId: string) => Promise<{ status: 'found' | 'empty' | 'denied'; rows: Rows; note: string | null }>;
   /** What the OTO App's own reader says this caller may see for one E.164 phone (`support-otoapp.ts`). */
-  otoAppRecords: (phone: string) => Promise<{ status: SupportSectionStatus; rows: Rows; note: string | null }>;
+  otoAppRecords: (phone: string) => Promise<{ status: SupportSectionStatus; rows: Rows; note: string | null; refusedByApp?: boolean }>;
 }
 
 export async function supportLookup(app: FastifyInstance, input: SupportLookupInput): Promise<SupportLookupAnswer> {
@@ -208,19 +282,20 @@ export async function supportLookup(app: FastifyInstance, input: SupportLookupIn
       sections.push(section({ key: 'platform.accounts', app: 'platform', kind, label: 'Staff sign-in accounts', ...accounts,
         permission: 'admin:account:read' }));
 
-      const records = phone === null ? { status: 'empty' as const, rows: [], note: null } : await input.otoAppRecords(phone);
-      sections.push(section({ key: 'oto_app.records', app: 'oto_app', kind, label: 'OTO App records', ...records,
-        permission: 'app:oto_app:access', rows: shield(records.rows), masked: !sensitive && records.rows.length > 0 }));
+      const records = phone === null ? { status: 'empty' as const, rows: [], note: null, refusedByApp: false } : await input.otoAppRecords(phone);
+      sections.push(section({ key: 'oto_app.records', app: 'oto_app', kind, label: 'OTO App records', status: records.status, note: records.note,
+        // A person the app itself refused does hold the permission: what is missing is in the app's own sentence.
+        permission: records.refusedByApp ? null : 'app:oto_app:access',
+        rows: shield(records.rows).map(otoAppRow), masked: !sensitive && records.rows.length > 0 }));
     } else if (kind === 'band') {
       const sales = outcomeOf(await get(caller, `/sales/lookup?band=${enc}`, 'GET /sales/lookup'), body => listAt(body, 'sales'));
       sections.push(section({ key: 'pos.sales', app: 'pos', kind, label: 'Sales and payments', ...sales, permission: 'pos:sale:read' }));
       const wallet = outcomeOf(await get(caller, `/wallets/lookup?key=${enc}`, 'GET /wallets/lookup'), walletRows);
       sections.push(section({ key: 'pos.wallet', app: 'pos', kind, label: 'Wallet', ...wallet, permission: 'pos:wallet:read' }));
       const gate = await perBranch(caller, branches, id => `/branches/${id}/gate-events?band=${enc}`, 'GET /branches/:id/gate-events',
-        body => listAt(body, 'events'));
+        body => listAt(body, 'events'), GATE_EVENTS_LIMIT);
       sections.push(section({ key: 'pos.gate_events', app: 'pos', kind, label: 'Gate events', ...gate, permission: 'pos:checkin:read',
-        note: [gate.note, gate.rows.length >= GATE_EVENTS_LIMIT ? `Showing the newest ${GATE_EVENTS_LIMIT} at each park.` : null]
-          .filter(Boolean).join(' ') || null }));
+        rows: gate.rows.map(gateRow) }));
     } else if (kind === 'receipt') {
       const sales = outcomeOf(await get(caller, `/sales/lookup?receipt=${enc}`, 'GET /sales/lookup'), body => listAt(body, 'sales'));
       sections.push(section({ key: 'pos.sales', app: 'pos', kind, label: 'Sales and payments', ...sales, permission: 'pos:sale:read' }));
@@ -233,7 +308,8 @@ export async function supportLookup(app: FastifyInstance, input: SupportLookupIn
       sections.push(section({ key: 'pos.wallet', app: 'pos', kind, label: 'Wallet voucher', ...wallet, permission: 'pos:wallet:read' }));
       // Never `GET /vouchers/lookup`: that one counts a wrong code against a till and can lock it.
       const promo = outcomeOf(await get(caller, `/vouchers/by-code?code=${enc}`, 'GET /vouchers/by-code'), body => listAt(body, 'vouchers'));
-      sections.push(section({ key: 'pos.promo_voucher', app: 'pos', kind, label: 'Promotion voucher', ...promo, permission: 'admin:booth:read' }));
+      sections.push(section({ key: 'pos.promo_voucher', app: 'pos', kind, label: 'Promotion voucher', ...promo, permission: 'admin:booth:read',
+        rows: promo.rows.map(voucherRow), note: promo.status === 'empty' ? PROMO_CODES_NOT_SEARCHED : promo.note }));
     } else if (kind === 'account') {
       const sessions = outcomeOf(await get(caller, `/accounts/${q}/sessions`, 'GET /accounts/:id/sessions'), body => listAt(body, 'sessions'));
       sections.push(section({ key: 'platform.account_sessions', app: 'platform', kind, label: 'Account sessions', ...sessions,

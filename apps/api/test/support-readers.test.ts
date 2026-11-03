@@ -4,7 +4,8 @@ import { hash } from '@node-rs/argon2';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
-  alert, auditLog, band, bandEvent, redemptionThrottle, schema as s, station, syncEvent, ticketPackage, voucher, voucherDefinition, voucherMiss,
+  alert, auditLog, band, bandEvent, boothConfigVersion, boothPrize, redemptionThrottle, schema as s, spin, station, syncEvent, ticketPackage, voucher,
+  voucherDefinition, voucherMiss,
 } from '@oto/db';
 import { bandShortCode, mintBoothCode, newId } from '@oto/shared';
 import { FakeOtoApp, OTOAPP_WORDS, fakeUser, seedFakeOtoAppWorld, type FakeOtoAppWorld } from './fake-otoapp';
@@ -64,7 +65,7 @@ async function person(phone: string, grants: Array<{ permissions: string[]; scop
   return signInAs(ctx.app, phone, PASSWORD);
 }
 
-async function sellAdultBand(): Promise<{ id: string; code: string }> {
+async function sellAdultBand(): Promise<{ id: string; code: string; saleId: string }> {
   const [till] = await ctx.db.select().from(station).where(eq(station.codePrefix, 'T1'));
   const [pkg] = await ctx.db.select().from(ticketPackage).where(and(eq(ticketPackage.branchId, till!.branchId), eq(ticketPackage.name, '2 Hours Play')));
   const saleId = newId();
@@ -74,7 +75,7 @@ async function sellAdultBand(): Promise<{ id: string; code: string }> {
   const paid = await ctx.app.inject({ method: 'POST', url: `/sales/${saleId}/finalise`, headers: { cookie: reception }, payload: {} });
   expect(paid.statusCode, paid.body).toBe(200);
   const [row] = await ctx.db.select().from(band).where(eq(band.saleId, saleId));
-  return { id: row!.id, code: row!.code };
+  return { id: row!.id, code: row!.code, saleId };
 }
 
 async function pass(bandId: string, kind: 'entry' | 'exit' | 'denied' | 'timeout' | 'alarm', stationId: string, at: Date, detail: Record<string, unknown> = {}) {
@@ -82,6 +83,13 @@ async function pass(bandId: string, kind: 'entry' | 'exit' | 'denied' | 'timeout
   await ctx.db.insert(bandEvent).values({ id, bandId, kind, stationId, boxId, detail: { direction: kind === 'exit' ? 'exit' : 'entry', side: 'left', ...detail }, createdAt: at });
   return id;
 }
+
+/** `count` refusals of one band at one lane, a minute apart. */
+const refusals = (bandId: string, stationId: string, count: number, day: number) => ctx.db.insert(bandEvent).values(
+  Array.from({ length: count }, (_, i) => ({ id: newId(), bandId, kind: 'denied' as const, stationId, boxId, detail: { reason: 'GATE_BUSY' }, createdAt: new Date(Date.UTC(2030, 3, day, 0, i)) })));
+
+/** The Console's compact list shows the first eight scalar facts of a row: `rowFacts` in `apps/console/src/lib/supportRules.ts`, pinned there on these shapes. */
+const onTheScreen = (row: Record<string, unknown>) => Object.keys(row).filter(key => row[key] === null || typeof row[key] !== 'object').slice(0, 8);
 
 beforeAll(async () => {
   fake = await FakeOtoApp.start();
@@ -170,7 +178,47 @@ describe('SCRUM-674 one band’s gate journal', () => {
     expect(res.body.truncated).toBe(true);
     expect(res.body.events[0].at).toBe(new Date(Date.UTC(2030, 2, 3, 0, 52)).toISOString());
     const console = await lookup(admin, busy.code, 'band');
-    expect(sectionOf(console, 'pos.gate_events')).toMatchObject({ status: 'found', rowCount: 50, note: 'Showing the newest 50 at each park.' });
+    expect(sectionOf(console, 'pos.gate_events')).toMatchObject({ status: 'found', rowCount: 50, note: 'Showing the newest 50 at Oto Play Park, Central Floresta.' });
+  });
+
+  it('notes a limit only for the park the reader actually cut, not by how many rows the parks add up to', async () => {
+    // Fifty-five between two parks, neither one cut.
+    const twoParks = await sellAdultBand();
+    await refusals(twoParks.id, centralLane, 30, 1);
+    await refusals(twoParks.id, chalongLane, 25, 2);
+    expect(sectionOf(await lookup(admin, twoParks.code, 'band'), 'pos.gate_events')).toMatchObject({ status: 'found', rowCount: 55, note: null });
+    // Exactly the limit at one park: all of it is there.
+    const exactly = await sellAdultBand();
+    await refusals(exactly.id, centralLane, 50, 3);
+    expect(sectionOf(await lookup(admin, exactly.code, 'band'), 'pos.gate_events')).toMatchObject({ status: 'found', rowCount: 50, note: null });
+    // One cut and one not: only the one that was.
+    const oneCut = await sellAdultBand();
+    await refusals(oneCut.id, centralLane, 51, 4);
+    await refusals(oneCut.id, chalongLane, 3, 5);
+    expect(sectionOf(await lookup(admin, oneCut.code, 'band'), 'pos.gate_events')).toMatchObject({ status: 'found', rowCount: 53, note: 'Showing the newest 50 at Oto Play Park, Central Floresta.' });
+  });
+
+  it('leads each row with what the desk asks, so those facts reach the Console’s compact list', async () => {
+    const worn = await sellAdultBand();
+    await pass(worn.id, 'denied', centralLane, new Date('2030-03-08T03:30:00Z'), { reason: 'ANTI_PASSBACK' });
+    await pass(worn.id, 'exit', centralLane, new Date('2030-03-08T04:00:00Z'), { exitWithoutEntry: true, offline: true });
+    const untrusted = newId();
+    const stamp = new Date('2030-03-08T01:00:00Z');
+    await ctx.db.insert(syncEvent).values({ eventId: untrusted, boxId, journalEpoch: 1, boxSeq: randomInt(1_000_000), type: 'band.gate_event', occurredAt: stamp, receivedAt: new Date('2030-03-08T02:00:00Z'),
+      clockTrust: 'untrusted', businessDate: '2030-03-08', operatorId: oto, branchId: central, stationId: centralLane, actorKind: 'box', payload: {}, payloadHash: 'b'.repeat(64), sig: 'test',
+    } as typeof syncEvent.$inferInsert);
+    await pass(worn.id, 'entry', centralLane, stamp, { sourceEventId: untrusted });
+    await pass(worn.id, 'entry', chalongLane, new Date('2030-03-08T06:00:00Z'));
+
+    const rows = sectionOf(await lookup(admin, worn.code, 'band'), 'pos.gate_events').rows as Array<Record<string, unknown>>;
+    const byKind = (kind: string, stationName: string) => rows.find(row => row.kind === kind && row.stationName === stationName)!;
+    expect(onTheScreen(byKind('entry', 'ZZ TEST Chalong lane'))).toEqual(['at', 'kind', 'direction', 'stationName', 'park', 'bandShortCode', 'bandKind', 'id']);
+    expect(onTheScreen(byKind('denied', 'ZZ TEST Central lane'))).toEqual(['at', 'kind', 'direction', 'stationName', 'park', 'reason', 'bandShortCode', 'bandKind']);
+    expect(onTheScreen(byKind('exit', 'ZZ TEST Central lane'))).toEqual(['at', 'kind', 'direction', 'stationName', 'park', 'exitWithoutEntry', 'offline', 'bandShortCode']);
+    expect(onTheScreen(byKind('entry', 'ZZ TEST Central lane'))).toEqual(['at', 'kind', 'direction', 'stationName', 'park', 'clockTrusted', 'bandShortCode', 'bandKind']);
+    expect(byKind('entry', 'ZZ TEST Central lane').clockTrusted).toBe(false);
+    // Only the order changed: the rest of the row is behind them.
+    expect(byKind('entry', 'ZZ TEST Chalong lane')).toMatchObject({ bandId: worn.id, stationId: chalongLane, reason: null, alarm: null, clockTrusted: true, revoked: false, side: 'left' });
   });
 
   it('refuses the anonymous, an account without the reader, and a park out of the caller’s reach', async () => {
@@ -262,6 +310,61 @@ describe('SCRUM-674 one voucher code', () => {
     expect(res.raw).not.toContain(accountId);
   });
 
+  it('answers a redeemed prize voucher: its worth, where it was used, on which receipt, and nobody by name', async () => {
+    const staffOf = async (phone: string) => {
+      const [row] = await ctx.db.select({ id: s.account.id, name: s.employee.name, nickname: s.employee.nickname }).from(s.account)
+        .leftJoin(s.employee, eq(s.employee.id, s.account.employeeId)).where(eq(s.account.phone, phone));
+      return row!;
+    };
+    const [redeemer, issuer] = [await staffOf(RECEPTION.phone), await staffOf(BRANCH_MANAGER.phone)];
+    expect(redeemer.name ?? redeemer.nickname).toBeTruthy();
+    const [booth] = await ctx.db.select().from(station).where(eq(station.name, 'Booth 1')).limit(1);
+    const [version] = await ctx.db.select().from(boothConfigVersion).where(eq(boothConfigVersion.stationId, booth!.id)).orderBy(desc(boothConfigVersion.version)).limit(1);
+    const [prize] = await ctx.db.select().from(boothPrize).where(and(eq(boothPrize.stationId, booth!.id), eq(boothPrize.nameEn, '100 THB Voucher')));
+    const [till] = await ctx.db.select().from(station).where(eq(station.codePrefix, 'T1'));
+    const { saleId } = await sellAdultBand();
+    const [sale] = await ctx.db.select().from(s.sale).where(eq(s.sale.id, saleId));
+    const [type] = await ctx.db.select().from(voucherDefinition).where(eq(voucherDefinition.id, prize!.voucherDefinitionId!));
+    const redeemedAt = new Date('2030-03-09T05:00:00Z');
+    const { id, code } = await issue(booth!.branchId, { voucherDefinitionId: type!.id, status: 'redeemed', issuedByAccountId: issuer.id, redeemedAt, saleId,
+      redeemedByAccountId: redeemer.id, redeemedBranchId: till!.branchId, redeemedStationId: till!.id, printCount: 2 });
+    const spinId = newId();
+    await ctx.db.insert(spin).values({ id: spinId, operatorId: oto, branchId: booth!.branchId, stationId: booth!.id, boxId: booth!.boxId!, boothConfigVersionId: version!.id, outcome: 'prize',
+      prizeId: prize!.id, voucherId: id, staffAccountId: issuer.id, simulated: false, occurredAt: new Date('2030-03-08T05:00:00Z'), businessDate: '2030-03-08' });
+    // What the slip printed in its Staff row, which the ledger answers and this reader does not.
+    await ctx.db.insert(auditLog).values({ id: newId(), action: 'spin.record', entityType: 'spin', entityId: spinId, after: { staffLabel: 'ZZ TEST ROSTER NAME' } });
+
+    const res = await get(admin, `/vouchers/by-code?code=${code}`);
+    expect(res.status, res.raw).toBe(200);
+    expect(res.body.vouchers).toEqual([expect.objectContaining({
+      record: 'voucher', id, status: 'redeemed', codeLast4: code.slice(-4), printCount: 2, prize: { id: prize!.id, nameEn: '100 THB Voucher' },
+      type: expect.objectContaining({ id: type!.id, nameEn: type!.nameEn }), value: expect.objectContaining({ kind: 'money', text: expect.stringContaining('off') }),
+      redeemed: { at: redeemedAt.toISOString(), branchName: 'Oto Play Park, Central Floresta', stationName: till!.name, saleId, receiptNumber: sale!.receiptNumber },
+      place: expect.objectContaining({ kind: 'booth', stationId: booth!.id }),
+    })]);
+    for (const person of [redeemer.id, issuer.id, redeemer.name, redeemer.nickname, issuer.name, issuer.nickname, 'ZZ TEST ROSTER NAME']) {
+      if (person) expect(res.raw).not.toContain(person);
+    }
+
+    // On the Console: flat, and the facts asked about are the ones listed.
+    const console = await lookup(admin, code, 'voucher');
+    expect(console.status, console.raw).toBe(200);
+    const [row] = sectionOf(console, 'pos.promo_voucher').rows as Array<Record<string, unknown>>;
+    expect(onTheScreen(row!)).toEqual(['status', 'type', 'value', 'codeLast4', 'park', 'redeemedAt', 'redeemedWhere', 'receiptNumber']);
+    expect(row).toMatchObject({ status: 'redeemed', type: type!.nameEn, redeemedAt: redeemedAt.toISOString(), redeemedWhere: `Oto Play Park, Central Floresta, ${till!.name}`,
+      receiptNumber: sale!.receiptNumber, prize: '100 THB Voucher', saleId, printCount: 2, id });
+    expect(Object.values(row!).filter(value => value !== null && typeof value === 'object')).toEqual([]);
+    expect(console.raw).not.toContain(code);
+    for (const person of [redeemer.id, issuer.id, 'ZZ TEST ROSTER NAME']) expect(console.raw).not.toContain(person);
+  });
+
+  it('lists a voucher not yet used by status, worth, park and expiry', async () => {
+    const { code } = await issue(central);
+    const [row] = sectionOf(await lookup(admin, code, 'voucher'), 'pos.promo_voucher').rows as Array<Record<string, unknown>>;
+    expect(onTheScreen(row!)).toEqual(['status', 'type', 'value', 'codeLast4', 'park', 'expiresAt', 'issuedAt', 'issuedFrom']);
+    expect(row).toMatchObject({ status: 'issued', type: 'ZZ TEST 674 voucher', redeemedAt: null, receiptNumber: null, prize: null });
+  });
+
   it('answers a fixed-code type by its shared code, whatever its state', async () => {
     const id = newId();
     await ctx.db.insert(voucherDefinition).values({ id, operatorId: oto, code: `zz-674-fixed-${id}`, nameEn: 'ZZ TEST 674 fixed', kind: 'discount', valueType: 'percent', valueBp: 1000, codeMode: 'fixed', fixedCode: 'ZZFIX674', active: false });
@@ -269,6 +372,9 @@ describe('SCRUM-674 one voucher code', () => {
     expect(res.status, res.raw).toBe(200);
     expect(res.body.vouchers).toEqual([expect.objectContaining({ record: 'voucher_type', id, codeLast4: 'X674', state: 'off', value: expect.objectContaining({ text: '10% off' }) })]);
     expect(res.raw).not.toContain('ZZFIX674');
+    const [row] = sectionOf(await lookup(admin, 'ZZFIX674', 'voucher'), 'pos.promo_voucher').rows as Array<Record<string, unknown>>;
+    expect(onTheScreen(row!)).toEqual(['record', 'state', 'type', 'value', 'codeLast4', 'id', 'typeKind']);
+    expect(row).toMatchObject({ record: 'voucher_type', state: 'off', type: 'ZZ TEST 674 fixed', value: '10% off', codeLast4: 'X674' });
   });
 
   it('answers empty for a code nobody issued and for one that cannot be a voucher', async () => {
@@ -277,6 +383,28 @@ describe('SCRUM-674 one voucher code', () => {
       expect(res.status, res.raw).toBe(200);
       expect(res.body).toEqual({ vouchers: [] });
     }
+  });
+
+  it('finds a booth code in the grouped form people read off the screen, without being told it is a voucher', async () => {
+    const { id, code } = await issue(central);
+    const parts = [code.slice(0, 2), code.slice(2, 6), code.slice(6, 10), code.slice(10)];
+    for (const typed of [parts.join(' '), parts.join('-'), code.toLowerCase()]) {
+      const res = await get(admin, `/console/support/lookup?q=${encodeURIComponent(typed)}`);
+      expect(res.status, res.raw).toBe(200);
+      expect(res.body.kinds, typed).toContain('voucher');
+      expect(sectionOf(res, 'pos.promo_voucher').rows.map(row => row.id), typed).toEqual([id]);
+      // The wallet's reader takes the same text and answers that it has no such key, not that it failed.
+      expect(sectionOf(res, 'pos.wallet').status, typed).toBe('empty');
+    }
+  });
+
+  it('says what it did not search when it found nothing: a park promo code a till takes is not a voucher code', async () => {
+    const empty = sectionOf(await lookup(admin, 'STAFF10', 'voucher'), 'pos.promo_voucher');
+    expect(empty).toMatchObject({ status: 'empty', rowCount: 0 });
+    expect(empty.note).toContain('A park promo code that a till takes as a discount is not searched here.');
+    const { code } = await issue(central);
+    expect(sectionOf(await lookup(admin, code, 'voucher'), 'pos.promo_voucher').note).toBeNull();
+    expect(sectionOf(await lookup(doorOnly, code, 'voucher'), 'pos.promo_voucher').note).not.toContain('promo code');
   });
 
   it('refuses the anonymous and an account without the reader', async () => {
@@ -420,16 +548,46 @@ describe('SCRUM-674 the OTO App’s records by phone', () => {
     fake.resetObservations();
     // No tile on the platform: refused before the app is contacted.
     const noTile = (await recordsOf(doorOnly)).section;
-    expect(noTile).toMatchObject({ status: 'denied', rowCount: 0 });
+    expect(noTile).toMatchObject({ status: 'denied', rowCount: 0, permission: 'app:oto_app:access' });
     expect(noTile.note).toContain('app:oto_app:access');
     expect(fake.requests).toEqual([]);
-    // The tile but no user in the app, and a disabled one: the app's sentence.
-    expect((await recordsOf(noUser)).section).toMatchObject({ status: 'denied', rowCount: 0, note: OTOAPP_WORDS.notProvisioned });
-    expect((await recordsOf(disabledUser)).section).toMatchObject({ status: 'denied', rowCount: 0, note: OTOAPP_WORDS.disabled });
+    // The tile but no user in the app, and a disabled one: the app's sentence, and no permission named, because they hold it.
+    expect((await recordsOf(noUser)).section).toMatchObject({ status: 'denied', rowCount: 0, permission: null, note: OTOAPP_WORDS.notProvisioned });
+    expect((await recordsOf(disabledUser)).section).toMatchObject({ status: 'denied', rowCount: 0, permission: null, note: OTOAPP_WORDS.disabled });
     // A staff rank in the app: the reader's own refusal, and the session is still logged out.
     fake.resetObservations();
-    expect((await recordsOf(staffUser)).section).toMatchObject({ status: 'denied', rowCount: 0, note: OTOAPP_WORDS.insufficient });
+    expect((await recordsOf(staffUser)).section).toMatchObject({ status: 'denied', rowCount: 0, permission: null, note: OTOAPP_WORDS.insufficient });
     expect(fake.logouts).toHaveLength(1);
+  });
+
+  it('leads each kind of record with what tells a person which one it is, for the Console’s compact list', async () => {
+    // Each row as the app's own reader writes it: `apps/oto-app/server/support-lookup-routes.ts`.
+    const phone = '+66810674097';
+    const common = { branchId: world.central, park: 'ZZ Central', name: 'ZZ TEST Child', guardianName: 'ZZ TEST Parent' };
+    const of = (id: string, row: Record<string, unknown>) => ({ phone, tenantId: world.tenantId, branchId: world.central, row: { record: row.record, id, ...row } });
+    fake.data.supportRecords.push(
+      of('zz-p', { record: 'person', personKind: 'employee', name: 'ZZ TEST Person', nickname: 'ZZ', status: 'active', branchId: world.central, park: 'ZZ Central' }),
+      of('zz-e', { record: 'event', eventType: 'party', name: 'ZZ TEST Party', guardianName: 'ZZ TEST Parent', date: '2030-03-01', startTime: '10:00', status: 'upcoming', branchId: world.central, park: 'ZZ Central' }),
+      of('zz-r', { record: 'event_registration', registrationKind: 'camp', eventId: 'zz-e', eventType: 'camp', date: '2030-03-01', ...common }),
+      of('zz-s', { record: 'checkin', checkinKind: 'service', serviceType: 'nanny', status: 'checked_out', name: common.name, guardianName: common.guardianName,
+        registeredAt: '2030-03-01T02:00:00.000Z', checkedInAt: '2030-03-01T03:00:00.000Z', checkedOutAt: '2030-03-01T04:00:00.000Z', branchId: world.central, park: 'ZZ Central' }),
+      of('zz-d', { record: 'checkin', checkinKind: 'dropoff', status: 'picked_up', guardianName: common.guardianName, children: 2,
+        createdAt: '2030-03-01T02:00:00.000Z', pickedUpAt: '2030-03-01T05:00:00.000Z', branchId: world.central, park: 'ZZ Central' }),
+      of('zz-c', { record: 'checkin', checkinKind: 'camp', date: '2030-03-01', status: 'present', checkedInAt: '2030-03-01T03:00:00.000Z', checkedOutAt: null,
+        eventId: 'zz-e', name: common.name, guardianName: common.guardianName, branchId: world.central, park: 'ZZ Central' }),
+    );
+    const rows = (await recordsOf(tileHolder, phone)).section.rows as Array<Record<string, unknown>>;
+    const shown = Object.fromEntries(rows.map(row => [row.id, onTheScreen(row)]));
+    expect(shown).toEqual({
+      'zz-p': ['personKind', 'name', 'nickname', 'status', 'park', 'record', 'id', 'branchId'],
+      'zz-e': ['eventType', 'name', 'guardianName', 'date', 'startTime', 'status', 'park', 'record'],
+      'zz-r': ['registrationKind', 'eventType', 'name', 'guardianName', 'date', 'park', 'record', 'id'],
+      'zz-s': ['checkinKind', 'serviceType', 'status', 'name', 'guardianName', 'park', 'checkedInAt', 'checkedOutAt'],
+      'zz-d': ['checkinKind', 'status', 'guardianName', 'children', 'park', 'createdAt', 'pickedUpAt', 'record'],
+      'zz-c': ['checkinKind', 'status', 'name', 'guardianName', 'park', 'date', 'checkedInAt', 'record'],
+    });
+    // Reordered, not reduced, and still masked.
+    expect(rows.find(row => row.id === 'zz-s')).toMatchObject({ name: '[redacted]', guardianName: '[redacted]', branchId: world.central, registeredAt: '2030-03-01T02:00:00.000Z' });
   });
 
   it('says unavailable when the app fails, and logs the session out', async () => {

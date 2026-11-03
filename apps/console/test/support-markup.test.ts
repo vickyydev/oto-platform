@@ -35,7 +35,8 @@ const SUBJECT = '01964800-0000-7000-8000-0000000000a2';
 const OTHER = '01964800-0000-7000-8000-0000000000a3';
 const OPERATOR = '01964800-0000-7000-8000-0000000000b1';
 const WINDOW = '01964800-0000-7000-8000-0000000000c1';
-const NOW = Date.parse('2026-10-28T03:00:00.000Z');
+const NOW_ISO = '2026-10-28T03:00:00.000Z';
+const NOW = Date.parse(NOW_ISO);
 const noop = () => undefined;
 const html = (element: ReturnType<typeof createElement>) => renderToStaticMarkup(element);
 
@@ -101,6 +102,67 @@ describe('SCRUM-648 lookup results', () => {
     expect((out.match(/data-masked="true"/g) ?? []).length).toBe(2);
     expect(out).not.toContain('[redacted]');
     expect(out).toContain('tourist');
+  });
+
+  /**
+   * Rows in the shapes and order `apps/api/src/services/support-lookup.ts` answers,
+   * pinned from that side by `apps/api/test/support-readers.test.ts`. The compact
+   * list shows the first eight scalar facts, so these are the facts a person sees.
+   */
+  const answered = (section: Pick<SupportLookup['sections'][number], 'key' | 'app' | 'kind' | 'label' | 'permission' | 'rows' | 'note'> & { status?: SupportLookup['sections'][number]['status'] }): SupportLookup => ({
+    generatedAt: NOW_ISO, kinds: [section.kind], detected: true, masked: false,
+    sections: [{ status: 'found', rowCount: section.rows.length, masked: false, ...section }],
+  });
+  const facts = (out: string) => [...out.matchAll(/<dt[^>]*>([^<]+)<\/dt>/g)].map(m => m[1]);
+
+  it('shows a redeemed voucher’s status, worth and where it was used, and leaves the ids for the row behind them', () => {
+    const out = html(createElement(LookupResults, { answer: answered({ key: 'pos.promo_voucher', app: 'pos', kind: 'voucher', label: 'Promotion voucher', permission: 'admin:booth:read', note: null, rows: [{
+      status: 'redeemed', type: 'ZZ 100 THB', value: '฿100.00 off', codeLast4: 'MQ4X', park: 'ZZ Central', redeemedAt: '2026-10-28T02:00:00.000Z', redeemedWhere: 'ZZ Central, ZZ Till 1',
+      receiptNumber: 'T1-000428', expiresAt: '2026-11-11T02:00:00.000Z', prize: '100 THB Voucher', issuedAt: '2026-10-27T02:00:00.000Z', issuedFrom: 'Booth 1', record: 'voucher', id: SUBJECT, typeKind: 'discount',
+    }] }) }));
+    expect(facts(out)).toEqual(['status', 'type', 'value', 'codeLast4', 'park', 'redeemedAt', 'redeemedWhere', 'receiptNumber']);
+    for (const seen of ['redeemed', 'ZZ 100 THB', '฿100.00 off', 'MQ4X', 'ZZ Central, ZZ Till 1', 'T1-000428']) expect(out).toContain(seen);
+    expect(out).not.toContain(SUBJECT);
+  });
+
+  it('shows a fixed-code voucher type by its name, value and state', () => {
+    const out = html(createElement(LookupResults, { answer: answered({ key: 'pos.promo_voucher', app: 'pos', kind: 'voucher', label: 'Promotion voucher', permission: 'admin:booth:read', note: null, rows: [{
+      record: 'voucher_type', state: 'off', type: 'ZZ fixed', value: '10% off', codeLast4: 'X674', id: SUBJECT, typeKind: 'discount',
+    }] }) }));
+    expect(facts(out)).toEqual(['record', 'state', 'type', 'value', 'codeLast4', 'id', 'typeKind']);
+    for (const seen of ['voucher_type', 'off', 'ZZ fixed', '10% off']) expect(out).toContain(seen);
+  });
+
+  it('shows a gate passage’s lane, direction, reason and park', () => {
+    const out = html(createElement(LookupResults, { answer: answered({ key: 'pos.gate_events', app: 'pos', kind: 'band', label: 'Gate events', permission: 'pos:checkin:read', note: 'Showing the newest 50 at ZZ Central.', rows: [{
+      at: '2026-10-28T02:00:00.000Z', kind: 'denied', direction: 'entry', stationName: 'ZZ Lane 1', park: 'ZZ Central', reason: 'ANTI_PASSBACK', bandShortCode: 'ZZ-Q7P4', bandKind: 'adult',
+      id: SUBJECT, bandId: OTHER, clockTrusted: true, stationId: OTHER, side: 'left', alarm: null, exitWithoutEntry: false, revoked: false, offline: false,
+    }] }) }));
+    expect(facts(out)).toEqual(['at', 'kind', 'direction', 'stationName', 'park', 'reason', 'bandShortCode', 'bandKind']);
+    for (const seen of ['denied', 'ZZ Lane 1', 'ZZ Central', 'ANTI_PASSBACK', 'Showing the newest 50 at ZZ Central.']) expect(out).toContain(seen);
+    expect(out).not.toContain(SUBJECT);
+  });
+
+  it('shows an OTO App check-in’s times and park, with its names masked', () => {
+    const out = html(createElement(LookupResults, { answer: answered({ key: 'oto_app.records', app: 'oto_app', kind: 'phone', label: 'OTO App records', permission: 'app:oto_app:access', note: null, rows: [{
+      checkinKind: 'service', serviceType: 'nanny', status: 'checked_out', name: '[redacted]', guardianName: '[redacted]', park: 'ZZ Central', checkedInAt: '2026-10-28T02:00:00.000Z', checkedOutAt: '2026-10-28T03:00:00.000Z',
+      record: 'checkin', id: SUBJECT, registeredAt: '2026-10-28T01:00:00.000Z', branchId: OTHER,
+    }] }) }));
+    expect(facts(out)).toEqual(['checkinKind', 'serviceType', 'status', 'name', 'guardianName', 'park', 'checkedInAt', 'checkedOutAt']);
+    expect((out.match(/data-masked="true"/g) ?? []).length).toBe(2);
+    expect(out).not.toContain('[redacted]');
+    expect(out).toContain('2026-10-28T03:00:00.000Z');
+  });
+
+  it('lets the app’s own sentence say why when the app refused, and names a permission only when it is the one missing', () => {
+    const refused = html(createElement(LookupResults, { answer: answered({ key: 'oto_app.records', app: 'oto_app', kind: 'phone', label: 'OTO App records', status: 'denied', permission: null, rows: [],
+      note: 'Your OTO App user has been disabled. Contact your administrator.' }) }));
+    expect(refused).toContain('Not on your access');
+    expect(refused).not.toContain('app:oto_app:access');
+    expect(refused).toContain('Your OTO App user has been disabled.');
+    const noTile = html(createElement(LookupResults, { answer: answered({ key: 'oto_app.records', app: 'oto_app', kind: 'phone', label: 'OTO App records', status: 'denied', permission: 'app:oto_app:access', rows: [],
+      note: 'Missing permission app:oto_app:access' }) }));
+    expect(noTile).toContain('Not on your access (app:oto_app:access)');
   });
 });
 

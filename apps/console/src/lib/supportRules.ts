@@ -41,7 +41,12 @@ export const isMasked = (value: unknown) => value === MASKED;
 const SCALAR = (v: unknown): v is string | number | boolean | null => v === null || ['string', 'number', 'boolean'].includes(typeof v);
 const HIDDEN_KEYS = new Set(['operatorId']);
 
-/** The scalar fields of one returned record, for the compact list: never more than `limit`. */
+/**
+ * The scalar fields of one returned record, for the compact list: never more
+ * than `limit`, in the order the server answered, which leads with what the desk
+ * asks where a section has been ordered for it (`deskFirst` in the api's
+ * `support-lookup.ts`).
+ */
 export function rowFacts(row: Record<string, unknown>, limit = 8): Array<[string, string | number | boolean | null]> {
   return Object.entries(row).filter(([key, value]) => !HIDDEN_KEYS.has(key) && SCALAR(value)).slice(0, limit) as Array<[string, string | number | boolean | null]>;
 }

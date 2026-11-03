@@ -97,6 +97,12 @@ describe('SCRUM-648 cross-app lookup', () => {
     expect(detectQueryKinds(newId())).toEqual(['account', 'action']);
     expect(detectQueryKinds('HKT1-000428')).toEqual(['receipt', 'action']);
     expect(detectQueryKinds('AB12CD34')).toEqual(['booking', 'voucher', 'action']);
+    // A booth code, the way people read it off the screen, whatever its check character says.
+    expect(detectQueryKinds('B1RT7KMQ4XZ')).toEqual(['booking', 'voucher', 'action']);
+    expect(detectQueryKinds('B1 RT7K MQ4X Z')).toEqual(['voucher']);
+    expect(detectQueryKinds('B1-RT7K-MQ4X-Z')).toEqual(['voucher', 'action']);
+    expect(detectQueryKinds('b1 rt7k mq4x')).toEqual(['voucher']);
+    expect(detectQueryKinds('hello there')).toEqual([]);
     expect(detectQueryKinds('   ')).toEqual([]);
   });
 
