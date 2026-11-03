@@ -116,6 +116,8 @@ export const StaffTokenClaimsSchema = z.object({
   box: z.string().uuid(),
   /** Issued at, seconds since the epoch. */
   iat: z.number().int().min(0),
+  /** Exact issue time for ordering a new sign-in after a manager end in the same second. */
+  iatMs: z.number().int().nonnegative().optional(),
   /** Expires at, seconds since the epoch. */
   exp: z.number().int().min(0),
 });
@@ -161,6 +163,7 @@ export const STAFF_TOKEN_REFUSALS = {
   EXPIRED: 'STAFF_TOKEN_EXPIRED',
   /** Signature did not verify against any known public key. */
   INVALID: 'STAFF_TOKEN_INVALID',
+  CLOCK_BEHIND: 'STAFF_TOKEN_CLOCK_BEHIND',
   /** `kid` names a key this box does not hold. */
   UNKNOWN_KEY: 'STAFF_TOKEN_UNKNOWN_KEY',
   /** The jti, or the account, is on the deny-list in the current cache bundle. */

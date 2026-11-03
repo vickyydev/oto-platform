@@ -1854,6 +1854,7 @@ describe('the cache bundle', () => {
       'lastTokenAt',
       'lastTokenId',
       'lastTokenRevoked',
+      'managerEndedAt',
       'mustChangePassword',
       'passwordHash',
       'permissions',

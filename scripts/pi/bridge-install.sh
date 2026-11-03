@@ -33,7 +33,9 @@ bridge_read_env() {
     printf -v "$key" '%s' "$value"
   done <"$file"
   [[ "${OTO_DNS_PROVIDER:-}" =~ ^[a-z][a-z0-9_]*$ ]] || return 1
-  [[ "${OTO_DNS_MODULE:-}" =~ ^github\.com/caddy-dns/[a-zA-Z0-9_-]+(@v[0-9][A-Za-z0-9.+-]*)?$ ]] || return 1
+  # Older env files carried a module hint. The pinned binary and its actual
+  # provider list are authoritative; the legacy hint is optional.
+  [[ -z "${OTO_DNS_MODULE:-}" || "${OTO_DNS_MODULE:-}" =~ ^github\.com/caddy-dns/[a-zA-Z0-9_-]+(@v[0-9][A-Za-z0-9.+-]*)?$ ]] || return 1
   [[ "${OTO_ACME_EMAIL:-}" =~ ^[A-Za-z0-9._+-]+@[A-Za-z0-9.-]+\.[A-Za-z]+$ ]] || return 1
   [ -n "${OTO_DNS_API_TOKEN:-}" ]
 }

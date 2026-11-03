@@ -67,8 +67,8 @@ changed; installing a bridge does not change it.
    variable expansions, spaces or escapes. Required names:
 
    - `OTO_DNS_PROVIDER`: the Caddy provider ID, such as `cloudflare`.
-   - `OTO_DNS_MODULE`: its `github.com/caddy-dns/...` module, preferably pinned
-     with its reviewed `@v...` version.
+   - The pinned Caddy artifact must include that DNS provider. `OTO_DNS_MODULE`
+     is an optional legacy hint; the installer verifies the actual binary.
    - `OTO_DNS_API_TOKEN`: the provider's zone token.
    - `OTO_ACME_EMAIL`: the certificate-notice address.
 
@@ -123,7 +123,7 @@ working; a late response cannot restore a credential after lock or station chang
   wrong passwords and revoked, forged or foreign tokens must refuse. With
   `STAFF_OFFLINE_SIGN_IN=true`, a missing token or an otherwise valid expired
   token may use OD-6: recognised here within 30 days, deny-list at most 72 hours
-  old, no ended shift or revoked account. Check the offline banner and fresh
+  old (a successful unchanged confirmation counts), no uncleared manager end or revoked account. Check the offline banner and fresh
   session marker. With the setting false, missing/expired tokens refuse.
 - Ring cash, a terminal card with a final answer, and PAX QR awaiting settlement
   only when separately approved for the bench. Confirm physical receipt and
@@ -147,11 +147,21 @@ existing expiry, session/account revocation and cached deny-list rules apply.
 false disables fresh sign-in. The API delivers it as `staffOfflineSignIn` in
 the versioned box configuration; both the physical and virtual mounts read it.
 The owner's OD-6 confirmation remains open. A fresh sign-in requires staff seen
-on this box within 30 days and a deny-list pulled within 72 hours; its session
+on this box within 30 days and a deny-list applied or confirmed current within 72 hours; its session
 and facts carry `offlineFresh` and the till shows its offline-unlock banner.
-Ended shifts stay ended even without the token. Only a verified token whose
+A manager end later than the latest online issue refuses fresh sign-in even without a token; a later online issue restores it. Normal sign-out and station changes revoke only their own live tokens. A valid token is judged by its own ID and signed issue time, and a pulled manager end closes an older fresh box session. Only a verified token whose
 sole failure is expiry may enter that path; it stays bound to its station,
 box, branch and person.
+
+Use a dedicated DNS zone controlled by the park, never a public or shared hosting
+suffix such as `com` or `onrender.com`. Single-label zones are refused except
+explicit non-production localhost proof. A rejected stored address stays hidden
+from tills; the Console explains why, and rename/disable remain available.
+
+Restoring an older box copy can temporarily restore an ended shift until the
+next successful pull. Fresh sign-in is bounded by the 72-hour confirmation age;
+a token is bounded by its own expiry. Restore the network and pull current staff
+and deny-list data before returning a restored counter to use.
 
 `BOX_BRIDGE_ZONE` and the till's build-time `VITE_BOX_BRIDGE_ZONE` default empty:
 no external address is saved or returned, and no password leaves the page for

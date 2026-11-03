@@ -7,6 +7,18 @@ running. [New local review evidence](review-local/README.md) records the rebuilt
 real-agent/browser proof and independent fixture cleanup. The earlier green
 results below predate those fixes and do not establish current release readiness.
 
+## 3 November independent review follow-up
+
+Current work is on `lane/codex-box-unlock-review-20261103-r1`. The earlier complete
+gates below cover the pre-review candidate only. The manager-end reason and
+freshness fixes now pass the 16-case real API/local HTTP review after four
+failures were reproduced. The expanded complete suite is running; do not infer
+release readiness from the historical green receipts. Q727-1 and Q727-2 remain
+open in the offline plan. No main or staging action has occurred. SCRUM-728 was
+started locally under updated direction and is checkpointed at `afbefec2` on
+`lane/codex-box-outage-20261103-r2` while these fixes take priority.
+
+## Earlier candidate evidence
 
 Status: **In Progress; local checks only**. Source
 `2a714b783d703925ae9b715af9fbd4f426f01dea` was rebased over documentation only
@@ -16,7 +28,7 @@ Runtime code and tests are identical. Main has not received this source.
 The owner requires a lane push after every commit; branch backup deploys nothing.
 SCRUM-726 reserves the staging source/API window through 17:30 Bangkok or its
 exact cleanup record. No staging proof, API restart, Render change or
-BOX_AGENT_TEST_SLOT change has been made. SCRUM-728 remains queued.
+BOX_AGENT_TEST_SLOT change has been made. SCRUM-728 was queued at the time of this earlier candidate.
 
 The configured zone is enforced at save, read and independently by the till.
 Invalid tokens stay refused, ended shifts cannot reopen by omitting a token,
@@ -69,5 +81,4 @@ records the rejected action. No deletion was retried through another method.
 Next: rebase and check main CI after 726 releases its
 window, push source and walk Testing, watch exact-SHA CI, then prove staging
 with the dedicated test-zone local agent. Clear the fixture, restore temporary
-settings with signing-key and unrelated-setting preservation, inspect/attach
-the images and only then walk Deployed. Never Done.
+settings with signing-key and unrelated-setting preservation, open the images and show them inside a commentWithImages Jira comment and only then walk Deployed. Never Done.

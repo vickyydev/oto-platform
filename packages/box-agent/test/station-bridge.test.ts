@@ -218,7 +218,7 @@ async function rig(opts: { seal?: boolean } = {}): Promise<Rig> {
       mustChangePassword: false,
       lastTokenAt: new Date(Date.parse(T0) - 2 * 86_400_000).toISOString(),
       lastTokenId: '018f0000-0000-7000-8000-0000000000f1',
-      lastTokenRevoked: false,
+      lastTokenRevoked: false, managerEndedAt: null,
       permissions: PERMISSIONS,
     },
     {

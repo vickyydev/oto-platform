@@ -13,8 +13,11 @@ describe('box credential destination', () => {
     'https://[::ffff:127.0.0.1]', 'https://192.168.1.1', ' https://zz-test.boxes.example.test'])('refuses %s', value => {
     expect(trustedBoxBridgeOrigin(value, 'boxes.example.test', true)).toBeNull();
   });
-  it.each(['', undefined, '*.example.test', '.example.test', 'https://example.test', '127.0.0.1'])('a missing or invalid zone never admits an address: %s', zone => {
+  it.each(['', undefined, 'com', 'test', '*.example.test', '.example.test', 'https://example.test', '127.0.0.1'])('a missing or invalid zone never admits an address: %s', zone => {
     expect(trustedBoxBridgeOrigin('https://zz-test.boxes.example.test', zone, true)).toBeNull();
+  });
+  it('a single-label public suffix never trusts its unrelated children', () => {
+    expect(trustedBoxBridgeOrigin('https://evil.com', 'com', true)).toBeNull();
   });
   it('local proof still requires a DNS zone and explicit HTTP loopback permission, never an IP', () => {
     expect(trustedBoxBridgeOrigin('http://zz-test.localhost:8471', 'localhost', true)).toBe('http://zz-test.localhost:8471');

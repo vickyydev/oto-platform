@@ -5210,6 +5210,7 @@ export async function cacheBundle(
           lastTokenAt: lastToken.get(a.id)?.issuedAt.toISOString() ?? null,
           lastTokenId: lastToken.get(a.id)?.jti ?? null,
           lastTokenRevoked: lastToken.get(a.id)?.revoked ?? false,
+          managerEndedAt: lastToken.get(a.id)?.managerEndedAt?.toISOString() ?? null,
           /**
            * What this account may do at THIS branch (offline plan §2.3, OD-11):
            * the permission strings its grants cover here, resolved exactly as
@@ -5239,16 +5240,11 @@ export async function cacheBundle(
         .where(and(eq(account.operatorId, operatorId), sql`${account.status} <> 'active'`))
         .limit(limit);
       /**
-       * Individually revoked shift tokens that have not yet expired (S2-06).
-       *
-       * Bounded by expiry rather than by history: past its `exp` a box refuses
-       * a token on the timestamp alone, so keeping it here would grow the list
-       * for ever in order to repeat what the token already says about itself.
-       *
-       * The window between a revocation and a box honouring it is the box's
-       * own pull interval, and for a box that is OFFLINE it is however long it
-       * stays offline. That is a property of offline working rather than a
-       * defect: it is why a token's expiry is hours and not days.
+       * Ordinary sign-out and station-change revocations remain for the token's
+       * own life. Manager/account revocations remain through OD-6's thirty-day
+       * recognition window. The staff record separately carries the account's
+       * manager-end time, so omitting a token cannot bypass that decision.
+       * An offline box learns these decisions only on its next successful pull.
        */
       /**
        * Bands stopped on purpose, NAMED (S2-12 round 2). The `bands` scope
@@ -5287,7 +5283,7 @@ export async function cacheBundle(
          * what can be cut short is the account query above, and a deny-list
          * missing the people it was cut off before is the one list in this
          * bundle that must never be applied half-read. The revoked token ids
-         * beside it are unbounded by expiry rather than by a LIMIT.
+         * beside it are bounded by token life/recognition time, not by a LIMIT.
          */
         { rowsRead: rows.length },
       );
