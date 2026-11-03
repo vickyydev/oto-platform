@@ -23,7 +23,7 @@ vi.mock('@/api/bridge', () => ({ setBridgeStaffName: vi.fn(), prepareConfiguredB
   bridgeApi: { lock: async () => ({}), unlock: async () => ({ accountId: 'zz-test-person', method: 'offline_sign_in', cacheAgeSeconds: 1, mustChangePassword: false }) },
 }));
 vi.mock('@/auth/staffToken', () => ({ readStaffToken: () => null, staffTokenLive: () => false, forgetStaffToken: vi.fn() }));
-vi.mock('@/lib/lane', () => ({ currentLane: () => 'box', laneStation: () => 'zz-test-station', isBoxLaneTrigger: () => false, noteLaneFailure: vi.fn(), platformNeedsUnlock: () => false }));
+vi.mock('@/lib/lane', () => ({ currentLane: () => 'box', laneStation: () => 'zz-test-station', isBoxLaneTrigger: () => false, noteLaneFailure: vi.fn(), platformNeedsUnlock: () => false, refreshLane: async () => 'box' }));
 vi.mock('@/api/catalogBridge', () => ({ loadCatalogFromApi: async () => undefined }));
 vi.mock('@/lib/displaySession', () => ({ takeTicketDisplayLeaseForSignOut: async () => null }));
 Object.assign(globalThis, { React });

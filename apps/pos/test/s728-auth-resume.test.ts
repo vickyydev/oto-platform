@@ -10,7 +10,8 @@ const seam = vi.hoisted(() => {
   });
   vi.stubGlobal('window', browser);
   return { browser, me: vi.fn(), unlock: vi.fn(), forgotten: vi.fn(), restored: vi.fn(),
-    setLang: vi.fn(), setTheme: vi.fn(), hold: vi.fn(), station: vi.fn(), onlineUnlock: vi.fn() };
+    setLang: vi.fn(), setTheme: vi.fn(), hold: vi.fn(), station: vi.fn(), onlineUnlock: vi.fn(),
+    refresh: vi.fn(), needsUnlock: vi.fn(), unlocked: vi.fn() };
 });
 vi.mock('react', async original => ({ ...await original<typeof import('react')>(), ...await import('./support/hooks') }));
 vi.mock('@/mockApi', () => ({ getOperatorThemePref: () => null }));
@@ -21,7 +22,7 @@ vi.mock('@/api/bridge', () => ({ setBridgeStaffName: vi.fn(), holdBoxSession: se
   bridgeApi: { lock: async () => ({}), unlock: seam.unlock },
 }));
 vi.mock('@/auth/staffToken', () => ({ readStaffToken: () => null, staffTokenLive: () => false, forgetStaffToken: vi.fn() }));
-vi.mock('@/lib/lane', () => ({ currentLane: () => 'box', laneStation: seam.station, isBoxLaneTrigger: () => true, noteLaneFailure: vi.fn(), platformNeedsUnlock: () => false }));
+vi.mock('@/lib/lane', () => ({ currentLane: () => 'box', laneStation: seam.station, isBoxLaneTrigger: () => true, noteLaneFailure: vi.fn(), platformNeedsUnlock: seam.needsUnlock, refreshLane: seam.refresh, platformUnlocked: seam.unlocked }));
 vi.mock('@/api/catalogBridge', () => ({ loadCatalogFromApi: async () => undefined, restorePreparedCatalog: seam.restored }));
 vi.mock('@/lib/displaySession', () => ({ takeTicketDisplayLeaseForSignOut: async () => null }));
 vi.mock('@/auth/offlinePreparation', () => ({ forgetOfflinePreparation: seam.forgotten, prepareOfflineOperator: vi.fn(),
@@ -32,6 +33,9 @@ Object.assign(globalThis, { React });
 beforeEach(() => {
   vi.clearAllMocks(); vi.stubGlobal('window', seam.browser);
   seam.station.mockReturnValue('zz-test-station');
+  seam.refresh.mockReset().mockResolvedValue('box');
+  seam.needsUnlock.mockReset().mockReturnValue(false);
+  seam.onlineUnlock.mockReset().mockResolvedValue({});
   seam.me.mockRejectedValue(new NetworkError());
   seam.unlock.mockResolvedValue({ accountId: 'zz-test-person', method: 'offline_sign_in', cacheAgeSeconds: 1,
     mustChangePassword: false, permissions: ['pos:sale:read'] });
@@ -39,6 +43,20 @@ beforeEach(() => {
 afterEach(() => vi.clearAllMocks());
 
 describe('SCRUM-728: a cold page has a box password door, never a remembered sign-in', () => {
+  it('HIGH: an unlock just after internet returns rechecks the platform lock before choosing the box', async () => {
+    seam.refresh.mockImplementation(async () => { seam.needsUnlock.mockReturnValue(true); return 'box'; });
+    const hook = renderHook(() => OperatorProvider({ children: null }));
+    const value = () => hook.result.current.props.value as ReturnType<typeof useOperator>;
+    try {
+      await vi.waitFor(() => expect(value().sessionResolved).toBe(true));
+      await value().unlock('ZZ TEST synthetic input');
+      expect(seam.onlineUnlock).toHaveBeenCalledExactlyOnceWith('ZZ TEST synthetic input');
+      expect(seam.unlock).not.toHaveBeenCalled();
+      expect(seam.unlocked).toHaveBeenCalledTimes(1);
+      expect(value().locked).toBe(false);
+      expect(value().offlineUnlock).toBeNull();
+    } finally { hook.unmount(); }
+  });
   it('HIGH: no selected box means one failed online unlock and no second cloud fallback', async () => {
     seam.station.mockReturnValue(null);
     const failure = new NetworkError();

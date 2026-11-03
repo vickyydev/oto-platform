@@ -394,6 +394,10 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     const held = readStaffToken();
     const token = staffTokenLive(held) ? (held?.token ?? null) : null;
     const station = laneStation();
+    // Recovery can arrive between the periodic probes. Check both routes now
+    // so one password submission unlocks a returned, still-locked platform.
+    // The shared probe is bounded; an outage or forced-offline box stays local.
+    if (station && currentLane() === 'box') await refreshLane();
     const connectLocal = station && token ? prepareConfiguredBridgeUnlock(station, { token, password }) : null;
     const throughBox = async (stationId: string): Promise<void> => {
       const answer = await bridgeApi.unlock(stationId, {
