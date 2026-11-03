@@ -1,13 +1,14 @@
 # SCRUM-728 release evidence
 
-## In Progress: full gates passed, source landing next
+## Testing: source landed, exact-SHA CI running
 
-The release checkout is `lane/codex-box-outage-20261104-r9`, rebased onto
-main `746f8d77960c6b2a302bfe47669ec6e5c6ba8424`. SCRUM-727 is Deployed with
-[its separate evidence](../s727/README.md). SCRUM-730 released the window at
-00:30 Bangkok on 4 November; the 00:36 STATUS checkpoint reserves the next
-source, API, proof and cleanup slot for SCRUM-728. No SCRUM-728 source has
-landed on main and no staging fixture, restart or setting change has occurred.
+Source `00f414ba0f78d91b0e87813924c3c53a64dddf5b` is on main and backed
+up on `lane/codex-box-outage-20261104-r9`.
+[Main CI 41693411235](https://github.com/vickyydev/oto-platform/actions/runs/41693411235)
+is running for that exact SHA. All local gates and full branch CI passed.
+SCRUM-727 is Deployed with [its separate evidence](../s727/README.md).
+SCRUM-728 retains the source, API, proof and cleanup slot released by 730.
+No SCRUM-728 staging fixture, restart or setting change has occurred yet.
 
 ## Behavior and review
 
