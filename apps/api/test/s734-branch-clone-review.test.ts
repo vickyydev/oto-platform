@@ -151,7 +151,7 @@ describe('SCRUM-734 branch configuration review', () => {
 
   it('HIGH: a retired target shelf blocks tracked products and their dependent rows instead of making them untracked', async () => {
     const source = await sourceFixture(), target = await emptyBranch();
-    await ctx.db.insert(stockLocation).values({ id: newId(), operatorId, branchId: target, name: 'ZZ TEST counter shelf', type: 'rotation', archivedAt: new Date() });
+    await ctx.db.insert(stockLocation).values({ id: newId(), operatorId, branchId: target, name: 'zz test counter shelf', type: 'rotation', archivedAt: new Date() });
     const result = await clone(target, source.id);
     expect(result.statusCode, result.body).toBe(200);
     expect(result.json().plan.products.blocked.some((r: { name: string }) => r.name === 'ZZ TEST cup')).toBe(true);
@@ -170,6 +170,22 @@ describe('SCRUM-734 branch configuration review', () => {
     expect(result.json().plan.stockItems.blocked.some((r: { reason: string }) => /inventory choice/.test(r.reason))).toBe(true);
     expect(await ctx.db.select().from(product).where(eq(product.id, existingId))).toEqual(before);
     expect(await ctx.db.select().from(stockItem).where(eq(stockItem.productId, existingId))).toEqual([]);
+  });
+
+  it('MEDIUM: stockroom matching uses the same case-insensitive name as its unique index', async () => {
+    const source = await sourceFixture(), target = await emptyBranch(), shelf = newId();
+    await ctx.db.insert(stockLocation).values({ id: shelf, operatorId, branchId: target, name: 'zz test counter shelf', type: 'rotation', sellPoint: true });
+    const before = await ctx.db.select().from(stockLocation).where(eq(stockLocation.id, shelf));
+    const result = await clone(target, source.id);
+    // The original FINDING returned 409; the existing shelf now keeps its
+    // identity and every copied minimum points at that target shelf.
+    console.info(JSON.stringify({ check: 'stockroom-case', status: result.statusCode }));
+    expect(result.statusCode).toBe(200);
+    expect(result.json().counts.stockLocations.created).toBe(0);
+    expect(await ctx.db.select().from(stockLocation).where(eq(stockLocation.branchId, target))).toEqual(before);
+    const items = await ctx.db.select().from(stockItem).where(eq(stockItem.branchId, target));
+    expect(items).toHaveLength(5);
+    expect(items.every(row => JSON.stringify(row.parByLocation) === JSON.stringify({ [shelf]: 5 }))).toBe(true);
   });
 
   it('HIGH: a failed stock insert rolls the whole configuration copy back', async () => {
