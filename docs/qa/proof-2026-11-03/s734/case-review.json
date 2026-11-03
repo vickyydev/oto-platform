@@ -1,0 +1,42 @@
+{
+  "note": "Before: one complete review file, six passing pins plus one expected it.fails FINDING. A nonexistent second filename filter selected no existing file. After: both actual complete files, 22 passing tests, no expected-failure test; API typecheck and changed-file eslint passed. The prescribed fix was applied, not the assertion weakened.",
+  "gates": [
+    {
+      "source": "e95e77cb2f932938c297c5ad6d20ca0cf8f6b24c",
+      "workingTreeReview": true,
+      "phase": "case-before",
+      "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s734-api-gate.mts test/s734-branch-clone-review.test.ts test/catalog-clone.test.ts\npnpm --filter @oto/api typecheck\npnpm exec eslint apps/api/src/services/catalog-clone.ts apps/api/test/s734-branch-clone-review.test.ts",
+      "startedAt": "2026-11-03T18:07:58.163Z",
+      "endedAt": "2026-11-03T18:11:08.517Z",
+      "exitCode": 0,
+      "signal": null,
+      "log": "C:/oto-lanes/s734-review-case-before.log",
+      "sha256": "34b13733e7e2dbb311662ad391d5bd37545329b720ea6ea752a1379c47bc3a2a",
+      "summary": [
+        "{\"finding\":\"stockroom-case\",\"status\":409}",
+        "✓ test/s734-branch-clone-review.test.ts (7 tests) 16466ms",
+        "Test Files  1 passed (1)",
+        "Tests  7 passed (7)"
+      ]
+    },
+    {
+      "source": "e95e77cb2f932938c297c5ad6d20ca0cf8f6b24c",
+      "workingTreeReview": true,
+      "phase": "case-after",
+      "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s734-api-gate.mts test/s734-branch-clone-review.test.ts test/branch-clone.test.ts\npnpm --filter @oto/api typecheck\npnpm exec eslint apps/api/src/services/catalog-clone.ts apps/api/test/s734-branch-clone-review.test.ts",
+      "startedAt": "2026-11-03T18:12:21.705Z",
+      "endedAt": "2026-11-03T18:15:37.600Z",
+      "exitCode": 0,
+      "signal": null,
+      "log": "C:/oto-lanes/s734-review-case-after.log",
+      "sha256": "b7e92507c3ac8c32e6483d3f49520d9bc58b0fc201649d602287268a3a131af1",
+      "summary": [
+        "✓ test/branch-clone.test.ts (15 tests) 17364ms",
+        "{\"check\":\"stockroom-case\",\"status\":200}",
+        "✓ test/s734-branch-clone-review.test.ts (7 tests) 13701ms",
+        "Test Files  2 passed (2)",
+        "Tests  22 passed (22)"
+      ]
+    }
+  ]
+}
