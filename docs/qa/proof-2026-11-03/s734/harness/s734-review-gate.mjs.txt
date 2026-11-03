@@ -1,0 +1,7 @@
+import {readFileSync,writeFileSync,openSync,closeSync} from 'node:fs';
+import {spawn,execFileSync} from 'node:child_process';
+const root='C:/oto-lanes/codex-branch-clone-20261103',phase=process.argv[2],log='C:/oto-lanes/s734-review-'+phase+'.log';
+const command='pnpm --filter @oto/api exec tsx C:/oto-lanes/s734-api-gate.mts test/s734-branch-clone-review.test.ts test/branch-clone.test.ts\npnpm --filter @oto/api typecheck\npnpm exec eslint apps/api/src/services/catalog-clone.ts apps/api/test/s734-branch-clone-review.test.ts';
+const source=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),startedAt=new Date().toISOString(),fd=openSync(log,'wx');
+const c=spawn('C:/Program Files/Git/bin/bash.exe',['-c','set -eo pipefail\n'+command],{cwd:root,windowsHide:true,stdio:['ignore',fd,fd]});
+c.once('exit',(code,signal)=>{closeSync(fd);const result={source,workingTreeReview:true,phase,command,startedAt,endedAt:new Date().toISOString(),exitCode:code??1,signal,log};writeFileSync('C:/oto-lanes/s734-review-'+phase+'-exit.json',JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));console.log(readFileSync(log,'utf8').slice(-1800));process.exitCode=code??1;});

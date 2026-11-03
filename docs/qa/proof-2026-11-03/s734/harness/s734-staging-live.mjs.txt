@@ -1,0 +1,43 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {pathToFileURL} from 'node:url';
+import {execFileSync} from 'node:child_process';
+import {randomUUID} from 'node:crypto';
+import {mkdirSync,writeFileSync} from 'node:fs';
+import {createInterface} from 'node:readline';
+import {need} from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs';
+const [root,sha]=process.argv.slice(2);assert.match(root??'',/^C:\/oto-lanes\//);assert.match(sha??'',/^[a-f0-9]{40}$/);
+assert.equal(execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),sha);
+const {render,service}=await import(pathToFileURL(root+'/scripts/agent/render.mjs').href);
+const {statusOf}=await import(pathToFileURL(root+'/scripts/agent/jira.mjs').href);
+assert.equal((await statusOf('SCRUM-707')).status,'Deployed','707 must be Deployed before this proof');
+const {chromium,expect}=createRequire(root+'/apps/pos/package.json')('@playwright/test');
+const CONSOLE='https://oto-console-staging.onrender.com',LAUNCHER='https://oto-launcher-staging.onrender.com';
+const stamp=Date.now().toString(36),name='ZZ TEST SCRUM-734 '+stamp,out=root+'/docs/qa/proof-2026-11-03/s734/staging/'+stamp;mkdirSync(out,{recursive:true});
+const r={unit:'SCRUM-734',startedAt:new Date().toISOString(),source:sha,name,fixtures:{branches:[]},screens:[],outcome:'incomplete'},f=r.fixtures;
+const save=()=>writeFileSync(out+'/receipt.json',JSON.stringify(r,null,2)+'\n');
+async function live(){const rows=[];for(const name of ['oto-api-staging','oto-console-staging']){const s=await service(name),d=(await render('GET',`/services/${s.id}/deploys?limit=1`))[0]?.deploy;assert.equal(d?.status,'live',name+' is not live');assert.equal(d.commit.id,sha,name+' source differs');rows.push({name,id:s.id,source:d.commit.id,deployId:d.id,liveAt:d.finishedAt});}return rows;}
+r.deployments=await live();r.ci=JSON.parse(execFileSync('gh',['run','list','--branch','main','--commit',sha,'--limit','1','--json','databaseId,headSha,conclusion'],{cwd:root,encoding:'utf8'}))[0];assert.equal(r.ci?.conclusion,'success');assert.equal(r.ci.headSha,sha);save();
+const browser=await chromium.launch({channel:'msedge'}),ctx=await browser.newContext({viewport:{width:1600,height:1100}}),p=await ctx.newPage();ctx.setDefaultTimeout(20000);
+const api=async(method,path,body)=>{const response=await ctx.request.fetch(CONSOLE+'/api'+path,{method,data:body,headers:method==='GET'?{}:{'Idempotency-Key':randomUUID()}});const answer=await response.json().catch(()=>null);assert.equal(response.status(),200,`${method} ${path}: ${response.status()} ${answer?.error?.code??''}`);return answer;};
+const snap=async(file)=>{assert.deepEqual(await live(),r.deployments);await p.screenshot({path:out+'/'+file,fullPage:true});r.screens.push({file,at:new Date().toISOString(),url:p.url(),kind:'native Console'});save();};
+try {
+ const login=await ctx.request.post(LAUNCHER+'/api/auth/sign-in',{data:{phone:need('STAGING_ADMIN_PHONE'),password:need('STAGING_ADMIN_PASSWORD')}});assert.equal(login.status(),200);
+ const h=await ctx.request.post(LAUNCHER+'/api/auth/handoff',{data:{app:'console'}});assert.equal(h.status(),200);await p.goto((await h.json()).launchUrl);await p.waitForURL('**/overview');
+ const me=await api('GET','/me');r.identity={actorId:me.account.id,originalBranchId:me.operatorContext.branchId};save();
+ for(const [suffix,label]of [['a','source'],['b','target']]){const branchName=name+' '+label,code='zz734-'+stamp+'-'+suffix;const made=await api('POST','/branches',{name:branchName,code,timezone:'Asia/Bangkok',country:'TH'});f.branches.push({id:made.id,name:branchName,code,role:label,otoApp:made.otoApp});save();}
+ const source=f.branches[0],target=f.branches[1];
+ r.policy={bands:[{id:'zz-young',label:'ZZ TEST young',minAge:0,maxAge:6,requirement:'nanny'},{id:'zz-older',label:'ZZ TEST older',minAge:7,maxAge:null,requirement:'none'}],siblingWaiver:{enabled:false,guardianMinAge:12,waivableRequirement:'drop_off',staffOnly:true}};
+ r.confirmations=[{id:'zz-required',text:'ZZ TEST required confirmation',required:true,order:2},{id:'zz-optional',text:'ZZ TEST optional confirmation',required:false,order:7}];
+ r.pricing={oneTimeFee:{weekday:12300,weekend:23400},nannyHourly:{weekday:34500,weekend:45600},extraHour:{weekday:6700,weekend:7800},fullDayHours:7,nannyRatioSoftMax:4,prepaidFoodUnused:'forfeit'};save();
+ await api('PUT',`/checkin/config/policy?branchId=${source.id}`,r.policy);await api('PUT',`/checkin/config/confirmations?branchId=${source.id}`,{items:r.confirmations});await api('PUT',`/checkin/config/pricing?branchId=${source.id}`,r.pricing);
+ const category=await api('POST','/menu/categories',{name:name+' food',taxableCategory:'fnb',defaultPrepStation:'kitchen'});f.categoryId=category.id;save();
+ const product=await api('POST',`/branches/${source.id}/menu/products`,{name:name+' cup',kind:'menu',categoryId:f.categoryId,priceSatang:1200,priceWeekendSatang:1300,stockLinks:[],active:true});f.sourceProductId=product.id;save();
+ const location=await api('POST',`/branches/${source.id}/stock/locations`,{name:name+' shelf',type:'bulk'});f.sourceLocationId=location.id;save();
+ r.stockBody={name:name+' cups',active:true,productId:product.id,unitCostSatang:12,reorder:{reorderPoint:4,reorderQuantity:12,leadTimeDays:2,supplierName:'ZZ TEST supplier',supplierContact:'ZZ TEST contact'},units:[{label:'ZZ TEST case of 12',eaches:12}],showPhotoInPos:false,sizes:[{variantId:null,label:'Each',lowStockThreshold:3,startingStock:0,parByLocation:{[location.id]:5}}]};
+ f.sourceStock=await api('POST',`/branches/${source.id}/stock/items`,r.stockBody);r.sourceConfig=await api('GET',`/checkin/config?branchId=${source.id}`);save();
+ // Only the native Clone button performs the clone. Setup stops before it.
+ await p.goto(CONSOLE+'/organisation/branches');const row=p.locator('li').filter({hasText:target.name});await expect(row).toHaveCount(1);await row.getByRole('button',{name:'Switch here',exact:true}).click();await expect(p.getByRole('button',{name:'Clone into '+target.name+'…',exact:true})).toBeVisible();
+ const proof={root,sha,r,f,out,name,browser,ctx,p,api,save,live,expect,snap,CONSOLE,LAUNCHER};console.log(JSON.stringify({ready:true,out,source:sha,branches:f.branches.map(({id,name})=>({id,name})),clonePerformed:false}));
+ const input=createInterface({input:process.stdin});for await(const file of input){if(file==='STOP'){input.close();break;}try{assert.match(file,/^C:\/oto-lanes\/s734-step-[a-z0-9-]+\.mjs$/);const step=await import(pathToFileURL(file).href+'?at='+Date.now());console.log(JSON.stringify({file,result:await step.default(proof)}));}catch(e){console.log(JSON.stringify({file,error:e.name,message:e.message}));}}
+}catch(e){console.log(JSON.stringify({error:e.name,message:e.message,out}));process.exitCode=1;}finally{await browser.close();}
