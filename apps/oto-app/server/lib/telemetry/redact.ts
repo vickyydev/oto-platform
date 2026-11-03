@@ -216,8 +216,12 @@ const DENY_CODE_KEYS = new Set([
 const VERIFICATION_CODE_VALUE = /^\d{4,8}$/;
 
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g;
-/** Four or more groups of digits, the way a card is written out. */
-const GROUPED_DIGITS_RE = /(?<![\d-])\d{4}(?:[ -]\d{4}){2,3}(?:[ -]\d{1,4})?(?![\d-])/g;
+/**
+ * A complete UUID is one token, not a card-shaped substring of its numeric
+ * groups. Consume that alternative first; all other grouped digits still
+ * receive the same masking. Sensitive keys are denied before this sweep.
+ */
+const GROUPED_DIGITS_RE = /(?<![\w-])([a-f\d]{8}-[a-f\d]{4}-[1-8][a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12})(?![\w-])|(?<![\d-])\d{4}(?:[ -]\d{4}){2,3}(?:[ -]\d{1,4})?(?![\d-])/gi;
 /**
  * An unbroken card-length run. Luhn is what separates it from an id, so the
  * boundary only has to exclude a longer number or a decimal — letters are
@@ -261,7 +265,7 @@ function passesLuhn(digits: string): boolean {
 function sweepValues(text: string): string {
   return text
     .replace(EMAIL_RE, EMAIL_MARK)
-    .replace(GROUPED_DIGITS_RE, CARD_MARK)
+    .replace(GROUPED_DIGITS_RE, (match, uuid: string | undefined) => uuid ? match : CARD_MARK)
     .replace(BARE_CARD_RE, (m) => (passesLuhn(m) ? CARD_MARK : m))
     .replace(INTL_PHONE_RE, PHONE_MARK)
     .replace(LOCAL_PHONE_RE, PHONE_MARK)

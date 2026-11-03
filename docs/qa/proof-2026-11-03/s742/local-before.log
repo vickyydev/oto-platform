@@ -1,0 +1,73 @@
+
+> @oto/telemetry@0.1.0 test C:\oto-lanes\codex-first-print-20261103\packages\telemetry
+> vitest run
+
+
+ RUN  v3.2.7 C:/oto-lanes/codex-first-print-20261103/packages/telemetry
+
+ ✓ test/logger.test.ts (7 tests) 18ms
+ ✓ test/scrub.test.ts (6 tests) 12ms
+ ❯ test/redact.test.ts (24 tests | 1 failed) 73ms
+   ✓ the fixtures the ticket names > drops a Thai local phone, whatever key it arrives under 5ms
+   ✓ the fixtures the ticket names > drops an E.164 phone in a key, in prose and in a URL 1ms
+   ✓ the fixtures the ticket names > drops a child record entirely — name, birth date, allergies, notes 1ms
+   ✓ the fixtures the ticket names > reduces a pg unique violation to its structural fields 3ms
+   ✓ the fixtures the ticket names > drops a card and an approval code from a terminal response 1ms
+   × keys the park cannot afford to lose > keeps a complete UUID whose numeric groups resemble a card, without keeping an adjacent card 18ms
+     → expected { …(2) } to deeply equal { …(2) }
+   ✓ keys the park cannot afford to lose > still masks UUID-shaped credentials and card-like fragments in malformed identifiers 1ms
+   ✓ keys the park cannot afford to lose > keeps a phone hash, an op name and a qualified name 0ms
+   ✓ keys the park cannot afford to lose > keeps an error code but not a verification code under the same key 1ms
+   ✓ keys the park cannot afford to lose > leaves ids, dates, money and statuses alone 2ms
+   ✓ keys the park cannot afford to lose > scrubs a key that is itself a value 0ms
+   ✓ structure: it must not throw and must not hang > bounds a very deep object 2ms
+   ✓ structure: it must not throw and must not hang > survives a cycle and reports it once 1ms
+   ✓ structure: it must not throw and must not hang > does not call a shared branch a cycle 0ms
+   ✓ structure: it must not throw and must not hang > bounds a very wide object and a very long array 9ms
+   ✓ structure: it must not throw and must not hang > bounds a shared subtree that would otherwise expand exponentially 12ms
+   ✓ structure: it must not throw and must not hang > cuts a very long string before sweeping it 5ms
+   ✓ structure: it must not throw and must not hang > walks an error and its cause chain 2ms
+   ✓ structure: it must not throw and must not hang > survives a cyclic cause chain 2ms
+   ✓ structure: it must not throw and must not hang > survives a getter that throws, a proxy and an object with no prototype 1ms
+   ✓ structure: it must not throw and must not hang > summarises the types a log serialiser would otherwise mangle 1ms
+   ✓ structure: it must not throw and must not hang > handles primitives, null and undefined at the top 1ms
+   ✓ scrubText, on a message a caller already formatted > replaces the value and keeps the sentence 0ms
+   ✓ scrubText, on a message a caller already formatted > leaves an id, a timestamp and a money amount intact 0ms
+ ✓ test/eslint-rule.test.mjs (1 test) 76ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/redact.test.ts > keys the park cannot afford to lose > keeps a complete UUID whose numeric groups resemble a card, without keeping an adjacent card
+AssertionError: expected { …(2) } to deeply equal { …(2) }
+
+- Expected
++ Received
+
+  {
+    "groups": [
+-     "e88e3138-2708-4749-9142-3a13fca6c6cb",
++     "e88e[redacted:card]a13fca6c6cb",
+    ],
+-   "tenantId": "e88e3138-2708-4749-9142-3a13fca6c6cb",
++   "tenantId": "e88e[redacted:card]a13fca6c6cb",
+  }
+
+ ❯ test/redact.test.ts:120:52
+    118|     // SCRUM-742: this real random test identifier was damaged in ops_…
+    119|     const id = 'e88e3138-2708-4749-9142-3a13fca6c6cb';
+    120|     expect(redact({ tenantId: id, groups: [id] })).toEqual({ tenantId:…
+       |                                                    ^
+    121|     expect(scrubText(`park group ${id}: card 4111-1111-1111-1111`)).to…
+    122|     expect(scrubText(`4111111111111111 ${id} 4111 1111 1111 1111`)).to…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 3 passed (4)
+      Tests  1 failed | 37 passed (38)
+   Start at  00:30:39
+   Duration  3.40s (transform 505ms, setup 0ms, collect 3.05s, tests 179ms, environment 2ms, prepare 1.97s)
+
+C:\oto-lanes\codex-first-print-20261103\packages\telemetry:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/telemetry@0.1.0 test: `vitest run`
+Exit status 1
