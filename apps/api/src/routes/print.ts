@@ -12,7 +12,9 @@ import type { App } from '../app';
 import { AppError } from '../lib/errors';
 import { inProcessBox } from '../services/box';
 import { loadBox, loadBranchForOperator, loadDevice, loadStation, queueCommand } from '../services/fleet';
+import { lockActiveOrganisation } from '../services/organisation-archive';
 import {
+  createMissingTemplates,
   describeTestPrintDestination,
   listPrintJobs,
   listStationPrinters,
@@ -26,7 +28,7 @@ import {
   resolveTestPrintTarget,
   updateTemplate,
 } from '../services/print';
-import { opCtx } from '../services/tx';
+import { opCtx, withTx } from '../services/tx';
 
 /**
  * Printing's HTTP surface (S2-06).
@@ -129,6 +131,47 @@ export async function printRoutes(app: App): Promise<void> {
       const auth = req.requireAuth();
       await loadBranchForOperator(app.db, auth.operatorId, req.params.branchId);
       return { templates: await listTemplates(app.db, req.params.branchId) };
+    },
+  );
+
+  /**
+   * "Create missing templates": a branch opened before SCRUM-707 can have no
+   * rows at all, and then the panel has nothing to open and a clone is refused
+   * once it has sold anything. Keyed like every write, and safe without the key
+   * too: a type that already has a row is never touched, so a second press
+   * writes nothing and what a park has edited stays as it is.
+   */
+  app.post(
+    '/branches/:branchId/print-templates/create-missing',
+    {
+      config: { permission: 'admin:branch:update', target: { branchId: 'params.branchId' } },
+      schema: {
+        description:
+          'Give this branch an editable template for every printout it has none for. Prints the same as before; a second run writes nothing.',
+        params: BranchParams,
+        response: {
+          200: z.object({
+            created: z.array(z.enum(PRINT_TEMPLATE_TYPES)),
+            templates: z.array(TemplateSchema),
+          }),
+        },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBranchForOperator(app.db, auth.operatorId, req.params.branchId);
+      return withTx(app.db, opCtx(req), 'print_template.create_missing', async (tx) => {
+        await lockActiveOrganisation(tx, auth.operatorId, row.id);
+        const created = await createMissingTemplates(
+          tx,
+          { accountId: auth.accountId, operatorId: auth.operatorId, requestId: req.id },
+          row.id,
+        );
+        return {
+          created: created.map((template) => template.type),
+          templates: await listTemplates(tx, row.id),
+        };
+      });
     },
   );
 

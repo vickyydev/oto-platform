@@ -12166,6 +12166,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/branches/{branchId}/print-templates/create-missing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Give this branch an editable template for every printout it has none for. Prints the same as before; a second run writes nothing. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    branchId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            created: ("receipt" | "kids_wristband" | "adult_wristband" | "kitchen_ticket" | "bar_ticket" | "credit_voucher")[];
+                            templates: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                branchId: string;
+                                /** @enum {string} */
+                                type: "receipt" | "kids_wristband" | "adult_wristband" | "kitchen_ticket" | "bar_ticket" | "credit_voucher";
+                                name: string;
+                                showLogo: boolean;
+                                headerText: string | null;
+                                footerText: string | null;
+                                fields: {
+                                    [key: string]: unknown | boolean;
+                                };
+                                version: number;
+                                updatedAt: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/print-templates/{id}": {
         parameters: {
             query?: never;

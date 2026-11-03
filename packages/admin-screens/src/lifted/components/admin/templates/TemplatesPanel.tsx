@@ -1,13 +1,14 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useSearch } from "../../../runtime/AdminScreenRuntime";
-import { Pencil, AlertTriangle } from "lucide-react";
+import { Pencil, AlertTriangle, Plus } from "lucide-react";
 import { type PrintTemplate, type PrintTemplateType } from "../../../model/types";
 import { useCatalogStore } from "../../../runtime/AdminScreenRuntime";
 import { useBranch } from "../../../runtime/AdminScreenRuntime";
 import { useStation } from "../../../runtime/AdminScreenRuntime";
 
 
+import { Button } from "../../ui/button";
 import { isMissingRoute } from "../../../api/client";
 import { TemplateEditorWithPorts } from "./TemplateEditor";
 import { PrintTemplateThumbnailWithPorts } from "./PrintTemplatePreview";
@@ -102,6 +103,7 @@ export function TemplatesPanel() {
     authorityMessage: scope.authorityMessage, updateLocalTemplate: mutators.upsertPrintTemplate,
     loading: loadedOwner !== contextKey || !settled, error: loadedOwner === contextKey ? error : null,
     onRetry: () => { void load(); }, onSaved: load, askedType: new URLSearchParams(search).get('template'),
+    createMissing: branchId && scope.canEditTemplates ? () => printApi.createMissingTemplates(branchId) : undefined,
     onAddressClose: () => navigate('/admin?panel=templates', { replace: true }),
   }} />;
 }
@@ -142,6 +144,29 @@ export function TemplatesPanelWithPorts({ ports }: { ports: TemplatesPanelPorts 
     (a, b) => TYPE_ORDER.indexOf(a.type) - TYPE_ORDER.indexOf(b.type)
   );
 
+  /**
+   * SCRUM-707: a branch opened before new branches got their templates has an
+   * empty list here, and printing carries on from the built-in defaults. This is
+   * the way in. Only the printouts with no row are written, so nothing already
+   * edited moves, and the new rows print what the branch was already printing.
+   */
+  const missing = live && settled ? TYPE_ORDER.filter((type) => !rows.some((t) => t.type === type)) : [];
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const createMissing = async () => {
+    if (!ports.createMissing || creating) return;
+    setCreating(true);
+    setCreateError(null);
+    try {
+      await ports.createMissing();
+      await ports.onSaved?.();
+    } catch {
+      setCreateError('The missing templates could not be created. Try again.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   if (editing) {
     return (
       <TemplateEditorWithPorts
@@ -177,6 +202,20 @@ export function TemplatesPanelWithPorts({ ports }: { ports: TemplatesPanelPorts 
             {error ??
               'These are the built-in templates. This branch is not connected to the platform’s print settings yet, so edits here will not reach a printer.'}
           </span>
+        </div>
+      )}
+
+      {missing.length > 0 && ports.canEdit && ports.createMissing && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-foreground/10 bg-foreground/[0.03] px-4 py-3 text-sm">
+          <span className="min-w-0 flex-1 text-foreground/70">
+            {createError ?? (rows.length === 0
+              ? 'This branch has no saved print templates yet. It prints every section until one is saved.'
+              : `${missing.length} of ${TYPE_ORDER.length} printouts have no saved template here. They print every section until one is saved.`)}
+          </span>
+          <Button size="sm" onClick={() => void createMissing()} disabled={creating}>
+            <Plus className="h-4 w-4" />
+            {creating ? 'Creating…' : 'Create missing templates'}
+          </Button>
         </div>
       )}
 

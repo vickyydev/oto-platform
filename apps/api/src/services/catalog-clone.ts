@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { isProductBarcode } from '@oto/box-agent';
 import {
   branch,
@@ -15,7 +15,7 @@ import {
   taxOverride,
   ticketPackage,
 } from '@oto/db';
-import { newId } from '@oto/shared';
+import { isUntouchedDefaultTemplate, newId } from '@oto/shared';
 import { errors } from '../lib/errors';
 import { audit } from './audit';
 import type { Exec, Tx } from './tx';
@@ -155,6 +155,14 @@ interface CloneWrites {
   discountCodes: Array<typeof discountDefinition.$inferInsert>;
   taxOverrides: Array<typeof taxOverride.$inferInsert>;
   printTemplates: Array<typeof printTemplate.$inferInsert>;
+  /** A target row that is still the default: the source's content goes on it. */
+  printTemplateFills: Array<{
+    before: typeof printTemplate.$inferSelect;
+    content: Pick<
+      typeof printTemplate.$inferInsert,
+      'name' | 'showLogo' | 'headerText' | 'footerText' | 'fields'
+    >;
+  }>;
   stockLocations: Array<typeof stockLocation.$inferInsert>;
 }
 
@@ -246,6 +254,7 @@ export async function planBranchClone(
     discountCodes: [],
     taxOverrides: [],
     printTemplates: [],
+    printTemplateFills: [],
     stockLocations: [],
   };
   const [targetBranch] = await exec
@@ -623,19 +632,42 @@ export async function planBranchClone(
   // editing it would change nothing. The copy starts at version 1: a box syncs
   // on that number, and carrying the source's would claim an edit history the
   // target has not had.
+  //
+  // SCRUM-707: every new branch now has a default row of each type, and those
+  // must not read as "already there" or a clone into a new park would copy no
+  // template at all. A row nobody has saved holds nothing of anybody's, so the
+  // source's content goes onto it in place: same id, so a print job naming it
+  // stays true, and the version moves on, so a box holding the default takes the
+  // newer one. A row anybody has saved is that park's, and is left alone as
+  // before. A source row that is itself an untouched default has nothing to give.
   {
     const sourceRows = await exec
       .select()
       .from(printTemplate)
       .where(and(eq(printTemplate.branchId, sourceBranchId), isNull(printTemplate.archivedAt)));
     const targetRows = await exec
-      .select({ type: printTemplate.type })
+      .select()
       .from(printTemplate)
       .where(and(eq(printTemplate.branchId, targetBranchId), isNull(printTemplate.archivedAt)));
-    const taken = new Set<string>(targetRows.map((r) => r.type));
+    const held = new Map(targetRows.map((r) => [r.type, r]));
     for (const row of sourceRows) {
-      if (taken.has(row.type)) {
-        plan.printTemplates.exists.push(row.type);
+      const here = held.get(row.type);
+      if (here) {
+        if (!isUntouchedDefaultTemplate(here) || isUntouchedDefaultTemplate(row)) {
+          plan.printTemplates.exists.push(row.type);
+          continue;
+        }
+        plan.printTemplates.create.push(row.type);
+        writes.printTemplateFills.push({
+          before: here,
+          content: {
+            name: row.name,
+            showLogo: row.showLogo,
+            headerText: row.headerText,
+            footerText: row.footerText,
+            fields: row.fields,
+          },
+        });
         continue;
       }
       plan.printTemplates.create.push(row.type);
@@ -793,6 +825,24 @@ export async function cloneBranchCatalog(
   if (writes.discountCodes.length) await tx.insert(discountDefinition).values(writes.discountCodes);
   if (writes.taxOverrides.length) await tx.insert(taxOverride).values(writes.taxOverrides);
   if (writes.printTemplates.length) await tx.insert(printTemplate).values(writes.printTemplates);
+  for (const fill of writes.printTemplateFills) {
+    const [after] = await tx
+      .update(printTemplate)
+      .set({ ...fill.content, version: sql`${printTemplate.version} + 1`, updatedAt: new Date() })
+      .where(eq(printTemplate.id, fill.before.id))
+      .returning();
+    await audit.record(tx, {
+      actorAccountId: ctx.actorAccountId,
+      operatorId: ctx.operatorId,
+      branchId: scope.targetBranchId,
+      action: 'print_template.update',
+      entityType: 'print_template',
+      entityId: fill.before.id,
+      before: fill.before,
+      after,
+      requestId: ctx.requestId ?? null,
+    });
+  }
   if (writes.stockLocations.length) await tx.insert(stockLocation).values(writes.stockLocations);
 
   const counts = countsOf(plan);

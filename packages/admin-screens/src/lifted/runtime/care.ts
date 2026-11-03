@@ -47,6 +47,8 @@ export interface TemplatesPanelPorts extends TemplateEditorPorts {
   onSaved?: () => void | Promise<void>;
   askedType?: string | null;
   onAddressClose?: () => void;
+  /** Absent where this person may not edit the branch's templates. */
+  createMissing?: () => Promise<unknown>;
 }
 
 export interface CareCapabilities {

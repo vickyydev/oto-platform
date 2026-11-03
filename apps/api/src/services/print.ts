@@ -14,6 +14,7 @@ import {
   PRINT_KINDS,
   PRINT_TEMPLATE_TYPE_ORDER,
   TEMPLATE_FOR_KIND,
+  defaultPrintTemplate,
   newId,
   reprintRootOf,
   type PrintKind,
@@ -32,7 +33,7 @@ import { audit } from './audit';
 import { boxAuthFromRow, configBundle } from './box';
 import { queueCommand } from './fleet';
 import { recordRun } from './ops';
-import { withTx, type Exec, type OpContext } from './tx';
+import { withTx, type Exec, type OpContext, type Tx } from './tx';
 
 /**
  * The cloud half of printing (S2-06).
@@ -103,7 +104,7 @@ function templateView(row: typeof printTemplate.$inferSelect): PrintTemplateView
  * bands, prep tickets, voucher — and a database `order by type` would quietly
  * reorder the panel the day somebody renamed a type.
  */
-export async function listTemplates(db: Db, branchId: string): Promise<PrintTemplateView[]> {
+export async function listTemplates(db: Exec, branchId: string): Promise<PrintTemplateView[]> {
   const rows = await db
     .select()
     .from(printTemplate)
@@ -171,6 +172,63 @@ export async function updateTemplate(
     });
     return { template: templateView(updated) };
   });
+}
+
+/**
+ * Give a branch the editable row of every printout it has none for (SCRUM-707).
+ *
+ * Called inside the caller's transaction, by whatever opens the branch and by
+ * the panel's "Create missing templates". Safe to call again: a type that has a
+ * live row is left exactly as it stands, so nothing a park has edited changes
+ * and a second run writes nothing. `on conflict do nothing` is for the two
+ * people pressing the button together: the unique index decides, and only the
+ * row actually written gets an audit row.
+ *
+ * What a new row prints is what the branch was already printing, so filling a
+ * branch in changes the panel and not the paper: see `defaultPrintTemplate`.
+ */
+export async function createMissingTemplates(
+  tx: Tx,
+  actor: { accountId: string | null; operatorId: string; requestId?: string | null },
+  branchId: string,
+): Promise<PrintTemplateView[]> {
+  const held = await tx
+    .select({ type: printTemplate.type })
+    .from(printTemplate)
+    .where(and(eq(printTemplate.branchId, branchId), isNull(printTemplate.archivedAt)));
+  const taken = new Set<PrintTemplateType>(held.map((row) => row.type));
+  const created: PrintTemplateView[] = [];
+  for (const type of PRINT_TEMPLATE_TYPE_ORDER) {
+    if (taken.has(type)) continue;
+    const [row] = await tx
+      .insert(printTemplate)
+      .values({
+        id: newId(),
+        operatorId: actor.operatorId,
+        branchId,
+        type,
+        ...defaultPrintTemplate(type),
+      })
+      .onConflictDoNothing({
+        target: [printTemplate.branchId, printTemplate.type],
+        where: isNull(printTemplate.archivedAt),
+      })
+      .returning();
+    if (!row) continue;
+    const view = templateView(row);
+    await audit.record(tx, {
+      actorAccountId: actor.accountId,
+      operatorId: actor.operatorId,
+      branchId,
+      action: 'print_template.create',
+      entityType: 'print_template',
+      entityId: row.id,
+      after: view,
+      requestId: actor.requestId ?? null,
+    });
+    created.push(view);
+  }
+  return created;
 }
 
 // --- Jobs --------------------------------------------------------------------

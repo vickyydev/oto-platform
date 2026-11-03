@@ -26679,6 +26679,128 @@
         }
       }
     },
+    "/branches/{branchId}/print-templates/create-missing": {
+      "post": {
+        "description": "Give this branch an editable template for every printout it has none for. Prints the same as before; a second run writes nothing.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "branchId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "created": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "receipt",
+                          "kids_wristband",
+                          "adult_wristband",
+                          "kitchen_ticket",
+                          "bar_ticket",
+                          "credit_voucher"
+                        ]
+                      }
+                    },
+                    "templates": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "receipt",
+                              "kids_wristband",
+                              "adult_wristband",
+                              "kitchen_ticket",
+                              "bar_ticket",
+                              "credit_voucher"
+                            ]
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "showLogo": {
+                            "type": "boolean"
+                          },
+                          "headerText": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "footerText": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "fields": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "anyOf": [
+                                {
+                                  "not": {}
+                                },
+                                {
+                                  "type": "boolean"
+                                }
+                              ]
+                            }
+                          },
+                          "version": {
+                            "type": "integer"
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "branchId",
+                          "type",
+                          "name",
+                          "showLogo",
+                          "headerText",
+                          "footerText",
+                          "fields",
+                          "version",
+                          "updatedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "created",
+                    "templates"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/print-templates/{id}": {
       "patch": {
         "description": "Edit a printout’s content. Which printer it routes to is Station Setup, not this.",

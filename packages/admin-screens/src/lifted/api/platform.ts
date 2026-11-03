@@ -354,6 +354,17 @@ const printApi = {
     body: Partial<Pick<ApiPrintTemplate, 'name' | 'showLogo' | 'headerText' | 'footerText' | 'fields'>>,
   ) => api.patch<ApiResponse<'/print-templates/{id}', 'patch'>>(`/print-templates/${encodeURIComponent(id)}`, body),
   /**
+   * An editable template for every printout this branch has none for
+   * (SCRUM-707). What is printed stays the same, and a second press writes
+   * nothing.
+   */
+  createMissingTemplates: (branchId: string) =>
+    api.post<ApiResponse<'/branches/{branchId}/print-templates/create-missing', 'post'>>(
+      `/branches/${encodeURIComponent(branchId)}/print-templates/create-missing`,
+      {},
+      { idempotencyKey: idemKey() },
+    ),
+  /**
    * Print this template's sample on a real printer. No idempotency key: two
    * presses of "Test print" mean two pieces of paper, which is exactly what
    * somebody pressing it twice is asking for.

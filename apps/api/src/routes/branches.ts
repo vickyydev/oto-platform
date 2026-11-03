@@ -13,6 +13,7 @@ import {
   syncNewBranchToApp,
 } from '../services/oto-app-branches';
 import { liveOccupancy } from '../services/occupancy';
+import { createMissingTemplates } from '../services/print';
 import { opCtx, withTx } from '../services/tx';
 import { LiveOccupancyViewSchema } from '@oto/shared';
 import { assertArchiveAllowed, lockActiveOrganisation, lockBranchForArchive } from '../services/organisation-archive';
@@ -185,6 +186,16 @@ export async function branchRoutes(app: App): Promise<void> {
             address: fields.address ?? null,
             timezone: fields.timezone,
           },
+        );
+        /**
+         * Something to open on Print Templates from the first minute (SCRUM-707).
+         * They print what a branch with no rows prints, so a new park's paper is
+         * unchanged, and a clone into it replaces them while they are untouched.
+         */
+        await createMissingTemplates(
+          tx,
+          { accountId: auth.accountId, operatorId: auth.operatorId, requestId: req.id },
+          id,
         );
         await audit.record(tx, {
           actorAccountId: auth.accountId,

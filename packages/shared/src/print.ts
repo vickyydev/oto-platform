@@ -218,6 +218,70 @@ export function printFieldOn(
   return template.fields[key] === true;
 }
 
+// --- What a new branch starts with -------------------------------------------
+
+/** What the panel calls each printout: the prototype's own names (`catalogStore.ts:729-784`). */
+const DEFAULT_TEMPLATE_NAMES: Record<PrintTemplateType, string> = {
+  receipt: 'Standard receipt',
+  kids_wristband: 'Kids wristband',
+  adult_wristband: 'Adult wristband',
+  kitchen_ticket: 'Kitchen ticket',
+  bar_ticket: 'Bar ticket',
+  credit_voucher: 'Credit voucher',
+};
+
+/** The content of a template: what a branch may edit, and what a default fills in. */
+export type PrintTemplateContent = Pick<
+  PrintTemplate,
+  'name' | 'showLogo' | 'headerText' | 'footerText' | 'fields'
+>;
+
+/**
+ * The editable row a branch starts with (SCRUM-707).
+ *
+ * **It prints exactly what the same branch prints with no row at all.** Every
+ * applicable field on, which is what `printFieldOn` answers for a missing
+ * template, and no logo, header or footer, which is what the renderer draws for
+ * one. So saving these rows changes what there is to open on the Print Templates
+ * panel and nothing on the paper: a park that has been trading on the built-in
+ * printouts keeps them to the dot until somebody edits one.
+ *
+ * Not the prototype's six seeded rows, on purpose. Those are one park's content:
+ * a logo and header it chose, a footer with its tax id, and an adult band with
+ * the holder's name off. Filled into another park they would print the first
+ * park's tax id on the second park's receipts.
+ */
+export function defaultPrintTemplate(type: PrintTemplateType): PrintTemplateContent {
+  return {
+    name: DEFAULT_TEMPLATE_NAMES[type],
+    showLogo: false,
+    headerText: null,
+    footerText: null,
+    fields: Object.fromEntries(APPLICABLE_FIELDS[type].map((key) => [key, true])),
+  };
+}
+
+/**
+ * Is this row a default nobody has opened and saved?
+ *
+ * A clone may fill such a row in, because it holds nothing of anybody's. The
+ * version is what separates it from a template somebody edited back to look the
+ * same: every save bumps it, so a row at 1 has never been saved over.
+ */
+export function isUntouchedDefaultTemplate(
+  row: PrintTemplateContent & { type: PrintTemplateType; version: number },
+): boolean {
+  if (row.version !== 1) return false;
+  const start = defaultPrintTemplate(row.type);
+  return (
+    row.name === start.name &&
+    row.showLogo === start.showLogo &&
+    (row.headerText ?? null) === start.headerText &&
+    (row.footerText ?? null) === start.footerText &&
+    PRINT_TEMPLATE_FIELD_KEYS.every((key) => !!row.fields[key] === !!start.fields[key])
+  );
+}
+
 // --- The record of a print attempt -------------------------------------------
 
 /**

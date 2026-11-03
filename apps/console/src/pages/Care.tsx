@@ -141,6 +141,7 @@ export function Care({ page }: { page: Page }) {
         {page === 'print-templates' && <TemplatesPanelWithPorts key={askedType ?? 'list'} ports={{ templates: snapshot.templates, live: true, stationId,
           canEdit: can('admin:branch:update', parkId), canTestPrint: !!stationId && can('admin:box:command', parkId), api: snapshot.api.printApi,
           onSaved: () => reload(true), askedType, onAddressClose: () => navigate('/catalogue/print-templates', { replace: true }),
+          createMissing: can('admin:branch:update', parkId) ? () => snapshot.api.printApi.createMissingTemplates(parkId) : undefined,
         }} />}
       </div> : !error && !parksError ? <Loading what="Care settings" /> : null}
     <AdminNotifications />
