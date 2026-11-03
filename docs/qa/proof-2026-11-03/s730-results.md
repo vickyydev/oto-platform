@@ -1,6 +1,6 @@
 # SCRUM-730 paid online drop-off: local proof
 
-Taken 2026-11-03 on a disposable local database with the real API and till in a browser (`apps/pos/e2e/run.mjs`). Nothing here touched staging. The staging proof with a ZZ TEST booking is still to do, once the lane has landed; its steps are at the end. Keep the ticket short of Deployed until those screens are attached.
+Taken 2026-11-03 on a disposable local database with the real API and till in a browser (`apps/pos/e2e/run.mjs`). Nothing here touched staging. The staging proof with a ZZ TEST booking is still to do, and the ticket asks for its first half before this lands; the steps are at the end. Keep the ticket short of Deployed until those screens are attached.
 
 ## Before the change (source at 234636a3)
 
@@ -33,12 +33,20 @@ The band itself needs a camera for the visit photo, so the browser run stops at 
 
 Rerun: `PAYMENTS_SIMULATOR=on POS_E2E_BROWSER=chromium node e2e/run.mjs e2e/dropoff-paid-online.spec.ts` from `apps/pos`, with `POS_E2E_SHOTS` naming a folder for the screens.
 
-## Staging proof, after landing
+## Staging proof
 
-1. As ZZ TEST, pay a booking for one drop-off child and one for a nanny child through the booking site on staging.
-2. Sign in at a till on the Check-in board. Screen: each family says Booked & paid.
-3. Press Check in on the drop-off family. Screen: the redeem dialog, with no line and no Pay.
-4. Confirm & Issue, then Check in now. Screen: the board's payment-free check-in. Take the visit photo and issue the band. Read the sale: one sale, the booking's, at what was paid.
-5. Press Check in on the nanny family. Screen: the redeem dialog, not "has not been paid for yet".
-6. Add a sibling to a paid family with Add drop-off child. Screen: the paid child reads Paid online and the sibling goes on the sale at the till's price.
-7. Close out the ZZ TEST bookings and stays as the other staging proofs do.
+Before landing, while staging still runs the earlier source:
+
+1. As ZZ TEST, pay a booking for one drop-off child through the booking site.
+2. On the Check-in board, press Check in on that family. Screen: the till with the child as a line to charge.
+3. Press Cancel at the till. Take no payment: the same booking serves step 6 below.
+
+After landing:
+
+4. As ZZ TEST, pay a booking for a nanny child as well.
+5. Sign in at a till on the Check-in board. Screen: each family says Booked & paid.
+6. Press Check in on the drop-off family. Screen: the redeem dialog, with no line and no Pay.
+7. Confirm & Issue, then Check in now. Screen: the board's payment-free check-in. Take the visit photo and issue the band. Read the sale: one sale, the booking's, at what was paid.
+8. Press Check in on the nanny family. Screen: the redeem dialog, not "has not been paid for yet".
+9. Add a sibling to a paid family with Add drop-off child. Screen: the paid child reads Paid online and the sibling goes on the sale at the till's price.
+10. Close out the ZZ TEST bookings and stays as the other staging proofs do.
