@@ -216,7 +216,7 @@
       "url": "https://oto-console-staging.onrender.com/reports-discounts"
     }
   ],
-  "outcome": "native proof and exact cleanup passed; Jira final walk pending",
+  "outcome": "passed; all eight tickets read back Deployed",
   "ci": [
     {
       "conclusion": "success",
@@ -392,5 +392,6 @@
     "cleanupJob": "job-dbl20ivb9u1s738o5eng",
     "readbackJob": "job-dbl21oe7bikc73867cng",
     "completedAt": "2026-11-03T17:59:37.172Z"
-  }
+  },
+  "jiraFinalReadAt": "2026-11-03T18:02:39.006Z"
 }
