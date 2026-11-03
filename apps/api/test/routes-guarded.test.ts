@@ -260,11 +260,15 @@ describe('route guards (S2-01b)', () => {
       'POST /events/:id/attendees/:attendeeId/checkout',
       'POST /events/:id/attendees/:attendeeId/reprint',
       'POST /events/:id/passes',
+      // SCRUM-732: a pass paid by QR or card rings its sale up here, online only
+      // like the one-press pass, and a party's balance takes those tenders online.
+      'POST /events/:id/passes/open',
       'POST /members',
       'POST /members/:id/children',
       'POST /members/:id/tier-verification',
       'POST /parties/:id/charges',
       'POST /parties/:id/payments',
+      'POST /parties/:id/payments/tender',
       'POST /payments/attempts',
       // Walking away from a gateway QR is a platform write on the attempt row,
       // like the press that opened it.

@@ -127,7 +127,7 @@ function paymentBody(amount: number, paymentId = newId()) {
     paymentId,
     actionId: newId(),
     amountSatang: amount,
-    tender: { method: 'card', kind: 'card' },
+    tender: { method: 'card', kind: 'card', approvalCode: '000000', tid: 'TID-TEST' },
   };
 }
 

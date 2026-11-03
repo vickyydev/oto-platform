@@ -26,6 +26,7 @@ import { reprintSale } from '../services/sale-printing';
 import { gatewayFor } from '../services/payments/gateway';
 import { opCtx, withTx } from '../services/tx';
 import { queueDrawerKick, type DrawerKick } from '../services/payments/drawer';
+import { writeBackSalePass } from '../services/booking-event-passes';
 import { removeSaleBenefit } from '../services/benefit-checkout';
 import {
   commitSale,
@@ -635,6 +636,10 @@ export async function saleRoutes(app: App): Promise<void> {
       if (drawerKick) {
         await queueDrawerKick(app.db, opCtx(req), actor, drawerKick);
       }
+      // SCRUM-732 — a pass this close put on the roster goes to the OTO App, and
+      // the till's close after a QR is that write-back's second chance. Nothing
+      // is sent for any other sale, and it cannot fail this request.
+      if (answer.finalised) await writeBackSalePass(app.db, req.log, req.params.id);
       if (answer.replay) reply.header('x-oto-replay', 'true');
       return answer;
     },

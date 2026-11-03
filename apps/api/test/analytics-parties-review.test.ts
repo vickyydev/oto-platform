@@ -38,7 +38,7 @@ async function post(path: string, body: Record<string, unknown>) {
 async function pay(id: string, amount: number) {
   const paymentId = newId();
   await post(`/parties/${id}/payments`, { paymentId, amountSatang: amount,
-    tender: { method: 'card', kind: 'card' } });
+    tender: { method: 'card', kind: 'card', approvalCode: '000000', tid: 'TID-TEST' } });
   const [row] = await ctx.db.select().from(partyPayment).where(eq(partyPayment.id, paymentId));
   return row!.paymentAttemptId;
 }

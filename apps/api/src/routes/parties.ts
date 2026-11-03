@@ -6,13 +6,15 @@ import {
   PartyPatchBodySchema,
   PartyPaymentBodySchema,
   PartyQuerySchema,
+  PartyTenderBodySchema,
   PartyWriteAnswerSchema,
   type Permission,
 } from '@oto/shared';
 import type { App } from '../app';
-import { chargeParty, getParty, payParty, updateParty } from '../services/parties';
+import { chargeParty, getParty, payParty, startPartyTender, updateParty } from '../services/parties';
 import { queueDrawerKick } from '../services/payments/drawer';
 import type { ActorContext } from '../services/sale';
+import { AttemptSchema } from './payments';
 import { opCtx } from '../services/tx';
 
 /**
@@ -164,8 +166,10 @@ export async function partyRoutes(app: App): Promise<void> {
           'one opens the drawer) with no sale behind it — not a sale of goods — and counted by End of Day on the ' +
           "party prepayments line on the day it is taken, for that day's party, never on the cash, card or QR line. " +
           'A balance that moved since the till showed it (`expectedOutstandingSatang`) is refused 409 ' +
-          'PARTY_BALANCE_CHANGED with nothing taken. The same payment id again answers what it took, under ' +
-          'x-oto-replay, and takes nothing.',
+          'PARTY_BALANCE_CHANGED with nothing taken. This call counts as confirmation that the money was taken, so a ' +
+          'QR, or a card with no approval code off its slip, is refused 409 PARTY_TENDER_ROUTED: those go by ' +
+          '/payments/tender. The same payment id again answers what it took, under x-oto-replay, and takes nothing; ' +
+          'one whose tender has not been paid is refused 409 PARTY_PAYMENT_NOT_TAKEN.',
         params: PartyParams,
         body: PartyPaymentBodySchema,
         response: { 200: PartyWriteAnswerSchema },
@@ -179,6 +183,53 @@ export async function partyRoutes(app: App): Promise<void> {
       });
       // Cash in the till opens the till, once the money is committed (S2-10a O-4).
       if (drawerKick) await queueDrawerKick(app.db, opCtx(req), actor, drawerKick);
+      if (answer.replayed) reply.header('x-oto-replay', 'true');
+      return answer;
+    },
+  );
+
+  app.post(
+    '/:id/payments/tender',
+    {
+      config: {
+        permission: 'pos:party:payment',
+        target: { branchId: 'body.branchId' },
+        stationTrading: true,
+      },
+      schema: {
+        description:
+          "Take money against a party's balance by a tender that answers later, routed by the station as a sale's " +
+          'tender is: a QR through the gateway or the terminal, a card on the terminal. The answer is the attempt the ' +
+          'till then polls on GET /payments/attempts/:id, with the QR to show. Nothing is on the bill until the attempt ' +
+          'is paid; meanwhile what it asked for is reserved, and another payment over the rest of the balance is ' +
+          'refused 409 PAYMENT_IN_FLIGHT. A station that keys cards in by hand answers route `manual` and opens ' +
+          'nothing. The same payment id again answers the same tender. Once it is paid, POST /parties/:id/payments ' +
+          'under the same payment id answers what it took.',
+        params: PartyParams,
+        body: PartyTenderBodySchema,
+        response: {
+          200: z.object({
+            route: z.enum(['card_terminal', 'manual', 'gateway']),
+            attempt: AttemptSchema.nullable(),
+            replayed: z.boolean(),
+            outstandingSatang: z.number().int(),
+            qrPayload: z.string().nullable(),
+            qrImageUrl: z.string().nullable(),
+            expiresAt: z.string().nullable(),
+            expiryTimerMs: z.number().int().nullable(),
+          }),
+        },
+      },
+    },
+    async (req, reply) => {
+      const actor = actorOf(req, 'pos:party:payment');
+      const answer = await startPartyTender(
+        { ...deps(req), env: app.env, log: req.log },
+        opCtx(req),
+        actor,
+        req.params.id,
+        { ...req.body, actionId: actionIdOf(req, req.body.actionId) },
+      );
       if (answer.replayed) reply.header('x-oto-replay', 'true');
       return answer;
     },

@@ -764,6 +764,55 @@ export const EventPassSellBodySchema = EventAttendeeCreateBodySchema.extend({
 });
 export type EventPassSellBody = z.infer<typeof EventPassSellBodySchema>;
 
+/**
+ * `POST /events/:id/passes/open` — a pass paid by a tender that answers later
+ * (SCRUM-732): the sale is rung up and the child held for it. No money and no
+ * roster entry yet; the sale takes its QR or card on the ordinary tender route,
+ * and the child lands on the roster in the transaction that closes it.
+ */
+export const EventPassOpenBodySchema = EventAttendeeCreateBodySchema.extend({
+  stationId: z.string().uuid(),
+  /** The pass sale's id, minted by the till. */
+  saleId: z.string().uuid(),
+  /** The fee the till showed. Compared, never charged: a stale price is refused. */
+  expectedTotalSatang: z.number().int().min(0).optional(),
+});
+export type EventPassOpenBody = z.infer<typeof EventPassOpenBodySchema>;
+
+/** A pass rung up and waiting for its money: its id and the sale the tender goes against. */
+export const EventPassOpenAnswerSchema = z.object({
+  attendeeId: z.string(),
+  /** The same attendee id was sent before; this is what that request made. */
+  replayed: z.boolean(),
+  /** The sale as the tender routes read it. It reads `finalised` once the money has landed. */
+  sale: z
+    .object({
+      id: z.string(),
+      status: z.string(),
+      totals: z.object({ grossSatang: z.number().int() }).passthrough(),
+    })
+    .passthrough(),
+});
+export type EventPassOpenAnswer = z.infer<typeof EventPassOpenAnswerSchema>;
+
+/** Refused on `POST /events/:id/passes`: card and QR answer later, so they go by `/passes/open`. */
+export const EVENT_PASS_TENDER_ROUTED = {
+  code: 'EVENT_PASS_TENDER_ROUTED',
+  message: 'A card or QR pass is taken on the terminal or through the gateway, so nothing was recorded here',
+} as const;
+
+/** `GET /events/:id/passes/:attendeeId` before the money has landed. */
+export const EVENT_PASS_NOT_PAID = {
+  code: 'EVENT_PASS_NOT_PAID',
+  message: 'This pass has not been paid yet, so the child is not on the roster',
+} as const;
+
+/** A held pass whose sale was voided: its ids are spent, and a new press mints new ones. */
+export const EVENT_PASS_RELEASED = {
+  code: 'EVENT_PASS_RELEASED',
+  message: 'That pass was cancelled with its sale, so nothing was saved. Start the pass again',
+} as const;
+
 export const EVENT_ATTENDEE_SYNC_STATE_VALUES = ['synced', 'pending', 'failed'] as const;
 export type EventAttendeeSyncStateValue = (typeof EVENT_ATTENDEE_SYNC_STATE_VALUES)[number];
 

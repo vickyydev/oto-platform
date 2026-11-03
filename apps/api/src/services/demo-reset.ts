@@ -16,6 +16,7 @@ import {
   child,
   endOfDay,
   eventAttendeeLink,
+  eventPassHold,
   eventCheckin,
   guardian,
   kioskSession,
@@ -292,6 +293,7 @@ async function resetDemoDataIn(tx: Tx): Promise<DemoResetCounts> {
   counts.event_attendee_link = (
     await tx.delete(eventAttendeeLink).returning({ id: eventAttendeeLink.id })
   ).length;
+  counts.event_pass_hold = (await tx.delete(eventPassHold).returning({ id: eventPassHold.id })).length;
 
   /**
    * SCRUM-503: S2-13's supervised stays are a day of play too — a drop-off or

@@ -195,6 +195,81 @@ export const eventAttendeeLink = pos.table(
   ],
 );
 
+/** Where a held pass stands: waiting for its money, on the roster, or let go with its sale. */
+export const EVENT_PASS_HOLD_STATUSES = ['pending', 'applied', 'released'] as const;
+export type EventPassHoldStatus = (typeof EVENT_PASS_HOLD_STATUSES)[number];
+
+/**
+ * A CAMP OR EVENT PASS WAITING FOR ITS MONEY (SCRUM-732).
+ *
+ * Cash is in the drawer before the till calls, so a cash pass writes its sale
+ * and its child in one transaction. A QR or a card answers later, and possibly
+ * after the till has gone: the sale waits in `tendering` and this row holds
+ * everything the roster entry needs. `finaliseSale` turns it into the
+ * `event_attendee_link` in the transaction that closes the sale, whoever closes
+ * it (the gateway's notification, the poller, the till's confirm), so a
+ * completed payment always lands a roster entry and an unpaid pass never does.
+ *
+ * Its id is the till's attendee id, which the link is then written under.
+ */
+export const eventPassHold = pos.table(
+  'event_pass_hold',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    /** The pass sale, in `tendering` until the money lands. */
+    saleId: uuid('sale_id')
+      .notNull()
+      .references(() => sale.id, { onDelete: 'restrict' }),
+    /** The OTO App's event. No foreign key: the app's tables are its own (C10). */
+    otoappEventId: uuid('otoapp_event_id').notNull(),
+    eventType: text('event_type').$type<'camp' | 'event'>().notNull(),
+    childId: uuid('child_id').references(() => child.id, { onDelete: 'restrict' }),
+    memberId: uuid('member_id').references(() => member.id, { onDelete: 'restrict' }),
+    priceSnapshotSatang: bigint('price_snapshot_satang', { mode: 'number' }).notNull(),
+    pricingMode: text('pricing_mode').notNull(),
+    parentAttending: boolean('parent_attending').notNull().default(false),
+    registerProperly: boolean('register_properly').notNull().default(false),
+    attendanceDays: date('attendance_days', { mode: 'string' })
+      .array()
+      .notNull()
+      .default(sql`'{}'::date[]`),
+    /** The directory body the link will carry, as it was stamped when the pass was rung up. */
+    writeback: jsonb('writeback').notNull(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'restrict' }),
+    stationId: uuid('station_id')
+      .notNull()
+      .references(() => station.id, { onDelete: 'restrict' }),
+    boxId: uuid('box_id').references(() => box.id, { onDelete: 'restrict' }),
+    actionId: text('action_id'),
+    status: text('status').$type<EventPassHoldStatus>().notNull().default('pending'),
+    appliedAt: timestamp('applied_at', { withTimezone: true, mode: 'date' }),
+    releasedAt: timestamp('released_at', { withTimezone: true, mode: 'date' }),
+    ...timestamps,
+  },
+  (t) => [
+    /** One sale, one pass: what `finaliseSale` looks a hold up by. */
+    uniqueIndex('event_pass_hold_sale_unique').on(t.saleId),
+    index('event_pass_hold_operator_idx').on(t.operatorId),
+    index('event_pass_hold_branch_idx').on(t.branchId, t.createdAt),
+    index('event_pass_hold_child_idx').on(t.childId),
+    index('event_pass_hold_member_idx').on(t.memberId),
+    index('event_pass_hold_account_idx').on(t.accountId),
+    index('event_pass_hold_station_idx').on(t.stationId),
+    index('event_pass_hold_box_idx').on(t.boxId),
+    check('event_pass_hold_type_check', sql`${t.eventType} in ('camp','event')`),
+    check('event_pass_hold_status_check', sql`${t.status} in ('pending','applied','released')`),
+    check('event_pass_hold_price_check', sql`${t.priceSnapshotSatang} > 0`),
+  ],
+);
+
 /** Where a check-in was made: a till online, a box with the link down, or the OTO App itself. */
 export const EVENT_CHECKIN_ORIGINS = ['till', 'box', 'otoapp'] as const;
 export type EventCheckinOrigin = (typeof EVENT_CHECKIN_ORIGINS)[number];

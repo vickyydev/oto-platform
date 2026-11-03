@@ -22534,7 +22534,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Sell a camp or event pass (`sellEventPass`): an ordinary sale of one child's flat entry, priced from the event at the day's rate mode (never tiered), committed and paid with the tender in ONE transaction — so no child is added without the money, and no money is taken without the child. A party (its guests ride the tab) and a free event are refused. The sale prints its receipt like any other; the child is then written to the OTO App under the till's `attendeeId` (`syncState`). The same attendee id again answers what it made. */
+        /** @description Sell a camp or event pass (`sellEventPass`): an ordinary sale of one child's flat entry, priced from the event at the day's rate mode (never tiered), committed and paid with the tender in ONE transaction — so no child is added without the money, and no money is taken without the child. A party (its guests ride the tab) and a free event are refused. So is a card or a QR (409 EVENT_PASS_TENDER_ROUTED): this call counts as confirmation that the money was taken, and those answer later, so they go by /passes/open. The sale prints its receipt like any other; the child is then written to the OTO App under the till's `attendeeId` (`syncState`). The same attendee id again answers what it made. */
         post: {
             parameters: {
                 query?: never;
@@ -22627,6 +22627,161 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/events/{id}/passes/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Ring up a camp or event pass that is paid by a tender that answers later, a QR or a card: the sale is committed in `tendering` and the child is held beside it, with no money taken and no roster entry. The tender then goes on `POST /payments/attempts`, routed by the station like any sale, and the child lands on the roster in the transaction that closes the sale, whoever closes it. Voiding the sale lets the child go. The same attendee id again answers the same sale as it stands now. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        branchId: string;
+                        /** Format: uuid */
+                        attendeeId: string;
+                        attendee: {
+                            name: string;
+                            age?: number;
+                            dateOfBirth?: string;
+                            language?: string;
+                            allergyFlag?: boolean;
+                            allergyDetail?: string;
+                            dietaryFlag?: boolean;
+                            dietaryDetail?: string;
+                            notes?: string;
+                            parentName: string;
+                            parentPhone?: string;
+                            emergencyContact?: string;
+                            parentAttending?: boolean;
+                        };
+                        /** @default false */
+                        registerProperly?: boolean;
+                        /** Format: uuid */
+                        stationId: string;
+                        /** Format: uuid */
+                        memberId?: string;
+                        /** Format: uuid */
+                        childId?: string;
+                        actionId?: string;
+                        /** Format: uuid */
+                        saleId: string;
+                        expectedTotalSatang?: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            attendeeId: string;
+                            replayed: boolean;
+                            sale: {
+                                id: string;
+                                status: string;
+                                totals: {
+                                    grossSatang: number;
+                                } & {
+                                    [key: string]: unknown;
+                                };
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/events/{id}/passes/{attendeeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description What a pass opened for a QR or a card came to, read once its tender has answered: the child on the roster and the sale that paid. Refused 409 EVENT_PASS_NOT_PAID while the sale is still waiting for its money, and 409 EVENT_PASS_RELEASED once the sale was voided. */
+        get: {
+            parameters: {
+                query: {
+                    branchId: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                    attendeeId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            attendee: {
+                                id: string;
+                                eventId: string;
+                                /** @enum {string} */
+                                eventType: "party" | "camp" | "event";
+                                otoappAttendeeId: string | null;
+                                merged: boolean;
+                                /** @enum {string} */
+                                billing: "sale" | "party_tab" | "free" | "booking";
+                                priceSatang: number;
+                                attendanceDays: string[];
+                                parentAttending: boolean;
+                                /** @enum {string} */
+                                syncState: "synced" | "pending" | "failed";
+                                syncError: string | null;
+                                createdAt: string;
+                            };
+                            replayed: boolean;
+                            sale: {
+                                id: string;
+                                receiptNumber: string | null;
+                                grossSatang: number;
+                                status: string;
+                            } | null;
+                            printingNotes: string[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -24427,7 +24582,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Take money against a party's balance (`addPartyPayment`): whole baht, capped at what is outstanding, refused when nothing is. Recorded through the tender machine as a real tender at the counter (a cash one opens the drawer) with no sale behind it — not a sale of goods — and counted by End of Day on the party prepayments line on the day it is taken, for that day's party, never on the cash, card or QR line. A balance that moved since the till showed it (`expectedOutstandingSatang`) is refused 409 PARTY_BALANCE_CHANGED with nothing taken. The same payment id again answers what it took, under x-oto-replay, and takes nothing. */
+        /** @description Take money against a party's balance (`addPartyPayment`): whole baht, capped at what is outstanding, refused when nothing is. Recorded through the tender machine as a real tender at the counter (a cash one opens the drawer) with no sale behind it — not a sale of goods — and counted by End of Day on the party prepayments line on the day it is taken, for that day's party, never on the cash, card or QR line. A balance that moved since the till showed it (`expectedOutstandingSatang`) is refused 409 PARTY_BALANCE_CHANGED with nothing taken. This call counts as confirmation that the money was taken, so a QR, or a card with no approval code off its slip, is refused 409 PARTY_TENDER_ROUTED: those go by /payments/tender. The same payment id again answers what it took, under x-oto-replay, and takes nothing; one whose tender has not been paid is refused 409 PARTY_PAYMENT_NOT_TAKEN. */
         post: {
             parameters: {
                 query?: never;
@@ -24452,6 +24607,9 @@ export interface paths {
                             kind?: string;
                             tenderedSatang?: number;
                             reference?: string;
+                            approvalCode?: string;
+                            tid?: string;
+                            last4?: string;
                         };
                         expectedOutstandingSatang?: number;
                         actionId?: string;
@@ -24636,6 +24794,101 @@ export interface paths {
                                 syncError: string | null;
                                 ignored: string[];
                             };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/parties/{id}/payments/tender": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Take money against a party's balance by a tender that answers later, routed by the station as a sale's tender is: a QR through the gateway or the terminal, a card on the terminal. The answer is the attempt the till then polls on GET /payments/attempts/:id, with the QR to show. Nothing is on the bill until the attempt is paid; meanwhile what it asked for is reserved, and another payment over the rest of the balance is refused 409 PAYMENT_IN_FLIGHT. A station that keys cards in by hand answers route `manual` and opens nothing. The same payment id again answers the same tender. Once it is paid, POST /parties/:id/payments under the same payment id answers what it took. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        branchId: string;
+                        /** Format: uuid */
+                        paymentId: string;
+                        /** Format: uuid */
+                        stationId: string;
+                        amountSatang: number;
+                        tender: {
+                            method: string;
+                            kind?: string;
+                        };
+                        expectedOutstandingSatang?: number;
+                        /** @enum {string} */
+                        qrDirection?: "show" | "scan";
+                        requestQrPayload?: boolean;
+                        actionId?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            route: "card_terminal" | "manual" | "gateway";
+                            attempt: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                saleId: string | null;
+                                /** @enum {string} */
+                                method: "cash" | "card" | "qr" | "wallet" | "voucher" | "transfer" | "other";
+                                /** @enum {string} */
+                                provider: "simulator" | "ghl" | "digio" | "2c2p" | "manual";
+                                /** @enum {string} */
+                                status: "created" | "sent_to_terminal" | "approved" | "declined" | "cancelled" | "unknown" | "inquiring" | "not_found" | "awaiting_staff_confirmation" | "awaiting_settlement";
+                                amountSatang: number;
+                                tenderedSatang: number | null;
+                                changeSatang: number | null;
+                                terminalRef: string | null;
+                                inquirySupported?: boolean;
+                                reversalPending?: boolean;
+                                tid: string | null;
+                                approvalCode: string | null;
+                                last4: string | null;
+                                invoiceNo: string | null;
+                                tranRef: string | null;
+                                actionId: string | null;
+                                offline: boolean;
+                                paidAt: string | null;
+                                createdAt: string;
+                            } | null;
+                            replayed: boolean;
+                            outstandingSatang: number;
+                            qrPayload: string | null;
+                            qrImageUrl: string | null;
+                            expiresAt: string | null;
+                            expiryTimerMs: number | null;
                         };
                     };
                 };

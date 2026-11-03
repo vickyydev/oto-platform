@@ -487,7 +487,7 @@ describe('check 3 — the party tab, its charge, its card payment and End of Day
       paymentId,
       actionId: newId(),
       amountSatang: 300_000,
-      tender: { method: 'card', kind: 'card' },
+      tender: { method: 'card', kind: 'card', approvalCode: '000000', tid: 'TID-TEST' },
       expectedOutstandingSatang: 791_000,
     });
     expect(paid.status, JSON.stringify(paid.body)).toBe(200);

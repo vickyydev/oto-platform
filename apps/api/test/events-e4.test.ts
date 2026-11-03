@@ -249,6 +249,7 @@ function paymentBody(o: {
       method: o.method ?? 'cash',
       kind: o.kind ?? (o.method === 'card' ? 'card' : o.method === 'promptpay' ? 'qr' : 'cash'),
       ...(o.tendered !== undefined ? { tenderedSatang: o.tendered } : {}),
+      ...(o.method === 'card' ? { approvalCode: '000000', tid: 'TID-TEST' } : {}),
     },
     ...(o.expected !== undefined ? { expectedOutstandingSatang: o.expected } : {}),
   };

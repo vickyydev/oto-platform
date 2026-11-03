@@ -1,20 +1,29 @@
 import { and, asc, eq, inArray, ne, or, sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
-import { branch, partyCharge, partyEdit, partyPayment, station, type Db } from '@oto/db';
+import { branch, partyCharge, partyEdit, partyPayment, paymentAttempt, station, type Db } from '@oto/db';
 import {
   PARTY_EDITABLE_FIELDS,
   PARTY_PATCH_ENVELOPE,
+  PARTY_PAYMENT_NOT_TAKEN,
+  PARTY_TENDER_ROUTED,
+  PAYMENT_ATTEMPT_TAKEN_STATUSES,
+  PAYMENT_ATTEMPT_TERMINAL_STATUSES,
+  STATION_QR_DISABLED,
   businessDate,
+  isPaymentReversalPending,
   normalizePhone,
   parseDayStart,
+  stationPaymentRoutes,
   type EventDetailAnswer,
   type EventView,
   type PartyChargeBody,
   type PartyEditFields,
   type PartyPatchBody,
   type PartyPaymentBody,
+  type PartyTenderBody,
   type PartyWriteAnswer,
 } from '@oto/shared';
+import type { Env } from '../env';
 import { AppError, errors } from '../lib/errors';
 import type { BranchReach } from './access-control';
 import { audit } from './audit';
@@ -39,8 +48,11 @@ import {
 } from './party-tab';
 import { openAttempt, settleAttempt, tenderMethodOf } from './payments/attempt';
 import { resolveDrawerKick, type DrawerKick } from './payments/drawer';
+import { openQrAttempt } from './payments/gateway';
+import type { StartPaymentResult } from './payments/routing';
+import { readAttempt, sendTenderToTerminal, type TenderActor } from './payments/terminal';
 import type { ActorContext } from './sale';
-import { withTx, type Exec, type OpContext } from './tx';
+import { withTx, type Exec, type OpContext, type Tx } from './tx';
 
 /**
  * S2-20 E4 — THE PARTY TAB (SCRUM-217; plan
@@ -270,6 +282,77 @@ export async function chargeParty(
 
 // --- Payments --------------------------------------------------------------------
 
+/**
+ * What is still waiting for an answer on this party: a QR on the display, a card
+ * on the terminal. Not on the bill, because it has not been taken, and not
+ * available to take again, because it may be. Read under the party's lock.
+ */
+async function waitingOn(tx: Exec, branchId: string, eventId: string) {
+  const attempts = await tx
+    .select({
+      attemptId: paymentAttempt.id,
+      paymentId: partyPayment.id,
+      stationId: partyPayment.stationId,
+      amountSatang: paymentAttempt.amountSatang,
+      status: paymentAttempt.status,
+      payload: paymentAttempt.payload,
+    })
+    .from(partyPayment)
+    .innerJoin(paymentAttempt, eq(paymentAttempt.id, partyPayment.paymentAttemptId))
+    .where(and(eq(partyPayment.branchId, branchId), eq(partyPayment.otoappEventId, eventId)));
+  return attempts.filter(
+    (a) =>
+      !PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status) &&
+      (!PAYMENT_ATTEMPT_TERMINAL_STATUSES.includes(a.status) || isPaymentReversalPending(a.payload)),
+  );
+}
+
+/**
+ * The amount one press takes, under the party's lock: the balance the till
+ * showed still stands, the prototype's whole baht capped at what is outstanding,
+ * and none of it spoken for by a tender still waiting for its answer.
+ */
+async function assessPayment(
+  tx: Exec,
+  branchId: string,
+  eventId: string,
+  body: { amountSatang: number; expectedOutstandingSatang?: number | undefined },
+) {
+  const { confirmed, bill } = await liveBill(tx, branchId, eventId);
+  if (body.expectedOutstandingSatang !== undefined && body.expectedOutstandingSatang !== bill.outstandingSatang) {
+    throw errors.conflict(
+      'PARTY_BALANCE_CHANGED',
+      `The balance changed to ฿${(bill.outstandingSatang / 100).toLocaleString('en-US')} since it was shown — nothing was taken. Check the bill and take the payment again.`,
+      { outstandingSatang: bill.outstandingSatang },
+    );
+  }
+  // `Math.min(Math.floor(amount), outstanding)` (addPartyPayment), in satang.
+  const requested = body.amountSatang - (body.amountSatang % 100);
+  const amount = Math.min(requested, bill.outstandingSatang);
+  if (amount <= 0) {
+    throw bill.outstandingSatang <= 0
+      ? errors.conflict('PARTY_NOTHING_OWED', 'This party is fully paid — nothing was taken', {
+          outstandingSatang: bill.outstandingSatang,
+        })
+      : errors.badRequest('A party payment is whole baht, at least ฿1', { amountSatang: body.amountSatang });
+  }
+  const waiting = await waitingOn(tx, branchId, eventId);
+  const reserved = waiting.reduce((sum, a) => sum + a.amountSatang, 0);
+  if (reserved > 0 && amount > bill.outstandingSatang - reserved) {
+    // Named, so the counter that opened it can bring it back after a reload.
+    throw errors.conflict(
+      'PAYMENT_IN_FLIGHT',
+      'A payment on this party is still waiting for an answer. Resolve it before charging this balance again.',
+      {
+        reservedSatang: reserved,
+        outstandingSatang: bill.outstandingSatang,
+        waiting: waiting.map((a) => ({ attemptId: a.attemptId, paymentId: a.paymentId, stationId: a.stationId })),
+      },
+    );
+  }
+  return { confirmed, bill, amount };
+}
+
 export interface PartyPaymentResult {
   answer: PartyWriteAnswer;
   /** The drawer a cash payment opens, once it has committed. */
@@ -297,6 +380,12 @@ export interface PartyPaymentResult {
  * party moved after it was paid takes its money's line with it. The date the
  * app held when the money was taken is kept on the row and in the audit as a
  * record of that moment only; nothing counts by it.
+ *
+ * THIS ROUTE'S CALL COUNTS AS CONFIRMATION THAT THE MONEY WAS TAKEN (SCRUM-732).
+ * That is so of cash in the drawer, of a tender recorded by hand, and of a card
+ * with its slip's approval code. A QR, or a card with no slip, is refused here:
+ * it goes by `startPartyTender`, and this route then answers what it took, under
+ * the same payment id, once it really has.
  */
 export async function payParty(
   deps: PartyDeps,
@@ -318,6 +407,17 @@ export async function payParty(
       });
     }
     await actor.assertBranchAllowed?.(row.branchId);
+    const [attempt] = await db
+      .select({ status: paymentAttempt.status })
+      .from(paymentAttempt)
+      .where(eq(paymentAttempt.id, row.paymentAttemptId))
+      .limit(1);
+    if (!attempt || !PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(attempt.status)) {
+      throw errors.conflict(PARTY_PAYMENT_NOT_TAKEN.code, PARTY_PAYMENT_NOT_TAKEN.message, {
+        paymentId: row.id,
+        status: attempt?.status ?? null,
+      });
+    }
     const party = await partyNow(db, actor, row.branchId, event.id);
     const payment = party.party?.payments?.find((p) => p.id === row.id);
     // The drawer opened on the first answer; a retry must not open it again.
@@ -344,31 +444,17 @@ export async function payParty(
       return undefined;
     }
 
-    const { confirmed, bill } = await liveBill(tx, clock.id, event.id);
+    const { confirmed, bill, amount } = await assessPayment(tx, clock.id, event.id, body);
     // The party's day as the OTO App holds it as the money is taken — a record
     // of the moment (the row's `party_date`, the audit's `partyDate`). End of
     // Day does not read it: it works the party's day out when the day is read.
     const partyDate = confirmed.startDate;
-    if (body.expectedOutstandingSatang !== undefined && body.expectedOutstandingSatang !== bill.outstandingSatang) {
-      throw errors.conflict(
-        'PARTY_BALANCE_CHANGED',
-        `The balance changed to ฿${(bill.outstandingSatang / 100).toLocaleString('en-US')} since it was shown — nothing was taken. Check the bill and take the payment again.`,
-        { outstandingSatang: bill.outstandingSatang },
-      );
-    }
-    // `Math.min(Math.floor(amount), outstanding)` (addPartyPayment), in satang.
-    const requested = body.amountSatang - (body.amountSatang % 100);
-    const amount = Math.min(requested, bill.outstandingSatang);
-    if (amount <= 0) {
-      throw bill.outstandingSatang <= 0
-        ? errors.conflict('PARTY_NOTHING_OWED', 'This party is fully paid — nothing was taken', {
-            outstandingSatang: bill.outstandingSatang,
-          })
-        : errors.badRequest('A party payment is whole baht, at least ฿1', { amountSatang: body.amountSatang });
-    }
 
     const tender = body.tender;
     const method = await tenderMethodOf(tx, actor.operatorId, tender.method, tender.kind);
+    if (method === 'qr' || (method === 'card' && !tender.approvalCode)) {
+      throw errors.conflict(PARTY_TENDER_ROUTED.code, PARTY_TENDER_ROUTED.message, { method });
+    }
     let changeSatang: number | null = null;
     if (tender.tenderedSatang !== undefined) {
       if (method !== 'cash') throw errors.badRequest('Only cash is handed over: send what was tendered with a cash payment only');
@@ -405,7 +491,12 @@ export async function payParty(
         ...(actionId ? { actionId } : {}),
       },
     });
-    await settleAttempt(tx, opened.id, { paidAt: now });
+    await settleAttempt(tx, opened.id, {
+      paidAt: now,
+      ...(tender.approvalCode
+        ? { approvalCode: tender.approvalCode, tid: tender.tid ?? null, last4: tender.last4 ?? null }
+        : {}),
+    });
     await tx.insert(partyPayment).values({
       id: body.paymentId,
       operatorId: actor.operatorId,
@@ -461,6 +552,234 @@ export async function payParty(
   const party = await partyNow(db, actor, clock.id, event.id);
   const payment = party.party?.payments?.find((p) => p.id === body.paymentId);
   return { answer: { replayed: false, party, ...(payment ? { payment } : {}) }, drawerKick: done.drawerKick };
+}
+
+/** What opening a tender for a party needs beyond the party's own write. */
+export interface PartyTenderDeps extends PartyDeps {
+  env: Env;
+  log: FastifyBaseLogger;
+}
+
+/**
+ * `POST /parties/:id/payments/tender` — money against the balance through a
+ * tender that answers later (SCRUM-732).
+ *
+ * The station's own routing decides, exactly as a sale's tender is routed
+ * (`startPaymentTender`): a QR through the gateway or the terminal, a card on
+ * the terminal, or nothing opened at all when the station keys cards in by hand.
+ * It is the same `pos.payment_attempt` and the same `pos.party_payment` row a
+ * counter's tender writes, opened and not settled, so it joins nothing until the
+ * money lands: the bill, End of Day's party line and Performance all read only
+ * attempts that were taken. While it waits, what it asked for is reserved
+ * (`assessPayment`) so no other press can take the same balance twice.
+ *
+ * The same payment id again answers the same tender as it stands now.
+ */
+export async function startPartyTender(
+  deps: PartyTenderDeps,
+  ctx: OpContext,
+  actor: ActorContext,
+  partyId: string,
+  body: PartyTenderBody,
+  now: Date = new Date(),
+): Promise<StartPaymentResult> {
+  const db = deps.db;
+  const clock = await branchClockOf(db, actor.operatorId, body.branchId);
+  await actor.assertBranchAllowed?.(clock.id);
+  const event = await partyOf(db, clock.id, partyId);
+  const operationCtx = { ...ctx, idempotency: undefined };
+  const tenderActor: TenderActor = {
+    accountId: actor.accountId,
+    operatorId: actor.operatorId,
+    ...(actor.requestId ? { requestId: actor.requestId } : {}),
+    assertBranchAllowed: async (id) => {
+      await actor.assertBranchAllowed?.(id);
+    },
+  };
+
+  const answerFor = async (row: typeof partyPayment.$inferSelect): Promise<StartPaymentResult> => {
+    if (row.operatorId !== actor.operatorId || row.otoappEventId !== event.id) {
+      throw errors.conflict('PAYMENT_ID_IN_USE', 'That payment id already belongs to another payment', {
+        paymentId: row.id,
+      });
+    }
+    const read = await readAttempt(db, actor.operatorId, row.paymentAttemptId);
+    const { bill } = await liveBill(db, clock.id, event.id);
+    return {
+      route: read.route,
+      attempt: read.attempt,
+      replayed: true,
+      outstandingSatang: bill.outstandingSatang,
+      qrPayload: read.qrPayload,
+      qrImageUrl: read.qrImageUrl,
+      expiresAt: read.expiresAt,
+      expiryTimerMs: read.expiryTimerMs,
+    };
+  };
+
+  const [prior] = await db.select().from(partyPayment).where(eq(partyPayment.id, body.paymentId)).limit(1);
+  if (prior) return answerFor(prior);
+  if (event.archived) throw errors.conflict('EVENT_ARCHIVED', 'This party has been archived in the OTO App');
+  const counter = await stationAt(db, actor.operatorId, clock.id, body.stationId);
+  if (!counter) throw errors.badRequest('A payment is taken at a counter: name the station');
+  const tradingDay = businessDate(now, clock.timezone, clock.dayStartMinutes);
+  const actionId = body.actionId ?? null;
+  const routes = stationPaymentRoutes(counter.paymentRouting);
+  const method = await tenderMethodOf(db, actor.operatorId, body.tender.method, body.tender.kind);
+  if (method !== 'card' && method !== 'qr') {
+    throw errors.badRequest('Only a card or a QR is routed to a terminal or the gateway', { method });
+  }
+  if (method === 'qr' && routes.qr === 'none') {
+    throw errors.conflict(STATION_QR_DISABLED.code, STATION_QR_DISABLED.message);
+  }
+  const attemptActionId = `party-payment:${body.paymentId}`;
+
+  /** The party's own record of the tender, in the transaction that opens it. */
+  const recordTender = async (tx: Tx, attemptId: string, amount: number, partyDate: string, before: number) => {
+    await tx.insert(partyPayment).values({
+      id: body.paymentId,
+      operatorId: actor.operatorId,
+      branchId: clock.id,
+      otoappEventId: event.id,
+      paymentAttemptId: attemptId,
+      partyDate,
+      accountId: actor.accountId,
+      stationId: counter.id,
+      boxId: counter.boxId,
+      actionId,
+      createdAt: now,
+      updatedAt: now,
+    });
+    await audit.record(tx, {
+      actorAccountId: actor.accountId,
+      operatorId: actor.operatorId,
+      branchId: clock.id,
+      action: 'party.payment_tender',
+      entityType: 'party_payment',
+      entityId: body.paymentId,
+      actionId,
+      requestId: actor.requestId,
+      before: { outstandingSatang: before },
+      after: {
+        eventId: event.id,
+        amountSatang: amount,
+        ...(amount !== body.amountSatang ? { requestedSatang: body.amountSatang } : {}),
+        method: body.tender.method,
+        kind: method,
+        attemptId,
+        businessDate: tradingDay,
+        partyDate,
+        stationId: counter.id,
+        boxId: counter.boxId,
+      },
+    });
+  };
+  const payload = { partyPayment: true, partyEventId: event.id, partyPaymentId: body.paymentId };
+
+  const plan = await withTx(
+    db,
+    operationCtx,
+    'party.payment_tender',
+    async (
+      tx,
+    ): Promise<
+      | { kind: 'gateway'; amount: number }
+      | { kind: 'manual'; outstanding: number }
+      | { kind: 'raced'; row: typeof partyPayment.$inferSelect }
+      | { kind: 'terminal'; attemptId: string; outstanding: number }
+    > => {
+      await lockParty(tx, event.id);
+      const [again] = await tx.select().from(partyPayment).where(eq(partyPayment.id, body.paymentId)).limit(1);
+      if (again) return { kind: 'raced', row: again };
+      const { confirmed, bill, amount } = await assessPayment(tx, clock.id, event.id, body);
+      if (method === 'card' && routes.card === 'manual') return { kind: 'manual', outstanding: bill.outstandingSatang };
+      if (method === 'qr' && routes.qr === 'gateway') return { kind: 'gateway', amount };
+      const opened = await sendTenderToTerminal(tx, tenderActor, {
+        operatorId: actor.operatorId,
+        branchId: clock.id,
+        stationRow: counter,
+        businessDate: tradingDay,
+        saleId: null,
+        amountSatang: amount,
+        tender: method,
+        methodCode: body.tender.method,
+        ...(body.tender.kind ? { kind: body.tender.kind } : {}),
+        ...(body.requestQrPayload ? { requestQrPayload: true } : {}),
+        ...(body.qrDirection ? { qrDirection: body.qrDirection } : {}),
+        actionId: attemptActionId,
+        commandActionId: body.paymentId,
+        payload,
+      });
+      await recordTender(tx, opened.id, amount, confirmed.startDate, bill.outstandingSatang);
+      return { kind: 'terminal', attemptId: opened.id, outstanding: bill.outstandingSatang };
+    },
+  );
+
+  if (plan.kind === 'raced') return answerFor(plan.row);
+  if (plan.kind === 'manual') {
+    return {
+      route: 'manual',
+      attempt: null,
+      replayed: false,
+      outstandingSatang: plan.outstanding,
+      qrPayload: null,
+      qrImageUrl: null,
+      expiresAt: null,
+      expiryTimerMs: null,
+    };
+  }
+  let attemptId: string;
+  let outstanding: number;
+  if (plan.kind === 'terminal') {
+    attemptId = plan.attemptId;
+    outstanding = plan.outstanding;
+  } else {
+    // Asked again under the lock inside act 1, which is what the attempt is written against.
+    // A holder, because a callback's assignments are invisible to the narrowing of a plain `let`.
+    const held: { assessed: Awaited<ReturnType<typeof assessPayment>> | null } = { assessed: null };
+    const opened = await openQrAttempt(db, deps.env, deps.log, operationCtx, {
+      operatorId: actor.operatorId,
+      branchId: clock.id,
+      saleId: null,
+      stationId: counter.id,
+      businessDate: tradingDay,
+      amountSatang: plan.amount,
+      methodCode: body.tender.method,
+      kind: body.tender.kind ?? 'qr',
+      actionId: attemptActionId,
+      accountId: actor.accountId,
+      description: 'OTO Park party',
+      payload,
+      reserve: async (tx) => {
+        await lockParty(tx, event.id);
+        held.assessed = await assessPayment(tx, clock.id, event.id, body);
+        if (held.assessed.amount !== plan.amount) {
+          throw errors.conflict(
+            'PARTY_BALANCE_CHANGED',
+            'The balance changed while the QR was being opened — nothing was taken. Check the bill and take the payment again.',
+            { outstandingSatang: held.assessed.bill.outstandingSatang },
+          );
+        }
+      },
+      attach: async (tx, attempt) => {
+        const { confirmed, bill } = held.assessed!;
+        await recordTender(tx, attempt.id, plan.amount, confirmed.startDate, bill.outstandingSatang);
+      },
+    });
+    attemptId = opened.attempt.id;
+    outstanding = held.assessed?.bill.outstandingSatang ?? 0;
+  }
+  const read = await readAttempt(db, actor.operatorId, attemptId);
+  return {
+    route: read.route,
+    attempt: read.attempt,
+    replayed: false,
+    outstandingSatang: outstanding,
+    qrPayload: read.qrPayload,
+    qrImageUrl: read.qrImageUrl,
+    expiresAt: read.expiresAt,
+    expiryTimerMs: read.expiryTimerMs,
+  };
 }
 
 // --- Edits -----------------------------------------------------------------------

@@ -10,6 +10,8 @@ import {
   EventReprintBodySchema,
   EventDayAnswerSchema,
   EventDetailAnswerSchema,
+  EventPassOpenAnswerSchema,
+  EventPassOpenBodySchema,
   EventPassSellBodySchema,
   EventPassesAnswerSchema,
   EventRosterAnswerSchema,
@@ -19,7 +21,7 @@ import {
 } from '@oto/shared';
 import type { App } from '../app';
 import { eventById, eventPassesFor, eventRoster, eventsForDay } from '../services/events';
-import { addEventAttendee, sellEventPass } from '../services/event-writes';
+import { addEventAttendee, openEventPass, readEventPass, sellEventPass } from '../services/event-writes';
 import { checkInEventAttendee, checkOutEventAttendee, reprintEventBands } from '../services/event-checkins';
 import { queueDrawerKick } from '../services/payments/drawer';
 import type { ActorContext } from '../services/sale';
@@ -43,6 +45,8 @@ import { opCtx } from '../services/tx';
  */
 
 const EventParams = z.object({ id: z.string().uuid() });
+const EventPassParams = z.object({ id: z.string().uuid(), attendeeId: z.string().uuid() });
+const EventPassQuery = z.object({ branchId: z.string().uuid() });
 
 /**
  * The acting account, with the scope check for the branch the write turns out
@@ -121,8 +125,10 @@ export async function eventRoutes(app: App): Promise<void> {
           "Sell a camp or event pass (`sellEventPass`): an ordinary sale of one child's flat entry, priced from the " +
           "event at the day's rate mode (never tiered), committed and paid with the tender in ONE transaction — so no " +
           'child is added without the money, and no money is taken without the child. A party (its guests ride the ' +
-          'tab) and a free event are refused. The sale prints its receipt like any other; the child is then written ' +
-          "to the OTO App under the till's `attendeeId` (`syncState`). The same attendee id again answers what it made.",
+          'tab) and a free event are refused. So is a card or a QR (409 EVENT_PASS_TENDER_ROUTED): this call counts as ' +
+          'confirmation that the money was taken, and those answer later, so they go by /passes/open. The sale prints ' +
+          "its receipt like any other; the child is then written to the OTO App under the till's `attendeeId` " +
+          '(`syncState`). The same attendee id again answers what it made.',
         params: EventParams,
         body: EventPassSellBodySchema,
         response: { 200: EventAttendeeWriteAnswerSchema },
@@ -143,6 +149,64 @@ export async function eventRoutes(app: App): Promise<void> {
       return answer;
     },
   );
+  app.post(
+    '/:id/passes/open',
+    {
+      config: {
+        permission: 'pos:event:pass_sell',
+        target: { branchId: 'body.branchId' },
+        stationTrading: true,
+      },
+      schema: {
+        description:
+          'Ring up a camp or event pass that is paid by a tender that answers later, a QR or a card: the sale is ' +
+          'committed in `tendering` and the child is held beside it, with no money taken and no roster entry. The ' +
+          'tender then goes on `POST /payments/attempts`, routed by the station like any sale, and the child lands ' +
+          'on the roster in the transaction that closes the sale, whoever closes it. Voiding the sale lets the child ' +
+          'go. The same attendee id again answers the same sale as it stands now.',
+        params: EventParams,
+        body: EventPassOpenBodySchema,
+        response: { 200: EventPassOpenAnswerSchema },
+      },
+    },
+    async (req, reply) => {
+      const actor = actorOf(req, 'pos:event:pass_sell');
+      const answer = await openEventPass(deps(req), opCtx(req), actor, req.params.id, {
+        ...req.body,
+        actionId: actionIdOf(req, req.body.actionId),
+      });
+      if (answer.replayed) reply.header('x-oto-replay', 'true');
+      return answer;
+    },
+  );
+
+  app.get(
+    '/:id/passes/:attendeeId',
+    {
+      config: {
+        permission: 'pos:event:pass_sell',
+        target: { branchId: 'query.branchId' },
+      },
+      schema: {
+        description:
+          'What a pass opened for a QR or a card came to, read once its tender has answered: the child on the roster ' +
+          'and the sale that paid. Refused 409 EVENT_PASS_NOT_PAID while the sale is still waiting for its money, and ' +
+          '409 EVENT_PASS_RELEASED once the sale was voided.',
+        params: EventPassParams,
+        querystring: EventPassQuery,
+        response: { 200: EventAttendeeWriteAnswerSchema },
+      },
+    },
+    async (req) => {
+      const actor = actorOf(req, 'pos:event:pass_sell');
+      return readEventPass(app.db, actor, {
+        branchId: req.query.branchId,
+        eventId: req.params.id,
+        attendeeId: req.params.attendeeId,
+      });
+    },
+  );
+
   // --- Check-in, check-out and reprint (S2-20 E3) ----------------------------------
 
   app.post(

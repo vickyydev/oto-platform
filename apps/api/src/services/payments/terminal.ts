@@ -645,6 +645,65 @@ export async function startTerminalTender(
     return { route: 'manual', attempt: null, replayed: false, outstandingSatang: owed };
   }
 
+  const stamped = await sendTenderToTerminal(tx, actor, {
+    operatorId: saleRow.operatorId,
+    branchId: saleRow.branchId,
+    stationRow,
+    businessDate: saleRow.businessDate,
+    saleId: saleRow.id,
+    amountSatang,
+    tender,
+    ...(input.methodCode ? { methodCode: input.methodCode } : {}),
+    ...(input.kind ? { kind: input.kind } : {}),
+    wallet: input.wallet ?? null,
+    cashier: input.cashier ?? null,
+    ...(input.requestQrPayload ? { requestQrPayload: true } : {}),
+    ...(input.qrDirection ? { qrDirection: input.qrDirection } : {}),
+    actionId: input.actionId ?? null,
+  });
+
+  return {
+    route: 'card_terminal',
+    attempt: attemptView(stamped),
+    replayed: false,
+    outstandingSatang: owed,
+  };
+}
+
+export interface TerminalTenderTarget {
+  operatorId: string;
+  branchId: string;
+  stationRow: typeof station.$inferSelect;
+  /** The trading day the tender belongs to. */
+  businessDate: string;
+  /** Null for money with no sale behind it: a party's balance (SCRUM-732). */
+  saleId: string | null;
+  amountSatang: number;
+  tender: TerminalTender;
+  methodCode?: string;
+  kind?: string;
+  wallet?: string | null;
+  cashier?: string | null;
+  requestQrPayload?: boolean;
+  qrDirection?: 'show' | 'scan';
+  actionId?: string | null;
+  /** The action id the box carries back, when the attempt's own is not one it can carry. */
+  commandActionId?: string;
+  /** What the tender's owner keeps on the attempt. */
+  payload?: Record<string, unknown>;
+}
+
+/**
+ * The terminal half of pressing Card, whoever owns the tender: find the device
+ * the station routes it to, open the attempt, give the box the instruction, all
+ * in the caller's transaction. Refuses a counter nothing can reach.
+ */
+export async function sendTenderToTerminal(
+  tx: Tx,
+  actor: TenderActor,
+  target: TerminalTenderTarget,
+): Promise<typeof paymentAttempt.$inferSelect> {
+  const { stationRow, tender, amountSatang, operatorId, branchId, saleId, businessDate } = target;
   const role = roleForTender(tender);
   const [routed] = await tx
     .select({ device })
@@ -684,29 +743,30 @@ export async function startTerminalTender(
     );
   }
 
-  const methodCode = input.methodCode ?? DEFAULT_TOKEN[tender];
-  const method = await tenderMethodOf(tx, actor.operatorId, methodCode, input.kind);
+  const methodCode = target.methodCode ?? DEFAULT_TOKEN[tender];
+  const method = await tenderMethodOf(tx, actor.operatorId, methodCode, target.kind);
 
   const opened = await openAttempt(tx, {
-    operatorId: saleRow.operatorId,
-    branchId: saleRow.branchId,
-    stationId: saleRow.stationId,
+    operatorId,
+    branchId,
+    stationId: stationRow.id,
     deviceId: terminalRow.id,
-    businessDate: saleRow.businessDate,
-    saleId: saleRow.id,
+    businessDate,
+    saleId,
     method,
     methodCode,
     provider: providerFor(terminalRow),
     amountSatang,
-    actionId: input.actionId ?? null,
+    actionId: target.actionId ?? null,
     payload: {
       takenByAccountId: actor.accountId,
-      ...(input.actionId ? { actionId: input.actionId } : {}),
-      ...(input.kind ? { kind: input.kind } : {}),
+      ...(target.actionId ? { actionId: target.actionId } : {}),
+      ...(target.kind ? { kind: target.kind } : {}),
       protocol,
       deviceLabel: terminalRow.label,
       tender,
-      ...(input.wallet ? { wallet: input.wallet } : {}),
+      ...(target.wallet ? { wallet: target.wallet } : {}),
+      ...target.payload,
     } satisfies AttemptPayload,
   });
 
@@ -723,11 +783,11 @@ export async function startTerminalTender(
     mid: terminalRow.merchantId,
   });
 
-  const actionId = input.actionId ?? newId();
+  const actionId = target.commandActionId ?? target.actionId ?? newId();
   await queueTerminalCommand(tx, {
     boxId: terminalRow.boxId,
-    branchId: saleRow.branchId,
-    operatorId: saleRow.operatorId,
+    branchId,
+    operatorId,
     actorAccountId: actor.accountId,
     actionId,
     requestId: actor.requestId,
@@ -739,24 +799,24 @@ export async function startTerminalTender(
       role,
       amountSatang,
       tender,
-      ...(input.wallet ? { wallet: input.wallet } : {}),
-      ...(input.cashier ? { cashier: input.cashier } : {}),
-      ...(input.requestQrPayload ? { requestQrPayload: true } : {}),
-      ...(input.qrDirection ? { qrDirection: input.qrDirection } : {}),
+      ...(target.wallet ? { wallet: target.wallet } : {}),
+      ...(target.cashier ? { cashier: target.cashier } : {}),
+      ...(target.requestQrPayload ? { requestQrPayload: true } : {}),
+      ...(target.qrDirection ? { qrDirection: target.qrDirection } : {}),
     },
   });
 
   await audit.record(tx, {
     actorAccountId: actor.accountId,
-    operatorId: saleRow.operatorId,
-    branchId: saleRow.branchId,
+    operatorId,
+    branchId,
     action: 'payment.tender.start',
     entityType: 'payment_attempt',
     entityId: opened.id,
-    actionId: input.actionId ?? null,
+    actionId: target.actionId ?? null,
     requestId: actor.requestId,
     after: {
-      saleId: saleRow.id,
+      saleId,
       stationId: stationRow.id,
       deviceId: terminalRow.id,
       method,
@@ -767,12 +827,7 @@ export async function startTerminalTender(
     },
   });
 
-  return {
-    route: 'card_terminal',
-    attempt: attemptView(stamped),
-    replayed: false,
-    outstandingSatang: owed,
-  };
+  return stamped;
 }
 
 // --- The box's answer --------------------------------------------------------
@@ -1031,6 +1086,21 @@ export async function recordTerminalResult(
       mid: report.mid ?? current.mid,
       payload: settledPayload,
     });
+    if (!current.saleId) {
+      // SCRUM-732 — no sale closes on this money, so its landing is recorded here.
+      await audit.record(tx, {
+        actorAccountId: null,
+        operatorId: current.operatorId,
+        branchId: current.branchId,
+        action: 'payment.settled',
+        entityType: 'payment_attempt',
+        entityId: current.id,
+        actionId: current.actionId,
+        requestId: ctx.requestId,
+        before: { status: current.status },
+        after: { status: settled.status, source: 'terminal', amountSatang: settled.amountSatang, saleId: null },
+      });
+    }
     return { attempt: attemptView(settled), replayed: false, phase, run };
   }
 

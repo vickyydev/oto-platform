@@ -52805,7 +52805,7 @@
     },
     "/events/{id}/passes": {
       "post": {
-        "description": "Sell a camp or event pass (`sellEventPass`): an ordinary sale of one child's flat entry, priced from the event at the day's rate mode (never tiered), committed and paid with the tender in ONE transaction — so no child is added without the money, and no money is taken without the child. A party (its guests ride the tab) and a free event are refused. The sale prints its receipt like any other; the child is then written to the OTO App under the till's `attendeeId` (`syncState`). The same attendee id again answers what it made.",
+        "description": "Sell a camp or event pass (`sellEventPass`): an ordinary sale of one child's flat entry, priced from the event at the day's rate mode (never tiered), committed and paid with the tender in ONE transaction — so no child is added without the money, and no money is taken without the child. A party (its guests ride the tab) and a free event are refused. So is a card or a QR (409 EVENT_PASS_TENDER_ROUTED): this call counts as confirmation that the money was taken, and those answer later, so they go by /passes/open. The sale prints its receipt like any other; the child is then written to the OTO App under the till's `attendeeId` (`syncState`). The same attendee id again answers what it made.",
         "requestBody": {
           "required": true,
           "content": {
@@ -52968,6 +52968,364 @@
             },
             "in": "path",
             "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "attendee": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "eventId": {
+                          "type": "string"
+                        },
+                        "eventType": {
+                          "type": "string",
+                          "enum": [
+                            "party",
+                            "camp",
+                            "event"
+                          ]
+                        },
+                        "otoappAttendeeId": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "merged": {
+                          "type": "boolean"
+                        },
+                        "billing": {
+                          "type": "string",
+                          "enum": [
+                            "sale",
+                            "party_tab",
+                            "free",
+                            "booking"
+                          ]
+                        },
+                        "priceSatang": {
+                          "type": "integer"
+                        },
+                        "attendanceDays": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                          }
+                        },
+                        "parentAttending": {
+                          "type": "boolean"
+                        },
+                        "syncState": {
+                          "type": "string",
+                          "enum": [
+                            "synced",
+                            "pending",
+                            "failed"
+                          ]
+                        },
+                        "syncError": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "eventId",
+                        "eventType",
+                        "otoappAttendeeId",
+                        "merged",
+                        "billing",
+                        "priceSatang",
+                        "attendanceDays",
+                        "parentAttending",
+                        "syncState",
+                        "syncError",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "replayed": {
+                      "type": "boolean"
+                    },
+                    "sale": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "receiptNumber": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "grossSatang": {
+                          "type": "integer"
+                        },
+                        "status": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "receiptNumber",
+                        "grossSatang",
+                        "status"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "printingNotes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "attendee",
+                    "replayed",
+                    "sale",
+                    "printingNotes"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{id}/passes/open": {
+      "post": {
+        "description": "Ring up a camp or event pass that is paid by a tender that answers later, a QR or a card: the sale is committed in `tendering` and the child is held beside it, with no money taken and no roster entry. The tender then goes on `POST /payments/attempts`, routed by the station like any sale, and the child lands on the roster in the transaction that closes the sale, whoever closes it. Voiding the sale lets the child go. The same attendee id again answers the same sale as it stands now.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "branchId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "attendeeId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "attendee": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "age": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 30
+                      },
+                      "dateOfBirth": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "language": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "allergyFlag": {
+                        "type": "boolean"
+                      },
+                      "allergyDetail": {
+                        "type": "string",
+                        "maxLength": 1500
+                      },
+                      "dietaryFlag": {
+                        "type": "boolean"
+                      },
+                      "dietaryDetail": {
+                        "type": "string",
+                        "maxLength": 1500
+                      },
+                      "notes": {
+                        "type": "string",
+                        "maxLength": 1000
+                      },
+                      "parentName": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "parentPhone": {
+                        "type": "string",
+                        "maxLength": 50
+                      },
+                      "emergencyContact": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "parentAttending": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "parentName"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "registerProperly": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "stationId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "memberId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "childId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "actionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "saleId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "expectedTotalSatang": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "branchId",
+                  "attendeeId",
+                  "attendee",
+                  "stationId",
+                  "saleId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "attendeeId": {
+                      "type": "string"
+                    },
+                    "replayed": {
+                      "type": "boolean"
+                    },
+                    "sale": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "totals": {
+                          "type": "object",
+                          "properties": {
+                            "grossSatang": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "grossSatang"
+                          ],
+                          "additionalProperties": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "status",
+                        "totals"
+                      ],
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "attendeeId",
+                    "replayed",
+                    "sale"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{id}/passes/{attendeeId}": {
+      "get": {
+        "description": "What a pass opened for a QR or a card came to, read once its tender has answered: the child on the roster and the sale that paid. Refused 409 EVENT_PASS_NOT_PAID while the sale is still waiting for its money, and 409 EVENT_PASS_RELEASED once the sale was voided.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "branchId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "attendeeId",
             "required": true
           }
         ],
@@ -59773,7 +60131,7 @@
     },
     "/parties/{id}/payments": {
       "post": {
-        "description": "Take money against a party's balance (`addPartyPayment`): whole baht, capped at what is outstanding, refused when nothing is. Recorded through the tender machine as a real tender at the counter (a cash one opens the drawer) with no sale behind it — not a sale of goods — and counted by End of Day on the party prepayments line on the day it is taken, for that day's party, never on the cash, card or QR line. A balance that moved since the till showed it (`expectedOutstandingSatang`) is refused 409 PARTY_BALANCE_CHANGED with nothing taken. The same payment id again answers what it took, under x-oto-replay, and takes nothing.",
+        "description": "Take money against a party's balance (`addPartyPayment`): whole baht, capped at what is outstanding, refused when nothing is. Recorded through the tender machine as a real tender at the counter (a cash one opens the drawer) with no sale behind it — not a sale of goods — and counted by End of Day on the party prepayments line on the day it is taken, for that day's party, never on the cash, card or QR line. A balance that moved since the till showed it (`expectedOutstandingSatang`) is refused 409 PARTY_BALANCE_CHANGED with nothing taken. This call counts as confirmation that the money was taken, so a QR, or a card with no approval code off its slip, is refused 409 PARTY_TENDER_ROUTED: those go by /payments/tender. The same payment id again answers what it took, under x-oto-replay, and takes nothing; one whose tender has not been paid is refused 409 PARTY_PAYMENT_NOT_TAKEN.",
         "requestBody": {
           "required": true,
           "content": {
@@ -59817,6 +60175,19 @@
                       "reference": {
                         "type": "string",
                         "maxLength": 120
+                      },
+                      "approvalCode": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 12
+                      },
+                      "tid": {
+                        "type": "string",
+                        "maxLength": 32
+                      },
+                      "last4": {
+                        "type": "string",
+                        "pattern": "^\\d{4}$"
                       }
                     },
                     "required": [
@@ -60661,6 +61032,279 @@
                   "required": [
                     "replayed",
                     "party"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/parties/{id}/payments/tender": {
+      "post": {
+        "description": "Take money against a party's balance by a tender that answers later, routed by the station as a sale's tender is: a QR through the gateway or the terminal, a card on the terminal. The answer is the attempt the till then polls on GET /payments/attempts/:id, with the QR to show. Nothing is on the bill until the attempt is paid; meanwhile what it asked for is reserved, and another payment over the rest of the balance is refused 409 PAYMENT_IN_FLIGHT. A station that keys cards in by hand answers route `manual` and opens nothing. The same payment id again answers the same tender. Once it is paid, POST /parties/:id/payments under the same payment id answers what it took.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "branchId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "paymentId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "stationId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "amountSatang": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000000000
+                  },
+                  "tender": {
+                    "type": "object",
+                    "properties": {
+                      "method": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 40
+                      },
+                      "kind": {
+                        "type": "string",
+                        "maxLength": 20
+                      }
+                    },
+                    "required": [
+                      "method"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "expectedOutstandingSatang": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "qrDirection": {
+                    "type": "string",
+                    "enum": [
+                      "show",
+                      "scan"
+                    ]
+                  },
+                  "requestQrPayload": {
+                    "type": "boolean"
+                  },
+                  "actionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "branchId",
+                  "paymentId",
+                  "stationId",
+                  "amountSatang",
+                  "tender"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "route": {
+                      "type": "string",
+                      "enum": [
+                        "card_terminal",
+                        "manual",
+                        "gateway"
+                      ]
+                    },
+                    "attempt": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "saleId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "method": {
+                          "type": "string",
+                          "enum": [
+                            "cash",
+                            "card",
+                            "qr",
+                            "wallet",
+                            "voucher",
+                            "transfer",
+                            "other"
+                          ]
+                        },
+                        "provider": {
+                          "type": "string",
+                          "enum": [
+                            "simulator",
+                            "ghl",
+                            "digio",
+                            "2c2p",
+                            "manual"
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "created",
+                            "sent_to_terminal",
+                            "approved",
+                            "declined",
+                            "cancelled",
+                            "unknown",
+                            "inquiring",
+                            "not_found",
+                            "awaiting_staff_confirmation",
+                            "awaiting_settlement"
+                          ]
+                        },
+                        "amountSatang": {
+                          "type": "integer"
+                        },
+                        "tenderedSatang": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "changeSatang": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "terminalRef": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "inquirySupported": {
+                          "type": "boolean"
+                        },
+                        "reversalPending": {
+                          "type": "boolean"
+                        },
+                        "tid": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "approvalCode": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "last4": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "invoiceNo": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "tranRef": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "actionId": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "offline": {
+                          "type": "boolean"
+                        },
+                        "paidAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "saleId",
+                        "method",
+                        "provider",
+                        "status",
+                        "amountSatang",
+                        "tenderedSatang",
+                        "changeSatang",
+                        "terminalRef",
+                        "tid",
+                        "approvalCode",
+                        "last4",
+                        "invoiceNo",
+                        "tranRef",
+                        "actionId",
+                        "offline",
+                        "paidAt",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "replayed": {
+                      "type": "boolean"
+                    },
+                    "outstandingSatang": {
+                      "type": "integer"
+                    },
+                    "qrPayload": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "qrImageUrl": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "expiryTimerMs": {
+                      "type": "integer",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "route",
+                    "attempt",
+                    "replayed",
+                    "outstandingSatang",
+                    "qrPayload",
+                    "qrImageUrl",
+                    "expiresAt",
+                    "expiryTimerMs"
                   ],
                   "additionalProperties": false
                 }

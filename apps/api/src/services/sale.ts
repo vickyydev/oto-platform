@@ -121,6 +121,7 @@ import type { Exec, Tx } from './tx';
 import { bandsOfSale } from './bands';
 import { refundsOfSale } from './refund-slices';
 import { applySaleExtension, cancelSaleExtension, assertSaleExtensionCollectable } from './sale-extension-lifecycle';
+import { applyEventPassHold, releaseEventPassHold } from './event-pass-hold';
 import { assertCartStock, stockSharesForLines, takeStockForSale } from './stock';
 import { printJobsOfSale, routeSalePrinting, type SalePrintingResult } from './sale-printing';
 import { debitForSale, grantSaleCredit, grantsOfSale } from './wallet';
@@ -4751,6 +4752,8 @@ export async function finaliseSale(
   const after = updated[0];
   if (!after) throw new Error('the sale was not finalised');
   await applySaleExtension(tx, after, actor, now);
+  // SCRUM-732 — a pass waiting for this money lands on the roster with it.
+  await applyEventPassHold(tx, after, actor, now);
 
   /**
    * S2-14b — THE STOCK LEAVES THE SHELF, in this transaction, once the sale is
@@ -4991,6 +4994,7 @@ export async function voidSale(
     .returning();
   if (!after) throw new Error('the sale was not voided');
   await cancelSaleExtension(tx, after, actor, now);
+  await releaseEventPassHold(tx, after, actor, now);
   // The trigger in 0021 has released `held` and written their ledger rows in
   // the statement above; these are the audit rows that name who asked.
   await auditVoidReleases(

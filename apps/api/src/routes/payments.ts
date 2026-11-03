@@ -82,7 +82,7 @@ function actionIdOf(headers: Record<string, unknown>): string | null {
 }
 
 /** `PaymentAttemptView` as a schema, so the OpenAPI document carries it. */
-const AttemptSchema = z.object({
+export const AttemptSchema = z.object({
   id: z.string().uuid(),
   saleId: z.string().uuid().nullable(),
   method: z.enum(PAYMENT_METHODS),

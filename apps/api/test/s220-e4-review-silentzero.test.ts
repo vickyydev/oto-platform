@@ -118,7 +118,7 @@ const payAt = (partyId: string, amount: number, now: Date) =>
       paymentId: newId(),
       actionId: newId(),
       amountSatang: amount,
-      tender: { method: 'card', kind: 'card' },
+      tender: { method: 'card', kind: 'card', approvalCode: '000000', tid: 'TID-TEST' },
     },
     now,
   );

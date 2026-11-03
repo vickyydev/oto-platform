@@ -7,6 +7,7 @@ import {
   employee,
   eventAttendeeLink,
   eventDropInPricing,
+  eventPassHold,
   member,
   sale,
   saleLine,
@@ -15,6 +16,9 @@ import {
 } from '@oto/db';
 import {
   EVENT_DROP_IN_PRICING_NONE,
+  EVENT_PASS_NOT_PAID,
+  EVENT_PASS_RELEASED,
+  EVENT_PASS_TENDER_ROUTED,
   businessDate,
   eventPassService,
   parseDayStart,
@@ -30,6 +34,8 @@ import {
   type EventDropInPricing,
   type EventDropInPricingAnswer,
   type EventPartyWalkUpCharge,
+  type EventPassOpenAnswer,
+  type EventPassOpenBody,
   type EventPassSellBody,
   type EventWalkUpBilling,
 } from '@oto/shared';
@@ -44,8 +50,9 @@ import type {
   DirectoryOutcome,
   OtoAppDirectory,
 } from './otoapp-directory';
+import { tenderMethodOf } from './payments/attempt';
 import type { DrawerKick } from './payments/drawer';
-import { commitSale, finaliseSale, resolvePricingScope, type ActorContext } from './sale';
+import { commitSale, finaliseSale, getSaleDetail, resolvePricingScope, type ActorContext } from './sale';
 import { withTx, type Exec, type OpContext } from './tx';
 
 /**
@@ -224,7 +231,8 @@ interface WriteInput {
   kind: 'attendee' | 'pass';
   eventId: string;
   body: EventAttendeeCreateBody;
-  pass?: Pick<EventPassSellBody, 'saleId' | 'tender' | 'expectedTotalSatang'>;
+  /** The pass's sale; `tender` is absent on a pass opened for a tender that answers later. */
+  pass?: Pick<EventPassSellBody, 'saleId' | 'expectedTotalSatang'> & Partial<Pick<EventPassSellBody, 'tender'>>;
 }
 
 /**
@@ -303,13 +311,12 @@ async function answerOf(
   return { attendee: linkView(row), replayed, sale: paid, printingNotes };
 }
 
-async function writeAttendee(
-  deps: EventWriteDeps,
-  ctx: OpContext,
-  actor: ActorContext,
-  input: WriteInput,
-  now: Date,
-): Promise<EventWriteResult> {
+/**
+ * Everything a write of this child is decided by, before anything is written:
+ * the rules that refuse it, its price, its days and its write-back body. Or, for
+ * an attendee id that already made a child, that child.
+ */
+async function planAttendee(deps: EventWriteDeps, actor: ActorContext, input: WriteInput, now: Date) {
   const { body, kind } = input;
   const db = deps.db;
   const clock = await branchClockOf(db, actor.operatorId, body.branchId);
@@ -321,7 +328,7 @@ async function writeAttendee(
   // before any rule that moves with the clock, so a retry tomorrow of
   // yesterday's camp walk-up is still yesterday's answer.
   const [prior] = await db.select().from(eventAttendeeLink).where(eq(eventAttendeeLink.id, body.attendeeId)).limit(1);
-  if (prior) return replayOf(deps, actor, prior, event.id);
+  if (prior) return { prior, event } as const;
 
   if (event.archived) throw errors.conflict('EVENT_ARCHIVED', 'This event has been archived in the OTO App');
   const today = businessDate(now, clock.timezone, clock.dayStartMinutes);
@@ -361,6 +368,18 @@ async function writeAttendee(
   }
   if (kind === 'pass' && billing === 'free') {
     throw errors.conflict('EVENT_PASS_IS_FREE', 'This event is free: add the child without a payment');
+  }
+  /**
+   * SCRUM-732 — THIS ROUTE'S CALL IS THE CONFIRMATION THAT THE MONEY WAS TAKEN,
+   * which is true of cash in the drawer and of a tender recorded by hand. A card
+   * or a QR answers later: it opens the pass and takes its tender on the routed
+   * path, and nothing may record it from a till's say-so.
+   */
+  if (input.pass?.tender) {
+    const method = await tenderMethodOf(db, actor.operatorId, input.pass.tender.method, input.pass.tender.kind);
+    if (method === 'card' || method === 'qr') {
+      throw errors.conflict(EVENT_PASS_TENDER_ROUTED.code, EVENT_PASS_TENDER_ROUTED.message, { method });
+    }
   }
 
   // Where it was done, and for whom — each checked inside the caller's operator.
@@ -402,7 +421,33 @@ async function writeAttendee(
     walkUpStamp(staffName, body.registerProperly),
     staffName,
   );
-  const actionId = body.actionId ?? null;
+  return {
+    prior: null,
+    event,
+    clock,
+    pair,
+    fee,
+    billing,
+    pricingMode: scope.pricingMode,
+    boxId,
+    days,
+    writeback,
+    actionId: body.actionId ?? null,
+  } as const;
+}
+
+async function writeAttendee(
+  deps: EventWriteDeps,
+  ctx: OpContext,
+  actor: ActorContext,
+  input: WriteInput,
+  now: Date,
+): Promise<EventWriteResult> {
+  const { body, kind } = input;
+  const db = deps.db;
+  const plan = await planAttendee(deps, actor, input, now);
+  if (plan.prior) return replayOf(deps, actor, plan.prior, plan.event.id);
+  const { event, clock, pair, fee, billing, boxId, days, writeback, actionId } = plan;
   const opName = kind === 'pass' ? 'event.pass_sell' : 'event.attendee_create';
 
   // Filled inside the transaction; a holder, because a callback's assignments
@@ -430,6 +475,36 @@ async function writeAttendee(
     let receiptNumber: string | null = null;
     if (kind === 'pass') {
       const pass = input.pass!;
+      /**
+       * SCRUM-732 — THE PASS WAS RUNG UP FOR A QR OR A CARD THAT DID NOT HAPPEN
+       * (cancelled, declined, a counter with no terminal) and the family is
+       * paying cash after all. The sale is already there, so the tender goes
+       * against it, and closing it lands the child through its hold.
+       */
+      const [held] = await tx.select().from(eventPassHold).where(eq(eventPassHold.id, body.attendeeId)).limit(1);
+      if (held) {
+        if (held.status !== 'pending') throw errors.conflict(EVENT_PASS_RELEASED.code, EVENT_PASS_RELEASED.message);
+        if (held.saleId !== pass.saleId) {
+          throw errors.conflict('SALE_ID_IN_USE', 'That sale id does not belong to this pass — nothing was saved');
+        }
+        const closed = await finaliseSale(
+          tx,
+          actor,
+          held.saleId,
+          { tender: pass.tender, actionId, prepaidGate: 'refuse' },
+          now,
+        );
+        if (!closed.finalised) {
+          throw errors.conflict(
+            'EVENT_PASS_PART_PAID',
+            'An event pass is paid in one tender: take the whole fee — nothing was saved',
+            { outstandingSatang: closed.outstandingSatang },
+          );
+        }
+        done.drawerKick = closed.drawerKick;
+        done.printingNotes = closed.printing?.notes ?? [];
+        return undefined;
+      }
       const service = eventPassService(event.type as 'camp' | 'event');
       // The ordinary sale path (S2-09a, S2-10a): priced by the engine, numbered,
       // printed and paid like any ticket sale — the one thing it cannot be is
@@ -523,7 +598,7 @@ async function writeAttendee(
         eventType: event.type,
         billing,
         priceSatang: fee,
-        pricingMode: scope.pricingMode,
+        pricingMode: plan.pricingMode,
         saleId,
         receiptNumber,
         stationId: body.stationId ?? null,
@@ -541,6 +616,169 @@ async function writeAttendee(
 
   const pushed = await pushAttendee(deps, body.attendeeId, { requestId: actor.requestId ?? null });
   return { answer: await answerOf(db, pushed, false, done.printingNotes), drawerKick: done.drawerKick };
+}
+
+/**
+ * `POST /events/:id/passes/open` — a pass for a tender that answers later
+ * (SCRUM-732). The ordinary sale path rings it up in `tendering`, and the child
+ * is held beside it: no money and no roster entry. The tender then goes on
+ * `POST /payments/attempts`, routed by the station like any sale's, and the
+ * child lands in the transaction that closes the sale. The same attendee id
+ * again answers the same sale, as it stands now.
+ */
+export async function openEventPass(
+  deps: EventWriteDeps,
+  ctx: OpContext,
+  actor: ActorContext,
+  eventId: string,
+  body: EventPassOpenBody,
+  now: Date = new Date(),
+): Promise<EventPassOpenAnswer> {
+  const db = deps.db;
+  const replayed = async (saleId: string): Promise<EventPassOpenAnswer> => {
+    const detail = await getSaleDetail(db, actor.operatorId, saleId);
+    return { attendeeId: body.attendeeId, replayed: true, sale: detail.sale as EventPassOpenAnswer['sale'] };
+  };
+  const heldAnswer = async (held: typeof eventPassHold.$inferSelect): Promise<EventPassOpenAnswer> => {
+    if (held.operatorId !== actor.operatorId || held.otoappEventId !== eventId.toLowerCase() || held.saleId !== body.saleId) {
+      throw errors.conflict('ATTENDEE_ID_IN_USE', 'That attendee id already belongs to another child', {
+        attendeeId: held.id,
+      });
+    }
+    await actor.assertBranchAllowed?.(held.branchId);
+    if (held.status === 'released') throw errors.conflict(EVENT_PASS_RELEASED.code, EVENT_PASS_RELEASED.message);
+    return replayed(held.saleId);
+  };
+
+  const [earlier] = await db.select().from(eventPassHold).where(eq(eventPassHold.id, body.attendeeId)).limit(1);
+  if (earlier) return heldAnswer(earlier);
+
+  const input: WriteInput = {
+    kind: 'pass',
+    eventId,
+    body,
+    pass: {
+      saleId: body.saleId,
+      ...(body.expectedTotalSatang === undefined ? {} : { expectedTotalSatang: body.expectedTotalSatang }),
+    },
+  };
+  const plan = await planAttendee(deps, actor, input, now);
+  if (plan.prior) {
+    // A cash press got there first under this id: already paid and on the roster.
+    await actor.assertBranchAllowed?.(plan.prior.branchId);
+    if (plan.prior.operatorId !== actor.operatorId || !plan.prior.saleId) {
+      throw errors.conflict('ATTENDEE_ID_IN_USE', 'That attendee id already belongs to another child', {
+        attendeeId: plan.prior.id,
+      });
+    }
+    return replayed(plan.prior.saleId);
+  }
+  const { event, clock, pair, fee, boxId, days, writeback, actionId, pricingMode } = plan;
+
+  const done: { sale: unknown; raced: typeof eventPassHold.$inferSelect | null } = { sale: null, raced: null };
+  await withTx(db, ctx, 'event.pass_open', async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`event-attendee:${body.attendeeId}`}, 0))`);
+    const [again] = await tx.select().from(eventPassHold).where(eq(eventPassHold.id, body.attendeeId)).limit(1);
+    if (again) {
+      done.raced = again;
+      return undefined;
+    }
+    const service = eventPassService(event.type as 'camp' | 'event');
+    const committed = await commitSale(
+      tx,
+      actor,
+      {
+        id: body.saleId,
+        branchId: clock.id,
+        stationId: body.stationId,
+        channel: 'till',
+        actionId,
+        ...(body.expectedTotalSatang !== undefined ? { expectedTotalSatang: body.expectedTotalSatang } : {}),
+        eventPass: {
+          lineId: body.attendeeId,
+          serviceId: service.serviceId,
+          label: service.label,
+          price: pair,
+          eventId: event.id,
+        },
+      },
+      now,
+    );
+    if (committed.replay) {
+      throw errors.conflict('SALE_ID_IN_USE', 'That sale id already belongs to another sale — nothing was saved');
+    }
+    await tx.insert(eventPassHold).values({
+      id: body.attendeeId,
+      operatorId: actor.operatorId,
+      branchId: clock.id,
+      saleId: body.saleId,
+      otoappEventId: event.id,
+      eventType: event.type as 'camp' | 'event',
+      childId: body.childId ?? null,
+      memberId: body.memberId ?? null,
+      priceSnapshotSatang: fee,
+      pricingMode,
+      parentAttending: body.attendee.parentAttending ?? false,
+      registerProperly: body.registerProperly,
+      attendanceDays: days,
+      writeback,
+      accountId: actor.accountId,
+      stationId: body.stationId,
+      boxId,
+      actionId,
+      createdAt: now,
+      updatedAt: now,
+    });
+    await audit.record(tx, {
+      actorAccountId: actor.accountId,
+      operatorId: actor.operatorId,
+      branchId: clock.id,
+      action: 'event.pass_open',
+      entityType: 'event_pass_hold',
+      entityId: body.attendeeId,
+      actionId,
+      requestId: actor.requestId,
+      after: {
+        eventId: event.id,
+        eventType: event.type,
+        priceSatang: fee,
+        pricingMode,
+        saleId: body.saleId,
+        stationId: body.stationId,
+        boxId,
+        registerProperly: body.registerProperly,
+        attendanceDays: days.length,
+        memberId: body.memberId ?? null,
+        childId: body.childId ?? null,
+      },
+    });
+    done.sale = committed.sale;
+    return undefined;
+  });
+  if (done.raced) return heldAnswer(done.raced);
+  return { attendeeId: body.attendeeId, replayed: false, sale: done.sale as EventPassOpenAnswer['sale'] };
+}
+
+/**
+ * `GET /events/:id/passes/:attendeeId` — what a paid pass came to, for the till
+ * once its tender has answered. The child is on the roster from the moment the
+ * sale closed; until then this is a refusal, because nothing has been paid.
+ */
+export async function readEventPass(
+  db: Exec,
+  actor: ActorContext,
+  q: { branchId: string; eventId: string; attendeeId: string },
+): Promise<EventAttendeeWriteAnswer> {
+  const [row] = await db.select().from(eventAttendeeLink).where(eq(eventAttendeeLink.id, q.attendeeId)).limit(1);
+  if (row && row.operatorId === actor.operatorId && row.branchId === q.branchId && row.otoappEventId === q.eventId.toLowerCase()) {
+    return answerOf(db, row, true, []);
+  }
+  const [held] = await db.select().from(eventPassHold).where(eq(eventPassHold.id, q.attendeeId)).limit(1);
+  if (held && held.operatorId === actor.operatorId && held.branchId === q.branchId && held.otoappEventId === q.eventId.toLowerCase()) {
+    if (held.status === 'released') throw errors.conflict(EVENT_PASS_RELEASED.code, EVENT_PASS_RELEASED.message);
+    throw errors.conflict(EVENT_PASS_NOT_PAID.code, EVENT_PASS_NOT_PAID.message, { saleId: held.saleId });
+  }
+  throw errors.notFound('That pass is not on record');
 }
 
 /**

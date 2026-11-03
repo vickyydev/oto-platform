@@ -131,6 +131,14 @@ export const PartyPaymentTenderSchema = z.object({
   /** Cash only: what was handed over. */
   tenderedSatang: z.number().int().min(0).optional(),
   reference: z.string().max(120).optional(),
+  /**
+   * A card taken on a terminal the platform cannot reach: the approval code and
+   * TID off its slip. Without them a card goes by `/payments/tender`, because
+   * this route's call counts as confirmation that the money was taken.
+   */
+  approvalCode: z.string().trim().min(1).max(12).optional(),
+  tid: z.string().trim().max(32).optional(),
+  last4: z.string().regex(/^\d{4}$/).optional(),
 });
 
 /** `POST /parties/:id/payments` — `addPartyPayment`. */
@@ -152,6 +160,44 @@ export const PartyPaymentBodySchema = z.object({
   actionId: z.string().min(1).max(200).optional(),
 });
 export type PartyPaymentBody = z.infer<typeof PartyPaymentBodySchema>;
+
+/**
+ * `POST /parties/:id/payments/tender` — money against the balance through a
+ * tender that answers later (SCRUM-732): the station's terminal or the QR
+ * gateway, as a sale's tender is routed. It counts on the bill only once the
+ * attempt has really been paid; the till then reads the party with the same
+ * payment id on `/payments`, which answers what it took.
+ */
+export const PartyTenderBodySchema = z.object({
+  branchId: z.string().uuid(),
+  /** The payment's id, minted by the till: the same id again is the same tender. */
+  paymentId: z.string().uuid(),
+  stationId: z.string().uuid(),
+  /** Floored to whole baht and capped at the outstanding balance, as the prototype does. */
+  amountSatang: z.number().int().min(1).max(10_000_000_000),
+  tender: z.object({
+    method: z.string().min(1).max(40),
+    kind: z.string().max(20).optional(),
+  }),
+  /** The balance the till showed. Compared, never charged. */
+  expectedOutstandingSatang: z.number().int().min(0).optional(),
+  qrDirection: z.enum(['show', 'scan']).optional(),
+  requestQrPayload: z.boolean().optional(),
+  actionId: z.string().min(1).max(200).optional(),
+});
+export type PartyTenderBody = z.infer<typeof PartyTenderBodySchema>;
+
+/** Refused on `POST /parties/:id/payments`: QR, and a card with no slip, go by `/payments/tender`. */
+export const PARTY_TENDER_ROUTED = {
+  code: 'PARTY_TENDER_ROUTED',
+  message: 'A card or QR payment is taken on the terminal or through the gateway, so nothing was recorded here',
+} as const;
+
+/** `POST /parties/:id/payments` naming a tender that has not been paid. */
+export const PARTY_PAYMENT_NOT_TAKEN = {
+  code: 'PARTY_PAYMENT_NOT_TAKEN',
+  message: 'That payment has not been taken, so nothing was recorded',
+} as const;
 
 export const PartyEditSyncStates = ['synced', 'pending', 'failed'] as const;
 

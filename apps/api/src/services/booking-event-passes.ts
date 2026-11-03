@@ -396,6 +396,32 @@ export async function writeBackBookingPasses(
   return sent;
 }
 
+/**
+ * SCRUM-732 — send a pass whose sale has just closed, whoever closed it: a card
+ * confirmed at the till, a QR the gateway answered with the till long gone. A
+ * sale with no pass finds nothing here and sends nothing. Never throws, for the
+ * reason above: the money is committed and the link is the record.
+ */
+export async function writeBackSalePass(
+  db: Db,
+  log: FastifyBaseLogger | undefined,
+  saleId: string,
+): Promise<void> {
+  const directory = directoryOf?.();
+  if (!directory) return;
+  const owed = await db
+    .select({ id: eventAttendeeLink.id })
+    .from(eventAttendeeLink)
+    .where(and(eq(eventAttendeeLink.saleId, saleId), eq(eventAttendeeLink.billing, 'sale'), ne(eventAttendeeLink.syncState, 'synced')));
+  for (const { id } of owed) {
+    try {
+      await pushAttendee({ db, directory, ...(log ? { log } : {}) }, id);
+    } catch (err) {
+      log?.error({ err, linkId: id, saleId }, 'a paid event pass could not be written back');
+    }
+  }
+}
+
 // --- 4 · Checked in at redemption ----------------------------------------------------
 
 type BandRow = typeof band.$inferSelect;

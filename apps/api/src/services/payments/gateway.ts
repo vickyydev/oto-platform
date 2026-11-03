@@ -49,6 +49,7 @@ import {
   expireOverdueBookings,
   type BookingPaidOutcome,
 } from '../booking-payment';
+import { writeBackSalePass } from '../booking-event-passes';
 import { assertSaleVouchersHeld } from '../vouchers';
 import { assertSalePromoUsesLeft } from '../promo-codes';
 import { assertSaleExtensionCollectable, extensionHoldsClose } from '../sale-extension-lifecycle';
@@ -473,6 +474,16 @@ export interface OpenQrAttemptInput {
   accountId: string;
   /** What the guest is paying for, for the gateway's `description` (C 250). */
   description?: string;
+  /**
+   * A TENDER WITH NO SALE BEHIND IT (SCRUM-732, a party's balance): the sale's
+   * own guards do not run, so its owner's do, in act 1's transaction. `reserve`
+   * runs before the invoice number is minted and may refuse; `attach` runs after
+   * the attempt is written, so the attempt is never committed without what owns
+   * it. `payload` is what the owner keeps on the attempt.
+   */
+  reserve?: (tx: Tx) => Promise<void>;
+  attach?: (tx: Tx, attempt: AttemptRow) => Promise<void>;
+  payload?: Record<string, unknown>;
 }
 
 export interface OpenQrAttemptResult {
@@ -598,6 +609,7 @@ export async function openQrAttempt(
         await assertSalePromoUsesLeft(tx, saleRow);
       }
     }
+    await input.reserve?.(tx);
     const [st] = await tx.select().from(station).where(eq(station.id, input.stationId)).limit(1);
     if (!st || st.operatorId !== input.operatorId || st.branchId !== input.branchId || st.archivedAt) {
       throw errors.badRequest('This QR tender names a station that is no longer available');
@@ -639,8 +651,10 @@ export async function openQrAttempt(
          */
         takenByAccountId: input.accountId,
         ...(input.actionId ? { actionId: input.actionId } : {}),
+        ...input.payload,
       },
     });
+    await input.attach?.(tx, row);
     await audit.record(tx, {
       actorAccountId: input.accountId,
       operatorId: input.operatorId,
@@ -1146,6 +1160,10 @@ export async function settlePaidAttempt(
     } catch (err) {
       log.error({ err, bookingId: outcome.bookingPaid.bookingId }, 'after a booking was paid');
     }
+  }
+  // SCRUM-732 — a pass this money closed goes to the OTO App now, till or no till.
+  if (outcome.finalisedSale && input.attempt.saleId) {
+    await writeBackSalePass(db, log, input.attempt.saleId);
   }
   const { bookingPaid, ...settled } = outcome;
   return {
