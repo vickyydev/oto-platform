@@ -1,0 +1,20 @@
+{
+  "jobId": "job-dbld1pbbc2fs73du9cb0",
+  "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+  "startedAt": "2026-11-04T06:29:57.503Z",
+  "status": "succeeded",
+  "result": {
+    "event": "s734_setup_session_recovery",
+    "at": "2026-11-04T06:30:51.249Z",
+    "session": {
+      "id": "01a1a539-cc65-78cc-89db-02eef4965e2e",
+      "account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "branch_id": "01a1a539-e348-7b21-a562-f90971cbc921",
+      "revoked_at": "2026-11-04T06:30:51.231Z",
+      "revoked_reason": "sign_out"
+    },
+    "method": "existing signOut domain function",
+    "requestId": "s734-recover-mw1qczn5",
+    "passed": true
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "jobId": "job-dbld0brbc2fs73du4rag",
+  "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+  "startedAt": "2026-11-04T06:26:55.536Z",
+  "status": "succeeded",
+  "result": {
+    "event": "s734_setup_session_read",
+    "at": "2026-11-04T06:27:41.937Z",
+    "readOnly": true,
+    "sessions": [
+      {
+        "id": "01a1a539-cc65-78cc-89db-02eef4965e2e",
+        "account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "branch_id": "01a1a539-e348-7b21-a562-f90971cbc921",
+        "station_id": null,
+        "class": "staff",
+        "created_at": "2026-11-04T06:23:10.949Z",
+        "revoked_at": null,
+        "revoked_reason": null
+      }
+    ],
+    "targetCounts": {
+      "products": 0,
+      "stock_items": 0,
+      "policies": 0
+    },
+    "cloneNotSubmitted": true,
+    "passed": true
+  }
+}

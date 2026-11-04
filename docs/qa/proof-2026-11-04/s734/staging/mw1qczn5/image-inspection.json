@@ -1,0 +1,19 @@
+{
+  "run": "mw1qczn5",
+  "names": [
+    "s734-clone-preview.png",
+    "s734-clone-completed.png",
+    "s734-copied-care-settings.png",
+    "s734-copied-stock.png",
+    "s734-copied-stock-pack.png"
+  ],
+  "openedAt": "2026-11-04T06:40:17.536Z",
+  "sha256": {
+    "s734-clone-preview.png": "63e3119c470ad4d0a62c044de738d7fb269bf45bb67c338b386e5cf065fecd50",
+    "s734-clone-completed.png": "a8202270095cbe0175569670a44b191336715ad57f108526b62f9e39972606f7",
+    "s734-copied-care-settings.png": "924f0f708e1d6ea36f61d93f7dd5094bf1e8fd94a0cb84e2a1a14b56c4b5f373",
+    "s734-copied-stock.png": "81c350b89fecc08804ac997fe52cf4c89fc56bea42d8c463bbc165ec2ce14814",
+    "s734-copied-stock-pack.png": "b59d6725fec80e33c4f10e50459030fb58349ef7557f168563dfcfed2b6a13a3"
+  },
+  "inspection": "All five original PNGs opened after cleanup. The preview and completion show eight rows; care shows maximum age 6 and the copied prices and confirmations; inventory and its dialog show the copied item, zero quantity and 12-unit pack."
+}

@@ -1,0 +1,887 @@
+{
+  "unit": "SCRUM-734",
+  "startedAt": "2026-11-04T06:23:07.121Z",
+  "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+  "name": "ZZ TEST SCRUM-734 mw1qczn5",
+  "fixtures": {
+    "branches": [
+      {
+        "id": "01a1a539-e180-79ef-a811-d4cafecf8636",
+        "name": "ZZ TEST SCRUM-734 mw1qczn5 source",
+        "code": "zz734-mw1qczn5-a",
+        "role": "source",
+        "otoApp": {
+          "appBranchId": "01a1a539-e185-7a94-ba37-495d4aa59002",
+          "appBranchName": "ZZ TEST SCRUM-734 mw1qczn5 source",
+          "status": "SUCCESS",
+          "mappedBy": "created",
+          "reason": null
+        }
+      },
+      {
+        "id": "01a1a539-e348-7b21-a562-f90971cbc921",
+        "name": "ZZ TEST SCRUM-734 mw1qczn5 target",
+        "code": "zz734-mw1qczn5-b",
+        "role": "target",
+        "otoApp": {
+          "appBranchId": "01a1a539-e34c-76bc-8ae1-21b3c543b90a",
+          "appBranchName": "ZZ TEST SCRUM-734 mw1qczn5 target",
+          "status": "SUCCESS",
+          "mappedBy": "created",
+          "reason": null
+        }
+      }
+    ],
+    "categoryId": "01a1a539-f6f4-7b6c-af70-4b31d2e0d42e",
+    "sourceProductId": "01a1a539-f8a7-70c2-b15d-d27db83c0cd7",
+    "sourceLocationId": "01a1a539-fa60-7d5d-a09c-4ba4c3d8a113",
+    "sourceStock": {
+      "groupId": "01a1a539-fc23-7815-9791-0c2202ae5cef",
+      "stockItemIds": [
+        "01a1a539-fc25-7fee-b5d0-aac712c91086"
+      ]
+    }
+  },
+  "screens": [
+    {
+      "file": "s734-clone-preview.png",
+      "at": "2026-11-04T06:33:30.295Z",
+      "url": "https://oto-console-staging.onrender.com/organisation/branches",
+      "kind": "native Console"
+    },
+    {
+      "file": "s734-clone-completed.png",
+      "at": "2026-11-04T06:33:32.695Z",
+      "url": "https://oto-console-staging.onrender.com/organisation/branches",
+      "kind": "native Console"
+    },
+    {
+      "file": "s734-copied-care-settings.png",
+      "at": "2026-11-04T06:33:47.827Z",
+      "url": "https://oto-console-staging.onrender.com/catalogue/care",
+      "kind": "native Console"
+    },
+    {
+      "file": "s734-copied-stock.png",
+      "at": "2026-11-04T06:33:50.747Z",
+      "url": "https://oto-console-staging.onrender.com/catalogue/inventory",
+      "kind": "native Console"
+    },
+    {
+      "file": "s734-copied-stock-pack.png",
+      "at": "2026-11-04T06:33:51.141Z",
+      "url": "https://oto-console-staging.onrender.com/catalogue/inventory",
+      "kind": "native Console"
+    }
+  ],
+  "outcome": "native staging clone, care and stock screens, independent reads and exact retirement passed",
+  "apiSettingNameCount": 57,
+  "deployments": [
+    {
+      "name": "oto-pos-web-staging",
+      "id": "srv-dbk7qu8n74is73bm894g",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "deployId": "dep-dblcrv8473hc73b1vokg",
+      "liveAt": "2026-11-04T06:19:57.162883Z"
+    },
+    {
+      "name": "oto-inbox-staging",
+      "id": "srv-dbbb4srrjlhs73dk2rm0",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "deployId": "dep-dblcrv8473hc73b1vov0",
+      "liveAt": "2026-11-04T06:18:09.341872Z"
+    },
+    {
+      "name": "oto-booth-staging",
+      "id": "srv-dapkbobtqb8s73delilg",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "deployId": "dep-dblcrv8473hc73b1vp7g",
+      "liveAt": "2026-11-04T06:18:11.127921Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "id": "srv-danppvjtqb8s73cnvua0",
+      "source": "b64d10ce0b85558e538eb58babd652dd500eb4d6",
+      "deployId": "dep-dblbihg473hc73b0o1fg",
+      "liveAt": "2026-11-04T04:51:40.269606Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "id": "srv-danng2p42hec73f38e3g",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "deployId": "dep-dblcrv8473hc73b1vorg",
+      "liveAt": "2026-11-04T06:18:11.117379Z"
+    },
+    {
+      "name": "oto-launcher-staging",
+      "id": "srv-danli3ajnfac7391jrk0",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "deployId": "dep-dblcrv8473hc73b1vp20",
+      "liveAt": "2026-11-04T06:18:08.999082Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "id": "srv-danh2mf40ujc73bu80j0",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "deployId": "dep-dblcrv8473hc73b1voog",
+      "liveAt": "2026-11-04T06:18:14.752966Z"
+    },
+    {
+      "name": "oto-api-staging",
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "deployId": "dep-dblcrv0473hc73b1vnlg",
+      "liveAt": "2026-11-04T06:21:12.471388Z"
+    }
+  ],
+  "ci": {
+    "conclusion": "success",
+    "databaseId": 41782135375,
+    "headSha": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf"
+  },
+  "identity": {
+    "actorId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "originalBranchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "policy": {
+    "bands": [
+      {
+        "id": "zz-young",
+        "label": "ZZ TEST young",
+        "minAge": 0,
+        "maxAge": 6,
+        "requirement": "nanny"
+      },
+      {
+        "id": "zz-older",
+        "label": "ZZ TEST older",
+        "minAge": 7,
+        "maxAge": null,
+        "requirement": "none"
+      }
+    ],
+    "siblingWaiver": {
+      "enabled": false,
+      "guardianMinAge": 12,
+      "waivableRequirement": "drop_off",
+      "staffOnly": true
+    }
+  },
+  "confirmations": [
+    {
+      "id": "zz-required",
+      "text": "ZZ TEST required confirmation",
+      "required": true,
+      "order": 2
+    },
+    {
+      "id": "zz-optional",
+      "text": "ZZ TEST optional confirmation",
+      "required": false,
+      "order": 7
+    }
+  ],
+  "pricing": {
+    "oneTimeFee": {
+      "weekday": 12300,
+      "weekend": 23400
+    },
+    "nannyHourly": {
+      "weekday": 34500,
+      "weekend": 45600
+    },
+    "extraHour": {
+      "weekday": 6700,
+      "weekend": 7800
+    },
+    "fullDayHours": 7,
+    "nannyRatioSoftMax": 4,
+    "prepaidFoodUnused": "forfeit"
+  },
+  "stockBody": {
+    "name": "ZZ TEST SCRUM-734 mw1qczn5 cups",
+    "active": true,
+    "productId": "01a1a539-f8a7-70c2-b15d-d27db83c0cd7",
+    "unitCostSatang": 12,
+    "reorder": {
+      "reorderPoint": 4,
+      "reorderQuantity": 12,
+      "leadTimeDays": 2,
+      "supplierName": "ZZ TEST supplier",
+      "supplierContact": "ZZ TEST contact"
+    },
+    "units": [
+      {
+        "label": "ZZ TEST case of 12",
+        "eaches": 12
+      }
+    ],
+    "showPhotoInPos": false,
+    "sizes": [
+      {
+        "variantId": null,
+        "label": "Each",
+        "lowStockThreshold": 3,
+        "startingStock": 0,
+        "parByLocation": {
+          "01a1a539-fa60-7d5d-a09c-4ba4c3d8a113": 5
+        }
+      }
+    ]
+  },
+  "sourceConfig": {
+    "policy": {
+      "bands": [
+        {
+          "id": "zz-young",
+          "label": "ZZ TEST young",
+          "minAge": 0,
+          "maxAge": 6,
+          "requirement": "nanny"
+        },
+        {
+          "id": "zz-older",
+          "label": "ZZ TEST older",
+          "minAge": 7,
+          "maxAge": null,
+          "requirement": "none"
+        }
+      ],
+      "siblingWaiver": {
+        "enabled": false,
+        "guardianMinAge": 12,
+        "waivableRequirement": "drop_off",
+        "staffOnly": true
+      },
+      "confirmations": [
+        {
+          "id": "zz-required",
+          "text": "ZZ TEST required confirmation",
+          "required": true,
+          "order": 2
+        },
+        {
+          "id": "zz-optional",
+          "text": "ZZ TEST optional confirmation",
+          "required": false,
+          "order": 7
+        }
+      ]
+    },
+    "pricing": {
+      "oneTimeFee": {
+        "weekday": 12300,
+        "weekend": 23400
+      },
+      "nannyHourly": {
+        "weekday": 34500,
+        "weekend": 45600
+      },
+      "extraHour": {
+        "weekday": 6700,
+        "weekend": 7800
+      },
+      "fullDayHours": 7,
+      "nannyRatioSoftMax": 4,
+      "prepaidFoodUnused": "forfeit"
+    },
+    "photoRetentionDays": 30,
+    "nannies": []
+  },
+  "setupRecovery": {
+    "cause": "The setup process saw end-of-input and closed its browser before any Clone submission.",
+    "sessionId": "01a1a539-cc65-78cc-89db-02eef4965e2e",
+    "closedAt": "2026-11-04T06:30:51.249Z",
+    "method": "existing signOut domain function",
+    "jobId": "job-dbld1pbbc2fs73du9cb0"
+  },
+  "resumedAt": "2026-11-04T06:32:08.879Z",
+  "commandLog": [
+    {
+      "seq": 1,
+      "startedAt": "2026-11-04T06:33:29.190Z",
+      "file": "C:/oto-lanes/s734-step-clone.mjs",
+      "outcome": "passed",
+      "finishedAt": "2026-11-04T06:33:32.695Z"
+    },
+    {
+      "seq": 2,
+      "startedAt": "2026-11-04T06:33:42.913Z",
+      "file": "C:/oto-lanes/s734-step-screens.mjs",
+      "outcome": "passed",
+      "finishedAt": "2026-11-04T06:33:51.161Z"
+    },
+    {
+      "seq": 3,
+      "startedAt": "2026-11-04T06:36:20.805Z",
+      "file": "C:/oto-lanes/s734-step-retire.mjs",
+      "outcome": "passed",
+      "finishedAt": "2026-11-04T06:36:32.907Z"
+    },
+    {
+      "seq": 4,
+      "startedAt": "2026-11-04T06:38:25.276Z",
+      "file": "C:/oto-lanes/s734-step-finish.mjs",
+      "outcome": "passed",
+      "finishedAt": "2026-11-04T06:38:25.950Z"
+    },
+    {
+      "seq": 5,
+      "startedAt": "2026-11-04T06:38:44.160Z",
+      "file": "STOP",
+      "outcome": "closed after verified cleanup",
+      "finishedAt": "2026-11-04T06:38:44.161Z"
+    }
+  ],
+  "resumeOriginalBranchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+  "preview": {
+    "sourceBranch": {
+      "id": "01a1a539-e180-79ef-a811-d4cafecf8636",
+      "name": "ZZ TEST SCRUM-734 mw1qczn5 source"
+    },
+    "targetBranch": {
+      "id": "01a1a539-e348-7b21-a562-f90971cbc921",
+      "name": "ZZ TEST SCRUM-734 mw1qczn5 target"
+    },
+    "targetHasSales": false,
+    "plan": {
+      "ticketPackages": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "holidays": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "taxConfig": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "products": {
+        "create": [
+          "ZZ TEST SCRUM-734 mw1qczn5 cup"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "modifierGroups": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "modifierOptions": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "modifierLinks": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "discountCodes": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "taxOverrides": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "printTemplates": {
+        "create": [],
+        "exists": [
+          "receipt",
+          "kids_wristband",
+          "adult_wristband",
+          "kitchen_ticket",
+          "bar_ticket",
+          "credit_voucher"
+        ],
+        "blocked": []
+      },
+      "stockLocations": {
+        "create": [
+          "ZZ TEST SCRUM-734 mw1qczn5 shelf"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "supervisionPolicy": {
+        "create": [
+          "supervision policy"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "confirmationItems": {
+        "create": [
+          "zz-optional",
+          "zz-required"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "dropOffPricing": {
+        "create": [
+          "drop-off and nanny prices"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "stockItems": {
+        "create": [
+          "ZZ TEST SCRUM-734 mw1qczn5 cups"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "stockUnits": {
+        "create": [
+          "ZZ TEST SCRUM-734 mw1qczn5 cups: ZZ TEST case of 12"
+        ],
+        "exists": [],
+        "blocked": []
+      }
+    },
+    "counts": {
+      "ticketPackages": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "holidays": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "taxConfig": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "products": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      },
+      "modifierGroups": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "modifierOptions": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "modifierLinks": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "discountCodes": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "taxOverrides": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "printTemplates": {
+        "created": 0,
+        "existing": 6,
+        "blocked": 0
+      },
+      "stockLocations": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      },
+      "supervisionPolicy": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      },
+      "confirmationItems": {
+        "created": 2,
+        "existing": 0,
+        "blocked": 0
+      },
+      "dropOffPricing": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      },
+      "stockItems": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      },
+      "stockUnits": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      }
+    },
+    "shared": [
+      "product categories",
+      "the shared modifier library and its options",
+      "customer tiers",
+      "payment methods",
+      "staff benefit role templates",
+      "wheel layouts",
+      "voucher definitions",
+      "discount codes that apply to every branch"
+    ]
+  },
+  "cloneSubmittedAt": "2026-11-04T06:33:30.295Z",
+  "clone": {
+    "sourceBranchId": "01a1a539-e180-79ef-a811-d4cafecf8636",
+    "targetBranchId": "01a1a539-e348-7b21-a562-f90971cbc921",
+    "counts": {
+      "ticketPackages": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "holidays": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "taxConfig": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "products": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      },
+      "modifierGroups": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "modifierOptions": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "modifierLinks": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "discountCodes": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "taxOverrides": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "printTemplates": {
+        "created": 0,
+        "existing": 6,
+        "blocked": 0
+      },
+      "stockLocations": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      },
+      "supervisionPolicy": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      },
+      "confirmationItems": {
+        "created": 2,
+        "existing": 0,
+        "blocked": 0
+      },
+      "dropOffPricing": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      },
+      "stockItems": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      },
+      "stockUnits": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      }
+    },
+    "plan": {
+      "ticketPackages": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "holidays": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "taxConfig": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "products": {
+        "create": [
+          "ZZ TEST SCRUM-734 mw1qczn5 cup"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "modifierGroups": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "modifierOptions": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "modifierLinks": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "discountCodes": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "taxOverrides": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "printTemplates": {
+        "create": [],
+        "exists": [
+          "receipt",
+          "kids_wristband",
+          "adult_wristband",
+          "kitchen_ticket",
+          "bar_ticket",
+          "credit_voucher"
+        ],
+        "blocked": []
+      },
+      "stockLocations": {
+        "create": [
+          "ZZ TEST SCRUM-734 mw1qczn5 shelf"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "supervisionPolicy": {
+        "create": [
+          "supervision policy"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "confirmationItems": {
+        "create": [
+          "zz-optional",
+          "zz-required"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "dropOffPricing": {
+        "create": [
+          "drop-off and nanny prices"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "stockItems": {
+        "create": [
+          "ZZ TEST SCRUM-734 mw1qczn5 cups"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "stockUnits": {
+        "create": [
+          "ZZ TEST SCRUM-734 mw1qczn5 cups: ZZ TEST case of 12"
+        ],
+        "exists": [],
+        "blocked": []
+      }
+    },
+    "created": 8
+  },
+  "targetConfig": {
+    "policy": {
+      "bands": [
+        {
+          "id": "zz-young",
+          "label": "ZZ TEST young",
+          "minAge": 0,
+          "maxAge": 6,
+          "requirement": "nanny"
+        },
+        {
+          "id": "zz-older",
+          "label": "ZZ TEST older",
+          "minAge": 7,
+          "maxAge": null,
+          "requirement": "none"
+        }
+      ],
+      "siblingWaiver": {
+        "enabled": false,
+        "guardianMinAge": 12,
+        "waivableRequirement": "drop_off",
+        "staffOnly": true
+      },
+      "confirmations": [
+        {
+          "id": "zz-required",
+          "text": "ZZ TEST required confirmation",
+          "required": true,
+          "order": 2
+        },
+        {
+          "id": "zz-optional",
+          "text": "ZZ TEST optional confirmation",
+          "required": false,
+          "order": 7
+        }
+      ]
+    },
+    "pricing": {
+      "oneTimeFee": {
+        "weekday": 12300,
+        "weekend": 23400
+      },
+      "nannyHourly": {
+        "weekday": 34500,
+        "weekend": 45600
+      },
+      "extraHour": {
+        "weekday": 6700,
+        "weekend": 7800
+      },
+      "fullDayHours": 7,
+      "nannyRatioSoftMax": 4,
+      "prepaidFoodUnused": "forfeit"
+    },
+    "photoRetentionDays": 30,
+    "nannies": []
+  },
+  "nativeProofCompletedAt": "2026-11-04T06:33:51.160Z",
+  "coreSessionId": "01a1a542-0545-72c1-b685-e95084d5815d",
+  "retirement": {
+    "startedAt": "2026-11-04T06:36:20.808Z",
+    "steps": [
+      "branch, item, product and shelf retired: 01a1a539-e180-79ef-a811-d4cafecf8636",
+      "branch, item, product and shelf retired: 01a1a539-e348-7b21-a562-f90971cbc921",
+      "empty mapped app branch removed: 01a1a539-e185-7a94-ba37-495d4aa59002",
+      "empty mapped app branch removed: 01a1a539-e34c-76bc-8ae1-21b3c543b90a"
+    ],
+    "sessions": [
+      {
+        "app": "oto-app",
+        "signedOut": true
+      },
+      {
+        "app": "oto-console-staging.onrender.com",
+        "signedOut": true
+      },
+      {
+        "app": "oto-launcher-staging.onrender.com",
+        "signedOut": true
+      }
+    ],
+    "appEntry": {
+      "method": "canonical one-use handoff API",
+      "boardOpened": false
+    },
+    "browserFinishedAt": "2026-11-04T06:36:32.906Z"
+  },
+  "apiSettingNameCountAfter": 57,
+  "settingNamesUnchanged": true,
+  "deploymentsAfter": [
+    {
+      "name": "oto-pos-web-staging",
+      "id": "srv-dbk7qu8n74is73bm894g",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "deployId": "dep-dblcrv8473hc73b1vokg",
+      "liveAt": "2026-11-04T06:19:57.162883Z"
+    },
+    {
+      "name": "oto-inbox-staging",
+      "id": "srv-dbbb4srrjlhs73dk2rm0",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "deployId": "dep-dblcrv8473hc73b1vov0",
+      "liveAt": "2026-11-04T06:18:09.341872Z"
+    },
+    {
+      "name": "oto-booth-staging",
+      "id": "srv-dapkbobtqb8s73delilg",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "deployId": "dep-dblcrv8473hc73b1vp7g",
+      "liveAt": "2026-11-04T06:18:11.127921Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "id": "srv-danppvjtqb8s73cnvua0",
+      "source": "b64d10ce0b85558e538eb58babd652dd500eb4d6",
+      "deployId": "dep-dblbihg473hc73b0o1fg",
+      "liveAt": "2026-11-04T04:51:40.269606Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "id": "srv-danng2p42hec73f38e3g",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "deployId": "dep-dblcrv8473hc73b1vorg",
+      "liveAt": "2026-11-04T06:18:11.117379Z"
+    },
+    {
+      "name": "oto-launcher-staging",
+      "id": "srv-danli3ajnfac7391jrk0",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "deployId": "dep-dblcrv8473hc73b1vp20",
+      "liveAt": "2026-11-04T06:18:08.999082Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "id": "srv-danh2mf40ujc73bu80j0",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "deployId": "dep-dblcrv8473hc73b1voog",
+      "liveAt": "2026-11-04T06:18:14.752966Z"
+    },
+    {
+      "name": "oto-api-staging",
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "deployId": "dep-dblcrv0473hc73b1vnlg",
+      "liveAt": "2026-11-04T06:21:12.471388Z"
+    }
+  ],
+  "cleanupVerified": true,
+  "finishedAt": "2026-11-04T06:38:25.950Z"
+}

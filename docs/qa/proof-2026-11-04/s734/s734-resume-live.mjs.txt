@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {pathToFileURL} from 'node:url';
+import {execFileSync} from 'node:child_process';
+import {randomUUID} from 'node:crypto';
+import {existsSync,readFileSync,writeFileSync} from 'node:fs';
+import {need} from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs';
+const root='C:/oto-lanes/codex-branch-clone-20261103',run='mw1qczn5',out=root+'/docs/qa/proof-2026-11-04/s734/staging/'+run,r=JSON.parse(readFileSync(out+'/receipt.json','utf8')),sha=r.source,f=r.fixtures,name=r.name;
+assert.equal(execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),sha);assert.ok(r.setupRecovery?.closedAt);assert.ok(!r.cloneSubmittedAt&&!r.resumedAt);assert.equal(r.screens.length,0);assert.equal(f.branches.length,2);
+const recovery=JSON.parse(readFileSync(out+'/setup-session-recovery.json','utf8'));assert.equal(recovery.result.passed,true);assert.equal(recovery.result.session.id,r.setupRecovery.sessionId);
+const {render,stagingServices}=await import(pathToFileURL(root+'/scripts/agent/render.mjs').href),{statusOf}=await import(pathToFileURL(root+'/scripts/agent/jira.mjs').href);assert.equal((await statusOf('SCRUM-707')).status,'Deployed');
+const {chromium,expect}=createRequire(root+'/apps/pos/package.json')('@playwright/test'),CONSOLE='https://oto-console-staging.onrender.com',LAUNCHER='https://oto-launcher-staging.onrender.com';
+const save=()=>writeFileSync(out+'/receipt.json',JSON.stringify(r,null,2)+'\n');
+const services=(await stagingServices()).filter(s=>r.deployments.some(d=>d.id===s.id));assert.equal(services.length,8);const apiService=services.find(s=>s.name==='oto-api-staging');assert.equal(apiService.id,'srv-danh2ljtqb8s73bt9en0');assert.ok(services.every(s=>s.ownerId===apiService.ownerId));
+async function live(){return Promise.all(services.map(async s=>{const d=(await render('GET',`/services/${s.id}/deploys?limit=1`))[0]?.deploy;assert.equal(d?.status,'live',s.name+' is not live');return {name:s.name,id:s.id,source:d.commit.id,deployId:d.id,liveAt:d.finishedAt};}));}
+assert.deepEqual(await live(),r.deployments);
+const settingNames=async()=>{const rows=await render('GET',`/services/${apiService.id}/env-vars?limit=100`);assert.ok(Array.isArray(rows));const names=rows.map(row=>(row.envVar??row).key).sort();assert.ok(names.every(n=>typeof n==='string'));assert.equal(new Set(names).size,names.length);return names;};const baselineNames=await settingNames();assert.equal(baselineNames.length,57);
+const browser=await chromium.launch({channel:'msedge'}),ctx=await browser.newContext({viewport:{width:1600,height:1100}}),p=await ctx.newPage();ctx.setDefaultTimeout(20000);
+const api=async(method,path,body)=>{const response=await ctx.request.fetch(CONSOLE+'/api'+path,{method,data:body,headers:method==='GET'?{}:{'Idempotency-Key':randomUUID()}}),answer=await response.json().catch(()=>null);assert.equal(response.status(),200,`${method} ${path}: ${response.status()} ${answer?.error?.code??''}`);return answer;};
+const snap=async(file)=>{assert.deepEqual(await live(),r.deployments);await p.evaluate(async()=>{await document.fonts.ready;await Promise.all(document.getAnimations().filter(a=>a.effect?.getComputedTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>undefined)));await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));});await p.screenshot({path:out+'/'+file,fullPage:true,mask:[p.locator('input[type=password],input[type=tel]')]});r.screens.push({file,at:new Date().toISOString(),url:p.url(),kind:'native Console'});save();};
+const verifyEnvironment=async()=>{assert.deepEqual(await settingNames(),baselineNames);r.apiSettingNameCountAfter=57;r.settingNamesUnchanged=true;r.deploymentsAfter=await live();assert.deepEqual(r.deploymentsAfter,r.deployments);save();};
+let ready=false;
+try{
+ r.resumedAt=new Date().toISOString();r.commandLog=[];save();
+ const login=await ctx.request.post(LAUNCHER+'/api/auth/sign-in',{data:{phone:need('STAGING_ADMIN_PHONE'),password:need('STAGING_ADMIN_PASSWORD')}});assert.equal(login.status(),200);
+ const h=await ctx.request.post(LAUNCHER+'/api/auth/handoff',{data:{app:'console'}});assert.equal(h.status(),200);await p.goto((await h.json()).launchUrl).catch(()=>{throw new Error('Console handoff navigation failed');});await p.waitForURL('**/overview').catch(()=>{throw new Error('Console handoff did not reach Overview');});
+ const me=await api('GET','/me');assert.equal(me.account.id,r.identity.actorId);r.resumeOriginalBranchId=me.operatorContext.branchId;assert.deepEqual(await api('GET','/checkin/config?branchId='+f.branches[0].id),r.sourceConfig);save();
+ await p.goto(CONSOLE+'/organisation/branches');const row=p.locator('li').filter({hasText:f.branches[1].name});await expect(row).toHaveCount(1);await row.getByRole('button',{name:'Switch here',exact:true}).click();await expect(p.getByRole('button',{name:'Clone into '+f.branches[1].name+'…',exact:true})).toBeVisible();
+ const proof={root,sha,r,f,out,name,browser,ctx,p,api,save,live,verifyEnvironment,expect,snap,CONSOLE,LAUNCHER},commandPath='C:/oto-lanes/s734-command-'+run+'.json';assert.ok(!existsSync(commandPath));ready=true;console.log(JSON.stringify({ready:true,resumed:true,run,out,source:sha,clonePerformed:false,commandPath}));
+ let last=0;
+ for(;;){
+  let command;try{if(existsSync(commandPath))command=JSON.parse(readFileSync(commandPath,'utf8'));}catch{}
+  if(command&&Number.isInteger(command.seq)&&command.seq>last){last=command.seq;const entry={seq:last,startedAt:new Date().toISOString(),file:command.file};r.commandLog.push(entry);save();
+   try{assert.equal(command.run,run);assert.equal(command.source,sha);if(command.file==='STOP'){assert.equal(r.cleanupVerified,true);entry.outcome='closed after verified cleanup';entry.finishedAt=new Date().toISOString();save();console.log(JSON.stringify({closed:true,run}));break;}
+    assert.match(command.file,/^C:\/oto-lanes\/s734-step-[a-z0-9-]+\.mjs$/);const step=await import(pathToFileURL(command.file).href+'?seq='+last),result=await step.default(proof);entry.outcome='passed';entry.finishedAt=new Date().toISOString();save();console.log(JSON.stringify({seq:last,file:command.file,result}));
+   }catch(e){entry.outcome='failed';entry.error={name:e.name,message:e.message};entry.finishedAt=new Date().toISOString();save();console.log(JSON.stringify({seq:last,error:e.name,message:e.message}));}
+  }
+  await new Promise(resolve=>setTimeout(resolve,500));
+ }
+}catch(e){r.resumeFailure={name:e.name,message:e.message,at:new Date().toISOString()};if(!ready){r.resumeFailure.cleanup=[];for(const origin of [CONSOLE,LAUNCHER]){try{const ended=await ctx.request.post(origin+'/api/auth/sign-out'),after=await ctx.request.get(origin+'/api/me');r.resumeFailure.cleanup.push({origin,signOutStatus:ended.status(),meStatus:after.status()});}catch{r.resumeFailure.cleanup.push({origin,unproven:true});}}}save();console.log(JSON.stringify({error:e.name,message:e.message,run}));process.exitCode=1;}finally{await browser.close();}

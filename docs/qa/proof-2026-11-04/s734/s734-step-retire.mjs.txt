@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 export default async function(proof){
  const {r,f,api,ctx,save,CONSOLE,LAUNCHER}=proof;
  const read=JSON.parse(readFileSync(proof.out+'/independent-readback.json','utf8'));assert.equal(read.result.passed,true);assert.ok(Date.now()-Date.parse(read.result.at)<15*60e3);
+ if(r.setupRecovery){assert.ok(read.result.coreSessions.initial.revoked_at);assert.equal(read.result.coreSessions.initial.id,r.setupRecovery.sessionId);r.coreSessionId=read.result.coreSessions.current.id;save();}
  assert.ok(!r.retirement?.startedAt,'Inspect partial retirement before sending another write');
  r.retirement={startedAt:new Date().toISOString(),steps:[],sessions:[]};save();
  await api('PUT','/me/session/branch',{branchId:r.identity.originalBranchId});

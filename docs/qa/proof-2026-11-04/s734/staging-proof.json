@@ -1,0 +1,124 @@
+{
+  "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+  "ci": {
+    "databaseId": 41782135375,
+    "headSha": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+    "conclusion": "success",
+    "url": "https://github.com/vickyydev/oto-platform/actions/runs/41782135375",
+    "otoAppBuild": "skipped"
+  },
+  "otoApp": {
+    "liveSource": "b64d10ce0b85558e538eb58babd652dd500eb4d6",
+    "liveTree": "81bfe5ae1cbdbff73a4b26e2818a7ac99f5b1924",
+    "sourceTree": "81bfe5ae1cbdbff73a4b26e2818a7ac99f5b1924",
+    "coverage": "OTO App application checks were path-skipped; its live app tree is identical to this source, and this is not a new full app test run."
+  },
+  "run": "mw1qczn5",
+  "imagesOpenedAt": "2026-11-04T06:40:17.536Z",
+  "screens": [
+    {
+      "name": "s734-clone-preview.png",
+      "capturedAt": "2026-11-04T06:33:30.295Z",
+      "sha256": "63e3119c470ad4d0a62c044de738d7fb269bf45bb67c338b386e5cf065fecd50"
+    },
+    {
+      "name": "s734-clone-completed.png",
+      "capturedAt": "2026-11-04T06:33:32.695Z",
+      "sha256": "a8202270095cbe0175569670a44b191336715ad57f108526b62f9e39972606f7"
+    },
+    {
+      "name": "s734-copied-care-settings.png",
+      "capturedAt": "2026-11-04T06:33:47.827Z",
+      "sha256": "924f0f708e1d6ea36f61d93f7dd5094bf1e8fd94a0cb84e2a1a14b56c4b5f373"
+    },
+    {
+      "name": "s734-copied-stock.png",
+      "capturedAt": "2026-11-04T06:33:50.747Z",
+      "sha256": "81c350b89fecc08804ac997fe52cf4c89fc56bea42d8c463bbc165ec2ce14814"
+    },
+    {
+      "name": "s734-copied-stock-pack.png",
+      "capturedAt": "2026-11-04T06:33:51.141Z",
+      "sha256": "b59d6725fec80e33c4f10e50459030fb58349ef7557f168563dfcfed2b6a13a3"
+    }
+  ],
+  "deployments": [
+    {
+      "name": "oto-pos-web-staging",
+      "id": "srv-dbk7qu8n74is73bm894g",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "deployId": "dep-dblcrv8473hc73b1vokg",
+      "liveAt": "2026-11-04T06:19:57.162883Z"
+    },
+    {
+      "name": "oto-inbox-staging",
+      "id": "srv-dbbb4srrjlhs73dk2rm0",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "deployId": "dep-dblcrv8473hc73b1vov0",
+      "liveAt": "2026-11-04T06:18:09.341872Z"
+    },
+    {
+      "name": "oto-booth-staging",
+      "id": "srv-dapkbobtqb8s73delilg",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "deployId": "dep-dblcrv8473hc73b1vp7g",
+      "liveAt": "2026-11-04T06:18:11.127921Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "id": "srv-danppvjtqb8s73cnvua0",
+      "source": "b64d10ce0b85558e538eb58babd652dd500eb4d6",
+      "deployId": "dep-dblbihg473hc73b0o1fg",
+      "liveAt": "2026-11-04T04:51:40.269606Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "id": "srv-danng2p42hec73f38e3g",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "deployId": "dep-dblcrv8473hc73b1vorg",
+      "liveAt": "2026-11-04T06:18:11.117379Z"
+    },
+    {
+      "name": "oto-launcher-staging",
+      "id": "srv-danli3ajnfac7391jrk0",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "deployId": "dep-dblcrv8473hc73b1vp20",
+      "liveAt": "2026-11-04T06:18:08.999082Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "id": "srv-danh2mf40ujc73bu80j0",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "deployId": "dep-dblcrv8473hc73b1voog",
+      "liveAt": "2026-11-04T06:18:14.752966Z"
+    },
+    {
+      "name": "oto-api-staging",
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "deployId": "dep-dblcrv0473hc73b1vnlg",
+      "liveAt": "2026-11-04T06:21:12.471388Z"
+    }
+  ],
+  "receipt": "docs/qa/proof-2026-11-04/s734/staging/mw1qczn5/receipt.json",
+  "referenceCensus": {
+    "columns": 76,
+    "sha256": "902810c6d7dacb920cde10b05ff0b7f3283b32869e385168f2cb28e4faf4f6de"
+  },
+  "cleanupVerified": true,
+  "limitations": [
+    "Booth stations, their settings and published versions are deliberately excluded because stations are not cloned.",
+    "Operator-wide payment methods, benefit templates and wheel layouts remain shared. No trading history or stock quantity is copied.",
+    "No park device or physical printing was used.",
+    "OTO App application checks were path-skipped; its live app tree is identical to this source, and this is not a new full app test run."
+  ],
+  "setupRecovery": {
+    "cause": "The setup process saw end-of-input and closed its browser before any Clone submission.",
+    "canonicalSignOutVerified": true,
+    "originalSessionId": "01a1a539-cc65-78cc-89db-02eef4965e2e",
+    "resumedSessionId": "01a1a542-0545-72c1-b685-e95084d5815d",
+    "bothPlatformSessionsRevoked": true,
+    "fixturesReused": true,
+    "cloneSubmittedOnce": true
+  }
+}
