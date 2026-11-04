@@ -89,3 +89,9 @@ compares it with the issued credential in memory. All eight agreed scan cases
 pass; all eight images were opened. See local/printed-qr. The earlier missing
 printer-address fixture failures remain in the external local receipts.
 Exact staging cleanup is being rehearsed locally before any staging write.
+
+The owner requested a pause on 4 November at 15:05 Bangkok. The complete
+rebased Console suite passes 357/357; types/lint/contracts and 123 combined API
+checks pass. Local exact cleanup and independent database readback pass. Main
+CI is red and lane CI already has a failed job; no staging proof exists.
+Resume only on the owner's command, from RESUME.md and resume/checkpoint.json.

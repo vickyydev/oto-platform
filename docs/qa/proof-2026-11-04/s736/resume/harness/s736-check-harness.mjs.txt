@@ -1,0 +1,4 @@
+import {createRequire} from 'node:module';
+import {readFileSync} from 'node:fs';
+const {transformSync}=createRequire('C:/oto-lanes/codex-box-scanner-20261104/packages/box-agent/package.json')('esbuild');
+for(const path of ['C:/oto-lanes/s736-local-run.mts','C:/oto-lanes/s736-staging-run.mts']){transformSync(readFileSync(path,'utf8'),{loader:'ts',target:'node22'});console.log('Syntax checked: '+path);}

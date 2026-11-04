@@ -1,0 +1,260 @@
+{
+  "at": "2026-11-04T08:06:45.181Z",
+  "ownerRequestedPause": true,
+  "source": "ba59e33b0e2588baaaec682c9656c594a3daf605",
+  "runtimeImplementation": "8e0e2563e",
+  "branch": "lane/codex-box-scanner-20261104-r3",
+  "main": "4fa1762860ec468eefc658fbf6b7356c21f9fd45",
+  "gates": [
+    {
+      "sha": "ba59e33b0e2588baaaec682c9656c594a3daf605",
+      "key": "types",
+      "start": "2026-11-04T07:52:23.250Z",
+      "end": "2026-11-04T07:55:25.613Z",
+      "command": "pnpm typecheck; pnpm lint; pnpm api-types:check",
+      "log": "C:/oto-lanes/s736-final-types.log",
+      "exitCode": 0,
+      "signal": null,
+      "logSha256": "f49362a70e8b90c2d188e21a4fc271930bf28543ea8ec38cf2aeb614da339ca3"
+    },
+    {
+      "sha": "ba59e33b0e2588baaaec682c9656c594a3daf605",
+      "key": "combined",
+      "start": "2026-11-04T07:52:23.250Z",
+      "end": "2026-11-04T07:54:33.551Z",
+      "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s736-api-gate.mts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/s736-scanner-relay-review.test.ts test/station-scans-poll.test.ts test/support-readers.test.ts test/release-feed.test.ts --reporter=default --reporter=json --outputFile=C:/oto-lanes/s736-final-combined.json",
+      "log": "C:/oto-lanes/s736-final-combined.log",
+      "exitCode": 0,
+      "signal": null,
+      "logSha256": "476a9029c75c18d46193b2600586f5e362139eb80dd4ebe9686881dd29eff19f"
+    },
+    {
+      "sha": "ba59e33b0e2588baaaec682c9656c594a3daf605",
+      "key": "console",
+      "start": "2026-11-04T07:52:23.250Z",
+      "end": "2026-11-04T08:00:53.635Z",
+      "command": "VITE_BOX_BRIDGE_ZONE=localhost VITE_BOX_BRIDGE_ALLOW_LOOPBACK=true pnpm --filter @oto/api exec tsx C:/oto-lanes/s736-console-gate.mts",
+      "log": "C:/oto-lanes/s736-final-console.log",
+      "exitCode": 0,
+      "signal": null,
+      "logSha256": "6e72eea9b3a29e4fd758c3ec950105aa868ca9cd02c5d11d68f7a12bd4dbb70d"
+    },
+    {
+      "key": "browser",
+      "sha": "ba59e33b0e2588baaaec682c9656c594a3daf605",
+      "start": "2026-11-04T07:59:11.504Z",
+      "end": "2026-11-04T07:59:56.116Z",
+      "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s736-cleanup-local-run.mts",
+      "log": "C:/oto-lanes/s736-cleanup-local5-browser.log",
+      "exitCode": 0,
+      "signal": null,
+      "logSha256": "705187b0633184a0d67d62d0ff0514b2434ba43579483a8a59d416ca312f1901"
+    }
+  ],
+  "combined": {
+    "files": 6,
+    "passed": 123,
+    "failed": 0
+  },
+  "consolePassed": 357,
+  "laneCi": {
+    "conclusion": "",
+    "headSha": "ba59e33b0e2588baaaec682c9656c594a3daf605",
+    "jobs": [
+      {
+        "name": "oto-app",
+        "id": 126458167420,
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      },
+      {
+        "name": "api-tests (3)",
+        "id": 126458167634,
+        "status": "in_progress",
+        "conclusion": "",
+        "failedSteps": []
+      },
+      {
+        "name": "pos-tests",
+        "id": 126458167694,
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      },
+      {
+        "name": "ci",
+        "id": 126458167763,
+        "status": "completed",
+        "conclusion": "failure",
+        "failedSteps": [
+          "Test"
+        ]
+      },
+      {
+        "name": "api-tests (2)",
+        "id": 126458167842,
+        "status": "in_progress",
+        "conclusion": "",
+        "failedSteps": []
+      },
+      {
+        "name": "api-tests (1)",
+        "id": 126458167885,
+        "status": "in_progress",
+        "conclusion": "",
+        "failedSteps": []
+      }
+    ],
+    "status": "in_progress"
+  },
+  "mainCi": {
+    "conclusion": "failure",
+    "headSha": "46e8accc09aa967f7d6ec57072dbf63b7c743796",
+    "jobs": [
+      {
+        "name": "oto-app",
+        "id": 126448202032,
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      },
+      {
+        "name": "api-tests (1)",
+        "id": 126448202248,
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      },
+      {
+        "name": "ci",
+        "id": 126448202266,
+        "status": "completed",
+        "conclusion": "failure",
+        "failedSteps": [
+          "Test"
+        ]
+      },
+      {
+        "name": "api-tests (2)",
+        "id": 126448202385,
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      },
+      {
+        "name": "api-tests (3)",
+        "id": 126448202400,
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      },
+      {
+        "name": "pos-tests",
+        "id": 126448202561,
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      }
+    ],
+    "status": "completed"
+  },
+  "stagingWrites": false,
+  "settingsWrites": false,
+  "slotClaimed": false,
+  "localGateProcessesRunning": false,
+  "stoppedOwnHomes": [
+    "C:/oto-lanes/s736-agent-mw1sx6l8",
+    "C:/oto-lanes/s736-agent-mw1t18qg",
+    "C:/oto-lanes/s736-agent-mw1t88s0",
+    "C:/oto-lanes/s736-agent-mw1tee49",
+    "C:/oto-lanes/s736-agent-mw1tgl7l",
+    "C:/oto-lanes/s736-agent-mw1tm5v5",
+    "C:/oto-lanes/s736-agent-mw1tnhig",
+    "C:/oto-lanes/s736-agent-mw1tsr25"
+  ],
+  "harness": [
+    {
+      "name": "s736-staging-run.mts",
+      "sha256": "1f12d850f5422ae82e0225f82ef824f1971c3f62549ae191c98ff2f9f0f6d529"
+    },
+    {
+      "name": "s736-proof-settings.mjs",
+      "sha256": "8b5692afd51e3bd8defb0924a1b6a6c04cec4d562597370d44da0e8c807ec4d4"
+    },
+    {
+      "name": "s736-proof-account.mjs",
+      "sha256": "1ffa11e3c2809f3cb45b19ebd7da075d90b69cfd9afe397c7c524b0454b5008c"
+    },
+    {
+      "name": "s736-release-render-job.mjs",
+      "sha256": "553f68c5156edd377a2ff0398f3d9371d3a397707eb8e528f4fae6bb73b86900"
+    },
+    {
+      "name": "s736-cleanup-api.mjs",
+      "sha256": "c542ddc6f9571c0c98fd98281454f56107cd01f46605b5e7bea37778cf22dd67"
+    },
+    {
+      "name": "s736-cleanup-database.mjs",
+      "sha256": "bdee483c2af0a321a60d7a9cc37848df2560d74510b13e9b27b2b9deb0f7d518"
+    },
+    {
+      "name": "s736-core-local-run.mts",
+      "sha256": "f263b3db1fd37e23dc8a592346220cbd9e577b753d1c5b2e4cc60b2d0419efc9"
+    },
+    {
+      "name": "s736-local-run.mts",
+      "sha256": "6232e1b4ec5ec4bfca02a2e201e4118eef70bdc57f30c02941ae3a753992ff35"
+    },
+    {
+      "name": "s736-cleanup-local-run.mts",
+      "sha256": "b82ef03698cc38634ce16e7a9d0eba3819dea86d4acdbaefe2cb2639a633b86a"
+    },
+    {
+      "name": "s736-prepare-cleanup-rehearsal.mjs",
+      "sha256": "2b8ff070c246583ec80089c0ab92114e030f71ff3cf325d6c0851628c135e3af"
+    },
+    {
+      "name": "s736-prepare-core-proof.mjs",
+      "sha256": "74a79e3b96c90222d131a912f267e54dd8923dd84d3515f0259b9e4b0dd837c8"
+    },
+    {
+      "name": "s736-finish-staging-preparation.mjs",
+      "sha256": "7b770409952e1d5e1475a9624826b83526499d0f095b1f803abcbd4546d0e889"
+    },
+    {
+      "name": "s736-api-gate.mts",
+      "sha256": "95681bd0f44baea3957d0afc7abc1948d863b178fd0727b6982f27e2cdc791fd"
+    },
+    {
+      "name": "s736-console-gate.mts",
+      "sha256": "54a00a356f5a7558ce779ef760c05df9d2ed6e3d97750538487b3464233dfd14"
+    },
+    {
+      "name": "s736-final-gates.mjs",
+      "sha256": "b6eb1761b0ecf1edd46b72b528534cc56cda9ddb30858d10d1d6e774c479213a"
+    },
+    {
+      "name": "s736-workspace-gate.mjs",
+      "sha256": "0ff090b05d1288573d995e5b9da5168385598aaed503f3b0690f260d50bacc8a"
+    },
+    {
+      "name": "s736-rerun1-gates.mjs",
+      "sha256": "412b3ba19969a8c3b498865e50735f6e0fe8a54162d661251d24ddbbf8a03175"
+    },
+    {
+      "name": "s736-check-harness.mjs",
+      "sha256": "d7791312d28659f64d504eee01d898eff1657085913b2e03a5e994ac5c9fe248"
+    },
+    {
+      "name": "s736-resolve-status.mjs",
+      "sha256": "dcbe7a70eb39cdaf0f35c87fb51a04ed70049e7d758fb6fe9a7851aed7df3028"
+    }
+  ],
+  "stagingHarnessExecuted": false,
+  "staffProvisionAndRetirementRehearsed": false,
+  "resumeBranch": "lane/codex-box-scanner-20261104-r4",
+  "mainCorrection": "4fa1762860ec468eefc658fbf6b7356c21f9fd45",
+  "mainCorrectionVerification": "Pending CI; do not resume gates before owner command",
+  "branchFailureConfirmed": "packages/db/test/suite-controls.test.ts deployment-column inventory"
+}

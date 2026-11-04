@@ -1,0 +1,249 @@
+{
+  "ticket": "SCRUM-736",
+  "source": "ba59e33b0e2588baaaec682c9656c594a3daf605",
+  "mode": "local",
+  "started": "2026-11-04T07:59:21.376Z",
+  "checks": [
+    {
+      "name": "Real simulated printout QR decoded and matched the issued band; native fixtures cached",
+      "passed": true
+    },
+    {
+      "name": "Exact fixture API cleanup passes",
+      "passed": true
+    },
+    {
+      "name": "Independent exact database cleanup readback passes",
+      "passed": true
+    },
+    {
+      "name": "No SMS sent",
+      "passed": true
+    }
+  ],
+  "images": [],
+  "home": "C:/oto-lanes/s736-agent-mw1tsr25",
+  "outcome": "passed",
+  "limits": [
+    "Real Windows runner, SQLite and HTTP bridge; simulated HID/CDC input",
+    "No physical Pi, scanner cradle, LAN TLS or park device tested",
+    "Disposable database; cash and simulator only"
+  ],
+  "fixture": {
+    "boxId": "01a1a592-2ac1-792f-807d-789fcbf2e58a",
+    "stationId": "01a1a592-2bb1-7e6b-aaeb-cbf1648414a9",
+    "branchId": "01a1a592-1555-73c7-b185-cf195d6249e5",
+    "name": "ZZ TEST SCRUM-736 mw1tsr25",
+    "printerId": "01a1a592-2b71-714f-8da2-3a719805cddb",
+    "bandPrinterId": "01a1a592-2b92-71f0-8afd-5d2233478bfe",
+    "child": "ZZ TEST SCRUM-736 mw1tsr25 child",
+    "registrationId": "770bacde-2259-4c2e-b052-66780de0603c",
+    "checkinId": "df6be52a-4006-4a5b-a2c0-13c475bbb906",
+    "saleId": "f9598e30-4497-48cf-ba3e-62ad44b4ce41",
+    "voucherSaleId": "e2c11022-fe9b-4692-8d95-dfd14e40f9dd",
+    "bookingId": "01a1a592-3ef0-7e04-8157-73826359d2a9"
+  },
+  "printPreparation": {
+    "notes": [],
+    "jobs": [
+      {
+        "id": "01a1a592-3a3f-76ef-b30c-2bede2fdf5c8",
+        "kind": "kids_wristband",
+        "status": "queued",
+        "deviceId": "01a1a592-2b92-71f0-8afd-5d2233478bfe",
+        "errorCode": null
+      }
+    ],
+    "readback": [
+      {
+        "id": "01a1a592-3a3f-76ef-b30c-2bede2fdf5c8",
+        "kind": "kids_wristband",
+        "status": "printed",
+        "deviceId": "01a1a592-2b92-71f0-8afd-5d2233478bfe",
+        "errorCode": null
+      },
+      {
+        "id": "01a1a592-39ea-78a9-9878-53bb87aedbbc",
+        "kind": "receipt",
+        "status": "printed",
+        "deviceId": "01a1a592-2b71-714f-8da2-3a719805cddb",
+        "errorCode": null
+      }
+    ],
+    "events": [
+      {
+        "kind": "status.read"
+      },
+      {
+        "kind": "status.read"
+      },
+      {
+        "kind": "status.read"
+      },
+      {
+        "kind": "status.read"
+      },
+      {
+        "kind": "status.read"
+      },
+      {
+        "kind": "job.printed"
+      },
+      {
+        "kind": "status.read"
+      }
+    ]
+  },
+  "printout": {
+    "seq": 1,
+    "widthDots": 400,
+    "heightDots": 413,
+    "qrDecoded": true,
+    "matchesIssuedBand": true
+  },
+  "fixtureCleanup": {
+    "started": "2026-11-04T07:59:47.930Z",
+    "steps": [
+      {
+        "name": "Own synthetic child collected and read out"
+      },
+      {
+        "name": "Own simulator booking redeemed and no longer waiting"
+      },
+      {
+        "name": "Own till session ended and refused on readback"
+      },
+      {
+        "name": "Own station, printers and box archived; address removed; box disabled",
+        "stationId": "01a1a592-2bb1-7e6b-aaeb-cbf1648414a9",
+        "boxId": "01a1a592-2ac1-792f-807d-789fcbf2e58a"
+      }
+    ],
+    "pickupFileId": "228d1ea5-5c35-41ba-94df-0be5648b3dd6",
+    "bookingSaleId": "01a1a592-4210-77ab-9918-1ecd6dad924b",
+    "bookingBandIds": [
+      "01a1a592-426a-7d70-8716-fa8e40111765",
+      "01a1a592-4270-77bf-b479-60d883b07a55"
+    ],
+    "sales": [
+      {
+        "id": "01a1a592-4210-77ab-9918-1ecd6dad924b",
+        "status": "finalised"
+      },
+      {
+        "id": "e2c11022-fe9b-4692-8d95-dfd14e40f9dd",
+        "status": "finalised"
+      },
+      {
+        "id": "f9598e30-4497-48cf-ba3e-62ad44b4ce41",
+        "status": "finalised"
+      }
+    ],
+    "printJobs": [
+      {
+        "id": "01a1a592-3a3f-76ef-b30c-2bede2fdf5c8",
+        "status": "printed",
+        "errorCode": null
+      },
+      {
+        "id": "01a1a592-39ea-78a9-9878-53bb87aedbbc",
+        "status": "printed",
+        "errorCode": null
+      },
+      {
+        "id": "01a1a592-3eac-73df-a54c-14d721a8851d",
+        "status": "skipped",
+        "errorCode": "NO_DEVICE_FOR_ROLE"
+      },
+      {
+        "id": "01a1a592-3ea3-7c64-90f8-23020e1f9389",
+        "status": "printed",
+        "errorCode": null
+      },
+      {
+        "id": "01a1a592-43e9-7fb1-b673-4a5d0c95f686",
+        "status": "skipped",
+        "errorCode": "NO_DEVICE_FOR_ROLE"
+      },
+      {
+        "id": "01a1a592-43e2-79f7-980b-4f4eab86c6c3",
+        "status": "printed",
+        "errorCode": null
+      },
+      {
+        "id": "01a1a592-43dc-7486-b08f-55fd1235a71a",
+        "status": "printed",
+        "errorCode": null
+      }
+    ],
+    "apiPassed": true,
+    "finished": "2026-11-04T07:59:51.838Z"
+  },
+  "databaseCleanup": {
+    "passed": true,
+    "readBackAt": "2026-11-04T07:59:53.382Z",
+    "counts": {
+      "active_sessions": 0,
+      "working_rows": 0,
+      "pending_prints": 0,
+      "box_print_queue": 0,
+      "pending_commands": 0,
+      "live_bands": 0
+    },
+    "staff": null,
+    "saleIds": [
+      "f9598e30-4497-48cf-ba3e-62ad44b4ce41",
+      "e2c11022-fe9b-4692-8d95-dfd14e40f9dd",
+      "01a1a592-4210-77ab-9918-1ecd6dad924b"
+    ],
+    "payments": [
+      {
+        "id": "01a1a592-397f-7ea9-b72f-760fbbc5207d",
+        "sale_id": "f9598e30-4497-48cf-ba3e-62ad44b4ce41",
+        "status": "approved",
+        "provider": "manual",
+        "amount": 111500
+      },
+      {
+        "id": "01a1a592-3e31-790b-86d1-3672a6b9cce8",
+        "sale_id": "e2c11022-fe9b-4692-8d95-dfd14e40f9dd",
+        "status": "approved",
+        "provider": "manual",
+        "amount": 35000
+      },
+      {
+        "id": "01a1a592-3f15-7602-9e5f-5f6047d9771c",
+        "sale_id": null,
+        "status": "approved",
+        "provider": "simulator",
+        "amount": 87000
+      },
+      {
+        "id": "01a1a592-422f-7403-8c05-5cb933ccb8d9",
+        "sale_id": "01a1a592-4210-77ab-9918-1ecd6dad924b",
+        "status": "approved",
+        "provider": "manual",
+        "amount": 87000
+      }
+    ],
+    "wallets": [
+      {
+        "id": "01a1a592-3e69-7f30-a4c1-890b50068820",
+        "balance": 35000,
+        "status": "active"
+      },
+      {
+        "id": "01a1a592-424f-7c37-bcfb-bf3caa9e2e14",
+        "balance": 35000,
+        "status": "active"
+      }
+    ],
+    "retained": "Paid sales, payments, booking redemption, wallet grants and pickup evidence remain as financial and safety history; all synthetic bands are revoked."
+  },
+  "cleanup": {
+    "disposableDatabaseDropped": true,
+    "localAgentStopped": true,
+    "proxyStopped": true,
+    "ownedBrowserClosed": true
+  }
+}

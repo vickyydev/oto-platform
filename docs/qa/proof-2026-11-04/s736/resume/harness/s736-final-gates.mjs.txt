@@ -1,0 +1,14 @@
+import {readFileSync,writeFileSync,openSync,closeSync} from 'node:fs';
+import {spawn,execFileSync} from 'node:child_process';
+const root='C:/oto-lanes/codex-box-scanner-20261104',key=process.argv[2];
+const commands={
+  types:'pnpm typecheck; pnpm lint; pnpm api-types:check',
+  combined:'pnpm --filter @oto/api exec tsx C:/oto-lanes/s736-api-gate.mts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/s736-scanner-relay-review.test.ts test/station-scans-poll.test.ts test/support-readers.test.ts test/release-feed.test.ts --reporter=default --reporter=json --outputFile=C:/oto-lanes/s736-final-combined.json',
+  console:'VITE_BOX_BRIDGE_ZONE=localhost VITE_BOX_BRIDGE_ALLOW_LOOPBACK=true pnpm --filter @oto/api exec tsx C:/oto-lanes/s736-console-gate.mts'
+};
+if(!commands[key])throw Error('Unknown gate');
+const sha=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),start=new Date().toISOString();
+const log='C:/oto-lanes/s736-final-'+key+'.log',fd=openSync(log,'wx');
+console.log(JSON.stringify({sha,key,start,log,output:'direct file descriptor, unpiped'}));
+const c=spawn('C:/Program Files/Git/bin/bash.exe',['-c','set -eo pipefail; '+commands[key]],{cwd:root,windowsHide:true,stdio:['ignore',fd,fd]});
+c.once('exit',(code,signal)=>{closeSync(fd);const r={sha,key,start,end:new Date().toISOString(),command:commands[key],log,exitCode:code??1,signal};writeFileSync('C:/oto-lanes/s736-final-'+key+'-exit.json',JSON.stringify(r,null,2));console.log(JSON.stringify(r));console.log(readFileSync(log,'utf8').slice(-3000));process.exitCode=code??1;});

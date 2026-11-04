@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync} from 'node:fs';
+let s=readFileSync('C:/oto-lanes/s736-core-local-run.mts','utf8');
+s="import {cleanupApi} from './s736-cleanup-api.mjs';\n"+s;
+s="import {retireFixture} from './s736-cleanup-database.mjs';\nimport {audit} from './codex-box-scanner-20261104/apps/api/src/services/audit.ts';\n"+s;
+s=s.replace("const cache=(scope:string)=>", "const photoObjects=new Map<string,Buffer>();ctx.app.fileStorage={bucket:'zz-test-s736-pickup',presignedPut:async()=> 'memory://unused',presignedGet:async()=> 'memory://unused',put:async(key,bytes)=>{photoObjects.set(key,Buffer.from(bytes));},remove:async(key)=>{photoObjects.delete(key);},probe:async()=>({state:'ready'})};\nconst cache=(scope:string)=>");
+s=s.replace('const checkinId=randomUUID(),child=', 'const registrationId=randomUUID(),checkinId=randomUUID(),child=');
+s=s.replace("post('/checkin/registrations',{id:randomUUID(),", "post('/checkin/registrations',{id:registrationId,");
+s=s.replace('for(const offline of [false,true])', 'for(const offline of [] as boolean[])');
+s=s.replace("step='exact fixture cleanup';", "step='exact fixture cleanup';");
+s=s.replace('receipt.fixture={boxId,stationId,branchId,name}', 'receipt.fixture={boxId,stationId,branchId,name,printerId:printer.device.id,bandPrinterId:bandPrinter.device.id}');
+s=s.replace('receipt.fixture={...receipt.fixture,checkinId,saleId,voucherSaleId,bookingId:made.id}', 'receipt.fixture={...receipt.fixture,registrationId,checkinId,saleId,voucherSaleId,bookingId:made.id}');
+const anchor=" assert.equal(ctx.smsLog.length,0);check('No SMS sent');";assert.ok(s.includes(anchor));
+s=s.replace(anchor," step='exact fixture cleanup';await cleanupApi({receipt,save,api,post,till,tillCtx,posOrigin:POS,stopRunner:async()=>{await runner?.stop();runner=undefined;}});check('Exact fixture API cleanup passes');\n const finalPool=new Pool({connectionString:ctx.app.env.DATABASE_URL});const finalClient=await finalPool.connect();try{const {drizzle}=createRequire(root+'/packages/db/package.json')('drizzle-orm/node-postgres');receipt.databaseCleanup=await retireFixture(finalClient,{fixture:receipt.fixture,fixtureCleanup:receipt.fixtureCleanup,actorId:me.account.id},{drizzle,audit,newId:randomUUID});save();}finally{finalClient.release();await finalPool.end();}check('Independent exact database cleanup readback passes');\n"+anchor);
+writeFileSync('C:/oto-lanes/s736-cleanup-local-run.mts',s);
+const v=process.argv[2];assert.match(v??'',/^\d+$/);
+let g=readFileSync('C:/oto-lanes/s736-core-paper3-gates.mjs','utf8').replaceAll('s736-core-paper3-',`s736-cleanup-local${v}-`).replaceAll('s736-core-local-run.mts','s736-cleanup-local-run.mts');writeFileSync(`C:/oto-lanes/s736-cleanup-local${v}-gates.mjs`,g);
+console.log('Prepared disposable API cleanup rehearsal.');

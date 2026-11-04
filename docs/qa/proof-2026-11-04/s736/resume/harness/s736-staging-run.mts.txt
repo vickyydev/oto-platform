@@ -1,0 +1,131 @@
+import {cleanupApi} from './s736-cleanup-api.mjs';
+import {cleanupDatabase} from './s736-cleanup-database.mjs';
+import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
+import { request as httpsRequest } from 'node:https';
+import { need } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs';
+import { render, service } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/render.mjs';
+import { provision } from './s736-proof-account.mjs';
+import { randomUUID, randomBytes, generateKeyPairSync } from 'node:crypto';
+import { spawn, spawnSync, execFileSync } from 'node:child_process';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { DatabaseSync } from 'node:sqlite';
+import { claimBox, startRunner, type RunningBox } from './codex-box-scanner-20261104/packages/box-agent/src/runner/runtime.ts';
+import { HidBurstReader, SerialScanReader, simulateHidKeys, simulateSerialRecord } from './codex-box-scanner-20261104/packages/box-agent/src/scan-input.ts';
+import { bandShortCode } from './codex-box-scanner-20261104/packages/shared/src/band-code.ts';
+const root='C:/oto-lanes/codex-box-scanner-20261104';
+const {chromium,expect}=createRequire(root+'/apps/pos/package.json')('@playwright/test');
+const qrReq=createRequire('C:/Users/waqar/AppData/Local/Temp/claude/c--Users-waqar-OneDrive-Desktop-Projects-oto-pos/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/s731deps/package.json');
+const jsQR=qrReq('jsqr'), {PNG}=qrReq('pngjs');
+assert.equal(process.env.S736_OWNER_TEST_SETTINGS_APPROVED,'true');
+assert.equal(process.env.S736_WINDOW_CLAIMED,'true');
+assert.equal(process.env.S736_HISTORY_SCOPE_RESOLVED,'true');
+const stamp=Date.now().toString(36), name='ZZ TEST SCRUM-736 '+stamp;
+const out=root+'/docs/qa/proof-2026-11-04/s736/staging/'+stamp, home='C:/oto-lanes/s736-agent-'+stamp;
+mkdirSync(out,{recursive:true});mkdirSync(home,{recursive:true});
+const checkout=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();const source=process.env.S736_PROOF_SHA??checkout;assert.match(source,/^[a-f0-9]{40}$/);execFileSync('git',['merge-base','--is-ancestor',source,checkout],{cwd:root});assert.equal(execFileSync('git',['diff',source,checkout,'--','apps','packages','scripts'],{cwd:root,encoding:'utf8'}),'','The checked-out runtime must equal the proven source');
+const receipt:any={ticket:'SCRUM-736',source,mode:'staging',started:new Date().toISOString(),checks:[],images:[],home,outcome:'incomplete',limits:['Real Windows runner, SQLite and HTTP bridge; simulated HID/CDC input','No physical Pi, scanner cradle, LAN TLS or park device tested','Dedicated ZZ TEST records; cash and simulator only; financial audit rows retained']};
+const save=()=>writeFileSync(out+'/result.json',JSON.stringify(receipt,null,2)+'\n');
+const check=(name:string,details={})=>{receipt.checks.push({name,...details,passed:true});save();console.log('PASS',name);};
+const sleep=(ms:number)=>new Promise(r=>setTimeout(r,ms));
+const until=async(label:string,run:()=>Promise<any>,ms=90000)=>{const end=Date.now()+ms;while(Date.now()<end){const v=await run().catch(()=>null);if(v)return v;await sleep(500);}throw Error('Timed out: '+label);};
+const listen=(server:any)=>new Promise<number>((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',()=>resolve(server.address().port));});
+const free=async()=>{const s=createServer();const p=await listen(s);await new Promise<void>(r=>s.close(()=>r()));return p;};
+const [bridgePort,kioskPort]=await Promise.all([free(),free()]);
+const API='https://oto-api-staging.onrender.com', POS='https://oto-pos-web-staging.onrender.com', CONSOLE='https://oto-console-staging.onrender.com', LAUNCHER='https://oto-launcher-staging.onrender.com', BRIDGE=`http://zz-test-s736.localhost:${bridgePort}`;
+const ci=JSON.parse(execFileSync('gh',['run','view',process.env.S736_CI!,'--json','headSha,conclusion'],{cwd:root,encoding:'utf8'}));assert.equal(ci.headSha,source);assert.equal(ci.conclusion,'success');
+for(const name of ['oto-api-staging','oto-pos-web-staging']) {const svc=await service(name);const live=(await render('GET',`/services/${svc.id}/deploys?limit=1`))[0].deploy;assert.equal(live.status,'live');assert.equal(live.commit.id,source);}
+receipt.ciRun=process.env.S736_CI;const apiService=await service('oto-api-staging');const settings=(await render('GET',`/services/${apiService.id}/env-vars?limit=100`)).map((r:any)=>r.envVar??r);assert.equal(settings.length,59);assert.ok(settings.some((r:any)=>r.key==='PGW_PROVIDER'&&r.value==='simulator'),'Staging gateway must be the simulator');receipt.gatewayVerifiedAsSimulator=true;
+const RECEPTION={phone:'+6690006'+String(Math.floor(Math.random()*10000)).padStart(4,'0'),password:randomBytes(24).toString('base64url')};
+let cloudDown=false, step='boot', runner:RunningBox|undefined, browser:any, pos:any, activity:any;
+const proxy=createServer((req,res)=>{if(cloudDown){req.socket.destroy();return;}const up=httpsRequest(API+req.url,{method:req.method,headers:{...req.headers,host:new URL(API).host}},r=>{res.writeHead(r.statusCode??502,r.headers);r.pipe(res);});up.on('error',()=>{if(!res.headersSent)res.writeHead(502);res.end();});req.on('aborted',()=>up.destroy());res.on('close',()=>up.destroy());req.pipe(up);});
+const proxyPort=await listen(proxy);
+const cache=(scope:string)=>{const db=new DatabaseSync(home+'/box.sqlite',{readOnly:true});try{const row=db.prepare('select payload from box_cache where scope=?').get(scope) as {payload:string}|undefined;return row?JSON.parse(row.payload):null;}finally{db.close();}};
+let till:any,admin:any,tillCtx:any;
+try {
+ browser=await chromium.launch({channel:'msedge'});
+ admin=await browser.newContext();
+ assert.equal((await admin.request.post(LAUNCHER+'/api/auth/sign-in',{data:{phone:need('STAGING_ADMIN_PHONE'),password:need('STAGING_ADMIN_PASSWORD')}})).status(),200);
+ const cp=await admin.newPage();const hand=await(await admin.request.post(LAUNCHER+'/api/auth/handoff',{data:{app:'console'}})).json();await cp.goto(hand.launchUrl);await cp.waitForURL('**/overview');
+ const api=async(method:string,path:string,body?:any)=>{const r=await admin.request.fetch(CONSOLE+'/api'+path,{method,data:body,headers:{'Idempotency-Key':randomUUID()}});const b=await r.json().catch(()=>null);assert.equal(r.status(),200,`${method} ${path}: ${r.status()} ${b?.error?.code??''}`);return b;};
+ const me=await api('GET','/me'), branchId=me.operatorContext.branchId;receipt.identity={actorId:me.account.id,branchId};save();
+ const accountId=randomUUID(),employeeId=randomUUID();receipt.staff={accountId,employeeId,name:name+' staff'};save();
+ receipt.staff.provision=await provision({accountId,employeeId,name:receipt.staff.name,phone:RECEPTION.phone,actorId:me.account.id,operatorId:me.operatorContext.effectiveOperatorId},'staging',source);save();
+ const grant=await api('POST','/accounts/'+accountId+'/role-assignments',{roleName:'reception',scopeType:'branch',scopeId:branchId});receipt.staff.grantId=grant.id;save();
+ const temp=await api('POST','/accounts/'+accountId+'/temp-password',{});const setup=await browser.newContext();try {assert.equal((await setup.request.post(POS+'/api/auth/sign-in',{data:{phone:RECEPTION.phone,password:temp.temporaryPassword}})).status(),200);assert.equal((await setup.request.post(POS+'/api/auth/change-password',{data:{currentPassword:temp.temporaryPassword,password:RECEPTION.password}})).status(),200);assert.equal((await setup.request.post(POS+'/api/auth/sign-out',{data:{}})).status(),200);}finally{delete temp.temporaryPassword;await setup.close();}
+ const branches=(await api('GET','/branches')).branches;const CENTRAL_BRANCH_CODE=branches.find((b:any)=>b.id===branchId).code;
+ const used=new Set((await api('GET',`/branches/${branchId}/stations?includeArchived=true`)).stations.map((s:any)=>s.codePrefix));let codePrefix='';for(let i=0;i<1000;i++){const candidate='Z'+i.toString(36).toUpperCase().padStart(2,'0');if(!used.has(candidate)){codePrefix=candidate;break;}}assert.ok(codePrefix);
+ step='own box, printer and station';
+ const box=await api('POST',`/branches/${branchId}/boxes`,{name,slot:'zz-test-s736-'+stamp,role:'counter'});
+ const boxId=box.box.id;receipt.fixture={boxId,branchId,name};save();
+ assert.equal((await claimBox({home,apiBaseUrl:`http://127.0.0.1:${proxyPort}`,code:box.claimCode,hostname:name})).boxId,boxId);delete box.claimCode;
+ const printer=await api('POST',`/boxes/${boxId}/devices`,{kind:'receipt_printer',label:name+' receipt',transport:'simulated',address:'zz-s736-receipt:9100',protocol:'escpos',model:'Welltech G4 (Xprinter XP-C260)'});
+ receipt.fixture.printerId=printer.device.id;save();
+ const bandPrinter=await api('POST',`/boxes/${boxId}/devices`,{kind:'band_printer',label:name+' band',transport:'simulated',address:'zz-s736-band:9100',protocol:'tspl2',model:'4B-2082A'});
+ receipt.fixture.bandPrinterId=bandPrinter.device.id;save();
+ const station=(await api('POST',`/branches/${branchId}/stations`,{name:name+' till',kind:'till',boxId,codePrefix,paymentRouting:{card:'manual',qr:'none'},accessScope:'all_staff',capabilities:[],devices:[{deviceId:printer.device.id,role:'receipt'},{deviceId:bandPrinter.device.id,role:'kids_band'}]})).station;
+ const stationId=station.id;receipt.fixture={boxId,stationId,branchId,name,printerId:printer.device.id,bandPrinterId:bandPrinter.device.id,codePrefix};save();
+ await api('PATCH','/boxes/'+boxId,{bridgeOrigin:BRIDGE});
+ runner=await startRunner({home,apiBaseUrl:`http://127.0.0.1:${proxyPort}`,port:kioskPort,bridge:{port:bridgePort,origins:[POS]},heartbeatIntervalMs:1000,pollIntervalMs:1000,syncIntervalMs:1000,cacheRefreshIntervalMs:3000});
+ assert.equal(runner.storeFault,null);
+ await until('station cached',async()=>runner!.agent.config()?.stations.some(s=>s.id===stationId));
+ step='native sign in';
+ tillCtx=await browser.newContext({viewport:{width:1440,height:1000}});tillCtx.setDefaultTimeout(25000);till=await tillCtx.newPage();
+ await till.goto(POS+'/');await till.locator('input[type="tel"], input[inputmode="tel"]').first().fill(RECEPTION.phone.replace(/^\+66/, '0'));await till.locator('input[type="password"]').fill(RECEPTION.password);await till.getByRole('button',{name:'Sign in',exact:true}).click();
+ await till.getByRole('button',{name:new RegExp(name)}).click();await till.getByText('Membership Check',{exact:true}).waitFor();
+ activity=setInterval(()=>{void till.keyboard.press('Shift').catch(()=>{});},15000);
+ const post=async(path:string,body:any)=>{const r=await tillCtx.request.post(POS+'/api'+path,{data:body,headers:{'Idempotency-Key':randomUUID()}});const b=await r.json();assert.equal(r.status(),200,`${path}: ${r.status()} ${b?.error?.code??''}`);return b;};
+ const cfg=await api('GET',`/checkin/config?branchId=${branchId}`);const confirmationIds=cfg.policy.confirmations.filter((c:any)=>c.required).map((c:any)=>c.id);
+ let bandCode:string,walletQr:string,bookingQr:string,bookingReference:string;
+ try {
+  const packages=(await api('GET',`/branches/${branchId}/ticket-packages`)).packages.filter((p:any)=>p.active&&!p.archivedAt);
+  const packageId=packages.find((p:any)=>p.name==='2 Hours Play').id, creditPackageId=packages.find((p:any)=>p.name==='Eat & Play Kids Pass').id;
+  const checkinId=randomUUID(),registrationId=randomUUID(),child=name+' child';Object.assign(receipt.fixture,{checkinId,registrationId,child});save();
+  await post('/checkin/registrations',{id:registrationId,branchId,stationId,guardianName:name+' guardian',guardianPhone:'0800000736',contactChannel:'whatsapp',consentAcknowledged:true,acknowledgedConfirmationIds:confirmationIds,children:[{checkinId,name:child,ageYears:6,allergies:'ZZ TEST peanut allergy',foodRestrictions:'ZZ TEST no dairy',service:'drop_off',foodProvision:{mode:'none',paidSatang:0}}]});
+  const saleId=randomUUID();receipt.fixture.saleId=saleId;save();await post('/sales',{id:saleId,stationId,lines:[{id:checkinId,packageId,kids:1,adults:0,serviceFee:{label:'Drop-off service',amountSatang:cfg.pricing.oneTimeFee.weekday},foodProvision:null}]});await post(`/sales/${saleId}/finalise`,{method:'cash'});const admitted=await post('/checkin/check-in-now',{saleId,entries:[{checkinId,nannyId:null}]});receipt.fixture.bandId=admitted.bands[0].id;save();
+  const paper=await until('own simulated band printout',async()=>runner!.agent.printing()?.printouts(bandPrinter.device.id,10).at(-1));const pixels=PNG.sync.read(Buffer.from(paper.preview));const decoded=jsQR(new Uint8ClampedArray(pixels.data),pixels.width,pixels.height,{inversionAttempts:'attemptBoth'});assert.ok(decoded,'Printed band QR decoded');bandCode=decoded.data;receipt.printout={seq:paper.seq,widthDots:paper.widthDots,heightDots:paper.heightDots,qrDecoded:true};save();
+  const voucherSaleId=randomUUID();receipt.fixture.voucherSaleId=voucherSaleId;save();await post('/sales',{id:voucherSaleId,stationId,lines:[{id:randomUUID(),packageId:creditPackageId,kids:0,adults:1}]});const paid=await post(`/sales/${voucherSaleId}/finalise`,{method:'cash'});walletQr=paid.grants.find((g:any)=>g.qrCode)?.qrCode;assert.ok(typeof walletQr==='string' && walletQr.startsWith('QR-'),'wallet voucher was issued');
+  const visitDate=new Date(Date.now()+7*3600000).toISOString().slice(0,10);
+  const made=await api('POST','/public/bookings',{branchCode:CENTRAL_BRANCH_CODE,phone:'0800000736',parentName:name+' booking',tier:'thai',visitDate,consentAck:true,acknowledgedConfirmationIds:confirmationIds,lines:[{packageId,kids:1,adults:1}]});
+  receipt.fixture.bookingId=made.id;save();
+  const opened=await api('POST',`/public/bookings/${made.id}/checkout`,{method:'card'});
+  const response=await admin.request.post(CONSOLE+`/api/webhooks/2c2p/hosted/${opened.attemptId}`,{form:{action:'pay'}});assert.equal(response.status(),200);
+  const booking=await api('GET',`/public/bookings/${made.id}/status`);assert.equal(booking.status,'paid');bookingQr=booking.qr;bookingReference=booking.reference;assert.ok(bookingQr);
+  receipt.fixture={...receipt.fixture,checkinId,saleId,voucherSaleId,bookingId:made.id};save();
+ } finally {save();}
+ await runner.agent.syncCache();await runner.agent.syncConfig();
+ await until('booking and child caches',async()=>JSON.stringify(cache('bookings')).includes(receipt.fixture.bookingId)&&JSON.stringify(cache('checkin')).includes(receipt.fixture.checkinId));
+ check('Two synthetic cash sales and one simulator-paid booking created through real routes; printed band QR decoded; cache ready');
+ const capture=async(file:string)=>{await till.screenshot({path:out+'/'+file,animations:'disabled',maskColor:'#d6d3d1',mask:[till.locator('input[type="password"]'),till.getByText(/^#QR-/)]});receipt.images.push(file);save();};
+ const unlock=async()=>{if(!await till.getByRole('button',{name:'Unlock',exact:true}).isVisible())await till.getByRole('button',{name:'Lock screen',exact:true}).click();await till.locator('input[type="password"]').fill(RECEPTION.password);const reply=till.waitForResponse((r:any)=>r.url()===BRIDGE+`/box/v1/station/${stationId}/unlock`&&r.request().method()==='POST');await till.getByRole('button',{name:'Unlock',exact:true}).click();assert.equal((await reply).status(),200);};
+ const scan=async(code:string,mode:'hid'|'serial')=>{let input:any;if(mode==='serial')input=new SerialScanReader({source:'box_serial'}).push(simulateSerialRecord(code),Date.now())[0];else {const reader=new HidBurstReader({source:'box_hid'});for(const key of simulateHidKeys(code,{startAt:Date.now(),interCharDelayMs:20})){const event=reader.push(key);if(event?.kind==='scan')input=event.input;}}assert.ok(input);const result=await runner!.agent.scanner()!.deliver(stationId,input,{screen:'box'});assert.equal(result.outcome,'handled');return{kind:result.kind,handler:result.handler};};
+ for(const offline of [false,true])for(const kind of ['band','voucher','booking','shop-band'] as const){
+  step=`${offline?'offline':'online'} ${kind}`;console.log('STEP',step);
+  cloudDown=false;await tillCtx.unroute(POS+'/api/**');await runner.agent.syncConfig();await runner.agent.syncCache();
+  await till.goto(POS+(kind==='booking'?'/':kind==='shop-band'?'/merch-station':kind==='history-band'?'/history':'/order-station'));await unlock();
+  await (kind==='booking'?till.getByText('Membership Check',{exact:true}):kind==='shop-band'?till.getByRole('heading',{name:'Retail Sale',exact:true}):kind==='history-band'?till.getByLabel('Search transactions'):till.getByRole('heading',{name:'Scan Wristband',exact:true})).waitFor();
+  await sleep(2500);
+  if(offline){cloudDown=true;await tillCtx.route(POS+'/api/**',(route:any)=>route.abort('internetdisconnected'));await runner.agent.syncConfig().catch(()=>false);await until('box offline',async()=>(await(await fetch(`http://127.0.0.1:${bridgePort}/box/v1/station/${stationId}/status`)).json()).link.lane==='box');}
+  const result=await scan(kind.includes('band')?bandCode!:kind==='voucher'?walletQr!:bookingQr!,kind==='voucher'||kind==='shop-band'?'serial':'hid');
+  if(kind==='band'){await till.getByText(`Allergy / medical alert \u00b7 ${receipt.fixture.child}`).waitFor();await expect(till.getByText('ZZ TEST peanut allergy',{exact:true})).toBeVisible();}
+  else if(kind==='voucher'){await till.getByText(/\u0e3f[\d,.]+ credit/).first().waitFor();receipt.creditView??={};receipt.creditView[offline?'offline':'online']=await till.getByText(/\u0e3f[\d,.]+ credit/).first().innerText();save();}
+  else if(kind==='shop-band'){await expect(till.getByRole('heading',{name:'Retail Sale',exact:true})).toBeHidden();await till.getByText(receipt.fixture.child).first().waitFor();}
+  else if(kind==='history-band'){await till.getByText('#'+bandShortCode(bandCode!)).waitFor();await till.getByText('Total spent').first().waitFor();}
+  else {await till.getByRole('dialog').getByText(bookingReference!,{exact:true}).waitFor();await expect(till.getByRole('button',{name:'Confirm & Issue',exact:true})).toBeEnabled();}
+  await sleep(2500);await expect(till.getByText(/This (wristband|credit voucher) is already open/)).toHaveCount(0);
+  await capture(`s736-${offline?'offline':'online'}-${kind}.png`);check(step+' opens the correct native screen once',result);
+ }
+ cloudDown=false;await tillCtx.unroute(POS+'/api/**');await runner.agent.syncConfig();
+ receipt.proofPassed=true;save();step='exact fixture cleanup';
+ await cleanupApi({receipt,save,api,post,till,tillCtx,posOrigin:POS,stopRunner:async()=>{await runner?.stop();runner=undefined;}});
+ receipt.databaseCleanup=await cleanupDatabase(receipt);assert.equal(receipt.databaseCleanup.result.passed,true);check('Exact fixture cleanup and independent database readback pass');receipt.outcome='passed';save();
+} catch(e) {receipt.failure={step,name:e instanceof Error?e.name:'Error',message:e instanceof Error?e.message:'unknown'};save();console.error('STOP',step,receipt.failure.message);if(till)await till.screenshot({path:out+'/failure.png',mask:[till.locator('input[type="password"]')]}).catch(()=>{});process.exitCode=1;}
+finally {
+ clearInterval(activity);cloudDown=false;
+ if(admin){try{const signedOut=await admin.request.post(CONSOLE+'/api/auth/sign-out',{data:{}});assert.equal(signedOut.status(),200);assert.equal((await admin.request.get(CONSOLE+'/api/me')).status(),401);receipt.adminSessionEnded=true;}catch(e){receipt.adminSignOutError=e instanceof Error?e.name:'Error';process.exitCode=1;}}
+ await browser?.close();await runner?.stop();proxy.closeAllConnections();await new Promise<void>(r=>proxy.close(()=>r()));
+ if(pos?.pid&&pos.exitCode===null)spawnSync('taskkill',['/pid',String(pos.pid),'/t','/f'],{windowsHide:true,stdio:'ignore'});
+ receipt.transportCleanup={localAgentStopped:true,proxyStopped:true,ownedBrowserClosed:true};receipt.fixtureRetained=receipt.databaseCleanup?.result?.passed!==true;save();console.log(JSON.stringify({out,outcome:receipt.outcome,transportCleanup:receipt.transportCleanup,fixtureRetained:receipt.fixtureRetained}));
+}
+process.exit(receipt.outcome==='passed'&&receipt.adminSessionEnded&&!receipt.fixtureRetained?0:1);

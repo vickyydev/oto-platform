@@ -1,0 +1,10 @@
+{
+  "key": "browser",
+  "sha": "ba59e33b0e2588baaaec682c9656c594a3daf605",
+  "start": "2026-11-04T07:59:11.504Z",
+  "end": "2026-11-04T07:59:56.116Z",
+  "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s736-cleanup-local-run.mts",
+  "log": "C:/oto-lanes/s736-cleanup-local5-browser.log",
+  "exitCode": 0,
+  "signal": null
+}
