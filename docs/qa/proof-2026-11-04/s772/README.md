@@ -55,7 +55,9 @@ After the lane lands and the api, POS web and Console are live on the landing co
 7. Document path on a third ZZ TEST member: Passport still verifies and is saved to the profile.
 8. Console: Watch, Activity shows `sale_tier_claim.approve_by_hand` with actor, reason and note; Catalogue,
    Tier verifications shows the per-staff count for the reception account.
-9. Offline: with the till on the box lane, the special case says it needs the platform and points at the
-   document check; nothing is recorded.
+9. Offline: with the till on the box lane (staging's forced-offline station, which the platform answers
+   `503 STATION_FORCED_OFFLINE`), the special case says "Approving by hand needs the platform, and this till
+   is offline. Check a document instead." rather than the generic sentence about taking payment; nothing is
+   recorded.
 
 Clean up: void the ZZ TEST sales that took no money; the cash sale stays as a ZZ TEST record.
