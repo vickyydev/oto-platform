@@ -620,6 +620,20 @@ async function findClaim(
 }
 
 /**
+ * Why a claim that has already priced a sale prices nothing else, in the
+ * words of the kind of claim it was. A document check asks for the document
+ * again; a rate approved by hand (SCRUM-772) was approved because the
+ * document is not to hand, so it asks for a new approval or a document.
+ */
+function spentClaimMessage(approvedByHand: boolean): string {
+  return approvedByHand
+    ? 'That approval by hand has already been used on a sale — approve it again, or check a ' +
+        'document, to price this one'
+    : 'That document check has already been used on a sale — check the document again to ' +
+        'price this one';
+}
+
+/**
  * THE CLAIM THAT PRICES THIS CART, or `null` when none does — in which case
  * the tier comes from the member, or from the operator's default, exactly as
  * it did before this ticket (`resolveTier` in `sale.ts`).
@@ -677,9 +691,7 @@ export async function resolveTierClaim(
       claim: null,
       refusal: {
         code: 'TIER_CLAIM_SPENT',
-        message:
-          'That document check has already been used on a sale — check the document again to ' +
-          'price this one',
+        message: spentClaimMessage(claim.approval !== null),
         details: { claimId: claim.id, saleId: claim.spentBySaleId },
       },
     };
@@ -733,10 +745,16 @@ export async function spendTierClaim(
     .where(and(eq(saleTierClaim.id, claimId), isNull(saleTierClaim.spentBySaleId)))
     .returning({ id: saleTierClaim.id });
   if (spent.length === 0) {
+    // Only on the refusal: which kind of claim it was decides what staff are
+    // told to do next.
+    const [row] = await tx
+      .select({ approvalReason: saleTierClaim.approvalReason })
+      .from(saleTierClaim)
+      .where(eq(saleTierClaim.id, claimId))
+      .limit(1);
     throw errors.conflict(
       'TIER_CLAIM_SPENT',
-      'That document check has already been used on a sale — check the document again to ' +
-        'price this one',
+      spentClaimMessage((row?.approvalReason ?? null) !== null),
       { claimId },
     );
   }

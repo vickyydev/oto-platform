@@ -5,6 +5,7 @@ import {
   auditLog,
   member,
   memberTierVerification,
+  operator,
   sale,
   saleTierClaim,
   station,
@@ -317,11 +318,116 @@ describe('SCRUM-772 — the approval prices this sale only', () => {
     const second = await commit();
     expect(second.statusCode, second.body).toBe(409);
     expect(second.json().error.code).toBe('TIER_CLAIM_SPENT');
+    // Told in the words of what was spent: no document was checked for this one.
+    expect(second.json().error.message).toContain('approval by hand');
+    expect(second.json().error.message).not.toContain('document check');
+
+    // The quote's refusal note says the same.
+    const quoted = await ctx.app.inject({
+      method: 'POST',
+      url: '/sales/quote',
+      headers: { cookie },
+      payload: { branchId, tierClaimActionId: actionId, lines: [line(1, 1)] },
+    });
+    expect(quoted.statusCode, quoted.body).toBe(200);
+    expect(quoted.json().tierClaimRefusal).toMatchObject({ code: 'TIER_CLAIM_SPENT' });
+    expect(quoted.json().tierClaimRefusal.message).toContain('approval by hand');
+  });
+});
+
+describe('SCRUM-772 — an approval does not carry a cart past the member check', () => {
+  /**
+   * A hand approval prices a cart that names a member, so the member is still
+   * looked up: archived since the till found them (SCRUM-273), or another
+   * operator's, the cart is refused as it is without an approval.
+   */
+  async function refusedFor(otherMemberId: string) {
+    const actionId = newId();
+    expect((await approve({ actionId, reason: 'thai_child_foreign_parent' })).statusCode).toBe(200);
+    const cartLine = line(1, 1);
+
+    const withoutClaim = await ctx.app.inject({
+      method: 'POST',
+      url: '/sales/quote',
+      headers: { cookie },
+      payload: { branchId, memberId: otherMemberId, lines: [cartLine] },
+    });
+    expect(withoutClaim.statusCode, withoutClaim.body).toBe(404);
+
+    const quoted = await ctx.app.inject({
+      method: 'POST',
+      url: '/sales/quote',
+      headers: { cookie },
+      payload: { branchId, memberId: otherMemberId, tierClaimActionId: actionId, lines: [cartLine] },
+    });
+    expect(quoted.statusCode, quoted.body).toBe(404);
+    expect(quoted.json().error.message).toBe('Member not found');
+
+    const saleId = newId();
+    const committed = await ctx.app.inject({
+      method: 'POST',
+      url: '/sales',
+      headers: { cookie },
+      payload: {
+        id: saleId,
+        stationId,
+        branchId,
+        memberId: otherMemberId,
+        tierClaimActionId: actionId,
+        lines: [cartLine],
+      },
+    });
+    expect(committed.statusCode, committed.body).toBe(404);
+    expect(committed.json().error.message).toBe('Member not found');
+
+    expect(await ctx.db.select().from(sale).where(eq(sale.id, saleId))).toHaveLength(0);
+    const [claimRow] = await ctx.db.select().from(saleTierClaim).where(eq(saleTierClaim.actionId, actionId));
+    expect(claimRow!.spentBySaleId).toBeNull();
+  }
+
+  it('refuses a member archived since the till found them', async () => {
+    const created = await ctx.app.inject({
+      method: 'POST',
+      url: '/members',
+      headers: { cookie },
+      payload: { phone: '0637720773', nickname: 'ZZ TEST Hand Approval Archived' },
+    });
+    expect(created.statusCode, created.body).toBeLessThan(300);
+    const archivedId = created.json().member.id as string;
+    await ctx.db.update(member).set({ archivedAt: new Date() }).where(eq(member.id, archivedId));
+    await refusedFor(archivedId);
+  });
+
+  it("refuses another operator's member", async () => {
+    const [other] = await ctx.db
+      .insert(operator)
+      .values({ id: newId(), name: 'ZZ TEST Other Park Co' })
+      .returning();
+    const [theirs] = await ctx.db
+      .insert(member)
+      .values({ id: newId(), operatorId: other!.id, phone: '+66637720774', nickname: 'ZZ TEST Other Guardian' })
+      .returning();
+    await refusedFor(theirs!.id);
   });
 });
 
 describe('SCRUM-772 — the Console count per staff member', () => {
   it('counts each account’s hand approvals, recent and in total', async () => {
+    // A document check by the same account, which the count must leave out.
+    const checked = await ctx.app.inject({
+      method: 'POST',
+      url: '/sales/tier-claims',
+      headers: { cookie },
+      payload: {
+        actionId: newId(),
+        branchId,
+        toTier: 'thai',
+        evidenceType: 'Passport',
+        evidenceExpiresAt: '2030-01-01',
+      },
+    });
+    expect(checked.statusCode, checked.body).toBe(200);
+
     const res = await ctx.app.inject({
       method: 'GET',
       url: '/sales/tier-approvals/by-staff',
@@ -336,10 +442,12 @@ describe('SCRUM-772 — the Console count per staff member', () => {
       .from(saleTierClaim)
       .where(eq(saleTierClaim.accountId, receptionAccountId));
     const approvals = rows.filter((row) => row.approvalReason !== null).length;
+    const documentChecks = rows.filter((row) => row.approvalReason === null).length;
     expect(approvals).toBeGreaterThan(0);
+    expect(documentChecks).toBeGreaterThan(0);
+    // Document checks are not counted: both figures are the hand approvals alone.
     expect(mine).toMatchObject({ recent: approvals, total: approvals, name: expect.any(String) });
-    // Document checks are not counted.
-    expect(rows.length).toBeGreaterThanOrEqual(approvals);
+    expect(mine.total).toBeLessThan(rows.length);
   });
 
   it('is a manager’s read, closed to the counter as the verification records are', async () => {
