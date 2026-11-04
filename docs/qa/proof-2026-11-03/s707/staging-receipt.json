@@ -1,0 +1,498 @@
+{
+  "unit": "SCRUM-707",
+  "liveCommit": "690d44dbfa31d8a3c487dfb3def0be9dfa3e105c",
+  "steps": {
+    "bare": {
+      "startedAt": "2026-11-04T00:35:52.932Z",
+      "branchId": "01a1a3d8-3671-7abe-9b6c-1971558e62bf",
+      "me": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "rowsBefore": 0,
+      "step1": {
+        "at": "2026-11-04T00:36:16.840Z",
+        "banner": true,
+        "button": true
+      },
+      "step2": {
+        "at": "2026-11-04T00:36:20.261Z",
+        "cards": [
+          "Edit Standard receipt",
+          "Edit Kids wristband",
+          "Edit Adult wristband",
+          "Edit Kitchen ticket",
+          "Edit Bar ticket",
+          "Edit Credit voucher"
+        ],
+        "bannerGone": true,
+        "buttonGone": true
+      },
+      "rowsAfterCreate": [
+        {
+          "id": "01a1a3fc-3a3a-7143-b63a-689e56a7770d",
+          "type": "receipt",
+          "name": "Standard receipt",
+          "footerText": null,
+          "updatedAt": "2026-11-04T00:36:18.616Z"
+        },
+        {
+          "id": "01a1a3fc-3a3c-7008-ae3b-76fc1f40a0d9",
+          "type": "kids_wristband",
+          "name": "Kids wristband",
+          "footerText": null,
+          "updatedAt": "2026-11-04T00:36:18.616Z"
+        },
+        {
+          "id": "01a1a3fc-3a3e-72b2-8686-8c5561d54335",
+          "type": "adult_wristband",
+          "name": "Adult wristband",
+          "footerText": null,
+          "updatedAt": "2026-11-04T00:36:18.616Z"
+        },
+        {
+          "id": "01a1a3fc-3a3f-7f9a-9c56-cb3345b822c8",
+          "type": "kitchen_ticket",
+          "name": "Kitchen ticket",
+          "footerText": null,
+          "updatedAt": "2026-11-04T00:36:18.616Z"
+        },
+        {
+          "id": "01a1a3fc-3a41-7192-b06e-1903429c84f5",
+          "type": "bar_ticket",
+          "name": "Bar ticket",
+          "footerText": null,
+          "updatedAt": "2026-11-04T00:36:18.616Z"
+        },
+        {
+          "id": "01a1a3fc-3a42-7b04-84d6-20ac71ac1703",
+          "type": "credit_voucher",
+          "name": "Credit voucher",
+          "footerText": null,
+          "updatedAt": "2026-11-04T00:36:18.616Z"
+        }
+      ],
+      "footerWords": "ZZ TEST footer kept by SCRUM-707",
+      "rowsAfterEdit": [
+        {
+          "id": "01a1a3fc-3a3a-7143-b63a-689e56a7770d",
+          "type": "receipt",
+          "footerText": "ZZ TEST footer kept by SCRUM-707",
+          "updatedAt": "2026-11-04T00:36:24.828Z"
+        },
+        {
+          "id": "01a1a3fc-3a3c-7008-ae3b-76fc1f40a0d9",
+          "type": "kids_wristband",
+          "footerText": null,
+          "updatedAt": "2026-11-04T00:36:18.616Z"
+        },
+        {
+          "id": "01a1a3fc-3a3e-72b2-8686-8c5561d54335",
+          "type": "adult_wristband",
+          "footerText": null,
+          "updatedAt": "2026-11-04T00:36:18.616Z"
+        },
+        {
+          "id": "01a1a3fc-3a3f-7f9a-9c56-cb3345b822c8",
+          "type": "kitchen_ticket",
+          "footerText": null,
+          "updatedAt": "2026-11-04T00:36:18.616Z"
+        },
+        {
+          "id": "01a1a3fc-3a41-7192-b06e-1903429c84f5",
+          "type": "bar_ticket",
+          "footerText": null,
+          "updatedAt": "2026-11-04T00:36:18.616Z"
+        },
+        {
+          "id": "01a1a3fc-3a42-7b04-84d6-20ac71ac1703",
+          "type": "credit_voucher",
+          "footerText": null,
+          "updatedAt": "2026-11-04T00:36:18.616Z"
+        }
+      ],
+      "step6": {
+        "at": "2026-11-04T00:36:25.936Z",
+        "saved": true
+      },
+      "step5": {
+        "at": "2026-11-04T00:36:26.408Z",
+        "status": 200,
+        "created": [],
+        "rows": [
+          {
+            "id": "01a1a3fc-3a3a-7143-b63a-689e56a7770d",
+            "type": "receipt",
+            "footerText": "ZZ TEST footer kept by SCRUM-707",
+            "updatedAt": "2026-11-04T00:36:24.828Z"
+          },
+          {
+            "id": "01a1a3fc-3a3c-7008-ae3b-76fc1f40a0d9",
+            "type": "kids_wristband",
+            "footerText": null,
+            "updatedAt": "2026-11-04T00:36:18.616Z"
+          },
+          {
+            "id": "01a1a3fc-3a3e-72b2-8686-8c5561d54335",
+            "type": "adult_wristband",
+            "footerText": null,
+            "updatedAt": "2026-11-04T00:36:18.616Z"
+          },
+          {
+            "id": "01a1a3fc-3a3f-7f9a-9c56-cb3345b822c8",
+            "type": "kitchen_ticket",
+            "footerText": null,
+            "updatedAt": "2026-11-04T00:36:18.616Z"
+          },
+          {
+            "id": "01a1a3fc-3a41-7192-b06e-1903429c84f5",
+            "type": "bar_ticket",
+            "footerText": null,
+            "updatedAt": "2026-11-04T00:36:18.616Z"
+          },
+          {
+            "id": "01a1a3fc-3a42-7b04-84d6-20ac71ac1703",
+            "type": "credit_voucher",
+            "footerText": null,
+            "updatedAt": "2026-11-04T00:36:18.616Z"
+          }
+        ],
+        "rowsUnchanged": true,
+        "footerKept": true
+      },
+      "afterReplayPanel": {
+        "banner": 0,
+        "button": 0,
+        "cards": 6,
+        "footerInEditor": "ZZ TEST footer kept by SCRUM-707"
+      },
+      "text": "Home operator: OTO\n\nOPERATOR\nCurrent operator not confirmed\nOTO\nSecond Operator\n\nAdmin · Catalogue & money\n\nPrint templates\nSaved print layouts, draft previews and separately authorized test prints.\nPark\nOto Play Park, Central Floresta\nOto Play Park, Robinson Chalong\nDemo Branch 2\nZZ TEST Print Bare\nStation\nPick a station\nAll templates\nStandard receipt\nReceipt\n\nCustomer receipt printed at checkout.\n\nTop\nThe head of the paper\nLogo\nPrint the Oto mark at the top.\nHeader text\nPrinted large under the logo. Leave it empty to print none.\nBody\nWhat this printout says, in print order\n3 of 3 shown\nItemized lines\nList each item with quantity and price.\nTax & service breakdown\nSubtotal, service charge, tax and total from the tax engine.\nCredit grants issued\nSummarize credit grants and item entitlements issued by this sale.\nBottom\nThe foot of the paper\nFooter text\nPrinted small under a dashed rule. Leave it empty to print none.\nMore options\nTemplate name\nTEMPLATE NAME\nHow this template is listed here. It is not printed.\nLIVE PREVIEW\nSample\nTest print sample\nSimple sale\nFuller sale\nLong names\nFit\n100%\n200%\nDrawing this printout…\nPrint test\nFinding this station’s printer…",
+      "finishedAt": "2026-11-04T00:36:38.188Z"
+    },
+    "newBranch": {
+      "startedAt": "2026-11-04T00:37:07.980Z",
+      "name": "ZZ TEST Print New",
+      "codeShown": "zz-test-print-new",
+      "timezoneShown": "Asia/Bangkok",
+      "createdAt": "2026-11-04T00:37:27.265Z",
+      "branchId": "01a1a3fd-3c96-7c72-8f16-ece578651c6a",
+      "code": "zz-test-print-new",
+      "rows": [
+        {
+          "id": "01a1a3fd-3ca0-7b67-bda3-dc360b1c9ec4",
+          "type": "receipt",
+          "name": "Standard receipt",
+          "updatedAt": "2026-11-04T00:37:24.758Z"
+        },
+        {
+          "id": "01a1a3fd-3ca2-7fad-888a-7da9241a8acd",
+          "type": "kids_wristband",
+          "name": "Kids wristband",
+          "updatedAt": "2026-11-04T00:37:24.758Z"
+        },
+        {
+          "id": "01a1a3fd-3ca4-71e2-a130-e8551b8c6de2",
+          "type": "adult_wristband",
+          "name": "Adult wristband",
+          "updatedAt": "2026-11-04T00:37:24.758Z"
+        },
+        {
+          "id": "01a1a3fd-3ca6-7c5f-af89-239b986429fa",
+          "type": "kitchen_ticket",
+          "name": "Kitchen ticket",
+          "updatedAt": "2026-11-04T00:37:24.758Z"
+        },
+        {
+          "id": "01a1a3fd-3ca8-7fd7-88d9-23a12b0fd012",
+          "type": "bar_ticket",
+          "name": "Bar ticket",
+          "updatedAt": "2026-11-04T00:37:24.758Z"
+        },
+        {
+          "id": "01a1a3fd-3ca9-7174-aeaa-ea065f6c2e90",
+          "type": "credit_voucher",
+          "name": "Credit voucher",
+          "updatedAt": "2026-11-04T00:37:24.758Z"
+        }
+      ],
+      "panel": {
+        "banner": 0,
+        "missingLine": 0,
+        "button": 0,
+        "cards": [
+          "Edit Standard receipt",
+          "Edit Kids wristband",
+          "Edit Adult wristband",
+          "Edit Kitchen ticket",
+          "Edit Bar ticket",
+          "Edit Credit voucher"
+        ],
+        "at": "2026-11-04T00:37:41.341Z"
+      },
+      "bareFooterInEditor": "ZZ TEST footer kept by SCRUM-707",
+      "finishedAt": "2026-11-04T00:37:58.446Z"
+    },
+    "audit": {
+      "startedAt": "2026-11-04T00:38:33.119Z",
+      "actorAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "bare": {
+        "status": 200,
+        "total": 10,
+        "actions": {
+          "print_template.update": 1,
+          "print_template.create": 6,
+          "nanny_duty.sync": 1,
+          "branch.create": 1,
+          "branch.oto_app_map": 1
+        },
+        "templateCreates": 6,
+        "createTypes": [
+          "adult_wristband",
+          "bar_ticket",
+          "credit_voucher",
+          "kids_wristband",
+          "kitchen_ticket",
+          "receipt"
+        ],
+        "createActors": [
+          "01a0bbdc-8c64-7283-aa3b-2af7e79c525d"
+        ],
+        "actorIsSignedInAdmin": true,
+        "rows": [
+          {
+            "action": "print_template.update",
+            "entityType": "print_template",
+            "entityId": "01a1a3fc-3a3a-7143-b63a-689e56a7770d",
+            "actor": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+            "actorName": "Khun Anan (Owner)",
+            "at": "2026-11-04T00:36:24.828Z",
+            "type": "receipt"
+          },
+          {
+            "action": "print_template.create",
+            "entityType": "print_template",
+            "entityId": "01a1a3fc-3a42-7b04-84d6-20ac71ac1703",
+            "actor": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+            "actorName": "Khun Anan (Owner)",
+            "at": "2026-11-04T00:36:18.616Z",
+            "type": "credit_voucher"
+          },
+          {
+            "action": "print_template.create",
+            "entityType": "print_template",
+            "entityId": "01a1a3fc-3a41-7192-b06e-1903429c84f5",
+            "actor": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+            "actorName": "Khun Anan (Owner)",
+            "at": "2026-11-04T00:36:18.616Z",
+            "type": "bar_ticket"
+          },
+          {
+            "action": "print_template.create",
+            "entityType": "print_template",
+            "entityId": "01a1a3fc-3a3f-7f9a-9c56-cb3345b822c8",
+            "actor": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+            "actorName": "Khun Anan (Owner)",
+            "at": "2026-11-04T00:36:18.616Z",
+            "type": "kitchen_ticket"
+          },
+          {
+            "action": "print_template.create",
+            "entityType": "print_template",
+            "entityId": "01a1a3fc-3a3e-72b2-8686-8c5561d54335",
+            "actor": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+            "actorName": "Khun Anan (Owner)",
+            "at": "2026-11-04T00:36:18.616Z",
+            "type": "adult_wristband"
+          },
+          {
+            "action": "print_template.create",
+            "entityType": "print_template",
+            "entityId": "01a1a3fc-3a3c-7008-ae3b-76fc1f40a0d9",
+            "actor": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+            "actorName": "Khun Anan (Owner)",
+            "at": "2026-11-04T00:36:18.616Z",
+            "type": "kids_wristband"
+          },
+          {
+            "action": "print_template.create",
+            "entityType": "print_template",
+            "entityId": "01a1a3fc-3a3a-7143-b63a-689e56a7770d",
+            "actor": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+            "actorName": "Khun Anan (Owner)",
+            "at": "2026-11-04T00:36:18.616Z",
+            "type": "receipt"
+          },
+          {
+            "action": "nanny_duty.sync",
+            "entityType": "branch",
+            "entityId": "01a1a3d8-3671-7abe-9b6c-1971558e62bf",
+            "actor": null,
+            "actorName": null,
+            "at": "2026-11-03T23:57:57.888Z",
+            "type": null
+          },
+          {
+            "action": "branch.create",
+            "entityType": "branch",
+            "entityId": "01a1a3d8-3671-7abe-9b6c-1971558e62bf",
+            "actor": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+            "actorName": "Khun Anan (Owner)",
+            "at": "2026-11-03T23:56:58.353Z",
+            "type": null
+          },
+          {
+            "action": "branch.oto_app_map",
+            "entityType": "otoapp_branch",
+            "entityId": "01a1a3d8-3676-7b3b-b4b8-9b6a5e0f073d",
+            "actor": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+            "actorName": "Khun Anan (Owner)",
+            "at": "2026-11-03T23:56:58.353Z",
+            "type": null
+          }
+        ],
+        "activityPage": {
+          "branchFilter": false,
+          "text": "Home operator: OTO\n\nOPERATOR\nCurrent operator not confirmed\nOTO\nSecond Operator\n\nAdmin · Central Floresta\n\nActivity\nThe audit log: who did what, to what, from where, and whether it went through.\nevery change, who and when\nEverything\nData access\nDenials\nAdmin log\nStaff log\nSign-in log\nRefresh\nExport format\nCSV\nNDJSON\nExport\nFilters\nClear filters\nACTION\nACTOR\nAnyone\nNok Manager\nzz-readiness-check\nZZ Audit TempPw\nKhun Dao (Manager)\nEvidence Code Hash\nZZ TEST Staff\nSCRUM-465 PROBE d52d65e9 Branch Manager\nSCRUM-465 PROBE 573d9e2a Branch Manager\nSCRUM-465 FOREIGN PROBE 0843b713 Manager\nSCRUM-465 FOREIGN PROBE b925c448 Manager\nSCRUM-465 FOREIGN PROBE b0bedfc6 Manager\nSCRUM-465 FOREIGN PROBE f977e29b Manager\nSCRUM-465 FOREIGN PROBE 44116b03 Manager\nZZ SCRUM193 TENANT 50b4dff9 Admin\nZZ SCRUM193 TENANT 2d39977f Admin\nZZ SCRUM193 TENANT 897bbae2 Admin\nZZ SCRUM193 TENANT 9862d7f3 Admin\nNok (Reception)\nZZ TEST Advisor WA\nZZ TEST User WA\nZZ TEST Owner\nDemo Anya (Birthdays EN/RU)\nDemo Vera (Birthdays EN/RU backup)\nDemo Fon (Birthdays TH)\nDemo Pim (Birthdays TH backup)\nDemo Mila (Marketing)\nDemo Hana (GM)\nYaroslav\nKhun Lek (Manager)\nKhun Anan (Owner)\nSom (Reception)\nZZ TEST SCRUM-673 mvzucpi4 appr"
+        }
+      },
+      "new": {
+        "status": 200,
+        "total": 8,
+        "actions": {
+          "branch.create": 1,
+          "print_template.create": 6,
+          "branch.oto_app_map": 1
+        },
+        "templateCreates": 6,
+        "createTypes": [
+          "adult_wristband",
+          "bar_ticket",
+          "credit_voucher",
+          "kids_wristband",
+          "kitchen_ticket",
+          "receipt"
+        ],
+        "createActors": [
+          "01a0bbdc-8c64-7283-aa3b-2af7e79c525d"
+        ],
+        "actorIsSignedInAdmin": true,
+        "rows": [
+          {
+            "action": "branch.create",
+            "entityType": "branch",
+            "entityId": "01a1a3fd-3c96-7c72-8f16-ece578651c6a",
+            "actor": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+            "actorName": "Khun Anan (Owner)",
+            "at": "2026-11-04T00:37:24.758Z",
+            "type": null
+          },
+          {
+            "action": "print_template.create",
+            "entityType": "print_template",
+            "entityId": "01a1a3fd-3ca9-7174-aeaa-ea065f6c2e90",
+            "actor": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+            "actorName": "Khun Anan (Owner)",
+            "at": "2026-11-04T00:37:24.758Z",
+            "type": "credit_voucher"
+          },
+          {
+            "action": "print_template.create",
+            "entityType": "print_template",
+            "entityId": "01a1a3fd-3ca8-7fd7-88d9-23a12b0fd012",
+            "actor": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+            "actorName": "Khun Anan (Owner)",
+            "at": "2026-11-04T00:37:24.758Z",
+            "type": "bar_ticket"
+          },
+          {
+            "action": "print_template.create",
+            "entityType": "print_template",
+            "entityId": "01a1a3fd-3ca6-7c5f-af89-239b986429fa",
+            "actor": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+            "actorName": "Khun Anan (Owner)",
+            "at": "2026-11-04T00:37:24.758Z",
+            "type": "kitchen_ticket"
+          },
+          {
+            "action": "print_template.create",
+            "entityType": "print_template",
+            "entityId": "01a1a3fd-3ca4-71e2-a130-e8551b8c6de2",
+            "actor": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+            "actorName": "Khun Anan (Owner)",
+            "at": "2026-11-04T00:37:24.758Z",
+            "type": "adult_wristband"
+          },
+          {
+            "action": "print_template.create",
+            "entityType": "print_template",
+            "entityId": "01a1a3fd-3ca2-7fad-888a-7da9241a8acd",
+            "actor": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+            "actorName": "Khun Anan (Owner)",
+            "at": "2026-11-04T00:37:24.758Z",
+            "type": "kids_wristband"
+          },
+          {
+            "action": "print_template.create",
+            "entityType": "print_template",
+            "entityId": "01a1a3fd-3ca0-7b67-bda3-dc360b1c9ec4",
+            "actor": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+            "actorName": "Khun Anan (Owner)",
+            "at": "2026-11-04T00:37:24.758Z",
+            "type": "receipt"
+          },
+          {
+            "action": "branch.oto_app_map",
+            "entityType": "otoapp_branch",
+            "entityId": "01a1a3fd-3c9c-7cb3-98a3-a4e849be24c5",
+            "actor": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+            "actorName": "Khun Anan (Owner)",
+            "at": "2026-11-04T00:37:24.758Z",
+            "type": null
+          }
+        ],
+        "activityPage": {
+          "branchFilter": true,
+          "text": "Home operator: OTO\n\nOPERATOR\nCurrent operator not confirmed\nOTO\nSecond Operator\n\nAdmin · Central Floresta\n\nActivity\nThe audit log: who did what, to what, from where, and whether it went through.\nevery change, who and when\nEverything\nData access\nDenials\nAdmin log\nStaff log\nSign-in log\nRefresh\nExport format\nCSV\nNDJSON\nExport\nFilters\nClear filters\nACTION\nACTOR\nAnyone\nNok Manager\nzz-readiness-check\nZZ Audit TempPw\nKhun Dao (Manager)\nEvidence Code Hash\nZZ TEST Staff\nSCRUM-465 PROBE d52d65e9 Branch Manager\nSCRUM-465 PROBE 573d9e2a Branch Manager\nSCRUM-465 FOREIGN PROBE 0843b713 Manager\nSCRUM-465 FOREIGN PROBE b925c448 Manager\nSCRUM-465 FOREIGN PROBE b0bedfc6 Manager\nSCRUM-465 FOREIGN PROBE f977e29b Manager\nSCRUM-465 FOREIGN PROBE 44116b03 Manager\nZZ SCRUM193 TENANT 50b4dff9 Admin\nZZ SCRUM193 TENANT 2d39977f Admin\nZZ SCRUM193 TENANT 897bbae2 Admin\nZZ SCRUM193 TENANT 9862d7f3 Admin\nNok (Reception)\nZZ TEST Advisor WA\nZZ TEST User WA\nZZ TEST Owner\nDemo Anya (Birthdays EN/RU)\nDemo Vera (Birthdays EN/RU backup)\nDemo Fon (Birthdays TH)\nDemo Pim (Birthdays TH backup)\nDemo Mila (Marketing)\nDemo Hana (GM)\nYaroslav\nKhun Lek (Manager)\nKhun Anan (Owner)\nSom (Reception)\nZZ TEST SCRUM-673 mvzucpi4 appr"
+        }
+      },
+      "finishedAt": "2026-11-04T00:38:58.312Z"
+    }
+  },
+  "cleanup": {
+    "startedAt": "2026-11-04T00:39:27.880Z",
+    "archived": [
+      {
+        "id": "01a1a3d8-3671-7abe-9b6c-1971558e62bf",
+        "name": "ZZ TEST Print Bare",
+        "patchStatus": 200,
+        "patchBody": {
+          "ok": true,
+          "otoApp": null
+        },
+        "archivedNow": true,
+        "inActiveList": false,
+        "mappingBefore": {
+          "status": "SUCCESS",
+          "appBranchId": "01a1a3d8-3676-7b3b-b4b8-9b6a5e0f073d",
+          "appBranchName": "ZZ TEST Print Bare"
+        },
+        "mappingAfter": null
+      },
+      {
+        "id": "01a1a3fd-3c96-7c72-8f16-ece578651c6a",
+        "name": "ZZ TEST Print New",
+        "patchStatus": 200,
+        "patchBody": {
+          "ok": true,
+          "otoApp": null
+        },
+        "archivedNow": true,
+        "inActiveList": false,
+        "mappingBefore": {
+          "status": "SUCCESS",
+          "appBranchId": "01a1a3fd-3c9c-7cb3-98a3-a4e849be24c5",
+          "appBranchName": "ZZ TEST Print New"
+        },
+        "mappingAfter": null
+      }
+    ],
+    "finishedAt": "2026-11-04T00:39:44.909Z"
+  }
+}

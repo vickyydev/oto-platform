@@ -1,0 +1,30 @@
+// SCRUM-707 staging proof, part D: archive exactly the two ZZ branches this proof used, and read back.
+import { BARE_ID, receipt, save, consoleSession, api } from './common.mjs';
+
+const r = receipt();
+const NEW_ID = r.steps.newBranch.branchId;
+const D = (r.cleanup = { startedAt: new Date().toISOString(), archived: [] });
+const { browser, page } = await consoleSession();
+try {
+  const mapRow = async (id) => {
+    const m = await api(page, 'GET', '/branches/oto-app');
+    const row = (m.body?.branches ?? []).find((b) => b.branchId === id);
+    return row ? { status: row.status ?? row.state ?? null, appBranchId: row.appBranchId ?? null, appBranchName: row.appBranchName ?? null } : null;
+  };
+  for (const [id, name] of [[BARE_ID, 'ZZ TEST Print Bare'], [NEW_ID, 'ZZ TEST Print New']]) {
+    const list = await api(page, 'GET', '/branches?includeArchived=true');
+    const row = (list.body?.branches ?? []).find((b) => b.id === id);
+    if (!row || row.name !== name || !name.startsWith('ZZ TEST')) throw new Error('Refusing: ' + id + ' is not ' + name);
+    const mappingBefore = await mapRow(id);
+    let res = { status: 'already archived' };
+    if (!row.archived) res = await api(page, 'PATCH', `/branches/${id}`, { archived: true, confirmName: name });
+    const back = (await api(page, 'GET', '/branches?includeArchived=true')).body.branches.find((b) => b.id === id);
+    const active = (await api(page, 'GET', '/branches')).body.branches.some((b) => b.id === id);
+    D.archived.push({ id, name, patchStatus: res.status, patchBody: res.body ?? null, archivedNow: back?.archived === true, inActiveList: active, mappingBefore, mappingAfter: await mapRow(id) });
+  }
+  D.finishedAt = new Date().toISOString();
+  save(r);
+  console.log(JSON.stringify(D, null, 2));
+} finally {
+  await browser.close();
+}

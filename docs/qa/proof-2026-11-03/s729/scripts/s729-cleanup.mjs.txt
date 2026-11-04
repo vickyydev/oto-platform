@@ -1,0 +1,62 @@
+// SCRUM-729 cleanup: no sale on either ZZ TEST till; revoke check; archive both tills, the dish and its category; read back.
+import { consoleSession, api } from './common.mjs';
+import { readFileSync, writeFileSync } from 'node:fs';
+
+const FIX = 'C:/oto-lanes/pos-small-20261103/docs/qa/proof-2026-11-03/s729/staging-fixture.json';
+const rec = JSON.parse(readFileSync(FIX, 'utf8'));
+const f = rec.fixtures;
+const C = (rec.cleanup = { startedAt: new Date().toISOString() });
+const save = () => writeFileSync(FIX, JSON.stringify(rec, null, 2) + '\n');
+const { browser, page } = await consoleSession();
+try {
+  // Shop: is there a ZZ TEST shop item on staging?
+  const menu = await api(page, 'GET', `/branches/${f.branchId}/menu`);
+  C.zzShopItems = (menu.body?.products ?? []).filter((p) => /^ZZ TEST/i.test(p.name) && p.kind !== 'menu').map((p) => ({ name: p.name, kind: p.kind }));
+  // No sale on either till.
+  C.sales = {};
+  for (const id of [f.stationId, f.idleStationId]) {
+    const s = await api(page, 'GET', `/sales?branchId=${f.branchId}&stationId=${id}&limit=50`);
+    C.sales[id] = { status: s.status, count: (s.body?.sales ?? []).length };
+  }
+  // Displays on both tills: none left.
+  C.displaysBefore = {};
+  for (const id of [f.stationId, f.idleStationId]) {
+    const d = await api(page, 'GET', `/stations/${id}/displays`);
+    C.displaysBefore[id] = (d.body?.displays ?? []).map((x) => ({ id: x.id, name: x.name, connected: x.connected }));
+  }
+  // Archive the two tills (names checked first), the dish and its category.
+  C.archive = [];
+  for (const [id, name] of [[f.stationId, f.stationName], [f.idleStationId, f.idleStationName]]) {
+    const own = (await api(page, 'GET', `/stations/${id}`)).body?.station;
+    if (!own || own.name !== name || !name.startsWith('ZZ TEST SCRUM-729')) throw new Error('Refusing to archive ' + id);
+    const del = await api(page, 'DELETE', `/stations/${id}`);
+    C.archive.push({ what: 'station', id, name, status: del.status, body: del.status === 200 ? null : del.body });
+  }
+  const delP = await api(page, 'DELETE', `/branches/${f.branchId}/menu/products/${f.productId}`);
+  C.archive.push({ what: 'product', id: f.productId, status: delP.status, body: delP.status === 200 ? null : delP.body });
+  const delC = await api(page, 'DELETE', `/menu/categories/${f.categoryId}`);
+  C.archive.push({ what: 'category', id: f.categoryId, status: delC.status, body: delC.status === 200 ? null : delC.body });
+  // Read back.
+  const all = await api(page, 'GET', `/branches/${f.branchId}/menu?includeArchived=true`);
+  const product = (all.body?.products ?? []).find((p) => p.id === f.productId);
+  const category = (all.body?.categories ?? []).find((c) => c.id === f.categoryId);
+  const active = await api(page, 'GET', `/branches/${f.branchId}/menu`);
+  const stations = (await api(page, 'GET', `/branches/${f.branchId}/stations?includeArchived=true`)).body?.stations ?? [];
+  C.readBack = {
+    at: new Date().toISOString(),
+    productArchived: !!product?.archivedAt && product?.active === false,
+    categoryArchived: !!category?.archivedAt,
+    absentFromActiveMenu: !(active.body?.products ?? []).some((p) => p.id === f.productId) && !(active.body?.categories ?? []).some((c) => c.id === f.categoryId),
+    stationsArchived: [f.stationId, f.idleStationId].map((id) => ({ id, archived: stations.find((s) => s.id === id)?.archived ?? null })),
+    otherTillsUntouched: stations.filter((s) => /Till 1 \(Pi\)|Till 2 \(test\)|FWBooth1/.test(s.name)).map((s) => ({ name: s.name, archived: s.archived })),
+  };
+  C.finishedAt = new Date().toISOString();
+  save();
+  console.log(JSON.stringify(C, null, 2));
+} catch (e) {
+  C.error = String(e?.message ?? e).slice(0, 500);
+  save();
+  console.log('ERROR', C.error);
+} finally {
+  await browser.close();
+}

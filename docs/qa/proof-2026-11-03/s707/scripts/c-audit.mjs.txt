@@ -1,0 +1,50 @@
+// SCRUM-707 staging proof, part C: the audit rows for both ZZ branches, read back and shown on Activity.
+import { OUT, BARE_ID, CONSOLE, receipt, save, consoleSession, api, mainText } from './common.mjs';
+
+const r = receipt();
+const NEW_ID = r.steps.newBranch.branchId;
+const C = (r.steps.audit = { startedAt: new Date().toISOString() });
+const { browser, page } = await consoleSession();
+try {
+  const me = await api(page, 'GET', '/me');
+  C.actorAccountId = me.body?.account?.id ?? null;
+  for (const [label, id] of [['bare', BARE_ID], ['new', NEW_ID]]) {
+    const a = await api(page, 'GET', `/audit?branchId=${id}&limit=100`);
+    const rows = (a.body?.entries ?? []).map((e) => ({ action: e.action, entityType: e.entityType, entityId: e.entityId, actor: e.actorAccountId, actorName: e.actorName, at: e.createdAt, type: e.after?.type ?? null }));
+    const creates = rows.filter((x) => x.action === 'print_template.create');
+    C[label] = {
+      status: a.status,
+      total: rows.length,
+      actions: rows.reduce((m, x) => ((m[x.action] = (m[x.action] ?? 0) + 1), m), {}),
+      templateCreates: creates.length,
+      createTypes: creates.map((x) => x.type).sort(),
+      createActors: [...new Set(creates.map((x) => x.actor))],
+      actorIsSignedInAdmin: creates.every((x) => x.actor === C.actorAccountId),
+      rows,
+    };
+  }
+  save(r);
+
+  // As a person reads it: Watch → Activity, action print_template.create, one branch at a time.
+  await page.goto(`${CONSOLE}/watch/activity`, { waitUntil: 'domcontentloaded' });
+  await page.getByPlaceholder('member.update').waitFor({ timeout: 30000 });
+  await page.getByPlaceholder('member.update').fill('print_template.create');
+  for (const [label, name] of [['bare', 'ZZ TEST Print Bare'], ['new', 'ZZ TEST Print New']]) {
+    const branchSelect = page.locator('select').filter({ has: page.locator('option', { hasText: name }) }).first();
+    const has = await branchSelect.count();
+    if (has) await branchSelect.selectOption({ label: name });
+    await page.waitForTimeout(5000);
+    C[label].activityPage = { branchFilter: !!has, text: (await mainText(page)).slice(0, 1200) };
+    await page.screenshot({ path: `${OUT}/s707-0${label === 'bare' ? 8 : 9}-activity-${label}-branch-template-rows.png`, fullPage: false });
+  }
+  C.finishedAt = new Date().toISOString();
+  save(r);
+  const brief = (x) => ({ status: x.status, total: x.total, actions: x.actions, templateCreates: x.templateCreates, createTypes: x.createTypes, actorIsSignedInAdmin: x.actorIsSignedInAdmin, branchFilter: x.activityPage?.branchFilter });
+  console.log(JSON.stringify({ bare: brief(C.bare), new: brief(C.new) }, null, 2));
+} catch (e) {
+  C.error = String(e?.message ?? e).slice(0, 500);
+  save(r);
+  console.log('ERROR', C.error, '\n', await mainText(page));
+} finally {
+  await browser.close();
+}

@@ -1,0 +1,16 @@
+Checked on staging on 4 November 2026 between 07:43 and 07:50 Bangkok, after the deploy, on live commit 690d44db, in the POS at oto-pos-web-staging. A test till "ZZ TEST SCRUM-729 ... till" was used, with the customer display shown beside the staff screen. No payment was taken and no sale was written.
+
+What a person sees now:
+- A walk-in ticket for 2 kids and 2 adults puts Kids, Adults and VAT included on the customer display in English.
+- The language button on the display, set to Thai (ไทย), shows เด็ก, ผู้ใหญ่ and รวมภาษีมูลค่าเพิ่ม.
+- Set to Russian (Русский), it shows Дети, Взрослые and Включая НДС.
+- The staff screen beside it stays in English the whole time: Kids, Adults, VAT included, Current Order, Total.
+- Set back to English, the display shows the same words as before.
+- F&B in Russian with a test dish ordered twice: the price line reads "฿50 за шт. × 2" and the tax row reads Включая НДС.
+- A separate paired screen at /display, with Russian chosen on that screen, shows "Добро пожаловать в OTO Park" when nothing is happening at its till. Its set-up screen with the pairing code stays in English on purpose (the code is blanked in the picture).
+
+Not shown: the Shop screen. The only test shop item on staging belongs to an earlier check, and this check used only its own test records.
+
+Cleanup: the order was cancelled. Both test tills, the test dish and its category were archived, and the three test display pairings were revoked. Neither test till has a sale.
+
+How to retest: on the POS, choose Skip - walk-in (Tourist), then Tourist, then a ticket. Keep at least one kid and one adult. On the customer side, press the language button and choose ไทย, then Русский, then English. The Kids and Adults rows and the VAT line change with each choice, and the staff side stays in English. Press Cancel when you finish.

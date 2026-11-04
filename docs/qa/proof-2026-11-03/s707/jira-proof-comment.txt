@@ -1,0 +1,15 @@
+Checked on staging on 4 November 2026 between 07:36 and 07:39 Bangkok, after the deploy, on live commit 690d44db (API, POS and Console all run it). Signed in to the staging Console as the admin account (Khun Anan). Only test branches named ZZ TEST were used.
+
+What a person can do now:
+- A branch opened before this change, with no print templates (test branch "ZZ TEST Print Bare"), shows a note on Catalogue > Print templates: "This branch has no saved print templates yet. It prints every section until one is saved." Beside it is a "Create missing templates" button.
+- Pressing the button gives the branch its six templates: Standard receipt, Kids wristband, Adult wristband, Kitchen ticket, Bar ticket and Credit voucher. The note goes away.
+- Each template opens and can be edited. The receipt's footer was changed to "ZZ TEST footer kept by SCRUM-707" and saved.
+- Running "create missing" again for the same branch created nothing, and the saved footer stayed as it was.
+- A branch opened now on Organisation > Branches (test branch "ZZ TEST Print New") has all six templates at once, with no note and no button.
+- Watch > Activity shows six "print_template.create" rows for each test branch, one per printout, by the person who pressed the button or opened the branch.
+
+The real branches were left alone. Robinson Chalong already had its six templates. Demo Branch 2 still has none, and nothing fills it automatically. Pressing the button there is the owner's decision.
+
+Cleanup: both test branches were archived afterwards and no longer appear in branch pickers.
+
+How to retest: in the Console, open Organisation > Branches and add a test branch. Open Catalogue > Print templates and choose that branch. All six cards should be there with no note. Open one card, change its footer and save, then come back to it: the footer is unchanged. To see the button, choose a branch that has no templates yet. Archive the test branch when you finish.

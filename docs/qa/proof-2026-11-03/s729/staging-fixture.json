@@ -1,0 +1,279 @@
+{
+  "unit": "SCRUM-729",
+  "liveCommit": "690d44dbfa31d8a3c487dfb3def0be9dfa3e105c",
+  "startedAt": "2026-11-04T00:41:33.112Z",
+  "name": "ZZ TEST SCRUM-729 mw1e5qd4",
+  "fixtures": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "branchName": "Oto Play Park, Central Floresta",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "boxName": "Virtual box 1",
+    "categoryId": "01a1a401-3dea-7b8c-8b98-27872adc4b63",
+    "productName": "ZZ TEST SCRUM-729 mw1e5qd4 rice",
+    "productId": "01a1a401-3faf-7d76-b9b7-d067062a57e1",
+    "stationId": "01a1a401-450d-7651-bec3-8c39d8a46c6c",
+    "stationName": "ZZ TEST SCRUM-729 mw1e5qd4 till",
+    "stationReady": true,
+    "displayCredentialId": "01a1a405-f629-7914-8794-e56bd001ebde",
+    "displayName": "ZZ TEST SCRUM-729 screen",
+    "displayCredentials": [
+      "01a1a405-f629-7914-8794-e56bd001ebde",
+      "01a1a408-fa08-71f0-9ffc-5d9dd28ba759",
+      "01a1a409-2488-7745-be04-0012cb438c61"
+    ],
+    "idleStationId": "01a1a408-f703-7a8e-a826-fe5b66485e78",
+    "idleStationName": "ZZ TEST SCRUM-729 mw1e5qd4 idle till"
+  },
+  "createdAt": "2026-11-04T00:41:48.161Z",
+  "walk": {
+    "startedAt": "2026-11-04T00:44:23.424Z",
+    "shots": [
+      "s729-01-english-before.png",
+      "s729-02-russian-display-english-staff.png",
+      "s729-03-thai-display-english-staff.png",
+      "s729-04-english-after.png"
+    ],
+    "checks": {
+      "s729-01-english-before": {
+        "at": "2026-11-04T00:44:38.658Z",
+        "display Kids Adults VAT included": true
+      },
+      "s729-02-russian-display-english-staff": {
+        "at": "2026-11-04T00:44:41.322Z",
+        "display Дети Взрослые Включая НДС": true,
+        "staff still English": true,
+        "display has no English Kids/Adults/VAT included": true
+      },
+      "s729-03-thai-display-english-staff": {
+        "at": "2026-11-04T00:44:43.952Z",
+        "display เด็ก ผู้ใหญ่ รวมภาษีมูลค่าเพิ่ม": true,
+        "staff still English": true,
+        "display has no English Kids/Adults/VAT included": true
+      },
+      "s729-04-english-after": {
+        "at": "2026-11-04T00:44:46.576Z",
+        "display Kids Adults VAT included": true
+      }
+    },
+    "identity": {
+      "name": "Khun Anan (Owner)",
+      "branch": "Oto Play Park, Central Floresta",
+      "station": null
+    },
+    "headerStation": "ZZ TEST SCRUM-729 mw1e5qd4 till",
+    "englishBeforeDisplay": "English\nO\nOto Play Park\nYour Order\n1 Hour Play\n฿2080\nKids2 × ฿690\n฿1380\nAdults2 × ฿350\n฿700\nVAT included\n฿136.07\nTotal\n฿2080",
+    "staffBefore": "Configure: 1 Hour Play\nBack to tickets\nParticipants\nKids\nRequires adult supervision\n2\nAdults\nReceives F&B credit\n2\nExtras & Add-ons\nBracelet Workshop\n+฿150\n0\nZZ TEST Addon 496\n+฿5\n0\nRegular Socks\n+฿50\nOut of stock\n0\nGrip Socks\n+฿80\nSizes\nLocker Rental\n+฿100\nOut of stock\n0\nRefillable Drink Cup\n+฿150\nOut of stock\n0\nGlow Band\n+฿60\nOut of stock\n0\nAdd Another Ticket\nContinue\nCurrent Order\nTOURIST\n1 Hour Play\nEDITING\n฿2080\nKids\n฿690 each\n2\nAdults\n฿350 each\n2\nRegular Socks\n฿0 each\n0\nApply\nRedeem\nIssue a voucher…\nAdd manual discount\nSubtotal\n฿2080\nVAT included\n฿136.07\nTotal\n฿2080\nCancel\nPay ฿2080",
+    "russianDisplay": "Русский\nO\nOto Play Park\nВаш заказ\nИгра 1 час\n฿2080\nДети2 × ฿690\n฿1380\nВзрослые2 × ฿350\n฿700\nВключая НДС\n฿136.07\nИтого\n฿2080",
+    "staffInRussian": "Configure: 1 Hour Play\nBack to tickets\nParticipants\nKids\nRequires adult supervision\n2\nAdults\nReceives F&B credit\n2\nExtras & Add-ons\nBracelet Workshop\n+฿150\n0\nZZ TEST Addon 496\n+฿5\n0\nRegular Socks\n+฿50\nOut of stock\n0\nGrip Socks\n+฿80\nSizes\nLocker Rental\n+฿100\nOut of stock\n0\nRefillable Drink Cup\n+฿150\nOut of stock\n0\nGlow Band\n+฿60\nOut of stock\n0\nAdd Another Ticket\nContinue\nCurrent Order\nTOURIST\n1 Hour Play\nEDITING\n฿2080\nKids\n฿690 each\n2\nAdults\n฿350 each\n2\nRegular Socks\n฿0 each\n0\nApply\nRedeem\nIssue a voucher…\nAdd manual discount\nSubtotal\n฿2080\nVAT included\n฿136.07\nTotal\n฿2080\nCancel\nPay ฿2080",
+    "thaiDisplay": "ไทย\nO\nOto เพลย์พาร์ค\nคำสั่งซื้อของคุณ\nเล่น 1 ชั่วโมง\n฿2080\nเด็ก2 × ฿690\n฿1380\nผู้ใหญ่2 × ฿350\n฿700\nรวมภาษีมูลค่าเพิ่ม\n฿136.07\nยอดรวม\n฿2080",
+    "staffInThai": "Configure: 1 Hour Play\nBack to tickets\nParticipants\nKids\nRequires adult supervision\n2\nAdults\nReceives F&B credit\n2\nExtras & Add-ons\nBracelet Workshop\n+฿150\n0\nZZ TEST Addon 496\n+฿5\n0\nRegular Socks\n+฿50\nOut of stock\n0\nGrip Socks\n+฿80\nSizes\nLocker Rental\n+฿100\nOut of stock\n0\nRefillable Drink Cup\n+฿150\nOut of stock\n0\nGlow Band\n+฿60\nOut of stock\n0\nAdd Another Ticket\nContinue\nCurrent Order\nTOURIST\n1 Hour Play\nEDITING\n฿2080\nKids\n฿690 each\n2\nAdults\n฿350 each\n2\nRegular Socks\n฿0 each\n0\nApply\nRedeem\nIssue a voucher…\nAdd manual discount\nSubtotal\n฿2080\nVAT included\n฿136.07\nTotal\n฿2080\nCancel\nPay ฿2080",
+    "englishAfterDisplay": "English\nO\nOto Play Park\nYour Order\n1 Hour Play\n฿2080\nKids2 × ฿690\n฿1380\nAdults2 × ฿350\n฿700\nVAT included\n฿136.07\nTotal\n฿2080",
+    "englishSameAsBefore": true,
+    "afterCancel": "English\nMEMBERS SAVE\nAre you a member?\n\nEnter your phone to get your member rate. New here? You can skip this.\n\nPhone Number\n🇹🇭\n+66\n8X XXX XXXX\n1\n2\n3\n4\n5\n6\n7\n8\n9\nClear\n0\nWhatsApp\nTelegram\nLINE\nNickname (Optional)\nFind my membershipI'm not a member — skip"
+  },
+  "fnb": {
+    "startedAt": "2026-11-04T00:45:34.767Z",
+    "headerStation": "ZZ TEST SCRUM-729 mw1e5qd4 till",
+    "url": "/order-station",
+    "check": {
+      "at": "2026-11-04T00:45:54.810Z",
+      "perUnitRussian": true,
+      "taxRowRussian": true,
+      "dishShown": true,
+      "staffEnglish": true
+    },
+    "displayText": "Русский\nO\nOto Play Park\nВаш заказ\n2\nZZ TEST SCRUM-729 mw1e5qd4 rice\nБазовая цена ฿50\n฿50 за шт. × 2\n฿100\nВключая НДС\n฿6.54\nИтого\n฿100",
+    "cartCleared": true,
+    "finishedAt": "2026-11-04T00:45:57.434Z"
+  },
+  "paired": {
+    "startedAt": "2026-11-04T00:46:44.608Z",
+    "steps": [
+      {
+        "at": "2026-11-04T00:46:55.367Z",
+        "what": "pairing screen shown, code masked in the image"
+      },
+      {
+        "at": "2026-11-04T00:46:55.457Z",
+        "what": "display claimed for the ZZ TEST till",
+        "credential": "01a1a405-f629-7914-8794-e56bd001ebde"
+      },
+      {
+        "at": "2026-11-04T00:47:02.432Z",
+        "what": "display set to Russian on its own pill",
+        "text": "ZZ TEST SCRUM-729 mw1e5qd4 till · ZZ TEST SCRUM-729 screen\nРусский\nУЧАСТНИКИ ЭКОНОМЯТ\nВы участник?\n\nВведите номер телефона, чтобы получить цену для участников. Впервые у нас? Можно пропустить.\n\nНомер телефона\n🇹🇭\n+66\n8X XXX XXXX\n1\n2\n3\n4\n5\n6\n7\n8\n9\nОчистить\n0\nWhatsApp\nTelegram\nLINE\nИмя (необязательно)\nНайти мою карту участникаЯ не участник — пропустить"
+      },
+      {
+        "at": "2026-11-04T00:47:08.488Z",
+        "what": "staff locked",
+        "idle": false,
+        "text": "ZZ TEST SCRUM-729 mw1e5qd4 till · ZZ TEST SCRUM-729 screen\nРусский\nУЧАСТНИКИ ЭКОНОМЯТ\nВы участник?\n\nВведите номер телефона, чтобы получить цену для участников. Впервые у нас? Можно пропустить.\n\nНомер телефона\n🇹🇭\n+66\n8X XXX XXXX\n1\n2\n3\n4\n5\n6\n7\n8\n9\nОчистить\n0\nWhatsApp\nTelegram\nLINE\nИмя (необязательно)\nНайти мою карту участникаЯ не участник — пропустить"
+      },
+      {
+        "at": "2026-11-04T00:47:16.496Z",
+        "what": "waited",
+        "idle": false,
+        "text": "ZZ TEST SCRUM-729 mw1e5qd4 till · ZZ TEST SCRUM-729 screen\nРусский\nУЧАСТНИКИ ЭКОНОМЯТ\nВы участник?\n\nВведите номер телефона, чтобы получить цену для участников. Впервые у нас? Можно пропустить.\n\nНомер телефона\n🇹🇭\n+66\n8X XXX XXXX\n1\n2\n3\n4\n5\n6\n7\n8\n9\nОчистить\n0\nWhatsApp\nTelegram\nLINE\nИмя (необязательно)\nНайти мою карту участникаЯ не участник — пропустить"
+      }
+    ],
+    "headerStation": "ZZ TEST SCRUM-729 mw1e5qd4 till",
+    "idleRussian": false,
+    "idleText": "ZZ TEST SCRUM-729 mw1e5qd4 till · ZZ TEST SCRUM-729 screen\nРусский\nУЧАСТНИКИ ЭКОНОМЯТ\nВы участник?\n\nВведите номер телефона, чтобы получить цену для участников. Впервые у нас? Можно пропустить.\n\nНомер телефона\n🇹🇭\n+66\n8X XXX XXXX\n1\n2\n3\n4\n5\n6\n7\n8\n9\nОчистить\n0\nWhatsApp\nTelegram\nLINE\nИмя (необязательно)\nНайти мою карту участникаЯ не участник — пропустить",
+    "revoke": {
+      "status": 423
+    },
+    "finishedAt": "2026-11-04T00:47:16.774Z",
+    "revokeRetry": {
+      "at": "2026-11-04T00:47:40.709Z",
+      "status": 200,
+      "before": [
+        {
+          "id": "01a1a405-f629-7914-8794-e56bd001ebde",
+          "name": "ZZ TEST SCRUM-729 screen",
+          "connected": false,
+          "revokedAt": null,
+          "status": null
+        }
+      ],
+      "after": [],
+      "afterStatus": 200
+    }
+  },
+  "idle": {
+    "startedAt": "2026-11-04T00:50:01.935Z",
+    "steps": [
+      {
+        "at": "2026-11-04T00:50:12.292Z",
+        "what": "idle till ready",
+        "id": "01a1a408-f703-7a8e-a826-fe5b66485e78"
+      },
+      {
+        "at": "2026-11-04T00:50:19.532Z",
+        "what": "display chose Russian",
+        "text": "ZZ TEST SCRUM-729 mw1e5qd4 till · ZZ TEST SCRUM-729 screen 2\nРусский\nУЧАСТНИКИ ЭКОНОМЯТ\nВы участник?\n\nВведите номер телефона, чтобы получить цену для участников. Впервые у нас? Можно пропустить.\n\nНоме"
+      },
+      {
+        "at": "2026-11-04T00:50:19.614Z",
+        "what": "first pairing revoked",
+        "status": 200
+      },
+      {
+        "at": "2026-11-04T00:50:21.450Z",
+        "what": "pairing screen again",
+        "back": true,
+        "storedLanguage": "ru"
+      },
+      {
+        "at": "2026-11-04T00:50:27.800Z",
+        "what": "idle screen captured",
+        "idleRussian": true
+      }
+    ],
+    "idleText": "Добро пожаловать в OTO Park\n\nПожалуйста, следуйте указаниям на экране сотрудника.\n\nZZ TEST SCRUM-729 mw1e5qd4 idle till · ZZ TEST SCRUM-729 screen idle",
+    "idleRussian": true,
+    "revokes": [
+      {
+        "id": "01a1a405-f629-7914-8794-e56bd001ebde",
+        "status": 409,
+        "code": "CREDENTIAL_ALREADY_REVOKED"
+      },
+      {
+        "id": "01a1a408-fa08-71f0-9ffc-5d9dd28ba759",
+        "status": 409,
+        "code": "CREDENTIAL_ALREADY_REVOKED"
+      },
+      {
+        "id": "01a1a409-2488-7745-be04-0012cb438c61",
+        "status": 200,
+        "code": null
+      }
+    ],
+    "finishedAt": "2026-11-04T00:50:28.108Z"
+  },
+  "cleanup": {
+    "startedAt": "2026-11-04T00:51:29.196Z",
+    "zzShopItems": [
+      {
+        "name": "ZZ TEST Addon 496",
+        "kind": "addon"
+      },
+      {
+        "name": "ZZ TEST Stock 496 Mug",
+        "kind": "merch"
+      }
+    ],
+    "sales": {
+      "01a1a401-450d-7651-bec3-8c39d8a46c6c": {
+        "status": 200,
+        "count": 0
+      },
+      "01a1a408-f703-7a8e-a826-fe5b66485e78": {
+        "status": 200,
+        "count": 0
+      }
+    },
+    "displaysBefore": {
+      "01a1a401-450d-7651-bec3-8c39d8a46c6c": [],
+      "01a1a408-f703-7a8e-a826-fe5b66485e78": []
+    },
+    "archive": [
+      {
+        "what": "station",
+        "id": "01a1a401-450d-7651-bec3-8c39d8a46c6c",
+        "name": "ZZ TEST SCRUM-729 mw1e5qd4 till",
+        "status": 200,
+        "body": null
+      },
+      {
+        "what": "station",
+        "id": "01a1a408-f703-7a8e-a826-fe5b66485e78",
+        "name": "ZZ TEST SCRUM-729 mw1e5qd4 idle till",
+        "status": 200,
+        "body": null
+      },
+      {
+        "what": "product",
+        "id": "01a1a401-3faf-7d76-b9b7-d067062a57e1",
+        "status": 200,
+        "body": null
+      },
+      {
+        "what": "category",
+        "id": "01a1a401-3dea-7b8c-8b98-27872adc4b63",
+        "status": 200,
+        "body": null
+      }
+    ],
+    "readBack": {
+      "at": "2026-11-04T00:51:47.610Z",
+      "productArchived": true,
+      "categoryArchived": true,
+      "absentFromActiveMenu": true,
+      "stationsArchived": [
+        {
+          "id": "01a1a401-450d-7651-bec3-8c39d8a46c6c",
+          "archived": true
+        },
+        {
+          "id": "01a1a408-f703-7a8e-a826-fe5b66485e78",
+          "archived": true
+        }
+      ],
+      "otherTillsUntouched": [
+        {
+          "name": "FWBooth1",
+          "archived": false
+        },
+        {
+          "name": "Till 1 (Pi)",
+          "archived": false
+        },
+        {
+          "name": "Till 2 (test)",
+          "archived": false
+        }
+      ]
+    },
+    "finishedAt": "2026-11-04T00:51:47.610Z"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "readAt": "2026-11-04T00:54:37.081Z",
+  "services": [
+    {
+      "name": "oto-pos-web-staging",
+      "status": "live",
+      "commit": "690d44dbfa31d8a3c487dfb3def0be9dfa3e105c",
+      "deployId": "dep-dbl7mu7avr4c73874g5g",
+      "finishedAt": "2026-11-04T00:27:58.708768Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "status": "live",
+      "commit": "690d44dbfa31d8a3c487dfb3def0be9dfa3e105c",
+      "deployId": "dep-dbl7mu7avr4c73874g9g",
+      "finishedAt": "2026-11-04T00:26:20.080523Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "status": "live",
+      "commit": "690d44dbfa31d8a3c487dfb3def0be9dfa3e105c",
+      "deployId": "dep-dbl7mu7avr4c73874gd0",
+      "finishedAt": "2026-11-04T00:26:23.102512Z"
+    },
+    {
+      "name": "oto-api-staging",
+      "status": "live",
+      "commit": "690d44dbfa31d8a3c487dfb3def0be9dfa3e105c",
+      "deployId": "dep-dbl7mu7avr4c73874f6g",
+      "finishedAt": "2026-11-04T00:29:06.508765Z"
+    }
+  ]
+}

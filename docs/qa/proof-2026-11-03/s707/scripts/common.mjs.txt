@@ -1,0 +1,56 @@
+// Shared helpers for the SCRUM-707 staging proof. Never prints a phone or password.
+import { launch, CONSOLE } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/evidence.mjs';
+import { need } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+
+export const OUT = 'C:/oto-lanes/pos-small-20261103/docs/qa/proof-2026-11-03/s707';
+export const RECEIPT = OUT + '/staging-receipt.json';
+export const BARE_ID = '01a1a3d8-3671-7abe-9b6c-1971558e62bf';
+export const LIVE = '690d44dbfa31d8a3c487dfb3def0be9dfa3e105c';
+export { CONSOLE };
+
+export const receipt = () => (existsSync(RECEIPT) ? JSON.parse(readFileSync(RECEIPT, 'utf8')) : { unit: 'SCRUM-707', liveCommit: LIVE, steps: {} });
+export const save = (r) => writeFileSync(RECEIPT, JSON.stringify(r, null, 2) + '\n');
+
+export async function consoleSession() {
+  const phone = need('STAGING_ADMIN_PHONE');
+  const password = need('STAGING_ADMIN_PASSWORD');
+  const browser = await launch();
+  const ctx = await browser.newContext({ viewport: { width: 1500, height: 1000 } });
+  const page = await ctx.newPage();
+  await page.goto(CONSOLE, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(4000);
+  if (await page.locator('input[type="password"]').count()) {
+    const field = page.locator('input[type="tel"], input[inputmode="tel"]').last();
+    const prefix = await field.evaluate((el) => /\+(\d{1,4})/.exec(el.parentElement?.textContent ?? '')?.[1] ?? null).catch(() => null);
+    const typed = prefix && phone.startsWith(`+${prefix}`) ? (prefix === '66' ? `0${phone.slice(3)}` : phone.slice(prefix.length + 1)) : phone;
+    await field.fill(typed);
+    await page.locator('input[type="password"]').last().fill(password);
+    await page.getByRole('button', { name: /sign in/i }).first().click();
+    await page.waitForTimeout(6000);
+  }
+  if (await page.locator('input[type="password"]').count()) throw new Error('Console still on the sign-in screen');
+  return { browser, ctx, page };
+}
+
+/** fetch from inside the signed-in Console page. */
+export const api = (page, method, path, body) =>
+  page.evaluate(async ({ method, path, body }) => {
+    const headers = body === undefined ? {} : { 'content-type': 'application/json' };
+    if (method !== 'GET') headers['idempotency-key'] = crypto.randomUUID();
+    const r = await fetch('/api' + path, { method, credentials: 'include', headers, body: body === undefined ? undefined : JSON.stringify(body) });
+    const text = await r.text();
+    let json = null;
+    try { json = JSON.parse(text); } catch { json = text.slice(0, 400); }
+    return { status: r.status, body: json };
+  }, { method, path, body });
+
+export async function openTemplates(page, branchName) {
+  await page.goto(`${CONSOLE}/catalogue/print-templates`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(5000);
+  const picker = page.locator('select').filter({ has: page.locator('option', { hasText: branchName }) }).first();
+  await picker.selectOption({ label: branchName });
+  await page.waitForTimeout(5000);
+}
+
+export const mainText = async (page) => (await page.locator('main').innerText().catch(() => '')).slice(0, 1500);

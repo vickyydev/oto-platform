@@ -1,0 +1,52 @@
+// SCRUM-729 staging proof fixtures: one ZZ TEST till on a virtual box (never the Pi or FWBooth1),
+// and one ZZ TEST F&B dish in its own ZZ TEST category. Receipt kept for cleanup.
+import { consoleSession, api } from './common.mjs';
+import { writeFileSync, existsSync, readFileSync } from 'node:fs';
+
+const OUT = 'C:/oto-lanes/pos-small-20261103/docs/qa/proof-2026-11-03/s729';
+const RECEIPT = OUT + '/staging-fixture.json';
+if (existsSync(RECEIPT) && JSON.parse(readFileSync(RECEIPT, 'utf8')).fixtures?.stationId && !JSON.parse(readFileSync(RECEIPT, 'utf8')).cleanup) {
+  console.log('fixtures already exist; see', RECEIPT);
+  process.exit(0);
+}
+const stamp = Date.now().toString(36);
+const name = 'ZZ TEST SCRUM-729 ' + stamp;
+const r = { unit: 'SCRUM-729', liveCommit: '690d44dbfa31d8a3c487dfb3def0be9dfa3e105c', startedAt: new Date().toISOString(), name, fixtures: {} };
+const f = r.fixtures;
+const save = () => writeFileSync(RECEIPT, JSON.stringify(r, null, 2) + '\n');
+const { browser, page } = await consoleSession();
+const ok = (res, what) => { if (res.status !== 200 && res.status !== 201) throw new Error(what + ' status ' + res.status + ' ' + JSON.stringify(res.body).slice(0, 300)); return res.body; };
+try {
+  const me = ok(await api(page, 'GET', '/me'), 'me');
+  f.branchId = me.operatorContext?.branchId ?? me.branch?.id;
+  f.branchName = me.branch?.name ?? null;
+  if (f.branchId !== '01a0bbdc-8c42-7753-b7e3-5ae19fb66d33') throw new Error('Signed-in branch is not Central Floresta: ' + f.branchName);
+  const boxes = ok(await api(page, 'GET', `/branches/${f.branchId}/boxes`), 'boxes').boxes;
+  const virtual = boxes.find((b) => b.role === 'virtual' && b.status === 'online' && !b.archived && !/FWBooth1|Pi/i.test(b.name));
+  if (!virtual) throw new Error('No online virtual box at the test branch');
+  f.boxId = virtual.id;
+  f.boxName = virtual.name;
+  save();
+  const category = ok(await api(page, 'POST', '/menu/categories', { name: name + ' food', taxableCategory: 'fnb', defaultPrepStation: 'kitchen' }), 'category');
+  f.categoryId = category.id;
+  save();
+  f.productName = name + ' rice';
+  f.productId = ok(await api(page, 'POST', `/branches/${f.branchId}/menu/products`, { name: f.productName, kind: 'menu', categoryId: f.categoryId, priceSatang: 5000, priceWeekendSatang: 5000, stockLinks: [], active: true }), 'product').id;
+  save();
+  const stations = ok(await api(page, 'GET', `/branches/${f.branchId}/stations?includeArchived=true`), 'stations').stations;
+  const used = new Set(stations.map((s) => s.codePrefix));
+  const prefix = Array.from({ length: 1000 }, (_, i) => 'Z' + (Date.now() + i).toString(36).slice(-5).toUpperCase()).find((c) => !used.has(c));
+  const made = ok(await api(page, 'POST', `/branches/${f.branchId}/stations`, { name: name + ' till', kind: 'till', boxId: virtual.id, codePrefix: prefix, accessScope: 'all_staff', devices: [], paymentRouting: { card: 'manual', qr: 'none' } }), 'station');
+  f.stationId = made.station.id;
+  f.stationName = made.station.name;
+  f.stationReady = made.station.ready;
+  r.createdAt = new Date().toISOString();
+  save();
+  console.log(JSON.stringify(r, null, 2));
+} catch (e) {
+  r.error = String(e?.message ?? e).slice(0, 500);
+  save();
+  console.log('ERROR', r.error);
+} finally {
+  await browser.close();
+}

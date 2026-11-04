@@ -1,0 +1,106 @@
+// SCRUM-729 staging proof, paired display idle in Russian.
+// The display is set to Russian on its own pill while paired to the ZZ TEST till, then the same
+// display is paired to a second, untouched ZZ TEST till (nothing going on there): its idle screen.
+// Every display credential made here is revoked at the end, from an unlocked staff session.
+import { launch, posSignIn, POS } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/evidence.mjs';
+import { readFileSync, writeFileSync } from 'node:fs';
+
+const DIR = 'C:/oto-lanes/pos-small-20261103/docs/qa/proof-2026-11-03/s729';
+const FIX = DIR + '/staging-fixture.json';
+const rec = JSON.parse(readFileSync(FIX, 'utf8'));
+const fx = rec.fixtures;
+fx.displayCredentials = fx.displayCredentials ?? (fx.displayCredentialId ? [fx.displayCredentialId] : []);
+const I = (rec.idle = { startedAt: new Date().toISOString(), steps: [] });
+const save = () => writeFileSync(FIX, JSON.stringify(rec, null, 2) + '\n');
+const step = (s) => { I.steps.push({ at: new Date().toISOString(), ...s }); save(); };
+const browser = await launch();
+const { page: staff } = await posSignIn(browser, 'ADMIN', { width: 1500, height: 950 });
+const dctx = await browser.newContext({ viewport: { width: 1024, height: 768 } });
+const display = await dctx.newPage();
+const call = (method, path, body) =>
+  staff.evaluate(async ({ method, path, body }) => {
+    const r = await fetch('/api' + path, { method, credentials: 'include', headers: { 'content-type': 'application/json', 'idempotency-key': crypto.randomUUID() }, body: body ? JSON.stringify(body) : undefined });
+    const t = await r.text();
+    let j = null; try { j = JSON.parse(t); } catch { j = t.slice(0, 300); }
+    return { status: r.status, body: j };
+  }, { method, path, body });
+const displayText = async () => (await display.locator('body').innerText().catch(() => '')).slice(0, 800);
+const PILL = ['Change language', 'Сменить язык', 'เปลี่ยนภาษา', '更改语言', 'Changer de langue'];
+async function pairTo(stationId, name) {
+  await display.getByRole('heading', { name: 'Set up this display' }).waitFor({ timeout: 45000 });
+  const code = (await display.getByTestId('display-pairing-code').textContent())?.trim();
+  if (!/^\d{6}$/.test(code ?? '')) throw new Error('No pairing code shown');
+  const claim = await call('POST', `/stations/${stationId}/displays/claim`, { pairingCode: code, name });
+  if (claim.status !== 200) throw new Error('claim status ' + claim.status + ' ' + JSON.stringify(claim.body).slice(0, 200));
+  fx.displayCredentials.push(claim.body.device.id);
+  save();
+  return claim.body.device.id;
+}
+try {
+  const heading = staff.getByRole('heading', { name: 'Which station are you on?' });
+  if (await heading.isVisible().catch(() => false)) {
+    await staff.getByRole('button', { name: new RegExp(fx.stationName) }).click();
+    await heading.waitFor({ state: 'hidden', timeout: 20000 });
+  }
+  await staff.getByText('Membership Check', { exact: true }).first().waitFor({ timeout: 30000 });
+
+  // A second ZZ TEST till on the same virtual box, never opened by anybody.
+  if (!fx.idleStationId) {
+    const stations = (await call('GET', `/branches/${fx.branchId}/stations?includeArchived=true`)).body.stations;
+    const used = new Set(stations.map((s) => s.codePrefix));
+    const prefix = Array.from({ length: 1000 }, (_, i) => 'Z' + (Date.now() + i).toString(36).slice(-5).toUpperCase()).find((c) => !used.has(c));
+    const made = await call('POST', `/branches/${fx.branchId}/stations`, { name: rec.name + ' idle till', kind: 'till', boxId: fx.boxId, codePrefix: prefix, accessScope: 'all_staff', devices: [], paymentRouting: { card: 'manual', qr: 'none' } });
+    if (made.status !== 200 && made.status !== 201) throw new Error('station B status ' + made.status);
+    fx.idleStationId = made.body.station.id;
+    fx.idleStationName = made.body.station.name;
+    save();
+  }
+  step({ what: 'idle till ready', id: fx.idleStationId });
+
+  // 1. Pair with the ZZ TEST till at Membership Check; choose Russian on the display's own pill.
+  await display.goto(POS + '/display', { waitUntil: 'domcontentloaded' });
+  const first = await pairTo(fx.stationId, 'ZZ TEST SCRUM-729 screen 2');
+  const pill = display.locator(PILL.map((l) => `button[aria-label="${l}"]`).join(', ')).first();
+  await pill.waitFor({ timeout: 45000 });
+  await pill.click();
+  await display.getByRole('button', { name: 'Русский', exact: true }).click();
+  await display.waitForTimeout(4000);
+  step({ what: 'display chose Russian', text: (await displayText()).slice(0, 200) });
+
+  // 2. Unpair it there (revoke), and pair the same screen with the untouched till.
+  const rv1 = await call('POST', `/credentials/${first}/revoke`, { reason: 'ZZ TEST SCRUM-729 staging proof: move the screen' });
+  step({ what: 'first pairing revoked', status: rv1.status });
+  let back = await display.getByRole('heading', { name: 'Set up this display' }).waitFor({ timeout: 30000 }).then(() => true).catch(() => false);
+  if (!back) {
+    await display.goto(POS + '/display', { waitUntil: 'domcontentloaded' });
+    back = await display.getByRole('heading', { name: 'Set up this display' }).waitFor({ timeout: 30000 }).then(() => true).catch(() => false);
+  }
+  step({ what: 'pairing screen again', back, storedLanguage: await display.evaluate(() => localStorage.getItem('oto.display.language')) });
+  await pairTo(fx.idleStationId, 'ZZ TEST SCRUM-729 screen idle');
+  await display.getByText('Добро пожаловать в OTO Park').waitFor({ timeout: 45000 });
+  await display.waitForTimeout(2000);
+  I.idleText = await displayText();
+  I.idleRussian = I.idleText.includes('Добро пожаловать в OTO Park') && !I.idleText.includes('Welcome to OTO Park');
+  await display.screenshot({ path: `${DIR}/s729-08-paired-display-idle-russian.png` });
+  step({ what: 'idle screen captured', idleRussian: I.idleRussian });
+  console.log(JSON.stringify({ idleRussian: I.idleRussian, text: I.idleText }, null, 2));
+} catch (e) {
+  I.error = String(e?.message ?? e).slice(0, 500);
+  save();
+  await display.screenshot({ path: `${DIR}/s729-error-idle-display.png` }).catch(() => {});
+  console.log('ERROR', I.error, '\nDISPLAY:', await displayText());
+} finally {
+  I.revokes = [];
+  for (const id of fx.displayCredentials) {
+    const rv = await call('POST', `/credentials/${id}/revoke`, { reason: 'ZZ TEST SCRUM-729 staging proof cleanup' }).catch((e) => ({ status: 0, body: String(e) }));
+    I.revokes.push({ id, status: rv.status, code: rv.body?.error?.code ?? null });
+  }
+  await display.evaluate(async () => {
+    const bearer = localStorage.getItem('oto.display.credential');
+    if (bearer) await fetch('/api/display/pairing/expire', { method: 'POST', credentials: 'omit', headers: { authorization: `Bearer ${bearer}`, 'content-type': 'application/json' }, body: '{}' });
+  }).catch(() => undefined);
+  I.finishedAt = new Date().toISOString();
+  save();
+  console.log('revokes', JSON.stringify(I.revokes));
+  await browser.close();
+}

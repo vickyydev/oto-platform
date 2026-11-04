@@ -1,0 +1,10 @@
+import { consoleSession, api } from './common.mjs';
+const { browser, page } = await consoleSession();
+try {
+  const m = await api(page, 'GET', '/branches/oto-app');
+  const b = m.body ?? {};
+  const keys = Object.keys(b);
+  const zz = JSON.stringify(b).match(/ZZ TEST Print[^"]*/g) ?? [];
+  const appOnly = (b.appOnly ?? b.appOnlyBranches ?? []).map((x) => ({ name: x.name ?? x.appBranchName, id: x.id ?? x.appBranchId, archived: x.archived ?? null }));
+  console.log(JSON.stringify({ status: m.status, keys, installed: b.installed, zzMentions: zz, appOnly }, null, 2));
+} finally { await browser.close(); }

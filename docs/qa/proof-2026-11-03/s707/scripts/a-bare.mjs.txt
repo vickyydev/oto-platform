@@ -1,0 +1,97 @@
+// SCRUM-707 staging proof, part A: the branch opened on the old code (ZZ TEST Print Bare).
+import { OUT, BARE_ID, receipt, save, consoleSession, api, openTemplates, mainText } from './common.mjs';
+
+const r = receipt();
+const A = (r.steps.bare = { startedAt: new Date().toISOString(), branchId: BARE_ID });
+const { browser, page } = await consoleSession();
+try {
+  A.me = (await api(page, 'GET', '/me')).body?.account?.id ?? null;
+  const before = await api(page, 'GET', `/branches/${BARE_ID}/print-templates`);
+  A.rowsBefore = before.body?.templates?.length ?? before;
+  if (A.rowsBefore !== 0) throw new Error('ZZ TEST Print Bare already holds rows: ' + JSON.stringify(A.rowsBefore));
+  save(r);
+
+  // 1. The panel says the branch has no saved templates, with the button.
+  await openTemplates(page, 'ZZ TEST Print Bare');
+  const banner = page.getByText('This branch has no saved print templates yet. It prints every section until one is saved.');
+  await banner.waitFor({ timeout: 20000 });
+  const button = page.getByRole('button', { name: 'Create missing templates' });
+  await button.waitFor({ timeout: 10000 });
+  await page.screenshot({ path: `${OUT}/s707-01-bare-branch-banner.png` });
+  A.step1 = { at: new Date().toISOString(), banner: true, button: true };
+  save(r);
+
+  // 2. Press it: six cards, banner gone.
+  await button.click();
+  await page.getByRole('button', { name: /^Edit / }).nth(5).waitFor({ timeout: 30000 });
+  await page.waitForTimeout(1500);
+  const editButtons = await page.getByRole('button', { name: /^Edit / }).allInnerTexts().catch(() => []);
+  const labels = await page.getByRole('button', { name: /^Edit / }).evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
+  A.step2 = { at: new Date().toISOString(), cards: labels, bannerGone: (await banner.count()) === 0, buttonGone: (await button.count()) === 0 };
+  await page.screenshot({ path: `${OUT}/s707-02-bare-branch-six-templates.png` });
+  const afterCreate = await api(page, 'GET', `/branches/${BARE_ID}/print-templates`);
+  A.rowsAfterCreate = (afterCreate.body?.templates ?? []).map((t) => ({ id: t.id, type: t.type, name: t.name, footerText: t.footerText ?? null, updatedAt: t.updatedAt }));
+  save(r);
+  void editButtons;
+
+  // 2b/6. Open the receipt, edit its footer, save.
+  await page.getByRole('button', { name: 'Edit Standard receipt' }).click();
+  await page.getByRole('button', { name: 'Back to all templates' }).waitFor({ timeout: 15000 });
+  await page.waitForTimeout(2500);
+  await page.screenshot({ path: `${OUT}/s707-03-receipt-template-opened.png` });
+  await page.getByRole('button', { name: /More options/ }).click();
+  const footer = page.locator('#tpl-footer');
+  await footer.waitFor({ timeout: 10000 });
+  A.footerWords = 'ZZ TEST footer kept by SCRUM-707';
+  await footer.fill(A.footerWords);
+  await page.getByRole('button', { name: 'Save changes' }).waitFor({ timeout: 10000 });
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  await page.getByText('Saved', { exact: true }).first().waitFor({ timeout: 20000 });
+  await page.waitForTimeout(1000);
+  await footer.scrollIntoViewIfNeeded().catch(() => {});
+  await page.screenshot({ path: `${OUT}/s707-04-receipt-footer-saved.png` });
+  const afterEdit = await api(page, 'GET', `/branches/${BARE_ID}/print-templates`);
+  A.rowsAfterEdit = (afterEdit.body?.templates ?? []).map((t) => ({ id: t.id, type: t.type, footerText: t.footerText ?? null, updatedAt: t.updatedAt }));
+  A.step6 = { at: new Date().toISOString(), saved: true };
+  save(r);
+
+  // 5. Replay create-missing with a fresh key: nothing created, rows unchanged.
+  const replay = await api(page, 'POST', `/branches/${BARE_ID}/print-templates/create-missing`, {});
+  A.step5 = {
+    at: new Date().toISOString(),
+    status: replay.status,
+    created: replay.body?.created ?? replay.body,
+    rows: (replay.body?.templates ?? []).map((t) => ({ id: t.id, type: t.type, footerText: t.footerText ?? null, updatedAt: t.updatedAt })),
+  };
+  A.step5.rowsUnchanged = JSON.stringify(A.step5.rows) === JSON.stringify(A.rowsAfterEdit);
+  A.step5.footerKept = A.step5.rows.find((t) => t.type === 'receipt')?.footerText === A.footerWords;
+  save(r);
+
+  // The panel after the replay, reloaded: six cards, no banner.
+  await openTemplates(page, 'ZZ TEST Print Bare');
+  await page.getByRole('button', { name: /^Edit / }).nth(5).waitFor({ timeout: 30000 });
+  await page.waitForTimeout(1500);
+  A.afterReplayPanel = {
+    banner: await page.getByText('This branch has no saved print templates yet.', { exact: false }).count(),
+    button: await page.getByRole('button', { name: 'Create missing templates' }).count(),
+    cards: await page.getByRole('button', { name: /^Edit / }).count(),
+  };
+  await page.getByRole('button', { name: 'Edit Standard receipt' }).click();
+  await page.getByRole('button', { name: 'Back to all templates' }).waitFor({ timeout: 15000 });
+  await page.getByRole('button', { name: /More options/ }).click();
+  await page.locator('#tpl-footer').waitFor({ timeout: 10000 });
+  A.afterReplayPanel.footerInEditor = await page.locator('#tpl-footer').inputValue();
+  await page.locator('#tpl-footer').scrollIntoViewIfNeeded().catch(() => {});
+  await page.screenshot({ path: `${OUT}/s707-05-footer-kept-after-second-run.png` });
+  A.text = await mainText(page);
+  A.finishedAt = new Date().toISOString();
+  save(r);
+  console.log(JSON.stringify({ step1: A.step1, step2: A.step2, step5: { status: A.step5.status, created: A.step5.created, rowsUnchanged: A.step5.rowsUnchanged, footerKept: A.step5.footerKept }, afterReplayPanel: A.afterReplayPanel }, null, 2));
+} catch (e) {
+  A.error = String(e?.message ?? e).slice(0, 500);
+  save(r);
+  await page.screenshot({ path: `${OUT}/s707-error-a.png` }).catch(() => {});
+  console.log('ERROR', A.error, '\n', await mainText(page));
+} finally {
+  await browser.close();
+}

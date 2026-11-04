@@ -1,0 +1,115 @@
+// SCRUM-729 staging proof: the ZZ TEST till with its customer display pane. No payment, no sale.
+import { launch, posSignIn, me } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/evidence.mjs';
+import { readFileSync, writeFileSync } from 'node:fs';
+
+const DIR = 'C:/oto-lanes/pos-small-20261103/docs/qa/proof-2026-11-03/s729';
+const FIX = DIR + '/staging-fixture.json';
+const rec = JSON.parse(readFileSync(FIX, 'utf8'));
+const fx = rec.fixtures;
+const W = (rec.walk = { startedAt: new Date().toISOString(), shots: [], checks: {} });
+const save = () => writeFileSync(FIX, JSON.stringify(rec, null, 2) + '\n');
+
+const browser = await launch();
+const { page } = await posSignIn(browser, 'ADMIN', { width: 1700, height: 1000 });
+
+const paneText = () =>
+  page.evaluate(() => {
+    const els = [...document.querySelectorAll('div')].filter((d) => d.classList.contains('w-1/2') && d.classList.contains('h-full') && !d.classList.contains('border-r'));
+    return els.map((e) => e.innerText).join('\n');
+  });
+const staffText = () =>
+  page.evaluate(() => {
+    const els = [...document.querySelectorAll('div')].filter((d) => d.classList.contains('w-1/2') && d.classList.contains('h-full') && d.classList.contains('border-r'));
+    return els.map((e) => e.innerText).join('\n');
+  });
+const PILL = ['Change language', 'Сменить язык', 'เปลี่ยนภาษา', '更改语言', 'Changer de langue'];
+async function setLang(native) {
+  const pill = page.locator(PILL.map((l) => `button[aria-label="${l}"]`).join(', ')).last();
+  await pill.click();
+  await page.getByRole('button', { name: native, exact: true }).last().click();
+  await page.waitForTimeout(2500);
+}
+async function shot(name, checks) {
+  const display = await paneText();
+  const staff = await staffText();
+  const result = { at: new Date().toISOString() };
+  for (const [k, words] of Object.entries(checks.display ?? {})) result['display ' + k] = words.every((w) => display.includes(w));
+  for (const [k, words] of Object.entries(checks.staff ?? {})) result['staff ' + k] = words.every((w) => staff.includes(w));
+  for (const [k, words] of Object.entries(checks.displayNot ?? {})) result['display has no ' + k] = words.every((w) => !display.includes(w));
+  await page.screenshot({ path: `${DIR}/${name}.png` });
+  W.shots.push(name + '.png');
+  W.checks[name] = result;
+  save();
+  return { display, staff, result };
+}
+
+try {
+  const heading = page.getByRole('heading', { name: 'Which station are you on?' });
+  if (await heading.isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: new RegExp(fx.stationName) }).click();
+    await heading.waitFor({ state: 'hidden', timeout: 20000 });
+  }
+  await page.getByText('Membership Check', { exact: true }).first().waitFor({ timeout: 30000 });
+  W.identity = await me(page);
+  W.headerStation = (await page.getByText(/ZZ TEST SCRUM-729/).first().innerText().catch(() => null));
+
+  // 1. A walk-in with kids and adults on a ticket package.
+  await page.getByRole('button', { name: 'Skip — walk-in (Tourist)' }).click();
+  await page.getByRole('heading', { name: 'Tourist' }).first().click();
+  await page.getByRole('heading', { name: '1 Hour Play' }).first().click();
+  await page.getByRole('heading', { name: /^Configure:/ }).waitFor({ timeout: 15000 });
+  await page.getByRole('button', { name: 'Add one Kids' }).first().click();
+  await page.getByRole('button', { name: 'Add one Adults' }).first().click();
+  // The order stays on the customer's screen while the line is being set up.
+  await page.waitForTimeout(3500);
+  const en1 = await shot('s729-01-english-before', {
+    display: { 'Kids Adults VAT included': ['Kids', 'Adults', 'VAT included'] },
+  });
+  W.englishBeforeDisplay = en1.display.slice(0, 1500);
+  W.staffBefore = en1.staff.slice(0, 1500);
+
+  // 2. Russian.
+  await setLang('Русский');
+  const ru = await shot('s729-02-russian-display-english-staff', {
+    display: { 'Дети Взрослые Включая НДС': ['Дети', 'Взрослые', 'Включая НДС'] },
+    displayNot: { 'English Kids/Adults/VAT included': ['Kids', 'Adults', 'VAT included'] },
+    staff: { 'still English': ['Current Order', 'Total'] },
+  });
+  W.russianDisplay = ru.display.slice(0, 1500);
+  W.staffInRussian = ru.staff.slice(0, 1500);
+
+  // 3. Thai.
+  await setLang('ไทย');
+  const th = await shot('s729-03-thai-display-english-staff', {
+    display: { 'เด็ก ผู้ใหญ่ รวมภาษีมูลค่าเพิ่ม': ['เด็ก', 'ผู้ใหญ่', 'รวมภาษีมูลค่าเพิ่ม'] },
+    displayNot: { 'English Kids/Adults/VAT included': ['Kids', 'Adults', 'VAT included'] },
+    staff: { 'still English': ['Current Order', 'Total'] },
+  });
+  W.thaiDisplay = th.display.slice(0, 1500);
+  W.staffInThai = th.staff.slice(0, 1500);
+
+  // 4. Back to English: the same words as before.
+  await setLang('English');
+  const en2 = await shot('s729-04-english-after', {
+    display: { 'Kids Adults VAT included': ['Kids', 'Adults', 'VAT included'] },
+  });
+  W.englishAfterDisplay = en2.display.slice(0, 1500);
+  W.englishSameAsBefore = en2.display === en1.display;
+
+  // Clear the ticket order: nothing is written.
+  await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+  await page.waitForTimeout(1500);
+  const confirm = page.getByRole('alertdialog').getByRole('button', { name: /cancel|clear|discard|yes/i });
+  if (await confirm.count()) await confirm.first().click().catch(() => {});
+  await page.waitForTimeout(2000);
+  W.afterCancel = (await paneText()).slice(0, 400);
+  save();
+  console.log(JSON.stringify({ identity: W.identity, checks: W.checks, englishSameAsBefore: W.englishSameAsBefore, afterCancel: W.afterCancel }, null, 2));
+} catch (e) {
+  W.error = String(e?.message ?? e).slice(0, 500);
+  save();
+  await page.screenshot({ path: `${DIR}/s729-error-walk.png` }).catch(() => {});
+  console.log('ERROR', W.error);
+} finally {
+  await browser.close();
+}

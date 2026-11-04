@@ -1,0 +1,16 @@
+// Revoke the ZZ TEST SCRUM-729 display credential from a fresh Console session, and read it back.
+import { consoleSession, api } from './common.mjs';
+import { readFileSync, writeFileSync } from 'node:fs';
+const FIX = 'C:/oto-lanes/pos-small-20261103/docs/qa/proof-2026-11-03/s729/staging-fixture.json';
+const rec = JSON.parse(readFileSync(FIX, 'utf8'));
+const id = rec.fixtures.displayCredentialId;
+const { browser, page } = await consoleSession();
+try {
+  const list = await api(page, 'GET', `/stations/${rec.fixtures.stationId}/displays`);
+  const before = (list.body?.displays ?? []).map((d) => ({ id: d.id, name: d.name, connected: d.connected, revokedAt: d.revokedAt ?? null, status: d.status ?? null }));
+  const rv = await api(page, 'POST', `/credentials/${id}/revoke`, { reason: 'ZZ TEST SCRUM-729 staging proof cleanup' });
+  const after = await api(page, 'GET', `/stations/${rec.fixtures.stationId}/displays`);
+  rec.paired.revokeRetry = { at: new Date().toISOString(), status: rv.status, before, after: (after.body?.displays ?? []).map((d) => ({ id: d.id, name: d.name, connected: d.connected, revokedAt: d.revokedAt ?? null, status: d.status ?? null })), afterStatus: after.status };
+  writeFileSync(FIX, JSON.stringify(rec, null, 2) + '\n');
+  console.log(JSON.stringify(rec.paired.revokeRetry, null, 2));
+} finally { await browser.close(); }

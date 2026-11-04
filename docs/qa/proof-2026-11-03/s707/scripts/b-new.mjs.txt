@@ -1,0 +1,80 @@
+// SCRUM-707 staging proof, part B: a branch opened on the new code (ZZ TEST Print New).
+import { OUT, BARE_ID, CONSOLE, receipt, save, consoleSession, api, openTemplates, mainText } from './common.mjs';
+
+const NAME = 'ZZ TEST Print New';
+const r = receipt();
+const B = (r.steps.newBranch = { startedAt: new Date().toISOString(), name: NAME });
+const { browser, page } = await consoleSession();
+try {
+  const list = await api(page, 'GET', '/branches?includeArchived=true');
+  const existing = (list.body?.branches ?? []).filter((b) => b.name === NAME);
+  if (existing.length) throw new Error('A branch named ' + NAME + ' already exists: ' + JSON.stringify(existing.map((b) => ({ id: b.id, archived: b.archived }))));
+
+  // 3. Create it on the Console's Branches page.
+  await page.goto(`${CONSOLE}/organisation/branches`, { waitUntil: 'domcontentloaded' });
+  await page.getByRole('button', { name: 'Add a branch' }).waitFor({ timeout: 30000 });
+  await page.getByRole('button', { name: 'Add a branch' }).click();
+  await page.getByPlaceholder('e.g. HKT Chalong').fill(NAME);
+  await page.waitForTimeout(500);
+  B.codeShown = await page.getByPlaceholder('hkt-chalong').inputValue();
+  const tz = page.locator('select').filter({ has: page.locator('option', { hasText: 'Asia/Bangkok' }) }).first();
+  B.timezoneShown = await tz.inputValue().catch(() => null);
+  if (B.timezoneShown !== 'Asia/Bangkok') await tz.selectOption('Asia/Bangkok');
+  const country = page.getByPlaceholder('TH');
+  if (!(await country.inputValue())) await country.fill('TH');
+  await page.screenshot({ path: `${OUT}/s707-06-new-branch-form.png` });
+  await page.getByRole('button', { name: 'Create branch' }).click();
+  await page.getByText(NAME, { exact: true }).first().waitFor({ timeout: 30000 });
+  await page.waitForTimeout(2500);
+  B.createdAt = new Date().toISOString();
+  const after = await api(page, 'GET', '/branches?includeArchived=true');
+  const made = (after.body?.branches ?? []).find((b) => b.name === NAME && !b.archived);
+  if (!made) throw new Error('The new branch is not listed');
+  B.branchId = made.id;
+  B.code = made.code;
+  save(r);
+
+  const t = await api(page, 'GET', `/branches/${made.id}/print-templates`);
+  B.rows = (t.body?.templates ?? []).map((x) => ({ id: x.id, type: x.type, name: x.name, updatedAt: x.updatedAt }));
+  save(r);
+
+  // Its Print Templates: six cards at once, no banner.
+  await openTemplates(page, NAME);
+  await page.getByRole('button', { name: /^Edit / }).nth(5).waitFor({ timeout: 30000 });
+  await page.waitForTimeout(2500);
+  B.panel = {
+    banner: await page.getByText('has no saved print templates', { exact: false }).count(),
+    missingLine: await page.getByText('printouts have no saved template here', { exact: false }).count(),
+    button: await page.getByRole('button', { name: 'Create missing templates' }).count(),
+    cards: await page.getByRole('button', { name: /^Edit / }).evaluateAll((els) => els.map((e) => e.getAttribute('aria-label'))),
+    at: new Date().toISOString(),
+  };
+  await page.screenshot({ path: `${OUT}/s707-07-new-branch-six-templates-at-once.png` });
+  save(r);
+
+  // A cleaner copy of the bare branch's kept footer, with its preview drawn.
+  await openTemplates(page, 'ZZ TEST Print Bare');
+  await page.getByRole('button', { name: 'Edit Standard receipt' }).click();
+  await page.getByRole('button', { name: 'Back to all templates' }).waitFor({ timeout: 15000 });
+  await page.getByText('Drawing this printout', { exact: false }).waitFor({ state: 'detached', timeout: 30000 }).catch(() => {});
+  await page.waitForTimeout(4000);
+  B.bareFooterInEditor = await page.locator('#tpl-footer').inputValue().catch(() => null);
+  if (B.bareFooterInEditor === null) {
+    await page.getByRole('button', { name: /More options/ }).click();
+    B.bareFooterInEditor = await page.locator('#tpl-footer').inputValue();
+  }
+  await page.getByText('Footer text', { exact: true }).first().scrollIntoViewIfNeeded().catch(() => {});
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: `${OUT}/s707-05-footer-kept-after-second-run.png` });
+  B.finishedAt = new Date().toISOString();
+  save(r);
+  console.log(JSON.stringify(B, null, 2));
+  void BARE_ID;
+} catch (e) {
+  B.error = String(e?.message ?? e).slice(0, 500);
+  save(r);
+  await page.screenshot({ path: `${OUT}/s707-error-b.png` }).catch(() => {});
+  console.log('ERROR', B.error, '\n', await mainText(page));
+} finally {
+  await browser.close();
+}

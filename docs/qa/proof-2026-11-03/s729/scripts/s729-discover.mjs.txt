@@ -1,0 +1,29 @@
+// SCRUM-729: discovery only — sign in on the staging POS, pick the ZZ TEST till, look at the ticket grid. No cart change.
+import { launch, posSignIn, me } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/evidence.mjs';
+import { readFileSync } from 'node:fs';
+const OUT = 'C:/Users/waqar/AppData/Local/Temp/claude/c--Users-waqar-OneDrive-Desktop-Projects-oto-pos/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/s707-post';
+const fx = JSON.parse(readFileSync('C:/oto-lanes/pos-small-20261103/docs/qa/proof-2026-11-03/s729/staging-fixture.json', 'utf8')).fixtures;
+const browser = await launch();
+try {
+  const { page } = await posSignIn(browser, 'ADMIN', { width: 1700, height: 1000 });
+  const heading = page.getByRole('heading', { name: 'Which station are you on?' });
+  if (await heading.isVisible().catch(() => false)) {
+    console.log('station buttons:', JSON.stringify(await page.getByRole('button').allInnerTexts()).slice(0, 1500));
+    await page.getByRole('button', { name: new RegExp(fx.stationName) }).click();
+    await heading.waitFor({ state: 'hidden', timeout: 20000 });
+  }
+  await page.getByText('Membership Check', { exact: true }).first().waitFor({ timeout: 30000 });
+  console.log('me', JSON.stringify(await me(page)));
+  await page.waitForTimeout(2000);
+  await page.screenshot({ path: OUT + '/d-00.png' });
+  await page.getByRole('button', { name: 'Skip — walk-in (Tourist)' }).click();
+  await page.waitForTimeout(2500);
+  console.log('headings after skip:', JSON.stringify(await page.getByRole('heading').allInnerTexts()));
+  await page.getByRole('heading', { name: 'Tourist' }).first().click();
+  await page.waitForTimeout(3000);
+  console.log('headings after tier:', JSON.stringify(await page.getByRole('heading').allInnerTexts()));
+  await page.screenshot({ path: OUT + '/d-01.png' });
+  console.log('labels:', JSON.stringify(await page.locator('[aria-label]').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')))).slice(0, 1500));
+} finally {
+  await browser.close();
+}
