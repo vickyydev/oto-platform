@@ -1,0 +1,10 @@
+{
+  "key": "tools",
+  "sha": "936cfbbe3f9062d955d3afdbdae26f38bfaeff89",
+  "start": "2026-11-04T07:02:57.903Z",
+  "end": "2026-11-04T07:03:01.452Z",
+  "command": "node scripts/check-no-mock-members.mjs; node --test scripts/inbox/whatsapp-history.test.mjs; node apps/oto-app/server/lib/telemetry/check-sync.mjs; for f in scripts/pi/*.sh; do bash -n \"$f\"; done; /c/oto-lanes/s713-shellcheck/shellcheck.exe --severity=error scripts/pi/*.sh",
+  "log": "C:/oto-lanes/s736-full-tools.log",
+  "exitCode": 0,
+  "signal": null
+}

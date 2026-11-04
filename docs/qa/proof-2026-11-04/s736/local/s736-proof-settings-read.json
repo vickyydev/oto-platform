@@ -1,0 +1,38 @@
+{
+  "at": "2026-11-04T06:57:52.763Z",
+  "readOnly": true,
+  "services": [
+    {
+      "name": "oto-api-staging",
+      "count": 57,
+      "settings": [
+        {
+          "name": "BOX_BRIDGE_ZONE",
+          "present": false
+        },
+        {
+          "name": "BOX_BRIDGE_ALLOW_LOOPBACK",
+          "present": false
+        },
+        {
+          "name": "STAFF_TOKEN_PRIVATE_KEY",
+          "present": true
+        }
+      ]
+    },
+    {
+      "name": "oto-pos-web-staging",
+      "count": 4,
+      "settings": [
+        {
+          "name": "VITE_BOX_BRIDGE_ZONE",
+          "present": false
+        },
+        {
+          "name": "VITE_BOX_BRIDGE_ALLOW_LOOPBACK",
+          "present": false
+        }
+      ]
+    }
+  ]
+}

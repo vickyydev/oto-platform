@@ -1,0 +1,49 @@
+import assert from 'node:assert/strict';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import { render, envValue, service } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/render.mjs';
+const root='C:/oto-lanes/codex-box-scanner-20261104';
+const [action,sha,ciRun]=process.argv.slice(2);
+assert.ok(['enable','restore'].includes(action));assert.match(sha??'',/^[a-f0-9]{40}$/);
+assert.equal(process.env.S736_OWNER_TEST_SETTINGS_APPROVED,'true','Owner approval for temporary settings is required');
+assert.equal(process.env.S736_WINDOW_CLAIMED,'true','This lane must hold the released slot');
+const ci=JSON.parse(execFileSync('gh',['run','view',ciRun,'--json','headSha,conclusion'],{cwd:root,encoding:'utf8'}));
+assert.equal(ci.headSha,sha);assert.equal(ci.conclusion,'success');
+const out=root+'/docs/qa/proof-2026-11-04/s736/staging';mkdirSync(out,{recursive:true});
+const hash=v=>createHash('sha256').update(v).digest('hex');
+const read=async id=>{const rows=await render('GET',`/services/${id}/env-vars?limit=100`);assert.ok(Array.isArray(rows)&&rows.length<100);return Object.fromEntries(rows.map(row=>{const v=row.envVar??row;assert.equal(typeof v.value,'string');return[v.key,v.value];}));};
+const values={
+ 'oto-api-staging':{BOX_BRIDGE_ZONE:'localhost',BOX_BRIDGE_ALLOW_LOOPBACK:'true'},
+ 'oto-pos-web-staging':{VITE_BOX_BRIDGE_ZONE:'localhost',VITE_BOX_BRIDGE_ALLOW_LOOPBACK:'true'},
+};
+const baselineCounts={'oto-api-staging':57,'oto-pos-web-staging':4};
+const baseline=action==='restore'?JSON.parse(readFileSync(out+'/settings-enable.json','utf8')):null;
+const receipt={action,source:sha,ciRun,startedAt:new Date().toISOString(),services:[]};
+const save=()=>writeFileSync(out+`/settings-${action}.json`,JSON.stringify(receipt,null,2)+'\n');
+for(const [name,changes] of Object.entries(values)) {
+ const s=await service(name), live=(await render('GET',`/services/${s.id}/deploys?limit=1`))[0]?.deploy;
+ assert.equal(live.status,'live');assert.equal(live.commit.id,sha);
+ const before=await read(s.id), prior=baseline?.services.find(x=>x.name===name);
+ assert.equal(Object.keys(before).length,baselineCounts[name]+(action==='restore'?2:0));
+ if(name==='oto-api-staging')assert.ok(before.STAFF_TOKEN_PRIVATE_KEY?.trim());
+ if(action==='enable')for(const key of Object.keys(changes))assert.equal(before[key],undefined,'Test key is already present; inspect before changing');
+ if(prior)assert.deepEqual(Object.fromEntries(Object.entries(before).map(([k,v])=>[k,hash(v)])),prior.afterFingerprints,'Settings drifted; inspect before restoring');
+ const record={name,id:s.id,countBefore:Object.keys(before).length,namesBefore:Object.keys(before).sort(),beforeFingerprints:Object.fromEntries(Object.entries(before).map(([k,v])=>[k,hash(v)])),changedNames:[]};receipt.services.push(record);save();
+ for(const [key,target] of Object.entries(changes)) {
+  assert.equal(await envValue(s.id,key),before[key]??null);
+  if(action==='enable')await render('PUT',`/services/${s.id}/env-vars/${key}`,{value:target});
+  else await render('DELETE',`/services/${s.id}/env-vars/${key}`);
+  assert.equal(await envValue(s.id,key),action==='enable'?target:null);
+  record.changedNames.push(key);save();
+ }
+ const after=await read(s.id);
+ assert.equal(Object.keys(after).length,baselineCounts[name]+(action==='enable'?2:0));
+ assert.ok(Object.keys(before).filter(k=>!(k in changes)).every(k=>before[k]===after[k]));
+ record.countAfter=Object.keys(after).length;record.untouchedValuesByteIdentical=true;
+ record.afterFingerprints=Object.fromEntries(Object.entries(after).map(([k,v])=>[k,hash(v)]));
+ if(prior)assert.deepEqual(record.afterFingerprints,prior.beforeFingerprints);save();
+ const deploy=await render('POST',`/services/${s.id}/deploys`,{commitId:sha});assert.ok(deploy.id);record.deployId=deploy.id;save();
+ console.log(JSON.stringify({name,action,changedNames:record.changedNames,countBefore:record.countBefore,countAfter:record.countAfter,deployId:deploy.id,untouchedValuesByteIdentical:true}));
+}
+receipt.settingsWrittenAt=new Date().toISOString();save();
