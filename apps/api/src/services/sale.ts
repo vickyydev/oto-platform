@@ -2592,9 +2592,9 @@ function viewOf(row: typeof sale.$inferSelect, voidedByName: string | null): Sal
  */
 export interface SaleTierClaimView {
   id: string;
-  /** `evidence_type`: "Passport", "Residence certificate", "Other". A kind, never a number. */
+  /** `evidence_type`: "Passport", "Driving licence", "Other" (or a retired kind as filed). A kind, never a number. */
   documentKind: string;
-  /** What staff typed for an Other document ("Thai driving licence"); null otherwise. */
+  /** What staff typed for an Other document ("Work permit"); null otherwise. */
   documentNote: string | null;
   /** The tier the document supported — the one that priced this sale. */
   toTier: string;

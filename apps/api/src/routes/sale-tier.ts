@@ -21,8 +21,8 @@ import { opCtx, withTx } from '../services/tx';
  * SCRUM-307 — the counter's document check, recorded before it prices
  * anything.
  *
- * The till calls this when staff confirm a passport or a residence
- * certificate for a visitor who is not a member yet. What comes back is a
+ * The till calls this when staff confirm a passport or a driving
+ * licence for a visitor who is not a member yet. What comes back is a
  * claim the cart can NAME; what prices the cart is the row written here. The
  * service says why it exists and what it deliberately does not do.
  *

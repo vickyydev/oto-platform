@@ -64,6 +64,8 @@ import {
   OfflineMemberCreatedSchema,
   OfflineMemberTierChangedSchema,
   TIER_PROOF_CHOICES,
+  TIER_PROOF_OTHER,
+  TIER_PROOF_TYPES,
   tierProofNoteProblem,
   OfflineMemberUpdatedSchema,
   OfflineVisitCreatedSchema,
@@ -2073,11 +2075,13 @@ export class StationBridge {
         : memberRecord(found.member);
       let toTier: string;
       if (body.direction === 'upgrade') {
+        // Today's four choices only: the replay schema still parses a retired
+        // kind (SCRUM-773) so an older check files, but none is made here.
         if (!TIER_PROOF_CHOICES.some((type) => type === body.evidenceType)) {
           throw new BridgeError(
             400,
             'VALIDATION',
-            'Select Passport, Residence certificate, School card or Other.',
+            `Select ${TIER_PROOF_TYPES.join(', ')} or ${TIER_PROOF_OTHER}.`,
           );
         }
         // SCRUM-697: Other is recorded only with what staff checked, and no

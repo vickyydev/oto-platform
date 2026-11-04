@@ -19,10 +19,10 @@ describe('s494 money — a walk-in tier claim needs no expiry', () => {
     const tierClaim = vi
       .spyOn(salesApi, 'tierClaim')
       .mockResolvedValue({ claim: { id: 'c', actionId: 'a', branchId: 'b', toTier: 'thai', expiresAt: 'x' } });
-    const actionId = await claimVerifiedTier({ branchId: 'b', tier: 'thai', proofType: 'Residence certificate' });
+    const actionId = await claimVerifiedTier({ branchId: 'b', tier: 'thai', proofType: 'Driving licence' });
     expect(tierClaim).toHaveBeenCalledTimes(1);
     const body = tierClaim.mock.calls[0]![0];
-    expect(body).toEqual({ actionId, branchId: 'b', toTier: 'thai', evidenceType: 'Residence certificate' });
+    expect(body).toEqual({ actionId, branchId: 'b', toTier: 'thai', evidenceType: 'Driving licence' });
     expect('evidenceExpiresAt' in body).toBe(false);
   });
 

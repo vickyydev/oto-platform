@@ -75,7 +75,7 @@ afterEach(() => {
 
 describe('SCRUM-697 — what the verify step offers and accepts', () => {
   it('offers the three kinds, then Other', () => {
-    expect(TIER_PROOF_CHOICES).toEqual(['Passport', 'Residence certificate', 'School card', 'Other']);
+    expect(TIER_PROOF_CHOICES).toEqual(['Passport', 'Driving licence', 'School card', 'Other']);
   });
 
   it('confirms Other only with a two-word description that is not a number', () => {
