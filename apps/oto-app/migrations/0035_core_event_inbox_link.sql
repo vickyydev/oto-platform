@@ -1,0 +1,1 @@
+ALTER TABLE "core_events" ADD COLUMN "inbox_conversation_id" uuid;

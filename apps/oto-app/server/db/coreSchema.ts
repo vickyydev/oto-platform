@@ -1951,6 +1951,12 @@ export const coreEvents = pgTable(
 
     suppressedTimelineSources: text("suppressed_timeline_sources").array().default(sql`'{}'::text[]`),
 
+    // The platform inbox conversation a birthday was booked from (SCRUM-775):
+    // the inbox's Book Date makes a tentative birthday here through the
+    // directory API (`POST /api/directory/events`) and the BEO editor says
+    // "From the inbox". A soft link across the two schemas: no foreign key.
+    inboxConversationId: uuid("inbox_conversation_id"),
+
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
     createdByUserId: varchar("created_by_user_id").references(() => users.id),

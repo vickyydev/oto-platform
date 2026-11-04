@@ -1403,6 +1403,18 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false }: B
                   {(beoData as any).branch.name}
                 </Badge>
               ) : null}
+              {/* SCRUM-775: a birthday booked from the platform inbox's Book Date. */}
+              {beoData.inboxConversationId ? (
+                <Badge
+                  variant="outline"
+                  className="text-xs"
+                  title="Booked from a conversation in the inbox"
+                  data-testid="badge-from-inbox"
+                >
+                  <MessageSquare className="h-3 w-3 mr-1" />
+                  From the inbox
+                </Badge>
+              ) : null}
               {packageTotal > 0 && (
                 <Badge
                   variant={prepaymentReceived <= 0 ? "destructive" : outstandingBalance > 0 ? "outline" : "default"}
