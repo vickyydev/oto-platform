@@ -19,11 +19,15 @@ const stamp=Date.now().toString(36),name='ZZ TEST SCRUM-738 '+stamp,out=root+'/d
 const f={name,events:Object.fromEntries([['pass','workshop'],['party','birthday'],['mobile','birthday']].map(([key,type])=>[key,{id:randomUUID(),title:name+' '+key,type}]))};
 const r={unit:'SCRUM-738',source:sha,startedAt:new Date().toISOString(),fixture:f,cases:[],attempts:[],screens:[],cleanup:{},outcome:'incomplete'};
 const save=()=>writeFileSync(out+'/receipt.json',JSON.stringify(r,null,2)+'\n'),phase=v=>{r.phase=v;save();};
-const services=(await stagingServices()).filter(s=>['oto-api-staging','oto-pos-web-staging','oto-console-staging','oto-launcher-staging','oto-app-staging'].includes(s.name));assert.equal(services.length,5);
+const services=(await stagingServices()).filter(s=>['oto-api-staging','oto-pos-web-staging','oto-pos-staging','oto-console-staging','oto-launcher-staging','oto-booth-staging','oto-inbox-staging','oto-app-staging'].includes(s.name));assert.equal(services.length,8);
 const apiService=services.find(s=>s.name==='oto-api-staging');assert.equal(apiService.id,'srv-danh2ljtqb8s73bt9en0');
-async function live(){return Promise.all(services.map(async s=>{const d=(await render('GET',`/services/${s.id}/deploys?limit=1`))[0]?.deploy;assert.equal(d?.status,'live','Deployment not live: '+s.name);if(['oto-api-staging','oto-pos-web-staging'].includes(s.name))assert.equal(d.commit.id,sha,'Live source differs: '+s.name);return {name:s.name,commit:d.commit.id,deployId:d.id,finishedAt:d.finishedAt};}));}
+assert.ok(typeof apiService.ownerId==='string'&&apiService.ownerId.length>0,'API owner must be readable');
+assert.ok(services.every(s=>s.ownerId===apiService.ownerId),'Proof services must share the API owner');
+const journeyServices=services.filter(s=>['oto-api-staging','oto-pos-web-staging'].includes(s.name));
+async function live(selected=services){return Promise.all(selected.map(async s=>{const d=(await render('GET',`/services/${s.id}/deploys?limit=1`))[0]?.deploy;assert.equal(d?.status,'live','Deployment not live: '+s.name);if(['oto-api-staging','oto-pos-web-staging','oto-pos-staging'].includes(s.name))assert.equal(d.commit.id,sha,'Live source differs: '+s.name);return {name:s.name,commit:d.commit.id,deployId:d.id,finishedAt:d.finishedAt};}));}
 const settingsNames=async()=>{const rows=await render('GET',`/services/${apiService.id}/env-vars?limit=100`);assert.ok(Array.isArray(rows));const names=rows.map(row=>(row.envVar??row).key);assert.ok(names.every(x=>typeof x==='string'));assert.equal(new Set(names).size,names.length);return names.sort();};
-r.deployments=await live();const stable=async()=>assert.deepEqual(await live(),r.deployments);
+r.deployments=await live();const journeyDeployments=r.deployments.filter(d=>journeyServices.some(s=>s.name===d.name));
+const stable=async()=>assert.deepEqual(await live(journeyServices),journeyDeployments);
 const baselineNames=await settingsNames();assert.equal(baselineNames.length,57);r.apiSettingNameCount=57;assert.ok((await envValue(apiService.id,'PGW_PROVIDER'))==='simulator','Gateway must be simulated');r.gatewaySimulatorVerified=true;
 r.ci=JSON.parse(execFileSync('gh',['run','list','--branch','main','--commit',sha,'--limit','1','--json','databaseId,headSha,status,conclusion'],{cwd:root,encoding:'utf8'}))[0];assert.equal(r.ci?.conclusion,'success');assert.equal(r.ci.headSha,sha);save();
 const browser=await chromium.launch(),displayBrowser=await chromium.launch(),admin=await browser.newContext({viewport:{width:1600,height:1100}}),ctx=await browser.newContext({viewport:{width:1600,height:1100}}),displayCtx=await displayBrowser.newContext({viewport:{width:1280,height:900}});
@@ -54,7 +58,7 @@ finally{
  try{if(r.eventsCreateAttempted){r.cleanup.events=await archiveEvents(f,sha);save();requireJob(r.cleanup.events);}}catch(e){cleanupError('event archive',e);}
  try{if(f.stationId&&f.displayId){r.cleanup.readback=await readCleanup(f,sha);save();requireJob(r.cleanup.readback);}}catch(e){cleanupError('independent cleanup readback',e);}
  r.cleanup.sessions=[];for(const[context,origin]of [[ctx,LAUNCHER],[admin,CONSOLE],[admin,LAUNCHER]]){try{const logout=await context.request.post(origin+'/api/auth/sign-out');assert.equal(logout.status(),200);assert.equal((await context.request.get(origin+'/api/me')).status(),401);r.cleanup.sessions.push({app:new URL(origin).hostname,signedOut:true});}catch(e){cleanupError('remaining session sign-out',e);}}
- try{assert.deepEqual(await settingsNames(),baselineNames);r.apiSettingNameCountAfter=57;r.cleanup.settingNamesUnchanged=true;await stable();r.deploymentsAfter=await live();}catch(e){cleanupError('stable service readback',e);}
+ try{assert.deepEqual(await settingsNames(),baselineNames);r.apiSettingNameCountAfter=57;r.cleanup.settingNamesUnchanged=true;await stable();r.deploymentsAfter=await live();assert.deepEqual(r.deploymentsAfter,r.deployments);}catch(e){cleanupError('stable service readback',e);}
  if(!r.failure&&!r.cleanup.errors){r.outcome='four native staging tender/display journeys, native sign-out and independent cleanup passed';r.cleanup.passed=true;}
  r.finishedAt=new Date().toISOString();save();await browser.close();
 }

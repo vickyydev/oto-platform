@@ -1,0 +1,16 @@
+{
+  "at": "2026-11-04T02:10:29.956Z",
+  "names": [
+    "oto-api-staging",
+    "oto-app-staging",
+    "oto-booth-staging",
+    "oto-console-staging",
+    "oto-inbox-staging",
+    "oto-launcher-staging",
+    "oto-pos-staging",
+    "oto-pos-web-staging"
+  ],
+  "apiOwnerReadable": true,
+  "sameOwner": true,
+  "readOnly": true
+}

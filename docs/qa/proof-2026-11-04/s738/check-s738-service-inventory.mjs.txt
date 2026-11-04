@@ -1,0 +1,7 @@
+import assert from 'node:assert/strict';
+import { stagingServices } from './codex-console-route-notes-20261104/scripts/agent/render.mjs';
+const wanted=['oto-api-staging','oto-pos-web-staging','oto-pos-staging','oto-console-staging','oto-launcher-staging','oto-booth-staging','oto-inbox-staging','oto-app-staging'];
+const services=(await stagingServices()).filter(s=>wanted.includes(s.name));assert.equal(services.length,8);
+const api=services.find(s=>s.name==='oto-api-staging');assert.equal(api.id,'srv-danh2ljtqb8s73bt9en0');
+assert.ok(typeof api.ownerId==='string'&&api.ownerId.length>0);assert.ok(services.every(s=>s.ownerId===api.ownerId));
+console.log(JSON.stringify({at:new Date().toISOString(),names:services.map(s=>s.name).sort(),apiOwnerReadable:true,sameOwner:true,readOnly:true}));
