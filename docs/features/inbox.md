@@ -334,11 +334,16 @@ sign-on.
   the Console's Failures page, channel health (token expiry, webhook
   silence) its Health page, and volumes and response times roll up into
   `analytics`.
-- **POS and OTO App:** "Book Date" creates or holds a `pos.booking`; the BEO
-  links by soft key to the event order in `oto_app` (which already has event
-  orders and packages) or its platform successor — which system masters BEOs
-  is an open question. POS-side changes appear in the timeline as
-  `inbox.event` rows.
+- **OTO App (decided 4 November 2026, SCRUM-775):** the OTO App's Events
+  module is the one home for birthday orders. "Book Date" opens a confirm
+  read from the chat and makes a TENTATIVE birthday event there through the
+  app's directory API (`POST /inbox/conversations/{id}/book-date` →
+  `POST /api/directory/events`); the conversation keeps the event's id in
+  `event_order_ref` and a `date_booked` pill, and the event keeps the
+  conversation's id (`core_events.inbox_conversation_id`) and shows "From the
+  inbox". "Create BEO" opens that event's BEO form in the OTO App through the
+  suite hand-off. The dashboard's BEO card counts the week's booked
+  birthdays.
 - **AI:** one provider behind an interface with a simulator: language
   detection, intent classification, FAQ answers from a knowledge base the
   marketing role maintains, BEO extraction, transcription, translation.
@@ -473,7 +478,7 @@ Integrations page.
 | Launcher tile and mockup shell (`apps/inbox`) | not started | sample data, styled per the screenshots |
 | Channel adapters and simulator | not started | WhatsApp first; LINE per `PROJECT_CONTEXT.md` |
 | AI first responder, transcription, translation | not started | provider choice open |
-| Book Date and BEO links to POS / OTO App | not started | depends on the BEO master decision |
+| Book Date and BEO links to the OTO App | built (SCRUM-775) | the Events module masters birthday orders (owner, 4 November 2026) |
 
 ## Open questions
 - The in-app IT Brief revises the May briefs (two statuses, three tabs, five
@@ -492,9 +497,8 @@ Integrations page.
 - The reception "phones": two WhatsApp numbers (one per park) or one number
   with branch routing? Who signs in on a shared reception phone — a shared
   account or the person on shift?
-- Where BEOs and birthday bookings are mastered: OTO App's events module
-  already holds event orders and packages; the POS will hold bookings. Which
-  one does "Book Date" block, and which one owns the BEO?
+- ~~Where BEOs and birthday bookings are mastered~~ — answered 4 November
+  2026: the OTO App's Events module (SCRUM-775).
 - The AI: provider, the FAQ knowledge base and who maintains it, whether its
   replies must be reviewed before it answers customers live, and the budget
   for transcription and translation.
