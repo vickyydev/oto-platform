@@ -96,6 +96,17 @@ describe('saved longer till codes open genuine simulator QR attempts', () => {
     expect(next.json().attempt.invoiceNo).toBe(`${invoices[0]!.slice(0, -6)}000007`);
   });
 
+  it('refuses a QR on a till saved before the six-character rule in words, opening no attempt', async () => {
+    const stationId = await till('ZZ747L');
+    const saleId = await unpaid(stationId);
+    // A row from before the save-time rule; no route can write this today.
+    await ctx.db.update(station).set({ codePrefix: 'ZZ747LEGACY' }).where(eq(station.id, stationId));
+    const refused = await press(saleId);
+    expect(refused.statusCode, refused.body).toBe(400);
+    expect(refused.json().error.message).toMatch(/cannot number a gateway invoice.*one to six/);
+    expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))).toHaveLength(0);
+  });
+
   it('still refuses unsupported or booking-reserved station codes at save time', async () => {
     for (const codePrefix of ['TOOLONG', 'WEB']) {
       const response = await ctx.app.inject({ method: 'POST', url: `/branches/${branchId}/stations`, headers: { cookie },

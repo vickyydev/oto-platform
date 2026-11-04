@@ -6,6 +6,7 @@ import {
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
   WEB_INVOICE_STATION_CODE,
   buildInvoiceNo,
+  invoiceStationSegment,
   newId,
   type PaymentAttemptStatus,
   type PaymentAttemptView,
@@ -617,6 +618,17 @@ export async function openQrAttempt(
     if (!st.codePrefix) {
       throw errors.badRequest(
         'This station has no code prefix, so it cannot number a gateway invoice — set one on the station',
+      );
+    }
+    /**
+     * SCRUM-747 — every code a station can be saved with today (one to six
+     * letters or digits) numbers an invoice. A row saved before that rule may
+     * still carry a longer one; it is refused here in words a counter can act
+     * on, before any attempt is opened, rather than as an internal error.
+     */
+    if (invoiceStationSegment(st.codePrefix) === null) {
+      throw errors.badRequest(
+        'This station’s code cannot number a gateway invoice — change it in Console to one to six capital letters or digits',
       );
     }
     const method = await tenderMethodOf(tx, input.operatorId, methodCode, input.kind ?? 'qr');
