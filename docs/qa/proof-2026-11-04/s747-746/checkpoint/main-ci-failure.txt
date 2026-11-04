@@ -1,0 +1,63 @@
+CI 41792289018; source 46e8accc09aa967f7d6ec57072dbf63b7c743796
+ci	Test	2026-11-04T07:35:10.4103016Z  FAIL  test/suite-controls.test.ts > SCRUM-643 native suite-control storage > declares nullable unknown deployment facts with no success/version/time defaults
+ci	Test	2026-11-04T07:35:10.4103255Z AssertionError: expected [ { …(4) }, …(13) ] to deeply equal [ { …(4) }, …(9) ]
+ci	Test	2026-11-04T07:35:10.4103261Z
+ci	Test	2026-11-04T07:35:10.4103346Z - Expected
+ci	Test	2026-11-04T07:35:10.4103420Z + Received
+ci	Test	2026-11-04T07:35:10.4103426Z
+ci	Test	2026-11-04T07:35:10.4103515Z @@ -35,13 +35,37 @@
+ci	Test	2026-11-04T07:35:10.4103650Z       "data_type": "timestamp with time zone",
+ci	Test	2026-11-04T07:35:10.4103747Z       "is_nullable": "YES",
+ci	Test	2026-11-04T07:35:10.4103814Z     },
+ci	Test	2026-11-04T07:35:10.4103885Z     {
+ci	Test	2026-11-04T07:35:10.4103982Z       "column_default": null,
+ci	Test	2026-11-04T07:35:10.4104098Z +     "column_name": "finished_at",
+ci	Test	2026-11-04T07:35:10.4104232Z +     "data_type": "timestamp with time zone",
+ci	Test	2026-11-04T07:35:10.4104329Z +     "is_nullable": "YES",
+ci	Test	2026-11-04T07:35:10.4104396Z +   },
+ci	Test	2026-11-04T07:35:10.4104461Z +   {
+ci	Test	2026-11-04T07:35:10.4104560Z +     "column_default": null,
+ci	Test	2026-11-04T07:35:10.4104659Z       "column_name": "id",
+ci	Test	2026-11-04T07:35:10.4104757Z       "data_type": "uuid",
+ci	Test	2026-11-04T07:35:10.4104855Z       "is_nullable": "NO",
+ci	Test	2026-11-04T07:35:10.4104919Z +   },
+ci	Test	2026-11-04T07:35:10.4104985Z +   {
+ci	Test	2026-11-04T07:35:10.4105087Z +     "column_default": null,
+ci	Test	2026-11-04T07:35:10.4105190Z +     "column_name": "service",
+ci	Test	2026-11-04T07:35:10.4105292Z +     "data_type": "text",
+ci	Test	2026-11-04T07:35:10.4105450Z +     "is_nullable": "YES",
+ci	Test	2026-11-04T07:35:10.4105512Z +   },
+ci	Test	2026-11-04T07:35:10.4105576Z +   {
+ci	Test	2026-11-04T07:35:10.4105678Z +     "column_default": null,
+ci	Test	2026-11-04T07:35:10.4105785Z +     "column_name": "source",
+ci	Test	2026-11-04T07:35:10.4105878Z +     "data_type": "text",
+ci	Test	2026-11-04T07:35:10.4105978Z +     "is_nullable": "YES",
+ci	Test	2026-11-04T07:35:10.4106042Z +   },
+ci	Test	2026-11-04T07:35:10.4106102Z +   {
+ci	Test	2026-11-04T07:35:10.4106205Z +     "column_default": null,
+ci	Test	2026-11-04T07:35:10.4106326Z +     "column_name": "source_event_id",
+ci	Test	2026-11-04T07:35:10.4106484Z +     "data_type": "text",
+ci	Test	2026-11-04T07:35:10.4106581Z +     "is_nullable": "YES",
+ci	Test	2026-11-04T07:35:10.4106645Z     },
+ci	Test	2026-11-04T07:35:10.4106709Z     {
+ci	Test	2026-11-04T07:35:10.4106806Z       "column_default": null,
+ci	Test	2026-11-04T07:35:10.4106907Z       "column_name": "status",
+ci	Test	2026-11-04T07:35:10.4107004Z       "data_type": "text",
+ci	Test	2026-11-04T07:35:10.4107009Z
+ci	Test	2026-11-04T07:35:10.4107176Z  ❯ test/suite-controls.test.ts:93:26
+ci	Test	2026-11-04T07:35:10.4107379Z      91|     const columns = await client.query(`select column_name, data_type,…
+ci	Test	2026-11-04T07:35:10.4107573Z      92|       from information_schema.columns where table_schema = 'core' and …
+ci	Test	2026-11-04T07:35:10.4107766Z      93|     expect(columns.rows).toEqual([
+ci	Test	2026-11-04T07:35:10.4107876Z        |                          ^
+ci	Test	2026-11-04T07:35:10.4108063Z      94|       { column_name: 'actor_account_id', data_type: 'uuid', is_nullabl…
+ci	Test	2026-11-04T07:35:10.4108245Z      95|       { column_name: 'app', data_type: 'text', is_nullable: 'NO', colu…
+ci	Test	2026-11-04T07:35:10.4108249Z
+ci	Test	2026-11-04T07:35:10.4108461Z ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ci	Test	2026-11-04T07:35:10.4108467Z
+ci	Test	2026-11-04T07:35:10.4108475Z
+ci	Test	2026-11-04T07:35:10.4108714Z  Test Files  1 failed | 55 passed (56)
+ci	Test	2026-11-04T07:35:10.4108955Z       Tests  1 failed | 387 passed (388)
+ci	Test	2026-11-04T07:35:10.4109054Z    Start at  07:30:31
+ci	Test	2026-11-04T07:35:10.4109372Z    Duration  278.10s (transform 7.56s, setup 0ms, collect 34.01s, tests 232.83s, environment 8ms, prepare 3.70s)
+ci	Test	2026-11-04T07:35:10.4109377Z
+ci	Test	2026-11-04T07:35:10.4109381Z

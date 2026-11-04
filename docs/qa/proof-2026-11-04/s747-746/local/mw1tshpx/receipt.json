@@ -1,0 +1,53 @@
+{
+  "mode": "local",
+  "source": "f035051ff804bdd6e1d1475006f1a62fd3ae96ef",
+  "startedAt": "2026-11-04T07:59:09.238Z",
+  "fixture": {
+    "stamp": "mw1tshpx",
+    "name": "ZZ TEST SCRUM-747 mw1tshpx",
+    "stations": [],
+    "branchId": "01a1a591-9705-7ea2-abd7-60f1fd23e2ea"
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/me",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a1a591-9705-7ea2-abd7-60f1fd23e2ea/boxes",
+      "status": 200,
+      "errorCode": null
+    }
+  ],
+  "cases": [],
+  "attempts": [],
+  "screens": [],
+  "outcome": "incomplete",
+  "browser": {
+    "version": "153.0.8010.12"
+  },
+  "phase": "exact test cleanup",
+  "failure": {
+    "phase": "dedicated test catalogue and tills",
+    "name": "AssertionError",
+    "message": "No online virtual box is available"
+  },
+  "cleanup": {
+    "errors": [],
+    "children": [],
+    "stations": [],
+    "sessions": [],
+    "finishedAt": "2026-11-04T07:59:12.904Z",
+    "passed": false
+  },
+  "adminSessions": [
+    {
+      "origin": "http://127.0.0.1:52818",
+      "signedOut": true
+    }
+  ],
+  "finishedAt": "2026-11-04T07:59:13.089Z"
+}

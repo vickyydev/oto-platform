@@ -1,0 +1,28 @@
+{
+  "at": "2026-11-04T08:10:20.237Z",
+  "source": "f035051ff804bdd6e1d1475006f1a62fd3ae96ef",
+  "requestedBy": "owner",
+  "state": "paused",
+  "completeApi": {
+    "outcome": "interrupted for owner-requested pause",
+    "controllerExitCode": 1,
+    "originalReceiptPreserved": true,
+    "acceptancePass": false,
+    "stoppedVitestProcessId": 27704,
+    "wrapperFinishedAt": "2026-11-04T08:06:12.115Z",
+    "knownControllerAndDatabaseProcessIdsReadAbsent": true
+  },
+  "workspace": {
+    "outcome": "failed",
+    "successfulTasks": 14,
+    "tasks": 15,
+    "failure": "packages/db/test/suite-controls.test.ts:93",
+    "buildReached": false
+  },
+  "staging": {
+    "fixturesCreated": 0,
+    "images": 0,
+    "deployed": false
+  },
+  "runningOwnWork": false
+}
