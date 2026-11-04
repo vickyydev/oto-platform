@@ -1,0 +1,16 @@
+{
+  "source": "7eb53c7e5b6ac1b83986189e4a48452c0d3bd167",
+  "recordedAt": "2026-11-04T01:28:48.877Z",
+  "exitCode": 0,
+  "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s738-api-gate.mts",
+  "runner": "Embedded PostgreSQL; complete API vitest run --pool=forks with repository serial file configuration; disposable database dropped in finally.",
+  "summary": {
+    "Test Files": "Test Files  441 passed | 8 skipped (449)",
+    "Tests": "Tests  6253 passed | 401 skipped | 4 todo (6658)",
+    "Duration": "Duration  3526.63s (transform 8.61s, setup 0ms, collect 836.41s, tests 2587.92s, environment 53ms, prepare 40.85s)"
+  },
+  "rawLogSha256": "de22ab9dbffcc6183910b7aadb242e59d31ffd32c9a0813dcf25ff898852ea14",
+  "committedLogSha256": "e00a2b6b7620c2b78bc981c067853e71ccf6949b5221fd69882e88077d52ff04",
+  "normalization": "LF line endings, trailing horizontal whitespace removed, one final newline; raw log retained outside the repository.",
+  "scope": "Local complete API acceptance on the stated source. No staging or later-source CI claim."
+}
