@@ -92,6 +92,8 @@ for the built till.
 
 Run on staging on 4 November 2026, 20:00-20:13 Bangkok, on live a671f7bd: see [staging/README.md](staging/README.md). The station part passed at 1440 and 390 px; one finding (the park list is not asked again after Unlock, so the till keeps the built-in sample catalogue) keeps SCRUM-744 at Testing.
 
+The second part, which asks for the park list and the catalogue again at the Unlock, is in [part2/README.md](part2/README.md), with its own local proof and staging plan.
+
 To run once this commit is on main and the POS web and api are live on it.
 No setting, credential or migration is needed.
 
