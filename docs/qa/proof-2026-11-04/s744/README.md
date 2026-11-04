@@ -76,6 +76,14 @@ the screen.
 CI's till end-to-end step now runs the spec as well, after the paid
 drop-off spec.
 
+Landing rebase, 4 November 2026 about 19:20 Bangkok: the lane was rebased
+onto main at 2cb74ada1 with no conflicts (the counter box scanner change to
+`apps/pos/src/api/bridge.ts` landed in between; this lane does not touch it).
+On the rebased tree `pnpm --filter @oto/pos typecheck`, eslint on the three
+changed files, the ten POS unit files that use the station context (316
+cases), `POS_E2E_BUILT=1 pnpm --filter @oto/pos e2e e2e/locked-reload.spec.ts`
+(2 of 2, desktop and phone) and `pnpm api-types:check` all passed.
+
 Rerun: `pnpm --filter @oto/pos e2e e2e/locked-reload.spec.ts`, with
 `POS_E2E_EVIDENCE_DIR` naming a folder for the screens and `POS_E2E_BUILT=1`
 for the built till.
