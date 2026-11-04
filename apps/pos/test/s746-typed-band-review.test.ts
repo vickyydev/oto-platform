@@ -17,6 +17,15 @@ describe('SCRUM-746: typed F&B band codes precede voucher classification', () =>
     },
   );
 
+  // A five-character prefix can equally pass the current voucher check
+  // character once the dash is removed; the printed band still wins.
+  it('leaves a five-character band that also passes the voucher check for the band lookup', () => {
+    const code = 'ZZAGY-T25K59';
+    expect(parseBandShortCode(code)).toEqual({ prefix: 'ZZAGY', tail: 'T25K59' });
+    expect(looksLikeVoucherCode(code)).toBe(true);
+    expect(looksLikeTypedFnbVoucher(code)).toBe(false);
+  });
+
   it.each(['T1-QV8QZ8', 'ZZ747A-QV8QZ8'])('keeps short and six-character bands in the band lookup: %s', code => {
     expect(parseBandShortCode(code)).not.toBeNull();
     expect(looksLikeTypedFnbVoucher(code)).toBe(false);
