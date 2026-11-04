@@ -6,6 +6,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { ConversationDetail, ConversationEvent, ConversationRow, Dashboard as DashboardData, InboxMe, Message } from '@/api/inbox';
+import { OTO_APP_UNREACHABLE, checkedLaunchUrl } from '@/api/otoApp';
 import { BookDateDialog, readDraft } from '@/components/BookDateDialog';
 import { ChatPanel, type Thread } from '@/components/ChatPanel';
 import { Dashboard } from '@/components/Dashboard';
@@ -17,7 +18,7 @@ import {
   resolveEventDate,
   type BookDateDraft,
 } from '@/lib/beo';
-import { BOOK_DATE_NOT_YOURS_REASON, eventText, mayBookDate } from '@/lib/view';
+import { BOOK_DATE_NOT_YOURS_REASON, WRITES_PENDING_REASON, eventText, mayBookDate } from '@/lib/view';
 
 const CENTRAL = '00000000-0000-7000-8000-00000000000c';
 const T_BIRTHDAYS = '00000000-0000-7000-8000-0000000000b1';
@@ -31,7 +32,7 @@ const teams = (member: boolean): InboxMe['teams'] => [
   { id: T_CENTRAL, kind: 'reception', name: 'Reception · Central Floresta', colour: 'sky', branchId: CENTRAL, member: false },
 ];
 
-function me(o: { member?: boolean; assign?: boolean } = {}): InboxMe {
+function me(o: { member?: boolean; assign?: boolean; writes?: boolean } = {}): InboxMe {
   return {
     accountId: ME,
     name: 'Agent',
@@ -41,7 +42,7 @@ function me(o: { member?: boolean; assign?: boolean } = {}): InboxMe {
     people: [{ accountId: ME, name: 'Agent', teamIds: [T_BIRTHDAYS], operatorWide: false }],
     defaultReceptionBranchId: CENTRAL,
     capabilities: {
-      writes: true,
+      writes: o.writes ?? true,
       dashboard: false,
       assign: o.assign ?? false,
       move: false,
@@ -90,6 +91,7 @@ const event: ConversationEvent = {
   branchName: 'Oto Play Park, Central Floresta',
   status: 'tentative',
   statusName: 'Tentative',
+  archived: false,
   kids: 15,
   adults: null,
   bookedAt: '2026-11-04T03:10:00.000Z',
@@ -184,6 +186,7 @@ describe("the prototype's reading of the chat, ported (parseBeoFromConversation,
     expect(data).toMatchObject({
       customerName: 'Olga Demo',
       contact: '+66812345678',
+      phone: '+66812345678',
       branchId: CENTRAL,
       eventDate: '21/mar',
       numKids: '15',
@@ -253,6 +256,20 @@ describe('the dialog opens with the reading and checks before it saves', () => {
       childAge: '6',
     });
   });
+  it('opens Phone empty on a channel that gives no phone: a handle is no phone number', () => {
+    const instagram = row({
+      channel: 'instagram',
+      contact: { id: '0192f0a0-1234-7abc-8def-0123456789ad', channel: 'instagram', handle: '17841400000000001', displayName: 'Olga Demo', phone: null, language: 'en', erased: false },
+    });
+    const data = parseBeoFromConversation(instagram, [msg('Party for 15 kids on 21/mar')]);
+    // The prototype's free contact keeps the handle; the Phone field does not take it.
+    expect(data.contact).toBe('17841400000000001');
+    expect(data.phone).toBe('');
+    const d = bookDateDraft(data, '2026-11-04', CENTRAL);
+    expect(d.phone).toBe('');
+    expect(readDraft(d)).toMatchObject({ values: { phone: null } });
+  });
+
   it('reads the draft into the route’s fields, or says what is missing', () => {
     expect(readDraft(draft)).toEqual({
       values: {
@@ -316,6 +333,14 @@ describe('Book Date and Create BEO in the conversation', () => {
     expect(html).toContain(`title="${BOOK_DATE_NOT_YOURS_REASON}"`);
   });
 
+  it('with writes not switched on, both say so, as the other controls do', () => {
+    const html = panel(me({ writes: false }), null);
+    expect(buttonNamed(html, 'Book Date')).toMatch(DISABLED);
+    expect(buttonNamed(html, 'Create BEO')).toMatch(DISABLED);
+    expect(html).toContain(`title="${WRITES_PENDING_REASON}"`);
+    expect(html).not.toContain(BOOK_DATE_NOT_YOURS_REASON);
+  });
+
   it('once booked: "Date Booked", and the chip naming the date and the park, which opens the event', () => {
     const html = panel(me(), event);
     expect(buttonNamed(html, 'Date Booked')).toMatch(DISABLED);
@@ -323,6 +348,16 @@ describe('Book Date and Create BEO in the conversation', () => {
     const chip = buttonNamed(html, 'Event: 21 Mar 2099 at Central Floresta');
     expect(chip).not.toBeNull();
     expect(chip).toContain('Tentative in the Events calendar');
+  });
+
+  it('an event archived in the Events module says so on the button and the chip; Create BEO still opens it', () => {
+    const html = panel(me(), { ...event, archived: true });
+    expect(buttonNamed(html, 'Date Booked')).toBeNull();
+    expect(buttonNamed(html, 'Event archived')).toMatch(DISABLED);
+    expect(buttonNamed(html, 'Create BEO')).not.toMatch(DISABLED);
+    const chip = buttonNamed(html, 'Event: 21 Mar 2099 at Central Floresta · Archived');
+    expect(chip).not.toBeNull();
+    expect(chip).toContain('Archived in the Events calendar');
   });
 
   it('a conversation outside Birthdays & Events has neither', () => {
@@ -334,12 +369,26 @@ describe('Book Date and Create BEO in the conversation', () => {
   it('the chip label, and the pill the booking leaves', () => {
     expect(eventChipLabel({ date: '2099-03-21', branchName: 'Central Floresta' })).toBe('Event: 21 Mar 2099 at Central Floresta');
     expect(eventChipLabel({ date: '2099-03-21', branchName: null })).toBe('Event: 21 Mar 2099');
+    expect(eventChipLabel({ date: '2099-03-21', branchName: 'Central Floresta', archived: true })).toBe(
+      'Event: 21 Mar 2099 at Central Floresta · Archived',
+    );
     expect(
       eventText(
         { id: EVENT, kind: 'date_booked', actorKind: 'account', actorAccountId: ME, actorName: 'Anya', payload: {}, createdAt: event.bookedAt },
         { me: me() },
       ),
     ).toBe('Date blocked in the Events calendar by Anya · awaiting confirmation');
+  });
+});
+
+describe('Create BEO goes only to a hand-off address the api answered', () => {
+  it('takes the OTO App hand-off with its BEO target, and nothing else', () => {
+    const ok = 'https://otoapp.example/#handoff=eyJ.abc.def&to=%2Fstudio%2Fevents%2Fkanban%3Fbeo%3D0192f0a0-1234-7abc-8def-0123456789ee';
+    expect(checkedLaunchUrl(ok)).toBe(ok);
+    expect(checkedLaunchUrl('https://otoapp.example/#handoff=eyJ.abc.def')).toBe('https://otoapp.example/#handoff=eyJ.abc.def');
+    for (const bad of [null, '', 'javascript:alert(1)//#handoff=x', 'https://otoapp.example/', 'https://otoapp.example/#to=%2Fx', 'not a url']) {
+      expect(() => checkedLaunchUrl(bad), String(bad)).toThrow(OTO_APP_UNREACHABLE);
+    }
   });
 });
 

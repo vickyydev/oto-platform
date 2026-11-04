@@ -129,6 +129,14 @@ export const inboxApi = {
       idempotencyKey: idemKey(),
     }),
 
+  /**
+   * Create BEO (SCRUM-775): a one-use hand-off into the OTO App landing on the
+   * conversation's event's BEO form, recorded naming the conversation and the
+   * event. The answer is a credential, so no key is sent: the api keeps none.
+   */
+  openBeo: (id: string) =>
+    api.post<ApiResponse<'/inbox/conversations/{id}/open-beo', 'post'>>(`${at(id)}/open-beo`, undefined),
+
   handle: (id: string) =>
     api.post<ApiResponse<'/inbox/conversations/{id}/handle', 'post'>>(`${at(id)}/handle`, undefined, {
       idempotencyKey: idemKey(),
