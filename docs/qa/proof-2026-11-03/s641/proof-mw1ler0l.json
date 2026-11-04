@@ -1,0 +1,207 @@
+{
+  "unit": "SCRUM-641",
+  "source": "057cd831b81297a4c4829bbf37f7a92003af2a6e",
+  "startedAt": "2026-11-04T04:04:31.173Z",
+  "checks": [
+    {
+      "name": "Set-up: the ZZ TEST Fix Department login is a member of the Fix Department",
+      "maintenanceMembersBefore": 1,
+      "at": "2026-11-04T04:04:44.350Z"
+    },
+    {
+      "name": "Set-up: a ZZ TEST supplier link for the ZZ TEST branch only",
+      "supplierTokenId": "22530bc7-1719-4d0c-9409-fc9d74bc3acb",
+      "at": "2026-11-04T04:04:44.508Z"
+    },
+    {
+      "name": "1. My Reports: the report reads \"Reported by <name> · <date, time>\"",
+      "reportId": "64e0c5da-bf8b-433b-9f23-e8e170d6c4cb",
+      "shown": "Reported by ZZ TEST SCRUM-641 mw1l5g6u reporter · 04 Nov 2026, 11:03",
+      "at": "2026-11-04T04:04:50.073Z"
+    },
+    {
+      "name": "2. Fix Board (Fix Department member): the same \"Reported by\" line on opening",
+      "shown": "Reported by ZZ TEST SCRUM-641 mw1l5g6u reporter · 04 Nov 2026, 11:03",
+      "at": "2026-11-04T04:04:51.811Z"
+    },
+    {
+      "name": "2. The member sees their own comment as \"<name> (you)\" with its date and time",
+      "commentId": "283dd4d1-2f67-4457-acf1-9e962b7a1919",
+      "time": "04 Nov 2026, 11:03",
+      "at": "2026-11-04T04:04:53.523Z"
+    },
+    {
+      "name": "2. The manager sees the same row with the name and no \"(you)\"; the submitted row and the comment both carry an absolute date and time",
+      "at": "2026-11-04T04:04:58.848Z"
+    },
+    {
+      "name": "3. The paperclip offers \"Camera\" and \"Choose from Gallery\"",
+      "at": "2026-11-04T04:05:00.601Z"
+    },
+    {
+      "name": "3. In the thread: the photo thumbnail and the \"PDF document\" chip show directly",
+      "thumbnailNaturalWidth": 480,
+      "at": "2026-11-04T04:05:02.468Z"
+    },
+    {
+      "name": "3. The photo opens in the gallery",
+      "at": "2026-11-04T04:05:04.057Z"
+    },
+    {
+      "name": "3. The PDF chip opens the file as a PDF",
+      "contentType": "application/pdf",
+      "startsWith": "%PDF-",
+      "tabUrlPath": "/api/files/fix-media/fix_1793765027376_dveajatr6.pdf",
+      "at": "2026-11-04T04:05:09.259Z"
+    },
+    {
+      "name": "3. A photo with no words posts, with no empty message line",
+      "commentId": "dfeb8426-2d0d-4e15-88f8-31f705aaf3fd",
+      "at": "2026-11-04T04:05:11.019Z"
+    },
+    {
+      "name": "3. At phone width the same dialog shows; Camera opens the file input that asks the device for its rear camera",
+      "capture": "environment",
+      "accept": "image/*,video/*",
+      "chooserFor": "input-comment-camera",
+      "note": "A headless browser has no camera; that the phone shows its camera app was not seen here.",
+      "at": "2026-11-04T04:05:12.779Z"
+    },
+    {
+      "name": "3. A .docx is refused in words: \"Can't add file\"",
+      "at": "2026-11-04T04:05:15.160Z"
+    },
+    {
+      "name": "3. The reporter adds a photo comment from My Reports",
+      "at": "2026-11-04T04:05:18.462Z"
+    },
+    {
+      "name": "4. No \"Delete report\" button for the reporter or the Fix Department member; the server refuses them too",
+      "reporter": {
+        "status": 403,
+        "body": {
+          "message": "Only managers and admins can delete Fix reports"
+        }
+      },
+      "member": {
+        "status": 403,
+        "body": {
+          "message": "Only managers and admins can delete Fix reports"
+        }
+      },
+      "at": "2026-11-04T04:05:21.076Z"
+    },
+    {
+      "name": "4. The manager at another branch cannot open the report",
+      "details": {
+        "status": 403,
+        "body": {
+          "message": "Access denied to this Fix report branch"
+        }
+      },
+      "at": "2026-11-04T04:05:25.764Z"
+    },
+    {
+      "name": "5. Before the delete, the ZZ TEST supplier link lists \"ZZ TEST 641 delete\"",
+      "at": "2026-11-04T04:05:31.373Z"
+    },
+    {
+      "name": "5. \"Delete report\" asks \"Delete this report?\" with the plain explanation; Cancel keeps the report",
+      "at": "2026-11-04T04:05:35.116Z"
+    },
+    {
+      "name": "5. Confirming shows \"Report deleted\"; the card leaves the board and Pending falls by one",
+      "pendingBefore": 2,
+      "pendingAfter": 1,
+      "at": "2026-11-04T04:05:36.382Z"
+    },
+    {
+      "name": "5. The admin deletes a third ZZ TEST report the same way",
+      "reportId": "422a343d-fb8f-49e3-95ed-dcb7182bd2d1",
+      "at": "2026-11-04T04:05:39.496Z"
+    },
+    {
+      "name": "6. The deleted reports are gone from the Fix Board, My Queue and My Reports",
+      "listed": {
+        "board": 1,
+        "queue": 1,
+        "mine": 1
+      },
+      "at": "2026-11-04T04:05:43.251Z"
+    },
+    {
+      "name": "6. A link saved earlier with ?reportId= shows \"This report is not available\"",
+      "at": "2026-11-04T04:05:44.433Z"
+    },
+    {
+      "name": "6. The deleted report's comment attachment URL is refused",
+      "before": 200,
+      "after": 404,
+      "at": "2026-11-04T04:05:45.370Z"
+    },
+    {
+      "name": "6. The supplier link made before the delete no longer shows the report",
+      "supplierRead": 404,
+      "at": "2026-11-04T04:05:46.686Z"
+    },
+    {
+      "name": "7. An update sent on a screen opened before the delete turns it to \"This report is not available\" with no status, comment bar or delete",
+      "commentStatus": 404,
+      "at": "2026-11-04T04:05:50.272Z"
+    },
+    {
+      "name": "8. The Activity Logbook shows one \"Fix Report Deleted\" row per deleted report, naming who deleted it",
+      "at": "2026-11-04T04:05:52.029Z"
+    },
+    {
+      "name": "9. The supplier sees and opens the photo and PDF on comments it can read, and its own update is text only (an attachment sent with it is not kept)",
+      "pdfContentType": "application/pdf",
+      "supplierCommentMedia": [],
+      "at": "2026-11-04T04:05:56.543Z"
+    }
+  ],
+  "images": [
+    "s641-01-reporter-my-report-reported-by.png",
+    "s641-02a-member-board-reported-by.png",
+    "s641-02b-member-comment-you-and-time.png",
+    "s641-02c-manager-comment-name-without-you.png",
+    "s641-03a-paperclip-camera-or-gallery.png",
+    "s641-03c-thread-thumbnail-and-pdf-chip.png",
+    "s641-03d-photo-opens-in-gallery.png",
+    "s641-03e-pdf-opens-as-pdf.png",
+    "s641-03f-photo-only-comment-no-empty-line.png",
+    "s641-03g-phone-width-same-dialog.png",
+    "s641-03h-docx-refused-in-words.png",
+    "s641-03i-reporter-photo-comment-from-my-reports.png",
+    "s641-04a-reporter-no-delete.png",
+    "s641-04b-member-no-delete.png",
+    "s641-04c-other-branch-manager-cannot-open.png",
+    "s641-05a-supplier-link-before-delete.png",
+    "s641-05b-board-before-delete.png",
+    "s641-05c-delete-confirmation.png",
+    "s641-05d-cancel-keeps-report.png",
+    "s641-05e-toast-report-deleted.png",
+    "s641-05f-board-after-delete.png",
+    "s641-05g-admin-deletes-third-report.png",
+    "s641-06a-member-queue-without-deleted.png",
+    "s641-06b-my-reports-without-deleted.png",
+    "s641-06c-saved-link-not-available.png",
+    "s641-06d-attachment-url-refused.png",
+    "s641-06e-supplier-link-after-delete.png",
+    "s641-07-stale-screen-not-available.png",
+    "s641-08-activity-logbook-deleted-rows.png",
+    "s641-09a-supplier-sees-attachments-text-only.png",
+    "s641-09b-supplier-opens-photo.png"
+  ],
+  "appDeploy": {
+    "name": "oto-app-staging",
+    "id": "srv-danppvjtqb8s73cnvua0",
+    "deployId": "dep-dblagc0473hc73avn5jg",
+    "status": "live",
+    "sha": "057cd831b81297a4c4829bbf37f7a92003af2a6e",
+    "finishedAt": "2026-11-04T03:39:00.750224Z"
+  },
+  "afterDeploy": true,
+  "outcome": "passed",
+  "finishedAt": "2026-11-04T04:05:56.543Z"
+}

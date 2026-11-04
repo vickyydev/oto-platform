@@ -1,0 +1,32 @@
+{
+  "jobId": "job-dblb120u01pc739mclu0",
+  "source": "057cd831b81297a4c4829bbf37f7a92003af2a6e",
+  "startedAt": "2026-11-04T04:11:52.541Z",
+  "status": "succeeded",
+  "result": {
+    "event": "s641_supplier_read",
+    "at": "2026-11-04T04:11:57.494Z",
+    "readOnly": true,
+    "rows": [
+      {
+        "id": "bc519714-abd1-46dd-9eed-1406e6cf7328",
+        "name": "ZZ TEST SCRUM-641 mw1l5g6u supplier",
+        "is_enabled": false,
+        "created_at": "2026-11-04T04:03:28.779Z"
+      },
+      {
+        "id": "22530bc7-1719-4d0c-9409-fc9d74bc3acb",
+        "name": "ZZ TEST SCRUM-641 mw1l5g6u supplier",
+        "is_enabled": false,
+        "created_at": "2026-11-04T04:04:44.542Z"
+      }
+    ],
+    "branches": [
+      {
+        "id": "01a1a4b4-5ab5-7494-b64f-f7665cbba778",
+        "name": "ZZ TEST SCRUM-641 mw1l5g6u",
+        "core_archived": true
+      }
+    ]
+  }
+}

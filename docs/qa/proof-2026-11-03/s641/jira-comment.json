@@ -1,0 +1,23 @@
+{
+  "at": "2026-11-04T04:13:03.708Z",
+  "status": 201,
+  "commentId": null,
+  "attached": [
+    "s641-01-reporter-my-report-reported-by.png",
+    "s641-02c-manager-comment-name-without-you.png",
+    "s641-03b-previews-before-sending.png",
+    "s641-03e-pdf-opens-as-pdf.png",
+    "s641-03g-phone-width-same-dialog.png",
+    "s641-03h-docx-refused-in-words.png",
+    "s641-04b-member-no-delete.png",
+    "s641-04c-other-branch-manager-cannot-open.png",
+    "s641-05c-delete-confirmation.png",
+    "s641-05e-toast-report-deleted.png",
+    "s641-06c-saved-link-not-available.png",
+    "s641-07-stale-screen-not-available.png",
+    "s641-08-activity-logbook-deleted-rows.png",
+    "s641-09a-supplier-sees-attachments-text-only.png"
+  ],
+  "uploadedNow": 14,
+  "statusBefore": "Testing"
+}

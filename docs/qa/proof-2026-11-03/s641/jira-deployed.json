@@ -1,0 +1,66 @@
+{
+  "at": "2026-11-04T04:13:27.829Z",
+  "key": "SCRUM-641",
+  "status": "Deployed",
+  "proofCommentId": "13396",
+  "commitLinksCommentId": "13397",
+  "commitLinks": 6,
+  "attachedImages": [
+    {
+      "id": "12462",
+      "filename": "s641-01-reporter-my-report-reported-by.png"
+    },
+    {
+      "id": "12463",
+      "filename": "s641-02c-manager-comment-name-without-you.png"
+    },
+    {
+      "id": "12464",
+      "filename": "s641-03b-previews-before-sending.png"
+    },
+    {
+      "id": "12465",
+      "filename": "s641-03e-pdf-opens-as-pdf.png"
+    },
+    {
+      "id": "12466",
+      "filename": "s641-03g-phone-width-same-dialog.png"
+    },
+    {
+      "id": "12467",
+      "filename": "s641-03h-docx-refused-in-words.png"
+    },
+    {
+      "id": "12468",
+      "filename": "s641-04b-member-no-delete.png"
+    },
+    {
+      "id": "12469",
+      "filename": "s641-04c-other-branch-manager-cannot-open.png"
+    },
+    {
+      "id": "12470",
+      "filename": "s641-05c-delete-confirmation.png"
+    },
+    {
+      "id": "12471",
+      "filename": "s641-05e-toast-report-deleted.png"
+    },
+    {
+      "id": "12472",
+      "filename": "s641-06c-saved-link-not-available.png"
+    },
+    {
+      "id": "12473",
+      "filename": "s641-07-stale-screen-not-available.png"
+    },
+    {
+      "id": "12474",
+      "filename": "s641-08-activity-logbook-deleted-rows.png"
+    },
+    {
+      "id": "12475",
+      "filename": "s641-09a-supplier-sees-attachments-text-only.png"
+    }
+  ]
+}

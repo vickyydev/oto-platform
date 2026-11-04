@@ -1,0 +1,223 @@
+{
+  "unit": "SCRUM-641",
+  "source": "057cd831b81297a4c4829bbf37f7a92003af2a6e",
+  "startedAt": "2026-11-04T04:08:10.630Z",
+  "steps": [
+    {
+      "name": "Re-shot: at the end of the thread the reporter and the Fix member have no \"Delete report\"; the manager has it",
+      "at": "2026-11-04T04:08:32.152Z"
+    },
+    {
+      "name": "Retired: \"ZZ TEST 641 author\" deleted by the ZZ TEST manager through the feature",
+      "reportId": "64e0c5da-bf8b-433b-9f23-e8e170d6c4cb",
+      "at": "2026-11-04T04:08:32.428Z"
+    },
+    {
+      "name": "Retired: the ZZ TEST supplier link is revoked",
+      "supplierTokenId": "22530bc7-1719-4d0c-9409-fc9d74bc3acb",
+      "at": "2026-11-04T04:08:35.892Z"
+    },
+    {
+      "name": "Put back: ZZ TEST Maintenance 656 is out of the Fix Department again",
+      "membersBefore": 1,
+      "membersAfter": 0,
+      "at": "2026-11-04T04:08:36.060Z"
+    },
+    {
+      "name": "Put back: the ZZ TEST Maintenance 656 app login is at Central Floresta again, switched off and no longer linked to a platform sign-in",
+      "at": "2026-11-04T04:08:39.552Z"
+    },
+    {
+      "name": "Retired: the five ZZ TEST SCRUM-641 platform logins are inactive with no access grants",
+      "at": "2026-11-04T04:08:49.069Z"
+    },
+    {
+      "name": "Retired: the ZZ TEST SCRUM-641 branch is archived",
+      "branchId": "f9d17edd-8a2b-4314-a8ca-10383dcc7022",
+      "at": "2026-11-04T04:08:49.502Z"
+    },
+    {
+      "name": "Read back: every ZZ TEST record this proof made is retired and the claimed login is as it was before",
+      "jobId": "job-dblb0bt9el5s73cghu90",
+      "at": "2026-11-04T04:11:33.027Z"
+    }
+  ],
+  "resumedAt": "2026-11-04T04:10:16.886Z",
+  "readBack": {
+    "jobId": "job-dblb0bt9el5s73cghu90",
+    "event": "s641_cleanup_read",
+    "at": "2026-11-04T04:11:26.355Z",
+    "readOnly": true,
+    "users": [
+      {
+        "id": "01a1a4b5-689b-7f88-b240-f5c88324a322",
+        "full_name": "ZZ TEST SCRUM-641 mw1l5g6u manager at another branch",
+        "role": "manager",
+        "is_active": false,
+        "platform_user_id": "65420143-19eb-46d1-8881-74af95ceb220",
+        "access": [
+          {
+            "b": "540f6e5e-e94b-4ce9-a79a-5947e841e1fb",
+            "s": "selected_branches"
+          }
+        ]
+      },
+      {
+        "id": "01a1a4b5-6a63-7f2f-9f9a-4b38f396b001",
+        "full_name": "ZZ TEST SCRUM-641 mw1l5g6u admin",
+        "role": "admin",
+        "is_active": false,
+        "platform_user_id": "a1c61fc7-6c63-41df-9bed-d64aec8c259c",
+        "access": [
+          {
+            "b": "01a1a4b4-5ab5-7494-b64f-f7665cbba778",
+            "s": "selected_branches"
+          },
+          {
+            "b": "540f6e5e-e94b-4ce9-a79a-5947e841e1fb",
+            "s": "selected_branches"
+          }
+        ]
+      },
+      {
+        "id": "01a1a4b5-66d8-70f7-80b6-e3809ecd9674",
+        "full_name": "ZZ TEST SCRUM-641 mw1l5g6u manager at the ZZ TEST branch",
+        "role": "manager",
+        "is_active": false,
+        "platform_user_id": "551f82a8-09a6-4619-8e37-16c91a54ee4e",
+        "access": [
+          {
+            "b": "01a1a4b4-5ab5-7494-b64f-f7665cbba778",
+            "s": "selected_branches"
+          }
+        ]
+      },
+      {
+        "id": "5d16d25e-3384-4250-9d4f-ec4f4e58b213",
+        "full_name": "ZZ TEST Maintenance 656",
+        "role": "staff",
+        "is_active": false,
+        "platform_user_id": null,
+        "access": [
+          {
+            "b": "540f6e5e-e94b-4ce9-a79a-5947e841e1fb",
+            "s": "selected_branches"
+          }
+        ]
+      },
+      {
+        "id": "01a1a4b5-6404-757a-8d39-85125e627616",
+        "full_name": "ZZ TEST SCRUM-641 mw1l5g6u reporter",
+        "role": "staff",
+        "is_active": false,
+        "platform_user_id": "6dd7619e-83b0-4108-b75f-e3f74b0ee02b",
+        "access": [
+          {
+            "b": "01a1a4b4-5ab5-7494-b64f-f7665cbba778",
+            "s": "selected_branches"
+          }
+        ]
+      }
+    ],
+    "employee": [
+      {
+        "id": "5f5eb6a8-771a-41fd-ac50-01aa5e9643df",
+        "primary_department_id": null,
+        "status": "active"
+      }
+    ],
+    "maintenanceMembers": 0,
+    "accounts": [
+      {
+        "id": "35a9f08a-c1b4-4f98-958b-e846d0889089",
+        "status": "inactive",
+        "grants": 0,
+        "sessions": 0,
+        "links": 0
+      },
+      {
+        "id": "6dd7619e-83b0-4108-b75f-e3f74b0ee02b",
+        "status": "inactive",
+        "grants": 0,
+        "sessions": 0,
+        "links": 1
+      },
+      {
+        "id": "551f82a8-09a6-4619-8e37-16c91a54ee4e",
+        "status": "inactive",
+        "grants": 0,
+        "sessions": 0,
+        "links": 1
+      },
+      {
+        "id": "65420143-19eb-46d1-8881-74af95ceb220",
+        "status": "inactive",
+        "grants": 0,
+        "sessions": 0,
+        "links": 1
+      },
+      {
+        "id": "a1c61fc7-6c63-41df-9bed-d64aec8c259c",
+        "status": "inactive",
+        "grants": 0,
+        "sessions": 0,
+        "links": 1
+      }
+    ],
+    "reports": [
+      {
+        "id": "64e0c5da-bf8b-433b-9f23-e8e170d6c4cb",
+        "title": "ZZ TEST 641 author",
+        "archived": true,
+        "archived_by_user_id": "01a1a4b5-66d8-70f7-80b6-e3809ecd9674",
+        "deleted_rows": 1,
+        "comments": 5,
+        "comments_with_media": 3
+      },
+      {
+        "id": "cf8fb583-9860-40c3-91ad-7153e0a6c92c",
+        "title": "ZZ TEST 641 delete",
+        "archived": true,
+        "archived_by_user_id": "01a1a4b5-66d8-70f7-80b6-e3809ecd9674",
+        "deleted_rows": 1,
+        "comments": 1,
+        "comments_with_media": 1
+      },
+      {
+        "id": "422a343d-fb8f-49e3-95ed-dcb7182bd2d1",
+        "title": "ZZ TEST 641 delete by admin",
+        "archived": true,
+        "archived_by_user_id": "01a1a4b5-6a63-7f2f-9f9a-4b38f396b001",
+        "deleted_rows": 1,
+        "comments": 0,
+        "comments_with_media": 0
+      },
+      {
+        "id": "6a9542c7-cb27-4948-80dc-bb678595b41b",
+        "title": "ZZ TEST 641 stale",
+        "archived": true,
+        "archived_by_user_id": "01a1a4b5-6a63-7f2f-9f9a-4b38f396b001",
+        "deleted_rows": 1,
+        "comments": 0,
+        "comments_with_media": 0
+      }
+    ],
+    "supplier": [
+      {
+        "id": "22530bc7-1719-4d0c-9409-fc9d74bc3acb",
+        "name": "ZZ TEST SCRUM-641 mw1l5g6u supplier",
+        "is_enabled": false
+      }
+    ],
+    "branch": [
+      {
+        "id": "f9d17edd-8a2b-4314-a8ca-10383dcc7022",
+        "name": "ZZ TEST SCRUM-641 mw1l5g6u",
+        "archived": true
+      }
+    ],
+    "openOnBranch": 0
+  },
+  "outcome": "passed",
+  "finishedAt": "2026-11-04T04:11:33.027Z"
+}

@@ -1,0 +1,178 @@
+{
+  "unit": "SCRUM-641",
+  "at": "2026-11-04T04:00:03.397Z",
+  "source": "057cd831b81297a4c4829bbf37f7a92003af2a6e",
+  "appDeploy": {
+    "name": "oto-app-staging",
+    "id": "srv-danppvjtqb8s73cnvua0",
+    "deployId": "dep-dblagc0473hc73avn5jg",
+    "status": "live",
+    "sha": "057cd831b81297a4c4829bbf37f7a92003af2a6e",
+    "finishedAt": "2026-11-04T03:39:00.750224Z"
+  },
+  "branch": {
+    "id": "f9d17edd-8a2b-4314-a8ca-10383dcc7022",
+    "name": "ZZ TEST SCRUM-641 mw1l5g6u",
+    "otoApp": {
+      "appBranchId": "01a1a4b4-5ab5-7494-b64f-f7665cbba778",
+      "appBranchName": "ZZ TEST SCRUM-641 mw1l5g6u",
+      "status": "SUCCESS",
+      "mappedBy": "created",
+      "reason": null
+    }
+  },
+  "accountsJob": {
+    "jobId": "job-dblaq9gae00c73bms6c0",
+    "at": "2026-11-04T03:58:14.737Z"
+  },
+  "accounts": {
+    "reporter": {
+      "accountId": "6dd7619e-83b0-4108-b75f-e3f74b0ee02b",
+      "name": "ZZ TEST SCRUM-641 mw1l5g6u reporter",
+      "appUserId": "01a1a4b5-6404-757a-8d39-85125e627616"
+    },
+    "member": {
+      "accountId": "35a9f08a-c1b4-4f98-958b-e846d0889089",
+      "name": "ZZ TEST SCRUM-641 mw1l5g6u Fix Department member",
+      "appUserId": "5d16d25e-3384-4250-9d4f-ec4f4e58b213"
+    },
+    "manager": {
+      "accountId": "551f82a8-09a6-4619-8e37-16c91a54ee4e",
+      "name": "ZZ TEST SCRUM-641 mw1l5g6u manager at the ZZ TEST branch",
+      "appUserId": "01a1a4b5-66d8-70f7-80b6-e3809ecd9674"
+    },
+    "other": {
+      "accountId": "65420143-19eb-46d1-8881-74af95ceb220",
+      "name": "ZZ TEST SCRUM-641 mw1l5g6u manager at another branch",
+      "appUserId": "01a1a4b5-689b-7f88-b240-f5c88324a322"
+    },
+    "admin": {
+      "accountId": "a1c61fc7-6c63-41df-9bed-d64aec8c259c",
+      "name": "ZZ TEST SCRUM-641 mw1l5g6u admin",
+      "appUserId": "01a1a4b5-6a63-7f2f-9f9a-4b38f396b001"
+    }
+  },
+  "readBack": {
+    "jobId": "job-dblaqregekts73frmr2g",
+    "event": "s641_provision_read",
+    "at": "2026-11-04T03:59:22.777Z",
+    "readOnly": true,
+    "users": [
+      {
+        "id": "01a1a4b5-6404-757a-8d39-85125e627616",
+        "full_name": "ZZ TEST SCRUM-641 mw1l5g6u reporter",
+        "role": "staff",
+        "is_active": true,
+        "platform_user_id": "6dd7619e-83b0-4108-b75f-e3f74b0ee02b",
+        "access": [
+          {
+            "b": "01a1a4b4-5ab5-7494-b64f-f7665cbba778",
+            "s": "selected_branches"
+          }
+        ]
+      },
+      {
+        "id": "01a1a4b5-66d8-70f7-80b6-e3809ecd9674",
+        "full_name": "ZZ TEST SCRUM-641 mw1l5g6u manager at the ZZ TEST branch",
+        "role": "manager",
+        "is_active": true,
+        "platform_user_id": "551f82a8-09a6-4619-8e37-16c91a54ee4e",
+        "access": [
+          {
+            "b": "01a1a4b4-5ab5-7494-b64f-f7665cbba778",
+            "s": "selected_branches"
+          }
+        ]
+      },
+      {
+        "id": "01a1a4b5-689b-7f88-b240-f5c88324a322",
+        "full_name": "ZZ TEST SCRUM-641 mw1l5g6u manager at another branch",
+        "role": "manager",
+        "is_active": true,
+        "platform_user_id": "65420143-19eb-46d1-8881-74af95ceb220",
+        "access": [
+          {
+            "b": "540f6e5e-e94b-4ce9-a79a-5947e841e1fb",
+            "s": "selected_branches"
+          }
+        ]
+      },
+      {
+        "id": "01a1a4b5-6a63-7f2f-9f9a-4b38f396b001",
+        "full_name": "ZZ TEST SCRUM-641 mw1l5g6u admin",
+        "role": "admin",
+        "is_active": true,
+        "platform_user_id": "a1c61fc7-6c63-41df-9bed-d64aec8c259c",
+        "access": [
+          {
+            "b": "01a1a4b4-5ab5-7494-b64f-f7665cbba778",
+            "s": "selected_branches"
+          },
+          {
+            "b": "540f6e5e-e94b-4ce9-a79a-5947e841e1fb",
+            "s": "selected_branches"
+          }
+        ]
+      },
+      {
+        "id": "5d16d25e-3384-4250-9d4f-ec4f4e58b213",
+        "full_name": "ZZ TEST Maintenance 656",
+        "role": "staff",
+        "is_active": true,
+        "platform_user_id": "35a9f08a-c1b4-4f98-958b-e846d0889089",
+        "access": [
+          {
+            "b": "01a1a4b4-5ab5-7494-b64f-f7665cbba778",
+            "s": "selected_branches"
+          }
+        ]
+      }
+    ],
+    "branch": [
+      {
+        "id": "01a1a4b4-5ab5-7494-b64f-f7665cbba778",
+        "name": "ZZ TEST SCRUM-641 mw1l5g6u",
+        "core_branch_id": "f9d17edd-8a2b-4314-a8ca-10383dcc7022"
+      }
+    ],
+    "grants": [
+      {
+        "account_id": "6dd7619e-83b0-4108-b75f-e3f74b0ee02b",
+        "name": "app_access_oto_app",
+        "scope_type": "branch",
+        "scope_id": "f9d17edd-8a2b-4314-a8ca-10383dcc7022"
+      },
+      {
+        "account_id": "551f82a8-09a6-4619-8e37-16c91a54ee4e",
+        "name": "app_access_oto_app",
+        "scope_type": "branch",
+        "scope_id": "f9d17edd-8a2b-4314-a8ca-10383dcc7022"
+      },
+      {
+        "account_id": "65420143-19eb-46d1-8881-74af95ceb220",
+        "name": "app_access_oto_app",
+        "scope_type": "branch",
+        "scope_id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+      },
+      {
+        "account_id": "a1c61fc7-6c63-41df-9bed-d64aec8c259c",
+        "name": "app_access_oto_app",
+        "scope_type": "branch",
+        "scope_id": "f9d17edd-8a2b-4314-a8ca-10383dcc7022"
+      },
+      {
+        "account_id": "a1c61fc7-6c63-41df-9bed-d64aec8c259c",
+        "name": "app_access_oto_app",
+        "scope_type": "branch",
+        "scope_id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+      },
+      {
+        "account_id": "35a9f08a-c1b4-4f98-958b-e846d0889089",
+        "name": "app_access_oto_app",
+        "scope_type": "branch",
+        "scope_id": "f9d17edd-8a2b-4314-a8ca-10383dcc7022"
+      }
+    ]
+  },
+  "note": "Logins are ZZ TEST accounts made without SMS; each persona signs in with a Console temporary password and a forced change to a random password nobody keeps. The Fix Department member is the existing ZZ TEST Maintenance 656 app login, claimed for this proof and put back afterwards."
+}

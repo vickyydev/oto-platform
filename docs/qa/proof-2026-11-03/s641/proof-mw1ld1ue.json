@@ -1,0 +1,105 @@
+{
+  "unit": "SCRUM-641",
+  "source": "057cd831b81297a4c4829bbf37f7a92003af2a6e",
+  "startedAt": "2026-11-04T04:03:11.894Z",
+  "checks": [
+    {
+      "name": "Set-up: the ZZ TEST Fix Department login is a member of the Fix Department",
+      "maintenanceMembersBefore": 0,
+      "at": "2026-11-04T04:03:28.668Z"
+    },
+    {
+      "name": "Set-up: a ZZ TEST supplier link for the ZZ TEST branch only",
+      "supplierTokenId": "bc519714-abd1-46dd-9eed-1406e6cf7328",
+      "at": "2026-11-04T04:03:28.747Z"
+    },
+    {
+      "name": "1. My Reports: the report reads \"Reported by <name> · <date, time>\"",
+      "reportId": "64e0c5da-bf8b-433b-9f23-e8e170d6c4cb",
+      "shown": "Reported by ZZ TEST SCRUM-641 mw1l5g6u reporter · 04 Nov 2026, 11:03",
+      "at": "2026-11-04T04:03:35.817Z"
+    },
+    {
+      "name": "2. Fix Board (Fix Department member): the same \"Reported by\" line on opening",
+      "shown": "Reported by ZZ TEST SCRUM-641 mw1l5g6u reporter · 04 Nov 2026, 11:03",
+      "at": "2026-11-04T04:03:37.563Z"
+    },
+    {
+      "name": "2. The member sees their own comment as \"<name> (you)\" with its date and time",
+      "commentId": "283dd4d1-2f67-4457-acf1-9e962b7a1919",
+      "time": "04 Nov 2026, 11:03",
+      "at": "2026-11-04T04:03:38.508Z"
+    },
+    {
+      "name": "2. The manager sees the same row with the name and no \"(you)\"; the submitted row and the comment both carry an absolute date and time",
+      "at": "2026-11-04T04:03:43.919Z"
+    },
+    {
+      "name": "3. The paperclip offers \"Camera\" and \"Choose from Gallery\"",
+      "at": "2026-11-04T04:03:45.690Z"
+    },
+    {
+      "name": "3. A photo and a PDF show as previews before sending, then post with the comment",
+      "commentId": "544a0e89-81dd-4e4f-b814-c6ba4d4e89ac",
+      "at": "2026-11-04T04:03:47.853Z"
+    },
+    {
+      "name": "3. In the thread: the photo thumbnail and the \"PDF document\" chip show directly",
+      "thumbnailNaturalWidth": 480,
+      "at": "2026-11-04T04:03:49.456Z"
+    },
+    {
+      "name": "3. The photo opens in the gallery",
+      "at": "2026-11-04T04:03:51.051Z"
+    },
+    {
+      "name": "3. The PDF chip opens the file as a PDF",
+      "contentType": "application/pdf",
+      "startsWith": "%PDF-",
+      "tabUrlPath": "/api/files/fix-media/fix_1793765027376_dveajatr6.pdf",
+      "at": "2026-11-04T04:03:56.060Z"
+    },
+    {
+      "name": "3. A photo with no words posts, with no empty message line",
+      "commentId": "dfeb8426-2d0d-4e15-88f8-31f705aaf3fd",
+      "at": "2026-11-04T04:03:57.898Z"
+    },
+    {
+      "name": "3. At phone width the same dialog shows; Camera opens the file input that asks the device for its rear camera",
+      "capture": "environment",
+      "accept": "image/*,video/*",
+      "chooserFor": "input-comment-camera",
+      "note": "A headless browser has no camera; that the phone shows its camera app was not seen here.",
+      "at": "2026-11-04T04:03:59.657Z"
+    }
+  ],
+  "images": [
+    "s641-01-reporter-my-report-reported-by.png",
+    "s641-02a-member-board-reported-by.png",
+    "s641-02b-member-comment-you-and-time.png",
+    "s641-02c-manager-comment-name-without-you.png",
+    "s641-03a-paperclip-camera-or-gallery.png",
+    "s641-03b-previews-before-sending.png",
+    "s641-03c-thread-thumbnail-and-pdf-chip.png",
+    "s641-03d-photo-opens-in-gallery.png",
+    "s641-03e-pdf-opens-as-pdf.png",
+    "s641-03f-photo-only-comment-no-empty-line.png",
+    "s641-03g-phone-width-same-dialog.png"
+  ],
+  "appDeploy": {
+    "name": "oto-app-staging",
+    "id": "srv-danppvjtqb8s73cnvua0",
+    "deployId": "dep-dblagc0473hc73avn5jg",
+    "status": "live",
+    "sha": "057cd831b81297a4c4829bbf37f7a92003af2a6e",
+    "finishedAt": "2026-11-04T03:39:00.750224Z"
+  },
+  "afterDeploy": true,
+  "outcome": "failed",
+  "error": {
+    "name": "Error",
+    "message": "expect(locator).toBeVisible() failed",
+    "at": "    at C:\\Users\\waqar\\AppData\\Local\\Temp\\claude\\c--Users-waqar-OneDrive-Desktop-Projects-oto-pos\\317fcfce-2754-44c9-bec5-9a762ab18d03\\scratchpad\\s641\\proof.mjs:239:112"
+  },
+  "finishedAt": "2026-11-04T04:04:00.999Z"
+}

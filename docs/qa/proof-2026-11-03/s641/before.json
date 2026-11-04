@@ -1,0 +1,72 @@
+{
+  "unit": "SCRUM-641",
+  "what": "State before the proof of the existing ZZ TEST Fix Department login and of the Fix Department setting, read only",
+  "jobId": "job-dblallbncjis73da2q8g",
+  "at": "2026-11-04T03:48:21.961Z",
+  "source": "057cd831b81297a4c4829bbf37f7a92003af2a6e",
+  "fixDepartment": [
+    {
+      "deptId": "52bc1714-ee7f-42d0-95ef-527bdceca7e7",
+      "name": "Maintanance ",
+      "employeeMembers": 0
+    }
+  ],
+  "zzTestMaintenance656": {
+    "appUserId": "5d16d25e-3384-4250-9d4f-ec4f4e58b213",
+    "name": "ZZ TEST Maintenance 656",
+    "role": "staff",
+    "isActive": false,
+    "linkedToPlatform": false,
+    "branchAccess": [
+      {
+        "b": "540f6e5e-e94b-4ce9-a79a-5947e841e1fb",
+        "s": "selected_branches"
+      }
+    ],
+    "employee": {
+      "id": "5f5eb6a8-771a-41fd-ac50-01aa5e9643df",
+      "primaryDepartmentId": null,
+      "status": "active"
+    }
+  },
+  "existingZzTestFixReports": [
+    {
+      "id": "fb9d7e93-a643-43ff-9e03-5e94465eec1b",
+      "title": "ZZ TEST Broken slide latch",
+      "status": "done",
+      "archivedAt": null
+    },
+    {
+      "id": "8b48e5e7-6dfd-4537-96f5-b307c46eed67",
+      "title": "ZZ TEST Fix report SCRUM-602 recheck",
+      "status": "new",
+      "archivedAt": null
+    },
+    {
+      "id": "82448050-fcdc-43db-8483-27451826361b",
+      "title": "ZZ TEST Fix report 657 Chalong",
+      "status": "new",
+      "archivedAt": null
+    },
+    {
+      "id": "895abf97-e929-4016-bbba-6aa4c99e8a2b",
+      "title": "ZZ TEST URGENT Fix report 656",
+      "status": "new",
+      "archivedAt": null
+    }
+  ],
+  "migration0033Columns": [
+    {
+      "table_name": "fix_reports",
+      "column_name": "archived_at"
+    },
+    {
+      "table_name": "fix_comments",
+      "column_name": "media"
+    },
+    {
+      "table_name": "fix_reports",
+      "column_name": "archived_by_user_id"
+    }
+  ]
+}
