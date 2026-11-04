@@ -1,0 +1,5 @@
+set -eo pipefail
+git diff --check origin/main HEAD > C:/oto-lanes/s734-final-whitespace.log 2>&1
+pnpm --filter @oto/api exec tsx C:/oto-lanes/s734-api-gate.mts test/s734-branch-clone-review.test.ts test/branch-clone.test.ts test/s707-print-template-defaults.test.ts > C:/oto-lanes/s734-final-focused.log 2>&1
+pnpm --filter @oto/api exec tsc -p tsconfig.json > C:/oto-lanes/s734-final-api-typecheck.log 2>&1
+pnpm exec eslint apps/api/src/services/catalog-clone.ts apps/api/test/s734-branch-clone-review.test.ts packages/admin-screens/src/lifted/api/platform.ts packages/admin-screens/src/lifted/components/admin/branches/BranchesPanel.tsx packages/admin-screens/src/lifted/components/admin/supervision/SupervisionPanel.tsx > C:/oto-lanes/s734-final-lint.log 2>&1

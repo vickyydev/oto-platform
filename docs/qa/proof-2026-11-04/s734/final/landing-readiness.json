@@ -1,0 +1,49 @@
+{
+  "preparedSource": "5c49bc349d1c6224ed7807023f7822d9e60ce6a9",
+  "main": "2dd78bfd38562f08a6abac19f9d9a60892bf7f2a",
+  "acceptedSource": "ef127baa407b421d197e1403d8980dd9864bf107",
+  "verifiedAt": "2026-11-04T05:51:03.795Z",
+  "allNonDocumentationFilesIdentical": true,
+  "allHandoverLinesPreserved": true,
+  "logs": {
+    "focused": {
+      "rawBytes": 9747,
+      "rawSha256": "f79ec5ef6cedaeb5abe84fbb0cbd0304ad41492f0273828e912a5cf8a295043b",
+      "committedBytes": 9701,
+      "committedSha256": "049e0ba85a0952aea4f8c0a36e48ddfca051adb3dde79d0884be367785c53742",
+      "normalization": "Readable copy uses LF and trims line-end whitespace and trailing blank lines; the gzip retains every original byte",
+      "rawArchive": "docs/qa/proof-2026-11-04/s734/final/focused.raw.log.gz"
+    },
+    "api-typecheck": {
+      "rawBytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "committedBytes": 0,
+      "committedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "normalization": "Readable copy uses LF and trims line-end whitespace and trailing blank lines; the gzip retains every original byte"
+    },
+    "lint": {
+      "rawBytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "committedBytes": 0,
+      "committedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "normalization": "Readable copy uses LF and trims line-end whitespace and trailing blank lines; the gzip retains every original byte"
+    },
+    "whitespace": {
+      "rawBytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "committedBytes": 0,
+      "committedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "normalization": "Readable copy uses LF and trims line-end whitespace and trailing blank lines; the gzip retains every original byte"
+    },
+    "preflight-failure": {
+      "rawBytes": 32637,
+      "rawSha256": "b7abb241b466af56e4e7a510bf4c68ded4bc7521a636583001524c1724580c61",
+      "committedBytes": 32376,
+      "committedSha256": "753d3e4da7fa82c8c74b96213319fc25f1bb7122548feebf1a7a220c52596640",
+      "normalization": "Readable copy uses LF and trims line-end whitespace and trailing blank lines; the gzip retains every original byte",
+      "rawArchive": "docs/qa/proof-2026-11-04/s734/final/preflight-failure.raw.log.gz"
+    }
+  },
+  "scope": "The first attempt stopped at whitespace before API tests during a rebase. The succeeding clean committed run passed all 48 tests, API types, lint and whitespace; prior broad receipts retain their original identities.",
+  "cleanupPreflight": "OTO App run generation is triggered by opening its checklist board. Cleanup exchanges the existing one-use launcher handoff through the canonical API and never opens that board; it still refuses any unexpected reference."
+}

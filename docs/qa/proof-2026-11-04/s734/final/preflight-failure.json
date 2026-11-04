@@ -1,0 +1,9 @@
+{
+  "source": "3074638e1ff1bcf20b1a82d1941b076ee3b12188",
+  "startedAt": "2026-11-04T05:45:14.829Z",
+  "script": "C:/oto-lanes/s734-final-source-gates.sh",
+  "outcome": "failed",
+  "exitCode": 2,
+  "signal": null,
+  "finishedAt": "2026-11-04T05:45:14.939Z"
+}

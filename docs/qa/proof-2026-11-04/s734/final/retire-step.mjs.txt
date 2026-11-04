@@ -1,0 +1,27 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+export default async function(proof){
+ const {r,f,api,ctx,save,CONSOLE,LAUNCHER}=proof;
+ const read=JSON.parse(readFileSync(proof.out+'/independent-readback.json','utf8'));assert.equal(read.result.passed,true);assert.ok(Date.now()-Date.parse(read.result.at)<15*60e3);
+ assert.ok(!r.retirement?.startedAt,'Inspect partial retirement before sending another write');
+ r.retirement={startedAt:new Date().toISOString(),steps:[],sessions:[]};save();
+ await api('PUT','/me/session/branch',{branchId:r.identity.originalBranchId});
+ for(const row of read.result.rows){assert.ok(f.branches.some(b=>b.id===row.branch.id&&b.name===row.branch.name));const item=row.items[0],body={...r.stockBody,active:false,productId:row.products[0].id,sizes:[{stockItemId:item.id,variantId:item.variant_id,label:item.variant_label??'Each',lowStockThreshold:item.low_stock_threshold,parByLocation:item.par_by_location}]};
+  await api('PUT',`/branches/${row.branch.id}/stock/items/${item.payload.groupId}`,body);
+  await api('PATCH',`/branches/${row.branch.id}/stock/locations/${row.rooms[0].id}`,{active:false});
+  await api('DELETE',`/branches/${row.branch.id}/menu/products/${row.products[0].id}`);
+  await api('PATCH','/branches/'+row.branch.id,{archived:true,confirmName:row.branch.name});r.retirement.steps.push('branch, item, product and shelf retired: '+row.branch.id);save();
+ }
+ await api('DELETE','/menu/categories/'+f.categoryId);
+ const APP='https://oto-app-staging.onrender.com',h=await ctx.request.post(LAUNCHER+'/api/auth/handoff',{data:{app:'oto_app'}});assert.equal(h.status(),200);const launch=(await h.json()).launchUrl;assert.equal(new URL(launch).origin,APP);
+ // The board creates historical runs for all-branch checklists when opened.
+ // Cleanup needs only the normal one-use handoff exchange and branch API.
+ const token=new URLSearchParams(new URL(launch).hash.slice(1)).get('handoff');assert.ok(typeof token==='string'&&token.length>0,'Launcher did not supply an app handoff');
+ const exchange=await ctx.request.post(APP+'/api/auth/handoff',{data:{token}});assert.equal(exchange.status(),200);
+ r.retirement.appEntry={method:'canonical one-use handoff API',boardOpened:false};save();
+ for(const row of read.result.rows){assert.ok(read.result.referenceCensus.columns>30);assert.equal(row.appReferences.checked,read.result.referenceCensus.columns);assert.equal(row.appReferences.nonzero,0);const app=row.app[0],before=await ctx.request.get(APP+'/api/branches/'+app.id);assert.equal(before.status(),200);const actual=await before.json();assert.equal(actual.name,row.branch.name);assert.equal(actual.coreBranchId,row.branch.id);const deleted=await ctx.request.delete(APP+'/api/branches/'+app.id);assert.equal(deleted.status(),204);assert.equal((await ctx.request.get(APP+'/api/branches/'+app.id)).status(),404);r.retirement.steps.push('empty mapped app branch removed: '+app.id);save();}
+ assert.equal((await ctx.request.post(APP+'/api/logout')).status(),200);assert.equal((await ctx.request.get(APP+'/api/user')).status(),401);r.retirement.sessions.push({app:'oto-app',signedOut:true});save();
+ for(const origin of [CONSOLE,LAUNCHER]){const response=await ctx.request.post(origin+'/api/auth/sign-out');assert.ok([200,204].includes(response.status()));assert.equal((await ctx.request.get(origin+'/api/me')).status(),401);r.retirement.sessions.push({app:new URL(origin).hostname,signedOut:true});save();}
+ if(proof.verifyEnvironment)await proof.verifyEnvironment();
+ r.retirement.browserFinishedAt=new Date().toISOString();save();return {retired:true,independentCleanupReadStillRequired:true};
+}

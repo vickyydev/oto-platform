@@ -1,0 +1,522 @@
+apps/api/src/services/catalog-clone.ts:7: trailing whitespace.
++  confirmationItem,
+apps/api/src/services/catalog-clone.ts:9: trailing whitespace.
++  dropOffPricing,
+apps/api/src/services/catalog-clone.ts:16: trailing whitespace.
++  stockItem,
+apps/api/src/services/catalog-clone.ts:18: trailing whitespace.
++  stockUnit,
+apps/api/src/services/catalog-clone.ts:19: trailing whitespace.
++  supervisionPolicy,
+apps/api/src/services/catalog-clone.ts:26: trailing whitespace.
++import { stockGroupKey } from './stock';
+apps/api/src/services/catalog-clone.ts:40: trailing whitespace.
++ * template, supervision rule, stock item and stockroom carry `branch_id` and are
+apps/api/src/services/catalog-clone.ts:42: trailing whitespace.
++ * shared modifier library, a tier, a payment method, a staff benefit template
+apps/api/src/services/catalog-clone.ts:43: trailing whitespace.
++ * and an operator-wide discount
+apps/api/src/services/catalog-clone.ts:56: trailing whitespace.
++ *   - **Payment methods and staff benefit role templates.** Their platform
+apps/api/src/services/catalog-clone.ts:57: trailing whitespace.
++ *     tables are operator-wide, so both branches already share them.
+apps/api/src/services/catalog-clone.ts:58: trailing whitespace.
++ *   - **Booth settings, prizes and published versions.** All three belong
+apps/api/src/services/catalog-clone.ts:59: trailing whitespace.
++ *     to a station (`packages/db/src/schema/booth.ts`), not to a branch alone.
+apps/api/src/services/catalog-clone.ts:60: trailing whitespace.
++ *     Stations are not cloned, so there is no target booth for their rows.
+apps/api/src/services/catalog-clone.ts:61: trailing whitespace.
++ *     Copying drafts alone would also leave the running version undescribed.
+apps/api/src/services/catalog-clone.ts:62: trailing whitespace.
++ *     Wheel layouts are operator-wide and are already shared. Configure and
+apps/api/src/services/catalog-clone.ts:63: trailing whitespace.
++ *     publish an actual new booth through its own setup flow.
+apps/api/src/services/catalog-clone.ts:101: trailing whitespace.
++  'supervisionPolicy',
+apps/api/src/services/catalog-clone.ts:102: trailing whitespace.
++  'confirmationItems',
+apps/api/src/services/catalog-clone.ts:103: trailing whitespace.
++  'dropOffPricing',
+apps/api/src/services/catalog-clone.ts:104: trailing whitespace.
++  'stockItems',
+apps/api/src/services/catalog-clone.ts:105: trailing whitespace.
++  'stockUnits',
+apps/api/src/services/catalog-clone.ts:176: trailing whitespace.
++  supervisionPolicy: Array<typeof supervisionPolicy.$inferInsert>;
+apps/api/src/services/catalog-clone.ts:177: trailing whitespace.
++  confirmationItems: Array<typeof confirmationItem.$inferInsert>;
+apps/api/src/services/catalog-clone.ts:178: trailing whitespace.
++  dropOffPricing: Array<typeof dropOffPricing.$inferInsert>;
+apps/api/src/services/catalog-clone.ts:179: trailing whitespace.
++  stockItems: Array<typeof stockItem.$inferInsert>;
+apps/api/src/services/catalog-clone.ts:180: trailing whitespace.
++  stockUnits: Array<typeof stockUnit.$inferInsert>;
+apps/api/src/services/catalog-clone.ts:181: trailing whitespace.
++  /** Set after products and their stock items exist, to satisfy both FKs. */
+apps/api/src/services/catalog-clone.ts:182: trailing whitespace.
++  productStockLinks: Array<{ productId: string; stockItemId: string }>;
+apps/api/src/services/catalog-clone.ts:275: trailing whitespace.
++    supervisionPolicy: [],
+apps/api/src/services/catalog-clone.ts:276: trailing whitespace.
++    confirmationItems: [],
+apps/api/src/services/catalog-clone.ts:277: trailing whitespace.
++    dropOffPricing: [],
+apps/api/src/services/catalog-clone.ts:278: trailing whitespace.
++    stockItems: [],
+apps/api/src/services/catalog-clone.ts:279: trailing whitespace.
++    stockUnits: [],
+apps/api/src/services/catalog-clone.ts:280: trailing whitespace.
++    productStockLinks: [],
+apps/api/src/services/catalog-clone.ts:377: trailing whitespace.
++  // --- Stockrooms -----------------------------------------------------------
+apps/api/src/services/catalog-clone.ts:378: trailing whitespace.
++  // The definitions, not the counts: `stock_level` is what is on the shelf and
+apps/api/src/services/catalog-clone.ts:379: trailing whitespace.
++  // is nobody else's to copy (the ticket excludes it; S2-14b owns it).
+apps/api/src/services/catalog-clone.ts:380: trailing whitespace.
++  const locationIdAtTarget = new Map<string, string>();
+apps/api/src/services/catalog-clone.ts:381: trailing whitespace.
++  {
+apps/api/src/services/catalog-clone.ts:382: trailing whitespace.
++    const sourceRows = await exec
+apps/api/src/services/catalog-clone.ts:383: trailing whitespace.
++      .select()
+apps/api/src/services/catalog-clone.ts:384: trailing whitespace.
++      .from(stockLocation)
+apps/api/src/services/catalog-clone.ts:385: trailing whitespace.
++      .where(and(eq(stockLocation.branchId, sourceBranchId), isNull(stockLocation.archivedAt)));
+apps/api/src/services/catalog-clone.ts:386: trailing whitespace.
++    const targetRows = await exec
+apps/api/src/services/catalog-clone.ts:387: trailing whitespace.
++      .select({ id: stockLocation.id, name: stockLocation.name, sellPoint: stockLocation.sellPoint, archivedAt: stockLocation.archivedAt })
+apps/api/src/services/catalog-clone.ts:388: trailing whitespace.
++      .from(stockLocation)
+apps/api/src/services/catalog-clone.ts:389: trailing whitespace.
++      .where(eq(stockLocation.branchId, targetBranchId));
+apps/api/src/services/catalog-clone.ts:390: trailing whitespace.
++    // The database's unique key is lower(name), including names whose case
+apps/api/src/services/catalog-clone.ts:391: trailing whitespace.
++    // differs between branches. Preserve that shelf and map its identity.
+apps/api/src/services/catalog-clone.ts:392: trailing whitespace.
++    const nameKey = (name: string) => name.toLowerCase();
+apps/api/src/services/catalog-clone.ts:393: trailing whitespace.
++    const taken = new Set(targetRows.map((r) => nameKey(r.name)));
+apps/api/src/services/catalog-clone.ts:394: trailing whitespace.
++    // One sell point per branch (`stock_location_sell_point_unique`): a target
+apps/api/src/services/catalog-clone.ts:395: trailing whitespace.
++    // that already has one keeps it, and the copies come across as storage.
+apps/api/src/services/catalog-clone.ts:396: trailing whitespace.
++    let targetHasSellPoint = targetRows.some((r) => r.sellPoint && !r.archivedAt);
+apps/api/src/services/catalog-clone.ts:397: trailing whitespace.
++    for (const row of sourceRows) {
+apps/api/src/services/catalog-clone.ts:398: trailing whitespace.
++      if (taken.has(nameKey(row.name))) {
+apps/api/src/services/catalog-clone.ts:399: trailing whitespace.
++        plan.stockLocations.exists.push(row.name);
+apps/api/src/services/catalog-clone.ts:400: trailing whitespace.
++        const existing = targetRows.find(t => nameKey(t.name) === nameKey(row.name) && !t.archivedAt);
+apps/api/src/services/catalog-clone.ts:401: trailing whitespace.
++        if (existing) locationIdAtTarget.set(row.id, existing.id);
+apps/api/src/services/catalog-clone.ts:402: trailing whitespace.
++        continue;
+apps/api/src/services/catalog-clone.ts:403: trailing whitespace.
++      }
+apps/api/src/services/catalog-clone.ts:404: trailing whitespace.
++      plan.stockLocations.create.push(row.name);
+apps/api/src/services/catalog-clone.ts:405: trailing whitespace.
++      const id = newId();
+apps/api/src/services/catalog-clone.ts:406: trailing whitespace.
++      locationIdAtTarget.set(row.id, id);
+apps/api/src/services/catalog-clone.ts:407: trailing whitespace.
++      writes.stockLocations.push({
+apps/api/src/services/catalog-clone.ts:408: trailing whitespace.
++        id,
+apps/api/src/services/catalog-clone.ts:409: trailing whitespace.
++        operatorId,
+apps/api/src/services/catalog-clone.ts:410: trailing whitespace.
++        branchId: targetBranchId,
+apps/api/src/services/catalog-clone.ts:411: trailing whitespace.
++        name: row.name,
+apps/api/src/services/catalog-clone.ts:412: trailing whitespace.
++        // S2-14b: the place's kind and whether it is the sell point come with it.
+apps/api/src/services/catalog-clone.ts:413: trailing whitespace.
++        type: row.type,
+apps/api/src/services/catalog-clone.ts:414: trailing whitespace.
++        sellPoint: row.sellPoint && row.active && !targetHasSellPoint,
+apps/api/src/services/catalog-clone.ts:415: trailing whitespace.
++        active: row.active,
+apps/api/src/services/catalog-clone.ts:416: trailing whitespace.
++      });
+apps/api/src/services/catalog-clone.ts:417: trailing whitespace.
++      if (row.sellPoint && row.active) targetHasSellPoint = true;
+apps/api/src/services/catalog-clone.ts:418: trailing whitespace.
++    }
+apps/api/src/services/catalog-clone.ts:419: trailing whitespace.
++  }
+apps/api/src/services/catalog-clone.ts:420: trailing whitespace.
++
+apps/api/src/services/catalog-clone.ts:421: trailing whitespace.
++  // --- Supervision configuration --------------------------------------------
+apps/api/src/services/catalog-clone.ts:422: trailing whitespace.
++  // Singletons keep an existing target choice. Confirmations match by their
+apps/api/src/services/catalog-clone.ts:423: trailing whitespace.
++  // branch-local code, including retired target rows so a clone cannot revive
+apps/api/src/services/catalog-clone.ts:424: trailing whitespace.
++  // wording that branch deliberately removed.
+apps/api/src/services/catalog-clone.ts:425: trailing whitespace.
++  {
+apps/api/src/services/catalog-clone.ts:426: trailing whitespace.
++    const [source] = await exec.select().from(supervisionPolicy).where(eq(supervisionPolicy.branchId, sourceBranchId));
+apps/api/src/services/catalog-clone.ts:427: trailing whitespace.
++    const [target] = await exec.select({ id: supervisionPolicy.id }).from(supervisionPolicy).where(eq(supervisionPolicy.branchId, targetBranchId));
+apps/api/src/services/catalog-clone.ts:428: trailing whitespace.
++    if (source) {
+apps/api/src/services/catalog-clone.ts:429: trailing whitespace.
++      if (target) plan.supervisionPolicy.exists.push('supervision policy');
+apps/api/src/services/catalog-clone.ts:430: trailing whitespace.
++      else {
+apps/api/src/services/catalog-clone.ts:431: trailing whitespace.
++        const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = source;
+apps/api/src/services/catalog-clone.ts:432: trailing whitespace.
++        writes.supervisionPolicy.push({ ...rest, id: newId(), operatorId, branchId: targetBranchId });
+apps/api/src/services/catalog-clone.ts:433: trailing whitespace.
++        plan.supervisionPolicy.create.push('supervision policy');
+apps/api/src/services/catalog-clone.ts:434: trailing whitespace.
++      }
+apps/api/src/services/catalog-clone.ts:435: trailing whitespace.
++    }
+apps/api/src/services/catalog-clone.ts:436: trailing whitespace.
++    const sourceItems = await exec.select().from(confirmationItem)
+apps/api/src/services/catalog-clone.ts:437: trailing whitespace.
++      .where(and(eq(confirmationItem.branchId, sourceBranchId), isNull(confirmationItem.archivedAt)));
+apps/api/src/services/catalog-clone.ts:438: trailing whitespace.
++    const targetItems = await exec.select({ code: confirmationItem.code }).from(confirmationItem)
+apps/api/src/services/catalog-clone.ts:439: trailing whitespace.
++      .where(eq(confirmationItem.branchId, targetBranchId));
+apps/api/src/services/catalog-clone.ts:440: trailing whitespace.
++    const taken = new Set(targetItems.map(row => row.code));
+apps/api/src/services/catalog-clone.ts:441: trailing whitespace.
++    for (const row of sourceItems) {
+apps/api/src/services/catalog-clone.ts:442: trailing whitespace.
++      if (taken.has(row.code)) { plan.confirmationItems.exists.push(row.code); continue; }
+apps/api/src/services/catalog-clone.ts:443: trailing whitespace.
++      const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = row;
+apps/api/src/services/catalog-clone.ts:444: trailing whitespace.
++      writes.confirmationItems.push({ ...rest, id: newId(), operatorId, branchId: targetBranchId });
+apps/api/src/services/catalog-clone.ts:445: trailing whitespace.
++      plan.confirmationItems.create.push(row.code);
+apps/api/src/services/catalog-clone.ts:446: trailing whitespace.
++    }
+apps/api/src/services/catalog-clone.ts:447: trailing whitespace.
++    const [sourcePrices] = await exec.select().from(dropOffPricing).where(eq(dropOffPricing.branchId, sourceBranchId));
+apps/api/src/services/catalog-clone.ts:448: trailing whitespace.
++    const [targetPrices] = await exec.select({ id: dropOffPricing.id }).from(dropOffPricing).where(eq(dropOffPricing.branchId, targetBranchId));
+apps/api/src/services/catalog-clone.ts:449: trailing whitespace.
++    if (sourcePrices) {
+apps/api/src/services/catalog-clone.ts:450: trailing whitespace.
++      if (targetPrices) plan.dropOffPricing.exists.push('drop-off and nanny prices');
+apps/api/src/services/catalog-clone.ts:451: trailing whitespace.
++      else {
+apps/api/src/services/catalog-clone.ts:452: trailing whitespace.
++        const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = sourcePrices;
+apps/api/src/services/catalog-clone.ts:453: trailing whitespace.
++        writes.dropOffPricing.push({ ...rest, id: newId(), operatorId, branchId: targetBranchId });
+apps/api/src/services/catalog-clone.ts:454: trailing whitespace.
++        plan.dropOffPricing.create.push('drop-off and nanny prices');
+apps/api/src/services/catalog-clone.ts:455: trailing whitespace.
++      }
+apps/api/src/services/catalog-clone.ts:456: trailing whitespace.
++    }
+apps/api/src/services/catalog-clone.ts:457: trailing whitespace.
++  }
+apps/api/src/services/catalog-clone.ts:458: trailing whitespace.
++
+apps/api/src/services/catalog-clone.ts:478: trailing whitespace.
++  const copiedProductLabels = new Map<string, string>();
+apps/api/src/services/catalog-clone.ts:517: trailing whitespace.
++      const copiedLabel = row.code ? `${row.name} (${row.code} → ${code})` : label;
+apps/api/src/services/catalog-clone.ts:518: trailing whitespace.
++      copiedProductLabels.set(row.id, copiedLabel);
+apps/api/src/services/catalog-clone.ts:519: trailing whitespace.
++      plan.products.create.push(copiedLabel);
+apps/api/src/services/catalog-clone.ts:521: trailing whitespace.
++      // Insert the product first; its target-local stock marker follows after
+apps/api/src/services/catalog-clone.ts:522: trailing whitespace.
++      // the stock item exists. Never retain the source branch's shelf id.
+apps/api/src/services/catalog-clone.ts:527: trailing whitespace.
++  // --- Stock definitions and their target-local links ------------------------
+apps/api/src/services/catalog-clone.ts:528: trailing whitespace.
++  {
+apps/api/src/services/catalog-clone.ts:529: trailing whitespace.
++    const sourceRows = await exec.select().from(stockItem)
+apps/api/src/services/catalog-clone.ts:530: trailing whitespace.
++      .where(and(eq(stockItem.operatorId, operatorId), eq(stockItem.branchId, sourceBranchId), isNull(stockItem.archivedAt)));
+apps/api/src/services/catalog-clone.ts:531: trailing whitespace.
++    const targetRows = await exec.select().from(stockItem)
+apps/api/src/services/catalog-clone.ts:532: trailing whitespace.
++      .where(and(eq(stockItem.operatorId, operatorId), eq(stockItem.branchId, targetBranchId)));
+apps/api/src/services/catalog-clone.ts:533: trailing whitespace.
++    const sharedProducts = new Set((await exec.select({ id: product.id }).from(product)
+apps/api/src/services/catalog-clone.ts:534: trailing whitespace.
++      .where(and(eq(product.operatorId, operatorId), isNull(product.branchId), isNull(product.archivedAt))))
+apps/api/src/services/catalog-clone.ts:535: trailing whitespace.
++      .map(row => row.id));
+apps/api/src/services/catalog-clone.ts:536: trailing whitespace.
++    const productHere = (id: string) => productIdAtTarget.get(id) ?? (sharedProducts.has(id) ? id : null);
+apps/api/src/services/catalog-clone.ts:537: trailing whitespace.
++    const payloadOf = (row: typeof stockItem.$inferSelect): Record<string, unknown> =>
+apps/api/src/services/catalog-clone.ts:538: trailing whitespace.
++      row.payload && typeof row.payload === 'object' && !Array.isArray(row.payload) ? row.payload as Record<string, unknown> : {};
+apps/api/src/services/catalog-clone.ts:539: trailing whitespace.
++    const naturalKey = (row: typeof stockItem.$inferSelect) => row.productId
+apps/api/src/services/catalog-clone.ts:540: trailing whitespace.
++      ? JSON.stringify([row.productId, row.variantId])
+apps/api/src/services/catalog-clone.ts:541: trailing whitespace.
++      : JSON.stringify([null, row.name, payloadOf(row).itemSku ?? null, row.variantLabel, row.sku]);
+apps/api/src/services/catalog-clone.ts:542: trailing whitespace.
++    // A live target definition wins over an archived predecessor of its key.
+apps/api/src/services/catalog-clone.ts:543: trailing whitespace.
++    const taken = new Map([...targetRows].sort((a, b) => Number(!a.archivedAt) - Number(!b.archivedAt))
+apps/api/src/services/catalog-clone.ts:544: trailing whitespace.
++      .map(row => [naturalKey(row), row]));
+apps/api/src/services/catalog-clone.ts:545: trailing whitespace.
++    const stockIdAtTarget = new Map<string, string>();
+apps/api/src/services/catalog-clone.ts:546: trailing whitespace.
++    const copiedStockLabels = new Map<string, string>();
+apps/api/src/services/catalog-clone.ts:547: trailing whitespace.
++    const groupIdAtTarget = new Map<string, string>();
+apps/api/src/services/catalog-clone.ts:548: trailing whitespace.
++    const ambiguousGroups = new Set<string>();
+apps/api/src/services/catalog-clone.ts:549: trailing whitespace.
++    for (const row of sourceRows) {
+apps/api/src/services/catalog-clone.ts:550: trailing whitespace.
++      const productId = row.productId === null ? null : productHere(row.productId);
+apps/api/src/services/catalog-clone.ts:551: trailing whitespace.
++      if (row.productId !== null && productId === null) continue;
+apps/api/src/services/catalog-clone.ts:552: trailing whitespace.
++      const existing = taken.get(naturalKey({ ...row, productId }));
+apps/api/src/services/catalog-clone.ts:553: trailing whitespace.
++      if (!existing || existing.archivedAt) continue;
+apps/api/src/services/catalog-clone.ts:554: trailing whitespace.
++      const sourceGroup = stockGroupKey(row), targetGroup = stockGroupKey(existing);
+apps/api/src/services/catalog-clone.ts:555: trailing whitespace.
++      const previous = groupIdAtTarget.get(sourceGroup);
+apps/api/src/services/catalog-clone.ts:556: trailing whitespace.
++      if (previous && previous !== targetGroup) ambiguousGroups.add(sourceGroup);
+apps/api/src/services/catalog-clone.ts:557: trailing whitespace.
++      groupIdAtTarget.set(sourceGroup, targetGroup);
+apps/api/src/services/catalog-clone.ts:558: trailing whitespace.
++    }
+apps/api/src/services/catalog-clone.ts:559: trailing whitespace.
++    const labelOf = (row: typeof stockItem.$inferSelect) => `${row.name}${row.variantLabel ? ` (${row.variantLabel})` : ''}${row.sku ? ` [${row.sku}]` : ''}`;
+apps/api/src/services/catalog-clone.ts:560: trailing whitespace.
++    for (const row of sourceRows) {
+apps/api/src/services/catalog-clone.ts:561: trailing whitespace.
++      const label = labelOf(row);
+apps/api/src/services/catalog-clone.ts:562: trailing whitespace.
++      const productId = row.productId === null ? null : productHere(row.productId);
+apps/api/src/services/catalog-clone.ts:563: trailing whitespace.
++      if (row.productId !== null && productId === null) {
+apps/api/src/services/catalog-clone.ts:564: trailing whitespace.
++        plan.stockItems.blocked.push({ name: label, reason: 'its product could not be copied or is not available at this branch' });
+apps/api/src/services/catalog-clone.ts:565: trailing whitespace.
++        continue;
+apps/api/src/services/catalog-clone.ts:566: trailing whitespace.
++      }
+apps/api/src/services/catalog-clone.ts:567: trailing whitespace.
++      const key = naturalKey({ ...row, productId });
+apps/api/src/services/catalog-clone.ts:568: trailing whitespace.
++      if (ambiguousGroups.has(stockGroupKey(row))
+apps/api/src/services/catalog-clone.ts:569: trailing whitespace.
++        || sourceRows.filter(s => naturalKey(s) === naturalKey(row)).length > 1
+apps/api/src/services/catalog-clone.ts:570: trailing whitespace.
++        || targetRows.filter(t => !t.archivedAt && naturalKey(t) === key).length > 1) {
+apps/api/src/services/catalog-clone.ts:571: trailing whitespace.
++        plan.stockItems.blocked.push({ name: label, reason: 'the stock item or its size group is ambiguous; copying it could merge different items' });
+apps/api/src/services/catalog-clone.ts:572: trailing whitespace.
++        continue;
+apps/api/src/services/catalog-clone.ts:573: trailing whitespace.
++      }
+apps/api/src/services/catalog-clone.ts:574: trailing whitespace.
++      const existing = taken.get(key);
+apps/api/src/services/catalog-clone.ts:575: trailing whitespace.
++      if (existing) {
+apps/api/src/services/catalog-clone.ts:576: trailing whitespace.
++        plan.stockItems.exists.push(label);
+apps/api/src/services/catalog-clone.ts:577: trailing whitespace.
++        if (!existing.archivedAt) stockIdAtTarget.set(row.id, existing.id);
+apps/api/src/services/catalog-clone.ts:578: trailing whitespace.
++        continue;
+apps/api/src/services/catalog-clone.ts:579: trailing whitespace.
++      }
+apps/api/src/services/catalog-clone.ts:580: trailing whitespace.
++      if (row.productId !== null && !sharedProducts.has(row.productId) && !copiedProductIds.has(row.productId)) {
+apps/api/src/services/catalog-clone.ts:581: trailing whitespace.
++        plan.stockItems.blocked.push({ name: label, reason: 'the target product already exists without this stock definition; its inventory choice is kept' });
+apps/api/src/services/catalog-clone.ts:582: trailing whitespace.
++        continue;
+apps/api/src/services/catalog-clone.ts:583: trailing whitespace.
++      }
+apps/api/src/services/catalog-clone.ts:584: trailing whitespace.
++      const parByLocation: Record<string, number> = {};
+apps/api/src/services/catalog-clone.ts:585: trailing whitespace.
++      let unavailableLocation = false;
+apps/api/src/services/catalog-clone.ts:586: trailing whitespace.
++      for (const [sourceId, quantity] of Object.entries(row.parByLocation)) {
+apps/api/src/services/catalog-clone.ts:587: trailing whitespace.
++        const targetId = locationIdAtTarget.get(sourceId);
+apps/api/src/services/catalog-clone.ts:588: trailing whitespace.
++        if (!targetId) { unavailableLocation = true; break; }
+apps/api/src/services/catalog-clone.ts:589: trailing whitespace.
++        parByLocation[targetId] = quantity;
+apps/api/src/services/catalog-clone.ts:590: trailing whitespace.
++      }
+apps/api/src/services/catalog-clone.ts:591: trailing whitespace.
++      if (unavailableLocation) {
+apps/api/src/services/catalog-clone.ts:592: trailing whitespace.
++        plan.stockItems.blocked.push({ name: label, reason: 'a shelf minimum names a stockroom that is unavailable at the target branch' });
+apps/api/src/services/catalog-clone.ts:593: trailing whitespace.
++        continue;
+apps/api/src/services/catalog-clone.ts:594: trailing whitespace.
++      }
+apps/api/src/services/catalog-clone.ts:595: trailing whitespace.
++      const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = row;
+apps/api/src/services/catalog-clone.ts:596: trailing whitespace.
++      const id = newId();
+apps/api/src/services/catalog-clone.ts:597: trailing whitespace.
++      const sourceGroup = stockGroupKey(row);
+apps/api/src/services/catalog-clone.ts:598: trailing whitespace.
++      const groupId = groupIdAtTarget.get(sourceGroup) ?? newId();
+apps/api/src/services/catalog-clone.ts:599: trailing whitespace.
++      groupIdAtTarget.set(sourceGroup, groupId);
+apps/api/src/services/catalog-clone.ts:600: trailing whitespace.
++      writes.stockItems.push({ ...rest, id, operatorId, branchId: targetBranchId, productId, parByLocation,
+apps/api/src/services/catalog-clone.ts:601: trailing whitespace.
++        payload: { ...payloadOf(row), groupId } });
+apps/api/src/services/catalog-clone.ts:602: trailing whitespace.
++      stockIdAtTarget.set(row.id, id);
+apps/api/src/services/catalog-clone.ts:603: trailing whitespace.
++      copiedStockLabels.set(row.id, label);
+apps/api/src/services/catalog-clone.ts:604: trailing whitespace.
++      plan.stockItems.create.push(label);
+apps/api/src/services/catalog-clone.ts:605: trailing whitespace.
++    }
+apps/api/src/services/catalog-clone.ts:606: trailing whitespace.
++    // A tracked product must not silently become untracked when one of its
+apps/api/src/services/catalog-clone.ts:607: trailing whitespace.
++    // stock definitions is blocked. Remove that whole copied product graph
+apps/api/src/services/catalog-clone.ts:608: trailing whitespace.
++    // before planning its modifiers, discounts and tax overrides below.
+apps/api/src/services/catalog-clone.ts:609: trailing whitespace.
++    for (const row of sourceProducts) {
+apps/api/src/services/catalog-clone.ts:610: trailing whitespace.
++      if (!copiedProductIds.has(row.id)) continue;
+apps/api/src/services/catalog-clone.ts:611: trailing whitespace.
++      const missingStock = (row.stockItemId !== null && !stockIdAtTarget.has(row.stockItemId))
+apps/api/src/services/catalog-clone.ts:612: trailing whitespace.
++        || sourceRows.some(stock => stock.productId === row.id && !stockIdAtTarget.has(stock.id));
+apps/api/src/services/catalog-clone.ts:613: trailing whitespace.
++      if (missingStock) {
+apps/api/src/services/catalog-clone.ts:614: trailing whitespace.
++        const productId = productIdAtTarget.get(row.id)!;
+apps/api/src/services/catalog-clone.ts:615: trailing whitespace.
++        const label = copiedProductLabels.get(row.id)!;
+apps/api/src/services/catalog-clone.ts:616: trailing whitespace.
++        writes.products = writes.products.filter(p => p.id !== productId);
+apps/api/src/services/catalog-clone.ts:617: trailing whitespace.
++        plan.products.create = plan.products.create.filter(name => name !== label);
+apps/api/src/services/catalog-clone.ts:618: trailing whitespace.
++        plan.products.blocked.push({ name: row.name, reason: 'one of its stock definitions cannot be copied; copying the product would lose its stock tracking' });
+apps/api/src/services/catalog-clone.ts:619: trailing whitespace.
++        productIdAtTarget.delete(row.id);
+apps/api/src/services/catalog-clone.ts:620: trailing whitespace.
++        copiedProductIds.delete(row.id);
+apps/api/src/services/catalog-clone.ts:621: trailing whitespace.
++        for (const stock of sourceRows.filter(stock => stock.productId === row.id)) {
+apps/api/src/services/catalog-clone.ts:622: trailing whitespace.
++          const stockId = stockIdAtTarget.get(stock.id);
+apps/api/src/services/catalog-clone.ts:623: trailing whitespace.
++          const stockLabel = copiedStockLabels.get(stock.id);
+apps/api/src/services/catalog-clone.ts:624: trailing whitespace.
++          if (stockId && stockLabel) {
+apps/api/src/services/catalog-clone.ts:625: trailing whitespace.
++            writes.stockItems = writes.stockItems.filter(s => s.id !== stockId);
+apps/api/src/services/catalog-clone.ts:626: trailing whitespace.
++            plan.stockItems.create = plan.stockItems.create.filter(name => name !== stockLabel);
+apps/api/src/services/catalog-clone.ts:627: trailing whitespace.
++            plan.stockItems.blocked.push({ name: stockLabel, reason: 'its product could not keep all of its stock definitions' });
+apps/api/src/services/catalog-clone.ts:628: trailing whitespace.
++            stockIdAtTarget.delete(stock.id);
+apps/api/src/services/catalog-clone.ts:629: trailing whitespace.
++          }
+apps/api/src/services/catalog-clone.ts:630: trailing whitespace.
++        }
+apps/api/src/services/catalog-clone.ts:631: trailing whitespace.
++      } else if (row.stockItemId !== null) {
+apps/api/src/services/catalog-clone.ts:632: trailing whitespace.
++        writes.productStockLinks.push({ productId: productIdAtTarget.get(row.id)!, stockItemId: stockIdAtTarget.get(row.stockItemId)! });
+apps/api/src/services/catalog-clone.ts:633: trailing whitespace.
++      }
+apps/api/src/services/catalog-clone.ts:634: trailing whitespace.
++    }
+apps/api/src/services/catalog-clone.ts:635: trailing whitespace.
++    if (sourceRows.length) {
+apps/api/src/services/catalog-clone.ts:636: trailing whitespace.
++      const sourceUnits = await exec.select().from(stockUnit)
+apps/api/src/services/catalog-clone.ts:637: trailing whitespace.
++        .where(and(eq(stockUnit.operatorId, operatorId), inArray(stockUnit.stockItemId, sourceRows.map(row => row.id)), isNull(stockUnit.archivedAt)));
+apps/api/src/services/catalog-clone.ts:638: trailing whitespace.
++      const targetIds = [...new Set(stockIdAtTarget.values())];
+apps/api/src/services/catalog-clone.ts:639: trailing whitespace.
++      const targetUnits = targetIds.length ? await exec.select().from(stockUnit).where(inArray(stockUnit.stockItemId, targetIds)) : [];
+apps/api/src/services/catalog-clone.ts:640: trailing whitespace.
++      const unitKey = (item: string, code: string) => JSON.stringify([item, code]);
+apps/api/src/services/catalog-clone.ts:641: trailing whitespace.
++      const existingUnits = new Set(targetUnits.map(row => unitKey(row.stockItemId, row.code)));
+apps/api/src/services/catalog-clone.ts:642: trailing whitespace.
++      for (const row of sourceUnits) {
+apps/api/src/services/catalog-clone.ts:643: trailing whitespace.
++        const targetId = stockIdAtTarget.get(row.stockItemId);
+apps/api/src/services/catalog-clone.ts:644: trailing whitespace.
++        const label = `${labelOf(sourceRows.find(stock => stock.id === row.stockItemId)!)}: ${row.label}`;
+apps/api/src/services/catalog-clone.ts:645: trailing whitespace.
++        if (!targetId) { plan.stockUnits.blocked.push({ name: label, reason: 'its stock item is unavailable at the target branch' }); continue; }
+apps/api/src/services/catalog-clone.ts:646: trailing whitespace.
++        if (existingUnits.has(unitKey(targetId, row.code))) { plan.stockUnits.exists.push(label); continue; }
+apps/api/src/services/catalog-clone.ts:647: trailing whitespace.
++        const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = row;
+apps/api/src/services/catalog-clone.ts:648: trailing whitespace.
++        writes.stockUnits.push({ ...rest, id: newId(), operatorId, stockItemId: targetId });
+apps/api/src/services/catalog-clone.ts:649: trailing whitespace.
++        plan.stockUnits.create.push(label);
+apps/api/src/services/catalog-clone.ts:650: trailing whitespace.
++      }
+apps/api/src/services/catalog-clone.ts:651: trailing whitespace.
++    }
+apps/api/src/services/catalog-clone.ts:652: trailing whitespace.
++  }
+apps/api/src/services/catalog-clone.ts:653: trailing whitespace.
++
+apps/api/src/services/catalog-clone.ts:956: trailing whitespace.
++  'payment methods',
+apps/api/src/services/catalog-clone.ts:957: trailing whitespace.
++  'staff benefit role templates',
+apps/api/src/services/catalog-clone.ts:958: trailing whitespace.
++  'wheel layouts',
+apps/api/src/services/catalog-clone.ts:1050: trailing whitespace.
++  if (writes.supervisionPolicy.length) await tx.insert(supervisionPolicy).values(writes.supervisionPolicy);
+apps/api/src/services/catalog-clone.ts:1051: trailing whitespace.
++  if (writes.confirmationItems.length) await tx.insert(confirmationItem).values(writes.confirmationItems);
+apps/api/src/services/catalog-clone.ts:1052: trailing whitespace.
++  if (writes.dropOffPricing.length) await tx.insert(dropOffPricing).values(writes.dropOffPricing);
+apps/api/src/services/catalog-clone.ts:1053: trailing whitespace.
++  if (writes.stockItems.length) await tx.insert(stockItem).values(writes.stockItems);
+apps/api/src/services/catalog-clone.ts:1054: trailing whitespace.
++  if (writes.stockUnits.length) await tx.insert(stockUnit).values(writes.stockUnits);
+apps/api/src/services/catalog-clone.ts:1055: trailing whitespace.
++  for (const link of writes.productStockLinks) {
+apps/api/src/services/catalog-clone.ts:1056: trailing whitespace.
++    await tx.update(product).set({ stockItemId: link.stockItemId }).where(eq(product.id, link.productId));
+apps/api/src/services/catalog-clone.ts:1057: trailing whitespace.
++  }
