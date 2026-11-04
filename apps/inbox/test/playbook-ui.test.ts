@@ -114,6 +114,7 @@ function detail(r: ConversationRow): ConversationDetail {
     aiPausedAt: null,
     aiPausedByAccountId: null,
     aiState: 'off',
+    event: null,
   };
 }
 

@@ -388,6 +388,30 @@ export const InboxEventSchema = z.object({
   createdAt: Iso,
 });
 
+/** A conversation's event in the Events module, as the inbox shows it ("Event: <date> at <branch>"). */
+export const InboxConversationEventSchema = z.object({
+  /** The event's id in the Events module (`conversation.event_order_ref`). */
+  id: Uuid,
+  title: z.string(),
+  date: z.string(),
+  startTime: z.string(),
+  branchId: Uuid,
+  branchName: z.string().nullable(),
+  /** The event's status in the Events module (`tentative` until a person confirms it there). */
+  status: z.string(),
+  statusName: z.string(),
+  kids: z.number().int().nullable(),
+  adults: z.number().int().nullable(),
+  bookedAt: Iso,
+  bookedByAccountId: Uuid.nullable(),
+  /** Where the OTO App opens this event's BEO form: the target for the suite hand-off. */
+  beoPath: z.string(),
+});
+export type InboxConversationEvent = z.infer<typeof InboxConversationEventSchema>;
+
+/** The OTO App path that opens an event's BEO form (its Events page reads `?beo=`). */
+export const beoPathOf = (eventId: string): string => `/studio/events/kanban?beo=${eventId}`;
+
 export const InboxConversationDetailSchema = InboxConversationRowSchema.extend({
   teamName: z.string().nullable(),
   firstResponseAt: Iso.nullable(),
@@ -419,6 +443,12 @@ export const InboxConversationDetailSchema = InboxConversationRowSchema.extend({
   aiPaused: z.boolean(),
   aiPausedAt: Iso.nullable(),
   aiPausedByAccountId: Uuid.nullable(),
+  /**
+   * The birthday's event in the Events module (SCRUM-775): what Book Date
+   * made, as the Events module now holds it where the inbox can read it, else
+   * as it was booked. Null until a date is booked.
+   */
+  event: InboxConversationEventSchema.nullable(),
 });
 export type InboxConversationDetail = z.infer<typeof InboxConversationDetailSchema>;
 
@@ -523,6 +553,15 @@ export const InboxDashboardSchema = z.object({
   }),
   /** The Bangkok day "today" means, `YYYY-MM-DD`. */
   day: z.string(),
+  /**
+   * The BEO card (SCRUM-775): birthday conversations whose event Book Date
+   * made in the Events module this Bangkok week, Monday to Sunday, within what
+   * the viewer can see — the prototype's "BEOs created" card (:1377), by the
+   * week.
+   */
+  beosThisWeek: z.number().int().min(0),
+  /** The Monday that week starts on, `YYYY-MM-DD`. */
+  weekStart: z.string(),
 });
 export type InboxDashboard = z.infer<typeof InboxDashboardSchema>;
 

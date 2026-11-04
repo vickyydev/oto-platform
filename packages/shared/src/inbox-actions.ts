@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { INBOX_CATEGORY_KEYS, INBOX_STATUS_KEYS } from './inbox';
+import { isIsoDate } from './dates';
+import { INBOX_CATEGORY_KEYS, INBOX_STATUS_KEYS, InboxConversationEventSchema } from './inbox';
 
 /**
  * THE INBOX'S OWNERSHIP AND STATUS ACTIONS — their shapes (S2-19 I2e,
@@ -127,3 +128,69 @@ export const InboxActionRefusalSchema = z.object({
   }),
 });
 export type InboxActionRefusalBody = z.infer<typeof InboxActionRefusalSchema>;
+
+// --- Book Date: a birthday's event in the Events module (SCRUM-775) -----------------
+//
+// Owner decision, 4 November (closes Inbox owner question Q23): the OTO App's
+// Events module is the one home for birthday orders. Book Date on a birthday
+// conversation makes a TENTATIVE birthday event there from what a person
+// confirmed out of the chat; the conversation keeps the event's id
+// (`event_order_ref`) and the event names the conversation. Create BEO then
+// opens that event's BEO form in the OTO App through the suite hand-off, at
+// `event.beoPath`.
+
+/** The refusal codes Book Date answers besides `ID_IN_USE` and the idempotency codes. */
+export const INBOX_BOOK_DATE_REFUSALS = [
+  /** 409: the conversation is not in Birthdays & Events. */
+  'NOT_A_BIRTHDAY',
+  /** 409: the conversation already has its event (`details.eventId`): Create BEO opens it. */
+  'EVENT_ALREADY_BOOKED',
+  /** 409: the OTO App has no branch for that park, so nothing was made. */
+  'EVENT_BRANCH_NOT_MAPPED',
+  /** 502: the Events module refused the event for another reason, in its own words. */
+  'EVENTS_CALENDAR_REFUSED',
+  /** 503: the Events module did not answer (or this deployment has none); nothing was booked here. */
+  'EVENTS_CALENDAR_UNAVAILABLE',
+] as const;
+export type InboxBookDateRefusal = (typeof INBOX_BOOK_DATE_REFUSALS)[number];
+
+const IsoDate = z.string().refine(isIsoDate, 'Expected a calendar date, YYYY-MM-DD');
+const ClockTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Expected HH:mm');
+const Text = (max: number) => z.string().trim().max(max);
+
+/**
+ * `POST /inbox/conversations/{id}/book-date` — what the person confirmed. `id`
+ * is caller-named: the event's own id in the Events module, so a second press
+ * (or a retry after a lost answer) under the same id is the same event.
+ */
+export const InboxBookDateBodySchema = z
+  .object({
+    id: Uuid,
+    /** The park, prefilled from the conversation's branch. */
+    branchId: Uuid,
+    date: IsoDate,
+    /** The party's start; the Events module's own form starts at 14:00. */
+    startTime: ClockTime,
+    /** How many children are coming (the prototype's "# of kids"). */
+    kids: z.number().int().min(0).max(1000).nullable(),
+    adults: z.number().int().min(0).max(1000).nullable(),
+    /** Who is booking: the contact's name, editable. */
+    contactName: Text(200).min(1),
+    /** The contact's phone, normalised to E.164 here. */
+    phone: Text(50).nullable(),
+    childName: Text(200).nullable(),
+    /** The age the child is turning, when the chat says it. */
+    childAge: z.number().int().min(0).max(30).nullable(),
+  })
+  .strict();
+export type InboxBookDateBody = z.infer<typeof InboxBookDateBodySchema>;
+
+/** What Book Date answers: the conversation's event, and whether this press made it. */
+export const InboxBookDateResultSchema = z.object({
+  conversationId: Uuid,
+  event: InboxConversationEventSchema,
+  /** False when the same id was booked before: the answer is the event as booked then. */
+  created: z.boolean(),
+});
+export type InboxBookDateResult = z.infer<typeof InboxBookDateResultSchema>;
+

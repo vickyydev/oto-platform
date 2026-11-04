@@ -200,6 +200,8 @@ describe('F3 — the phone shows the list first', () => {
     population: 'active',
     byCategory: { birthdays: 5, general: 4, marketing: 3, gm: 0 },
     day: '2026-10-22',
+    beosThisWeek: 0,
+    weekStart: '2026-10-19',
   };
 
   function grid(unansweredOnly = false): string {

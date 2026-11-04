@@ -37,6 +37,10 @@ export type TemplatePatch = ApiBody<'/inbox/templates/{id}', 'patch'>;
 export type MoveDest = ApiBody<'/inbox/conversations/{id}/move', 'post'>['dest'];
 export type PrimaryAssignee = ApiBody<'/inbox/conversations/{id}/primary', 'put'>['assignee'];
 export type SimulatedInbound = ApiBody<'/inbox/simulator/inbound', 'post'>;
+export type BookDateBody = ApiBody<'/inbox/conversations/{id}/book-date', 'post'>;
+export type BookDateResult = ApiResponse<'/inbox/conversations/{id}/book-date', 'post'>;
+/** A conversation's event in the Events module (SCRUM-775), on its detail. */
+export type ConversationEvent = NonNullable<ConversationDetail['event']>;
 
 const at = (id: string) => `/inbox/conversations/${encodeURIComponent(id)}`;
 
@@ -114,6 +118,16 @@ export const inboxApi = {
       { branchId },
       { idempotencyKey: idemKey() },
     ),
+
+  /**
+   * Book Date (SCRUM-775): a tentative birthday in the Events module from what
+   * the person confirmed. `body.id` names the event there: the dialog mints it
+   * once, so a second press or a retry is the same event, never a second.
+   */
+  bookDate: (id: string, body: BookDateBody) =>
+    api.post<ApiResponse<'/inbox/conversations/{id}/book-date', 'post'>>(`${at(id)}/book-date`, body, {
+      idempotencyKey: idemKey(),
+    }),
 
   handle: (id: string) =>
     api.post<ApiResponse<'/inbox/conversations/{id}/handle', 'post'>>(`${at(id)}/handle`, undefined, {

@@ -684,6 +684,13 @@ describe('reading, and the sampled read audit (plan §3.6)', () => {
   });
 });
 
+/** The Monday of a Bangkok day's week, worked out here rather than read from the api. */
+function mondayOf(isoDay: string): string {
+  const d = new Date(`${isoDay}T12:00:00Z`);
+  const back = (d.getUTCDay() + 6) % 7;
+  return new Date(d.getTime() - back * 86_400_000).toISOString().slice(0, 10);
+}
+
 describe('the dashboard', () => {
   it('counts within what the viewer sees, by the shared rules and the Bangkok day; By category counts the Active population, and the card says whose numbers they are', async () => {
     const facts = await factsOf();
@@ -717,6 +724,9 @@ describe('the dashboard', () => {
           gm: active.filter((f) => f.category === 'gm').length,
         },
         day,
+        // SCRUM-775: the BEO card — no date is booked in the demo threads — and its Monday.
+        beosThisWeek: 0,
+        weekStart: mondayOf(day),
       });
       expect(
         res.body.byCategory.birthdays + res.body.byCategory.general + res.body.byCategory.marketing + res.body.byCategory.gm,

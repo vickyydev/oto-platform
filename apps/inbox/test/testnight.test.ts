@@ -140,6 +140,7 @@ function detail(r: ConversationRow, over: Partial<ConversationDetail> = {}): Con
     aiPausedAt: null,
     aiPausedByAccountId: null,
     aiState,
+    event: null,
     ...over,
   };
 }
@@ -462,6 +463,8 @@ describe('the wording (U9)', () => {
       scope: 'mine',
       population: 'active',
       byCategory: { birthdays: 0, general: 0, marketing: 0, gm: 0 },
+      beosThisWeek: 0,
+      weekStart: '2026-10-19',
     };
     const card = (d: DashboardData) =>
       renderToStaticMarkup(createElement(Dashboard, { data: d, error: null, unansweredOnly: false, onToggleUnanswered: noop }));
