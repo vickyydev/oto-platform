@@ -610,6 +610,17 @@ export const saleTierClaim = pos.table(
      */
     note: text('note'),
     /**
+     * SCRUM-772 — set when the rate was approved by hand rather than on a
+     * document: the reason's code (`TIER_APPROVAL_REASONS` in `@oto/shared`).
+     * Null for a document check. The approver is `account_id`, the time is
+     * `created_at` and the sale is `spent_by_sale_id`, as for any claim.
+     */
+    approvalReason: text('approval_reason'),
+    /** What staff typed when the approval's reason is Other; null otherwise. */
+    approvalReasonText: text('approval_reason_text'),
+    /** The optional note staff added to a hand approval. Never a document number. */
+    approvalNote: text('approval_note'),
+    /**
      * The sale this claim priced, once one did. Set by a conditional update
      * inside the sale's transaction — `where spent_by_sale_id is null` — so two
      * carts racing for one claim cannot both win it.
@@ -627,10 +638,19 @@ export const saleTierClaim = pos.table(
     index('sale_tier_claim_session_idx').on(t.accountId, t.branchId, t.createdAt),
     index('sale_tier_claim_branch_idx').on(t.branchId),
     index('sale_tier_claim_sale_idx').on(t.spentBySaleId),
+    /** The Console's count of hand approvals per staff member (SCRUM-772). */
+    index('sale_tier_claim_approval_idx')
+      .on(t.operatorId, t.accountId, t.createdAt)
+      .where(sql`approval_reason is not null`),
     /** Spent means both, or neither: a claim cannot be half-spent. */
     check(
       'sale_tier_claim_spent_check',
       sql`(${t.spentBySaleId} is null) = (${t.spentAt} is null)`,
+    ),
+    /** A typed reason or a note belongs to a hand approval and to nothing else. */
+    check(
+      'sale_tier_claim_approval_check',
+      sql`${t.approvalReason} is not null or (${t.approvalReasonText} is null and ${t.approvalNote} is null)`,
     ),
   ],
 );

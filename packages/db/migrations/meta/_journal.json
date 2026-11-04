@@ -715,6 +715,13 @@
       "when": 1793697708195,
       "tag": "0101_deploy_event_source",
       "breakpoints": true
+    },
+    {
+      "idx": 102,
+      "version": "7",
+      "when": 1793786986957,
+      "tag": "0102_tier_claim_hand_approval",
+      "breakpoints": true
     }
   ]
 }
