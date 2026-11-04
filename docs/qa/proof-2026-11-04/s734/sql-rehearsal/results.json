@@ -1,0 +1,84 @@
+{
+  "source": "b83641d45c7ad4304f6d8062be791ed7f31b7942",
+  "at": "2026-11-04T03:24:17.744Z",
+  "runs": [
+    {
+      "run": "mw1jpvnu",
+      "passed": false,
+      "databaseDropped": true,
+      "programs": [
+        {
+          "mode": "proof",
+          "passed": true,
+          "resultBytes": 18973
+        },
+        {
+          "mode": "cleanup",
+          "passed": false,
+          "resultBytes": 0
+        }
+      ]
+    },
+    {
+      "run": "mw1jsnjb",
+      "passed": true,
+      "databaseDropped": true,
+      "programs": [
+        {
+          "mode": "proof",
+          "passed": true,
+          "resultBytes": 5324
+        },
+        {
+          "mode": "cleanup",
+          "passed": true,
+          "resultBytes": 5086
+        }
+      ]
+    },
+    {
+      "run": "mw1jupwa",
+      "passed": true,
+      "databaseDropped": true,
+      "programs": [
+        {
+          "mode": "proof",
+          "passed": true,
+          "resultBytes": 5649
+        },
+        {
+          "mode": "cleanup",
+          "passed": true,
+          "resultBytes": 5410
+        }
+      ]
+    }
+  ],
+  "logs": [
+    {
+      "path": "docs/qa/proof-2026-11-04/s734/sql-rehearsal/s734-readback-rehearsal.log",
+      "rawSha256": "5536db176002105d011d8ec7b205eb4aced5f5b4972780405b1a1bdca1bd3b77",
+      "normalizedSha256": "c7ee66901e751533f1e50d0191ac3f149a84149296c5ad607fe46fea533a96ca"
+    },
+    {
+      "path": "docs/qa/proof-2026-11-04/s734/sql-rehearsal/s734-readback-rehearsal-corrected.log",
+      "rawSha256": "616e77c648edefb2e27ed9e50219b040e607b7cdce942c5fb13e24726c5c07ae",
+      "normalizedSha256": "85d8a67d2f1dc7b07131b32ae1bf4368aeeebc894f23e465a4e89608d94e8614"
+    },
+    {
+      "path": "docs/qa/proof-2026-11-04/s734/sql-rehearsal/s734-readback-rehearsal-final.log",
+      "rawSha256": "40a33f32fbfcf07855c4866593a162f9ec5e886f6172db6f4b3cafd32bf1197e",
+      "normalizedSha256": "ce077f9466c305a9be5cd7bed0f8aab685d4b817a68c7d3a2013edc202d6656e"
+    }
+  ],
+  "correction": "The canonical stock-location retirement sets active=false. The original reader incorrectly required archived_at. The corrected reader requires the exact own location inactive, both own branches and products archived, category archived, empty app branches absent, and zero quantities or trading rows.",
+  "referenceCensus": {
+    "columns": 76,
+    "eachBranchNonzero": 0
+  },
+  "receiptSize": "Final proof 5649 bytes; final cleanup 5410 bytes. The full introspected reference list is bound by its sha256, and every column is checked before removal.",
+  "limits": [
+    "SQL readers ran on the local lifted schema. Empty app branches were removed with guarded local SQL; the canonical staging app HTTP removal and staging proof remain unproven."
+  ],
+  "staging": false
+}

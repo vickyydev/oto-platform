@@ -1,0 +1,61 @@
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-QCGWMj ... ok
+
+creating subdirectories ...
+ok
+
+selecting dynamic shared memory implementation ... windows
+
+selecting default max_connections ...
+100
+selecting default shared_buffers ...
+128MB
+selecting default time zone ...
+Asia/Bangkok
+creating configuration files ...
+ok
+running bootstrap script ...
+ok
+
+performing post-bootstrap initialization ...
+ok
+syncing data to disk ...
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-branch^-clone^-20261103^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-QCGWMj^" -l logfile start
+
+
+2026-11-04 10:21:01.069 +07 [9952] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+2026-11-04 10:21:01.072 +07 [9952] LOG:  listening on IPv6 address "::1", port 51066
+
+2026-11-04 10:21:01.072 +07 [9952] LOG:  listening on IPv4 address "127.0.0.1", port 51066
+
+2026-11-04 10:21:01.121 +07 [73552] LOG:  database system was shut down at 2026-11-04 10:20:59 +07
+
+2026-11-04 10:21:01.143 +07 [9952] LOG:  database system is ready to accept connections
+
+2026-11-04 10:21:04.632 +07 [105284] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+Suite registry: registered 6 app(s).
+Settings catalogue: 8 inserted, 0 updated.
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+(node:95456) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+2026-11-04 10:21:08.756 +07 [88696] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 10:21:08.768 +07 [88696] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.002 s, sync=0.003 s, total=0.013 s; sync files=5, longest=0.001 s, average=0.001 s; distance=26431 kB, estimate=26431 kB; lsn=0/2F47E50, redo lsn=0/2F47E18
+
+{"out":"C:/oto-lanes/codex-branch-clone-20261103/docs/qa/proof-2026-11-04/s734/sql-rehearsal/mw1jupwa","source":"b83641d45c7ad4304f6d8062be791ed7f31b7942","passed":true,"databaseDropped":true,"programs":[{"mode":"proof","passed":true,"bytes":5649,"referenceCounts":[{"checked":76,"nonzero":0},{"checked":76,"nonzero":0}]},{"mode":"cleanup","passed":true,"bytes":5410,"referenceCounts":[{"checked":0,"nonzero":0},{"checked":0,"nonzero":0}]}]}

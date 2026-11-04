@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+export default async function(proof){
+ const {r,f,save}=proof;
+ const before=JSON.parse(readFileSync(proof.out+'/independent-readback.json','utf8')),after=JSON.parse(readFileSync(proof.out+'/cleanup-readback.json','utf8'));
+ for(const read of [before,after]){assert.equal(read.source,r.source);assert.equal(read.status,'succeeded');assert.equal(read.result.passed,true);assert.equal(read.result.readOnly,true);assert.equal(read.result.rows.length,2);assert.deepEqual(read.result.rows.map(x=>x.branch.id),f.branches.map(x=>x.id));}
+ assert.deepEqual(after.result.referenceCensus,before.result.referenceCensus);assert.equal(after.result.category.id,f.categoryId);assert.equal(after.result.category.archived,true);
+ assert.equal(r.screens.length,5);assert.ok(r.nativeProofCompletedAt);assert.equal(r.retirement.steps.length,4);assert.equal(r.retirement.sessions.length,3);assert.ok(r.retirement.sessions.every(s=>s.signedOut));
+ for(const row of after.result.rows){assert.equal(row.branch.archived,true);assert.equal(row.app.length,0);assert.ok(Object.values(row.counts).every(n=>n===0));assert.equal(row.printTemplates.count,6);}
+ await proof.verifyEnvironment();assert.equal(r.apiSettingNameCountAfter,57);assert.equal(r.settingNamesUnchanged,true);
+ r.cleanupVerified=true;r.outcome='native staging clone, care and stock screens, independent reads and exact retirement passed';r.finishedAt=new Date().toISOString();save();
+ return {passed:true,source:r.source,images:r.screens.map(s=>s.file),cleanupVerified:true};
+}
