@@ -338,6 +338,8 @@ const PLATFORM_NAMED: Record<string, string> = {
   'POST /print-jobs/:id/reprint': 'a print job: the box names its own offline (OD-12); online the platform queues it',
   'POST /sales/:id/refunds': `${ACTION_KEYED} (\`refund_action_unique\`); refunds are online only (decision 8)`,
   'POST /sales/:id/extensions': `${ACTION_KEYED} (\`sale_extension_action_unique\`); paid time extensions are online only`,
+  // SCRUM-772: a hand approval is a tier claim, keyed as the document check is.
+  'POST /sales/tier-approvals': `${ACTION_KEYED} (\`sale_tier_claim_action_unique\`)`,
   'POST /sales/tier-claims': `${ACTION_KEYED} (\`sale_tier_claim_action_unique\`)`,
   'POST /stations/:id/displays/claim': 'derived: the credential a paired display is answered with, once',
   // S2-20 K2 — the kiosk pairs as a display does: the credential its K code buys, once.

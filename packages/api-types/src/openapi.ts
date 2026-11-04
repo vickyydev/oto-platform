@@ -5117,6 +5117,125 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sales/tier-approvals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Approve the Thai rate by hand for this sale only, with a reason from the till's short list and an optional note. The approver and the branch are stamped from the session; the member is not marked as a verified tier. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        actionId: string;
+                        /** Format: uuid */
+                        branchId?: string;
+                        toTier: string;
+                        /** @enum {string} */
+                        reason: "thai_child_foreign_parent" | "thai_id_seen_not_to_hand" | "other";
+                        reasonText?: string;
+                        note?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            claim: {
+                                /** Format: uuid */
+                                id: string;
+                                actionId: string;
+                                /** Format: uuid */
+                                branchId: string;
+                                toTier: string;
+                                evidenceType: string;
+                                evidenceExpiresAt: string | null;
+                                note: string | null;
+                                approval: {
+                                    reason: string;
+                                    reasonText: string | null;
+                                    note: string | null;
+                                } | null;
+                                /** Format: uuid */
+                                verifiedByAccountId: string;
+                                createdAt: string;
+                                expiresAt: string;
+                                /** Format: uuid */
+                                spentBySaleId: string | null;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sales/tier-approvals/by-staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Count the Thai rate approvals made by hand, per staff member: the last 30 days and in total. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            since: string;
+                            days: number;
+                            staff: {
+                                /** Format: uuid */
+                                accountId: string;
+                                name: string | null;
+                                recent: number;
+                                total: number;
+                                lastApprovedAt: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sales/tier-claims": {
         parameters: {
             query?: never;

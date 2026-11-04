@@ -10506,6 +10506,224 @@
         }
       }
     },
+    "/sales/tier-approvals": {
+      "post": {
+        "description": "Approve the Thai rate by hand for this sale only, with a reason from the till's short list and an optional note. The approver and the branch are stamped from the session; the member is not marked as a verified tier.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "actionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "branchId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "toTier": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "reason": {
+                    "type": "string",
+                    "enum": [
+                      "thai_child_foreign_parent",
+                      "thai_id_seen_not_to_hand",
+                      "other"
+                    ]
+                  },
+                  "reasonText": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "actionId",
+                  "toTier",
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "claim": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "actionId": {
+                          "type": "string"
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "toTier": {
+                          "type": "string"
+                        },
+                        "evidenceType": {
+                          "type": "string"
+                        },
+                        "evidenceExpiresAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "note": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "approval": {
+                          "type": "object",
+                          "properties": {
+                            "reason": {
+                              "type": "string"
+                            },
+                            "reasonText": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "note": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "reason",
+                            "reasonText",
+                            "note"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "verifiedByAccountId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "expiresAt": {
+                          "type": "string"
+                        },
+                        "spentBySaleId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "actionId",
+                        "branchId",
+                        "toTier",
+                        "evidenceType",
+                        "evidenceExpiresAt",
+                        "note",
+                        "approval",
+                        "verifiedByAccountId",
+                        "createdAt",
+                        "expiresAt",
+                        "spentBySaleId"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "claim"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sales/tier-approvals/by-staff": {
+      "get": {
+        "description": "Count the Thai rate approvals made by hand, per staff member: the last 30 days and in total.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "since": {
+                      "type": "string"
+                    },
+                    "days": {
+                      "type": "integer"
+                    },
+                    "staff": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "accountId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "recent": {
+                            "type": "integer"
+                          },
+                          "total": {
+                            "type": "integer"
+                          },
+                          "lastApprovedAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "accountId",
+                          "name",
+                          "recent",
+                          "total",
+                          "lastApprovedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "since",
+                    "days",
+                    "staff"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/sales/tier-claims": {
       "post": {
         "description": "Record a checked tier proof for a visitor who is not a member yet, so the cart can be priced at that tier. The verifier and the branch are stamped from the session; the tier is never taken from a cart.",

@@ -1,8 +1,20 @@
 import { z } from 'zod';
-import { TIER_PROOF_CHOICES, TIER_PROOF_NOTE_MAX, tierProofNoteProblem } from '@oto/shared';
+import {
+  TIER_APPROVAL_REASONS,
+  TIER_APPROVAL_TEXT_MAX,
+  TIER_PROOF_CHOICES,
+  TIER_PROOF_NOTE_MAX,
+  tierProofNoteProblem,
+} from '@oto/shared';
 import type { App } from '../app';
 import { AppError, errors } from '../lib/errors';
-import { recordTierClaim } from '../services/sale-tier';
+import {
+  CLAIM_APPROVE_BY_HAND_ACTION,
+  TIER_APPROVAL_COUNT_DAYS,
+  recordTierApproval,
+  recordTierClaim,
+  tierApprovalCounts,
+} from '../services/sale-tier';
 import { opCtx, withTx } from '../services/tx';
 
 /**
@@ -66,7 +78,142 @@ const ClaimBody = z
   })
   .strict();
 
+/**
+ * SCRUM-772 — the Thai rate approved by hand, for the special cases a
+ * document check does not fit.
+ *
+ * WHAT THE CALLER MAY NOT SEND, as on the document check: who approved it,
+ * which branch, or a price. The approver and the branch come from the
+ * session; the tier names a rate in the catalogue. There is no field for a
+ * document number, and the two free-text fields refuse a run of five or more
+ * digits (`tierApprovalProblem`).
+ */
+const ApprovalBody = z
+  .object({
+    /** `x-oto-action-id` of the press that approved it: the key the cart names. */
+    actionId: z.string().min(1).max(200),
+    /** The branch, as on the document check; the session's when omitted. */
+    branchId: z.string().uuid().optional(),
+    /** Only the Thai rate may be approved by hand (`TIER_APPROVAL_TIERS`). */
+    toTier: z.string().min(1).max(40),
+    reason: z.enum(TIER_APPROVAL_REASONS),
+    /** What staff typed when the reason is Other: two words at least. */
+    reasonText: z.string().max(TIER_APPROVAL_TEXT_MAX).optional(),
+    /** An optional note on any reason. */
+    note: z.string().max(TIER_APPROVAL_TEXT_MAX).optional(),
+  })
+  .strict();
+
+const ApprovalClaim = z.object({
+  id: z.string().uuid(),
+  actionId: z.string(),
+  branchId: z.string().uuid(),
+  toTier: z.string(),
+  evidenceType: z.string(),
+  evidenceExpiresAt: z.string().nullable(),
+  note: z.string().nullable(),
+  approval: z
+    .object({
+      reason: z.string(),
+      reasonText: z.string().nullable(),
+      note: z.string().nullable(),
+    })
+    .nullable(),
+  verifiedByAccountId: z.string().uuid(),
+  createdAt: z.string(),
+  expiresAt: z.string(),
+  spentBySaleId: z.string().uuid().nullable(),
+});
+
+const ApprovalCounts = z.object({
+  /** The start of the recent window: `TIER_APPROVAL_COUNT_DAYS` days back. */
+  since: z.string(),
+  days: z.number().int(),
+  staff: z.array(
+    z.object({
+      accountId: z.string().uuid(),
+      name: z.string().nullable(),
+      recent: z.number().int(),
+      total: z.number().int(),
+      lastApprovedAt: z.string(),
+    }),
+  ),
+});
+
 export async function saleTierRoutes(app: App): Promise<void> {
+  app.post(
+    '/tier-approvals',
+    {
+      /**
+       * `pos:member:update`, the permission that lets reception apply a
+       * verified rate (the document check above); no new role, and nobody
+       * else confirms it, so the customer does not wait. The branch target
+       * and the handler's re-check follow the document check's reasons.
+       */
+      config: { permission: 'pos:member:update', target: { branchId: 'body.branchId' }, stationTrading: true },
+      schema: {
+        description:
+          'Approve the Thai rate by hand for this sale only, with a reason from the till\'s ' +
+          'short list and an optional note. The approver and the branch are stamped from the ' +
+          'session; the member is not marked as a verified tier.',
+        body: ApprovalBody,
+        response: { 200: z.object({ claim: ApprovalClaim }) },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const branchId = req.body.branchId ?? auth.branchId;
+      if (!branchId) {
+        throw errors.badRequest('This session has no branch, so an approval has nowhere to belong');
+      }
+      await req.requirePermission('pos:member:update', { branchId });
+
+      // The answer is built inside the transaction, so the body an
+      // Idempotency-Key stores there is the body a replay sends back.
+      return withTx(app.db, opCtx(req), CLAIM_APPROVE_BY_HAND_ACTION, async (tx) => ({
+        claim: await recordTierApproval(
+          tx,
+          {
+            accountId: auth.accountId,
+            operatorId: auth.operatorId,
+            branchId,
+            requestId: req.id,
+          },
+          {
+            actionId: req.body.actionId,
+            toTier: req.body.toTier,
+            reason: req.body.reason,
+            reasonText: req.body.reasonText ?? null,
+            note: req.body.note ?? null,
+          },
+        ),
+      }));
+    },
+  );
+
+  /**
+   * SCRUM-772 — the Console's count of hand approvals per staff member, so
+   * it shows whether the special case is used more than it should be. On
+   * `pos:member:list`, as the tier verification records it sits beside.
+   */
+  app.get(
+    '/tier-approvals/by-staff',
+    {
+      config: { permission: 'pos:member:list' },
+      schema: {
+        description:
+          'Count the Thai rate approvals made by hand, per staff member: the last ' +
+          `${TIER_APPROVAL_COUNT_DAYS} days and in total.`,
+        response: { 200: ApprovalCounts },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const counts = await tierApprovalCounts(app.db, auth.operatorId);
+      return { ...counts, days: TIER_APPROVAL_COUNT_DAYS };
+    },
+  );
+
   app.post(
     '/tier-claims',
     {
