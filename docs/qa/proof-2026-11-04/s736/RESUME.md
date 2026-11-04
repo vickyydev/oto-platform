@@ -17,6 +17,21 @@ ci job failed on the deployment-column inventory that 4fa176286 corrected.
 The CI run for the head carrying the barcode change is reported in the
 hand-back to the planner by its full SHA.
 
+### Rebased onto main 3404c959f (4 November, 16:55 Bangkok)
+
+Main moved by three documentation and proof commits only (76f507574,
+edb96803d, 3404c959f). The lane was rebased onto 3404c959f; the STATUS and
+handover blocks were merged keeping both sides, newest first, and every file
+outside docs/ is byte-identical to the pre-rebase head bcdf516d7. Gates on the
+rebased tree, all exit 0, output read: typecheck of @oto/shared,
+@oto/box-agent, @oto/api, @oto/api-types and @oto/pos; eslint on every changed
+.ts/.tsx (no errors); box agent whole suite 891/891; api 12 files with
+--pool=forks (the four route guards, station-scans, station-scans-poll,
+box-api, box-scanner, scanning-product, scanning-staff-token,
+s731-band-wallet-scan, s736-scanner-relay-review) 200/200; POS whole suite 139
+files, 1957/1957; pnpm api-types:check matches. Branch CI for the new head is
+reported to the planner by full SHA.
+
 ### Barcodes on a Pi (added at take-over)
 
 Only the api put a product barcode handler on a scanner, and only on the
