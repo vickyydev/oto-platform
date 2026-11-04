@@ -1,0 +1,224 @@
+{
+  "mode": "local",
+  "source": "e4394703a5c83628faa4ae8181ee41c6d50d7d3a",
+  "startedAt": "2026-11-04T11:02:41.454Z",
+  "cases": [
+    {
+      "name": "SCRUM-765 socks sale prints the receipt and the bands, no socks slip",
+      "passed": true
+    },
+    {
+      "name": "SCRUM-773 verify step offers Driving licence and takes an expiry on Other",
+      "passed": true
+    },
+    {
+      "name": "SCRUM-765 socks sale with no wallet: the card shows the socks; receipt and bands only",
+      "passed": true
+    }
+  ],
+  "screens": [
+    "s765-order-with-two-pairs-of-socks.png",
+    "s765-payment-successful-receipt-and-bands-only.png",
+    "s773-verify-step-driving-licence.png",
+    "s773-verify-step-other-with-expiry.png",
+    "s773-thai-rate-on-other-with-expiry.png",
+    "s765-thai-full-day-order-with-two-pairs-of-socks.png",
+    "s765-no-wallet-payment-successful-socks-card.png"
+  ],
+  "printouts": [
+    {
+      "sale": "s765",
+      "printer": "Receipt Printer 1",
+      "seq": 1,
+      "heightDots": 1184,
+      "truncated": false,
+      "file": "s765-receipt-printer-1.png"
+    },
+    {
+      "sale": "s765",
+      "printer": "Band Printer (kids)",
+      "seq": 1,
+      "heightDots": 240,
+      "truncated": false,
+      "file": "s765-kids-band-printer-1.png"
+    },
+    {
+      "sale": "s765",
+      "printer": "Band Printer (adults)",
+      "seq": 1,
+      "heightDots": 237,
+      "truncated": false,
+      "file": "s765-adult-band-printer-1.png"
+    },
+    {
+      "sale": "s765-no-wallet",
+      "printer": "Receipt Printer 1",
+      "seq": 3,
+      "heightDots": 709,
+      "truncated": false,
+      "file": "s765-no-wallet-receipt-printer-3.png"
+    },
+    {
+      "sale": "s765-no-wallet",
+      "printer": "Band Printer (kids)",
+      "seq": 2,
+      "heightDots": 241,
+      "truncated": false,
+      "file": "s765-no-wallet-kids-band-printer-2.png"
+    },
+    {
+      "sale": "s765-no-wallet",
+      "printer": "Band Printer (adults)",
+      "seq": 2,
+      "heightDots": 244,
+      "truncated": false,
+      "file": "s765-no-wallet-adult-band-printer-2.png"
+    }
+  ],
+  "outcome": "passed",
+  "phase": "no-wallet socks sale",
+  "box": {
+    "id": "01a1a639-d4ec-726f-8846-d9d3e0fc3851",
+    "name": "Virtual box 1",
+    "status": "online"
+  },
+  "till": {
+    "id": "01a1a639-d4ff-7260-8451-2dc1fd1a0816",
+    "name": "Reception Till 1",
+    "codePrefix": "T1",
+    "printers": [
+      {
+        "role": "receipt",
+        "label": "Receipt Printer 1",
+        "transport": "simulated"
+      },
+      {
+        "role": "kids_band",
+        "label": "Band Printer (kids)",
+        "transport": "simulated"
+      },
+      {
+        "role": "adult_band",
+        "label": "Band Printer (adults)",
+        "transport": "simulated"
+      }
+    ]
+  },
+  "browser": "153.0.8010.12",
+  "sale": {
+    "id": "01a1a63a-0d4f-731a-a373-32520421ff49",
+    "receiptNumber": "T1-000001",
+    "status": "finalised",
+    "socksQuantity": 2,
+    "walletGrants": 1,
+    "lines": [
+      {
+        "kind": "kids",
+        "label": "Kids",
+        "quantity": 1
+      },
+      {
+        "kind": "adults_paid",
+        "label": "Adults",
+        "quantity": 1
+      },
+      {
+        "kind": "addon",
+        "label": "Regular Socks",
+        "quantity": 2
+      }
+    ],
+    "printJobs": [
+      {
+        "kind": "adult_wristband",
+        "status": "printed",
+        "device": "Band Printer (adults)"
+      },
+      {
+        "kind": "kids_wristband",
+        "status": "printed",
+        "device": "Band Printer (kids)"
+      },
+      {
+        "kind": "receipt",
+        "status": "printed",
+        "device": "Receipt Printer 1"
+      }
+    ]
+  },
+  "salePaper": {
+    "receipt-printer": 1,
+    "receipt-printer-empty-sessions": 1,
+    "kids-band-printer": 1,
+    "adult-band-printer": 1
+  },
+  "offered": [
+    "Passport",
+    "Driving licence",
+    "School card",
+    "Other"
+  ],
+  "claim": {
+    "evidenceType": "Other",
+    "evidenceExpiresAt": "2027-06-30",
+    "note": "Work permit",
+    "toTier": "thai"
+  },
+  "noWalletSale": {
+    "id": "01a1a63a-34d2-7795-9b78-de97e76e0d49",
+    "receiptNumber": "T1-000002",
+    "status": "finalised",
+    "socksQuantity": 2,
+    "walletGrants": 0,
+    "lines": [
+      {
+        "kind": "kids",
+        "label": "Kids",
+        "quantity": 1
+      },
+      {
+        "kind": "adults_free",
+        "label": "Adults (free)",
+        "quantity": 1
+      },
+      {
+        "kind": "addon",
+        "label": "Regular Socks",
+        "quantity": 2
+      }
+    ],
+    "printJobs": [
+      {
+        "kind": "adult_wristband",
+        "status": "printed",
+        "device": "Band Printer (adults)"
+      },
+      {
+        "kind": "kids_wristband",
+        "status": "printed",
+        "device": "Band Printer (kids)"
+      },
+      {
+        "kind": "receipt",
+        "status": "printed",
+        "device": "Receipt Printer 1"
+      }
+    ]
+  },
+  "noWalletCard": {
+    "shown": true,
+    "total": "1 total",
+    "rows": [
+      "Regular Socks ×2 to collect"
+    ]
+  },
+  "noWalletSalePaper": {
+    "receipt-printer": 1,
+    "receipt-printer-empty-sessions": 1,
+    "kids-band-printer": 1,
+    "adult-band-printer": 1
+  },
+  "smsCount": 0,
+  "finishedAt": "2026-11-04T11:03:19.280Z",
+  "databaseDropped": true
+}
