@@ -3118,7 +3118,9 @@ export default function Till() {
     saleId: holdSaleId,
     online: paymentStage.online,
     paymentInProgress:
-      paymentStage.busy || !paymentStage.canBack || completionRetry !== null ||
+      // `locked`, not `canBack`: a recorded part payment shuts Back for good,
+      // and that is exactly when Save as partly paid is pressed.
+      paymentStage.busy || paymentStage.locked || completionRetry !== null ||
       paymentStage.state.phase === 'pending' || paymentStage.state.phase === 'manual' ||
       saleWriter.state.kind === 'writing' || saleWriter.state.kind === 'finalising',
     paidSatang: paidOnScreen,
