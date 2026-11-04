@@ -1,0 +1,112 @@
+{
+  "source": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+  "ci": {
+    "databaseId": 41759572637,
+    "headSha": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+    "conclusion": "success",
+    "url": "https://github.com/vickyydev/oto-platform/actions/runs/41759572637"
+  },
+  "run": "mw1ixvf2",
+  "imagesOpenedAt": "2026-11-04T03:00:59.611Z",
+  "screens": [
+    {
+      "name": "s738-till-pass-pending-display.png",
+      "capturedAt": "2026-11-04T02:56:56.521Z",
+      "sha256": "75fb30a3e0be8cb06939c81281416ca39dc93691dcb1dab4bf4f82007e14623f"
+    },
+    {
+      "name": "s738-party-balance-pending-display.png",
+      "capturedAt": "2026-11-04T02:57:01.418Z",
+      "sha256": "7b963a8f2900364963df75f68cc6e61ec6e7295ce34f940a37e76c318b600021"
+    },
+    {
+      "name": "s738-dropoff-pass-pending-display.png",
+      "capturedAt": "2026-11-04T02:57:06.570Z",
+      "sha256": "75cef37a0d3456ad6da3c6f04e9497678f268c536116261fdf01a2ca81601a3c"
+    },
+    {
+      "name": "s738-mobile-party-balance-pending-display.png",
+      "capturedAt": "2026-11-04T02:57:11.185Z",
+      "sha256": "527b269dfac788fce12c9455ce8e932b7c1acdeb3326eca1a01bed6e7bec0feb"
+    },
+    {
+      "name": "s738-till-pass-restored-display.png",
+      "capturedAt": "2026-11-04T02:56:58.588Z",
+      "sha256": "a69bc01103c6d4677096b4eb563156278d459c9894905c9f5d2f14b09585f114"
+    },
+    {
+      "name": "s738-party-balance-restored-display.png",
+      "capturedAt": "2026-11-04T02:57:03.246Z",
+      "sha256": "0fac13051ccfe53b969f047a88470f82146a547d908cc0307eb000b4658a0c33"
+    },
+    {
+      "name": "s738-signed-out-staff.png",
+      "capturedAt": "2026-11-04T02:57:15.907Z",
+      "sha256": "f20fab0d28186391de2565bb187046b9919d64c7af55b79506fb95b8c6141dbd"
+    },
+    {
+      "name": "s738-signed-out-display.png",
+      "capturedAt": "2026-11-04T02:57:16.219Z",
+      "sha256": "a69bc01103c6d4677096b4eb563156278d459c9894905c9f5d2f14b09585f114"
+    }
+  ],
+  "deployments": [
+    {
+      "name": "oto-pos-web-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhlbedkc73a2i8ug",
+      "finishedAt": "2026-11-04T02:41:46.080628Z"
+    },
+    {
+      "name": "oto-inbox-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhtbedkc73a2i9c0",
+      "finishedAt": "2026-11-04T02:39:50.284943Z"
+    },
+    {
+      "name": "oto-booth-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhlbedkc73a2i990",
+      "finishedAt": "2026-11-04T02:39:50.929757Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "commit": "773fd25f5436bf07f663af183761481b3197a3ef",
+      "deployId": "dep-dbl3udp42hec73d3g5mg",
+      "finishedAt": "2026-11-03T20:11:18.348148Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhlbedkc73a2i92g",
+      "finishedAt": "2026-11-04T02:39:54.38375Z"
+    },
+    {
+      "name": "oto-launcher-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhtbedkc73a2i9l0",
+      "finishedAt": "2026-11-04T02:39:51.288318Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhlbedkc73a2i960",
+      "finishedAt": "2026-11-04T02:39:52.314668Z"
+    },
+    {
+      "name": "oto-api-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhlbedkc73a2i7vg",
+      "finishedAt": "2026-11-04T02:42:56.030949Z"
+    }
+  ],
+  "nativeReceipt": "docs/qa/proof-2026-11-04/s738/staging/mw1ixvf2/receipt.json",
+  "priorInterruptedRun": "mw1iqb1n",
+  "openFinding": "SCRUM-747",
+  "cleanupVerified": true,
+  "limitations": [
+    "Payments used the staging simulator. Real bank and physical terminal payments are unproven.",
+    "The display used an independent browser process on a ZZ TEST virtual-box till. No park Pi, iPad, printer or physical display hardware was changed or proved.",
+    "The first proof fixture exceeded the gateway station-code limit; its exact cleanup is retained and the configuration defect remains open separately."
+  ]
+}
