@@ -525,7 +525,7 @@ describe('a tier changed at a counter with no internet (OD-11)', () => {
         memberId: seeded!.id,
         verificationId,
         toTier: 'thai',
-        evidenceType: 'Residence certificate',
+        evidenceType: 'Driving licence',
       }),
     );
     expect((answer.result as { member: { tierCode: string } }).member.tierCode).toBe('thai');
@@ -538,7 +538,7 @@ describe('a tier changed at a counter with no internet (OD-11)', () => {
       .select()
       .from(memberTierVerification)
       .where(eq(memberTierVerification.id, verificationId));
-    expect(evidence).toMatchObject({ toTier: 'thai', evidenceType: 'Residence certificate' });
+    expect(evidence).toMatchObject({ toTier: 'thai', evidenceType: 'Driving licence' });
     expect(evidence!.evidenceExpiresAt).toBeNull();
     const [row] = await ctx.db
       .select()

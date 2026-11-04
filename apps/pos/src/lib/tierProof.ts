@@ -36,7 +36,7 @@ export const TIER_PROOF_NOTE =
 
 /**
  * The document a sale was priced on, as History's sentence reads it —
- * "Priced on passport", "Priced on other (Thai driving licence)".
+ * "Priced on passport", "Priced on other (Work permit)".
  */
 export function pricedOnDocument(kind: string, note?: string | null): string {
   const text = note?.trim();

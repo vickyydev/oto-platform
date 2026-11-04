@@ -51,7 +51,7 @@ function apiMember(over: Partial<ApiMember> = {}): ApiMember {
 
 describe('s494 money — an expired document keeps the rate and flags re-verify', () => {
   it('offers three document kinds for new checks and still reads historical Other verifications', () => {
-    expect(TIER_PROOF_TYPES).toEqual(['Passport', 'Residence certificate', 'School card']);
+    expect(TIER_PROOF_TYPES).toEqual(['Passport', 'Driving licence', 'School card']);
     const existing = apiMember();
     existing.tierVerification!.proofType = 'Other';
     const mapped = apiMemberToMember(existing);

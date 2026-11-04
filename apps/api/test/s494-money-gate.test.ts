@@ -138,7 +138,7 @@ describe('s494 money gate — 1: an expired document keeps the rate and flags re
       method: 'POST',
       url: `/members/${memberId}/tier-verification`,
       headers: { cookie, 'idempotency-key': newId() },
-      payload: { toTier: 'thai', evidenceType: 'Residence certificate', evidenceExpiresAt: future },
+      payload: { toTier: 'thai', evidenceType: 'Driving licence', evidenceExpiresAt: future },
     });
     expect(verified.statusCode, verified.body).toBe(200);
     expect(verified.json().member.tierVerification).toMatchObject({ expiresAt: future, reverifyDue: false });
@@ -235,7 +235,7 @@ describe('s494 money gate — 2: Tourist for a verified member; an unverified ti
       method: 'POST',
       url: `/members/${memberId}/tier-verification`,
       headers: { cookie, 'idempotency-key': newId() },
-      payload: { toTier: 'thai', evidenceType: 'Residence certificate' },
+      payload: { toTier: 'thai', evidenceType: 'Driving licence' },
     });
     const cartLine = ticketLine(1, 2);
     const q = await quote({ memberId, tier: 'tourist', lines: [cartLine] });

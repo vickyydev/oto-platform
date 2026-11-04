@@ -16,7 +16,7 @@ import {
  */
 describe('SCRUM-697 tier proof choices', () => {
   it('offers the three kinds, then Other, and leaves the three kinds as they were', () => {
-    expect(TIER_PROOF_TYPES).toEqual(['Passport', 'Residence certificate', 'School card']);
+    expect(TIER_PROOF_TYPES).toEqual(['Passport', 'Driving licence', 'School card']);
     expect(TIER_PROOF_CHOICES).toEqual([...TIER_PROOF_TYPES, 'Other']);
     expect(TIER_PROOF_OTHER).toBe('Other');
   });

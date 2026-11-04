@@ -96,7 +96,7 @@ export interface TierClaimInput {
    */
   actionId: string;
   toTier: string;
-  /** `Passport`, `Residence certificate`, `School card`, `Other` — a kind, never a number. */
+  /** `Passport`, `Driving licence`, `School card`, `Other` — a kind, never a number (older claims may say `Residence certificate`). */
   evidenceType: string;
   /**
    * The document's expiry, `YYYY-MM-DD`, when it carries one. Optional, as at
@@ -104,7 +104,7 @@ export interface TierClaimInput {
    */
   evidenceExpiresAt?: string | null;
   /**
-   * What staff checked when the kind is Other ("Thai driving licence"),
+   * What staff checked when the kind is Other ("Work permit"),
    * trimmed; the route has refused anything holding a document number
    * (SCRUM-697). Never written to the audit row.
    */

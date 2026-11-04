@@ -221,7 +221,7 @@ describe('s494 money — entry 1, walk-in: a tier claim needs no expiry either',
       method: 'POST',
       url: '/sales/tier-claims',
       headers: { cookie, 'idempotency-key': newId() },
-      payload: { branchId, toTier: 'thai', evidenceType: 'Residence certificate', ...payload },
+      payload: { branchId, toTier: 'thai', evidenceType: 'Driving licence', ...payload },
     });
   }
 

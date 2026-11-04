@@ -3220,7 +3220,7 @@ export interface paths {
                         verificationId?: string;
                         toTier: string;
                         /** @enum {string} */
-                        evidenceType: "Passport" | "Residence certificate" | "School card" | "Other";
+                        evidenceType: "Passport" | "Driving licence" | "School card" | "Other";
                         evidenceExpiresAt?: string | null;
                         note?: string;
                     };
@@ -5142,7 +5142,7 @@ export interface paths {
                         branchId?: string;
                         toTier: string;
                         /** @enum {string} */
-                        evidenceType: "Passport" | "Residence certificate" | "School card" | "Other";
+                        evidenceType: "Passport" | "Driving licence" | "School card" | "Other";
                         evidenceExpiresAt?: string | null;
                         note?: string;
                     };

@@ -332,7 +332,7 @@ describe('Tier verification — proof checked at the counter (beyond the prototy
       // A real document kind, so the refusal under test is the expiry and not
       // the kind: since SCRUM-315 the field is the four-name enum, and an
       // invented kind would have been refused before the date was read.
-      payload: { toTier: 'thai', evidenceType: 'Residence certificate', evidenceExpiresAt: '2020-01-01' },
+      payload: { toTier: 'thai', evidenceType: 'Driving licence', evidenceExpiresAt: '2020-01-01' },
     });
     expect(res.statusCode).toBe(400);
     expect(res.json().error.message).toMatch(/expired/i);

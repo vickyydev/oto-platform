@@ -4,23 +4,46 @@
  * The till, platform and offline box accept these three kinds for new
  * verifications. Historical records retain their recorded document text.
  * A claim carries the kind of document, never its number.
+ *
+ * SCRUM-773 (4 November 2026): Driving licence takes the place of Residence
+ * certificate, which is no longer offered (`TIER_PROOF_RETIRED`).
  */
-export const TIER_PROOF_TYPES = ['Passport', 'Residence certificate', 'School card'] as const;
+export const TIER_PROOF_TYPES = ['Passport', 'Driving licence', 'School card'] as const;
 export type TierProofType = (typeof TIER_PROOF_TYPES)[number];
 
 /**
  * SCRUM-697 — a document that is none of the three kinds.
  *
- * Staff pick "Other" and describe what they checked ("Thai driving licence").
- * The description is the record's note; it is what makes an Other check mean
+ * Staff pick "Other" and describe what they checked ("Work permit"). The
+ * description is the record's note; it is what makes an Other check mean
  * anything, so it is required, and it describes the document, never its
- * number. No expiry is asked for: the expiry is optional everywhere.
+ * number. The document's expiry date is asked for as on the three kinds
+ * (SCRUM-773) and, as on them, it is optional.
  */
 export const TIER_PROOF_OTHER = 'Other' as const;
 
 /** What the till offers and the routes accept: the three kinds, then Other. */
 export const TIER_PROOF_CHOICES = [...TIER_PROOF_TYPES, TIER_PROOF_OTHER] as const;
 export type TierProofChoice = (typeof TIER_PROOF_CHOICES)[number];
+
+/**
+ * SCRUM-773 — kinds the till no longer offers, which recorded checks still
+ * carry.
+ *
+ * A verification filed as "Residence certificate" before 4 November reads as
+ * it was filed, everywhere it is shown: its `evidence_type` is text, and no
+ * screen maps it through this list. Nothing new may pick it — the till, the
+ * Console, the box and the routes offer and accept `TIER_PROOF_CHOICES` only.
+ */
+export const TIER_PROOF_RETIRED = ['Residence certificate'] as const;
+
+/**
+ * Every kind a check recorded at a counter may carry: today's choices and the
+ * retired ones. Only what a box replays is read against it — a check its till
+ * made with the link down, before the box took this list, still files when
+ * the link returns rather than waiting in quarantine for a person.
+ */
+export const TIER_PROOF_RECORDED = [...TIER_PROOF_CHOICES, ...TIER_PROOF_RETIRED] as const;
 
 /** The longest description a check carries, trimmed. */
 export const TIER_PROOF_NOTE_MAX = 200;
@@ -29,7 +52,7 @@ export const TIER_PROOF_NOTE_MAX = 200;
  * One sentence per problem, so the till and the api say the same words.
  */
 export const TIER_PROOF_NOTE_PROBLEMS = {
-  missing: 'Say what you checked in at least two words, e.g. Thai driving licence.',
+  missing: 'Say what you checked in at least two words, e.g. Work permit.',
   tooLong: `Keep the description to ${TIER_PROOF_NOTE_MAX} characters.`,
   number: 'Describe the document, never its number.',
 } as const;
@@ -63,8 +86,8 @@ export function tierProofNoteProblem(
 }
 
 /**
- * How a recorded check reads on a profile: the kind, or for Other the
- * description staff typed — "Other (Thai driving licence)".
+ * How a recorded check reads on a profile: the kind — a retired one as it was
+ * filed — or for Other the description staff typed: "Other (Work permit)".
  */
 export function tierProofLabel(proofType: string, note?: string | null): string {
   const text = note?.trim();

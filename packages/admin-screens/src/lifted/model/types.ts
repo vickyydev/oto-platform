@@ -61,7 +61,7 @@ export interface TierDef {
 // A verified discounted-tier entitlement. The default tier never needs one.
 export interface TierVerification {
   tier: CustomerTier; // the verified rate (expat | thai)
-  proofType: string; // e.g. 'Passport', 'Residence certificate', 'School card'
+  proofType: string; // e.g. 'Passport', 'Driving licence', 'School card'; older records may say 'Residence certificate'
   verifiedBy: string; // operator name (from auth context)
   verifiedById: string;
   verifiedAt: string; // ISO

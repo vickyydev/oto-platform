@@ -5944,7 +5944,7 @@
                     "type": "string",
                     "enum": [
                       "Passport",
-                      "Residence certificate",
+                      "Driving licence",
                       "School card",
                       "Other"
                     ]
@@ -10534,7 +10534,7 @@
                     "type": "string",
                     "enum": [
                       "Passport",
-                      "Residence certificate",
+                      "Driving licence",
                       "School card",
                       "Other"
                     ]

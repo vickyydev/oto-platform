@@ -735,7 +735,7 @@ test('OD-11: a tier upgraded on a document at the counter prices the next cart; 
       memberId,
       verificationId: '018f0000-0000-7000-8000-0000000000e7',
       toTier: 'thai',
-      evidenceType: 'Residence certificate',
+      evidenceType: 'Driving licence',
       evidenceExpiresAt: '2027-09-30',
     }),
   );
@@ -800,7 +800,7 @@ test('OD-11: a document with no expiry date verifies a tier offline; an expired 
         memberId,
         verificationId: '018f0000-0000-7000-8000-0000000000e9',
         toTier: 'thai',
-        evidenceType: 'Residence certificate',
+        evidenceType: 'Driving licence',
         evidenceExpiresAt: '2000-01-01',
       }),
     ),
@@ -814,7 +814,7 @@ test('OD-11: a document with no expiry date verifies a tier offline; an expired 
       memberId,
       verificationId: '018f0000-0000-7000-8000-0000000000ea',
       toTier: 'thai',
-      evidenceType: 'Residence certificate',
+      evidenceType: 'Driving licence',
     }),
   );
   assert.equal((upgraded.result?.member as { tierCode: string }).tierCode, 'thai');
@@ -854,7 +854,7 @@ test('SCRUM-697: an Other document verifies a tier offline only with what staff 
     (err: unknown) =>
       err instanceof BridgeError &&
       err.status === 400 &&
-      err.message === 'Say what you checked in at least two words, e.g. Thai driving licence.',
+      err.message === 'Say what you checked in at least two words, e.g. Work permit.',
     'a one-word description is refused',
   );
   await assert.rejects(
@@ -869,7 +869,52 @@ test('SCRUM-697: an Other document verifies a tier offline only with what staff 
   assert.equal(factTier!.type, 'member.tier_changed');
   assert.equal(factTier!.payload.evidenceType, 'Other');
   assert.equal(factTier!.payload.note, 'Thai driving licence');
-  assert.equal(factTier!.payload.evidenceExpiresAt, undefined, 'no expiry is asked for');
+  assert.equal(factTier!.payload.evidenceExpiresAt, undefined, 'none was entered, so none is carried');
   assert.equal(OfflineMemberTierChangedSchema.safeParse(factTier!.payload).success, true);
+  r.t.close();
+});
+
+test('SCRUM-773: the box offers Driving licence, not Residence certificate, and Other carries its expiry', async () => {
+  const r = await rig();
+  const { caller } = await r.bridge.unlock(STATION_ID, {
+    token: token(r.now.at),
+    password: 'open-sesame',
+  });
+  const memberId = '018f0000-0000-7000-8000-00000000d773';
+  await r.bridge.intent(
+    STATION_ID,
+    caller,
+    intent('member.create', { memberId, phone: '+66817730773', nickname: 'Licence proof' }),
+  );
+  const upgrade = (verificationId: string, over: Record<string, unknown>) =>
+    r.bridge.intent(
+      STATION_ID,
+      caller,
+      intent('member.tier_change', { direction: 'upgrade', memberId, verificationId, toTier: 'thai', ...over }),
+    );
+  await assert.rejects(
+    upgrade('018f0000-0000-7000-8000-0000000007a1', { evidenceType: 'Residence certificate' }),
+    (err: unknown) =>
+      err instanceof BridgeError &&
+      err.status === 400 &&
+      err.message === 'Select Passport, Driving licence, School card or Other.',
+    'a retired kind is not a new choice at the counter',
+  );
+  const upgraded = await upgrade('018f0000-0000-7000-8000-0000000007a2', {
+    evidenceType: 'Other',
+    note: 'Work permit',
+    evidenceExpiresAt: '2027-09-30',
+  });
+  assert.equal((upgraded.result?.member as { tierCode: string }).tierCode, 'thai');
+  const [, factTier] = (await r.t.store.takeBatch(BOX_ID)).events;
+  assert.equal(factTier!.type, 'member.tier_changed');
+  assert.equal(factTier!.payload.evidenceType, 'Other');
+  assert.equal(factTier!.payload.note, 'Work permit');
+  assert.equal(factTier!.payload.evidenceExpiresAt, '2027-09-30', 'the expiry travels to the platform');
+  assert.equal(
+    OfflineMemberTierChangedSchema.safeParse({ ...factTier!.payload, evidenceType: 'Residence certificate', note: null }).success,
+    true,
+    'a check an older box recorded on a Residence certificate still replays',
+  );
   r.t.close();
 });

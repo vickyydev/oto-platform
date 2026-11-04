@@ -16,6 +16,7 @@ import {
   child,
   employee,
   member,
+  memberTierVerification,
   opsRun,
   station,
   syncAnomaly,
@@ -2311,5 +2312,59 @@ describe('a box only ever speaks about itself', () => {
     const [branchOfTwo] = await ctx.db.select().from(branch).where(eq(branch.id, two.branchId));
     expect(branchOfTwo).toBeTruthy();
     expect(ofTwo.every((r) => r.branchId === two.branchId)).toBe(true);
+  });
+});
+
+describe('SCRUM-773 — a tier check a box recorded before the document list changed', () => {
+  it('files a Residence certificate check on replay, rather than quarantining it', async () => {
+    const b = await freshBox();
+    await registerKey(b);
+    const created = memberPayload(uniquePhone(), 'Earlier check');
+    const verificationId = newId();
+    const { body } = await push(b, [
+      mint(b, 'member.created', created),
+      mint(b, 'member.tier_changed', {
+        direction: 'upgrade',
+        memberId: created.memberId,
+        verificationId,
+        toTier: 'thai',
+        evidenceType: 'Residence certificate',
+      }),
+    ]);
+    expect(body).toMatchObject({ applied: 2, quarantined: 0 });
+    const [filed] = await ctx.db
+      .select()
+      .from(memberTierVerification)
+      .where(eq(memberTierVerification.id, verificationId));
+    expect(filed).toMatchObject({ toTier: 'thai', evidenceType: 'Residence certificate' });
+    const [after] = await ctx.db.select().from(member).where(eq(member.id, created.memberId));
+    expect(after?.tierCode).toBe('thai');
+  });
+
+  it('files an Other check with its description and its expiry', async () => {
+    const b = await freshBox();
+    await registerKey(b);
+    const created = memberPayload(uniquePhone(), 'Other with expiry');
+    const verificationId = newId();
+    const expiry = `${new Date().getUTCFullYear() + 1}-06-30`;
+    const { body } = await push(b, [
+      mint(b, 'member.created', created),
+      mint(b, 'member.tier_changed', {
+        direction: 'upgrade',
+        memberId: created.memberId,
+        verificationId,
+        toTier: 'thai',
+        evidenceType: 'Other',
+        note: 'Work permit',
+        evidenceExpiresAt: expiry,
+      }),
+    ]);
+    expect(body).toMatchObject({ applied: 2, quarantined: 0 });
+    const [filed] = await ctx.db
+      .select()
+      .from(memberTierVerification)
+      .where(eq(memberTierVerification.id, verificationId));
+    expect(filed).toMatchObject({ evidenceType: 'Other', note: 'Work permit' });
+    expect(filed!.evidenceExpiresAt?.toISOString().slice(0, 10)).toBe(expiry);
   });
 });

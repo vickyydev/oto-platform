@@ -103,7 +103,7 @@ export function VerifyTierModal({
     !isDefaultTier(member.tierVerification.tier)
       ? member.tierVerification
       : undefined;
-  /** "Passport", or for Other what was checked: "Other (Thai driving licence)". */
+  /** "Passport", or for Other what was checked: "Other (Work permit)". */
   const heldProof = held ? tierProofLabel(held.proofType, held.note) : '';
   const mayRevoke = can('pos:member:tier_downgrade');
   const baselineLabel = tierLabel(getDefaultTier().id);
@@ -163,11 +163,12 @@ export function VerifyTierModal({
   const expiryValid =
     expiresAt === '' || (/^\d{4}-\d{2}-\d{2}$/.test(expiresAt) && expiresAt >= todayIso());
   /**
-   * SCRUM-697 — Other carries what staff checked instead of a kind, and asks
-   * for no expiry. The description follows the platform's rule word for word
+   * SCRUM-697 — Other carries what staff checked instead of a kind. The
+   * description follows the platform's rule word for word
    * (`tierProofNoteProblem`): two words at least, never a document number.
    * Only Other sends one; a description typed before switching to a named
-   * kind is left behind.
+   * kind is left behind. The expiry date is asked for on Other too
+   * (SCRUM-773), optional as on every kind.
    */
   const isOther = proofType === TIER_PROOF_OTHER;
   const noteText = isOther ? note.trim() : '';
@@ -340,11 +341,7 @@ export function VerifyTierModal({
                   type="button"
                   variant={proofType === p ? 'default' : 'outline'}
                   className="h-14 justify-start text-base"
-                  onClick={() => {
-                    setProofType(p);
-                    // Other asks for no expiry, so none is carried over to it.
-                    if (p === TIER_PROOF_OTHER) setExpiresAt('');
-                  }}
+                  onClick={() => setProofType(p)}
                 >
                   {p}
                 </Button>
@@ -352,7 +349,7 @@ export function VerifyTierModal({
             </div>
           </div>
 
-          {isOther ? (
+          {isOther && (
             <div className="space-y-2">
               <label
                 htmlFor="tier-evidence-note"
@@ -364,7 +361,7 @@ export function VerifyTierModal({
                 id="tier-evidence-note"
                 value={note}
                 maxLength={TIER_PROOF_NOTE_MAX}
-                placeholder="e.g. Thai driving licence"
+                placeholder="e.g. Work permit"
                 autoFocus
                 onChange={(e) => setNote(e.target.value)}
               />
@@ -372,28 +369,29 @@ export function VerifyTierModal({
                 <p className="text-sm text-destructive">{noteProblem}</p>
               )}
             </div>
-          ) : (
-            <div className="space-y-2">
-              <label
-                htmlFor="tier-evidence-expiry"
-                className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground"
-              >
-                <CalendarClock className="w-4 h-4" />
-                Document expiry date
-              </label>
-              <input
-                id="tier-evidence-expiry"
-                type="date"
-                value={expiresAt}
-                min={todayIso()}
-                onChange={(e) => setExpiresAt(e.target.value)}
-                className="w-full h-12 rounded-lg border border-input bg-background px-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              {expiresAt && !expiryValid && (
-                <p className="text-sm text-destructive">The document has already expired.</p>
-              )}
-            </div>
           )}
+
+          {/* Every kind, Other included (SCRUM-773): optional, never past. */}
+          <div className="space-y-2">
+            <label
+              htmlFor="tier-evidence-expiry"
+              className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground"
+            >
+              <CalendarClock className="w-4 h-4" />
+              Document expiry date
+            </label>
+            <input
+              id="tier-evidence-expiry"
+              type="date"
+              value={expiresAt}
+              min={todayIso()}
+              onChange={(e) => setExpiresAt(e.target.value)}
+              className="w-full h-12 rounded-lg border border-input bg-background px-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            {expiresAt && !expiryValid && (
+              <p className="text-sm text-destructive">The document has already expired.</p>
+            )}
+          </div>
 
           {/* Recorded automatically — who checked, fixed to the signed-in account. */}
           <div className="flex items-center gap-2 rounded-lg border border-dashed border-foreground/15 bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground">

@@ -810,7 +810,7 @@ export const removeSavedChild = (memberId: string, childId: string): void => {
 // prompts for a short description of the document (saved with the record).
 export const getProofTypes = (): string[] => [
   'Passport',
-  'Residence certificate',
+  'Driving licence',
   'School card',
   'Other',
 ];
