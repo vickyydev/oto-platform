@@ -521,6 +521,8 @@ describe('route guards (S2-01b)', () => {
       // The one route a box reaches before it has a credential: the claim
       // code IS the credential, single-use and short-lived.
       'POST /box/v1/register [box-claim]',
+      // SCRUM-736: live scanner delivery is authenticated by the sending box.
+      'POST /box/v1/scans [box]',
       'POST /box/v1/sync/key [box]',
       'POST /box/v1/sync/push [box]',
     ]);
@@ -551,12 +553,14 @@ describe('route guards (S2-01b)', () => {
         r.method !== 'HEAD' &&
         r.method !== 'OPTIONS',
     );
-    // Thirteen since SCRUM-694 took the booth staff verify route away.
-    expect(boxUrls.length).toBe(13);
+    // Fourteen since SCRUM-736 added the box-authenticated scan relay.
+    expect(boxUrls.length).toBe(14);
 
     const bodies: Record<string, unknown> = {
       'POST:/box/v1/register': { claimCode: undefined, agentVersion: '0.1.0' },
       'POST:/box/v1/heartbeat': { reportedAt: new Date().toISOString(), agentVersion: '0.1.0' },
+      // Even malformed scans must be refused by authentication first.
+      'POST:/box/v1/scans': {},
       'POST:/box/v1/commands/poll': { max: 5 },
       'POST:/box/v1/commands/:commandId/result': { state: 'succeeded' },
       'POST:/box/v1/print-jobs/:id/result': { status: 'printed', attempts: 1 },

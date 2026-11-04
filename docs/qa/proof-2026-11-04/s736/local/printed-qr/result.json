@@ -1,0 +1,160 @@
+{
+  "ticket": "SCRUM-736",
+  "source": "968807651e70654aa35a58ab0a3ecddf78023be1",
+  "mode": "local",
+  "started": "2026-11-04T07:43:24.550Z",
+  "checks": [
+    {
+      "name": "Real simulated printout QR decoded and matched the issued band; native fixtures cached",
+      "passed": true
+    },
+    {
+      "name": "online band opens the correct native screen once",
+      "kind": "band",
+      "handler": "band",
+      "passed": true
+    },
+    {
+      "name": "online voucher opens the correct native screen once",
+      "kind": "wallet",
+      "handler": "wallet-qr",
+      "passed": true
+    },
+    {
+      "name": "online booking opens the correct native screen once",
+      "kind": "booking",
+      "handler": "booking",
+      "passed": true
+    },
+    {
+      "name": "online shop-band opens the correct native screen once",
+      "kind": "band",
+      "handler": "band",
+      "passed": true
+    },
+    {
+      "name": "offline band opens the correct native screen once",
+      "kind": "band",
+      "handler": "band",
+      "passed": true
+    },
+    {
+      "name": "offline voucher opens the correct native screen once",
+      "kind": "wallet",
+      "handler": "wallet-qr",
+      "passed": true
+    },
+    {
+      "name": "offline booking opens the correct native screen once",
+      "kind": "booking",
+      "handler": "booking",
+      "passed": true
+    },
+    {
+      "name": "offline shop-band opens the correct native screen once",
+      "kind": "band",
+      "handler": "band",
+      "passed": true
+    },
+    {
+      "name": "No SMS sent",
+      "passed": true
+    }
+  ],
+  "images": [
+    "s736-online-band.png",
+    "s736-online-voucher.png",
+    "s736-online-booking.png",
+    "s736-online-shop-band.png",
+    "s736-offline-band.png",
+    "s736-offline-voucher.png",
+    "s736-offline-booking.png",
+    "s736-offline-shop-band.png"
+  ],
+  "home": "C:/oto-lanes/s736-agent-mw1t88s0",
+  "outcome": "passed",
+  "limits": [
+    "Real Windows runner, SQLite and HTTP bridge; simulated HID/CDC input",
+    "No physical Pi, scanner cradle, LAN TLS or park device tested",
+    "Disposable database; cash and simulator only"
+  ],
+  "fixture": {
+    "boxId": "01a1a583-76ec-7377-8b94-a03c6d38d82e",
+    "stationId": "01a1a583-7791-71ae-a6e6-54ffa02e72b6",
+    "branchId": "01a1a583-6aee-762d-875a-1cf4c302ff20",
+    "name": "ZZ TEST SCRUM-736 mw1t88s0",
+    "child": "ZZ TEST SCRUM-736 mw1t88s0 child",
+    "checkinId": "550258ef-34f3-4822-921b-fa16171f9ef1",
+    "saleId": "22580ff2-34a8-4398-acc8-9349257f073d",
+    "voucherSaleId": "7ed3903b-adfc-41a1-a190-c34ddebff76d",
+    "bookingId": "01a1a583-882e-740c-acb8-ab69e75d7d5f"
+  },
+  "printPreparation": {
+    "notes": [],
+    "jobs": [
+      {
+        "id": "01a1a583-82d3-7af3-82d7-22de35124c74",
+        "kind": "kids_wristband",
+        "status": "queued",
+        "deviceId": "01a1a583-7780-74e4-8bf4-5ea6677653d1",
+        "errorCode": null
+      }
+    ],
+    "readback": [
+      {
+        "id": "01a1a583-82d3-7af3-82d7-22de35124c74",
+        "kind": "kids_wristband",
+        "status": "printed",
+        "deviceId": "01a1a583-7780-74e4-8bf4-5ea6677653d1",
+        "errorCode": null
+      },
+      {
+        "id": "01a1a583-828c-7502-be4e-7ba97aa194fb",
+        "kind": "receipt",
+        "status": "printed",
+        "deviceId": "01a1a583-7769-7a4b-87e8-880471fae1c5",
+        "errorCode": null
+      }
+    ],
+    "events": [
+      {
+        "kind": "status.read"
+      },
+      {
+        "kind": "status.read"
+      },
+      {
+        "kind": "status.read"
+      },
+      {
+        "kind": "status.read"
+      },
+      {
+        "kind": "status.read"
+      },
+      {
+        "kind": "job.printed"
+      },
+      {
+        "kind": "status.read"
+      }
+    ]
+  },
+  "printout": {
+    "seq": 1,
+    "widthDots": 400,
+    "heightDots": 416,
+    "qrDecoded": true,
+    "matchesIssuedBand": true
+  },
+  "creditView": {
+    "online": "฿350 credit",
+    "offline": "฿300 credit"
+  },
+  "cleanup": {
+    "disposableDatabaseDropped": true,
+    "localAgentStopped": true,
+    "proxyStopped": true,
+    "ownedBrowserClosed": true
+  }
+}
