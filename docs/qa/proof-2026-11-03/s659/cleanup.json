@@ -1,0 +1,175 @@
+{
+  "unit": "SCRUM-659",
+  "source": "b64d10ce0b85558e538eb58babd652dd500eb4d6",
+  "startedAt": "2026-11-04T05:28:01.630Z",
+  "steps": [
+    {
+      "name": "Before: the Daily, its copy at B and the Copy at A each have their own attachment row on one stored image",
+      "rows": 3,
+      "at": "2026-11-04T05:28:13.053Z"
+    },
+    {
+      "name": "Deleted the copy at B through the screen; the original's reference image still opens",
+      "confirm": "Are you sure you want to delete \"ZZ TEST 659 Daily\"? Its run history and completion evidence are deleted with it. This cannot be undone.",
+      "at": "2026-11-04T05:28:19.783Z"
+    },
+    {
+      "name": "Deleted ZZ TEST 659 Copy through the screen; the original's reference image still opens",
+      "confirm": "Are you sure you want to delete \"ZZ TEST 659 Copy\"? Its run history and completion evidence are deleted with it. This cannot be undone.",
+      "at": "2026-11-04T05:28:25.834Z"
+    },
+    {
+      "name": "Deleted ZZ TEST 659 Daily through the screen (its DELETE answered 200). Its stored file stayed in the bucket: deleting a whole checklist removes the rows that name a file but never the file itself, which is how the delete route has worked since the app came in; the earlier signed link still showed the image",
+      "key": "checklists/e922bbe0-be07-487d-a5c8-5169e926d246/items/cdaaa54e-f4da-4328-b4ed-e3cdbe09ce07/<one png>",
+      "at": "2026-11-04T05:30:16.707Z"
+    },
+    {
+      "name": "Media case: the Pair split has a reference image, and \"Save as a new checklist\" made ZZ TEST 659 Media copy with its own row on the same stored file",
+      "copy": "0471c60b-b346-46ac-8821-ecb0f291f7ae",
+      "at": "2026-11-04T05:30:23.151Z"
+    },
+    {
+      "name": "Removed the file from the Media copy on the screen; the Pair split still shows it and it loads",
+      "at": "2026-11-04T05:30:30.357Z"
+    },
+    {
+      "name": "Removed the file from the Pair split, its last checklist; the stored file is gone (its signed link now answers 404)",
+      "status": 404,
+      "body": "/* Copyright 2014 The Chromium Authors * Use of this source code is governed by a BSD-style license that can be * found in the LICENSE file. */ :root { color-sc",
+      "at": "2026-11-04T05:30:33.623Z"
+    },
+    {
+      "name": "Deleted ZZ TEST 659 Media copy, Pair split and Pair (shared) through the screen; no ZZ TEST 659 checklist is left",
+      "at": "2026-11-04T05:30:46.876Z"
+    },
+    {
+      "name": "Retired the ZZ TEST employee staff at A: login unlinked, employee deleted in the app",
+      "employeeId": "7a5d1efe-3e21-42dc-bac2-94018dd905ea",
+      "at": "2026-11-04T05:31:08.943Z"
+    },
+    {
+      "name": "Retired the ZZ TEST employee staff at B: login unlinked, employee deleted in the app",
+      "employeeId": "29e3c605-ad4f-4a0d-84d8-60c164d759a8",
+      "at": "2026-11-04T05:31:09.585Z"
+    },
+    {
+      "name": "Retired the three ZZ TEST 659 platform logins: inactive, no access grants, no OTO App link",
+      "at": "2026-11-04T05:31:16.120Z"
+    },
+    {
+      "name": "Archived the two ZZ TEST 659 branches",
+      "at": "2026-11-04T05:31:17.081Z"
+    },
+    {
+      "name": "The two ZZ TEST staff app users were still switched on (they had been unlinked before their accounts were switched off); the ZZ TEST admin was linked and switched on for a moment and switched them off in the app",
+      "at": "2026-11-04T05:35:25.652Z"
+    },
+    {
+      "name": "Retired the ZZ TEST admin again: inactive, no grants, unlinked",
+      "at": "2026-11-04T05:35:27.539Z"
+    },
+    {
+      "name": "Read back: no ZZ TEST 659 checklist, run or attachment is left; the logins are inactive with no grants, sessions or links; both branches are archived",
+      "jobId": "job-dblc8b0u01pc739q27rg",
+      "otherRunsAtOurBranches": [
+        {
+          "name": "ZZ TEST Wave1 Everyone",
+          "branch_id": "01a1a4f6-49ab-7211-9059-c5f7c92da15b",
+          "n": 23
+        },
+        {
+          "name": "ZZ TEST Wave1 Everyone",
+          "branch_id": "01a1a4f6-4b81-7a39-a984-9390601b0132",
+          "n": 23
+        }
+      ],
+      "employees": [],
+      "users": 3,
+      "at": "2026-11-04T05:36:46.667Z"
+    }
+  ],
+  "finishedAt": "2026-11-04T05:36:46.667Z",
+  "firstRunStoppedAt": {
+    "name": "AssertionError",
+    "message": "the stored image is still there after the last checklist naming it went",
+    "at": "    at file:///C:/Users/waqar/AppData/Local/Temp/claude/c--Users-waqar-OneDrive-Desktop-Projects-oto-pos/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/s659p/cleanup.mjs:74:12"
+  },
+  "outcome": "passed",
+  "error": {
+    "name": "AssertionError",
+    "message": "app user still active",
+    "at": "    at file:///C:/Users/waqar/AppData/Local/Temp/claude/c--Users-waqar-OneDrive-Desktop-Projects-oto-pos/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/s659p/cleanup.mjs:155:35"
+  },
+  "readBack": {
+    "jobId": "job-dblc8b0u01pc739q27rg",
+    "event": "s659_cleanup_read",
+    "at": "2026-11-04T05:36:38.454Z",
+    "readOnly": true,
+    "templates": 0,
+    "runs": 0,
+    "attachments": 0,
+    "otherRunsAtOurBranches": [
+      {
+        "name": "ZZ TEST Wave1 Everyone",
+        "branch_id": "01a1a4f6-49ab-7211-9059-c5f7c92da15b",
+        "n": 23
+      },
+      {
+        "name": "ZZ TEST Wave1 Everyone",
+        "branch_id": "01a1a4f6-4b81-7a39-a984-9390601b0132",
+        "n": 23
+      }
+    ],
+    "users": [
+      {
+        "id": "01a1a4f7-7135-7ae6-90a7-8990801f225a",
+        "is_active": false,
+        "platform_user_id": null
+      },
+      {
+        "id": "01a1a4f7-748d-78fe-a095-c2319b633d64",
+        "is_active": false,
+        "platform_user_id": null
+      },
+      {
+        "id": "01a1a4f7-7659-7b3b-9871-61921c5d858a",
+        "is_active": false,
+        "platform_user_id": null
+      }
+    ],
+    "employees": [],
+    "accounts": [
+      {
+        "id": "f2a9c22c-54ce-42e7-9f44-2c9a3db8a9bc",
+        "status": "inactive",
+        "grants": 0,
+        "sessions": 0,
+        "links": 0
+      },
+      {
+        "id": "27b0bd9a-0b96-4acd-bd92-96fe9c42bf29",
+        "status": "inactive",
+        "grants": 0,
+        "sessions": 0,
+        "links": 0
+      },
+      {
+        "id": "3516c424-56d2-4fdb-b657-39eac3f615a3",
+        "status": "inactive",
+        "grants": 0,
+        "sessions": 0,
+        "links": 0
+      }
+    ],
+    "branches": [
+      {
+        "id": "ac3593df-c012-44fa-b3f1-a80c90f9ae9b",
+        "archived": true
+      },
+      {
+        "id": "9dd4fc19-e7e8-4d52-bbda-e223c86f8027",
+        "archived": true
+      }
+    ]
+  }
+}

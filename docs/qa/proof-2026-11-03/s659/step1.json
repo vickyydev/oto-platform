@@ -1,0 +1,65 @@
+{
+  "checklists": {
+    "daily": {
+      "id": "e922bbe0-be07-487d-a5c8-5169e926d246",
+      "branchId": "01a1a4f6-49ab-7211-9059-c5f7c92da15b",
+      "branchIds": [],
+      "assignedEmployeeIds": [
+        "7a5d1efe-3e21-42dc-bac2-94018dd905ea"
+      ],
+      "recurrence": "daily",
+      "scheduledTime": "08:30",
+      "items": [
+        {
+          "id": "cdaaa54e-f4da-4328-b4ed-e3cdbe09ce07",
+          "title": "ZZ TEST check the front door"
+        },
+        {
+          "id": "90b1f782-e074-4fc2-be24-8461be902fe4",
+          "title": "ZZ TEST check the lights"
+        }
+      ],
+      "itemMedia": {
+        "attachmentId": "7b422fe3-9c27-4521-9a15-133c697b6ab1",
+        "itemId": "cdaaa54e-f4da-4328-b4ed-e3cdbe09ce07",
+        "s3Key": "checklists/e922bbe0-be07-487d-a5c8-5169e926d246/items/cdaaa54e-f4da-4328-b4ed-e3cdbe09ce07/23df3225-3297-41ff-87a0-827b1358d0fa.png"
+      }
+    },
+    "pair": {
+      "id": "8150536c-423a-4243-9f7f-4eb2294e231c",
+      "branchId": "01a1a4f6-49ab-7211-9059-c5f7c92da15b",
+      "branchIds": []
+    },
+    "pairExtra": {
+      "id": "13f4cd7b-e1e2-4b60-a4e2-43a5e45de404",
+      "branchId": "01a1a4f6-4b81-7a39-a984-9390601b0132",
+      "branchIds": [],
+      "confirmText": "Are you sure you want to delete \"ZZ TEST 659 Pair\"? Its run history and completion evidence are deleted with it. This cannot be undone.",
+      "deletedAt": "2026-11-04T05:17:26.746Z"
+    }
+  },
+  "rows": [
+    {
+      "id": "8150536c-423a-4243-9f7f-4eb2294e231c",
+      "name": "ZZ TEST 659 Pair",
+      "branchId": "01a1a4f6-49ab-7211-9059-c5f7c92da15b",
+      "branchIds": [],
+      "assignedEmployeeIds": [],
+      "recurrence": "daily",
+      "scheduledTime": "09:00",
+      "version": 1
+    },
+    {
+      "id": "e922bbe0-be07-487d-a5c8-5169e926d246",
+      "name": "ZZ TEST 659 Daily",
+      "branchId": "01a1a4f6-49ab-7211-9059-c5f7c92da15b",
+      "branchIds": [],
+      "assignedEmployeeIds": [
+        "7a5d1efe-3e21-42dc-bac2-94018dd905ea"
+      ],
+      "recurrence": "daily",
+      "scheduledTime": "08:30",
+      "version": 1
+    }
+  ]
+}

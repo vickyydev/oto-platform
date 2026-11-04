@@ -1,0 +1,110 @@
+{
+  "unit": "SCRUM-659",
+  "at": "2026-11-04T05:11:57.343Z",
+  "source": "b64d10ce0b85558e538eb58babd652dd500eb4d6",
+  "appDeploy": {
+    "name": "oto-app-staging",
+    "id": "srv-danppvjtqb8s73cnvua0",
+    "deployId": "dep-dblbihg473hc73b0o1fg",
+    "status": "live",
+    "sha": "b64d10ce0b85558e538eb58babd652dd500eb4d6",
+    "finishedAt": "2026-11-04T04:51:40.269606Z"
+  },
+  "branches": {
+    "A": {
+      "id": "ac3593df-c012-44fa-b3f1-a80c90f9ae9b",
+      "name": "ZZ TEST 659 A mw1nq25m",
+      "appBranchId": "01a1a4f6-49ab-7211-9059-c5f7c92da15b"
+    },
+    "B": {
+      "id": "9dd4fc19-e7e8-4d52-bbda-e223c86f8027",
+      "name": "ZZ TEST 659 B mw1nq25m",
+      "appBranchId": "01a1a4f6-4b81-7a39-a984-9390601b0132"
+    }
+  },
+  "accountsJob": {
+    "jobId": "job-dblbs20u01pc739oume0",
+    "at": "2026-11-04T05:10:20.427Z"
+  },
+  "accounts": {
+    "admin": {
+      "accountId": "f2a9c22c-54ce-42e7-9f44-2c9a3db8a9bc",
+      "name": "ZZ TEST 659 mw1nq25m admin all branches",
+      "appUserId": "01a1a4f7-7135-7ae6-90a7-8990801f225a",
+      "appEmployeeId": null
+    },
+    "staffA": {
+      "accountId": "27b0bd9a-0b96-4acd-bd92-96fe9c42bf29",
+      "name": "ZZ TEST 659 mw1nq25m staff at A",
+      "appUserId": "01a1a4f7-748d-78fe-a095-c2319b633d64",
+      "appEmployeeId": "7a5d1efe-3e21-42dc-bac2-94018dd905ea"
+    },
+    "staffB": {
+      "accountId": "3516c424-56d2-4fdb-b657-39eac3f615a3",
+      "name": "ZZ TEST 659 mw1nq25m staff at B",
+      "appUserId": "01a1a4f7-7659-7b3b-9871-61921c5d858a",
+      "appEmployeeId": "29e3c605-ad4f-4a0d-84d8-60c164d759a8"
+    }
+  },
+  "readBack": {
+    "jobId": "job-dblbsmt9el5s73cj6rag",
+    "event": "s659_provision_read",
+    "at": "2026-11-04T05:11:40.218Z",
+    "readOnly": true,
+    "users": [
+      {
+        "id": "01a1a4f7-7135-7ae6-90a7-8990801f225a",
+        "full_name": "ZZ TEST 659 mw1nq25m admin all branches",
+        "role": "admin",
+        "is_active": true,
+        "platform_user_id": "f2a9c22c-54ce-42e7-9f44-2c9a3db8a9bc",
+        "access": [
+          {
+            "b": "540f6e5e-e94b-4ce9-a79a-5947e841e1fb",
+            "s": "selected_branches"
+          }
+        ]
+      },
+      {
+        "id": "01a1a4f7-748d-78fe-a095-c2319b633d64",
+        "full_name": "ZZ TEST 659 mw1nq25m staff at A",
+        "role": "staff",
+        "is_active": true,
+        "platform_user_id": "27b0bd9a-0b96-4acd-bd92-96fe9c42bf29",
+        "access": [
+          {
+            "b": "01a1a4f6-49ab-7211-9059-c5f7c92da15b",
+            "s": "selected_branches"
+          }
+        ]
+      },
+      {
+        "id": "01a1a4f7-7659-7b3b-9871-61921c5d858a",
+        "full_name": "ZZ TEST 659 mw1nq25m staff at B",
+        "role": "staff",
+        "is_active": true,
+        "platform_user_id": "3516c424-56d2-4fdb-b657-39eac3f615a3",
+        "access": [
+          {
+            "b": "01a1a4f6-4b81-7a39-a984-9390601b0132",
+            "s": "selected_branches"
+          }
+        ]
+      }
+    ],
+    "emps": [],
+    "branches": [
+      {
+        "id": "01a1a4f6-49ab-7211-9059-c5f7c92da15b",
+        "name": "ZZ TEST 659 A mw1nq25m",
+        "core_branch_id": "ac3593df-c012-44fa-b3f1-a80c90f9ae9b"
+      },
+      {
+        "id": "01a1a4f6-4b81-7a39-a984-9390601b0132",
+        "name": "ZZ TEST 659 B mw1nq25m",
+        "core_branch_id": "9dd4fc19-e7e8-4d52-bbda-e223c86f8027"
+      }
+    ]
+  },
+  "note": "Logins are ZZ TEST accounts made without SMS; each persona signs in with a Console temporary password and a forced change to a random password nobody keeps. The two staff employees were made by the ZZ TEST admin in the OTO App."
+}

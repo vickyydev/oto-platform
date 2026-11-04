@@ -1,0 +1,24 @@
+{
+  "at": "2026-11-04T05:39:00.071Z",
+  "status": 201,
+  "commentId": "13402",
+  "attached": [
+    "s659-01a-create-daily-form.png",
+    "s659-01d-list-two-pair-rows.png",
+    "s659-02a-normal-edit-box-unticked.png",
+    "s659-03a-save-as-new-ticked-summary.png",
+    "s659-03b-list-copy-and-original.png",
+    "s659-04a-branch-added-question-save-closed.png",
+    "s659-04b-copy-chosen-assign-for-copy.png",
+    "s659-04d-copy-items-schedule-employee-image.png",
+    "s659-05a-share-chosen.png",
+    "s659-05f-shared-note-working-at-a.png",
+    "s659-05e-list-all-659-rows.png",
+    "s659-06b-ops-board-at-b.png",
+    "s659-07a-staff-b-today-shows-copy.png",
+    "s659-07c-staff-b-reference-image-opened.png"
+  ],
+  "uploadedNow": 14,
+  "statusBefore": "Testing",
+  "created": "2026-11-04T12:38:59.741+0700"
+}

@@ -1,0 +1,96 @@
+{
+  "source": "b64d10ce0b85558e538eb58babd652dd500eb4d6",
+  "jobId": "job-dblc29bncjis73de5f40",
+  "event": "s659_runs_read",
+  "at": "2026-11-04T05:23:36.417Z",
+  "readOnly": true,
+  "runs": [
+    {
+      "template_id": "180c12dd-4d06-4b5e-b3ed-bca1f37b0391",
+      "branch_id": "01a1a4f6-49ab-7211-9059-c5f7c92da15b",
+      "n": 1,
+      "first_at": "2026-11-04T05:22:33.007Z",
+      "items": 2
+    },
+    {
+      "template_id": "60104078-f011-4762-8c25-51082722ac49",
+      "branch_id": "01a1a4f6-4b81-7a39-a984-9390601b0132",
+      "n": 1,
+      "first_at": "2026-11-04T05:22:33.007Z",
+      "items": 1
+    },
+    {
+      "template_id": "8150536c-423a-4243-9f7f-4eb2294e231c",
+      "branch_id": "01a1a4f6-49ab-7211-9059-c5f7c92da15b",
+      "n": 1,
+      "first_at": "2026-11-04T05:22:33.007Z",
+      "items": 1
+    },
+    {
+      "template_id": "8150536c-423a-4243-9f7f-4eb2294e231c",
+      "branch_id": "01a1a4f6-4b81-7a39-a984-9390601b0132",
+      "n": 1,
+      "first_at": "2026-11-04T05:22:33.007Z",
+      "items": 1
+    },
+    {
+      "template_id": "8926a855-28e1-4888-9cd4-0f68ed2f1c79",
+      "branch_id": "01a1a4f6-4b81-7a39-a984-9390601b0132",
+      "n": 1,
+      "first_at": "2026-11-04T05:22:33.007Z",
+      "items": 2
+    },
+    {
+      "template_id": "e922bbe0-be07-487d-a5c8-5169e926d246",
+      "branch_id": "01a1a4f6-49ab-7211-9059-c5f7c92da15b",
+      "n": 1,
+      "first_at": "2026-11-04T05:22:33.007Z",
+      "items": 2
+    }
+  ],
+  "tpl": [
+    {
+      "id": "8150536c-423a-4243-9f7f-4eb2294e231c",
+      "name": "ZZ TEST 659 Pair",
+      "branch_id": "01a1a4f6-49ab-7211-9059-c5f7c92da15b",
+      "branch_ids": [
+        "01a1a4f6-49ab-7211-9059-c5f7c92da15b",
+        "01a1a4f6-4b81-7a39-a984-9390601b0132"
+      ],
+      "template_version": 2,
+      "assigned_employee_id": null
+    },
+    {
+      "id": "180c12dd-4d06-4b5e-b3ed-bca1f37b0391",
+      "name": "ZZ TEST 659 Copy",
+      "branch_id": "01a1a4f6-49ab-7211-9059-c5f7c92da15b",
+      "branch_ids": [],
+      "template_version": 1,
+      "assigned_employee_id": "7a5d1efe-3e21-42dc-bac2-94018dd905ea"
+    },
+    {
+      "id": "e922bbe0-be07-487d-a5c8-5169e926d246",
+      "name": "ZZ TEST 659 Daily",
+      "branch_id": "01a1a4f6-49ab-7211-9059-c5f7c92da15b",
+      "branch_ids": [],
+      "template_version": 2,
+      "assigned_employee_id": "7a5d1efe-3e21-42dc-bac2-94018dd905ea"
+    },
+    {
+      "id": "8926a855-28e1-4888-9cd4-0f68ed2f1c79",
+      "name": "ZZ TEST 659 Daily",
+      "branch_id": "01a1a4f6-4b81-7a39-a984-9390601b0132",
+      "branch_ids": [],
+      "template_version": 1,
+      "assigned_employee_id": "29e3c605-ad4f-4a0d-84d8-60c164d759a8"
+    },
+    {
+      "id": "60104078-f011-4762-8c25-51082722ac49",
+      "name": "ZZ TEST 659 Pair split",
+      "branch_id": "01a1a4f6-4b81-7a39-a984-9390601b0132",
+      "branch_ids": [],
+      "template_version": 1,
+      "assigned_employee_id": null
+    }
+  ]
+}
