@@ -1,0 +1,30 @@
+import { attach, commentWithImages, statusOf, images, jget } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/jira.mjs';
+import { readFileSync, writeFileSync } from 'node:fs';
+const LANE = 'C:/oto-lanes/unlock744-20261104/';
+const D = LANE + 'docs/qa/proof-2026-11-04/s744/staging/';
+const files = [
+  LANE + 'docs/qa/proof-2026-11-03/s732/staging/finding-repro-2-after-unlock.png',
+  D + 's744-02-desktop-4-locked-after-reload.png',
+  D + 's744-02-desktop-5-after-unlock.png',
+  D + 's744-02-desktop-6-15-seconds-later.png',
+  D + 's744-07-phone-5-after-unlock.png',
+  D + 's744-07-phone-6-15-seconds-later.png',
+  D + 's744-02-desktop-7-finding-park-list-after-unlock.png',
+  D + 's744-02-desktop-8-control-direct-address.png',
+];
+const names = files.map((f) => f.split('/').pop());
+const key = 'SCRUM-744';
+const before = (await statusOf(key)).status;
+const a = await attach(key, files);
+if (a.status >= 300) throw new Error('attach ' + a.status + ' ' + (a.body ?? ''));
+const c = await commentWithImages(key, readFileSync(D + 'jira-comment-744.txt', 'utf8').trim(), names);
+const commentId = /"id":"(\d+)"/.exec(c.body ?? "")?.[1] ?? null;
+const out = { key, statusBefore: before, attachStatus: a.status, attached: a.files, commentStatus: c.status ?? null, commentId, statusAfterComment: (await statusOf(key)).status, imagesOnTicket: (await images(key)).length, walk: 'not moved: stays at Testing (finding: the park list is not asked again after Unlock)' };
+if (commentId) {
+  const r = await jget(`/rest/api/2/issue/${key}/comment/${commentId}?expand=renderedBody`);
+  const html = r?.renderedBody ?? '';
+  out.renderedImageIds = [...html.matchAll(/attachment\/content\/(\d+)|\/secure\/attachment\/(\d+)/g)].map((m) => m[1] ?? m[2]);
+  out.renderedImages = (html.match(/<img /g) ?? []).length;
+}
+writeFileSync(D + 'jira-publication.json', JSON.stringify(out, null, 2) + '\n');
+console.log(JSON.stringify(out, null, 1));

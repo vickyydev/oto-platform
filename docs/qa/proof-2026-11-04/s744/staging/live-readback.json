@@ -1,0 +1,63 @@
+{
+  "readAt": "2026-11-04T13:14:05.470Z",
+  "note": "Read after the proof. Every service was live on a671f7bd before the proof began (first fixture call about 13:00Z) and stayed on the same deploy throughout.",
+  "ci": {
+    "run": 41828859420,
+    "headSha": "a671f7bd0e8c2bcd872890212dd4e009be48b1b5",
+    "conclusion": "success",
+    "jobs": [
+      "ci",
+      "pos-tests",
+      "oto-app",
+      "api-tests (1)",
+      "api-tests (2)",
+      "api-tests (3)"
+    ]
+  },
+  "services": [
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "liveDeploy": {
+        "id": "dep-dblikvp7lnhs739phs60",
+        "status": "live",
+        "commit": "a671f7bd0e8c",
+        "msg": "docs(qa): record the locked till reload landing rebase",
+        "finishedAt": "2026-11-04T12:55:52.924804Z"
+      }
+    },
+    {
+      "name": "oto-pos-web-staging",
+      "serviceId": "srv-dbk7qu8n74is73bm894g",
+      "liveDeploy": {
+        "id": "dep-dblikvp7lnhs739pht60",
+        "status": "live",
+        "commit": "a671f7bd0e8c",
+        "msg": "docs(qa): record the locked till reload landing rebase",
+        "finishedAt": "2026-11-04T12:54:43.335411Z"
+      }
+    },
+    {
+      "name": "oto-pos-staging",
+      "serviceId": "srv-danh2mf40ujc73bu80j0",
+      "liveDeploy": {
+        "id": "dep-dblikvp7lnhs739phti0",
+        "status": "live",
+        "commit": "a671f7bd0e8c",
+        "msg": "docs(qa): record the locked till reload landing rebase",
+        "finishedAt": "2026-11-04T12:53:05.654853Z"
+      }
+    },
+    {
+      "name": "oto-console-staging",
+      "serviceId": "srv-danng2p42hec73f38e3g",
+      "liveDeploy": {
+        "id": "dep-dblikvp7lnhs739phteg",
+        "status": "live",
+        "commit": "a671f7bd0e8c",
+        "msg": "docs(qa): record the locked till reload landing rebase",
+        "finishedAt": "2026-11-04T12:52:56.539779Z"
+      }
+    }
+  ]
+}

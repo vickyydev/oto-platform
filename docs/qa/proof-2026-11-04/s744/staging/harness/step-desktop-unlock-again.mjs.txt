@@ -1,0 +1,16 @@
+// The till locked itself again two minutes after the proof's Unlock (nobody touched it). Unlock it, no reload.
+export default async function (S) {
+  const { pages, need, expect } = S;
+  const page = pages.desktop.page;
+  const locked = page.getByRole('heading', { name: 'Locked', exact: true });
+  const out = { at: new Date().toISOString(), wasLocked: await locked.isVisible().catch(() => false) };
+  if (out.wasLocked) {
+    await page.locator('input[type="password"]').first().fill(need('STAGING_RECEPTION_PASSWORD'));
+    await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+    await expect(locked).toBeHidden({ timeout: 30000 });
+    await expect(page.getByLabel('Lock screen')).toBeVisible({ timeout: 30000 });
+  }
+  out.switcher = await page.locator('button[title="Switch branch"]').count();
+  out.switcherText = out.switcher ? (await page.locator('button[title="Switch branch"]').first().textContent())?.trim() : null;
+  return out;
+}

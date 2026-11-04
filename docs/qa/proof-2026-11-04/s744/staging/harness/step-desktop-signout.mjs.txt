@@ -1,0 +1,11 @@
+// The desktop test session signs out (the phone run is a separate device), read back.
+export default async function (S) {
+  const { st, save, pages, tillApi } = S;
+  const out = { at: new Date().toISOString() };
+  const r = await tillApi('desktop', 'POST', '/auth/sign-out');
+  out.signOut = r.status;
+  out.meAfter = (await tillApi('desktop', 'GET', '/me')).status;
+  st.cleanup = st.cleanup ?? { actions: [] };
+  st.cleanup.desktopSignedOut = out; save();
+  return out;
+}

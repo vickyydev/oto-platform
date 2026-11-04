@@ -1,0 +1,57 @@
+{
+  "key": "SCRUM-744",
+  "statusBefore": "Testing",
+  "attachStatus": 200,
+  "attached": [
+    {
+      "id": "12549",
+      "name": "finding-repro-2-after-unlock.png"
+    },
+    {
+      "id": "12550",
+      "name": "s744-02-desktop-4-locked-after-reload.png"
+    },
+    {
+      "id": "12551",
+      "name": "s744-02-desktop-5-after-unlock.png"
+    },
+    {
+      "id": "12552",
+      "name": "s744-02-desktop-6-15-seconds-later.png"
+    },
+    {
+      "id": "12553",
+      "name": "s744-07-phone-5-after-unlock.png"
+    },
+    {
+      "id": "12554",
+      "name": "s744-07-phone-6-15-seconds-later.png"
+    },
+    {
+      "id": "12555",
+      "name": "s744-02-desktop-7-finding-park-list-after-unlock.png"
+    },
+    {
+      "id": "12556",
+      "name": "s744-02-desktop-8-control-direct-address.png"
+    }
+  ],
+  "commentStatus": 201,
+  "commentId": "13467",
+  "statusAfterComment": "Testing",
+  "imagesOnTicket": 8,
+  "walk": "not moved: stays at Testing (finding: the park list is not asked again after Unlock)",
+  "commentCreated": "2026-11-04T20:15:23.522+0700",
+  "renderedImages": 9,
+  "renderedImageIds": [
+    "12549",
+    "12550",
+    "12551",
+    "12552",
+    "12553",
+    "12554",
+    "12555",
+    "12556"
+  ],
+  "commentsOnTicket": 2
+}

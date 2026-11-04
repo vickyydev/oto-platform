@@ -1,0 +1,987 @@
+{
+  "unit": "SCRUM-744",
+  "source": "a671f7bd0e8c2bcd872890212dd4e009be48b1b5",
+  "startedAt": "2026-11-04T13:00:47.595Z",
+  "fixture": {
+    "stamp": "mw24kguf",
+    "name": "ZZ TEST SCRUM-744 mw24kguf",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "codePrefix": "Z744A",
+    "zzStationsBefore": [],
+    "boxId": "01a1a6a5-e0e7-7f08-bb76-7ed43c77ff4e",
+    "boxName": "ZZ TEST SCRUM-744 mw24kguf virtual box",
+    "boxSlot": "zz-test-s744-mw24kguf",
+    "boxRole": "virtual",
+    "boxCreatedAt": "2026-11-04T13:00:50.817Z",
+    "boxReadback": {
+      "name": "ZZ TEST SCRUM-744 mw24kguf virtual box",
+      "role": "virtual",
+      "slot": "zz-test-s744-mw24kguf",
+      "status": "unclaimed"
+    },
+    "stationId": "01a1a6a6-1bf7-7400-acc7-e40c21b6c667",
+    "stationName": "ZZ TEST SCRUM-744 mw24kguf till",
+    "station": {
+      "codePrefix": "Z744A",
+      "boxId": "01a1a6a5-e0e7-7f08-bb76-7ed43c77ff4e",
+      "paymentRouting": {
+        "qr": "none",
+        "card": "manual"
+      },
+      "accessScope": "all_staff",
+      "ready": true,
+      "reasons": []
+    },
+    "stationCreatedAt": "2026-11-04T13:01:06.121Z",
+    "stationReadback": {
+      "name": "ZZ TEST SCRUM-744 mw24kguf till",
+      "kind": "till",
+      "codePrefix": "Z744A",
+      "boxId": "01a1a6a5-e0e7-7f08-bb76-7ed43c77ff4e",
+      "card": "manual",
+      "qr": "none",
+      "accessScope": "all_staff",
+      "ready": true,
+      "reasons": [],
+      "archivedAt": null
+    }
+  },
+  "steps": {
+    "consoleForm": {
+      "at": "2026-11-04T13:01:05.554Z"
+    },
+    "desktopProbePark": {
+      "at": "2026-11-04T13:08:45.570Z",
+      "chipButton": "HKT Central",
+      "inPark": "in park",
+      "switcherShown": 1,
+      "chipText": "HKT Central",
+      "parkList": [
+        "HKT Central",
+        "HKT Chalong"
+      ]
+    },
+    "desktopControl": {
+      "at": "2026-11-04T13:08:59.162Z",
+      "look": {
+        "at": "2026-11-04T13:09:03.612Z",
+        "url": "https://oto-pos-web-staging.onrender.com/",
+        "lockedHeading": false,
+        "picker": false,
+        "lockedLine": 0,
+        "noStation": 0,
+        "lockButton": true,
+        "membershipCheck": true,
+        "selectCustomerType": false
+      },
+      "parkChip": "Oto Play Park, Central Floresta",
+      "switcher": 0,
+      "linkStationIsTheZzTestTill": true,
+      "rememberedIsTheZzTestTill": true
+    },
+    "phoneControl": {
+      "at": "2026-11-04T13:12:05.607Z",
+      "look": {
+        "at": "2026-11-04T13:12:09.507Z",
+        "url": "https://oto-pos-web-staging.onrender.com/",
+        "lockedHeading": false,
+        "picker": false,
+        "lockedLine": 0,
+        "noStation": 0,
+        "lockButton": true,
+        "membershipCheck": false,
+        "selectCustomerType": true
+      },
+      "parkChip": "Oto Play Park, Central Floresta",
+      "switcher": 0,
+      "linkStationIsTheZzTestTill": true,
+      "rememberedIsTheZzTestTill": true
+    }
+  },
+  "images": [
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/staging/s744-00-console-new-zz-test-till-form.png",
+      "at": "2026-11-04T13:01:05.643Z",
+      "till": "console",
+      "url": "https://oto-console-staging.onrender.com/devices"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/staging/s744-01-console-zz-test-till-made.png",
+      "at": "2026-11-04T13:01:09.832Z",
+      "till": "console",
+      "url": "https://oto-console-staging.onrender.com/devices"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/staging/s744-02-desktop-1-on-the-zz-test-till.png",
+      "at": "2026-11-04T13:02:44.374Z",
+      "till": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/staging/s744-02-desktop-2-auto-lock-warning.png",
+      "at": "2026-11-04T13:04:29.249Z",
+      "till": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/staging/s744-02-desktop-3-locked-by-timeout.png",
+      "at": "2026-11-04T13:04:46.010Z",
+      "till": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/staging/s744-02-desktop-4-locked-after-reload.png",
+      "at": "2026-11-04T13:04:54.271Z",
+      "till": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/staging/s744-02-desktop-5-after-unlock.png",
+      "at": "2026-11-04T13:04:56.242Z",
+      "till": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/staging/s744-02-desktop-6-15-seconds-later.png",
+      "at": "2026-11-04T13:05:11.308Z",
+      "till": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/staging/s744-02-desktop-7-finding-park-list-after-unlock.png",
+      "at": "2026-11-04T13:08:46.165Z",
+      "till": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/staging/s744-02-desktop-8-control-direct-address.png",
+      "at": "2026-11-04T13:09:03.686Z",
+      "till": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/staging/s744-07-phone-1-on-the-zz-test-till.png",
+      "at": "2026-11-04T13:09:27.198Z",
+      "till": "phone",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/staging/s744-07-phone-2-auto-lock-warning.png",
+      "at": "2026-11-04T13:11:12.113Z",
+      "till": "phone",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/staging/s744-07-phone-3-locked-by-timeout.png",
+      "at": "2026-11-04T13:11:28.275Z",
+      "till": "phone",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/staging/s744-07-phone-4-locked-after-reload.png",
+      "at": "2026-11-04T13:11:36.036Z",
+      "till": "phone",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/staging/s744-07-phone-5-after-unlock.png",
+      "at": "2026-11-04T13:11:37.978Z",
+      "till": "phone",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/staging/s744-07-phone-6-15-seconds-later.png",
+      "at": "2026-11-04T13:11:53.080Z",
+      "till": "phone",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/staging/s744-07-phone-7-control-direct-address.png",
+      "at": "2026-11-04T13:12:09.627Z",
+      "till": "phone",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    }
+  ],
+  "network": [
+    {
+      "at": "2026-11-04T13:00:56.837Z",
+      "till": "console",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401,
+      "error": "UNAUTHORIZED"
+    },
+    {
+      "at": "2026-11-04T13:01:00.279Z",
+      "till": "console",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:01:00.829Z",
+      "till": "console",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:01:01.948Z",
+      "till": "console",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:02:42.175Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401,
+      "error": "UNAUTHORIZED"
+    },
+    {
+      "at": "2026-11-04T13:02:43.170Z",
+      "till": "desktop",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:02:43.246Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:02:43.858Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/stations",
+      "status": 200,
+      "stations": 11
+    },
+    {
+      "at": "2026-11-04T13:02:44.060Z",
+      "till": "desktop",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200,
+      "request": {
+        "stationId": "01a1a6a6-1bf7-7400-acc7-e40c21b6c667"
+      }
+    },
+    {
+      "at": "2026-11-04T13:02:44.125Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:03:04.140Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:03:24.128Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:03:44.147Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:04:04.122Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:04:24.124Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:04:44.016Z",
+      "till": "desktop",
+      "method": "POST",
+      "path": "/api/auth/lock",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:04:49.948Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:04:50.172Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/stations",
+      "status": 423,
+      "error": "SESSION_LOCKED"
+    },
+    {
+      "at": "2026-11-04T13:04:54.389Z",
+      "till": "desktop",
+      "method": "POST",
+      "path": "/api/auth/unlock",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:04:54.465Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/stations",
+      "status": 200,
+      "stations": 11
+    },
+    {
+      "at": "2026-11-04T13:04:54.570Z",
+      "till": "desktop",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200,
+      "request": {
+        "stationId": "01a1a6a6-1bf7-7400-acc7-e40c21b6c667"
+      }
+    },
+    {
+      "at": "2026-11-04T13:04:54.663Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:05:14.646Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:05:34.645Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:05:54.646Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:06:14.641Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:06:34.643Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:06:54.477Z",
+      "till": "desktop",
+      "method": "POST",
+      "path": "/api/auth/lock",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:08:45.380Z",
+      "till": "desktop",
+      "method": "POST",
+      "path": "/api/auth/unlock",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:08:45.531Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:08:59.398Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:08:59.972Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/stations",
+      "status": 200,
+      "stations": 11
+    },
+    {
+      "at": "2026-11-04T13:09:00.082Z",
+      "till": "desktop",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200,
+      "request": {
+        "stationId": "01a1a6a6-1bf7-7400-acc7-e40c21b6c667"
+      }
+    },
+    {
+      "at": "2026-11-04T13:09:00.186Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:09:20.144Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 401,
+      "error": "UNAUTHORIZED"
+    },
+    {
+      "at": "2026-11-04T13:09:24.824Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401,
+      "error": "UNAUTHORIZED"
+    },
+    {
+      "at": "2026-11-04T13:09:25.773Z",
+      "till": "phone",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:09:25.848Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:09:26.381Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/me/stations",
+      "status": 200,
+      "stations": 11
+    },
+    {
+      "at": "2026-11-04T13:09:26.636Z",
+      "till": "phone",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200,
+      "request": {
+        "stationId": "01a1a6a6-1bf7-7400-acc7-e40c21b6c667"
+      }
+    },
+    {
+      "at": "2026-11-04T13:11:26.599Z",
+      "till": "phone",
+      "method": "POST",
+      "path": "/api/auth/lock",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:11:31.742Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:11:31.957Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/me/stations",
+      "status": 423,
+      "error": "SESSION_LOCKED"
+    },
+    {
+      "at": "2026-11-04T13:11:36.150Z",
+      "till": "phone",
+      "method": "POST",
+      "path": "/api/auth/unlock",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:11:36.222Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/me/stations",
+      "status": 200,
+      "stations": 11
+    },
+    {
+      "at": "2026-11-04T13:11:36.310Z",
+      "till": "phone",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200,
+      "request": {
+        "stationId": "01a1a6a6-1bf7-7400-acc7-e40c21b6c667"
+      }
+    },
+    {
+      "at": "2026-11-04T13:12:05.744Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T13:12:06.314Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/me/stations",
+      "status": 200,
+      "stations": 11
+    },
+    {
+      "at": "2026-11-04T13:12:06.409Z",
+      "till": "phone",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200,
+      "request": {
+        "stationId": "01a1a6a6-1bf7-7400-acc7-e40c21b6c667"
+      }
+    }
+  ],
+  "browser": "156.0.4314.58",
+  "adminActorId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+  "tills": {
+    "desktop": {
+      "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+      "role": "reception",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "signedInAt": "2026-11-04T13:02:44.085Z",
+      "lastTouchAt": "2026-11-04T13:02:44.085Z",
+      "linkStatus": 200,
+      "linkStationIsTheZzTestTill": true,
+      "rememberedIsTheZzTestTill": true,
+      "idle": {
+        "startedAt": "2026-11-04T13:02:47.982Z",
+        "lastTouchAt": "2026-11-04T13:02:44.085Z",
+        "warningAt": "2026-11-04T13:04:29.189Z",
+        "warningText": "Auto-lock in 15s with no activity",
+        "lockedAt": "2026-11-04T13:04:44.447Z",
+        "secondsFromLastTouchToLock": 120,
+        "secondsFromLastTouchToWarning": 105,
+        "lockCall": [
+          {
+            "at": "2026-11-04T13:04:44.016Z",
+            "status": 200
+          }
+        ],
+        "look": {
+          "at": "2026-11-04T13:04:46.010Z",
+          "url": "https://oto-pos-web-staging.onrender.com/",
+          "lockedHeading": true,
+          "picker": false,
+          "lockedLine": 0,
+          "noStation": 0,
+          "lockButton": false,
+          "membershipCheck": false,
+          "selectCustomerType": false
+        }
+      },
+      "reloadUnlock": {
+        "reloadAt": "2026-11-04T13:04:49.768Z",
+        "afterReload": {
+          "at": "2026-11-04T13:04:54.212Z",
+          "url": "https://oto-pos-web-staging.onrender.com/",
+          "lockedHeading": true,
+          "picker": false,
+          "lockedLine": 0,
+          "noStation": 0,
+          "lockButton": false,
+          "membershipCheck": false,
+          "selectCustomerType": false
+        },
+        "callsBehindTheLock": [
+          {
+            "at": "2026-11-04T13:04:49.948Z",
+            "method": "GET",
+            "path": "/api/me",
+            "status": 200,
+            "error": null
+          },
+          {
+            "at": "2026-11-04T13:04:50.172Z",
+            "method": "GET",
+            "path": "/api/me/stations",
+            "status": 423,
+            "error": "SESSION_LOCKED"
+          }
+        ],
+        "unlockStatus": 200,
+        "unlockAt": "2026-11-04T13:04:54.387Z",
+        "afterUnlock": {
+          "at": "2026-11-04T13:04:56.164Z",
+          "url": "https://oto-pos-web-staging.onrender.com/",
+          "lockedHeading": false,
+          "picker": false,
+          "lockedLine": 0,
+          "noStation": 0,
+          "lockButton": true,
+          "membershipCheck": true,
+          "selectCustomerType": false
+        },
+        "after15s": {
+          "at": "2026-11-04T13:05:11.245Z",
+          "url": "https://oto-pos-web-staging.onrender.com/",
+          "lockedHeading": false,
+          "picker": false,
+          "lockedLine": 0,
+          "noStation": 0,
+          "lockButton": true,
+          "membershipCheck": true,
+          "selectCustomerType": false
+        },
+        "callsAtUnlock": [
+          {
+            "at": "2026-11-04T13:04:54.389Z",
+            "method": "POST",
+            "path": "/api/auth/unlock",
+            "status": 200,
+            "error": null
+          },
+          {
+            "at": "2026-11-04T13:04:54.465Z",
+            "method": "GET",
+            "path": "/api/me/stations",
+            "status": 200,
+            "error": null
+          },
+          {
+            "at": "2026-11-04T13:04:54.570Z",
+            "method": "PUT",
+            "path": "/api/me/session/station",
+            "status": 200,
+            "error": null,
+            "pickIsTheZzTestTill": true
+          },
+          {
+            "at": "2026-11-04T13:04:54.663Z",
+            "method": "GET",
+            "path": "/api/me/station/link",
+            "status": 200,
+            "error": null
+          }
+        ],
+        "linkStatus": 200,
+        "linkStationIsTheZzTestTill": true,
+        "rememberedIsTheZzTestTill": true
+      }
+    },
+    "phone": {
+      "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+      "role": "reception",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "signedInAt": "2026-11-04T13:09:26.748Z",
+      "lastTouchAt": "2026-11-04T13:09:26.748Z",
+      "linkStatus": 200,
+      "linkStationIsTheZzTestTill": true,
+      "rememberedIsTheZzTestTill": true,
+      "idle": {
+        "startedAt": "2026-11-04T13:09:32.249Z",
+        "lastTouchAt": "2026-11-04T13:09:26.748Z",
+        "warningAt": "2026-11-04T13:11:11.990Z",
+        "warningText": "Auto-lock in 15s with no activity",
+        "lockedAt": "2026-11-04T13:11:26.717Z",
+        "secondsFromLastTouchToLock": 120,
+        "secondsFromLastTouchToWarning": 105,
+        "lockCall": [
+          {
+            "at": "2026-11-04T13:11:26.599Z",
+            "status": 200
+          }
+        ],
+        "look": {
+          "at": "2026-11-04T13:11:28.275Z",
+          "url": "https://oto-pos-web-staging.onrender.com/",
+          "lockedHeading": true,
+          "picker": false,
+          "lockedLine": 0,
+          "noStation": 0,
+          "lockButton": false,
+          "membershipCheck": false,
+          "selectCustomerType": false
+        }
+      },
+      "reloadUnlock": {
+        "reloadAt": "2026-11-04T13:11:31.573Z",
+        "afterReload": {
+          "at": "2026-11-04T13:11:35.983Z",
+          "url": "https://oto-pos-web-staging.onrender.com/",
+          "lockedHeading": true,
+          "picker": false,
+          "lockedLine": 0,
+          "noStation": 0,
+          "lockButton": false,
+          "membershipCheck": false,
+          "selectCustomerType": false
+        },
+        "callsBehindTheLock": [
+          {
+            "at": "2026-11-04T13:11:31.742Z",
+            "method": "GET",
+            "path": "/api/me",
+            "status": 200,
+            "error": null
+          },
+          {
+            "at": "2026-11-04T13:11:31.957Z",
+            "method": "GET",
+            "path": "/api/me/stations",
+            "status": 423,
+            "error": "SESSION_LOCKED"
+          }
+        ],
+        "unlockStatus": 200,
+        "unlockAt": "2026-11-04T13:11:36.148Z",
+        "afterUnlock": {
+          "at": "2026-11-04T13:11:37.870Z",
+          "url": "https://oto-pos-web-staging.onrender.com/",
+          "lockedHeading": false,
+          "picker": false,
+          "lockedLine": 0,
+          "noStation": 0,
+          "lockButton": true,
+          "membershipCheck": false,
+          "selectCustomerType": true
+        },
+        "after15s": {
+          "at": "2026-11-04T13:11:52.981Z",
+          "url": "https://oto-pos-web-staging.onrender.com/",
+          "lockedHeading": false,
+          "picker": false,
+          "lockedLine": 0,
+          "noStation": 0,
+          "lockButton": true,
+          "membershipCheck": false,
+          "selectCustomerType": true
+        },
+        "callsAtUnlock": [
+          {
+            "at": "2026-11-04T13:11:36.150Z",
+            "method": "POST",
+            "path": "/api/auth/unlock",
+            "status": 200,
+            "error": null
+          },
+          {
+            "at": "2026-11-04T13:11:36.222Z",
+            "method": "GET",
+            "path": "/api/me/stations",
+            "status": 200,
+            "error": null
+          },
+          {
+            "at": "2026-11-04T13:11:36.310Z",
+            "method": "PUT",
+            "path": "/api/me/session/station",
+            "status": 200,
+            "error": null,
+            "pickIsTheZzTestTill": true
+          }
+        ],
+        "everyApiCallFromReloadTo15sAfterUnlock": [
+          {
+            "at": "2026-11-04T13:11:31.741Z",
+            "method": "GET",
+            "path": "/api/me",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T13:11:31.809Z",
+            "method": "GET",
+            "path": "/api/me/permissions",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T13:11:31.883Z",
+            "method": "GET",
+            "path": "/api/branches",
+            "status": 423,
+            "error": "SESSION_LOCKED"
+          },
+          {
+            "at": "2026-11-04T13:11:31.958Z",
+            "method": "GET",
+            "path": "/api/me/stations",
+            "status": 423,
+            "error": "SESSION_LOCKED"
+          },
+          {
+            "at": "2026-11-04T13:11:36.148Z",
+            "method": "POST",
+            "path": "/api/auth/unlock",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T13:11:36.221Z",
+            "method": "GET",
+            "path": "/api/me/stations",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T13:11:36.303Z",
+            "method": "PUT",
+            "path": "/api/me/session/station",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T13:11:36.376Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T13:11:37.950Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T13:11:39.533Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T13:11:41.110Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T13:11:42.696Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T13:11:44.271Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T13:11:45.850Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T13:11:47.432Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T13:11:49.048Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T13:11:50.622Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T13:11:52.203Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          }
+        ],
+        "linkStatus": 200,
+        "linkStationIsTheZzTestTill": true,
+        "rememberedIsTheZzTestTill": true
+      }
+    }
+  },
+  "cleanup": {
+    "actions": [
+      {
+        "at": "2026-11-04T13:12:30.830Z",
+        "what": "phone till sign-out",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-04T13:12:31.039Z",
+        "what": "archive the ZZ TEST till",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-04T13:12:31.121Z",
+        "what": "archive the ZZ TEST virtual box",
+        "status": 200,
+        "code": null
+      }
+    ],
+    "desktopSignedOut": {
+      "at": "2026-11-04T13:09:19.181Z",
+      "signOut": 200,
+      "meAfter": 401
+    },
+    "phoneSignedOut": {
+      "meAfter": 401
+    },
+    "tillArchived": "2026-11-04T13:12:31.039Z",
+    "boxArchived": "2026-11-04T13:12:31.122Z",
+    "consoleSignedOut": {
+      "signOut": 200,
+      "meAfter": 401
+    },
+    "readback": {
+      "tillArchivedAt": true,
+      "tillInLiveList": false,
+      "zzS744StationsLive": 0,
+      "boxInLiveList": false,
+      "boxArchived": true,
+      "liveStationCount": 13
+    }
+  }
+}

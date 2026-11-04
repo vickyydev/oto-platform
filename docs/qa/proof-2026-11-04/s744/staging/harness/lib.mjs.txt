@@ -1,0 +1,123 @@
+import assert from 'node:assert/strict';
+const BS = String.fromCharCode(92);
+export const escapeRe = (s) => [...s].map((c) => ('.*+?^$' + '{}()|[]' + BS).includes(c) ? BS + c : c).join('');
+export const PICKER = 'Which station are you on?';
+export const LOCKED_LINE = 'This session is locked';
+export const NO_STATION = 'No station here is yours to work';
+export const VIEWPORTS = { desktop: { width: 1440, height: 900 }, phone: { width: 390, height: 844 } };
+export const NUM = { desktop: '02', phone: '07' };
+
+export async function look(S, label) {
+  const page = S.pages[label].page;
+  return {
+    at: new Date().toISOString(),
+    url: page.url(),
+    lockedHeading: await page.getByRole('heading', { name: 'Locked', exact: true }).isVisible().catch(() => false),
+    picker: await page.getByRole('heading', { name: PICKER }).isVisible().catch(() => false),
+    lockedLine: await page.getByText(LOCKED_LINE).count(),
+    noStation: await page.getByText(NO_STATION).count(),
+    lockButton: await page.getByLabel('Lock screen').isVisible().catch(() => false),
+    membershipCheck: await page.getByText('Membership Check', { exact: true }).first().isVisible().catch(() => false),
+    selectCustomerType: await page.getByText('Select Customer Type', { exact: true }).first().isVisible().catch(() => false),
+  };
+}
+
+export async function remembered(page) {
+  return page.evaluate(() => {
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('oto.pos.station.')) return (JSON.parse(localStorage.getItem(key) ?? '{}')).id ?? null;
+    }
+    return null;
+  });
+}
+
+export async function signIn(S, label) {
+  const { st, save, tillPage, expect, need, POS, tillApi, shot } = S;
+  const f = st.fixture;
+  const { page } = await tillPage(label, VIEWPORTS[label]);
+  await page.goto(POS + '/');
+  await expect(page.getByRole('heading', { name: 'Oto POS is locked' })).toBeVisible({ timeout: 60000 });
+  await page.locator('input[inputmode="tel"], input[type="tel"]').first().fill(need('STAGING_RECEPTION_PHONE').replace(/^\+66/, '0'));
+  await page.locator('input[type="password"][autocomplete="current-password"]').fill(need('STAGING_RECEPTION_PASSWORD'));
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByRole('heading', { name: PICKER })).toBeVisible({ timeout: 30000 });
+  await page.getByRole('button', { name: new RegExp(escapeRe(f.stationName)) }).click();
+  await expect(page.getByLabel('Lock screen')).toBeVisible({ timeout: 30000 });
+  await expect(page.getByRole('heading', { name: PICKER })).toBeHidden();
+  const lastTouch = new Date().toISOString();
+  const me = await tillApi(label, 'GET', '/me');
+  assert.equal(me.status, 200);
+  const link = await tillApi(label, 'GET', '/me/station/link');
+  st.tills = st.tills ?? {};
+  st.tills[label] = { accountId: me.body.account.id, role: 'reception', viewport: VIEWPORTS[label], signedInAt: lastTouch, lastTouchAt: lastTouch, linkStatus: link.status, linkStationIsTheZzTestTill: link.body?.stationId === f.stationId, rememberedIsTheZzTestTill: (await remembered(page)) === f.stationId };
+  save();
+  assert.ok(st.tills[label].linkStationIsTheZzTestTill, 'the session is on the ZZ TEST till');
+  await shot(label, `s744-${NUM[label]}-${label}-1-on-the-zz-test-till`);
+  return { ...st.tills[label], look: await look(S, label) };
+}
+
+// Leave the till alone: no click, key, move or touch. Screens only (they send no input).
+export async function idle(S, label) {
+  const { st, save, shot, expect } = S;
+  const page = S.pages[label].page;
+  const t = st.tills[label];
+  const out = { startedAt: new Date().toISOString(), lastTouchAt: t.lastTouchAt };
+  const warning = page.getByText(/Auto-lock in \d+s with no activity/);
+  await expect(warning).toBeVisible({ timeout: 130000 });
+  out.warningAt = new Date().toISOString();
+  out.warningText = (await warning.textContent())?.trim() ?? null;
+  await shot(label, `s744-${NUM[label]}-${label}-2-auto-lock-warning`);
+  await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeVisible({ timeout: 40000 });
+  out.lockedAt = new Date().toISOString();
+  out.secondsFromLastTouchToLock = Math.round((Date.parse(out.lockedAt) - Date.parse(t.lastTouchAt)) / 1000);
+  out.secondsFromLastTouchToWarning = Math.round((Date.parse(out.warningAt) - Date.parse(t.lastTouchAt)) / 1000);
+  out.lockCall = st.network.filter((n) => n.till === label && n.path === '/api/auth/lock').map((n) => ({ at: n.at, status: n.status }));
+  await page.waitForTimeout(1500);
+  await shot(label, `s744-${NUM[label]}-${label}-3-locked-by-timeout`);
+  out.look = await look(S, label);
+  t.idle = out; save();
+  return out;
+}
+
+export async function reloadUnlock(S, label) {
+  const { st, save, shot, expect, need, tillApi } = S;
+  const f = st.fixture;
+  const page = S.pages[label].page;
+  const t = st.tills[label];
+  const out = {};
+  const every = [];
+  const onAny = async (res) => { const p = new URL(res.url()).pathname; if (!p.startsWith('/api/')) return; let code = null; if (res.status() >= 400) { try { code = (await res.json())?.error?.code ?? null; } catch {} } every.push({ at: new Date().toISOString(), method: res.request().method(), path: p.replace(/[0-9a-f]{8}-[0-9a-f-]{27}/g, ':id'), status: res.status(), ...(code ? { error: code } : {}) }); };
+  page.on('response', onAny);
+  const mark = st.network.length;
+  out.reloadAt = new Date().toISOString();
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeVisible({ timeout: 60000 });
+  await page.waitForTimeout(4000);
+  out.afterReload = await look(S, label);
+  await shot(label, `s744-${NUM[label]}-${label}-4-locked-after-reload`);
+  out.callsBehindTheLock = st.network.slice(mark).filter((n) => n.till === label).map((n) => ({ at: n.at, method: n.method, path: n.path, status: n.status, error: n.error ?? null, ...(n.request ? { pickIsTheZzTestTill: n.request.stationId === f.stationId } : {}) }));
+  const mark2 = st.network.length;
+  await page.locator('input[type="password"][autocomplete="current-password"]').fill(need('STAGING_RECEPTION_PASSWORD'));
+  const unlocked = page.waitForResponse((r) => r.url().endsWith('/api/auth/unlock') && r.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  out.unlockStatus = (await unlocked).status();
+  out.unlockAt = new Date().toISOString();
+  await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeHidden({ timeout: 30000 });
+  await expect(page.getByRole('heading', { name: 'Which station are you on?' }).or(page.getByLabel('Lock screen')).first()).toBeVisible({ timeout: 30000 });
+  await page.waitForTimeout(1500);
+  out.afterUnlock = await look(S, label);
+  await shot(label, `s744-${NUM[label]}-${label}-5-after-unlock`);
+  await page.waitForTimeout(15000);
+  out.after15s = await look(S, label);
+  await shot(label, `s744-${NUM[label]}-${label}-6-15-seconds-later`);
+  out.callsAtUnlock = st.network.slice(mark2).filter((n) => n.till === label).map((n) => ({ at: n.at, method: n.method, path: n.path, status: n.status, error: n.error ?? null, ...(n.request ? { pickIsTheZzTestTill: n.request.stationId === f.stationId } : {}) }));
+  page.off('response', onAny);
+  out.everyApiCallFromReloadTo15sAfterUnlock = every;
+  const link = await tillApi(label, 'GET', '/me/station/link');
+  out.linkStatus = link.status;
+  out.linkStationIsTheZzTestTill = link.body?.stationId === f.stationId;
+  out.rememberedIsTheZzTestTill = (await remembered(page)) === f.stationId;
+  t.reloadUnlock = out; save();
+  return out;
+}

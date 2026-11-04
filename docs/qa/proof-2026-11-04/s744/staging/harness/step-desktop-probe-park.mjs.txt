@@ -1,0 +1,26 @@
+// After the locked reload and Unlock (desktop): which park and park list does the till header carry?
+// Read only: opens the park chip's list, reads it, closes it. No sale, no switch.
+export default async function (S) {
+  const { st, save, shot, pages } = S;
+  const page = pages.desktop.page;
+  const out = { at: new Date().toISOString() };
+  const header = page.locator('header, [class*="h-16"]').first();
+  out.chipButton = await page.getByRole('button', { name: /HKT|Oto Play Park/ }).first().textContent().catch(() => null);
+  out.inPark = await page.getByText(/in park/).first().textContent().catch(() => null);
+  const chip = page.locator('button[title="Switch branch"]');
+  out.switcherShown = await chip.count();
+  if (out.switcherShown) {
+    out.chipText = (await chip.first().textContent())?.trim() ?? null;
+    await chip.first().click();
+    await page.waitForTimeout(500);
+    out.parkList = (await page.locator('button[title="Switch branch"] + div button').allTextContents()).map((s) => s.trim());
+    await shot('desktop', 's744-02-desktop-7-finding-park-list-after-unlock');
+    await page.keyboard.press('Escape');
+    await chip.first().click();
+    await page.waitForTimeout(300);
+  } else {
+    out.chipText = await page.locator('span[title]').filter({ hasText: /Oto Play Park|HKT/ }).first().textContent().catch(() => null);
+  }
+  st.steps.desktopProbePark = out; save();
+  return out;
+}

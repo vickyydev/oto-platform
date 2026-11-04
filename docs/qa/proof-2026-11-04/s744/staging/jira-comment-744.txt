@@ -1,0 +1,20 @@
+Checked on staging on 4 November 2026, 20:00 to 20:13 Bangkok, on the live commit a671f7bd (the till, the till web page, the platform and the Console all run it). A test till called "ZZ TEST SCRUM-744 mw24kguf till" was made in the Console on a test virtual box, and the reception test account signed in on it, once at computer width and once at phone width.
+
+What works now:
+1. Left alone, the till showed "Auto-lock in 15s" after 1 minute 45 seconds and locked itself at exactly 2 minutes. The page was then reloaded and came back on the lock screen.
+2. After typing the password and pressing Unlock, the till opened straight onto its own station: Membership Check on the computer, Select Customer Type on the phone. There was no "Which station are you on?" question, no "This session is locked" message and no "No station here is yours to work". It was exactly the same 15 seconds later.
+3. Opening the till's address directly still opens it on its station, as before.
+
+One thing still to fix, so this stays at Testing: after the reload and Unlock, the top of the till shows a built-in sample park, "HKT Central" (its list also offers "HKT Chalong"), instead of "Oto Play Park, Central Floresta". The in-park count reads 0 instead of 1, and the stock and overdue notices are missing. The ticket list and prices come from that same place, so they are the sample ones too until the page is opened again. The reason is the same as before: the till asked for its park list while it was still locked and does not ask again after Unlock. Opening the address again, or signing out and in, brings the real park back. The next change makes Unlock ask for the park list again as well; then this is checked again the same way.
+
+How to retest: sign in on a till and pick its station; leave it untouched for 2 minutes until it locks; reload the page; type the password and press Unlock. Expected: the till itself, no station question, no locked message, and the real park name at the top (the park name is the part still to fix).
+
+Pictures, in order:
+1) Before this change (3 November): the station question after Unlock, with the locked message twice.
+2) Now: the till locked by the 2-minute timeout and reloaded, still on the lock screen.
+3) Now, computer: straight after Unlock, on its own station.
+4) Now, computer: 15 seconds later, unchanged.
+5) Now, phone: straight after Unlock, on its own station.
+6) Now, phone: 15 seconds later, unchanged.
+7) Still to fix: the sample park "HKT Central" and its list after Unlock.
+8) The same till opened by its address: the real park name, 1 in park and the notices.

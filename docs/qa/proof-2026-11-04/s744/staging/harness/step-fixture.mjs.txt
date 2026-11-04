@@ -1,0 +1,32 @@
+// SCRUM-744 staging fixture, made for this proof only, at the staff branch:
+// one ZZ TEST virtual box (nothing runs it). The till itself is made in the Console (next step).
+import assert from 'node:assert/strict';
+export default async function (S) {
+  const { st, save, adminApi } = S;
+  const f = st.fixture;
+  const me = await adminApi('GET', '/me');
+  assert.equal(me.status, 200);
+  const BRANCH = me.body.operatorContext.branchId;
+  assert.equal(BRANCH, '01a0bbdc-8c42-7753-b7e3-5ae19fb66d33');
+  st.adminActorId = me.body.account.id;
+  f.stamp = f.stamp ?? Date.now().toString(36);
+  f.name = 'ZZ TEST SCRUM-744 ' + f.stamp;
+  f.branchId = BRANCH; save();
+  const stations = (await adminApi('GET', `/branches/${BRANCH}/stations?includeArchived=true`)).body.stations;
+  const used = new Set(stations.map((s) => s.codePrefix));
+  f.codePrefix = f.codePrefix ?? Array.from('ABCDEFGHJKLMNPQRSTUVWXYZ', (c) => 'Z744' + c).find((c) => !used.has(c));
+  assert.ok(f.codePrefix);
+  f.zzStationsBefore = stations.filter((s) => /SCRUM-744/.test(s.name)).map((s) => ({ id: s.id, name: s.name, archivedAt: s.archivedAt ?? null }));
+  if (!f.boxId) {
+    const b = await adminApi('POST', `/branches/${BRANCH}/boxes`, { name: f.name + ' virtual box', slot: 'zz-test-s744-' + f.stamp, role: 'virtual' });
+    assert.equal(b.status, 200, JSON.stringify(b.body?.error ?? b.status));
+    f.boxId = b.body.box.id; f.boxName = b.body.box.name; f.boxSlot = b.body.box.slot; f.boxRole = b.body.box.role;
+    f.boxCreatedAt = new Date().toISOString();
+    save();
+  }
+  const boxes = (await adminApi('GET', `/branches/${BRANCH}/boxes`)).body.boxes;
+  const box = boxes.find((x) => x.id === f.boxId);
+  f.boxReadback = { name: box?.name, role: box?.role, slot: box?.slot, status: box?.status ?? null };
+  save();
+  return { stamp: f.stamp, name: f.name, codePrefix: f.codePrefix, boxReadback: f.boxReadback, zzStationsBefore: f.zzStationsBefore, liveStationCount: stations.filter((s) => !s.archivedAt).length };
+}

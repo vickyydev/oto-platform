@@ -1,0 +1,20 @@
+// Step 7, the control from the report: open the till's address directly, unlocked. It opens on its station.
+import { look, remembered } from './lib.mjs?v=1';
+export default async function (S) {
+  const { st, save, shot, pages, expect, POS, tillApi } = S;
+  const f = st.fixture;
+  const page = pages.desktop.page;
+  const out = { at: new Date().toISOString() };
+  await page.goto(POS + '/');
+  await expect(page.getByLabel('Lock screen').or(page.getByRole('heading', { name: 'Which station are you on?' })).or(page.getByRole('heading', { name: 'Locked', exact: true })).first()).toBeVisible({ timeout: 60000 });
+  await page.waitForTimeout(3000);
+  out.look = await look(S, 'desktop');
+  out.parkChip = await page.locator('span[title]').filter({ hasText: /Oto Play Park|HKT/ }).first().getAttribute('title').catch(() => null);
+  out.switcher = await page.locator('button[title="Switch branch"]').count();
+  await shot('desktop', 's744-02-desktop-8-control-direct-address');
+  const link = await tillApi('desktop', 'GET', '/me/station/link');
+  out.linkStationIsTheZzTestTill = link.body?.stationId === f.stationId;
+  out.rememberedIsTheZzTestTill = (await remembered(page)) === f.stationId;
+  st.steps.desktopControl = out; save();
+  return out;
+}

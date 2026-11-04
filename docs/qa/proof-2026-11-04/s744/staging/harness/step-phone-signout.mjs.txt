@@ -1,0 +1,11 @@
+// The phone test session signs out, read back.
+export default async function (S) {
+  const { st, save, pages, tillApi } = S;
+  const out = { at: new Date().toISOString() };
+  const r = await tillApi('phone', 'POST', '/auth/sign-out');
+  out.signOut = r.status;
+  out.meAfter = (await tillApi('phone', 'GET', '/me')).status;
+  st.cleanup = st.cleanup ?? { actions: [] };
+  st.cleanup.phoneSignedOut = out; save();
+  return out;
+}
