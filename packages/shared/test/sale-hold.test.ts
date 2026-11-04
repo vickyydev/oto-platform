@@ -64,6 +64,8 @@ const row = (over: Partial<EodOpenSale>): EodOpenSale => ({
   label: 'Khun Anna',
   held: true,
   stationName: 'Reception Till 1',
+  counter: 'ticket',
+  carriedFrom: null,
   grossSatang: 55_000,
   paidSatang: 20_000,
   balanceSatang: 35_000,
@@ -84,10 +86,38 @@ describe('partPaidCloseRefusal — the End of Day says why it cannot close', () 
     );
   });
 
-  it('says where a part-paid sale still on a till is, and how to move it to Held sales', () => {
-    const message = partPaidCloseRefusal([row({ held: false, label: 'Walk-in', stationName: 'Counter 2' })]);
-    expect(message).toContain('Walk-in (open on Counter 2)');
-    expect(message).toContain('save it as partly paid');
+  it('says where a part-paid sale still on a ticket till is, and how to move it to Held sales', () => {
+    expect(partPaidCloseRefusal([row({ held: false, label: 'Walk-in', stationName: 'Counter 2' })])).toBe(
+      'End of Day cannot close: 1 sale is partly paid — Walk-in (open on Counter 2), ฿200 paid, balance ฿350. ' +
+        'Take the balance on that till, or save it as partly paid there and refund what was paid from Held sales, then close the day.',
+    );
+  });
+
+  it('never sends an F&B or shop order to Held sales: it is paid at its counter or refunded from History', () => {
+    const message = partPaidCloseRefusal([row({ held: false, label: 'Walk-in', stationName: 'F&B 1', counter: 'other' })]);
+    expect(message).toBe(
+      'End of Day cannot close: 1 sale is partly paid — Walk-in (open on F&B 1), ฿200 paid, balance ฿350. ' +
+        'Take the balance at that counter, or have a manager refund what was paid from History, then close the day.',
+    );
+    expect(message).not.toContain('Held sales');
+  });
+
+  it('gives each kind of sale its own way out when they are mixed', () => {
+    const message = partPaidCloseRefusal([
+      row({}),
+      row({ held: false, label: 'Walk-in', stationName: 'F&B 1', counter: 'other' }),
+    ])!;
+    expect(message).toContain(
+      'For one in Held sales, take the balance or refund what was paid from Held sales on a till; ' +
+        'for one open at the restaurant or shop counter, take the balance there, or have a manager refund what was paid from History. ' +
+        'Then close the day.',
+    );
+  });
+
+  it('names the day a held part-paid sale was carried over from', () => {
+    expect(partPaidCloseRefusal([row({ carriedFrom: '2026-11-03', flaggedAt: '2026-11-03T17:00:00.000Z' })])).toContain(
+      'Khun Anna (in Held sales since 3 Nov), ฿200 paid, balance ฿350.',
+    );
   });
 
   it('names three and counts the rest', () => {

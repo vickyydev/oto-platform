@@ -63119,6 +63119,17 @@
                                 "type": "string",
                                 "nullable": true
                               },
+                              "counter": {
+                                "type": "string",
+                                "enum": [
+                                  "ticket",
+                                  "other"
+                                ]
+                              },
+                              "carriedFrom": {
+                                "type": "string",
+                                "nullable": true
+                              },
                               "grossSatang": {
                                 "type": "integer"
                               },
@@ -63139,6 +63150,8 @@
                               "label",
                               "held",
                               "stationName",
+                              "counter",
+                              "carriedFrom",
                               "grossSatang",
                               "paidSatang",
                               "balanceSatang",
@@ -63963,6 +63976,17 @@
                                 "type": "string",
                                 "nullable": true
                               },
+                              "counter": {
+                                "type": "string",
+                                "enum": [
+                                  "ticket",
+                                  "other"
+                                ]
+                              },
+                              "carriedFrom": {
+                                "type": "string",
+                                "nullable": true
+                              },
                               "grossSatang": {
                                 "type": "integer"
                               },
@@ -63983,6 +64007,8 @@
                               "label",
                               "held",
                               "stationName",
+                              "counter",
+                              "carriedFrom",
                               "grossSatang",
                               "paidSatang",
                               "balanceSatang",
@@ -64933,6 +64959,17 @@
                                 "type": "string",
                                 "nullable": true
                               },
+                              "counter": {
+                                "type": "string",
+                                "enum": [
+                                  "ticket",
+                                  "other"
+                                ]
+                              },
+                              "carriedFrom": {
+                                "type": "string",
+                                "nullable": true
+                              },
                               "grossSatang": {
                                 "type": "integer"
                               },
@@ -64953,6 +64990,8 @@
                               "label",
                               "held",
                               "stationName",
+                              "counter",
+                              "carriedFrom",
                               "grossSatang",
                               "paidSatang",
                               "balanceSatang",

@@ -670,7 +670,7 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
       description:
         'Voids held sales still waiting at midnight in their branch as not collected, and flags part-paid ones for the manager',
       intervalSeconds: 300,
-      run: async ({ db, env, log, now }) => ({ detail: await runHeldSalesMidnight(db, env, now, log) }),
+      run: async ({ db, env, log, now }) => ({ detail: await runHeldSalesMidnight(db, env, now, log, deps.channels) }),
     },
     /**
      * `job:booth.duty_sync` — THE DAY'S BOOTH STAFF, AT THE BRANCH'S OPEN

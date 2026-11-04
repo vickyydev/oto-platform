@@ -5216,6 +5216,14 @@ export interface SaleListItem extends SaleReadView {
    * offered back to the screen that rang it up.
    */
   hold: { holdId: string; kind: 'held' | 'part_paid'; label: string } | null;
+  /**
+   * SCRUM-774 — the sale was taken back from Held sales, by whom and to which
+   * till (the last resume). The till it went to offers it to that account to
+   * continue after a reload, as it offers its own rung-up sale: nobody else
+   * there is taking money for it, and without this a part-paid sale whose
+   * screen went would be offered only a void it refuses.
+   */
+  resumedFromHold: { accountId: string | null; stationId: string | null } | null;
 }
 
 /** An id no row has, for an `in` over an empty list — Postgres refuses `in ()`. */
@@ -5304,6 +5312,20 @@ export async function listSales(
         .where(and(inArray(saleHold.saleId, ids), isNull(saleHold.releasedAt)))
     : [];
   const holdOf = new Map(openHolds.map((h) => [h.saleId, { holdId: h.id, kind: h.kind, label: h.label }]));
+  const resumes = ids.length
+    ? await db
+        .select({
+          saleId: saleHold.saleId,
+          accountId: saleHold.releasedByAccountId,
+          stationId: saleHold.resumedStationId,
+          releasedAt: saleHold.releasedAt,
+        })
+        .from(saleHold)
+        .where(and(inArray(saleHold.saleId, ids), eq(saleHold.releasedReason, 'resumed')))
+        .orderBy(asc(saleHold.releasedAt))
+    : [];
+  // Oldest first, so the last resume of each sale is the one kept.
+  const resumedOf = new Map(resumes.map((r) => [r.saleId, { accountId: r.accountId, stationId: r.stationId }]));
   // SCRUM-430 — who voided each voided sale on the page, by name, in one query.
   const voiderNameOf = await accountNamesOf(
     db,
@@ -5336,6 +5358,7 @@ export async function listSales(
       lineKinds: [...(kindsBySale.get(row.sale.id) ?? [])],
       revenueCategories: [...(areasBySale.get(row.sale.id) ?? [])],
       hold: holdOf.get(row.sale.id) ?? null,
+      resumedFromHold: holdOf.has(row.sale.id) ? null : (resumedOf.get(row.sale.id) ?? null),
     })),
   };
 }

@@ -116,8 +116,20 @@ export type SaleResumeAnswer = z.infer<typeof SaleResumeAnswerSchema>;
 // --- The End of Day's view ------------------------------------------------------
 
 /**
- * An open sale of the day, as the End of Day shows it: a held sale (no money)
- * or a part-paid one (held or still on a till's screen).
+ * Where an open sale was rung up, and so where it is finished: the ticket
+ * till (`ticket`), which can hold it and resume it from Held sales, or the
+ * restaurant or shop counter (`other`), whose orders are paid at that counter
+ * and refunded from History — they never go into Held sales.
+ */
+export const EOD_OPEN_SALE_COUNTER_VALUES = ['ticket', 'other'] as const;
+export type EodOpenSaleCounter = (typeof EOD_OPEN_SALE_COUNTER_VALUES)[number];
+
+/**
+ * An open sale as the End of Day shows it: a held sale (no money) or a
+ * part-paid one (held or still on a till's screen) of the day being closed,
+ * and any sale still in Held sales from an earlier day (`carriedFrom`) — a
+ * part-paid sale is unresolved until it is paid or refunded, whatever day it
+ * was parked on.
  */
 export const EodOpenSaleSchema = z.object({
   saleId: z.string().uuid(),
@@ -127,6 +139,9 @@ export const EodOpenSaleSchema = z.object({
   /** Parked in Held sales, or still open on a till. */
   held: z.boolean(),
   stationName: z.string().nullable(),
+  counter: z.enum(EOD_OPEN_SALE_COUNTER_VALUES),
+  /** The earlier trading day a held sale was parked on; null for a sale of the day itself. */
+  carriedFrom: z.string().nullable(),
   grossSatang: z.number().int(),
   paidSatang: z.number().int(),
   balanceSatang: z.number().int(),
@@ -144,6 +159,33 @@ export type EodOpenSales = z.infer<typeof EodOpenSalesSchema>;
 /** How many part-paid sales a refusal names before it says "and N more". */
 const NAMED_IN_REFUSAL = 3;
 
+/** "3 Nov", from an ISO date, for a held sale carried over from an earlier day. */
+export function carriedFromLabel(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return iso;
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+}
+
+type WayOut = 'held' | 'ticket' | 'other';
+
+const wayOutOf = (row: EodOpenSale): WayOut => (row.held ? 'held' : row.counter === 'other' ? 'other' : 'ticket');
+
+/** How each kind of part-paid sale is resolved, on its own and as a clause beside the others. */
+const WAYS_OUT: Record<WayOut, { alone: string; clause: string }> = {
+  held: {
+    alone: 'Take the balance or refund what was paid, from Held sales on a till',
+    clause: 'for one in Held sales, take the balance or refund what was paid from Held sales on a till',
+  },
+  ticket: {
+    alone: 'Take the balance on that till, or save it as partly paid there and refund what was paid from Held sales',
+    clause: 'for one open on a ticket till, take the balance there, or save it as partly paid and refund what was paid from Held sales',
+  },
+  other: {
+    alone: 'Take the balance at that counter, or have a manager refund what was paid from History',
+    clause: 'for one open at the restaurant or shop counter, take the balance there, or have a manager refund what was paid from History',
+  },
+};
+
 /**
  * THE END OF DAY'S REFUSAL while a sale is partly paid, in the words the till
  * shows before the press and the platform answers after it:
@@ -152,20 +194,26 @@ const NAMED_IN_REFUSAL = 3;
  *   sales), ฿200 paid, balance ฿350. Take the balance or refund what was paid,
  *   from Held sales on a till, then close the day.
  *
- * Null when nothing part-paid stands in the way.
+ * The way out named is the one that applies to where each sale is: Held
+ * sales; a ticket till's screen (which can save it as partly paid); or the
+ * restaurant or shop counter, whose orders never go into Held sales and are
+ * refunded from History. Null when nothing part-paid stands in the way.
  */
 export function partPaidCloseRefusal(rows: readonly EodOpenSale[]): string | null {
   const partPaid = rows.filter((r) => r.kind === 'part_paid');
   if (partPaid.length === 0) return null;
   const named = partPaid.slice(0, NAMED_IN_REFUSAL).map((r) => {
-    const where = r.held ? 'in Held sales' : `open on ${r.stationName ?? 'a till'}`;
+    const where = r.held
+      ? `in Held sales${r.carriedFrom ? ` since ${carriedFromLabel(r.carriedFrom)}` : ''}`
+      : `open on ${r.stationName ?? 'a till'}`;
     return `${r.label} (${where}), ${formatTHB(r.paidSatang)} paid, balance ${formatTHB(r.balanceSatang)}`;
   });
   const more = partPaid.length - named.length;
   const count = `${partPaid.length} sale${partPaid.length === 1 ? ' is' : 's are'} partly paid`;
-  const anyOnScreen = partPaid.some((r) => !r.held);
-  const how = anyOnScreen
-    ? 'Take the balance, or save it as partly paid and refund what was paid from Held sales on a till, then close the day.'
-    : 'Take the balance or refund what was paid, from Held sales on a till, then close the day.';
+  const ways = (['held', 'ticket', 'other'] as const).filter((w) => partPaid.some((r) => wayOutOf(r) === w));
+  const how =
+    ways.length === 1
+      ? `${WAYS_OUT[ways[0]!].alone}, then close the day.`
+      : `${ways.map((w) => WAYS_OUT[w].clause).join('; ').replace(/^f/, 'F')}. Then close the day.`;
   return `End of Day cannot close: ${count} — ${named.join('; ')}${more > 0 ? `; and ${more} more` : ''}. ${how}`;
 }

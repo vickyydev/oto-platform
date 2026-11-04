@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, isNull, lt } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import {
   branch,
@@ -6,6 +6,7 @@ import {
   paymentAttempt,
   sale,
   saleHold,
+  saleLine,
   station,
   type Db,
 } from '@oto/db';
@@ -28,7 +29,8 @@ import {
 import type { Env } from '../env';
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
-import { raiseAlert, resolveAlert } from './ops';
+import { deliverRoutedAlert } from './alert-routing';
+import { raiseAlert, resolveAlert, type AlertChannel } from './ops';
 import { accountNames } from './refund-slices';
 import { voidSale, type ActorContext } from './sale';
 import { releaseOpenHold } from './sale-hold-release';
@@ -152,7 +154,13 @@ export async function holdSale(
   now: Date = new Date(),
 ): Promise<SaleHoldAnswer> {
   const [row] = await tx.select().from(sale).where(eq(sale.id, saleId)).for('update').limit(1);
-  if (!row || row.operatorId !== actor.operatorId) throw errors.notFound('Sale not found');
+  if (!row || row.operatorId !== actor.operatorId) {
+    // The one way a till's own sale is not here: it was rung up on the counter
+    // box while the platform could not be reached, and has not reached it yet.
+    throw errors.notFound(
+      'This sale is not on the platform yet — a sale rung up on the counter box while the connection was down cannot be held. Take the payment now.',
+    );
+  }
   // The sale names the branch; the URL does not — checked on the row, as the void does.
   await actor.assertBranchAllowed?.(row.branchId);
 
@@ -365,6 +373,21 @@ export async function resumeHeldSale(
     .from(saleHold)
     .where(and(eq(saleHold.saleId, saleId), isNull(saleHold.releasedAt)))
     .limit(1);
+  if (!open && row.status === 'tendering' && row.stationId === till.id) {
+    // Resume pressed again on the till that already took it back — its answer
+    // was lost, or the screen could not open the sale and the press was
+    // repeated under a new id. The sale is this till's, still owed: the same
+    // answer again, so it is opened here rather than stranded off the list.
+    const [last] = await tx
+      .select()
+      .from(saleHold)
+      .where(eq(saleHold.saleId, saleId))
+      .orderBy(desc(saleHold.heldAt))
+      .limit(1);
+    if (last?.releasedReason === 'resumed' && last.resumedStationId === till.id) {
+      return answerOf(last, till.id, true);
+    }
+  }
   if (!open || row.status !== 'tendering') throw await notHeldRefusal(tx, row);
 
   if (row.stationId !== till.id) {
@@ -418,12 +441,26 @@ export async function listHeldSales(db: Exec, operatorId: string, branchId: stri
 
 // --- The End of Day ---------------------------------------------------------
 
+/** The line kinds only the restaurant and shop counters write: their orders never go into Held sales. */
+const COUNTER_ONLY_KINDS: ReadonlySet<string> = new Set(['fnb_item', 'merch_item']);
+
 /**
- * The day's open sales, as the End of Day shows them and refuses on: every
- * sale of the branch-day still `tendering` that is held (no money) or has
- * money on it (part-paid, held or still on a till's screen). A sale rung up
- * and left with no money and no hold is neither — it is an unpaid cart the
- * till's own left-behind card deals with — and does not appear.
+ * The day's open sales, as the End of Day shows them and refuses on:
+ *
+ *   - every sale of the branch-day still `tendering` that is held (no money)
+ *     or has money on it (part-paid, held or still on a till's screen). A
+ *     sale rung up and left with no money and no hold is neither — it is an
+ *     unpaid cart the till's own left-behind card deals with — and does not
+ *     appear;
+ *   - every sale still in Held sales from an EARLIER trading day
+ *     (`carriedFrom`): a part-paid sale is unresolved until it is paid or
+ *     refunded, so a day that was never closed does not let the next one
+ *     close over it. A sale on a till's screen from an earlier day keeps to
+ *     its own day, as before.
+ *
+ * Each row says where it is finished (`counter`): a ticket till's sale can be
+ * held and resumed from Held sales; a restaurant or shop order is paid at
+ * its counter or refunded from History.
  */
 export async function openSalesOfDay(
   db: Exec,
@@ -431,14 +468,16 @@ export async function openSalesOfDay(
   branchId: string,
   date: string,
 ): Promise<EodOpenSales> {
-  const rows = await db
-    .select({
-      id: sale.id,
-      grossSatang: sale.grossSatang,
-      stationName: station.name,
-      memberName: member.name,
-      memberNickname: member.nickname,
-    })
+  const columns = {
+    id: sale.id,
+    grossSatang: sale.grossSatang,
+    businessDate: sale.businessDate,
+    stationName: station.name,
+    memberName: member.name,
+    memberNickname: member.nickname,
+  };
+  const ofTheDay = await db
+    .select(columns)
     .from(sale)
     .leftJoin(station, eq(station.id, sale.stationId))
     .leftJoin(member, eq(member.id, sale.memberId))
@@ -452,6 +491,24 @@ export async function openSalesOfDay(
     )
     .orderBy(asc(sale.occurredAt))
     .limit(500);
+  const carried = await db
+    .select(columns)
+    .from(saleHold)
+    .innerJoin(sale, eq(sale.id, saleHold.saleId))
+    .leftJoin(station, eq(station.id, sale.stationId))
+    .leftJoin(member, eq(member.id, sale.memberId))
+    .where(
+      and(
+        eq(saleHold.operatorId, operatorId),
+        eq(saleHold.branchId, branchId),
+        isNull(saleHold.releasedAt),
+        eq(sale.status, 'tendering'),
+        lt(sale.businessDate, date),
+      ),
+    )
+    .orderBy(asc(saleHold.heldAt))
+    .limit(200);
+  const rows = [...carried, ...ofTheDay];
   const ids = rows.map((r) => r.id);
   const money = await moneyOf(db, ids);
   const holds = ids.length
@@ -461,17 +518,32 @@ export async function openSalesOfDay(
         .where(and(inArray(saleHold.saleId, ids), isNull(saleHold.releasedAt)))
     : [];
   const holdOf = new Map(holds.map((h) => [h.saleId, h]));
+  const kindsOf = new Map<string, Set<string>>();
+  if (ids.length) {
+    const lines = await db
+      .select({ saleId: saleLine.saleId, kind: saleLine.kind })
+      .from(saleLine)
+      .where(inArray(saleLine.saleId, ids));
+    for (const line of lines) {
+      const kinds = kindsOf.get(line.saleId) ?? new Set<string>();
+      kinds.add(line.kind);
+      kindsOf.set(line.saleId, kinds);
+    }
+  }
   const out: EodOpenSale[] = [];
   for (const r of rows) {
     const paid = (money.get(r.id) ?? NO_MONEY).paidSatang;
     const hold = holdOf.get(r.id);
     if (!hold && paid <= 0) continue;
+    const kinds = [...(kindsOf.get(r.id) ?? [])];
     out.push({
       saleId: r.id,
       kind: heldSaleKindOf(paid),
       label: hold?.label ?? r.memberNickname ?? r.memberName ?? 'Walk-in',
       held: !!hold,
       stationName: r.stationName,
+      counter: kinds.length > 0 && kinds.every((k) => COUNTER_ONLY_KINDS.has(k)) ? 'other' : 'ticket',
+      carriedFrom: r.businessDate < date ? r.businessDate : null,
       grossSatang: r.grossSatang,
       paidSatang: paid,
       balanceSatang: Math.max(0, r.grossSatang - paid),
@@ -499,7 +571,9 @@ export interface HeldMidnightSummary extends Record<string, unknown> {
   alertsCleared: number;
 }
 
-const partPaidAlertKey = (branchId: string): string => `sales.part_paid:${branchId}`;
+/** The alert's category, as an alert recipient is set up for it. */
+export const PART_PAID_ALERT_CATEGORY = 'sales.part_paid';
+const partPaidAlertKey = (branchId: string): string => `${PART_PAID_ALERT_CATEGORY}:${branchId}`;
 
 /**
  * `job:sales.held_midnight` — A HELD SALE NOBODY CAME BACK FOR.
@@ -516,14 +590,19 @@ const partPaidAlertKey = (branchId: string): string => `sales.part_paid:${branch
  *     branch's alert names how many wait for the manager; the End of Day
  *     refuses to close over it until it is resolved.
  *
- * A branch whose flagged sales are all resolved closes its own alert. Each
- * sale is its own transaction, so one refusal never holds up the rest.
+ * A branch whose flagged sales are all resolved closes its own alert. The
+ * alert goes out through the alert routing (`deliverRoutedAlert`, as the
+ * watchdog sends its own) when it opens, and its all-clear when it closes
+ * after somebody was told, so a recipient set up for `sales.part_paid` hears
+ * of it. Each sale is its own transaction, so one refusal never holds up the
+ * rest.
  */
 export async function runHeldSalesMidnight(
   db: Db,
   env: Pick<Env, 'ALERT_FLAP_WINDOW_S'>,
   now: Date = new Date(),
   log?: FastifyBaseLogger,
+  channels: AlertChannel[] = [],
 ): Promise<HeldMidnightSummary> {
   const open = await db
     .select({ hold: saleHold, timezone: branch.timezone })
@@ -610,24 +689,37 @@ export async function runHeldSalesMidnight(
   }
   for (const [branchId, bucket] of byBranch) {
     const n = bucket.saleIds.length;
+    const key = partPaidAlertKey(branchId);
+    const subject = 'Partly paid sales waiting for the manager';
+    const summaryLine =
+      `${n} partly paid sale${n === 1 ? ' was' : 's were'} still in Held sales at midnight: ` +
+      `${bucket.labels.slice(0, 5).join(', ')}${n > 5 ? ` and ${n - 5} more` : ''}. ` +
+      'Take the balance or refund what was paid; End of Day cannot close until then.';
     const raised = await raiseAlert(
       db,
       {
-        key: partPaidAlertKey(branchId),
-        category: 'sales.part_paid',
+        key,
+        category: PART_PAID_ALERT_CATEGORY,
         severity: 'warning',
-        subject: 'Partly paid sales waiting for the manager',
-        summary:
-          `${n} partly paid sale${n === 1 ? ' was' : 's were'} still in Held sales at midnight: ` +
-          `${bucket.labels.slice(0, 5).join(', ')}${n > 5 ? ` and ${n - 5} more` : ''}. ` +
-          'Take the balance or refund what was paid; End of Day cannot close until then.',
+        subject,
+        summary: summaryLine,
         detail: { saleIds: bucket.saleIds.slice(0, 20) },
         operatorId: bucket.operatorId,
         branchId,
       },
       { flapWindowSeconds: env.ALERT_FLAP_WINDOW_S },
     );
-    if (raised.outcome === 'opened') summary.alertsOpened += 1;
+    // Only a new condition is sent, as the watchdog does: a repeat is the same
+    // sales still waiting, and the alert row already says so.
+    if (raised.outcome === 'opened') {
+      summary.alertsOpened += 1;
+      await deliverRoutedAlert(
+        db,
+        channels,
+        { alertId: raised.id, key, category: PART_PAID_ALERT_CATEGORY, severity: 'warning', subject, summary: summaryLine, event: 'opened' },
+        log,
+      );
+    }
   }
   const everFlagged = await db
     .selectDistinct({ branchId: saleHold.branchId })
@@ -635,7 +727,26 @@ export async function runHeldSalesMidnight(
     .where(isNotNull(saleHold.flaggedAt));
   for (const { branchId } of everFlagged) {
     if (byBranch.has(branchId)) continue;
-    if (await resolveAlert(db, partPaidAlertKey(branchId), 'resolved')) summary.alertsCleared += 1;
+    const key = partPaidAlertKey(branchId);
+    const resolved = await resolveAlert(db, key, 'resolved');
+    if (!resolved) continue;
+    summary.alertsCleared += 1;
+    if (resolved.wasNotified) {
+      await deliverRoutedAlert(
+        db,
+        channels,
+        {
+          alertId: resolved.id,
+          key,
+          category: PART_PAID_ALERT_CATEGORY,
+          severity: 'info',
+          subject: 'Partly paid sales resolved',
+          summary: 'Every partly paid sale flagged at midnight has been paid or refunded.',
+          event: 'resolved',
+        },
+        log,
+      );
+    }
   }
   return summary;
 }

@@ -25618,6 +25618,9 @@ export interface paths {
                                     label: string;
                                     held: boolean;
                                     stationName: string | null;
+                                    /** @enum {string} */
+                                    counter: "ticket" | "other";
+                                    carriedFrom: string | null;
                                     grossSatang: number;
                                     paidSatang: number;
                                     balanceSatang: number;
@@ -25850,6 +25853,9 @@ export interface paths {
                                     label: string;
                                     held: boolean;
                                     stationName: string | null;
+                                    /** @enum {string} */
+                                    counter: "ticket" | "other";
+                                    carriedFrom: string | null;
                                     grossSatang: number;
                                     paidSatang: number;
                                     balanceSatang: number;
@@ -26140,6 +26146,9 @@ export interface paths {
                                     label: string;
                                     held: boolean;
                                     stationName: string | null;
+                                    /** @enum {string} */
+                                    counter: "ticket" | "other";
+                                    carriedFrom: string | null;
                                     grossSatang: number;
                                     paidSatang: number;
                                     balanceSatang: number;

@@ -2,18 +2,29 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   alert,
+  alertDelivery,
   auditLog,
   band,
   branch,
   member,
+  paymentAttempt,
   sale,
   saleHold,
   station,
   ticketPackage,
 } from '@oto/db';
-import { HELD_SALE_NOT_COLLECTED, addDaysToIsoDate, isoDateInTz, newId, type EndOfDayRecord } from '@oto/shared';
+import {
+  HELD_SALE_NOT_COLLECTED,
+  addDaysToIsoDate,
+  carriedFromLabel,
+  isoDateInTz,
+  newId,
+  type EndOfDayRecord,
+} from '@oto/shared';
+import type { AlertChannel, AlertMessage } from '../src/services/ops';
 import { runHeldSalesMidnight } from '../src/services/sale-holds';
 import {
+  ADMIN,
   BRANCH_MANAGER,
   RECEPTION,
   createTestContext,
@@ -37,6 +48,9 @@ import {
  */
 
 let ctx: TestContext;
+let operatorId: string;
+let chalongBranch: string;
+let chalongTill: string;
 let till1Cookie: string;
 let till2Cookie: string;
 let managerCookie: string;
@@ -81,6 +95,34 @@ async function saleRow(saleId: string) {
 async function bandsOf(saleId: string) {
   return ctx.db.select().from(band).where(eq(band.saleId, saleId));
 }
+/** A tender the counter started, written as the payment service writes one. */
+async function attemptOn(saleId: string, status: 'sent_to_terminal' | 'approved', amountSatang: number): Promise<string> {
+  const row = await saleRow(saleId);
+  const id = newId();
+  await ctx.db.insert(paymentAttempt).values({
+    id,
+    operatorId,
+    branchId,
+    saleId,
+    stationId: row.stationId,
+    businessDate: row.businessDate,
+    method: 'card',
+    status,
+    amountSatang,
+  });
+  return id;
+}
+
+/** An alert channel that keeps what it was given, as a recipient would receive it. */
+const sent: AlertMessage[] = [];
+const capture: AlertChannel = {
+  name: 'capture',
+  async deliver(message) {
+    sent.push(message);
+    return { target: 'capture' };
+  },
+};
+
 async function auditsOf(saleId: string, action: string) {
   return ctx.db
     .select()
@@ -99,7 +141,15 @@ beforeAll(async () => {
   const branches = await ctx.db.select().from(branch);
   const hkt = branches.find((row) => row.code === 'hkt-central') ?? branches[0]!;
   branchId = hkt.id;
+  operatorId = hkt.operatorId;
   timezone = hkt.timezone;
+  const chalong = branches.find((row) => row.id !== hkt.id && row.operatorId === hkt.operatorId)!;
+  const [otherTill] = await ctx.db
+    .select()
+    .from(station)
+    .where(and(eq(station.branchId, chalong.id), eq(station.kind, 'till')));
+  chalongBranch = chalong.id;
+  chalongTill = otherTill!.id;
   const tills = await ctx.db
     .select()
     .from(station)
@@ -196,6 +246,25 @@ describe('Hold sale: parked under a name, nothing issued, resumed at another til
     expect((await heldList(till1Cookie)).json().sales.map((s: { saleId: string }) => s.saleId)).not.toContain(saleId);
   });
 
+  it('pressed again on the till that took it back, it is answered the same — never stranded off the list', async () => {
+    // The first answer was lost and the screen could not open the sale: a new
+    // press at the same till is the same resume, not a refusal naming itself.
+    const again = await resume(till2Cookie, saleId, { actionId: newId() });
+    expect(again.statusCode, again.body).toBe(200);
+    expect(again.json()).toMatchObject({ replay: true, saleId, stationId: till2, kind: 'held', balanceSatang: owed });
+    expect(await auditsOf(saleId, 'sale.hold.resume')).toHaveLength(1);
+    // After a reload, the till it went to lists it as taken back there, by whom:
+    // the left-behind card offers it to that account to continue.
+    const open = await ctx.app.inject({
+      method: 'GET',
+      url: `/sales?branchId=${branchId}&stationId=${till2}&status=tendering`,
+      headers: { cookie: till2Cookie },
+    });
+    const listed = open.json().sales.find((s: { id: string }) => s.id === saleId);
+    const [resumedBy] = await auditsOf(saleId, 'sale.hold.resume');
+    expect(listed).toMatchObject({ hold: null, resumedFromHold: { stationId: till2, accountId: resumedBy!.actorAccountId } });
+  });
+
   it('bands and the receipt come when the balance is paid, at the till that took it', async () => {
     const res = await payCash(till2Cookie, saleId, owed);
     expect(res.statusCode, res.body).toBe(200);
@@ -253,16 +322,99 @@ describe('Save as partly paid: the balance only, and nothing issued until it is 
   });
 
   it('resumed at another till, it asks for the balance only; bands come at zero', async () => {
-    const res = await resume(till2Cookie, saleId);
+    const press = `resume-${saleId}`;
+    const res = await resume(till2Cookie, saleId, { actionId: press });
     expect(res.statusCode, res.body).toBe(200);
-    expect(res.json()).toMatchObject({ kind: 'part_paid', paidSatang: part, balanceSatang: owed - part });
+    expect(res.json()).toMatchObject({ replay: false, kind: 'part_paid', paidSatang: part, balanceSatang: owed - part });
+    // The same press again, after a lost answer, answers the resume it made.
+    const replay = await resume(till2Cookie, saleId, { actionId: press });
+    expect(replay.statusCode, replay.body).toBe(200);
+    expect(replay.json()).toMatchObject({ replay: true, stationId: till2, paidSatang: part, balanceSatang: owed - part });
+    expect(await auditsOf(saleId, 'sale.hold.resume')).toHaveLength(1);
     const tooMuch = await payCash(till2Cookie, saleId, owed);
-    expect(tooMuch.statusCode).toBeGreaterThanOrEqual(400);
+    expect(tooMuch.statusCode).toBe(400);
+    expect(tooMuch.json().error).toMatchObject({
+      code: 'BAD_REQUEST',
+      message: 'That tender is more than this sale still owes',
+      details: { amountSatang: owed, outstandingSatang: owed - part },
+    });
     expect(await bandsOf(saleId)).toHaveLength(0);
     const rest = await payCash(till2Cookie, saleId, owed - part);
     expect(rest.statusCode, rest.body).toBe(200);
     expect(rest.json().finalised).toBe(true);
     expect((await bandsOf(saleId)).length).toBeGreaterThan(0);
+  });
+});
+
+describe('every other refusal names its reason', () => {
+  it('a payment still in progress: the sale is not held until it is finished or cancelled', async () => {
+    const { saleId } = await ringUp();
+    const attemptId = await attemptOn(saleId, 'sent_to_terminal', 10_000);
+    const res = await hold(till1Cookie, saleId, { kind: 'held', label: 'ZZ TEST Khun Ida' });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().error).toMatchObject({
+      code: 'PAYMENT_IN_FLIGHT',
+      message: 'A payment on this sale is still in progress — finish or cancel it before holding the sale.',
+    });
+    expect(await ctx.db.select().from(saleHold).where(eq(saleHold.saleId, saleId))).toHaveLength(0);
+    await ctx.db.update(paymentAttempt).set({ status: 'cancelled' }).where(eq(paymentAttempt.id, attemptId));
+    expect((await post(till1Cookie, `/sales/${saleId}/void`, { reason: 'ZZ TEST tidy' })).statusCode).toBe(200);
+  });
+
+  it('a sale that owes nothing is completed, not held', async () => {
+    const { saleId, owed } = await ringUp();
+    const attemptId = await attemptOn(saleId, 'approved', owed);
+    const res = await hold(till1Cookie, saleId, { kind: 'part_paid', label: 'ZZ TEST Khun Jo' });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().error).toMatchObject({
+      code: 'SALE_OWES_NOTHING',
+      message: 'This sale owes nothing — complete it instead of holding it.',
+    });
+    // Tidy: the stand-in tender goes, so the day's open sales are the test's own.
+    await ctx.db.update(paymentAttempt).set({ status: 'declined' }).where(eq(paymentAttempt.id, attemptId));
+    expect((await post(till1Cookie, `/sales/${saleId}/void`, { reason: 'ZZ TEST tidy' })).statusCode).toBe(200);
+  });
+
+  it('a resume needs a till, at the sale’s own branch', async () => {
+    const { saleId } = await ringUp();
+    expect((await hold(till1Cookie, saleId, { kind: 'held', label: 'ZZ TEST Khun Kim' })).statusCode).toBe(200);
+
+    const noTill = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    const bare = await resume(noTill, saleId);
+    expect(bare.statusCode).toBe(409);
+    expect(bare.json().error).toMatchObject({
+      code: 'NO_STATION',
+      message: 'Take a till before resuming a held sale — its receipt and bands print at the till that takes the balance.',
+    });
+
+    const admin = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+    const moved = await ctx.app.inject({
+      method: 'PUT',
+      url: '/me/session/branch',
+      headers: { cookie: admin },
+      payload: { branchId: chalongBranch },
+    });
+    expect(moved.statusCode, moved.body).toBe(200);
+    await takeStation(ctx.app, admin, chalongTill);
+    const elsewhere = await resume(admin, saleId);
+    expect(elsewhere.statusCode).toBe(409);
+    expect(elsewhere.json().error).toMatchObject({
+      code: 'STATION_ELSEWHERE',
+      message: 'This held sale belongs to another branch — resume it from a till at that branch.',
+    });
+    // Neither refusal took it off the list or moved it.
+    const [still] = await ctx.db.select().from(saleHold).where(eq(saleHold.saleId, saleId));
+    expect(still!.releasedAt).toBeNull();
+    expect((await saleRow(saleId)).stationId).toBe(till1);
+    expect((await post(till1Cookie, `/sales/${saleId}/void`, { reason: 'ZZ TEST tidy' })).statusCode).toBe(200);
+  });
+
+  it('a sale the platform does not have — a counter box sale not yet handed over — says so', async () => {
+    const res = await hold(till1Cookie, newId(), { kind: 'held', label: 'ZZ TEST Khun Lee' });
+    expect(res.statusCode).toBe(404);
+    expect(res.json().error.message).toBe(
+      'This sale is not on the platform yet — a sale rung up on the counter box while the connection was down cannot be held. Take the payment now.',
+    );
   });
 });
 
@@ -314,7 +466,7 @@ describe('midnight: a held sale is voided as not collected, a part-paid one is f
 
   it('at 00:00 in the branch the held sale is voided "not collected" by the platform, and logged', async () => {
     const midnight = nextMidnight(heldAt);
-    const summary = await runHeldSalesMidnight(ctx.db, { ALERT_FLAP_WINDOW_S: 300 }, midnight);
+    const summary = await runHeldSalesMidnight(ctx.db, { ALERT_FLAP_WINDOW_S: 300 }, midnight, undefined, [capture]);
     expect(summary.voided).toBeGreaterThanOrEqual(1);
     const voided = await saleRow(heldId);
     expect(voided).toMatchObject({ status: 'voided', voidReason: HELD_SALE_NOT_COLLECTED, voidedByAccountId: null });
@@ -340,6 +492,12 @@ describe('midnight: a held sale is voided as not collected, a part-paid one is f
       .from(alert)
       .where(and(eq(alert.key, `sales.part_paid:${branchId}`), isNull(alert.resolvedAt)));
     expect(raised!.summary).toContain('ZZ TEST Khun Finn');
+    // Sent through the alert routing, as the watchdog sends its own, once.
+    const opened = sent.filter((m) => m.category === 'sales.part_paid' && m.event === 'opened');
+    expect(opened).toHaveLength(1);
+    expect(opened[0]).toMatchObject({ alertId: raised!.id, key: `sales.part_paid:${branchId}`, severity: 'warning' });
+    const deliveries = await ctx.db.select().from(alertDelivery).where(eq(alertDelivery.alertId, raised!.id));
+    expect(deliveries.map((d) => [d.channel, d.event, d.status])).toContainEqual(['capture', 'opened', 'sent']);
     // A second tick an hour later flags nothing twice.
     const later = await runHeldSalesMidnight(
       ctx.db,
@@ -349,9 +507,53 @@ describe('midnight: a held sale is voided as not collected, a part-paid one is f
     expect(later.flagged).toBe(0);
     expect(await auditsOf(partId, 'sale.hold.flag')).toHaveLength(1);
   });
+
+  it('once the part-paid sale is refunded, the alert resolves and the all-clear is sent', async () => {
+    const refund = await ctx.app.inject({
+      method: 'POST',
+      url: `/sales/${partId}/refunds`,
+      headers: { cookie: managerCookie, 'idempotency-key': newId() },
+      payload: { mode: 'whole', reason: 'ZZ TEST customer did not return', actionId: newId() },
+    });
+    expect(refund.statusCode, refund.body).toBe(200);
+    const summary = await runHeldSalesMidnight(
+      ctx.db,
+      { ALERT_FLAP_WINDOW_S: 300 },
+      new Date(nextMidnight(heldAt).getTime() + 7_200_000),
+      undefined,
+      [capture],
+    );
+    expect(summary.alertsCleared).toBe(1);
+    const open = await ctx.db
+      .select()
+      .from(alert)
+      .where(and(eq(alert.key, `sales.part_paid:${branchId}`), isNull(alert.resolvedAt)));
+    expect(open).toHaveLength(0);
+    expect(sent.filter((m) => m.category === 'sales.part_paid' && m.event === 'resolved')).toHaveLength(1);
+  });
 });
 
 describe('End of Day', () => {
+  let gailId: string;
+  let hanaId: string;
+  let closeDate: string;
+
+  const closeDay = () =>
+    ctx.app.inject({
+      method: 'POST',
+      url: `/branches/${branchId}/end-of-day/close`,
+      headers: { cookie: managerCookie, 'idempotency-key': newId() },
+      payload: {
+        date: closeDate,
+        actuals: [],
+        countedSatang: null,
+        floatLeftSatang: null,
+        // Whoever the day's bands left counted inside is not this test's subject.
+        override: { reason: 'ZZ TEST rehearsal day' },
+      },
+    });
+
+
   it('shows the held and part-paid counts, and refuses to close over a part-paid sale with its reason', async () => {
     const { saleId } = await ringUp();
     await payCash(till1Cookie, saleId, 35_000);
@@ -384,5 +586,54 @@ describe('End of Day', () => {
     expect(error.message).toMatch(/^End of Day cannot close: \d+ sales? (is|are) partly paid — /);
     expect(error.message).toContain('ZZ TEST Khun Gail (in Held sales), ฿350 paid, balance ฿');
     expect(error.message).toContain('Take the balance or refund what was paid, from Held sales on a till, then close the day.');
+    gailId = saleId;
+    closeDate = date;
+  });
+
+  it('a part-paid sale still held from an earlier day stands in the way too, named with its day', async () => {
+    const { saleId } = await ringUp();
+    await payCash(till1Cookie, saleId, 10_000);
+    await hold(till1Cookie, saleId, { kind: 'part_paid', label: 'ZZ TEST Khun Hana' });
+    const yesterday = addDaysToIsoDate(closeDate, -1);
+    // Parked on the day before, which was never closed.
+    await ctx.db.update(sale).set({ businessDate: yesterday }).where(eq(sale.id, saleId));
+    hanaId = saleId;
+
+    const day = await ctx.app.inject({
+      method: 'GET',
+      url: `/branches/${branchId}/end-of-day?date=${closeDate}`,
+      headers: { cookie: managerCookie },
+    });
+    const row = (day.json() as EndOfDayRecord).openSales!.rows.find((r) => r.saleId === saleId);
+    expect(row).toMatchObject({ kind: 'part_paid', held: true, carriedFrom: yesterday, counter: 'ticket' });
+
+    const close = await closeDay();
+    expect(close.statusCode).toBe(409);
+    expect(close.json().error.code).toBe('PART_PAID_SALES');
+    expect(close.json().error.message).toContain(
+      `ZZ TEST Khun Hana (in Held sales since ${carriedFromLabel(yesterday)}), ฿100 paid, balance ฿`,
+    );
+  });
+
+  it('once each part-paid sale is paid or refunded, Close Day goes through', async () => {
+    // Khun Gail comes back: the balance is taken at another till.
+    const back = await resume(till2Cookie, gailId);
+    expect(back.statusCode, back.body).toBe(200);
+    const owed = back.json().balanceSatang as number;
+    const paid = await payCash(till2Cookie, gailId, owed);
+    expect(paid.statusCode, paid.body).toBe(200);
+    expect(paid.json().finalised).toBe(true);
+    // Khun Hana does not: what was paid is refunded the normal way.
+    const refund = await ctx.app.inject({
+      method: 'POST',
+      url: `/sales/${hanaId}/refunds`,
+      headers: { cookie: managerCookie, 'idempotency-key': newId() },
+      payload: { mode: 'whole', reason: 'ZZ TEST customer cancelled', actionId: newId() },
+    });
+    expect(refund.statusCode, refund.body).toBe(200);
+
+    const close = await closeDay();
+    expect(close.statusCode, close.body).toBe(200);
+    expect((close.json() as EndOfDayRecord).closedAt).toBeTruthy();
   });
 });
