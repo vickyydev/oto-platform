@@ -21,9 +21,17 @@ the till; below it the phone till has no built-in display pane).
 | `s745-1024-th.png`, `s745-1024-ru.png`, `s745-1024-en.png` | 1024 | Thai, Russian, English |
 | `s745-768-th.png`, `s745-768-ru.png`, `s745-768-en.png` | 768 | Thai, Russian, English |
 
-At 768 px in Thai the park's name and `คำสั่งซื้อของคุณ` each take two lines; both
-are whole and uncovered. Every other display screen (membership, welcome, details,
-payment, thank you) keeps the button in its corner, where its heading is centred
+At 768 px, in every language shown, the park's name and the order heading each take
+two lines: `Oto Play / Park` and `Your / Order` in English, `Oto Play / Park` and
+`Ваш / заказ` in Russian, the Thai name and `คำสั่งซื้อของคุณ` in Thai. All of them are
+whole and uncovered. The display pane is about 384 px wide there, and the button now
+takes its own room in the header row instead of floating over the heading, so English
+and Russian most likely fit on one line at this width before the change (reasoned from
+the pane width, not measured on the earlier build). At 1024 and 1440 px every language
+keeps the name and heading on one line each.
+
+Every other display screen (membership, welcome, details, payment, thank you) keeps
+the button in its corner, where its heading is centred
 (`apps/pos/test/s745-display-language-button.test.ts`).
 
 The `Reception Till 1 is yours` notice in the lower right is the till's own station
