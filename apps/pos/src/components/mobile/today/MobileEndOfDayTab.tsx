@@ -7,6 +7,8 @@ import { CashMovementList } from '@/components/eod/CashMovementList';
 import { EodReceiptCard } from '@/components/eod/EodReceiptCard';
 import { ProvisionalBanner } from '@/components/eod/ProvisionalBanner';
 import { StrandedList } from '@/components/eod/StrandedList';
+import { OpenSalesCard } from '@/components/eod/OpenSalesCard';
+import { partPaidCloseRefusal } from '@oto/shared';
 import { SettlementPanel } from '@/components/eod/SettlementPanel';
 import { useEndOfDay } from '@/components/eod/useEndOfDay';
 import {
@@ -98,7 +100,20 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
   const provisional = readOnly ? [] : (apiRecord.provisional ?? []);
   const stranded = readOnly ? [] : (apiRecord.stranded ?? []);
   const canOverride = can('pos:cash:approve');
-  const closeBlocked = provisional.length > 0 || (stranded.length > 0 && !(canOverride && overrideReason.trim()));
+  // SCRUM-774 — a part-paid sale of the day refuses the close until it is resolved.
+  const partPaidRefusal = readOnly ? null : partPaidCloseRefusal(apiRecord.openSales?.rows ?? []);
+  const closeBlocked =
+    provisional.length > 0 || partPaidRefusal !== null || (stranded.length > 0 && !(canOverride && overrideReason.trim()));
+  /** Why Close Day is shut, in words beside it (the owner's rule: never a dead button). */
+  const closeBlockedReason = provisional.length > 0
+    ? 'Close Day waits until every box has caught up — see the provisional notice above.'
+    : partPaidRefusal
+      ? partPaidRefusal
+      : stranded.length > 0 && !(canOverride && overrideReason.trim())
+        ? canOverride
+          ? 'Resolve everyone still counted inside, or give a reason to close over them.'
+          : 'Resolve everyone still counted inside, or ask a manager to close the day.'
+        : null;
 
   return (
     <div className="space-y-3 pb-4">
@@ -127,6 +142,8 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
         />
       )}
       <ProvisionalBanner compact boxes={provisional} onRecheck={() => void recheck()} />
+      {/* SCRUM-774 — the day's held and part-paid sales */}
+      {!readOnly && <OpenSalesCard openSales={apiRecord.openSales} />}
 
       {/* Summary verdict */}
       <ReconSummary record={record} />
@@ -363,6 +380,11 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
       {!readOnly && closeError && (
         <p role="alert" className="text-xs text-amber-600">
           {closeError}
+        </p>
+      )}
+      {!readOnly && closeBlockedReason && !closeError && (
+        <p role="status" className="text-xs text-amber-600" data-testid="close-day-blocked-reason">
+          {closeBlockedReason}
         </p>
       )}
       {!readOnly && (

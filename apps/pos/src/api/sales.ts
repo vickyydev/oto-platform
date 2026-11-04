@@ -574,6 +574,12 @@ export interface ApiSale {
   soldBy?: { accountId: string; name: string | null } | null;
   /** The till's name, on a list row. */
   stationName?: string | null;
+  /**
+   * SCRUM-774 — the sale waits in the branch's Held sales list, on a list row.
+   * The left-behind card never offers such a sale back to its screen: it is
+   * resumed from Held sales (`lib/leftBehindSale.ts`).
+   */
+  hold?: { holdId: string; kind: 'held' | 'part_paid'; label: string } | null;
 }
 
 export interface SaleCommitResult {

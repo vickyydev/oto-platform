@@ -10,7 +10,7 @@ import { takeBookingRedeemHandoff, takeDropOffHandoff } from '@/lib/dropoffHando
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { childReviewPatch, useChildReviewSave, useTicketDisplay } from '@/lib/displaySession';
 import { ChildReviewPromptSchema, childReviewAge, ConsentActionSchema, ConsentPromptSchema, consentActionAllowed,
-  newId, stockSizeName, type ChildReviewPrompt, type ConsentPrompt } from '@oto/shared';
+  newId, stockSizeName, type ChildReviewPrompt, type ConsentPrompt, type HeldSale, type HeldSaleKind } from '@oto/shared';
 import { useCustomerTheme } from '@/lib/themePref';
 import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines } from '@/lib/pricing';
 import { resolveRateToday } from '@/lib/pricingMode';
@@ -45,7 +45,7 @@ import { useOperator } from '@/auth/OperatorContext';
 import { toast } from '@/hooks/use-toast';
 import { confirmVisitChildren, membersApi } from '@/api/platform';
 import { childrenApi, lookupMember } from '@/api/members';
-import { ApiError, isMissingRoute } from '@/api/client';
+import { ApiError, NetworkError, idemKey, isMissingRoute } from '@/api/client';
 import {
   looksLikeBookingQr,
   typedBookingQr,
@@ -73,6 +73,7 @@ import {
   promoChargeSatang,
   quotedPricing,
   refusedPromoCodes,
+  salesApi,
   toSatang,
   type ApiSale,
   type CartIdentity,
@@ -114,7 +115,10 @@ import { PriceSourceNote, SaleNotSavedNotice, SaleWriteFailure } from '@/compone
 import { useLeftBehindSales } from '@/lib/leftBehindSale';
 import { rebuildResumedSale } from '@/lib/resumeSale';
 import { forgetSaleOnScreen, rememberSaleOnScreen } from '@/lib/saleOnScreen';
-import { getSale } from '@/api/history';
+import { getSale, newActionId, refundSale } from '@/api/history';
+import { heldSalesApi } from '@/api/heldSales';
+import { HeldSalesPanel, HoldSaleButtons, HoldSaleDialog, type HeldSaleActions } from '@/components/till/HeldSales';
+import { bahtLabel, holdButtonReasons, useHeldSales } from '@/lib/heldSales';
 import type { CartQuoteState } from '@/lib/cartQuote';
 import { formatVoucherStamp } from '@/lib/tillVoucher';
 import { apiChildToSavedChild, apiMemberToMember } from '@/api/mappers';
@@ -313,6 +317,17 @@ export default function Till() {
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, [rungUpUnpaid]);
+  /** SCRUM-774 — the branch's Held sales, and this screen's presses on them. */
+  const heldSales = useHeldSales({
+    branchId: apiBranchIdForSlug(branch.id) ?? null,
+    enabled: !locked && can('pos:sale:read'),
+  });
+  const [holdKind, setHoldKind] = useState<HeldSaleKind | null>(null);
+  const [holdBusy, setHoldBusy] = useState(false);
+  const [holdError, setHoldError] = useState<string | null>(null);
+  const holdActionRef = useRef<string | null>(null);
+  const [heldBusyId, setHeldBusyId] = useState<string | null>(null);
+  const [heldRefusal, setHeldRefusal] = useState<string | null>(null);
   const leftBehind = useLeftBehindSales({
     branchId: apiBranchIdForSlug(branch.id),
     stationId: station?.stationId ?? null,
@@ -332,7 +347,14 @@ export default function Till() {
    * any other unpaid sale here is offered the void alone, as before. The
    * order of a resumed sale cannot be changed: Pay it, or Cancel voids it.
    */
-  const [resumed, setResumed] = useState<{ saleId: string; occurredAt: string; cart: CartQuoteState; eventPass: boolean } | null>(null);
+  const [resumed, setResumed] = useState<{
+    saleId: string;
+    occurredAt: string;
+    cart: CartQuoteState;
+    eventPass: boolean;
+    /** SCRUM-774 — taken back from Held sales rather than after a reload. */
+    held?: { label: string; note: string | null; paidSatang: number };
+  } | null>(null);
   const resumingRef = useRef(false);
   const RESUMED_ORDER_FROZEN =
     'This sale was rung up before the page reloaded. Take the payment, or Cancel to void it and ring up a new order.';
@@ -831,7 +853,10 @@ export default function Till() {
    * The till then goes straight to the payment screen. A sale no longer open
    * — paid or voided since — is not resumed, and the card for it goes.
    */
-  const resumeSale = async (saleId: string): Promise<void> => {
+  const resumeSale = async (
+    saleId: string,
+    fromHold?: { label: string; note: string | null; paidSatang: number },
+  ): Promise<void> => {
     const stationId = station?.stationId;
     if (!stationId || !operator || resumingRef.current || locked) return;
     resumingRef.current = true;
@@ -885,7 +910,7 @@ export default function Till() {
         engineVersion: sale.engineVersion ?? rebuilt.cart.quote.engineVersion,
       };
       if (!saleWriter.adopt(adopted)) return;
-      setResumed({ saleId, occurredAt: sale.occurredAt, cart: rebuilt.cart, eventPass: rebuilt.eventPass });
+      setResumed({ saleId, occurredAt: sale.occurredAt, cart: rebuilt.cart, eventPass: rebuilt.eventPass, ...(fromHold ? { held: fromHold } : {}) });
       setTier(rebuilt.tier);
       setLines(rebuilt.lines);
       setDiscounts(rebuilt.discounts);
@@ -3073,6 +3098,135 @@ export default function Till() {
     ? { ...paymentStage.display, saleId: completionRetry.sale.id, status: 'paid' as const }
     : paymentStage.display;
 
+  /**
+   * SCRUM-774 — HOLD SALE AND SAVE AS PARTLY PAID, the payment step's two
+   * buttons, and the branch's Held sales list in the order panel.
+   *
+   * Holding parks the sale the platform already holds — nothing is written
+   * again and nothing is issued — under the customer's name or band, and this
+   * screen moves on to the next visitor. Every till at the branch lists it
+   * (`useHeldSales`); Resume takes it back to this till (the platform moves
+   * the sale here, so its receipt and bands print here) and then opens it on
+   * the payment screen exactly as a reloaded sale is opened (`resumeSale`),
+   * so only the balance is asked for and the bands come when it reaches zero.
+   * Each button that cannot be pressed says why underneath it, and each
+   * refusal is the platform's sentence.
+   */
+  const paidOnScreen = paymentStage.state.settlements.reduce((sum, part) => sum + part.amountSatang, 0);
+  const holdSaleId = saleWriter.committed?.id ?? paymentStage.state.saleId ?? null;
+  const holdReasons = holdButtonReasons({
+    saleId: holdSaleId,
+    online: paymentStage.online,
+    paymentInProgress:
+      paymentStage.busy || !paymentStage.canBack || completionRetry !== null ||
+      paymentStage.state.phase === 'pending' || paymentStage.state.phase === 'manual' ||
+      saleWriter.state.kind === 'writing' || saleWriter.state.kind === 'finalising',
+    paidSatang: paidOnScreen,
+    outstandingSatang: paymentStage.state.outstandingSatang,
+    canHold: can('pos:sale:update'),
+  });
+  const holdDefaultLabel =
+    resumed?.held?.label ?? (customerNickname.trim() || member?.nickname || '');
+
+  const confirmHold = async (label: string, note: string): Promise<void> => {
+    const kind = holdKind;
+    const saleId = holdSaleId;
+    if (!kind || !saleId || holdBusy) return;
+    setHoldBusy(true);
+    setHoldError(null);
+    const actionId = holdActionRef.current ?? idemKey();
+    holdActionRef.current = actionId;
+    try {
+      const answer = await heldSalesApi.hold(saleId, { kind, label, note: note || null, actionId });
+      holdActionRef.current = null;
+      setHoldKind(null);
+      toast({
+        title: kind === 'held' ? 'Sale held' : 'Saved as partly paid',
+        description:
+          kind === 'held'
+            ? `${answer.hold.label} — in Held sales on every till at this branch. Nothing was issued.`
+            : `${answer.hold.label} — ${bahtLabel(answer.hold.paidSatang)} paid, balance ${bahtLabel(answer.hold.balanceSatang)}. In Held sales on every till at this branch.`,
+      });
+      resetSale();
+      heldSales.refresh();
+    } catch (err) {
+      // A lost answer keeps its press, so the retry finds the hold it made;
+      // a refusal is final for that press, and the next one is a new press.
+      if (!(err instanceof NetworkError)) holdActionRef.current = null;
+      setHoldError(err instanceof Error ? err.message : 'The sale could not be held');
+    } finally {
+      setHoldBusy(false);
+    }
+  };
+
+  const saleOnThisScreen =
+    resumed !== null || lines.length > 0 || step !== 1 || saleWriter.state.kind !== 'idle';
+  const heldActionsFor = (sale: HeldSale): HeldSaleActions => ({
+    resumeReason: !can('pos:sale:update')
+      ? 'Your role cannot take payment — ask a manager.'
+      : !station?.stationId
+        ? 'Pick this till’s station first — the receipt and bands print here.'
+        : saleOnThisScreen
+          ? 'Finish or cancel the sale on screen first.'
+          : null,
+    voidReason:
+      sale.kind === 'held' && !can('pos:sale:void') ? 'Voiding needs the void permission — ask a manager.' : null,
+    refundReason:
+      sale.kind === 'part_paid' && !(can('pos:refund:create') && can('pos:refund:approve'))
+        ? 'A refund needs a manager’s approval — ask a manager to make it.'
+        : null,
+  });
+
+  const resumeFromHeld = async (sale: HeldSale): Promise<void> => {
+    const reason = heldActionsFor(sale).resumeReason;
+    if (reason) {
+      setHeldRefusal(reason);
+      return;
+    }
+    setHeldRefusal(null);
+    setHeldBusyId(sale.saleId);
+    try {
+      const answer = await heldSalesApi.resume(sale.saleId);
+      await resumeSale(sale.saleId, { label: answer.label, note: answer.note, paidSatang: answer.paidSatang });
+    } catch (err) {
+      setHeldRefusal(err instanceof Error ? err.message : 'The held sale could not be resumed');
+    } finally {
+      setHeldBusyId(null);
+      heldSales.refresh();
+    }
+  };
+
+  const voidFromHeld = async (sale: HeldSale, reason: string): Promise<void> => {
+    setHeldRefusal(null);
+    setHeldBusyId(sale.saleId);
+    try {
+      await salesApi.voidSale(sale.saleId, reason);
+      toast({ title: 'Held sale voided', description: `${sale.label} — ${reason}. It can never be paid.` });
+    } catch (err) {
+      setHeldRefusal(err instanceof Error ? err.message : 'The held sale could not be voided');
+    } finally {
+      setHeldBusyId(null);
+      heldSales.refresh();
+    }
+  };
+
+  const refundFromHeld = async (sale: HeldSale, reason: string): Promise<void> => {
+    setHeldRefusal(null);
+    setHeldBusyId(sale.saleId);
+    try {
+      const answer = await refundSale(sale.saleId, { mode: 'whole', reason, actionId: newActionId() });
+      toast({
+        title: 'Refunded and cancelled',
+        description: `${sale.label} — ${bahtLabel(answer.refund.amountSatang)} refunded (${answer.refund.number}). The sale is closed.`,
+      });
+    } catch (err) {
+      setHeldRefusal(err instanceof Error ? err.message : 'The refund could not be made');
+    } finally {
+      setHeldBusyId(null);
+      heldSales.refresh();
+    }
+  };
+
   const handleSelectPaymentMethod = (method: string) => {
     if (paymentStage.locked) return;
     setPendingPaymentMethod(method);
@@ -3504,6 +3658,14 @@ export default function Till() {
               onComplete={handleCompletePayment}
               onBack={handlePaymentBack}
               paymentStage={paymentStage}
+              holdControls={
+                <HoldSaleButtons
+                  holdReason={holdReasons.hold}
+                  partPaidReason={holdReasons.partPaid}
+                  onHold={() => { setHoldError(null); setHoldKind('held'); }}
+                  onSavePartPaid={() => { setHoldError(null); setHoldKind('part_paid'); }}
+                />
+              }
               busy={saleWriter.state.kind === 'writing' || saleWriter.state.kind === 'finalising'}
               busyLabel={saleWriter.state.kind === 'finalising' ? 'Recording the payment…' : undefined}
               notice={
@@ -3511,7 +3673,15 @@ export default function Till() {
                   state={saleWriter.state}
                   onRetry={handleRetrySaleWrite}
                   onDismiss={handlePaymentBack}
-                /> : resumed ? (
+                /> : resumed?.held ? (
+                  <div className="mb-6 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm" data-testid="resumed-held-notice">
+                    Resumed from Held sales: <span className="font-semibold">{resumed.held.label}</span>
+                    {resumed.held.note ? ` — “${resumed.held.note}”` : ''}.{' '}
+                    {resumed.held.paidSatang > 0
+                      ? `${bahtLabel(resumed.held.paidSatang)} already paid — take the balance. Bands and the receipt are issued when it is paid.`
+                      : 'Take the payment, hold it again, or Cancel to void it.'}
+                  </div>
+                ) : resumed ? (
                   <div className="mb-6 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm" data-testid="resumed-sale-notice">
                     Resumed after a reload: this sale was rung up at this till
                     {' '}{formatVoucherStamp(resumed.occurredAt, { time: true })}. Take the payment, or Cancel to void it.
@@ -3519,6 +3689,17 @@ export default function Till() {
                 ) : undefined
               }
             />}
+            <HoldSaleDialog
+              kind={holdKind ?? 'held'}
+              open={holdKind !== null}
+              defaultLabel={holdDefaultLabel}
+              paidSatang={paidOnScreen}
+              balanceSatang={paymentStage.state.outstandingSatang}
+              busy={holdBusy}
+              error={holdError}
+              onConfirm={(label, note) => void confirmHold(label, note)}
+              onClose={() => { setHoldKind(null); setHoldError(null); }}
+            />
             {completionRetry && (
               <div className="mx-6 mb-6 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
                 <p className="text-sm">Payment is recorded. Restore this order's staff, station and ticket setup to issue the receipt and bands.</p>
@@ -3707,6 +3888,18 @@ export default function Till() {
                     testId="left-behind-refusal"
                   />
                 )}
+                {/* SCRUM-774 — the branch's Held sales: resume, void a held one, refund a part-paid one. */}
+                <HeldSalesPanel
+                  held={heldSales}
+                  timeZone={branch.timezone}
+                  busyId={heldBusyId}
+                  refusal={heldRefusal}
+                  actionsFor={heldActionsFor}
+                  onResume={(sale) => void resumeFromHeld(sale)}
+                  onVoid={(sale, reason) => void voidFromHeld(sale, reason)}
+                  onRefund={(sale, reason) => void refundFromHeld(sale, reason)}
+                  onDismissRefusal={() => setHeldRefusal(null)}
+                />
               </div>
             }
           />

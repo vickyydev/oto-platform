@@ -52,6 +52,12 @@ interface StepPaymentProps {
   paymentStage?: PaymentStageController;
   /** SCRUM-732 — this sale is paid in one tender: no part amount is offered. */
   fixedAmount?: boolean;
+  /**
+   * SCRUM-774 — the ticket till's "Hold sale" and "Save as partly paid"
+   * (`HoldSaleButtons`), drawn above Back and Confirm. Callers without Held
+   * sales leave it unset and nothing changes for them.
+   */
+  holdControls?: ReactNode;
 }
 
 // Visual accent per method KIND (the tender list itself is configured in Admin).
@@ -89,7 +95,7 @@ const KIND_STYLE: Record<
   },
 };
 
-export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete, onBack, notice, busy, busyLabel, unpriced, nothingToPay, paymentStage, fixedAmount }: StepPaymentProps) {
+export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete, onBack, notice, busy, busyLabel, unpriced, nothingToPay, paymentStage, fixedAmount, holdControls }: StepPaymentProps) {
   const methods = getEnabledPaymentMethods();
   if (paymentStage) {
     selectedMethod = paymentStage.state.method;
@@ -168,6 +174,7 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
 
       {notice}
       {paymentStage && !unpriced && <PaymentTenderPanel stage={paymentStage} showSubmit={false} {...(fixedAmount ? { fixedAmount } : {})} />}
+      {holdControls}
 
       <div className="mt-auto pt-6 flex items-center justify-between gap-4">
         {/* While a gateway QR is pending, Back is the way out of it: the QR is

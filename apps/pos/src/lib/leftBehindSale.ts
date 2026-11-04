@@ -122,7 +122,8 @@ export function useLeftBehindSales(opts: {
       .then(({ sales: found }) => {
         if (cancelled) return;
         const listed = found
-          .filter((s) => s.status === 'tendering' && s.stationId === stationId && !ownsRef.current(s.id))
+          // SCRUM-774 — a held sale waits in Held sales, where any till takes it back.
+          .filter((s) => s.status === 'tendering' && s.stationId === stationId && !ownsRef.current(s.id) && !s.hold)
           .map((s) => ({
             saleId: s.id,
             stationName,

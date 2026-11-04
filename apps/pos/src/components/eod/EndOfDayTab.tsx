@@ -9,6 +9,7 @@ import { AmountInput } from '@/components/eod/AmountInput';
 import { EodReceiptCard } from '@/components/eod/EodReceiptCard';
 import { ProvisionalBanner } from '@/components/eod/ProvisionalBanner';
 import { StrandedList } from '@/components/eod/StrandedList';
+import { OpenSalesCard } from '@/components/eod/OpenSalesCard';
 import { SettlementPanel } from '@/components/eod/SettlementPanel';
 import { useEndOfDay } from '@/components/eod/useEndOfDay';
 import {
@@ -21,6 +22,7 @@ import {
   withNotes,
   withVouchers,
 } from '@/api/endOfDay';
+import { partPaidCloseRefusal } from '@oto/shared';
 import { useOperator } from '@/auth/OperatorContext';
 import { Lock, Vault } from 'lucide-react';
 
@@ -102,7 +104,20 @@ export function EndOfDayTab({ date, branch }: { date: string; branch: string }) 
   const provisional = readOnly ? [] : (apiRecord.provisional ?? []);
   const stranded = readOnly ? [] : (apiRecord.stranded ?? []);
   const canOverride = can('pos:cash:approve');
-  const closeBlocked = provisional.length > 0 || (stranded.length > 0 && !(canOverride && overrideReason.trim()));
+  // SCRUM-774 — a part-paid sale of the day refuses the close until it is resolved.
+  const partPaidRefusal = readOnly ? null : partPaidCloseRefusal(apiRecord.openSales?.rows ?? []);
+  const closeBlocked =
+    provisional.length > 0 || partPaidRefusal !== null || (stranded.length > 0 && !(canOverride && overrideReason.trim()));
+  /** Why Close Day is shut, in words beside it (the owner's rule: never a dead button). */
+  const closeBlockedReason = provisional.length > 0
+    ? 'Close Day waits until every box has caught up — see the provisional notice above.'
+    : partPaidRefusal
+      ? partPaidRefusal
+      : stranded.length > 0 && !(canOverride && overrideReason.trim())
+        ? canOverride
+          ? 'Resolve everyone still counted inside, or give a reason to close over them.'
+          : 'Resolve everyone still counted inside, or ask a manager to close the day.'
+        : null;
 
   return (
     <div className="space-y-4">
@@ -125,6 +140,8 @@ export function EndOfDayTab({ date, branch }: { date: string; branch: string }) 
         <EodReceiptCard receipt={apiRecord.receipt ?? null} reprinting={reprinting} error={reprintError} onReprint={() => void reprint()} />
       )}
       <ProvisionalBanner boxes={provisional} onRecheck={() => void recheck()} />
+      {/* SCRUM-774 — the day's held and part-paid sales */}
+      {!readOnly && <OpenSalesCard openSales={apiRecord.openSales} />}
 
       {/* Summary bar */}
       <ReconSummary record={record} />
@@ -245,6 +262,11 @@ export function EndOfDayTab({ date, branch }: { date: string; branch: string }) 
           {closeError && (
             <p role="alert" className="text-xs text-amber-600">
               {closeError}
+            </p>
+          )}
+          {closeBlockedReason && !closeError && (
+            <p role="status" className="max-w-xl text-right text-xs text-amber-600" data-testid="close-day-blocked-reason">
+              {closeBlockedReason}
             </p>
           )}
           <Button size="lg" className="h-12 px-8 gap-2" onClick={onClose} disabled={!operator || closing || closeBlocked}>
