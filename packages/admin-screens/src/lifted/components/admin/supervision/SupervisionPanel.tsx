@@ -366,7 +366,7 @@ export function SupervisionPanelWithPorts({ ports }: { ports: SupervisionPanelPo
 
         <div className="mt-5 flex flex-col gap-2">
           {/* Header row (desktop) */}
-          <div className="hidden gap-2 px-3 text-xs font-semibold uppercase tracking-wider text-foreground/40 sm:grid sm:grid-cols-[1fr_5rem_5rem_1fr_2.5rem]">
+          <div className="hidden gap-2 px-3 text-xs font-semibold uppercase tracking-wider text-foreground/40 sm:grid sm:grid-cols-[1fr_5rem_8rem_1fr_2.5rem]">
             <span>Label</span>
             <span>Min age</span>
             <span>Max age</span>
@@ -377,7 +377,7 @@ export function SupervisionPanelWithPorts({ ports }: { ports: SupervisionPanelPo
           {sorted.map((b) => (
             <div
               key={b.id}
-              className="grid grid-cols-1 gap-2 rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-3 py-3 sm:grid-cols-[1fr_5rem_5rem_1fr_2.5rem] sm:items-center sm:py-2"
+              className="grid grid-cols-1 gap-2 rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-3 py-3 sm:grid-cols-[1fr_5rem_8rem_1fr_2.5rem] sm:items-center sm:py-2"
             >
               <TextInput
                 value={b.label}
