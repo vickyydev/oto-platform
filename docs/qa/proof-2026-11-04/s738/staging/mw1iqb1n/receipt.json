@@ -1,0 +1,288 @@
+{
+  "unit": "SCRUM-738",
+  "source": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+  "startedAt": "2026-11-04T02:49:31.500Z",
+  "fixture": {
+    "name": "ZZ TEST SCRUM-738 mw1iqb1n",
+    "events": {
+      "pass": {
+        "id": "8a6cc02c-65b7-412a-a7a7-e05daefe6b53",
+        "title": "ZZ TEST SCRUM-738 mw1iqb1n pass",
+        "type": "workshop"
+      },
+      "party": {
+        "id": "47aa1ce8-9f33-42cc-a224-0999b54ee104",
+        "title": "ZZ TEST SCRUM-738 mw1iqb1n party",
+        "type": "birthday"
+      },
+      "mobile": {
+        "id": "941053e7-41dc-47f9-a279-760ffa71dbfa",
+        "title": "ZZ TEST SCRUM-738 mw1iqb1n mobile",
+        "type": "birthday"
+      }
+    },
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "stationId": "01a1a476-6469-710b-867f-6b8ac3a8db61",
+    "displayId": "01a1a477-3e88-7cbf-b405-08e10c3f1cc8"
+  },
+  "cases": [],
+  "attempts": [],
+  "screens": [
+    {
+      "file": "failure-display.png",
+      "at": "2026-11-04T02:50:44.535Z"
+    }
+  ],
+  "cleanup": {
+    "startedAt": "2026-11-04T02:50:44.619Z",
+    "unpaidPasses": {
+      "closed": [
+        {
+          "saleId": "01a1a477-4aea-7428-9fab-f804ec5eb356",
+          "status": "voided"
+        }
+      ],
+      "remainingUnpaid": 0
+    },
+    "staffSessionEnded": true,
+    "displayRevoked": true,
+    "stationArchived": true,
+    "events": {
+      "jobId": "job-dbl9r33bc2fs73dkvd8g",
+      "source": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "startedAt": "2026-11-04T02:50:52.552Z",
+      "status": "succeeded",
+      "result": {
+        "event": "s738_archive_events",
+        "at": "2026-11-04T02:51:45.637Z",
+        "view": [
+          {
+            "id": "8a6cc02c-65b7-412a-a7a7-e05daefe6b53",
+            "title": "ZZ TEST SCRUM-738 mw1iqb1n pass",
+            "archived": true
+          },
+          {
+            "id": "47aa1ce8-9f33-42cc-a224-0999b54ee104",
+            "title": "ZZ TEST SCRUM-738 mw1iqb1n party",
+            "archived": true
+          },
+          {
+            "id": "941053e7-41dc-47f9-a279-760ffa71dbfa",
+            "title": "ZZ TEST SCRUM-738 mw1iqb1n mobile",
+            "archived": true
+          }
+        ],
+        "passed": true
+      },
+      "errors": []
+    },
+    "readback": {
+      "jobId": "job-dbl9rkm417fc73ftn0ug",
+      "source": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "startedAt": "2026-11-04T02:52:02.771Z",
+      "status": "succeeded",
+      "result": {
+        "event": "s738_cleanup_readback",
+        "at": "2026-11-04T02:52:56.229Z",
+        "station": {
+          "name": "ZZ TEST SCRUM-738 mw1iqb1n till",
+          "archived": true
+        },
+        "credential": {
+          "label": "ZZ TEST SCRUM-738 mw1iqb1n display",
+          "revoked": true
+        },
+        "sessions": 0,
+        "lease": {
+          "released": true
+        },
+        "events": {
+          "n": 3,
+          "archived": 3
+        },
+        "pending": 0,
+        "pendingHolds": 0,
+        "financialHistoryRetained": true,
+        "passed": true
+      },
+      "errors": []
+    },
+    "sessions": [
+      {
+        "app": "oto-launcher-staging.onrender.com",
+        "signedOut": true
+      },
+      {
+        "app": "oto-console-staging.onrender.com",
+        "signedOut": true
+      },
+      {
+        "app": "oto-launcher-staging.onrender.com",
+        "signedOut": true
+      }
+    ],
+    "settingNamesUnchanged": true
+  },
+  "outcome": "incomplete",
+  "deployments": [
+    {
+      "name": "oto-pos-web-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhlbedkc73a2i8ug",
+      "finishedAt": "2026-11-04T02:41:46.080628Z"
+    },
+    {
+      "name": "oto-inbox-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhtbedkc73a2i9c0",
+      "finishedAt": "2026-11-04T02:39:50.284943Z"
+    },
+    {
+      "name": "oto-booth-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhlbedkc73a2i990",
+      "finishedAt": "2026-11-04T02:39:50.929757Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "commit": "773fd25f5436bf07f663af183761481b3197a3ef",
+      "deployId": "dep-dbl3udp42hec73d3g5mg",
+      "finishedAt": "2026-11-03T20:11:18.348148Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhlbedkc73a2i92g",
+      "finishedAt": "2026-11-04T02:39:54.38375Z"
+    },
+    {
+      "name": "oto-launcher-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhtbedkc73a2i9l0",
+      "finishedAt": "2026-11-04T02:39:51.288318Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhlbedkc73a2i960",
+      "finishedAt": "2026-11-04T02:39:52.314668Z"
+    },
+    {
+      "name": "oto-api-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhlbedkc73a2i7vg",
+      "finishedAt": "2026-11-04T02:42:56.030949Z"
+    }
+  ],
+  "apiSettingNameCount": 57,
+  "gatewaySimulatorVerified": true,
+  "ci": {
+    "conclusion": "success",
+    "databaseId": 41759572637,
+    "headSha": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+    "status": "completed"
+  },
+  "browser": {
+    "version": "153.0.8010.12",
+    "independentDisplayProcess": true
+  },
+  "phase": "ticket pass",
+  "eventsCreateAttempted": true,
+  "eventsCreate": {
+    "jobId": "job-dbl9qiajnfac73fb09sg",
+    "source": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+    "startedAt": "2026-11-04T02:49:45.819Z",
+    "status": "succeeded",
+    "result": {
+      "event": "s738_fixture_events",
+      "at": "2026-11-04T02:50:25.668Z",
+      "day": "2026-11-04",
+      "view": [
+        {
+          "id": "8a6cc02c-65b7-412a-a7a7-e05daefe6b53",
+          "title": "ZZ TEST SCRUM-738 mw1iqb1n pass",
+          "type": "event",
+          "archived": false,
+          "entry_price_weekday_satang": "100",
+          "total_value_satang": null
+        },
+        {
+          "id": "47aa1ce8-9f33-42cc-a224-0999b54ee104",
+          "title": "ZZ TEST SCRUM-738 mw1iqb1n party",
+          "type": "party",
+          "archived": false,
+          "entry_price_weekday_satang": null,
+          "total_value_satang": "200"
+        },
+        {
+          "id": "941053e7-41dc-47f9-a279-760ffa71dbfa",
+          "title": "ZZ TEST SCRUM-738 mw1iqb1n mobile",
+          "type": "party",
+          "archived": false,
+          "entry_price_weekday_satang": null,
+          "total_value_satang": "200"
+        }
+      ],
+      "passed": true
+    },
+    "errors": []
+  },
+  "failure": {
+    "phase": "ticket pass",
+    "name": "AssertionError",
+    "message": "Expected values to be strictly equal: "
+  },
+  "apiSettingNameCountAfter": 57,
+  "deploymentsAfter": [
+    {
+      "name": "oto-pos-web-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhlbedkc73a2i8ug",
+      "finishedAt": "2026-11-04T02:41:46.080628Z"
+    },
+    {
+      "name": "oto-inbox-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhtbedkc73a2i9c0",
+      "finishedAt": "2026-11-04T02:39:50.284943Z"
+    },
+    {
+      "name": "oto-booth-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhlbedkc73a2i990",
+      "finishedAt": "2026-11-04T02:39:50.929757Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "commit": "773fd25f5436bf07f663af183761481b3197a3ef",
+      "deployId": "dep-dbl3udp42hec73d3g5mg",
+      "finishedAt": "2026-11-03T20:11:18.348148Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhlbedkc73a2i92g",
+      "finishedAt": "2026-11-04T02:39:54.38375Z"
+    },
+    {
+      "name": "oto-launcher-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhtbedkc73a2i9l0",
+      "finishedAt": "2026-11-04T02:39:51.288318Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhlbedkc73a2i960",
+      "finishedAt": "2026-11-04T02:39:52.314668Z"
+    },
+    {
+      "name": "oto-api-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhlbedkc73a2i7vg",
+      "finishedAt": "2026-11-04T02:42:56.030949Z"
+    }
+  ],
+  "finishedAt": "2026-11-04T02:53:20.389Z"
+}

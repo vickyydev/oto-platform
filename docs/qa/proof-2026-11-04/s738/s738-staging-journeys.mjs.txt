@@ -9,7 +9,9 @@ const {p,display,POS,f,r,api,shot,save,expect,ctx,phase,stable}=S,made={station:
  const takeQr=async(label)=>{
   const started=p.waitForResponse(res=>res.request().method()==='POST'&&/\/(payments\/attempts|parties\/[^/]+\/payments\/tender)$/.test(new URL(res.url()).pathname));
   await p.getByRole('button',{name:'Show payment QR',exact:true}).click();
-  const response=await started;assert.equal(response.status(),200);const body=await response.json();assert.equal(body.attempt.provider,'simulator');r.attempts.push(body.attempt.id);save();
+  const response=await started,body=await response.json();
+  (r.tenderResponses??=[]).push({label,status:response.status(),errorCode:body?.error?.code??null,hasAttempt:!!body?.attempt});save();
+  assert.equal(response.status(),200,'Tender request failed: '+response.status()+' '+(body?.error?.code??''));assert.equal(body.attempt.provider,'simulator','Tender must use simulator');r.attempts.push(body.attempt.id);save();
   await expect(display.getByTestId('payment-qr')).toBeVisible();
   const before=await read();assert.equal(before.cart.kind,'tender');assert.equal(before.payment.status,'pending');
   await shot(label+'-pending-display');

@@ -1,0 +1,9 @@
+{
+  "key": "SCRUM-747",
+  "source": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+  "observedAt": "2026-11-04T02:50:44.018863637Z",
+  "requestId": "af89e83d-9a70-4733-ab72-6717d2c77cd8",
+  "cause": "Gateway invoice encoding refuses a station prefix longer than three characters.",
+  "proofRun": "mw1iqb1n",
+  "cleanupIndependentlyVerified": true
+}
