@@ -27,3 +27,11 @@ UI additions (CLAUDE.md §7.2): on a family card with more than one Check in, ea
 press names its children; on a family with both a paid child and one still to pay,
 the green paid pill names the paid children and an amber `To pay` pill beside it
 names the rest. Both on the iPad board card and the phone's family screen.
+
+## Landing rebase
+
+At about 20:25 Bangkok the lane was rebased onto main at `43993d793` with no
+conflicts (the till scanner, typed band and locked reload work landed since; none
+of them touch these files). On the rebased tree the POS typecheck, eslint on the
+changed files, the whole POS unit suite (143 files, 1988 tests), this spec and the
+SCRUM-745 spec (three cases each) and the api types check all passed.

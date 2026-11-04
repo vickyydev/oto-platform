@@ -36,3 +36,10 @@ the button in its corner, where its heading is centred
 
 The `Reception Till 1 is yours` notice in the lower right is the till's own station
 notice after sign-in, not part of this change.
+
+## Landing rebase
+
+Re-run at about 20:25 Bangkok on the lane rebased onto main at `43993d793` (no
+conflicts): this spec passed its three widths again, alongside the POS typecheck,
+eslint, the whole POS unit suite and the api types check. See the SCRUM-741 README
+for the full list.
