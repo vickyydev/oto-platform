@@ -1,0 +1,70 @@
+{
+  "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+  "verifiedAt": "2026-11-04T06:21:16.601Z",
+  "deployments": [
+    {
+      "name": "oto-pos-web-staging",
+      "id": "srv-dbk7qu8n74is73bm894g",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "status": "live",
+      "deployId": "dep-dblcrv8473hc73b1vokg",
+      "liveAt": "2026-11-04T06:19:57.162883Z"
+    },
+    {
+      "name": "oto-inbox-staging",
+      "id": "srv-dbbb4srrjlhs73dk2rm0",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "status": "live",
+      "deployId": "dep-dblcrv8473hc73b1vov0",
+      "liveAt": "2026-11-04T06:18:09.341872Z"
+    },
+    {
+      "name": "oto-booth-staging",
+      "id": "srv-dapkbobtqb8s73delilg",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "status": "live",
+      "deployId": "dep-dblcrv8473hc73b1vp7g",
+      "liveAt": "2026-11-04T06:18:11.127921Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "id": "srv-danppvjtqb8s73cnvua0",
+      "source": "b64d10ce0b85558e538eb58babd652dd500eb4d6",
+      "status": "live",
+      "deployId": "dep-dblbihg473hc73b0o1fg",
+      "liveAt": "2026-11-04T04:51:40.269606Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "id": "srv-danng2p42hec73f38e3g",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "status": "live",
+      "deployId": "dep-dblcrv8473hc73b1vorg",
+      "liveAt": "2026-11-04T06:18:11.117379Z"
+    },
+    {
+      "name": "oto-launcher-staging",
+      "id": "srv-danli3ajnfac7391jrk0",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "status": "live",
+      "deployId": "dep-dblcrv8473hc73b1vp20",
+      "liveAt": "2026-11-04T06:18:08.999082Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "id": "srv-danh2mf40ujc73bu80j0",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "status": "live",
+      "deployId": "dep-dblcrv8473hc73b1voog",
+      "liveAt": "2026-11-04T06:18:14.752966Z"
+    },
+    {
+      "name": "oto-api-staging",
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+      "status": "live",
+      "deployId": "dep-dblcrv0473hc73b1vnlg",
+      "liveAt": "2026-11-04T06:21:12.471388Z"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 export default async function(proof){
- const {r,f,api,ctx,p,save,CONSOLE,LAUNCHER}=proof;
+ const {r,f,api,ctx,save,CONSOLE,LAUNCHER}=proof;
  const read=JSON.parse(readFileSync(proof.out+'/independent-readback.json','utf8'));assert.equal(read.result.passed,true);assert.ok(Date.now()-Date.parse(read.result.at)<15*60e3);
  assert.ok(!r.retirement?.startedAt,'Inspect partial retirement before sending another write');
  r.retirement={startedAt:new Date().toISOString(),steps:[],sessions:[]};save();
@@ -14,7 +14,11 @@ export default async function(proof){
  }
  await api('DELETE','/menu/categories/'+f.categoryId);
  const APP='https://oto-app-staging.onrender.com',h=await ctx.request.post(LAUNCHER+'/api/auth/handoff',{data:{app:'oto_app'}});assert.equal(h.status(),200);const launch=(await h.json()).launchUrl;assert.equal(new URL(launch).origin,APP);
- const exchange=p.waitForResponse(x=>x.request().method()==='POST'&&x.url()===APP+'/api/auth/handoff',{timeout:45000});await p.goto(launch).catch(()=>{throw new Error('App handoff navigation failed');});assert.equal((await exchange).status(),200);
+ // The board creates historical runs for all-branch checklists when opened.
+ // Cleanup needs only the normal one-use handoff exchange and branch API.
+ const token=new URLSearchParams(new URL(launch).hash.slice(1)).get('handoff');assert.ok(typeof token==='string'&&token.length>0,'Launcher did not supply an app handoff');
+ const exchange=await ctx.request.post(APP+'/api/auth/handoff',{data:{token}});assert.equal(exchange.status(),200);
+ r.retirement.appEntry={method:'canonical one-use handoff API',boardOpened:false};save();
  for(const row of read.result.rows){assert.ok(read.result.referenceCensus.columns>30);assert.equal(row.appReferences.checked,read.result.referenceCensus.columns);assert.equal(row.appReferences.nonzero,0);const app=row.app[0],before=await ctx.request.get(APP+'/api/branches/'+app.id);assert.equal(before.status(),200);const actual=await before.json();assert.equal(actual.name,row.branch.name);assert.equal(actual.coreBranchId,row.branch.id);const deleted=await ctx.request.delete(APP+'/api/branches/'+app.id);assert.equal(deleted.status(),204);assert.equal((await ctx.request.get(APP+'/api/branches/'+app.id)).status(),404);r.retirement.steps.push('empty mapped app branch removed: '+app.id);save();}
  assert.equal((await ctx.request.post(APP+'/api/logout')).status(),200);assert.equal((await ctx.request.get(APP+'/api/user')).status(),401);r.retirement.sessions.push({app:'oto-app',signedOut:true});save();
  for(const origin of [CONSOLE,LAUNCHER]){const response=await ctx.request.post(origin+'/api/auth/sign-out');assert.ok([200,204].includes(response.status()));assert.equal((await ctx.request.get(origin+'/api/me')).status(),401);r.retirement.sessions.push({app:new URL(origin).hostname,signedOut:true});save();}

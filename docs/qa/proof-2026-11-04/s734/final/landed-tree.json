@@ -1,0 +1,20 @@
+{
+  "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+  "main": "284ddca5cb7fc281729007ffac1ff530ff235b32",
+  "branch": "lane/codex-branch-clone-20261104-r11",
+  "acceptedSource": "ef127baa407b421d197e1403d8980dd9864bf107",
+  "at": "2026-11-04T05:54:01.577Z",
+  "allNonDocumentationFilesIdentical": true,
+  "allHandoverLinesPreserved": true,
+  "rawAndReadableLogHashesVerified": true,
+  "ownCommits": [
+    "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf docs(qa): retain the final branch clone landing checks",
+    "000101304553d475adcb60a288d0ba5c490c63d5 fix(catalog): keep the branch clone service as portable text",
+    "8ecc850ef928f4c8cdfc77651405d9047ede6d74 fix(console): show the maximum age without clipping",
+    "52dbd2e833f33370137de896a2c4134ddde8fe95 docs(qa): preserve the rebased clone proof and safe entrypoint",
+    "5ca2b514f3f2c48afa317621683f86adae0ddabe docs(qa): retain the native branch clone rehearsal",
+    "c423849333001b9f2fe80db3cbc08980f985731c fix(catalog): match cloned stockrooms by the database name key",
+    "ecb6ccc16ffabbe865792a04f6f7dd23c2429725 fix(catalog): copy branch policy and stock definitions",
+    "eaaff46b2d1a5f5c5601b086c404ffea19b7c0a0 docs(progress): record the branch clone implementation plan"
+  ]
+}
