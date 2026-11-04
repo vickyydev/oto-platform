@@ -26,8 +26,9 @@ import { summarizeTax, type TaxBreakdown } from './tax';
  *   - a TICKET sale: one receipt, carrying a credit section — QR and figure —
  *     for each wallet the sale granted, where the prototype printed a credit
  *     voucher per wallet on a slip of its own; a kids band per child and an
- *     adult band per adult; one item voucher per socks / add-on / free-item
- *     grant, grouped by label;
+ *     adult band per adult; one item voucher per add-on / free-item grant,
+ *     grouped by label. Socks are on the receipt only (SCRUM-765): its line
+ *     and its "to collect" row, and no slip of their own;
  *   - an F&B order: one receipt carrying only the whole-order note, and one
  *     prep ticket per station that has items — kitchen, then bar — each with
  *     the allergy line, its own items' notes and the order note;
@@ -276,6 +277,18 @@ export interface SalePrintRequest {
 /** The ticket units that are things to collect rather than admission (`buildCreditGrants`). */
 const ITEM_VOUCHER_KINDS = new Set(['socks', 'addon', 'promo_item']);
 
+/**
+ * SCRUM-765 — the things to collect that print on the receipt only.
+ *
+ * Socks are handed over at the counter with the receipt, which already lists
+ * them twice: as a priced line and as "2× Grip Socks to collect". The ledger
+ * names them by kind (`socks`, from the engine's socks row — never by their
+ * label), so a slip of their own is not asked for. Add-ons and free items keep
+ * theirs. A socks slip queued before this rule still reprints from History
+ * (`saleItemVoucherDocument` answers for any line to collect).
+ */
+const RECEIPT_ONLY_KINDS = new Set(['socks']);
+
 function hhmm(instant: Date, timezone: string): string {
   const minutes = wallClockMinutesInTz(instant, timezone);
   return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
@@ -352,7 +365,11 @@ function allergyTextOf(rows: readonly SalePrintChild[]): string | undefined {
   return parts.length ? parts.join(' · ') : undefined;
 }
 
-/** The item vouchers a ticket sale's lines owe: one per label, the first line standing for the group. */
+/**
+ * What a ticket sale's lines owe to collect: one group per label, the first
+ * line standing for the group. The receipt lists every group as "to collect";
+ * `saleItemSlipGroups` says which of them also print a slip.
+ */
 export function saleItemVoucherGroups(
   lines: readonly SalePrintLine[],
 ): { lineId: string; label: string; quantity: number }[] {
@@ -364,6 +381,13 @@ export function saleItemVoucherGroups(
     else groups.set(line.label, { lineId: line.id, label: line.label, quantity: line.quantity });
   }
   return [...groups.values()];
+}
+
+/** The groups that print an item voucher of their own: every group but socks (SCRUM-765). */
+export function saleItemSlipGroups(
+  lines: readonly SalePrintLine[],
+): { lineId: string; label: string; quantity: number }[] {
+  return saleItemVoucherGroups(lines.filter((line) => !RECEIPT_ONLY_KINDS.has(line.kind)));
 }
 
 // --- The documents ---------------------------------------------------------------------
@@ -489,15 +513,21 @@ export function saleItemVoucherDocument(
 ): SaleItemVoucherDocument | null {
   const line = snapshot.lines.find((l) => l.id === lineId);
   if (!line) return null;
-  const group = saleItemVoucherGroups(snapshot.lines).find((g) => g.label === line.label);
+  // A slip counts only the lines that print slips; a socks slip queued before
+  // SCRUM-765, reprinted, counts the socks it was printed for.
+  const groups = RECEIPT_ONLY_KINDS.has(line.kind)
+    ? saleItemVoucherGroups(snapshot.lines.filter((l) => RECEIPT_ONLY_KINDS.has(l.kind)))
+    : saleItemSlipGroups(snapshot.lines);
+  const group = groups.find((g) => g.label === line.label);
   return { label: line.label, quantity: group?.quantity ?? line.quantity };
 }
 
 /**
  * Everything a finalised sale prints, in the order it is asked for: the
- * receipt, the kids bands, the adult bands, the item vouchers, then one prep
- * ticket per station with items. A box that polls the oldest first prints the
- * receipt before the vouchers behind it.
+ * receipt, the kids bands, the adult bands, the item vouchers (none for socks,
+ * which the receipt carries — SCRUM-765), then one prep ticket per station
+ * with items. A box that polls the oldest first prints the receipt before the
+ * vouchers behind it.
  */
 export function salePrintRequests(snapshot: SalePrintSnapshot): SalePrintRequest[] {
   const requests: SalePrintRequest[] = [
@@ -510,7 +540,7 @@ export function salePrintRequests(snapshot: SalePrintSnapshot): SalePrintRequest
     for (const band of snapshot.bands.filter((b) => b.kind === 'adult')) {
       requests.push({ kind: 'adult_wristband', subjectType: 'band', subjectId: band.id });
     }
-    for (const group of saleItemVoucherGroups(snapshot.lines)) {
+    for (const group of saleItemSlipGroups(snapshot.lines)) {
       requests.push({ kind: 'item_voucher', subjectType: 'sale_line', subjectId: group.lineId });
     }
   }
