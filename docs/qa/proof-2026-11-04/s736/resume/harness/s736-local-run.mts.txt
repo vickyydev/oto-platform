@@ -1,4 +1,4 @@
-﻿import assert from 'node:assert/strict';
+import assert from 'node:assert/strict';
 import { createServer, request as httpRequest } from 'node:http';
 import { randomUUID, randomBytes, generateKeyPairSync } from 'node:crypto';
 import { spawn, spawnSync, execFileSync } from 'node:child_process';
@@ -110,5 +110,3 @@ finally {
  await ctx.close();await teardownAll();receipt.cleanup={disposableDatabaseDropped:true,localAgentStopped:true,proxyStopped:true,ownedBrowserClosed:true};save();console.log(JSON.stringify({out,outcome:receipt.outcome,cleanup:receipt.cleanup}));
 }
 process.exit(receipt.outcome==='passed'?0:1);
-
-

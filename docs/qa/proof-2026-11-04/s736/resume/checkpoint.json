@@ -256,5 +256,14 @@
   "resumeBranch": "lane/codex-box-scanner-20261104-r4",
   "mainCorrection": "4fa1762860ec468eefc658fbf6b7356c21f9fd45",
   "mainCorrectionVerification": "Pending CI; do not resume gates before owner command",
-  "branchFailureConfirmed": "packages/db/test/suite-controls.test.ts deployment-column inventory"
+  "branchFailureConfirmed": "packages/db/test/suite-controls.test.ts deployment-column inventory",
+  "savedCopyNormalization": "UTF-8 without BOM, LF, trailing whitespace removed; source log and harness hashes describe the original external files",
+  "rebasedRuntime": "dad5c0ad1",
+  "rebasedCommits": [
+    "eb857ece0f9a79751e65648f8c87df632b957aa1 docs(pos): save the scanner lane pause checkpoint",
+    "0d77c34d875c01ce444610fe21ab3d8321b093d3 test(api): pin the authenticated scanner relay surface",
+    "32442ee073e07ac78222405aefeceb21aa2a8be4 docs(pos): preserve scanner proof and open scope questions",
+    "dad5c0ad183b1bcef1cb4a6c2dcfba68c443b084 fix(pos): hear counter box scans directly and once",
+    "3b5495b66ee9f48c876bfc1bae0b99a5d2b07177 docs(pos): record the direct scanner delivery plan"
+  ]
 }

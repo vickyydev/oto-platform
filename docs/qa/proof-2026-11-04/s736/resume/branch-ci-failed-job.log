@@ -1,4 +1,7 @@
-﻿2026-11-04T08:01:46.0489116Z  FAIL  test/suite-controls.test.ts > SCRUM-643 native suite-control storage > declares nullable unknown deployment facts with no success/version/time defaults
-2026-11-04T08:01:46.0489349Z AssertionError: expected [ { …(4) }, …(13) ] to deeply equal [ { …(4) }, …(9) ]
-2026-11-04T08:01:46.0501627Z ##[error]AssertionError: expected [ { …(4) }, …(13) ] to deeply equal [ { …(4) }, …(9) ]
-2026-11-04T08:01:46.0502468Z Failed:    @oto/db#test
+2026-11-04T08:01:46.0489116Z  FAIL  test/suite-controls.test.ts > SCRUM-643 native suite-control storage > declares nullable unknown deployment facts with no success/version/time defaults
+
+2026-11-04T08:01:46.0489349Z AssertionError: expected [ { …(4) }, …(13) ] to deeply equal [ { …(4) }, …(9) ]
+
+2026-11-04T08:01:46.0501627Z ##[error]AssertionError: expected [ { …(4) }, …(13) ] to deeply equal [ { …(4) }, …(9) ]
+
+2026-11-04T08:01:46.0502468Z Failed:    @oto/db#test

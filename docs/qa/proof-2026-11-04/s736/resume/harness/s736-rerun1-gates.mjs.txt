@@ -1,4 +1,4 @@
-﻿import { readFileSync, writeFileSync, openSync, closeSync } from 'node:fs';
+import { readFileSync, writeFileSync, openSync, closeSync } from 'node:fs';
 import { spawn, execFileSync } from 'node:child_process';
 const root='C:/oto-lanes/codex-box-scanner-20261104';
 const key=process.argv[2];
@@ -23,7 +23,3 @@ console.log(JSON.stringify({key,sha,start,log,command:commands[key],output:'dire
 const child=spawn('C:/Program Files/Git/bin/bash.exe',['-c','set -eo pipefail; '+commands[key]],{cwd:root,windowsHide:true,stdio:['ignore',fd,fd]});
 child.once('error',e=>{closeSync(fd);writeFileSync(receipt,JSON.stringify({key,sha,start,end:new Date().toISOString(),error:e.name,exitCode:1},null,2));process.exitCode=1;});
 child.once('exit',(code,signal)=>{closeSync(fd);const result={key,sha,start,end:new Date().toISOString(),command:commands[key],log,exitCode:code??1,signal};writeFileSync(receipt,JSON.stringify(result,null,2));console.log(JSON.stringify(result));console.log(readFileSync(log,'utf8').slice(-3000));process.exitCode=code??1;});
-
-
-
-
