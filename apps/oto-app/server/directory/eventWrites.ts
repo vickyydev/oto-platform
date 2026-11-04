@@ -794,3 +794,247 @@ export async function editPartyEvent(
     };
   });
 }
+
+// --- Booking a birthday from the inbox (SCRUM-775) ------------------------------
+
+/**
+ * The statuses this app gives a park group that has none yet — the same four,
+ * in the same order and colours, as `GET /api/admin/event-statuses` makes on
+ * first read (routes.ts). Written here only when a booking from the inbox is
+ * the first thing to need a status, so the board still opens with its four
+ * columns and not with Tentative alone.
+ */
+const DEFAULT_EVENT_STATUSES = [
+  { name: "Upcoming", value: "upcoming", color: "blue", sortOrder: 0 },
+  { name: "In Progress", value: "in_progress", color: "yellow", sortOrder: 1 },
+  { name: "Completed", value: "completed", color: "green", sortOrder: 2 },
+  { name: "Cancelled", value: "cancelled", color: "gray", sortOrder: 3 },
+] as const;
+
+/** The status a date booked from the inbox waits in until a person confirms it. */
+export const TENTATIVE_STATUS = { name: "Tentative", value: "tentative", color: "orange" } as const;
+
+export interface InboxEventInput {
+  /** The inbox's own id for the event: a retry is a replay, never a second party. */
+  id: string;
+  /** The platform branch the conversation is at; the app's branch is the one mapped to it. */
+  coreBranchId: string;
+  /** The conversation the date was booked from: the event says so ("From the inbox"). */
+  inboxConversationId: string;
+  title: string;
+  eventDate: string;
+  startTime: string;
+  numChildren?: number | null;
+  numAdults?: number | null;
+  childName?: string | null;
+  kidTurningAge?: number | null;
+  /** Who booked: the contact's name, as the app's "Booking name". */
+  bookingName?: string | null;
+  parentName?: string | null;
+  /** E.164, as the platform normalised it. */
+  whatsappPhone?: string | null;
+}
+
+export interface InboxEventResult {
+  event: {
+    id: string;
+    branchId: string;
+    coreBranchId: string;
+    eventType: "birthday";
+    title: string;
+    status: string;
+    statusName: string;
+    eventDate: string;
+    startTime: string;
+    numChildren: number | null;
+    numAdults: number | null;
+    inboxConversationId: string;
+    createdAt: string;
+  };
+  /** The same id was booked before: the event already says what it says. */
+  replayed: boolean;
+}
+
+interface StoredInboxEvent {
+  id: string;
+  tenant_id: string;
+  branch_id: string;
+  core_branch_id: string | null;
+  title: string;
+  status: string;
+  status_name: string | null;
+  event_date: string;
+  start_time: string;
+  num_children: number | null;
+  num_adults: number | null;
+  inbox_conversation_id: string | null;
+  created_at: Date;
+}
+
+async function storedInboxEvent(tx: PoolClient, id: string): Promise<StoredInboxEvent | null> {
+  const { rows } = await tx.query<StoredInboxEvent>(
+    `select e.id, e.tenant_id, e.branch_id, b.core_branch_id, e.title, e.status,
+            (select s.name from event_statuses s
+              where s.tenant_id = e.tenant_id and s.value = e.status
+              order by s.sort_order limit 1) as status_name,
+            e.event_date, e.start_time, e.num_children, e.num_adults, e.inbox_conversation_id,
+            e.created_at at time zone 'UTC' as created_at
+       from core_events e
+       left join branches b on b.id = e.branch_id
+      where e.id = $1`,
+    [id],
+  );
+  return rows[0] ?? null;
+}
+
+function inboxEventShape(row: StoredInboxEvent, coreBranchId: string): InboxEventResult["event"] {
+  return {
+    id: row.id,
+    branchId: row.branch_id,
+    coreBranchId: (row.core_branch_id ?? coreBranchId).toLowerCase(),
+    eventType: "birthday",
+    title: row.title,
+    status: row.status,
+    statusName: row.status_name ?? row.status,
+    eventDate: row.event_date,
+    startTime: row.start_time,
+    numChildren: row.num_children,
+    numAdults: row.num_adults,
+    inboxConversationId: row.inbox_conversation_id ?? "",
+    createdAt: new Date(row.created_at).toISOString(),
+  };
+}
+
+/**
+ * The status value the board shows as "Tentative" for this park group: the
+ * one named so if a person already made it, otherwise made now at the end of
+ * the board — after the four defaults when the park group has none yet, so a
+ * first read of the board still makes no second set. Named once per park
+ * group, case and spaces aside, as the app's own status form insists.
+ */
+async function tentativeStatusValue(tx: PoolClient, tenantId: string): Promise<string> {
+  // One maker at a time per park group: two first bookings at once would
+  // otherwise both find no status and write two columns.
+  await tx.query(`select pg_advisory_xact_lock(hashtextextended('otoapp.event_statuses:' || $1, 0))`, [tenantId]);
+  const { rows } = await tx.query<{ name: string; value: string; sort_order: number }>(
+    `select name, value, sort_order from event_statuses where tenant_id = $1 order by sort_order`,
+    [tenantId],
+  );
+  const named = rows.find((s) => s.name.trim().toLowerCase() === TENTATIVE_STATUS.name.toLowerCase());
+  if (named) return named.value;
+  const all = [...rows];
+  if (all.length === 0) {
+    for (const s of DEFAULT_EVENT_STATUSES) {
+      await tx.query(
+        `insert into event_statuses (tenant_id, name, value, color, sort_order, is_default)
+         values ($1, $2, $3, $4, $5, true)`,
+        [tenantId, s.name, s.value, s.color, s.sortOrder],
+      );
+      all.push({ name: s.name, value: s.value, sort_order: s.sortOrder });
+    }
+  }
+  // The app's own rule for a new status's stored value: a free one.
+  const taken = new Set(all.map((s) => s.value));
+  let value: string = TENTATIVE_STATUS.value;
+  for (let n = 2; taken.has(value); n++) value = `${TENTATIVE_STATUS.value}_${n}`;
+  const nextOrder = Math.max(...all.map((s) => s.sort_order), -1) + 1;
+  await tx.query(
+    `insert into event_statuses (tenant_id, name, value, color, sort_order, is_default)
+     values ($1, $2, $3, $4, $5, false)`,
+    [tenantId, TENTATIVE_STATUS.name, value, TENTATIVE_STATUS.color, nextOrder],
+  );
+  return value;
+}
+
+/**
+ * A birthday booked from the inbox (SCRUM-775, owner decision 4 November: the
+ * Events module is the one home for birthday orders). The inbox's Book Date
+ * makes a TENTATIVE birthday here, at the app branch mapped to the
+ * conversation's park, carrying what a person confirmed from the chat; its BEO
+ * is the event's own, filled in this app afterwards.
+ *
+ * The row is the one the app's own "New event" writes (`POST
+ * /api/admin/events`: event type birthday, a title, a date and a start time,
+ * the child, the booking name, the WhatsApp number, the guest counts), with
+ * two differences: its status is Tentative rather than Upcoming, and it
+ * names the conversation it came from.
+ *
+ * BY THE CALLER'S ID. The id is looked up first: the same id for the same
+ * conversation is a replay (the stored event comes back, nothing is
+ * written); the same id for anything else is refused `id_in_use`. Two
+ * arrivals at once under one new id meet the primary key, and the second is
+ * then answered as the replay it is.
+ *
+ * THE TENANT IS THE KEY'S, and the branch must be one of its branches mapped
+ * to the platform's: a park the app has no branch for is refused
+ * `branch_not_mapped`, and nothing is written.
+ */
+export async function createInboxBirthdayEvent(
+  pool: Pool,
+  tenantId: string,
+  input: InboxEventInput,
+): Promise<WriteOutcome<InboxEventResult>> {
+  return inTransaction(pool, async (tx) => {
+    const replay = async (): Promise<WriteOutcome<InboxEventResult> | null> => {
+      const held = await storedInboxEvent(tx, input.id);
+      if (!held) return null;
+      if (
+        held.tenant_id === tenantId &&
+        held.inbox_conversation_id?.toLowerCase() === input.inboxConversationId.toLowerCase()
+      ) {
+        return { ok: true, status: 200, body: { event: inboxEventShape(held, input.coreBranchId), replayed: true } };
+      }
+      return refuse(409, "id_in_use", "This event id already belongs to another event");
+    };
+    const earlier = await replay();
+    if (earlier) return earlier;
+
+    const { rows: branchRows } = await tx.query<{ id: string }>(
+      `select id from branches where tenant_id = $1 and lower(core_branch_id) = lower($2) limit 1`,
+      [tenantId, input.coreBranchId],
+    );
+    const branch = branchRows[0];
+    if (!branch) {
+      return refuse(409, "branch_not_mapped", "This park has no branch in the OTO App, so no event was made");
+    }
+
+    const status = await tentativeStatusValue(tx, tenantId);
+    const phone = blank(input.whatsappPhone);
+    await tx.query("savepoint inbox_event_write");
+    try {
+      await tx.query(
+        `insert into core_events
+           (id, tenant_id, branch_id, event_type, title, event_date, start_time,
+            num_children, num_adults, child_name, kid_turning_age, booking_name, parent_name,
+            whatsapp_phone_raw, whatsapp_phone_e164, whatsapp_parse_valid, status, inbox_conversation_id)
+         values ($1, $2, $3, 'birthday', $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $13, true, $14, $15)`,
+        [
+          input.id,
+          tenantId,
+          branch.id,
+          input.title.trim(),
+          input.eventDate,
+          input.startTime,
+          input.numChildren ?? null,
+          input.numAdults ?? null,
+          blank(input.childName),
+          input.kidTurningAge ?? null,
+          blank(input.bookingName),
+          blank(input.parentName),
+          phone,
+          status,
+          input.inboxConversationId,
+        ],
+      );
+    } catch (err) {
+      if ((err as { code?: string }).code !== "23505") throw err;
+      // Another arrival under this very id committed first: its event decides.
+      await tx.query("rollback to savepoint inbox_event_write");
+      const taken = await replay();
+      if (taken) return taken;
+      throw err;
+    }
+    const made = await storedInboxEvent(tx, input.id);
+    return { ok: true, status: 201, body: { event: inboxEventShape(made!, input.coreBranchId), replayed: false } };
+  });
+}

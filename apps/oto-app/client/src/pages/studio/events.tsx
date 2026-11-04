@@ -77,6 +77,7 @@ import { AIEventAssistant } from "@/components/ai-event-assistant";
 import { BeoEventEditor, BeoTimelineEditor, BeoDayOfView } from "@/components/beo";
 import { getCountries, getCountryCallingCode } from "libphonenumber-js";
 import { fetchPersonBirthdays, type PersonBirthday } from "@/lib/person-birthdays";
+import { beoEventIdFrom, withoutBeoParam } from "@/lib/beo-deep-link";
 
 // Color options for status columns
 const STATUS_COLORS = [
@@ -842,6 +843,33 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
     setViewingStudioEvent(event);
     setShowBeoEditor(true);
   };
+
+  // SCRUM-775: the platform inbox's Create BEO lands here through the suite
+  // hand-off as `?beo=<event id>`, and the BEO editor opens as a click on the
+  // birthday's card opens it. The parameter is taken off the address first,
+  // so closing the editor does not reopen it on a reload. An event this
+  // person cannot see is said, not opened (the app's own read decides).
+  useEffect(() => {
+    const eventId = beoEventIdFrom(window.location.search);
+    if (!eventId) return;
+    window.history.replaceState(null, "", withoutBeoParam(window.location.pathname, window.location.search));
+    let cancelled = false;
+    void (async () => {
+      const res = await fetch(`/api/admin/events/${encodeURIComponent(eventId)}`, { credentials: "include" }).catch(() => null);
+      if (cancelled) return;
+      if (!res || !res.ok) {
+        toast({ title: "Event not found", description: "The event this link names is not one you can open.", variant: "destructive" });
+        return;
+      }
+      const event = (await res.json()) as Event;
+      if (!cancelled) openBeoEditor(event);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Once, on arrival: the hand-off's address is read the moment the page opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const openStudioEventView = async (event: Event) => {
     setViewingStudioEvent(event);
