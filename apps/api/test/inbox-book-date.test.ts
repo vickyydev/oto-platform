@@ -8,12 +8,20 @@ import {
   InboxBookDateResultSchema,
   InboxConversationDetailSchema,
   InboxDashboardSchema,
+  InboxOpenBeoResultSchema,
   newId,
+  readHandoffTarget,
   type InboxBookDateResult,
+  type InboxOpenBeoResult,
 } from '@oto/shared';
 import { SESSION_COOKIE, hashToken, newSessionToken } from '../src/plugins/session';
-import { BOOK_DATE_ACTION, BOOK_DATE_MESSAGES, eventTitleOf } from '../src/services/inbox/book-date';
-import { inboxWeekStart } from '../src/services/inbox/read';
+import {
+  BOOK_DATE_ACTION,
+  BOOK_DATE_MESSAGES,
+  OPEN_BEO_PURPOSE,
+  eventTitleOf,
+} from '../src/services/inbox/book-date';
+import { inboxToday, inboxWeekStart } from '../src/services/inbox/read';
 import type {
   DirectoryInboxEventAnswer,
   DirectoryInboxEventBody,
@@ -44,13 +52,17 @@ import {
  * Conversations are made the real way, through the simulator's signed webhook.
  *
  *   the GM        inbox_manager operator-wide (holds assign)
- *   bdayA         an agent in Birthdays & Events (a department grant)
+ *   bdayA         an agent in Birthdays & Events (a department grant), who
+ *                 may also open the OTO App (a department grant of its own)
  *   recCentral    an agent at Reception · Central (no assign)
  *   coord         manual-only: reads what they are put on, in no team
+ *   mgrCentral    inbox_manager at the Central branch only (a branch manager)
  */
 
 const SECRET = 'inbox-book-date-test-secret';
 const PASSWORD = 'inboxbookdate1234';
+const OTO_APP_ORIGIN = 'https://otoapp.book-date.test';
+const HANDOFF_KEY = 'k775:inbox-book-date-handoff-secret-0123456789';
 
 interface AppWrites {
   createInboxBirthdayEvent(
@@ -73,7 +85,7 @@ let appWrites: AppWrites;
 const appTenant = newId();
 const appCentral = newId();
 const cookies: Record<string, string> = {};
-const people = {} as Record<'gm' | 'bdayA' | 'recCentral' | 'coord', string>;
+const people = {} as Record<'gm' | 'bdayA' | 'recCentral' | 'coord' | 'mgrCentral', string>;
 let phoneSeq = 0;
 
 type Plan = 'app' | 'unreachable' | 'lost_answer';
@@ -165,7 +177,7 @@ async function staff(
   phone: string,
   name: string,
   roleName: 'inbox_agent' | 'inbox_manager',
-  scope: { scopeType: 'operator' | 'department'; scopeId: string },
+  scope: { scopeType: 'operator' | 'branch' | 'department'; scopeId: string },
 ): Promise<string> {
   const employeeId = newId();
   await ctx.db.insert(s.employee).values({ id: employeeId, operatorId: oto, name, phone });
@@ -268,7 +280,15 @@ async function appEvents(conversationId: string) {
 }
 
 beforeAll(async () => {
-  ctx = await createTestContext({ otoapp: true, env: { INBOX_SIMULATOR: 'on', INBOX_SIMULATOR_SECRET: SECRET } });
+  ctx = await createTestContext({
+    otoapp: true,
+    env: {
+      INBOX_SIMULATOR: 'on',
+      INBOX_SIMULATOR_SECRET: SECRET,
+      HANDOFF_SIGNING_KEY: HANDOFF_KEY,
+      HANDOFF_APP_ORIGINS: `oto_app=${OTO_APP_ORIGIN}`,
+    },
+  });
   oto = await operatorIdByName(ctx.db, OTO_OPERATOR_NAME);
   central = await branchIdByCode(ctx.db, CENTRAL_BRANCH_CODE);
   chalong = await branchIdByCode(ctx.db, CHALONG_BRANCH_CODE);
@@ -303,6 +323,21 @@ beforeAll(async () => {
     scopeType: 'department',
     scopeId: elsewhere,
   });
+  people.mgrCentral = await staff('+66810007705', 'Book Date Central Manager', 'inbox_manager', {
+    scopeType: 'branch',
+    scopeId: central,
+  });
+  // Opening the OTO App (Create BEO): the birthdays agent holds it at the team's department.
+  const otoAppRole = newId();
+  await ctx.db.insert(s.role).values({ id: otoAppRole, operatorId: oto, name: 'book_date_oto_app', description: 'Open the OTO App' });
+  await ctx.db.insert(s.rolePermission).values({ id: newId(), roleId: otoAppRole, permission: 'app:oto_app:access' });
+  await ctx.db.insert(s.roleAssignment).values({
+    id: newId(),
+    accountId: people.bdayA,
+    roleId: otoAppRole,
+    scopeType: 'department',
+    scopeId: birthdays.departmentId,
+  });
 
   caCentral = newId();
   await ctx.db.insert(s.channelAccount).values({
@@ -319,7 +354,7 @@ beforeAll(async () => {
   });
 
   cookies.gm = await signInAs(ctx.app, '+66810007701', PASSWORD);
-  for (const who of ['bdayA', 'recCentral', 'coord'] as const) await session(who, people[who]);
+  for (const who of ['bdayA', 'recCentral', 'coord', 'mgrCentral'] as const) await session(who, people[who]);
 }, 300_000);
 
 afterAll(async () => {
@@ -359,6 +394,7 @@ describe('Book Date makes a tentative birthday in the Events module, linked both
         branchName: expect.any(String),
         status: 'tentative',
         statusName: 'Tentative',
+        archived: false,
         kids: 12,
         adults: null,
         bookedByAccountId: people.bdayA,
@@ -461,6 +497,24 @@ describe('Book Date makes a tentative birthday in the Events module, linked both
     const plain = await bday();
     expect((await get<{ event: unknown }>('gm', `/inbox/conversations/${plain}`)).body.event).toBeNull();
   });
+
+  it('an event archived in the Events module shows as archived, and stays the conversation’s', async () => {
+    await appPool.query(`update core_events set is_archived = true, archived_at = now() where id = $1`, [body.id]);
+    try {
+      const res = await get<{ event: { id: string; archived: boolean } }>('gm', `/inbox/conversations/${conv}`);
+      expect(res.status).toBe(200);
+      expect(InboxConversationDetailSchema.safeParse(res.body).success).toBe(true);
+      expect(res.body.event).toMatchObject({ id: body.id, archived: true });
+      // Still the conversation's event: a new date is refused, naming it (an owner question on the ticket).
+      const again = await book<Refusal>('bdayA', conv, bodyOf());
+      expect(again.status).toBe(409);
+      expect(again.body.error).toMatchObject({ code: 'EVENT_ALREADY_BOOKED', details: { eventId: body.id } });
+    } finally {
+      await appPool.query(`update core_events set is_archived = false, archived_at = null where id = $1`, [body.id]);
+    }
+    const restored = await get<{ event: { archived: boolean } }>('gm', `/inbox/conversations/${conv}`);
+    expect(restored.body.event.archived).toBe(false);
+  });
 });
 
 describe('who may book, and where', () => {
@@ -523,6 +577,28 @@ describe('who may book, and where', () => {
     expect(await audits(conv, `${BOOK_DATE_ACTION}.failed`)).toHaveLength(1);
   });
 
+  it('a branch manager books into their own park’s calendar, never another park’s', async () => {
+    const conv = await bday();
+    expect((await convRow(conv)).branchId).toBe(central);
+    const elsewhere = await book<Refusal>('mgrCentral', conv, bodyOf({ branchId: chalong }));
+    expect(elsewhere.status, JSON.stringify(elsewhere.body)).toBe(403);
+    expect(calls).toHaveLength(0);
+    expect((await convRow(conv)).eventOrderRef).toBeNull();
+    const own = await book('mgrCentral', conv, bodyOf());
+    expect(own.status, JSON.stringify(own.body)).toBe(200);
+    expect(own.body.event.branchId).toBe(central);
+    expect(calls).toHaveLength(1);
+  });
+
+  it('the birthdays team (every park’s) may put the event at another park', async () => {
+    const conv = await bday();
+    // Past the permission check: the Events module is asked, and answers that it has no branch there.
+    const res = await book<Refusal>('bdayA', conv, bodyOf({ branchId: chalong }));
+    expect(res.status, JSON.stringify(res.body)).toBe(409);
+    expect(res.body.error.code).toBe('EVENT_BRANCH_NOT_MAPPED');
+    expect(calls).toHaveLength(1);
+  });
+
   it('a phone that cannot be read is refused before anything is asked', async () => {
     const conv = await bday();
     const res = await book<Refusal>('gm', conv, bodyOf({ phone: 'not a phone' }));
@@ -561,18 +637,120 @@ describe('when the Events module does not answer', () => {
   });
 });
 
+describe('Create BEO opens the event’s BEO form in the OTO App, and says so in the activity log', () => {
+  const open = async <T = InboxOpenBeoResult>(who: string, conversationId: string): Promise<Res<T>> => {
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/inbox/conversations/${conversationId}/open-beo`,
+      headers: { cookie: cookies[who]! },
+    });
+    return { status: res.statusCode, body: res.json() as T, headers: res.headers };
+  };
+  const handoffRows = async (accountId: string) =>
+    ctx.db
+      .select()
+      .from(s.auditLog)
+      .where(and(eq(s.auditLog.actorAccountId, accountId), eq(s.auditLog.action, 'auth.handoff_issue')));
+
+  it('a booked birthday: a one-use hand-off landing on its BEO, recorded naming the conversation and the event', async () => {
+    const conv = await bday();
+    const b = bodyOf();
+    expect((await book('bdayA', conv, b)).status).toBe(200);
+    const before = (await handoffRows(people.bdayA)).length;
+    const res = await open('bdayA', conv);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(InboxOpenBeoResultSchema.safeParse(res.body).success).toBe(true);
+    expect(res.headers['cache-control']).toBe('no-store');
+    expect(res.body).toMatchObject({ conversationId: conv, eventId: b.id, beoPath: `/studio/events/kanban?beo=${b.id}` });
+    const url = new URL(res.body.launchUrl);
+    expect(url.origin).toBe(OTO_APP_ORIGIN);
+    expect(url.hash).toMatch(/^#handoff=[^&]+&to=/);
+    expect(readHandoffTarget(url.hash)).toBe(res.body.beoPath);
+    const rows = await handoffRows(people.bdayA);
+    expect(rows).toHaveLength(before + 1);
+    const row = rows.find((r) => (r.after as Record<string, unknown> | null)?.conversationId === conv);
+    expect(row?.after).toMatchObject({ audience: 'oto_app', purpose: OPEN_BEO_PURPOSE, conversationId: conv, eventId: b.id });
+    // The token is never on the record.
+    const token = /^#handoff=([^&]+)/.exec(url.hash)![1]!;
+    expect(JSON.stringify(row)).not.toContain(token);
+    // A second press is a second one-use hand-off, never the first one again.
+    const again = await open('bdayA', conv);
+    expect(again.status).toBe(200);
+    expect(again.body.launchUrl).not.toBe(res.body.launchUrl);
+    expect(await handoffRows(people.bdayA)).toHaveLength(before + 2);
+  });
+
+  it('before Book Date there is no event to open', async () => {
+    const conv = await bday();
+    const res = await open<Refusal>('bdayA', conv);
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatchObject({ code: 'NO_EVENT_YET', message: BOOK_DATE_MESSAGES.noEventYet });
+  });
+
+  it('opening the OTO App needs app:oto_app:access; a conversation the caller cannot see is 404', async () => {
+    const conv = await bday();
+    expect((await book('bdayA', conv, bodyOf())).status).toBe(200);
+    const gmBefore = (await handoffRows(people.gm)).length;
+    expect((await open('gm', conv)).status).toBe(403);
+    expect(await handoffRows(people.gm)).toHaveLength(gmBefore);
+    expect((await open('recCentral', conv)).status).toBe(404);
+  });
+});
+
 describe('the dashboard counts the week’s booked birthdays', () => {
-  it('BEOs this week: birthday conversations whose event was booked since Monday', async () => {
+  it('BEOs this week: birthday conversations whose event was booked since Monday, of those the viewer sees', async () => {
+    // Last week's booking: a pill a minute before this week's Monday, Bangkok.
+    const weekStart = inboxWeekStart(inboxToday(new Date()));
+    const lastWeek = await bday();
+    const lastWeekEvent = newId();
+    await ctx.db.update(s.conversation).set({ eventOrderRef: lastWeekEvent }).where(eq(s.conversation.id, lastWeek));
+    await ctx.db.insert(s.inboxEvent).values({
+      id: newId(),
+      operatorId: oto,
+      conversationId: lastWeek,
+      kind: 'date_booked',
+      actorKind: 'account',
+      actorAccountId: people.gm,
+      payload: { eventId: lastWeekEvent, branchId: central, date: '2099-01-01' },
+      createdAt: new Date(Date.parse(`${weekStart}T00:00:00+07:00`) - 60_000),
+    });
+    // This week's booking at a park the Central manager does not see.
+    const atChalong = await bday();
+    expect((await book('gm', atChalong, bodyOf())).status).toBe(200);
+    await ctx.db.update(s.conversation).set({ branchId: chalong }).where(eq(s.conversation.id, atChalong));
+
+    const linked = async (branchId?: string) =>
+      (
+        await ctx.db
+          .select({ n: sql<number>`count(*)::int` })
+          .from(s.conversation)
+          .where(
+            and(
+              eq(s.conversation.operatorId, oto),
+              sql`${s.conversation.eventOrderRef} is not null`,
+              branchId ? eq(s.conversation.branchId, branchId) : undefined,
+            ),
+          )
+      )[0]!.n;
+
     const res = await get<Record<string, unknown>>('gm', '/inbox/dashboard');
     expect(res.status).toBe(200);
     expect(InboxDashboardSchema.safeParse(res.body).success).toBe(true);
-    const linked = await ctx.db
-      .select({ n: sql<number>`count(*)::int` })
-      .from(s.conversation)
-      .where(and(eq(s.conversation.operatorId, oto), sql`${s.conversation.eventOrderRef} is not null`));
-    expect(res.body.beosThisWeek).toBe(linked[0]!.n);
-    expect(res.body.beosThisWeek).toBeGreaterThanOrEqual(5);
     expect(res.body.weekStart).toBe(inboxWeekStart(res.body.day as string));
+    // Every linked conversation but last week's.
+    expect(res.body.beosThisWeek).toBe((await linked()) - 1);
+    expect(res.body.beosThisWeek).toBeGreaterThanOrEqual(5);
+
+    // The Central manager: Central's, last week's aside; never the one at Chalong.
+    const mgr = await get<Record<string, unknown>>('mgrCentral', '/inbox/dashboard');
+    expect(mgr.status).toBe(200);
+    expect(mgr.body.beosThisWeek).toBe((await linked(central)) - 1);
+    expect(mgr.body.beosThisWeek).toBeLessThan(res.body.beosThisWeek as number);
+
+    // Reception sees no birthday thread at all.
+    const rec = await get<Record<string, unknown>>('recCentral', '/inbox/dashboard');
+    expect(rec.status).toBe(200);
+    expect(rec.body.beosThisWeek).toBe(0);
   });
 
   it('the week starts on Monday, Bangkok day', () => {

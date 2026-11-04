@@ -400,6 +400,12 @@ export const InboxConversationEventSchema = z.object({
   /** The event's status in the Events module (`tentative` until a person confirms it there). */
   status: z.string(),
   statusName: z.string(),
+  /**
+   * The event was archived in the Events module (a customer who dropped out).
+   * The conversation keeps it: Create BEO still opens it, and the app is where
+   * it is restored. False when the inbox cannot read the app's view.
+   */
+  archived: z.boolean(),
   kids: z.number().int().nullable(),
   adults: z.number().int().nullable(),
   bookedAt: Iso,

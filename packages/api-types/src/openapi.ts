@@ -33729,6 +33729,7 @@ export interface paths {
                                 branchName: string | null;
                                 status: string;
                                 statusName: string;
+                                archived: boolean;
                                 kids: number | null;
                                 adults: number | null;
                                 bookedAt: string;
@@ -34818,6 +34819,7 @@ export interface paths {
                                 branchName: string | null;
                                 status: string;
                                 statusName: string;
+                                archived: boolean;
                                 kids: number | null;
                                 adults: number | null;
                                 bookedAt: string;
@@ -34826,6 +34828,70 @@ export interface paths {
                                 beoPath: string;
                             };
                             created: boolean;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                };
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/conversations/{id}/open-beo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Create BEO (SCRUM-775): open the event Book Date made, at its BEO form in the OTO App's Events module, as the signed-in person. Answers a one-use suite hand-off (`launchUrl`, about a minute, its target the BEO form at `beoPath`), minted as `POST /auth/handoff` mints one and recorded as `auth.handoff_issue` naming the conversation and the event (`purpose: inbox.create_beo`). A second call mints a second hand-off; nothing is written to the conversation. Refusals: 409 NOT_A_BIRTHDAY; 409 NO_EVENT_YET before Book Date; 403 without app:oto_app:access; 503 HANDOFF_NOT_CONFIGURED where the suite hand-off is not set up. Whoever can see the conversation may open its BEO; the OTO App decides what they may do there. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            conversationId: string;
+                            /** Format: uuid */
+                            eventId: string;
+                            beoPath: string;
+                            launchUrl: string;
+                            /** Format: date-time */
+                            expiresAt: string;
                         };
                     };
                 };

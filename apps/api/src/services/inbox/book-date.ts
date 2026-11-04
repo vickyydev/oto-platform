@@ -5,14 +5,18 @@ import {
   beoPathOf,
   newId,
   normalizePhone,
+  withHandoffTarget,
   type InboxBookDateBody,
   type InboxBookDateResult,
   type InboxConversationEvent,
+  type InboxOpenBeoResult,
   type Permission,
 } from '@oto/shared';
 import { AppError, errors } from '../../lib/errors';
+import { holdsAtOwnDepartment } from '../access-control';
 import { audit } from '../audit';
 import { claimClientId, idInUse, markReplay } from '../client-id';
+import { appAccessPermission, issueHandoffAudited, type HandoffConfig } from '../handoff';
 import { getBranchEvent } from '../otoapp-events';
 import {
   DIRECTORY_NOT_CONFIGURED,
@@ -42,12 +46,16 @@ import { loadVisibleConversation } from './read-visibility';
  *   - the event keeps the conversation's id (the app's migration 0034) and its
  *     BEO editor says "From the inbox".
  *
- * Create BEO is not a write here: it opens `beoPath` in the OTO App through the
- * suite hand-off, whose own mint is audited (`auth.handoff_issue`).
+ * Create BEO writes nothing here: it opens `beoPath` in the OTO App through the
+ * suite hand-off (`openConversationBeo`, below), whose mint is recorded as
+ * `auth.handoff_issue` naming the conversation and the event.
  *
  * WHO. A person in the birthdays team (a department grant at the team the
  * conversation is with), or anyone holding `inbox:conversation:assign` at the
  * conversation. Only a conversation in Birthdays & Events (`NOT_A_BIRTHDAY`).
+ * WHERE. The event goes into the calendar of the park the person confirms,
+ * which they may hold too (`mayBookAt`): the conversation's own park, or
+ * another one that their assign grant or their birthdays team reaches.
  *
  * ONE EVENT PER CONVERSATION, PER PRESS. The body's `id` is the event's own id
  * in the Events module, named by the caller:
@@ -82,20 +90,31 @@ export const BOOK_DATE_MESSAGES = {
   phoneUnreadable: 'That phone number could not be read. Check it, or leave it empty.',
   branchNotMapped: 'This park has no branch in the OTO App yet, so no event was made.',
   unavailable: 'The Events calendar did not answer, so no date was booked. Press Book Date again.',
+  noEventYet: 'No date is booked for this conversation yet. Book Date makes the event Create BEO opens.',
 } as const;
 
 /** The audit action, and the operation name of its transaction. */
 export const BOOK_DATE_ACTION = 'inbox.conversation.book_date';
 
+const ASSIGN: Permission = 'inbox:conversation:assign';
+
+interface ConvTeam {
+  key: string;
+  departmentId: string | null;
+  /** The park the team is tied to; null for a team of every park (Birthdays & Events). */
+  branchId: string | null;
+}
+
+/** Is this person in the birthdays team the conversation is with. */
+const inBirthdaysTeam = (ctx: ActionCtx, convTeam: ConvTeam | null): convTeam is ConvTeam =>
+  convTeam?.key === 'birthdays' &&
+  convTeam.departmentId !== null &&
+  ctx.viewer.scope.departmentIds.includes(convTeam.departmentId);
+
 /** May this person book the date here: the birthdays team, or `assign` at the conversation. */
-function mayBook(
-  ctx: ActionCtx,
-  conv: { id: string; branchId: string | null },
-  convTeam: { key: string; departmentId: string | null } | null,
-): boolean {
-  const assign: Permission = 'inbox:conversation:assign';
+function mayBook(ctx: ActionCtx, conv: { id: string; branchId: string | null }, convTeam: ConvTeam | null): boolean {
   if (
-    hasPermission(ctx.effective, assign, {
+    hasPermission(ctx.effective, ASSIGN, {
       operatorId: ctx.viewer.operatorId,
       branchId: conv.branchId ?? undefined,
       departmentId: convTeam?.departmentId ?? undefined,
@@ -104,11 +123,21 @@ function mayBook(
   ) {
     return true;
   }
-  return (
-    convTeam?.key === 'birthdays' &&
-    convTeam.departmentId !== null &&
-    ctx.viewer.scope.departmentIds.includes(convTeam.departmentId)
-  );
+  return inBirthdaysTeam(ctx, convTeam);
+}
+
+/**
+ * May this person put the event in `branchId`'s calendar. The conversation's
+ * own park is what `mayBook` checked. Another park needs a reach of its own:
+ * `assign` operator-wide or at that park, or a place in a birthdays team that
+ * is tied to no other park. A grant on the one conversation does not carry to
+ * another park's calendar, nor does a branch manager's grant at the
+ * conversation's park.
+ */
+function mayBookAt(ctx: ActionCtx, conv: { branchId: string | null }, convTeam: ConvTeam | null, branchId: string): boolean {
+  if (conv.branchId !== null && conv.branchId === branchId) return true;
+  if (hasPermission(ctx.effective, ASSIGN, { operatorId: ctx.viewer.operatorId, branchId })) return true;
+  return inBirthdaysTeam(ctx, convTeam) && (convTeam.branchId === null || convTeam.branchId === branchId);
 }
 
 /** "Mali's 6th Birthday", as the Events module's own form suggests ("e.g., Emma's 5th Birthday"). */
@@ -169,6 +198,7 @@ export async function conversationEventOf(
     branchName: str(p.branchName),
     status: str(p.status) ?? 'tentative',
     statusName: str(p.statusName) ?? 'Tentative',
+    archived: false,
     kids: int(p.kids),
     adults: int(p.adults),
     bookedAt: pill.createdAt.toISOString(),
@@ -181,9 +211,10 @@ export async function conversationEventOf(
     .where(and(eq(branch.id, branchId), eq(branch.operatorId, operatorId)))
     .limit(1);
   if (park) booked.branchName = park.name;
-  // The Events module is the master: a date moved or a status confirmed there
-  // shows here. Its view is optional (a deployment without the app has none,
-  // one without the grant refuses): the booking as made stands in for it.
+  // The Events module is the master: a date moved, a status confirmed or the
+  // event archived there shows here. Its view is optional (a deployment
+  // without the app has none, one without the grant refuses): the booking as
+  // made stands in for it.
   const live = await getBranchEvent(db, { branchId, eventId }).catch(() => null);
   if (!live) return booked;
   return {
@@ -193,6 +224,7 @@ export async function conversationEventOf(
     startTime: live.startTime,
     status: live.status,
     statusName: live.status === booked.status ? booked.statusName : statusWords(live.status),
+    archived: live.archived,
     kids: live.expectedKids,
     adults: live.expectedAdults,
   };
@@ -229,12 +261,12 @@ export async function bookConversationDate(
   const conv = await loadVisibleConversation(db, ctx.viewer, input.conversationId);
   const [convTeam] = conv.teamId
     ? await db
-        .select({ key: team.key, departmentId: team.departmentId })
+        .select({ key: team.key, departmentId: team.departmentId, branchId: team.branchId })
         .from(team)
         .where(and(eq(team.operatorId, operatorId), eq(team.id, conv.teamId)))
         .limit(1)
     : [];
-  if (!mayBook(ctx, conv, convTeam ?? null)) throw new PermissionDeniedError('inbox:conversation:assign');
+  if (!mayBook(ctx, conv, convTeam ?? null)) throw new PermissionDeniedError(ASSIGN);
   if (conv.category !== 'birthdays') throw errors.conflict('NOT_A_BIRTHDAY', BOOK_DATE_MESSAGES.notABirthday);
 
   // The id names the event: this conversation's own (a replay), another's (refused), or nobody's yet.
@@ -265,6 +297,7 @@ export async function bookConversationDate(
     .where(and(eq(branch.id, input.branchId), eq(branch.operatorId, operatorId), isNull(branch.archivedAt)))
     .limit(1);
   if (!park) throw errors.notFound(BOOK_DATE_MESSAGES.branchNotFound);
+  if (!mayBookAt(ctx, conv, convTeam ?? null, park.id)) throw new PermissionDeniedError(ASSIGN);
   let phone: string | null = null;
   if (input.phone) {
     phone = normalizePhone(input.phone);
@@ -369,4 +402,75 @@ export async function bookConversationDate(
     const answer: InboxBookDateResult = { conversationId: conv.id, event, created: locked.eventOrderRef !== eventId };
     return locked.eventOrderRef === eventId ? markReplay(answer) : answer;
   });
+}
+
+// --- Create BEO: the event's BEO form in the OTO App ----------------------------------
+
+/** The audit row's purpose word on the hand-off Create BEO mints. */
+export const OPEN_BEO_PURPOSE = 'inbox.create_beo';
+
+/** The signed-in session Create BEO hands off, as the route read it. */
+export interface OpenBeoSession {
+  sessionId: string;
+  accountId: string;
+  operatorId: string;
+  /** The session's seat: where opening the OTO App is checked, as `POST /auth/handoff` checks it. */
+  branchId: string | null;
+  /** The session's own cookie token, read from the caller's request; never returned or logged. */
+  sessionToken: string;
+}
+
+/**
+ * Create BEO on a conversation whose date is booked (the route: `POST
+ * /inbox/conversations/{id}/open-beo`): a one-use suite hand-off into the OTO
+ * App as the same person, landing on the event's BEO form. It is the launcher's
+ * hand-off (`issueHandoffAudited`, one transaction with its
+ * `auth.handoff_issue` row), asked for here so the row names what was opened:
+ * `purpose: inbox.create_beo`, the conversation and the event.
+ *
+ * Whoever can see the conversation may open its event's BEO, as they may press
+ * its chip; the OTO App decides what they may do there. Opening the app at all
+ * needs `app:oto_app:access`, checked exactly as `POST /auth/handoff` checks
+ * it. No event yet is `NO_EVENT_YET`: Book Date comes first.
+ */
+export async function openConversationBeo(
+  deps: { db: Db; handoff: () => HandoffConfig },
+  ctx: ActionCtx,
+  op: OpContext,
+  input: { conversationId: string; session: OpenBeoSession; requestId: string },
+): Promise<InboxOpenBeoResult> {
+  const { db } = deps;
+  const { operatorId } = ctx.viewer;
+  const conv = await loadVisibleConversation(db, ctx.viewer, input.conversationId);
+  if (conv.category !== 'birthdays') throw errors.conflict('NOT_A_BIRTHDAY', BOOK_DATE_MESSAGES.notABirthday);
+  const eventId = conv.eventOrderRef;
+  if (!eventId) throw errors.conflict('NO_EVENT_YET', BOOK_DATE_MESSAGES.noEventYet);
+
+  const permission = appAccessPermission('oto_app');
+  const seated = hasPermission(ctx.effective, permission, {
+    operatorId,
+    branchId: input.session.branchId ?? undefined,
+  });
+  if (!seated && !(await holdsAtOwnDepartment(db, ctx.effective, permission, operatorId))) {
+    throw new PermissionDeniedError(permission);
+  }
+
+  const beoPath = beoPathOf(eventId);
+  const issued = await issueHandoffAudited(db, op, deps.handoff(), {
+    sessionId: input.session.sessionId,
+    accountId: input.session.accountId,
+    operatorId: input.session.operatorId,
+    branchId: input.session.branchId,
+    sessionToken: input.session.sessionToken,
+    audience: 'oto_app',
+    requestId: input.requestId,
+    after: { purpose: OPEN_BEO_PURPOSE, conversationId: conv.id, eventId },
+  });
+  return {
+    conversationId: conv.id,
+    eventId,
+    beoPath,
+    launchUrl: withHandoffTarget(issued.launchUrl, beoPath),
+    expiresAt: issued.expiresAt.toISOString(),
+  };
 }
