@@ -34,6 +34,7 @@ import {
   VOUCHER_AFTER_SALE,
   VOUCHER_BEING_PRICED,
   VOUCHER_NOT_COMBINABLE,
+  looksLikeVoucherCode,
   looksLikeTypedFnbVoucher,
   useTillVoucher,
   voucherUnpricedReason,
