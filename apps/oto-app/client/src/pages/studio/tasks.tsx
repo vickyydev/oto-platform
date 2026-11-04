@@ -32,10 +32,12 @@ import {
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import AssignmentSearchBar, { type AssignmentValue } from "@/components/core/AssignmentSearchBar";
 import { useToast } from "@/hooks/use-toast";
+import { pickerBranches } from "@/lib/branch-picker";
 
 interface Branch {
   id: string;
   name: string;
+  archived?: boolean;
 }
 
 interface Role {
@@ -145,6 +147,9 @@ export default function StudioTasksPage() {
   const { data: branches = [] } = useQuery<Branch[]>({
     queryKey: ["/api/studio/branches"],
   });
+  // What the pickers offer (SCRUM-749): no branch the platform has archived,
+  // except the one the task being edited already names, so it can be taken off.
+  const offeredBranches = pickerBranches(branches, editingTask?.branchId ? [editingTask.branchId] : []);
 
   const { data: roles = [] } = useQuery<Role[]>({
     queryKey: ["/api/roles"],
@@ -807,10 +812,10 @@ export default function StudioTasksPage() {
             <div className="space-y-2">
               <Label>Branches</Label>
               <div className="border rounded-md p-3 space-y-2 max-h-40 overflow-y-auto">
-                {branches.length === 0 ? (
+                {offeredBranches.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No branches available</p>
                 ) : (
-                  branches.map((branch) => (
+                  offeredBranches.map((branch) => (
                     <label
                       key={branch.id}
                       className="flex items-center gap-2 cursor-pointer hover-elevate p-1 rounded"
@@ -839,7 +844,7 @@ export default function StudioTasksPage() {
                 advisors={advisors}
                 roles={roles}
                 departments={departments}
-                branches={branches}
+                branches={offeredBranches}
                 placeholder="Search person, role, dept..."
               />
             </div>

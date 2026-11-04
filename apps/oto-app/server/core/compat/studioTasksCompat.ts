@@ -10,6 +10,7 @@ import {
 import { branches } from "../../../shared/schema";
 import { requireAuth } from "../../auth";
 import { canUserAccessBranch } from "../../auth-middleware";
+import { archivedBranchIds } from "../../lib/platformBranches";
 
 function requireStudioAccess(req: Request, res: Response, next: NextFunction) {
   const user = req.user as any;
@@ -388,8 +389,14 @@ router.get("/studio/branches", requireAuth, requireStudioAccess, async (req: Req
       .from(branches)
       .where(eq(branches.tenantId, tenantId))
       .orderBy(branches.name);
+    // Every branch stays in the list, so a name on an older checklist, task or
+    // run still reads; `archived` says which the platform has archived, and the
+    // Studio pickers leave those out (SCRUM-749).
+    const archived = await archivedBranchIds(tenantId);
 
-    res.json(allBranches.filter(branch => canUserAccessBranch(req.userWithAccess!, branch.id)));
+    res.json(allBranches
+      .filter(branch => canUserAccessBranch(req.userWithAccess!, branch.id))
+      .map(branch => ({ ...branch, archived: archived.has(branch.id) })));
   } catch (error) {
     console.error("Error fetching branches:", error);
     res.status(500).json({ message: "Failed to fetch branches" });

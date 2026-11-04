@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { MediaUploadButton, MediaPreviewStrip, MediaDropZone, UploadingFilesPreview, UploadStatusBanner, type ChecklistAttachment } from "@/components/media";
 import { uploadQueue } from "@/lib/uploadQueue";
 import { useBranchContext } from "@/hooks/use-branch-context";
+import { pickerBranches } from "@/lib/branch-picker";
 import {
   addedBranchIds as branchesAddedTo,
   addedBranchQuestion,
@@ -51,6 +52,7 @@ interface Role {
 interface Branch {
   id: string;
   name: string;
+  archived?: boolean;
 }
 
 interface Location {
@@ -260,7 +262,7 @@ export default function StudioChecklistsPage() {
   };
 
   const toggleAllBranches = () => {
-    const allBranchIds = branches.map(b => b.id);
+    const allBranchIds = openBranches.map(b => b.id);
     const current = form.getValues("branchIds");
     if (current.length === allBranchIds.length) {
       // All selected, deselect all
@@ -307,12 +309,17 @@ export default function StudioChecklistsPage() {
     enabled: !!user,
   });
 
-  const allBranchesSelected = branches.length > 0 && selectedBranchIds.length === branches.length;
-
   const originalBranchIds = useMemo(
     () => (editingChecklist ? checklistBranchIds(editingChecklist) : []),
     [editingChecklist],
   );
+  // What the pickers offer (SCRUM-749): no branch the platform has archived,
+  // except one the checklist being edited already names, so it can be taken off.
+  // "All Branches" means every open branch.
+  const openBranches = pickerBranches(branches);
+  const offeredBranches = pickerBranches(branches, originalBranchIds);
+
+  const allBranchesSelected = openBranches.length > 0 && selectedBranchIds.length === openBranches.length;
   const addedBranches = branchesAddedTo(originalBranchIds, selectedBranchIds);
   const addedBranchesKey = addedBranches.join(",");
   // The answer belongs to the branches it was given for: a different set asks again.
@@ -326,7 +333,7 @@ export default function StudioChecklistsPage() {
   // A shared checklist can also be on a branch this person does not have: it stays
   // selected but is not in their picker. A new checklist goes to the branches they
   // can see and choose, so splitting off a copy never asks for one out of reach.
-  const saveAsNewBranchIds = selectedBranchIds.filter((id) => branches.some((branch) => branch.id === id));
+  const saveAsNewBranchIds = selectedBranchIds.filter((id) => openBranches.some((branch) => branch.id === id));
   // A manager at the second branch of a shared checklist can open and copy it, but
   // the server keeps a plain save for the first. Say so before they try.
   const plainSaveRefused = !saveAsNew
@@ -1171,7 +1178,7 @@ export default function StudioChecklistsPage() {
                   >
                     All Branches
                   </Badge>
-                  {branches.map((branch) => (
+                  {offeredBranches.map((branch) => (
                     <Badge
                       key={branch.id}
                       variant={selectedBranchIds.includes(branch.id) ? "default" : "outline"}
@@ -1942,7 +1949,7 @@ export default function StudioChecklistsPage() {
               <FormItem>
                 <FormLabel>Branches</FormLabel>
                 <div className="border rounded-md p-3 space-y-2 max-h-40 overflow-y-auto">
-                  {branches.length === 0 ? (
+                  {offeredBranches.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No branches available</p>
                   ) : (
                     <>
@@ -1957,7 +1964,7 @@ export default function StudioChecklistsPage() {
                         <span className="text-sm">All Branches</span>
                       </label>
                       <hr className="my-1" />
-                      {branches.map((branch) => (
+                      {offeredBranches.map((branch) => (
                         <label
                           key={branch.id}
                           className="flex items-center gap-2 cursor-pointer hover-elevate p-1 rounded"

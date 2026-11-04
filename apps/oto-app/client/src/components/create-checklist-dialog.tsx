@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { pickerBranches } from "@/lib/branch-picker";
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ interface Role {
 interface Branch {
   id: string;
   name: string;
+  archived?: boolean;
 }
 
 interface Department {
@@ -163,10 +165,12 @@ export function CreateChecklistDialog({ open, onOpenChange }: CreateChecklistDia
   const checklistType = form.watch("checklistType");
   const checkerRounds = form.watch("checkerRounds");
 
-  const { data: branches = [] } = useQuery<Branch[]>({
+  const { data: studioBranches = [] } = useQuery<Branch[]>({
     queryKey: ["/api/studio/branches"],
     enabled: open,
   });
+  // A new checklist is never set up at a branch the platform has archived (SCRUM-749).
+  const branches = pickerBranches(studioBranches);
 
   const { data: roles } = useQuery<Role[]>({
     queryKey: ["/api/roles"],

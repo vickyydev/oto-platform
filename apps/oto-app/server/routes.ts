@@ -171,6 +171,7 @@ import { DEACTIVATE_INSTEAD, deleteManagedUser } from "./lib/userDeletion";
 import { deleteBranchWhole, deleteEmployeeWhole, deletePersonWhole } from "./lib/recordDeletion";
 import { FACE_CLOCK_OFF_REFUSAL, FACE_ENROLMENT_OFF_REFUSAL, FACE_OFF_NO_MATCH, faceClockInOn } from "./lib/faceOff";
 import { SHIFT_GROUP_DELETE_NEEDS_TARGET, SHIFT_GROUP_REQUIRED, noShiftGroup, shiftStillOnRota } from "./lib/shiftGroupRequired";
+import { archivedBranchIds } from "./lib/platformBranches";
 import {
   BRANCH_NOT_FOUND,
   CATALOG_ITEM_NOT_FOUND,
@@ -21683,7 +21684,7 @@ OTO Company Limited`,
       // Materialize the current recurring period as a pending run. This keeps
       // Pending meaningful without requiring a separate scheduler, while the
       // period lookup makes repeated dashboard requests idempotent.
-      const accessibleBranches = await db.select({ id: branches.id, timezone: branches.timezone })
+      const accessibleBranches = await db.select({ id: branches.id, timezone: branches.timezone, createdAt: branches.createdAt })
         .from(branches)
         .where(and(
           eq(branches.tenantId, tenantId),
@@ -21694,6 +21695,9 @@ OTO Company Limited`,
               : inArray(branches.id, user.allowedBranchIds),
         ));
       const accessibleBranchMap = new Map(accessibleBranches.map((branch) => [branch.id, branch]));
+      // A branch the platform has archived gets no new runs (SCRUM-749). Its
+      // past runs stay where they are.
+      const archivedBranches = await archivedBranchIds(tenantId);
       // With every employee each names (SCRUM-658), for the responsible staff below.
       const recurringTemplates = await withChecklistAssignees(await db.select()
         .from(checklistTemplates)
@@ -21710,8 +21714,9 @@ OTO Company Limited`,
           : template.branchId
             ? [template.branchId]
             : [...accessibleBranchMap.keys()];
-        for (const targetBranchId of targetBranchIds.filter((id) => accessibleBranchMap.has(id))) {
-          const timezone = accessibleBranchMap.get(targetBranchId)?.timezone || "Asia/Bangkok";
+        for (const targetBranchId of targetBranchIds.filter((id) => accessibleBranchMap.has(id) && !archivedBranches.has(id))) {
+          const targetBranch = accessibleBranchMap.get(targetBranchId);
+          const timezone = targetBranch?.timezone || "Asia/Bangkok";
           const localDate = getLocalDateString(now, timezone);
           const [latestRun] = await db.select({ periodStart: checklistRuns.periodStart })
             .from(checklistRuns)
@@ -21725,9 +21730,16 @@ OTO Company Limited`,
             .from(checklistTemplateItems)
             .where(eq(checklistTemplateItems.templateId, template.id));
 
+          // A branch's first run is for the later of the day the checklist was
+          // made and the day the branch opened (SCRUM-749): a branch opened
+          // today starts with today's run, not with every run it would have had
+          // since the checklist was made. A branch that already has runs carries
+          // on from its latest, as before.
+          const checklistMadeDate = getLocalDateString(template.createdAt || now, timezone);
+          const branchOpenedDate = targetBranch?.createdAt ? getLocalDateString(targetBranch.createdAt, timezone) : checklistMadeDate;
           let candidateDate = latestRun?.periodStart
             ? getLocalDateString(latestRun.periodStart, timezone)
-            : getLocalDateString(template.createdAt || now, timezone);
+            : branchOpenedDate > checklistMadeDate ? branchOpenedDate : checklistMadeDate;
           // Catch up elapsed occurrences after downtime or long periods without
           // dashboard visits. The cap prevents a legacy template from causing
           // unbounded work on its first lifecycle-aware request.

@@ -40,6 +40,20 @@
 //      see and shows on a checklist on no branch whoever opens it, and the two
 //      answers read as the owner wrote them.
 //
+// SCRUM-749, the recurring run creator and the platform's archived branches:
+//
+//  13. A branch's first run is for the later of the day the checklist was made
+//      and the day the branch opened: a branch opened today gets today's run
+//      and nothing before it, while a branch already open keeps every run since
+//      the checklist was made, as before. A branch the platform has archived
+//      (`core.branch.archived_at`, read through `branches.core_branch_id`) gets
+//      no runs, from a checklist for every branch or one naming it; a mapped
+//      branch still open does. The Studio branch list marks the archived one and
+//      the pickers leave it out, unless the record being edited names it.
+//      CI's database holds the app's schema alone, so a stand-in `core.branch`
+//      with the columns the app reads is made for the run and removed after; on
+//      a database the platform has migrated, real rows are written and removed.
+//
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
 //   npx tsx tests/checklist-copies.check.ts
@@ -62,6 +76,7 @@ import {
   saveAsNewSummary,
   sharedChecklistNote,
 } from "../client/src/lib/checklist-branch-edit";
+import { pickerBranches } from "../client/src/lib/branch-picker";
 
 const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -254,6 +269,14 @@ async function api(who: Who, method: string, path: string, body?: unknown): Prom
   }
   return { status: res.status, body: parsed };
 }
+
+/** What section 13 wrote into the platform's branch table, for the clean-up. */
+const platformBranches: { standIn: boolean | null; madeSchema: boolean; operator: string | null; rows: string[] } = {
+  standIn: null,
+  madeSchema: false,
+  operator: null,
+  rows: [],
+};
 
 let checks = 0;
 const check = async (title: string, fn: () => void | Promise<void>) => {
@@ -1101,6 +1124,102 @@ try {
     assert.match(saveAsNewSummary({ selectedBranchIds: [], branches, canReachAllBranches: false }), /^Creates one new checklist for your branch\./);
   });
 
+  // ── 13. Runs start when the branch opens, and stop when it is archived ────
+
+  await check("a branch opened today gets today's run only, an open branch keeps its runs, an archived branch gets none", async () => {
+    // The platform's branch table: the real one when the platform has migrated
+    // this database, otherwise a stand-in with the columns the app reads.
+    platformBranches.standIn = !(await q<{ reg: string | null }>("select to_regclass('core.branch')::text as reg"))[0].reg;
+    if (platformBranches.standIn) {
+      platformBranches.madeSchema = (await q("select 1 from pg_namespace where nspname = 'core'")).length === 0;
+      await q("create schema if not exists core");
+      await q("create table core.branch (id uuid primary key, name text not null, created_at timestamptz not null default now(), archived_at timestamptz)");
+    } else {
+      platformBranches.operator = randomUUID();
+      await q("insert into core.operator (id, name) values ($1, $2)", [platformBranches.operator, `ZZ TEST 749 ${run}`]);
+    }
+    async function platformBranch(label: string, archived: boolean): Promise<string> {
+      const id = randomUUID();
+      if (platformBranches.standIn) {
+        await q("insert into core.branch (id, name, archived_at) values ($1, $2, $3)", [id, `ZZ TEST 749 ${label} ${run}`, archived ? new Date() : null]);
+      } else {
+        await q("insert into core.branch (id, operator_id, name, code, archived_at) values ($1, $2, $3, $4, $5)", [
+          id,
+          platformBranches.operator,
+          `ZZ TEST 749 ${label} ${run}`,
+          `zz-749-${label.toLowerCase().replaceAll(" ", "-")}-${run}`,
+          archived ? new Date() : null,
+        ]);
+      }
+      platformBranches.rows.push(id);
+      return id;
+    }
+    async function appBranch(label: string, opts: { openedDaysAgo: number; coreBranchId?: string }): Promise<string> {
+      const id = randomUUID();
+      await q(
+        `insert into branches (id, tenant_id, name, address, timezone, created_at, core_branch_id)
+         values ($1, $2, $3, 'ZZ TEST', 'Asia/Bangkok', now() - make_interval(days => $4::int), $5)`,
+        [id, tenant, `ZZ TEST 749 ${label} ${run}`, opts.openedDaysAgo, opts.coreBranchId ?? null],
+      );
+      return id;
+    }
+    // In capitals, as some mapped rows were written before the platform lowered them.
+    const openLong = await appBranch("Open long", { openedDaysAgo: 60, coreBranchId: (await platformBranch("Open", false)).toUpperCase() });
+    const openedToday = await appBranch("Opened today", { openedDaysAgo: 0 });
+    const closed = await appBranch("Closed", { openedDaysAgo: 60, coreBranchId: await platformBranch("Closed", true) });
+
+    const everywhere = await fullChecklist("Every branch 749", { recurrence: "daily", weeklyDays: [], branchIds: [] });
+    const named = await fullChecklist("Named 749", { recurrence: "daily", weeklyDays: [], branchIds: [hkt] });
+    await q("update checklist_templates set branch_id = $2, branch_ids = $3::jsonb where id = $1", [named.id, openLong, JSON.stringify([openLong, closed])]);
+    await q("update checklist_templates set created_at = now() - interval '30 days' where id = any($1::uuid[])", [[everywhere.id, named.id]]);
+
+    for (let i = 0; i < 2; i++) {
+      const board = await api("admin", "GET", "/api/checklist-runs/ops?branchId=all");
+      assert.equal(board.status, 200, JSON.stringify(board.body).slice(0, 300));
+    }
+    const runsAt = async (template: string, branchId: string) =>
+      q<{ day: string; status: string }>(
+        `select to_char(period_start at time zone 'UTC' at time zone 'Asia/Bangkok', 'YYYY-MM-DD') as day, status
+           from checklist_runs where template_id = $1 and branch_id = $2 order by period_start`,
+        [template, branchId],
+      );
+    const [{ today }] = await q<{ today: string }>("select to_char(now() at time zone 'Asia/Bangkok', 'YYYY-MM-DD') as today");
+
+    const fresh = await runsAt(everywhere.id, openedToday);
+    assert.deepEqual(fresh.map((r) => r.day), [today], "a branch opened today was given runs from before it opened");
+    assert.equal(fresh[0].status, "pending");
+    for (const branchId of [hkt, robinson, patong]) {
+      assert.deepEqual((await runsAt(everywhere.id, branchId)).map((r) => r.day), [today], "a branch opened with this run was given earlier runs");
+    }
+
+    for (const template of [everywhere.id, named.id]) {
+      const kept = await runsAt(template, openLong);
+      assert.equal(kept.length, 31, "a branch open before the checklist no longer has a run for every day since it was made");
+      assert.equal(kept[kept.length - 1].day, today);
+      assert.ok(kept.slice(0, -1).every((r) => r.status === "missed"));
+      assert.deepEqual(await runsAt(template, closed), [], "an archived branch was given runs");
+    }
+  });
+
+  await check("the Studio branch list marks the archived branch, and the pickers leave it out unless the record names it", async () => {
+    const listed = await api("admin", "GET", "/api/studio/branches");
+    assert.equal(listed.status, 200);
+    const byName = new Map((listed.body as { id: string; name: string; archived: boolean }[]).map((b) => [b.name, b]));
+    assert.equal(byName.get(`ZZ TEST 749 Closed ${run}`)?.archived, true);
+    assert.equal(byName.get(`ZZ TEST 749 Open long ${run}`)?.archived, false);
+    assert.equal(byName.get(`ZZ TEST 749 Opened today ${run}`)?.archived, false);
+    assert.equal(byName.get(`ZZ TEST HKT ${run}`)?.archived, false, "a branch with no platform branch reads as archived");
+
+    const branches = [
+      { id: "hkt", name: "HKT Central", archived: false },
+      { id: "old", name: "Old park", archived: true },
+      { id: "rob", name: "Robinson" },
+    ];
+    assert.deepEqual(pickerBranches(branches).map((b) => b.id), ["hkt", "rob"]);
+    assert.deepEqual(pickerBranches(branches, ["old"]).map((b) => b.id), ["hkt", "old", "rob"], "a branch the record names was hidden");
+    assert.deepEqual(pickerBranches(branches, ["hkt"]).map((b) => b.id), ["hkt", "rob"]);
+  });
+
   console.log(`checklist-copies.check: ${checks} checks passed`);
 } catch (err) {
   console.error("checklist-copies.check FAILED:", err);
@@ -1108,5 +1227,13 @@ try {
 } finally {
   for (const child of children) child.kill();
   bucketServer.close();
+  // The platform's branch rows this run wrote, or the stand-in table it made.
+  if (platformBranches.standIn === true) {
+    await q("drop table if exists core.branch");
+    if (platformBranches.madeSchema) await q("drop schema if exists core");
+  } else if (platformBranches.standIn === false) {
+    if (platformBranches.rows.length) await q("delete from core.branch where id = any($1::uuid[])", [platformBranches.rows]);
+    if (platformBranches.operator) await q("delete from core.operator where id = $1", [platformBranches.operator]);
+  }
   await pool.end();
 }
