@@ -104,6 +104,9 @@ async function fixture(page: Page, options: { branchOnly?: boolean; omitted?: Pe
     if (path === '/members/tier-verifications') return route.fulfill({ json: { verifications: [{ id: SECOND, member: { id: PERSON, nickname: 'ZZ TEST Verified Ada', phone: '+66812340000' },
       fromTier: 'regular', toTier: 'resident', evidenceType: 'Residence permit', evidenceExpiresAt: '2027-01-01', expired: false,
       verifiedBy: 'ZZ TEST Document checker', branch: parks[0]!.name, note: 'ZZ TEST Evidence note', verifiedAt: '2026-10-23T01:02:00Z' }] } });
+    // SCRUM-772 — the count of Thai rates approved by hand, beside the records.
+    if (path === '/sales/tier-approvals/by-staff') return route.fulfill({ json: { since: '2026-10-05T00:00:00Z', days: 30,
+      staff: [{ accountId: SECOND, name: 'ZZ TEST Hand approver', recent: 3, total: 5, lastApprovedAt: '2026-11-03T01:02:00Z' }] } });
     if (path === '/members') {
       if (method === 'POST') { const created = person(String(body!.id), String(body!.nickname)); created.phone = String(body!.phone); members.push(created); return route.fulfill({ json: { member: created } }); }
       return route.fulfill({ json: { members: control.actor === ACTOR ? members : [person(SECOND, 'ZZ TEST Current person')] } });
@@ -143,6 +146,7 @@ test('the four native operations pages, their aliases and phone controls open wi
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
     await page.goto('/tier-verifications'); await expect(page.getByText('ZZ TEST Verified Ada', { exact: true }).filter({ visible: true })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Thai rate approved by hand' }).getByText('ZZ TEST Hand approver', { exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
     await page.goto('/reports/wallets'); await page.getByRole('textbox', { name: 'Wallet key', exact: true }).fill('ZZTESTBAND');
     await page.getByRole('button', { name: 'Look up', exact: true }).click();

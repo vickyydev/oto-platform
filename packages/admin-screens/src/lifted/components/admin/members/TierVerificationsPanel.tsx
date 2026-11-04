@@ -6,6 +6,7 @@ import { type ApiTierVerificationRecord } from "../../../api/platform";
 
 import { Button } from "../../ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../ui/table";
+import { TierApprovalCounts } from "./TierApprovalCounts";
 
 
 /**
@@ -29,6 +30,8 @@ export function TierVerificationsPanelWithPorts({ ports }: { ports: TierVerifica
   const [records, setRecords] = useState<ApiTierVerificationRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  /** SCRUM-772 — Refresh reads the hand-approval count again too. */
+  const [countsSignal, setCountsSignal] = useState(0);
 
   const refresh = useCallback(() => {
     if (!current()) return Promise.resolve();
@@ -71,11 +74,13 @@ export function TierVerificationsPanelWithPorts({ ports }: { ports: TierVerifica
         <span className="text-sm text-foreground/40">
           {records.length} record{records.length === 1 ? '' : 's'}
         </span>
-        <Button variant="outline" onClick={() => void refresh()} disabled={loading}>
+        <Button variant="outline" onClick={() => { setCountsSignal((n) => n + 1); void refresh(); }} disabled={loading}>
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>
+
+      <TierApprovalCounts load={membersApi.tierApprovalCounts} refreshSignal={countsSignal} isCurrent={isCurrent} />
 
       {records.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-foreground/15 bg-foreground/[0.02] px-6 py-12 text-center text-sm text-foreground/50">
