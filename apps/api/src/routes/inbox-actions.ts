@@ -3,6 +3,8 @@ import { z } from 'zod';
 import {
   InboxActionRefusalSchema,
   InboxActionResultSchema,
+  InboxBookDateBodySchema,
+  InboxBookDateResultSchema,
   InboxBranchBodySchema,
   InboxBranchResultSchema,
   InboxMoveBodySchema,
@@ -14,6 +16,8 @@ import {
 import type { App } from '../app';
 import { PermissionDeniedError } from '../plugins/session';
 import { opCtx, withTx } from '../services/tx';
+import { REPLAY_HEADER, wasReplay } from '../services/client-id';
+import { bookConversationDate } from '../services/inbox/book-date';
 import { holdsAnywhere, viewerScopeOf } from '../services/inbox/read-visibility';
 import {
   addSupport,
@@ -203,6 +207,42 @@ export async function inboxActionRoutes(app: App): Promise<void> {
       return withTx(app.db, opCtx(req), 'inbox.conversation_branch', (tx) =>
         setBranch(tx, ctx, { conversationId: req.params.id, branchId: req.body.branchId }),
       );
+    },
+  );
+
+  app.post(
+    '/conversations/:id/book-date',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Book Date (SCRUM-775): on a Birthdays & Events conversation, make a TENTATIVE birthday event in the OTO ' +
+          "App's Events module from what the person confirmed out of the chat — the park, the date and start time, " +
+          'the guests, the contact and the child — and link the two: the conversation keeps the event (its `event` ' +
+          'on GET …/{id}, a `date_booked` pill) and the event names the conversation ("From the inbox"). The body ' +
+          "`id` is caller-named — the event's own id in the Events module — so the same id again is the same event " +
+          '(a replay, `x-oto-replay: true`), never a second; an id another conversation holds is 409 ID_IN_USE. ' +
+          'Refusals: 409 NOT_A_BIRTHDAY; 409 EVENT_ALREADY_BOOKED when the conversation has its event already ' +
+          '(`details.eventId`; Create BEO opens it at `event.beoPath`); 409 EVENT_BRANCH_NOT_MAPPED when the OTO App ' +
+          'has no branch for the park; 503 EVENTS_CALENDAR_UNAVAILABLE when the Events module did not answer ' +
+          '(nothing was booked; press again); 502 EVENTS_CALENDAR_REFUSED otherwise. Needs a place in the birthdays ' +
+          'team or inbox:conversation:assign at the conversation. ' +
+          REFUSALS,
+        params: ConversationParams,
+        body: InboxBookDateBodySchema,
+        response: { 200: InboxBookDateResultSchema, 409: InboxActionRefusalSchema },
+      },
+    },
+    async (req, reply) => {
+      const ctx = await actionCtx(req, 'inbox:conversation:read');
+      const answer = await bookConversationDate(
+        { db: app.db, directory: app.otoAppDirectory, log: req.log },
+        ctx,
+        opCtx(req),
+        { conversationId: req.params.id, ...req.body },
+      );
+      if (wasReplay(answer)) reply.header(REPLAY_HEADER, 'true');
+      return answer;
     },
   );
 

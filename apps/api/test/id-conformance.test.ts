@@ -238,6 +238,9 @@ const CALLER_NAMED = [
   // S2-19 I2f: a reply is the same message under the same id (never a second
   // send), and a template variant is named by the Console that makes it.
   'POST /inbox/conversations/:id/messages',
+  // SCRUM-775: Book Date names the event it makes in the Events module, so a
+  // second press, or a retry after a lost answer, is the same event there.
+  'POST /inbox/conversations/:id/book-date',
   'POST /inbox/templates',
   // SCRUM-626: Console team and rule creates accept optional caller UUIDs.
   'POST /inbox/teams',

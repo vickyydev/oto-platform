@@ -85874,6 +85874,74 @@
                       "type": "string",
                       "format": "uuid",
                       "nullable": true
+                    },
+                    "event": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "date": {
+                          "type": "string"
+                        },
+                        "startTime": {
+                          "type": "string"
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "branchName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "statusName": {
+                          "type": "string"
+                        },
+                        "kids": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "adults": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "bookedAt": {
+                          "type": "string"
+                        },
+                        "bookedByAccountId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "beoPath": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "title",
+                        "date",
+                        "startTime",
+                        "branchId",
+                        "branchName",
+                        "status",
+                        "statusName",
+                        "kids",
+                        "adults",
+                        "bookedAt",
+                        "bookedByAccountId",
+                        "beoPath"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
                     }
                   },
                   "required": [
@@ -85908,7 +85976,8 @@
                     "aiState",
                     "aiPaused",
                     "aiPausedAt",
-                    "aiPausedByAccountId"
+                    "aiPausedByAccountId",
+                    "event"
                   ],
                   "additionalProperties": false
                 }
@@ -86627,6 +86696,13 @@
                     },
                     "day": {
                       "type": "string"
+                    },
+                    "beosThisWeek": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "weekStart": {
+                      "type": "string"
                     }
                   },
                   "required": [
@@ -86638,7 +86714,9 @@
                     "averageFirstResponseSeconds",
                     "population",
                     "byCategory",
-                    "day"
+                    "day",
+                    "beosThisWeek",
+                    "weekStart"
                   ],
                   "additionalProperties": false
                 }
@@ -88368,6 +88446,225 @@
                     "hostAdded",
                     "hostSkipped",
                     "host"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/conversations/{id}/book-date": {
+      "post": {
+        "description": "Book Date (SCRUM-775): on a Birthdays & Events conversation, make a TENTATIVE birthday event in the OTO App's Events module from what the person confirmed out of the chat — the park, the date and start time, the guests, the contact and the child — and link the two: the conversation keeps the event (its `event` on GET …/{id}, a `date_booked` pill) and the event names the conversation (\"From the inbox\"). The body `id` is caller-named — the event's own id in the Events module — so the same id again is the same event (a replay, `x-oto-replay: true`), never a second; an id another conversation holds is 409 ID_IN_USE. Refusals: 409 NOT_A_BIRTHDAY; 409 EVENT_ALREADY_BOOKED when the conversation has its event already (`details.eventId`; Create BEO opens it at `event.beoPath`); 409 EVENT_BRANCH_NOT_MAPPED when the OTO App has no branch for the park; 503 EVENTS_CALENDAR_UNAVAILABLE when the Events module did not answer (nothing was booked; press again); 502 EVENTS_CALENDAR_REFUSED otherwise. Needs a place in the birthdays team or inbox:conversation:assign at the conversation. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "branchId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "date": {
+                    "type": "string"
+                  },
+                  "startTime": {
+                    "type": "string",
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                  },
+                  "kids": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000,
+                    "nullable": true
+                  },
+                  "adults": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000,
+                    "nullable": true
+                  },
+                  "contactName": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1
+                  },
+                  "phone": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "nullable": true
+                  },
+                  "childName": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "nullable": true
+                  },
+                  "childAge": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 30,
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "id",
+                  "branchId",
+                  "date",
+                  "startTime",
+                  "kids",
+                  "adults",
+                  "contactName",
+                  "phone",
+                  "childName",
+                  "childAge"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversationId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "event": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "date": {
+                          "type": "string"
+                        },
+                        "startTime": {
+                          "type": "string"
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "branchName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "statusName": {
+                          "type": "string"
+                        },
+                        "kids": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "adults": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "bookedAt": {
+                          "type": "string"
+                        },
+                        "bookedByAccountId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "beoPath": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "title",
+                        "date",
+                        "startTime",
+                        "branchId",
+                        "branchName",
+                        "status",
+                        "statusName",
+                        "kids",
+                        "adults",
+                        "bookedAt",
+                        "bookedByAccountId",
+                        "beoPath"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "created": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "conversationId",
+                    "event",
+                    "created"
                   ],
                   "additionalProperties": false
                 }

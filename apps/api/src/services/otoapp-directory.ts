@@ -148,9 +148,59 @@ export interface DirectoryEventEditAnswer {
   replayed: boolean;
 }
 
+/**
+ * SCRUM-775 — a birthday booked from the inbox, as the app's directory takes
+ * it (`inboxEventBodySchema`, the app's eventRoutes.ts): the inbox's own id
+ * for the event, the PLATFORM branch (the app finds its own branch mapped to
+ * it), the conversation it came from, and what a person confirmed.
+ */
+export interface DirectoryInboxEventBody {
+  id: string;
+  coreBranchId: string;
+  inboxConversationId: string;
+  title: string;
+  eventDate: string;
+  startTime: string;
+  numChildren?: number | null;
+  numAdults?: number | null;
+  childName?: string | null;
+  kidTurningAge?: number | null;
+  bookingName?: string | null;
+  parentName?: string | null;
+  whatsappPhone?: string | null;
+}
+
+/** What the app answers with (`InboxEventResult`, the app's eventWrites.ts). */
+export interface DirectoryInboxEventAnswer {
+  event: {
+    id: string;
+    branchId: string;
+    coreBranchId: string;
+    eventType: 'birthday';
+    title: string;
+    /** The app's stored status value (`tentative`, or the value of a status the park group named Tentative). */
+    status: string;
+    statusName: string;
+    eventDate: string;
+    startTime: string;
+    numChildren: number | null;
+    numAdults: number | null;
+    inboxConversationId: string;
+    createdAt: string;
+  };
+  replayed: boolean;
+}
+
 export interface OtoAppDirectory {
   /** Whether this deployment has a directory to call at all. */
   readonly configured: boolean;
+  /**
+   * SCRUM-775 — make a tentative birthday from the inbox's Book Date:
+   * `POST /api/directory/events`. The body carries the event's own id, so a
+   * retry is a replay in the app. Optional so a directory built before it (a
+   * test's stub) still types; one without it is answered "not configured".
+   */
+  createInboxEvent?(body: DirectoryInboxEventBody): Promise<DirectoryOutcome<DirectoryInboxEventAnswer>>;
   addAttendee(eventId: string, body: DirectoryAttendeeBody): Promise<DirectoryOutcome<DirectoryAttendeeAnswer>>;
   /**
    * S2-20 E4 — write a till's party edit back. Optional so a directory built
@@ -425,6 +475,18 @@ export function buildOtoAppDirectory(
 
   return {
     configured,
+    createInboxEvent(body) {
+      return post(
+        '/api/directory/events',
+        body,
+        (answer): answer is DirectoryInboxEventAnswer => {
+          const event = (answer as Partial<DirectoryInboxEventAnswer> | null)?.event;
+          return !!event?.id && event.id.toLowerCase() === body.id.toLowerCase() && typeof event.eventDate === 'string';
+        },
+        'The OTO App answered without the event',
+        'This deployment has no OTO App directory configured, so no event was made there',
+      );
+    },
     addAttendee(eventId, body) {
       return post(
         `/api/directory/events/${encodeURIComponent(eventId)}/attendees`,

@@ -167,6 +167,8 @@ describe('the dark palette on the key surfaces', () => {
       population: 'active',
       day: '2026-10-22',
       byCategory: { birthdays: 1, general: 2, marketing: 0, gm: 0 },
+      beosThisWeek: 0,
+      weekStart: '2026-10-19',
     };
     const html = renderToStaticMarkup(
       createElement(Dashboard, { data, error: null, unansweredOnly: false, onToggleUnanswered: noop }),

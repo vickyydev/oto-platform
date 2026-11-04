@@ -333,6 +333,20 @@ describe('operator-wide settings are changed at operator scope (SCRUM-606)', () 
     }
   });
 
+  it("Book Date loads the conversation inside the caller's operator and checks at it (SCRUM-775)", () => {
+    const key = 'POST /inbox/conversations/:id/book-date';
+    const route = routes.find((r) => `${r.method} ${r.path}` === key);
+    expect(route).toBeDefined();
+    expect(configs.get(key)?.dynamicPermission).toBe(true);
+    expect(configs.get(key)?.target).toBeUndefined();
+    // The caller holds the inbox somewhere in their operator, then the service
+    // loads the conversation within it (404 otherwise) and checks there.
+    expect(route!.handlerText).toContain("actionCtx(req, 'inbox:conversation:read')");
+    expect(establishesOwnership(route!.handlerText)).toBe(true);
+    expect(reachesText(route!.handlerText, (text) => /\bloadVisibleConversation\s*\(/.test(text), functions, 2)).toBe(true);
+    expect(reachesText(route!.handlerText, (text) => /\bmayBook\s*\(/.test(text), functions, 2)).toBe(true);
+  });
+
   it('every operator-wide write declares the operator target, and nothing else', () => {
     const wrong = OPERATOR_WIDE_WRITES.filter((key) => {
       const config = configs.get(key);

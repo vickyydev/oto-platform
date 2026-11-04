@@ -22,6 +22,7 @@ import { audit } from '../audit';
 import type { EffectivePermission } from '../permissions';
 import type { Tx } from '../tx';
 import { divertTarget } from './actions';
+import { conversationEventOf } from './book-date';
 import { aiStateOf } from './ai-turns';
 import {
   INBOX_READ,
@@ -75,6 +76,13 @@ const dayStartSql = (isoDay: string): SQL =>
 
 /** The Bangkok day `now` falls in. */
 export const inboxToday = (now: Date): string => isoDateInTz(now, INBOX_DAY_TIMEZONE);
+
+/** The Monday of the week a Bangkok day falls in, `YYYY-MM-DD` (the BEO card's week, SCRUM-775). */
+export function inboxWeekStart(isoDay: string): string {
+  const d = new Date(`${isoDay}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return d.toISOString().slice(0, 10);
+}
 
 /** The list's order: newest activity first, a thread with no message by its start. */
 const sortKeySql = sql`coalesce(${s.conversation.lastMessageAt}, ${s.conversation.createdAt})`;
@@ -462,6 +470,7 @@ export async function conversationDetail(
     aiPaused: conv.aiPausedAt !== null,
     aiPausedAt: iso(conv.aiPausedAt),
     aiPausedByAccountId: conv.aiPausedByAccountId,
+    event: await conversationEventOf(db, viewer.operatorId, conv),
   };
 }
 
@@ -680,6 +689,7 @@ export async function dashboardScopeOf(db: Db, viewer: InboxViewer): Promise<Inb
 export async function inboxDashboard(db: Db, viewer: InboxViewer, now: Date): Promise<InboxDashboard> {
   const day = inboxToday(now);
   const start = dayStartSql(day);
+  const weekStart = inboxWeekStart(day);
   const activeIn = (category: InboxCategory): SQL =>
     sql`count(*) filter (where ${s.conversation.status} = 'active' and ${s.conversation.category} = ${category})::int`;
   const [row] = await db
@@ -698,6 +708,26 @@ export async function inboxDashboard(db: Db, viewer: InboxViewer, now: Date): Pr
     })
     .from(s.conversation)
     .where(visibleConversationsSql(viewer));
+  // The BEO card (SCRUM-775): a birthday conversation whose event Book Date
+  // made this week, one row per conversation so a second pill never counts
+  // twice. Its own query: the correlation has to sit in a WHERE, where the
+  // conversation's columns are written with their table.
+  const [beo] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(s.conversation)
+    .where(
+      and(
+        visibleConversationsSql(viewer),
+        eq(s.conversation.category, 'birthdays'),
+        sql`${s.conversation.eventOrderRef} is not null`,
+        sql`exists (
+          select 1 from ${s.inboxEvent}
+           where ${s.inboxEvent.operatorId} = ${s.conversation.operatorId}
+             and ${s.inboxEvent.conversationId} = ${s.conversation.id}
+             and ${s.inboxEvent.kind} = 'date_booked'
+             and ${s.inboxEvent.createdAt} >= ${dayStartSql(weekStart)})`,
+      ),
+    );
   const avg = row?.averageFirstResponseSeconds;
   return {
     scope: await dashboardScopeOf(db, viewer),
@@ -714,6 +744,8 @@ export async function inboxDashboard(db: Db, viewer: InboxViewer, now: Date): Pr
       gm: Number(row?.gm ?? 0),
     },
     day,
+    beosThisWeek: Number(beo?.n ?? 0),
+    weekStart,
   };
 }
 

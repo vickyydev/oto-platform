@@ -194,6 +194,32 @@ describe('route guards (S2-01b)', () => {
     }
   });
 
+  it('Book Date is a session write, guarded at the conversation by its handler (SCRUM-775)', async () => {
+    const route = ctx.app.routeRegistry.find((r) => r.method === 'POST' && r.url === '/inbox/conversations/:id/book-date');
+    expect(route).toBeDefined();
+    expect(route?.config.dynamicPermission).toBe(true);
+    expect(route?.config.permission).toBeUndefined();
+    expect(route?.config.public).not.toBe(true);
+    expect(route?.config.credential).toBeUndefined();
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/inbox/conversations/01964600-0000-7000-8000-000000000001/book-date',
+      payload: {
+        id: '01964600-0000-7000-8000-000000000002',
+        branchId: '01964600-0000-7000-8000-000000000003',
+        date: '2099-03-14',
+        startTime: '14:00',
+        kids: 10,
+        adults: null,
+        contactName: 'Guard',
+        phone: null,
+        childName: null,
+        childAge: null,
+      },
+    });
+    expect(res.statusCode).toBe(401);
+  });
+
   it('keeps access review behind the existing role-read gate (SCRUM-616)', () => {
     const route = ctx.app.routeRegistry.find((r) => r.method === 'GET' && r.url.replace(/\/$/, '') === '/access-review');
     expect(route?.config.permission).toBe('admin:role:read');

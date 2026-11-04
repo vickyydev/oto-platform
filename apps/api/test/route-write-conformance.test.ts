@@ -152,6 +152,26 @@ describe('Operator selection write registration (SCRUM-640)', () => {
   });
 });
 
+describe('Book Date write registration (SCRUM-775)', () => {
+  it('validates both ways, keys the event by the caller, and commits the link with its audit row', () => {
+    const key = 'POST /inbox/conversations/:id/book-date';
+    const route = routes.find((r) => `${r.method} ${r.path}` === key);
+    expect(route).toBeDefined();
+    expect(route!.optionsText).toContain('body: InboxBookDateBodySchema');
+    expect(route!.optionsText).toContain('200: InboxBookDateResultSchema');
+    expect(reachesText(route!.handlerText, (text) => /\bbookConversationDate\s*\(/.test(text), functions)).toBe(true);
+    expect(reachesText(route!.handlerText, (text) => /\bclaimClientId\s*\(/.test(text), functions, 2)).toBe(true);
+    expect(reachesText(route!.handlerText, (text) => /\bwithTx\s*\(/.test(text), functions)).toBe(true);
+    expect(reachesText(route!.handlerText, (text) => /\baudit\.record\s*\(\s*tx\b/.test(text), functions, 2)).toBe(true);
+    const config = configs.get(key);
+    expect(config?.dynamicPermission).toBe(true);
+    expect(config?.secretResponse).not.toBe(true);
+    expect(config?.replaysByOwnId).not.toBe(true);
+    expect(config?.credential).toBeUndefined();
+    expect(config?.public).not.toBe(true);
+  });
+});
+
 describe('Platform read registration (SCRUM-639)', () => {
   it('adds exactly three reads without a mutation exemption or a control runner', () => {
     const paths = ['/platform/alerts', '/platform/jobs', '/platform/environment'];
