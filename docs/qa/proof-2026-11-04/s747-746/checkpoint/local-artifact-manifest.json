@@ -1,0 +1,162 @@
+{
+  "at": "2026-11-04T08:10:20.220Z",
+  "source": "f035051ff804bdd6e1d1475006f1a62fd3ae96ef",
+  "artifacts": [
+    {
+      "file": "C:/oto-lanes/s747-api-focused.log",
+      "bytes": 13563,
+      "sha256": "edb76c3d80a32f18cec3d3963caa66675d9e16d53443c1a7b7ef12f8c57e9310",
+      "repositoryCopy": null
+    },
+    {
+      "file": "C:/oto-lanes/s747-api-full-controller.mjs",
+      "bytes": 1045,
+      "sha256": "fc136c0610ccb26f9402ad139ac8fadd2cee8b6bc2bcf7dda30f948b8a536c5c",
+      "repositoryCopy": "prepared/s747-api-full-controller.mjs"
+    },
+    {
+      "file": "C:/oto-lanes/s747-api-full.json",
+      "bytes": 204,
+      "sha256": "1f14d85c44806beef028d1a0494c5b7de2738ad69d6d4313906a74cec039d1aa",
+      "repositoryCopy": "s747-api-full.json"
+    },
+    {
+      "file": "C:/oto-lanes/s747-api-full.log",
+      "bytes": 198282,
+      "sha256": "0bd3f5b1a2d37f1ffed9fc96fb82351fd1eef1d5844d120bc7fe7293e6662b38",
+      "repositoryCopy": null
+    },
+    {
+      "file": "C:/oto-lanes/s747-api-full.sh",
+      "bytes": 118,
+      "sha256": "4a7f3e5de51f55a594c27e92f8628da137ddc0fcd6076be709933aa3ff0d8012",
+      "repositoryCopy": "prepared/s747-api-full.sh"
+    },
+    {
+      "file": "C:/oto-lanes/s747-api-gate.mts",
+      "bytes": 824,
+      "sha256": "105e65aba0f686d9914a61ef7e78506b63b1f01b4e044e57703a59e49f710cbd",
+      "repositoryCopy": "prepared/s747-api-gate.mts"
+    },
+    {
+      "file": "C:/oto-lanes/s747-api-types.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repositoryCopy": null
+    },
+    {
+      "file": "C:/oto-lanes/s747-code-commit.txt",
+      "bytes": 439,
+      "sha256": "6dbc68d6fc7da370239a2d5f391bdbe7d325936b323a4cb7310f2667605a660c",
+      "repositoryCopy": null
+    },
+    {
+      "file": "C:/oto-lanes/s747-contracts.log",
+      "bytes": 489,
+      "sha256": "389ac27fd1cb557825f2ae81c1bceeaa20c6386d57cbb3ef303662a4b007dd91",
+      "repositoryCopy": null
+    },
+    {
+      "file": "C:/oto-lanes/s747-gate-controller.mjs",
+      "bytes": 1051,
+      "sha256": "2316ed4f4366616b64db5b3390c110caa51c441a1119afe682bdc7034e44b803",
+      "repositoryCopy": "prepared/s747-gate-controller.mjs"
+    },
+    {
+      "file": "C:/oto-lanes/s747-import-commit.txt",
+      "bytes": 262,
+      "sha256": "a9db20eb9faaa507f4805604adff83185a0b206b46647c92cb4b99d20e681211",
+      "repositoryCopy": null
+    },
+    {
+      "file": "C:/oto-lanes/s747-lint.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repositoryCopy": null
+    },
+    {
+      "file": "C:/oto-lanes/s747-local-gates.json",
+      "bytes": 204,
+      "sha256": "73956c4ae2fb3844e3ce0dbc447b4bd3c49a469c34b3b01b5e40b23ea0ab9a0b",
+      "repositoryCopy": "s747-local-gates.json"
+    },
+    {
+      "file": "C:/oto-lanes/s747-local-gates.sh",
+      "bytes": 1012,
+      "sha256": "33e050f41a1c497a387246f91fe753ef0b305d661cb92e1d7b84ff76d1bf5a4d",
+      "repositoryCopy": "prepared/s747-local-gates.sh"
+    },
+    {
+      "file": "C:/oto-lanes/s747-main-ci-failed.log",
+      "bytes": 3014938,
+      "sha256": "c9a7b5bb9aa9afe5bd0280dd34df2e39f3d23bd674fcd8c3bace5a6b442674f4",
+      "repositoryCopy": null
+    },
+    {
+      "file": "C:/oto-lanes/s747-native-browser.mjs",
+      "bytes": 7757,
+      "sha256": "be595074fbde8a5a27c42cf622d20be0a751d68845b64f78aead5c3f11a8b5d1",
+      "repositoryCopy": "prepared/s747-native-browser.mjs"
+    },
+    {
+      "file": "C:/oto-lanes/s747-native-flow.mjs",
+      "bytes": 17962,
+      "sha256": "67f64cc335bcc71aa1eadd9b31e751bd8a610e95b1514519721711aa84448254",
+      "repositoryCopy": "prepared/s747-native-flow.mjs"
+    },
+    {
+      "file": "C:/oto-lanes/s747-native-local-1.log",
+      "bytes": 8950,
+      "sha256": "c276e566199c1909a481815258f80c3b78ede1eb313c62f7d36f874af529cbac",
+      "repositoryCopy": null
+    },
+    {
+      "file": "C:/oto-lanes/s747-native-local.mts",
+      "bytes": 2893,
+      "sha256": "c57bab1a70e5216c58ec0084d87a8aeb337c2e6068f7bc1dddf591947a83b49a",
+      "repositoryCopy": "prepared/s747-native-local.mts"
+    },
+    {
+      "file": "C:/oto-lanes/s747-pos-gates.sh",
+      "bytes": 711,
+      "sha256": "de2e7bd947a09cb3a2a776b6a0de6c7621ad72360080159f3ca69ecb72eb8b81",
+      "repositoryCopy": "prepared/s747-pos-gates.sh"
+    },
+    {
+      "file": "C:/oto-lanes/s747-pos-types-final.log",
+      "bytes": 187,
+      "sha256": "cb367678cc3679f4a19dd36481573fb2e23c90c76b7fe68166fb45253a7044aa",
+      "repositoryCopy": null
+    },
+    {
+      "file": "C:/oto-lanes/s747-pos-types.log",
+      "bytes": 610,
+      "sha256": "59034bb212957f91df42cdbdb7b54758e84d9c86f0d248a1817298fce260c59b",
+      "repositoryCopy": null
+    },
+    {
+      "file": "C:/oto-lanes/s747-shared-types.log",
+      "bytes": 110,
+      "sha256": "4488187587074f67add6fe6ce7e2aa8aa9b86a9313ac0264464620f8298049cb",
+      "repositoryCopy": null
+    },
+    {
+      "file": "C:/oto-lanes/s747-start-commit.txt",
+      "bytes": 280,
+      "sha256": "0d819df46972e0bdfa863f812367a97fd1e803d36b6f5c452988c0ddfa080639",
+      "repositoryCopy": null
+    },
+    {
+      "file": "C:/oto-lanes/s747-start.mjs",
+      "bytes": 4178,
+      "sha256": "182f471f6f19519959af406e4fc8c1a79799d0f2be231e0b4a2b9e29b39a19bc",
+      "repositoryCopy": null
+    },
+    {
+      "file": "C:/oto-lanes/s747-workspace.log",
+      "bytes": 1091143,
+      "sha256": "97aec28803664aec0c1f5eb4241cd8070870dbd99e63d0006dba8426a6e643b8",
+      "repositoryCopy": null
+    }
+  ]
+}
