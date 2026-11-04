@@ -177,6 +177,9 @@ jobs:
           # harness runs only the smoke flows unless it is named a spec. This one
           # pays through the simulated gateway, and a skip fails this gate.
           PAYMENTS_SIMULATOR=on pnpm --filter @oto/pos e2e e2e/dropoff-paid-online.spec.ts
+          # SCRUM-744: a till locked by the inactivity timeout and reloaded
+          # unlocks onto its own station, at desktop and at phone width.
+          pnpm --filter @oto/pos e2e e2e/locked-reload.spec.ts
       # The Pi release (SCRUM-422; the closing audit's M4 and L52). The box
       # installs `oto-box-<version>-<YYYYMMDD>-<commit>.tgz` (the build id:
       # `packages/box-agent/src/build.ts`), and the guide says the file

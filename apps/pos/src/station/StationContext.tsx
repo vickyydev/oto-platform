@@ -140,9 +140,23 @@ function keepStaffToken(picked: {
 const failure = (err: unknown): string =>
   err instanceof Error ? err.message : 'Could not reach the platform';
 
+/**
+ * SCRUM-744 — the API's refusal of a LOCKED session (423 SESSION_LOCKED).
+ *
+ * It is not an answer about stations. The session is still signed in and may
+ * do no business until the password is entered again, so a till reloaded at
+ * its lock screen — which asks its station question while still locked — is
+ * told nothing by it. Treating it as an answer is what put the till on the
+ * picker after the unlock, with "No station here is yours to work" and the
+ * lock's own sentence printed twice. The question is asked again at the unlock
+ * instead (`askAfterUnlock` below).
+ */
+const refusedWhileLocked = (err: unknown): boolean =>
+  err instanceof ApiError && err.status === 423 && err.code === 'SESSION_LOCKED';
+
 export function StationProvider({ children }: { children: ReactNode }) {
   const { branch, switching } = useBranch();
-  const { operator, mustChangePassword, offlinePreparation } = useOperator();
+  const { operator, mustChangePassword, offlinePreparation, locked } = useOperator();
   const scopeKey = `${branch.id}:${operator?.id ?? ''}:${mustChangePassword}:${switching}`;
   const scope = useRef({ key: scopeKey, generation: 0 });
   if (scope.current.key !== scopeKey) scope.current = { key: scopeKey, generation: scope.current.generation + 1 };
@@ -159,6 +173,15 @@ export function StationProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  /**
+   * A station question the lock refused, kept to be asked again at the unlock
+   * (SCRUM-744): 'resolve' is the whole question a sign-in or reload asks (the
+   * list, then the station this device remembers), 'list' a later re-read of
+   * the list alone. A lock in the middle of a shift asks nothing and so holds
+   * nothing: the station it already has stays, and so does the sale under it.
+   */
+  const [askAfterUnlock, setAskAfterUnlock] = useState<'resolve' | 'list' | null>(null);
+  const [resumeAfterUnlock, setResumeAfterUnlock] = useState(0);
 
   // The prototype's own station profiles, keyed by branch, for a deployment
   // whose API has no fleet routes yet. In-memory by design, as before: they
@@ -203,7 +226,11 @@ export function StationProvider({ children }: { children: ReactNode }) {
       setFleetAvailable(true);
     } catch (err) {
       if (!mounted.current || scope.current.generation !== generation) return;
-      if (isMissingRoute(err)) {
+      if (refusedWhileLocked(err)) {
+        // Not an answer (SCRUM-744): the lock screen is already up, and the
+        // list is read again at the unlock rather than left saying "locked".
+        setAskAfterUnlock((held) => held ?? 'list');
+      } else if (isMissingRoute(err)) {
         // The fleet routes are not deployed here yet. Rather than block the
         // till behind a picker that can never fill, the POS falls back to the
         // prototype's own station setup until they arrive.
@@ -229,11 +256,17 @@ export function StationProvider({ children }: { children: ReactNode }) {
   // to. The account id does not change when the password does, so without
   // this the picker kept showing the refusal it got before the change — the
   // person fixed the thing they were told to fix and the screen did not move.
+  //
+  // And once more after an unlock, when the lock refused the first asking
+  // (SCRUM-744, `resumeAfterUnlock`): a reload at the lock screen comes back
+  // signed in but locked, and the API answers nothing about stations until
+  // the password is entered again.
   const accountId = operator?.id ?? null;
   useEffect(() => {
     setBridgeOrigin(null);
     holdBoxSession(null);
     setLaneStation(null);
+    setAskAfterUnlock(null);
     if (!accountId || mustChangePassword || switching) {
       setStations(null);
       setActive(null);
@@ -272,6 +305,13 @@ export function StationProvider({ children }: { children: ReactNode }) {
         setFleetAvailable(true);
       } catch (err) {
         if (cancelled) return;
+        if (refusedWhileLocked(err)) {
+          // Reloaded at the lock screen: nothing is settled, so the till stays
+          // unresolved behind the lock and asks again at the unlock.
+          setAskAfterUnlock('resolve');
+          setLoading(false);
+          return;
+        }
         if (isMissingRoute(err)) {
           routesMissing = true;
           setFleetAvailable(false);
@@ -292,6 +332,13 @@ export function StationProvider({ children }: { children: ReactNode }) {
           }
         } catch (err) {
           if (cancelled) return;
+          if (refusedWhileLocked(err)) {
+            // Locked between the list and the pick: the remembered station is
+            // still this device's, and is taken again at the unlock.
+            setAskAfterUnlock('resolve');
+            setLoading(false);
+            return;
+          }
           if (err instanceof ApiError && ['STATION_NOT_READY', 'STATION_HAS_NO_BOX'].includes(err.code)) {
             forgetRemembered(branch.id);
             forgetStaffToken();
@@ -331,7 +378,15 @@ export function StationProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [accountId, mustChangePassword, branch.id, adopt, switching, offlinePreparation]);
+  }, [accountId, mustChangePassword, branch.id, adopt, switching, offlinePreparation, resumeAfterUnlock]);
+
+  // The unlock itself (SCRUM-744): ask again whatever the lock refused.
+  useEffect(() => {
+    if (locked || !askAfterUnlock) return;
+    setAskAfterUnlock(null);
+    if (askAfterUnlock === 'resolve') setResumeAfterUnlock((count) => count + 1);
+    else void readList();
+  }, [locked, askAfterUnlock, readList]);
 
   const setStation = useCallback(
     (profile: StationProfile) => {
