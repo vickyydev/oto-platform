@@ -1,0 +1,19 @@
+import assert from 'node:assert/strict';
+export default async function (S) {
+  const { st, save, pages, expect, shot, adminApi, tillApi } = S;
+  const page = pages.six.page, step = st.steps.sixQr;
+  step.paidPressAt = new Date().toISOString();
+  const paid = await adminApi('POST', '/webhooks/2c2p/simulator', { attemptId: step.attempt.id, event: 'paid' });
+  step.paidPress = { status: paid.status, gatewayState: paid.body?.gatewayState ?? null, error: paid.body?.error ?? null };
+  save();
+  assert.equal(paid.status, 200, JSON.stringify(paid.body));
+  await expect(page.getByRole('heading', { name: 'Order Confirmed', exact: true })).toBeVisible({ timeout: 60000 });
+  step.paidSeenAt = new Date().toISOString();
+  await page.waitForTimeout(1000);
+  await shot('six', 's747-03-six-character-till-paid-through-simulator');
+  const sale = await tillApi('six', 'GET', `/sales/${step.attempt.saleId}`);
+  const s = sale.body?.sale ?? sale.body;
+  step.saleReadback = { status: sale.status, saleStatus: s?.status ?? null, receiptNumber: s?.receiptNumber ?? null, stationId: s?.stationId ?? null, grossSatang: s?.totals?.grossSatang ?? null, payments: (s?.payments ?? []).map((p) => ({ method: p.method ?? p.methodToken ?? null, amountSatang: p.amountSatang ?? null, status: p.status ?? null })) };
+  save();
+  return { paidPress: step.paidPress, saleReadback: step.saleReadback };
+}

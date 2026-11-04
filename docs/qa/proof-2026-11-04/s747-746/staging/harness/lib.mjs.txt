@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+const BS = String.fromCharCode(92);
+export const escapeRe = (s) => [...s].map((c) => (".*+?^$" + "{}()|[]" + BS).includes(c) ? BS + c : c).join("");
+export async function signInTill(S, label) {
+  const { st, save, tillPage, expect, need, POS, tillApi } = S;
+  const f = st.fixture, till = f.tills[label];
+  const { page } = await tillPage(label);
+  await page.goto(POS + '/');
+  await expect(page.getByRole('heading', { name: 'Oto POS is locked' })).toBeVisible({ timeout: 60000 });
+  await page.locator('input[inputmode="tel"], input[type="tel"]').first().fill(need('STAGING_RECEPTION_PHONE').replace(/^\+66/, '0'));
+  await page.locator('input[type="password"][autocomplete="current-password"]').fill(need('STAGING_RECEPTION_PASSWORD'));
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Which station are you on?' })).toBeVisible({ timeout: 30000 });
+  await page.getByRole('button', { name: new RegExp(escapeRe(till.name)) }).click();
+  await expect(page.getByText('Membership Check', { exact: true })).toBeVisible({ timeout: 30000 });
+  const me = await tillApi(label, 'GET', '/me');
+  assert.equal(me.status, 200);
+  st.tillSessions = st.tillSessions ?? {};
+  st.tillSessions[label] = { accountId: me.body.account.id, role: 'reception', stationId: me.body.session?.stationId ?? me.body.operatorContext?.stationId ?? null, signedInAt: new Date().toISOString() };
+  save();
+  assert.equal(st.tillSessions[label].stationId, till.id, 'session is on our till');
+  return st.tillSessions[label];
+}

@@ -1,0 +1,43 @@
+// SCRUM-747: a gateway QR on the six-character ZZ TEST till (ZZ747A), F&B guest order, PromptPay.
+import assert from 'node:assert/strict';
+import { escapeRe } from './lib.mjs?v=2';
+export default async function (S) {
+  const { st, save, pages, expect, shot, POS } = S;
+  const page = pages.six.page;
+  const product = 'Bottled Water';
+  const step = (st.steps.sixQr = { startedAt: new Date().toISOString(), till: st.fixture.tills.six.name, codePrefix: 'ZZ747A', product });
+  await page.goto(POS + '/order-station');
+  await page.getByRole('button', { name: /No wristband.*continue as guest/ }).click();
+  await page.getByPlaceholder('Search dish…').fill(product);
+  await page.getByRole('button', { name: new RegExp(escapeRe(product)) }).first().click();
+  const addToOrder = page.getByRole('dialog').getByRole('button', { name: /^Add to order/ });
+  if (await addToOrder.isVisible().catch(() => false)) await addToOrder.click();
+  await page.getByRole('button', { name: /^Charge ฿/ }).click();
+  const pickup = page.getByRole('dialog', { name: 'Pick-up Code', exact: true });
+  await page.waitForTimeout(800);
+  if (await pickup.isVisible().catch(() => false)) {
+    await pickup.getByRole('button', { name: '7', exact: true }).click();
+    await pickup.getByRole('button', { name: '4', exact: true }).click();
+    await pickup.getByRole('button', { name: /^Continue to Payment/ }).click();
+    step.pickupCode = '74';
+  }
+  await page.getByRole('button', { name: /^PromptPay/ }).click();
+  const opened = page.waitForResponse((res) => res.request().method() === 'POST' && new URL(res.url()).pathname === '/api/payments/attempts', { timeout: 60000 });
+  await page.getByRole('button', { name: /Show payment QR/ }).click();
+  const response = await opened;
+  step.attemptStatus = response.status();
+  const body = await response.json().catch(() => null);
+  step.attempt = body?.attempt ? { id: body.attempt.id, saleId: body.attempt.saleId ?? null, provider: body.attempt.provider, status: body.attempt.status, invoiceNo: body.attempt.invoiceNo, amountSatang: body.attempt.amountSatang ?? null } : null;
+  step.error = body?.error ?? null;
+  save();
+  assert.equal(response.status(), 200, 'gateway QR request: ' + JSON.stringify(body?.error ?? null));
+  assert.equal(body.attempt.provider, 'simulator');
+  await expect(page.getByTestId('payment-qr').first()).toBeVisible({ timeout: 30000 });
+  await page.waitForTimeout(1500);
+  step.qrCount = await page.getByTestId('payment-qr').count();
+  step.internalErrorShown = await page.getByText(/internal error|something went wrong/i).count();
+  step.pendingAt = new Date().toISOString();
+  save();
+  await shot('six', 's747-02-six-character-till-gateway-qr-till-and-customer-display');
+  return step;
+}

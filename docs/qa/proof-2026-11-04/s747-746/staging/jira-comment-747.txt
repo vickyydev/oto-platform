@@ -1,0 +1,20 @@
+*Proof on staging, 4 November 2026, 17:31 to 17:47 Bangkok, live commit 01b5b64daf9684940161ec62e526d2ebc3592c0e (API and both POS builds live on it from 17:27).* Done in a real browser on the staging Console and the staging till, with ZZ TEST records only and the payment simulator. No real money was taken, no SMS was sent and no park device was used.
+
+*What a person can do now*
+A till whose code has four, five or six characters can show a PromptPay payment QR. Before this fix, pressing Show payment QR on such a till ended in an error instead of a QR.
+
+*What was checked*
+* In Console, Devices: a ZZ TEST box with two ZZ TEST tills, one coded ZQ7C (four characters) and one coded ZZ747A (six characters), both with QR set to the payment gateway. Both saved with their codes and both say "Ready for selling" (picture 1).
+* On the six-character till: an F&B order (one bottled water, 25 baht), PromptPay, Show payment QR. The QR appeared on the till and on the customer display, with no error (picture 2). Its payment number is SBX0AX261104000001.
+* The simulator then reported the payment as paid, and the till showed Order Confirmed with receipt ZZ747A-000001 (picture 3).
+* The four-character till also took a QR payment through the simulator (a ticket for a test child): payment number SBXCUJ261104000001. So each long code gets its own fixed three-character part in the payment number.
+* The park's own tills keep their payment numbers. The live code still gives T01, T02, PI1 and PI2 for T1, T2, PI1 and PI2, exactly as before, and the newest staging payment numbers for PI1 and PI2 carry that same part. Staging has no QR payment from T1 or T2 yet; the automatic test on main pins those two as well. Those tills were only read, never touched.
+
+*How to retest*
+# In Console, Devices, give a test till a code of four to six letters or digits and set its QR to the payment gateway.
+# Sign in on the POS, pick that till, ring up any item, choose PromptPay and press Show payment QR: the QR appears on the till and on the customer display.
+# On staging, finish it with Console, Integrations, QR payment gateway, Customer paid: the till shows the order as paid.
+
+*Cleaned up:* both test tills and the test box are archived and every test sign-in ended. Nothing is left waiting for payment. The two small paid test sales stay as records, as with earlier proofs. Read back from the database afterwards.
+
+Pictures, in order: the two tills in Console with their codes; the QR on the six-character till and its customer display; the paid order.

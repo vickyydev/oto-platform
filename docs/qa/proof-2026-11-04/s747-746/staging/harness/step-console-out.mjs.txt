@@ -1,0 +1,11 @@
+export default async function (S) {
+  const { st, save, pages } = S;
+  const page = pages.console.page;
+  const r = await page.evaluate(async () => {
+    const so = await fetch('/api/auth/sign-out', { method: 'POST', credentials: 'include', headers: { 'idempotency-key': crypto.randomUUID() } });
+    const me = await fetch('/api/me', { credentials: 'include' });
+    return { signOut: so.status, meAfter: me.status };
+  });
+  st.cleanup.consoleSignOut = r; save();
+  return r;
+}

@@ -1,0 +1,30 @@
+// SCRUM-746: the printed band short code, typed with its dash into the F&B band field on the four-character till.
+import assert from 'node:assert/strict';
+export default async function (S) {
+  const { st, save, pages, expect, shot, POS } = S;
+  const page = pages.four.page, fam = st.fixture.family;
+  const step = (st.steps.typedBand = { startedAt: new Date().toISOString(), till: st.fixture.tills.four.name, codePrefix: 'ZQ7C', typed: fam.bandShortCode });
+  await page.goto(POS + '/order-station');
+  const all = [];
+  const onReq = (req) => { const p = new URL(req.url()).pathname; if (p.startsWith('/api/')) all.push(`${req.method()} ${p}`); };
+  page.on('request', onReq);
+  const field = page.getByPlaceholder('Wristband code e.g. 1001');
+  await field.fill(fam.bandShortCode);
+  await shot('four', 's746-01-four-character-till-band-code-typed-with-dash');
+  await page.getByRole('button', { name: 'Load Tab', exact: true }).click();
+  await expect(page.getByPlaceholder('Search dish…')).toBeVisible({ timeout: 30000 });
+  await expect(page.getByText(fam.childName, { exact: true }).first()).toBeVisible({ timeout: 30000 });
+  await page.waitForTimeout(1500);
+  step.invalidCodeShown = await page.getByText(/Invalid code/).count();
+  step.noTabShown = await page.getByText(/No tab found/).count();
+  page.off('request', onReq);
+  step.apiRequests = all;
+  step.voucherRequests = all.filter((x) => /voucher/i.test(x));
+  step.openedAt = new Date().toISOString();
+  save();
+  await shot('four', 's746-02-four-character-till-child-order-opens');
+  assert.equal(step.invalidCodeShown, 0);
+  assert.equal(step.noTabShown, 0);
+  assert.equal(step.voucherRequests.length, 0, 'typed band reached the voucher path');
+  return step;
+}

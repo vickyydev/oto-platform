@@ -1,0 +1,20 @@
+// Paints over the issued voucher's code in the voucher screenshot (the 674 practice: no voucher code in a picture).
+import { readFileSync, writeFileSync } from 'node:fs';
+export default async function (S) {
+  const { browser, OUT, st, save } = S;
+  const file = OUT + '/s746-03-genuine-voucher-typed-opens-its-tab-held.png';
+  const original = readFileSync(file);
+  const rects = [[474, 341, 84, 16], [474, 655, 84, 16]];
+  const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
+  const data = await page.evaluate(async ({ b64, rects }) => {
+    const img = new Image(); img.src = 'data:image/png;base64,' + b64; await img.decode();
+    const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+    const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+    for (const [x, y, w, h] of rects) { g.fillStyle = '#3d3d3d'; g.fillRect(x, y, w, h); g.fillStyle = '#ffffff'; g.font = '10px sans-serif'; g.fillText('code hidden', x + 6, y + 12); }
+    return c.toDataURL('image/png').split(',')[1];
+  }, { b64: original.toString('base64'), rects });
+  await page.close();
+  writeFileSync(file, Buffer.from(data, 'base64'));
+  st.steps.typedVoucher.codePaintedOver = rects; save();
+  return { painted: rects.length };
+}

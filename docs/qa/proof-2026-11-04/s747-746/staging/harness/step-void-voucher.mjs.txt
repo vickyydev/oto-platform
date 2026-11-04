@@ -1,0 +1,19 @@
+// Cleanup 3, one checked transaction in a one-off job: the one voucher the fixed ZZ TEST code issued at the till,
+// released and never used, is voided (no route voids an unused voucher), and the change is audited.
+import { job } from './job.mjs?v=1';
+export default async function (S) {
+  const { st, save, SOURCE } = S;
+  const f = st.fixture;
+  const v = st.dbReadback.result.vouchers;
+  const spec = { voucherId: v[0].id, def: f.voucher.definitionId, actorId: st.adminActorId };
+  const program = `(async()=>{require('tsx/cjs');const assert=require('node:assert/strict'),{Client}=require('pg'),{drizzle}=require('drizzle-orm/node-postgres'),{audit}=require('./src/services/audit.ts');const s=${JSON.stringify(spec)};const c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();const out={};try{await c.query('BEGIN');await c.query("SET LOCAL statement_timeout='20s'");const db=drizzle(c);
+const d=(await c.query("select operator_id,name_en,active,archived_at is not null archived from promo.voucher_definition where id=$1",[s.def])).rows[0];assert.ok(d&&d.name_en.startsWith('ZZ TEST SCRUM-746 ')&&d.active===false&&d.archived===true);
+const all=(await c.query("select count(*)::int n from promo.voucher where voucher_definition_id=$1",[s.def])).rows[0].n;assert.equal(all,1);
+const v=await c.query("update promo.voucher set status='void', updated_at=now() where id=$1 and status='issued' and held_sale_id is null and voucher_definition_id=$2 and operator_id=$3",[s.voucherId,s.def,d.operator_id]);assert.equal(v.rowCount,1);
+await audit.record(db,{actorAccountId:s.actorId,operatorId:d.operator_id,action:'qa.voucher.void',entityType:'voucher',entityId:s.voucherId,sourceApp:'console',origin:'job',reason:'SCRUM-746 proof cleanup: ZZ TEST voucher issued from the fixed test code at the till, released and never used',before:{status:'issued'},after:{status:'void'}});out.voucherVoided=v.rowCount;
+await c.query('COMMIT');console.log(JSON.stringify({event:'s746_void_voucher',at:new Date().toISOString(),...out}));}catch(e){await c.query('ROLLBACK').catch(()=>{});console.log(JSON.stringify({event:'s746_void_voucher_error',name:e.name,code:e.code??null,message:String(e.message).slice(0,300),out}));process.exitCode=1;}finally{await c.end();}})();`;
+  const r = await job(program, 's746_void_voucher', SOURCE);
+  st.cleanup.voidVoucherJob = { jobId: r.jobId, status: r.status, result: r.result, errors: r.errors };
+  save();
+  return st.cleanup.voidVoucherJob;
+}

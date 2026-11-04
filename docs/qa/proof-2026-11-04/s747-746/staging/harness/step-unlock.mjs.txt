@@ -1,0 +1,17 @@
+export default async function (S) {
+  const { pages, need, expect } = S;
+  const out = {};
+  for (const label of ['four', 'six']) {
+    const page = pages[label].page;
+    const locked = page.getByRole('heading', { name: 'Locked', exact: true });
+    if (await locked.isVisible().catch(() => false)) {
+      await page.locator('input[type="password"]').first().fill(need('STAGING_RECEPTION_PASSWORD'));
+      await page.getByRole('button', { name: /Unlock/ }).click();
+      await expect(locked).toHaveCount(0, { timeout: 30000 });
+      out[label] = 'unlocked';
+    } else out[label] = 'not locked';
+    const me = await S.tillApi(label, 'GET', '/me');
+    out[label + 'Me'] = me.status;
+  }
+  return out;
+}

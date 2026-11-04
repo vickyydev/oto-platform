@@ -1,0 +1,6 @@
+export default async function (S) {
+  const { st, tillApi } = S;
+  const m = await tillApi('six', 'GET', `/branches/${st.fixture.branchId}/menu`);
+  const ps = (m.body.products ?? []).filter((p) => p.kind === 'menu' && p.active !== false && !p.archivedAt && (p.priceSatang ?? 0) > 0);
+  return { keys: Object.keys(m.body), sampleKeys: Object.keys(ps[0] ?? {}), cheapest: ps.sort((a, b) => a.priceSatang - b.priceSatang).slice(0, 8).map((p) => ({ id: p.id, name: p.name, priceSatang: p.priceSatang, modifierGroups: (p.modifierGroups ?? p.modifiers ?? []).length, stock: p.stock ?? p.stockStatus ?? p.outOfStock ?? null, category: p.categoryName ?? p.categoryId })) };
+}

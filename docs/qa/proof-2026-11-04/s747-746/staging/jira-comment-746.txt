@@ -1,0 +1,21 @@
+*Proof on staging, 4 November 2026, 17:31 to 17:47 Bangkok, live commit 01b5b64daf9684940161ec62e526d2ebc3592c0e (API and both POS builds live on it from 17:27).* Done in a real browser on the staging till, with ZZ TEST records only and the payment simulator. No real money was taken, no SMS was sent and no park device was used.
+
+*What a person can do now*
+On a till with a four-character code, staff can type a child's printed band code, with its dash, into the F&B band box and the child's order opens. Before this fix the till said "Invalid code", because such a band code looks like an old Lucky Wheel voucher.
+
+*What was checked*
+* A ZZ TEST till coded ZQ7C, four characters (picture 1 shows it in Console). A ZZ TEST child got a ticket on that till, paid through the simulator, and was checked in. The child's band code is ZQ7C-A3H6QK.
+* At F&B on that till, ZQ7C-A3H6QK typed into the band box (picture 2), then Load Tab: the child's own order opened, with the child's name on the customer display and no "Invalid code" (picture 3). The till went straight to the band lookup and never asked the voucher system. The yellow "Food not authorized" note is only because the test child was registered without food permission.
+* A real ZZ TEST voucher typed into the same band box still opened its own order with the voucher on it, a free bottled water (picture 4; the voucher's code is painted over). It was then taken off again.
+
+*Still open, and asked of the owner*
+If a band code is typed without its dash on a till whose code has four or five characters, the till can still read it as a voucher. Typing it with the dash, as printed on the band, works.
+
+*How to retest*
+# On a till whose code has four characters, sell a ticket for a child and check the child in.
+# Open F&B, type the child's band code exactly as printed, with the dash, and press Load Tab: the child's order opens.
+# Type a voucher code into the same box and press Load Tab: its order opens with the voucher on it.
+
+*Cleaned up:* the test child was picked up and is checked out; the test voucher type is switched off and archived and its one voucher voided; both test tills and the test box are archived and every test sign-in ended. Nothing is held or waiting for payment. The paid test ticket stays as a record, as with earlier proofs. Read back from the database afterwards.
+
+Pictures, in order: the four-character till in Console; the band code typed with its dash; the child's order open; the voucher's order open with the voucher held.

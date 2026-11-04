@@ -1,0 +1,25 @@
+// Read only: this proof's attempts and their invoice numbers, the park tills' newest gateway invoices
+// (T1, T2, PI1, PI2: read, never touched), the voucher's state, and what is still open on our tills.
+import { job } from './job.mjs?v=1';
+export default async function (S) {
+  const { st, save, SOURCE } = S;
+  const f = st.fixture;
+  const spec = { branch: f.branchId, stations: [f.tills.four.id, f.tills.six.id], def: f.voucher?.definitionId ?? null, sales: [f.family.saleId, st.steps.sixQr.attempt.saleId, st.steps.typedVoucher?.saleId].filter(Boolean), checkin: f.family.checkinId };
+  const program = `(async()=>{const {Client}=require('pg');const s=${JSON.stringify(spec)},c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();try{await c.query('BEGIN READ ONLY');await c.query("SET LOCAL statement_timeout='20s'");const q=async(sql,p)=>(await c.query(sql,p)).rows;
+const ours=await q("SELECT a.id,a.station_id,a.sale_id,a.invoice_no,a.provider,a.status,a.amount_satang,a.created_at,a.paid_at FROM pos.payment_attempt a WHERE a.station_id = ANY($1::uuid[]) ORDER BY a.created_at",[s.stations]);
+const park=await q("SELECT DISTINCT ON (st.id) st.code_prefix,st.name,a.invoice_no,a.provider,a.created_at FROM pos.payment_attempt a JOIN core.station st ON st.id=a.station_id WHERE st.branch_id=$1 AND st.code_prefix = ANY($2::text[]) AND st.archived_at IS NULL AND a.invoice_no IS NOT NULL ORDER BY st.id,a.created_at DESC",[s.branch,['T1','T2','PI1','PI2']]);
+const parkSegments=await q("SELECT st.code_prefix, substring(a.invoice_no from char_length(a.invoice_no)-14 for 3) seg, count(*)::int n, max(a.created_at) newest FROM pos.payment_attempt a JOIN core.station st ON st.id=a.station_id WHERE st.branch_id=$1 AND st.code_prefix = ANY($2::text[]) AND a.invoice_no IS NOT NULL GROUP BY 1,2 ORDER BY 1,2",[s.branch,['T1','T2','PI1','PI2']]);
+const parkStations=await q("SELECT code_prefix,name,archived_at IS NOT NULL archived FROM core.station WHERE branch_id=$1 AND code_prefix = ANY($2::text[])",[s.branch,['T1','T2','PI1','PI2']]);
+const vouchers=s.def?await q("SELECT id,status,source,held_sale_id,sale_id,right(code,4) last4,issued_at,redeemed_at FROM promo.voucher WHERE voucher_definition_id=$1",[s.def]):[];
+const redemptions=s.def?await q("SELECT r.kind,r.sale_id,r.station_id,r.occurred_at FROM promo.voucher_redemption r JOIN promo.voucher v ON v.id=r.voucher_id WHERE v.voucher_definition_id=$1 ORDER BY r.occurred_at",[s.def]):[];
+const def=s.def?(await q("SELECT name_en,active,archived_at IS NOT NULL archived,code_mode FROM promo.voucher_definition WHERE id=$1",[s.def]))[0]:null;
+const sales=await q("SELECT id,station_id,status,receipt_number,gross_satang FROM pos.sale WHERE id = ANY($1::uuid[])",[s.sales]).catch(async()=>await q("SELECT id,station_id,status FROM pos.sale WHERE id = ANY($1::uuid[])",[s.sales]));
+const sessions=(await q("SELECT count(*)::int n FROM core.session WHERE station_id = ANY($1::uuid[]) AND expires_at>now() AND revoked_at IS NULL",[s.stations]))[0].n;
+const leases=await q("SELECT station_id, lease_id IS NULL AS released FROM edge.station_session WHERE station_id = ANY($1::uuid[])",[s.stations]);
+const stay=(await q("SELECT status FROM pos.checkin WHERE id=$1",[s.checkin]))[0]??null;
+await c.query('COMMIT');console.log(JSON.stringify({event:'s747_db_readback',at:new Date().toISOString(),ours,park,parkSegments,parkStations,vouchers,redemptions,def,sales,sessions,leases,stay}));}catch(e){await c.query('ROLLBACK').catch(()=>{});console.log(JSON.stringify({event:'s747_db_readback_error',name:e.name,code:e.code??null,message:String(e.message).slice(0,400)}));process.exitCode=1;}finally{await c.end();}})();`;
+  const r = await job(program, 's747_db_readback', SOURCE);
+  st.dbReadback = { jobId: r.jobId, status: r.status, result: r.result, errors: r.errors };
+  save();
+  return st.dbReadback;
+}

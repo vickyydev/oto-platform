@@ -1,0 +1,17 @@
+import { attach, commentWithImages, statusOf, images } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/jira.mjs';
+import { readFileSync, writeFileSync } from 'node:fs';
+const D = 'C:/oto-lanes/tillcodes747-20261104/docs/qa/proof-2026-11-04/s747-746/staging/';
+const plan = {
+  'SCRUM-747': { text: 'jira-comment-747.txt', files: ['s747-01-console-tills-four-and-six-character-codes.png', 's747-02-six-character-till-gateway-qr-till-and-customer-display.png', 's747-03-six-character-till-paid-through-simulator.png'] },
+  'SCRUM-746': { text: 'jira-comment-746.txt', files: ['s747-01-console-tills-four-and-six-character-codes.png', 's746-01-four-character-till-band-code-typed-with-dash.png', 's746-02-four-character-till-child-order-opens.png', 's746-03-genuine-voucher-typed-opens-its-tab-held.png'] },
+};
+const out = {};
+for (const [key, p] of Object.entries(plan)) {
+  const a = await attach(key, p.files.map((f) => D + f));
+  if (a.status >= 300) throw new Error(key + ' attach ' + a.status + ' ' + (a.body ?? ''));
+  const c = await commentWithImages(key, readFileSync(D + p.text, 'utf8').trim(), p.files);
+  let commentId = null; try { commentId = JSON.parse(c.body).id; } catch {}
+  out[key] = { attachStatus: a.status, attached: a.files, commentStatus: c.status ?? null, commentId, statusAfterComment: (await statusOf(key)).status, imagesOnTicket: (await images(key)).length };
+}
+writeFileSync(D + 'jira-publication.json', JSON.stringify(out, null, 2) + '\n');
+console.log(JSON.stringify(out, null, 1));

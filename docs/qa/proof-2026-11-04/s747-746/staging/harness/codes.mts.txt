@@ -1,0 +1,6 @@
+import { pathToFileURL } from 'node:url';
+const shared = await import(pathToFileURL('C:/oto-lanes/tillcodes747-20261104/packages/shared/src/index.ts').href);
+for (const c of ['ZQ7C', 'ZK7C', 'ZY7C', 'ZI7C', 'ZZ747A', 'T1', 'T2', 'PI1', 'PI2']) {
+  const band = c + '-ABCDEF';
+  console.log(c, 'segment', shared.invoiceStationSegment(c), 'bandParses', !!shared.parseBandShortCode(band), 'legacyVoucherShape', shared.isLegacyBoothCode(band), 'undashedLegacy', shared.isLegacyBoothCode(c + 'ABCDEF'));
+}

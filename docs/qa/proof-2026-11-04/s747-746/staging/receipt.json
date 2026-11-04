@@ -1,0 +1,2135 @@
+{
+  "unit": "SCRUM-747/746",
+  "source": "01b5b64daf9684940161ec62e526d2ebc3592c0e",
+  "startedAt": "2026-11-04T10:35:40.879Z",
+  "fixture": {
+    "stamp": "mw1ze0to",
+    "name": "ZZ TEST SCRUM-747 mw1ze0to",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "boxId": "01a1a621-24c9-732a-85a8-19a98923f74c",
+    "boxName": "ZZ TEST SCRUM-747 mw1ze0to virtual box",
+    "boxSlot": "zz-test-s747-mw1ze0to",
+    "boxRole": "virtual",
+    "boxStatusAtCreate": "unclaimed",
+    "tills": {
+      "four": {
+        "id": "01a1a621-2524-76c7-b743-196c09f1a87c",
+        "name": "ZZ TEST SCRUM-747 mw1ze0to four",
+        "codePrefix": "ZQ7C",
+        "paymentRouting": {
+          "qr": "gateway",
+          "card": "manual"
+        },
+        "ready": true,
+        "reasons": []
+      },
+      "six": {
+        "id": "01a1a621-2580-7d6c-8c5a-9f9f45f5161b",
+        "name": "ZZ TEST SCRUM-747 mw1ze0to six",
+        "codePrefix": "ZZ747A",
+        "paymentRouting": {
+          "qr": "gateway",
+          "card": "manual"
+        },
+        "ready": true,
+        "reasons": []
+      }
+    },
+    "readback": {
+      "four": {
+        "name": "ZZ TEST SCRUM-747 mw1ze0to four",
+        "codePrefix": "ZQ7C",
+        "boxId": "01a1a621-24c9-732a-85a8-19a98923f74c",
+        "qr": "gateway",
+        "card": "manual",
+        "ready": true,
+        "archivedAt": null
+      },
+      "six": {
+        "name": "ZZ TEST SCRUM-747 mw1ze0to six",
+        "codePrefix": "ZZ747A",
+        "boxId": "01a1a621-24c9-732a-85a8-19a98923f74c",
+        "qr": "gateway",
+        "card": "manual",
+        "ready": true,
+        "archivedAt": null
+      }
+    },
+    "boxReadback": {
+      "name": "ZZ TEST SCRUM-747 mw1ze0to virtual box",
+      "role": "virtual",
+      "slot": "zz-test-s747-mw1ze0to",
+      "status": "unclaimed"
+    },
+    "createdAt": "2026-11-04T10:35:52.390Z",
+    "family": {
+      "calls": [
+        {
+          "m": "GET",
+          "p": "/checkin/config",
+          "status": 200,
+          "error": null
+        },
+        {
+          "m": "GET",
+          "p": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/ticket-packages",
+          "status": 200,
+          "error": null
+        },
+        {
+          "m": "POST",
+          "p": "/checkin/registrations",
+          "status": 200,
+          "error": null
+        },
+        {
+          "m": "POST",
+          "p": "/sales",
+          "status": 200,
+          "error": null
+        },
+        {
+          "m": "POST",
+          "p": "/payments/attempts",
+          "status": 200,
+          "error": null
+        },
+        {
+          "m": "POST",
+          "p": "/checkin/check-in-now",
+          "status": 200,
+          "error": null
+        },
+        {
+          "m": "GET",
+          "p": "/checkin/registrations/6689d968-64bb-4d12-9eba-18af52a5a504",
+          "status": 200,
+          "error": null
+        },
+        {
+          "m": "GET",
+          "p": "/sales/f0f2abc2-c539-4f89-b652-7dd3f21135f0",
+          "status": 200,
+          "error": null
+        }
+      ],
+      "packages": [
+        {
+          "name": "1 Hour Play",
+          "kidW": null
+        },
+        {
+          "name": "2 Hours Play",
+          "kidW": null
+        },
+        {
+          "name": "Full Day Pass",
+          "kidW": null
+        },
+        {
+          "name": "Eat & Play Kids Pass",
+          "kidW": null
+        }
+      ],
+      "packageName": "2 Hours Play",
+      "registrationId": "6689d968-64bb-4d12-9eba-18af52a5a504",
+      "checkinId": "25deeeec-704b-4152-911b-8ff92c813c96",
+      "saleId": "f0f2abc2-c539-4f89-b652-7dd3f21135f0",
+      "childName": "ZZ TEST SCRUM-746 mw1ze0to child",
+      "guardianName": "ZZ TEST SCRUM-746 mw1ze0to guardian",
+      "registeredAt": "2026-11-04T10:38:05.225Z",
+      "saleCreated": true,
+      "attempt": {
+        "id": "01a1a623-2ddd-7d96-b26e-eb482086dd99",
+        "provider": "simulator",
+        "status": "sent_to_terminal",
+        "invoiceNo": "SBXCUJ261104000001",
+        "amountSatang": 89000
+      },
+      "paid": {
+        "at": "2026-11-04T10:38:05.575Z",
+        "gatewayState": "paid"
+      },
+      "checkedIn": "2026-11-04T10:38:05.678Z",
+      "childStatus": "in_park",
+      "bandId": "01a1a623-2ed3-7d15-82ed-8656ea2838ef",
+      "saleStatus": "finalised",
+      "receiptNumber": "ZQ7C-000001",
+      "grossSatang": 89000,
+      "bandShortCode": "ZQ7C-A3H6QK",
+      "allBands": [
+        {
+          "id": "01a1a623-2ed3-7d15-82ed-8656ea2838ef",
+          "shortCode": "ZQ7C-A3H6QK",
+          "kind": "kid"
+        }
+      ],
+      "released": {
+        "at": "2026-11-04T10:42:58.373Z",
+        "status": "out",
+        "photoId": "9ddae76b-e7d0-44f0-b8ef-676e1b7b7b87"
+      }
+    },
+    "voucher": {
+      "lastFour": "S9ND",
+      "definitionId": "01a1a624-1f34-7b02-b245-08564f7c85b2",
+      "definitionName": "ZZ TEST SCRUM-746 mw1ze0to voucher",
+      "product": "Bottled Water",
+      "createdAt": "2026-11-04T10:39:07.257Z"
+    }
+  },
+  "steps": {
+    "console": {
+      "at": "2026-11-04T10:36:16.460Z",
+      "url": "https://oto-console-staging.onrender.com/devices"
+    },
+    "sixQr": {
+      "startedAt": "2026-11-04T10:37:27.472Z",
+      "till": "ZZ TEST SCRUM-747 mw1ze0to six",
+      "codePrefix": "ZZ747A",
+      "product": "Bottled Water",
+      "pickupCode": "74",
+      "attemptStatus": 200,
+      "attempt": {
+        "id": "01a1a622-a2b2-78d9-87e1-0274f06663f4",
+        "saleId": "01a1a622-9fe2-7a70-8b0d-4f16ed2aea05",
+        "provider": "simulator",
+        "status": "sent_to_terminal",
+        "invoiceNo": "SBX0AX261104000001",
+        "amountSatang": 2500
+      },
+      "error": null,
+      "qrCount": 2,
+      "internalErrorShown": 0,
+      "pendingAt": "2026-11-04T10:37:31.390Z",
+      "paidPressAt": "2026-11-04T10:37:42.044Z",
+      "paidPress": {
+        "status": 200,
+        "gatewayState": "paid",
+        "error": null
+      },
+      "paidSeenAt": "2026-11-04T10:37:43.048Z",
+      "saleReadback": {
+        "status": 200,
+        "saleStatus": "finalised",
+        "receiptNumber": "ZZ747A-000001",
+        "stationId": "01a1a621-2580-7d6c-8c5a-9f9f45f5161b",
+        "grossSatang": 2500,
+        "payments": []
+      }
+    },
+    "typedBand": {
+      "startedAt": "2026-11-04T10:38:16.654Z",
+      "till": "ZZ TEST SCRUM-747 mw1ze0to four",
+      "codePrefix": "ZQ7C",
+      "typed": "ZQ7C-A3H6QK",
+      "invalidCodeShown": 0,
+      "noTabShown": 0,
+      "apiRequests": [
+        "GET /api/me",
+        "GET /api/me/permissions",
+        "GET /api/branches",
+        "GET /api/payment-methods",
+        "GET /api/tiers",
+        "GET /api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/ticket-packages",
+        "GET /api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/holidays",
+        "GET /api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/tax-config",
+        "GET /api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/pricing-mode",
+        "GET /api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/menu",
+        "GET /api/menu/discounts",
+        "GET /api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/sellable",
+        "GET /api/me/stations",
+        "PUT /api/me/session/station",
+        "GET /api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/occupancy",
+        "GET /api/stations/01a1a621-2524-76c7-b743-196c09f1a87c/printers",
+        "GET /api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/pricing-mode",
+        "GET /api/me/station/link",
+        "GET /api/ops/demo-reset",
+        "GET /api/stations/01a1a621-2524-76c7-b743-196c09f1a87c/displays",
+        "GET /api/stations/01a1a621-2524-76c7-b743-196c09f1a87c/channel",
+        "GET /api/wallets/scan"
+      ],
+      "voucherRequests": [],
+      "openedAt": "2026-11-04T10:38:19.577Z"
+    },
+    "typedVoucher": {
+      "startedAt": "2026-11-04T10:39:07.258Z",
+      "till": "ZZ TEST SCRUM-747 mw1ze0to four",
+      "lastFour": "S9ND",
+      "holdStatus": 200,
+      "saleId": "01a1a624-221e-73a7-b1a8-ee0cc77b4e84",
+      "voucherId": "01a1a624-23e2-7d2a-85bd-fda726dbbaf3",
+      "holdError": null,
+      "invalidCodeShown": 0,
+      "codeVisibleCount": 0,
+      "releaseStatus": 200,
+      "releasedAt": "2026-11-04T10:39:09.813Z",
+      "codePaintedOver": [
+        [
+          474,
+          341,
+          84,
+          16
+        ],
+        [
+          474,
+          655,
+          84,
+          16
+        ]
+      ]
+    }
+  },
+  "images": [
+    {
+      "file": "docs/qa/proof-2026-11-04/s747-746/staging/s747-01-console-tills-four-and-six-character-codes.png",
+      "at": "2026-11-04T10:36:16.542Z",
+      "till": "console",
+      "url": "https://oto-console-staging.onrender.com/devices"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s747-746/staging/s747-02-six-character-till-gateway-qr-till-and-customer-display.png",
+      "at": "2026-11-04T10:37:31.474Z",
+      "till": "six",
+      "url": "https://oto-pos-web-staging.onrender.com/order-station"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s747-746/staging/s747-03-six-character-till-paid-through-simulator.png",
+      "at": "2026-11-04T10:37:44.114Z",
+      "till": "six",
+      "url": "https://oto-pos-web-staging.onrender.com/order-station"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s747-746/staging/s746-01-four-character-till-band-code-typed-with-dash.png",
+      "at": "2026-11-04T10:38:17.921Z",
+      "till": "four",
+      "url": "https://oto-pos-web-staging.onrender.com/order-station"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s747-746/staging/s746-02-four-character-till-child-order-opens.png",
+      "at": "2026-11-04T10:38:19.627Z",
+      "till": "four",
+      "url": "https://oto-pos-web-staging.onrender.com/order-station"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s747-746/staging/s746-03-genuine-voucher-typed-opens-its-tab-held.png",
+      "at": "2026-11-04T10:39:09.704Z",
+      "till": "four",
+      "url": "https://oto-pos-web-staging.onrender.com/order-station"
+    }
+  ],
+  "network": [
+    {
+      "at": "2026-11-04T10:37:02.703Z",
+      "till": "four",
+      "method": "GET",
+      "path": "/api/sales",
+      "status": 200,
+      "request": null,
+      "response": {
+        "sales": []
+      }
+    },
+    {
+      "at": "2026-11-04T10:37:05.526Z",
+      "till": "six",
+      "method": "GET",
+      "path": "/api/sales",
+      "status": 200,
+      "request": null,
+      "response": {
+        "sales": []
+      }
+    },
+    {
+      "at": "2026-11-04T10:37:28.623Z",
+      "till": "six",
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "status": 200,
+      "request": {
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "stationId": "01a1a621-2580-7d6c-8c5a-9f9f45f5161b",
+        "channel": "fnb",
+        "tier": "tourist",
+        "pricingMode": "weekday",
+        "pricingModeReason": "Weekday pricing",
+        "socks": {
+          "addOnId": "a-socks",
+          "unitSatang": 0,
+          "label": "Regular Socks"
+        },
+        "lines": [],
+        "items": [
+          {
+            "id": "01a1a622-9c1f-7665-8c60-9f0f66593067",
+            "productId": "01a0cb02-13a9-790f-85a1-73d0ef92ae52",
+            "quantity": 1,
+            "modifiers": [],
+            "lineTotalSatang": 2500
+          }
+        ],
+        "promos": [],
+        "manualDiscounts": [],
+        "memberId": null,
+        "customerPhone": null,
+        "customerNickname": null,
+        "expectedTotalSatang": 2500
+      },
+      "response": {
+        "quote": {
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "businessDate": "2026-11-04",
+          "pricingMode": "weekday",
+          "pricingModeReason": "Weekday pricing",
+          "holidayName": null,
+          "tier": "tourist",
+          "tierSource": "default",
+          "tierClaimRefusal": null,
+          "customerTier": "tourist",
+          "engineVersion": "2026.10.06-1",
+          "totals": {
+            "subtotalSatang": 2500,
+            "manualDiscountSatang": 0,
+            "promoDiscountSatang": 0,
+            "discountSatang": 0,
+            "netSatang": 2336,
+            "serviceChargeSatang": 0,
+            "taxInclusiveSatang": 164,
+            "taxExclusiveSatang": 0,
+            "grossSatang": 2500,
+            "unappliedDiscountSatang": 0
+          },
+          "lineTotals": {
+            "01a1a622-9c1f-7665-8c60-9f0f66593067": 2500
+          },
+          "itemPresentation": {
+            "01a1a622-9c1f-7665-8c60-9f0f66593067": {
+              "name": "Bottled Water",
+              "basePriceSatang": 2500,
+              "modifiers": []
+            }
+          },
+          "manualAmounts": {},
+          "appliedPromos": [],
+          "rejectedPromoCodes": [],
+          "voucher": null,
+          "benefit": null,
+          "taxBreakdown": {
+            "netSubtotal": 2500,
+            "discountTotal": 0,
+            "serviceChargeTotal": 0,
+            "exclusiveTaxTotal": 0,
+            "inclusiveTaxTotal": 164,
+            "taxTotal": 164,
+            "categories": [
+              {
+                "category": "fnb",
+                "base": 2500,
+                "taxMode": "inclusive",
+                "taxRateId": "vat",
+                "taxName": "VAT",
+                "taxPercent": 7,
+                "serviceCharge": 0,
+                "tax": 164,
+                "secondaryTaxMode": "none",
+                "secondaryTaxPercent": 0,
+                "secondaryTax": 0,
+                "gross": 2500
+              }
+            ],
+            "grandTotal": 2500,
+            "unappliedDiscount": 0
+          },
+          "lines": [
+            {
+              "lineNo": 1,
+              "cartLineId": "01a1a622-9c1f-7665-8c60-9f0f66593067",
+              "kind": "fnb_item",
+              "componentKey": "01a0cb02-13a9-790f-85a1-73d0ef92ae52",
+              "ticketPackageId": null,
+              "productId": "01a0cb02-13a9-790f-85a1-73d0ef92ae52",
+              "label": "Bottled Water",
+              "revenueCategory": "fnb",
+              "taxableCategory": "fnb",
+              "quantity": 1,
+              "unitSatang": 2500,
+              "baseSatang": 2500,
+              "discountSatang": 0,
+              "netSatang": 2336,
+              "serviceChargeSatang": 0,
+              "taxSatang": 164,
+              "taxMode": "inclusive",
+              "taxRateBp": 700,
+              "taxRateId": "vat",
+              "taxName": "VAT",
+              "grossSatang": 2500,
+              "customerTier": "tourist",
+              "kidCount": 0,
+              "adultCount": 0,
+              "freeAdultCount": 0,
+              "stayHours": null,
+              "stayDurationLabel": null,
+              "payload": {
+                "prepStation": "bar"
+              }
+            }
+          ],
+          "disagreements": {
+            "pricingModeSentByTill": "weekday",
+            "tierSentByTill": "tourist",
+            "pricingModeDiffers": false,
+            "tierDiffers": false
+          }
+        },
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "businessDate": "2026-11-04",
+        "pricingMode": "weekday",
+        "pricingModeReason": "Weekday pricing",
+        "holidayName": null,
+        "tier": "tourist",
+        "tierSource": "default",
+        "tierClaimRefusal": null,
+        "customerTier": "tourist",
+        "engineVersion": "2026.10.06-1",
+        "totals": {
+          "subtotalSatang": 2500,
+          "manualDiscountSatang": 0,
+          "promoDiscountSatang": 0,
+          "discountSatang": 0,
+          "netSatang": 2336,
+          "serviceChargeSatang": 0,
+          "taxInclusiveSatang": 164,
+          "taxExclusiveSatang": 0,
+          "grossSatang": 2500,
+          "unappliedDiscountSatang": 0
+        },
+        "lineTotals": {
+          "01a1a622-9c1f-7665-8c60-9f0f66593067": 2500
+        },
+        "itemPresentation": {
+          "01a1a622-9c1f-7665-8c60-9f0f66593067": {
+            "name": "Bottled Water",
+            "basePriceSatang": 2500,
+            "modifiers": []
+          }
+        },
+        "manualAmounts": {},
+        "appliedPromos": [],
+        "rejectedPromoCodes": [],
+        "voucher": null,
+        "benefit": null,
+        "taxBreakdown": {
+          "netSubtotal": 2500,
+          "discountTotal": 0,
+          "serviceChargeTotal": 0,
+          "exclusiveTaxTotal": 0,
+          "inclusiveTaxTotal": 164,
+          "taxTotal": 164,
+          "categories": [
+            {
+              "category": "fnb",
+              "base": 2500,
+              "taxMode": "inclusive",
+              "taxRateId": "vat",
+              "taxName": "VAT",
+              "taxPercent": 7,
+              "serviceCharge": 0,
+              "tax": 164,
+              "secondaryTaxMode": "none",
+              "secondaryTaxPercent": 0,
+              "secondaryTax": 0,
+              "gross": 2500
+            }
+          ],
+          "grandTotal": 2500,
+          "unappliedDiscount": 0
+        },
+        "lines": [
+          {
+            "lineNo": 1,
+            "cartLineId": "01a1a622-9c1f-7665-8c60-9f0f66593067",
+            "kind": "fnb_item",
+            "componentKey": "01a0cb02-13a9-790f-85a1-73d0ef92ae52",
+            "ticketPackageId": null,
+            "productId": "01a0cb02-13a9-790f-85a1-73d0ef92ae52",
+            "label": "Bottled Water",
+            "revenueCategory": "fnb",
+            "taxableCategory": "fnb",
+            "quantity": 1,
+            "unitSatang": 2500,
+            "baseSatang": 2500,
+            "discountSatang": 0,
+            "netSatang": 2336,
+            "serviceChargeSatang": 0,
+            "taxSatang": 164,
+            "taxMode": "inclusive",
+            "taxRateBp": 700,
+            "taxRateId": "vat",
+            "taxName": "VAT",
+            "grossSatang": 2500,
+            "customerTier": "tourist",
+            "kidCount": 0,
+            "adultCount": 0,
+            "freeAdultCount": 0,
+            "stayHours": null,
+            "stayDurationLabel": null,
+            "payload": {
+              "prepStation": "bar"
+            }
+          }
+        ],
+        "disagreements": {
+          "pricingModeSentByTill": "weekday",
+          "tierSentByTill": "tourist",
+          "pricingModeDiffers": false,
+          "tierDiffers": false
+        }
+      }
+    },
+    {
+      "at": "2026-11-04T10:37:29.555Z",
+      "till": "six",
+      "method": "POST",
+      "path": "/api/sales",
+      "status": 200,
+      "request": {
+        "id": "01a1a622-9fe2-7a70-8b0d-4f16ed2aea05",
+        "actionId": "01a1a622-9fe2-7a70-8b0d-4f17a1e478ee",
+        "cart": {
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "stationId": "01a1a621-2580-7d6c-8c5a-9f9f45f5161b",
+          "channel": "fnb",
+          "tier": "tourist",
+          "pricingMode": "weekday",
+          "pricingModeReason": "Weekday pricing",
+          "socks": {
+            "addOnId": "a-socks",
+            "unitSatang": 0,
+            "label": "Regular Socks"
+          },
+          "lines": [],
+          "items": [
+            {
+              "id": "01a1a622-9c1f-7665-8c60-9f0f66593067",
+              "productId": "01a0cb02-13a9-790f-85a1-73d0ef92ae52",
+              "quantity": 1,
+              "modifiers": [],
+              "lineTotalSatang": 2500
+            }
+          ],
+          "pickupCode": "74",
+          "promos": [],
+          "manualDiscounts": [],
+          "memberId": null,
+          "customerPhone": null,
+          "customerNickname": null,
+          "expectedTotalSatang": 2500
+        },
+        "occurredAt": "2026-11-04T10:37:29.442Z",
+        "note": null,
+        "finalise": false
+      },
+      "response": {
+        "printing": null,
+        "grants": [],
+        "replay": false,
+        "replayed": false,
+        "finalised": false,
+        "outstandingSatang": 2500,
+        "pickupCode": "74",
+        "sale": {
+          "id": "01a1a622-9fe2-7a70-8b0d-4f16ed2aea05",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "stationId": "01a1a621-2580-7d6c-8c5a-9f9f45f5161b",
+          "boxId": "01a1a621-24c9-732a-85a8-19a98923f74c",
+          "memberId": null,
+          "visitId": null,
+          "businessDate": "2026-11-04",
+          "occurredAt": "2026-11-04T10:37:29.442Z",
+          "status": "tendering",
+          "salesChannel": "fnb",
+          "pricingMode": "weekday",
+          "pricingModeReason": "Weekday pricing",
+          "customerTier": "tourist",
+          "engineVersion": "2026.10.06-1",
+          "receiptNumber": null,
+          "receiptSeries": null,
+          "receiptSeq": null,
+          "finalisedAt": null,
+          "note": null,
+          "voidedAt": null,
+          "voidedByAccountId": null,
+          "voidedByName": null,
+          "voidReason": null,
+          "totals": {
+            "subtotalSatang": 2500,
+            "manualDiscountSatang": 0,
+            "promoDiscountSatang": 0,
+            "discountSatang": 0,
+            "netSatang": 2336,
+            "serviceChargeSatang": 0,
+            "taxInclusiveSatang": 164,
+            "taxExclusiveSatang": 0,
+            "grossSatang": 2500,
+            "unappliedDiscountSatang": 0,
+            "refundedSatang": 0
+          }
+        },
+        "lines": [
+          {
+            "lineNo": 1,
+            "cartLineId": "01a1a622-9c1f-7665-8c60-9f0f66593067",
+            "kind": "fnb_item",
+            "componentKey": "01a0cb02-13a9-790f-85a1-73d0ef92ae52",
+            "ticketPackageId": null,
+            "productId": "01a0cb02-13a9-790f-85a1-73d0ef92ae52",
+            "label": "Bottled Water",
+            "revenueCategory": "fnb",
+            "taxableCategory": "fnb",
+            "quantity": 1,
+            "unitSatang": 2500,
+            "baseSatang": 2500,
+            "discountSatang": 0,
+            "netSatang": 2336,
+            "serviceChargeSatang": 0,
+            "taxSatang": 164,
+            "taxMode": "inclusive",
+            "taxRateBp": 700,
+            "taxRateId": "vat",
+            "taxName": "VAT",
+            "grossSatang": 2500,
+            "customerTier": "tourist",
+            "kidCount": 0,
+            "adultCount": 0,
+            "freeAdultCount": 0,
+            "stayHours": null,
+            "stayDurationLabel": null,
+            "payload": {
+              "prepStation": "bar",
+              "pickupCode": "74"
+            }
+          }
+        ],
+        "rejectedPromoCodes": [],
+        "voucher": null,
+        "benefit": null
+      }
+    },
+    {
+      "at": "2026-11-04T10:37:29.812Z",
+      "till": "six",
+      "method": "POST",
+      "path": "/api/payments/attempts",
+      "status": 200,
+      "request": {
+        "saleId": "01a1a622-9fe2-7a70-8b0d-4f16ed2aea05",
+        "actionId": "01a1a622-a0df-7958-9bb8-7e848c40aa34",
+        "method": "promptpay",
+        "kind": "qr",
+        "tender": "qr",
+        "amountSatang": 2500,
+        "requestQrPayload": true,
+        "qrDirection": "show"
+      },
+      "response": {
+        "route": "gateway",
+        "attempt": {
+          "id": "01a1a622-a2b2-78d9-87e1-0274f06663f4",
+          "saleId": "01a1a622-9fe2-7a70-8b0d-4f16ed2aea05",
+          "method": "qr",
+          "provider": "simulator",
+          "status": "sent_to_terminal",
+          "amountSatang": 2500,
+          "tenderedSatang": null,
+          "changeSatang": null,
+          "terminalRef": null,
+          "inquirySupported": false,
+          "tid": null,
+          "approvalCode": null,
+          "last4": null,
+          "invoiceNo": "SBX0AX261104000001",
+          "tranRef": "SIMB44727457BEB6D0C06",
+          "actionId": "01a1a622-a0df-7958-9bb8-7e848c40aa34",
+          "offline": false,
+          "paidAt": null,
+          "createdAt": "2026-11-04T10:37:30.151Z"
+        },
+        "replayed": false,
+        "outstandingSatang": 2500,
+        "qrPayload": "[omitted]",
+        "qrImageUrl": null,
+        "expiresAt": "2026-11-04T10:57:30.167Z",
+        "expiryTimerMs": 1199990
+      }
+    },
+    {
+      "at": "2026-11-04T10:37:31.472Z",
+      "till": "six",
+      "method": "GET",
+      "path": "/api/payments/attempts/01a1a622-a2b2-78d9-87e1-0274f06663f4",
+      "status": 200,
+      "request": null,
+      "response": {
+        "route": "gateway",
+        "attempt": {
+          "id": "01a1a622-a2b2-78d9-87e1-0274f06663f4",
+          "saleId": "01a1a622-9fe2-7a70-8b0d-4f16ed2aea05",
+          "method": "qr",
+          "provider": "simulator",
+          "status": "sent_to_terminal",
+          "amountSatang": 2500,
+          "tenderedSatang": null,
+          "changeSatang": null,
+          "terminalRef": null,
+          "inquirySupported": false,
+          "tid": null,
+          "approvalCode": null,
+          "last4": null,
+          "invoiceNo": "SBX0AX261104000001",
+          "tranRef": "SIMB44727457BEB6D0C06",
+          "actionId": "01a1a622-a0df-7958-9bb8-7e848c40aa34",
+          "offline": false,
+          "paidAt": null,
+          "createdAt": "2026-11-04T10:37:30.151Z"
+        },
+        "qrPayload": "[omitted]",
+        "qrImageUrl": null,
+        "expiresAt": "2026-11-04T10:57:30.167Z",
+        "expiryTimerMs": 1198355,
+        "deviceLabel": null,
+        "responseText": null,
+        "outstandingSatang": 2500
+      }
+    },
+    {
+      "at": "2026-11-04T10:37:33.024Z",
+      "till": "six",
+      "method": "GET",
+      "path": "/api/payments/attempts/01a1a622-a2b2-78d9-87e1-0274f06663f4",
+      "status": 200,
+      "request": null,
+      "response": {
+        "route": "gateway",
+        "attempt": {
+          "id": "01a1a622-a2b2-78d9-87e1-0274f06663f4",
+          "saleId": "01a1a622-9fe2-7a70-8b0d-4f16ed2aea05",
+          "method": "qr",
+          "provider": "simulator",
+          "status": "sent_to_terminal",
+          "amountSatang": 2500,
+          "tenderedSatang": null,
+          "changeSatang": null,
+          "terminalRef": null,
+          "inquirySupported": false,
+          "tid": null,
+          "approvalCode": null,
+          "last4": null,
+          "invoiceNo": "SBX0AX261104000001",
+          "tranRef": "SIMB44727457BEB6D0C06",
+          "actionId": "01a1a622-a0df-7958-9bb8-7e848c40aa34",
+          "offline": false,
+          "paidAt": null,
+          "createdAt": "2026-11-04T10:37:30.151Z"
+        },
+        "qrPayload": "[omitted]",
+        "qrImageUrl": null,
+        "expiresAt": "2026-11-04T10:57:30.167Z",
+        "expiryTimerMs": 1196772,
+        "deviceLabel": null,
+        "responseText": null,
+        "outstandingSatang": 2500
+      }
+    },
+    {
+      "at": "2026-11-04T10:37:34.607Z",
+      "till": "six",
+      "method": "GET",
+      "path": "/api/payments/attempts/01a1a622-a2b2-78d9-87e1-0274f06663f4",
+      "status": 200,
+      "request": null,
+      "response": {
+        "route": "gateway",
+        "attempt": {
+          "id": "01a1a622-a2b2-78d9-87e1-0274f06663f4",
+          "saleId": "01a1a622-9fe2-7a70-8b0d-4f16ed2aea05",
+          "method": "qr",
+          "provider": "simulator",
+          "status": "sent_to_terminal",
+          "amountSatang": 2500,
+          "tenderedSatang": null,
+          "changeSatang": null,
+          "terminalRef": null,
+          "inquirySupported": false,
+          "tid": null,
+          "approvalCode": null,
+          "last4": null,
+          "invoiceNo": "SBX0AX261104000001",
+          "tranRef": "SIMB44727457BEB6D0C06",
+          "actionId": "01a1a622-a0df-7958-9bb8-7e848c40aa34",
+          "offline": false,
+          "paidAt": null,
+          "createdAt": "2026-11-04T10:37:30.151Z"
+        },
+        "qrPayload": "[omitted]",
+        "qrImageUrl": null,
+        "expiresAt": "2026-11-04T10:57:30.167Z",
+        "expiryTimerMs": 1195191,
+        "deviceLabel": null,
+        "responseText": null,
+        "outstandingSatang": 2500
+      }
+    },
+    {
+      "at": "2026-11-04T10:37:36.189Z",
+      "till": "six",
+      "method": "GET",
+      "path": "/api/payments/attempts/01a1a622-a2b2-78d9-87e1-0274f06663f4",
+      "status": 200,
+      "request": null,
+      "response": {
+        "route": "gateway",
+        "attempt": {
+          "id": "01a1a622-a2b2-78d9-87e1-0274f06663f4",
+          "saleId": "01a1a622-9fe2-7a70-8b0d-4f16ed2aea05",
+          "method": "qr",
+          "provider": "simulator",
+          "status": "sent_to_terminal",
+          "amountSatang": 2500,
+          "tenderedSatang": null,
+          "changeSatang": null,
+          "terminalRef": null,
+          "inquirySupported": false,
+          "tid": null,
+          "approvalCode": null,
+          "last4": null,
+          "invoiceNo": "SBX0AX261104000001",
+          "tranRef": "SIMB44727457BEB6D0C06",
+          "actionId": "01a1a622-a0df-7958-9bb8-7e848c40aa34",
+          "offline": false,
+          "paidAt": null,
+          "createdAt": "2026-11-04T10:37:30.151Z"
+        },
+        "qrPayload": "[omitted]",
+        "qrImageUrl": null,
+        "expiresAt": "2026-11-04T10:57:30.167Z",
+        "expiryTimerMs": 1193610,
+        "deviceLabel": null,
+        "responseText": null,
+        "outstandingSatang": 2500
+      }
+    },
+    {
+      "at": "2026-11-04T10:37:37.771Z",
+      "till": "six",
+      "method": "GET",
+      "path": "/api/payments/attempts/01a1a622-a2b2-78d9-87e1-0274f06663f4",
+      "status": 200,
+      "request": null,
+      "response": {
+        "route": "gateway",
+        "attempt": {
+          "id": "01a1a622-a2b2-78d9-87e1-0274f06663f4",
+          "saleId": "01a1a622-9fe2-7a70-8b0d-4f16ed2aea05",
+          "method": "qr",
+          "provider": "simulator",
+          "status": "sent_to_terminal",
+          "amountSatang": 2500,
+          "tenderedSatang": null,
+          "changeSatang": null,
+          "terminalRef": null,
+          "inquirySupported": false,
+          "tid": null,
+          "approvalCode": null,
+          "last4": null,
+          "invoiceNo": "SBX0AX261104000001",
+          "tranRef": "SIMB44727457BEB6D0C06",
+          "actionId": "01a1a622-a0df-7958-9bb8-7e848c40aa34",
+          "offline": false,
+          "paidAt": null,
+          "createdAt": "2026-11-04T10:37:30.151Z"
+        },
+        "qrPayload": "[omitted]",
+        "qrImageUrl": null,
+        "expiresAt": "2026-11-04T10:57:30.167Z",
+        "expiryTimerMs": 1192028,
+        "deviceLabel": null,
+        "responseText": null,
+        "outstandingSatang": 2500
+      }
+    },
+    {
+      "at": "2026-11-04T10:37:39.349Z",
+      "till": "six",
+      "method": "GET",
+      "path": "/api/payments/attempts/01a1a622-a2b2-78d9-87e1-0274f06663f4",
+      "status": 200,
+      "request": null,
+      "response": {
+        "route": "gateway",
+        "attempt": {
+          "id": "01a1a622-a2b2-78d9-87e1-0274f06663f4",
+          "saleId": "01a1a622-9fe2-7a70-8b0d-4f16ed2aea05",
+          "method": "qr",
+          "provider": "simulator",
+          "status": "sent_to_terminal",
+          "amountSatang": 2500,
+          "tenderedSatang": null,
+          "changeSatang": null,
+          "terminalRef": null,
+          "inquirySupported": false,
+          "tid": null,
+          "approvalCode": null,
+          "last4": null,
+          "invoiceNo": "SBX0AX261104000001",
+          "tranRef": "SIMB44727457BEB6D0C06",
+          "actionId": "01a1a622-a0df-7958-9bb8-7e848c40aa34",
+          "offline": false,
+          "paidAt": null,
+          "createdAt": "2026-11-04T10:37:30.151Z"
+        },
+        "qrPayload": "[omitted]",
+        "qrImageUrl": null,
+        "expiresAt": "2026-11-04T10:57:30.167Z",
+        "expiryTimerMs": 1190451,
+        "deviceLabel": null,
+        "responseText": null,
+        "outstandingSatang": 2500
+      }
+    },
+    {
+      "at": "2026-11-04T10:37:40.930Z",
+      "till": "six",
+      "method": "GET",
+      "path": "/api/payments/attempts/01a1a622-a2b2-78d9-87e1-0274f06663f4",
+      "status": 200,
+      "request": null,
+      "response": {
+        "route": "gateway",
+        "attempt": {
+          "id": "01a1a622-a2b2-78d9-87e1-0274f06663f4",
+          "saleId": "01a1a622-9fe2-7a70-8b0d-4f16ed2aea05",
+          "method": "qr",
+          "provider": "simulator",
+          "status": "sent_to_terminal",
+          "amountSatang": 2500,
+          "tenderedSatang": null,
+          "changeSatang": null,
+          "terminalRef": null,
+          "inquirySupported": false,
+          "tid": null,
+          "approvalCode": null,
+          "last4": null,
+          "invoiceNo": "SBX0AX261104000001",
+          "tranRef": "SIMB44727457BEB6D0C06",
+          "actionId": "01a1a622-a0df-7958-9bb8-7e848c40aa34",
+          "offline": false,
+          "paidAt": null,
+          "createdAt": "2026-11-04T10:37:30.151Z"
+        },
+        "qrPayload": "[omitted]",
+        "qrImageUrl": null,
+        "expiresAt": "2026-11-04T10:57:30.167Z",
+        "expiryTimerMs": 1188871,
+        "deviceLabel": null,
+        "responseText": null,
+        "outstandingSatang": 2500
+      }
+    },
+    {
+      "at": "2026-11-04T10:37:42.509Z",
+      "till": "six",
+      "method": "GET",
+      "path": "/api/payments/attempts/01a1a622-a2b2-78d9-87e1-0274f06663f4",
+      "status": 200,
+      "request": null,
+      "response": {
+        "route": "gateway",
+        "attempt": {
+          "id": "01a1a622-a2b2-78d9-87e1-0274f06663f4",
+          "saleId": "01a1a622-9fe2-7a70-8b0d-4f16ed2aea05",
+          "method": "qr",
+          "provider": "simulator",
+          "status": "approved",
+          "amountSatang": 2500,
+          "tenderedSatang": null,
+          "changeSatang": null,
+          "terminalRef": null,
+          "inquirySupported": false,
+          "tid": null,
+          "approvalCode": null,
+          "last4": null,
+          "invoiceNo": "SBX0AX261104000001",
+          "tranRef": "SIMB44727457BEB6D0C06",
+          "actionId": "01a1a622-a0df-7958-9bb8-7e848c40aa34",
+          "offline": false,
+          "paidAt": "2026-11-04T10:37:42.512Z",
+          "createdAt": "2026-11-04T10:37:30.151Z"
+        },
+        "qrPayload": "[omitted]",
+        "qrImageUrl": null,
+        "expiresAt": "2026-11-04T10:57:30.167Z",
+        "expiryTimerMs": 1187290,
+        "deviceLabel": null,
+        "responseText": null,
+        "outstandingSatang": 0
+      }
+    },
+    {
+      "at": "2026-11-04T10:37:42.597Z",
+      "till": "six",
+      "method": "POST",
+      "path": "/api/sales/01a1a622-9fe2-7a70-8b0d-4f16ed2aea05/finalise",
+      "status": 200,
+      "request": {
+        "method": "none",
+        "kind": "other",
+        "amountSatang": 0,
+        "tenderedSatang": 0,
+        "changeSatang": 0,
+        "actionId": "01a1a622-d2eb-7abf-be85-9e37e8f10da7",
+        "tender": {
+          "method": "none",
+          "kind": "other",
+          "amountSatang": 0,
+          "tenderedSatang": 0,
+          "changeSatang": 0
+        }
+      },
+      "response": {
+        "replay": true,
+        "replayed": true,
+        "finalised": true,
+        "outstandingSatang": 0,
+        "attempt": null,
+        "pickupCode": "74",
+        "sale": {
+          "id": "01a1a622-9fe2-7a70-8b0d-4f16ed2aea05",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "stationId": "01a1a621-2580-7d6c-8c5a-9f9f45f5161b",
+          "boxId": "01a1a621-24c9-732a-85a8-19a98923f74c",
+          "memberId": null,
+          "visitId": null,
+          "businessDate": "2026-11-04",
+          "occurredAt": "2026-11-04T10:37:29.442Z",
+          "status": "finalised",
+          "salesChannel": "fnb",
+          "pricingMode": "weekday",
+          "pricingModeReason": "Weekday pricing",
+          "customerTier": "tourist",
+          "engineVersion": "2026.10.06-1",
+          "receiptNumber": "ZZ747A-000001",
+          "receiptSeries": "ZZ747A",
+          "receiptSeq": 1,
+          "finalisedAt": "2026-11-04T10:37:42.517Z",
+          "note": null,
+          "voidedAt": null,
+          "voidedByAccountId": null,
+          "voidedByName": null,
+          "voidReason": null,
+          "totals": {
+            "subtotalSatang": 2500,
+            "manualDiscountSatang": 0,
+            "promoDiscountSatang": 0,
+            "discountSatang": 0,
+            "netSatang": 2336,
+            "serviceChargeSatang": 0,
+            "taxInclusiveSatang": 164,
+            "taxExclusiveSatang": 0,
+            "grossSatang": 2500,
+            "unappliedDiscountSatang": 0,
+            "refundedSatang": 0
+          }
+        },
+        "redeemedVoucherIds": [],
+        "printing": null,
+        "receiptCollision": null,
+        "grants": []
+      }
+    },
+    {
+      "at": "2026-11-04T10:37:42.694Z",
+      "till": "six",
+      "method": "GET",
+      "path": "/api/sales/01a1a622-9fe2-7a70-8b0d-4f16ed2aea05",
+      "status": 200,
+      "request": null,
+      "response": {
+        "timeExtension": null,
+        "sale": {
+          "id": "01a1a622-9fe2-7a70-8b0d-4f16ed2aea05",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "stationId": "01a1a621-2580-7d6c-8c5a-9f9f45f5161b",
+          "boxId": "01a1a621-24c9-732a-85a8-19a98923f74c",
+          "memberId": null,
+          "visitId": null,
+          "businessDate": "2026-11-04",
+          "occurredAt": "2026-11-04T10:37:29.442Z",
+          "status": "finalised",
+          "salesChannel": "fnb",
+          "pricingMode": "weekday",
+          "pricingModeReason": "Weekday pricing",
+          "customerTier": "tourist",
+          "engineVersion": "2026.10.06-1",
+          "receiptNumber": "ZZ747A-000001",
+          "receiptSeries": "ZZ747A",
+          "receiptSeq": 1,
+          "finalisedAt": "2026-11-04T10:37:42.517Z",
+          "note": null,
+          "voidedAt": null,
+          "voidedByAccountId": null,
+          "voidedByName": null,
+          "voidReason": null,
+          "totals": {
+            "subtotalSatang": 2500,
+            "manualDiscountSatang": 0,
+            "promoDiscountSatang": 0,
+            "discountSatang": 0,
+            "netSatang": 2336,
+            "serviceChargeSatang": 0,
+            "taxInclusiveSatang": 164,
+            "taxExclusiveSatang": 0,
+            "grossSatang": 2500,
+            "unappliedDiscountSatang": 0,
+            "refundedSatang": 0
+          },
+          "tierClaim": null
+        },
+        "correctionBandShortCode": null,
+        "refundStatus": "none",
+        "refundableSatang": 2500,
+        "refunds": [],
+        "printJobs": [
+          {
+            "id": "01a1a622-d329-746a-8207-bddb154e208c",
+            "kind": "bar_ticket",
+            "role": "bar",
+            "status": "skipped",
+            "stationId": "01a1a621-2580-7d6c-8c5a-9f9f45f5161b",
+            "deviceId": null,
+            "deviceLabel": null,
+            "subjectType": "sale",
+            "subjectId": "01a1a622-9fe2-7a70-8b0d-4f16ed2aea05",
+            "reprintOf": null,
+            "reprintReason": null,
+            "requestedByName": "Som",
+            "errorCode": "NO_DEVICE_FOR_ROLE",
+            "errorMessage": "No bar printer is assigned to this station",
+            "queuedAt": "2026-11-04T10:37:42.518Z",
+            "finishedAt": "2026-11-04T10:37:42.518Z"
+          },
+          {
+            "id": "01a1a622-d325-785d-a558-f8de5ce43e42",
+            "kind": "receipt",
+            "role": "receipt",
+            "status": "skipped",
+            "stationId": "01a1a621-2580-7d6c-8c5a-9f9f45f5161b",
+            "deviceId": null,
+            "deviceLabel": null,
+            "subjectType": "sale",
+            "subjectId": "01a1a622-9fe2-7a70-8b0d-4f16ed2aea05",
+            "reprintOf": null,
+            "reprintReason": null,
+            "requestedByName": "Som",
+            "errorCode": "NO_DEVICE_FOR_ROLE",
+            "errorMessage": "No receipt printer is assigned to this station",
+            "queuedAt": "2026-11-04T10:37:42.517Z",
+            "finishedAt": "2026-11-04T10:37:42.517Z"
+          }
+        ],
+        "bands": [],
+        "grants": [],
+        "pickupCode": "74",
+        "attempts": [
+          {
+            "id": "01a1a622-a2b2-78d9-87e1-0274f06663f4",
+            "saleId": "01a1a622-9fe2-7a70-8b0d-4f16ed2aea05",
+            "method": "qr",
+            "provider": "simulator",
+            "status": "approved",
+            "amountSatang": 2500,
+            "tenderedSatang": null,
+            "changeSatang": null,
+            "terminalRef": null,
+            "inquirySupported": false,
+            "tid": null,
+            "approvalCode": null,
+            "last4": null,
+            "invoiceNo": "SBX0AX261104000001",
+            "tranRef": "SIMB44727457BEB6D0C06",
+            "actionId": "01a1a622-a0df-7958-9bb8-7e848c40aa34",
+            "offline": false,
+            "paidAt": "2026-11-04T10:37:42.512Z",
+            "createdAt": "2026-11-04T10:37:30.151Z"
+          }
+        ],
+        "taxBreakdown": {
+          "taxTotal": 164,
+          "categories": [
+            {
+              "tax": 164,
+              "base": 2500,
+              "gross": 2500,
+              "taxMode": "inclusive",
+              "taxName": "VAT",
+              "category": "fnb",
+              "taxRateId": "vat",
+              "taxPercent": 7,
+              "secondaryTax": 0,
+              "serviceCharge": 0,
+              "secondaryTaxMode": "none",
+              "secondaryTaxPercent": 0
+            }
+          ],
+          "grandTotal": 2500,
+          "netSubtotal": 2500,
+          "discountTotal": 0,
+          "exclusiveTaxTotal": 0,
+          "inclusiveTaxTotal": 164,
+          "unappliedDiscount": 0,
+          "serviceChargeTotal": 0
+        },
+        "taxConfig": {
+          "rates": [
+            {
+              "id": "vat",
+              "name": "VAT",
+              "percent": 7
+            }
+          ],
+          "categoryRules": [
+            {
+              "taxMode": "inclusive",
+              "category": "tickets",
+              "taxRateId": "vat",
+              "taxOnServiceCharge": false,
+              "serviceChargePercent": 0
+            },
+            {
+              "taxMode": "inclusive",
+              "category": "fnb",
+              "taxRateId": "vat",
+              "taxOnServiceCharge": false,
+              "serviceChargePercent": 0
+            },
+            {
+              "taxMode": "inclusive",
+              "category": "bar",
+              "taxRateId": "vat",
+              "taxOnServiceCharge": false,
+              "serviceChargePercent": 0
+            },
+            {
+              "taxMode": "inclusive",
+              "category": "drop_off",
+              "taxRateId": "vat",
+              "taxOnServiceCharge": false,
+              "serviceChargePercent": 0
+            },
+            {
+              "taxMode": "inclusive",
+              "category": "parties",
+              "taxRateId": "vat",
+              "taxOnServiceCharge": false,
+              "serviceChargePercent": 0
+            },
+            {
+              "taxMode": "inclusive",
+              "category": "addons",
+              "taxRateId": "vat",
+              "taxOnServiceCharge": false,
+              "serviceChargePercent": 0
+            },
+            {
+              "taxMode": "inclusive",
+              "category": "merch",
+              "taxRateId": "vat",
+              "taxOnServiceCharge": false,
+              "serviceChargePercent": 0
+            },
+            {
+              "taxMode": "none",
+              "category": "stored_value",
+              "taxOnServiceCharge": false,
+              "serviceChargePercent": 0
+            }
+          ],
+          "discountPlacement": "before_tax"
+        },
+        "lines": [
+          {
+            "id": "01a1a622-9fe2-70a8-aef6-8e83f9d78c86",
+            "lineNo": 1,
+            "cartLineId": "01a1a622-9c1f-7665-8c60-9f0f66593067",
+            "kind": "fnb_item",
+            "label": "Bottled Water",
+            "componentKey": "01a0cb02-13a9-790f-85a1-73d0ef92ae52",
+            "ticketPackageId": null,
+            "productId": "01a0cb02-13a9-790f-85a1-73d0ef92ae52",
+            "revenueCategory": "fnb",
+            "taxableCategory": "fnb",
+            "quantity": 1,
+            "unitSatang": 2500,
+            "baseSatang": 2500,
+            "discountSatang": 0,
+            "netSatang": 2336,
+            "serviceChargeSatang": 0,
+            "taxSatang": 164,
+            "taxMode": "inclusive",
+            "taxRateBp": 700,
+            "taxName": "VAT",
+            "grossSatang": 2500,
+            "customerTier": "tourist",
+            "kidCount": 0,
+            "adultCount": 0,
+            "freeAdultCount": 0,
+            "stayHours": null,
+            "stayDurationLabel": null,
+            "modifiers": null,
+            "note": null,
+            "variant": null,
+            "prepStation": "bar",
+            "variantBreakdown": null,
+            "prepaid": null,
+            "holderCheckinId": null,
+            "supervised": false
+          }
+        ],
+        "discounts": []
+      }
+    },
+    {
+      "at": "2026-11-04T10:39:08.319Z",
+      "till": "four",
+      "method": "GET",
+      "path": "/api/vouchers/lookup",
+      "status": 200,
+      "request": null,
+      "response": {
+        "voucher": {
+          "id": "01a1a624-238a-7fb9-a15a-7e499e62a93b",
+          "code": "[omitted]",
+          "source": "fixed",
+          "state": "available",
+          "prize": {
+            "nameEn": "ZZ TEST SCRUM-746 mw1ze0to voucher",
+            "nameTh": null
+          },
+          "definitionCode": "zz-test-s747-mw1ze0to",
+          "kind": "free_item",
+          "effect": {
+            "type": "free_item",
+            "product": {
+              "id": "01a0cb02-13a9-790f-85a1-73d0ef92ae52",
+              "name": "Bottled Water",
+              "kind": "menu",
+              "priceSatang": 2500,
+              "weekendPriceSatang": 2500
+            }
+          },
+          "summary": "Ring up to use it, then hand over: Bottled Water",
+          "issuedAt": "2026-11-04T10:39:08.672Z",
+          "issuedBooth": null,
+          "issuedBranch": {
+            "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+            "name": "Oto Play Park, Central Floresta"
+          },
+          "expiresAt": null,
+          "legacyFormat": false,
+          "hold": null,
+          "redeemableOffline": false,
+          "staffLabel": null,
+          "issuedBy": {
+            "name": "Som",
+            "code": "[omitted]"
+          }
+        }
+      }
+    },
+    {
+      "at": "2026-11-04T10:39:08.426Z",
+      "till": "four",
+      "method": "POST",
+      "path": "/api/sales/01a1a624-221e-73a7-b1a8-ee0cc77b4e84/vouchers",
+      "status": 200,
+      "request": {
+        "code": "[omitted]"
+      },
+      "response": {
+        "voucher": {
+          "id": "01a1a624-23e2-7d2a-85bd-fda726dbbaf3",
+          "code": "[omitted]",
+          "source": "fixed",
+          "state": "held_here",
+          "prize": {
+            "nameEn": "ZZ TEST SCRUM-746 mw1ze0to voucher",
+            "nameTh": null
+          },
+          "definitionCode": "zz-test-s747-mw1ze0to",
+          "kind": "free_item",
+          "effect": {
+            "type": "free_item",
+            "product": {
+              "id": "01a0cb02-13a9-790f-85a1-73d0ef92ae52",
+              "name": "Bottled Water",
+              "kind": "menu",
+              "priceSatang": 2500,
+              "weekendPriceSatang": 2500
+            }
+          },
+          "summary": "Ring up to use it, then hand over: Bottled Water",
+          "issuedAt": "2026-11-04T10:39:08.765Z",
+          "issuedBooth": null,
+          "issuedBranch": {
+            "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+            "name": "Oto Play Park, Central Floresta"
+          },
+          "expiresAt": null,
+          "legacyFormat": false,
+          "hold": {
+            "saleId": "01a1a624-221e-73a7-b1a8-ee0cc77b4e84",
+            "stationId": "01a1a621-2524-76c7-b743-196c09f1a87c",
+            "stationName": "ZZ TEST SCRUM-747 mw1ze0to four",
+            "heldAt": "2026-11-04T10:39:08.765Z"
+          },
+          "redeemableOffline": false,
+          "staffLabel": null,
+          "issuedBy": {
+            "name": "Som",
+            "code": "[omitted]"
+          }
+        },
+        "saleId": "01a1a624-221e-73a7-b1a8-ee0cc77b4e84",
+        "alreadyHeld": false
+      }
+    },
+    {
+      "at": "2026-11-04T10:39:08.565Z",
+      "till": "four",
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "status": 200,
+      "request": {
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "stationId": "01a1a621-2524-76c7-b743-196c09f1a87c",
+        "channel": "fnb",
+        "tier": "tourist",
+        "pricingMode": "weekday",
+        "pricingModeReason": "Weekday pricing",
+        "socks": {
+          "addOnId": "a-socks",
+          "unitSatang": 0,
+          "label": "Regular Socks"
+        },
+        "lines": [],
+        "items": [],
+        "promos": [],
+        "promoCodes": [
+          "[voucher code omitted]"
+        ],
+        "manualDiscounts": [],
+        "memberId": null,
+        "customerPhone": null,
+        "customerNickname": null,
+        "expectedTotalSatang": 0
+      },
+      "response": {
+        "quote": {
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "businessDate": "2026-11-04",
+          "pricingMode": "weekday",
+          "pricingModeReason": "Weekday pricing",
+          "holidayName": null,
+          "tier": "tourist",
+          "tierSource": "default",
+          "tierClaimRefusal": null,
+          "customerTier": "tourist",
+          "engineVersion": "2026.10.06-1",
+          "totals": {
+            "subtotalSatang": 2500,
+            "manualDiscountSatang": 0,
+            "promoDiscountSatang": 2500,
+            "discountSatang": 2500,
+            "netSatang": 0,
+            "serviceChargeSatang": 0,
+            "taxInclusiveSatang": 0,
+            "taxExclusiveSatang": 0,
+            "grossSatang": 0,
+            "unappliedDiscountSatang": 0
+          },
+          "lineTotals": {
+            "01a1a624-23e2-7d2a-85bd-fda726dbbaf3": 2500
+          },
+          "itemPresentation": {},
+          "manualAmounts": {},
+          "appliedPromos": [
+            {
+              "code": "[omitted]",
+              "label": "ZZ TEST SCRUM-746 mw1ze0to voucher (voucher …5GPJ)",
+              "type": "fixed",
+              "amountSatang": 2500
+            }
+          ],
+          "rejectedPromoCodes": [],
+          "voucher": {
+            "voucherId": "01a1a624-23e2-7d2a-85bd-fda726dbbaf3",
+            "code": "[omitted]",
+            "definitionCode": "zz-test-s747-mw1ze0to",
+            "label": "ZZ TEST SCRUM-746 mw1ze0to voucher (voucher …5GPJ)",
+            "effect": {
+              "type": "free_item",
+              "product": {
+                "id": "01a0cb02-13a9-790f-85a1-73d0ef92ae52",
+                "name": "Bottled Water",
+                "kind": "menu",
+                "priceSatang": 2500,
+                "weekendPriceSatang": 2500
+              }
+            },
+            "amountSatang": 2500,
+            "applicable": true,
+            "reason": null
+          },
+          "benefit": null,
+          "taxBreakdown": {
+            "netSubtotal": 2500,
+            "discountTotal": 2500,
+            "serviceChargeTotal": 0,
+            "exclusiveTaxTotal": 0,
+            "inclusiveTaxTotal": 0,
+            "taxTotal": 0,
+            "categories": [
+              {
+                "category": "fnb",
+                "base": 0,
+                "taxMode": "inclusive",
+                "taxRateId": "vat",
+                "taxName": "VAT",
+                "taxPercent": 7,
+                "serviceCharge": 0,
+                "tax": 0,
+                "secondaryTaxMode": "none",
+                "secondaryTaxPercent": 0,
+                "secondaryTax": 0,
+                "gross": 0
+              }
+            ],
+            "grandTotal": 0,
+            "unappliedDiscount": 0
+          },
+          "lines": [
+            {
+              "lineNo": 1,
+              "cartLineId": "01a1a624-23e2-7d2a-85bd-fda726dbbaf3",
+              "kind": "promo_item",
+              "componentKey": "promo-item:01a0cb02-13a9-790f-85a1-73d0ef92ae52",
+              "ticketPackageId": null,
+              "productId": "01a0cb02-13a9-790f-85a1-73d0ef92ae52",
+              "label": "Bottled Water",
+              "revenueCategory": "fnb",
+              "taxableCategory": "fnb",
+              "quantity": 1,
+              "unitSatang": 2500,
+              "baseSatang": 2500,
+              "discountSatang": 2500,
+              "netSatang": 0,
+              "serviceChargeSatang": 0,
+              "taxSatang": 0,
+              "taxMode": "inclusive",
+              "taxRateBp": 700,
+              "taxRateId": "vat",
+              "taxName": "VAT",
+              "grossSatang": 0,
+              "customerTier": "tourist",
+              "kidCount": 0,
+              "adultCount": 0,
+              "freeAdultCount": 0,
+              "stayHours": null,
+              "stayDurationLabel": null,
+              "payload": {
+                "voucher": {
+                  "id": "01a1a624-23e2-7d2a-85bd-fda726dbbaf3",
+                  "code": "[omitted]"
+                }
+              }
+            }
+          ],
+          "disagreements": {
+            "pricingModeSentByTill": "weekday",
+            "tierSentByTill": "tourist",
+            "pricingModeDiffers": false,
+            "tierDiffers": false
+          }
+        },
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "businessDate": "2026-11-04",
+        "pricingMode": "weekday",
+        "pricingModeReason": "Weekday pricing",
+        "holidayName": null,
+        "tier": "tourist",
+        "tierSource": "default",
+        "tierClaimRefusal": null,
+        "customerTier": "tourist",
+        "engineVersion": "2026.10.06-1",
+        "totals": {
+          "subtotalSatang": 2500,
+          "manualDiscountSatang": 0,
+          "promoDiscountSatang": 2500,
+          "discountSatang": 2500,
+          "netSatang": 0,
+          "serviceChargeSatang": 0,
+          "taxInclusiveSatang": 0,
+          "taxExclusiveSatang": 0,
+          "grossSatang": 0,
+          "unappliedDiscountSatang": 0
+        },
+        "lineTotals": {
+          "01a1a624-23e2-7d2a-85bd-fda726dbbaf3": 2500
+        },
+        "itemPresentation": {},
+        "manualAmounts": {},
+        "appliedPromos": [
+          {
+            "code": "[omitted]",
+            "label": "ZZ TEST SCRUM-746 mw1ze0to voucher (voucher …5GPJ)",
+            "type": "fixed",
+            "amountSatang": 2500
+          }
+        ],
+        "rejectedPromoCodes": [],
+        "voucher": {
+          "voucherId": "01a1a624-23e2-7d2a-85bd-fda726dbbaf3",
+          "code": "[omitted]",
+          "definitionCode": "zz-test-s747-mw1ze0to",
+          "label": "ZZ TEST SCRUM-746 mw1ze0to voucher (voucher …5GPJ)",
+          "effect": {
+            "type": "free_item",
+            "product": {
+              "id": "01a0cb02-13a9-790f-85a1-73d0ef92ae52",
+              "name": "Bottled Water",
+              "kind": "menu",
+              "priceSatang": 2500,
+              "weekendPriceSatang": 2500
+            }
+          },
+          "amountSatang": 2500,
+          "applicable": true,
+          "reason": null
+        },
+        "benefit": null,
+        "taxBreakdown": {
+          "netSubtotal": 2500,
+          "discountTotal": 2500,
+          "serviceChargeTotal": 0,
+          "exclusiveTaxTotal": 0,
+          "inclusiveTaxTotal": 0,
+          "taxTotal": 0,
+          "categories": [
+            {
+              "category": "fnb",
+              "base": 0,
+              "taxMode": "inclusive",
+              "taxRateId": "vat",
+              "taxName": "VAT",
+              "taxPercent": 7,
+              "serviceCharge": 0,
+              "tax": 0,
+              "secondaryTaxMode": "none",
+              "secondaryTaxPercent": 0,
+              "secondaryTax": 0,
+              "gross": 0
+            }
+          ],
+          "grandTotal": 0,
+          "unappliedDiscount": 0
+        },
+        "lines": [
+          {
+            "lineNo": 1,
+            "cartLineId": "01a1a624-23e2-7d2a-85bd-fda726dbbaf3",
+            "kind": "promo_item",
+            "componentKey": "promo-item:01a0cb02-13a9-790f-85a1-73d0ef92ae52",
+            "ticketPackageId": null,
+            "productId": "01a0cb02-13a9-790f-85a1-73d0ef92ae52",
+            "label": "Bottled Water",
+            "revenueCategory": "fnb",
+            "taxableCategory": "fnb",
+            "quantity": 1,
+            "unitSatang": 2500,
+            "baseSatang": 2500,
+            "discountSatang": 2500,
+            "netSatang": 0,
+            "serviceChargeSatang": 0,
+            "taxSatang": 0,
+            "taxMode": "inclusive",
+            "taxRateBp": 700,
+            "taxRateId": "vat",
+            "taxName": "VAT",
+            "grossSatang": 0,
+            "customerTier": "tourist",
+            "kidCount": 0,
+            "adultCount": 0,
+            "freeAdultCount": 0,
+            "stayHours": null,
+            "stayDurationLabel": null,
+            "payload": {
+              "voucher": {
+                "id": "01a1a624-23e2-7d2a-85bd-fda726dbbaf3",
+                "code": "[omitted]"
+              }
+            }
+          }
+        ],
+        "disagreements": {
+          "pricingModeSentByTill": "weekday",
+          "tierSentByTill": "tourist",
+          "pricingModeDiffers": false,
+          "tierDiffers": false
+        }
+      }
+    },
+    {
+      "at": "2026-11-04T10:39:09.821Z",
+      "till": "four",
+      "method": "DELETE",
+      "path": "/api/sales/01a1a624-221e-73a7-b1a8-ee0cc77b4e84/vouchers/01a1a624-23e2-7d2a-85bd-fda726dbbaf3",
+      "status": 200,
+      "request": null,
+      "response": {
+        "released": true,
+        "voucherId": "01a1a624-23e2-7d2a-85bd-fda726dbbaf3",
+        "saleId": "01a1a624-221e-73a7-b1a8-ee0cc77b4e84"
+      }
+    }
+  ],
+  "browser": "156.0.4314.58",
+  "adminActorId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+  "tillSessions": {
+    "four": {
+      "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+      "role": "reception",
+      "stationId": "01a1a621-2524-76c7-b743-196c09f1a87c",
+      "signedInAt": "2026-11-04T10:37:02.842Z"
+    },
+    "six": {
+      "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+      "role": "reception",
+      "stationId": "01a1a621-2580-7d6c-8c5a-9f9f45f5161b",
+      "signedInAt": "2026-11-04T10:37:05.612Z"
+    }
+  },
+  "dbReadback": {
+    "jobId": "job-dblgnfrbc2fs73e7vi80",
+    "status": "succeeded",
+    "result": {
+      "event": "s747_db_readback",
+      "at": "2026-11-04T10:41:50.449Z",
+      "ours": [
+        {
+          "id": "01a1a622-a2b2-78d9-87e1-0274f06663f4",
+          "station_id": "01a1a621-2580-7d6c-8c5a-9f9f45f5161b",
+          "sale_id": "01a1a622-9fe2-7a70-8b0d-4f16ed2aea05",
+          "invoice_no": "SBX0AX261104000001",
+          "provider": "simulator",
+          "status": "approved",
+          "amount_satang": "2500",
+          "created_at": "2026-11-04T10:37:30.151Z",
+          "paid_at": "2026-11-04T10:37:42.512Z"
+        },
+        {
+          "id": "01a1a623-2ddd-7d96-b26e-eb482086dd99",
+          "station_id": "01a1a621-2524-76c7-b743-196c09f1a87c",
+          "sale_id": "f0f2abc2-c539-4f89-b652-7dd3f21135f0",
+          "invoice_no": "SBXCUJ261104000001",
+          "provider": "simulator",
+          "status": "approved",
+          "amount_satang": "89000",
+          "created_at": "2026-11-04T10:38:05.778Z",
+          "paid_at": "2026-11-04T10:38:05.898Z"
+        }
+      ],
+      "park": [
+        {
+          "code_prefix": "T1",
+          "name": "Reception Till 1",
+          "invoice_no": "000001",
+          "provider": "ghl",
+          "created_at": "2026-09-30T11:09:50.978Z"
+        },
+        {
+          "code_prefix": "PI1",
+          "name": "Till 1 (Pi)",
+          "invoice_no": "SBXPI1261029000003",
+          "provider": "simulator",
+          "created_at": "2026-10-29T09:15:35.033Z"
+        },
+        {
+          "code_prefix": "PI2",
+          "name": "Till 2 (test)",
+          "invoice_no": "SBXPI2261030000003",
+          "provider": "simulator",
+          "created_at": "2026-10-30T08:38:00.588Z"
+        }
+      ],
+      "parkSegments": [
+        {
+          "code_prefix": "PI1",
+          "seg": "PI1",
+          "n": 3,
+          "newest": "2026-10-29T09:15:35.033Z"
+        },
+        {
+          "code_prefix": "PI2",
+          "seg": "PI2",
+          "n": 3,
+          "newest": "2026-10-30T08:38:00.588Z"
+        },
+        {
+          "code_prefix": "T1",
+          "seg": "",
+          "n": 3,
+          "newest": "2026-09-30T11:09:50.978Z"
+        }
+      ],
+      "parkStations": [
+        {
+          "code_prefix": "T1",
+          "name": "Reception Till 1",
+          "archived": false
+        },
+        {
+          "code_prefix": "T2",
+          "name": "Counter 2",
+          "archived": false
+        },
+        {
+          "code_prefix": "PI1",
+          "name": "Till 1 (Pi)",
+          "archived": false
+        },
+        {
+          "code_prefix": "PI2",
+          "name": "Till 2 (test)",
+          "archived": false
+        }
+      ],
+      "vouchers": [
+        {
+          "id": "01a1a624-23e2-7d2a-85bd-fda726dbbaf3",
+          "status": "issued",
+          "source": "fixed",
+          "held_sale_id": null,
+          "sale_id": null,
+          "last4": "5GPJ",
+          "issued_at": "2026-11-04T10:39:08.765Z",
+          "redeemed_at": null
+        }
+      ],
+      "redemptions": [
+        {
+          "kind": "held",
+          "sale_id": "01a1a624-221e-73a7-b1a8-ee0cc77b4e84",
+          "station_id": "01a1a621-2524-76c7-b743-196c09f1a87c",
+          "occurred_at": "2026-11-04T10:39:08.765Z"
+        },
+        {
+          "kind": "released",
+          "sale_id": "01a1a624-221e-73a7-b1a8-ee0cc77b4e84",
+          "station_id": "01a1a621-2524-76c7-b743-196c09f1a87c",
+          "occurred_at": "2026-11-04T10:39:10.175Z"
+        }
+      ],
+      "def": {
+        "name_en": "ZZ TEST SCRUM-746 mw1ze0to voucher",
+        "active": true,
+        "archived": false,
+        "code_mode": "fixed"
+      },
+      "sales": [
+        {
+          "id": "01a1a622-9fe2-7a70-8b0d-4f16ed2aea05",
+          "station_id": "01a1a621-2580-7d6c-8c5a-9f9f45f5161b",
+          "status": "finalised",
+          "receipt_number": "ZZ747A-000001",
+          "gross_satang": "2500"
+        },
+        {
+          "id": "f0f2abc2-c539-4f89-b652-7dd3f21135f0",
+          "station_id": "01a1a621-2524-76c7-b743-196c09f1a87c",
+          "status": "finalised",
+          "receipt_number": "ZQ7C-000001",
+          "gross_satang": "89000"
+        }
+      ],
+      "sessions": 2,
+      "leases": [
+        {
+          "station_id": "01a1a621-2524-76c7-b743-196c09f1a87c",
+          "released": true
+        },
+        {
+          "station_id": "01a1a621-2580-7d6c-8c5a-9f9f45f5161b",
+          "released": true
+        }
+      ],
+      "stay": {
+        "status": "in_park"
+      }
+    },
+    "errors": []
+  },
+  "cleanup": {
+    "startedAt": "2026-11-04T10:42:43.944Z",
+    "actions": [
+      {
+        "what": "upload pickup photo record",
+        "status": 423,
+        "code": "SESSION_LOCKED"
+      },
+      {
+        "what": "upload pickup photo record",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "upload pickup photo content",
+        "status": 204
+      },
+      {
+        "what": "release the ZZ TEST child to the dropper-off",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "switch the ZZ TEST voucher type off",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive the ZZ TEST voucher type",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "four till sign-out",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "six till sign-out",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive till four",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive till six",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive the ZZ TEST virtual box",
+        "status": 200,
+        "code": null
+      }
+    ],
+    "voucherDefinitionArchived": "2026-11-04T10:43:08.860Z",
+    "meAfter_four": 401,
+    "signedOut_four": "2026-11-04T10:43:09.114Z",
+    "meAfter_six": 401,
+    "signedOut_six": "2026-11-04T10:43:09.331Z",
+    "archived_four": "2026-11-04T10:43:09.417Z",
+    "archived_six": "2026-11-04T10:43:09.500Z",
+    "boxArchived": "2026-11-04T10:43:09.579Z",
+    "voidVoucherJob": {
+      "jobId": "job-dblgoj2jnfac73fve59g",
+      "status": "succeeded",
+      "result": {
+        "event": "s746_void_voucher",
+        "at": "2026-11-04T10:44:13.746Z",
+        "voucherVoided": 1
+      },
+      "errors": []
+    },
+    "consoleSignOut": {
+      "signOut": 200,
+      "meAfter": 401
+    }
+  },
+  "finalReadback": {
+    "jobId": "job-dblgprrm8hqs7398ntag",
+    "status": "succeeded",
+    "result": {
+      "event": "s747_final_readback",
+      "at": "2026-11-04T10:46:54.141Z",
+      "liveSegments": {
+        "T1": "T01",
+        "T2": "T02",
+        "PI1": "PI1",
+        "PI2": "PI2",
+        "ZQ7C": "CUJ",
+        "ZZ747A": "0AX",
+        "TOOLONG7": null
+      },
+      "stations": [
+        {
+          "name": "ZZ TEST SCRUM-747 mw1ze0to four",
+          "code_prefix": "ZQ7C",
+          "archived": true
+        },
+        {
+          "name": "ZZ TEST SCRUM-747 mw1ze0to six",
+          "code_prefix": "ZZ747A",
+          "archived": true
+        }
+      ],
+      "box": {
+        "name": "ZZ TEST SCRUM-747 mw1ze0to virtual box",
+        "archived": true
+      },
+      "sessions": 0,
+      "leases": [
+        {
+          "released": true
+        },
+        {
+          "released": true
+        }
+      ],
+      "pending": 0,
+      "attempts": [
+        {
+          "invoice_no": "SBX0AX261104000001",
+          "provider": "simulator",
+          "status": "approved"
+        },
+        {
+          "invoice_no": "SBXCUJ261104000001",
+          "provider": "simulator",
+          "status": "approved"
+        }
+      ],
+      "openSales": 0,
+      "vouchers": [
+        {
+          "status": "void",
+          "not_held": true,
+          "last4": "5GPJ"
+        }
+      ],
+      "def": {
+        "active": false,
+        "archived": true
+      },
+      "heldAnywhere": 0,
+      "stay": {
+        "status": "out"
+      },
+      "qaAudit": 1
+    },
+    "errors": []
+  }
+}

@@ -1,0 +1,2 @@
+import { signInTill } from './lib.mjs?v=2';
+export default (S) => signInTill(S, 'six');

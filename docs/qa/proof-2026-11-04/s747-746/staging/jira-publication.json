@@ -1,0 +1,65 @@
+{
+  "SCRUM-747": {
+    "attachStatus": 200,
+    "attached": [
+      {
+        "id": "12529",
+        "name": "s747-01-console-tills-four-and-six-character-codes.png"
+      },
+      {
+        "id": "12530",
+        "name": "s747-02-six-character-till-gateway-qr-till-and-customer-display.png"
+      },
+      {
+        "id": "12531",
+        "name": "s747-03-six-character-till-paid-through-simulator.png"
+      }
+    ],
+    "commentStatus": 201,
+    "commentId": "13459",
+    "statusAfterComment": "Testing",
+    "imagesOnTicket": 3,
+    "renderedImageIds": [
+      "12529",
+      "12530",
+      "12531"
+    ],
+    "walk": "Deployed",
+    "statusReadBack": "Deployed",
+    "commitLinks": "3 of 3"
+  },
+  "SCRUM-746": {
+    "attachStatus": 200,
+    "attached": [
+      {
+        "id": "12532",
+        "name": "s747-01-console-tills-four-and-six-character-codes.png"
+      },
+      {
+        "id": "12533",
+        "name": "s746-01-four-character-till-band-code-typed-with-dash.png"
+      },
+      {
+        "id": "12534",
+        "name": "s746-02-four-character-till-child-order-opens.png"
+      },
+      {
+        "id": "12535",
+        "name": "s746-03-genuine-voucher-typed-opens-its-tab-held.png"
+      }
+    ],
+    "commentStatus": 201,
+    "commentId": "13460",
+    "statusAfterComment": "Testing",
+    "imagesOnTicket": 4,
+    "renderedImageIds": [
+      "12532",
+      "12533",
+      "12534",
+      "12535"
+    ],
+    "walk": "Deployed",
+    "statusReadBack": "Deployed",
+    "commitLinks": "3 of 3"
+  }
+}

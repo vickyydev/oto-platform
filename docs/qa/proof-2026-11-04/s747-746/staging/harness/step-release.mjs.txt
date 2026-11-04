@@ -1,0 +1,27 @@
+// Cleanup 1: the ZZ TEST child goes home through the park's own pick-up (dropper-off collects),
+// with a synthetic picture as the pickup photo (no person photographed).
+import assert from 'node:assert/strict';
+export default async function (S) {
+  const { st, save, pages, browser, tillApi, POS, randomUUID } = S;
+  const f = st.fixture, fam = f.family;
+  const c = (st.cleanup = st.cleanup ?? { startedAt: new Date().toISOString(), actions: [] });
+  const act = (what, r) => { c.actions.push({ what, status: r.status, code: r.body?.error?.code ?? null }); save(); return r; };
+  if (fam.released) return fam.released;
+  const pg = await browser.newPage({ viewport: { width: 640, height: 480 } });
+  await pg.setContent('<body style="background:#163345;color:white;font:30px sans-serif;padding:100px">ZZ TEST SCRUM-746<br>Synthetic image<br>No person photographed</body>');
+  const photo = await pg.screenshot(); await pg.close();
+  const photoId = randomUUID();
+  const made = act('upload pickup photo record', await tillApi('four', 'POST', '/files', { id: photoId, contentType: 'image/png', ownerEntityType: 'registration', ownerEntityId: fam.registrationId, filename: 'zz-test-s746-pickup.png' }));
+  assert.equal(made.status, 200, JSON.stringify(made.body?.error ?? made.body));
+  const put = await pages.four.page.request.put(POS + '/api/files/' + photoId + '/content', { data: photo, headers: { 'content-type': 'image/png' } });
+  c.actions.push({ what: 'upload pickup photo content', status: put.status() }); save();
+  assert.ok(put.ok());
+  const rel = act('release the ZZ TEST child to the dropper-off', await tillApi('four', 'POST', `/checkin/pickups/stays/${fam.checkinId}/release`, { id: randomUUID(), collector: { kind: 'dropper_off' }, pickupPhotoFileId: photoId, stationId: f.tills.four.id }));
+  assert.equal(rel.status, 200, JSON.stringify(rel.body?.error ?? rel.body));
+  const reg = await tillApi('four', 'GET', `/checkin/registrations/${fam.registrationId}`);
+  const stay = reg.body.children.find((x) => x.id === fam.checkinId);
+  fam.released = { at: new Date().toISOString(), status: stay?.status, photoId };
+  save();
+  assert.equal(stay?.status, 'out');
+  return fam.released;
+}

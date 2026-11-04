@@ -1,0 +1,39 @@
+// SCRUM-747/746 staging fixtures, made for this proof only, at Oto Play Park, Central Floresta:
+// one ZZ TEST virtual box (nothing runs it), and two ZZ TEST tills on it with QR through the gateway,
+// codes ZQ7C (four characters) and ZZ747A (six characters).
+import assert from 'node:assert/strict';
+export default async function (S) {
+  const { st, save, adminApi } = S;
+  const f = st.fixture;
+  const BRANCH = '01a0bbdc-8c42-7753-b7e3-5ae19fb66d33';
+  f.stamp = f.stamp ?? Date.now().toString(36);
+  f.name = 'ZZ TEST SCRUM-747 ' + f.stamp;
+  f.branchId = BRANCH; save();
+  const me = await adminApi('GET', '/me');
+  assert.equal(me.status, 200); assert.equal(me.body.operatorContext.branchId, BRANCH);
+  st.adminActorId = me.body.account.id;
+  if (!f.boxId) {
+    const b = await adminApi('POST', `/branches/${BRANCH}/boxes`, { name: f.name + ' virtual box', slot: 'zz-test-s747-' + f.stamp, role: 'virtual' });
+    assert.equal(b.status, 200, JSON.stringify(b.body?.error ?? b.status));
+    f.boxId = b.body.box.id; f.boxName = b.body.box.name; f.boxSlot = b.body.box.slot; f.boxRole = b.body.box.role; f.boxStatusAtCreate = b.body.box.status ?? null;
+    save();
+  }
+  f.tills = f.tills ?? {};
+  for (const [label, codePrefix] of [['four', 'ZQ7C'], ['six', 'ZZ747A']]) {
+    if (f.tills[label]?.id) continue;
+    const name = `${f.name} ${label}`;
+    const s = await adminApi('POST', `/branches/${BRANCH}/stations`, { name, kind: 'till', codePrefix, boxId: f.boxId, accessScope: 'all_staff', paymentRouting: { card: 'manual', qr: 'gateway' }, capabilities: [], devices: [] });
+    assert.equal(s.status, 200, label + ' ' + JSON.stringify(s.body));
+    f.tills[label] = { id: s.body.station.id, name: s.body.station.name, codePrefix: s.body.station.codePrefix, paymentRouting: s.body.station.paymentRouting, ready: s.body.station.ready ?? null, reasons: s.body.station.reasons ?? null };
+    save();
+  }
+  // Read both back.
+  const stations = (await adminApi('GET', `/branches/${BRANCH}/stations?includeArchived=true`)).body.stations;
+  f.readback = Object.fromEntries(Object.entries(f.tills).map(([k, t]) => { const s = stations.find((x) => x.id === t.id); return [k, { name: s?.name, codePrefix: s?.codePrefix, boxId: s?.boxId, qr: s?.paymentRouting?.qr, card: s?.paymentRouting?.card, ready: s?.ready ?? null, archivedAt: s?.archivedAt ?? null }]; }));
+  const boxes = (await adminApi('GET', `/branches/${BRANCH}/boxes`)).body.boxes;
+  const box = boxes.find((b) => b.id === f.boxId);
+  f.boxReadback = { name: box?.name, role: box?.role, slot: box?.slot, status: box?.status ?? null };
+  f.createdAt = f.createdAt ?? new Date().toISOString();
+  save();
+  return f;
+}

@@ -1,0 +1,15 @@
+// Mints one booth-shaped ZZ voucher code into the scratchpad secrets file (never printed).
+import { pathToFileURL } from 'node:url';
+import { randomInt } from 'node:crypto';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+const shared = await import(pathToFileURL('C:/oto-lanes/tillcodes747-20261104/packages/shared/src/index.ts').href);
+const file = 'C:/Users/waqar/AppData/Local/Temp/claude/9d4c56906b777e8e/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/s747/secrets.json';
+const s = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {};
+if (!s.voucherCode) {
+  const code = shared.mintBoothCode('ZZ', (max: number) => randomInt(max));
+  if (shared.parseBandShortCode(code) !== null) throw new Error('minted code reads as a band');
+  if (!shared.verifyBoothCode(code).ok) throw new Error('minted code does not verify');
+  s.voucherCode = code;
+  writeFileSync(file, JSON.stringify(s, null, 2) + '\n');
+}
+console.log(JSON.stringify({ minted: true, length: s.voucherCode.length, lastFour: s.voucherCode.slice(-4) }));

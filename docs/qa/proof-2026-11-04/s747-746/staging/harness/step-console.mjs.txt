@@ -1,0 +1,34 @@
+// Console > Devices, filtered to this proof's box and tills: the saved codes as a person sees them.
+const CONSOLE = 'https://oto-console-staging.onrender.com';
+const typedPhone = async (field, phone) => {
+  const prefix = await field.evaluate((el) => /\+(\d{1,4})/.exec(el.parentElement?.textContent ?? '')?.[1] ?? null).catch(() => null);
+  if (!prefix || !phone.startsWith(`+${prefix}`)) return phone;
+  const national = phone.slice(prefix.length + 1);
+  return prefix === '66' ? `0${national}` : national;
+};
+export default async function (S) {
+  const { st, save, tillPage, shot, need, expect } = S;
+  const f = st.fixture;
+  const { page } = await tillPage('console');
+  await page.setViewportSize({ width: 1500, height: 1100 });
+  await page.goto(CONSOLE + '/devices', { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(4000);
+  if (await page.locator('input[type="password"]').count()) {
+    const field = page.locator('input[type="tel"], input[inputmode="tel"]').last();
+    await field.fill(await typedPhone(field, need('STAGING_ADMIN_PHONE')));
+    await page.locator('input[type="password"]').last().fill(need('STAGING_ADMIN_PASSWORD'));
+    await page.getByRole('button', { name: /sign in/i }).first().click();
+    await page.waitForTimeout(6000);
+  }
+  if (!/\/devices/.test(page.url())) await page.goto(CONSOLE + '/devices', { waitUntil: 'domcontentloaded' });
+  await expect(page.getByPlaceholder('Name, identifier or type')).toBeVisible({ timeout: 60000 });
+  await page.getByPlaceholder('Name, identifier or type').fill(f.stamp);
+  await page.waitForTimeout(1500);
+  await expect(page.getByText(f.tills.four.name, { exact: true }).first()).toBeVisible();
+  await expect(page.getByText(f.tills.six.name, { exact: true }).first()).toBeVisible();
+  await page.getByText(f.tills.four.name, { exact: true }).first().scrollIntoViewIfNeeded();
+  st.steps.console = { at: new Date().toISOString(), url: page.url() };
+  save();
+  await shot('console', 's747-01-console-tills-four-and-six-character-codes', { fullPage: true });
+  return st.steps.console;
+}

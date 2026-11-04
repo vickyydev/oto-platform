@@ -1,0 +1,1317 @@
+{
+  "at": "2026-11-04T10:31:07.060Z",
+  "source": "01b5b64daf9684940161ec62e526d2ebc3592c0e",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "deployId": "dep-dblgf8bncjis73dq3ci0",
+      "status": "live",
+      "source": "01b5b64daf9684940161ec62e526d2ebc3592c0e",
+      "liveAt": "2026-11-04T10:26:53.155805Z"
+    },
+    {
+      "name": "oto-pos-web-staging",
+      "serviceId": "srv-dbk7qu8n74is73bm894g",
+      "deployId": "dep-dblgf8jm8hqs7397rigg",
+      "status": "live",
+      "source": "01b5b64daf9684940161ec62e526d2ebc3592c0e",
+      "liveAt": "2026-11-04T10:25:53.333823Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "serviceId": "srv-danh2mf40ujc73bu80j0",
+      "deployId": "dep-dblgf961egvs73f7sq8g",
+      "status": "live",
+      "source": "01b5b64daf9684940161ec62e526d2ebc3592c0e",
+      "liveAt": "2026-11-04T10:24:12.756179Z"
+    }
+  ],
+  "ci": {
+    "run": 41810103161,
+    "headSha": "01b5b64daf9684940161ec62e526d2ebc3592c0e",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "oto-app",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (3)",
+        "conclusion": "success"
+      },
+      {
+        "name": "pos-tests",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (1)",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (2)",
+        "conclusion": "success"
+      },
+      {
+        "name": "ci",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "gatewayIsSimulator": true,
+  "paymentsSimulatorNamePresent": true,
+  "apiSettingNames": 57,
+  "apiHealth": 200,
+  "adminSignIn": 200,
+  "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+  "branchName": "Oto Play Park, Central Floresta",
+  "boxes": [
+    {
+      "id": "01a0e704-2721-70eb-a677-5bcdf62b3d34",
+      "name": "FortuneWheelBox",
+      "role": "booth",
+      "slot": "booth-1",
+      "status": "online",
+      "archived": false
+    },
+    {
+      "id": "01a0ce90-812e-7061-8ba1-6cba09befb30",
+      "name": "Evidence box 206-G",
+      "role": "counter",
+      "slot": "evidence-206g",
+      "status": "offline",
+      "archived": false
+    },
+    {
+      "id": "01a0cdac-e880-7ffd-85eb-43b5fadab8cb",
+      "name": "Evidence box 361",
+      "role": "counter",
+      "slot": "evidence-361",
+      "status": "offline",
+      "archived": false
+    },
+    {
+      "id": "01a0d4f4-0371-784b-af54-cc3bda6d4fdd",
+      "name": "Proof box (25 Sept)",
+      "role": "booth",
+      "slot": "proof-bench",
+      "status": "offline",
+      "archived": false
+    },
+    {
+      "id": "01a0d65c-9c5e-7109-b95b-592c29c37357",
+      "name": "Proof box 2 (26 Sept)",
+      "role": "booth",
+      "slot": "proof-bench-2",
+      "status": "offline",
+      "archived": false
+    },
+    {
+      "id": "01a185aa-a041-70bd-9391-baf7bdb8d7b5",
+      "name": "HKT till box (Pi 5)",
+      "role": "counter",
+      "slot": "till-1",
+      "status": "online",
+      "archived": false
+    },
+    {
+      "id": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "name": "Virtual box 1",
+      "role": "virtual",
+      "slot": "virtual-1",
+      "status": "online",
+      "archived": false
+    },
+    {
+      "id": "01a0c0fa-2fb3-77c8-b21b-ee16fa96501f",
+      "name": "Virtual box 2",
+      "role": "virtual",
+      "slot": "virtual-2",
+      "status": "unclaimed",
+      "archived": false
+    },
+    {
+      "id": "01a19afe-d33c-7ea1-b583-c525b9322da7",
+      "name": "ZZ TEST SCRUM-710 display",
+      "role": "virtual",
+      "slot": "zz-test-s710",
+      "status": "unclaimed",
+      "archived": false
+    },
+    {
+      "id": "01a19ba8-d8d5-76cc-923b-aca24002ab7f",
+      "name": "ZZ TEST SCRUM-718 path",
+      "role": "virtual",
+      "slot": "zz-test-s718",
+      "status": "unclaimed",
+      "archived": false
+    }
+  ],
+  "liveStations": [
+    {
+      "id": "01a0d4f6-ea01-7529-90a5-1d1cfb0ad476",
+      "name": "Booth 2 (proof)",
+      "kind": "booth",
+      "codePrefix": "B2",
+      "boxId": "01a0d4f4-0371-784b-af54-cc3bda6d4fdd",
+      "qr": null
+    },
+    {
+      "id": "01a0d65f-4e80-7324-93ac-e9036aa0df19",
+      "name": "Booth 3 (fixes)",
+      "kind": "booth",
+      "codePrefix": "B3",
+      "boxId": "01a0d65c-9c5e-7109-b95b-592c29c37357",
+      "qr": null
+    },
+    {
+      "id": "01a0d4f9-db76-7b0e-bc01-93fb5873d339",
+      "name": "Booth 3 (picker proof)",
+      "kind": "booth",
+      "codePrefix": "B3",
+      "boxId": "01a0d4f4-0371-784b-af54-cc3bda6d4fdd",
+      "qr": null
+    },
+    {
+      "id": "01a0eeab-f868-726c-a16a-b3fe88311eff",
+      "name": "Consent release proof 3ecd54c6",
+      "kind": "till",
+      "codePrefix": "C3ECD5",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a0eeaa-1535-721f-9327-0b0f075b5558",
+      "name": "Consent release proof 9a6fa308",
+      "kind": "till",
+      "codePrefix": "C9A6FA",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a0eeaa-b104-70f9-9d8b-14a33b6da216",
+      "name": "Consent release proof c088905b",
+      "kind": "till",
+      "codePrefix": "CC0889",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a0c0fa-2fc3-78db-b47d-49e0858c009b",
+      "name": "Counter 2",
+      "kind": "till",
+      "codePrefix": "T2",
+      "boxId": "01a0c0fa-2fb3-77c8-b21b-ee16fa96501f",
+      "qr": null
+    },
+    {
+      "id": "01a0ede4-24cf-7b8e-8470-4f38bf65ecd1",
+      "name": "Display release proof 17c6cf7e",
+      "kind": "till",
+      "codePrefix": "D17C6C",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a0ede6-9e6b-74e5-9a49-5ed89759cbb8",
+      "name": "Display release proof 5c355f90",
+      "kind": "till",
+      "codePrefix": "D5C355",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a0ede8-21e0-79fc-8056-a0fc8f7e7e6b",
+      "name": "Display release proof 9587ab83",
+      "kind": "till",
+      "codePrefix": "D9587A",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a0ede5-6470-7b5a-861d-84b3782a8e9a",
+      "name": "Display release proof a24d7ed9",
+      "kind": "till",
+      "codePrefix": "DA24D7",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a0e72b-12e1-72a7-bc9d-866678d60b30",
+      "name": "FortuneWheelBooth",
+      "kind": "booth",
+      "codePrefix": "FW",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": null
+    },
+    {
+      "id": "01a0be8c-89c4-7ef7-a0e7-22ca6a797f47",
+      "name": "FWBooth1",
+      "kind": "booth",
+      "codePrefix": "B1",
+      "boxId": "01a0e704-2721-70eb-a677-5bcdf62b3d34",
+      "qr": null
+    },
+    {
+      "id": "01a0eeaa-086d-70d1-b418-210702479e41",
+      "name": "Guest display proof 88b11700",
+      "kind": "till",
+      "codePrefix": "D88B11",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a0eeb2-0b5d-754c-bfc7-529d3d6c3598",
+      "name": "Guest display proof b3bb2948",
+      "kind": "till",
+      "codePrefix": "DB3BB2",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a0ec8b-53ce-7814-992a-bd04628180a1",
+      "name": "Native payment desktop-cash 473fbfc8",
+      "kind": "till",
+      "codePrefix": "HBK",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a0ec8f-9553-7e6c-be31-b40cfc259fc9",
+      "name": "Native payment desktop-cash 52ef6bab",
+      "kind": "till",
+      "codePrefix": "CWX",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a0ec8c-9357-7a7c-af11-19448cae4d02",
+      "name": "Native payment desktop-cash 79b20157",
+      "kind": "till",
+      "codePrefix": "JYY",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a0ec85-af98-74a8-b64d-1ab7dab8e744",
+      "name": "Native payment desktop-cash cedf7dbc",
+      "kind": "till",
+      "codePrefix": "3B8",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a0eca1-778e-7b0a-a49e-d211264152ee",
+      "name": "Native payment fnb-qr 1082feaa",
+      "kind": "till",
+      "codePrefix": "3PJ",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a0ec99-064b-74eb-912a-4c899542e500",
+      "name": "Native payment fnb-qr 2904d627",
+      "kind": "till",
+      "codePrefix": "4A5",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a0eca7-5884-7e75-b71d-8ff8ea0308e3",
+      "name": "Native payment fnb-qr 33af1842",
+      "kind": "till",
+      "codePrefix": "RLE",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a0ec98-b3a4-7b87-98ab-ca72bb60f1c0",
+      "name": "Native payment mobile-split-manual 2904d627",
+      "kind": "till",
+      "codePrefix": "QP4",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a0ec96-91cb-74fd-b3a8-55b04914886e",
+      "name": "Native payment mobile-split-manual d911b4e6",
+      "kind": "till",
+      "codePrefix": "6GM",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a0ecae-0e30-7a3d-bef7-961be8ff3559",
+      "name": "Native payment shop-approved 91c372ce",
+      "kind": "till",
+      "codePrefix": "61S",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a0eca8-1e27-70d4-b384-b142ca5b0615",
+      "name": "Native payment shop-approved b8b37a01",
+      "kind": "till",
+      "codePrefix": "4N8",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a0ecaf-1307-73fa-816c-6eaa414d2e20",
+      "name": "Native payment shop-declined 91c372ce",
+      "kind": "till",
+      "codePrefix": "IDH",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a0ecb6-13b5-7d32-96b6-9805bc2bbacb",
+      "name": "Native payment shop-inquiry-confirm 0d008153",
+      "kind": "till",
+      "codePrefix": "VBC",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a0ecaf-ecdf-7d33-ab05-75fd2ee19ecf",
+      "name": "Native payment shop-inquiry-confirm 91c372ce",
+      "kind": "till",
+      "codePrefix": "YM2",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a0ecb8-9096-7d88-8987-50c0958e8412",
+      "name": "Native payment shop-partial-refused 0d008153",
+      "kind": "till",
+      "codePrefix": "6BI",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a0eddb-5f0f-7470-be48-eae00601d649",
+      "name": "Offline guard proof bffe3020",
+      "kind": "till",
+      "codePrefix": "GBFFE3",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a0eddc-8dcf-735a-81f1-1611216311d3",
+      "name": "Offline guard proof c5deb632",
+      "kind": "till",
+      "codePrefix": "GC5DEB",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a0eddb-60ee-7edd-8211-ed0b846833af",
+      "name": "Offline isolation proof bffe3020",
+      "kind": "till",
+      "codePrefix": "IBFFE3",
+      "boxId": "01a0c0fa-2fb3-77c8-b21b-ee16fa96501f",
+      "qr": "none"
+    },
+    {
+      "id": "01a0eddc-8fc3-7f3d-940a-a8a6355c8635",
+      "name": "Offline isolation proof c5deb632",
+      "kind": "till",
+      "codePrefix": "IC5DEB",
+      "boxId": "01a0c0fa-2fb3-77c8-b21b-ee16fa96501f",
+      "qr": "none"
+    },
+    {
+      "id": "01a0eb40-40d2-72de-9870-4626b8857cc5",
+      "name": "Payment prerequisites proof mum4pmtu",
+      "kind": "till",
+      "codePrefix": "D9M",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a0edfa-ed22-7a43-8ca9-5557e6c92458",
+      "name": "Payment proof 0a68bb73 fnb-qr-disabled",
+      "kind": "till",
+      "codePrefix": "P0A68B0",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a0edfb-2cef-7acc-b90b-d6e093552711",
+      "name": "Payment proof 0a68bb73 shop-zero",
+      "kind": "till",
+      "codePrefix": "P0A68B1",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a0edf5-bc37-7af8-acf8-cb36dead36c9",
+      "name": "Payment proof 276de940 shop-ghl-confirm",
+      "kind": "till",
+      "codePrefix": "P276DE1",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a0edf5-08f8-7a86-93b4-2a31094a4809",
+      "name": "Payment proof 276de940 shop-partial-refused",
+      "kind": "till",
+      "codePrefix": "P276DE0",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a0edea-d12a-7a85-996b-f928ddc5ab2d",
+      "name": "Payment proof 29bbe43c shop-partial-refused",
+      "kind": "till",
+      "codePrefix": "P29BBE0",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a0eeaa-b2ed-72fd-8287-150a001dad1f",
+      "name": "Payment proof a54d326c shop-ghl-confirm",
+      "kind": "till",
+      "codePrefix": "PA54D30",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a0bbdc-8cd7-7208-8e05-84eaf2963a9a",
+      "name": "Reception Till 1",
+      "kind": "till",
+      "codePrefix": "T1",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": null
+    },
+    {
+      "id": "01a0eb84-16bd-7b24-8279-0e82f013cbbd",
+      "name": "Replay proof till mum7cvwl",
+      "kind": "till",
+      "codePrefix": "H4U",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a0eb8a-ffc9-7ccf-b8cc-75a402d954bc",
+      "name": "Replay proof till mum7ml4e",
+      "kind": "till",
+      "codePrefix": "IWW",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a0eb96-7503-7b6d-a46f-5a171d3ae5b8",
+      "name": "Spin duration proof 1ef59c49",
+      "kind": "booth",
+      "codePrefix": "18",
+      "boxId": "01a0eb96-7165-7ec6-a61a-3f3c991adefd",
+      "qr": null
+    },
+    {
+      "id": "01a0eb8c-9a93-773b-9c95-5eee17a0f673",
+      "name": "Spin duration proof 1fd8cbbc",
+      "kind": "booth",
+      "codePrefix": "TC",
+      "boxId": "01a0eb8c-96fd-7f50-87d7-9c1108cb702e",
+      "qr": null
+    },
+    {
+      "id": "01a0eb99-2415-7eb5-94a9-b6102d90066e",
+      "name": "Spin duration proof 9082c650",
+      "kind": "booth",
+      "codePrefix": "QT",
+      "boxId": "01a0eb99-2089-7b9d-bd44-e0bba9efaba2",
+      "qr": null
+    },
+    {
+      "id": "01a0eb84-0723-74cd-947c-b9b1fe2b6e83",
+      "name": "Spin duration proof bd19721a",
+      "kind": "booth",
+      "codePrefix": "4B",
+      "boxId": "01a0eb84-038f-7118-8a6b-92dea62d6e77",
+      "qr": null
+    },
+    {
+      "id": "01a0eb93-3138-7d36-b1b7-afbe27f2aac9",
+      "name": "Spin duration proof bda31601",
+      "kind": "booth",
+      "codePrefix": "O5",
+      "boxId": "01a0eb93-2db3-723c-a224-12e58cb15264",
+      "qr": null
+    },
+    {
+      "id": "01a185c1-a729-79ae-93f6-91d0e2985c25",
+      "name": "Till 1 (Pi)",
+      "kind": "till",
+      "codePrefix": "PI1",
+      "boxId": "01a185aa-a041-70bd-9391-baf7bdb8d7b5",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a18602-5f0b-72ca-bcc3-671ff14e9284",
+      "name": "Till 2 (test)",
+      "kind": "till",
+      "codePrefix": "PI2",
+      "boxId": "01a185aa-a041-70bd-9391-baf7bdb8d7b5",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a10b6e-4bf1-77fb-ae8f-384c68310514",
+      "name": "ZZ QA SCRUM-500 voucher booth",
+      "kind": "booth",
+      "codePrefix": "Z5",
+      "boxId": "01a10b6e-45af-71fd-85d6-d6d9ddb95778",
+      "qr": null
+    },
+    {
+      "id": "01a10b6d-161c-7ce0-9378-6aa4d314b582",
+      "name": "ZZ QA SCRUM-500 voucher booth",
+      "kind": "booth",
+      "codePrefix": "Z5",
+      "boxId": "01a10b6d-0e5a-7972-a114-49e15d548986",
+      "qr": null
+    },
+    {
+      "id": "01a10b77-e784-7939-baf7-80c217ca8076",
+      "name": "ZZ QA SCRUM-500 voucher booth",
+      "kind": "booth",
+      "codePrefix": "Z5",
+      "boxId": "01a10b77-e0de-753a-a578-83af151487b3",
+      "qr": null
+    },
+    {
+      "id": "01a10b76-3b9d-7a39-bc0a-6c8eb01f6ee8",
+      "name": "ZZ QA SCRUM-500 voucher booth",
+      "kind": "booth",
+      "codePrefix": "Z5",
+      "boxId": "01a10b76-348a-7dab-9bed-0ab664f4bfc1",
+      "qr": null
+    },
+    {
+      "id": "01a10b7a-9f15-7825-99df-338282db0995",
+      "name": "ZZ QA SCRUM-500 voucher booth",
+      "kind": "booth",
+      "codePrefix": "Z5",
+      "boxId": "01a10b7a-9922-70fc-93ef-8bda527b4633",
+      "qr": null
+    },
+    {
+      "id": "01a1a25c-89ff-7c8b-9d2e-fc43c123c453",
+      "name": "ZZ TEST older proof mw0xplf7 till",
+      "kind": "till",
+      "codePrefix": "Z0",
+      "boxId": "01a1a25b-d9fe-7647-bb2d-17a2c1936d87",
+      "qr": "none"
+    },
+    {
+      "id": "01a1a580-b9a1-737b-9a0a-e2e721e8049a",
+      "name": "ZZ TEST recheck mw1t4ooa till",
+      "kind": "till",
+      "codePrefix": "Z2",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a19c1a-75e7-7baa-82c1-e49d049c9744",
+      "name": "ZZ TEST recovery till",
+      "kind": "till",
+      "codePrefix": "Z0D8",
+      "boxId": "01a19c1a-72bd-73ca-a3e1-7b5688465d7f",
+      "qr": "none"
+    },
+    {
+      "id": "01a19c23-a25d-715d-b9c2-831abd2778c8",
+      "name": "ZZ TEST recovery till",
+      "kind": "till",
+      "codePrefix": "ZEF8",
+      "boxId": "01a19c23-a08b-72fa-889b-df3075f23a51",
+      "qr": "none"
+    },
+    {
+      "id": "01a19c17-7c05-70d4-94c4-7d1181a962f1",
+      "name": "ZZ TEST recovery till",
+      "kind": "till",
+      "codePrefix": "ZBD6",
+      "boxId": "01a19c17-7a27-7888-ab47-4ca1f5088d60",
+      "qr": "none"
+    },
+    {
+      "id": "01a19c18-44f9-7111-8871-b7db2f69eebb",
+      "name": "ZZ TEST recovery till",
+      "kind": "till",
+      "codePrefix": "Z4C7",
+      "boxId": "01a19c18-432b-7b72-976f-3722723c7589",
+      "qr": "none"
+    },
+    {
+      "id": "01a19e60-0f9f-7c9f-b51a-76e0741975d4",
+      "name": "ZZ TEST SCRUM-502 mvztxbuj till",
+      "kind": "till",
+      "codePrefix": "Z502",
+      "boxId": "01a19e60-0acd-7922-8ea6-a090fc37bd3c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19e67-0336-720a-a7ca-bd1be795111f",
+      "name": "ZZ TEST SCRUM-503 mvzu75yd till",
+      "kind": "till",
+      "codePrefix": "Z503",
+      "boxId": "01a19e66-f78c-7636-af7c-6fe317722b74",
+      "qr": "none"
+    },
+    {
+      "id": "01a1a5c9-b669-7fe5-a38e-d5889420cea8",
+      "name": "ZZ TEST SCRUM-674 mw1vxv8u gate lane",
+      "kind": "gate",
+      "codePrefix": null,
+      "boxId": "01a1a5c9-b4a3-7a06-9181-daacc65aefc5",
+      "qr": null
+    },
+    {
+      "id": "01a1a5c8-f6a9-7ed3-b7df-bf960a39300d",
+      "name": "ZZ TEST SCRUM-674 mw1vxv8u till",
+      "kind": "till",
+      "codePrefix": "Z3",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a19afe-d88c-74d2-b7b9-7cdde25d43b8",
+      "name": "ZZ TEST SCRUM-710 display",
+      "kind": "till",
+      "codePrefix": "Z710",
+      "boxId": "01a19afe-d33c-7ea1-b583-c525b9322da7",
+      "qr": "none"
+    },
+    {
+      "id": "01a19df9-6b8c-7b79-8132-70d5de9abafb",
+      "name": "ZZ TEST SCRUM-713 mvzpx429 till",
+      "kind": "till",
+      "codePrefix": "Z713",
+      "boxId": "01a19df9-6357-7986-b077-93000c3ab9ef",
+      "qr": "none"
+    },
+    {
+      "id": "6d049534-7b69-4fea-a6be-cfeaa69ac9a0",
+      "name": "ZZ TEST SCRUM-717 till",
+      "kind": "till",
+      "codePrefix": "Z717",
+      "boxId": "01a19c2b-9dec-7939-934a-17f45a6833be",
+      "qr": "none"
+    },
+    {
+      "id": "01a19ba8-e19a-75c6-9f28-0bc5d6937610",
+      "name": "ZZ TEST SCRUM-718 path",
+      "kind": "till",
+      "codePrefix": "Z718",
+      "boxId": "01a19ba8-d8d5-76cc-923b-aca24002ab7f",
+      "qr": "none"
+    },
+    {
+      "id": "45492e2d-438c-4772-9276-edfbf384f4f1",
+      "name": "ZZ TEST SCRUM-723 till",
+      "kind": "till",
+      "codePrefix": "Z723",
+      "boxId": "01a19d64-335b-7d9d-8d3b-b5b7eb59280c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19d33-d588-750e-9a5c-e34fd521116f",
+      "name": "ZZ TEST SCRUM-725 links",
+      "kind": "till",
+      "codePrefix": "Z725",
+      "boxId": "01a19d33-d18d-7295-a202-a621b5c13657",
+      "qr": "none"
+    },
+    {
+      "id": "01a19e88-2a5d-7685-989b-22601c493045",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu board 1",
+      "kind": "till",
+      "codePrefix": "B72601",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f4d-86a9-73d7-a62c-7b0e702653de",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu board 10",
+      "kind": "till",
+      "codePrefix": "B72610",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f4d-9486-78e5-9a8d-856bf234f6e6",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu board 11",
+      "kind": "till",
+      "codePrefix": "B72611",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f3a-7858-7adf-b2d8-ecb5607395b9",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu board 2",
+      "kind": "till",
+      "codePrefix": "B72602",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f41-ce8a-7633-9560-3fdf4a9a8235",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu board 3",
+      "kind": "till",
+      "codePrefix": "B72603",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f45-a22d-72c4-ac04-2a0417369e08",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu board 4",
+      "kind": "till",
+      "codePrefix": "B72604",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f49-7cae-7b65-bb05-8166685d6ee8",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu board 5",
+      "kind": "till",
+      "codePrefix": "B72605",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f49-8a95-716a-84a6-71d81f00bc45",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu board 6",
+      "kind": "till",
+      "codePrefix": "B72606",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f49-987e-759a-81af-8669779d861d",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu board 7",
+      "kind": "till",
+      "codePrefix": "B72607",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f49-a6a2-7f5a-a08d-ffa2d0218e12",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu board 8",
+      "kind": "till",
+      "codePrefix": "B72608",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f4d-6742-7c41-ac0f-33407658b8f7",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu board 9",
+      "kind": "till",
+      "codePrefix": "B72609",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 1",
+      "kind": "till",
+      "codePrefix": "Z72601",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f45-90b4-7a3c-b04e-fb2ff6f8f539",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 10",
+      "kind": "till",
+      "codePrefix": "Z72610",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f45-9662-7be6-b395-6501be05be5d",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 11",
+      "kind": "till",
+      "codePrefix": "Z72611",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f45-9c39-755a-a302-2f405775e7f5",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 12",
+      "kind": "till",
+      "codePrefix": "Z72612",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f49-22a0-7a60-b46f-6b57a47faac0",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 13",
+      "kind": "till",
+      "codePrefix": "Z72613",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f49-28e8-72a2-ab4a-a0017baab2c1",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 14",
+      "kind": "till",
+      "codePrefix": "Z72614",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f49-2f25-76bc-acca-de66f55a7aa5",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 15",
+      "kind": "till",
+      "codePrefix": "Z72615",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f49-3507-7e07-b1fe-42b7b33bd71f",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 16",
+      "kind": "till",
+      "codePrefix": "Z72616",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f49-3ab1-74b9-a4fa-bd1a1f01552a",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 17",
+      "kind": "till",
+      "codePrefix": "Z72617",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f49-4068-7c2d-b56e-c83ea37dbf14",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 18",
+      "kind": "till",
+      "codePrefix": "Z72618",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f49-4622-78b6-b6b6-48013e28b518",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 19",
+      "kind": "till",
+      "codePrefix": "Z72619",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f07-f5bb-79c0-91d9-240a1744a0b0",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 2",
+      "kind": "till",
+      "codePrefix": "Z72602",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f49-4c2d-791c-aabf-d49e7b7132e4",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 20",
+      "kind": "till",
+      "codePrefix": "Z72620",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f49-5270-737d-9e87-6ced7f312616",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 21",
+      "kind": "till",
+      "codePrefix": "Z72621",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f49-5875-7cfe-9d9b-da4001408d5a",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 22",
+      "kind": "till",
+      "codePrefix": "Z72622",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f49-717d-746f-949f-43dc5f332830",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 23",
+      "kind": "till",
+      "codePrefix": "Z72623",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f49-7706-7789-9e1b-3d4ad85faaa0",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 24",
+      "kind": "till",
+      "codePrefix": "Z72624",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f4d-38f0-7ae3-81df-387b243129ab",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 25",
+      "kind": "till",
+      "codePrefix": "Z72625",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f4d-3e70-7b87-8617-bb832761eb8f",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 26",
+      "kind": "till",
+      "codePrefix": "Z72626",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f4d-442d-7dcc-83f2-73d6ac46f7cb",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 27",
+      "kind": "till",
+      "codePrefix": "Z72627",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f4d-4997-7a3a-ac91-24984fad9f74",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 28",
+      "kind": "till",
+      "codePrefix": "Z72628",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f4d-4f55-72b2-ae86-4c388adf5ddc",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 29",
+      "kind": "till",
+      "codePrefix": "Z72629",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f3a-6c4c-7bed-829a-81fe7dfdfcd3",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 3",
+      "kind": "till",
+      "codePrefix": "Z72603",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f4d-54eb-7ef5-9405-59029681079f",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 30",
+      "kind": "till",
+      "codePrefix": "Z72630",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f4d-5a86-7473-b889-d3e84a67ad9c",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 31",
+      "kind": "till",
+      "codePrefix": "Z72631",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f4d-6168-762e-941e-a5d89681c002",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 32",
+      "kind": "till",
+      "codePrefix": "Z72632",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f3a-726a-7a3b-be03-d61d8e233ec2",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 4",
+      "kind": "till",
+      "codePrefix": "Z72604",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f3e-3433-7d4f-a67b-49f0ce5df81c",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 5",
+      "kind": "till",
+      "codePrefix": "Z72605",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f3e-3a44-78e3-a70a-2fe321223688",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 6",
+      "kind": "till",
+      "codePrefix": "Z72606",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f41-c2fd-7f71-907e-bfba4d909004",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 7",
+      "kind": "till",
+      "codePrefix": "Z72607",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f41-c8dc-796e-9dba-3a3fd08c4898",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 8",
+      "kind": "till",
+      "codePrefix": "Z72608",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a19f45-8aa2-72d5-b9e2-e0a978353ca5",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 9",
+      "kind": "till",
+      "codePrefix": "Z72609",
+      "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+      "qr": "none"
+    },
+    {
+      "id": "01a1a20c-f5f6-76c2-a150-eaa5086fbab6",
+      "name": "ZZ TEST SCRUM-727 mw0ulb5n till",
+      "kind": "till",
+      "codePrefix": "Z727",
+      "boxId": "01a1a20c-f096-7bb0-bb24-8f89e0416633",
+      "qr": "none"
+    },
+    {
+      "id": "01a1a2cc-0473-7e93-9697-64bad8f06202",
+      "name": "ZZ TEST SCRUM-728 mw122192 till",
+      "kind": "till",
+      "codePrefix": "Z728",
+      "boxId": "01a1a2cb-fe65-751f-9ebf-698aba639cb6",
+      "qr": "none"
+    },
+    {
+      "id": "01a1a408-f703-7a8e-a826-fe5b66485e78",
+      "name": "ZZ TEST SCRUM-729 mw1e5qd4 idle till",
+      "kind": "till",
+      "codePrefix": "ZEGUW6",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a1a401-450d-7651-bec3-8c39d8a46c6c",
+      "name": "ZZ TEST SCRUM-729 mw1e5qd4 till",
+      "kind": "till",
+      "codePrefix": "ZE61CF",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a1a223-7f7c-7956-aecd-cd783e61b189",
+      "name": "ZZ TEST SCRUM-730 till",
+      "kind": "till",
+      "codePrefix": "Z730",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a1a43e-d2b4-775f-be30-be14633544c9",
+      "name": "ZZ TEST SCRUM-731 mw1gk7c6 till",
+      "kind": "till",
+      "codePrefix": "ZI7C",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a1a449-4c44-7d0b-bc70-ffce786b91f3",
+      "name": "ZZ TEST SCRUM-731 mw1gk7c6 till 2",
+      "kind": "till",
+      "codePrefix": "Z8D",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a1a36c-d129-7dc0-8763-05c4cf85b39e",
+      "name": "ZZ TEST SCRUM-732 mw18diqh till",
+      "kind": "till",
+      "codePrefix": "Z70",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a1a3cb-d062-7298-95ba-ba8285a8afb9",
+      "name": "ZZ TEST SCRUM-735 mw1c2qrj till",
+      "kind": "till",
+      "codePrefix": "ZC2YIF",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    },
+    {
+      "id": "01a1a30a-e6b6-720e-b7ff-64452ba34749",
+      "name": "ZZ TEST SCRUM-737 mw14jlle till",
+      "kind": "till",
+      "codePrefix": "Z1",
+      "boxId": "01a1a30a-d876-790c-92c0-b7246bf78dc3",
+      "qr": "none"
+    },
+    {
+      "id": "01a1a476-6469-710b-867f-6b8ac3a8db61",
+      "name": "ZZ TEST SCRUM-738 mw1iqb1n till",
+      "kind": "till",
+      "codePrefix": "ZIQL48",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a1a47b-b8cf-7fd5-b5bc-73e2606a4a52",
+      "name": "ZZ TEST SCRUM-738 mw1ixvf2 till",
+      "kind": "till",
+      "codePrefix": "ZNC",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a1a3a6-6096-77ff-a019-ad5e31122307",
+      "name": "ZZ TEST SCRUM-739 mw1amatj",
+      "kind": "till",
+      "codePrefix": "Z30",
+      "boxId": "01a1a3a6-5dee-76ee-ba20-a76e9afee304",
+      "qr": "gateway"
+    },
+    {
+      "id": "01a1998f-0cf3-70e3-890b-a7ff88c71bda",
+      "name": "ZZ TEST setup traps 20261102",
+      "kind": "till",
+      "codePrefix": "Z703",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "qr": "none"
+    }
+  ],
+  "zzStations747": [],
+  "usedPrefixes": [
+    "B2",
+    "B3",
+    "B3",
+    "C3ECD5",
+    "C9A6FA",
+    "CC0889",
+    "T2",
+    "D17C6C",
+    "D5C355",
+    "D9587A",
+    "DA24D7",
+    "FW",
+    "B1",
+    "D88B11",
+    "DB3BB2",
+    "HBK",
+    "CWX",
+    "JYY",
+    "3B8",
+    "3PJ",
+    "4A5",
+    "RLE",
+    "QP4",
+    "6GM",
+    "61S",
+    "4N8",
+    "IDH",
+    "VBC",
+    "YM2",
+    "6BI",
+    "GBFFE3",
+    "GC5DEB",
+    "IBFFE3",
+    "IC5DEB",
+    "D9M",
+    "P0A68B0",
+    "P0A68B1",
+    "P276DE1",
+    "P276DE0",
+    "P29BBE0",
+    "PA54D30",
+    "T1",
+    "H4U",
+    "IWW",
+    "18",
+    "TC",
+    "QT",
+    "4B",
+    "O5",
+    "PI1",
+    "PI2",
+    "Z5",
+    "Z5",
+    "Z5",
+    "Z5",
+    "Z5",
+    "Z0",
+    "Z2",
+    "Z0D8",
+    "ZEF8",
+    "ZBD6",
+    "Z4C7",
+    "Z502",
+    "Z503",
+    null,
+    "Z3",
+    "Z710",
+    "Z713",
+    "Z717",
+    "Z718",
+    "Z723",
+    "Z725",
+    "B72601",
+    "B72610",
+    "B72611",
+    "B72602",
+    "B72603",
+    "B72604",
+    "B72605",
+    "B72606",
+    "B72607",
+    "B72608",
+    "B72609",
+    "Z72601",
+    "Z72610",
+    "Z72611",
+    "Z72612",
+    "Z72613",
+    "Z72614",
+    "Z72615",
+    "Z72616",
+    "Z72617",
+    "Z72618",
+    "Z72619",
+    "Z72602",
+    "Z72620",
+    "Z72621",
+    "Z72622",
+    "Z72623",
+    "Z72624",
+    "Z72625",
+    "Z72626",
+    "Z72627",
+    "Z72628",
+    "Z72629",
+    "Z72603",
+    "Z72630",
+    "Z72631",
+    "Z72632",
+    "Z72604",
+    "Z72605",
+    "Z72606",
+    "Z72607",
+    "Z72608",
+    "Z72609",
+    "Z727",
+    "Z728",
+    "ZEGUW6",
+    "ZE61CF",
+    "Z730",
+    "ZI7C",
+    "Z8D",
+    "Z70",
+    "ZC2YIF",
+    "Z1",
+    "ZIQL48",
+    "ZNC",
+    "Z30",
+    "Z703"
+  ],
+  "adminSignOut": 200
+}

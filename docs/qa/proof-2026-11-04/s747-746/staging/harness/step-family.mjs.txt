@@ -1,0 +1,58 @@
+// SCRUM-746 setup, through the four-character till's own session (the calls the till makes):
+// a ZZ TEST drop-in child registered with no phone (so no message can go out), a ticket for the child
+// paid by a gateway QR on this till (the four-character invoice) completed by the simulator, then checked in.
+import assert from 'node:assert/strict';
+export default async function (S) {
+  const { st, save, tillApi, adminApi, randomUUID } = S;
+  const f = st.fixture, four = f.tills.four;
+  const fam = (f.family = f.family ?? {});
+  const api = async (m, p, d, okStatuses = [200, 201]) => { const r = await tillApi('four', m, p, d); fam.calls = fam.calls ?? []; fam.calls.push({ m, p: p.split('?')[0], status: r.status, error: r.body?.error?.code ?? null }); save(); assert.ok(okStatuses.includes(r.status), `${m} ${p.split('?')[0]} ${r.status} ${JSON.stringify(r.body?.error ?? r.body).slice(0, 500)}`); return r.body; };
+  const config = await api('GET', `/checkin/config?branchId=${f.branchId}`);
+  const pkgs = (await api('GET', `/branches/${f.branchId}/ticket-packages`)).packages.filter((p) => p.active && !p.archivedAt);
+  fam.packages = pkgs.map((p) => ({ name: p.name, kidW: p.kidPriceWeekday ?? p.kidPriceWeekdaySatang ?? null }));
+  const pkg = pkgs.find((p) => p.name === '2 Hours Play') ?? pkgs[0];
+  assert.ok(pkg, 'a ticket package');
+  fam.packageName = pkg.name;
+  if (!fam.registrationId) {
+    fam.registrationId = randomUUID(); fam.checkinId = randomUUID(); fam.saleId = randomUUID();
+    fam.childName = 'ZZ TEST SCRUM-746 ' + f.stamp + ' child'; fam.guardianName = 'ZZ TEST SCRUM-746 ' + f.stamp + ' guardian';
+    save();
+    await api('POST', '/checkin/registrations', {
+      id: fam.registrationId, branchId: f.branchId, stationId: four.id, guardianName: fam.guardianName, contactChannel: 'whatsapp',
+      consentAcknowledged: true, acknowledgedConfirmationIds: (config.policy?.confirmations ?? []).map((c) => c.id),
+      children: [{ checkinId: fam.checkinId, name: fam.childName, ageYears: 9, service: 'none', foodProvision: { mode: 'none', paidSatang: 0 } }],
+    });
+    fam.registeredAt = new Date().toISOString(); save();
+  }
+  if (!fam.saleCreated) {
+    await api('POST', '/sales', { id: fam.saleId, stationId: four.id, lines: [{ id: fam.checkinId, packageId: pkg.id, kids: 1, adults: 0 }] });
+    fam.saleCreated = true; save();
+  }
+  if (!fam.attempt) {
+    const t = await api('POST', '/payments/attempts', { saleId: fam.saleId, actionId: randomUUID(), tender: 'qr', method: 'promptpay', kind: 'qr' });
+    fam.attempt = { id: t.attempt.id, provider: t.attempt.provider, status: t.attempt.status, invoiceNo: t.attempt.invoiceNo, amountSatang: t.attempt.amountSatang ?? null };
+    save();
+    assert.equal(t.attempt.provider, 'simulator');
+  }
+  if (!fam.paid) {
+    const paid = await adminApi('POST', '/webhooks/2c2p/simulator', { attemptId: fam.attempt.id, event: 'paid' });
+    assert.equal(paid.status, 200, JSON.stringify(paid.body?.error ?? paid.body));
+    fam.paid = { at: new Date().toISOString(), gatewayState: paid.body?.gatewayState ?? null }; save();
+  }
+  if (!fam.checkedIn) {
+    await api('POST', '/checkin/check-in-now', { saleId: fam.saleId, entries: [{ checkinId: fam.checkinId, nannyId: null }] });
+    fam.checkedIn = new Date().toISOString(); save();
+  }
+  const reg = await api('GET', `/checkin/registrations/${fam.registrationId}`);
+  const child = reg.children.find((c) => c.id === fam.checkinId);
+  fam.childStatus = child?.status; fam.bandId = child?.bandId ?? null;
+  const detail = await api('GET', `/sales/${fam.saleId}`);
+  const s = detail.sale ?? detail;
+  fam.saleStatus = s?.status ?? null; fam.receiptNumber = s?.receiptNumber ?? null; fam.grossSatang = s?.totals?.grossSatang ?? null;
+  fam.bandShortCode = (detail.bands ?? []).find((b) => b.id === fam.bandId)?.shortCode ?? null;
+  fam.allBands = (detail.bands ?? []).map((b) => ({ id: b.id, shortCode: b.shortCode, kind: b.kind ?? b.type ?? null }));
+  save();
+  assert.equal(fam.childStatus, 'in_park');
+  assert.ok(fam.bandShortCode?.startsWith('ZQ7C-'), 'band short code ' + fam.bandShortCode);
+  return { packageName: fam.packageName, attempt: fam.attempt, paid: fam.paid, childStatus: fam.childStatus, saleStatus: fam.saleStatus, receiptNumber: fam.receiptNumber, grossSatang: fam.grossSatang, bandShortCode: fam.bandShortCode, allBands: fam.allBands, calls: fam.calls };
+}

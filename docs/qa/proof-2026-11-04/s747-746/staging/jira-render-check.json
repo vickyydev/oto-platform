@@ -1,0 +1,23 @@
+{
+  "SCRUM-747": {
+    "commentId": "13459",
+    "created": "2026-11-04T17:48:55.806+0700",
+    "renderedImageIds": [
+      "12529",
+      "12530",
+      "12531"
+    ],
+    "bodyStart": "*Proof on staging, 4 November 2026, 17:31 to 17:47 Bangkok, live commit 01b5b64d"
+  },
+  "SCRUM-746": {
+    "commentId": "13460",
+    "created": "2026-11-04T17:49:00.439+0700",
+    "renderedImageIds": [
+      "12532",
+      "12533",
+      "12534",
+      "12535"
+    ],
+    "bodyStart": "*Proof on staging, 4 November 2026, 17:31 to 17:47 Bangkok, live commit 01b5b64d"
+  }
+}

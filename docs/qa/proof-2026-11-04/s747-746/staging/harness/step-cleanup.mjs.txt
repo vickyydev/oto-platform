@@ -1,0 +1,33 @@
+// Cleanup 2: the voucher type switched off and archived; both tills sign out; the tills, then the box, archived.
+import assert from 'node:assert/strict';
+export default async function (S) {
+  const { st, save, pages, tillApi, adminApi } = S;
+  const f = st.fixture;
+  const c = st.cleanup;
+  const act = (what, r) => { c.actions.push({ what, status: r.status, code: r.body?.error?.code ?? null }); save(); return r; };
+  if (f.voucher?.definitionId && !c.voucherDefinitionArchived) {
+    act('switch the ZZ TEST voucher type off', await adminApi('PATCH', `/voucher-definitions/${f.voucher.definitionId}`, { active: false }));
+    const a = act('archive the ZZ TEST voucher type', await adminApi('DELETE', `/voucher-definitions/${f.voucher.definitionId}`));
+    assert.equal(a.status, 200, JSON.stringify(a.body?.error ?? a.body));
+    c.voucherDefinitionArchived = new Date().toISOString(); save();
+  }
+  for (const label of ['four', 'six']) {
+    if (c['signedOut_' + label]) continue;
+    await pages[label].page.goto(S.POS + '/');
+    act(`${label} till sign-out`, await tillApi(label, 'POST', '/auth/sign-out'));
+    c['meAfter_' + label] = (await tillApi(label, 'GET', '/me')).status;
+    c['signedOut_' + label] = new Date().toISOString(); save();
+  }
+  for (const label of ['four', 'six']) {
+    if (c['archived_' + label]) continue;
+    const r = act(`archive till ${label}`, await adminApi('DELETE', `/stations/${f.tills[label].id}`));
+    assert.equal(r.status, 200, JSON.stringify(r.body?.error ?? r.body));
+    c['archived_' + label] = new Date().toISOString(); save();
+  }
+  if (!c.boxArchived) {
+    const r = act('archive the ZZ TEST virtual box', await adminApi('DELETE', `/boxes/${f.boxId}`));
+    assert.equal(r.status, 200, JSON.stringify(r.body?.error ?? r.body));
+    c.boxArchived = new Date().toISOString(); save();
+  }
+  return c;
+}
