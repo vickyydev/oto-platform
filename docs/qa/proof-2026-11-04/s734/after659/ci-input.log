@@ -1,0 +1,307 @@
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-l3qmFL ...
+ok
+
+creating subdirectories ...
+ok
+
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+100
+selecting default shared_buffers ...
+128MB
+selecting default time zone ...
+Asia/Bangkok
+creating configuration files ...
+ok
+running bootstrap script ...
+ok
+
+performing post-bootstrap initialization ...
+ok
+syncing data to disk ...
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-branch^-clone^-20261103^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-l3qmFL^" -l logfile start
+
+
+2026-11-04 12:04:18.291 +07 [64968] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+2026-11-04 12:04:18.294 +07 [64968] LOG:  listening on IPv6 address "::1", port 52595
+
+2026-11-04 12:04:18.294 +07 [64968] LOG:  listening on IPv4 address "127.0.0.1", port 52595
+
+2026-11-04 12:04:18.328 +07 [108424] LOG:  database system was shut down at 2026-11-04 12:04:16 +07
+
+2026-11-04 12:04:18.359 +07 [64968] LOG:  database system is ready to accept connections
+
+2026-11-04 12:04:21.623 +07 [87740] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+ RUN  v3.2.7 C:/oto-lanes/codex-branch-clone-20261103/apps/api
+
+2026-11-04 12:04:33.258 +07 [110300] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+2026-11-04 12:04:37.670 +07 [106964] ERROR:  null value in column "tenant_id" of relation "settings" violates not-null constraint
+2026-11-04 12:04:37.670 +07 [106964] DETAIL:  Failing row contains (a14f50b1-d811-43a3-b168-0f304deabab2, zz_after, x, 2026-11-04 12:04:37.670338, null).
+2026-11-04 12:04:37.670 +07 [106964] STATEMENT:  insert into settings (key, value) values ($1, $2)
+
+2026-11-04 12:04:37.671 +07 [106964] ERROR:  null value in column "tenant_id" of relation "activity_log" violates not-null constraint
+2026-11-04 12:04:37.671 +07 [106964] DETAIL:  Failing row contains (3e891b03-2ab1-4e1f-b979-dae44333ed01, null, null, null, null, null, employee_updated, ZZ after, null, null, 2026-11-04 12:04:37.671503, null).
+2026-11-04 12:04:37.671 +07 [106964] STATEMENT:  insert into activity_log (activity_type, summary_text) values ($1, $2)
+
+2026-11-04 12:04:37.672 +07 [106964] ERROR:  null value in column "tenant_id" of relation "attention_items" violates not-null constraint
+2026-11-04 12:04:37.672 +07 [106964] DETAIL:  Failing row contains (dcb15daa-ddf0-4945-a3f9-b02459acf3da, null, null, null, CONTRACT_NOT_SENT, medium, ZZ after, null, null, open, , , null, null, 2026-11-04 12:04:37.671928, 2026-11-04 12:04:37.671928, null, null, null).
+2026-11-04 12:04:37.672 +07 [106964] STATEMENT:  insert into attention_items (type, title) values ($1, $2)
+
+2026-11-04 12:04:37.709 +07 [106308] ERROR:  duplicate key value violates unique constraint "settings_tenant_id_key_unique"
+2026-11-04 12:04:37.709 +07 [106308] DETAIL:  Key (tenant_id, key)=(51c93827-457a-4dc6-b084-c56b35e8ef9a, md_signatory_name) already exists.
+2026-11-04 12:04:37.709 +07 [106308] STATEMENT:  insert into settings (key, value, tenant_id) values ('md_signatory_name', 'twice', $1)
+
+2026-11-04 12:04:37.739 +07 [101752] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 12:04:38.647 +07 [101752] LOG:  checkpoint complete: wrote 1773 buffers (10.8%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.069 s, sync=0.822 s, total=0.908 s; sync files=1966, longest=0.015 s, average=0.001 s; distance=41145 kB, estimate=41145 kB; lsn=0/3DA6778, redo lsn=0/3DA6740
+
+2026-11-04 12:04:42.078 +07 [33304] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+2026-11-04 12:04:43.592 +07 [91204] ERROR:  tenant ownership (0007): 0 settings, 1 activity_log and 0 attention_items rows still have no park group after the backfill ran again, so tenant_id is not made NOT NULL and nothing was changed. Run npm run tenant:readback in the OTO App to see them, give each its park group, then deploy again.
+2026-11-04 12:04:43.592 +07 [91204] CONTEXT:  PL/pgSQL function inline_code_block line 11 at RAISE
+2026-11-04 12:04:43.592 +07 [91204] STATEMENT:
+
+	-- The gate: nothing is made NOT NULL while a row is still without its park group.
+	DO $$
+	DECLARE
+	  unplaced_settings bigint;
+	  unplaced_activity bigint;
+	  unplaced_attention bigint;
+	BEGIN
+	  SELECT count(*) INTO unplaced_settings FROM "settings" WHERE "tenant_id" IS NULL;
+	  SELECT count(*) INTO unplaced_activity FROM "activity_log" WHERE "tenant_id" IS NULL;
+	  SELECT count(*) INTO unplaced_attention FROM "attention_items" WHERE "tenant_id" IS NULL;
+	  IF unplaced_settings + unplaced_activity + unplaced_attention > 0 THEN
+	    RAISE EXCEPTION 'tenant ownership (0007): % settings, % activity_log and % attention_items rows still have no park group after the backfill ran again, so tenant_id is not made NOT NULL and nothing was changed. Run npm run tenant:readback in the OTO App to see them, give each its park group, then deploy again.',
+	      unplaced_settings, unplaced_activity, unplaced_attention;
+	  END IF;
+	END $$;
+
+2026-11-04 12:04:43.670 +07 [101752] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 12:04:43.682 +07 [101752] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.003 s, sync=0.002 s, total=0.012 s; sync files=4, longest=0.001 s, average=0.001 s; distance=23237 kB, estimate=39354 kB; lsn=0/5457CC0, redo lsn=0/5457C88
+
+2026-11-04 12:04:47.051 +07 [111368] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+2026-11-04 12:04:49.050 +07 [110956] ERROR:  null value in column "tenant_id" of relation "activity_log" violates not-null constraint
+2026-11-04 12:04:49.050 +07 [110956] DETAIL:  Failing row contains (5f6267d9-496e-40aa-af74-d2c149bc93f5, 1a9877e3-fde5-4446-ae95-325532817030, null, null, null, null, employee_updated, ZZ queued bare, null, null, 2026-11-04 12:04:48.540589, null).
+2026-11-04 12:04:49.050 +07 [110956] STATEMENT:  insert into activity_log (id, activity_type, summary_text, branch_id) values ($1, 'employee_updated', 'ZZ queued bare', $2)
+
+2026-11-04 12:04:49.125 +07 [101752] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 12:04:49.139 +07 [101752] LOG:  checkpoint complete: wrote 5 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.002 s, total=0.015 s; sync files=4, longest=0.001 s, average=0.001 s; distance=25551 kB, estimate=37974 kB; lsn=0/6D4B9A0, redo lsn=0/6D4B968
+
+2026-11-04 12:04:52.475 +07 [110792] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+2026-11-04 12:04:54.403 +07 [101752] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 12:04:54.416 +07 [101752] LOG:  checkpoint complete: wrote 5 buffers (0.0%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.004 s, sync=0.002 s, total=0.013 s; sync files=4, longest=0.001 s, average=0.001 s; distance=25543 kB, estimate=36731 kB; lsn=0/863D628, redo lsn=0/863D5F0
+
+2026-11-04 12:04:59.357 +07 [98064] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+stdout | test/s217b-r4b.test.ts > D. the platform’s two new jobs against a stand-in app
+Suite registry: registered 6 app(s).
+
+stdout | test/s217b-r4b.test.ts > D. the platform’s two new jobs against a stand-in app
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/s217b-r4b.test.ts > D. the platform’s two new jobs against a stand-in app
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s217b-r4b.test.ts > D. the platform’s two new jobs against a stand-in app
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:110992) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+2026-11-04 12:05:02.775 +07 [101752] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 12:05:02.816 +07 [101752] LOG:  checkpoint complete: wrote 5 buffers (0.0%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.004 s, sync=0.017 s, total=0.041 s; sync files=4, longest=0.011 s, average=0.005 s; distance=26435 kB, estimate=35701 kB; lsn=0/A00E608, redo lsn=0/A00E5D0
+
+ ✓ test/s217b-r4b.test.ts (36 tests | 4 skipped) 33929ms
+   ✓ A. the contraction, app migration 0007 > the gate: a row the backfill cannot place stops 0007 loudly, and nothing is changed  4994ms
+   ✓ A. the contraction, app migration 0007 > the window: a write in flight is waited for and placed; a write queued behind the lock lands after — refused naming no park group, taken naming one  5481ms
+   ✓ A. the contraction, app migration 0007 > from empty, twice: 0007’s shape, and no park group made  5290ms
+   ✓ C. read off the code > the platform registers job:otoapp.attention and job:otoapp.no_show; nothing else in the suite names the three tables or 4b’s words  1192ms
+2026-11-04 12:05:07.240 +07 [105492] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+2026-11-04 12:05:12.480 +07 [80916] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+2026-11-04 12:05:13.905 +07 [39904] ERROR:  duplicate key value violates unique constraint "settings_key_unique"
+2026-11-04 12:05:13.905 +07 [39904] DETAIL:  Key (key)=(md_signatory_name) already exists.
+2026-11-04 12:05:13.905 +07 [39904] STATEMENT:  insert into settings (key, value) values ('md_signatory_name', 'twice')
+
+2026-11-04 12:05:13.937 +07 [101752] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 12:05:15.050 +07 [101752] LOG:  checkpoint complete: wrote 2551 buffers (15.6%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.085 s, sync=1.016 s, total=1.114 s; sync files=3444, longest=0.003 s, average=0.001 s; distance=48809 kB, estimate=48809 kB; lsn=0/CFB8C58, redo lsn=0/CFB8C20
+
+2026-11-04 12:05:15.313 +07 [101752] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 12:05:15.320 +07 [101752] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.002 s, sync=0.001 s, total=0.008 s; sync files=2, longest=0.001 s, average=0.001 s; distance=2 kB, estimate=43928 kB; lsn=0/CFB94A0, redo lsn=0/CFB9468
+
+2026-11-04 12:05:19.098 +07 [102800] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+2026-11-04 12:05:21.006 +07 [101752] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 12:05:21.017 +07 [101752] LOG:  checkpoint complete: wrote 5 buffers (0.0%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.003 s, sync=0.002 s, total=0.012 s; sync files=4, longest=0.001 s, average=0.001 s; distance=25541 kB, estimate=42090 kB; lsn=0/E8AAB60, redo lsn=0/E8AAB28
+
+2026-11-04 12:05:24.275 +07 [105048] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+2026-11-04 12:05:26.216 +07 [101752] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 12:05:26.230 +07 [101752] LOG:  checkpoint complete: wrote 5 buffers (0.0%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.004 s, sync=0.002 s, total=0.014 s; sync files=4, longest=0.001 s, average=0.001 s; distance=25555 kB, estimate=40436 kB; lsn=0/1019F7D8, redo lsn=0/1019F7A0
+
+2026-11-04 12:05:29.618 +07 [34736] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+2026-11-04 12:05:31.176 +07 [101752] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 12:05:31.187 +07 [101752] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.002 s, total=0.011 s; sync files=4, longest=0.001 s, average=0.001 s; distance=23236 kB, estimate=38716 kB; lsn=0/11850B28, redo lsn=0/11850AF0
+
+ ✓ test/s217b-r4a.test.ts (28 tests | 2 skipped) 27433ms
+   ✓ A. H10: the backfill places every row in its own park group > still takes the previous release's writes: no tenant named, the rows taken, the uniques as they were  4486ms
+   ✓ B. the default park group is made only where a row is left for it > an empty database gets no new tenant  5693ms
+   ✓ B. the default park group is made only where a row is left for it > a database of several park groups, none the default, whose settings have nowhere to go gets one, as the app’s own backfill makes it  5213ms
+   ✓ C. the migration as committed: expand only, both uniques, from empty twice > applies from empty, and a second run applies nothing and fails on nothing (0006’s chain; the whole chain from empty is s217b-r4b’s)  4927ms
+2026-11-04 12:05:36.943 +07 [90504] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+2026-11-04 12:05:39.136 +07 [101752] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 12:05:39.153 +07 [101752] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.004 s, sync=0.007 s, total=0.018 s; sync files=4, longest=0.004 s, average=0.002 s; distance=23278 kB, estimate=37172 kB; lsn=0/12F0C6F0, redo lsn=0/12F0C6B8
+
+2026-11-04 12:05:42.749 +07 [64796] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+2026-11-04 12:05:44.407 +07 [91348] ERROR:  duplicate key value violates unique constraint "employee_offboarding_employee_unique"
+2026-11-04 12:05:44.407 +07 [91348] DETAIL:  Key (employee_id)=(447d1c63-38de-4373-ae05-7028bf7b2a72) already exists.
+2026-11-04 12:05:44.407 +07 [91348] STATEMENT:  insert into employee_offboarding (employee_id, offboarding_type, reason_code, last_working_day, created_by) values ($1, $2, $3, $4, $5)
+
+2026-11-04 12:05:44.478 +07 [101752] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 12:05:44.489 +07 [101752] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.003 s, sync=0.002 s, total=0.011 s; sync files=4, longest=0.001 s, average=0.001 s; distance=23306 kB, estimate=35786 kB; lsn=0/145CF1D0, redo lsn=0/145CF198
+
+2026-11-04 12:05:47.822 +07 [97376] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+2026-11-04 12:05:49.406 +07 [101752] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 12:05:49.449 +07 [101752] LOG:  checkpoint complete: wrote 621 buffers (3.8%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.015 s, sync=0.022 s, total=0.044 s; sync files=42, longest=0.003 s, average=0.001 s; distance=25943 kB, estimate=34801 kB; lsn=0/15F33F10, redo lsn=0/15F24FD0
+
+2026-11-04 12:05:52.782 +07 [43896] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+2026-11-04 12:05:54.322 +07 [101752] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 12:05:54.348 +07 [101752] LOG:  checkpoint complete: wrote 189 buffers (1.2%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.010 s, sync=0.008 s, total=0.027 s; sync files=20, longest=0.002 s, average=0.001 s; distance=24019 kB, estimate=33723 kB; lsn=0/17699C88, redo lsn=0/17699C50
+
+2026-11-04 12:05:57.871 +07 [95560] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+2026-11-04 12:05:59.472 +07 [101752] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 12:05:59.482 +07 [101752] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.011 s; sync files=4, longest=0.002 s, average=0.001 s; distance=23276 kB, estimate=32679 kB; lsn=0/18D54FF8, redo lsn=0/18D54FC0
+
+ ✓ test/s217b-r6.test.ts (36 tests | 2 skipped) 27748ms
+   ✓ B. from empty, twice > applies from empty and a second run applies nothing: the columns nullable, the indexes there, the census index made, no park group made  7272ms
+   ✓ C, continued: the census both ways, and the default park group made only where needed > a person with two offboardings: 0008 still deploys, the index is not made, the words name the count, and the census names the person  4980ms
+   ✓ C, continued: the census both ways, and the default park group made only where needed > a database whose ONLY park group is not slug "default": every document row is that park group’s, and no "OTO Default" is minted  4890ms
+   ✓ C, continued: the census both ways, and the default park group made only where needed > several park groups, none slug "default", and a row with nowhere to go: "OTO Default" is made for it, as 0006 makes it  5137ms
+2026-11-04 12:06:05.251 +07 [100412] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+stdout | test/s217b-r1-review.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/s217b-r1-review.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/s217b-r1-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s217b-r1-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:84928) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+2026-11-04 12:06:13.146 +07 [101752] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 12:06:13.165 +07 [101752] LOG:  checkpoint complete: wrote 47 buffers (0.3%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.006 s, sync=0.004 s, total=0.019 s; sync files=13, longest=0.001 s, average=0.001 s; distance=26650 kB, estimate=32076 kB; lsn=0/1A75B918, redo lsn=0/1A75B8E0
+
+ ✓ test/s217b-r1-review.test.ts (42 tests | 20 skipped) 11299ms
+   ✓ C. CI: the path gates run by bash against simulated diffs > a new app migration only: workspace=true, db=false; the OTO App job runs  404ms
+   ✓ C. CI: the path gates run by bash against simulated diffs > an app directory route only: workspace=true, db=false; the OTO App job runs  397ms
+   ✓ C. CI: the path gates run by bash against simulated diffs > the delete module only: workspace=true, db=false; the OTO App job runs  401ms
+   ✓ C. CI: the path gates run by bash against simulated diffs > the fences module only: workspace=true, db=false; the OTO App job runs  402ms
+   ✓ C. CI: the path gates run by bash against simulated diffs > the app routes only (not read by the platform suite): workspace=false, db=false; the OTO App job runs  367ms
+   ✓ C. CI: the path gates run by bash against simulated diffs > an app screen only: workspace=false, db=false; the OTO App job runs  402ms
+   ✓ C. CI: the path gates run by bash against simulated diffs > a near-miss name beside the fences module: workspace=false, db=false; the OTO App job runs  386ms
+   ✓ C. CI: the path gates run by bash against simulated diffs > a platform migration: workspace=true, db=true; the OTO App job runs  356ms
+   ✓ C. CI: the path gates run by bash against simulated diffs > the api only: workspace=true, db=false; the OTO App job skips  356ms
+   ✓ C. CI: the path gates run by bash against simulated diffs > the workflow itself: workspace=true, db=false; the OTO App job runs  370ms
+   ✓ C. CI: the path gates run by bash against simulated diffs > an app screen and the api: workspace=true, db=false; the OTO App job runs  367ms
+   ✓ C. CI: the path gates run by bash against simulated diffs > a workspace run is the one that runs the view tests: the api shards are gated on it and run the suite that holds them  310ms
+2026-11-04 12:06:18.666 +07 [96892] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+stdout | test/s217b-r1.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/s217b-r1.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/s217b-r1.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s217b-r1.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:106132) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+2026-11-04 12:06:22.034 +07 [109652] ERROR:  update or delete on table "users" violates foreign key constraint "user_module_overrides_user_id_users_id_fk" on table "user_module_overrides"
+2026-11-04 12:06:22.034 +07 [109652] DETAIL:  Key (id)=(01a1a4f3-789e-7a97-aca2-ca5894a5e09a) is still referenced from table "user_module_overrides".
+2026-11-04 12:06:22.034 +07 [109652] STATEMENT:  delete from users where id = $1
+
+2026-11-04 12:06:22.313 +07 [101752] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 12:06:22.328 +07 [101752] LOG:  checkpoint complete: wrote 8 buffers (0.0%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.004 s, sync=0.004 s, total=0.016 s; sync files=6, longest=0.001 s, average=0.001 s; distance=26494 kB, estimate=31517 kB; lsn=0/1C13B1C8, redo lsn=0/1C13B190
+
+ ✓ test/s217b-r1.test.ts (31 tests | 1 skipped) 6881ms
+ ✓ test/s217b-r8-review.test.ts (15 tests) 254ms
+ ✓ test/s217b-r5.test.ts (18 tests | 1 skipped) 88ms
+
+ Test Files  7 passed (7)
+      Tests  176 passed | 30 skipped (206)
+   Start at  12:04:22
+   Duration  121.79s (transform 3.57s, setup 0ms, collect 12.55s, tests 107.63s, environment 1ms, prepare 703ms)
+
+2026-11-04 12:06:24.515 +07 [101752] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 12:06:24.521 +07 [101752] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.002 s, sync=0.001 s, total=0.006 s; sync files=2, longest=0.001 s, average=0.001 s; distance=3 kB, estimate=28366 kB; lsn=0/1C13BF88, redo lsn=0/1C13BF50

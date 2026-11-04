@@ -1,0 +1,2 @@
+set -eo pipefail
+pnpm --filter @oto/api exec tsx C:/oto-lanes/s734-api-gate.mts test/s217b-r1.test.ts test/s217b-r1-review.test.ts test/s217b-r4a.test.ts test/s217b-r4b.test.ts test/s217b-r5.test.ts test/s217b-r6.test.ts test/s217b-r8-review.test.ts > C:/oto-lanes/s734-ci-input-gates.log 2>&1
