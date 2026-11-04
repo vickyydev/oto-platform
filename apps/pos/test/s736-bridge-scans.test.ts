@@ -34,3 +34,37 @@ it('CRITICAL: a paired customer display never invokes the staff scan handler', a
   const stop = watchBridgeSnapshots(station, { bearer: 'ZZ TEST display', onScan, onSnapshot: vi.fn(), onState: vi.fn(), onFailure: vi.fn() });
   await vi.advanceTimersByTimeAsync(0); expect(onScan).not.toHaveBeenCalled(); stop();
 });
+it('HIGH: a till that unlocked without its box hears scans once a fresh box session arrives, on that session only', async () => {
+  holdBoxSession(null);
+  const wires: Array<ReadableStreamDefaultController<Uint8Array>> = [];
+  const request = vi.fn().mockImplementation((_url: string, init: RequestInit) => {
+    if (!(init.headers as Record<string, string>).authorization) {
+      return Promise.resolve(new Response(JSON.stringify({ error: { code: 'BOX_SESSION_REQUIRED', message: 'Unlock first' } }), { status: 401 }));
+    }
+    const body = new ReadableStream<Uint8Array>({ start(controller) { wires.push(controller); } });
+    return Promise.resolve(new Response(body, { headers: { 'content-type': 'text/event-stream' } }));
+  });
+  vi.stubGlobal('fetch', request);
+  const onScan = vi.fn();
+  const stop = watchBridgeSnapshots(station, { onScan, onSnapshot: vi.fn(), onState: vi.fn(), onFailure: vi.fn() });
+  const frame = (id: string) => new TextEncoder().encode('event: scan\ndata: ' + JSON.stringify({ ...scan, scanId: id }) + '\n\n');
+  try {
+    await vi.advanceTimersByTimeAsync(20_000);
+    // Refused without a session, and not retried with the refused credential.
+    expect(request).toHaveBeenCalledOnce();
+    holdBoxSession('ZZ TEST fresh session');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(request).toHaveBeenCalledTimes(2);
+    expect(request.mock.calls[1]![1]).toMatchObject({ headers: { authorization: 'Bearer ZZ TEST fresh session' } });
+    wires[0]!.enqueue(frame('018f0000-0000-7000-8000-000000000011')); await vi.advanceTimersByTimeAsync(0);
+    expect(onScan).toHaveBeenCalledOnce();
+    // A lock ends the stream and opens nothing until the next unlock.
+    holdBoxSession(null); await vi.advanceTimersByTimeAsync(20_000);
+    expect(request).toHaveBeenCalledTimes(2);
+    holdBoxSession('ZZ TEST next session'); await vi.advanceTimersByTimeAsync(0);
+    expect(request).toHaveBeenCalledTimes(3);
+    expect(request.mock.calls[2]![1]).toMatchObject({ headers: { authorization: 'Bearer ZZ TEST next session' } });
+    wires[1]!.enqueue(frame('018f0000-0000-7000-8000-000000000012')); await vi.advanceTimersByTimeAsync(0);
+    expect(onScan).toHaveBeenCalledTimes(2);
+  } finally { stop(); for (const wire of wires) { try { wire.close(); } catch { /* already ended */ } } }
+});
