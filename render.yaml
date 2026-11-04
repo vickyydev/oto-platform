@@ -762,6 +762,30 @@ services:
       - key: INTERNAL_AI_OTOAPP_TOOLS
         sync: false
 
+      # -- the release feed (SCRUM-672) ----------------------------------------
+      # Off until the key is set. Then the api's job runner (`job:release.feed`,
+      # every five minutes) reads each named service's deployments from Render
+      # and each commit's check runs from GitHub, and records the finished ones
+      # in the Console's Releases page. GET only: it can start nothing. All
+      # three are read from the environment directly (services/release-feed.ts).
+      #   RELEASE_FEED_RENDER_API_KEY  secret. A Render API key that can read
+      #     these services: a scoped key if the workspace has them, otherwise
+      #     the key of the member with the least access that can see them.
+      #   RELEASE_FEED_SERVICES        <app>=<render service name>, comma
+      #     separated, the app one of the suite registry's keys; an app may
+      #     have more than one service. There is no registry entry for the api
+      #     itself: it files under pos, and each row names its service.
+      #   RELEASE_FEED_GITHUB_TOKEN    optional secret. The repository is
+      #     public, so it is read anonymously; a read-only token only lifts
+      #     GitHub's anonymous rate limit, which a shared address can exhaust.
+      #     Until then a CI result it could not read stays unknown.
+      - key: RELEASE_FEED_RENDER_API_KEY
+        sync: false
+      - key: RELEASE_FEED_SERVICES
+        sync: false
+      - key: RELEASE_FEED_GITHUB_TOKEN
+        sync: false
+
       # -- error reporting -----------------------------------------------------
       - key: SENTRY_DSN
         # Optional. The error hook is a no-op while this is empty.

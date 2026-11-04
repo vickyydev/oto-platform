@@ -389,9 +389,28 @@ describe('Deploy history', () => {
     expect(html(createElement(DeployHistoryBody, { answer: history({ total: 3, offset: 50 }) }))).toContain('No releases on this page.');
     const markup = html(createElement(DeployHistoryBody, { answer: history({ total: 1, deployments: [{
       id: '01964300-0000-7000-8000-000000000101', app: 'console', appName: 'ZZ TEST Admin', version: null, commit: null,
-      actorAccountId: null, status: 'recorded', ciGreen: null, deployedAt: null, recordedAt: '2026-10-28T03:00:00.000Z' }] }) }));
-    expect(markup.match(/Not recorded/g)).toHaveLength(5);
+      actorAccountId: null, status: 'recorded', ciGreen: null, deployedAt: null, recordedAt: '2026-10-28T03:00:00.000Z',
+      service: null, source: null, sourceEventId: null, finishedAt: null }] }) }));
+    expect(markup.match(/Not recorded/g)).toHaveLength(8);
     expect(markup).not.toContain('Passed');
+  });
+
+  it('shows what the release feed observed, and keeps a green build apart from a deployment that did not go live (SCRUM-672)', () => {
+    const observed = { id: '01964300-0000-7000-8000-000000000102', app: 'pos', appName: 'ZZ TEST POS', version: null,
+      commit: 'a'.repeat(40), actorAccountId: null, ciGreen: true, recordedAt: '2026-10-28T03:06:00.000Z',
+      service: 'zz-test-api', source: 'render', sourceEventId: 'dep-zztest', finishedAt: '2026-10-28T03:05:00.000Z' } as const;
+    const live = html(createElement(DeployHistoryBody, { answer: history({ total: 1, deployments: [{ ...observed, status: 'live', deployedAt: '2026-10-28T03:05:00.000Z' }] }) }));
+    expect(live).toContain('zz-test-api');
+    expect(live).toContain('render dep-zztest');
+    expect(live).toContain('a'.repeat(40));
+    expect(live).toContain('Passed');
+    expect(live).toContain('dateTime="2026-10-28T03:05:00.000Z"');
+    // Version and who triggered it stay unknown; nothing about a feed row fills them in.
+    expect(live.match(/Not recorded/g)).toHaveLength(2);
+    const failed = html(createElement(DeployHistoryBody, { answer: history({ total: 1, deployments: [{ ...observed, status: 'update_failed', deployedAt: null }] }) }));
+    expect(failed).toContain('update_failed');
+    expect(failed).toContain('Passed');
+    expect(failed.match(/Not recorded/g)).toHaveLength(3);
   });
 });
 

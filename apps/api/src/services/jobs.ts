@@ -65,6 +65,7 @@ import { overviewForScopeOf } from './console';
 import { createConsoleDigestSender, runConsoleDigest, type DigestSender } from './console-digest';
 import { runSuiteExpirySweep, SUITE_CONTROL_EXPIRY_JOB } from './suite-flags';
 import { buildIntegrationExpiryJobs } from './integration-expiry';
+import { buildReleaseFeedJobs } from './release-feed';
 
 /** S2-14a round 3 — the wallet day-end jobs, named once (the runner, the tests, the Health page). */
 export const WALLET_EXPIRY_JOB = 'job:wallet.expiry';
@@ -997,6 +998,7 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
     ...buildOtoAppNightJobs(deps),
     ...digestJobs,
     ...buildIntegrationExpiryJobs(deps), // SCRUM-645 / Q26: the credential expiry watch
+    ...buildReleaseFeedJobs(deps), // SCRUM-672: off until RELEASE_FEED_RENDER_API_KEY is set
   ];
 }
 

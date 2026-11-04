@@ -22,7 +22,8 @@ export const SuiteReleasesSchema = z.object({
     id: z.string().uuid(), app: z.enum(SUITE_APP_KEYS), appName: z.string(),
     version: z.string().nullable(), commit: z.string().nullable(), actorAccountId: z.string().uuid().nullable(),
     status: z.string(), ciGreen: z.boolean().nullable(), deployedAt: z.string().datetime().nullable(),
-    recordedAt: z.string().datetime(),
+    recordedAt: z.string().datetime(), service: z.string().nullable(), source: z.string().nullable(),
+    sourceEventId: z.string().nullable(), finishedAt: z.string().datetime().nullable(),
   }).strict()),
 }).strict();
 
@@ -49,7 +50,7 @@ export async function suiteControlRoutes(app: App): Promise<void> {
   app.get('/console/releases', {
     config: { permission: 'console:release:read', target: { operator: true } },
     schema: {
-      description: 'Recorded deployment history, newest recorded event first, with nullable unknown version/commit/actor/CI/deployment time. No inferred release or deploy action. Archived apps are excluded.',
+      description: 'Recorded deployment history, newest recorded event first, with nullable unknown version/commit/actor/CI/deployment time, and the service, source and source id of a row the release feed observed (`finishedAt` is when it ended, however it ended; `deployedAt` only a deployment that went live). No inferred release or deploy action. Archived apps are excluded.',
       querystring: z.object({
         app: z.enum(SUITE_APP_KEYS).optional(), limit: z.coerce.number().int().min(1).max(100).default(50),
         offset: z.coerce.number().int().min(0).max(100_000).default(0),

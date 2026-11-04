@@ -73792,7 +73792,7 @@
     },
     "/console/releases": {
       "get": {
-        "description": "Recorded deployment history, newest recorded event first, with nullable unknown version/commit/actor/CI/deployment time. No inferred release or deploy action. Archived apps are excluded.",
+        "description": "Recorded deployment history, newest recorded event first, with nullable unknown version/commit/actor/CI/deployment time, and the service, source and source id of a row the release feed observed (`finishedAt` is when it ended, however it ended; `deployedAt` only a deployment that went live). No inferred release or deploy action. Archived apps are excluded.",
         "parameters": [
           {
             "schema": {
@@ -73909,6 +73909,23 @@
                           "recordedAt": {
                             "type": "string",
                             "format": "date-time"
+                          },
+                          "service": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "source": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "sourceEventId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "finishedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
                           }
                         },
                         "required": [
@@ -73921,7 +73938,11 @@
                           "status",
                           "ciGreen",
                           "deployedAt",
-                          "recordedAt"
+                          "recordedAt",
+                          "service",
+                          "source",
+                          "sourceEventId",
+                          "finishedAt"
                         ],
                         "additionalProperties": false
                       }

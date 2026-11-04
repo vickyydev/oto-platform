@@ -25,7 +25,8 @@ const registry = (name = 'ZZ TEST Admin') => ({ generatedAt: GENERATED, apps: [{
 }] });
 const history = (name = 'ZZ TEST Admin', offset = 0) => ({ generatedAt: GENERATED, total: 51, limit: 50, offset,
   deployments: [{ id: EVENT, app: 'console', appName: name, version: null, commit: null,
-    actorAccountId: null, status: 'recorded', ciGreen: null, deployedAt: null, recordedAt: GENERATED }],
+    actorAccountId: null, status: 'recorded', ciGreen: null, deployedAt: null, recordedAt: GENERATED,
+    service: null, source: null, sourceEventId: null, finishedAt: null }],
 });
 type Agents = ApiResponse<'/console/releases/agents', 'get'>;
 const agent = (name = 'ZZ TEST Box', agentVersion: string | null = '2.1.0', belowMinimum: boolean | null = false): Agents['agents'][number] => ({
@@ -100,7 +101,7 @@ test('Releases uses recorded history and reports null facts honestly, including 
   await page.goto('/releases');
   await expect(page.getByRole('heading', { name: 'Releases', exact: true, level: 1 })).toBeVisible();
   await expect(page.getByText('ZZ TEST Admin', { exact: true })).toBeVisible();
-  await expect(page.getByText('Not recorded', { exact: true })).toHaveCount(5);
+  await expect(page.getByText('Not recorded', { exact: true })).toHaveCount(8);
   await expect(page.getByRole('heading', { name: 'Box agent versions', exact: true, level: 2 })).toBeVisible();
   await expect(page.getByText('2.0.0', { exact: true })).toBeVisible();
   await expect(page.getByText('ZZ TEST Box', { exact: true })).toBeVisible();

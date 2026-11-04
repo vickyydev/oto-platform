@@ -708,6 +708,13 @@
       "when": 1793697707195,
       "tag": "0100_event_pass_hold",
       "breakpoints": true
+    },
+    {
+      "idx": 101,
+      "version": "7",
+      "when": 1793697708195,
+      "tag": "0101_deploy_event_source",
+      "breakpoints": true
     }
   ]
 }

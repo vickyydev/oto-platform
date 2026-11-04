@@ -29334,7 +29334,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Recorded deployment history, newest recorded event first, with nullable unknown version/commit/actor/CI/deployment time. No inferred release or deploy action. Archived apps are excluded. */
+        /** @description Recorded deployment history, newest recorded event first, with nullable unknown version/commit/actor/CI/deployment time, and the service, source and source id of a row the release feed observed (`finishedAt` is when it ended, however it ended; `deployedAt` only a deployment that went live). No inferred release or deploy action. Archived apps are excluded. */
         get: {
             parameters: {
                 query?: {
@@ -29376,6 +29376,11 @@ export interface paths {
                                 deployedAt: string | null;
                                 /** Format: date-time */
                                 recordedAt: string;
+                                service: string | null;
+                                source: string | null;
+                                sourceEventId: string | null;
+                                /** Format: date-time */
+                                finishedAt: string | null;
                             }[];
                         };
                     };

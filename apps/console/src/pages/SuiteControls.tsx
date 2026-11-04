@@ -585,10 +585,13 @@ function ReleaseRecord({ release }: { release: SuiteReleases['deployments'][numb
     </div>
     <dl className="mt-4 grid min-w-0 grid-cols-1 gap-x-6 gap-y-4 @xl:grid-cols-2 @3xl:grid-cols-3">
       <Fact label="Version">{release.version ?? 'Not recorded'}</Fact>
+      <Fact label="Service"><span className="break-all">{release.service ?? 'Not recorded'}</span></Fact>
+      <Fact label="Source"><span className="break-all">{release.source ? `${release.source} ${release.sourceEventId ?? ''}`.trim() : 'Not recorded'}</span></Fact>
       <Fact label="Commit"><code className="text-xs break-all">{release.commit ?? 'Not recorded'}</code></Fact>
       <Fact label="Triggered by"><span className="break-all">{release.actorAccountId ?? 'Not recorded'}</span></Fact>
       <Fact label="CI">{release.ciGreen === null ? 'Not recorded' : release.ciGreen ? 'Passed' : 'Failed'}</Fact>
       <Fact label="Deployed at"><Stamp value={release.deployedAt} /></Fact>
+      <Fact label="Finished at"><Stamp value={release.finishedAt} /></Fact>
       <Fact label="Recorded at"><Stamp value={release.recordedAt} /></Fact>
     </dl>
   </article>;

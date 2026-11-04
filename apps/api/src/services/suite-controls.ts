@@ -59,6 +59,7 @@ export async function suiteReleasesOf(db: Db, input: { app?: SuiteAppKey; limit:
         id: row.id, app: row.app, appName, version: row.version, commit: row.commit,
         actorAccountId: row.actorAccountId, status: row.status, ciGreen: row.ciGreen,
         deployedAt: row.deployedAt?.toISOString() ?? null, recordedAt: row.createdAt.toISOString(),
+        service: row.service, source: row.source, sourceEventId: row.sourceEventId, finishedAt: row.finishedAt?.toISOString() ?? null,
       })),
     };
   }, { isolationLevel: 'repeatable read', accessMode: 'read only' });

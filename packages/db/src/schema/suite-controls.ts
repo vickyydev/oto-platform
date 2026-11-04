@@ -172,7 +172,15 @@ export const featureFlag = core.table('feature_flag', {
   )`),
 ]);
 
-/** Only supplied release facts; unknown version, CI result and deployment time stay unknown. */
+/**
+ * Only supplied release facts; unknown version, CI result and deployment time stay unknown.
+ *
+ * SCRUM-672: a row the release feed observed also says which service it was,
+ * who reported it and under what id (`source`, `source_event_id`): that pair is
+ * the event's identity, so a repeat is the same event however often it is seen.
+ * `deployed_at` is only ever a deployment that went live; `finished_at` is when
+ * the provider says it ended, however it ended. A person's row leaves all four null.
+ */
 export const deployEvent = core.table('deploy_event', {
   id: idPk(),
   app: text('app').$type<SuiteAppKey>().notNull().references(() => appRegistry.key),
@@ -182,11 +190,17 @@ export const deployEvent = core.table('deploy_event', {
   status: text('status').notNull(),
   ciGreen: boolean('ci_green'),
   deployedAt: timestamp('deployed_at', { withTimezone: true, mode: 'date' }),
+  service: text('service'),
+  source: text('source'),
+  sourceEventId: text('source_event_id'),
+  finishedAt: timestamp('finished_at', { withTimezone: true, mode: 'date' }),
   ...timestamps,
 }, t => [
   index('deploy_event_app_time_idx').on(t.app, t.deployedAt),
   index('deploy_event_actor_idx').on(t.actorAccountId),
+  uniqueIndex('deploy_event_source_event_unique').on(t.source, t.sourceEventId).where(sql`${t.sourceEventId} is not null`),
   check('deploy_event_status_check', sql`length(btrim(${t.status})) > 0`),
+  check('deploy_event_source_pair_check', sql`(${t.source} is null) = (${t.sourceEventId} is null)`),
 ]);
 
 /** The operations a two-administrator approval can bind: SCRUM-643's kill switch and SCRUM-648's write-allowed impersonation. */
