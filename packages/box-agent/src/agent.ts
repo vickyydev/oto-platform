@@ -42,7 +42,8 @@ import {
   type UploadCrashPoint,
   type UploadTick,
 } from './photo-upload';
-import { BAND_CODE_HANDLER, ScanRouter, type ScanInput } from './scan';
+import { BAND_CODE_HANDLER, ScanRouter, productBarcodeHandler, type ScanInput } from './scan';
+import { catalogueProductBarcodeLookup } from './product-barcode-cache';
 import { HidBurstReader, buttonKeyProblem, simulateHidKeys } from './scan-input';
 import {
   createScannerHost,
@@ -360,6 +361,21 @@ export interface BoxAgentOptions {
     retryMs?: number;
     /** How often a burst with no suffix is checked for. */
     tickMs?: number;
+  };
+  /**
+   * Retail barcodes read by this box's own scanner, resolved from its cached
+   * `catalogue` scope (SCRUM-736, `product-barcode-cache.ts`), so a barcode on
+   * a Raspberry Pi's cradle adds the item online and with the link down.
+   *
+   * On by default only on a Raspberry Pi (a box with a `configCache`), for the
+   * reason `scanners` is: the virtual box runs inside the api, which puts its
+   * database-backed handler on this box's scanner instead
+   * (`registerProductBarcodeHandler`). That registration is idempotent by
+   * name, so this one on the virtual box would quietly replace a live lookup
+   * with the copy.
+   */
+  productBarcodes?: {
+    enabled?: boolean;
   };
   /**
    * The sale queue (offline plan Round 4). `crashPoint` is a test's hand on
@@ -2200,6 +2216,21 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
        */
       benefits: () => benefitContextNow(boxId),
     });
+    /**
+     * SCRUM-736 — a barcode on this box's cradle resolves here, from the
+     * catalogue copy, because a Pi has no database and a relayed scan carries
+     * no code for the platform to resolve. Registered after the router's own
+     * shapes by construction, so it stays the broad matcher it must be.
+     */
+    if (options.productBarcodes?.enabled ?? Boolean(options.configCache)) {
+      scanner.register(
+        productBarcodeHandler(
+          catalogueProductBarcodeLookup(async () =>
+            store ? ((await store.readBundle(boxId, 'catalogue').catch(() => null))?.payload ?? null) : null,
+          ),
+        ),
+      );
+    }
 
     /**
      * The station bridge (offline plan Round 3). Every answer it gives is read
