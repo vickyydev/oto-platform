@@ -1,9 +1,5 @@
-import type {
-  HeldSalesAnswer,
-  SaleHoldAnswer,
-  SaleHoldBody,
-  SaleResumeAnswer,
-} from '@oto/shared';
+import type { ApiResponse } from '@oto/api-types';
+import type { HeldSalesAnswer, SaleHoldAnswer, SaleHoldBody, SaleResumeAnswer } from '@oto/shared';
 import { api, idemKey } from './client';
 
 /**
@@ -17,16 +13,26 @@ import { api, idemKey } from './client';
  * hold or the resume it already made.
  */
 export const heldSalesApi = {
-  list: (branchId: string) =>
-    api.get<HeldSalesAnswer>(`/sales/held?branchId=${encodeURIComponent(branchId)}`),
-  hold: (saleId: string, body: SaleHoldBody & { actionId: string }) =>
-    api.post<SaleHoldAnswer>(`/sales/${encodeURIComponent(saleId)}/hold`, body, {
-      idempotencyKey: `hold:${saleId}:${body.actionId}`,
-      headers: { 'x-oto-action-id': body.actionId },
-    }),
-  resume: (saleId: string, actionId: string = idemKey()) =>
-    api.post<SaleResumeAnswer>(`/sales/${encodeURIComponent(saleId)}/resume`, { actionId }, {
-      idempotencyKey: `resume:${saleId}:${actionId}`,
-      headers: { 'x-oto-action-id': actionId },
-    }),
+  list: (branchId: string): Promise<HeldSalesAnswer> =>
+    api.get<ApiResponse<'/sales/held', 'get'>>(
+      `/sales/held?branchId=${encodeURIComponent(branchId)}`,
+    ),
+  hold: (saleId: string, body: SaleHoldBody & { actionId: string }): Promise<SaleHoldAnswer> =>
+    api.post<ApiResponse<'/sales/{id}/hold', 'post'>>(
+      `/sales/${encodeURIComponent(saleId)}/hold`,
+      body,
+      {
+        idempotencyKey: `hold:${saleId}:${body.actionId}`,
+        headers: { 'x-oto-action-id': body.actionId },
+      },
+    ),
+  resume: (saleId: string, actionId: string = idemKey()): Promise<SaleResumeAnswer> =>
+    api.post<ApiResponse<'/sales/{id}/resume', 'post'>>(
+      `/sales/${encodeURIComponent(saleId)}/resume`,
+      { actionId },
+      {
+        idempotencyKey: `resume:${saleId}:${actionId}`,
+        headers: { 'x-oto-action-id': actionId },
+      },
+    ),
 };
