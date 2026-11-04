@@ -16,7 +16,7 @@ Events module is the one home for birthday orders.
 | A ZZ TEST birthday chat ("15 kids on 21/mar", "6 years old"): Book Date and Create BEO are live | `s775-01-birthday-chat-book-date-live.png` |
 | Book Date opens the confirm read from the chat: 21/03/2027 (the chat's "21/mar"), 14:00, Central Floresta, 15 kids, the contact's name and phone, turning 6 | `s775-02-book-date-confirm-prefilled.png` |
 | Saved with a double press: "Date Booked", the chip "Event: 21 Mar 2027 at Central Floresta", the note "tentative in the Events calendar"; the BEO card reads 1 | `s775-03-event-chip-date-booked.png` |
-| Create BEO opens a new tab, signed in through the suite hand-off, on the event's BEO form: title, child, booking name, WhatsApp number, age 6, 21 March 2027 at 14:00, 15 kids, and "From the inbox" | `s775-04-create-beo-opens-prefilled-beo-form.png` |
+| Create BEO opens a new tab, signed in through the suite hand-off (`POST /inbox/conversations/{id}/open-beo`), on the event's BEO form: title, child, booking name, WhatsApp number, age 6, 21 March 2027 at 14:00, 15 kids, and "From the inbox" | `s775-04-create-beo-opens-prefilled-beo-form.png` |
 | The app's board: the event in the Tentative column (made once, after the four default columns) | `s775-05-events-board-tentative-column.png` |
 | The app's calendar: the birthday on Sunday 21 March 2027; Confirmed Events 0 | `s775-06-events-calendar-on-the-date.png` |
 | The inbox timeline pill "Date blocked in the Events calendar by … · awaiting confirmation" beside the chip | `s775-07-inbox-pill-and-chip.png` |
@@ -33,6 +33,10 @@ Events module is the one home for birthday orders.
   `x-oto-replay: true` and `created: false`; a new id answered 409
   `EVENT_ALREADY_BOOKED`; still one event.
 - One `inbox.conversation.book_date` audit row, by the person who pressed.
+- Create BEO's press: one `auth.handoff_issue` row with
+  `purpose: inbox.create_beo`, the conversation and the event (the jti, never
+  the token). Through the api alone, `POST …/open-beo` answered 200 with the
+  event's id and a hand-off whose target is its BEO form.
 - The park group's statuses: Upcoming, In Progress, Completed, Cancelled, then
   Tentative (orange) at the end.
 
@@ -43,13 +47,13 @@ The harness is `s775-local-proof.mts.txt` (run from `apps/api` with tsx).
 | Gate | Result |
 |---|---|
 | `pnpm --filter @oto/shared typecheck`, `@oto/api`, `@oto/inbox`, `@oto/api-types` | pass |
-| `pnpm --filter @oto/api exec vitest run --pool=forks test/inbox-book-date.test.ts` | 17 / 17 |
-| the four route guards (`routes-guarded`, `route-write-conformance`, `id-conformance`, `route-scope-target`) | 106 / 106 |
+| `pnpm --filter @oto/api exec vitest run --pool=forks test/inbox-book-date.test.ts` | 23 / 23 (review round: the park check, the archived event, Create BEO's recorded hand-off, the BEO card's week and visibility) |
+| the four route guards (`routes-guarded`, `route-write-conformance`, `id-conformance`, `route-scope-target`) | 109 / 109 |
 | `test/inbox-read.test.ts`, `test/inbox-actions.test.ts`, `test/otoapp-directory.test.ts` | pass (96) |
 | `test/otoapp-events-seam.test.ts`, `test/s217b-r1.test.ts` | 51 / 51 |
 | `pnpm api-types:check`; `@oto/api-types` seam walker | matches; 10 / 10 |
 | `@oto/shared` `test/inbox.test.ts` | 41 / 41 |
-| `@oto/inbox` test (all 12 files, `test/book-date.test.ts` new) and build | 234 / 234; built |
+| `@oto/inbox` test (all 12 files, `test/book-date.test.ts` new) and build | 238 / 238; built |
 | OTO App `npm run check:ratchet` | 418 / 418, no new diagnostic |
 | OTO App `tests/directory-inbox-event.check.ts` (fresh database, both migrators) | 9 / 9 |
 | eslint on every changed `.ts` / `.tsx` outside `apps/oto-app` | clean |
@@ -77,14 +81,17 @@ same scope).
    `inbox.conversation.book_date` audit row; the Tentative status row (note
    whether it was made now or already there).
 4. Press Create BEO: the OTO App opens in a new tab on the event's BEO form
-   with "From the inbox". Screenshot it. Do not save the BEO.
+   with "From the inbox". Screenshot it. Do not save the BEO. Read back,
+   read-only: one `auth.handoff_issue` row with `purpose: inbox.create_beo`
+   naming the ZZ TEST conversation and event. The pressing login needs
+   `app:oto_app:access`, as the launcher's OTO App tile does.
 5. In the OTO App, screenshot the event in the Tentative column and on the
    calendar on its date; in the inbox, the BEO card.
 6. Clean up through the screens: archive the ZZ TEST event in the OTO App
    (its own archive button) and mark the ZZ TEST conversation handled.
    Record that the Tentative status stays (it is the park group's own column
    from then on) and that the conversation keeps its link to the archived
-   event.
+   event, now shown as "Event archived" and "· Archived" on its chip.
 
 ## Not proven here
 

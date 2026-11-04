@@ -1,12 +1,12 @@
 {
-  "at": "2026-11-04T10:00:18.269Z",
-  "run": "mw1y4ajh",
+  "at": "2026-11-04T10:34:41.872Z",
+  "run": "mw1zcits",
   "ports": {
-    "api": 61712,
-    "inbox": 61713,
-    "app": 61714
+    "api": 55343,
+    "inbox": 55344,
+    "app": 55345
   },
-  "conversationId": "01a1a600-e4df-7b94-992e-9b5003f60804",
+  "conversationId": "01a1a620-975d-7857-92eb-1af76bb48cf2",
   "dialogValues": {
     "date": "2027-03-21",
     "startTime": "14:00",
@@ -17,7 +17,7 @@
     "age": "6"
   },
   "eventAfterUiPress": {
-    "id": "01a1a600-edf3-7126-a807-7c381dc7f4fc",
+    "id": "01a1a620-add2-7be2-b3c6-352260278931",
     "event_type": "birthday",
     "status": "tentative",
     "title": "ZZ TEST Mali's 6th Birthday",
@@ -28,10 +28,10 @@
     "kid_turning_age": 6,
     "booking_name": "ZZ TEST Olga",
     "whatsapp_phone_e164": "+66810007750",
-    "inbox_conversation_id": "01a1a600-e4df-7b94-992e-9b5003f60804",
-    "branch_id": "c6ac87a4-fca4-44a5-8b22-35a1d6431789"
+    "inbox_conversation_id": "01a1a620-975d-7857-92eb-1af76bb48cf2",
+    "branch_id": "5dff71ed-85e3-4b3c-b496-964145e3dabf"
   },
-  "conversationEventOrderRef": "01a1a600-edf3-7126-a807-7c381dc7f4fc",
+  "conversationEventOrderRef": "01a1a620-add2-7be2-b3c6-352260278931",
   "apiReplay": {
     "status": 200,
     "replayHeader": "true",
@@ -47,8 +47,8 @@
   "auditRows": [
     {
       "action": "inbox.conversation.book_date",
-      "actor_account_id": "01a1a600-c277-7a95-b76c-fa6a69facafb",
-      "event": "01a1a600-edf3-7126-a807-7c381dc7f4fc",
+      "actor_account_id": "01a1a620-4029-79fb-bf8b-4be95642a5a9",
+      "event": "01a1a620-add2-7be2-b3c6-352260278931",
       "status": "tentative"
     }
   ],
@@ -84,7 +84,27 @@
       "sort_order": 4
     }
   ],
-  "beoTabUrl": "http://127.0.0.1:61714/studio/events/kanban",
+  "beoTabUrl": "http://127.0.0.1:55345/studio/events/kanban",
+  "createBeoAuditRows": [
+    {
+      "action": "auth.handoff_issue",
+      "actor_account_id": "01a1a620-4029-79fb-bf8b-4be95642a5a9",
+      "entity_type": "session",
+      "after": {
+        "jti": "01a1a620-b48c-7743-bdc6-d5585cbd9166",
+        "eventId": "01a1a620-add2-7be2-b3c6-352260278931",
+        "purpose": "inbox.create_beo",
+        "audience": "oto_app",
+        "conversationId": "01a1a620-975d-7857-92eb-1af76bb48cf2"
+      }
+    }
+  ],
+  "apiOpenBeo": {
+    "status": 200,
+    "eventId": "01a1a620-add2-7be2-b3c6-352260278931",
+    "beoPath": "/studio/events/kanban?beo=01a1a620-add2-7be2-b3c6-352260278931",
+    "launchUrlTarget": "/studio/events/kanban?beo=01a1a620-add2-7be2-b3c6-352260278931"
+  },
   "pill": "Date blocked in the Events calendar by Khun Anan (Owner) · awaiting confirmation",
   "screenshots": [
     "s775-01-birthday-chat-book-date-live.png",

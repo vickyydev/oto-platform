@@ -341,9 +341,13 @@ sign-on.
   `POST /api/directory/events`); the conversation keeps the event's id in
   `event_order_ref` and a `date_booked` pill, and the event keeps the
   conversation's id (`core_events.inbox_conversation_id`) and shows "From the
-  inbox". "Create BEO" opens that event's BEO form in the OTO App through the
-  suite hand-off. The dashboard's BEO card counts the week's booked
-  birthdays.
+  inbox". The event goes into the calendar of a park the person may book at:
+  the conversation's own, or another one their assign grant or their
+  birthdays team reaches. "Create BEO" opens that event's BEO form in the OTO
+  App through the suite hand-off (`POST /inbox/conversations/{id}/open-beo`,
+  recorded as `auth.handoff_issue` naming the conversation and the event). An
+  event archived in the app shows as archived on the conversation, which
+  keeps it. The dashboard's BEO card counts the week's booked birthdays.
 - **AI:** one provider behind an interface with a simulator: language
   detection, intent classification, FAQ answers from a knowledge base the
   marketing role maintains, BEO extraction, transcription, translation.
