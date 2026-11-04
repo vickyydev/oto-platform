@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {statusOf} from './codex-console-route-notes-20261104/scripts/agent/jira.mjs';
+const root='C:/oto-lanes/codex-console-route-notes-20261104',rel='docs/qa/proof-2026-11-04/s738';
+const proof=JSON.parse(readFileSync(root+'/'+rel+'/staging-proof.json','utf8'));
+const publicationPath=root+'/'+rel+'/jira-publication.json',publication=JSON.parse(readFileSync(publicationPath,'utf8'));
+assert.ok(proof.imagesOpenedAt&&proof.cleanupVerified&&publication.inlineImagesVerified);
+assert.equal(proof.source,publication.source);assert.equal(proof.ci.conclusion,'success');assert.equal(publication.attachments.length,8);
+const status=await statusOf('SCRUM-738');assert.equal(status.status,'Deployed');
+publication.statusAfter=status.status;publication.statusReadAt=new Date().toISOString();writeFileSync(publicationPath,JSON.stringify(publication,null,2)+'\n');
+const stamp=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date());
+const block=`**4 November 2026, ${stamp} Bangkok, SCRUM-738 DEPLOYED AND READ BACK; SOURCE/API/PROOF SLOT RELEASED:** Source ${proof.source} passed all six jobs of main CI ${proof.ci.databaseId}; the API and both POS builds were live on this source during the proof. Four native staging simulator journeys showed the pending pass or party QR on a separately paired display browser, then removed it and restored the original screen with the same lease: Till, DropOff, desktop Parties and phone Parties. Native sign-out submitted the held lease and independent readback confirmed its release. Eight opened images are shown inline in Jira comment ${publication.commentId}; jira.mjs walk moved the ticket to Deployed and a fresh read confirmed it, never Done. Exact cleanup retired the own ZZ TEST till, display credential and three events, ended all test sessions and left no pending payment or pass hold; two finalised one-baht pass sales and two two-baht party payments remain as financial history. All eight service identities stayed unchanged and the API setting-name count remains 57. Receipts, image fingerprints, live commits and publication readback are under docs/qa/proof-2026-11-04/s738. Real bank payments, physical terminals and park Pi/iPad/display hardware remain unproven and were not changed. This block explicitly RELEASES source, API restart and staging proof. The written queue continues with 641, 659, 674/672, 734 and 736, with their prerequisites. 734's 707 dependency is satisfied; its prepared source still needs rebase, clone gates and its later staging window.**`;
+const finalBlock=block.replace('Real bank payments,',`${proof.openFinding} remains open for the station-configuration/gateway code-length mismatch found by the interrupted, fully retired first run. Real bank payments,`);
+for(const path of ['docs/progress/STATUS.md','docs/handover/CODEX_HANDOVER.md','docs/handover/CLOUD_HANDOVER.md','docs/progress/OPEN_ITEMS.md']){
+ const text=readFileSync(root+'/'+path,'utf8');
+ if(path.includes('CLOUD_')){const i=text.indexOf('## 2. Where the work stands');assert.ok(i>=0);const end=text.indexOf('\n',i)+1;writeFileSync(root+'/'+path,text.slice(0,end)+'\n'+finalBlock+'\n\n'+text.slice(end));}
+ else writeFileSync(root+'/'+path,finalBlock+'\n\n'+text);
+}
+const report=root+'/'+rel+'/README.md';writeFileSync(report,finalBlock+'\n\n'+readFileSync(report,'utf8'));
+writeFileSync('C:/oto-lanes/s738-close-commit.txt','docs(qa): close the paired tender display proof\n\n- Record opened inline staging evidence and exact fixture retirement.\n- Read back Deployed and release the source and proof window.\n\nRefs: SCRUM-738\n');
+writeFileSync('C:/oto-lanes/s738-close-note.txt',`The staging evidence is shown inline in comment ${publication.commentId}, and the ticket now reads Deployed after jira.mjs walk and a fresh check. All own test fixtures and sessions are retired; the four simulator payments remain in the audit history. The source/API/proof window is released to the written queue. Real bank payments and physical park devices remain unproven.\n`);
+console.log(JSON.stringify({key:'SCRUM-738',status:status.status,source:proof.source,ci:proof.ci.databaseId,commentId:publication.commentId,windowReleased:true}));

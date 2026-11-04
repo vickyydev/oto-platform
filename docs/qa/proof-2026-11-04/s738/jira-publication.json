@@ -1,0 +1,46 @@
+{
+  "key": "SCRUM-738",
+  "source": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+  "evidenceCommit": "0ff2e84a9c163e2834e1c953a206b2e3184fadde",
+  "statusBefore": "Testing",
+  "startedAt": "2026-11-04T03:01:11.450Z",
+  "attachments": [
+    {
+      "id": "12454",
+      "name": "s738-till-pass-pending-display.png"
+    },
+    {
+      "id": "12455",
+      "name": "s738-party-balance-pending-display.png"
+    },
+    {
+      "id": "12456",
+      "name": "s738-dropoff-pass-pending-display.png"
+    },
+    {
+      "id": "12457",
+      "name": "s738-mobile-party-balance-pending-display.png"
+    },
+    {
+      "id": "12458",
+      "name": "s738-till-pass-restored-display.png"
+    },
+    {
+      "id": "12459",
+      "name": "s738-party-balance-restored-display.png"
+    },
+    {
+      "id": "12460",
+      "name": "s738-signed-out-staff.png"
+    },
+    {
+      "id": "12461",
+      "name": "s738-signed-out-display.png"
+    }
+  ],
+  "commentId": "13388",
+  "inlineImagesVerified": true,
+  "verifiedAt": "2026-11-04T03:01:17.371Z",
+  "statusAfter": "Deployed",
+  "statusReadAt": "2026-11-04T03:01:58.607Z"
+}
