@@ -20,6 +20,7 @@ import { buildSale } from '@/lib/sale';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
 import { tierProofLabel } from '@/lib/tierProof';
+import { tierApprovalReasonLabel, type TierApprovalChoice } from '@/lib/tierApproval';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { setSaleOpen } from '@/pwa/openSale';
 import { getAddOns } from '@/store/catalogStore';
@@ -66,6 +67,7 @@ import {
 } from '@/api/events';
 import { boxSaleIssue } from '@/api/boxSales';
 import {
+  approveTierByHand,
   buildCartPayload,
   claimVerifiedTier,
   promoChargeSatang,
@@ -1302,6 +1304,42 @@ export default function Till() {
     } else {
       setPendingVerification(verification);
     }
+    setStep(3);
+  };
+
+  /**
+   * SCRUM-772 — THE THAI RATE APPROVED BY HAND, for this sale only.
+   *
+   * The special case beside the document check: the staff member on the till
+   * approves alone, with a reason, so the customer does not wait. The platform
+   * records it as a claim the cart names — approver and branch from the
+   * session — and, unlike a document check, it is never saved to the member:
+   * no pending verification is held for the details step, and a member already
+   * on the cart keeps their own record, so the next visit asks again. The
+   * claim prices a member's cart too (`resolveTierClaim`).
+   *
+   * There is no local fallback: a rate the platform has not recorded is one
+   * nobody can charge, so a refusal throws back to the modal, which stays open
+   * with the reason and the document check still on offer.
+   */
+  const handleApprovedByHand = async (choice: TierApprovalChoice) => {
+    const apiBranchId = apiBranchIdForSlug(branch.id);
+    const approvedTier = verifyTier;
+    if (!apiBranchId || !approvedTier || !operator) {
+      throw new Error('This till has no platform branch, so an approval by hand cannot be recorded here.');
+    }
+    const epoch = saleEpochRef.current;
+    const actionId = await approveTierByHand({ branchId: apiBranchId, tier: approvedTier, ...choice });
+    if (saleEpochRef.current !== epoch) return;
+    setTierClaimActionId(actionId);
+    // A fresh approval answers the last check's refusal (SCRUM-311).
+    setTierClaimRefusal(null);
+    setTier(approvedTier);
+    restateLinesToTier(approvedTier);
+    toast({
+      title: `${tierLabel(approvedTier)} rate approved by hand`,
+      description: `${tierApprovalReasonLabel(choice.reason, choice.reasonText)} · this sale only · recorded by ${operator.name}`,
+    });
     setStep(3);
   };
 
@@ -3823,6 +3861,7 @@ export default function Till() {
           operatorId={operator.id}
           operatorName={operator.name}
           onConfirm={handleVerified}
+          onApproveByHand={handleApprovedByHand}
         />
       )}
 

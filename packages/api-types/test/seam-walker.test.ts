@@ -123,8 +123,7 @@ const MACHINE_CALLERS: Array<{ prefix: string; exact?: boolean; except?: string;
  * caller fails until its line is removed, so the list stays the truth.
  */
 const NOT_YET_CALLED = new Map<string, string>([
-  // 2026-11-04, SCRUM-772: the till's special-case button and the Console's count land in the next two commits.
-  ['POST /sales/tier-approvals', 'the till calls it from the verify step once its special-case path lands'],
+  // 2026-11-04, SCRUM-772: the Console's count panel lands in the next commit.
   ['GET /sales/tier-approvals/by-staff', 'the Console reads it on Tier verifications once its count panel lands'],
   ['POST /auth/unlock-offline', '2026-11-03 SCRUM-728: deprecated compatibility route for older virtual tills; the current till authenticates its box directly, and removal waits for verified retirement of older clients'],
   // 2026-11-03, SCRUM-674: the Console's support lookup reads these in process, as the caller, through its own route.

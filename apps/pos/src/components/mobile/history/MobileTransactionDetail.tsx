@@ -16,6 +16,7 @@ import { baht } from '@/api/history';
 import { getDiscountReasons } from '@/store/catalogStore';
 import { tierLabel } from '@/lib/membership';
 import { pricedOnDocument } from '@/lib/tierProof';
+import { approvedByHandLine } from '@/lib/tierApproval';
 import { clearRefundRequests } from '@/lib/refundRequests';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -134,8 +135,17 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
             </div>
             {state.tierClaim && (
               <div className="text-xs text-muted-foreground">
-                Priced on {pricedOnDocument(state.tierClaim.documentKind, state.tierClaim.documentNote)}, checked{' '}
-                {fmt(state.tierClaim.verifiedAt)}
+                {/* SCRUM-772 — approved by hand: who and why, not a document. */}
+                {state.tierClaim.approval ? (
+                  <>
+                    {approvedByHandLine(state.tierClaim)}, {fmt(state.tierClaim.verifiedAt)}
+                  </>
+                ) : (
+                  <>
+                    Priced on {pricedOnDocument(state.tierClaim.documentKind, state.tierClaim.documentNote)}, checked{' '}
+                    {fmt(state.tierClaim.verifiedAt)}
+                  </>
+                )}
               </div>
             )}
           </div>
