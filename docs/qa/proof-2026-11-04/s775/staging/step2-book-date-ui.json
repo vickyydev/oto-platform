@@ -1,0 +1,91 @@
+{
+  "conversationId": "01a1a7aa-15b1-7696-9740-a7bc42c94749",
+  "login": {
+    "name": "ZZ TEST S775 mw2en8wa birthdays team",
+    "assign": false,
+    "writes": true,
+    "teams": [
+      {
+        "kind": "birthdays",
+        "name": "Birthdays & Events",
+        "member": true
+      },
+      {
+        "kind": "reception",
+        "name": "Reception · Central Floresta",
+        "member": false
+      },
+      {
+        "kind": "reception",
+        "name": "Reception · Robinson Chalong",
+        "member": false
+      },
+      {
+        "kind": "reception",
+        "name": "Reception · Demo Branch 2",
+        "member": false
+      },
+      {
+        "kind": "reception",
+        "name": "Reception · ZZ TEST Print Bare",
+        "member": false
+      },
+      {
+        "kind": "marketing",
+        "name": "Marketing",
+        "member": false
+      },
+      {
+        "kind": "gm",
+        "name": "GM",
+        "member": false
+      }
+    ]
+  },
+  "dialog": {
+    "title": "Book Date — ZZ TEST S775 Birthday",
+    "date": "2027-03-21",
+    "startTime": "14:00",
+    "park": "Central Floresta",
+    "kids": "12",
+    "adults": "",
+    "bookingName": "ZZ TEST S775 Birthday",
+    "phoneShape": "+•••••••7751",
+    "childName": "",
+    "age": "6",
+    "dialogText": "Book Date — ZZ TEST S775 BirthdayRead from the conversation. Check it, then save: the date goes into the Events calendar as tentative. Read from the chat DateThe chat says “21/mar” Start time ParkChoose the parkCentral FlorestaRobinson ChalongDemo Branch 2ZZ TEST Print Bare # of kids # of adults Booking name Phone Child's name Turning (age)CancelBook date"
+  },
+  "childAdded": "ZZ TEST Child",
+  "doublePress": "dblclick on Book date",
+  "uiPostsSeen": [
+    {
+      "at": "2026-11-04T17:46:00.526Z"
+    },
+    {
+      "status": 200,
+      "replay": null
+    }
+  ],
+  "strip": {
+    "chip": "Event: 21 Mar 2027 at Central Floresta",
+    "dateBookedDisabled": true,
+    "pill": "Date blocked in the Events calendar by ZZ TEST S775 mw2en8wa birthdays team · awaiting confirmation"
+  },
+  "conversationEventAsRead": {
+    "id": "01a1a7aa-e6e8-7fad-ac4e-afa1810ba2d8",
+    "title": "ZZ TEST Child's 6th Birthday",
+    "date": "2027-03-21",
+    "startTime": "14:00",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "branchName": "Oto Play Park, Central Floresta",
+    "status": "tentative",
+    "statusName": "Tentative",
+    "archived": false,
+    "kids": 12,
+    "adults": null,
+    "bookedAt": "2026-11-04T17:46:01.588Z",
+    "bookedByAccountId": "2ae91f0d-7b0e-4e49-a47b-7d5663dc6f3b",
+    "beoPath": "/studio/events/kanban?beo=01a1a7aa-e6e8-7fad-ac4e-afa1810ba2d8"
+  },
+  "bookedAt": "2026-11-04T17:46:04.463Z"
+}

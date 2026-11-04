@@ -1,0 +1,103 @@
+// Step 4: Create BEO opens the OTO App on the event's BEO form (not saved).
+// Step 5: the event on the Events board's Tentative column and on the calendar; the inbox BEO card.
+// Step 6: the api alone: the same id again is a replay; a new id is EVENT_ALREADY_BOOKED.
+import { api, raw, assert, adminConsole, persona, INBOX, APP, CENTRAL, loadState, saveState, writeReceipt, chromium, shot, signOut, randomUUID } from './lib.mjs';
+const state = loadState();
+const note = (name, detail = {}) => { state.log.push({ step: name, ...detail, at: new Date().toISOString() }); saveState(state); console.log('OK', name, JSON.stringify(detail).slice(0, 900)); };
+const EV = state.event.id;
+const browser = await chromium.launch({ channel: 'msedge' });
+const admin = await adminConsole(browser);
+let ag;
+try {
+  ag = await persona(browser, admin, state.agent);
+  const p = ag.page;
+  await p.goto(INBOX + '/?c=' + state.conv.id);
+  await p.locator('[data-testid="event-chip"]').waitFor({ timeout: 60000 });
+  await p.waitForTimeout(1200);
+  // Step 4.
+  const openBeo = [];
+  p.on('response', (r) => { if (r.request().method() === 'POST' && /\/open-beo$/.test(new URL(r.url()).pathname)) openBeo.push({ status: r.status() }); });
+  const [tab] = await Promise.all([
+    ag.ctx.waitForEvent('page', { timeout: 60000 }),
+    p.getByRole('button', { name: /^Create BEO$/ }).first().click(),
+  ]);
+  await tab.waitForLoadState('domcontentloaded');
+  await tab.locator('[data-testid="badge-from-inbox"]').waitFor({ timeout: 120000 });
+  await tab.waitForTimeout(2500);
+  const beoUrl = new URL(tab.url());
+  state.beo = { url: beoUrl.origin + beoUrl.pathname + beoUrl.search, hasBeoParam: beoUrl.searchParams.has('beo'), hash: beoUrl.hash ? 'present' : 'none', openBeo, badge: (await tab.locator('[data-testid="badge-from-inbox"]').textContent())?.trim(), at: new Date().toISOString() };
+  saveState(state);
+  await shot(tab, 's775-st-06-create-beo-opens-prefilled-beo-form.png');
+  assert.equal(state.beo.hasBeoParam, false, '?beo= still in the address');
+  assert.ok(/\/studio\/events\/kanban/.test(beoUrl.pathname), 'not on the kanban');
+  // What the form shows, read off its fields (nothing is saved).
+  const form = await tab.evaluate(() => {
+    const vals = {};
+    for (const el of document.querySelectorAll('input, textarea')) {
+      const id = el.getAttribute('data-testid') || el.getAttribute('name') || el.id;
+      if (id && el.value && !/password/i.test(id)) vals[id] = el.value.slice(0, 80);
+    }
+    return vals;
+  });
+  state.beo.form = form; saveState(state);
+  note('Step 4: Create BEO opened the BEO form from the inbox', state.beo);
+  // Leave the BEO editor without saving.
+  const cancel = tab.getByTestId('button-cancel');
+  if (await cancel.isVisible().catch(() => false)) await cancel.click();
+  await tab.waitForTimeout(1500);
+  // Step 5: the board.
+  await tab.setViewportSize({ width: 1920, height: 1000 });
+  await tab.goto(APP + '/studio/events/kanban');
+  await tab.locator('h3', { hasText: /^Tentative$/ }).first().waitFor({ timeout: 60000 });
+  const card = tab.locator(`[data-testid="card-event-${EV}"]`);
+  await card.waitFor({ timeout: 60000 });
+  await card.scrollIntoViewIfNeeded();
+  await tab.waitForTimeout(1500);
+  await shot(tab, 's775-st-07-events-board-tentative-column.png');
+  const columns = await tab.locator('h3').allTextContents();
+  state.board = { columns: columns.map((c) => c.trim()).filter(Boolean).slice(0, 12), card: (await card.textContent())?.replace(/\s+/g, ' ').trim().slice(0, 200) };
+  saveState(state);
+  note('Step 5: the event in the Tentative column', state.board);
+  await tab.goto(APP + '/studio/events/calendar/2027-03');
+  await tab.waitForTimeout(5000);
+  const onCal = await tab.locator('text=ZZ TEST Child').count();
+  state.calendar = { month: '2027-03', zzTestChildMentions: onCal };
+  saveState(state);
+  await shot(tab, 's775-st-08-events-calendar-21-march-2027.png');
+  note('Step 5: the calendar for March 2027', state.calendar);
+  // The inbox dashboard card.
+  await p.bringToFront();
+  const dash = await api(ag.ctx, INBOX, 'GET', '/inbox/dashboard');
+  state.dashboard = { beoCard: dash.beosCreated ?? dash.beos ?? dash.beoCount ?? null, keys: Object.keys(dash) };
+  saveState(state);
+  await p.goto(INBOX + '/');
+  await p.locator('text=BEOs created · week').first().waitFor({ timeout: 60000 }).catch(() => {});
+  await p.waitForTimeout(1500);
+  await shot(p, 's775-st-09-inbox-dashboard-beo-card.png');
+  note('Step 5: the inbox dashboard', state.dashboard);
+  // Step 6: the api alone.
+  const body = { id: EV, branchId: CENTRAL, date: '2027-03-21', startTime: '14:00', kids: 12, adults: null, contactName: 'ZZ TEST S775 Birthday', phone: null, childName: 'ZZ TEST Child', childAge: 6 };
+  const again = await raw(ag.ctx, INBOX, 'POST', '/inbox/conversations/' + state.conv.id + '/book-date', body);
+  const fresh = await raw(ag.ctx, INBOX, 'POST', '/inbox/conversations/' + state.conv.id + '/book-date', { ...body, id: randomUUID(), childName: null, childAge: null });
+  state.step6 = {
+    sameId: { status: again.status, replayHeader: again.headers['x-oto-replay'] ?? null, created: again.body?.created ?? null, eventId: again.body?.event?.id ?? again.body?.eventId ?? null },
+    newId: { status: fresh.status, code: fresh.body?.error?.code ?? null, detailsEventId: fresh.body?.error?.details?.eventId ?? null },
+    at: new Date().toISOString(),
+  };
+  saveState(state);
+  note('Step 6: the api alone', state.step6);
+  assert.equal(again.status, 200);
+  assert.equal(state.step6.sameId.replayHeader, 'true');
+  assert.equal(fresh.status, 409);
+  assert.equal(state.step6.newId.code, 'EVENT_ALREADY_BOOKED');
+  assert.equal(state.step6.newId.detailsEventId, EV);
+  writeReceipt('step4-6-beo-board-api.json', { conversationId: state.conv.id, eventId: EV, beo: state.beo, board: state.board, calendar: state.calendar, dashboard: { ...state.dashboard, raw: dash }, step6: state.step6 });
+} catch (e) {
+  console.error('FAIL', e.message.split('\n')[0]);
+  if (ag) for (const pg of ag.ctx.pages()) await pg.screenshot({ path: 'C:/Users/waqar/AppData/Local/Temp/claude/9d4c56906b777e8e/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/s775p/fail-p4-' + ag.ctx.pages().indexOf(pg) + '.png' }).catch(() => {});
+  process.exitCode = 1;
+} finally {
+  await signOut(ag);
+  await signOut(admin);
+  await browser.close();
+}

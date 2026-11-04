@@ -1,0 +1,26 @@
+// Step 3: read back, read-only.
+import { readJob, loadState, saveState, writeReceipt, SHA, APP_TENANT, assert } from './lib.mjs';
+const state = loadState();
+const C = state.conv.id;
+const r = await readJob('s775_step3', `
+const C=${JSON.stringify(C)};
+const events=await q("SELECT id,event_type,status,title,event_date::text,start_time,num_children,num_adults,child_name,kid_turning_age,booking_name,(whatsapp_phone_e164 IS NOT NULL) has_phone,inbox_conversation_id,branch_id,tenant_id,is_archived,archived_at,created_at FROM otoapp.core_events WHERE inbox_conversation_id=$1",[C]);
+const conv=await q("SELECT id,event_order_ref,category,team_id,branch_id,status,handled_at FROM inbox.conversation WHERE id=$1",[C]);
+const audits=await q("SELECT id,action,actor_account_id,(after->>'eventOrderRef') event_ref,created_at FROM core.audit_log WHERE entity_id=$1 AND action LIKE 'inbox.conversation.book_date%' ORDER BY created_at",[C]);
+const allBook=await q("SELECT count(*)::int n FROM core.audit_log WHERE action LIKE 'inbox.conversation.book_date%'");
+const statuses=await q("SELECT name,value,color,sort_order,created_at FROM otoapp.event_statuses WHERE tenant_id=$1 ORDER BY sort_order",[${JSON.stringify(APP_TENANT)}]);
+const linkedAll=await q("SELECT count(*)::int n FROM otoapp.core_events WHERE inbox_conversation_id IS NOT NULL");
+const pills=await q("SELECT kind,created_at FROM inbox.inbox_event WHERE conversation_id=$1 ORDER BY created_at",[C]).catch(e=>[{err:e.message}]);
+return {events,conv,audits,allBook,statuses,linkedAll,pills};
+`, SHA);
+const x = r.result;
+console.log(JSON.stringify(x, null, 1).slice(0, 6000));
+assert.equal(x.events.length, 1, 'one event');
+assert.equal(x.events[0].event_type, 'birthday');
+assert.equal(x.events[0].status, 'tentative');
+assert.equal(x.conv[0].event_order_ref, x.events[0].id);
+assert.equal(x.audits.length, 1, 'one book_date audit row');
+state.event = { id: x.events[0].id, date: x.events[0].event_date, startTime: x.events[0].start_time, branchId: x.events[0].branch_id };
+state.step3 = { jobId: r.jobId, at: r.result.at };
+saveState(state);
+writeReceipt('step3-readback.json', { source: SHA, jobId: r.jobId, ...x });

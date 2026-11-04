@@ -1,0 +1,17 @@
+{
+  "conversationId": "01a1a7aa-15b1-7696-9740-a7bc42c94749",
+  "channelAccount": "Demo WhatsApp · Central Floresta (simulator)",
+  "contactName": "ZZ TEST S775 Birthday",
+  "message": "ZZ TEST birthday for 12 kids on 21/mar, turning 6 years",
+  "outcome": "processed",
+  "conversationsCreated": 1,
+  "messages": 1,
+  "read": {
+    "category": "birthdays",
+    "team": "Birthdays & Events",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "status": "active",
+    "event": null
+  },
+  "playedAt": "2026-11-04T17:45:03.651Z"
+}

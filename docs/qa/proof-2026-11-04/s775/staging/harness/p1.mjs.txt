@@ -1,0 +1,54 @@
+// Preflight (live services on the SHA) and one ZZ TEST birthdays-team login (no SMS):
+// inbox_agent at the Birthdays & Events department, linked to the OTO App as a manager.
+import { job, api, assert, adminConsole, CONSOLE, SHA, OP, BIRTHDAYS_DEPT, loadState, saveState, writeReceipt, randomUUID, liveDeploy, chromium, signOut } from './lib.mjs';
+const state = loadState();
+const stamp = state.stamp ?? Date.now().toString(36);
+state.stamp = stamp; state.unit = 'SCRUM-775'; state.log ??= [];
+const note = (name, detail = {}) => { state.log.push({ step: name, ...detail, at: new Date().toISOString() }); saveState(state); console.log('OK', name, JSON.stringify(detail).slice(0, 500)); };
+saveState(state);
+const live = [];
+for (const n of ['oto-api-staging', 'oto-inbox-staging', 'oto-app-staging', 'oto-pos-staging', 'oto-launcher-staging', 'oto-console-staging']) {
+  const d = await liveDeploy(n);
+  assert.equal(d.status, 'live', n + ' not live');
+  assert.equal(d.sha, SHA, n + ' not on the SHA');
+  live.push(d);
+}
+state.preflight = { at: new Date().toISOString(), live };
+saveState(state);
+writeReceipt('live-before.json', state.preflight);
+note('Preflight: services live on the SHA', { services: live.map((d) => d.name) });
+const browser = await chromium.launch({ channel: 'msedge' });
+const admin = await adminConsole(browser);
+assert.equal(admin.operatorId, OP);
+state.actorAccountId = admin.actorId; saveState(state);
+try {
+  if (!state.agent) {
+    const spec = { actorId: admin.actorId, operatorId: OP, row: { accountId: randomUUID(), employeeId: randomUUID(), name: `ZZ TEST S775 ${stamp} birthdays team`, phone: '+66907750' + String(101 + Math.floor(Math.random() * 800)).padStart(3, '0') } };
+    const program = `(async()=>{require('tsx/cjs');const assert=require('node:assert/strict'),{Client}=require('pg'),{drizzle}=require('drizzle-orm/node-postgres'),{audit}=require('./src/services/audit.ts');const s=${JSON.stringify(spec)},r=s.row,c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();try{await c.query('BEGIN');await c.query("SET LOCAL statement_timeout='15s'");const a=(await c.query("SELECT a.id FROM core.account a JOIN core.role_assignment ra ON ra.account_id=a.id JOIN core.role ro ON ro.id=ra.role_id WHERE a.id=$1 AND a.operator_id=$2 AND a.status='active' AND ro.name='platform_admin' AND ro.operator_id IS NULL AND ra.scope_type='operator' AND ra.scope_id IS NULL",[s.actorId,s.operatorId])).rows;assert.equal(a.length,1);assert.ok(r.name.startsWith('ZZ TEST S775 '));assert.equal((await c.query('SELECT id FROM core.account WHERE phone=$1 OR id=$2',[r.phone,r.accountId])).rowCount,0);assert.equal((await c.query('SELECT id FROM otoapp.users WHERE phone_e164=$1',[r.phone])).rowCount,0);await c.query('INSERT INTO core.employee (id,operator_id,name,phone) VALUES ($1,$2,$3,$4)',[r.employeeId,s.operatorId,r.name,r.phone]);await c.query("INSERT INTO core.account (id,operator_id,employee_id,phone,status) VALUES ($1,$2,$3,$4,'invited')",[r.accountId,s.operatorId,r.employeeId,r.phone]);await audit.record(drizzle(c),{actorAccountId:s.actorId,operatorId:s.operatorId,action:'qa.account.create',entityType:'account',entityId:r.accountId,sourceApp:'console',origin:'job',reason:'SCRUM-775 staging proof login; no SMS',after:{employeeId:r.employeeId,name:r.name,status:'invited',roles:[]}});await c.query('COMMIT');console.log(JSON.stringify({event:'s775_fixture',at:new Date().toISOString(),accountId:r.accountId,employeeId:r.employeeId,status:'invited',sms:false,passed:true}));}catch(e){await c.query('ROLLBACK');throw e;}finally{await c.end();}})().catch(e=>{console.error(JSON.stringify({event:'s775_fixture_error',name:e.name,code:e.code??'ASSERTION',message:String(e.message).slice(0,160)}));process.exitCode=1;});`;
+    const r = await job(program, 's775_fixture', SHA);
+    state.agent = { accountId: spec.row.accountId, employeeId: spec.row.employeeId, name: spec.row.name, jobId: r.jobId };
+    saveState(state);
+    note('Created the ZZ TEST S775 birthdays-team login (invited, no SMS)', { accountId: state.agent.accountId, jobId: r.jobId });
+  }
+  const A = state.agent;
+  if (!A.grantId) {
+    const g = await api(admin.ctx, CONSOLE, 'POST', '/accounts/' + A.accountId + '/role-assignments', { roleName: 'inbox_agent', scopeType: 'department', scopeId: BIRTHDAYS_DEPT });
+    A.grantId = g.id; saveState(state);
+    note('Granted inbox_agent at the Birthdays & Events department', { grantId: g.id });
+  }
+  if (!A.appUserId) {
+    const linked = await api(admin.ctx, CONSOLE, 'POST', '/admin/apps/oto_app/users', { accountId: A.accountId, name: A.name, otoApp: { email: `${A.accountId}@example.invalid`, fullName: A.name, role: 'manager' } });
+    A.appUserId = linked.externalUserId; saveState(state);
+    note('Linked the ZZ TEST S775 login to the OTO App as a manager, all branches', { appUserId: A.appUserId });
+  }
+  const perms = await api(admin.ctx, CONSOLE, 'GET', '/accounts/' + A.accountId + '/permissions');
+  const roles = (perms.assignments ?? []).map((g) => ({ role: g.roleName ?? g.role?.name ?? g.role, scopeType: g.scopeType, scopeId: g.scopeId }));
+  state.agentGrants = roles; saveState(state);
+  note('The login\'s grants', { roles });
+} catch (e) {
+  console.error('FAIL', e.message.split('\n')[0]);
+  process.exitCode = 1;
+} finally {
+  await signOut(admin);
+  await browser.close();
+}

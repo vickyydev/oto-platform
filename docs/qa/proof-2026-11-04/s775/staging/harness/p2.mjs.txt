@@ -1,0 +1,52 @@
+// Step 1: the staging admin plays one ZZ TEST birthday message through the inbox's Simulator panel.
+import { api, assert, adminConsole, hand, INBOX, SIM_ACCOUNT, loadState, saveState, writeReceipt, chromium, shot, signOut } from './lib.mjs';
+const state = loadState();
+const note = (name, detail = {}) => { state.log.push({ step: name, ...detail, at: new Date().toISOString() }); saveState(state); console.log('OK', name, JSON.stringify(detail).slice(0, 600)); };
+const FROM = '66810007751';
+const NAME = 'ZZ TEST S775 Birthday';
+const TEXT = 'ZZ TEST birthday for 12 kids on 21/mar, turning 6 years';
+const browser = await chromium.launch({ channel: 'msedge' });
+const admin = await adminConsole(browser);
+try {
+  if (!state.conv) {
+    const p = await hand(admin.ctx, 'inbox');
+    await p.getByRole('button', { name: 'Settings' }).waitFor({ timeout: 60000 });
+    await p.getByRole('button', { name: 'Settings' }).click();
+    await p.getByRole('menuitem', { name: /Simulator/ }).click();
+    const d = p.getByRole('dialog');
+    await d.getByLabel('Channel account').waitFor({ timeout: 30000 });
+    await d.getByLabel('Channel account').selectOption(SIM_ACCOUNT);
+    await d.getByLabel('From (digits, country code first)').fill(FROM);
+    await d.getByLabel('Name (optional)').fill(NAME);
+    await d.getByLabel('Category (instead of the AI)').selectOption('birthdays');
+    await d.getByLabel('Language (instead of the AI)').selectOption('en');
+    await d.getByLabel('Message').fill(TEXT);
+    await shot(p, 's775-st-01-simulator-zz-test-birthday-message.png');
+    const [resp] = await Promise.all([
+      p.waitForResponse((r) => new URL(r.url()).pathname === '/api/inbox/simulator/inbound' && r.request().method() === 'POST', { timeout: 90000 }),
+      d.getByRole('button', { name: 'Send as the customer' }).click(),
+    ]);
+    const body = await resp.json();
+    assert.equal(resp.status(), 200, 'inbound ' + resp.status());
+    assert.equal(body.outcome, 'processed');
+    assert.equal(body.conversationsCreated, 1, 'a new conversation');
+    assert.equal(body.conversationIds.length, 1);
+    state.conv = { id: body.conversationIds[0], from: 'ZZ TEST number', name: NAME, text: TEXT, playedAt: new Date().toISOString(), inbound: { outcome: body.outcome, conversationsCreated: body.conversationsCreated, messages: body.messages } };
+    saveState(state);
+    await shot(p, 's775-st-01b-simulator-message-played.png');
+    note('Step 1: one ZZ TEST birthday message played through the Simulator panel', state.conv);
+  }
+  await new Promise((r) => setTimeout(r, 8000));
+  const c = await api(admin.ctx, INBOX, 'GET', '/inbox/conversations/' + state.conv.id);
+  const conv = c.conversation ?? c;
+  state.conv.read = { category: conv.category, team: conv.team?.name ?? conv.teamName ?? null, branchId: conv.branchId, status: conv.status, event: c.event ?? conv.event ?? null };
+  saveState(state);
+  note('The conversation as the api reads it', state.conv.read);
+  writeReceipt('step1-simulated-conversation.json', { conversationId: state.conv.id, channelAccount: 'Demo WhatsApp · Central Floresta (simulator)', contactName: NAME, message: TEXT, ...state.conv.inbound, read: state.conv.read, playedAt: state.conv.playedAt });
+} catch (e) {
+  console.error('FAIL', e.message.split('\n')[0]);
+  process.exitCode = 1;
+} finally {
+  await signOut(admin);
+  await browser.close();
+}

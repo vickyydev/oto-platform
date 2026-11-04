@@ -1,0 +1,123 @@
+{
+  "source": "a9d89d0a4a36d08e0150088b16e1b8242dfb5b04",
+  "steps": [
+    {
+      "step": "Clean-up: archived the ZZ TEST event with the BEO editor's archive button",
+      "at": "2026-11-04T17:51:11.973Z",
+      "status": 200,
+      "columnsAfter": [
+        "Upcoming",
+        "Test bd 2",
+        "Super event test",
+        "In Progress",
+        "Completed",
+        "Cancelled",
+        "Tentative",
+        "Recent Updates"
+      ]
+    },
+    {
+      "step": "The inbox chip after the archive",
+      "chip": "Event: 21 Mar 2027 at Central Floresta · Archived",
+      "eventArchivedButton": 1,
+      "at": "2026-11-04T17:51:17.845Z"
+    },
+    {
+      "step": "Clean-up: marked the ZZ TEST conversation handled",
+      "at": "2026-11-04T17:51:21.686Z",
+      "status": 200
+    },
+    {
+      "step": "The conversation after clean-up",
+      "status": "handled",
+      "handledAt": "2026-11-04T17:51:20.184Z",
+      "event": {
+        "id": "01a1a7aa-e6e8-7fad-ac4e-afa1810ba2d8",
+        "title": "ZZ TEST Child's 6th Birthday",
+        "date": "2027-03-21",
+        "startTime": "14:00",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "branchName": "Oto Play Park, Central Floresta",
+        "status": "tentative",
+        "statusName": "Tentative",
+        "archived": true,
+        "kids": 12,
+        "adults": null,
+        "bookedAt": "2026-11-04T17:46:01.588Z",
+        "bookedByAccountId": "2ae91f0d-7b0e-4e49-a47b-7d5663dc6f3b",
+        "beoPath": "/studio/events/kanban?beo=01a1a7aa-e6e8-7fad-ac4e-afa1810ba2d8"
+      },
+      "at": "2026-11-04T17:51:26.830Z"
+    },
+    {
+      "step": "Clean-up: the ZZ TEST S775 login is inactive, with no grants, and unlinked from the OTO App",
+      "at": "2026-11-04T17:52:12.095Z",
+      "grantsRemoved": 2,
+      "unlink": 200
+    }
+  ],
+  "readBack": {
+    "jobId": "job-dbln38qjnfac73a6dvh0",
+    "event": "s775_cleanup_read",
+    "at": "2026-11-04T17:56:30.909Z",
+    "readOnly": true,
+    "ev": [
+      {
+        "id": "01a1a7aa-e6e8-7fad-ac4e-afa1810ba2d8",
+        "status": "tentative",
+        "is_archived": true,
+        "archived": true,
+        "updated_at": "2026-11-04T17:51:09.320Z"
+      }
+    ],
+    "eventsForConv": [
+      {
+        "n": 1
+      }
+    ],
+    "linkedAll": [
+      {
+        "n": 1
+      }
+    ],
+    "tentative": [
+      {
+        "name": "Tentative",
+        "value": "tentative",
+        "color": "orange",
+        "sort_order": 4
+      }
+    ],
+    "conv": [
+      {
+        "status": "handled",
+        "handled": true,
+        "handled_by_login": true,
+        "event_order_ref": "01a1a7aa-e6e8-7fad-ac4e-afa1810ba2d8"
+      }
+    ],
+    "books": [
+      {
+        "n": 1
+      }
+    ],
+    "beoHandoffs": [
+      {
+        "n": 1
+      }
+    ],
+    "account": [
+      {
+        "status": "inactive",
+        "grants": 0,
+        "sessions": 0,
+        "links": 0
+      }
+    ],
+    "appUser": [
+      {
+        "is_active": false
+      }
+    ]
+  }
+}

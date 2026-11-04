@@ -1,0 +1,85 @@
+{
+  "conversationId": "01a1a7aa-15b1-7696-9740-a7bc42c94749",
+  "eventId": "01a1a7aa-e6e8-7fad-ac4e-afa1810ba2d8",
+  "beo": {
+    "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+    "hasBeoParam": false,
+    "hash": "none",
+    "openBeo": [
+      {
+        "status": 200
+      }
+    ],
+    "badge": "From the inbox",
+    "at": "2026-11-04T17:48:30.772Z",
+    "form": {
+      "input-kid-turning-age": "6"
+    }
+  },
+  "board": {
+    "columns": [
+      "Upcoming",
+      "Test bd 2",
+      "Super event test",
+      "In Progress",
+      "Completed",
+      "Cancelled",
+      "Tentative",
+      "ZZ TEST Child's 6th Birthday",
+      "Recent Updates"
+    ],
+    "card": "ZZ TEST Child's 6th Birthday21 MarBirthday"
+  },
+  "calendar": {
+    "month": "2027-03",
+    "zzTestChildMentions": 1
+  },
+  "dashboard": {
+    "beoCard": null,
+    "keys": [
+      "scope",
+      "newToday",
+      "unanswered",
+      "handledToday",
+      "active",
+      "averageFirstResponseSeconds",
+      "population",
+      "byCategory",
+      "day",
+      "beosThisWeek",
+      "weekStart"
+    ],
+    "raw": {
+      "scope": "team",
+      "newToday": 1,
+      "unanswered": 9,
+      "handledToday": 0,
+      "active": 12,
+      "averageFirstResponseSeconds": 912,
+      "population": "active",
+      "byCategory": {
+        "birthdays": 12,
+        "general": 0,
+        "marketing": 0,
+        "gm": 0
+      },
+      "day": "2026-11-05",
+      "beosThisWeek": 1,
+      "weekStart": "2026-11-02"
+    }
+  },
+  "step6": {
+    "sameId": {
+      "status": 200,
+      "replayHeader": "true",
+      "created": false,
+      "eventId": "01a1a7aa-e6e8-7fad-ac4e-afa1810ba2d8"
+    },
+    "newId": {
+      "status": 409,
+      "code": "EVENT_ALREADY_BOOKED",
+      "detailsEventId": "01a1a7aa-e6e8-7fad-ac4e-afa1810ba2d8"
+    },
+    "at": "2026-11-04T17:48:48.589Z"
+  }
+}

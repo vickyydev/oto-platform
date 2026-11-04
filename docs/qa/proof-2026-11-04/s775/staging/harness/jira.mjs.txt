@@ -1,0 +1,56 @@
+// Attach the proof, post one plain comment that shows it, walk to Deployed, read back. Never Done.
+import { attach, commentWithImages, walkTo, statusOf, images } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/jira.mjs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+const DIR = 'C:/oto-lanes/inbox775-20261104/docs/qa/proof-2026-11-04/s775/staging/';
+const STATE = 'C:/Users/waqar/AppData/Local/Temp/claude/9d4c56906b777e8e/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/s775p/jira-state.json';
+const st = existsSync(STATE) ? JSON.parse(readFileSync(STATE, 'utf8')) : {};
+const save = () => writeFileSync(STATE, JSON.stringify(st, null, 2));
+const key = 'SCRUM-775';
+const files = [
+  's775-st-02-birthday-chat-book-date-and-create-beo-live.png',
+  's775-st-03-book-date-confirm-prefilled.png',
+  's775-st-04-date-booked-and-event-chip.png',
+  's775-st-05-timeline-pill-date-blocked.png',
+  's775-st-06-create-beo-opens-prefilled-beo-form.png',
+  's775-st-07-events-board-tentative-column.png',
+  's775-st-08-events-calendar-21-march-2027.png',
+  's775-st-12-inbox-chip-event-archived.png',
+];
+const text = `Checked on the staging site on 5 November 2026, between 00:45 and 00:56 Bangkok time, on the live version a9d89d0a, with test records only (all named ZZ TEST). No real customer chat was opened, and nothing was sent by WhatsApp or SMS.
+
+What a person can do now:
+- From a birthday conversation in the inbox, Book Date and Create BEO are ready to press (first picture). Our test chat said "ZZ TEST birthday for 12 kids on 21/mar, turning 6 years".
+- Book Date opens a window already filled in from the chat: 21 March 2027 (with the chat's own words "21/mar" shown under the date so you can check it), Central Floresta, 12 kids, turning 6, a 14:00 start, and the contact's name and phone (second picture). We only added the child's name, then pressed Book date.
+- The date is then blocked as a tentative birthday in the OTO App Events calendar. The chat shows "Date Booked", a link "Event: 21 Mar 2027 at Central Floresta", and the line "Date blocked in the Events calendar by ... · awaiting confirmation" (third and fourth pictures).
+- Pressing Book date twice quickly made one event, not two. Sending the same booking again gave back the same event, and a second booking for the same chat was refused as already booked.
+- Create BEO opens the OTO App in a new tab on that event's BEO form, already filled in (child, booking name, WhatsApp number, age 6, 21 March 2027 at 14:00, 12 kids) and marked "From the inbox" (fifth picture). Nothing is saved until someone presses Save there.
+- In the OTO App the event sits in the "Tentative" column of the Events board and on the calendar on Sunday 21 March 2027 (sixth and seventh pictures). The Tentative column was added for this park the first time a date was booked, and it stays.
+- The inbox's "BEOs created · week" card counted it (1 since Monday 2 November).
+- This was done by a test login that is only in the Birthdays & Events team, so the birthdays team can use these buttons without manager rights.
+- When the event is archived in the OTO App, the chat says "Event archived" (last picture).
+
+How to retest: in the inbox, open a birthday conversation, press Book Date, check the filled-in window and press Book date. Then press Create BEO: the OTO App opens on the event's BEO form. In the OTO App, Events shows the birthday in the Tentative column and on the calendar.
+
+Cleaned up afterwards: the test event is archived in the OTO App, the test chat is marked handled, and the test login is switched off. Evidence and read-backs: docs/qa/proof-2026-11-04/s775/staging/ in the repository.`;
+st.before = (await statusOf(key)).status;
+if (!st.attached) {
+  const r = await attach(key, files.map((f) => DIR + f));
+  if (r.status !== 200) throw new Error(key + ' attach ' + r.status + ' ' + (r.body ?? ''));
+  st.attached = r.files;
+  save();
+}
+const have = (await images(key)).map((a) => a.filename);
+for (const f of files) if (!have.includes(f)) throw new Error(key + ' missing image ' + f);
+if (!st.commented) {
+  const r = await commentWithImages(key, text, files);
+  if (r.status !== 201) throw new Error(key + ' comment ' + r.status + ' ' + r.body);
+  st.commented = (r.body.match(/"id":"([0-9]+)"/) ?? [])[1] ?? true;
+  save();
+}
+if (!st.walked) {
+  st.walked = await walkTo(key, 'Deployed');
+  save();
+}
+st.after = (await statusOf(key)).status;
+save();
+console.log(key, st.before, '->', st.after, 'comment', st.commented, 'images', st.attached.length);

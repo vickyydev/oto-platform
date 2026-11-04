@@ -1,0 +1,22 @@
+// Steps 4 and 6 read back, read-only: Create BEO's one hand-off record; still one event and one book_date row.
+import { readJob, loadState, saveState, writeReceipt, SHA, assert } from './lib.mjs';
+const state = loadState();
+const C = state.conv.id, E = state.event.id;
+const r = await readJob('s775_step4', `
+const C=${JSON.stringify(C)},E=${JSON.stringify(E)};
+const handoffs=await q("SELECT id,action,actor_account_id,entity_type,(after->>'purpose') purpose,(after->>'app') app,(after->>'conversationId') conversation_id,(after->>'eventId') event_id,(after ? 'jti') has_jti,(after::text ILIKE '%token%') mentions_token,created_at FROM core.audit_log WHERE action='auth.handoff_issue' AND after->>'purpose'='inbox.create_beo' ORDER BY created_at");
+const afterKeys=await q("SELECT DISTINCT jsonb_object_keys(after) k FROM core.audit_log WHERE action='auth.handoff_issue' AND after->>'purpose'='inbox.create_beo'");
+const events=await q("SELECT count(*)::int n FROM otoapp.core_events WHERE inbox_conversation_id=$1",[C]);
+const linkedAll=await q("SELECT count(*)::int n FROM otoapp.core_events WHERE inbox_conversation_id IS NOT NULL");
+const books=await q("SELECT count(*)::int n FROM core.audit_log WHERE entity_id=$1 AND action LIKE 'inbox.conversation.book_date%'",[C]);
+const ev=await q("SELECT status,is_archived,updated_at FROM otoapp.core_events WHERE id=$1",[E]);
+return {handoffs,afterKeys:afterKeys.map(x=>x.k),events,linkedAll,books,ev};
+`, SHA);
+const x = r.result;
+console.log(JSON.stringify(x, null, 1));
+assert.equal(x.handoffs.length, 1, 'one Create BEO hand-off record');
+assert.equal(x.events[0].n, 1);
+assert.equal(x.books[0].n, 1);
+state.step4read = { jobId: r.jobId, ...x };
+saveState(state);
+writeReceipt('step4-6-readback.json', { source: SHA, jobId: r.jobId, ...x });

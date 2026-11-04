@@ -95,7 +95,8 @@ same scope).
 
 ## Not proven here
 
-- Staging (above, at landing).
+- Staging: proved on 5 November 2026 on live a9d89d0a, in `staging/` (its README).
 - A birthdays-team agent with a department grant pressing in the browser: the
   api test covers that grant (`inbox-book-date.test.ts`); the browser ran as
-  the seeded admin, who holds assign.
+  the seeded admin, who holds assign. The staging proof in `staging/` pressed
+  both buttons as a login that is only in the birthdays team.
