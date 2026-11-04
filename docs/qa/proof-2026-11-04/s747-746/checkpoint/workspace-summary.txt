@@ -1,0 +1,101 @@
+@oto/messaging:test:  Test Files  6 passed (6)
+@oto/messaging:test:       Tests  79 passed (79)
+@oto/telemetry:test:  Test Files  4 passed (4)
+@oto/telemetry:test:       Tests  38 passed (38)
+@oto/assistant:test:  Test Files  17 passed (17)
+@oto/assistant:test:       Tests  678 passed (678)
+@oto/payments-2c2p:test:  Test Files  6 passed (6)
+@oto/payments-2c2p:test:       Tests  86 passed (86)
+@oto/inbox:test:  Test Files  11 passed (11)
+@oto/inbox:test:       Tests  218 passed (218)
+@oto/shared:test:  Test Files  59 passed (59)
+@oto/shared:test:       Tests  896 passed (896)
+@oto/admin-screens:test:  Test Files  18 passed (18)
+@oto/admin-screens:test:       Tests  163 passed (163)
+@oto/api-types:test:  Test Files  1 passed (1)
+@oto/api-types:test:       Tests  10 passed (10)
+@oto/launcher:test:  Test Files  7 passed (7)
+@oto/launcher:test:       Tests  88 passed (88)
+@oto/console:test:  Test Files  60 passed (60)
+@oto/console:test:       Tests  595 passed | 3 todo (598)
+@oto/print:test:  Test Files  12 passed (12)
+@oto/print:test:       Tests  283 passed (283)
+@oto/pos:test:  Test Files  138 passed (138)
+@oto/pos:test:       Tests  1955 passed (1955)
+@oto/db:test: ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+@oto/db:test:  Test Files  1 failed | 55 passed (56)
+@oto/db:test:       Tests  1 failed | 387 passed (388)
+ Tasks:    14 successful, 15 total
+Cached:    2 cached, 15 total
+Failed:    @oto/db#test
+
+@oto/db:test:  FAIL  test/suite-controls.test.ts > SCRUM-643 native suite-control storage > declares nullable unknown deployment facts with no success/version/time defaults
+@oto/db:test: AssertionError: expected [ { …(4) }, …(13) ] to deeply equal [ { …(4) }, …(9) ]
+@oto/db:test:
+@oto/db:test: - Expected
+@oto/db:test: + Received
+@oto/db:test:
+@oto/db:test: @@ -35,13 +35,37 @@
+@oto/db:test:       "data_type": "timestamp with time zone",
+@oto/db:test:       "is_nullable": "YES",
+@oto/db:test:     },
+@oto/db:test:     {
+@oto/db:test:       "column_default": null,
+@oto/db:test: +     "column_name": "finished_at",
+@oto/db:test: +     "data_type": "timestamp with time zone",
+@oto/db:test: +     "is_nullable": "YES",
+@oto/db:test: +   },
+@oto/db:test: +   {
+@oto/db:test: +     "column_default": null,
+@oto/db:test:       "column_name": "id",
+@oto/db:test:       "data_type": "uuid",
+@oto/db:test:       "is_nullable": "NO",
+@oto/db:test: +   },
+@oto/db:test: +   {
+@oto/db:test: +     "column_default": null,
+@oto/db:test: +     "column_name": "service",
+@oto/db:test: +     "data_type": "text",
+@oto/db:test: +     "is_nullable": "YES",
+@oto/db:test: +   },
+@oto/db:test: +   {
+@oto/db:test: +     "column_default": null,
+@oto/db:test: +     "column_name": "source",
+@oto/db:test: +     "data_type": "text",
+@oto/db:test: +     "is_nullable": "YES",
+@oto/db:test: +   },
+@oto/db:test: +   {
+@oto/db:test: +     "column_default": null,
+@oto/db:test: +     "column_name": "source_event_id",
+@oto/db:test: +     "data_type": "text",
+@oto/db:test: +     "is_nullable": "YES",
+@oto/db:test:     },
+@oto/db:test:     {
+@oto/db:test:       "column_default": null,
+@oto/db:test:       "column_name": "status",
+@oto/db:test:       "data_type": "text",
+@oto/db:test:
+@oto/db:test:  ❯ test/suite-controls.test.ts:93:26
+@oto/db:test:      91|     const columns = await client.query(`select column_name, data_type,…
+@oto/db:test:      92|       from information_schema.columns where table_schema = 'core' and …
+@oto/db:test:      93|     expect(columns.rows).toEqual([
+@oto/db:test:        |                          ^
+@oto/db:test:      94|       { column_name: 'actor_account_id', data_type: 'uuid', is_nullabl…
+@oto/db:test:      95|       { column_name: 'app', data_type: 'text', is_nullable: 'NO', colu…
+@oto/db:test:
+@oto/db:test: ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+@oto/db:test:
+@oto/db:test:
+@oto/db:test:  Test Files  1 failed | 55 passed (56)
+@oto/db:test:       Tests  1 failed | 387 passed (388)
+@oto/db:test:    Start at  14:48:45
+@oto/db:test:    Duration  963.42s (transform 5.98s, setup 0ms, collect 57.38s, tests 886.55s, environment 9ms, prepare 8.02s)
+@oto/db:test:
+@oto/db:test:  ELIFECYCLE  Test failed. See above for more details.
+@oto/db#test:  ERROR  command (C:\oto-lanes\codex-till-codes-20261104\packages\db) C:\Users\waqar\AppData\Roaming\npm\pnpm.cmd run test exited (1)
+
+ Tasks:    14 successful, 15 total
+Cached:    2 cached, 15 total
+  Time:    16m10.774s
+Failed:    @oto/db#test
+
+ ERROR  run failed: command  exited (1)
