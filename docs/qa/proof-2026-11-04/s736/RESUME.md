@@ -12,8 +12,11 @@ Latest correction at checkpoint save: Pause checkpoint update: main has now adva
 - Source/checkpoint before this documentation commit: ba59e33b0e2588baaaec682c9656c594a3daf605.
 - Runtime implementation after rebase: 8e0e2563e; original tested runtime:
   936cfbbe3f9062d955d3afdbdae26f38bfaeff89.
-- Four own commits after the last rebase: 54a87a79b plan, 8e0e2563e runtime,
-  f3cee81f5 local proof, ba59e33b0 route-inventory corrections and checkpoint.
+- Rebased own commits on r4: 3b5495b66 plan, dad5c0ad1 runtime, 32442ee07
+  local proof, 0d77c34d8 route inventories, eb857ece0 pause notes. Historical
+  gate receipts retain their original source SHAs. The saved text copies have
+  normalized line endings and trailing whitespace; source hashes refer to the
+  original external files.
 - Main at pause: 480f3cc65 (documentation over source 46e8accc0).
 - Jira SCRUM-736 In Progress. No main landing or staging proof exists for it.
 - SCRUM-753 To Do records offline History; its opened failure image is inline.

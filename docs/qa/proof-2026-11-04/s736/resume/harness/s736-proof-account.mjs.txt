@@ -1,4 +1,4 @@
-﻿import assert from 'node:assert/strict';
+import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 const root='C:/oto-lanes/codex-box-scanner-20261104';
 export async function provision(spec,mode,sha){
@@ -14,4 +14,3 @@ export async function provision(spec,mode,sha){
  assert.equal(mode,'staging');assert.equal(process.env.S736_WINDOW_CLAIMED,'true');
  const {job}=await import('./s736-release-render-job.mjs');return job(program,'s736_fixture_account',sha);
 }
-
