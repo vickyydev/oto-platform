@@ -1,0 +1,32 @@
+{
+  "source": "b83641d45c7ad4304f6d8062be791ed7f31b7942",
+  "run": "mw1jiqz1",
+  "openedAt": "2026-11-04T03:15:29.403Z",
+  "screens": [
+    {
+      "file": "s734-clone-preview.png",
+      "sha256": "e20fef3f11fdc9acd9891d89245910fceaf84ccaea447e66aa520cde4f9096ce"
+    },
+    {
+      "file": "s734-clone-completed.png",
+      "sha256": "69d993d5c1b391c623e876c8a95e11e092264137e5d04c136b98cc8a4bf2f22d"
+    },
+    {
+      "file": "s734-copied-care-settings.png",
+      "sha256": "fccb63358b191c886704346b9233dda931d5ef4bf6b0b6306dc367fe87885754"
+    },
+    {
+      "file": "s734-copied-stock.png",
+      "sha256": "454272d5b5a74c2cbde029ea9d7f265100db5573fc6933839d08e75bf9b8af20"
+    },
+    {
+      "file": "s734-copied-stock-pack.png",
+      "sha256": "c1c6bf426e4c619779d4f491f48dff7be4976b9dd6de5a664a05c2d443ce8834"
+    }
+  ],
+  "staging": false,
+  "limits": [
+    "OTO App was not installed in the disposable rehearsal.",
+    "The maximum-age input holds 6 but is too narrow to show the value clearly; a small width correction is pending."
+  ]
+}

@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+export default async function(proof){
+ const {p,r,f,save,expect,snap}=proof,[source,target]=f.branches;
+ assert.ok(!r.cloneSubmittedAt,'Read back an uncertain clone before considering another write');
+ await p.getByRole('button',{name:'Clone into '+target.name+'…',exact:true}).click();
+ // The source picker is the only select containing this dedicated source slug.
+ await p.locator('select').filter({has:p.locator('option[value="'+source.code+'"]')}).selectOption(source.code);
+ const previewResponse=p.waitForResponse(x=>x.request().method()==='GET'&&x.url().includes(`/branches/${target.id}/clone-preview?`));await p.getByRole('button',{name:'Continue',exact:true}).click();const response=await previewResponse;assert.equal(response.status(),200);r.preview=await response.json();save();
+ for(const [key,n]of [['supervisionPolicy',1],['confirmationItems',2],['dropOffPricing',1],['stockItems',1],['stockUnits',1]])assert.equal(r.preview.counts[key].created,n,key);
+ await expect(p.getByText('Stock pack sizes',{exact:true})).toBeVisible();await snap('s734-clone-preview.png');
+ const written=p.waitForResponse(x=>x.request().method()==='POST'&&x.url().endsWith(`/branches/${target.id}/clone`));r.cloneSubmittedAt=new Date().toISOString();save();await p.getByRole('button',{name:new RegExp('^Copy [0-9]+ rows into '+target.name+'$')}).click();const cloned=await written;assert.equal(cloned.status(),200);r.clone=await cloned.json();save();
+ assert.deepEqual(r.clone.counts,r.preview.counts);await expect(p.getByText('Catalog cloned successfully',{exact:true})).toBeVisible();await snap('s734-clone-completed.png');
+ return {cloned:true,created:r.clone.created,readbackAndScreensPending:true};
+}

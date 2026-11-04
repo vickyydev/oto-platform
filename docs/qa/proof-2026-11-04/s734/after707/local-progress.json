@@ -1,0 +1,111 @@
+{
+  "source": "b83641d45c7ad4304f6d8062be791ed7f31b7942",
+  "at": "2026-11-04T03:15:29.403Z",
+  "focusedApi": {
+    "files": 3,
+    "passed": 48
+  },
+  "workspace": {
+    "successfulTasks": 15,
+    "totalTasks": 15,
+    "cachedTasks": 11
+  },
+  "build": {
+    "successfulTasks": 5,
+    "totalTasks": 5
+  },
+  "typechecks": [
+    "api: zero bytes",
+    "admin-screens",
+    "console: all three configurations",
+    "pos: all three configurations"
+  ],
+  "generatedContractsUnchanged": true,
+  "additionalContractTreeCheck": "git diff --exit-code -- packages/api-types",
+  "lintPassed": true,
+  "logs": [
+    {
+      "name": "focused",
+      "path": "docs/qa/proof-2026-11-04/s734/after707/focused.log",
+      "rawSha256": "4e97c23bbdf79e253f249b8b36d400017fe8a6f0be406b1e52a253ff7def2c93",
+      "normalizedSha256": "e912c2d502d3c6e1af6f9ebcef833c12fe01497cc6bb6312105ac1ee6f5d6b7e"
+    },
+    {
+      "name": "api-typecheck",
+      "path": "docs/qa/proof-2026-11-04/s734/after707/api-typecheck.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "normalizedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "admin-typecheck",
+      "path": "docs/qa/proof-2026-11-04/s734/after707/admin-typecheck.log",
+      "rawSha256": "3a4e06579a88ea77d165eb08eb85a92e2af9da491ec172e2b0bc41a2ff8b26c7",
+      "normalizedSha256": "7c2cbfc385997a767b39ecd967dcc05ffd9bed0a4c548f2fc92cdac0887622c0"
+    },
+    {
+      "name": "console-typecheck",
+      "path": "docs/qa/proof-2026-11-04/s734/after707/console-typecheck.log",
+      "rawSha256": "ec268208f35208c876b1e995ad517709f92c8a5f2821f1f91dec3e1d7dd498bb",
+      "normalizedSha256": "cf0a0c9132d6057a4e838111c463a25fbafe034cbb0d809a1d14e272afc62cec"
+    },
+    {
+      "name": "pos-typecheck",
+      "path": "docs/qa/proof-2026-11-04/s734/after707/pos-typecheck.log",
+      "rawSha256": "1e6483e7824960ff24d11c90c8737f6d1eb9c4f0ece71c37cdc7dd3e3e471466",
+      "normalizedSha256": "a2e3b60deb22f5fd4c08a2606da0ea0339cd904816414dbc57beede39d7da048"
+    },
+    {
+      "name": "contracts",
+      "path": "docs/qa/proof-2026-11-04/s734/after707/contracts.log",
+      "rawSha256": "9874dd11809c7ed4694792d03eb327c7cb0b9aa1eab4275f6b4e82550a643e98",
+      "normalizedSha256": "9874dd11809c7ed4694792d03eb327c7cb0b9aa1eab4275f6b4e82550a643e98"
+    },
+    {
+      "name": "lint",
+      "path": "docs/qa/proof-2026-11-04/s734/after707/lint.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "normalizedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "workspace",
+      "path": "docs/qa/proof-2026-11-04/s734/after707/workspace.log",
+      "rawSha256": "18dcfa9500be6076e1d058dd5e8f9f6ff067609f305d6c99d4f86da547ec01e1",
+      "normalizedSha256": "b9b6d3e6c03dc20dea8f8f4ef52dc36769885da806dd532f2d0b350883d84f92"
+    },
+    {
+      "name": "build",
+      "path": "docs/qa/proof-2026-11-04/s734/after707/build.log",
+      "rawSha256": "d3395fd35108d249c350c5604b4fb2547512f654a07cb76a58723e1206a93d91",
+      "normalizedSha256": "2adbdd0cbba55a30c95c1d010957a639edc7cbb8dfaf259aa97198159146805f"
+    },
+    {
+      "name": "native",
+      "path": "docs/qa/proof-2026-11-04/s734/after707/native.log",
+      "rawSha256": "53c4c2de5247f8eefdfb016c45397132d0590341b78cc7cfab3a80e69df5fd5e",
+      "normalizedSha256": "49f1e02c00f3a9e356e1aa26dac6b245faf06ef81276506e5c5672aca6f82058"
+    },
+    {
+      "name": "native-settled",
+      "path": "docs/qa/proof-2026-11-04/s734/after707/native-settled.log",
+      "rawSha256": "5ec4087f2bdd562136004aa646c947b1d1adea2daf386df9cd8594541d99197b",
+      "normalizedSha256": "6f9f2234698ee0b53aec0bf89d718272881cc339dea6e2cb6aa49f0382459f2b"
+    }
+  ],
+  "local": [
+    {
+      "run": "mw1jgfkj",
+      "receipt": "docs/qa/proof-2026-11-04/s734/local/mw1jgfkj/receipt.json",
+      "imagesOpened": 5,
+      "databaseDropped": true
+    },
+    {
+      "run": "mw1jiqz1",
+      "receipt": "docs/qa/proof-2026-11-04/s734/local/mw1jiqz1/receipt.json",
+      "imagesOpened": 5,
+      "databaseDropped": true
+    }
+  ],
+  "completeApi": "running; not a pass",
+  "staging": false,
+  "pendingVisualCorrection": "Give the maximum-age value and its no-upper-bound button enough width."
+}
