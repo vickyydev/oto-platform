@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
+const lane='C:/oto-lanes/codex-branch-clone-20261103',prior='822d3ac48985aeb79c678fd0160876399b4c3458';
+const git=args=>execFileSync('git',args,{cwd:lane,encoding:'utf8',maxBuffer:32*1024*1024});
+const source=git(['rev-parse','HEAD']).trim(),main=git(['rev-parse','origin/main']).trim(),branch=git(['branch','--show-current']).trim();assert.equal(branch,'lane/codex-branch-clone-20261104-r7');
+const paths=['apps/api','apps/pos','apps/console','packages','apps/oto-app/migrations','apps/oto-app/server/lib/recordDeletion.ts'];execFileSync('git',['diff','--exit-code',prior,source,'--',...paths],{cwd:lane,stdio:'ignore'});execFileSync('git',['diff','--exit-code','--','apps','packages'],{cwd:lane,stdio:'ignore'});
+const extract=ref=>{const s=git(['show',ref+':apps/oto-app/server/routes.ts']),start=s.indexOf('  app.delete("/api/branches/:id",'),end=s.indexOf('  // Upload branch logo to object storage',start);assert.ok(start>=0&&end>start);return s.slice(start,end);};const cleanup=extract(source);assert.equal(cleanup,extract(prior));
+for(const p of ['docs/progress/STATUS.md','docs/handover/CODEX_HANDOVER.md','docs/handover/CLOUD_HANDOVER.md']){const lines=new Set(readFileSync(lane+'/'+p,'utf8').split(/\r?\n/).filter(Boolean));for(const ref of [prior,main])assert.ok(git(['show',ref+':'+p]).split(/\r?\n/).filter(Boolean).every(s=>lines.has(s)),p+' lost a history line');}
+const commits=git(['log','--format=%H','origin/main..HEAD']).trim().split('\n');assert.equal(commits.length,6);
+const r={source,branch,main,acceptedSource:prior,verifiedAt:new Date().toISOString(),identicalPaths:paths,appBranchCleanupRouteSha256:createHash('sha256').update(cleanup).digest('hex'),allHandoverLinesPreserved:true,ownCommits:commits,staging:false,ciFor659:'Still being watched by its lane; this receipt does not claim it passed.'};writeFileSync('C:/oto-lanes/s734-ready-source.json',JSON.stringify(r,null,2)+'\n');console.log(JSON.stringify({source,branch,main,identicalPaths:paths,ownCommits:commits.length,handoverLinesPreserved:true}));

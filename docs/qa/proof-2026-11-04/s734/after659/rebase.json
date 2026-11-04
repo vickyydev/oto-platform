@@ -1,0 +1,27 @@
+{
+  "source": "b742d09b05546329cecbe28f9b4f8602cd5f0bb1",
+  "branch": "lane/codex-branch-clone-20261104-r7",
+  "main": "b64d10ce0b85558e538eb58babd652dd500eb4d6",
+  "acceptedSource": "822d3ac48985aeb79c678fd0160876399b4c3458",
+  "verifiedAt": "2026-11-04T04:28:22.378Z",
+  "identicalPaths": [
+    "apps/api",
+    "apps/pos",
+    "apps/console",
+    "packages",
+    "apps/oto-app/migrations",
+    "apps/oto-app/server/lib/recordDeletion.ts"
+  ],
+  "appBranchCleanupRouteSha256": "7134a3ce3a13a4fb0982b586426b2b62d0bbdeda54f0baef4d8e8258337baa39",
+  "allHandoverLinesPreserved": true,
+  "ownCommits": [
+    "b742d09b05546329cecbe28f9b4f8602cd5f0bb1",
+    "c79b2c2fe8cb4b3eb5458f228c352e3804a22656",
+    "46c911445d983cacf4c0d7a1dac71851dd3ae9ce",
+    "3c69b89364fd0a0044b02600420d4a91ae78fae7",
+    "1da3c81e9663f08ba172e11d9c490a20f1e372a3",
+    "791293753ee15d6593f1faaefeea50a13999e93f"
+  ],
+  "staging": false,
+  "ciFor659": "Still being watched by its lane; this receipt does not claim it passed."
+}
