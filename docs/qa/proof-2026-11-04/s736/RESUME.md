@@ -1,4 +1,67 @@
-# SCRUM-736 paused checkpoint — 4 November 2026, 15:05 Bangkok
+# SCRUM-736 resume notes
+
+## Take-over, 4 November 2026 — current state (supersedes the pause note below)
+
+The paused work continues on lane/scanner736-20261104, cut from a6de88847,
+which already sits on main 4fa176286 (the deployment-column correction), so
+no rebase was needed. The runtime commits are unchanged; this lane adds one
+POS test and this note. Nothing is on main, nothing is deployed, no staging
+setting or record was touched, and the release slot is not claimed here.
+
+Local gates on this tree, all exit 0, output read:
+
+- typecheck: @oto/shared, @oto/box-agent, @oto/api-types, @oto/api, @oto/pos
+- eslint on every changed .ts/.tsx (no errors)
+- box agent, whole suite: 888/888
+- api, 12 files with --pool=forks: the four route guards (routes-guarded,
+  route-write-conformance, id-conformance, route-scope-target), station-scans,
+  station-scans-poll, box-api, box-scanner, scanning-product,
+  scanning-staff-token, s731-band-wallet-scan, s736-scanner-relay-review:
+  200/200
+- POS, whole suite, including the new re-unlock case: 139 files, 1957/1957
+- pnpm api-types:check: packages/api-types matches the api
+
+Review of the delivery, read from the code:
+
+- Voucher, booking QR and wristband all leave the box the same way: the box's
+  scan router decides the code once and publishes one message with a fresh
+  scanId. The box's staff channel carries it over the counter network to the
+  till (box session bearer, never the display credential); while the box's
+  link is up and not forced offline it also posts the same message to
+  POST /box/v1/scans (at most eight in flight, two-second answer, no outbox,
+  no retry). The till's listener admits each scanId once across both paths,
+  including a copy that was heard while the screen was hidden.
+- Platform unreachable: the box's link is down, so nothing is posted; the
+  counter-network copy still reaches the till and the same screen handlers
+  read it. What a handler then does offline follows the existing lane rules;
+  offline History lookup stays SCRUM-753.
+- The relay route takes the box credential, then requires an active station
+  on that same box and branch (403 otherwise, 404 when archived). The body is
+  strict, needs a scanId and is capped at 16 KB; the route is rate-limited,
+  kept out of the replay store, and writes no business fact, so no audit row.
+- Virtual box: the till has no box address, so only the platform channel and
+  poll listen, unchanged. Its in-process agent also posts the relay to its own
+  api; the tape already holds that scanId, so the copy is dropped.
+- A lock now ends the direct stream; the next unlock reopens it on the new
+  session. A till that unlocked while its box was unreachable sends one
+  refused request and then waits for a fresh unlock (new test).
+
+Points for the planner, unchanged in code:
+
+- The duplicate check lives in each screen listener. If staff change page
+  within the relay's two seconds, the newly opened page could still act on
+  the platform copy of a scan the previous page already handled.
+- A relayed scan reaches the screens attached to the api instance that took
+  the post. One instance today, as the station-session notes already record.
+- A scan whose detail exceeds 16 KB is refused by the relay (413); the
+  counter-network copy is unaffected.
+
+Still for the planner, in order: the released slot, landing with branch and
+main CI green by full SHA, the four approved temporary staging settings with
+exact restoration, the staging proof, and only after the owner installs the
+next box release, the park Pi with the real cradle in HID and CDC.
+
+## Paused checkpoint — 4 November 2026, 15:05 Bangkok (history)
 
 The owner explicitly requested this checkpoint and a pause until their command.
 Do not continue implementation, proof or deployment until that command arrives.
