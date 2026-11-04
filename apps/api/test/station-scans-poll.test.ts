@@ -349,6 +349,8 @@ describe('GET /stations/:id/scans (SCRUM-392)', () => {
     });
     // The fingerprint travels, and the scan carries no field for the code.
     expect(scan!.codeFingerprint).toMatch(/^[0-9a-f]{16}$/);
+    // SCRUM-736 adds one read identity, not a raw code, for LAN/cloud deduplication.
+    expect(scan!.scanId).toMatch(/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/);
     expect(Object.keys(scan!).sort()).toEqual(
       [
         'actionId',
@@ -359,6 +361,7 @@ describe('GET /stations/:id/scans (SCRUM-392)', () => {
         'handler',
         'kind',
         'outcome',
+        'scanId',
         'scannedAt',
         'source',
       ].sort(),

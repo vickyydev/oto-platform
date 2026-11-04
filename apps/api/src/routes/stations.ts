@@ -106,6 +106,7 @@ const ScansQuery = ViewQuery.extend({
 /** One scan as the channel sends it (`StationScanMessage`): the fingerprint, never the code. */
 const ScanMessageSchema = z.object({
   kind: z.literal('scan'),
+  scanId: z.string().uuid().optional(),
   source: z.string(),
   codeKind: z.string(),
   codeFingerprint: z.string(),

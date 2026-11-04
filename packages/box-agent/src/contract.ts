@@ -412,6 +412,8 @@ export interface StationPingMessage {
  */
 export interface StationScanMessage {
   kind: 'scan';
+  /** One physical read, shared by direct and relayed delivery (SCRUM-736). */
+  scanId?: string;
   /** The hardware it came from: `box_hid`, `camera`, `simulator`, … */
   source: string;
   codeKind: string;

@@ -1,4 +1,11 @@
 import { z } from 'zod';
+import { StationScanMessageSchema } from '@oto/shared';
+
+/** Live delivery only. Unlike telemetry, staff scan detail is never persisted. */
+export const BoxScanRelaySchema = z.object({
+  stationId: z.string().uuid(),
+  scan: StationScanMessageSchema.extend({ scanId: z.string().uuid() }).strict(),
+}).strict();
 
 /**
  * The wire between a box and the cloud (S2-04).
@@ -12,11 +19,13 @@ import { z } from 'zod';
  *
  * Two rules the shapes below follow, and that every later field must follow:
  *
- *   - **Nothing personal crosses this wire upwards.** A heartbeat carries
+ *   - **Nothing personal enters telemetry.** A heartbeat carries
  *     counts, states and error FINGERPRINTS. Not a member, not a phone, not a
  *     line of a receipt. The box knows all of those and has no reason to
  *     report them, and telemetry is the one stream nobody reads until the day
- *     something has already gone wrong.
+ *     something has already gone wrong. Live scan relay is a separate,
+ *     authenticated staff-channel delivery: its detail is not persisted as
+ *     telemetry, a command, an outbox fact or an idempotency response.
  *   - **A box only ever speaks about itself.** No request body names a box, a
  *     station or a device belonging to anyone else — the box the credential
  *     names is the whole scope, and the api takes it from the credential

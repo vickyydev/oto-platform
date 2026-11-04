@@ -5,6 +5,7 @@ import {
   BoxCommandResultRequestSchema,
   BoxHeartbeatRequestSchema,
   BoxRegisterRequestSchema,
+  BoxScanRelaySchema,
 } from '@oto/box-agent';
 import {
   SYNC_CHANGE_SCOPES,
@@ -38,6 +39,7 @@ import { BoxPhotoBodySchema, linkBoxPhoto, presignBoxPhoto } from '../services/s
 import { buildPrintDocument } from '../services/sale-printing';
 import { sendFiledCheckins } from '../services/event-checkins';
 import type { OpContext } from '../services/tx';
+import { relayBoxScan } from '../services/station-scans';
 
 /**
  * What a box says about a print job (S2-06).
@@ -99,6 +101,19 @@ export async function boxRoutes(app: App): Promise<void> {
 
   /** Already authenticated by the credential guard; this only reads the result. */
   const boxAuth = (req: FastifyRequest): BoxAuth => boxAuthOf(req);
+
+  app.post('/scans', {
+    config: { credential: 'box', ...limited },
+    bodyLimit: 16_384,
+    schema: {
+      description: 'Deliver a live scanner answer to this box\'s own station. Never stored as a business fact or retried from the box outbox.',
+      body: BoxScanRelaySchema,
+      response: { 204: z.null() },
+    },
+  }, async (req, reply) => {
+    await relayBoxScan(app.db, boxAuth(req), req.body.stationId, req.body.scan);
+    return reply.code(204).send(null);
+  });
 
   /**
    * The operation context for a box's own writes. `actorAccountId` is null and

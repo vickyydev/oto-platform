@@ -66,6 +66,9 @@ export interface StationScanPage {
 }
 
 export const stationScanTape = {
+  has(stationId: string, scanId: string): boolean {
+    return perStation.get(stationId)?.entries.some(entry => entry.scan.scanId === scanId) ?? false;
+  },
   /** One scan, as it was published to the station's screens. Returns its number. */
   record(stationId: string, scan: StationScanMessage): number {
     let tape = perStation.get(stationId);
@@ -73,6 +76,8 @@ export const stationScanTape = {
       tape = { last: START, entries: [] };
       perStation.set(stationId, tape);
     }
+    const previous = scan.scanId && tape.entries.find(entry => entry.scan.scanId === scan.scanId);
+    if (previous) return previous.n;
     tape.last += 1;
     tape.entries.push({ n: tape.last, scan });
     if (tape.entries.length > STATION_SCAN_TAPE_SIZE) {
