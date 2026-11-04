@@ -92,6 +92,22 @@ export interface ApiSaleTierClaim {
   evidenceExpiresOn: string | null;
   /** When reception checked it. */
   verifiedAt: string;
+  /**
+   * SCRUM-772 — set when the rate was approved by hand rather than on a
+   * document. Optional: a platform that predates it omits it.
+   */
+  approval?: ApiSaleTierApproval | null;
+}
+
+/** SCRUM-772 — a hand approval as a sale read carries it. */
+export interface ApiSaleTierApproval {
+  reason: string;
+  /** The reason's words, or what staff typed for Other. */
+  reasonLabel: string;
+  note: string | null;
+  approvedByAccountId: string;
+  /** Who approved it, by name. */
+  approvedBy: string | null;
 }
 
 export interface ApiSale {

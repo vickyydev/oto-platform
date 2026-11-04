@@ -1,3 +1,4 @@
+import type { ApiResponse } from '@oto/api-types';
 import type {
   CartLine,
   Discount,
@@ -700,6 +701,23 @@ export interface SaleTierClaimBody {
   note?: string;
 }
 
+/**
+ * SCRUM-772 — what the till sends when staff approve the Thai rate by hand.
+ * Who approved it and the branch are the session's; nothing here names them.
+ */
+export interface SaleTierApprovalBody {
+  /** One press on Approve, however many HTTP attempts it takes. */
+  actionId: string;
+  branchId: string;
+  toTier: string;
+  /** One of `TIER_APPROVAL_REASONS`. */
+  reason: string;
+  /** What staff typed when the reason is Other. */
+  reasonText?: string;
+  /** An optional note. */
+  note?: string;
+}
+
 /** The claim as the platform answers it. The tier on it is the platform's. */
 export interface ApiTierClaim {
   id: string;
@@ -737,6 +755,16 @@ export const salesApi = {
   tierClaim: (body: SaleTierClaimBody) =>
     api.post<{ claim: ApiTierClaim }>('/sales/tier-claims', body, {
       idempotencyKey: `tier-claim:${body.actionId}`,
+      headers: { 'x-oto-action-id': body.actionId },
+    }),
+  /**
+   * SCRUM-772 — the Thai rate approved by hand for this sale only. Online
+   * only, like the document check above: the box keeps no tier claims, and a
+   * rate the platform has not recorded is one it will not let anybody charge.
+   */
+  tierApproval: (body: SaleTierApprovalBody) =>
+    api.post<ApiResponse<'/sales/tier-approvals', 'post'>>('/sales/tier-approvals', body, {
+      idempotencyKey: `tier-approval:${body.actionId}`,
       headers: { 'x-oto-action-id': body.actionId },
     }),
   /**
@@ -1514,6 +1542,34 @@ export async function claimVerifiedTier(input: {
     toTier: input.tier,
     evidenceType: input.proofType,
     ...(input.expiresAt ? { evidenceExpiresAt: input.expiresAt } : {}),
+    ...(input.note ? { note: input.note } : {}),
+  });
+  return actionId;
+}
+
+/**
+ * SCRUM-772 — record the Thai rate approved by hand, and get back the action
+ * id the cart carries from here on, exactly as a document check does
+ * (`claimVerifiedTier`). Awaited for the same reason: a cart quoted before
+ * the approval lands is quoted at the tourist rate. It throws on refusal.
+ *
+ * Nothing is written to the member: the approval prices this sale only.
+ */
+export async function approveTierByHand(input: {
+  branchId: string;
+  tier: string;
+  reason: string;
+  /** What staff typed for Other. */
+  reasonText?: string;
+  note?: string;
+}): Promise<string> {
+  const actionId = newId();
+  await salesApi.tierApproval({
+    actionId,
+    branchId: input.branchId,
+    toTier: input.tier,
+    reason: input.reason,
+    ...(input.reasonText ? { reasonText: input.reasonText } : {}),
     ...(input.note ? { note: input.note } : {}),
   });
   return actionId;

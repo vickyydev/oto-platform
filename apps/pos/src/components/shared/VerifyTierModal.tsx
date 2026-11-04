@@ -22,7 +22,13 @@ import { isDefaultTier, tierLabel } from '@/lib/membership';
 import { useOperator } from '@/auth/OperatorContext';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { BadgeCheck, CalendarClock, Loader2, ShieldCheck, ShieldOff, UserCheck } from 'lucide-react';
+import { BadgeCheck, CalendarClock, Hand, Loader2, ShieldCheck, ShieldOff, UserCheck } from 'lucide-react';
+import {
+  EMPTY_TIER_APPROVAL,
+  TierApprovalPanel,
+  type TierApprovalDraft,
+} from '@/components/shared/TierApprovalPanel';
+import { isTierApprovalTier, tierApprovalErrorText, type TierApprovalChoice } from '@/lib/tierApproval';
 
 interface VerifyTierModalProps {
   open: boolean;
@@ -34,6 +40,13 @@ interface VerifyTierModalProps {
   operatorId: string;
   operatorName: string;
   onConfirm: (result: { member: Member | null; verification: TierVerification }) => void;
+  /**
+   * SCRUM-772 — "Special case, approve by hand": records the Thai rate for
+   * this sale only and applies it. Resolves once the platform has recorded
+   * it; a rejection keeps the modal open with the reason. The button shows
+   * only when this is given and the tier is one a hand approval may apply.
+   */
+  onApproveByHand?: (choice: TierApprovalChoice) => Promise<void>;
 }
 
 /** Members loaded from the platform API carry UUID ids, and only those can be
@@ -56,6 +69,7 @@ export function VerifyTierModal({
   operatorId,
   operatorName,
   onConfirm,
+  onApproveByHand,
 }: VerifyTierModalProps) {
   const [proofType, setProofType] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState('');
@@ -65,6 +79,10 @@ export function VerifyTierModal({
   const [revoking, setRevoking] = useState(false);
   const [revokeReason, setRevokeReason] = useState('');
   const [revokeError, setRevokeError] = useState<string | null>(null);
+  /** SCRUM-772 — the special-case step, in place of the document list. */
+  const [approving, setApproving] = useState(false);
+  const [approvalDraft, setApprovalDraft] = useState<TierApprovalDraft>(EMPTY_TIER_APPROVAL);
+  const [approvalError, setApprovalError] = useState<string | null>(null);
   const { can } = useOperator();
   // A fixed built-in list — no route serves it (see `lib/tierProof.ts`). The
   // verification it produces is written to the platform, not to the fixtures.
@@ -80,8 +98,32 @@ export function VerifyTierModal({
       setRevoking(false);
       setRevokeReason('');
       setRevokeError(null);
+      setApproving(false);
+      setApprovalDraft(EMPTY_TIER_APPROVAL);
+      setApprovalError(null);
     }
   }, [open]);
+
+  /**
+   * SCRUM-772 — the Thai rate approved by hand. The staff member on the till
+   * approves alone, so the customer does not wait; the caller records it on
+   * the platform for this sale only and applies the rate. Nothing is written
+   * to the member here or there: the next visit asks again.
+   */
+  const mayApproveByHand = !!onApproveByHand && isTierApprovalTier(tier);
+  const handleApproveByHand = async (choice: TierApprovalChoice) => {
+    if (!onApproveByHand) return;
+    setBusy(true);
+    setApprovalError(null);
+    try {
+      await onApproveByHand(choice);
+      onOpenChange(false);
+    } catch (err) {
+      setApprovalError(tierApprovalErrorText(err));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   /**
    * SCRUM-241 — the rate this member already holds, and the way to end it.
@@ -232,13 +274,34 @@ export function VerifyTierModal({
             Verify {tierLabel(tier)} rate
           </DialogTitle>
           <DialogDescription>
-            {member
-              ? 'Saved to the member profile so they won’t be asked again.'
-              : 'Saved to their profile once they enter their details.'}
+            {approving
+              ? 'For this sale only. The member profile is not marked, so the next visit asks again.'
+              : member
+                ? 'Saved to the member profile so they won’t be asked again.'
+                : 'Saved to their profile once they enter their details.'}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5 py-2">
+        {approving && (
+          <div className="py-2">
+            <TierApprovalPanel
+              tierName={tierLabel(tier)}
+              tier={tier}
+              approverName={operatorName}
+              draft={approvalDraft}
+              onDraftChange={setApprovalDraft}
+              busy={busy}
+              error={approvalError}
+              onBack={() => {
+                setApproving(false);
+                setApprovalError(null);
+              }}
+              onApprove={(choice) => void handleApproveByHand(choice)}
+            />
+          </div>
+        )}
+
+        <div className={approving ? 'hidden' : 'space-y-5 py-2'}>
           {member && (
             <div className="flex items-center gap-3 rounded-lg bg-muted p-4">
               <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center text-primary font-bold shrink-0">
@@ -412,6 +475,20 @@ export function VerifyTierModal({
                 ? `Verify ${tierLabel(tier)} — ${choiceLabel}`
                 : 'Choose proof to verify'}
           </Button>
+
+          {/* SCRUM-772 — beside the document check, never instead of it. */}
+          {mayApproveByHand && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-12 gap-2"
+              disabled={busy}
+              onClick={() => setApproving(true)}
+            >
+              <Hand className="w-4 h-4" />
+              Special case, approve by hand
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

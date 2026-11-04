@@ -35,6 +35,7 @@ import {
 } from '@/api/history';
 import { correctionFromSale, setCorrectedOrder } from '@/lib/correctedOrder';
 import { pricedOnDocument } from '@/lib/tierProof';
+import { approvedByHandLine } from '@/lib/tierApproval';
 import { membersApi } from '@/api/platform';
 import { apiMemberToMember } from '@/api/mappers';
 import { scanBand } from '@/api/wallet';
@@ -1381,8 +1382,13 @@ export function SaleDetail(props: SaleDetailProps) {
                     an element here would be a second flex item and split the
                     row into two columns. Text stays in the run beside the tier
                     it is explaining. */}
+                {/* SCRUM-772 — a rate approved by hand says who and why
+                    instead of a document: "Thai rate approved by hand by
+                    Som: Thai child with a foreign parent". */}
                 {tierClaim
-                  ? ` · Priced on ${pricedOnDocument(tierClaim.documentKind, tierClaim.documentNote)}, checked ${fmt(tierClaim.verifiedAt)}`
+                  ? tierClaim.approval
+                    ? ` · ${approvedByHandLine(tierClaim)}, ${fmt(tierClaim.verifiedAt)}`
+                    : ` · Priced on ${pricedOnDocument(tierClaim.documentKind, tierClaim.documentNote)}, checked ${fmt(tierClaim.verifiedAt)}`
                   : ''}
               </div>
             </div>
