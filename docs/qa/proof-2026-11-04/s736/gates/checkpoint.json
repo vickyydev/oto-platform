@@ -1,0 +1,167 @@
+{
+  "at": "2026-11-04T07:50:29.944Z",
+  "runtimeSource": "936cfbbe3f9062d955d3afdbdae26f38bfaeff89",
+  "api": [
+    {
+      "shard": 1,
+      "key": "api1",
+      "sha": "936cfbbe3f9062d955d3afdbdae26f38bfaeff89",
+      "start": "2026-11-04T07:06:53.859Z",
+      "end": "2026-11-04T07:41:50.441Z",
+      "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s736-api-gate.mts --shard=1/3 --reporter=default --reporter=json --outputFile=C:/oto-lanes/s736-rerun1-api1.json",
+      "log": "C:/oto-lanes/s736-rerun1-api1.log",
+      "exitCode": 1,
+      "signal": null,
+      "reportSha256": "1b84a365cfb36de788cd312b055c58facd059cae7bd43f881e1099e1aec1caec",
+      "logSha256": "402d2b2a5d8e5c045da1765ebcfa363bf0fbc6e7fdd864faebb1d3b48d8eb63c",
+      "passed": 2174,
+      "failed": 2,
+      "pending": 108,
+      "todo": 0,
+      "failures": [
+        {
+          "file": "apps/api/test/routes-guarded.test.ts",
+          "tests": [
+            "route guards (S2-01b) the box surface is only what it should be, and is credential-guarded",
+            "route guards (S2-01b) every box route refuses a caller with no credential"
+          ]
+        }
+      ]
+    },
+    {
+      "shard": 2,
+      "key": "api2",
+      "sha": "936cfbbe3f9062d955d3afdbdae26f38bfaeff89",
+      "start": "2026-11-04T07:06:53.859Z",
+      "end": "2026-11-04T07:40:56.591Z",
+      "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s736-api-gate.mts --shard=2/3 --reporter=default --reporter=json --outputFile=C:/oto-lanes/s736-rerun1-api2.json",
+      "log": "C:/oto-lanes/s736-rerun1-api2.log",
+      "exitCode": 1,
+      "signal": null,
+      "reportSha256": "511f759a7cefa0eef7d7cd7ec94732bcf60a88e177c18e5085d560c833973d3a",
+      "logSha256": "d34d6e474e25eca094a260006207f1e7347c8fd5d05226d8b12ef30a542b9dd3",
+      "passed": 2142,
+      "failed": 2,
+      "pending": 172,
+      "todo": 3,
+      "failures": [
+        {
+          "file": "apps/api/test/route-write-conformance.test.ts",
+          "tests": [
+            "the idempotency key (SCRUM-291) only these mutating routes are outside the replay store",
+            "the idempotency key (SCRUM-291) every other mutating route that has a session is therefore covered"
+          ]
+        }
+      ]
+    },
+    {
+      "shard": 3,
+      "key": "api3",
+      "sha": "936cfbbe3f9062d955d3afdbdae26f38bfaeff89",
+      "start": "2026-11-04T07:06:53.859Z",
+      "end": "2026-11-04T07:42:12.418Z",
+      "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s736-api-gate.mts --shard=3/3 --reporter=default --reporter=json --outputFile=C:/oto-lanes/s736-rerun1-api3.json",
+      "log": "C:/oto-lanes/s736-rerun1-api3.log",
+      "exitCode": 0,
+      "signal": null,
+      "reportSha256": "e58e1022a04c505af432779a4ec86e1f85a61308b1faf4fe58ae3108f4c75b8b",
+      "logSha256": "6bd4a808c8c3079d101685042eb99a4c2e8e63d5ea0e536c1fc0532c698d0e46",
+      "passed": 1952,
+      "failed": 0,
+      "pending": 121,
+      "todo": 1,
+      "failures": []
+    }
+  ],
+  "gates": [
+    {
+      "key": "types",
+      "sha": "936cfbbe3f9062d955d3afdbdae26f38bfaeff89",
+      "start": "2026-11-04T06:56:23.266Z",
+      "end": "2026-11-04T06:58:34.101Z",
+      "command": "pnpm typecheck; pnpm lint; pnpm api-types:check",
+      "log": "C:/oto-lanes/s736-full-types.log",
+      "exitCode": 0,
+      "signal": null,
+      "logSha256": "4edd3267fb5b18933b8dfbdfd413d666ea4ebd251eee84b06a0ff6445dc62c04"
+    },
+    {
+      "key": "build",
+      "sha": "936cfbbe3f9062d955d3afdbdae26f38bfaeff89",
+      "start": "2026-11-04T06:58:35.306Z",
+      "end": "2026-11-04T06:59:06.713Z",
+      "command": "VITE_BOX_BRIDGE_ZONE=localhost VITE_BOX_BRIDGE_ALLOW_LOOPBACK=true pnpm build; pnpm --filter @oto/pos build:display; pnpm --filter @oto/box-agent build:runner",
+      "log": "C:/oto-lanes/s736-full-build.log",
+      "exitCode": 0,
+      "signal": null,
+      "logSha256": "3d2ebd817b58455576157575e2aa0c047fa28611266da1501957e5407ee9848c"
+    },
+    {
+      "key": "tools",
+      "sha": "936cfbbe3f9062d955d3afdbdae26f38bfaeff89",
+      "start": "2026-11-04T07:02:57.903Z",
+      "end": "2026-11-04T07:03:01.452Z",
+      "command": "node scripts/check-no-mock-members.mjs; node --test scripts/inbox/whatsapp-history.test.mjs; node apps/oto-app/server/lib/telemetry/check-sync.mjs; for f in scripts/pi/*.sh; do bash -n \"$f\"; done; /c/oto-lanes/s713-shellcheck/shellcheck.exe --severity=error scripts/pi/*.sh",
+      "log": "C:/oto-lanes/s736-full-tools.log",
+      "exitCode": 0,
+      "signal": null,
+      "logSha256": "e55f303a4979005a59adfad4549658723b95e052c300b7092c865603dab5f35d"
+    },
+    {
+      "sha": "968807651e70654aa35a58ab0a3ecddf78023be1",
+      "runtimeSource": "936cfbbe3f9062d955d3afdbdae26f38bfaeff89",
+      "start": "2026-11-04T07:24:49.390Z",
+      "commands": [
+        "pnpm --filter @oto/print test --maxWorkers=1 --minWorkers=1",
+        "pnpm --filter @oto/shared test --maxWorkers=1 --minWorkers=1",
+        "pnpm --filter @oto/api-types test --maxWorkers=1 --minWorkers=1",
+        "pnpm --filter @oto/assistant test --maxWorkers=1 --minWorkers=1",
+        "pnpm --filter @oto/db test --maxWorkers=1 --minWorkers=1",
+        "pnpm --filter @oto/messaging test --maxWorkers=1 --minWorkers=1",
+        "pnpm --filter @oto/payments-2c2p test --maxWorkers=1 --minWorkers=1",
+        "pnpm --filter @oto/telemetry test --maxWorkers=1 --minWorkers=1",
+        "pnpm --filter @oto/admin-screens test --maxWorkers=1 --minWorkers=1",
+        "pnpm --filter @oto/console test --maxWorkers=1 --minWorkers=1",
+        "pnpm --filter @oto/inbox test --maxWorkers=1 --minWorkers=1",
+        "pnpm --filter @oto/launcher test --maxWorkers=1 --minWorkers=1",
+        "pnpm --filter @oto/pos test --maxWorkers=1 --minWorkers=1",
+        "pnpm --filter @oto/booth test",
+        "pnpm --filter @oto/box-agent test --test-concurrency=1"
+      ],
+      "log": "C:/oto-lanes/s736-workspace-serial.log",
+      "output": "direct file descriptor, unpiped",
+      "end": "2026-11-04T07:47:50.686Z",
+      "exitCode": 0,
+      "signal": null,
+      "logSha256": "48541b3a22707470176c491d65f45db3353d47740fe9a97c27ec14cc67d0a949"
+    },
+    {
+      "key": "smoke",
+      "sha": "968807651e70654aa35a58ab0a3ecddf78023be1",
+      "start": "2026-11-04T07:44:58.907Z",
+      "end": "2026-11-04T07:47:28.462Z",
+      "command": "VITE_BOX_BRIDGE_ZONE=localhost VITE_BOX_BRIDGE_ALLOW_LOOPBACK=true POS_E2E_BROWSER=msedge POS_E2E_BUILT=1 pnpm --filter @oto/pos e2e",
+      "log": "C:/oto-lanes/s736-rerun1-smoke.log",
+      "exitCode": 0,
+      "signal": null,
+      "logSha256": "0f5c9875d1a8155dd9eaa702f8bb0641393c12616fffe533cd94104d4d98232a"
+    },
+    {
+      "sha": "968807651e70654aa35a58ab0a3ecddf78023be1",
+      "localChanges": [
+        "test/route-write-conformance.test.ts",
+        "test/routes-guarded.test.ts"
+      ],
+      "start": "2026-11-04T07:43:18.729Z",
+      "end": "2026-11-04T07:44:20.667Z",
+      "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s736-api-gate.mts test/route-write-conformance.test.ts test/routes-guarded.test.ts test/s736-scanner-relay-review.test.ts --reporter=default --reporter=json --outputFile=C:/oto-lanes/s736-conformance.json; pnpm --filter @oto/api exec eslint test/route-write-conformance.test.ts test/routes-guarded.test.ts",
+      "log": "C:/oto-lanes/s736-conformance.log",
+      "exitCode": 0,
+      "signal": null,
+      "logSha256": "1967916aaf67a083848ffee07846ed8d1cd8d0a6acbbef3ebe13caf4ff648d99"
+    }
+  ],
+  "interpretation": "The complete API run found only four inventory assertions in two files. Deliberate additions name the box-authenticated scan route and raise its exact count; the two whole inventory files plus scanner review then pass 59 tests. No runtime changes or guards weakened. Complete Console browser battery and final rebase checks remain.",
+  "normalPosSmoke": 7,
+  "boxTests": 888
+}

@@ -1,0 +1,38 @@
+{
+  "openedAt": "2026-11-04T07:50:29.955Z",
+  "images": [
+    {
+      "name": "s736-online-band.png",
+      "sha256": "0126439371bfc243edd0d2b59896c090e5b00cb78a5543055fe03220f139033e"
+    },
+    {
+      "name": "s736-online-voucher.png",
+      "sha256": "1e04ad17acf8c210dccdeb8a1d734afa68923eb2e078c6120dace8ae863651f7"
+    },
+    {
+      "name": "s736-online-booking.png",
+      "sha256": "1f7c8a997873e9e35ef0bfcaec2b43a724f9cdeaabb05c38034dca57d3f4d161"
+    },
+    {
+      "name": "s736-online-shop-band.png",
+      "sha256": "3448a7b4a302658f31f646c954a5fcfebe6a237abe8547577fa633b4cf1364be"
+    },
+    {
+      "name": "s736-offline-band.png",
+      "sha256": "0126439371bfc243edd0d2b59896c090e5b00cb78a5543055fe03220f139033e"
+    },
+    {
+      "name": "s736-offline-voucher.png",
+      "sha256": "87156e6d236e831f8edbb5d68b86c62655f60affd4568a9b98486e5f14d4920b"
+    },
+    {
+      "name": "s736-offline-booking.png",
+      "sha256": "e232a3c588039cd52e480483acb36670185d6ebc40da68f1de4965ea5854d590"
+    },
+    {
+      "name": "s736-offline-shop-band.png",
+      "sha256": "3448a7b4a302658f31f646c954a5fcfebe6a237abe8547577fa633b4cf1364be"
+    }
+  ],
+  "notes": "All eight local images opened: child allergy and name, masked voucher key and credit, booking dialog, shop child; online and offline. No park hardware proof."
+}
