@@ -1,0 +1,15 @@
+{
+  "at": "2026-11-04T02:17:13.028Z",
+  "source": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+  "branch": "lane/codex-tender-display-20261104-r6",
+  "acceptedSource": "cbe56b17d2a0fcecf40e09e997ea1f5fd7fa764f",
+  "applicationAndTestFilesIdentical": true,
+  "ci": {
+    "run": 41759572637,
+    "statusAtCheckpoint": "in_progress",
+    "url": "https://github.com/vickyydev/oto-platform/actions/runs/41759572637"
+  },
+  "jiraStatus": "Testing",
+  "stagingProof": "pending",
+  "window": "held by SCRUM-738"
+}
