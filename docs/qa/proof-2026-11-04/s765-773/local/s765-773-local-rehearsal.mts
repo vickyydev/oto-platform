@@ -11,6 +11,10 @@
  *   SCRUM-773 — the verify-tier step offers Driving licence where Residence
  *   certificate was, and shows the expiry date under Other; a walk-in claim
  *   on Other carries the date to the platform.
+ *   SCRUM-765 again, at that Thai rate — a Full Day Pass for a kid and the
+ *   free adult, with socks: nobody earns a wallet, so the payment screen's
+ *   "Credit Grants to Print" card shows only because the receipt carries the
+ *   socks to collect; the receipt and the bands print, no socks slip.
  *
  * Run from apps/api with: pnpm exec tsx <this file>; S765_LANE names the checkout.
  */
@@ -116,73 +120,92 @@ try {
     await expect(page.getByText('Membership Check', { exact: true })).toBeVisible();
   };
 
-  // --- SCRUM-765: a ticket sale with socks, paid in cash ---------------------
-  r.phase = 'socks sale'; save();
-  await openTill();
-  await page.getByRole('button', { name: 'Skip — walk-in (Tourist)' }).click();
-  await page.getByRole('heading', { name: 'Tourist', exact: true }).click();
-  await page.getByRole('heading', { name: '2 Hours Play', exact: true }).click();
-  await expect(page.getByRole('heading', { name: /^Configure:/ })).toBeVisible();
-  // The add-ons on the configure step: the way the till sells socks.
-  await page.getByRole('button', { name: 'Add one Regular Socks' }).first().click();
-  await page.getByRole('button', { name: 'Add one Regular Socks' }).first().click();
-  await expect(page.getByText('Regular Socks × 2')).toBeVisible();
-  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  // --- SCRUM-765: ticket sales with socks, paid in cash ----------------------
+  // Socks are sold from the ticket's add-ons on the configure step.
+  const startSale = async () => {
+    await openTill();
+    await page.getByRole('button', { name: 'Skip — walk-in (Tourist)' }).click();
+    await page.getByRole('heading', { name: 'Tourist', exact: true }).click();
+    await page.getByRole('heading', { name: '2 Hours Play', exact: true }).click();
+    await expect(page.getByRole('heading', { name: /^Configure:/ })).toBeVisible();
+  };
+  const addTwoPairsOfSocks = async () => {
+    await page.getByRole('button', { name: 'Add one Regular Socks' }).first().click();
+    await page.getByRole('button', { name: 'Add one Regular Socks' }).first().click();
+    await expect(page.getByText('Regular Socks × 2')).toBeVisible();
+  };
   const payButton = page.getByRole('button', { name: /^Pay ฿/ });
+  const payCashAndRead = async () => {
+    await payButton.click();
+    const done = page.getByRole('button', { name: 'Done', exact: true });
+    if (await done.isVisible().catch(() => false)) await done.click();
+    await expect(page.getByRole('heading', { name: 'Amount Due' })).toBeVisible();
+    await page.getByRole('heading', { name: 'Cash' }).click();
+    await page.getByRole('button', { name: 'Confirm Payment Received' }).click();
+    await expect(page.getByRole('heading', { name: 'Payment Successful' })).toBeVisible();
+    const listed = await page.request.get(`${origin}/api/sales?limit=1`);
+    const saleId = (await listed.json()).sales[0].id as string;
+    let detail: any;
+    for (let i = 0; i < 40; i += 1) {
+      detail = await (await page.request.get(`${origin}/api/sales/${saleId}`)).json();
+      if ((detail.printJobs ?? []).length > 0 && detail.printJobs.every((j: any) => j.status !== 'queued')) break;
+      await sleep(500);
+    }
+    return { saleId, detail };
+  };
+  const [socksProduct] = await ctx.db.select({ id: DB.product.id }).from(DB.product).where(eq(DB.product.code, 'AO-SOCKS'));
+  const saleRecord = (saleId: string, detail: any) => {
+    const socks = detail.lines.filter((l: any) => l.kind === 'socks' || l.productId === socksProduct?.id);
+    const jobs = (detail.printJobs ?? []).filter((j: any) => j.reprintOf === null).map((j: any) => ({ kind: j.kind, status: j.status, device: j.deviceLabel ?? null }));
+    return { id: saleId, receiptNumber: detail.sale.receiptNumber, status: detail.sale.status, socksQuantity: socks.reduce((n: number, l: any) => n + l.quantity, 0),
+      walletGrants: (detail.grants ?? []).length,
+      lines: detail.lines.map((l: any) => ({ kind: l.kind, label: l.label, quantity: l.quantity })), printJobs: jobs };
+  };
+  // What each simulated printer drew since `from`, as PNGs; the paper count per printer.
+  const drawPrintouts = async (tag: string, from: { receipt: number; kids: number; adult: number }) => {
+    const counts: Record<string, number> = {};
+    for (const [name, device, since] of [['receipt-printer', receiptPrinter, from.receipt], ['kids-band-printer', kidsPrinter, from.kids], ['adult-band-printer', adultPrinter, from.adult]] as const) {
+      const fresh = (await printoutsOf((device as any).deviceId)).filter((p) => p.seq > (since as number));
+      // A cash sale also opens the drawer through the receipt printer: a session
+      // with no dots and no cut, which the simulator keeps as an empty printout.
+      const paper = fresh.filter((p) => p.heightDots > 0);
+      for (const p of paper) {
+        const png = await admin('GET', `/devices/${(device as any).deviceId}/printouts/${p.seq}/preview.png`);
+        const file = `${tag}-${name}-${p.seq}.png`;
+        writeFileSync(`${out}/${file}`, png.rawPayload);
+        r.printouts.push({ sale: tag, printer: (device as any).label, seq: p.seq, heightDots: p.heightDots, truncated: p.truncated, file });
+      }
+      counts[name] = paper.length;
+      if (name === 'receipt-printer') counts['receipt-printer-empty-sessions'] = fresh.length - paper.length;
+    }
+    save();
+    return counts;
+  };
+  const creditCard = page.getByRole('heading', { name: 'Credit Grants to Print', exact: true });
+
+  // A kid and an adult on 2 Hours Play, with two pairs of socks.
+  r.phase = 'socks sale'; save();
+  await startSale();
+  await addTwoPairsOfSocks();
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(payButton).toBeVisible();
   await shot('s765-order-with-two-pairs-of-socks', page);
-  await payButton.click();
-  const done = page.getByRole('button', { name: 'Done', exact: true });
-  if (await done.isVisible().catch(() => false)) await done.click();
-  await expect(page.getByRole('heading', { name: 'Amount Due' })).toBeVisible();
-  await page.getByRole('heading', { name: 'Cash' }).click();
-  await page.getByRole('button', { name: 'Confirm Payment Received' }).click();
-  await expect(page.getByRole('heading', { name: 'Payment Successful' })).toBeVisible();
-
-  const listed = await page.request.get(`${origin}/api/sales?limit=1`);
-  const saleId = (await listed.json()).sales[0].id as string;
-  let detail: any;
-  for (let i = 0; i < 40; i += 1) {
-    detail = await (await page.request.get(`${origin}/api/sales/${saleId}`)).json();
-    if ((detail.printJobs ?? []).length > 0 && detail.printJobs.every((j: any) => j.status !== 'queued')) break;
-    await sleep(500);
-  }
-  const [socksProduct] = await ctx.db.select({ id: DB.product.id }).from(DB.product).where(eq(DB.product.code, 'AO-SOCKS'));
-  const socks = detail.lines.filter((l: any) => l.kind === 'socks' || l.productId === socksProduct?.id);
-  const jobs = (detail.printJobs ?? []).filter((j: any) => j.reprintOf === null).map((j: any) => ({ kind: j.kind, status: j.status, device: j.deviceLabel ?? null }));
-  r.sale = { id: saleId, receiptNumber: detail.sale.receiptNumber, status: detail.sale.status, socksQuantity: socks.reduce((n: number, l: any) => n + l.quantity, 0),
-    lines: detail.lines.map((l: any) => ({ kind: l.kind, label: l.label, quantity: l.quantity })), printJobs: jobs };
+  const first = await payCashAndRead();
+  r.sale = saleRecord(first.saleId, first.detail);
   save();
-  assert.equal(detail.sale.status, 'finalised');
+  assert.equal(first.detail.sale.status, 'finalised');
   assert.equal(r.sale.socksQuantity, 2, 'the sale carries two pairs of socks');
-  assert.deepEqual(jobs.map((j: any) => j.kind).sort(), ['adult_wristband', 'kids_wristband', 'receipt']);
-  assert.ok(jobs.every((j: any) => j.status === 'printed'), `print jobs: ${JSON.stringify(jobs)}`);
+  assert.deepEqual(r.sale.printJobs.map((j: any) => j.kind).sort(), ['adult_wristband', 'kids_wristband', 'receipt']);
+  assert.ok(r.sale.printJobs.every((j: any) => j.status === 'printed'), `print jobs: ${JSON.stringify(r.sale.printJobs)}`);
+  await expect(creditCard).toBeVisible();
   await sleep(1500);
   await shot('s765-payment-successful-receipt-and-bands-only', page);
-
-  // What each simulated printer drew for the sale, as PNGs.
   r.phase = 'printouts'; save();
-  for (const [name, device, from] of [['receipt-printer', receiptPrinter, before.receipt], ['kids-band-printer', kidsPrinter, before.kids], ['adult-band-printer', adultPrinter, before.adult]] as const) {
-    const fresh = (await printoutsOf((device as any).deviceId)).filter((p) => p.seq > (from as number));
-    // A cash sale also opens the drawer through the receipt printer: a session
-    // with no dots and no cut, which the simulator keeps as an empty printout.
-    const paper = fresh.filter((p) => p.heightDots > 0);
-    if (fresh.length > paper.length) {
-      const events = (await admin('GET', `/devices/${(device as any).deviceId}/printouts?limit=20`)).json().events as any[];
-      r.receiptPrinterEvents = events.map((e) => e.kind);
-    }
-    for (const p of paper) {
-      const png = await admin('GET', `/devices/${(device as any).deviceId}/printouts/${p.seq}/preview.png`);
-      const file = `s765-${name}-${p.seq}.png`;
-      writeFileSync(`${out}/${file}`, png.rawPayload);
-      r.printouts.push({ printer: (device as any).label, seq: p.seq, heightDots: p.heightDots, truncated: p.truncated, file });
-    }
-    if (name === 'receipt-printer') {
-      r.receiptPrinterNewPaper = paper.length;
-      r.receiptPrinterEmptySessions = fresh.length - paper.length;
-      assert.equal(paper.length, 1, 'the receipt printer printed the receipt and no socks slip');
-    }
-  }
+  const firstPaper = await drawPrintouts('s765', before);
+  r.salePaper = firstPaper;
+  assert.equal(firstPaper['receipt-printer'], 1, 'the receipt printer printed the receipt and no socks slip');
+  assert.equal(firstPaper['kids-band-printer'], 1);
+  assert.equal(firstPaper['adult-band-printer'], 1);
   r.cases.push({ name: 'SCRUM-765 socks sale prints the receipt and the bands, no socks slip', passed: true });
   save();
 
@@ -219,6 +242,48 @@ try {
   await sleep(800);
   await shot('s773-thai-rate-on-other-with-expiry', page);
   r.cases.push({ name: 'SCRUM-773 verify step offers Driving licence and takes an expiry on Other', passed: true });
+
+  // --- SCRUM-765: socks on a sale where nobody earns a wallet ----------------
+  // The first sale's adult earns a wallet (2 Hours Play credits adults at full
+  // price), and a wallet alone shows the "Credit Grants to Print" card. Here,
+  // at the Thai rate just verified, the Full Day Pass's adult is the one free
+  // adult, whose credit is read from a price of nothing, and kids earn none:
+  // so the card shows only because the receipt carries the socks to collect.
+  r.phase = 'no-wallet socks sale'; save();
+  const beforeNoWallet = { receipt: await seqBefore(receiptPrinter.deviceId), kids: await seqBefore(kidsPrinter.deviceId), adult: await seqBefore(adultPrinter.deviceId) };
+  await page.getByRole('heading', { name: 'Full Day Pass', exact: true }).click();
+  await expect(page.getByRole('heading', { name: /^Configure:/ })).toBeVisible();
+  await addTwoPairsOfSocks();
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(payButton).toBeVisible();
+  await shot('s765-thai-full-day-order-with-two-pairs-of-socks', page);
+  const second = await payCashAndRead();
+  r.noWalletSale = saleRecord(second.saleId, second.detail);
+  save();
+  assert.equal(second.detail.sale.status, 'finalised');
+  assert.equal(r.noWalletSale.socksQuantity, 2, 'the sale carries two pairs of socks');
+  assert.ok(r.noWalletSale.lines.some((l: any) => l.kind === 'adults_free'), 'the adult is the free adult');
+  assert.ok(!r.noWalletSale.lines.some((l: any) => l.kind === 'adults_paid'), 'no paid adult on the sale');
+  assert.equal(r.noWalletSale.walletGrants, 0, 'nobody on the sale earns a wallet');
+  assert.deepEqual(r.noWalletSale.printJobs.map((j: any) => j.kind).sort(), ['adult_wristband', 'kids_wristband', 'receipt']);
+  assert.ok(r.noWalletSale.printJobs.every((j: any) => j.status === 'printed'), `print jobs: ${JSON.stringify(r.noWalletSale.printJobs)}`);
+  // The card shows, with the socks as its one row and no credit row.
+  await expect(creditCard).toBeVisible();
+  const card = page.locator('div.flex-col', { has: creditCard }).last();
+  await expect(card.getByText('1 total', { exact: true })).toBeVisible();
+  await expect(card.getByText('Regular Socks', { exact: true })).toBeVisible();
+  await expect(card.getByText('to collect', { exact: true })).toBeVisible();
+  await expect(card.getByText('credit', { exact: true })).toHaveCount(0);
+  r.noWalletCard = { shown: true, total: '1 total', rows: ['Regular Socks ×2 to collect'] };
+  await sleep(1500);
+  await shot('s765-no-wallet-payment-successful-socks-card', page);
+  const noWalletPaper = await drawPrintouts('s765-no-wallet', beforeNoWallet);
+  r.noWalletSalePaper = noWalletPaper;
+  assert.equal(noWalletPaper['receipt-printer'], 1, 'the receipt printer printed the receipt and no socks slip');
+  assert.equal(noWalletPaper['kids-band-printer'], 1);
+  assert.equal(noWalletPaper['adult-band-printer'], 1);
+  r.cases.push({ name: 'SCRUM-765 socks sale with no wallet: the card shows the socks; receipt and bands only', passed: true });
+  save();
 
   r.smsCount = ctx.smsLog.length;
   assert.equal(ctx.smsLog.length, 0);
