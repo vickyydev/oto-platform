@@ -17,6 +17,21 @@ ci job failed on the deployment-column inventory that 4fa176286 corrected.
 The CI run for the head carrying the barcode change is reported in the
 hand-back to the planner by its full SHA.
 
+### Rebased onto main dce00543e for landing (4 November, 18:05 Bangkok)
+
+Main moved by the SCRUM-747/746 landing (shared/payments.ts, the payments
+gateway, tillVoucher.ts, OrderStation.tsx and their tests) and its proof and
+STATUS commits. None of those files is touched by this lane. The rebase
+conflicted only on the prepended STATUS and handover blocks, merged keeping
+both sides, newest first. Every file outside docs/ equals the reviewed head
+ce4c887ae plus main's own changes. pnpm api-types:generate wrote no difference
+and api-types:check matches. Gates on the rebased tree, all exit 0, output
+read: typecheck of @oto/shared, @oto/box-agent, @oto/api-types, @oto/api and
+@oto/pos; eslint on every changed file (no errors, one warning that the
+generated openapi.ts is ignored); box agent whole suite 891/891; shared 59
+files, 896/896; api 13 files with --pool=forks (the 12 above plus main's
+s747-till-code-review) 205/205; POS whole suite 140 files, 1966/1966.
+
 ### Rebased onto main 3404c959f (4 November, 16:55 Bangkok)
 
 Main moved by three documentation and proof commits only (76f507574,
