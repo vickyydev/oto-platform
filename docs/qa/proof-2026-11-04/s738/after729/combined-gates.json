@@ -1,0 +1,155 @@
+{
+  "at": "2026-11-04T00:24:04.975Z",
+  "source": "7eb53c7e5b6ac1b83986189e4a48452c0d3bd167",
+  "baseMain": "690d44dbfa31d8a3c487dfb3def0be9dfa3e105c",
+  "pos": {
+    "files": 135,
+    "passed": 1907
+  },
+  "api": {
+    "wholeFiles": 7,
+    "passed": 136
+  },
+  "remainingWorkspace": {
+    "tasks": 14,
+    "passed": 14,
+    "boxPassed": 880,
+    "consolePassed": 589,
+    "consoleTodo": 3,
+    "sharedPassed": 886
+  },
+  "typesAndLint": true,
+  "contractsMatch": true,
+  "build": true,
+  "firstWorkspaceFailureRetained": true,
+  "executionChange": "One workspace package at a time; same tests, timeout and assertion.",
+  "native": {
+    "run": "mw1dfav1",
+    "cases": 4,
+    "independentBrowserProcesses": true,
+    "imagesOpenedAt": "2026-11-04T00:24:04.976Z",
+    "openedImages": [
+      "till-pass-pending-display.png",
+      "party-balance-pending-display.png",
+      "dropoff-pass-pending-display.png",
+      "mobile-party-balance-pending-display.png",
+      "till-pass-restored-display.png",
+      "party-balance-restored-display.png",
+      "signed-out-staff.png",
+      "signed-out-display.png"
+    ],
+    "readback": {
+      "at": "2026-11-04T00:21:19.804Z",
+      "counts": {
+        "sales": 2,
+        "party_payments": 2,
+        "remaining_lease": null
+      },
+      "smsSent": 0
+    },
+    "cleanup": {
+      "at": "2026-11-04T00:21:20.704Z",
+      "dropped": true
+    }
+  },
+  "logs": [
+    {
+      "name": "workspace",
+      "rawSha256": "894957c3a85b9089d82bc60f4294f943f72b60f66f3cf5f505406ed17d38705a"
+    },
+    {
+      "name": "workspace-serial",
+      "rawSha256": "52d1e72eb01718855e68ca97f7436ad6d9d657978d84d99dfcdd341df6839394"
+    },
+    {
+      "name": "pos-types",
+      "rawSha256": "090f2b59d8bf7da91472435e51d3de1953f6a2895dc68a6a0cd5c7182aecab0d"
+    },
+    {
+      "name": "api-typecheck",
+      "rawSha256": "4a7e40320ea54161f30125bb8e7b9b827a47c6c6eedeab78df391ba0f472764d"
+    },
+    {
+      "name": "shared-typecheck",
+      "rawSha256": "ec21f08787e18be7b7ceadfbc210082eae061bdd443551c23903f9ced5cdc0c4"
+    },
+    {
+      "name": "box-typecheck",
+      "rawSha256": "f7b56d03955dc672bb43a092eb960bcf41d10d1c50b150d465ddc153dda77c79"
+    },
+    {
+      "name": "lint",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "api-types",
+      "rawSha256": "50abd7ea235490fc6a1b8937c35f29ff862576060be205fc96b53951e7145adf"
+    },
+    {
+      "name": "build",
+      "rawSha256": "f8c1f15ccd54a7b40a0b2748d0e41b86a4208fc70ec1c6f3de3f79dfbb7bcd62"
+    }
+  ],
+  "limitations": [
+    "The complete local API battery remains recorded at its earlier exact source; this merged tree has the seven relevant whole files, and still needs its full-SHA main CI.",
+    "The local OTO App attendee writer is bound in-process. Staging cross-service acceptance remains unproven.",
+    "No real payment, terminal, park Pi, iPad or physical display proof."
+  ],
+  "logFormatting": {
+    "method": "LF, remove trailing spaces and extra final blank lines; test output content and original raw hashes retained",
+    "files": [
+      {
+        "path": "docs/qa/proof-2026-11-04/s738/after729/language-before.log",
+        "beforeWhitespaceNormalizationSha256": "a01d36d1071824c178960f74f8dba88d257db7856f8580fee78fb9c8d7d53bbe"
+      },
+      {
+        "path": "docs/qa/proof-2026-11-04/s738/after729/pos.log",
+        "beforeWhitespaceNormalizationSha256": "ec1ada23d6cdc92acbe5e7751cdd1f6430e3d98cb52f7a28f4e22ae03c1cc90d"
+      },
+      {
+        "path": "docs/qa/proof-2026-11-04/s738/after729/api.log",
+        "beforeWhitespaceNormalizationSha256": "b0554735b63f5e91fa75836a21786293e500dab0d5a1ea344fa8c0d0177ad836"
+      },
+      {
+        "path": "docs/qa/proof-2026-11-04/s738/after729/box-storage-isolated.log",
+        "beforeWhitespaceNormalizationSha256": "82f949a606129a6c837c81551439cc6f57c8d884c9ec5f22ab0e27bf1a18b22f"
+      },
+      {
+        "path": "docs/qa/proof-2026-11-04/s738/after729/workspace.log",
+        "beforeWhitespaceNormalizationSha256": "47789cb71b0c0989600dd9521a0803699aa96b97c4266344b20a73fee592a0ef"
+      },
+      {
+        "path": "docs/qa/proof-2026-11-04/s738/after729/workspace-serial.log",
+        "beforeWhitespaceNormalizationSha256": "8cec6ed58edc3015eb39494b77504a7a069ac712e74de6f786d0bb9cc8a9d36c"
+      },
+      {
+        "path": "docs/qa/proof-2026-11-04/s738/after729/pos-types.log",
+        "beforeWhitespaceNormalizationSha256": "090f2b59d8bf7da91472435e51d3de1953f6a2895dc68a6a0cd5c7182aecab0d"
+      },
+      {
+        "path": "docs/qa/proof-2026-11-04/s738/after729/api-typecheck.log",
+        "beforeWhitespaceNormalizationSha256": "4a7e40320ea54161f30125bb8e7b9b827a47c6c6eedeab78df391ba0f472764d"
+      },
+      {
+        "path": "docs/qa/proof-2026-11-04/s738/after729/shared-typecheck.log",
+        "beforeWhitespaceNormalizationSha256": "ec21f08787e18be7b7ceadfbc210082eae061bdd443551c23903f9ced5cdc0c4"
+      },
+      {
+        "path": "docs/qa/proof-2026-11-04/s738/after729/box-typecheck.log",
+        "beforeWhitespaceNormalizationSha256": "f7b56d03955dc672bb43a092eb960bcf41d10d1c50b150d465ddc153dda77c79"
+      },
+      {
+        "path": "docs/qa/proof-2026-11-04/s738/after729/lint.log",
+        "beforeWhitespaceNormalizationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "docs/qa/proof-2026-11-04/s738/after729/api-types.log",
+        "beforeWhitespaceNormalizationSha256": "50abd7ea235490fc6a1b8937c35f29ff862576060be205fc96b53951e7145adf"
+      },
+      {
+        "path": "docs/qa/proof-2026-11-04/s738/after729/build.log",
+        "beforeWhitespaceNormalizationSha256": "f8c1f15ccd54a7b40a0b2748d0e41b86a4208fc70ec1c6f3de3f79dfbb7bcd62"
+      }
+    ]
+  }
+}

@@ -1,0 +1,3 @@
+
+> @oto/shared@0.1.0 typecheck C:\oto-lanes\codex-tender-display-20261104\packages\shared
+> tsc -p tsconfig.json

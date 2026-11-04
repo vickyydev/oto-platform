@@ -1,0 +1,95 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-tender-display-20261104/apps/pos
+
+ ❯ test/s738-tender-display.test.ts (11 tests | 4 failed) 18ms
+   ✓ SCRUM-738 read-only tender presentation > HIGH: event_pass forwards only the controller state and releases it once paid 3ms
+   ✓ SCRUM-738 read-only tender presentation > HIGH: party_balance forwards only the controller state and releases it once paid 1ms
+   ✓ SCRUM-738 read-only tender presentation > HIGH: changing the tender updates its frame and close/unmount restores the host 1ms
+   ✓ SCRUM-738 read-only tender presentation > HIGH: cash and a malformed payment never start a tender display 1ms
+   ✓ SCRUM-738 read-only tender presentation > HIGH: the display receives the actual QR only while the tender is pending and online 1ms
+   ✓ SCRUM-738 read-only tender presentation > MEDIUM: a card tender has no QR and no family information 0ms
+   ✓ SCRUM-738 read-only tender presentation > MEDIUM: the separate tender screen follows the display language (en) 0ms
+   × SCRUM-738 read-only tender presentation > MEDIUM: the separate tender screen follows the display language (th) 6ms
+     → expected '{"type":"div","key":null,"props":{"cl…' to contain 'ยอดคงเหลือของงานปาร์ตี้'
+   × SCRUM-738 read-only tender presentation > MEDIUM: the separate tender screen follows the display language (zh) 1ms
+     → expected '{"type":"div","key":null,"props":{"cl…' to contain '派对尾款'
+   × SCRUM-738 read-only tender presentation > MEDIUM: the separate tender screen follows the display language (ru) 2ms
+     → expected '{"type":"div","key":null,"props":{"cl…' to contain 'Остаток за праздник'
+   × SCRUM-738 read-only tender presentation > MEDIUM: the separate tender screen follows the display language (fr) 1ms
+     → expected '{"type":"div","key":null,"props":{"cl…' to contain 'Solde de la fête'
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/s738-tender-display.test.ts > SCRUM-738 read-only tender presentation > MEDIUM: the separate tender screen follows the display language (th)
+AssertionError: expected '{"type":"div","key":null,"props":{"cl…' to contain 'ยอดคงเหลือของงานปาร์ตี้'
+
+Expected: "ยอดคงเหลือของงานปาร์ตี้"
+Received: "{"type":"div","key":null,"props":{"className":"h-full flex flex-col","data-testid":"display-tender","children":[{"type":"h1","key":null,"props":{"className":"shrink-0 text-center text-xl font-bold p-3","children":"Party balance"},"_owner":null,"_store":{}},{"type":"div","key":null,"props":{"className":"flex-1 min-h-0","children":{"key":null,"props":{"amount":123.45,"qrPayload":"ZZ TEST gateway payload","qrImageUrl":null,"expiresAt":"2026-11-05T00:00:00.000Z","note":"Waiting for payment confirmation."},"_owner":null,"_store":{}}},"_owner":null,"_store":{}}]},"_owner":null,"_store":{}}"
+
+ ❯ test/s738-tender-display.test.ts:97:16
+     95|     vi.stubGlobal('React', React);
+     96|     const qr = JSON.stringify(TenderCustomerDisplay({ cart, payment })…
+     97|     expect(qr).toContain(party);
+       |                ^
+     98|     const cardText = JSON.stringify(TenderCustomerDisplay({ cart: { ..…
+     99|     expect(cardText).toContain(pass);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  test/s738-tender-display.test.ts > SCRUM-738 read-only tender presentation > MEDIUM: the separate tender screen follows the display language (zh)
+AssertionError: expected '{"type":"div","key":null,"props":{"cl…' to contain '派对尾款'
+
+Expected: "派对尾款"
+Received: "{"type":"div","key":null,"props":{"className":"h-full flex flex-col","data-testid":"display-tender","children":[{"type":"h1","key":null,"props":{"className":"shrink-0 text-center text-xl font-bold p-3","children":"Party balance"},"_owner":null,"_store":{}},{"type":"div","key":null,"props":{"className":"flex-1 min-h-0","children":{"key":null,"props":{"amount":123.45,"qrPayload":"ZZ TEST gateway payload","qrImageUrl":null,"expiresAt":"2026-11-05T00:00:00.000Z","note":"Waiting for payment confirmation."},"_owner":null,"_store":{}}},"_owner":null,"_store":{}}]},"_owner":null,"_store":{}}"
+
+ ❯ test/s738-tender-display.test.ts:97:16
+     95|     vi.stubGlobal('React', React);
+     96|     const qr = JSON.stringify(TenderCustomerDisplay({ cart, payment })…
+     97|     expect(qr).toContain(party);
+       |                ^
+     98|     const cardText = JSON.stringify(TenderCustomerDisplay({ cart: { ..…
+     99|     expect(cardText).toContain(pass);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  test/s738-tender-display.test.ts > SCRUM-738 read-only tender presentation > MEDIUM: the separate tender screen follows the display language (ru)
+AssertionError: expected '{"type":"div","key":null,"props":{"cl…' to contain 'Остаток за праздник'
+
+Expected: "Остаток за праздник"
+Received: "{"type":"div","key":null,"props":{"className":"h-full flex flex-col","data-testid":"display-tender","children":[{"type":"h1","key":null,"props":{"className":"shrink-0 text-center text-xl font-bold p-3","children":"Party balance"},"_owner":null,"_store":{}},{"type":"div","key":null,"props":{"className":"flex-1 min-h-0","children":{"key":null,"props":{"amount":123.45,"qrPayload":"ZZ TEST gateway payload","qrImageUrl":null,"expiresAt":"2026-11-05T00:00:00.000Z","note":"Waiting for payment confirmation."},"_owner":null,"_store":{}}},"_owner":null,"_store":{}}]},"_owner":null,"_store":{}}"
+
+ ❯ test/s738-tender-display.test.ts:97:16
+     95|     vi.stubGlobal('React', React);
+     96|     const qr = JSON.stringify(TenderCustomerDisplay({ cart, payment })…
+     97|     expect(qr).toContain(party);
+       |                ^
+     98|     const cardText = JSON.stringify(TenderCustomerDisplay({ cart: { ..…
+     99|     expect(cardText).toContain(pass);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  test/s738-tender-display.test.ts > SCRUM-738 read-only tender presentation > MEDIUM: the separate tender screen follows the display language (fr)
+AssertionError: expected '{"type":"div","key":null,"props":{"cl…' to contain 'Solde de la fête'
+
+Expected: "Solde de la fête"
+Received: "{"type":"div","key":null,"props":{"className":"h-full flex flex-col","data-testid":"display-tender","children":[{"type":"h1","key":null,"props":{"className":"shrink-0 text-center text-xl font-bold p-3","children":"Party balance"},"_owner":null,"_store":{}},{"type":"div","key":null,"props":{"className":"flex-1 min-h-0","children":{"key":null,"props":{"amount":123.45,"qrPayload":"ZZ TEST gateway payload","qrImageUrl":null,"expiresAt":"2026-11-05T00:00:00.000Z","note":"Waiting for payment confirmation."},"_owner":null,"_store":{}}},"_owner":null,"_store":{}}]},"_owner":null,"_store":{}}"
+
+ ❯ test/s738-tender-display.test.ts:97:16
+     95|     vi.stubGlobal('React', React);
+     96|     const qr = JSON.stringify(TenderCustomerDisplay({ cart, payment })…
+     97|     expect(qr).toContain(party);
+       |                ^
+     98|     const cardText = JSON.stringify(TenderCustomerDisplay({ cart: { ..…
+     99|     expect(cardText).toContain(pass);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 7 passed (11)
+   Start at  07:05:18
+   Duration  1.58s (transform 546ms, setup 0ms, collect 1.08s, tests 18ms, environment 0ms, prepare 223ms)
+
+undefined
+C:\oto-lanes\codex-tender-display-20261104\apps\pos:
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 1: vitest run test/s738-tender-display.test.ts

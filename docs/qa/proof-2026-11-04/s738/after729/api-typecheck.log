@@ -1,0 +1,3 @@
+
+> @oto/api@0.1.0 typecheck C:\oto-lanes\codex-tender-display-20261104\apps\api
+> tsc -p tsconfig.json
