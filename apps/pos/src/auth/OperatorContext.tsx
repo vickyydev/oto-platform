@@ -176,6 +176,20 @@ function acceptHandoffOnArrival(): Promise<string | null> | null {
 
 const handoffArrival = acceptHandoffOnArrival();
 
+/**
+ * SCRUM-744 — the API's refusal of a LOCKED session (423 SESSION_LOCKED), as
+ * the station provider reads it (`StationContext`).
+ *
+ * `/me` and `/me/permissions` answer a locked session; the park list and the
+ * catalogue do not. A page reloaded at the lock screen therefore resumed with
+ * its catalogue refused, kept the POS's built-in sample park, tickets and
+ * prices, and never asked again, because an unlock changes nothing that
+ * would. The refusal is "not yet", and the whole session is read again at the
+ * unlock (`readAgainAtUnlock` below).
+ */
+const refusedWhileLocked = (err: unknown): boolean =>
+  err instanceof ApiError && err.status === 423 && err.code === 'SESSION_LOCKED';
+
 /** Map the API session to the prototype's Operator shape the whole UI reads. */
 function toOperator(me: Awaited<ReturnType<typeof authApi.me>>, isManager: boolean): Operator {
   return {
@@ -212,6 +226,13 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   const logoutTimer = useRef<number | null>(null);
   const countdown = useRef<number | null>(null);
   const pendingSignOut = useRef<Promise<void> | null>(null);
+  /**
+   * The last session read had its catalogue refused by the lock (SCRUM-744),
+   * so the next platform unlock reads the whole session again. Set by each
+   * read; a lock in the middle of a shift read everything before it locked,
+   * so its unlock reads nothing and the sale under the lock is left alone.
+   */
+  const readAgainAtUnlock = useRef(false);
 
   const clearTimers = useCallback(() => {
     if (warnTimer.current !== null) window.clearTimeout(warnTimer.current);
@@ -316,10 +337,14 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     // Hydrate branches + wired catalog collections from the API before the
     // till renders, so pricing/packages come from the database.
     let catalogReady = true;
-    await loadCatalogFromApi(me.branch?.code).catch(() => {
+    let catalogNotYet = false;
+    await loadCatalogFromApi(me.branch?.code).catch((err: unknown) => {
       catalogReady = false;
       // Catalog load failing must not block the lock screen → surfaced by panels.
+      // A locked session's refusal is no answer at all: read again at the unlock.
+      catalogNotYet = refusedWhileLocked(err);
     });
+    readAgainAtUnlock.current = catalogNotYet;
     setHeld(new Set(permissions.map((p) => p.permission)));
     setMustChangePassword(me.account.mustChangePassword);
     setViewAs(me.impersonation ?? null);
@@ -423,9 +448,12 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       // this bounded call neither delays online access nor stores the password.
       void connectLocal?.();
       if (currentLane() === 'box') await refreshLane();
-      if (offlinePreparation) {
+      if (offlinePreparation || readAgainAtUnlock.current) {
         // A cold offline page began with no platform permissions or selected
         // shift. Restore those from the authenticated API before resuming.
+        // So did a page reloaded at the lock screen, whose park list and
+        // catalogue the lock refused (SCRUM-744): read before the till opens,
+        // so it opens on the real park and never on the sample one.
         const resumed = await hydrate();
         setLocked(resumed.sessionLocked);
         return;

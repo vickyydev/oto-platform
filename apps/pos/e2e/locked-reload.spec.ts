@@ -13,6 +13,15 @@ import { resolve } from 'node:path';
  * The till is a ZZ TEST station on the seed's virtual box, as on staging, and
  * the run is made at desktop and at phone width. Everything is local: the
  * isolated harness (`e2e/run.mjs`) owns the database, the api and the accounts.
+ *
+ * The second part pins what the reload reads besides the station: the park
+ * list and the catalogue (`hydrate` in `OperatorContext`). Read at the lock
+ * screen they are refused with 423 SESSION_LOCKED, and before the fix the
+ * till kept the POS's built-in sample park ("HKT Central", with its sample
+ * tickets and prices) after the unlock. The run asserts on the park list's
+ * own request — refused while locked, read again and answered after the
+ * unlock — and on the park name in the header, which is the session's real
+ * park and not the sample's.
  */
 
 const PHONE = process.env.POS_E2E_PHONE ?? '';
@@ -22,6 +31,8 @@ const ADMIN_PASSWORD = process.env.POS_E2E_ADMIN_PASSWORD ?? '';
 const PICKER = 'Which station are you on?';
 const LOCKED_LINE = 'This session is locked';
 const VIRTUAL_BOX = 'Virtual box 1';
+/** The POS's built-in sample park, which the till must not be left showing. */
+const SAMPLE_PARK = 'HKT Central';
 
 process.env.PLAYWRIGHT_NO_COPY_PROMPT = '1';
 test.use({ trace: 'off', video: 'off', screenshot: 'off' });
@@ -113,6 +124,13 @@ for (const width of WIDTHS) {
         picks.push((sent.postDataJSON() as { stationId?: string } | null)?.stationId ?? '');
       }
     });
+    // Every answer to the park list the till asks for (part two).
+    const parkLists: number[] = [];
+    page.on('response', answer => {
+      if (answer.request().method() === 'GET' && new URL(answer.url()).pathname === '/api/branches') {
+        parkLists.push(answer.status());
+      }
+    });
     try {
       // The inactivity timer is the page's own; the clock lets the test reach it.
       await page.clock.install();
@@ -131,8 +149,14 @@ for (const width of WIDTHS) {
       // The ZZ TEST till, on the virtual box at the branch this session is on.
       const me = await page.request.get('/api/me');
       expect(me.status()).toBe(200);
-      const branchId = (await me.json()).branch?.id as string;
+      const session = await me.json() as { branch?: { id?: string; name?: string } };
+      const branchId = session.branch?.id as string;
       expect(typeof branchId).toBe('string');
+      // The session's own park, which the header must name after the unlock. It
+      // has to differ from the sample park, or the header proves nothing.
+      const parkName = session.branch?.name as string;
+      expect(typeof parkName).toBe('string');
+      expect(parkName).not.toBe(SAMPLE_PARK);
       const adminSignedIn = await admin.post('/api/auth/sign-in', { data: { phone: ADMIN_PHONE, password: ADMIN_PASSWORD } });
       expect(adminSignedIn.status()).toBe(200);
       const stationName = `ZZ TEST SCRUM-744 ${width.name} ${crypto.randomUUID().slice(0, 8)} till`;
@@ -146,6 +170,9 @@ for (const width of WIDTHS) {
       await expect(page.getByLabel('Lock screen')).toBeVisible({ timeout: 20_000 });
       await expect(page.getByRole('heading', { name: PICKER })).toBeHidden();
       expect(await rememberedStation(page)).toBe(stationId);
+      // Signed in without a reload, the till is on the session's park.
+      await expect(page.locator(`span[title="${parkName}"]`).first()).toBeAttached();
+      await expect(page.locator(`span[title="${SAMPLE_PARK}"]`)).toHaveCount(0);
 
       // Lock by the inactivity timeout, as a till left alone does.
       const locked = page.waitForResponse(response => response.url().endsWith('/api/auth/lock')
@@ -154,13 +181,18 @@ for (const width of WIDTHS) {
       expect((await locked).status()).toBe(200);
       await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeVisible();
 
-      // Reload at the lock screen: the page comes back locked.
+      // Reload at the lock screen: the page comes back locked, and the park
+      // list it asks for on the way is refused by the lock.
+      parkLists.length = 0;
       await page.reload();
       await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeVisible({ timeout: 20_000 });
+      await expect.poll(() => parkLists, { timeout: 20_000 }).toContain(423);
+      expect(parkLists).not.toContain(200);
       await capture(page, `${width.name}-1-locked-after-reload.png`);
 
       // Unlock: the till is back on its own station, with no locked line and no picker.
       picks.length = 0;
+      parkLists.length = 0;
       await page.locator('input[type="password"][autocomplete="current-password"]').fill(PASSWORD);
       const unlocked = page.waitForResponse(response => response.url().endsWith('/api/auth/unlock')
         && response.request().method() === 'POST');
@@ -177,6 +209,13 @@ for (const width of WIDTHS) {
       expect(picks).toEqual([stationId]);
       expect(await rememberedStation(page)).toBe(stationId);
       if (width.name === 'desktop') await expect(page.getByText('Membership Check', { exact: true })).toBeVisible();
+      // Part two: the park list is asked again at the unlock and answered, and
+      // the header names the session's park, not the sample's.
+      expect(parkLists).toContain(200);
+      expect(parkLists).not.toContain(423);
+      await expect(page.locator(`span[title="${parkName}"]`).first()).toBeAttached();
+      await expect(page.locator(`span[title="${SAMPLE_PARK}"]`)).toHaveCount(0);
+      if (width.name === 'desktop') await expect(page.locator(`span[title="${parkName}"]`).first()).toBeVisible();
 
       // And it stays there: the defect was still on screen fifteen seconds later.
       await page.waitForTimeout(15_000);
@@ -184,6 +223,8 @@ for (const width of WIDTHS) {
       await expect(page.getByText(LOCKED_LINE)).toHaveCount(0);
       await expect(page.getByLabel('Lock screen')).toBeVisible();
       expect(picks).toEqual([stationId]);
+      await expect(page.locator(`span[title="${parkName}"]`).first()).toBeAttached();
+      await expect(page.locator(`span[title="${SAMPLE_PARK}"]`)).toHaveCount(0);
       await capture(page, `${width.name}-3-after-15s.png`);
 
       const link = await page.request.get('/api/me/station/link');
