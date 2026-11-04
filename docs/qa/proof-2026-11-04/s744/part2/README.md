@@ -71,13 +71,23 @@ After the change, against the built till as CI runs it (`POS_E2E_BUILT=1`):
 | 390px phone | [locked](local-after-phone-1-locked-after-reload.png) | [the phone till](local-after-phone-2-after-unlock.png) | [unchanged](local-after-phone-3-after-15s.png) |
 
 At 390px the phone bar cuts its start cluster where it runs out of room
-(SCRUM-509), and locally the in-park chip carries the "no gate" mark, so the
-park chip is cut off in both runs and the phone screens look alike. The phone
-run asserts the same things as the desktop run on the page itself: the park
-list refused at the reload and answered after Unlock, the header's park chip
-naming "Oto Play Park, Central Floresta", and no "HKT Central" anywhere. On
-staging the gate is reporting, so the chip has no "no gate" mark and the park
-name has room to show; the staging plan below screens it at phone width.
+(SCRUM-509), and the in-park chip carries the "no gate" mark, so the park chip
+is cut off in both runs and the phone screens look alike. The phone run
+asserts the same things as the desktop run on the page itself: the park list
+refused at the reload and answered after Unlock, the header's park chip naming
+"Oto Play Park, Central Floresta", and no "HKT Central" anywhere.
+
+Staging shows the same "no gate" mark: part one's control screens read
+"1 in park • no gate" at 1440px
+(`../staging/s744-02-desktop-8-control-direct-address.png`) and cut the phone
+bar at "1 • no ga" (`../staging/s744-07-phone-7-control-direct-address.png`),
+so the park chip is cut off on a staging phone too. The phone till also draws
+no low-stock strip and no overdue notice: the strip is part of the desktop
+header, and the notice is drawn by the desktop till (on a phone it shows on
+the Check-in board only).
+The staging plan below therefore names the park, the low-stock strip and the
+overdue notice at desktop width only, and checks the phone by what does show
+there: the in-park count, and the recorded requests behind it.
 
 Each run also keeps the first part's checks: one station pick after Unlock,
 for the ZZ TEST till; the device still remembers it; `/me/station/link` names
@@ -126,8 +136,18 @@ part's, with the park checks added.
    again and answered 200. Screen it, and again 15 seconds later.
 6. Open Tickets and check the ticket list and prices match an unlocked open of
    the same till (read only: start no sale).
-7. Repeat 3 to 5 at 390px phone width, and screen the park chip in the phone
-   bar after Unlock.
+7. Repeat 3 to 5 at 390px phone width. The phone bar cuts the park chip and
+   draws no low-stock strip or overdue notice, so the phone checks are:
+   - the in-park count after Unlock equals the control's (1 in part one's
+     run), where the sample park reads 0;
+   - the recorded `GET /api/branches`: 423 at the locked reload, then asked
+     again after Unlock and answered 200, its body naming "Oto Play Park,
+     Central Floresta";
+   - the chip's own poll, `GET /api/branches/<the park's id>/occupancy`,
+     running every 5 seconds after Unlock (on the sample park the chip makes
+     no request at all), so the count is the real park's even when it is 0.
+   Screen the phone till after Unlock and 15 seconds later beside the
+   control, and keep the request record with the screens.
 8. Archive the ZZ TEST till and the ZZ TEST virtual box, and sign the test
    account and the Console out.
 
