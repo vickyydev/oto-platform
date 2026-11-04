@@ -1,6 +1,6 @@
 import { CheckIn, ContactChannel } from '@/types';
 import { CHANNEL_LABEL, normalizeChannel } from '@/lib/contactChannel';
-import { familyCheckInActions, remainingMinutes, dueState, formatRemaining } from '@/lib/dropoff';
+import { childNames, familyCheckInActions, familyCheckInNames, remainingMinutes, dueState, formatRemaining } from '@/lib/dropoff';
 import { deriveWaStatus, showWaActions } from '@/lib/waConnection';
 import { WaChip } from '@/components/dropoff/WaChip';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import {
   Users,
   CalendarClock,
   ShieldCheck,
+  Wallet,
 } from 'lucide-react';
 import { WaActionPanel } from '@/components/dropoff/WaActionPanel';
 
@@ -241,6 +242,17 @@ export function MobileChildDetail({
   const scheduledChild = booked[0] ?? rep;
   const inParkChild = family.find((c) => c.status === 'in_park') ?? rep;
 
+  // SCRUM-741 — a child paid online beside a sibling still to pay: two Check In
+  // presses, each named for its children, and the paid label says who is which.
+  const names = familyCheckInNames(family);
+  const split = toRedeem.length > 0 ? names.split : null;
+  const checkInLabel = (children: readonly CheckIn[]) =>
+    split ? (
+      <span className="min-w-0 whitespace-normal break-words text-center leading-tight">Check In {childNames(children)}</span>
+    ) : (
+      'Check In'
+    );
+
   const allSameInPark = allSameStatus && rep.status === 'in_park';
   const remaining = allSameInPark ? remainingMinutes(rep) : null;
   const due = dueState(remaining);
@@ -379,16 +391,29 @@ export function MobileChildDetail({
 
         {toRedeem.length > 0 && (
           <>
-            <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-semibold text-emerald-400">
-              <BadgeCheck className="w-3.5 h-3.5" />
-              Booked &amp; paid · no payment needed
-            </div>
+            {split ? (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-semibold text-emerald-400">
+                  <BadgeCheck className="w-3.5 h-3.5 shrink-0" />
+                  Booked &amp; paid · {childNames(split.paid)}
+                </div>
+                <div className="flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                  <Wallet className="w-3.5 h-3.5 shrink-0" />
+                  To pay · {childNames(split.toPay)}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-semibold text-emerald-400">
+                <BadgeCheck className="w-3.5 h-3.5" />
+                Booked &amp; paid · no payment needed
+              </div>
+            )}
             <Button
               className="w-full h-16 text-lg gap-2 rounded-2xl"
               onClick={() => onRedeemBooking(toRedeem[0])}
             >
               <LogIn className="w-5 h-5" />
-              Check In
+              {checkInLabel(names.redeem)}
             </Button>
           </>
         )}
@@ -409,7 +434,7 @@ export function MobileChildDetail({
             onClick={() => onCheckIn(registeredChild)}
           >
             <LogIn className="w-5 h-5" />
-            Check In
+            {checkInLabel(walkUp)}
           </Button>
         )}
 

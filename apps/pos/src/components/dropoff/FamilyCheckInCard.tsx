@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckIn, ContactChannel } from '@/types';
-import { familyCheckInActions, remainingMinutes, dueState, formatRemaining } from '@/lib/dropoff';
+import { childNames, familyCheckInActions, familyCheckInNames, remainingMinutes, dueState, formatRemaining } from '@/lib/dropoff';
 import { deriveWaStatus, showWaActions } from '@/lib/waConnection';
 import { WaChip } from './WaChip';
 import {
@@ -18,6 +18,7 @@ import {
   Users,
   BadgeCheck,
   ShieldCheck,
+  Wallet,
 } from 'lucide-react';
 import { WaActionPanel } from './WaActionPanel';
 
@@ -59,6 +60,11 @@ function useElapsed(sinceISO?: string): string {
 
 const fmtTime = (iso?: string) =>
   iso ? new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
+
+// SCRUM-741 — the board's payment pill, and a Check in named for its children:
+// a long name wraps inside the button rather than running out of it.
+const PAYMENT_PILL = 'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold';
+const NAMED_CHECK_IN = 'min-w-0 whitespace-normal break-words text-center leading-tight';
 
 function StatusBadge({ child }: { child: CheckIn }) {
   const elapsed = useElapsed(child.status === 'in_park' ? child.checkedInAt : undefined);
@@ -217,6 +223,13 @@ export function FamilyCheckInCard({
   const registeredChild = walkUp[0] ?? rep;
   const inParkChild = family.find((c) => c.status === 'in_park') ?? rep;
 
+  // SCRUM-741 — more than one Check in: each names the children it checks in,
+  // and a family with a child paid for and one still to pay says which is which.
+  const names = familyCheckInNames(family);
+  const namedCheckIns = [anyToRedeem, anyScheduled, anyRegistered].filter(Boolean).length > 1;
+  const checkInLabel = (children: readonly CheckIn[]) =>
+    namedCheckIns ? <span className={NAMED_CHECK_IN}>Check in {childNames(children)}</span> : 'Check in';
+
   return (
     <Card className="p-4 flex flex-col gap-3 bg-card/50">
       {/* Family header: parent info + child count */}
@@ -294,10 +307,24 @@ export function FamilyCheckInCard({
       )}
 
       {/* Booked & paid online — no payment is taken at check-in. */}
-      {(anyScheduled || anyToRedeem) && (
+      {(anyScheduled || anyToRedeem) && !names.split && (
         <div className="flex items-center gap-1.5 self-start rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-semibold text-emerald-400">
           <BadgeCheck className="w-3.5 h-3.5" />
           Booked &amp; paid · no payment needed
+        </div>
+      )}
+
+      {/* SCRUM-741 — a child paid for and a sibling still to pay: by name. */}
+      {names.split && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <div className={`${PAYMENT_PILL} bg-emerald-500/15 text-emerald-400`}>
+            <BadgeCheck className="w-3.5 h-3.5 shrink-0" />
+            Booked &amp; paid · {childNames(names.split.paid)}
+          </div>
+          <div className={`${PAYMENT_PILL} bg-amber-500/15 text-amber-600 dark:text-amber-400`}>
+            <Wallet className="w-3.5 h-3.5 shrink-0" />
+            To pay · {childNames(names.split.toPay)}
+          </div>
         </div>
       )}
 
@@ -310,7 +337,7 @@ export function FamilyCheckInCard({
             onClick={() => onRedeemBooking(toRedeem[0])}
           >
             <LogIn className="w-4 h-4" />
-            Check in
+            {checkInLabel(names.redeem)}
           </Button>
         )}
 
@@ -321,7 +348,7 @@ export function FamilyCheckInCard({
             onClick={() => onCheckInBooked(scheduledChildren)}
           >
             <LogIn className="w-4 h-4" />
-            Check in
+            {checkInLabel(scheduledChildren)}
           </Button>
         )}
 
@@ -332,7 +359,7 @@ export function FamilyCheckInCard({
             onClick={() => onCheckIn(registeredChild)}
           >
             <LogIn className="w-4 h-4" />
-            Check in
+            {checkInLabel(walkUp)}
           </Button>
         )}
 

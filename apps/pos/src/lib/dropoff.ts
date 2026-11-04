@@ -37,6 +37,44 @@ export function familyCheckInActions(family: readonly CheckIn[]): {
   };
 }
 
+/**
+ * SCRUM-741 — THE CHILDREN ONE PRESS OF A FAMILY'S CHECK IN COVERS, BY NAME.
+ *
+ * A family can wait with a child paid for and a sibling still to pay, and then
+ * its card offers one Check in per path. Each press is named for its children:
+ *
+ *   - `redeem`: the children on the booking that press opens (`toRedeem[0]`'s):
+ *     redeeming a booking files every child on it.
+ *   - `booked` and `walkUp`: as `familyCheckInActions` answers them; the till
+ *     loads every walk-up child of the registration.
+ *
+ * `paid` and `toPay` say which waiting child is which, for a family that has
+ * both; `null` otherwise, and the card keeps its one family-wide label.
+ */
+export function familyCheckInNames(family: readonly CheckIn[]): {
+  redeem: CheckIn[];
+  booked: CheckIn[];
+  walkUp: CheckIn[];
+  split: { paid: CheckIn[]; toPay: CheckIn[] } | null;
+} {
+  const { toRedeem, booked, walkUp } = familyCheckInActions(family);
+  const bookingId = toRedeem[0]?.paidOnline?.bookingId;
+  const paid = [...toRedeem, ...booked];
+  return {
+    redeem: toRedeem.filter((c) => c.paidOnline?.bookingId === bookingId),
+    booked,
+    walkUp,
+    split: paid.length > 0 && walkUp.length > 0 ? { paid, toPay: walkUp } : null,
+  };
+}
+
+/** Children's names as a card says them: "Bua", "Bua & Nok", "Bua, Nok & Mai" (SCRUM-741). */
+export function childNames(children: readonly CheckIn[]): string {
+  const names = children.map((c) => c.childName);
+  if (names.length <= 1) return names[0] ?? '';
+  return `${names.slice(0, -1).join(', ')} & ${names[names.length - 1]}`;
+}
+
 // Plain-number view of the catalog's drop-off pricing config, resolved for one
 // rate mode. All fee math in this file works off concrete numbers — never the
 // raw WeekdayWeekendPrice shape — so callers must resolve once via
