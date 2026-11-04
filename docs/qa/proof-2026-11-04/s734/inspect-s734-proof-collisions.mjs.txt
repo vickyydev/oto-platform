@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
+const root='C:/oto-lanes/codex-branch-clone-20261103';
+const git=(args,encoding='utf8')=>execFileSync('git',args,{cwd:root,encoding});
+const untracked=git(['ls-files','--others','--exclude-standard','-z']).split('\0').filter(Boolean),tracked=new Set(git(['ls-tree','-rz','--name-only','origin/main']).split('\0').filter(Boolean));
+const collisions=[];
+for(const path of untracked.filter(p=>tracked.has(p))){assert.ok(path.startsWith('docs/qa/proof-2026-11-04/s734/'));const raw=readFileSync(root+'/'+path),remote=git(['show','origin/main:'+path],null);collisions.push({path,identical:raw.equals(remote),sha256:createHash('sha256').update(raw).digest('hex')});}
+const receipt={source:git(['rev-parse','HEAD']).trim(),main:git(['rev-parse','origin/main']).trim(),at:new Date().toISOString(),untrackedFiles:untracked.length,collisions};
+writeFileSync('C:/oto-lanes/s734-proof-collisions.json',JSON.stringify(receipt,null,2)+'\n');
+console.log(JSON.stringify({source:receipt.source,main:receipt.main,untrackedFiles:untracked.length,collisions:collisions.length,allIdentical:collisions.every(x=>x.identical),paths:collisions.map(x=>x.path)}));

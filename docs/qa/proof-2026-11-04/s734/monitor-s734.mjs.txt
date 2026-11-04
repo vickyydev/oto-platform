@@ -1,0 +1,5 @@
+import {readFileSync,statSync} from 'node:fs';
+const state=JSON.parse(readFileSync('C:/oto-lanes/s734-after707-gates.json','utf8'));
+const log=readFileSync('C:/oto-lanes/s734-after707-api-full.log','utf8');
+const lines=log.split(/\r?\n/),passed=lines.filter(s=>/^\s*[✓✔]\s+test\//u.test(s)),failed=lines.filter(s=>/^\s*[❯×✗]\s+test\//u.test(s));
+console.log(JSON.stringify({at:new Date().toISOString(),...state,logUpdatedAt:statSync('C:/oto-lanes/s734-after707-api-full.log').mtime.toISOString(),completedFiles:passed.length,failedFileLines:failed,lastCompleted:passed.at(-1),summary:lines.filter(s=>/^\s*(Test Files|Tests|Duration)\s/.test(s))}));

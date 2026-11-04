@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import './codex-console-route-notes-20261104/scripts/agent/env.mjs';
+const files=process.argv.slice(2);assert.ok(files.length>0);
+let problem=false;
+for(const file of files){assert.ok(file.startsWith('C:/oto-lanes/s734-')&&file.endsWith('.log'));const text=readFileSync(file,'utf8');
+ const names=Object.entries(process.env).filter(([name,value])=>/(?:SECRET|TOKEN|PASSWORD|DATABASE_URL|PRIVATE_KEY|API_KEY)/i.test(name)&&value&&value.length>=8&&text.includes(value)).map(([name])=>name);
+ const signatures={postgresUrl:(text.match(/postgres(?:ql)?:\/\/[^\s]+/g)??[]).length,jwt:(text.match(/eyJ[A-Za-z0-9_-]{12,}\.[A-Za-z0-9_-]{12,}\.[A-Za-z0-9_-]{12,}/g)??[]).length,privateKey:(text.match(/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/g)??[]).length};
+ const clean=names.length===0&&Object.values(signatures).every(n=>n===0);if(!clean)problem=true;console.log(JSON.stringify({file,knownSecretNameMatches:names,signatures,clean}));
+}
+process.exitCode=problem?1:0;

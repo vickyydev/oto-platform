@@ -1,0 +1,13 @@
+set -eo pipefail
+pnpm --filter @oto/api exec tsx C:/oto-lanes/s734-api-gate.mts test/s734-branch-clone-review.test.ts test/branch-clone.test.ts test/s707-print-template-defaults.test.ts > C:/oto-lanes/s734-after-width-focused.log 2>&1
+pnpm --filter @oto/api exec tsc -p tsconfig.json > C:/oto-lanes/s734-after-width-api-typecheck.log 2>&1
+pnpm --filter @oto/admin-screens typecheck > C:/oto-lanes/s734-after-width-admin-typecheck.log 2>&1
+pnpm --filter @oto/console typecheck > C:/oto-lanes/s734-after-width-console-typecheck.log 2>&1
+pnpm --filter @oto/pos typecheck > C:/oto-lanes/s734-after-width-pos-typecheck.log 2>&1
+pnpm api-types:generate > C:/oto-lanes/s734-after-width-contracts.log 2>&1
+pnpm api-types:check >> C:/oto-lanes/s734-after-width-contracts.log 2>&1
+git diff --exit-code -- packages/api-types
+pnpm exec eslint apps/api/src/services/catalog-clone.ts apps/api/test/s734-branch-clone-review.test.ts packages/admin-screens/src/lifted/api/platform.ts packages/admin-screens/src/lifted/components/admin/branches/BranchesPanel.tsx packages/admin-screens/src/lifted/components/admin/supervision/SupervisionPanel.tsx > C:/oto-lanes/s734-after-width-lint.log 2>&1
+pnpm exec turbo run test --filter='!@oto/api' --concurrency=1 > C:/oto-lanes/s734-after-width-workspace.log 2>&1
+pnpm build > C:/oto-lanes/s734-after-width-build.log 2>&1
+pnpm --filter @oto/api exec tsx C:/oto-lanes/s734-local-native.mts > C:/oto-lanes/s734-after-width-native.log 2>&1

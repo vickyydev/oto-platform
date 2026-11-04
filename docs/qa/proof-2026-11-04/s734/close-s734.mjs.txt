@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {statusOf} from './codex-console-route-notes-20261104/scripts/agent/jira.mjs';
+const root='C:/oto-lanes/codex-console-route-notes-20261104',rel='docs/qa/proof-2026-11-04/s734';
+const proof=JSON.parse(readFileSync(root+'/'+rel+'/staging-proof.json','utf8'));
+const path=root+'/'+rel+'/jira-publication.json',publication=JSON.parse(readFileSync(path,'utf8'));
+assert.ok(proof.imagesOpenedAt&&proof.cleanupVerified&&publication.inlineImagesVerified);
+assert.equal(proof.source,publication.source);assert.equal(proof.ci.conclusion,'success');assert.equal(publication.attachments.length,5);
+const status=await statusOf('SCRUM-734');assert.equal(status.status,'Deployed');
+publication.statusAfter=status.status;publication.statusReadAt=new Date().toISOString();writeFileSync(path,JSON.stringify(publication,null,2)+'\n');
+const stamp=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date());
+const block=`**4 November 2026, ${stamp} Bangkok, SCRUM-734 DEPLOYED AND READ BACK; SOURCE/API/PROOF SLOT RELEASED:** Source ${proof.source} passed all six jobs of main CI ${proof.ci.databaseId}; API, Console and both POS builds were live on this source during the proof. The native Clone button copied eight rows into an own ZZ TEST branch, and its care and stock screens showed the supervision rules, confirmations, drop-off prices, stock definition and 12-unit pack. Independent reads confirmed target-local identities, six retained print defaults and zero stock quantity or trading history. Five opened staging images are shown inline in Jira comment ${publication.commentId}; jira.mjs walk and a fresh status read report Deployed, never Done. Exact core fixtures are retired, both empty mapped app branches read absent after canonical removal, and all three browser sessions ended. The eight deployment identities and 57 API setting names stayed unchanged. Evidence and every live service commit are under docs/qa/proof-2026-11-04/s734. Booth stations, their settings and published versions remain deliberately excluded because no destination station is created; operator-wide settings remain shared. No park device, real payment or SMS. Physical printing and a real second branch remain unproven. This block explicitly RELEASES source, API restart and staging proof to the next eligible lane under the owner's first-come instruction, preserving the stated order of the remaining planner landings.**`;
+for(const p of ['docs/progress/STATUS.md','docs/handover/CODEX_HANDOVER.md','docs/handover/CLOUD_HANDOVER.md']){
+ const text=readFileSync(root+'/'+p,'utf8');
+ if(p.includes('CLOUD_')){const start=text.indexOf('## 2. Where the work stands');assert.ok(start>=0);const end=text.indexOf('\n',start)+1;writeFileSync(root+'/'+p,text.slice(0,end)+'\n'+block+'\n\n'+text.slice(end));}
+ else writeFileSync(root+'/'+p,block+'\n\n'+text);
+}
+const report=root+'/'+rel+'/README.md';writeFileSync(report,block+'\n\n'+readFileSync(report,'utf8'));
+writeFileSync('C:/oto-lanes/s734-close-commit.txt','docs(qa): close the branch clone staging proof\n\n- Record opened inline evidence and exact fixture retirement.\n- Read back Deployed and release the source and proof window.\n\nRefs: SCRUM-734\n');
+writeFileSync('C:/oto-lanes/s734-close-note.txt',`The five opened staging images are shown inline in comment ${publication.commentId}, and a fresh check after jira.mjs walk reads Deployed. All own test fixtures and sessions are retired, with independent cleanup readback. The source/API/proof window is released for the next eligible claim under the owner's instruction. Booth stations and their settings remain excluded; physical printing and a real second branch were not tested.\n`);
+console.log(JSON.stringify({key:'SCRUM-734',source:proof.source,ci:proof.ci.databaseId,status:status.status,commentId:publication.commentId,windowReleased:true}));

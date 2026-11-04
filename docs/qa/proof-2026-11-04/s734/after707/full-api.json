@@ -1,0 +1,28 @@
+{
+  "source": "b83641d45c7ad4304f6d8062be791ed7f31b7942",
+  "startedAt": "2026-11-04T03:05:58.145Z",
+  "script": "C:/oto-lanes/s734-after707-gates.sh",
+  "outcome": "passed",
+  "exitCode": 0,
+  "signal": null,
+  "finishedAt": "2026-11-04T04:11:18.677Z",
+  "summary": [
+    "Test Files  443 passed | 8 skipped (451)",
+    "Tests  6265 passed | 401 skipped | 4 todo (6670)",
+    "Duration  3661.38s (transform 9.02s, setup 0ms, collect 851.76s, tests 2707.33s, environment 54ms, prepare 40.61s)"
+  ],
+  "rawSha256": "00371efd9f984e61adff7e69c2310c1e5dad3f42bfef6cab34a421fcea871447",
+  "normalizedSha256": "69a57dfeef7c837802a775cb6786724506b5b05cad52f0e910a6534a3d6f3686",
+  "contentCheck": {
+    "file": "C:/oto-lanes/s734-after707-api-full.log",
+    "knownSecretNameMatches": [],
+    "signatures": {
+      "postgresUrl": 0,
+      "jwt": 0,
+      "privateKey": 0
+    },
+    "clean": true
+  },
+  "sourceTreeUnchanged": true,
+  "staging": false
+}
