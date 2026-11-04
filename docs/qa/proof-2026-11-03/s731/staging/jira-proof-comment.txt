@@ -1,0 +1,23 @@
+Checked on staging on 4 November 2026 between 08:48 and 09:08 Bangkok, after the deploy, on live commit 3f60a2bf (oto-api-staging, oto-pos-web-staging and oto-pos-staging), in a real browser at oto-pos-web-staging. Signed in as the reception test account at a test till, "ZZ TEST SCRUM-731 ... till 2", on Virtual box 1. A test child, "ZZ TEST S731 Band Child", was checked in for drop-off with a test peanut allergy, a "no dairy" note and no food allowed. The child's band was printed on a test band printer and the QR on it was read. A test credit voucher worth ฿350 was made too. Every scan went through the box's scanner simulator, which feeds the code through the same reader the real scanner uses.
+
+Important: this works on a virtual box, like the one used here. On a real Pi box, no scan reaches the till yet; that is SCRUM-736. Until SCRUM-736 lands, the cradle stays in the iPad.
+
+What a person can do now:
+- F&B, first screen: scanning the wristband opens the child's order, with the allergy alert, the "no dairy" note and "Food not authorized". Typing the code printed under the QR (Z8D-VJWJRA) opens the same screen.
+- F&B with that order open: scanning the credit voucher opens nothing and says "Credit voucher not opened ... Nothing changed".
+- F&B, first screen: scanning the credit voucher opens its tab with ฿350 credit. The voucher's code is hidden in the picture, because whoever holds it can spend it.
+- Shop, first screen: scanning the wristband opens the sale on the child's tab, with the band's wallet (฿0 credit on this band).
+- Shop at payment: scanning a wristband changes nothing and says "Wristband Z8D-VJWJRA not opened. Finish this sale first. Nothing changed." The amount due stays ฿50.
+- History, list: scanning the wristband opens the band's orders: its code, its credit and the drop-off visit (Z8D-000001, ฿1115).
+- History with that sale open: scanning the wristband says to go back first, and the sale stays on screen. Scanning the credit voucher says "That is a credit voucher, not a bracelet".
+- History, Add time: scanning the wristband ticks it ("Bracelet Z8D-VJWJRA added"). Once Add time is at payment, a scan changes nothing and says so.
+- Ticket till: scanning the wristband or the voucher says where each one opens, and the ticket order stays as it was.
+- Locked till: a scan made while the screen was locked opened nothing after unlocking.
+- iPad: tapping the wristband field asks for a full keyboard with letters, because band codes carry letters. A picture of the real iPad keyboard is left for the bench.
+- A credit voucher cannot be sent through the Console's command queue, where it would be stored and shown. It is refused, and nothing is queued.
+
+Clean-up: the two unpaid charges left at the test till (the Add time charge and a shop guest sale) were voided. Both test children went home through the normal pick-up, with a test picture that shows no person. Both test tills, the test band printer, the test shop item and its category were archived. The paid test sales and the ฿350 test voucher stay for the record. No real till, park device, Pi or FWBooth1 was used, and no SMS was sent.
+
+How to retest:
+- What anyone can check today on staging: at F&B, type the code printed under a checked-in child's band (like T1-ABC123) and press Load Tab. The child's order opens with the allergy alert. A scan opens exactly this screen.
+- The scan itself: on staging the team drives the box's scanner simulator at a virtual-box till. On the park's counter it can be tried once SCRUM-736 lands: scan a band at F&B, the shop and History, and expect the screens below.

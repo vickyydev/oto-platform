@@ -1,0 +1,712 @@
+{
+  "unit": "SCRUM-731",
+  "liveCommit": "3f60a2bf3dbad3c7037e62c7d46f24258cfcb1a5",
+  "fixtures": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "boxName": "Virtual box 1",
+    "bandPrinterId": "01a1a43e-cb2a-7b62-a3e7-767b77e9fbb5",
+    "bandPrinterLabel": "ZZ TEST SCRUM-731 mw1gk7c6 kids band",
+    "shopCategoryId": "01a1a43e-cceb-7663-a9b5-3911d8e7ef7f",
+    "shopItemName": "ZZ TEST SCRUM-731 mw1gk7c6 socks",
+    "shopItemId": "01a1a43e-cea8-7984-ad6c-0d76f5d62940",
+    "stationId": "01a1a449-4c44-7d0b-bc70-ffce786b91f3",
+    "stationName": "ZZ TEST SCRUM-731 mw1gk7c6 till 2",
+    "codePrefix": "Z8D",
+    "stationReady": true,
+    "stationDevices": [
+      {
+        "role": "kids_band",
+        "deviceId": "01a1a43e-cb2a-7b62-a3e7-767b77e9fbb5"
+      }
+    ],
+    "firstStationId": "01a1a43e-d2b4-775f-be30-be14633544c9",
+    "firstStationName": "ZZ TEST SCRUM-731 mw1gk7c6 till",
+    "firstCodePrefix": "ZI7C",
+    "secondTillCreatedAt": "2026-11-04T02:00:28.540Z"
+  },
+  "name": "ZZ TEST SCRUM-731 mw1gk7c6",
+  "startedAt": "2026-11-04T01:48:47.526Z",
+  "createdAt": "2026-11-04T01:49:02.068Z",
+  "voucher": {
+    "saleId": "99613eef-1426-490d-977e-d8b7650389ba",
+    "status": "finalised",
+    "receiptNumber": "ZI7C-000002",
+    "grossSatang": 35000,
+    "hasQr": true,
+    "grantSummary": [
+      {
+        "walletId": "01a1a441-01e9-7f83-a940-c18adf56a0a1",
+        "amountSatang": 35000
+      }
+    ],
+    "madeAtFirstTill": true
+  },
+  "firstTill": {
+    "fixtures": {
+      "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "boxName": "Virtual box 1",
+      "bandPrinterId": "01a1a43e-cb2a-7b62-a3e7-767b77e9fbb5",
+      "bandPrinterLabel": "ZZ TEST SCRUM-731 mw1gk7c6 kids band",
+      "shopCategoryId": "01a1a43e-cceb-7663-a9b5-3911d8e7ef7f",
+      "shopItemName": "ZZ TEST SCRUM-731 mw1gk7c6 socks",
+      "shopItemId": "01a1a43e-cea8-7984-ad6c-0d76f5d62940",
+      "stationId": "01a1a43e-d2b4-775f-be30-be14633544c9",
+      "stationName": "ZZ TEST SCRUM-731 mw1gk7c6 till",
+      "codePrefix": "ZI7C",
+      "stationReady": true,
+      "stationDevices": [
+        {
+          "role": "kids_band",
+          "deviceId": "01a1a43e-cb2a-7b62-a3e7-767b77e9fbb5"
+        }
+      ]
+    },
+    "family": {
+      "startedAt": "2026-11-04T01:51:14.698Z",
+      "signedIn": {
+        "name": "Som (Reception)",
+        "branch": "Oto Play Park, Central Floresta",
+        "station": "ZZ TEST SCRUM-731 mw1gk7c6 till",
+        "pickedAt": "2026-11-04T01:51:24.121Z"
+      },
+      "registrationId": "7b255bd6-07e8-4acd-b170-78bbe403ff61",
+      "checkinId": "4625499b-c7ba-4bf1-b4c4-c7116302356e",
+      "saleId": "ff8aa7dd-98b8-419f-80f8-13166c27e2f8",
+      "childName": "ZZ TEST S731 Scan Child",
+      "allergies": "ZZ TEST peanut allergy",
+      "foodRestrictions": "ZZ TEST no dairy",
+      "registeredAt": "2026-11-04T01:51:24.366Z",
+      "saleStatus": "finalised",
+      "receiptNumber": "ZI7C-000001",
+      "grossSatang": 111500,
+      "inPark": false,
+      "checkedInAt": "2026-11-04T01:51:24.741Z",
+      "printJobs": [
+        {
+          "id": "01a1a441-00bc-7481-ba93-81543a86783c",
+          "kind": "kids_wristband",
+          "status": "queued",
+          "deviceId": "01a1a43e-cb2a-7b62-a3e7-767b77e9fbb5"
+        }
+      ],
+      "printNotes": [],
+      "bandId": "01a1a441-00b3-7b54-ad3a-c6d1e9b63300",
+      "bandShortCode": "ZI7C-QV8QZ8",
+      "bandStatus": "active"
+    },
+    "printout": {
+      "seq": 1,
+      "at": "2026-11-04T01:51:26.640Z",
+      "widthDots": 400,
+      "heightDots": 393,
+      "qrRead": true,
+      "bandShaped": true
+    },
+    "walkA": {
+      "startedAt": "2026-11-04T01:53:57.409Z",
+      "shots": [
+        "s731-finding-first-till-band-read-opens-the-order.png",
+        "s731-finding-fnb-typed-short-code-of-a-four-character-till-read-as-voucher.png"
+      ],
+      "checks": {
+        "s731-01-fnb-band-read-opens-the-order": {
+          "at": "2026-11-04T01:54:05.392Z",
+          "allergy banner names the child": true,
+          "allergy text": true,
+          "restriction": true,
+          "food not authorized card": true
+        }
+      },
+      "scans": [
+        {
+          "label": "F&B first screen: the band",
+          "at": "2026-11-04T01:54:04.399Z",
+          "status": 200,
+          "kind": "band",
+          "outcome": "handled",
+          "handler": "band",
+          "errorCode": null,
+          "recognised": true,
+          "bandShortCode": "ZI7C-QV8QZ8"
+        }
+      ],
+      "signedIn": {
+        "name": "Som (Reception)",
+        "branch": "Oto Play Park, Central Floresta",
+        "station": "ZZ TEST SCRUM-731 mw1gk7c6 till",
+        "pickedAt": "2026-11-04T01:53:57.408Z"
+      },
+      "wristbandFieldInputMode": "text",
+      "error": "locator.waitFor: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('Allergy / medical alert · ZZ TEST S731 Scan Child').first() to be visible\u001b[22m\n"
+    },
+    "why": "Its code prefix ZI7C is four characters, so the band short code ZI7C-QV8QZ8 is ten characters without its dash, the shape of a legacy Lucky Wheel voucher code; the F&B band field hands such a value to the voucher path. Kept for the finding; the proof reran on a till with a three-character prefix, as the park tills have (T1, PI1)."
+  },
+  "family": {
+    "startedAt": "2026-11-04T02:00:38.663Z",
+    "signedIn": {
+      "name": "Som (Reception)",
+      "branch": "Oto Play Park, Central Floresta",
+      "station": "ZZ TEST SCRUM-731 mw1gk7c6 till 2",
+      "pickedAt": "2026-11-04T02:00:48.331Z"
+    },
+    "registrationId": "284cc835-597b-4bf7-a975-8b3eedd2c202",
+    "checkinId": "5df863e8-5db9-43ac-bc48-d02fc50f6422",
+    "saleId": "fb67a104-34e1-4a2e-849a-582248db01f2",
+    "childName": "ZZ TEST S731 Band Child",
+    "allergies": "ZZ TEST peanut allergy",
+    "foodRestrictions": "ZZ TEST no dairy",
+    "registeredAt": "2026-11-04T02:00:48.578Z",
+    "saleStatus": "finalised",
+    "receiptNumber": "Z8D-000001",
+    "grossSatang": 111500,
+    "inPark": false,
+    "checkedInAt": "2026-11-04T02:00:48.926Z",
+    "printJobs": [
+      {
+        "id": "01a1a449-9ca0-7424-bbbc-aa09b197237f",
+        "kind": "kids_wristband",
+        "status": "queued",
+        "deviceId": "01a1a43e-cb2a-7b62-a3e7-767b77e9fbb5"
+      }
+    ],
+    "printNotes": [],
+    "bandId": "01a1a449-9c99-7b17-9606-1284281a5fac",
+    "bandShortCode": "Z8D-VJWJRA",
+    "bandStatus": "active"
+  },
+  "printout": {
+    "seq": 2,
+    "at": "2026-11-04T02:00:51.720Z",
+    "widthDots": 400,
+    "heightDots": 393,
+    "qrRead": true,
+    "bandShaped": true
+  },
+  "walk": {
+    "a": {
+      "startedAt": "2026-11-04T02:01:26.127Z",
+      "shots": [
+        "s731-01-fnb-band-read-opens-the-order.png",
+        "s731-02-fnb-typed-short-code-same-screen.png",
+        "s731-03-fnb-voucher-on-open-order-changes-nothing.png",
+        "s731-04-fnb-voucher-opens-its-tab-with-credit.png",
+        "s731-05-shop-band-read-opens-the-sale.png",
+        "s731-06-shop-band-at-payment-changes-nothing.png"
+      ],
+      "checks": {
+        "s731-01-fnb-band-read-opens-the-order": {
+          "at": "2026-11-04T02:01:34.007Z",
+          "allergy banner names the child": true,
+          "allergy text": true,
+          "restriction": true,
+          "food not authorized card": true
+        },
+        "s731-02-fnb-typed-short-code-same-screen": {
+          "at": "2026-11-04T02:01:35.047Z",
+          "allergy banner names the child": true,
+          "allergy text": true,
+          "restriction": true,
+          "food not authorized card": true
+        },
+        "s731-03-fnb-voucher-on-open-order-changes-nothing": {
+          "at": "2026-11-04T02:01:42.001Z",
+          "toast: Credit voucher not opened": true,
+          "toast: Finish or clear it": true,
+          "child still on the order": true
+        },
+        "s731-04-fnb-voucher-opens-its-tab-with-credit": {
+          "at": "2026-11-04T02:01:49.086Z",
+          "credit shown": true,
+          "first screen gone": true
+        },
+        "s731-05-shop-band-read-opens-the-sale": {
+          "at": "2026-11-04T02:01:58.540Z",
+          "child on the sale": true,
+          "first screen gone": true
+        },
+        "s731-06-shop-band-at-payment-changes-nothing": {
+          "at": "2026-11-04T02:02:09.533Z",
+          "toast: Wristband not opened": true,
+          "toast: Finish this sale first": true,
+          "child not on the sale": true
+        }
+      },
+      "scans": [
+        {
+          "label": "F&B first screen: the band",
+          "at": "2026-11-04T02:01:33.100Z",
+          "status": 200,
+          "kind": "band",
+          "outcome": "handled",
+          "handler": "band",
+          "errorCode": null,
+          "recognised": true,
+          "bandShortCode": "Z8D-VJWJRA"
+        },
+        {
+          "label": "F&B open order: the credit voucher",
+          "at": "2026-11-04T02:01:41.185Z",
+          "status": 200,
+          "kind": "wallet",
+          "outcome": "handled",
+          "handler": "wallet-qr",
+          "errorCode": null,
+          "recognised": true,
+          "bandShortCode": null
+        },
+        {
+          "label": "F&B first screen: the credit voucher",
+          "at": "2026-11-04T02:01:48.185Z",
+          "status": 200,
+          "kind": "wallet",
+          "outcome": "handled",
+          "handler": "wallet-qr",
+          "errorCode": null,
+          "recognised": true,
+          "bandShortCode": null
+        },
+        {
+          "label": "Shop first screen: the band",
+          "at": "2026-11-04T02:01:57.645Z",
+          "status": 200,
+          "kind": "band",
+          "outcome": "handled",
+          "handler": "band",
+          "errorCode": null,
+          "recognised": true,
+          "bandShortCode": "Z8D-VJWJRA"
+        },
+        {
+          "label": "Shop at payment: the band",
+          "at": "2026-11-04T02:02:08.729Z",
+          "status": 200,
+          "kind": "band",
+          "outcome": "handled",
+          "handler": "band",
+          "errorCode": null,
+          "recognised": true,
+          "bandShortCode": "Z8D-VJWJRA"
+        }
+      ],
+      "signedIn": {
+        "name": "Som (Reception)",
+        "branch": "Oto Play Park, Central Floresta",
+        "station": "ZZ TEST SCRUM-731 mw1gk7c6 till 2",
+        "pickedAt": "2026-11-04T02:01:26.127Z"
+      },
+      "wristbandFieldInputMode": "text",
+      "shopChargeBefore": "Charge ฿50",
+      "shopChargeAfter": "Charge ฿50",
+      "shopTotalUnchanged": true,
+      "finishedAt": "2026-11-04T02:02:12.163Z"
+    },
+    "b": {
+      "startedAt": "2026-11-04T02:03:07.463Z",
+      "shots": [
+        "s731-07-history-band-read-opens-its-orders.png",
+        "s731-08-history-sale-open-band-says-go-back.png",
+        "s731-09-history-credit-voucher-is-not-a-bracelet.png",
+        "s731-10-add-time-band-read-is-ticked.png",
+        "s731-11-add-time-at-payment-changes-nothing.png"
+      ],
+      "checks": {
+        "s731-07-history-band-read-opens-its-orders": {
+          "at": "2026-11-04T02:03:15.473Z",
+          "band code shown": true,
+          "total spent shown": true,
+          "credit shown": true
+        },
+        "s731-08-history-sale-open-band-says-go-back": {
+          "at": "2026-11-04T02:03:18.039Z",
+          "toast: Bracelet not opened": true,
+          "toast: go back first": true,
+          "the sale stays (Add time still there)": true,
+          "the sale stays (its receipt number)": true
+        },
+        "s731-09-history-credit-voucher-is-not-a-bracelet": {
+          "at": "2026-11-04T02:03:24.464Z",
+          "toast: credit voucher, not a bracelet": true,
+          "toast: opens at F&B or the shop": true,
+          "the sale stays": true
+        },
+        "s731-10-add-time-band-read-is-ticked": {
+          "at": "2026-11-04T02:03:32.211Z",
+          "toast: Bracelet added": true,
+          "toast: ticked on this Add time": true
+        },
+        "s731-11-add-time-at-payment-changes-nothing": {
+          "at": "2026-11-04T02:03:38.711Z",
+          "toast: Bracelet not added": true,
+          "toast: already set for payment": true
+        }
+      },
+      "scans": [
+        {
+          "label": "History list: the band",
+          "at": "2026-11-04T02:03:14.458Z",
+          "status": 200,
+          "kind": "band",
+          "outcome": "handled",
+          "handler": "band",
+          "errorCode": null,
+          "recognised": true,
+          "bandShortCode": "Z8D-VJWJRA"
+        },
+        {
+          "label": "History, a sale open: the band",
+          "at": "2026-11-04T02:03:17.225Z",
+          "status": 200,
+          "kind": "band",
+          "outcome": "handled",
+          "handler": "band",
+          "errorCode": null,
+          "recognised": true,
+          "bandShortCode": "Z8D-VJWJRA"
+        },
+        {
+          "label": "History, a sale open: the credit voucher",
+          "at": "2026-11-04T02:03:23.652Z",
+          "status": 200,
+          "kind": "wallet",
+          "outcome": "handled",
+          "handler": "wallet-qr",
+          "errorCode": null,
+          "recognised": true,
+          "bandShortCode": null
+        },
+        {
+          "label": "History, Add time open: the band",
+          "at": "2026-11-04T02:03:31.395Z",
+          "status": 200,
+          "kind": "band",
+          "outcome": "handled",
+          "handler": "band",
+          "errorCode": null,
+          "recognised": true,
+          "bandShortCode": "Z8D-VJWJRA"
+        },
+        {
+          "label": "History, Add time at payment: the band",
+          "at": "2026-11-04T02:03:37.898Z",
+          "status": 200,
+          "kind": "band",
+          "outcome": "handled",
+          "handler": "band",
+          "errorCode": null,
+          "recognised": true,
+          "bandShortCode": "Z8D-VJWJRA"
+        }
+      ],
+      "signedIn": {
+        "name": "Som (Reception)",
+        "branch": "Oto Play Park, Central Floresta",
+        "station": "ZZ TEST SCRUM-731 mw1gk7c6 till 2",
+        "pickedAt": "2026-11-04T02:03:07.463Z"
+      },
+      "saleOpenReceipt": true,
+      "braceletTickedBeforeScan": false,
+      "braceletTickedAfterScan": true,
+      "addTimeOption": "+30 minutes฿60 × 1 bracelet฿60",
+      "braceletStillTickedAtPayment": true,
+      "extensionsAfter": {
+        "status": 200,
+        "body": "{\"options\":[{\"id\":\"ext-30\",\"label\":\"+30 minutes\",\"minutes\":30,\"unitSatang\":6000},{\"id\":\"ext-60\",\"label\":\"+1 hour\",\"minutes\":60,\"unitSatang\":10000},{\"id\":\"ext-120\",\"label\":\"+2 hours\",\"minutes\":120,\"unitSatang\":18000}],\"eligibleBands\":[{\"id\":\"01a1a449-9c99-7b17-9606-1284281a5fac\",\"shortCode\":\"Z8D-VJWJRA\",\"kind\":\"kid\"}],\"extensions\":[{\"id\":\"01a1a44c-1b36-7311-a766-cbfcebf7f1a7\",\"chargeSaleId\":\"01a1a44c-1b36-7311-a766-cbfb36956f40\",\"optionId\":\"ext-30\",\"label\":\"+30 minutes\",\"minutesAdded\":30,\"braceletCount\":1,\"amountSatang\":6000,\"selection\":{\"mode\":\"bands\",\"bandIds\":[\"01a1a449-9c99-7b17-9606-1284281a5fac\"]},\"status\":\"pending\",\"createdAt\":\"2026-11-04T02:03:33.548Z\",\"createdByName\":\"Som (Reception)\",\"appliedAt\":null,\"currentBandIds\":[\"01a1a449-9c99-7b17-9606-1284281a5fac\"],\"paymentMethods\":[],\"needsReselection\":false}]}"
+      },
+      "finishedAt": "2026-11-04T02:03:40.847Z"
+    },
+    "c": {
+      "startedAt": "2026-11-04T02:04:35.780Z",
+      "shots": [
+        "s731-12-ticket-till-band-says-where-it-goes.png",
+        "s731-13-ticket-till-credit-voucher-says-where-it-goes.png",
+        "s731-14-locked-scan-heard-by-the-box.png",
+        "s731-15-after-unlock-nothing-landed.png"
+      ],
+      "checks": {
+        "s731-12-ticket-till-band-says-where-it-goes": {
+          "at": "2026-11-04T02:04:45.371Z",
+          "toast: That is wristband": true,
+          "toast: opens at F&B, the shop or History": true,
+          "the order is still on the till": true
+        },
+        "s731-13-ticket-till-credit-voucher-says-where-it-goes": {
+          "at": "2026-11-04T02:04:51.824Z",
+          "toast: That is a credit voucher": true,
+          "toast: spends at F&B or the shop": true,
+          "the order is still on the till": true
+        },
+        "s731-14-locked-scan-heard-by-the-box": {
+          "at": "2026-11-04T02:05:18.265Z",
+          "the till is locked": true
+        },
+        "s731-15-after-unlock-nothing-landed": {
+          "at": "2026-11-04T02:05:25.349Z",
+          "still on the first screen": true,
+          "no child order opened": true
+        }
+      },
+      "scans": [
+        {
+          "label": "Ticket till with an order: the band",
+          "at": "2026-11-04T02:04:44.552Z",
+          "status": 200,
+          "kind": "band",
+          "outcome": "handled",
+          "handler": "band",
+          "errorCode": null,
+          "recognised": true,
+          "bandShortCode": "Z8D-VJWJRA"
+        },
+        {
+          "label": "Ticket till with an order: the credit voucher",
+          "at": "2026-11-04T02:04:51.008Z",
+          "status": 200,
+          "kind": "wallet",
+          "outcome": "handled",
+          "handler": "wallet-qr",
+          "errorCode": null,
+          "recognised": true,
+          "bandShortCode": null
+        },
+        {
+          "label": "While the till is locked: the band, from a second session",
+          "at": "2026-11-04T02:05:13.461Z",
+          "status": 200,
+          "kind": "band",
+          "outcome": "handled",
+          "handler": "band",
+          "bandShortCode": "Z8D-VJWJRA"
+        }
+      ],
+      "signedIn": {
+        "name": "Som (Reception)",
+        "branch": "Oto Play Park, Central Floresta",
+        "station": "ZZ TEST SCRUM-731 mw1gk7c6 till 2",
+        "pickedAt": "2026-11-04T02:04:35.780Z"
+      },
+      "tillOrderBefore": true,
+      "tillOrderAfter": true,
+      "finishedAt": "2026-11-04T02:05:25.394Z"
+    },
+    "d": {
+      "startedAt": "2026-11-04T02:06:17.285Z",
+      "shots": [
+        "s731-16-ipad-wristband-field-tapped-raw.png",
+        "s731-16-ipad-wristband-field-full-keyboard.png",
+        "s731-17-queued-voucher-scan-refused.png"
+      ],
+      "device": {
+        "name": "iPad Pro 11 landscape (Playwright emulation)",
+        "viewport": {
+          "width": 1194,
+          "height": 834
+        },
+        "isMobile": true,
+        "hasTouch": true,
+        "userAgent": "Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Mobile/15E148 Safari"
+      },
+      "field": {
+        "focused": true,
+        "type": null,
+        "inputmode": "text",
+        "autocapitalize": "characters",
+        "autocorrect": "off",
+        "pattern": null
+      },
+      "queueRefusal": {
+        "at": "2026-11-04T02:06:46.119Z",
+        "status": 409,
+        "code": "SIMULATOR_ACTION_CARRIES_SECRET",
+        "message": "A credit voucher QR cannot travel through the command queue — it is stored and shown. Drive that scan through the station scan simulator instead.",
+        "commandListReadable": true,
+        "noCommandAdded": true,
+        "voucherCodeInCommandList": false
+      },
+      "finishedAt": "2026-11-04T02:06:48.459Z"
+    }
+  },
+  "cleanup": {
+    "startedAt": "2026-11-04T02:08:15.244Z",
+    "steps": [
+      {
+        "what": "void unpaid sale",
+        "status": 200,
+        "error": null,
+        "saleId": "01a1a44c-1b36-7311-a766-cbfb36956f40",
+        "result": "voided"
+      },
+      {
+        "what": "void unpaid sale",
+        "status": 200,
+        "error": null,
+        "saleId": "01a1a44a-c99a-7728-abe8-119a5e375a1a",
+        "result": "voided"
+      },
+      {
+        "what": "pick-up photo record",
+        "status": 200,
+        "error": null,
+        "label": "till 1 child"
+      },
+      {
+        "what": "pick-up photo upload",
+        "status": 204,
+        "error": null,
+        "label": "till 1 child"
+      },
+      {
+        "what": "release",
+        "status": 200,
+        "error": null,
+        "label": "till 1 child"
+      },
+      {
+        "what": "pick-up photo record",
+        "status": 200,
+        "error": null,
+        "label": "till 2 child"
+      },
+      {
+        "what": "pick-up photo upload",
+        "status": 204,
+        "error": null,
+        "label": "till 2 child"
+      },
+      {
+        "what": "release",
+        "status": 200,
+        "error": null,
+        "label": "till 2 child"
+      },
+      {
+        "what": "archive till",
+        "status": 200,
+        "error": null,
+        "id": "01a1a43e-d2b4-775f-be30-be14633544c9",
+        "name": "ZZ TEST SCRUM-731 mw1gk7c6 till"
+      },
+      {
+        "what": "archive till",
+        "status": 200,
+        "error": null,
+        "id": "01a1a449-4c44-7d0b-bc70-ffce786b91f3",
+        "name": "ZZ TEST SCRUM-731 mw1gk7c6 till 2"
+      },
+      {
+        "what": "archive band printer",
+        "status": 200,
+        "error": null,
+        "stillAssignedTo": []
+      },
+      {
+        "what": "archive shop item",
+        "status": 200,
+        "error": null
+      },
+      {
+        "what": "archive shop category",
+        "status": 200,
+        "error": null
+      }
+    ],
+    "unpaidFound": [
+      {
+        "id": "01a1a44c-1b36-7311-a766-cbfb36956f40",
+        "gross": 6000
+      },
+      {
+        "id": "01a1a44a-c99a-7728-abe8-119a5e375a1a",
+        "gross": 5000
+      }
+    ],
+    "releases": [
+      {
+        "label": "till 1 child",
+        "child": "ZZ TEST S731 Scan Child",
+        "statusAfter": "out"
+      },
+      {
+        "label": "till 2 child",
+        "child": "ZZ TEST S731 Band Child",
+        "statusAfter": "out"
+      }
+    ],
+    "readBack": {
+      "at": "2026-11-04T02:08:46.545Z",
+      "shopItemArchived": true,
+      "shopCategoryArchived": true,
+      "shopItemAbsentFromActiveMenu": true,
+      "tillsArchived": [
+        {
+          "id": "01a1a43e-d2b4-775f-be30-be14633544c9",
+          "name": "ZZ TEST SCRUM-731 mw1gk7c6 till",
+          "archived": true
+        },
+        {
+          "id": "01a1a449-4c44-7d0b-bc70-ffce786b91f3",
+          "name": "ZZ TEST SCRUM-731 mw1gk7c6 till 2",
+          "archived": true
+        }
+      ],
+      "bandPrinterArchived": true,
+      "bandPrinterAbsentFromActiveList": true,
+      "virtualBox1DevicesStillActive": 13,
+      "salesAfter": {
+        "till 1": [
+          {
+            "receipt": "ZI7C-000002",
+            "status": "finalised",
+            "gross": 35000
+          },
+          {
+            "receipt": "ZI7C-000001",
+            "status": "finalised",
+            "gross": 111500
+          }
+        ],
+        "till 2": [
+          {
+            "receipt": null,
+            "status": "voided",
+            "gross": 6000
+          },
+          {
+            "receipt": null,
+            "status": "voided",
+            "gross": 5000
+          },
+          {
+            "receipt": "Z8D-000001",
+            "status": "finalised",
+            "gross": 111500
+          }
+        ]
+      },
+      "childrenAfter": {
+        "ZZ TEST S731 Scan Child": "out",
+        "ZZ TEST S731 Band Child": "out"
+      },
+      "untouched": [
+        {
+          "name": "FWBooth1",
+          "archived": false
+        },
+        {
+          "name": "Reception Till 1",
+          "archived": false
+        },
+        {
+          "name": "Till 1 (Pi)",
+          "archived": false
+        },
+        {
+          "name": "Till 2 (test)",
+          "archived": false
+        }
+      ]
+    },
+    "finishedAt": "2026-11-04T02:08:46.545Z"
+  }
+}

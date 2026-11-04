@@ -1,0 +1,40 @@
+// SCRUM-731 staging fixtures, made for this proof only: one ZZ TEST simulated kids band printer on
+// Virtual box 1 (the box this api process runs, so a scan reaches the till), one ZZ TEST till on it,
+// and one ZZ TEST shop item in its own ZZ TEST category. Never the Pi, its tills or FWBooth1.
+import { launch, consoleSession, api, ok, receipt, save, BRANCH, LIVE } from './common.mjs';
+const r = receipt();
+if (r.fixtures?.stationId && !r.cleanup) { console.log('fixtures already exist'); process.exit(0); }
+const stamp = Date.now().toString(36);
+const name = 'ZZ TEST SCRUM-731 ' + stamp;
+Object.assign(r, { unit: 'SCRUM-731', liveCommit: LIVE, name, startedAt: new Date().toISOString(), fixtures: {} });
+const f = r.fixtures;
+const browser = await launch();
+try {
+  const { page } = await consoleSession(browser);
+  const me = ok(await api(page, 'GET', '/me'), 'me');
+  if ((me.branch?.id) !== BRANCH) throw new Error('Signed-in branch is not Central Floresta');
+  f.branchId = BRANCH;
+  const boxes = ok(await api(page, 'GET', `/branches/${BRANCH}/boxes`), 'boxes').boxes;
+  const vb = boxes.find((b) => b.role === 'virtual' && b.slot === 'virtual-1' && b.status === 'online' && !b.archived);
+  if (!vb || /FWBooth|Pi/i.test(vb.name)) throw new Error('Virtual box 1 not online');
+  f.boxId = vb.id; f.boxName = vb.name; save(r);
+  const dev = ok(await api(page, 'POST', `/boxes/${vb.id}/devices`, { kind: 'band_printer', label: name + ' kids band', transport: 'simulated', address: 'zz-s731-band:9100', model: '4B-2082A', protocol: 'tspl2' }), 'device').device;
+  f.bandPrinterId = dev.id; f.bandPrinterLabel = dev.label; save(r);
+  const cat = ok(await api(page, 'POST', '/menu/categories', { name: name + ' shop', taxableCategory: 'merch' }), 'category');
+  f.shopCategoryId = cat.id; save(r);
+  f.shopItemName = name + ' socks';
+  f.shopItemId = ok(await api(page, 'POST', `/branches/${BRANCH}/menu/products`, { name: f.shopItemName, kind: 'merch', categoryId: cat.id, priceSatang: 5000, priceWeekendSatang: 5000, stockLinks: [], active: true }), 'product').id;
+  save(r);
+  const stations = ok(await api(page, 'GET', `/branches/${BRANCH}/stations?includeArchived=true`), 'stations').stations;
+  const used = new Set(stations.map((s) => s.codePrefix));
+  const prefix = Array.from({ length: 1000 }, (_, i) => 'Z' + (Date.now() + i).toString(36).slice(-3).toUpperCase()).find((c) => !used.has(c));
+  const made = ok(await api(page, 'POST', `/branches/${BRANCH}/stations`, { name: name + ' till', kind: 'till', boxId: vb.id, codePrefix: prefix, accessScope: 'all_staff', devices: [{ deviceId: dev.id, role: 'kids_band' }], paymentRouting: { card: 'manual', qr: 'none' } }), 'station');
+  f.stationId = made.station.id; f.stationName = made.station.name; f.codePrefix = prefix; f.stationReady = made.station.ready;
+  f.stationDevices = made.station.devices?.map((d) => ({ role: d.role, deviceId: d.deviceId }));
+  r.createdAt = new Date().toISOString();
+  save(r);
+  await api(page, 'POST', '/auth/sign-out', {});
+  console.log(JSON.stringify(r, null, 2));
+} catch (e) {
+  r.error = String(e?.message ?? e).slice(0, 500); save(r); console.log('ERROR', r.error);
+} finally { await browser.close(); }

@@ -1,0 +1,13 @@
+// Sign in on the POS as the staging reception account and stand at the ZZ TEST till (picked by name).
+import { posSignIn, api, ok, receipt } from './common.mjs';
+export async function atTill(browser, viewport = { width: 1280, height: 860 }) {
+  const f = receipt().fixtures;
+  const { ctx, page } = await posSignIn(browser, 'RECEPTION', viewport);
+  const heading = page.getByRole('heading', { name: 'Which station are you on?' });
+  await heading.waitFor({ timeout: 15000 });
+  await page.getByRole('button', { name: new RegExp(f.stationName) }).first().click();
+  await heading.waitFor({ state: 'hidden', timeout: 20000 });
+  await page.getByText('Membership Check', { exact: true }).first().waitFor({ timeout: 30000 });
+  const me = ok(await api(page, 'GET', '/me'), 'me');
+  return { ctx, page, f, who: { name: me.employee?.name, branch: me.branch?.name, station: f.stationName, pickedAt: new Date().toISOString() } };
+}

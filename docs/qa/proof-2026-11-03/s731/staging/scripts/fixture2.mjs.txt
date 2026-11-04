@@ -1,0 +1,49 @@
+// A second ZZ TEST till on Virtual box 1, with a three-character code prefix as the park's tills
+// have (T1, PI1), sharing the ZZ TEST simulated kids band printer. The proof's walk runs here.
+import { launch, consoleSession, api, ok, receipt, save, BRANCH } from './common.mjs';
+const r = receipt();
+const f = r.fixtures;
+if (f.firstStationId) {
+  console.log('second till already made');
+  process.exit(0);
+}
+const browser = await launch();
+try {
+  const { page } = await consoleSession(browser);
+  const stations = ok(await api(page, 'GET', `/branches/${BRANCH}/stations?includeArchived=true`), 'stations').stations;
+  const used = new Set(stations.map((s) => s.codePrefix));
+  const A = '23456789ABCDEFGHJKMNPQRSTVWXYZ';
+  let prefix = null;
+  for (let i = 0; i < 2000 && !prefix; i += 1) {
+    const c = 'Z' + A[Math.floor(Math.random() * A.length)] + A[Math.floor(Math.random() * A.length)];
+    if (!used.has(c)) prefix = c;
+  }
+  const made = ok(
+    await api(page, 'POST', `/branches/${BRANCH}/stations`, {
+      name: r.name + ' till 2',
+      kind: 'till',
+      boxId: f.boxId,
+      codePrefix: prefix,
+      accessScope: 'all_staff',
+      devices: [{ deviceId: f.bandPrinterId, role: 'kids_band' }],
+      paymentRouting: { card: 'manual', qr: 'none' },
+    }),
+    'station',
+  );
+  f.firstStationId = f.stationId;
+  f.firstStationName = f.stationName;
+  f.firstCodePrefix = f.codePrefix;
+  f.stationId = made.station.id;
+  f.stationName = made.station.name;
+  f.codePrefix = prefix;
+  f.stationReady = made.station.ready;
+  f.stationDevices = made.station.devices?.map((d) => ({ role: d.role, deviceId: d.deviceId }));
+  f.secondTillCreatedAt = new Date().toISOString();
+  save(r);
+  await api(page, 'POST', '/auth/sign-out', {});
+  console.log(JSON.stringify(f, null, 2));
+} catch (e) {
+  console.log('ERROR', e.message);
+} finally {
+  await browser.close();
+}

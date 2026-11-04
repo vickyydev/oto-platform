@@ -1,0 +1,39 @@
+// Read the band the ZZ TEST simulated printer drew, and read its QR as a scanner would.
+// The picture and the code stay in the scratchpad: the code is the band's credential.
+import { createRequire } from 'node:module';
+import { writeFileSync } from 'node:fs';
+import { launch, consoleSession, api, ok, receipt, save, secrets, saveSecrets } from './common.mjs';
+const req = createRequire('C:/Users/waqar/AppData/Local/Temp/claude/c--Users-waqar-OneDrive-Desktop-Projects-oto-pos/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/s731deps/package.json');
+const jsQR = req('jsqr');
+const { PNG } = req('pngjs');
+const r = receipt();
+const f = r.fixtures;
+const browser = await launch();
+try {
+  const { page } = await consoleSession(browser);
+  const list = ok(await api(page, 'GET', `/devices/${f.bandPrinterId}/printouts?limit=5`), 'printouts');
+  console.log('printouts', JSON.stringify(list.printouts.map((p) => ({ seq: p.seq, at: p.at, w: p.widthDots, h: p.heightDots, truncated: p.truncated }))));
+  console.log('events', JSON.stringify(list.events.slice(-5).map((e) => ({ at: e.at, kind: e.kind }))));
+  const last = list.printouts.at(-1);
+  if (!last) throw new Error('no printout yet');
+  const b64 = await page.evaluate(async (u) => {
+    const res = await fetch('/api' + u, { credentials: 'include' });
+    const buf = new Uint8Array(await res.arrayBuffer());
+    let s = ''; for (const c of buf) s += String.fromCharCode(c);
+    return btoa(s);
+  }, last.previewUrl);
+  const png = Buffer.from(b64, 'base64');
+  writeFileSync('band-printout.png', png);
+  const img = PNG.sync.read(png);
+  // Rotate attempts: the band may be drawn sideways; jsQR handles rotation but needs RGBA.
+  let found = jsQR(new Uint8ClampedArray(img.data), img.width, img.height, { inversionAttempts: 'attemptBoth' });
+  if (!found) throw new Error('QR not read from the printout ' + img.width + 'x' + img.height);
+  const code = found.data;
+  const shape = /^[0-9A-Z]{20,40}\.[0-9A-Z]{12}$/.test(code);
+  const short = code.split('.')[0];
+  console.log('qr read; band-shaped:', shape, '| starts with prefix', short.startsWith(f.codePrefix), '| length', code.length);
+  const s = secrets(); s.bandCode = code; saveSecrets(s);
+  r.printout = { seq: last.seq, at: last.at, widthDots: last.widthDots, heightDots: last.heightDots, qrRead: true, bandShaped: shape };
+  save(r);
+  await api(page, 'POST', '/auth/sign-out', {});
+} catch (e) { console.log('ERROR', e.message); } finally { await browser.close(); }

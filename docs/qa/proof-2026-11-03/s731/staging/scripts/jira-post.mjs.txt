@@ -1,0 +1,17 @@
+// Post the SCRUM-731 proof comment with its screenshots shown inside it, once.
+import { commentWithImages, jget } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/jira.mjs';
+import { readFileSync, writeFileSync } from 'node:fs';
+const [key, textFile, out, ...files] = process.argv.slice(2);
+const text = readFileSync(textFile, 'utf8').trim();
+const existing = await jget(`/rest/api/2/issue/${key}/comment?maxResults=100&orderBy=-created`);
+if ((existing.comments ?? []).some((c) => typeof c.body === 'string' && c.body.includes(files[0]))) {
+  console.log('already posted');
+  process.exit(0);
+}
+const r = await commentWithImages(key, text, files);
+const id = /"id":"(\d+)"/.exec(String(r.body ?? ''))?.[1] ?? r.json?.id ?? null;
+const back = id ? await jget(`/rest/api/2/issue/${key}/comment/${id}`) : null;
+const shown = files.filter((f) => typeof back?.body === 'string' && back.body.includes(`!${f}|`));
+const rec = { key, status: r.status, commentId: id, imagesShownInComment: shown, at: new Date().toISOString() };
+writeFileSync(out, JSON.stringify(rec, null, 2) + '\n');
+console.log(JSON.stringify(rec, null, 2));

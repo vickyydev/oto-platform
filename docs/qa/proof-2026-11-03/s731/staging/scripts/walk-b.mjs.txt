@@ -1,0 +1,106 @@
+// Steps 10 to 12 of the lane's proof plan: History, and History's Add time.
+import { launch, api, receipt, save, secrets, OUT } from './common.mjs';
+import { atTill } from './till.mjs';
+import { walker, listening } from './walkcommon.mjs';
+const r = receipt();
+const s = secrets();
+const fam = r.family;
+const short = fam.bandShortCode;
+const browser = await launch();
+let page;
+let w;
+try {
+  const t = await atTill(browser, { width: 1440, height: 900 });
+  page = t.page;
+  w = walker(page, r, 'b');
+  w.note('signedIn', t.who);
+  const POS = new URL(page.url()).origin;
+
+  // 10. History's list: the band read by the box opens the band's orders.
+  await page.goto(POS + '/history', { waitUntil: 'domcontentloaded' });
+  await page.getByLabel('Search transactions').waitFor({ timeout: 30000 });
+  await listening(page);
+  await w.scan(s.bandCode, 'History list: the band');
+  await page.getByText(`#${short}`).first().waitFor({ timeout: 20000 });
+  await w.shot('s731-07-history-band-read-opens-its-orders', [
+    ['band code shown', page.getByText(`#${short}`)],
+    ['total spent shown', page.getByText('Total spent')],
+    ['credit shown', page.getByText(/credit/i)],
+  ]);
+
+  // 11. A sale open: the band is not taken, and the sale stays.
+  const saleRow = page.locator('button', { hasText: '฿' }).first();
+  await saleRow.waitFor({ timeout: 20000 });
+  await saleRow.click();
+  const addTime = page.getByRole('button', { name: 'Add time', exact: true });
+  await addTime.waitFor({ timeout: 20000 });
+  w.note('saleOpenReceipt', await page.getByText(fam.receiptNumber).first().isVisible().catch(() => false));
+  await page.waitForTimeout(1500);
+  await w.scan(s.bandCode, 'History, a sale open: the band');
+  await page.getByText(`Bracelet ${short} not opened`).first().waitFor({ timeout: 20000 });
+  await w.shot('s731-08-history-sale-open-band-says-go-back', [
+    ['toast: Bracelet not opened', page.getByText(`Bracelet ${short} not opened`)],
+    ['toast: go back first', page.getByText('Go back from this sale first, then scan again. Nothing changed.')],
+    ['the sale stays (Add time still there)', addTime],
+    ['the sale stays (its receipt number)', page.getByText(fam.receiptNumber)],
+  ]);
+  await page.waitForTimeout(5500);
+  await w.scan(s.walletQr, 'History, a sale open: the credit voucher');
+  await page.getByText('That is a credit voucher, not a bracelet').first().waitFor({ timeout: 20000 });
+  await w.shot('s731-09-history-credit-voucher-is-not-a-bracelet', [
+    ['toast: credit voucher, not a bracelet', page.getByText('That is a credit voucher, not a bracelet')],
+    ['toast: opens at F&B or the shop', page.getByText(/A credit voucher opens at F&B or the shop\. Nothing changed here\./)],
+    ['the sale stays', addTime],
+  ]);
+
+  // 12. Add time open: the band read by the box is ticked.
+  await page.waitForTimeout(5500);
+  await addTime.click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('heading', { name: 'Add time' }).waitFor({ timeout: 15000 });
+  const bracelet = dialog.getByRole('checkbox', { name: short });
+  await bracelet.waitFor({ timeout: 15000 });
+  if (await bracelet.isChecked()) await bracelet.uncheck();
+  w.note('braceletTickedBeforeScan', await bracelet.isChecked());
+  await page.waitForTimeout(1000);
+  await w.scan(s.bandCode, 'History, Add time open: the band');
+  await page.getByText(`Bracelet ${short} added`).first().waitFor({ timeout: 20000 });
+  w.note('braceletTickedAfterScan', await bracelet.isChecked());
+  await w.shot('s731-10-add-time-band-read-is-ticked', [
+    ['toast: Bracelet added', page.getByText(`Bracelet ${short} added`)],
+    ['toast: ticked on this Add time', page.getByText('It is ticked on this Add time.')],
+  ]);
+  // At Add time's payment step a scan changes nothing.
+  const option = dialog.getByRole('button', { name: /^\+\s*\d+/ }).first();
+  w.note('addTimeOption', (await option.textContent().catch(() => null))?.trim() ?? null);
+  await option.click();
+  await dialog.getByRole('button', { name: 'Continue to payment' }).click();
+  await dialog.getByRole('button', { name: 'Continue to payment' }).waitFor({ state: 'hidden', timeout: 20000 });
+  await page.waitForTimeout(5500);
+  await w.scan(s.bandCode, 'History, Add time at payment: the band');
+  await page.getByText(/already set for payment/).first().waitFor({ timeout: 20000 });
+  w.note('braceletStillTickedAtPayment', await bracelet.isChecked().catch(() => null));
+  await w.shot('s731-11-add-time-at-payment-changes-nothing', [
+    ['toast: Bracelet not added', page.getByText(`Bracelet ${short} not added`)],
+    ['toast: already set for payment', page.getByText('The bracelets on this Add time are already set for payment. Nothing changed.')],
+  ]);
+  // Leave the charge unpaid; the cleanup voids it.
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(2000);
+  const ext = await api(page, 'GET', `/sales/${fam.saleId}/extensions`);
+  w.note('extensionsAfter', { status: ext.status, body: JSON.stringify(ext.body).slice(0, 1500) });
+  w.note('finishedAt', new Date().toISOString());
+  await api(page, 'POST', '/auth/sign-out', {});
+  console.log(JSON.stringify(r.walk.b, null, 1));
+} catch (e) {
+  r.walk ??= {};
+  r.walk.b ??= {};
+  r.walk.b.error = String(e?.message ?? e).slice(0, 600);
+  save(r);
+  if (page) await page.screenshot({ path: `${OUT}/s731-error-walk-b.png` }).catch(() => {});
+  console.log('ERROR', r.walk.b.error);
+  console.log(JSON.stringify(r.walk.b, null, 1).slice(0, 4000));
+  if (page) await api(page, 'POST', '/auth/sign-out', {}).catch(() => {});
+} finally {
+  await browser.close();
+}

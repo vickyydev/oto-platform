@@ -1,0 +1,99 @@
+// Steps 13 and 14 of the lane's proof plan: the ticket till, and a scan while the station is locked.
+import { need } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs';
+import { launch, api, receipt, save, secrets, OUT, consoleSession } from './common.mjs';
+import { atTill } from './till.mjs';
+import { walker, listening } from './walkcommon.mjs';
+const r = receipt();
+const s = secrets();
+const fam = r.family;
+const short = fam.bandShortCode;
+const browser = await launch();
+let page;
+let w;
+let consolePage;
+try {
+  const t = await atTill(browser, { width: 1440, height: 900 });
+  page = t.page;
+  w = walker(page, r, 'c');
+  w.note('signedIn', t.who);
+  const POS = new URL(page.url()).origin;
+
+  // 13. The ticket till, with a walk-in ticket on the order: each scan says where it goes.
+  await page.goto(POS + '/', { waitUntil: 'domcontentloaded' });
+  await page.getByText('Membership Check', { exact: true }).first().waitFor({ timeout: 30000 });
+  await page.getByRole('button', { name: 'Skip — walk-in (Tourist)' }).click();
+  await page.getByRole('heading', { name: 'Tourist' }).first().click();
+  await page.getByRole('heading', { name: '1 Hour Play' }).first().click();
+  await page.getByRole('heading', { name: /^Configure:/ }).waitFor({ timeout: 15000 });
+  await page.getByRole('button', { name: 'Add one Kids' }).first().click();
+  await listening(page);
+  const before = await page.evaluate(() => document.body.innerText);
+  w.note('tillOrderBefore', /1 Hour Play/.test(before));
+  await w.scan(s.bandCode, 'Ticket till with an order: the band');
+  await page.getByText(`That is wristband ${short}`).first().waitFor({ timeout: 20000 });
+  await w.shot('s731-12-ticket-till-band-says-where-it-goes', [
+    ['toast: That is wristband', page.getByText(`That is wristband ${short}`)],
+    ['toast: opens at F&B, the shop or History', page.getByText('It opens at F&B, the shop or History. Nothing changed on this sale.')],
+    ['the order is still on the till', page.getByText('1 Hour Play')],
+  ]);
+  await page.waitForTimeout(5500);
+  await w.scan(s.walletQr, 'Ticket till with an order: the credit voucher');
+  await page.getByText('That is a credit voucher', { exact: true }).first().waitFor({ timeout: 20000 });
+  await w.shot('s731-13-ticket-till-credit-voucher-says-where-it-goes', [
+    ['toast: That is a credit voucher', page.getByText('That is a credit voucher', { exact: true })],
+    ['toast: spends at F&B or the shop', page.getByText('It spends at F&B or the shop. Nothing changed on this sale.')],
+    ['the order is still on the till', page.getByText('1 Hour Play')],
+  ]);
+  const after = await page.evaluate(() => document.body.innerText);
+  w.note('tillOrderAfter', /1 Hour Play/.test(after));
+  // Clear the ticket order: nothing was written.
+  await page.getByRole('button', { name: 'Cancel', exact: true }).first().click().catch(() => {});
+  await page.waitForTimeout(1500);
+  const confirm = page.getByRole('alertdialog').getByRole('button', { name: /cancel|clear|discard|yes/i });
+  if (await confirm.count()) await confirm.first().click().catch(() => {});
+  await page.waitForTimeout(1500);
+
+  // 14. Locked: the box hears a scan, and nothing lands after the unlock.
+  await page.goto(POS + '/order-station', { waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { name: 'Scan Wristband' }).waitFor({ timeout: 30000 });
+  await listening(page);
+  await page.getByLabel('Lock screen').click();
+  const locked = page.getByRole('heading', { name: 'Locked', exact: true });
+  if (!(await locked.isVisible().catch(() => false))) {
+    const lockNow = page.getByRole('button', { name: /^Lock/ }).first();
+    if (await lockNow.isVisible().catch(() => false)) await lockNow.click();
+  }
+  await locked.waitFor({ timeout: 15000 });
+  // The locked session cannot scan, so a second session does, as the box's scanner would.
+  const c = await consoleSession(browser);
+  consolePage = c.page;
+  const heard = await api(consolePage, 'POST', `/stations/${r.fixtures.stationId}/scan/simulate`, { code: s.bandCode, mode: 'hid' });
+  w.part.scans.push({ label: 'While the till is locked: the band, from a second session', at: new Date().toISOString(), status: heard.status, kind: heard.body?.kind, outcome: heard.body?.outcome, handler: heard.body?.handler ?? null, bandShortCode: heard.body?.detail?.band?.shortCode ?? null });
+  save(r);
+  await page.waitForTimeout(4000);
+  await w.shot('s731-14-locked-scan-heard-by-the-box', [['the till is locked', locked]]);
+  await page.locator('input[type="password"]').first().fill(need('STAGING_RECEPTION_PASSWORD'));
+  await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  await locked.waitFor({ state: 'hidden', timeout: 20000 });
+  await page.waitForTimeout(6000);
+  await w.shot('s731-15-after-unlock-nothing-landed', [
+    ['still on the first screen', page.getByRole('heading', { name: 'Scan Wristband' })],
+    ['no child order opened', page.getByText(`Allergy / medical alert · ${fam.childName}`), false],
+  ]);
+  w.note('finishedAt', new Date().toISOString());
+  await api(consolePage, 'POST', '/auth/sign-out', {});
+  await api(page, 'POST', '/auth/sign-out', {});
+  console.log(JSON.stringify(r.walk.c, null, 1));
+} catch (e) {
+  r.walk ??= {};
+  r.walk.c ??= {};
+  r.walk.c.error = String(e?.message ?? e).slice(0, 600);
+  save(r);
+  if (page) await page.screenshot({ path: `${OUT}/s731-error-walk-c.png` }).catch(() => {});
+  console.log('ERROR', r.walk.c.error);
+  console.log(JSON.stringify(r.walk.c, null, 1).slice(0, 4000));
+  if (consolePage) await api(consolePage, 'POST', '/auth/sign-out', {}).catch(() => {});
+  if (page) await api(page, 'POST', '/auth/sign-out', {}).catch(() => {});
+} finally {
+  await browser.close();
+}

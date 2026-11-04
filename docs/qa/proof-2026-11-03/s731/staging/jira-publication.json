@@ -1,0 +1,25 @@
+{
+  "key": "SCRUM-731",
+  "status": 201,
+  "commentId": "13382",
+  "imagesShownInComment": [
+    "s731-01-fnb-band-read-opens-the-order.png",
+    "s731-02-fnb-typed-short-code-same-screen.png",
+    "s731-03-fnb-voucher-on-open-order-changes-nothing.png",
+    "s731-04-fnb-voucher-opens-its-tab-with-credit.png",
+    "s731-05-shop-band-read-opens-the-sale.png",
+    "s731-06-shop-band-at-payment-changes-nothing.png",
+    "s731-07-history-band-read-opens-its-orders.png",
+    "s731-08-history-sale-open-band-says-go-back.png",
+    "s731-09-history-credit-voucher-is-not-a-bracelet.png",
+    "s731-10-add-time-band-read-is-ticked.png",
+    "s731-11-add-time-at-payment-changes-nothing.png",
+    "s731-12-ticket-till-band-says-where-it-goes.png",
+    "s731-13-ticket-till-credit-voucher-says-where-it-goes.png",
+    "s731-14-locked-scan-heard-by-the-box.png",
+    "s731-15-after-unlock-nothing-landed.png",
+    "s731-16-ipad-wristband-field-full-keyboard.png",
+    "s731-17-queued-voucher-scan-refused.png"
+  ],
+  "at": "2026-11-04T02:10:45.298Z"
+}

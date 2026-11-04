@@ -1,0 +1,128 @@
+// Step 15 of the lane's proof plan (an iPad's wristband field), and the plan's set-up note that a
+// queued scanner.scan carrying a credit voucher is refused. Both made into evidence cards.
+import { createRequire } from 'node:module';
+import { need } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs';
+import { card, png } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/evidence.mjs';
+import { launch, api, receipt, save, secrets, OUT, POS, consoleSession, LIVE } from './common.mjs';
+const req = createRequire('C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/apps/pos/package.json');
+const { devices } = req('@playwright/test');
+const r = receipt();
+const s = secrets();
+const f = r.fixtures;
+r.walk ??= {};
+const D = (r.walk.d = { startedAt: new Date().toISOString(), shots: [] });
+const browser = await launch();
+let page;
+let consolePage;
+const deploy = `Live commit ${LIVE.slice(0, 8)} on oto-api-staging, oto-pos-web-staging and oto-pos-staging`;
+try {
+  // --- The iPad -------------------------------------------------------------------------
+  const ipad = devices['iPad Pro 11 landscape'];
+  const ctx = await browser.newContext({ ...ipad });
+  page = await ctx.newPage();
+  for (let attempt = 1; attempt <= 4; attempt += 1) {
+    await page.goto(POS, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(2500);
+    const locked = await page.evaluate(() => Array.from(document.querySelectorAll('input[type="password"]')).some((i) => i.offsetParent !== null));
+    if (!locked) break;
+    const phone = need('STAGING_RECEPTION_PHONE');
+    const field = page.locator('input[type="tel"], input[inputmode="tel"]').last();
+    const prefix = await field.evaluate((el) => /\+(\d{1,4})/.exec(el.parentElement?.textContent ?? '')?.[1] ?? null).catch(() => null);
+    const typed = prefix && phone.startsWith(`+${prefix}`) ? (prefix === '66' ? `0${phone.slice(3)}` : phone.slice(prefix.length + 1)) : phone;
+    await field.fill(typed);
+    await page.locator('input[type="password"]').last().fill(need('STAGING_RECEPTION_PASSWORD'));
+    await page.getByRole('button', { name: /^sign in$/i }).tap().catch(() => page.getByRole('button', { name: /^sign in$/i }).click());
+    await page.waitForTimeout(6000);
+  }
+  const picker = page.getByRole('heading', { name: 'Which station are you on?' });
+  await picker.waitFor({ timeout: 15000 });
+  await page.getByRole('button', { name: new RegExp(f.stationName) }).first().tap();
+  await picker.waitFor({ state: 'hidden', timeout: 20000 });
+  await page.goto(POS + '/order-station', { waitUntil: 'domcontentloaded' });
+  const fieldBand = page.getByPlaceholder(/Wristband code/);
+  await fieldBand.waitFor({ timeout: 30000 });
+  await page.waitForTimeout(1500);
+  await fieldBand.tap();
+  await page.waitForTimeout(800);
+  D.device = { name: 'iPad Pro 11 landscape (Playwright emulation)', viewport: ipad.viewport, isMobile: ipad.isMobile, hasTouch: ipad.hasTouch, userAgent: ipad.userAgent.slice(0, 120) };
+  D.field = await fieldBand.evaluate((el) => ({
+    focused: document.activeElement === el,
+    type: el.getAttribute('type'),
+    inputmode: el.getAttribute('inputmode'),
+    autocapitalize: el.getAttribute('autocapitalize'),
+    autocorrect: el.getAttribute('autocorrect'),
+    pattern: el.getAttribute('pattern'),
+  }));
+  await page.screenshot({ path: `${OUT}/s731-16-ipad-wristband-field-tapped-raw.png` });
+  D.shots.push('s731-16-ipad-wristband-field-tapped-raw.png');
+  save(r);
+  await api(page, 'POST', '/auth/sign-out', {});
+
+  // --- The queued simulator door refuses a credit voucher ------------------------------
+  const c = await consoleSession(browser);
+  consolePage = c.page;
+  const beforeCmds = await api(consolePage, 'GET', `/boxes/${f.boxId}/commands?limit=5`);
+  const refused = await api(consolePage, 'POST', `/boxes/${f.boxId}/commands`, {
+    kind: 'simulate',
+    payload: { action: { action: 'scanner.scan', input: { code: s.walletQr, source: 'simulator' } } },
+  });
+  const afterCmds = await api(consolePage, 'GET', `/boxes/${f.boxId}/commands?limit=5`);
+  const ids = (b) => JSON.stringify((b.body?.commands ?? []).map((x) => x.id));
+  D.queueRefusal = {
+    at: new Date().toISOString(),
+    status: refused.status,
+    code: refused.body?.error?.code ?? null,
+    message: refused.body?.error?.message ?? null,
+    commandListReadable: beforeCmds.status === 200 && afterCmds.status === 200,
+    noCommandAdded: beforeCmds.status === 200 && ids(beforeCmds) === ids(afterCmds),
+    voucherCodeInCommandList: JSON.stringify(afterCmds.body ?? '').includes(s.walletQr),
+  };
+  save(r);
+  const who = await api(consolePage, 'GET', '/me');
+  await api(consolePage, 'POST', '/auth/sign-out', {});
+
+  // --- Evidence cards --------------------------------------------------------------------
+  const cctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+  const cp = await cctx.newPage();
+  await cp.setContent('<html><body style="margin:0;background:#0b1020"></body></html>');
+  await card(cp, {
+    title: 'SCRUM-731 step 15: the wristband field on an iPad',
+    subtitle: 'F&B first screen, ZZ TEST till 2 on Virtual box 1, tapped with touch in an iPad Pro 11 emulation',
+    identity: `${r.walk.a?.signedIn?.name ?? 'Som (Reception)'} at ${f.stationName}, Oto Play Park, Central Floresta`,
+    deploy,
+    rows: [
+      { ok: D.field.focused, tag: D.field.focused ? 'PASS' : 'FAIL', head: 'Tapping the field focuses it', note: 'the field takes the keyboard' },
+      { ok: D.field.inputmode === 'text', tag: D.field.inputmode === 'text' ? 'PASS' : 'FAIL', head: `inputmode="${D.field.inputmode}"`, note: 'a full keyboard, letters first: band codes carry letters (Z8D-VJWJRA)' },
+      { ok: D.field.autocapitalize === 'characters', tag: D.field.autocapitalize === 'characters' ? 'PASS' : 'FAIL', head: `autocapitalize="${D.field.autocapitalize}"`, note: 'capitals as they are printed on the band' },
+      { ok: true, tag: 'NOTE', head: 'A picture of the real on-screen keyboard is for the bench', note: 'a browser emulation draws no iOS keyboard; the attribute above is what tells the iPad which keyboard to open' },
+    ],
+    images: [{ heading: 'The iPad screen after the tap', items: [{ label: 'iPad Pro 11, landscape', url: `${POS}/order-station`, src: png(`${OUT}/s731-16-ipad-wristband-field-tapped-raw.png`) }] }],
+  }, `${OUT}/s731-16-ipad-wristband-field-full-keyboard.png`);
+  D.shots.push('s731-16-ipad-wristband-field-full-keyboard.png');
+  const q = D.queueRefusal;
+  await card(cp, {
+    title: 'SCRUM-731: a credit voucher cannot travel through the box command queue',
+    subtitle: 'POST /boxes/<Virtual box 1>/commands, kind simulate, action scanner.scan carrying the ZZ TEST credit voucher (code not shown)',
+    identity: `${who.body?.employee?.name ?? 'Console admin'} on the Console, Oto Play Park, Central Floresta`,
+    deploy,
+    rows: [
+      { ok: q.status === 409, tag: String(q.status), head: q.code ?? 'no code', note: q.message ?? '' },
+      { ok: q.noCommandAdded, tag: q.noCommandAdded ? 'PASS' : 'CHECK', head: 'No command was queued', note: q.commandListReadable ? 'the box command list is the same before and after' : 'the command list could not be read' },
+      { ok: !q.voucherCodeInCommandList, tag: !q.voucherCodeInCommandList ? 'PASS' : 'FAIL', head: 'The voucher code is not in the command history', note: 'it stays out of box_command, the audit row and the Console history' },
+      { ok: true, tag: 'DOOR', head: 'The station scan simulator is the door', note: 'POST /stations/<till>/scan/simulate stores nothing; every scan in this proof went through it' },
+    ],
+  }, `${OUT}/s731-17-queued-voucher-scan-refused.png`);
+  D.shots.push('s731-17-queued-voucher-scan-refused.png');
+  D.finishedAt = new Date().toISOString();
+  save(r);
+  console.log(JSON.stringify(D, null, 1));
+} catch (e) {
+  D.error = String(e?.message ?? e).slice(0, 600);
+  save(r);
+  if (page) await page.screenshot({ path: `${OUT}/s731-error-walk-d.png` }).catch(() => {});
+  console.log('ERROR', D.error);
+  if (page) await api(page, 'POST', '/auth/sign-out', {}).catch(() => {});
+  if (consolePage) await api(consolePage, 'POST', '/auth/sign-out', {}).catch(() => {});
+} finally {
+  await browser.close();
+}

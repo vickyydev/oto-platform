@@ -1,0 +1,45 @@
+// What every walk shares: the scan through the box's simulator and a checked screenshot.
+// A scan's answer is recorded by kind and outcome only: never the code, never a voucher key.
+import { api, save, OUT } from './common.mjs';
+export function walker(page, r, key) {
+  r.walk ??= {};
+  const part = (r.walk[key] = { startedAt: new Date().toISOString(), shots: [], checks: {}, scans: [] });
+  const scan = async (code, label, at = page) => {
+    const res = await api(at, 'POST', `/stations/${r.fixtures.stationId}/scan/simulate`, { code, mode: 'hid' });
+    const b = res.body ?? {};
+    const rec = {
+      label,
+      at: new Date().toISOString(),
+      status: res.status,
+      kind: b.kind,
+      outcome: b.outcome,
+      handler: b.handler ?? null,
+      errorCode: b.errorCode ?? b.error?.code ?? null,
+      recognised: b.recognised,
+      bandShortCode: b.detail?.band?.shortCode ?? null,
+    };
+    part.scans.push(rec);
+    save(r);
+    return rec;
+  };
+  const shot = async (name, checks = []) => {
+    await page.waitForTimeout(800);
+    const result = { at: new Date().toISOString() };
+    for (const [label, locator, want = true] of checks) {
+      const seen = await locator.first().isVisible().catch(() => false);
+      result[label] = want ? seen : !seen;
+    }
+    await page.screenshot({ path: `${OUT}/${name}.png` });
+    part.shots.push(name + '.png');
+    part.checks[name] = result;
+    save(r);
+    return result;
+  };
+  const note = (k, v) => {
+    part[k] = v;
+    save(r);
+  };
+  return { part, scan, shot, note };
+}
+/** Past the stream's bounded open, so the screen is listening whichever way it reached. */
+export const listening = (page) => page.waitForTimeout(6000);

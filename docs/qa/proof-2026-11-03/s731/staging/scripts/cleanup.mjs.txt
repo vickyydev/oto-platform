@@ -1,0 +1,129 @@
+// SCRUM-731 cleanup, own records only: void the two unpaid sales left on ZZ TEST till 2 (the Add time
+// charge and the shop guest sale), release both ZZ TEST children through the real pick-up with a
+// synthetic photo, then archive both tills, the ZZ TEST band printer, the shop item and its category.
+// Paid sales, receipts, bands, registrations, the voucher's wallet and audit rows stay for the record.
+import { randomUUID } from 'node:crypto';
+import { launch, api, receipt, save, consoleSession, BRANCH } from './common.mjs';
+import { atTill } from './till.mjs';
+const r = receipt();
+const f = r.fixtures;
+const C = (r.cleanup = { startedAt: new Date().toISOString(), steps: [] });
+const step = (what, res, extra = {}) => {
+  C.steps.push({ what, status: res?.status ?? null, error: res && res.status >= 300 ? JSON.stringify(res.body).slice(0, 300) : null, ...extra });
+  save(r);
+};
+const browser = await launch();
+let page;
+let cp;
+try {
+  const t = await atTill(browser, { width: 1280, height: 860 });
+  page = t.page;
+  // 1. The two unpaid sales on till 2, by exact id, after reading that they are this proof's and unpaid.
+  const list = await api(page, 'GET', `/sales?branchId=${BRANCH}&stationId=${f.stationId}&limit=50`);
+  const unpaid = (list.body?.sales ?? []).filter((x) => x.status === 'tendering');
+  C.unpaidFound = unpaid.map((x) => ({ id: x.id, gross: x.totals?.grossSatang ?? null }));
+  for (const sale of unpaid) {
+    const v = await api(page, 'POST', `/sales/${sale.id}/void`, { reason: 'ZZ TEST SCRUM-731 proof: not paid' });
+    step('void unpaid sale', v, { saleId: sale.id, result: v.body?.sale?.status ?? v.body?.status ?? null });
+  }
+  // 2. Release both children: the dropper-off collects, with a synthetic pick-up photo.
+  const photo = await page.evaluate(() => {
+    const c = document.createElement('canvas');
+    c.width = 640; c.height = 480;
+    const g = c.getContext('2d');
+    g.fillStyle = '#163345'; g.fillRect(0, 0, 640, 480);
+    g.fillStyle = '#ffffff'; g.font = '30px sans-serif';
+    g.fillText('ZZ TEST SCRUM-731', 100, 180); g.fillText('Synthetic image', 100, 230); g.fillText('No person photographed', 100, 280);
+    return c.toDataURL('image/png').split(',')[1];
+  });
+  const families = [
+    { label: 'till 1 child', fam: r.firstTill.family },
+    { label: 'till 2 child', fam: r.family },
+  ];
+  C.releases = [];
+  for (const { label, fam } of families) {
+    const reg = await api(page, 'GET', `/checkin/registrations/${fam.registrationId}`);
+    const stay = (reg.body?.children ?? []).find((x) => x.id === fam.checkinId);
+    if (!stay || !String(stay.childName ?? stay.name ?? fam.childName).startsWith('ZZ TEST')) throw new Error('Refusing to release a stay that is not this proof\'s');
+    if (stay.status !== 'in_park') { C.releases.push({ label, already: stay.status }); continue; }
+    const fileId = randomUUID();
+    const made = await api(page, 'POST', '/files', { id: fileId, contentType: 'image/png', ownerEntityType: 'registration', ownerEntityId: fam.registrationId, filename: 'zz-test-s731-pickup.png' });
+    step('pick-up photo record', made, { label });
+    const put = await page.evaluate(async ({ fileId, b64 }) => {
+      const bytes = Uint8Array.from(atob(b64), (ch) => ch.charCodeAt(0));
+      const res = await fetch(`/api/files/${fileId}/content`, { method: 'PUT', credentials: 'include', headers: { 'content-type': 'image/png' }, body: bytes });
+      return { status: res.status };
+    }, { fileId, b64: photo });
+    step('pick-up photo upload', put, { label });
+    const rel = await api(page, 'POST', `/checkin/pickups/stays/${fam.checkinId}/release`, { id: randomUUID(), collector: { kind: 'dropper_off' }, pickupPhotoFileId: fileId, stationId: f.stationId });
+    step('release', rel, { label });
+    const after = await api(page, 'GET', `/checkin/registrations/${fam.registrationId}`);
+    const now = (after.body?.children ?? []).find((x) => x.id === fam.checkinId);
+    C.releases.push({ label, child: fam.childName, statusAfter: now?.status ?? null });
+    fam.inPark = now?.status === 'in_park';
+    save(r);
+  }
+  await api(page, 'POST', '/auth/sign-out', {});
+  page = null;
+
+  // 3. The Console: archive the two tills, the band printer, the shop item and its category.
+  const c = await consoleSession(browser);
+  cp = c.page;
+  for (const [id, name] of [[f.firstStationId, f.firstStationName], [f.stationId, f.stationName]]) {
+    const own = (await api(cp, 'GET', `/stations/${id}`)).body?.station;
+    if (!own || own.name !== name || !name.startsWith('ZZ TEST SCRUM-731')) throw new Error('Refusing to archive station ' + id);
+    step('archive till', await api(cp, 'DELETE', `/stations/${id}`), { id, name });
+  }
+  const devs = (await api(cp, 'GET', `/boxes/${f.boxId}/devices`)).body?.devices ?? [];
+  const mine = devs.find((d) => d.id === f.bandPrinterId);
+  if (!mine || !mine.label.startsWith('ZZ TEST SCRUM-731')) throw new Error('Refusing to archive device ' + f.bandPrinterId);
+  const delD = await api(cp, 'DELETE', `/devices/${f.bandPrinterId}`);
+  step('archive band printer', delD, { stillAssignedTo: delD.body?.stillAssignedTo ?? null });
+  step('archive shop item', await api(cp, 'DELETE', `/branches/${BRANCH}/menu/products/${f.shopItemId}`));
+  step('archive shop category', await api(cp, 'DELETE', `/menu/categories/${f.shopCategoryId}`));
+
+  // 4. Read back.
+  const all = await api(cp, 'GET', `/branches/${BRANCH}/menu?includeArchived=true`);
+  const product = (all.body?.products ?? []).find((p) => p.id === f.shopItemId);
+  const category = (all.body?.categories ?? []).find((x) => x.id === f.shopCategoryId);
+  const active = await api(cp, 'GET', `/branches/${BRANCH}/menu`);
+  const stations = (await api(cp, 'GET', `/branches/${BRANCH}/stations?includeArchived=true`)).body?.stations ?? [];
+  const devsAfter = (await api(cp, 'GET', `/boxes/${f.boxId}/devices?includeArchived=true`)).body?.devices ?? [];
+  const activeDevs = (await api(cp, 'GET', `/boxes/${f.boxId}/devices`)).body?.devices ?? [];
+  const salesAfter = {};
+  for (const [label, id] of [['till 1', f.firstStationId], ['till 2', f.stationId]]) {
+    const s = await api(cp, 'GET', `/sales?branchId=${BRANCH}&stationId=${id}&limit=50`);
+    salesAfter[label] = (s.body?.sales ?? []).map((x) => ({ receipt: x.receiptNumber, status: x.status, gross: x.totals?.grossSatang ?? null }));
+  }
+  const regs = {};
+  for (const fam of [r.firstTill.family, r.family]) {
+    const g = await api(cp, 'GET', `/checkin/registrations/${fam.registrationId}`);
+    regs[fam.childName] = (g.body?.children ?? []).find((x) => x.id === fam.checkinId)?.status ?? null;
+  }
+  C.readBack = {
+    at: new Date().toISOString(),
+    shopItemArchived: !!product?.archivedAt && product?.active === false,
+    shopCategoryArchived: !!category?.archivedAt,
+    shopItemAbsentFromActiveMenu: !(active.body?.products ?? []).some((p) => p.id === f.shopItemId),
+    tillsArchived: [f.firstStationId, f.stationId].map((id) => ({ id, name: stations.find((s) => s.id === id)?.name ?? null, archived: stations.find((s) => s.id === id)?.archived ?? null })),
+    bandPrinterArchived: devsAfter.find((d) => d.id === f.bandPrinterId)?.archived ?? null,
+    bandPrinterAbsentFromActiveList: !activeDevs.some((d) => d.id === f.bandPrinterId),
+    virtualBox1DevicesStillActive: activeDevs.length,
+    salesAfter,
+    childrenAfter: regs,
+    untouched: stations.filter((s) => /Till 1 \(Pi\)|Till 2 \(test\)|FWBooth1|Reception Till 1/.test(s.name)).map((s) => ({ name: s.name, archived: s.archived })),
+  };
+  C.finishedAt = new Date().toISOString();
+  save(r);
+  await api(cp, 'POST', '/auth/sign-out', {});
+  console.log(JSON.stringify(C, null, 2));
+} catch (e) {
+  C.error = String(e?.message ?? e).slice(0, 600);
+  save(r);
+  console.log('ERROR', C.error);
+  console.log(JSON.stringify(C, null, 2).slice(0, 3000));
+  if (page) await api(page, 'POST', '/auth/sign-out', {}).catch(() => {});
+  if (cp) await api(cp, 'POST', '/auth/sign-out', {}).catch(() => {});
+} finally {
+  await browser.close();
+}

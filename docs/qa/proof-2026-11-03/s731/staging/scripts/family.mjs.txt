@@ -1,0 +1,54 @@
+// The proof's family: one ZZ TEST child with an allergy and a food restriction, no food authorised,
+// a drop-off sold in cash and checked in (its band prints on the ZZ TEST simulated band printer),
+// and one ZZ TEST credit voucher (Eat & Play Kids Pass, one adult, cash). Codes stay in the scratchpad.
+import { randomUUID } from 'node:crypto';
+import { launch, api, ok, receipt, save, secrets, saveSecrets, BRANCH } from './common.mjs';
+import { atTill } from './till.mjs';
+const r = receipt();
+if (r.family?.inPark) { console.log('family exists'); process.exit(0); }
+const browser = await launch();
+const fam = (r.family = { startedAt: new Date().toISOString() });
+const sec = secrets();
+try {
+  const { page, f, who } = await atTill(browser);
+  fam.signedIn = who;
+  const cfg = ok(await api(page, 'GET', `/checkin/config?branchId=${BRANCH}`), 'config');
+  const pk = ok(await api(page, 'GET', `/branches/${BRANCH}/ticket-packages`), 'packages').packages;
+  const play = pk.find((p) => p.name === '2 Hours Play' && p.active && !p.archivedAt);
+  const credit = pk.find((p) => p.name === 'Eat & Play Kids Pass' && p.active && !p.archivedAt);
+  fam.registrationId = randomUUID(); fam.checkinId = randomUUID(); fam.saleId = randomUUID();
+  fam.childName = 'ZZ TEST S731 Band Child';
+  fam.allergies = 'ZZ TEST peanut allergy'; fam.foodRestrictions = 'ZZ TEST no dairy';
+  save(r);
+  ok(await api(page, 'POST', '/checkin/registrations', {
+    id: fam.registrationId, branchId: BRANCH, stationId: f.stationId, guardianName: r.name + ' guardian', contactChannel: 'whatsapp',
+    consentAcknowledged: true, acknowledgedConfirmationIds: cfg.policy.confirmations.map((c) => c.id),
+    children: [{ checkinId: fam.checkinId, name: fam.childName, ageYears: 6, service: 'drop_off', allergies: fam.allergies, foodRestrictions: fam.foodRestrictions, foodProvision: { mode: 'none', paidSatang: 0 } }],
+  }), 'registration');
+  fam.registeredAt = new Date().toISOString(); save(r);
+  ok(await api(page, 'POST', '/sales', { id: fam.saleId, stationId: f.stationId, lines: [{ id: fam.checkinId, packageId: play.id, kids: 1, adults: 0, serviceFee: { label: 'ZZ TEST drop-off service', amountSatang: cfg.pricing.oneTimeFee.weekday }, foodProvision: null }] }), 'sale');
+  const paid = ok(await api(page, 'POST', `/sales/${fam.saleId}/finalise`, { method: 'cash', kind: 'cash' }), 'finalise');
+  fam.saleStatus = paid.sale?.status; fam.receiptNumber = paid.sale?.receiptNumber; fam.grossSatang = paid.sale?.totals?.grossSatang; save(r);
+  const inNow = ok(await api(page, 'POST', '/checkin/check-in-now', { saleId: fam.saleId, entries: [{ checkinId: fam.checkinId, nannyId: null }] }), 'check-in-now');
+  fam.inPark = true; fam.checkedInAt = new Date().toISOString();
+  fam.printJobs = (inNow.printJobs ?? []).map((j) => ({ id: j.id, kind: j.kind, status: j.status, deviceId: j.deviceId }));
+  fam.printNotes = inNow.notes; fam.bandId = inNow.bands?.[0]?.id; save(r);
+  const detail = ok(await api(page, 'GET', `/sales/${fam.saleId}`), 'sale detail');
+  const band = detail.bands?.find((b) => b.id === fam.bandId);
+  fam.bandShortCode = band?.shortCode; fam.bandStatus = band?.status; save(r);
+  // The credit voucher (made once).
+  if (r.voucher?.hasQr) { save(r); await api(page, 'POST', '/auth/sign-out', {}); console.log(JSON.stringify({ family: fam }, null, 2)); process.exit(0); }
+  const v = (r.voucher = { saleId: randomUUID() });
+  ok(await api(page, 'POST', '/sales', { id: v.saleId, stationId: f.stationId, lines: [{ id: randomUUID(), packageId: credit.id, kids: 0, adults: 1 }] }), 'voucher sale');
+  const closed = ok(await api(page, 'POST', `/sales/${v.saleId}/finalise`, { method: 'cash', kind: 'cash' }), 'voucher finalise');
+  v.status = closed.sale?.status; v.receiptNumber = closed.sale?.receiptNumber; v.grossSatang = closed.sale?.totals?.grossSatang;
+  const g = (closed.grants ?? []).find((x) => x.qrCode);
+  v.hasQr = /^QR-/.test(g?.qrCode ?? '');
+  v.grantSummary = (closed.grants ?? []).map((x) => ({ kind: x.kind, label: x.label, walletId: x.walletId ?? x.wallet?.id ?? null, amountSatang: x.amountSatang ?? x.creditSatang ?? null }));
+  sec.walletQr = g?.qrCode ?? null; saveSecrets(sec);
+  save(r);
+  await api(page, 'POST', '/auth/sign-out', {});
+  console.log(JSON.stringify({ family: fam, voucher: v }, null, 2));
+} catch (e) {
+  fam.error = String(e?.message ?? e).slice(0, 600); save(r); console.log('ERROR', fam.error);
+} finally { await browser.close(); }
