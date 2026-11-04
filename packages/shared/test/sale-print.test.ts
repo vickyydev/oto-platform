@@ -209,13 +209,18 @@ describe('the bands, the prep ticket and the voucher', () => {
   });
 
   it('asks for the receipt, the kids bands, the adult bands, the vouchers, then each prep station — in that order', () => {
-    const s = snapshot();
-    expect(salePrintRequests(s).map((r) => [r.kind, r.subjectType])).toEqual([
-      ['receipt', 'sale'],
-      ['kids_wristband', 'band'],
-      ['adult_wristband', 'band'],
-      ['item_voucher', 'sale_line'],
-      ['bar_ticket', 'sale'],
+    const s = snapshot({
+      lines: [
+        ...snapshot().lines,
+        { id: 'l-locker', kind: 'addon', label: 'Locker Rental', quantity: 1, grossSatang: 5_000, ticket: true, payload: null, stayHours: null, stayDurationLabel: null },
+      ],
+    });
+    expect(salePrintRequests(s).map((r) => [r.kind, r.subjectType, r.subjectId])).toEqual([
+      ['receipt', 'sale', s.saleId],
+      ['kids_wristband', 'band', s.bands[0]!.id],
+      ['adult_wristband', 'band', s.bands[1]!.id],
+      ['item_voucher', 'sale_line', 'l-locker'],
+      ['bar_ticket', 'sale', s.saleId],
     ]);
     const bar = salePrintDocumentOf(s, { kind: 'bar_ticket', subjectType: 'sale', subjectId: s.saleId });
     expect(bar).toMatchObject({
@@ -230,8 +235,69 @@ describe('the bands, the prep ticket and the voucher', () => {
         orderNote: 'Birthday table',
       },
     });
-    const voucher = salePrintDocumentOf(s, { kind: 'item_voucher', subjectType: 'sale_line', subjectId: 'l-socks' });
-    expect(voucher).toEqual({ kind: 'item_voucher', data: { label: 'Grip Socks', quantity: 2 } });
+    const voucher = salePrintDocumentOf(s, { kind: 'item_voucher', subjectType: 'sale_line', subjectId: 'l-locker' });
+    expect(voucher).toEqual({ kind: 'item_voucher', data: { label: 'Locker Rental', quantity: 1 } });
+  });
+});
+
+describe('SCRUM-765 — socks are on the receipt only', () => {
+  /** Two kids, one adult, two pairs of socks, a free ice cream from a promo code, and an F&B latte. */
+  const withFreeItem = (): SalePrintSnapshot =>
+    snapshot({
+      lines: [
+        ...snapshot().lines,
+        { id: 'l-cone', kind: 'promo_item', label: 'Ice Cream Cone', quantity: 1, grossSatang: 0, ticket: true, payload: null, stayHours: null, stayDurationLabel: null },
+      ],
+    });
+
+  it('queues the receipt and the bands but no socks slip, while a free item keeps its slip', () => {
+    const s = withFreeItem();
+    expect(salePrintRequests(s).map((r) => [r.kind, r.subjectId])).toEqual([
+      ['receipt', s.saleId],
+      ['kids_wristband', s.bands[0]!.id],
+      ['adult_wristband', s.bands[1]!.id],
+      ['item_voucher', 'l-cone'],
+      ['bar_ticket', s.saleId],
+    ]);
+    const slips = salePrintRequests(s).filter((r) => r.kind === 'item_voucher');
+    expect(slips.map((r) => r.subjectId)).not.toContain('l-socks');
+    expect(salePrintDocumentOf(s, slips[0]!)).toEqual({
+      kind: 'item_voucher',
+      data: { label: 'Ice Cream Cone', quantity: 1 },
+    });
+  });
+
+  it('a socks-only ticket sale queues the receipt and its bands and nothing else', () => {
+    const s = snapshot({ lines: snapshot().lines.filter((l) => l.kind !== 'fnb_item') });
+    expect(salePrintRequests(s).map((r) => r.kind)).toEqual(['receipt', 'kids_wristband', 'adult_wristband']);
+  });
+
+  it('keeps the socks on the receipt as they were: their priced line and their row to collect', () => {
+    const receipt = saleReceiptDocument(withFreeItem());
+    expect(receipt.lines.map((l) => [l.qty, l.name, l.price])).toContainEqual([2, 'Grip Socks', '฿100']);
+    expect(receipt.creditGrants).toEqual(['2× Grip Socks to collect', '1× Ice Cream Cone to collect']);
+  });
+
+  it('a socks slip queued before the change still reprints with the socks it was printed for', () => {
+    const s = withFreeItem();
+    expect(salePrintDocumentOf(s, { kind: 'item_voucher', subjectType: 'sale_line', subjectId: 'l-socks' }, true)).toEqual({
+      kind: 'item_voucher',
+      data: { label: 'Grip Socks', quantity: 2 },
+    });
+  });
+
+  it('names socks by the ledger’s kind, not by their label: an add-on called socks keeps its slip', () => {
+    const s = snapshot({
+      lines: [
+        ...snapshot().lines.filter((l) => l.kind !== 'fnb_item'),
+        { id: 'l-addon-socks', kind: 'addon', label: 'Grip Socks', quantity: 1, grossSatang: 5_000, ticket: true, payload: null, stayHours: null, stayDurationLabel: null },
+      ],
+    });
+    const slips = salePrintRequests(s).filter((r) => r.kind === 'item_voucher');
+    expect(slips.map((r) => r.subjectId)).toEqual(['l-addon-socks']);
+    expect(salePrintDocumentOf(s, slips[0]!)).toEqual({ kind: 'item_voucher', data: { label: 'Grip Socks', quantity: 1 } });
+    // The receipt still counts both as one row to collect, as it always has.
+    expect(saleReceiptDocument(s).creditGrants).toEqual(['3× Grip Socks to collect']);
   });
 });
 

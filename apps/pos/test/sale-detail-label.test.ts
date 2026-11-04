@@ -588,6 +588,18 @@ describe('reportsCreditVoucher — whether the platform printed a credit voucher
     // Wallets but no receipt queued: nothing carries the credit.
     expect(reportsCreditVoucher([job({ id: 'j1', kind: 'kids_wristband', status: 'queued' })], [grant])).toBe(false);
   });
+
+  it('SCRUM-765: is true for a first-print receipt of a sale with items to collect — socks print on it, with no slip', () => {
+    const receipt = job({ id: 'j1', kind: 'receipt', status: 'queued' });
+    expect(reportsCreditVoucher([receipt], [], true)).toBe(true);
+    expect(reportsCreditVoucher([receipt], null, true)).toBe(true);
+    expect(reportsCreditVoucher([receipt], [], false)).toBe(false);
+    // No receipt, or only a copy of it: nothing carries the socks.
+    expect(reportsCreditVoucher([job({ id: 'j1', kind: 'kids_wristband', status: 'queued' })], [], true)).toBe(false);
+    expect(
+      reportsCreditVoucher([job({ id: 'j1', kind: 'receipt', status: 'printed', reprintOf: 'j0' })], [], true),
+    ).toBe(false);
+  });
 });
 
 describe('refundSliceWords — how each slice of a refund went back', () => {

@@ -116,22 +116,27 @@ export function prepStationsPrinted(jobs: readonly ApiSalePrintJob[]): PrepStati
 
 /**
  * WHETHER THE PLATFORM REPORTED A CREDIT PRINTOUT for this sale — SCRUM-208.
- * A ticket sale's item grants print as `item_voucher` jobs. Its F&B credit —
- * one wallet per person, granted as the platform closes the sale (S2-14a) —
- * prints ON the receipt, a section per wallet, so a sale that granted wallets
- * and queued its receipt has put its credit on paper. A sale from before the
- * credit moved onto the receipt carries `credit_voucher` jobs instead, and
- * still counts. Only the sale's own print jobs (not copies) are read, so the
- * payment-done screen's "Credit Grants to Print" block never promises paper
- * that no printer produced.
+ * A ticket sale's add-on and free-item grants print as `item_voucher` jobs. Its
+ * F&B credit — one wallet per person, granted as the platform closes the sale
+ * (S2-14a) — prints ON the receipt, a section per wallet, so a sale that
+ * granted wallets and queued its receipt has put its credit on paper. Socks
+ * print on the receipt only (SCRUM-765), as a row "to collect" — so a sale
+ * with items to collect (`itemsOnReceipt`) and a queued receipt has put them
+ * on paper too. A sale from before the credit moved onto the receipt carries
+ * `credit_voucher` jobs instead, and still counts. Only the sale's own print
+ * jobs (not copies) are read, so the payment-done screen's "Credit Grants to
+ * Print" block never promises paper that no printer produced.
  */
 export function reportsCreditVoucher(
   jobs: readonly ApiSalePrintJob[],
   grants: readonly unknown[] | null = null,
+  itemsOnReceipt = false,
 ): boolean {
   const firstPrints = jobs.filter((job) => job.reprintOf === null);
   if (firstPrints.some((job) => job.kind === 'credit_voucher' || job.kind === 'item_voucher')) {
     return true;
   }
-  return (grants?.length ?? 0) > 0 && firstPrints.some((job) => job.kind === 'receipt');
+  return (
+    ((grants?.length ?? 0) > 0 || itemsOnReceipt) && firstPrints.some((job) => job.kind === 'receipt')
+  );
 }

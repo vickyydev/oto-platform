@@ -272,11 +272,15 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue }
   /**
    * SCRUM-208 — the "Credit Grants to Print" block is shown only once the
    * platform reports a credit printout for this sale: an item voucher, or a
-   * receipt for a sale that granted wallets, whose credit prints on it. Until
-   * the read lands it stays hidden, so it never promises paper no printer
-   * produced.
+   * receipt for a sale that granted wallets or items to collect, which print
+   * on it (socks have no slip of their own — SCRUM-765). Until the read lands
+   * it stays hidden, so it never promises paper no printer produced.
    */
-  const platformPrintsCredit = reportsCreditVoucher(issue.printJobs ?? [], issue.grants);
+  const platformPrintsCredit = reportsCreditVoucher(
+    issue.printJobs ?? [],
+    issue.grants,
+    sale.creditGrants.some((grant) => grant.type === 'item'),
+  );
   /** The i-th grant row's place among the F&B-credit rows — the platform's person order. */
   const creditIndexOf = (i: number): number =>
     sale.creditGrants.slice(0, i).filter((g) => g.type === 'fnb_credit').length;
