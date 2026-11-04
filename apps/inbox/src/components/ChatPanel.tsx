@@ -18,10 +18,20 @@ import {
   X,
 } from 'lucide-react';
 import { INBOX_CATEGORY_KEYS, type InboxCategoryKey } from '@oto/shared/inbox';
+import { newId } from '@oto/shared/ids';
 import { ApiError } from '@/api/client';
 import { assistantApi } from '@/api/assistant';
-import { inboxApi, type ConversationDetail, type ConversationRow, type InboxMe, type Message } from '@/api/inbox';
+import {
+  inboxApi,
+  type ConversationDetail,
+  type ConversationEvent,
+  type ConversationRow,
+  type InboxMe,
+  type Message,
+} from '@/api/inbox';
+import { openBlankTab, openOtoAppPage } from '@/api/otoApp';
 import { Avatar, CategoryBadge, ChannelDot, ChipView, StatusBadge } from '@/components/atoms';
+import { BookDateDialog, type BookDateValues } from '@/components/BookDateDialog';
 import { Composer, MANAGER_REOPENS, type InsertedTemplate } from '@/components/Composer';
 import { CorrectAssistant, type CorrectionTarget } from '@/components/CorrectAssistant';
 import { PrimaryMoveConfirm, TeamMoveConfirm, type PendingPrimaryMove, type PendingTeamMove } from '@/components/confirms';
@@ -30,9 +40,10 @@ import { MessageBubble, ShadowBubble } from '@/components/MessageBubble';
 import { SlotPicker } from '@/components/SlotPicker';
 import { PendingControl } from '@/components/writes';
 import { sourceLabel } from '@/lib/inboxes';
+import { bookDateDraft, eventChipLabel, parseBeoFromConversation } from '@/lib/beo';
 import {
+  BOOK_DATE_NOT_YOURS_REASON,
   CHANNEL_LABEL,
-  EVENT_ORDERS_REASON,
   SUPPORT_FULL_HINT,
   WRITES_PENDING_REASON,
   aiStateLineFor,
@@ -45,10 +56,12 @@ import {
   canHandle,
   categoryTitle,
   contactName,
+  dayOf,
   effectiveBranchId,
   handleLabel,
   initialsOf,
   langLabel,
+  mayBookDate,
   moveOptions,
   moveOutcome,
   moveValue,
@@ -74,7 +87,14 @@ export interface Thread {
   error: string | null;
 }
 
-type Busy = 'primary' | 'support' | 'divert' | 'move' | 'branch' | 'reopen' | 'ai' | null;
+type Busy = 'primary' | 'support' | 'divert' | 'move' | 'branch' | 'reopen' | 'ai' | 'book' | 'beo' | null;
+
+/** The Book Date dialog while it is open: the event's id, minted once, and whether Save then opens the BEO. */
+interface Booking {
+  conversationId: string;
+  eventId: string;
+  thenBeo: boolean;
+}
 
 // Every category the api names, the playbook's GM queue (SCRUM-220) among them.
 const CATEGORY_KEYS: readonly InboxCategoryKey[] = INBOX_CATEGORY_KEYS;
@@ -94,8 +114,15 @@ function refusalOf(err: unknown, fallback: string): string {
  * support slot pickers, Divert and the branch select in the strip; Mark as
  * Handled; the composer. Every refusal is the server's sentence, shown as it
  * was said. While the api says `writes: false` the same controls render
- * disabled with their reason, as in Cut A. Book Date and Create BEO are
- * disabled in both cuts: they wait on the event orders (owner Q23).
+ * disabled with their reason, as in Cut A.
+ *
+ * Book Date and Create BEO (SCRUM-775, owner decision 4 November: the OTO
+ * App's Events module is the one home for birthday orders): Book Date opens
+ * a confirm read from the chat and books a TENTATIVE birthday there; the
+ * conversation then shows "Event: <date> at <park>", which opens it. Create
+ * BEO opens that event's BEO form in the OTO App through the suite hand-off,
+ * booking the date first when there is no event yet. For the birthdays team
+ * and the managers who assign; anyone else sees both disabled, with why.
  */
 export function ChatPanel({
   row,
@@ -154,6 +181,8 @@ export function ChatPanel({
   const [pendingMove, setPendingMove] = useState<(PendingTeamMove & { option: MoveOption }) | null>(null);
   const [moveError, setMoveError] = useState<string | null>(null);
   const [correcting, setCorrecting] = useState<CorrectionTarget | null>(null);
+  const [booking, setBooking] = useState<Booking | null>(null);
+  const [bookError, setBookError] = useState<string | null>(null);
 
   // A refusal belongs to the conversation it was said about.
   useEffect(() => {
@@ -162,6 +191,8 @@ export function ChatPanel({
     setPendingPrimary(null);
     setPendingMove(null);
     setCorrecting(null);
+    setBooking(null);
+    setBookError(null);
   }, [conv.id]);
 
   // SCRUM-590 A3: the assistant's pause on this thread (§A.3 kill switch 3),
@@ -262,6 +293,67 @@ export function ChatPanel({
       setBusy(null);
     }
   };
+
+  // Book Date and Create BEO (SCRUM-775).
+  const event: ConversationEvent | null = detail?.event ?? null;
+  const mayBook = live && mayBookDate(me);
+  const askBookDate = (thenBeo: boolean) => {
+    setBookError(null);
+    setBooking({ conversationId: conv.id, eventId: newId(), thenBeo });
+  };
+  const openBeo = async (ev: ConversationEvent, tab: Window | null = openBlankTab()) => {
+    setBusy('beo');
+    setError(null);
+    try {
+      await openOtoAppPage(ev.beoPath, tab);
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : 'The BEO could not be opened here.');
+    } finally {
+      setBusy(null);
+    }
+  };
+  const saveBooking = async (values: BookDateValues) => {
+    if (!booking) return;
+    // The BEO's tab is opened now, while Save is still a press, or the browser refuses it.
+    const tab = booking.thenBeo ? openBlankTab() : null;
+    setBusy('book');
+    setBookError(null);
+    try {
+      const r = await inboxApi.bookDate(booking.conversationId, { id: booking.eventId, ...values });
+      setBooking(null);
+      setNote(`${eventChipLabel(eventChipOf(r.event))} · tentative in the Events calendar`);
+      await onChanged();
+      if (booking.thenBeo) await openBeo(r.event, tab);
+    } catch (err) {
+      tab?.close();
+      if (err instanceof ApiError && err.code === 'EVENT_ALREADY_BOOKED') {
+        // Somebody booked it first: the conversation's event is the one to use.
+        setBooking(null);
+        setError(err.message);
+        await onChanged();
+      } else {
+        setBookError(refusalOf(err, 'The date could not be booked.'));
+      }
+    } finally {
+      setBusy(null);
+    }
+  };
+  const eventChipOf = (ev: ConversationEvent) => ({
+    date: ev.date,
+    branchName: branchOptionLabel(ev.branchId) ?? ev.branchName,
+  });
+  const branchOptionLabel = (branchId: string) => branchSelectOptions(me.teams).find((b) => b.value === branchId)?.label ?? null;
+  const bookDraft = useMemo(
+    () =>
+      bookDateDraft(
+        parseBeoFromConversation(conv, thread.messages),
+        dayOf(now),
+        effectiveBranchId(conv, me.teams),
+      ),
+    // Read when the dialog opens: the conversation and the lines loaded then.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [booking?.eventId],
+  );
 
   const items = useMemo(
     () => timeline(thread.messages, thread.detail?.events ?? [], thread.olderCursor === null, { me }),
@@ -625,22 +717,72 @@ export function ChatPanel({
             )}
             {conv.category === 'birthdays' && (
               <>
-                <PendingControl
-                  reason={EVENT_ORDERS_REASON}
-                  label="Book Date"
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-2.5 py-1 text-[12px] font-medium text-white ring-1 ring-amber-500"
-                >
-                  <Calendar className="h-3.5 w-3.5" />
-                  Book Date
-                </PendingControl>
-                <PendingControl
-                  reason={EVENT_ORDERS_REASON}
-                  label="Create BEO"
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-2.5 py-1 text-[12px] font-medium text-white ring-1 ring-violet-600"
-                >
-                  <FileText className="h-3.5 w-3.5" />
-                  Create BEO
-                </PendingControl>
+                {event ? (
+                  // The prototype's booked state (:1986-1996): the date is held, the press is spent.
+                  <button
+                    type="button"
+                    disabled
+                    title="Date already blocked in the Events calendar"
+                    className="inline-flex cursor-default items-center gap-1.5 rounded-lg bg-amber-50 dark:bg-amber-500/15 px-2.5 py-1 text-[12px] font-medium text-amber-700 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-500/30"
+                  >
+                    <Calendar className="h-3.5 w-3.5" />
+                    Date Booked
+                  </button>
+                ) : mayBook ? (
+                  <button
+                    type="button"
+                    onClick={() => askBookDate(false)}
+                    disabled={busy !== null}
+                    title="Block this date in the Events calendar"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-2.5 py-1 text-[12px] font-medium text-white ring-1 ring-amber-500 hover:bg-amber-600 disabled:opacity-60"
+                  >
+                    <Calendar className="h-3.5 w-3.5" />
+                    Book Date
+                  </button>
+                ) : (
+                  <PendingControl
+                    reason={BOOK_DATE_NOT_YOURS_REASON}
+                    label="Book Date"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-2.5 py-1 text-[12px] font-medium text-white ring-1 ring-amber-500"
+                  >
+                    <Calendar className="h-3.5 w-3.5" />
+                    Book Date
+                  </PendingControl>
+                )}
+                {event || mayBook ? (
+                  <button
+                    type="button"
+                    onClick={() => (event ? void openBeo(event) : askBookDate(true))}
+                    disabled={busy !== null}
+                    title={event ? "Open this event's BEO in the OTO App" : 'Book the date, then open its BEO in the OTO App'}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-2.5 py-1 text-[12px] font-medium text-white ring-1 ring-violet-600 hover:bg-violet-700 disabled:opacity-60"
+                  >
+                    {busy === 'beo' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
+                    Create BEO
+                  </button>
+                ) : (
+                  <PendingControl
+                    reason={BOOK_DATE_NOT_YOURS_REASON}
+                    label="Create BEO"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-2.5 py-1 text-[12px] font-medium text-white ring-1 ring-violet-600"
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    Create BEO
+                  </PendingControl>
+                )}
+                {event && (
+                  <button
+                    type="button"
+                    onClick={() => void openBeo(event)}
+                    disabled={busy !== null}
+                    title={`${event.title} · ${event.statusName} in the Events calendar. Opens it in the OTO App.`}
+                    data-testid="event-chip"
+                    className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-200 ring-1 ring-amber-200 dark:ring-amber-500/30 hover:bg-amber-100 dark:hover:bg-amber-500/25 disabled:opacity-60"
+                  >
+                    <Calendar className="h-3 w-3" />
+                    {eventChipLabel(eventChipOf(event))}
+                  </button>
+                )}
               </>
             )}
           </span>
@@ -820,6 +962,19 @@ export function ChatPanel({
         onCancel={() => setPendingMove(null)}
         onConfirm={() => void confirmMove()}
       />
+      {conv.category === 'birthdays' && (
+        <BookDateDialog
+          open={booking !== null && booking.conversationId === conv.id}
+          customer={name}
+          initial={bookDraft}
+          branches={branchSelectOptions(me.teams).filter((b) => b.value !== '')}
+          busy={busy === 'book'}
+          error={bookError}
+          thenOpensBeo={booking?.thenBeo ?? false}
+          onCancel={() => setBooking(null)}
+          onSave={(values) => void saveBooking(values)}
+        />
+      )}
       <DetailsDialog
         open={detailsOpen}
         onClose={onCloseDetails}

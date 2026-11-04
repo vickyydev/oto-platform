@@ -1,4 +1,4 @@
-import { Activity, CheckCircle2, Clock3, MessageSquare, MessageSquareWarning } from 'lucide-react';
+import { Activity, CheckCircle2, Clock3, FileText, MessageSquare, MessageSquareWarning } from 'lucide-react';
 import type { InboxCategoryKey } from '@oto/shared/inbox';
 import type { Dashboard as DashboardData } from '@/api/inbox';
 import { CategoryMixCard, MetricCard } from '@/components/atoms';
@@ -11,8 +11,9 @@ const v = (n: number | undefined) => (n === undefined ? '—' : n);
  * figures (plan §3.3 `GET /inbox/dashboard`). "Unassigned" and "Needs manager"
  * are gone with the statuses that made them (nobody is ever unowned), so
  * their places hold Unanswered — clickable, it filters the list, as the
- * prototype's card does (:1367-1375) — and Active. The BEO card waits on the
- * event orders (owner Q23).
+ * prototype's card does (:1367-1375) — and Active. The BEO card (:1377,
+ * "BEOs created · month") counts the birthday conversations whose event Book
+ * Date made in the Events module this week (SCRUM-775).
  *
  * The grid is for lg and up: below that it pushed the list off the screen
  * (owner UI round 2026-10-22, F3), so the phone gets `DashboardStrip` — one
@@ -94,6 +95,13 @@ export function Dashboard({
         data={data?.byCategory ?? { birthdays: 0, general: 0, marketing: 0, gm: 0 }}
         selected={category}
         {...(onPickCategory ? { onPick: onPickCategory } : {})}
+      />
+      <MetricCard
+        icon={FileText}
+        label="BEOs created · week"
+        value={v(data?.beosThisWeek)}
+        tint="text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/15"
+        hint={data?.weekStart ? `Since Monday ${data.weekStart}` : undefined}
       />
     </div>
   );

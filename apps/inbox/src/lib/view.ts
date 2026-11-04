@@ -473,8 +473,10 @@ export function eventText(e: InboxEvent, ctx: PillContext): string | null {
       return e.actorKind === 'ai' ? 'Marked as Handled by AI · Auto-resolved' : `Marked as Handled by ${actorOf(e, ctx)}`;
     case 'reopened':
       return p.automatic === true ? 'Reopened · the customer wrote again' : `Reopened by ${actorOf(e, ctx)}`;
+    // The prototype's pill (`bookDate`, :1268-1270), with the place the date is held
+    // now: the Events calendar (SCRUM-775), not the POS.
     case 'date_booked':
-      return `Date blocked in POS by ${actorOf(e, ctx)}`;
+      return `Date blocked in the Events calendar by ${actorOf(e, ctx)} · awaiting confirmation`;
     case 'beo_saved':
       return `BEO saved by ${actorOf(e, ctx)}`;
     case 'translated':
@@ -837,8 +839,20 @@ export function attachmentsOf(
  */
 export type WriteMode = 'disabled' | 'live';
 export const WRITES_PENDING_REASON = 'Coming with the channel connection';
-/** Book Date and Create BEO, in both cuts (owner Q23). */
-export const EVENT_ORDERS_REASON = 'With the event orders (open decision)';
+/**
+ * Book Date and Create BEO for a viewer who may not book (SCRUM-775): the
+ * birthdays team and the managers who assign book a birthday's date.
+ */
+export const BOOK_DATE_NOT_YOURS_REASON = 'The birthdays team or a manager books the date';
+
+/**
+ * May this viewer book a birthday's date (SCRUM-775): they assign somewhere,
+ * or they are in the birthdays team. The api checks it again at the
+ * conversation (`POST …/book-date`).
+ */
+export function mayBookDate(me: Pick<InboxMe, 'capabilities' | 'teams'>): boolean {
+  return me.capabilities.assign || me.teams.some((t) => t.kind === 'birthdays' && t.member);
+}
 /** The composer's emoji and attachment buttons: the reply route takes words and templates only. */
 export const COMPOSER_EXTRAS_REASON = 'Not in this build yet';
 
