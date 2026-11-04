@@ -5,6 +5,7 @@ import {
   isLegacyBoothCode,
   newId,
   normaliseBoothCode,
+  parseBandShortCode,
   verifyBoothCode,
 } from '@oto/shared';
 import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
@@ -146,6 +147,11 @@ export function looksLikeVoucherCode(raw: string): boolean {
   const code = normaliseBoothCode(raw);
   if (/^[0-9]+$/.test(code)) return false;
   return verifyBoothCode(code).ok || isLegacyBoothCode(code);
+}
+
+/** A printed band wins in the shared entry; explicit voucher scans keep their own reader. */
+export function looksLikeTypedFnbVoucher(raw: string): boolean {
+  return parseBandShortCode(raw) === null && looksLikeVoucherCode(raw);
 }
 
 /**
