@@ -2604,6 +2604,7 @@ export class StationBridge {
           payload: line.payload,
           stayHours: line.stayHours,
           stayDurationLabel: line.stayDurationLabel,
+          productCode: line.productCode ?? null,
         })),
         subtotalSatang: pricing.quote.totals.subtotalSatang,
         grossSatang: gross,

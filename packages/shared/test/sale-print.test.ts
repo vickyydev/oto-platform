@@ -5,6 +5,8 @@ import {
   mintBandCode,
   planLedgerBands,
   priceCartLine,
+  printsOnReceiptOnly,
+  SOCKS_PRODUCT_CODES,
   salePrintDocumentOf,
   salePrintRequests,
   saleBandDocument,
@@ -286,13 +288,41 @@ describe('SCRUM-765 — socks are on the receipt only', () => {
     });
   });
 
-  it('names socks by the ledger’s kind, not by their label: an add-on called socks keeps its slip', () => {
+  it('socks picked from the add-ons — Regular or Grip, by catalogue code — print on the receipt only too', () => {
+    const s = snapshot({
+      lines: [
+        ...snapshot().lines.filter((l) => l.kind !== 'socks' && l.kind !== 'fnb_item'),
+        { id: 'l-addon-socks', kind: 'addon', label: 'Regular Socks', quantity: 2, grossSatang: 10_000, ticket: true, payload: null, stayHours: null, stayDurationLabel: null, productCode: 'AO-SOCKS' },
+        { id: 'l-grip-socks', kind: 'addon', label: 'Grip Socks', quantity: 1, grossSatang: 8_000, ticket: true, payload: null, stayHours: null, stayDurationLabel: null, productCode: 'AO-GRIPSOCKS' },
+        { id: 'l-locker', kind: 'addon', label: 'Locker Rental', quantity: 1, grossSatang: 10_000, ticket: true, payload: null, stayHours: null, stayDurationLabel: null, productCode: 'AO-LOCKER' },
+      ],
+    });
+    expect(SOCKS_PRODUCT_CODES).toEqual(['AO-SOCKS', 'AO-GRIPSOCKS']);
+    expect(salePrintRequests(s).map((r) => [r.kind, r.subjectId])).toEqual([
+      ['receipt', s.saleId],
+      ['kids_wristband', s.bands[0]!.id],
+      ['adult_wristband', s.bands[1]!.id],
+      ['item_voucher', 'l-locker'],
+    ]);
+    const receipt = saleReceiptDocument(s);
+    expect(receipt.lines.map((l) => [l.qty, l.name, l.price])).toContainEqual([2, 'Regular Socks', '฿100']);
+    expect(receipt.lines.map((l) => [l.qty, l.name, l.price])).toContainEqual([1, 'Grip Socks', '฿80']);
+    expect(receipt.creditGrants).toEqual([
+      '2× Regular Socks to collect',
+      '1× Grip Socks to collect',
+      '1× Locker Rental to collect',
+    ]);
+  });
+
+  it('names socks by kind or catalogue code, never by the label: an add-on called socks with another code keeps its slip', () => {
     const s = snapshot({
       lines: [
         ...snapshot().lines.filter((l) => l.kind !== 'fnb_item'),
-        { id: 'l-addon-socks', kind: 'addon', label: 'Grip Socks', quantity: 1, grossSatang: 5_000, ticket: true, payload: null, stayHours: null, stayDurationLabel: null },
+        { id: 'l-addon-socks', kind: 'addon', label: 'Grip Socks', quantity: 1, grossSatang: 5_000, ticket: true, payload: null, stayHours: null, stayDurationLabel: null, productCode: 'AO-TOWEL' },
       ],
     });
+    expect(printsOnReceiptOnly(s.lines.find((l) => l.id === 'l-socks')!)).toBe(true);
+    expect(printsOnReceiptOnly(s.lines.find((l) => l.id === 'l-addon-socks')!)).toBe(false);
     const slips = salePrintRequests(s).filter((r) => r.kind === 'item_voucher');
     expect(slips.map((r) => r.subjectId)).toEqual(['l-addon-socks']);
     expect(salePrintDocumentOf(s, slips[0]!)).toEqual({ kind: 'item_voucher', data: { label: 'Grip Socks', quantity: 1 } });

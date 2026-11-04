@@ -63,6 +63,12 @@ export interface SalePrintLine {
   } | null;
   stayHours: number | null;
   stayDurationLabel: string | null;
+  /**
+   * SCRUM-765 — the catalogue code of the product the line sold, when it sold
+   * one: `AO-SOCKS` names socks picked from a ticket's add-ons. Absent on a
+   * snapshot written before it was carried, which then prints as it did.
+   */
+  productCode?: string | null;
 }
 
 /** Money taken, as the receipt lists it. Only tenders that took money belong here. */
@@ -278,16 +284,27 @@ export interface SalePrintRequest {
 const ITEM_VOUCHER_KINDS = new Set(['socks', 'addon', 'promo_item']);
 
 /**
+ * The socks products' catalogue codes: Regular Socks (`AO-SOCKS`, the code the
+ * till, the box and the stock lane already know socks by) and Grip Socks.
+ */
+export const SOCKS_PRODUCT_CODES: readonly string[] = ['AO-SOCKS', 'AO-GRIPSOCKS'];
+
+/**
  * SCRUM-765 — the things to collect that print on the receipt only.
  *
  * Socks are handed over at the counter with the receipt, which already lists
- * them twice: as a priced line and as "2× Grip Socks to collect". The ledger
- * names them by kind (`socks`, from the engine's socks row — never by their
- * label), so a slip of their own is not asked for. Add-ons and free items keep
- * theirs. A socks slip queued before this rule still reprints from History
- * (`saleItemVoucherDocument` answers for any line to collect).
+ * them twice: as a priced line and as "2× Regular Socks to collect". So a slip
+ * of their own is not asked for. Add-ons and free items keep theirs.
+ *
+ * Socks reach the ledger two ways, and neither is told apart by its label: the
+ * ticket line's socks count (the engine's socks row, ledger kind `socks`), and
+ * a socks product picked from the add-ons (kind `addon`, a catalogue code in
+ * `SOCKS_PRODUCT_CODES`). A socks slip queued before this rule still reprints
+ * from History (`saleItemVoucherDocument` answers for any line to collect).
  */
-const RECEIPT_ONLY_KINDS = new Set(['socks']);
+export function printsOnReceiptOnly(line: Pick<SalePrintLine, 'kind' | 'productCode'>): boolean {
+  return line.kind === 'socks' || (!!line.productCode && SOCKS_PRODUCT_CODES.includes(line.productCode));
+}
 
 function hhmm(instant: Date, timezone: string): string {
   const minutes = wallClockMinutesInTz(instant, timezone);
@@ -387,7 +404,7 @@ export function saleItemVoucherGroups(
 export function saleItemSlipGroups(
   lines: readonly SalePrintLine[],
 ): { lineId: string; label: string; quantity: number }[] {
-  return saleItemVoucherGroups(lines.filter((line) => !RECEIPT_ONLY_KINDS.has(line.kind)));
+  return saleItemVoucherGroups(lines.filter((line) => !printsOnReceiptOnly(line)));
 }
 
 // --- The documents ---------------------------------------------------------------------
@@ -515,8 +532,8 @@ export function saleItemVoucherDocument(
   if (!line) return null;
   // A slip counts only the lines that print slips; a socks slip queued before
   // SCRUM-765, reprinted, counts the socks it was printed for.
-  const groups = RECEIPT_ONLY_KINDS.has(line.kind)
-    ? saleItemVoucherGroups(snapshot.lines.filter((l) => RECEIPT_ONLY_KINDS.has(l.kind)))
+  const groups = printsOnReceiptOnly(line)
+    ? saleItemVoucherGroups(snapshot.lines.filter(printsOnReceiptOnly))
     : saleItemSlipGroups(snapshot.lines);
   const group = groups.find((g) => g.label === line.label);
   return { label: line.label, quantity: group?.quantity ?? line.quantity };
