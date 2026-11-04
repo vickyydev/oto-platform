@@ -193,7 +193,7 @@ import {
   wizardEmployeeEdits,
   type EmployeeParkGroupIdField,
 } from "./lib/employeeParkGroups";
-import { tasks, taskQuestions, taskAssignments, taskAttachments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments, fixSupplierTokens } from "./db/coreSchema";
+import { tasks, taskQuestions, taskAssignments, taskAttachments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, checklistAttachments, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments, fixSupplierTokens } from "./db/coreSchema";
 import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql } from "drizzle-orm";
 import { generateInstanceForDefinition } from "./core/taskGeneration";
 import { personFence, fenceAllows, fenceRows, EMPLOYEE_DENIED } from "./core/personScope";
@@ -21627,24 +21627,49 @@ OTO Company Limited`,
         return res.status(403).json({ message: "Access denied to this checklist" });
       }
       
-      // Delete related runs and their items first (foreign key constraints)
-      const relatedRuns = await db.select({ id: checklistRuns.id })
-        .from(checklistRuns)
-        .where(eq(checklistRuns.templateId, id));
-      
-      if (relatedRuns.length > 0) {
-        const runIds = relatedRuns.map(r => r.id);
-        // Run items cascade from runs, but delete explicitly to be safe
-        await db.delete(checklistRunItems).where(inArray(checklistRunItems.runId, runIds));
-        await db.delete(checklistRuns).where(inArray(checklistRuns.id, runIds));
-      }
-      
-      // Delete template items
-      await db.delete(checklistTemplateItems).where(eq(checklistTemplateItems.templateId, id));
-      
-      // Delete the template
-      await db.delete(checklistTemplates).where(eq(checklistTemplates.id, id));
-      
+      // One transaction, so the files below are only removed once every row
+      // that named them is gone.
+      const mediaKeys = await db.transaction(async (tx) => {
+        // Its media rows go with the checklist and its items; their files are
+        // read first (SCRUM-750).
+        const mediaRows = await tx.select({ s3Key: checklistAttachments.s3Key })
+          .from(checklistAttachments)
+          .where(and(
+            eq(checklistAttachments.tenantId, tenantId),
+            or(
+              eq(checklistAttachments.checklistTemplateId, id),
+              inArray(
+                checklistAttachments.checklistTemplateItemId,
+                tx.select({ id: checklistTemplateItems.id }).from(checklistTemplateItems).where(eq(checklistTemplateItems.templateId, id)),
+              ),
+            ),
+          ));
+
+        // Delete related runs and their items first (foreign key constraints)
+        const relatedRuns = await tx.select({ id: checklistRuns.id })
+          .from(checklistRuns)
+          .where(eq(checklistRuns.templateId, id));
+
+        if (relatedRuns.length > 0) {
+          const runIds = relatedRuns.map(r => r.id);
+          // Run items cascade from runs, but delete explicitly to be safe
+          await tx.delete(checklistRunItems).where(inArray(checklistRunItems.runId, runIds));
+          await tx.delete(checklistRuns).where(inArray(checklistRuns.id, runIds));
+        }
+
+        // Delete template items
+        await tx.delete(checklistTemplateItems).where(eq(checklistTemplateItems.templateId, id));
+
+        // Delete the template
+        await tx.delete(checklistTemplates).where(eq(checklistTemplates.id, id));
+        return mediaRows.map((row) => row.s3Key);
+      });
+
+      // Each stored file no other checklist still names goes too, the same way
+      // removing one file does; a file a copy shares stays (SCRUM-750).
+      const { deleteUnusedChecklistMedia } = await import("./core/checklistMediaRoutes");
+      await deleteUnusedChecklistMedia(mediaKeys);
+
       res.json({ success: true });
     } catch (error) {
       next(error);

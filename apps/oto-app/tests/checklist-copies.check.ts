@@ -54,6 +54,13 @@
 //      with the columns the app reads is made for the run and removed after; on
 //      a database the platform has migrated, real rows are written and removed.
 //
+// SCRUM-750, deleting a whole checklist:
+//
+//  14. The checklist, its items and the rows naming its files go, and so does
+//      each stored file no other checklist names, as removing one file does: a
+//      file a copy still names stays and still opens, and goes when the copy is
+//      deleted. A refused delete removes nothing.
+//
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
 //   npx tsx tests/checklist-copies.check.ts
@@ -1218,6 +1225,46 @@ try {
     assert.deepEqual(pickerBranches(branches).map((b) => b.id), ["hkt", "rob"]);
     assert.deepEqual(pickerBranches(branches, ["old"]).map((b) => b.id), ["hkt", "old", "rob"], "a branch the record names was hidden");
     assert.deepEqual(pickerBranches(branches, ["hkt"]).map((b) => b.id), ["hkt", "rob"]);
+  });
+
+  // ── 14. Deleting a whole checklist takes its files with it ────────────────
+
+  await check("deleting a checklist removes each of its files no other checklist names, and a refused delete removes none", async () => {
+    const own = await fullChecklist("Whole delete 750");
+    const shared = await attach({ templateId: own.id }, "whole-shared");
+    const copy = await api("admin", "POST", "/api/checklists/templates", { copiedFromTemplateId: own.id, name: `${own.name} copy`, branchIds: [robinson] });
+    assert.equal(copy.status, 201);
+    const [firstItem] = await itemsOf(own.id);
+    const ownHeader = await attach({ templateId: own.id }, "whole-header", 1);
+    const ownItemFile = await attach({ itemId: firstItem.id }, "whole-item");
+    const keysOf = async (templateId: string) =>
+      (await q<{ s3_key: string }>(
+        `select a.s3_key from checklist_attachments a
+          where a.checklist_template_id = $1
+             or a.checklist_template_item_id in (select id from checklist_template_items where template_id = $1)`,
+        [templateId],
+      )).map((r) => r.s3_key);
+    const copyKeys = await keysOf(copy.body.id);
+    assert.ok(copyKeys.includes(shared.s3Key), "the copy does not share the original's file");
+    const ownOnly = [...new Set(await keysOf(own.id))].filter((key) => !copyKeys.includes(key));
+    assert.ok(ownOnly.includes(ownHeader.s3Key) && ownOnly.includes(ownItemFile.s3Key));
+    const inBucket = (keys: string[]) => keys.map((key) => `/${BUCKET}/${key}`).sort();
+
+    bucketDeletes.length = 0;
+    assert.equal((await api("managerRobinson", "DELETE", `/api/checklists/templates/${own.id}`)).status, 403);
+    assert.ok(await templateRow(own.id), "a refused delete removed the checklist");
+    assert.deepEqual(bucketDeletes, [], "a refused delete removed files");
+
+    assert.equal((await api("admin", "DELETE", `/api/checklists/templates/${own.id}`)).status, 200);
+    assert.equal(await templateRow(own.id), undefined);
+    assert.deepEqual(await keysOf(own.id), []);
+    assert.deepEqual([...bucketDeletes].sort(), inBucket(ownOnly), "the checklist's own files were not all removed, or a shared one was");
+    assert.ok(!bucketDeletes.includes(`/${BUCKET}/${shared.s3Key}`), "the file the copy still names was removed");
+    assert.equal((await api("managerRobinson", "GET", `/api/checklist-media/url?s3Key=${encodeURIComponent(shared.s3Key)}`)).status, 200, "the copy's file no longer opens");
+
+    bucketDeletes.length = 0;
+    assert.equal((await api("admin", "DELETE", `/api/checklists/templates/${copy.body.id}`)).status, 200);
+    assert.deepEqual([...bucketDeletes].sort(), inBucket([...new Set(copyKeys)]), "the last checklist naming a file did not remove it");
   });
 
   console.log(`checklist-copies.check: ${checks} checks passed`);

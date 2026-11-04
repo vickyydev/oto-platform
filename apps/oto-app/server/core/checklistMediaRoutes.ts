@@ -69,6 +69,43 @@ async function getAuthorizedTemplate(req: Request, templateId: string, tenantId:
 
 const getS3Bucket = s3Bucket;
 
+/**
+ * Deleting a whole checklist (SCRUM-750). Its media rows go with it, cascading
+ * from the checklist and its items; this then removes each stored file that no
+ * row names any more, the same way removing one file does. A copied checklist's
+ * media shares the stored file (SCRUM-659), so a file another checklist still
+ * names stays where it is. Call it once the rows are gone. It never throws:
+ * the checklist is already deleted, so a refused bucket delete is logged and
+ * the rest carry on, as with one file.
+ */
+export async function deleteUnusedChecklistMedia(s3Keys: readonly string[]): Promise<void> {
+  const keys = [...new Set(s3Keys)];
+  if (keys.length === 0) return;
+  let unused: string[];
+  let s3Client: S3Client;
+  let bucket: string;
+  try {
+    const stillNamed = new Set((await db
+      .select({ s3Key: checklistAttachments.s3Key })
+      .from(checklistAttachments)
+      .where(inArray(checklistAttachments.s3Key, keys))).map((row) => row.s3Key));
+    unused = keys.filter((key) => !stillNamed.has(key));
+    if (unused.length === 0) return;
+    s3Client = getS3Client();
+    bucket = getS3Bucket();
+  } catch (s3Error) {
+    console.error("[ChecklistMedia] S3 delete error (continuing):", s3Error);
+    return;
+  }
+  for (const key of unused) {
+    try {
+      await s3Client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+    } catch (s3Error) {
+      console.error("[ChecklistMedia] S3 delete error (continuing):", s3Error);
+    }
+  }
+}
+
 async function verifyTemplateAccess(req: Request, templateId: string, userTenantId: string): Promise<boolean> {
   return !!await getAuthorizedTemplate(req, templateId, userTenantId);
 }
