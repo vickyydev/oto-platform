@@ -1,0 +1,34 @@
+{
+  "key": "SCRUM-734",
+  "source": "d5dfbd3364e8a8d124f2764a74bdf75a62a40ccf",
+  "evidenceCommit": "620f08296d39ac0c3cec2510e746e6398a873b65",
+  "statusBefore": "Testing",
+  "startedAt": "2026-11-04T06:43:04.808Z",
+  "attachments": [
+    {
+      "id": "12490",
+      "name": "s734-clone-preview.png"
+    },
+    {
+      "id": "12491",
+      "name": "s734-clone-completed.png"
+    },
+    {
+      "id": "12492",
+      "name": "s734-copied-care-settings.png"
+    },
+    {
+      "id": "12493",
+      "name": "s734-copied-stock.png"
+    },
+    {
+      "id": "12494",
+      "name": "s734-copied-stock-pack.png"
+    }
+  ],
+  "commentId": "13410",
+  "inlineImagesVerified": true,
+  "verifiedAt": "2026-11-04T06:43:09.798Z",
+  "statusAfter": "Deployed",
+  "statusReadAt": "2026-11-04T06:43:52.468Z"
+}
