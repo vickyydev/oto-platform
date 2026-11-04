@@ -477,7 +477,7 @@ export async function planBranchClone(
   const copiedProductIds = new Set<string>();
   const copiedProductLabels = new Map<string, string>();
   {
-    const nameKey = (p: { kind: string; name: string }) => `${p.kind} ${p.name}`;
+    const nameKey = (p: { kind: string; name: string }) => `${p.kind}\u0000${p.name}`;
     const targetByName = new Map(targetProducts.map((p) => [nameKey(p), p.id]));
     // Every live code and sku the operator holds, so a renamed one is checked
     // here rather than refused by the index in the middle of the insert.
