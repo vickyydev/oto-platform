@@ -25,7 +25,8 @@ export interface MembersPanelPorts extends MemberFormPorts {
   toast: AdminScreenRuntime['toast'];
 }
 export interface TierVerificationsPorts extends OperationLifetime {
-  membersApi: Pick<MembersApi, 'tierVerifications'>;
+  /** SCRUM-772 — the records, and the count of Thai rates approved by hand beside them. */
+  membersApi: Pick<MembersApi, 'tierVerifications' | 'tierApprovalCounts'>;
   tierLabel: (id: string) => string;
   toast: AdminScreenRuntime['toast'];
 }

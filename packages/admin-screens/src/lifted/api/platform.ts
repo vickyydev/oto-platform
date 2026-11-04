@@ -61,6 +61,9 @@ export interface ApiTierVerificationRecord {
   verifiedAt: string;
 }
 
+/** SCRUM-772 — hand approvals of the Thai rate, counted per staff member. */
+export type ApiTierApprovalCounts = ApiResponse<'/sales/tier-approvals/by-staff', 'get'>;
+
 
 // --- branches / catalog -----------------------------------------------------
 export interface ApiBranch {
@@ -460,6 +463,12 @@ const membersApi = {
         }),
   tierVerifications: () =>
     api.get<{ verifications: ApiTierVerificationRecord[] }>('/members/tier-verifications'),
+  /**
+   * SCRUM-772 — how often each staff member approved the Thai rate by hand:
+   * the last 30 days and in total. Read beside the verification records.
+   */
+  tierApprovalCounts: () =>
+    api.get<ApiResponse<'/sales/tier-approvals/by-staff', 'get'>>('/sales/tier-approvals/by-staff'),
 };
 
 const templatesApi = {

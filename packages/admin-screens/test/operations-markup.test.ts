@@ -43,6 +43,8 @@ describe('native operations render with their narrow host capabilities', () => {
     const records = renderToStaticMarkup(createElement(TierVerificationsPanelWithPorts, { ports: { membersApi, toast, tierLabel: id => id } }));
     const lookup = renderToStaticMarkup(createElement(WalletLookupPanelWithPorts, { ports: { ...wallet, toast, can: () => false } }));
     expect(members).toContain('Loading members'); expect(records).toContain('Loading records');
+    // SCRUM-772 — the hand-approval count sits beside the records and reads on its own.
+    expect(records).toContain('Thai rate approved by hand'); expect(records).toContain('Loading approvals');
     expect(lookup).toContain('aria-label="Wallet key"'); expect(lookup).toContain('Look up');
     expect(lookup).toContain('Scan a guest&#x27;s band'); expect(unexpected).not.toHaveBeenCalled(); expect(toast).not.toHaveBeenCalled();
   });
