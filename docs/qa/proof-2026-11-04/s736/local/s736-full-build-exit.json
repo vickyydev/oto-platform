@@ -1,0 +1,10 @@
+{
+  "key": "build",
+  "sha": "936cfbbe3f9062d955d3afdbdae26f38bfaeff89",
+  "start": "2026-11-04T06:58:35.306Z",
+  "end": "2026-11-04T06:59:06.713Z",
+  "command": "VITE_BOX_BRIDGE_ZONE=localhost VITE_BOX_BRIDGE_ALLOW_LOOPBACK=true pnpm build; pnpm --filter @oto/pos build:display; pnpm --filter @oto/box-agent build:runner",
+  "log": "C:/oto-lanes/s736-full-build.log",
+  "exitCode": 0,
+  "signal": null
+}

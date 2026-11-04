@@ -1,0 +1,84 @@
+{
+  "ticket": "SCRUM-736",
+  "source": "936cfbbe3f9062d955d3afdbdae26f38bfaeff89",
+  "mode": "local",
+  "started": "2026-11-04T07:15:10.185Z",
+  "checks": [
+    {
+      "name": "Two synthetic cash sales and one simulator-paid booking created through real routes; cache ready",
+      "passed": true
+    },
+    {
+      "name": "online band opens the correct native screen once",
+      "kind": "band",
+      "handler": "band",
+      "passed": true
+    },
+    {
+      "name": "online voucher opens the correct native screen once",
+      "kind": "wallet",
+      "handler": "wallet-qr",
+      "passed": true
+    },
+    {
+      "name": "online booking opens the correct native screen once",
+      "kind": "booking",
+      "handler": "booking",
+      "passed": true
+    },
+    {
+      "name": "offline band opens the correct native screen once",
+      "kind": "band",
+      "handler": "band",
+      "passed": true
+    },
+    {
+      "name": "offline voucher opens the correct native screen once",
+      "kind": "wallet",
+      "handler": "wallet-qr",
+      "passed": true
+    },
+    {
+      "name": "offline booking opens the correct native screen once",
+      "kind": "booking",
+      "handler": "booking",
+      "passed": true
+    },
+    {
+      "name": "No SMS sent",
+      "passed": true
+    }
+  ],
+  "images": [
+    "s736-online-band.png",
+    "s736-online-voucher.png",
+    "s736-online-booking.png",
+    "s736-offline-band.png",
+    "s736-offline-voucher.png",
+    "s736-offline-booking.png"
+  ],
+  "home": "C:/oto-lanes/s736-agent-mw1s7xe1",
+  "outcome": "passed",
+  "limits": [
+    "Real Windows runner, SQLite and HTTP bridge; simulated HID/CDC input",
+    "No physical Pi, scanner cradle, LAN TLS or park device tested",
+    "Disposable database; cash and simulator only"
+  ],
+  "fixture": {
+    "boxId": "01a1a569-a66f-73e5-a9cb-bba16a1b2b09",
+    "stationId": "01a1a569-a6ed-70ba-8dbf-70595bf694b3",
+    "branchId": "01a1a569-9c6d-742b-a8ec-6a1f0a978278",
+    "name": "ZZ TEST SCRUM-736 mw1s7xe1",
+    "child": "ZZ TEST SCRUM-736 mw1s7xe1 child",
+    "checkinId": "44ed2485-60e6-4ce7-b61b-332456e3c212",
+    "saleId": "c75db9d7-b8b3-454e-a360-e3eb3d09bc6c",
+    "voucherSaleId": "a49dd339-9ecb-41f3-afdb-5981891f2b67",
+    "bookingId": "01a1a569-b9af-7379-a70f-b7969041c54c"
+  },
+  "cleanup": {
+    "disposableDatabaseDropped": true,
+    "localAgentStopped": true,
+    "proxyStopped": true,
+    "ownedBrowserClosed": true
+  }
+}
