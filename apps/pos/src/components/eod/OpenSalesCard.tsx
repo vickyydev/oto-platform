@@ -1,4 +1,4 @@
-import { partPaidCloseRefusal, type EodOpenSales } from '@oto/shared';
+import { carriedFromLabel, partPaidCloseRefusal, type EodOpenSales } from '@oto/shared';
 import { Card } from '@/components/ui/card';
 import { Flag, Hourglass } from 'lucide-react';
 import { bahtLabel } from '@/lib/heldSales';
@@ -6,10 +6,12 @@ import { bahtLabel } from '@/lib/heldSales';
 /**
  * SCRUM-774 — UI ADDITION. The day's held and part-paid sales, on the End of
  * Day (the cash-up tab), in the provisional banner's amber: the two counts
- * always, and each sale with what was paid and the balance. A part-paid sale
- * refuses Close Day until it is resolved from Held sales on a till — the
- * sentence that says so is the platform's own (`partPaidCloseRefusal`), shown
- * here before the press and returned by the platform if it is pressed anyway.
+ * always, and each sale with what was paid and the balance — a sale still in
+ * Held sales from an earlier day with the day it was parked. A part-paid sale
+ * refuses Close Day until it is resolved — the sentence that says so, and the
+ * way out for where each sale is, is the platform's own
+ * (`partPaidCloseRefusal`), shown here before the press and returned by the
+ * platform if it is pressed anyway.
  * A held sale with nothing paid does not stand in the way: it is cancelled as
  * not collected at midnight.
  */
@@ -50,7 +52,9 @@ export function OpenSalesCard({ openSales }: { openSales: EodOpenSales | undefin
                     ? `${bahtLabel(r.paidSatang)} paid, balance ${bahtLabel(r.balanceSatang)}`
                     : `${bahtLabel(r.balanceSatang)} to pay, nothing paid`}
                   {' · '}
-                  {r.held ? 'in Held sales' : `open on ${r.stationName ?? 'a till'}`}
+                  {r.held
+                    ? `in Held sales${r.carriedFrom ? ` since ${carriedFromLabel(r.carriedFrom)}` : ''}`
+                    : `open on ${r.stationName ?? 'a till'}`}
                   {r.flaggedAt && (
                     <span className="ml-2 inline-flex items-center gap-1 text-rose-600 dark:text-rose-300">
                       <Flag className="w-3 h-3" /> flagged for the manager

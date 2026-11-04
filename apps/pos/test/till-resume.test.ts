@@ -452,7 +452,7 @@ describe('the counter till’s wiring', () => {
     expect(till).toMatch(/const saleId = leftBehind\.resumeId;\s*if \(!saleId \|\| locked \|\| resumed \|\| step !== 1 \|\| lines\.length > 0 \|\| saleWriter\.state\.kind !== 'idle'\) return;\s*void resumeSale\(saleId\);/);
     // A sale that is no longer open, or at another till, is never resumed.
     expect(till).toContain("if (sale.status !== 'tendering' || sale.stationId !== stationId) {");
-    expect(till).toContain('if (!saleWriter.adopt(adopted)) return;');
+    expect(till).toContain('if (!saleWriter.adopt(adopted)) return false;');
     expect(till).toContain('setStep(5);\n      leftBehind.dismiss(saleId);\n      rememberSaleOnScreen(stationId, saleId);');
   });
 

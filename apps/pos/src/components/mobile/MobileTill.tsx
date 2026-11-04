@@ -35,7 +35,7 @@ import {
 } from '@/mockApi';
 import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
 import { paymentMethodLabel } from '@/lib/payments';
-import { subscribeCatalog } from '@/store/catalogStore';
+import { getAddOns, subscribeCatalog } from '@/store/catalogStore';
 
 import { useOperator } from '@/auth/OperatorContext';
 import { useBranch } from '@/branch/BranchContext';
@@ -43,6 +43,12 @@ import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import { ApiError, isMissingRoute } from '@/api/client';
 import { apiCheckinToCheckIn, checkinApi, foodProvisionToWire, TILL_NOT_LINKED, waitingStaysOf, type ApiNanny } from '@/api/checkin';
 import { membersApi } from '@/api/platform';
+import { getSale } from '@/api/history';
+import { laneSale } from '@/api/boxSales';
+import { apiMemberToMember } from '@/api/mappers';
+import { rebuildResumedSale } from '@/lib/resumeSale';
+import { bahtLabel, holdButtonReasons, useHeldSaleDesk, type ResumedHold } from '@/lib/heldSales';
+import { HeldSaleDeskDialog, HeldSaleDeskPanel, HoldSaleButtons } from '@/components/till/HeldSales';
 import { lookupMember } from '@/api/members';
 import { type PlatformBooking, type RedeemOutcome, type ScannedBooking } from '@/api/bookings';
 import { announceBookingRedemption, redeemBookingOnPlatform, redeemedOutcome } from '@/lib/bookingRedemption';
@@ -58,7 +64,7 @@ import {
   type CartIdentity,
   type SaleCartPayload,
 } from '@/api/sales';
-import { useCartQuote } from '@/lib/cartQuote';
+import { useCartQuote, type CartQuoteState } from '@/lib/cartQuote';
 import { useSaleWriter, type SaleWriteOutcome } from '@/lib/saleWriter';
 import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
 import { useTicketDisplay } from '@/lib/displaySession';
@@ -101,7 +107,17 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowLeft, CheckCircle2, Baby, Monitor, User, UtensilsCrossed, Printer, QrCode as QrCodeIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { currentLane } from '@/lib/lane';
+import { currentLane, useLane } from '@/lib/lane';
+
+/** One empty cart, so a resumed sale does not hand a new array to every render. */
+const NO_LINES: readonly CartLine[] = [];
+
+/**
+ * Why the order of a sale taken back from Held sales cannot be changed here,
+ * as the counter's till says it (`pages/Till.tsx`, `RESUMED_ORDER_FROZEN`).
+ */
+const RESUMED_ORDER_FROZEN =
+  'This sale was taken back from Held sales: its order cannot be changed. Take the payment, or hold it again.';
 
 // ─── Mobile step types ────────────────────────────────────────────────────────
 
@@ -304,7 +320,7 @@ function getHandoffCfg(
  * "hand to customer" full-screen takeovers on the single device.
  */
 export default function MobileTill() {
-  const { operator, locked } = useOperator();
+  const { operator, locked, can } = useOperator();
   /**
    * SCRUM-371 — the phone keeps its sale through a staff lock, as the counter's
    * stations do (`pages/Till.tsx`): the shell stays mounted under the lock
@@ -592,6 +608,19 @@ export default function MobileTill() {
    * screen.
    */
   const saleWriter = useSaleWriter();
+  /**
+   * SCRUM-774 — A SALE TAKEN BACK FROM HELD SALES, as the counter's till
+   * resumes one (`pages/Till.tsx`): the platform's row is the sale, its lines
+   * are rebuilt from the ledger (`rebuildResumedSale`), its own figures stand
+   * (`resumed.cart`, never re-quoted), the money already taken on it is read
+   * by the payment stage (`resumeSaleId`), and the writer takes it over
+   * (`saleWriter.adopt`) so the tender closes it under its own id. Its order
+   * cannot be changed: it is paid, or held again.
+   */
+  const [resumed, setResumed] = useState<{ saleId: string; cart: CartQuoteState; held: ResumedHold } | null>(null);
+  const resumingRef = useRef(false);
+  /** SCRUM-774 — which way this till is working: Held sales need the platform. */
+  const lane = useLane();
   const completedPaymentRef = useRef<string | null>(null);
   const [completionRetry, setCompletionRetry] = useState<{
     sale: ApiSale;
@@ -626,13 +655,15 @@ export default function MobileTill() {
     customerNickname,
   ]);
 
-  const cart = useCartQuote({
-    lines,
+  const liveCart = useCartQuote({
+    // A resumed sale is never re-quoted: the platform's own figures stand.
+    lines: resumed ? NO_LINES : lines,
     discounts,
     manualDiscounts,
     identity: cartIdentity,
     enabled: !locked && saleResult === null,
   });
+  const cart: CartQuoteState = resumed?.cart ?? liveCart;
 
   const saleOwesNothing = lines.length > 0 && cart.totals.total === 0 &&
     unpricedCartLines(lines).length === 0;
@@ -640,6 +671,7 @@ export default function MobileTill() {
   const resetSale = () => {
     saleEpochRef.current += 1;
     saleWriter.reset();
+    setResumed(null);
     setCompletionRetry(null);
     setMStep('tier');
     setHandoffMode(null);
@@ -1640,6 +1672,16 @@ export default function MobileTill() {
       message,
       retryable: false,
     });
+    // SCRUM-774 — a sale taken back from Held sales is the platform's row
+    // already: nothing is written again, and the sale in hand is the one the
+    // tender closes.
+    if (resumed) {
+      const held = saleWriter.committed;
+      if (held && held.id === resumed.saleId) {
+        return { ok: true, written: true, sale: held, replay: true, saleId: held.id };
+      }
+      return refusal(RESUMED_ORDER_FROZEN);
+    }
     if (!preflightSale()) return refusal('Finish the order before taking payment.');
     const payload = commitPayload();
     if (!payload) return refusal(unwritableReason());
@@ -1662,7 +1704,8 @@ export default function MobileTill() {
   };
 
   useEffect(() => {
-    if (mStep !== 'payment') return;
+    // A sale taken back from Held sales is already on the platform.
+    if (mStep !== 'payment' || resumed) return;
     void recordSaleOnPlatform(saleEpochRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once on reaching the payment step: recordSaleOnPlatform is a new function every render, so listing it would call it again on every render
   }, [mStep]);
@@ -1848,6 +1891,9 @@ export default function MobileTill() {
     active: mStep === 'payment' && completionRetry === null,
     paused: locked,
     totalSatang: toSatang(cart.totals.total),
+    // SCRUM-774 — a resumed sale: what was already taken on it is read from
+    // the platform before anything more is collected — the balance only.
+    ...(resumed ? { resumeSaleId: resumed.saleId } : {}),
     prepareSale: () => preparePaymentSale(paymentEpoch, paymentScope),
     finaliseSale: saleWriter.finalise,
     onComplete: completeSale,
@@ -1863,6 +1909,133 @@ export default function MobileTill() {
     setPaymentContextLocked('mobile-till', paymentContextLocked);
     return () => setPaymentContextLocked('mobile-till', false);
   }, [paymentContextLocked]);
+  /**
+   * SCRUM-774 — TAKE A HELD SALE BACK TO THIS PHONE, after the platform moved
+   * it here (`useHeldSaleDesk` → `POST /sales/:id/resume`): read it, rebuild
+   * its cart, adopt it and go straight to the payment step, which asks only
+   * for the balance. Answers true once it is on the screen; anything else
+   * keeps the press, so pressing Resume again opens the same sale.
+   */
+  const openResumedSale = async (saleId: string, fromHold: ResumedHold): Promise<boolean> => {
+    const stationId = station?.stationId;
+    if (!stationId || !operator || resumingRef.current || staffLocked.current) return false;
+    resumingRef.current = true;
+    const epoch = saleEpochRef.current;
+    try {
+      const detail = await getSale(saleId);
+      if (saleEpochRef.current !== epoch) return false;
+      const sale = detail.sale;
+      if (sale.status !== 'tendering' || sale.stationId !== stationId) {
+        toast({
+          title: 'That sale is no longer open here',
+          description:
+            sale.status === 'voided' ? 'It has been voided.'
+              : sale.status === 'finalised' || sale.status === 'refunded' ? 'It has been paid — find it in the sale list.'
+                : sale.status === 'paid' ? 'Its payment is being recorded on another screen.'
+                  : 'It was taken back to another till.',
+          variant: 'destructive',
+        });
+        return false;
+      }
+      const rebuilt = rebuildResumedSale(detail, {
+        ticketTypes: getTicketTypes(),
+        addOns: getAddOns(),
+        discountByCode: getDiscountByCode,
+      });
+      if (!rebuilt) {
+        toast({
+          title: 'That sale is not a ticket sale',
+          description: 'It was taken at the restaurant or shop counter and is paid there.',
+          variant: 'destructive',
+        });
+        return false;
+      }
+      // The family's record, when the sale names one; a lookup that fails
+      // leaves the sale a walk-in's on this screen — the platform still has it.
+      let found: Member | null = null;
+      if (sale.memberId) {
+        try {
+          found = apiMemberToMember((await membersApi.get(sale.memberId)).member);
+        } catch {
+          found = null;
+        }
+      }
+      if (saleEpochRef.current !== epoch) return false;
+      const adopted: ApiSale = {
+        ...sale,
+        pricingMode: rebuilt.cart.quote.pricingMode,
+        engineVersion: sale.engineVersion ?? rebuilt.cart.quote.engineVersion,
+      };
+      if (!saleWriter.adopt(adopted)) return false;
+      setResumed({ saleId, cart: rebuilt.cart, held: fromHold });
+      setTier(rebuilt.tier);
+      setLines(rebuilt.lines);
+      setDiscounts(rebuilt.discounts);
+      setManualDiscounts(rebuilt.manualDiscounts);
+      setActiveLineId(null);
+      setMember(found);
+      if (found) {
+        setCustomerPhone(found.phone);
+        setCustomerNickname(found.nickname);
+        if (found.preferredChannel) setCustomerContactChannel(found.preferredChannel);
+      }
+      setSupervisionResolved(true);
+      setPendingPaymentMethod(null);
+      setShowCartSheet(false);
+      setMStep('payment');
+      if (rebuilt.supervised) {
+        toast({
+          title: 'Resumed with a supervised child on it',
+          description: 'After payment, check the child in from the Drop-Off board.',
+        });
+      }
+      return true;
+    } catch (err) {
+      if (saleEpochRef.current !== epoch) return false;
+      toast({
+        title: 'Could not resume the sale',
+        description: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'destructive',
+      });
+      return false;
+    } finally {
+      resumingRef.current = false;
+    }
+  };
+
+  /**
+   * SCRUM-774 — HOLD SALE AND SAVE AS PARTLY PAID on the phone's payment
+   * step, and the branch's Held sales list on its first step: the same desk
+   * as the counter's till (`useHeldSaleDesk`), so a sale held at either is
+   * resumed at either. Each button that cannot be pressed says why under it.
+   */
+  const paidOnScreen = paymentStage.state.settlements.reduce((sum, part) => sum + part.amountSatang, 0);
+  const holdSaleId = saleWriter.committed?.id ?? paymentStage.state.saleId ?? null;
+  const holdReasons = holdButtonReasons({
+    saleId: holdSaleId,
+    online: paymentStage.online,
+    boxLane: lane === 'box',
+    boxSale: holdSaleId !== null && laneSale(holdSaleId)?.lane === 'box',
+    paymentInProgress:
+      paymentStage.busy || paymentStage.locked || completionRetry !== null ||
+      paymentStage.state.phase === 'pending' || paymentStage.state.phase === 'manual' ||
+      saleWriter.state.kind === 'writing' || saleWriter.state.kind === 'finalising',
+    paidSatang: paidOnScreen,
+    outstandingSatang: paymentStage.state.outstandingSatang,
+    canHold: can('pos:sale:update'),
+  });
+  const heldDesk = useHeldSaleDesk({
+    branchId: apiBranchIdForSlug(branch.id) ?? null,
+    enabled: !locked && can('pos:sale:read'),
+    can,
+    stationId: station?.stationId ?? null,
+    boxLane: lane === 'box',
+    saleOnScreen: resumed !== null || lines.length > 0 || mStep !== 'tier' || saleWriter.state.kind !== 'idle',
+    holdSaleId,
+    onHeld: resetSale,
+    openResumed: openResumedSale,
+  });
+
   const shownQrAttemptRef = useRef<string | null>(null);
   const retryLocalCompletion = () => {
     if (!completionRetry || completionRetry.epoch !== saleEpochRef.current ||
@@ -2068,7 +2241,7 @@ export default function MobileTill() {
   // Back-nav behaviour per step
   const canGoBack = (
     ['tickets', 'configure', 'dropoff-config', 'supervision', 'review', 'payment'] as MobileStep[]
-  ).includes(mStep) && (mStep !== 'payment' || (!completionRetry && (paymentStage.canBack || paymentStage.canCancel)));
+  ).includes(mStep) && (mStep !== 'payment' || (!completionRetry && ((paymentStage.canBack && !resumed) || paymentStage.canCancel)));
 
   const handleBack = () => {
     switch (mStep) {
@@ -2082,6 +2255,11 @@ export default function MobileTill() {
         // A pending gateway QR: Back abandons it and stays at the method choice.
         if (paymentStage.canCancel) { void paymentStage.cancel(); return; }
         if (!paymentStage.canBack) return;
+        // SCRUM-774 — a resumed sale has no order step behind it.
+        if (resumed) {
+          toast({ title: 'The order cannot be changed', description: RESUMED_ORDER_FROZEN });
+          return;
+        }
         setPendingPaymentMethod(null);
         setMStep('review');
         break;
@@ -2109,6 +2287,10 @@ export default function MobileTill() {
                 onPickTier={handlePickTier}
                 onRequestVerify={handleRequestVerify}
               />
+              {/* SCRUM-774 — the branch's Held sales: resume, void a held one, refund a part-paid one. */}
+              <div className="mt-4">
+                <HeldSaleDeskPanel desk={heldDesk} timeZone={branch.timezone} />
+              </div>
             </div>
             {lines.length === 0 && (
               <Button
@@ -2233,6 +2415,14 @@ export default function MobileTill() {
               onComplete={handleCompletePayment}
               onBack={handleBack}
               paymentStage={paymentStage}
+              holdControls={
+                <HoldSaleButtons
+                  holdReason={holdReasons.hold}
+                  partPaidReason={holdReasons.partPaid}
+                  onHold={() => heldDesk.openHoldDialog('held')}
+                  onSavePartPaid={() => heldDesk.openHoldDialog('part_paid')}
+                />
+              }
               busy={saleWriter.state.kind === 'writing' || saleWriter.state.kind === 'finalising'}
               busyLabel={saleWriter.state.kind === 'finalising' ? 'Recording the payment…' : undefined}
               notice={
@@ -2241,6 +2431,15 @@ export default function MobileTill() {
                   onRetry={handleRetrySaleWrite}
                   onDismiss={handleBack}
                 />
+                  : resumed ? (
+                    <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm" data-testid="resumed-held-notice">
+                      Resumed from Held sales: <span className="font-semibold">{resumed.held.label}</span>
+                      {resumed.held.note ? ` — “${resumed.held.note}”` : ''}.{' '}
+                      {resumed.held.paidSatang > 0
+                        ? `${bahtLabel(resumed.held.paidSatang)} already paid — take the balance. Bands and the receipt are issued when it is paid.`
+                        : 'Take the payment, or hold it again.'}
+                    </div>
+                  )
                   // SCRUM-372 — a refusal that lands after Review is drawn
                   // here too, before the press rather than after the commit.
                   : payBlockedReason ? <div className="mt-6"><QuoteRefusalNote error={quoteRefusal} /></div>
@@ -2484,6 +2683,14 @@ export default function MobileTill() {
       )}
 
       {/* ── Shared modals (dialogs rendered in portal, work on mobile) ── */}
+
+      {/* SCRUM-774 — whose sale it is, and an optional note, before it is parked. */}
+      <HeldSaleDeskDialog
+        desk={heldDesk}
+        defaultLabel={resumed?.held.label ?? (customerNickname.trim() || member?.nickname || '')}
+        paidSatang={paidOnScreen}
+        balanceSatang={paymentStage.state.outstandingSatang}
+      />
 
       {operator && verifyTier && (
         <VerifyTierModal

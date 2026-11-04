@@ -580,6 +580,12 @@ export interface ApiSale {
    * resumed from Held sales (`lib/leftBehindSale.ts`).
    */
   hold?: { holdId: string; kind: 'held' | 'part_paid'; label: string } | null;
+  /**
+   * SCRUM-774 — taken back from Held sales: by whom and to which till, on a
+   * list row. That account may continue it at that till after a reload
+   * (`lib/leftBehindSale.ts`).
+   */
+  resumedFromHold?: { accountId: string | null; stationId: string | null } | null;
 }
 
 export interface SaleCommitResult {

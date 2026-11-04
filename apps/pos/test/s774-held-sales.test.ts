@@ -8,7 +8,8 @@ import { api } from '@/api/client';
 import { heldSalesApi } from '@/api/heldSales';
 import { HeldSalesPanel, HoldSaleButtons } from '@/components/till/HeldSales';
 import { OpenSalesCard } from '@/components/eod/OpenSalesCard';
-import { holdButtonReasons, type HeldSalesState } from '@/lib/heldSales';
+import { BOX_LANE_NO_HOLD, BOX_SALE_NOT_HELD, holdButtonReasons, type HeldSalesState } from '@/lib/heldSales';
+import { resumableHere } from '@/lib/leftBehindSale';
 
 /**
  * SCRUM-774 — the till's Hold sale and Save as partly paid, its Held sales
@@ -60,6 +61,24 @@ describe('holdButtonReasons — each payment-step button says why it is shut', (
       'Nothing is owed on this sale — complete it instead.',
     );
     expect(holdButtonReasons({ ...base, canHold: false }).hold).toBe('Your role cannot hold sales — ask a manager.');
+  });
+
+  it('on the box lane, both are shut with the reason even though the counter network is up', () => {
+    // `online` is the browser's; the lane arbiter is what says the platform is out of reach.
+    expect(holdButtonReasons({ ...base, online: true, boxLane: true })).toEqual({
+      hold: BOX_LANE_NO_HOLD,
+      partPaid: BOX_LANE_NO_HOLD,
+    });
+    expect(BOX_LANE_NO_HOLD).toBe(
+      'This till is working through its counter box while the platform cannot be reached — holding a sale needs the platform. Take the payment now, or wait for the connection.',
+    );
+  });
+
+  it('a sale rung up on the counter box says it cannot be held, whatever lane the till is on now', () => {
+    expect(holdButtonReasons({ ...base, boxSale: true, boxLane: false }).hold).toBe(BOX_SALE_NOT_HELD);
+    expect(BOX_SALE_NOT_HELD).toBe(
+      'This sale was rung up on the counter box while the platform could not be reached — it cannot be held. Take the payment now.',
+    );
   });
 
   it('draws the reason under the shut button', () => {
@@ -189,8 +208,47 @@ describe('what the till sends', () => {
     expect(get).toHaveBeenCalledWith('/sales/held?branchId=branch-1');
   });
 
+  it('a sale taken back from Held sales is continued after a reload by the account that took it, at that till only', () => {
+    const at = { stationId: 'station-2', accountId: 'account-som' };
+    const row = {
+      status: 'tendering' as const,
+      stationId: 'station-2',
+      soldBy: { accountId: 'account-mai', name: 'Mai' },
+      resumedFromHold: { accountId: 'account-som', stationId: 'station-2' },
+    };
+    expect(resumableHere(row, at)).toBe(true);
+    expect(resumableHere(row, { ...at, accountId: 'account-other' })).toBe(false);
+    expect(resumableHere({ ...row, stationId: 'station-1' }, at)).toBe(false);
+    expect(resumableHere({ ...row, resumedFromHold: null }, at)).toBe(false);
+  });
+
   it('never offers a held sale back to the screen that rang it up', () => {
     expect(src('lib/leftBehindSale.ts')).toMatch(/!ownsRef\.current\(s\.id\) && !s\.hold\)/);
+  });
+});
+
+describe('every ticket till at the branch has the two buttons and the list', () => {
+  it('the counter’s till and the phone’s till both draw them from the same desk', () => {
+    for (const file of ['pages/Till.tsx', 'components/mobile/MobileTill.tsx']) {
+      const text = src(file);
+      expect(text, file).toContain('useHeldSaleDesk({');
+      expect(text, file).toContain('<HoldSaleButtons');
+      expect(text, file).toContain("onSavePartPaid={() => heldDesk.openHoldDialog('part_paid')}");
+      expect(text, file).toContain('<HeldSaleDeskPanel desk={heldDesk}');
+      expect(text, file).toContain('<HeldSaleDeskDialog');
+      // The lane arbiter decides whether the platform can be reached, not the browser.
+      expect(text, file).toContain("boxLane: lane === 'box',");
+      expect(text, file).toContain("boxSale: holdSaleId !== null && laneSale(holdSaleId)?.lane === 'box',");
+    }
+  });
+
+  it('the phone opens a resumed sale on its payment step, asking only for the balance', () => {
+    const text = src('components/mobile/MobileTill.tsx');
+    expect(text).toContain('...(resumed ? { resumeSaleId: resumed.saleId } : {}),');
+    expect(text).toContain("if (mStep !== 'payment' || resumed) return;");
+    expect(text).toContain('if (!saleWriter.adopt(adopted)) return false;');
+    expect(text).toContain("setMStep('payment');");
+    expect(text).toContain('openResumed: openResumedSale,');
   });
 });
 
@@ -204,6 +262,8 @@ const openSales = (over: Partial<EodOpenSales> = {}): EodOpenSales => ({
       label: 'ZZ TEST Khun Anna',
       held: true,
       stationName: 'Reception Till 1',
+      counter: 'ticket',
+      carriedFrom: null,
       grossSatang: 55_000,
       paidSatang: 0,
       balanceSatang: 55_000,
@@ -215,6 +275,8 @@ const openSales = (over: Partial<EodOpenSales> = {}): EodOpenSales => ({
       label: 'ZZ TEST Khun Ben',
       held: true,
       stationName: 'Reception Till 1',
+      counter: 'ticket',
+      carriedFrom: null,
       grossSatang: 55_000,
       paidSatang: 20_000,
       balanceSatang: 35_000,
@@ -233,6 +295,23 @@ describe('the End of Day shows the counts and why it cannot close', () => {
       'End of Day cannot close: 1 sale is partly paid — ZZ TEST Khun Ben (in Held sales), ฿200 paid, balance ฿350. ' +
         'Take the balance or refund what was paid, from Held sales on a till, then close the day.',
     );
+  });
+
+  it('names the day a part-paid sale carried over from, and an F&B order’s own way out', () => {
+    const rows = openSales().rows;
+    const html = markup(
+      React.createElement(OpenSalesCard, {
+        openSales: openSales({
+          partPaid: 2,
+          rows: [
+            { ...rows[1]!, carriedFrom: '2026-11-03', flaggedAt: '2026-11-03T17:00:00.000Z' },
+            { ...rows[1]!, saleId: '0192f000-0000-7000-8000-00000000d004', label: 'Walk-in', held: false, stationName: 'F&B 1', counter: 'other' },
+          ],
+        }),
+      }),
+    );
+    expect(html).toContain('in Held sales since 3 Nov');
+    expect(html).toContain('have a manager refund what was paid from History');
   });
 
   it('says nothing stands in the way when only a held sale with no money is open', () => {

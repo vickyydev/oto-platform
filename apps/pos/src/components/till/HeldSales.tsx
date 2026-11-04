@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { bahtLabel, type HeldSalesState } from '@/lib/heldSales';
+import { bahtLabel, type HeldSaleActions, type HeldSaleDesk, type HeldSalesState } from '@/lib/heldSales';
 
 /**
  * SCRUM-774 — UI ADDITIONS, in the till's own design language:
@@ -144,15 +144,7 @@ export function HoldSaleDialog({
 const timeOf = (iso: string, timeZone: string | undefined): string =>
   new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', ...(timeZone ? { timeZone } : {}) });
 
-/** One held sale's choices, each shut with its reason when this screen cannot make it. */
-export interface HeldSaleActions {
-  /** Null when Resume can be pressed here; otherwise why not. */
-  resumeReason: string | null;
-  /** Null when Void can be pressed (a held sale); otherwise why not. */
-  voidReason: string | null;
-  /** Null when Cancel and refund can be pressed (a part-paid sale); otherwise why not. */
-  refundReason: string | null;
-}
+export type { HeldSaleActions } from '@/lib/heldSales';
 
 export function HeldSalesPanel({
   held,
@@ -296,5 +288,49 @@ export function HeldSalesPanel({
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+/** The list, bound to a till's `useHeldSaleDesk` — what the counter's and the phone's tills draw. */
+export function HeldSaleDeskPanel({ desk, timeZone }: { desk: HeldSaleDesk; timeZone?: string }) {
+  return (
+    <HeldSalesPanel
+      held={desk.held}
+      {...(timeZone ? { timeZone } : {})}
+      busyId={desk.busyId}
+      refusal={desk.refusal}
+      actionsFor={desk.actionsFor}
+      onResume={(sale) => void desk.resume(sale)}
+      onVoid={(sale, reason) => void desk.voidHeld(sale, reason)}
+      onRefund={(sale, reason) => void desk.refundHeld(sale, reason)}
+      onDismissRefusal={desk.dismissRefusal}
+    />
+  );
+}
+
+/** The hold dialog, bound to a till's `useHeldSaleDesk`. */
+export function HeldSaleDeskDialog({
+  desk,
+  defaultLabel,
+  paidSatang,
+  balanceSatang,
+}: {
+  desk: HeldSaleDesk;
+  defaultLabel: string;
+  paidSatang: number;
+  balanceSatang: number;
+}) {
+  return (
+    <HoldSaleDialog
+      kind={desk.holdKind ?? 'held'}
+      open={desk.holdKind !== null}
+      defaultLabel={defaultLabel}
+      paidSatang={paidSatang}
+      balanceSatang={balanceSatang}
+      busy={desk.holdBusy}
+      error={desk.holdError}
+      onConfirm={(label, note) => void desk.confirmHold(label, note)}
+      onClose={desk.closeHoldDialog}
+    />
   );
 }

@@ -66,15 +66,14 @@ export interface LeftBehindSales {
  * rather than trusted by its presence.
  */
 export function resumableHere(
-  sale: Pick<ApiSale, 'status' | 'stationId' | 'soldBy'>,
+  sale: Pick<ApiSale, 'status' | 'stationId' | 'soldBy' | 'resumedFromHold'>,
   at: { stationId: string; accountId: string | null },
 ): boolean {
-  return (
-    sale.status === 'tendering' &&
-    sale.stationId === at.stationId &&
-    at.accountId !== null &&
-    sale.soldBy?.accountId === at.accountId
-  );
+  if (sale.status !== 'tendering' || sale.stationId !== at.stationId || at.accountId === null) return false;
+  if (sale.soldBy?.accountId === at.accountId) return true;
+  // SCRUM-774 — taken back from Held sales to this till by this account: it
+  // was on this screen, taking money, when the page went.
+  return sale.resumedFromHold?.stationId === at.stationId && sale.resumedFromHold.accountId === at.accountId;
 }
 
 /**
