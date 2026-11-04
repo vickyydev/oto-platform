@@ -1,0 +1,7 @@
+import {spawn,execFileSync} from 'node:child_process';
+import {writeFileSync} from 'node:fs';
+const root='C:/oto-lanes/codex-branch-clone-20261103';
+const receipt={source:execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),startedAt:new Date().toISOString(),script:'C:/oto-lanes/s734-after707-gates.sh',outcome:'running'};
+const file='C:/oto-lanes/s734-after707-gates.json';writeFileSync(file,JSON.stringify(receipt,null,2)+'\n');
+const child=spawn('C:/Program Files/Git/bin/bash.exe',[receipt.script],{cwd:root,windowsHide:true,stdio:'inherit'});
+child.once('exit',(code,signal)=>{Object.assign(receipt,{exitCode:code??1,signal,finishedAt:new Date().toISOString(),outcome:code===0?'passed':'failed'});writeFileSync(file,JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt));process.exitCode=code??1;});

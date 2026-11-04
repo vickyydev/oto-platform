@@ -1,0 +1,48 @@
+{
+  "source": "b83641d45c7ad4304f6d8062be791ed7f31b7942",
+  "previousSource": "50e98eb325ef5ac822c2eda6b8ed6743bc43440a",
+  "rebasedOver": "111868ec1ce4e49d42fa12e0f0b864e8e19ea6fc",
+  "at": "2026-11-04T03:07:11.426Z",
+  "branch": "lane/codex-branch-clone-20261104-r5",
+  "scope": [
+    "apps/api/src/services/catalog-clone.ts",
+    "apps/api/test/s734-branch-clone-review.test.ts",
+    "packages/admin-screens/src/lifted/api/platform.ts",
+    "packages/admin-screens/src/lifted/components/admin/branches/BranchesPanel.tsx"
+  ],
+  "normalizedThreeWayMergeMatches": true,
+  "preserved": [
+    {
+      "file": "docs/progress/STATUS.md",
+      "from": "50e98eb325ef5ac822c2eda6b8ed6743bc43440a",
+      "nonemptyLines": 2125
+    },
+    {
+      "file": "docs/progress/STATUS.md",
+      "from": "111868ec1ce4e49d42fa12e0f0b864e8e19ea6fc",
+      "nonemptyLines": 2184
+    },
+    {
+      "file": "docs/handover/CODEX_HANDOVER.md",
+      "from": "50e98eb325ef5ac822c2eda6b8ed6743bc43440a",
+      "nonemptyLines": 1472
+    },
+    {
+      "file": "docs/handover/CODEX_HANDOVER.md",
+      "from": "111868ec1ce4e49d42fa12e0f0b864e8e19ea6fc",
+      "nonemptyLines": 1523
+    },
+    {
+      "file": "docs/handover/CLOUD_HANDOVER.md",
+      "from": "50e98eb325ef5ac822c2eda6b8ed6743bc43440a",
+      "nonemptyLines": 1322
+    },
+    {
+      "file": "docs/handover/CLOUD_HANDOVER.md",
+      "from": "111868ec1ce4e49d42fa12e0f0b864e8e19ea6fc",
+      "nonemptyLines": 1372
+    }
+  ],
+  "gates": "running; no combined pass claimed",
+  "stagingFixtureCreated": false
+}
