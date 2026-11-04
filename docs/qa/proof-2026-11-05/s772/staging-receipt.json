@@ -1,0 +1,420 @@
+{
+  "unit": "SCRUM-772",
+  "liveCommit": "d630b22c26b49d5e9eead06e4f5f068ca88733b9",
+  "fixtures": {
+    "stamp": "mw2hnfyc",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "boxName": "Virtual box 1",
+    "stationId": "01a1a7f5-300b-7421-b7de-16a8fbfa079d",
+    "stationName": "ZZ TEST SCRUM-772 mw2hnfyc till",
+    "codePrefix": "Z772",
+    "stationReady": true,
+    "createdAt": "2026-11-04T19:07:05.496Z",
+    "reception": {
+      "name": "Som (Reception)",
+      "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834"
+    },
+    "members": {
+      "hand": {
+        "id": "01a1a7f5-4233-745c-9e47-c0cf146eb11a",
+        "nickname": "ZZ TEST Hand Approval 772",
+        "phone": "+66897777201",
+        "tierCode": "tourist"
+      },
+      "other": {
+        "id": "01a1a7f5-42eb-7a2a-9e39-e399869b8e8b",
+        "nickname": "ZZ TEST Other Reason 772",
+        "phone": "+66897777202",
+        "tierCode": "tourist"
+      },
+      "cancel": {
+        "id": "01a1a7f5-4397-75ca-8046-987204731628",
+        "nickname": "ZZ TEST Cancel Path 772",
+        "phone": "+66897777203",
+        "tierCode": "tourist"
+      },
+      "doc": {
+        "id": "01a1a7f5-446e-7bcf-8fc9-34b5c540ba33",
+        "nickname": "ZZ TEST Document Check 772",
+        "phone": "+66897777204",
+        "tierCode": "tourist"
+      }
+    },
+    "paidSaleId": "01a1a7f6-c3f1-79dc-b6d7-d151ed1b1363",
+    "otherSaleId": "01a1a7f9-ef0c-784f-9beb-0c942c816112"
+  },
+  "steps": {
+    "s1": {
+      "startedAt": "2026-11-04T19:08:39.766Z",
+      "network": [
+        {
+          "at": "2026-11-04T19:08:47.165Z",
+          "method": "POST",
+          "path": "/api/sales/tier-approvals",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T19:08:47.874Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T19:08:49.637Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T19:08:52.270Z",
+          "method": "POST",
+          "path": "/api/sales/01a1a7f6-c3f1-79dc-b6d7-d151ed1b1363/finalise",
+          "status": 200
+        }
+      ],
+      "dialogBefore": "Verify Thai rate\n\nSaved to the member profile so they won’t be asked again.\n\nZ\nZZ TEST Hand Approval 772\n+66897777201\n\nProof checked *\n\nPassport\nResidence certificate\nSchool card\nOther\nDocument expiry date\nChecked by Som (Reception) — recorded automatically with date & time.\nChoose proof to verify\nSpecial case, approve by hand\nClose",
+      "panel": "Verify Thai rate\n\nFor this sale only. The member profile is not marked, so the next visit asks again.\n\nWhy approve the Thai rate by hand? *\n\nThai child with a foreign parent\nThai ID seen earlier, not to hand\nOther\nNote (optional)\nApproved by Som (Reception) — recorded automatically with date & time, for this sale only. The member profile is not changed.\nApprove Thai rate by hand\nBack to the document check\nClose",
+      "panelHasPin": false,
+      "approvedAt": "2026-11-04T19:08:47.402Z",
+      "orderText": "\nTHAI\nZZ TEST Hand Approval 772\n2 Hours Play\nEDITING\n฿870\nKids\n฿520 each\n1\nAdults\n฿350 each\n1\nRegular Socks\n฿0 each\n0\nApply\nRedeem\nIssue a voucher…\nAdd manual discount\nSubtotal\n฿870\nVAT included\n฿56.92\nTotal\n฿870\nCancel\nPay ฿870\nCustomer\nZZ TEST Hand Approval 772\nO\nOto Play Park\nYour Order\nEnglish\n2 Hours Play\n฿870\nKids1 × ฿520\n฿520\nAdults1 × ฿350\n฿350\nMember rate applied\nVAT included\n฿56.92\nTotal\n฿870\nThai rate approved by hand\nThai child with a foreign parent · this sale only · recorded by Som (Reception)",
+      "payText": "Test harness — staff till and customer display share one live sale.\nHide customer display\n1\nin park\nno gate\nOto Play Park, Central Floresta\nTickets\nF&B\nShop\nEvents\nCheck-in\nHistory\nToday\n7\nMessages\nCash\nWeekday pricing\nZZ TEST SCRUM-772 mw2hnfyc till\nSom\n13 out of stock · 1 low\nGlow Band, Locker Rental, Mascot Keyring, Oto Mascot Plush +10 more\n5 overdue\nReview →\nAmount Due\n฿870\nSelect Payment Method\nCash\nCard\nPromptPay\nPayment amount\nCash received\n\nChange ฿0.00\n\nBack\nConfirm Payment Received\nCurrent Order\nTHAI\nZZ TEST Hand Approval 772\n2 Hours Play\nEDITING\n฿870\nKids\n฿520 each\n1\nAdults\n฿350 each\n1\nRegular Socks\n฿0 each\n0\nApply\nRedeem\nIssue a voucher…\nAdd manual discount\nSubtotal\n฿870\nVAT included\n฿56.92\nTotal\n฿870\nCancel\nPay ฿870\nEnglish\nCustomer\nZZ TEST Hand Approval 772\n\nPlease pay\n\n฿870.00\n\nto our staff\n\nPaying by Cash\nThai rate approved by hand\nThai child with a foreign parent · this sale only · recorded by Som (Reception)",
+      "afterPay": "Test harness — staff till and customer display share one live sale.\nHide customer display\n1\nin park\nno gate\nOto Play Park, Central Floresta\nTickets\nF&B\nShop\nEvents\nCheck-in\nHistory\nToday\n7\nMessages\nCash\nWeekday pricing\nZZ TEST SCRUM-772 mw2hnfyc till\nSom\n13 out of stock · 1 low\nGlow Band, Locker Rental, Mascot Keyring, Oto Mascot Plush +10 more\n5 overdue\nReview →\n\nOto Play Park\n\nPayment Successful\n\nReceipt Z772-000001 • ฿870 • Cash\n\nVAT included ฿56.92\n\nThank you for visiting! · Tax ID 0105500000000\n\nBracelets to Print\n2 TOTAL\n1× Child bracelet\n2 Hours • 2 Hours Play\nZ772-YQB9JC\n2 HOURS\n1× Adult bracelet\n2 Hours • 2 Hours Play\nZ772-FTKX9W\n2 HOURS\nCredit Grants to Print\n1 TOTAL\nCredit\n฿350 credit\n#1\nStart New Sale\nEnglish\nCustomer\nZZ TEST Hand Approval 772\nThank you!\n\nHere's what you're receiving — enjoy your play!\n\n1\nChild bracelet\n1\nAdult bracelet\nCredit Grants\nCredit\n฿350\nSome items not printed\nAdult bracelet not printed — no adult band printer at this station\nKids bracelet not printed — no kids band printer at this station\nReceipt not printed — no receipt printer at this station",
+      "finishedAt": "2026-11-04T19:08:57.843Z"
+    },
+    "s3": {
+      "startedAt": "2026-11-04T19:09:47.110Z",
+      "sale": {
+        "id": "01a1a7f6-c3f1-79dc-b6d7-d151ed1b1363",
+        "receiptNumber": "Z772-000001",
+        "status": "finalised",
+        "customerTier": "thai",
+        "memberId": "01a1a7f5-4233-745c-9e47-c0cf146eb11a",
+        "grossSatang": 87000,
+        "payments": [],
+        "tierClaim": {
+          "id": "01a1a7f6-bde5-7efa-9a8a-b0a9d962c249",
+          "documentKind": "Approved by hand",
+          "documentNote": null,
+          "toTier": "thai",
+          "evidenceExpiresOn": null,
+          "verifiedAt": "2026-11-04T19:08:47.970Z",
+          "approval": {
+            "reason": "thai_child_foreign_parent",
+            "reasonLabel": "Thai child with a foreign parent",
+            "note": "ZZ TEST mother is Thai, father British",
+            "approvedByAccountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+            "approvedBy": "Som"
+          }
+        }
+      },
+      "historyLine": "ZZ TEST SCRUM-772 mw2hnfyc till · trading day 2026-11-04 · Thai · Weekday pricing · Thai rate approved by hand by Som: Thai child with a foreign parent — ZZ TEST mother is Thai, father British, 05 Nov, 02:08",
+      "historyDetail": "1\nin park\nno gate\nOto Play Park, Central Floresta\nTickets\nF&B\nShop\nEvents\nCheck-in\nHistory\nToday\n7\nMessages\nCash\nWeekday pricing\nZZ TEST SCRUM-772 mw2hnfyc till\nSom\n13 out of stock · 1 low\nGlow Band, Locker Rental, Mascot Keyring, Oto Mascot Plush +10 more\nBack to history\nPaid\nTicket sale Z772-000001\nZZ TEST Hand Approval 772\n· +66897777201\n05 Nov, 02:08 · sold by Som\nZZ TEST SCRUM-772 mw2hnfyc till · trading day 2026-11-04 · Thai · Weekday pricing · Thai rate approved by hand by Som: Thai child with a foreign parent — ZZ TEST mother is Thai, father British, 05 Nov, 02:08\n2 Hours Play · Thai\n฿870\nKids 1× ฿520\n฿520\nAdults 1× ฿350\n฿350\nBRACELETS PRINTED\n2\n1 child\n1 adult\nZ772-YQB9JC\nZ772-FTKX9W\nSubtotal\n฿870\nVAT (included)\n฿56.92\nTotal paid\n฿870\nPayment\nCash · Approved\n05 Nov, 02:08\n฿870\nReprint\nAdd time\nRefund (฿870 left)\nAdd time, refunds, voids and reprints need the platform: with the station offline, a refund can only be noted as requested, for a manager to make once it is back online."
+    },
+    "s4m": {
+      "startedAt": "2026-11-04T19:10:12.554Z",
+      "line": "Thai rate approved by hand by Som: Thai child with a foreign parent — ZZ TEST mother is Thai, father British, 05 Nov, 02:08"
+    },
+    "s5": {
+      "startedAt": "2026-11-04T19:12:05.759Z",
+      "dialog": "Verify Thai rate\n\nSaved to the member profile so they won’t be asked again.\n\nZ\nZZ TEST Hand Approval 772\n+66897777201\n\nProof checked *\n\nPassport\nResidence certificate\nSchool card\nOther\nDocument expiry date\nChecked by Som (Reception) — recorded automatically with date & time.\nChoose proof to verify\nSpecial case, approve by hand\nClose",
+      "badge": true,
+      "member": {
+        "id": "01a1a7f5-4233-745c-9e47-c0cf146eb11a",
+        "nickname": "ZZ TEST Hand Approval 772",
+        "tierCode": "tourist",
+        "tierVerification": null
+      },
+      "finishedAt": "2026-11-04T19:12:09.038Z"
+    },
+    "s6": {
+      "startedAt": "2026-11-04T19:12:09.038Z",
+      "auditBefore": 16,
+      "oneWord": {
+        "refusal": "Say why in at least two words, e.g. Thai grandparent with the family.",
+        "approveEnabled": false
+      },
+      "digits": {
+        "refusal": "Never type a document number here.",
+        "approveEnabled": false
+      },
+      "twoWords": {
+        "refusal": "",
+        "approveEnabled": true
+      },
+      "order": "\nTHAI\nZZ TEST Other Reason 772\n2 Hours Play\nEDITING\n฿870\nKids\n฿520 each\n1\nAdults\n฿350 each\n1\nRegular Socks\n฿0 each\n0\nApply\nRedeem\nIssue a voucher…\nAdd manual discount\nSubtotal\n฿870\nVAT included\n฿56.92\nTotal\n฿870\nCancel\nPay ฿870\nCustomer\nZZ TEST Other Reason 772\nO\nOto Play Park\nYour Order\nEnglish\n2 H",
+      "salesSeen": [
+        {
+          "at": "2026-11-04T19:12:17.267Z",
+          "path": "/api/sales",
+          "status": 200,
+          "id": "01a1a7f9-ef0c-784f-9beb-0c942c816112"
+        },
+        {
+          "at": "2026-11-04T19:12:19.684Z",
+          "path": "/api/sales/01a1a7f9-ef0c-784f-9beb-0c942c816112/void",
+          "status": 200,
+          "id": "01a1a7f9-ef0c-784f-9beb-0c942c816112"
+        }
+      ],
+      "sale": {
+        "id": "01a1a7f9-ef0c-784f-9beb-0c942c816112",
+        "status": "voided",
+        "customerTier": "thai",
+        "memberId": "01a1a7f5-42eb-7a2a-9e39-e399869b8e8b",
+        "grossSatang": 87000,
+        "tierClaim": null
+      },
+      "member": {
+        "id": "01a1a7f5-42eb-7a2a-9e39-e399869b8e8b",
+        "nickname": "ZZ TEST Other Reason 772",
+        "tierCode": "tourist",
+        "tierVerification": null
+      },
+      "auditAfter": 18,
+      "finishedAt": "2026-11-04T19:12:23.887Z"
+    },
+    "s7": {
+      "startedAt": "2026-11-04T19:12:23.888Z",
+      "auditBefore": 18,
+      "orderTier": "\nTOURIST\nZZ TEST Cancel Path 772\n\nNo items added yet\n\nApply\nRedeem\nIssue a voucher…\nAdd manual discount\nSubtotal\n฿0\nTota",
+      "expatHasSpecialCase": 0,
+      "auditAfter": 18,
+      "newRows": [],
+      "member": {
+        "id": "01a1a7f5-4397-75ca-8046-987204731628",
+        "nickname": "ZZ TEST Cancel Path 772",
+        "tierCode": "tourist",
+        "tierVerification": null
+      },
+      "finishedAt": "2026-11-04T19:12:31.674Z"
+    },
+    "s8": {
+      "startedAt": "2026-11-04T19:12:31.675Z",
+      "after": "Test harness — staff till and customer display share one live sale.\nHide customer display\n1\nin park\nno gate\nOto Play Park, Central Floresta\nTickets\nF&B\nShop\nEvents\nCheck-in\nHistory\nToday\n7\nMessages\nCash\nWeekday pricing\nZZ TEST SCRUM-772 mw2hnfyc till\nSom\n13 out of stock · 1 low\nGlow Band, Locker Rental, Mascot Keyring, Oto Mascot Plush +10 more\n5 overdue\nReview →\nAdd to Sale\nAdd drop-off child\nAdd ticket — select a play ticket for kids and adults\n1 Hour Play\n1 Hour\n฿420\nper person\n2 Hours Play\n2 Hours\n฿520\nper person\nFull Day Pass\nAll Day\n฿620\nper person\nEat & Play Kids Pass\nAll Day + Meal\n฿1300\nper person\nCurrent Order\nTHAI\nZZ TEST Document Check 772\n\nNo items added yet\n\nApply\nRedeem\nIssue a voucher…\nAdd manual discount\nSubtotal\n฿0\nTotal\n฿0\nCancel\nPay ฿0\nEnglish\nCustomer\nZZ TEST Document Check 772\nO\nWelcome back, ZZ TEST Document Check 772!\n\nGreat to see you again. Let's get you ready to play!\n\nMember rate applied\nOur staff will help you at the counter\nThai rate verified\nPassport · recorded by Som (Reception)",
+      "member": {
+        "id": "01a1a7f5-446e-7bcf-8fc9-34b5c540ba33",
+        "nickname": "ZZ TEST Document Check 772",
+        "tierCode": "thai",
+        "tierVerification": {
+          "tier": "thai",
+          "proofType": "Passport",
+          "note": null,
+          "verifiedAt": "2026-11-04T19:12:35.739Z",
+          "verifiedBy": "Som (Reception)",
+          "expiresAt": null,
+          "reverifyDue": false
+        }
+      },
+      "finishedAt": "2026-11-04T19:12:37.840Z"
+    },
+    "s9": {
+      "startedAt": "2026-11-04T19:13:17.618Z",
+      "auditThisRun": [
+        {
+          "id": "01a1a7f9-fc0c-7c85-bc7a-3ce86f470aaf",
+          "action": "sale_tier_claim.restore",
+          "entityId": "01a1a7f9-eb8b-7455-ac06-f3c3295de586",
+          "actorAccountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+          "actorName": "Som (Reception)",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "createdAt": "2026-11-04T19:12:20.477Z",
+          "after": {
+            "reason": "sale_voided",
+            "spentBySaleId": null
+          }
+        },
+        {
+          "id": "01a1a7f9-eb8d-7e89-864d-bbe95653a830",
+          "action": "sale_tier_claim.approve_by_hand",
+          "entityId": "01a1a7f9-eb8b-7455-ac06-f3c3295de586",
+          "actorAccountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+          "actorName": "Som (Reception)",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "createdAt": "2026-11-04T19:12:16.263Z",
+          "after": {
+            "toTier": "thai",
+            "expiresAt": "2026-11-04T19:42:16.264Z",
+            "approvalNote": null,
+            "evidenceType": "Approved by hand",
+            "approvalReason": "other",
+            "approvalReasonText": "Thai grandmother"
+          }
+        },
+        {
+          "id": "01a1a7f6-bde6-76e2-946a-726e60058c3b",
+          "action": "sale_tier_claim.approve_by_hand",
+          "entityId": "01a1a7f6-bde5-7efa-9a8a-b0a9d962c249",
+          "actorAccountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+          "actorName": "Som (Reception)",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "createdAt": "2026-11-04T19:08:47.969Z",
+          "after": {
+            "toTier": "thai",
+            "expiresAt": "2026-11-04T19:38:47.970Z",
+            "approvalNote": "ZZ TEST mother is Thai, father British",
+            "evidenceType": "Approved by hand",
+            "approvalReason": "thai_child_foreign_parent",
+            "approvalReasonText": null
+          }
+        }
+      ],
+      "byStaff": {
+        "since": "2026-10-05T19:13:30.852Z",
+        "days": 30,
+        "staff": [
+          {
+            "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+            "name": "Som",
+            "recent": 2,
+            "total": 2,
+            "lastApprovedAt": "2026-11-04T19:12:16.264Z"
+          }
+        ]
+      },
+      "activityRows": 1,
+      "region": "Thai rate approved by hand\n· per staff member\nStaff member\tLast 30 days\tTotal\tLast approved\nSom\t2\t2\t05 Nov 2026",
+      "note": "The first Activity capture landed on an unfiltered log and opened the newer approval; s9b is the capture used (filtered to sale_tier_claim, the paid sale approval opened). Page dumps that listed other accounts were removed from this file."
+    },
+    "s9b": {
+      "startedAt": "2026-11-04T19:14:10.473Z",
+      "list": "\n5 Nov, 02:12\nsale_tier_claim.restore\nsale_tier_claim\nSom (Reception)\nCentral Floresta\n5 Nov, 02:12\nsale_tier_claim.approve_by_hand\nsale_tier_claim\nSom (Reception)\nCentral Floresta\n5 Nov, 02:08\nsale_tier_claim.approve_by_hand\nsale_tier_claim\nSom (Reception)\nCentral Floresta\n31 Oct, 16:49\nsale_tier_claim.create\nsale_tier_claim\nKhun Anan (Owner)\nCentral Floresta\n30 Oct, 15:08\nsale_tier_claim.restore\nsale_tier_claim\nKhun Anan (Owner)\nCentral Floresta\n30 Oct, 15:07\nsale_tier_claim.restore\nsale_tier_claim\nKhun Anan (Owner)\nCentral Floresta\n30 Oct, 14:13\nsale_tier_claim.create\nsale_tier_claim\nKhun Anan (Owner)\nCentral Floresta\n30 Oct, 14:02\nsale_tier_claim.create\nsale_tier_claim\nKhun Anan (Owner)\nCentral Floresta\n23 Sept, 15:02\nsale_tier_claim.create\nsale_tier_claim\nSom (Reception)\nCentral Floresta\n23 Sept, 12:17\nsale_tier_claim.create\nsale_tier_claim\nSom (Reception)\nCentral Floresta\n23 Sept, 06:04\nsale_tier_claim.create\nsale_tier_claim\nSom (Reception)\nCentral Floresta\n23 Sept, 04:08\nsale_tier_claim.create\nsale_tier_claim\nSom (Reception)\nCentral Floresta\n23 Sept, 04:06\nsale_tier_claim.create\nsale_tier_claim\nSom (Reception)\nCentral Floresta\n23 Sept, 04:05\nsale_tier_claim.create\nsale_tier_claim\nSom (Reception)\nCentral Floresta\n23 Sept, 04:04\nsale_tier_claim.create\nsale_tier_claim\nSom (Reception)\nCentral Floresta\n23 Sept, 03:04\nsale_tier_claim.create\nsale_tier_claim\nSom (Reception)\nCentral Floresta\n23 Sept, 03:02\nsale_tier_claim.create\nsale_tier_claim\nSom (Reception)\nCentral Floresta\n",
+      "rows": 2,
+      "opened": "sale_tier_claim.approve_by_hand\nSom (Reception) · 5 Nov 2026, 02:08:47 GMT+7\nACTOR\nSom (Reception)\nBRANCH\nOto Play Park, Central Floresta\nENTITY\nsale_tier_claim\n01a1a7f6-bde5-7efa-9a8a-b0a9d962c249\nWHEN\n5 Nov 2026, 02:08:47 GMT+7\nREQUEST ID\ne689034c-3f03-4444-aaaf-4a28c022e504\nYou are reading these rows unmasked. That read is recorded as audit.read_sensitive against your account.\nChanges\nRaw record\nRelated\n\nAPPROVAL NOTE\n\nnow ZZ TEST mother is Thai, father British\n\nAPPROVAL REASON\n\nnow thai_child_foreign_parent\n\nAPPROVAL REASON TEXT\n\nnow —\n\nEVIDENCE TYPE\n\nnow Approved by hand\n\nEXPIRES AT\n\nnow 2026-11-04T19:38:47.970Z\n\nTO TIER\n\nnow thai"
+    },
+    "s9c": {
+      "at": "2026-11-04T19:15:03.958Z",
+      "clipHeight": 495,
+      "region": "Thai rate approved by hand\n· per staff member\nStaff member\tLast 30 days\tTotal\tLast approved\nSom\t2\t2\t05 Nov 2026"
+    },
+    "s10": {
+      "plan": "Offline: approve by hand on a forced-offline station",
+      "result": "not run on staging",
+      "why": "No station on staging is forced offline (boxes read at 02:06: Virtual box 1 online, every other box offline or unclaimed with no agent). Forcing one needs Virtual box 1 sent offline, which takes every till on it offline for whoever else is using staging, or a second test agent through a new API setting and restart. Neither was done."
+    }
+  },
+  "cleanup": {
+    "startedAt": "2026-11-04T19:15:49.950Z",
+    "actions": [
+      {
+        "what": "archive member ZZ TEST Hand Approval 772",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive member ZZ TEST Other Reason 772",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive member ZZ TEST Cancel Path 772",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive member ZZ TEST Document Check 772",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "till sign-out",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive station",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "console sign-out",
+        "status": 200,
+        "code": null
+      }
+    ],
+    "salesBefore": [
+      {
+        "id": "01a1a7f9-ef0c-784f-9beb-0c942c816112",
+        "receipt": null,
+        "status": "voided",
+        "gross": 87000
+      },
+      {
+        "id": "01a1a7f6-c3f1-79dc-b6d7-d151ed1b1363",
+        "receipt": "Z772-000001",
+        "status": "finalised",
+        "gross": 87000
+      }
+    ],
+    "tillMeAfterSignOut": 401,
+    "readBack": {
+      "at": "2026-11-04T19:16:11.908Z",
+      "station": {
+        "name": "ZZ TEST SCRUM-772 mw2hnfyc till",
+        "archived": true
+      },
+      "salesAfter": [
+        {
+          "receipt": null,
+          "status": "voided",
+          "gross": 87000
+        },
+        {
+          "receipt": "Z772-000001",
+          "status": "finalised",
+          "gross": 87000
+        }
+      ],
+      "membersAfter": {
+        "hand": {
+          "status": 404,
+          "archivedAt": null,
+          "code": "NOT_FOUND",
+          "lookupStatus": 200,
+          "lookupFinds": false
+        },
+        "other": {
+          "status": 404,
+          "archivedAt": null,
+          "code": "NOT_FOUND",
+          "lookupStatus": 200,
+          "lookupFinds": false
+        },
+        "cancel": {
+          "status": 404,
+          "archivedAt": null,
+          "code": "NOT_FOUND",
+          "lookupStatus": 200,
+          "lookupFinds": false
+        },
+        "doc": {
+          "status": 404,
+          "archivedAt": null,
+          "code": "NOT_FOUND",
+          "lookupStatus": 200,
+          "lookupFinds": false
+        }
+      },
+      "untouched": [
+        {
+          "name": "FWBooth1",
+          "archived": false
+        },
+        {
+          "name": "Reception Till 1",
+          "archived": false
+        },
+        {
+          "name": "Till 1 (Pi)",
+          "archived": false
+        },
+        {
+          "name": "Till 2 (test)",
+          "archived": false
+        }
+      ]
+    },
+    "consoleMeAfterSignOut": 401,
+    "finishedAt": "2026-11-04T19:16:13.106Z"
+  }
+}

@@ -1,0 +1,45 @@
+// Step 9: the Console's Activity row and the per-staff count on Tier verifications; api read-backs.
+import { launch, consoleSession, receipt, save, text, shot, api, ok, CONSOLE } from './common.mjs';
+const S = 'C:/Users/waqar/AppData/Local/Temp/claude/9d4c56906b777e8e/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/s772st';
+const r = receipt();
+const f = r.fixtures;
+const st = (r.steps.s9 = { startedAt: new Date().toISOString() });
+const browser = await launch();
+const { page } = await consoleSession(browser, { width: 1500, height: 1000 });
+try {
+  const runStart = r.steps.s1.startedAt;
+  const a = ok(await api(page, 'GET', '/audit?entityType=sale_tier_claim&limit=100'), 'audit');
+  const rows = a.entries ?? a.items ?? a.rows ?? a;
+  st.auditThisRun = (Array.isArray(rows) ? rows : []).filter((e) => e.createdAt >= runStart).map((e) => ({ id: e.id, action: e.action, entityId: e.entityId, actorAccountId: e.actorAccountId ?? null, actorName: e.actorName ?? e.actor?.name ?? null, branchId: e.branchId ?? null, createdAt: e.createdAt, after: e.after ?? null }));
+  st.byStaff = ok(await api(page, 'GET', '/sales/tier-approvals/by-staff'), 'by-staff');
+  save(r);
+  await page.goto(CONSOLE + '/watch/activity', { waitUntil: 'domcontentloaded' });
+  await page.getByText('sale_tier_claim.approve_by_hand').first().waitFor({ timeout: 30000 });
+  await page.waitForTimeout(1500);
+  await shot(page, 's772-st-20-console-activity-approve-by-hand');
+  st.activityList = (await text(page, 4000)).slice(0, 3000);
+  // Open the row of the first approval (the paid sale's), by its note.
+  const rowsLoc = page.getByText('sale_tier_claim.approve_by_hand');
+  const n = await rowsLoc.count();
+  st.activityRows = n;
+  await rowsLoc.nth(n > 1 ? 1 : 0).click();
+  await page.waitForTimeout(1500);
+  st.opened = (await text(page, 6000)).slice(0, 4000);
+  await shot(page, 's772-st-21-console-activity-row-opened');
+  await page.goto(CONSOLE + '/catalogue/tier-verifications', { waitUntil: 'domcontentloaded' });
+  const region = page.getByRole('region', { name: 'Thai rate approved by hand' });
+  await region.waitFor({ timeout: 30000 });
+  await region.getByText('Som', { exact: false }).first().waitFor({ timeout: 30000 });
+  await region.scrollIntoViewIfNeeded();
+  st.region = (await region.innerText()).slice(0, 1500);
+  await shot(page, 's772-st-22-console-tier-verifications-approved-by-hand-per-staff');
+} catch (e) {
+  st.error = e.message.split('\n')[0];
+  console.log('FAILED', st.error);
+  await page.screenshot({ path: S + '/s9-fail.png' });
+  console.log(await text(page, 3000));
+}
+save(r);
+console.log(JSON.stringify(st, null, 2).slice(0, 12000));
+await api(page, 'POST', '/auth/sign-out', {});
+await browser.close();

@@ -1,0 +1,32 @@
+// Step 4, phone till: the same sale's transaction detail at phone width.
+import { launch, tillSession, receipt, save, text, shot } from './common.mjs';
+const S = 'C:/Users/waqar/AppData/Local/Temp/claude/9d4c56906b777e8e/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/s772st';
+const r = receipt();
+const f = r.fixtures;
+const st = (r.steps.s4m = { startedAt: new Date().toISOString() });
+const browser = await launch();
+const { page } = await tillSession(browser, f.stationName, { width: 390, height: 844 });
+try {
+  await page.waitForTimeout(3000);
+  await page.screenshot({ path: S + '/m0.png' });
+  console.log(await text(page, 1200));
+  const hist = page.getByRole('button', { name: /history/i }).first();
+  if (await hist.count()) await hist.click(); else await page.getByText('History', { exact: true }).first().click();
+  await page.waitForTimeout(3000);
+  await page.screenshot({ path: S + '/m1.png' });
+  console.log('---hist---'); console.log(await text(page, 1500));
+  await page.getByText(/Z772-000001/).first().click();
+  await page.getByText(/approved by hand by/).first().waitFor({ timeout: 20000 });
+  await page.getByText(/approved by hand by/).first().scrollIntoViewIfNeeded();
+  st.line = await page.getByText(/approved by hand by/).first().innerText();
+  await shot(page, 's772-st-08m-phone-till-transaction-detail');
+} catch (e) {
+  st.error = e.message.split('\n')[0];
+  console.log('FAILED', st.error);
+  await page.screenshot({ path: S + '/m-fail.png' });
+  console.log(await text(page, 2000));
+}
+save(r);
+console.log(JSON.stringify(st, null, 2));
+await page.evaluate(() => fetch('/api/auth/sign-out', { method: 'POST', credentials: 'include', headers: { 'idempotency-key': crypto.randomUUID(), 'content-type': 'application/json' }, body: '{}' }));
+await browser.close();

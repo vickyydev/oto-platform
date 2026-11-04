@@ -1,0 +1,56 @@
+// Attach the staging screenshots to SCRUM-772 and show them inside one plain comment.
+import { readdirSync, writeFileSync } from 'node:fs';
+import { attach, commentWithImages, images } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/jira.mjs';
+const DIR = 'C:/oto-lanes/thairate772-20261104/docs/qa/proof-2026-11-05/s772';
+const KEY = 'SCRUM-772';
+const pngs = readdirSync(DIR).filter((f) => f.endsWith('.png')).sort();
+const already = new Set((await images(KEY)).map((a) => a.filename));
+const toAttach = pngs.filter((f) => !already.has(f));
+const att = toAttach.length ? await attach(KEY, toAttach.map((f) => `${DIR}/${f}`)) : { status: 'none needed' };
+console.log('attach', att.status, (att.files ?? []).length);
+const shown = [
+  's772-st-02-verify-thai-rate-documents-and-special-case.png',
+  's772-st-03-special-case-three-reasons-no-pin.png',
+  's772-st-04-reason-and-note-chosen.png',
+  's772-st-05-order-at-thai-rate-and-toast.png',
+  's772-st-07-paid-receipt.png',
+  's772-st-08-history-sale-approved-by-hand.png',
+  's772-st-08m-phone-till-transaction-detail.png',
+  's772-st-09-next-visit-thai-asks-for-proof-again.png',
+  's772-st-10-other-one-word-refused.png',
+  's772-st-11-other-five-digit-run-refused.png',
+  's772-st-16-cancel-path-still-tourist.png',
+  's772-st-17-expat-no-approval-by-hand.png',
+  's772-st-19-document-path-thai-rate-verified.png',
+  's772-st-21-console-activity-row-opened.png',
+  's772-st-22-console-tier-verifications-approved-by-hand-per-staff.png',
+];
+const text = `Checked on staging (the test system) on 5 November 2026, 02:06 to 02:16 Bangkok, on the live version d630b22c (the till, the Console and the platform were all on it). Only test records were used (names start with ZZ TEST), cash only, on a test till made for this check and removed afterwards.
+
+What a person can do now:
+- When a customer should get the Thai rate but cannot show an ID, staff pick Thai and press "Special case, approve by hand" under the list of documents.
+- They pick one of three reasons (Thai child with a foreign parent; Thai ID seen earlier, not to hand; Other) and can add a note. No PIN and no manager are needed: the till records who approved it and when.
+- The sale gets the Thai price for that sale only (2 Hours Play: 520 baht for the child instead of 890). The member stays unverified, so on the next visit the till asks for proof again.
+- The sale and History show who approved it and why, for example "Thai rate approved by hand by Som: Thai child with a foreign parent — (the note)", on the till and on the phone till.
+- "Other" needs at least two words and refuses a number. Closing the box changes nothing. Expat has no such button: it is for the Thai rate only.
+- The normal document check (for example Passport) works as before and is still saved to the member.
+- In the Console, Watch > Activity shows each approval with who did it, the reason and the note, and Catalogue & money > Tier verifications counts the approvals by hand per staff member.
+
+How to retest:
+- On the staging till, sign in as reception and look up a test member (or make one whose name starts with ZZ TEST).
+- Pick Thai. In "Verify Thai rate", press "Special case, approve by hand", pick a reason, add a note if you like, and press "Approve Thai rate by hand".
+- Add a ticket: it shows the Thai price. Pay by cash.
+- Open History and the sale: the line says who approved it by hand and why.
+- Look the same member up again: it still says "No verified rate", and Thai asks for proof again.
+- Try Other with one word, then with a number in it: both are refused.
+- In the Console, open Tier verifications: your name shows with the count.
+
+Not shown on staging: the message on a till that has lost the platform. No test till on staging was offline, and making one would take every staging till offline for everyone; that message is covered by the automatic checks instead.
+
+The full record is in the repository under docs/qa/proof-2026-11-05/s772.`;
+const res = await commentWithImages(KEY, text, shown);
+console.log('comment', res.status);
+let id = null;
+try { id = JSON.parse(res.body).id ?? null; } catch { id = (/"id":"(\d+)"/.exec(res.body) ?? [])[1] ?? null; }
+writeFileSync(`${DIR}/jira-publication.json`, JSON.stringify({ key: KEY, at: new Date().toISOString(), attached: (att.files ?? []).map((f) => f.name), attachStatus: att.status, commentStatus: res.status, commentId: id, shown }, null, 2) + '\n');
+writeFileSync(`${DIR}/jira-comment-772.txt`, text + '\n');

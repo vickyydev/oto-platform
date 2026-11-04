@@ -1,0 +1,45 @@
+{
+  "readAt": "2026-11-04T19:16:19.813Z",
+  "services": {
+    "oto-api-staging": {
+      "liveDeploy": "dep-dblnjvdg1s2s73d5uqmg",
+      "commit": "d630b22c26b49d5e9eead06e4f5f068ca88733b9",
+      "finishedAt": "2026-11-04T18:35:12.531209Z",
+      "newest": {
+        "id": "dep-dblnjvdg1s2s73d5uqmg",
+        "status": "live",
+        "commit": "d630b22c26b49d5e9eead06e4f5f068ca88733b9"
+      }
+    },
+    "oto-pos-web-staging": {
+      "liveDeploy": "dep-dblnjvdg1s2s73d5urn0",
+      "commit": "d630b22c26b49d5e9eead06e4f5f068ca88733b9",
+      "finishedAt": "2026-11-04T18:34:01.578532Z",
+      "newest": {
+        "id": "dep-dblnjvdg1s2s73d5urn0",
+        "status": "live",
+        "commit": "d630b22c26b49d5e9eead06e4f5f068ca88733b9"
+      }
+    },
+    "oto-pos-staging": {
+      "liveDeploy": "dep-dblnjvlg1s2s73d5urv0",
+      "commit": "d630b22c26b49d5e9eead06e4f5f068ca88733b9",
+      "finishedAt": "2026-11-04T18:32:22.443839Z",
+      "newest": {
+        "id": "dep-dblnjvlg1s2s73d5urv0",
+        "status": "live",
+        "commit": "d630b22c26b49d5e9eead06e4f5f068ca88733b9"
+      }
+    },
+    "oto-console-staging": {
+      "liveDeploy": "dep-dblnjvdg1s2s73d5urr0",
+      "commit": "d630b22c26b49d5e9eead06e4f5f068ca88733b9",
+      "finishedAt": "2026-11-04T18:32:17.814288Z",
+      "newest": {
+        "id": "dep-dblnjvdg1s2s73d5urr0",
+        "status": "live",
+        "commit": "d630b22c26b49d5e9eead06e4f5f068ca88733b9"
+      }
+    }
+  }
+}

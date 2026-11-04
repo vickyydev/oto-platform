@@ -1,0 +1,18 @@
+// Tier verifications: the per-staff table and the ZZ TEST row only, so no other member shows.
+import { launch, consoleSession, receipt, save, api, OUT, CONSOLE } from './common.mjs';
+const r = receipt();
+const browser = await launch();
+const { page } = await consoleSession(browser, { width: 1500, height: 1000 });
+try {
+  await page.goto(CONSOLE + '/catalogue/tier-verifications', { waitUntil: 'domcontentloaded' });
+  const region = page.getByRole('region', { name: 'Thai rate approved by hand' });
+  await region.getByText('Som', { exact: false }).first().waitFor({ timeout: 30000 });
+  await page.getByText('ZZ TEST Document Check 772').first().waitFor({ timeout: 30000 });
+  await page.waitForTimeout(1000);
+  const row = await page.getByText('ZZ TEST Document Check 772').first().boundingBox();
+  const bottom = Math.ceil(row.y + 48);
+  await page.screenshot({ path: OUT + '/s772-st-22-console-tier-verifications-approved-by-hand-per-staff.png', clip: { x: 0, y: 0, width: 1500, height: bottom } });
+  r.steps.s9c = { at: new Date().toISOString(), clipHeight: bottom, region: (await region.innerText()).slice(0, 400) };
+  save(r);
+  console.log(JSON.stringify(r.steps.s9c));
+} finally { await api(page, 'POST', '/auth/sign-out', {}); await browser.close(); }

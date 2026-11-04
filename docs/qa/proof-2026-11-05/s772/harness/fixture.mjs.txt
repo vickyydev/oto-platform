@@ -1,0 +1,50 @@
+// ZZ TEST fixtures for SCRUM-772, own records only: one ZZ TEST till on Virtual box 1 (no devices),
+// and four ZZ TEST members made from that till. Never the Pi, its tills or FWBooth1.
+import { launch, consoleSession, tillSession, api, ok, receipt, save, BRANCH, LIVE } from './common.mjs';
+const r = receipt();
+const f = r.fixtures;
+const browser = await launch();
+try {
+  if (!f.stationId) {
+    const { page } = await consoleSession(browser);
+    const me = ok(await api(page, 'GET', '/me'), 'me');
+    if (me.operatorContext?.branchId !== BRANCH) throw new Error('admin branch is not Central Floresta');
+    const boxes = ok(await api(page, 'GET', `/branches/${BRANCH}/boxes`), 'boxes').boxes;
+    const vb = boxes.find((b) => b.role === 'virtual' && b.slot === 'virtual-1' && b.status === 'online' && !b.archived);
+    if (!vb) throw new Error('Virtual box 1 not online');
+    const stamp = Date.now().toString(36);
+    const stations = ok(await api(page, 'GET', `/branches/${BRANCH}/stations?includeArchived=true`), 'stations').stations;
+    const used = new Set(stations.map((s) => s.codePrefix));
+    const prefix = ['Z772', 'Z77', 'Z7T', 'Z7H'].find((c) => !used.has(c)) ?? Array.from('ABCDEFGHJKMNPQRSTVWXYZ', (c) => 'Z7' + c).find((c) => !used.has(c));
+    const name = `ZZ TEST SCRUM-772 ${stamp} till`;
+    const made = ok(await api(page, 'POST', `/branches/${BRANCH}/stations`, { name, kind: 'till', boxId: vb.id, codePrefix: prefix, accessScope: 'all_staff', paymentRouting: { card: 'manual', qr: 'none' }, capabilities: [], devices: [] }), 'station');
+    Object.assign(f, { stamp, branchId: BRANCH, boxId: vb.id, boxName: vb.name, stationId: made.station.id, stationName: made.station.name, codePrefix: prefix, stationReady: made.station.ready, createdAt: new Date().toISOString() });
+    r.liveCommit = LIVE;
+    save(r);
+    await api(page, 'POST', '/auth/sign-out', {});
+  }
+  if (!f.members) {
+    const { page } = await tillSession(browser, f.stationName);
+    const me = ok(await api(page, 'GET', '/me'), 'me');
+    f.reception = { name: me.employee?.name ?? null, accountId: me.account?.id ?? null };
+    const want = [['hand', 'ZZ TEST Hand Approval 772'], ['other', 'ZZ TEST Other Reason 772'], ['cancel', 'ZZ TEST Cancel Path 772'], ['doc', 'ZZ TEST Document Check 772']];
+    f.members = {};
+    let n = 77201;
+    for (const [key, nickname] of want) {
+      let phone = null;
+      for (; n < 77299; n += 1) {
+        const p = '+668977' + String(n).padStart(5, '0');
+        const look = await api(page, 'GET', '/members/lookup?phone=' + encodeURIComponent(p));
+        if (look.status === 404 || (look.status === 200 && !look.body?.member)) { phone = p; n += 1; break; }
+      }
+      if (!phone) throw new Error('no free test phone');
+      const m = ok(await api(page, 'POST', '/members', { phone, nickname, createdVia: 'pos' }), 'member ' + key).member;
+      f.members[key] = { id: m.id, nickname: m.nickname, phone: m.phone, tierCode: m.tierCode ?? m.tier ?? null };
+      save(r);
+    }
+    await api(page, 'POST', '/auth/sign-out', {});
+  }
+  console.log(JSON.stringify({ station: { id: f.stationId, name: f.stationName, prefix: f.codePrefix, ready: f.stationReady }, members: Object.fromEntries(Object.entries(f.members).map(([k, v]) => [k, { id: v.id, nickname: v.nickname, tier: v.tierCode }])), reception: f.reception?.name }, null, 2));
+} catch (e) {
+  r.fixtureError = String(e?.message ?? e).slice(0, 500); save(r); console.log('ERROR', r.fixtureError);
+} finally { await browser.close(); }

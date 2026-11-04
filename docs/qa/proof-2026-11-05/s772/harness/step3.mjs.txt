@@ -1,0 +1,36 @@
+// Step 3 read-back and step 4: History's sale detail on the till.
+import { launch, tillSession, receipt, save, text, shot, api, ok } from './common.mjs';
+const S = 'C:/Users/waqar/AppData/Local/Temp/claude/9d4c56906b777e8e/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/s772st';
+const r = receipt();
+const f = r.fixtures;
+const saleId = r.steps.s1.network.find((n) => /finalise$/.test(n.path)).path.split('/')[3];
+f.paidSaleId = saleId;
+const st = (r.steps.s3 = { startedAt: new Date().toISOString() });
+const browser = await launch();
+const { page } = await tillSession(browser, f.stationName);
+try {
+  const sale = ok(await api(page, 'GET', `/sales/${saleId}`), 'sale');
+  const s = sale.sale ?? sale;
+  st.sale = { id: s.id, receiptNumber: s.receiptNumber ?? s.code ?? null, status: s.status, customerTier: s.customerTier, memberId: s.memberId, grossSatang: s.totals?.grossSatang ?? s.grossSatang ?? null, payments: (s.payments ?? []).map((p) => ({ method: p.method, amountSatang: p.amountSatang, status: p.status })), tierClaim: s.tierClaim ?? null };
+  save(r);
+  // History on the till.
+  await page.getByText('History', { exact: true }).first().click();
+  await page.waitForTimeout(3000);
+  await page.getByText('ZZ TEST Hand Approval 772').first().waitFor({ timeout: 20000 });
+  await shot(page, 's772-st-08a-history-list');
+  await page.getByText('ZZ TEST Hand Approval 772').first().click();
+  await page.getByText(/Thai rate approved by hand by/).first().waitFor({ timeout: 20000 });
+  st.historyLine = await page.getByText(/Thai rate approved by hand by/).first().innerText();
+  await page.getByText(/Thai rate approved by hand by/).first().scrollIntoViewIfNeeded();
+  await shot(page, 's772-st-08-history-sale-approved-by-hand');
+  st.historyDetail = (await text(page, 5000)).slice(0, 3500);
+} catch (e) {
+  st.error = e.message.split('\n')[0];
+  console.log('FAILED', st.error);
+  await page.screenshot({ path: S + '/s3-fail.png' });
+  console.log(await text(page, 3000));
+}
+save(r);
+console.log(JSON.stringify(st, null, 2).slice(0, 6000));
+await page.evaluate(() => fetch('/api/auth/sign-out', { method: 'POST', credentials: 'include', headers: { 'idempotency-key': crypto.randomUUID(), 'content-type': 'application/json' }, body: '{}' }));
+await browser.close();

@@ -1,0 +1,64 @@
+// SCRUM-772 clean-up, own records only: void any unpaid sale left on the ZZ TEST till, archive the four
+// ZZ TEST members and the ZZ TEST till, then read everything back. The paid cash sale stays as a ZZ TEST record.
+import { launch, tillSession, consoleSession, receipt, save, api, ok, BRANCH } from './common.mjs';
+const r = receipt();
+const f = r.fixtures;
+const C = (r.cleanup = { startedAt: new Date().toISOString(), actions: [] });
+const act = (what, res, extra = {}) => { C.actions.push({ what, status: res.status, code: res.body?.error?.code ?? null, ...extra }); save(r); return res; };
+const browser = await launch();
+let tp = null;
+let cp = null;
+try {
+  ({ page: cp } = await consoleSession(browser));
+  const station = ok(await api(cp, 'GET', `/stations/${f.stationId}`), 'station').station;
+  if (!station || station.name !== f.stationName || !station.name.startsWith('ZZ TEST SCRUM-772')) throw new Error('Refusing: the station is not this proof\'s');
+  // 1. Unpaid sales on this till, by exact id.
+  const list = ok(await api(cp, 'GET', `/sales?branchId=${BRANCH}&stationId=${f.stationId}&limit=50`), 'sales').sales ?? [];
+  C.salesBefore = list.map((s) => ({ id: s.id, receipt: s.receiptNumber ?? null, status: s.status, gross: s.totals?.grossSatang ?? null }));
+  const unpaid = list.filter((s) => s.status === 'tendering' || s.status === 'open' || s.status === 'draft');
+  for (const s of unpaid) act('void unpaid sale', await api(cp, 'POST', `/sales/${s.id}/void`, { reason: 'ZZ TEST SCRUM-772 proof: not paid' }), { saleId: s.id });
+  // 2. The four ZZ TEST members, from the till they were made on.
+  ({ page: tp } = await tillSession(browser, f.stationName));
+  for (const [key, m] of Object.entries(f.members)) {
+    const now = ok(await api(tp, 'GET', `/members/${m.id}`), 'member ' + key).member;
+    if (now.nickname !== m.nickname || !m.nickname.startsWith('ZZ TEST')) throw new Error('Refusing to archive member ' + m.id);
+    act('archive member ' + m.nickname, await api(tp, 'DELETE', `/members/${m.id}`));
+  }
+  act('till sign-out', await api(tp, 'POST', '/auth/sign-out', {}));
+  C.tillMeAfterSignOut = (await api(tp, 'GET', '/me')).status;
+  tp = null;
+  // 3. The ZZ TEST till.
+  act('archive station', await api(cp, 'DELETE', `/stations/${f.stationId}`));
+  // 4. Read back.
+  const stations = ok(await api(cp, 'GET', `/branches/${BRANCH}/stations?includeArchived=true`), 'stations').stations;
+  const mine = stations.find((s) => s.id === f.stationId);
+  const salesAfter = ok(await api(cp, 'GET', `/sales?branchId=${BRANCH}&stationId=${f.stationId}&limit=50`), 'sales').sales ?? [];
+  const membersAfter = {};
+  for (const [key, m] of Object.entries(f.members)) {
+    const g = await api(cp, 'GET', `/members/${m.id}`);
+    membersAfter[key] = { status: g.status, archivedAt: g.body?.member?.archivedAt ?? null, code: g.body?.error?.code ?? null };
+    const look = await api(cp, 'GET', '/members/lookup?phone=' + encodeURIComponent(m.phone));
+    membersAfter[key].lookupStatus = look.status;
+    membersAfter[key].lookupFinds = !!look.body?.member;
+  }
+  C.readBack = {
+    at: new Date().toISOString(),
+    station: mine ? { name: mine.name, archived: mine.archived } : null,
+    salesAfter: salesAfter.map((s) => ({ receipt: s.receiptNumber ?? null, status: s.status, gross: s.totals?.grossSatang ?? null })),
+    membersAfter,
+    untouched: stations.filter((s) => /Till 1 \(Pi\)|Till 2 \(test\)|FWBooth1|Reception Till 1/.test(s.name)).map((s) => ({ name: s.name, archived: s.archived })),
+  };
+  act('console sign-out', await api(cp, 'POST', '/auth/sign-out', {}));
+  C.consoleMeAfterSignOut = (await api(cp, 'GET', '/me')).status;
+  cp = null;
+  C.finishedAt = new Date().toISOString();
+} catch (e) {
+  C.error = String(e?.message ?? e).slice(0, 600);
+  console.log('ERROR', C.error);
+  if (tp) await api(tp, 'POST', '/auth/sign-out', {}).catch(() => {});
+  if (cp) await api(cp, 'POST', '/auth/sign-out', {}).catch(() => {});
+} finally {
+  save(r);
+  console.log(JSON.stringify(C, null, 2));
+  await browser.close();
+}

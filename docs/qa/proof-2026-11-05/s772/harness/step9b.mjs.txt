@@ -1,0 +1,35 @@
+// Step 9 again for the Activity log: filtered to the tier-claim rows, the paid sale's approval opened.
+import { launch, consoleSession, receipt, save, text, shot, api, CONSOLE } from './common.mjs';
+const S = 'C:/Users/waqar/AppData/Local/Temp/claude/9d4c56906b777e8e/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/s772st';
+const r = receipt();
+const st = (r.steps.s9b = { startedAt: new Date().toISOString() });
+const browser = await launch();
+const { page } = await consoleSession(browser, { width: 1500, height: 1000 });
+try {
+  await page.goto(CONSOLE + '/watch/activity', { waitUntil: 'domcontentloaded' });
+  await page.getByText('The log', { exact: true }).waitFor({ timeout: 30000 });
+  await page.getByPlaceholder('member', { exact: true }).fill('sale_tier_claim');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(3000);
+  const rows = page.locator('text=sale_tier_claim.approve_by_hand');
+  await rows.first().waitFor({ timeout: 30000 });
+  st.list = (await text(page, 9000)).split('newest first')[1]?.slice(0, 1500) ?? null;
+  await page.getByText('The log', { exact: true }).scrollIntoViewIfNeeded();
+  await shot(page, 's772-st-20-console-activity-approve-by-hand');
+  const n = await rows.count();
+  st.rows = n;
+  // Newest first: the paid sale's approval (02:08) sits below the Other one (02:12).
+  await rows.nth(n - 1).click();
+  await page.getByText('ZZ TEST mother is Thai, father British').first().waitFor({ timeout: 20000 });
+  st.opened = (await page.getByRole('dialog').first().innerText().catch(async () => text(page, 3000))).slice(0, 1500);
+  await shot(page, 's772-st-21-console-activity-row-opened');
+} catch (e) {
+  st.error = e.message.split('\n')[0];
+  console.log('FAILED', st.error);
+  await page.screenshot({ path: S + '/s9b-fail.png' });
+  console.log((await text(page, 9000)).slice(-3000));
+}
+save(r);
+console.log(JSON.stringify(st, null, 2).slice(0, 5000));
+await api(page, 'POST', '/auth/sign-out', {});
+await browser.close();
