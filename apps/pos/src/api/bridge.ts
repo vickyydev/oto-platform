@@ -2,6 +2,8 @@ import {
   STATION_BRIDGE_BASE,
   trustedBoxBridgeOrigin,
   StationSessionDocumentSchema,
+  StationScanMessageSchema,
+  type StationScanEvent,
   type BridgeStatus,
   type BridgeUnlockRequest,
   type BridgeUnlockResponse,
@@ -248,6 +250,8 @@ export function watchBridgeSnapshots(stationId: string, options: {
   onFailure: (error: unknown) => void;
   /** Every chunk read, heartbeats included: the last moment this connection was known to work. */
   onActivity?: () => void;
+  /** Staff scans share this authenticated LAN stream; never a display credential. */
+  onScan?: (scan: StationScanEvent) => void;
 }): () => void {
   let stopped = false;
   let attempt = 0;
@@ -256,7 +260,15 @@ export function watchBridgeSnapshots(stationId: string, options: {
   let deadline: ReturnType<typeof setTimeout> | undefined;
   let awaitingSession = false;
   const afterUnlock = () => {
-    if (stopped || !awaitingSession || !boxSession) return;
+    if (stopped) return;
+    // A lock revokes the live staff connection too, not only future fetches.
+    // Its in-flight chunks carry the old revision and can never deliver scans.
+    if (!boxSession) {
+      awaitingSession = true;
+      clearTimeout(retry); controller?.abort();
+      return;
+    }
+    if (!awaitingSession) controller?.abort();
     awaitingSession = false;
     clearTimeout(retry);
     retry = setTimeout(() => { void connect(); }, 0);
@@ -297,6 +309,13 @@ export function watchBridgeSnapshots(stationId: string, options: {
             const data = frame.split('\n').filter(line => line.startsWith('data:')).map(line => line.slice(5).trimStart()).join('\n');
             if (!data) continue;
             const message = JSON.parse(data) as { kind?: string; document?: unknown };
+            if (message.kind === 'scan') {
+              if (!stopped && !options.bearer && revision === sessionRevision) {
+                const scan = StationScanMessageSchema.safeParse(message);
+                if (scan.success) options.onScan?.(scan.data);
+              }
+              continue;
+            }
             if (message.kind !== 'snapshot') continue;
             const document = StationSessionDocumentSchema.parse(message.document);
             if (document.stationId !== stationId) throw new Error('Wrong display station');
@@ -320,7 +339,9 @@ export function watchBridgeSnapshots(stationId: string, options: {
         return;
       }
     } finally { clearTimeout(deadline); active.abort(); }
-    if (!stopped) retry = setTimeout(() => { void connect(); }, Math.min(15_000, 1_000 * 2 ** attempt++));
+    if (!stopped && !awaitingSession && revision === sessionRevision) {
+      retry = setTimeout(() => { void connect(); }, Math.min(15_000, 1_000 * 2 ** attempt++));
+    }
   };
   if (!options.bearer) sessionListeners.add(afterUnlock);
   void connect();

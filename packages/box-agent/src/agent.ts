@@ -994,6 +994,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   let outbox: Outbox | null = null;
   let sessions: StationSessionManager | null = null;
   let scanner: ScanRouter | null = null;
+  let scanRelaysInFlight = 0;
   let booth: Booth | null = null;
   /** The gate host, built only for a bundle with a gate station (S2-12). */
   let gateHost: GateHost | null = null;
@@ -2171,7 +2172,18 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     scanner = new ScanRouter({
       boxId,
       store,
-      publish: (stationId, message) => sessions?.emitScan(stationId, message),
+      publish: (stationId, message) => {
+        sessions?.emitScan(stationId, message);
+        // Live input, never an outbox fact: a delayed scan must not open a
+        // later customer's order. LAN delivery above never waits for cloud.
+        if (!credential || !state.linkUp || state.offline || scanRelaysInFlight >= 8) return;
+        scanRelaysInFlight += 1;
+        void call(`${base}/box/v1/scans`, {
+          method: 'POST', answerTimeoutMs: 2_000,
+          headers: { authorization: `Bearer ${credential}`, 'content-type': 'application/json' },
+          body: JSON.stringify({ stationId, scan: message }),
+        }).catch(() => undefined).finally(() => { scanRelaysInFlight -= 1; });
+      },
       now: () => new Date(clock()),
       log,
       /**

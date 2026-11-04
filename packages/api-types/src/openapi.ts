@@ -11449,6 +11449,8 @@ export interface paths {
                             scans: {
                                 /** @enum {string} */
                                 kind: "scan";
+                                /** Format: uuid */
+                                scanId?: string;
                                 source: string;
                                 codeKind: string;
                                 codeFingerprint: string;
@@ -37011,6 +37013,66 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/box/v1/scans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Deliver a live scanner answer to this box's own station. Never stored as a business fact or retried from the box outbox. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        stationId: string;
+                        scan: {
+                            /** @enum {string} */
+                            kind: "scan";
+                            /** Format: uuid */
+                            scanId: string;
+                            source: string;
+                            codeKind: string;
+                            codeFingerprint: string;
+                            outcome: string;
+                            handler: string | null;
+                            errorCode: string | null;
+                            detail: {
+                                [key: string]: unknown;
+                            } | null;
+                            actionId: string | null;
+                            scannedAt: string;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": "null" | null;
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
