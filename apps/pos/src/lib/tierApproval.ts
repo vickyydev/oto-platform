@@ -16,7 +16,7 @@ import { tierApprovedByHandLine } from '@oto/shared';
 import type { TierApprovalReason } from '@oto/shared';
 import type { ApiSaleTierClaim } from '@/api/history';
 import { tierLabel } from '@/lib/membership';
-import { NetworkError, isMissingRoute } from '@/api/client';
+import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
 
 export {
   TIER_APPROVAL_PROBLEMS,
@@ -53,11 +53,17 @@ export function approvedByHandLine(claim: Pick<ApiSaleTierClaim, 'toTier' | 'app
 /**
  * Why an approval press did not land, in words for the counter. The box keeps
  * no tier claims, so with no platform there is nothing to record it on: the
- * till says so and points at the document check, which is still there.
+ * till says so and points at the document check, which is still there. A
+ * station forced offline for testing (`STATION_FORCED_OFFLINE`, SCRUM-285) is
+ * the same fact for this step, so it gets the same sentence rather than the
+ * platform's generic one about taking payment.
  */
 export function tierApprovalErrorText(err: unknown): string {
   if (err instanceof NetworkError) {
     return 'Approving by hand needs the platform, and it did not answer. Try again, or check a document instead.';
+  }
+  if (err instanceof ApiError && err.code === 'STATION_FORCED_OFFLINE') {
+    return 'Approving by hand needs the platform, and this till is offline. Check a document instead.';
   }
   if (isMissingRoute(err)) {
     return 'This platform cannot record an approval by hand yet. Check a document instead.';

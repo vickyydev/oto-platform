@@ -223,6 +223,14 @@ describe('SCRUM-772 — what the till sends, and what it never writes', () => {
   it('says why a press did not land, pointing back at the document check', () => {
     expect(tierApprovalErrorText(new NetworkError())).toContain('check a document instead');
     expect(tierApprovalErrorText(new ApiError(404, 'ROUTE_NOT_FOUND', 'x'))).toContain('Check a document instead');
+    // A station forced offline is answered as the platform being out of reach,
+    // not with the platform's sentence about taking payment.
+    const offline = tierApprovalErrorText(
+      new ApiError(503, 'STATION_FORCED_OFFLINE', 'Go online before taking payment or changing the sale.'),
+    );
+    expect(offline).toContain('needs the platform');
+    expect(offline).toContain('Check a document instead');
+    expect(offline).not.toContain('payment');
     expect(tierApprovalErrorText(new ApiError(400, 'TIER_APPROVAL', TIER_APPROVAL_PROBLEMS.tier))).toBe(
       TIER_APPROVAL_PROBLEMS.tier,
     );
