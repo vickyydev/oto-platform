@@ -1,0 +1,110 @@
+{
+  "ticket": "SCRUM-736",
+  "source": "936cfbbe3f9062d955d3afdbdae26f38bfaeff89",
+  "mode": "local",
+  "started": "2026-11-04T07:17:51.681Z",
+  "checks": [
+    {
+      "name": "Two synthetic cash sales and one simulator-paid booking created through real routes; cache ready",
+      "passed": true
+    },
+    {
+      "name": "online band opens the correct native screen once",
+      "kind": "band",
+      "handler": "band",
+      "passed": true
+    },
+    {
+      "name": "online voucher opens the correct native screen once",
+      "kind": "wallet",
+      "handler": "wallet-qr",
+      "passed": true
+    },
+    {
+      "name": "online booking opens the correct native screen once",
+      "kind": "booking",
+      "handler": "booking",
+      "passed": true
+    },
+    {
+      "name": "online shop-band opens the correct native screen once",
+      "kind": "band",
+      "handler": "band",
+      "passed": true
+    },
+    {
+      "name": "online history-band opens the correct native screen once",
+      "kind": "band",
+      "handler": "band",
+      "passed": true
+    },
+    {
+      "name": "offline band opens the correct native screen once",
+      "kind": "band",
+      "handler": "band",
+      "passed": true
+    },
+    {
+      "name": "offline voucher opens the correct native screen once",
+      "kind": "wallet",
+      "handler": "wallet-qr",
+      "passed": true
+    },
+    {
+      "name": "offline booking opens the correct native screen once",
+      "kind": "booking",
+      "handler": "booking",
+      "passed": true
+    },
+    {
+      "name": "offline shop-band opens the correct native screen once",
+      "kind": "band",
+      "handler": "band",
+      "passed": true
+    }
+  ],
+  "images": [
+    "s736-online-band.png",
+    "s736-online-voucher.png",
+    "s736-online-booking.png",
+    "s736-online-shop-band.png",
+    "s736-online-history-band.png",
+    "s736-offline-band.png",
+    "s736-offline-voucher.png",
+    "s736-offline-booking.png",
+    "s736-offline-shop-band.png"
+  ],
+  "home": "C:/oto-lanes/s736-agent-mw1sbe03",
+  "outcome": "incomplete",
+  "limits": [
+    "Real Windows runner, SQLite and HTTP bridge; simulated HID/CDC input",
+    "No physical Pi, scanner cradle, LAN TLS or park device tested",
+    "Disposable database; cash and simulator only"
+  ],
+  "fixture": {
+    "boxId": "01a1a56c-1958-7ccc-bb3a-8d06d4c23295",
+    "stationId": "01a1a56c-1ba0-7e7d-87f8-9d49bc8d9c3e",
+    "branchId": "01a1a56c-0d56-7d3a-b8dd-d554aa7f500f",
+    "name": "ZZ TEST SCRUM-736 mw1sbe03",
+    "child": "ZZ TEST SCRUM-736 mw1sbe03 child",
+    "checkinId": "a6081597-38d7-46c8-b972-bd952de12f4b",
+    "saleId": "96a6aa97-c064-48c3-8ed7-b059ef02ff8b",
+    "voucherSaleId": "6980cfb2-744a-42eb-bf99-d46f56048cfd",
+    "bookingId": "01a1a56c-29cf-7f5b-abfd-f8f3923a9a67"
+  },
+  "creditView": {
+    "online": "฿350 credit",
+    "offline": "฿300 credit"
+  },
+  "failure": {
+    "step": "offline history-band",
+    "name": "TimeoutError",
+    "message": "locator.waitFor: Timeout 25000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('#Z36-CTZ995') to be visible\u001b[22m\n"
+  },
+  "cleanup": {
+    "disposableDatabaseDropped": true,
+    "localAgentStopped": true,
+    "proxyStopped": true,
+    "ownedBrowserClosed": true
+  }
+}
