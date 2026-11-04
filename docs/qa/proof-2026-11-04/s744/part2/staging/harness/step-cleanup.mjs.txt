@@ -1,0 +1,46 @@
+// Cleanup: the phone till signs out; the ZZ TEST till, then the ZZ TEST virtual box, archived;
+// the Console session signs out. Everything read back.
+import assert from 'node:assert/strict';
+const CONSOLE = 'https://oto-console-staging.onrender.com';
+export default async function (S) {
+  const { st, save, pages, tillApi, adminApi, call } = S;
+  const f = st.fixture;
+  const c = st.cleanup = st.cleanup ?? { actions: [] };
+  c.actions = c.actions ?? [];
+  const act = (what, r) => { c.actions.push({ at: new Date().toISOString(), what, status: r.status, code: r.body?.error?.code ?? null }); save(); return r; };
+  if (!c.phoneSignedOut) {
+    act('phone till sign-out', await tillApi('phone', 'POST', '/auth/sign-out'));
+    c.phoneSignedOut = { meAfter: (await tillApi('phone', 'GET', '/me')).status }; save();
+  }
+  if (!c.tillArchived) {
+    const r = act('archive the ZZ TEST till', await adminApi('DELETE', `/stations/${f.stationId}`));
+    assert.equal(r.status, 200, JSON.stringify(r.body?.error ?? r.body));
+    c.tillArchived = new Date().toISOString(); save();
+  }
+  if (!c.boxArchived) {
+    const r = act('archive the ZZ TEST virtual box', await adminApi('DELETE', `/boxes/${f.boxId}`));
+    assert.equal(r.status, 200, JSON.stringify(r.body?.error ?? r.body));
+    c.boxArchived = new Date().toISOString(); save();
+  }
+  if (!c.consoleSignedOut && pages.console) {
+    const action = S.randomUUID();
+    const res = await pages.console.page.request.fetch(CONSOLE + '/api/auth/sign-out', { method: 'POST', headers: { 'idempotency-key': action, 'x-oto-action-id': action } });
+    const me = await pages.console.page.request.fetch(CONSOLE + '/api/me');
+    c.consoleSignedOut = { signOut: res.status(), meAfter: me.status() }; save();
+  }
+  const stations = (await adminApi('GET', `/branches/${f.branchId}/stations?includeArchived=true`)).body.stations;
+  const s = stations.find((x) => x.id === f.stationId);
+  const live = (await adminApi('GET', `/branches/${f.branchId}/stations`)).body.stations;
+  const boxesAll = (await adminApi('GET', `/branches/${f.branchId}/boxes?includeArchived=true`)).body.boxes ?? [];
+  const boxesLive = (await adminApi('GET', `/branches/${f.branchId}/boxes`)).body.boxes ?? [];
+  c.readback = {
+    tillArchivedAt: s?.archivedAt ?? s?.archived ?? null,
+    tillInLiveList: live.some((x) => x.id === f.stationId),
+    zzS744StationsLive: live.filter((x) => /SCRUM-744/.test(x.name)).length,
+    boxInLiveList: boxesLive.some((x) => x.id === f.boxId),
+    boxArchived: (boxesAll.find((x) => x.id === f.boxId)?.archivedAt ?? boxesAll.find((x) => x.id === f.boxId)?.archived ?? null),
+    liveStationCount: live.length,
+  };
+  save();
+  return c;
+}

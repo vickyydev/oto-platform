@@ -1,0 +1,10 @@
+import { render, stagingServices } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/render.mjs';
+const services = await stagingServices();
+const out = [];
+for (const name of ['oto-api-staging', 'oto-pos-web-staging', 'oto-pos-staging', 'oto-console-staging']) {
+  const s = services.find((x) => x.name === name);
+  if (!s) { out.push({ name, missing: true }); continue; }
+  const ds = await render('GET', `/services/${s.id}/deploys?limit=3`);
+  out.push({ name, serviceId: s.id, autoDeploy: s.autoDeploy ?? s.serviceDetails?.autoDeploy ?? null, deploys: ds.map((x) => ({ id: x.deploy.id, status: x.deploy.status, commit: x.deploy.commit?.id?.slice(0, 12), msg: x.deploy.commit?.message?.split('\n')[0]?.slice(0, 70), finishedAt: x.deploy.finishedAt })) });
+}
+console.log(JSON.stringify({ at: new Date().toISOString(), out }, null, 1));

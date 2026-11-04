@@ -1,0 +1,2 @@
+import { idle } from './lib.mjs?v=1';
+export default (S) => idle(S, 'phone');

@@ -1,8 +1,9 @@
 # SCRUM-744, second part: a locked reload opens on the real park after Unlock
 
 Local proof done on 4 November 2026 on lane `lane/unlock744b-20261104`,
-source commit `86401bdee`. The staging proof is still to come and follows the
-plan at the end of this page once the change is on main.
+source commit `86401bdee`. The staging proof ran on 4 November 2026, 21:50 to
+21:57 Bangkok, on live `2549fefc0` and passed: see [staging/README.md](staging/README.md)
+(Jira comment 13475; SCRUM-744 Deployed).
 
 ## What happened, and where
 

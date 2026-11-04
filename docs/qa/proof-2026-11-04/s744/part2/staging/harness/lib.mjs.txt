@@ -1,0 +1,195 @@
+// SCRUM-744 second part: the till after a locked reload and Unlock carries its own park.
+import assert from 'node:assert/strict';
+const BS = String.fromCharCode(92);
+export const escapeRe = (s) => [...s].map((c) => ('.*+?^$' + '{}()|[]' + BS).includes(c) ? BS + c : c).join('');
+export const PICKER = 'Which station are you on?';
+export const LOCKED_LINE = 'This session is locked';
+export const NO_STATION = 'No station here is yours to work';
+export const SAMPLE_PARK = 'HKT Central';
+export const VIEWPORTS = { desktop: { width: 1440, height: 900 }, phone: { width: 390, height: 844 } };
+export const NUM = { desktop: '02', phone: '07' };
+export const P = 's744b';
+
+export async function look(S, label) {
+  const page = S.pages[label].page;
+  return {
+    at: new Date().toISOString(),
+    url: page.url(),
+    lockedHeading: await page.getByRole('heading', { name: 'Locked', exact: true }).isVisible().catch(() => false),
+    picker: await page.getByRole('heading', { name: PICKER }).isVisible().catch(() => false),
+    lockedLine: await page.getByText(LOCKED_LINE).count(),
+    noStation: await page.getByText(NO_STATION).count(),
+    lockButton: await page.getByLabel('Lock screen').isVisible().catch(() => false),
+    membershipCheck: await page.getByText('Membership Check', { exact: true }).first().isVisible().catch(() => false),
+    selectCustomerType: await page.getByText('Select Customer Type', { exact: true }).first().isVisible().catch(() => false),
+  };
+}
+
+/** What the till's header carries: the park, the in-park count, the low-stock strip, the overdue notice. */
+export async function header(S, label) {
+  const page = S.pages[label].page;
+  const park = S.st.fixture.parkName;
+  const chip = page.locator(`span[title="${park}"]`);
+  const occ = page.locator('button[aria-label*="people in park"]').first();
+  const strip = page.locator('[role="status"]').filter({ hasText: /out of stock|\d+ low/ }).first();
+  const overdue = page.getByText(/^\d+ overdue$/).first();
+  const switcher = page.locator('button[title="Switch branch"]');
+  return {
+    at: new Date().toISOString(),
+    parkChipAttached: await chip.count(),
+    parkChipVisible: await chip.first().isVisible().catch(() => false),
+    sampleParkChip: await page.locator(`span[title="${SAMPLE_PARK}"]`).count(),
+    sampleParkText: await page.getByText(SAMPLE_PARK, { exact: true }).count(),
+    sampleSecondParkText: await page.getByText('HKT Chalong', { exact: true }).count(),
+    switcher: await switcher.count(),
+    switcherText: (await switcher.count()) ? ((await switcher.first().textContent())?.trim() ?? null) : null,
+    inParkLabel: await occ.getAttribute('aria-label').catch(() => null),
+    inParkVisible: await occ.isVisible().catch(() => false),
+    lowStockStrip: (await strip.count()) ? ((await strip.textContent())?.trim() ?? null) : null,
+    lowStockStripVisible: await strip.isVisible().catch(() => false),
+    overdueNotice: (await overdue.count()) ? ((await overdue.textContent())?.trim() ?? null) : null,
+    overdueVisible: await overdue.isVisible().catch(() => false),
+    pricingMode: (await page.getByText(/^(Weekday|Weekend|Holiday) pricing$/).count()) ? ((await page.getByText(/^(Weekday|Weekend|Holiday) pricing$/).first().textContent())?.trim() ?? null) : null,
+  };
+}
+
+export async function remembered(page) {
+  return page.evaluate(() => {
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('oto.pos.station.')) return (JSON.parse(localStorage.getItem(key) ?? '{}')).id ?? null;
+    }
+    return null;
+  });
+}
+
+const net = (S, label, from) => S.st.network.slice(from).filter((n) => n.till === label);
+const parkCalls = (rows) => rows.filter((n) => n.path === '/api/branches').map((n) => ({ at: n.at, status: n.status, error: n.error ?? null, parks: n.parks ?? null }));
+const occCalls = (rows) => rows.filter((n) => n.path === '/api/branches/:id/occupancy').map((n) => ({ at: n.at, status: n.status, error: n.error ?? null, parkIsTheSessionPark: n.parkIsTheSessionPark, total: n.total ?? null }));
+
+export async function signIn(S, label) {
+  const { st, save, tillPage, expect, need, POS, tillApi, shot } = S;
+  const f = st.fixture;
+  const { page } = await tillPage(label, VIEWPORTS[label]);
+  const mark = st.network.length;
+  await page.goto(POS + '/');
+  await expect(page.getByRole('heading', { name: 'Oto POS is locked' })).toBeVisible({ timeout: 60000 });
+  await page.locator('input[inputmode="tel"], input[type="tel"]').first().fill(need('STAGING_RECEPTION_PHONE').replace(/^\+66/, '0'));
+  await page.locator('input[type="password"][autocomplete="current-password"]').fill(need('STAGING_RECEPTION_PASSWORD'));
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByRole('heading', { name: PICKER })).toBeVisible({ timeout: 30000 });
+  await page.getByRole('button', { name: new RegExp(escapeRe(f.stationName)) }).click();
+  await expect(page.getByLabel('Lock screen')).toBeVisible({ timeout: 30000 });
+  await expect(page.getByRole('heading', { name: PICKER })).toBeHidden();
+  const me = await tillApi(label, 'GET', '/me');
+  assert.equal(me.status, 200);
+  assert.equal(me.body.branch?.name, f.parkName, 'the reception session is at the proof park');
+  const link = await tillApi(label, 'GET', '/me/station/link');
+  // Let the header settle on the park's own counts before the control screen.
+  await page.waitForTimeout(7000);
+  const lastTouch = new Date().toISOString();
+  st.tills = st.tills ?? {};
+  st.tills[label] = { accountId: me.body.account.id, role: 'reception', viewport: VIEWPORTS[label], signedInAt: lastTouch, lastTouchAt: lastTouch, linkStatus: link.status, linkStationIsTheZzTestTill: link.body?.stationId === f.stationId, rememberedIsTheZzTestTill: (await remembered(page)) === f.stationId };
+  st.tills[label].control = { look: await look(S, label), header: await header(S, label), parkList: parkCalls(net(S, label, mark)), occupancy: occCalls(net(S, label, mark)) };
+  save();
+  assert.ok(st.tills[label].linkStationIsTheZzTestTill, 'the session is on the ZZ TEST till');
+  await shot(label, `${P}-${NUM[label]}-${label}-1-control-signed-in-on-the-zz-test-till`);
+  return st.tills[label];
+}
+
+// Leave the till alone: no click, key, move or touch. Screens only (they send no input).
+export async function idle(S, label) {
+  const { st, save, shot, expect } = S;
+  const page = S.pages[label].page;
+  const t = st.tills[label];
+  const out = { startedAt: new Date().toISOString(), lastTouchAt: t.lastTouchAt };
+  const warning = page.getByText(/Auto-lock in \d+s with no activity/);
+  await expect(warning).toBeVisible({ timeout: 130000 });
+  out.warningAt = new Date().toISOString();
+  out.warningText = (await warning.textContent())?.trim() ?? null;
+  await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeVisible({ timeout: 40000 });
+  out.lockedAt = new Date().toISOString();
+  out.secondsFromLastTouchToLock = Math.round((Date.parse(out.lockedAt) - Date.parse(t.lastTouchAt)) / 1000);
+  out.lockCall = st.network.filter((n) => n.till === label && n.path === '/api/auth/lock').map((n) => ({ at: n.at, status: n.status }));
+  await page.waitForTimeout(1500);
+  await shot(label, `${P}-${NUM[label]}-${label}-2-locked-by-timeout`);
+  out.look = await look(S, label);
+  t.idle = out; save();
+  return out;
+}
+
+export async function reloadUnlock(S, label) {
+  const { st, save, shot, expect, need, tillApi } = S;
+  const f = st.fixture;
+  const page = S.pages[label].page;
+  const t = st.tills[label];
+  const out = {};
+  const every = [];
+  const onAny = async (res) => { const p = new URL(res.url()).pathname; if (!p.startsWith('/api/')) return; let code = null; if (res.status() >= 400) { try { code = (await res.json())?.error?.code ?? null; } catch {} } every.push({ at: new Date().toISOString(), method: res.request().method(), path: p.replace(/[0-9a-f]{8}-[0-9a-f-]{27}/g, ':id'), status: res.status(), ...(code ? { error: code } : {}) }); };
+  page.on('response', onAny);
+  const mark = st.network.length;
+  out.reloadAt = new Date().toISOString();
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeVisible({ timeout: 60000 });
+  await page.waitForTimeout(5000);
+  out.afterReload = await look(S, label);
+  await shot(label, `${P}-${NUM[label]}-${label}-3-locked-after-reload`);
+  out.behindTheLock = { parkList: parkCalls(net(S, label, mark)), occupancy: occCalls(net(S, label, mark)), stations: net(S, label, mark).filter((n) => n.path === '/api/me/stations').map((n) => ({ status: n.status, error: n.error ?? null })) };
+  const mark2 = st.network.length;
+  await page.locator('input[type="password"][autocomplete="current-password"]').fill(need('STAGING_RECEPTION_PASSWORD'));
+  const unlocked = page.waitForResponse((r) => r.url().endsWith('/api/auth/unlock') && r.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  out.unlockStatus = (await unlocked).status();
+  out.unlockAt = new Date().toISOString();
+  await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeHidden({ timeout: 30000 });
+  await expect(page.getByRole('heading', { name: PICKER }).or(page.getByLabel('Lock screen')).first()).toBeVisible({ timeout: 30000 });
+  // The in-park chip asks its park on arrival and every 5 s after; let it answer before the screen.
+  await page.waitForTimeout(6000);
+  out.afterUnlock = { look: await look(S, label), header: await header(S, label) };
+  await shot(label, `${P}-${NUM[label]}-${label}-4-after-unlock`);
+  await page.waitForTimeout(15000);
+  out.after15s = { look: await look(S, label), header: await header(S, label) };
+  await shot(label, `${P}-${NUM[label]}-${label}-5-15-seconds-later`);
+  const atUnlock = net(S, label, mark2);
+  out.atUnlock = {
+    parkList: parkCalls(atUnlock),
+    occupancy: occCalls(atUnlock),
+    stationPicks: atUnlock.filter((n) => n.path === '/api/me/session/station').map((n) => ({ status: n.status, pickIsTheZzTestTill: n.request?.stationId === f.stationId })),
+  };
+  const occAt = out.atUnlock.occupancy.map((o) => Date.parse(o.at));
+  out.atUnlock.occupancySecondsApart = occAt.slice(1).map((v, i) => Math.round((v - occAt[i]) / 100) / 10);
+  page.off('response', onAny);
+  out.everyApiCallFromReloadTo15sAfterUnlock = every;
+  out.writesFromReloadTo15sAfterUnlock = every.filter((c) => c.method !== 'GET');
+  const link = await tillApi(label, 'GET', '/me/station/link');
+  out.linkStatus = link.status;
+  out.linkStationIsTheZzTestTill = link.body?.stationId === f.stationId;
+  out.rememberedIsTheZzTestTill = (await remembered(page)) === f.stationId;
+  t.reloadUnlock = out; save();
+  return out;
+}
+
+/** Read only: Skip walk-in (Tourist), then the Tourist rate, then read the ticket grid. No ticket is pressed. */
+export async function readTickets(S, label, name) {
+  const { st, save, shot, expect } = S;
+  const page = S.pages[label].page;
+  const writes = [];
+  const onReq = (req) => { const p = new URL(req.url()).pathname; if (p.startsWith('/api/') && req.method() !== 'GET') writes.push({ at: new Date().toISOString(), method: req.method(), path: p.replace(/[0-9a-f]{8}-[0-9a-f-]{27}/g, ':id') }); };
+  page.on('request', onReq);
+  const out = { at: new Date().toISOString() };
+  await page.getByRole('button', { name: 'Skip — walk-in (Tourist)' }).click();
+  await expect(page.getByText('Select Customer Type', { exact: true }).first()).toBeVisible({ timeout: 15000 });
+  const wizard = page.locator('div.flex-1.overflow-hidden.relative.p-6').first();
+  out.customerTypeText = (await wizard.innerText()).split('\n').map((s) => s.trim()).filter(Boolean).slice(0, 30);
+  // The default rate's card (a card that answers a press, not a button).
+  await wizard.locator('h3').filter({ hasText: /^Tourist$/ }).first().click();
+  await page.waitForTimeout(1500);
+  out.gridText = (await wizard.innerText()).split('\n').map((s) => s.trim()).filter(Boolean);
+  out.prices = out.gridText.filter((s) => /฿/.test(s));
+  await shot(label, name);
+  page.off('request', onReq);
+  out.writes = writes;
+  st.tickets = st.tickets ?? {};
+  st.tickets[name] = out; save();
+  return out;
+}

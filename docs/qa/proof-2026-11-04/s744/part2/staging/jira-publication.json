@@ -1,0 +1,77 @@
+{
+  "key": "SCRUM-744",
+  "statusBefore": "Testing",
+  "attachStatus": 200,
+  "attached": [
+    {
+      "id": "12570",
+      "name": "s744b-02-desktop-3-locked-after-reload.png"
+    },
+    {
+      "id": "12571",
+      "name": "s744b-02-desktop-4-after-unlock.png"
+    },
+    {
+      "id": "12572",
+      "name": "s744b-02-desktop-6-park-after-unlock-header.png"
+    },
+    {
+      "id": "12573",
+      "name": "s744b-02-desktop-5-15-seconds-later.png"
+    },
+    {
+      "id": "12574",
+      "name": "s744b-02-desktop-7-tickets-after-unlock.png"
+    },
+    {
+      "id": "12575",
+      "name": "s744b-02-desktop-8-control-direct-address.png"
+    },
+    {
+      "id": "12576",
+      "name": "s744b-02-desktop-9-control-tickets.png"
+    },
+    {
+      "id": "12577",
+      "name": "s744b-07-phone-4-after-unlock.png"
+    },
+    {
+      "id": "12578",
+      "name": "s744b-07-phone-5-15-seconds-later.png"
+    },
+    {
+      "id": "12579",
+      "name": "s744b-07-phone-6-control-direct-address.png"
+    }
+  ],
+  "commentStatus": 201,
+  "commentId": "13475",
+  "statusAfterComment": "Testing",
+  "imagesOnTicket": 18,
+  "commentCreated": "2026-11-04T21:59:20.598+0700",
+  "renderedImages": 12,
+  "renderedImageIds": [
+    "12555",
+    "12570",
+    "12571",
+    "12572",
+    "12573",
+    "12574",
+    "12575",
+    "12576",
+    "12577",
+    "12578",
+    "12579"
+  ],
+  "walk": {
+    "to": "Deployed",
+    "at": "2026-11-04T14:59:34.876Z",
+    "commitLinks": "+2 of 2",
+    "statusReadBack": "Deployed"
+  },
+  "beforePicture": {
+    "name": "s744-02-desktop-7-finding-park-list-after-unlock.png",
+    "id": "12555",
+    "from": "comment 13467"
+  }
+}

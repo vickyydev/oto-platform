@@ -1,0 +1,62 @@
+// Console > Devices > New station: the ZZ TEST till on the ZZ TEST virtual box,
+// ready to sell (a receipt prefix; cards taken on the terminal and recorded by hand; QR not taken here).
+import assert from 'node:assert/strict';
+const CONSOLE = 'https://oto-console-staging.onrender.com';
+const typedPhone = async (field, phone) => {
+  const prefix = await field.evaluate((el) => /\+(\d{1,4})/.exec(el.parentElement?.textContent ?? '')?.[1] ?? null).catch(() => null);
+  if (!prefix || !phone.startsWith(`+${prefix}`)) return phone;
+  const national = phone.slice(prefix.length + 1);
+  return prefix === '66' ? `0${national}` : national;
+};
+export default async function (S) {
+  const { st, save, tillPage, shot, need, expect, adminApi } = S;
+  const f = st.fixture;
+  const { page } = await tillPage('console', { width: 1440, height: 1000 });
+  await page.goto(CONSOLE + '/devices', { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(4000);
+  if (await page.locator('input[type="password"]').count()) {
+    const field = page.locator('input[type="tel"], input[inputmode="tel"]').last();
+    await field.fill(await typedPhone(field, need('STAGING_ADMIN_PHONE')));
+    await page.locator('input[type="password"]').last().fill(need('STAGING_ADMIN_PASSWORD'));
+    await page.getByRole('button', { name: /sign in/i }).first().click();
+    await page.waitForTimeout(6000);
+  }
+  if (!/\/devices/.test(page.url())) await page.goto(CONSOLE + '/devices', { waitUntil: 'domcontentloaded' });
+  await expect(page.getByPlaceholder('Name, identifier or type')).toBeVisible({ timeout: 60000 });
+  if (!f.stationId) {
+    await page.getByRole('button', { name: 'New station' }).click();
+    const field = (label) => page.locator('label').filter({ has: page.locator('span', { hasText: new RegExp('^' + label + '$') }) });
+    const boxSelect = field('Box').locator('select');
+    await expect(boxSelect).toBeVisible();
+    await boxSelect.selectOption(f.boxId);
+    await field('Name').locator('input').fill(f.name + ' till');
+    await field('Kind').locator('select').selectOption('till');
+    await field('Code prefix').locator('input').fill(f.codePrefix);
+    await field('Cards').locator('select').selectOption('manual');
+    await field('QR').locator('select').selectOption('none');
+    await page.getByText('All staff at this branch', { exact: true }).click();
+    st.steps.consoleForm = { at: new Date().toISOString() }; save();
+    await shot('console', 's744b-00-console-new-zz-test-till-form', { fullPage: false });
+    const created = page.waitForResponse((r) => /\/api\/branches\/[^/]+\/stations$/.test(new URL(r.url()).pathname) && r.request().method() === 'POST');
+    await page.getByRole('button', { name: 'Create the station' }).click();
+    const res = await created;
+    let body = null; try { body = await res.json(); } catch {}
+    assert.equal(res.status(), 200, JSON.stringify(body?.error ?? res.status()));
+    f.stationId = body.station.id; f.stationName = body.station.name;
+    f.station = { codePrefix: body.station.codePrefix, boxId: body.station.boxId, paymentRouting: body.station.paymentRouting, accessScope: body.station.accessScope, ready: body.station.ready ?? null, reasons: body.station.reasons ?? null };
+    f.stationCreatedAt = new Date().toISOString();
+    save();
+  }
+  await page.waitForTimeout(2000);
+  const closeBtn = page.getByRole('button', { name: /^(Close|Cancel)$/ });
+  if (await closeBtn.count()) await closeBtn.first().click().catch(() => {});
+  await page.getByPlaceholder('Name, identifier or type').fill(f.stamp);
+  await page.waitForTimeout(1500);
+  await expect(page.getByText(f.stationName, { exact: true }).first()).toBeVisible();
+  await shot('console', 's744b-01-console-zz-test-till-made', { fullPage: true });
+  const stations = (await adminApi('GET', `/branches/${f.branchId}/stations`)).body.stations;
+  const s = stations.find((x) => x.id === f.stationId);
+  f.stationReadback = { name: s?.name, kind: s?.kind, codePrefix: s?.codePrefix, boxId: s?.boxId, card: s?.paymentRouting?.card, qr: s?.paymentRouting?.qr, accessScope: s?.accessScope, ready: s?.ready ?? null, reasons: s?.reasons ?? null, archivedAt: s?.archivedAt ?? null };
+  save();
+  return { station: f.station, readback: f.stationReadback };
+}

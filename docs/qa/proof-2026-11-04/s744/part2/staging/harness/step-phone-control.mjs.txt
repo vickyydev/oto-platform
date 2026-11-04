@@ -1,0 +1,23 @@
+// Control: the till's address opened directly on the phone, unlocked.
+import { look, header, remembered, P } from './lib.mjs?v=2';
+export default async function (S) {
+  const { st, save, shot, pages, expect, POS, tillApi } = S;
+  const f = st.fixture;
+  const page = pages.phone.page;
+  const out = { at: new Date().toISOString() };
+  const mark = st.network.length;
+  await page.goto(POS + '/');
+  await expect(page.getByLabel('Lock screen').or(page.getByRole('heading', { name: 'Which station are you on?' })).or(page.getByRole('heading', { name: 'Locked', exact: true })).first()).toBeVisible({ timeout: 60000 });
+  await page.waitForTimeout(7000);
+  out.look = await look(S, 'phone');
+  out.header = await header(S, 'phone');
+  const rows = st.network.slice(mark).filter((n) => n.till === 'phone');
+  out.parkList = rows.filter((n) => n.path === '/api/branches').map((n) => ({ status: n.status, parks: n.parks ?? null }));
+  out.occupancy = rows.filter((n) => n.path === '/api/branches/:id/occupancy').map((n) => ({ status: n.status, total: n.total ?? null, parkIsTheSessionPark: n.parkIsTheSessionPark }));
+  await shot('phone', `${P}-07-phone-6-control-direct-address`);
+  const link = await tillApi('phone', 'GET', '/me/station/link');
+  out.linkStationIsTheZzTestTill = link.body?.stationId === f.stationId;
+  out.rememberedIsTheZzTestTill = (await remembered(page)) === f.stationId;
+  st.steps.phoneControl = out; save();
+  return out;
+}

@@ -1,0 +1,4 @@
+#!/bin/sh
+D=C:/Users/waqar/AppData/Local/Temp/claude/9d4c56906b777e8e/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/s744b/steps
+if [ "$1" = "STOP" ]; then curl -s --max-time 60 -X POST --data "STOP" http://127.0.0.1:47441/; exit; fi
+curl -s --max-time 590 -X POST --data "$D/$1.mjs" http://127.0.0.1:47441/

@@ -1,0 +1,22 @@
+// Control: the till's address opened directly, unlocked; then the same read-only ticket grid.
+import { look, header, remembered, readTickets, P } from './lib.mjs?v=1';
+export default async function (S) {
+  const { st, save, shot, pages, expect, POS, tillApi } = S;
+  const f = st.fixture;
+  const page = pages.desktop.page;
+  const out = { at: new Date().toISOString() };
+  const mark = st.network.length;
+  await page.goto(POS + '/');
+  await expect(page.getByLabel('Lock screen').or(page.getByRole('heading', { name: 'Which station are you on?' })).or(page.getByRole('heading', { name: 'Locked', exact: true })).first()).toBeVisible({ timeout: 60000 });
+  await page.waitForTimeout(7000);
+  out.look = await look(S, 'desktop');
+  out.header = await header(S, 'desktop');
+  out.parkList = st.network.slice(mark).filter((n) => n.till === 'desktop' && n.path === '/api/branches').map((n) => ({ status: n.status, parks: n.parks ?? null }));
+  await shot('desktop', `${P}-02-desktop-8-control-direct-address`);
+  out.tickets = await readTickets(S, 'desktop', `${P}-02-desktop-9-control-tickets`);
+  const link = await tillApi('desktop', 'GET', '/me/station/link');
+  out.linkStationIsTheZzTestTill = link.body?.stationId === f.stationId;
+  out.rememberedIsTheZzTestTill = (await remembered(page)) === f.stationId;
+  st.steps.desktopControl = out; save();
+  return out;
+}

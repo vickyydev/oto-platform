@@ -1,0 +1,2665 @@
+{
+  "unit": "SCRUM-744 (second part)",
+  "source": "2549fefc0b4ea47cc72de0a068650d9f8f4a6ac4",
+  "startedAt": "2026-11-04T14:50:06.943Z",
+  "fixture": {
+    "parkName": "Oto Play Park, Central Floresta",
+    "stamp": "mw28h2cu",
+    "name": "ZZ TEST SCRUM-744 mw28h2cu",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "codePrefix": "Z744B",
+    "zzStationsBefore": [
+      {
+        "id": "01a1a6a6-1bf7-7400-acc7-e40c21b6c667",
+        "name": "ZZ TEST SCRUM-744 mw24kguf till",
+        "archivedAt": null
+      }
+    ],
+    "boxId": "01a1a709-f94a-701f-bf4a-79e33c05e2a0",
+    "boxName": "ZZ TEST SCRUM-744 mw28h2cu virtual box",
+    "boxSlot": "zz-test-s744b-mw28h2cu",
+    "boxRole": "virtual",
+    "boxCreatedAt": "2026-11-04T14:50:10.561Z",
+    "boxReadback": {
+      "name": "ZZ TEST SCRUM-744 mw28h2cu virtual box",
+      "role": "virtual",
+      "slot": "zz-test-s744b-mw28h2cu",
+      "status": "unclaimed"
+    },
+    "stationId": "01a1a70a-3e4b-7c3a-8329-e57ab7ed5126",
+    "stationName": "ZZ TEST SCRUM-744 mw28h2cu till",
+    "station": {
+      "codePrefix": "Z744B",
+      "boxId": "01a1a709-f94a-701f-bf4a-79e33c05e2a0",
+      "paymentRouting": {
+        "qr": "none",
+        "card": "manual"
+      },
+      "accessScope": "all_staff",
+      "ready": true,
+      "reasons": []
+    },
+    "stationCreatedAt": "2026-11-04T14:50:28.398Z",
+    "stationReadback": {
+      "name": "ZZ TEST SCRUM-744 mw28h2cu till",
+      "kind": "till",
+      "codePrefix": "Z744B",
+      "boxId": "01a1a709-f94a-701f-bf4a-79e33c05e2a0",
+      "card": "manual",
+      "qr": "none",
+      "accessScope": "all_staff",
+      "ready": true,
+      "reasons": [],
+      "archivedAt": null
+    }
+  },
+  "steps": {
+    "consoleForm": {
+      "at": "2026-11-04T14:50:27.851Z"
+    },
+    "desktopAfterUnlockParkAndTickets": {
+      "at": "2026-11-04T14:53:22.128Z",
+      "header": {
+        "at": "2026-11-04T14:53:22.128Z",
+        "parkChipAttached": 1,
+        "parkChipVisible": true,
+        "sampleParkChip": 0,
+        "sampleParkText": 0,
+        "sampleSecondParkText": 0,
+        "switcher": 0,
+        "switcherText": null,
+        "inParkLabel": "1 people in park. No gate is reporting at this branch.",
+        "inParkVisible": true,
+        "lowStockStrip": "13 out of stock · 1 lowGlow Band, Locker Rental, Mascot Keyring, Oto Mascot Plush +10 more",
+        "lowStockStripVisible": true,
+        "overdueNotice": "5 overdue",
+        "overdueVisible": true,
+        "pricingMode": "Weekday pricing"
+      },
+      "chipBox": {
+        "x": 324.921875,
+        "y": 65.5,
+        "width": 120,
+        "height": 30
+      },
+      "tickets": {
+        "at": "2026-11-04T14:53:22.204Z",
+        "customerTypeText": [
+          "Select Customer Type",
+          "Choose the pricing tier to start the sale.",
+          "Walk-in (no member) · default Tourist rate. Verify to apply a discounted tier.",
+          "Tourist",
+          "Standard pricing",
+          "Expat",
+          "Resident pricing",
+          "Proof required — verify now",
+          "Thai",
+          "Local pricing",
+          "Proof required — verify now"
+        ],
+        "gridText": [
+          "Add to Sale",
+          "Add drop-off child",
+          "Add ticket — select a play ticket for kids and adults",
+          "1 Hour Play",
+          "1 Hour",
+          "฿690",
+          "per person",
+          "2 Hours Play",
+          "2 Hours",
+          "฿890",
+          "per person",
+          "Full Day Pass",
+          "All Day",
+          "฿1090",
+          "per person",
+          "Eat & Play Kids Pass",
+          "All Day + Meal",
+          "฿1300",
+          "per person"
+        ],
+        "prices": [
+          "฿690",
+          "฿890",
+          "฿1090",
+          "฿1300"
+        ],
+        "writes": []
+      }
+    },
+    "desktopControl": {
+      "at": "2026-11-04T14:53:29.455Z",
+      "look": {
+        "at": "2026-11-04T14:53:37.335Z",
+        "url": "https://oto-pos-web-staging.onrender.com/",
+        "lockedHeading": false,
+        "picker": false,
+        "lockedLine": 0,
+        "noStation": 0,
+        "lockButton": true,
+        "membershipCheck": true,
+        "selectCustomerType": false
+      },
+      "header": {
+        "at": "2026-11-04T14:53:37.345Z",
+        "parkChipAttached": 1,
+        "parkChipVisible": true,
+        "sampleParkChip": 0,
+        "sampleParkText": 0,
+        "sampleSecondParkText": 0,
+        "switcher": 0,
+        "switcherText": null,
+        "inParkLabel": "1 people in park. No gate is reporting at this branch.",
+        "inParkVisible": true,
+        "lowStockStrip": "13 out of stock · 1 lowGlow Band, Locker Rental, Mascot Keyring, Oto Mascot Plush +10 more",
+        "lowStockStripVisible": true,
+        "overdueNotice": "5 overdue",
+        "overdueVisible": true,
+        "pricingMode": "Weekday pricing"
+      },
+      "parkList": [
+        {
+          "status": 200,
+          "parks": [
+            "Oto Play Park, Central Floresta"
+          ]
+        }
+      ],
+      "tickets": {
+        "at": "2026-11-04T14:53:37.421Z",
+        "customerTypeText": [
+          "Select Customer Type",
+          "Choose the pricing tier to start the sale.",
+          "Walk-in (no member) · default Tourist rate. Verify to apply a discounted tier.",
+          "Tourist",
+          "Standard pricing",
+          "Expat",
+          "Resident pricing",
+          "Proof required — verify now",
+          "Thai",
+          "Local pricing",
+          "Proof required — verify now"
+        ],
+        "gridText": [
+          "Add to Sale",
+          "Add drop-off child",
+          "Add ticket — select a play ticket for kids and adults",
+          "1 Hour Play",
+          "1 Hour",
+          "฿690",
+          "per person",
+          "2 Hours Play",
+          "2 Hours",
+          "฿890",
+          "per person",
+          "Full Day Pass",
+          "All Day",
+          "฿1090",
+          "per person",
+          "Eat & Play Kids Pass",
+          "All Day + Meal",
+          "฿1300",
+          "per person"
+        ],
+        "prices": [
+          "฿690",
+          "฿890",
+          "฿1090",
+          "฿1300"
+        ],
+        "writes": []
+      },
+      "linkStationIsTheZzTestTill": true,
+      "rememberedIsTheZzTestTill": true
+    },
+    "phoneControl": {
+      "at": "2026-11-04T14:56:31.754Z",
+      "look": {
+        "at": "2026-11-04T14:56:39.639Z",
+        "url": "https://oto-pos-web-staging.onrender.com/",
+        "lockedHeading": false,
+        "picker": false,
+        "lockedLine": 0,
+        "noStation": 0,
+        "lockButton": true,
+        "membershipCheck": false,
+        "selectCustomerType": true
+      },
+      "header": {
+        "at": "2026-11-04T14:56:39.647Z",
+        "parkChipAttached": 1,
+        "parkChipVisible": false,
+        "sampleParkChip": 0,
+        "sampleParkText": 0,
+        "sampleSecondParkText": 0,
+        "switcher": 0,
+        "switcherText": null,
+        "inParkLabel": "1 people in park. No gate is reporting at this branch.",
+        "inParkVisible": true,
+        "lowStockStrip": null,
+        "lowStockStripVisible": false,
+        "overdueNotice": null,
+        "overdueVisible": false,
+        "pricingMode": null
+      },
+      "parkList": [
+        {
+          "status": 200,
+          "parks": [
+            "Oto Play Park, Central Floresta"
+          ]
+        }
+      ],
+      "occupancy": [
+        {
+          "status": 200,
+          "total": 1,
+          "parkIsTheSessionPark": true
+        },
+        {
+          "status": 200,
+          "total": 1,
+          "parkIsTheSessionPark": true
+        }
+      ],
+      "linkStationIsTheZzTestTill": true,
+      "rememberedIsTheZzTestTill": true
+    }
+  },
+  "images": [
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/part2/staging/s744b-00-console-new-zz-test-till-form.png",
+      "at": "2026-11-04T14:50:27.934Z",
+      "till": "console",
+      "url": "https://oto-console-staging.onrender.com/devices"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/part2/staging/s744b-01-console-zz-test-till-made.png",
+      "at": "2026-11-04T14:50:32.099Z",
+      "till": "console",
+      "url": "https://oto-console-staging.onrender.com/devices"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/part2/staging/s744b-02-desktop-1-control-signed-in-on-the-zz-test-till.png",
+      "at": "2026-11-04T14:50:49.707Z",
+      "till": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/part2/staging/s744b-02-desktop-2-locked-by-timeout.png",
+      "at": "2026-11-04T14:52:43.977Z",
+      "till": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/part2/staging/s744b-02-desktop-3-locked-after-reload.png",
+      "at": "2026-11-04T14:52:55.596Z",
+      "till": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/part2/staging/s744b-02-desktop-4-after-unlock.png",
+      "at": "2026-11-04T14:53:02.612Z",
+      "till": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/part2/staging/s744b-02-desktop-5-15-seconds-later.png",
+      "at": "2026-11-04T14:53:17.685Z",
+      "till": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/part2/staging/s744b-02-desktop-6-park-after-unlock-header.png",
+      "at": "2026-11-04T14:53:22.203Z",
+      "till": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/part2/staging/s744b-02-desktop-7-tickets-after-unlock.png",
+      "at": "2026-11-04T14:53:24.605Z",
+      "till": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/part2/staging/s744b-02-desktop-8-control-direct-address.png",
+      "at": "2026-11-04T14:53:37.421Z",
+      "till": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/part2/staging/s744b-02-desktop-9-control-tickets.png",
+      "at": "2026-11-04T14:53:39.805Z",
+      "till": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/part2/staging/s744b-07-phone-1-control-signed-in-on-the-zz-test-till.png",
+      "at": "2026-11-04T14:54:24.439Z",
+      "till": "phone",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/part2/staging/s744b-07-phone-2-locked-by-timeout.png",
+      "at": "2026-11-04T14:55:48.692Z",
+      "till": "phone",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/part2/staging/s744b-07-phone-3-locked-after-reload.png",
+      "at": "2026-11-04T14:56:05.490Z",
+      "till": "phone",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/part2/staging/s744b-07-phone-4-after-unlock.png",
+      "at": "2026-11-04T14:56:12.677Z",
+      "till": "phone",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/part2/staging/s744b-07-phone-5-15-seconds-later.png",
+      "at": "2026-11-04T14:56:27.790Z",
+      "till": "phone",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s744/part2/staging/s744b-07-phone-6-control-direct-address.png",
+      "at": "2026-11-04T14:56:39.756Z",
+      "till": "phone",
+      "url": "https://oto-pos-web-staging.onrender.com/"
+    }
+  ],
+  "network": [
+    {
+      "at": "2026-11-04T14:50:18.125Z",
+      "till": "console",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401,
+      "error": "UNAUTHORIZED"
+    },
+    {
+      "at": "2026-11-04T14:50:22.440Z",
+      "till": "console",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:50:23.332Z",
+      "till": "console",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:50:24.444Z",
+      "till": "console",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:50:25.119Z",
+      "till": "console",
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200,
+      "parks": [
+        "Oto Play Park, Central Floresta",
+        "Oto Play Park, Robinson Chalong",
+        "Demo Branch 2"
+      ]
+    },
+    {
+      "at": "2026-11-04T14:50:39.750Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401,
+      "error": "UNAUTHORIZED"
+    },
+    {
+      "at": "2026-11-04T14:50:40.719Z",
+      "till": "desktop",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:50:40.799Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:50:41.043Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200,
+      "parks": [
+        "Oto Play Park, Central Floresta"
+      ]
+    },
+    {
+      "at": "2026-11-04T14:50:41.527Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/stations",
+      "status": 200,
+      "stations": 11
+    },
+    {
+      "at": "2026-11-04T14:50:42.091Z",
+      "till": "desktop",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200,
+      "request": {
+        "stationId": "01a1a70a-3e4b-7c3a-8329-e57ab7ed5126"
+      }
+    },
+    {
+      "at": "2026-11-04T14:50:42.213Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:50:42.253Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:50:47.303Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:50:52.392Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:50:57.478Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:51:02.164Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:51:02.558Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:51:07.629Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:51:12.735Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:51:17.812Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:51:22.150Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:51:22.965Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:51:28.050Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:51:33.152Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:51:38.238Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:51:42.169Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:51:43.327Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:51:48.413Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:51:53.523Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:51:58.603Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:52:02.152Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:52:03.679Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:52:08.765Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:52:13.853Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:52:18.950Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:52:22.206Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:52:24.035Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:52:29.120Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:52:34.203Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:52:39.284Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:52:42.025Z",
+      "till": "desktop",
+      "method": "POST",
+      "path": "/api/auth/lock",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:52:50.321Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:52:50.477Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 423,
+      "error": "SESSION_LOCKED"
+    },
+    {
+      "at": "2026-11-04T14:52:50.551Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/stations",
+      "status": 423,
+      "error": "SESSION_LOCKED"
+    },
+    {
+      "at": "2026-11-04T14:52:55.720Z",
+      "till": "desktop",
+      "method": "POST",
+      "path": "/api/auth/unlock",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:52:55.803Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:52:55.949Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200,
+      "parks": [
+        "Oto Play Park, Central Floresta"
+      ]
+    },
+    {
+      "at": "2026-11-04T14:52:56.351Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/stations",
+      "status": 200,
+      "stations": 11
+    },
+    {
+      "at": "2026-11-04T14:52:56.471Z",
+      "till": "desktop",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200,
+      "request": {
+        "stationId": "01a1a70a-3e4b-7c3a-8329-e57ab7ed5126"
+      }
+    },
+    {
+      "at": "2026-11-04T14:52:56.548Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:52:56.550Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:53:01.628Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:53:06.703Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:53:11.785Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:53:16.530Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:53:16.938Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:53:22.023Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:53:27.097Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:53:29.586Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:53:29.733Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200,
+      "parks": [
+        "Oto Play Park, Central Floresta"
+      ]
+    },
+    {
+      "at": "2026-11-04T14:53:30.171Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/stations",
+      "status": 200,
+      "stations": 11
+    },
+    {
+      "at": "2026-11-04T14:53:30.284Z",
+      "till": "desktop",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200,
+      "request": {
+        "stationId": "01a1a70a-3e4b-7c3a-8329-e57ab7ed5126"
+      }
+    },
+    {
+      "at": "2026-11-04T14:53:30.362Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:53:30.382Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:53:35.446Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:53:40.528Z",
+      "till": "desktop",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:53:45.206Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401,
+      "error": "UNAUTHORIZED"
+    },
+    {
+      "at": "2026-11-04T14:53:46.150Z",
+      "till": "phone",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:53:46.224Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:53:46.367Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200,
+      "parks": [
+        "Oto Play Park, Central Floresta"
+      ]
+    },
+    {
+      "at": "2026-11-04T14:53:46.782Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/me/stations",
+      "status": 200,
+      "stations": 11
+    },
+    {
+      "at": "2026-11-04T14:53:46.991Z",
+      "till": "phone",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200,
+      "request": {
+        "stationId": "01a1a70a-3e4b-7c3a-8329-e57ab7ed5126"
+      }
+    },
+    {
+      "at": "2026-11-04T14:53:47.064Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:53:52.143Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:53:57.220Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:54:02.313Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:54:07.397Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:54:12.483Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:54:17.567Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:54:22.650Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:54:27.723Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:54:32.796Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:54:37.881Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:54:42.969Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:54:48.053Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:54:53.135Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:54:58.212Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:55:03.296Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:55:08.376Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:55:13.458Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:55:18.538Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:55:23.620Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:55:28.700Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:55:33.778Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:55:38.863Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:55:43.956Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:55:46.962Z",
+      "till": "phone",
+      "method": "POST",
+      "path": "/api/auth/lock",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:56:00.202Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:56:00.356Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 423,
+      "error": "SESSION_LOCKED"
+    },
+    {
+      "at": "2026-11-04T14:56:00.432Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/me/stations",
+      "status": 423,
+      "error": "SESSION_LOCKED"
+    },
+    {
+      "at": "2026-11-04T14:56:05.626Z",
+      "till": "phone",
+      "method": "POST",
+      "path": "/api/auth/unlock",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:56:05.707Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:56:05.865Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200,
+      "parks": [
+        "Oto Play Park, Central Floresta"
+      ]
+    },
+    {
+      "at": "2026-11-04T14:56:06.296Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/me/stations",
+      "status": 200,
+      "stations": 11
+    },
+    {
+      "at": "2026-11-04T14:56:06.423Z",
+      "till": "phone",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200,
+      "request": {
+        "stationId": "01a1a70a-3e4b-7c3a-8329-e57ab7ed5126"
+      }
+    },
+    {
+      "at": "2026-11-04T14:56:06.543Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:56:11.631Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:56:16.713Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:56:21.798Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:56:26.921Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:56:31.895Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 200
+    },
+    {
+      "at": "2026-11-04T14:56:32.033Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200,
+      "parks": [
+        "Oto Play Park, Central Floresta"
+      ]
+    },
+    {
+      "at": "2026-11-04T14:56:32.445Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/me/stations",
+      "status": 200,
+      "stations": 11
+    },
+    {
+      "at": "2026-11-04T14:56:32.540Z",
+      "till": "phone",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200,
+      "request": {
+        "stationId": "01a1a70a-3e4b-7c3a-8329-e57ab7ed5126"
+      }
+    },
+    {
+      "at": "2026-11-04T14:56:32.615Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:56:37.695Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:56:42.787Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:56:47.865Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:56:52.942Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:56:58.028Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    },
+    {
+      "at": "2026-11-04T14:57:03.119Z",
+      "till": "phone",
+      "method": "GET",
+      "path": "/api/branches/:id/occupancy",
+      "status": 200,
+      "parkIsTheSessionPark": true,
+      "total": 1
+    }
+  ],
+  "browser": "156.0.4314.58",
+  "adminActorId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+  "tills": {
+    "desktop": {
+      "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+      "role": "reception",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "signedInAt": "2026-11-04T14:50:49.624Z",
+      "lastTouchAt": "2026-11-04T14:50:49.624Z",
+      "linkStatus": 200,
+      "linkStationIsTheZzTestTill": true,
+      "rememberedIsTheZzTestTill": true,
+      "control": {
+        "look": {
+          "at": "2026-11-04T14:50:49.627Z",
+          "url": "https://oto-pos-web-staging.onrender.com/",
+          "lockedHeading": false,
+          "picker": false,
+          "lockedLine": 0,
+          "noStation": 0,
+          "lockButton": true,
+          "membershipCheck": true,
+          "selectCustomerType": false
+        },
+        "header": {
+          "at": "2026-11-04T14:50:49.636Z",
+          "parkChipAttached": 1,
+          "parkChipVisible": true,
+          "sampleParkChip": 0,
+          "sampleParkText": 0,
+          "sampleSecondParkText": 0,
+          "switcher": 0,
+          "switcherText": null,
+          "inParkLabel": "1 people in park. No gate is reporting at this branch.",
+          "inParkVisible": true,
+          "lowStockStrip": "13 out of stock · 1 lowGlow Band, Locker Rental, Mascot Keyring, Oto Mascot Plush +10 more",
+          "lowStockStripVisible": true,
+          "overdueNotice": "5 overdue",
+          "overdueVisible": true,
+          "pricingMode": "Weekday pricing"
+        },
+        "parkList": [
+          {
+            "at": "2026-11-04T14:50:41.043Z",
+            "status": 200,
+            "error": null,
+            "parks": [
+              "Oto Play Park, Central Floresta"
+            ]
+          }
+        ],
+        "occupancy": [
+          {
+            "at": "2026-11-04T14:50:42.213Z",
+            "status": 200,
+            "error": null,
+            "parkIsTheSessionPark": true,
+            "total": 1
+          },
+          {
+            "at": "2026-11-04T14:50:47.303Z",
+            "status": 200,
+            "error": null,
+            "parkIsTheSessionPark": true,
+            "total": 1
+          }
+        ]
+      },
+      "idle": {
+        "startedAt": "2026-11-04T14:50:54.049Z",
+        "lastTouchAt": "2026-11-04T14:50:49.624Z",
+        "warningAt": "2026-11-04T14:52:27.303Z",
+        "warningText": "Auto-lock in 15s with no activity",
+        "lockedAt": "2026-11-04T14:52:42.434Z",
+        "secondsFromLastTouchToLock": 113,
+        "lockCall": [
+          {
+            "at": "2026-11-04T14:52:42.025Z",
+            "status": 200
+          }
+        ],
+        "look": {
+          "at": "2026-11-04T14:52:43.977Z",
+          "url": "https://oto-pos-web-staging.onrender.com/",
+          "lockedHeading": true,
+          "picker": false,
+          "lockedLine": 0,
+          "noStation": 0,
+          "lockButton": false,
+          "membershipCheck": false,
+          "selectCustomerType": false
+        }
+      },
+      "reloadUnlock": {
+        "reloadAt": "2026-11-04T14:52:50.152Z",
+        "afterReload": {
+          "at": "2026-11-04T14:52:55.550Z",
+          "url": "https://oto-pos-web-staging.onrender.com/",
+          "lockedHeading": true,
+          "picker": false,
+          "lockedLine": 0,
+          "noStation": 0,
+          "lockButton": false,
+          "membershipCheck": false,
+          "selectCustomerType": false
+        },
+        "behindTheLock": {
+          "parkList": [
+            {
+              "at": "2026-11-04T14:52:50.477Z",
+              "status": 423,
+              "error": "SESSION_LOCKED",
+              "parks": null
+            }
+          ],
+          "occupancy": [],
+          "stations": [
+            {
+              "status": 423,
+              "error": "SESSION_LOCKED"
+            }
+          ]
+        },
+        "unlockStatus": 200,
+        "unlockAt": "2026-11-04T14:52:55.719Z",
+        "afterUnlock": {
+          "look": {
+            "at": "2026-11-04T14:53:02.529Z",
+            "url": "https://oto-pos-web-staging.onrender.com/",
+            "lockedHeading": false,
+            "picker": false,
+            "lockedLine": 0,
+            "noStation": 0,
+            "lockButton": true,
+            "membershipCheck": true,
+            "selectCustomerType": false
+          },
+          "header": {
+            "at": "2026-11-04T14:53:02.537Z",
+            "parkChipAttached": 1,
+            "parkChipVisible": true,
+            "sampleParkChip": 0,
+            "sampleParkText": 0,
+            "sampleSecondParkText": 0,
+            "switcher": 0,
+            "switcherText": null,
+            "inParkLabel": "1 people in park. No gate is reporting at this branch.",
+            "inParkVisible": true,
+            "lowStockStrip": "13 out of stock · 1 lowGlow Band, Locker Rental, Mascot Keyring, Oto Mascot Plush +10 more",
+            "lowStockStripVisible": true,
+            "overdueNotice": "5 overdue",
+            "overdueVisible": true,
+            "pricingMode": "Weekday pricing"
+          }
+        },
+        "after15s": {
+          "look": {
+            "at": "2026-11-04T14:53:17.614Z",
+            "url": "https://oto-pos-web-staging.onrender.com/",
+            "lockedHeading": false,
+            "picker": false,
+            "lockedLine": 0,
+            "noStation": 0,
+            "lockButton": true,
+            "membershipCheck": true,
+            "selectCustomerType": false
+          },
+          "header": {
+            "at": "2026-11-04T14:53:17.622Z",
+            "parkChipAttached": 1,
+            "parkChipVisible": true,
+            "sampleParkChip": 0,
+            "sampleParkText": 0,
+            "sampleSecondParkText": 0,
+            "switcher": 0,
+            "switcherText": null,
+            "inParkLabel": "1 people in park. No gate is reporting at this branch.",
+            "inParkVisible": true,
+            "lowStockStrip": "13 out of stock · 1 lowGlow Band, Locker Rental, Mascot Keyring, Oto Mascot Plush +10 more",
+            "lowStockStripVisible": true,
+            "overdueNotice": "5 overdue",
+            "overdueVisible": true,
+            "pricingMode": "Weekday pricing"
+          }
+        },
+        "atUnlock": {
+          "parkList": [
+            {
+              "at": "2026-11-04T14:52:55.949Z",
+              "status": 200,
+              "error": null,
+              "parks": [
+                "Oto Play Park, Central Floresta"
+              ]
+            }
+          ],
+          "occupancy": [
+            {
+              "at": "2026-11-04T14:52:56.548Z",
+              "status": 200,
+              "error": null,
+              "parkIsTheSessionPark": true,
+              "total": 1
+            },
+            {
+              "at": "2026-11-04T14:53:01.628Z",
+              "status": 200,
+              "error": null,
+              "parkIsTheSessionPark": true,
+              "total": 1
+            },
+            {
+              "at": "2026-11-04T14:53:06.703Z",
+              "status": 200,
+              "error": null,
+              "parkIsTheSessionPark": true,
+              "total": 1
+            },
+            {
+              "at": "2026-11-04T14:53:11.785Z",
+              "status": 200,
+              "error": null,
+              "parkIsTheSessionPark": true,
+              "total": 1
+            },
+            {
+              "at": "2026-11-04T14:53:16.938Z",
+              "status": 200,
+              "error": null,
+              "parkIsTheSessionPark": true,
+              "total": 1
+            }
+          ],
+          "stationPicks": [
+            {
+              "status": 200,
+              "pickIsTheZzTestTill": true
+            }
+          ],
+          "occupancySecondsApart": [
+            5.1,
+            5.1,
+            5.1,
+            5.2
+          ]
+        },
+        "everyApiCallFromReloadTo15sAfterUnlock": [
+          {
+            "at": "2026-11-04T14:52:50.319Z",
+            "method": "GET",
+            "path": "/api/me",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:50.396Z",
+            "method": "GET",
+            "path": "/api/me/permissions",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:50.478Z",
+            "method": "GET",
+            "path": "/api/branches",
+            "status": 423,
+            "error": "SESSION_LOCKED"
+          },
+          {
+            "at": "2026-11-04T14:52:50.552Z",
+            "method": "GET",
+            "path": "/api/me/stations",
+            "status": 423,
+            "error": "SESSION_LOCKED"
+          },
+          {
+            "at": "2026-11-04T14:52:55.719Z",
+            "method": "POST",
+            "path": "/api/auth/unlock",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:55.802Z",
+            "method": "GET",
+            "path": "/api/me",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:55.871Z",
+            "method": "GET",
+            "path": "/api/me/permissions",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:55.948Z",
+            "method": "GET",
+            "path": "/api/branches",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.018Z",
+            "method": "GET",
+            "path": "/api/payment-methods",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.092Z",
+            "method": "GET",
+            "path": "/api/tiers",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.102Z",
+            "method": "GET",
+            "path": "/api/branches/:id/ticket-packages",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.105Z",
+            "method": "GET",
+            "path": "/api/branches/:id/pricing-mode",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.111Z",
+            "method": "GET",
+            "path": "/api/branches/:id/tax-config",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.111Z",
+            "method": "GET",
+            "path": "/api/branches/:id/holidays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.193Z",
+            "method": "GET",
+            "path": "/api/menu/discounts",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.194Z",
+            "method": "GET",
+            "path": "/api/branches/:id/menu",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.273Z",
+            "method": "GET",
+            "path": "/api/branches/:id/stock/sellable",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.350Z",
+            "method": "GET",
+            "path": "/api/me/stations",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.443Z",
+            "method": "PUT",
+            "path": "/api/me/session/station",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.526Z",
+            "method": "GET",
+            "path": "/api/stations/:id/printers",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.545Z",
+            "method": "GET",
+            "path": "/api/kiosk-desk",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.545Z",
+            "method": "GET",
+            "path": "/api/sales",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.546Z",
+            "method": "GET",
+            "path": "/api/branches/:id/occupancy",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.546Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.546Z",
+            "method": "GET",
+            "path": "/api/branches/:id/pricing-mode",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.549Z",
+            "method": "GET",
+            "path": "/api/me/station/link",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.551Z",
+            "method": "GET",
+            "path": "/api/stations/:id/channel",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.557Z",
+            "method": "GET",
+            "path": "/api/checkin/config",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.575Z",
+            "method": "GET",
+            "path": "/api/events/passes",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.592Z",
+            "method": "GET",
+            "path": "/api/checkin/board",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:58.126Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:59.702Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:53:01.277Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:53:01.628Z",
+            "method": "GET",
+            "path": "/api/branches/:id/occupancy",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:53:02.848Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:53:04.424Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:53:06.001Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:53:06.702Z",
+            "method": "GET",
+            "path": "/api/branches/:id/occupancy",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:53:07.573Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:53:09.149Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:53:10.721Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:53:11.785Z",
+            "method": "GET",
+            "path": "/api/branches/:id/occupancy",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:53:12.296Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:53:13.876Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:53:15.450Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:53:16.530Z",
+            "method": "GET",
+            "path": "/api/me/station/link",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:53:16.624Z",
+            "method": "GET",
+            "path": "/api/kiosk-desk",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:53:16.937Z",
+            "method": "GET",
+            "path": "/api/branches/:id/occupancy",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:53:17.026Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          }
+        ],
+        "writesFromReloadTo15sAfterUnlock": [
+          {
+            "at": "2026-11-04T14:52:55.719Z",
+            "method": "POST",
+            "path": "/api/auth/unlock",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:52:56.443Z",
+            "method": "PUT",
+            "path": "/api/me/session/station",
+            "status": 200
+          }
+        ],
+        "linkStatus": 200,
+        "linkStationIsTheZzTestTill": true,
+        "rememberedIsTheZzTestTill": true
+      }
+    },
+    "phone": {
+      "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+      "role": "reception",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "signedInAt": "2026-11-04T14:53:54.291Z",
+      "lastTouchAt": "2026-11-04T14:53:54.291Z",
+      "linkStatus": 200,
+      "linkStationIsTheZzTestTill": true,
+      "rememberedIsTheZzTestTill": true,
+      "control": {
+        "look": {
+          "at": "2026-11-04T14:53:54.293Z",
+          "url": "https://oto-pos-web-staging.onrender.com/",
+          "lockedHeading": false,
+          "picker": false,
+          "lockedLine": 0,
+          "noStation": 0,
+          "lockButton": true,
+          "membershipCheck": false,
+          "selectCustomerType": true
+        },
+        "header": {
+          "at": "2026-11-04T14:53:54.302Z",
+          "parkChipAttached": 1,
+          "parkChipVisible": false,
+          "sampleParkChip": 0,
+          "sampleParkText": 0,
+          "sampleSecondParkText": 0,
+          "switcher": 0,
+          "switcherText": null,
+          "inParkLabel": "1 people in park. No gate is reporting at this branch.",
+          "inParkVisible": true,
+          "lowStockStrip": null,
+          "lowStockStripVisible": false,
+          "overdueNotice": null,
+          "overdueVisible": false,
+          "pricingMode": null
+        },
+        "parkList": [
+          {
+            "at": "2026-11-04T14:53:46.367Z",
+            "status": 200,
+            "error": null,
+            "parks": [
+              "Oto Play Park, Central Floresta"
+            ]
+          }
+        ],
+        "occupancy": [
+          {
+            "at": "2026-11-04T14:53:47.064Z",
+            "status": 200,
+            "error": null,
+            "parkIsTheSessionPark": true,
+            "total": 1
+          },
+          {
+            "at": "2026-11-04T14:53:52.143Z",
+            "status": 200,
+            "error": null,
+            "parkIsTheSessionPark": true,
+            "total": 1
+          },
+          {
+            "at": "2026-11-04T14:53:57.220Z",
+            "status": 200,
+            "error": null,
+            "parkIsTheSessionPark": true,
+            "total": 1
+          },
+          {
+            "at": "2026-11-04T14:54:02.313Z",
+            "status": 200,
+            "error": null,
+            "parkIsTheSessionPark": true,
+            "total": 1
+          },
+          {
+            "at": "2026-11-04T14:54:07.397Z",
+            "status": 200,
+            "error": null,
+            "parkIsTheSessionPark": true,
+            "total": 1
+          },
+          {
+            "at": "2026-11-04T14:54:12.483Z",
+            "status": 200,
+            "error": null,
+            "parkIsTheSessionPark": true,
+            "total": 1
+          },
+          {
+            "at": "2026-11-04T14:54:17.567Z",
+            "status": 200,
+            "error": null,
+            "parkIsTheSessionPark": true,
+            "total": 1
+          },
+          {
+            "at": "2026-11-04T14:54:22.650Z",
+            "status": 200,
+            "error": null,
+            "parkIsTheSessionPark": true,
+            "total": 1
+          }
+        ]
+      },
+      "idle": {
+        "startedAt": "2026-11-04T14:54:36.847Z",
+        "lastTouchAt": "2026-11-04T14:53:54.291Z",
+        "warningAt": "2026-11-04T14:55:32.178Z",
+        "warningText": "Auto-lock in 15s with no activity",
+        "lockedAt": "2026-11-04T14:55:47.129Z",
+        "secondsFromLastTouchToLock": 113,
+        "lockCall": [
+          {
+            "at": "2026-11-04T14:55:46.962Z",
+            "status": 200
+          }
+        ],
+        "look": {
+          "at": "2026-11-04T14:55:48.693Z",
+          "url": "https://oto-pos-web-staging.onrender.com/",
+          "lockedHeading": true,
+          "picker": false,
+          "lockedLine": 0,
+          "noStation": 0,
+          "lockButton": false,
+          "membershipCheck": false,
+          "selectCustomerType": false
+        }
+      },
+      "reloadUnlock": {
+        "reloadAt": "2026-11-04T14:55:59.978Z",
+        "afterReload": {
+          "at": "2026-11-04T14:56:05.430Z",
+          "url": "https://oto-pos-web-staging.onrender.com/",
+          "lockedHeading": true,
+          "picker": false,
+          "lockedLine": 0,
+          "noStation": 0,
+          "lockButton": false,
+          "membershipCheck": false,
+          "selectCustomerType": false
+        },
+        "behindTheLock": {
+          "parkList": [
+            {
+              "at": "2026-11-04T14:56:00.356Z",
+              "status": 423,
+              "error": "SESSION_LOCKED",
+              "parks": null
+            }
+          ],
+          "occupancy": [],
+          "stations": [
+            {
+              "status": 423,
+              "error": "SESSION_LOCKED"
+            }
+          ]
+        },
+        "unlockStatus": 200,
+        "unlockAt": "2026-11-04T14:56:05.624Z",
+        "afterUnlock": {
+          "look": {
+            "at": "2026-11-04T14:56:12.549Z",
+            "url": "https://oto-pos-web-staging.onrender.com/",
+            "lockedHeading": false,
+            "picker": false,
+            "lockedLine": 0,
+            "noStation": 0,
+            "lockButton": true,
+            "membershipCheck": false,
+            "selectCustomerType": true
+          },
+          "header": {
+            "at": "2026-11-04T14:56:12.559Z",
+            "parkChipAttached": 1,
+            "parkChipVisible": false,
+            "sampleParkChip": 0,
+            "sampleParkText": 0,
+            "sampleSecondParkText": 0,
+            "switcher": 0,
+            "switcherText": null,
+            "inParkLabel": "1 people in park. No gate is reporting at this branch.",
+            "inParkVisible": true,
+            "lowStockStrip": null,
+            "lowStockStripVisible": false,
+            "overdueNotice": null,
+            "overdueVisible": false,
+            "pricingMode": null
+          }
+        },
+        "after15s": {
+          "look": {
+            "at": "2026-11-04T14:56:27.688Z",
+            "url": "https://oto-pos-web-staging.onrender.com/",
+            "lockedHeading": false,
+            "picker": false,
+            "lockedLine": 0,
+            "noStation": 0,
+            "lockButton": true,
+            "membershipCheck": false,
+            "selectCustomerType": true
+          },
+          "header": {
+            "at": "2026-11-04T14:56:27.694Z",
+            "parkChipAttached": 1,
+            "parkChipVisible": false,
+            "sampleParkChip": 0,
+            "sampleParkText": 0,
+            "sampleSecondParkText": 0,
+            "switcher": 0,
+            "switcherText": null,
+            "inParkLabel": "1 people in park. No gate is reporting at this branch.",
+            "inParkVisible": true,
+            "lowStockStrip": null,
+            "lowStockStripVisible": false,
+            "overdueNotice": null,
+            "overdueVisible": false,
+            "pricingMode": null
+          }
+        },
+        "atUnlock": {
+          "parkList": [
+            {
+              "at": "2026-11-04T14:56:05.865Z",
+              "status": 200,
+              "error": null,
+              "parks": [
+                "Oto Play Park, Central Floresta"
+              ]
+            }
+          ],
+          "occupancy": [
+            {
+              "at": "2026-11-04T14:56:06.543Z",
+              "status": 200,
+              "error": null,
+              "parkIsTheSessionPark": true,
+              "total": 1
+            },
+            {
+              "at": "2026-11-04T14:56:11.631Z",
+              "status": 200,
+              "error": null,
+              "parkIsTheSessionPark": true,
+              "total": 1
+            },
+            {
+              "at": "2026-11-04T14:56:16.713Z",
+              "status": 200,
+              "error": null,
+              "parkIsTheSessionPark": true,
+              "total": 1
+            },
+            {
+              "at": "2026-11-04T14:56:21.798Z",
+              "status": 200,
+              "error": null,
+              "parkIsTheSessionPark": true,
+              "total": 1
+            },
+            {
+              "at": "2026-11-04T14:56:26.921Z",
+              "status": 200,
+              "error": null,
+              "parkIsTheSessionPark": true,
+              "total": 1
+            }
+          ],
+          "stationPicks": [
+            {
+              "status": 200,
+              "pickIsTheZzTestTill": true
+            }
+          ],
+          "occupancySecondsApart": [
+            5.1,
+            5.1,
+            5.1,
+            5.1
+          ]
+        },
+        "everyApiCallFromReloadTo15sAfterUnlock": [
+          {
+            "at": "2026-11-04T14:56:00.201Z",
+            "method": "GET",
+            "path": "/api/me",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:00.275Z",
+            "method": "GET",
+            "path": "/api/me/permissions",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:00.357Z",
+            "method": "GET",
+            "path": "/api/branches",
+            "status": 423,
+            "error": "SESSION_LOCKED"
+          },
+          {
+            "at": "2026-11-04T14:56:00.433Z",
+            "method": "GET",
+            "path": "/api/me/stations",
+            "status": 423,
+            "error": "SESSION_LOCKED"
+          },
+          {
+            "at": "2026-11-04T14:56:05.624Z",
+            "method": "POST",
+            "path": "/api/auth/unlock",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:05.706Z",
+            "method": "GET",
+            "path": "/api/me",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:05.786Z",
+            "method": "GET",
+            "path": "/api/me/permissions",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:05.865Z",
+            "method": "GET",
+            "path": "/api/branches",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:05.937Z",
+            "method": "GET",
+            "path": "/api/payment-methods",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:06.014Z",
+            "method": "GET",
+            "path": "/api/tiers",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:06.024Z",
+            "method": "GET",
+            "path": "/api/branches/:id/ticket-packages",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:06.024Z",
+            "method": "GET",
+            "path": "/api/branches/:id/pricing-mode",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:06.031Z",
+            "method": "GET",
+            "path": "/api/branches/:id/holidays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:06.031Z",
+            "method": "GET",
+            "path": "/api/branches/:id/tax-config",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:06.115Z",
+            "method": "GET",
+            "path": "/api/menu/discounts",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:06.129Z",
+            "method": "GET",
+            "path": "/api/branches/:id/menu",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:06.211Z",
+            "method": "GET",
+            "path": "/api/branches/:id/stock/sellable",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:06.295Z",
+            "method": "GET",
+            "path": "/api/me/stations",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:06.389Z",
+            "method": "PUT",
+            "path": "/api/me/session/station",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:06.540Z",
+            "method": "GET",
+            "path": "/api/branches/:id/occupancy",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:06.541Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:06.541Z",
+            "method": "GET",
+            "path": "/api/checkin/config",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:08.150Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:09.739Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:11.315Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:11.630Z",
+            "method": "GET",
+            "path": "/api/branches/:id/occupancy",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:12.946Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:14.520Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:16.112Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:16.712Z",
+            "method": "GET",
+            "path": "/api/branches/:id/occupancy",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:17.683Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:19.277Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:21.007Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:21.797Z",
+            "method": "GET",
+            "path": "/api/branches/:id/occupancy",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:22.663Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:24.319Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:25.902Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:26.920Z",
+            "method": "GET",
+            "path": "/api/branches/:id/occupancy",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:27.488Z",
+            "method": "GET",
+            "path": "/api/stations/:id/displays",
+            "status": 200
+          }
+        ],
+        "writesFromReloadTo15sAfterUnlock": [
+          {
+            "at": "2026-11-04T14:56:05.624Z",
+            "method": "POST",
+            "path": "/api/auth/unlock",
+            "status": 200
+          },
+          {
+            "at": "2026-11-04T14:56:06.389Z",
+            "method": "PUT",
+            "path": "/api/me/session/station",
+            "status": 200
+          }
+        ],
+        "linkStatus": 200,
+        "linkStationIsTheZzTestTill": true,
+        "rememberedIsTheZzTestTill": true
+      }
+    }
+  },
+  "tickets": {
+    "s744b-02-desktop-7-tickets-after-unlock": {
+      "at": "2026-11-04T14:53:22.204Z",
+      "customerTypeText": [
+        "Select Customer Type",
+        "Choose the pricing tier to start the sale.",
+        "Walk-in (no member) · default Tourist rate. Verify to apply a discounted tier.",
+        "Tourist",
+        "Standard pricing",
+        "Expat",
+        "Resident pricing",
+        "Proof required — verify now",
+        "Thai",
+        "Local pricing",
+        "Proof required — verify now"
+      ],
+      "gridText": [
+        "Add to Sale",
+        "Add drop-off child",
+        "Add ticket — select a play ticket for kids and adults",
+        "1 Hour Play",
+        "1 Hour",
+        "฿690",
+        "per person",
+        "2 Hours Play",
+        "2 Hours",
+        "฿890",
+        "per person",
+        "Full Day Pass",
+        "All Day",
+        "฿1090",
+        "per person",
+        "Eat & Play Kids Pass",
+        "All Day + Meal",
+        "฿1300",
+        "per person"
+      ],
+      "prices": [
+        "฿690",
+        "฿890",
+        "฿1090",
+        "฿1300"
+      ],
+      "writes": []
+    },
+    "s744b-02-desktop-9-control-tickets": {
+      "at": "2026-11-04T14:53:37.421Z",
+      "customerTypeText": [
+        "Select Customer Type",
+        "Choose the pricing tier to start the sale.",
+        "Walk-in (no member) · default Tourist rate. Verify to apply a discounted tier.",
+        "Tourist",
+        "Standard pricing",
+        "Expat",
+        "Resident pricing",
+        "Proof required — verify now",
+        "Thai",
+        "Local pricing",
+        "Proof required — verify now"
+      ],
+      "gridText": [
+        "Add to Sale",
+        "Add drop-off child",
+        "Add ticket — select a play ticket for kids and adults",
+        "1 Hour Play",
+        "1 Hour",
+        "฿690",
+        "per person",
+        "2 Hours Play",
+        "2 Hours",
+        "฿890",
+        "per person",
+        "Full Day Pass",
+        "All Day",
+        "฿1090",
+        "per person",
+        "Eat & Play Kids Pass",
+        "All Day + Meal",
+        "฿1300",
+        "per person"
+      ],
+      "prices": [
+        "฿690",
+        "฿890",
+        "฿1090",
+        "฿1300"
+      ],
+      "writes": []
+    }
+  },
+  "cleanup": {
+    "actions": [
+      {
+        "at": "2026-11-04T14:57:05.310Z",
+        "what": "archive the ZZ TEST till",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-04T14:57:05.398Z",
+        "what": "archive the ZZ TEST virtual box",
+        "status": 200,
+        "code": null
+      }
+    ],
+    "desktopSignedOut": {
+      "at": "2026-11-04T14:53:44.323Z",
+      "signOut": 200,
+      "meAfter": 401
+    },
+    "phoneSignedOut": {
+      "at": "2026-11-04T14:57:04.974Z",
+      "signOut": 200,
+      "meAfter": 401
+    },
+    "tillArchived": "2026-11-04T14:57:05.311Z",
+    "boxArchived": "2026-11-04T14:57:05.399Z",
+    "consoleSignedOut": {
+      "signOut": 200,
+      "meAfter": 401
+    },
+    "readback": {
+      "tillArchivedAt": true,
+      "tillInLiveList": false,
+      "zzS744StationsLive": 0,
+      "boxInLiveList": false,
+      "boxArchived": true,
+      "liveStationCount": 13
+    }
+  }
+}

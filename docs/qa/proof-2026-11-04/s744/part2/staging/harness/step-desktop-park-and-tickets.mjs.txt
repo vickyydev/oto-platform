@@ -1,0 +1,15 @@
+// Desktop, straight after the locked reload's Unlock (inside its two minutes): the park chip, then the
+// ticket grid read only (Skip walk-in, the Tourist rate; no ticket pressed, no sale).
+import { header, readTickets, P } from './lib.mjs?v=1';
+export default async function (S) {
+  const { st, save, pages, shot } = S;
+  const page = pages.desktop.page;
+  const out = { at: new Date().toISOString(), header: await header(S, 'desktop') };
+  const chip = page.locator(`span[title="${st.fixture.parkName}"]`).first();
+  out.chipBox = await chip.boundingBox();
+  await chip.scrollIntoViewIfNeeded().catch(() => {});
+  await shot('desktop', `${P}-02-desktop-6-park-after-unlock-header`, { clip: { x: 0, y: 48, width: 1440, height: 160 } });
+  out.tickets = await readTickets(S, 'desktop', `${P}-02-desktop-7-tickets-after-unlock`);
+  st.steps.desktopAfterUnlockParkAndTickets = out; save();
+  return out;
+}

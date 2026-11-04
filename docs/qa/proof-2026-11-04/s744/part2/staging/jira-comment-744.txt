@@ -1,0 +1,26 @@
+Checked again on staging on 4 November 2026, 21:50 to 21:57 Bangkok, on the live commit 2549fefc (the till, the till web page, the platform and the Console all run it). A new test till called "ZZ TEST SCRUM-744 mw28h2cu till" was made in the Console on a test virtual box, and the reception test account signed in on it, once at computer width and once at phone width. Nothing was sold.
+
+Both halves of this ticket are now proven. The first half (comment 13467): after a locked reload and Unlock the till opens on its own station. This second half: it also opens on its own park, with that park's numbers, tickets and prices, instead of the built-in sample park "HKT Central".
+
+What a person can do now:
+1. Left alone for 2 minutes, the till warns "Auto-lock in 15s" and locks itself. Reloading the page keeps it on the lock screen.
+2. After typing the password and pressing Unlock, the till opens straight onto its own station, and the top of the screen is the same as before it locked: "Oto Play Park, Central Floresta", 1 in park, the "13 out of stock · 1 low" stock strip and the "5 overdue" notice. "HKT Central" and "HKT Chalong" appear nowhere. It is the same 15 seconds later.
+3. The ticket list after Unlock is the same as when the till is opened normally: 1 Hour Play ฿690, 2 Hours Play ฿890, Full Day Pass ฿1090, Eat & Play Kids Pass ฿1300 (Tourist, weekday). On staging these happen to have the same names and prices as the built-in sample, so the picture alone cannot show the difference; the record of what the till asked for shows that after Unlock it fetched the park's own ticket list, prices, holidays and tax again, and every answer came back.
+4. On the phone the park name is cut off by the narrow bar (as before), so the phone was checked by its in-park count (1, as when opened normally; the sample park shows 0) and by the record of what it asked for: its park, read again after Unlock and answered, and the count for that park every 5 seconds.
+
+How to retest: sign in on a till and pick its station; note the park name, the in-park count, the stock strip and the overdue notice at the top; leave it untouched for 2 minutes until it locks; reload the page; type the password and press Unlock. Expected: the till itself, no station question, and the same park name, count and notices as before it locked; Skip walk-in, then Tourist, shows the same tickets and prices as a normal open.
+
+Pictures, in order:
+1) Before (first half, this evening): after the reload and Unlock the till showed the sample park "HKT Central" and its list.
+2) Now: the till locked by the 2-minute timeout and reloaded, still on the lock screen.
+3) Now, computer: straight after Unlock, on its own station and its own park, 1 in park, the stock strip and 5 overdue.
+4) Now: the top bar after Unlock, close up.
+5) Now, computer: 15 seconds later, unchanged.
+6) Now, computer: the ticket list and prices after Unlock (nothing pressed).
+7) For comparison: the same till opened by its address, normally.
+8) For comparison: the ticket list and prices on that normal open.
+9) Now, phone: straight after Unlock, 1 in park.
+10) Now, phone: 15 seconds later, unchanged.
+11) For comparison: the phone opened normally.
+
+The test till and its test box were archived afterwards and every test session was signed out.
