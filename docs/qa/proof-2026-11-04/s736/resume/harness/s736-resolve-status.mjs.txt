@@ -1,0 +1,22 @@
+import { execFileSync } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
+const root='C:/oto-lanes/codex-box-scanner-20261104';
+const git=(...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8',maxBuffer:64*1024*1024});
+const file='docs/progress/STATUS.md';
+const base=git('show','HEAD:'+file);
+const incoming=git('show','REBASE_HEAD:'+file);
+const notes=incoming.match(/^\*\*4 November 2026, [^\n]*SCRUM-736[^\n]*\*\*$/gm)?.filter(line=>!base.includes(line))??[];
+if (!notes.length) throw new Error('Missing own checkpoint');
+let result=base;
+for(const note of notes) {
+  const minute=Number(note.match(/, (\d\d):/)[1])*60+Number(note.match(/, \d\d:(\d\d)/)[1]);
+  const blocks=[...result.matchAll(/^\*\*4 November 2026, (\d\d):(\d\d) Bangkok[^\n]*$/gm)];
+  const next=blocks.find(b=>Number(b[1])*60+Number(b[2])<minute);
+  if(!next) throw new Error('No insertion position');
+  result=result.slice(0,next.index)+note+'\n\n'+result.slice(next.index);
+}
+if (/^(<<<<<<<|=======|>>>>>>>)/m.test(result)) throw new Error('Conflict marker remains');
+for(const line of base.split('\n').filter(Boolean)) if(!result.includes(line)) throw new Error('Lost main history');
+writeFileSync(root+'/'+file,result);
+git('add',file);
+console.log(JSON.stringify({added:notes.length,keptMainHistory:true,rebaseHead:git('rev-parse','REBASE_HEAD').trim()}));

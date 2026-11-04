@@ -1,0 +1,12 @@
+import {spawn,execFileSync} from 'node:child_process';
+import {openSync,closeSync,writeFileSync,readFileSync} from 'node:fs';
+const root='C:/oto-lanes/codex-box-scanner-20261104';
+const packages=['print','shared','api-types','assistant','db','messaging','payments-2c2p','telemetry','admin-screens','console','inbox','launcher','pos'];
+const commands=packages.map(name=>`pnpm --filter @oto/${name} test --maxWorkers=1 --minWorkers=1`);
+commands.push('pnpm --filter @oto/booth test','pnpm --filter @oto/box-agent test --test-concurrency=1');
+const sha=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
+const log='C:/oto-lanes/s736-workspace-serial.log',fd=openSync(log,'wx');
+const receipt={sha,runtimeSource:'936cfbbe3f9062d955d3afdbdae26f38bfaeff89',start:new Date().toISOString(),commands,log,output:'direct file descriptor, unpiped'};
+console.log(JSON.stringify(receipt));
+const child=spawn('C:/Program Files/Git/bin/bash.exe',['-c','set -eo pipefail; '+commands.join('; ')],{cwd:root,windowsHide:true,stdio:['ignore',fd,fd]});
+child.once('exit',(code,signal)=>{closeSync(fd);const result={...receipt,end:new Date().toISOString(),exitCode:code??1,signal};writeFileSync('C:/oto-lanes/s736-workspace-serial-exit.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result));console.log(readFileSync(log,'utf8').slice(-2500));process.exitCode=code??1;});

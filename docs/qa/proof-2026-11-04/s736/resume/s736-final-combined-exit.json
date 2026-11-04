@@ -1,0 +1,10 @@
+{
+  "sha": "ba59e33b0e2588baaaec682c9656c594a3daf605",
+  "key": "combined",
+  "start": "2026-11-04T07:52:23.250Z",
+  "end": "2026-11-04T07:54:33.551Z",
+  "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s736-api-gate.mts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/s736-scanner-relay-review.test.ts test/station-scans-poll.test.ts test/support-readers.test.ts test/release-feed.test.ts --reporter=default --reporter=json --outputFile=C:/oto-lanes/s736-final-combined.json",
+  "log": "C:/oto-lanes/s736-final-combined.log",
+  "exitCode": 0,
+  "signal": null
+}

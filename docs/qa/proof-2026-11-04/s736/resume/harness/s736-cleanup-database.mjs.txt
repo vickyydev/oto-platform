@@ -1,0 +1,68 @@
+import assert from 'node:assert/strict';
+import {job} from './s736-release-render-job.mjs';
+
+// A final exact-identity retirement after the public APIs close the own proof.
+// Nothing is selected by a broad ZZ TEST prefix, and no financial fact is deleted.
+export async function retireFixture(c,s,helpers) {
+  const assert=(await import('node:assert/strict')).default;
+  const {fixture:f,fixtureCleanup:cleanup,staff,actorId}=s;
+  assert.ok(f.name.startsWith('ZZ TEST SCRUM-736 '));assert.equal(cleanup.apiPassed,true);
+  const saleIds=[f.saleId,f.voucherSaleId,cleanup.bookingSaleId];assert.equal(new Set(saleIds).size,3);
+  await c.query('BEGIN');
+  try {
+    const station=(await c.query('SELECT id,name,box_id,branch_id,operator_id,archived_at FROM core.station WHERE id=$1 FOR UPDATE',[f.stationId])).rows[0];
+    assert.equal(station.name,f.name+' till');assert.equal(station.box_id,f.boxId);assert.equal(station.branch_id,f.branchId);assert.ok(station.archived_at);
+    const box=(await c.query('SELECT id,name,status,archived_at,bridge_origin IS NULL no_address,secret_hash IS NULL no_secret,claim_code_hash IS NULL no_claim FROM core.box WHERE id=$1 FOR UPDATE',[f.boxId])).rows[0];
+    assert.equal(box.name,f.name);assert.equal(box.status,'disabled');assert.ok(box.archived_at&&box.no_address&&box.no_secret&&box.no_claim);
+    const sales=(await c.query('SELECT id,status,receipt_number FROM pos.sale WHERE station_id=$1 ORDER BY id',[f.stationId])).rows;
+    assert.equal(sales.length,3);assert.ok(sales.every(x=>saleIds.includes(x.id)&&x.status==='finalised'));
+    const stay=(await c.query('SELECT id,child_name,status,registration_id,band_id,sale_id FROM pos.checkin WHERE id=$1',[f.checkinId])).rows[0];
+    assert.equal(stay.child_name,f.child);assert.equal(stay.status,'out');assert.equal(stay.registration_id,f.registrationId);assert.equal(stay.sale_id,f.saleId);
+    const booking=(await c.query('SELECT id,status,payment_attempt_id FROM pos.booking WHERE id=$1',[f.bookingId])).rows[0];
+    assert.equal(booking.status,'redeemed');assert.equal((await c.query('SELECT count(*)::int n FROM pos.booking_redemption WHERE booking_id=$1 AND station_id=$2',[f.bookingId,f.stationId])).rows[0].n,1);
+    const db=helpers.drizzle(c);
+    const audit=async(action,entityType,entityId,before,after)=>helpers.audit.record(db,{actorAccountId:actorId,operatorId:station.operator_id,branchId:station.branch_id,action,entityType,entityId,before,after,sourceApp:'console',origin:'job',reason:'SCRUM-736 exact synthetic fixture retirement; retain financial and pickup history'});
+    const bands=(await c.query('SELECT id,sale_id,status FROM pos.band WHERE sale_id=ANY($1::uuid[]) FOR UPDATE',[saleIds])).rows;assert.equal(bands.length,4);
+    for(const b of bands) {
+      if(b.status==='revoked')continue;assert.equal(b.status,'active');
+      assert.equal((await c.query("SELECT count(*)::int n FROM pos.band_event WHERE band_id=$1 AND kind IN ('entry','exit')",[b.id])).rows[0].n,0);
+      await c.query("UPDATE pos.band SET status='revoked',updated_at=now() WHERE id=$1",[b.id]);
+      await c.query("INSERT INTO pos.band_event(id,band_id,kind,station_id,box_id,detail) VALUES($1,$2,'revoked',$3,$4,$5::jsonb)",[helpers.newId(),b.id,f.stationId,f.boxId,JSON.stringify({reason:'ZZ TEST SCRUM-736 proof finished; no physical band issued',accountId:actorId})]);
+      await audit('qa.band.retire','band',b.id,{status:b.status},{status:'revoked',saleRetained:true});
+    }
+    const working=(await c.query('SELECT station_id,box_id,stage,lease_id IS NOT NULL AND lease_expires_at>now() live_lease,member IS NULL no_member,payment IS NULL no_payment FROM edge.station_session WHERE station_id=$1 FOR UPDATE',[f.stationId])).rows;
+    assert.ok(working.length<=1);
+    if(working.length) {
+      const w=working[0];assert.equal(w.box_id,f.boxId);assert.ok(!w.live_lease&&w.no_member&&w.no_payment,'Only an inactive empty test working document can be retired');
+      await c.query('DELETE FROM edge.station_session WHERE station_id=$1 AND box_id=$2',[f.stationId,f.boxId]);
+      await audit('qa.station_session.retire','station',f.stationId,{rows:1,stage:w.stage},{rows:0,salesRetained:3});
+    }
+    if(staff) {
+      const a=(await c.query('SELECT id,status,employee_id,operator_id FROM core.account WHERE id=$1 FOR UPDATE',[staff.accountId])).rows[0];
+      assert.equal(a.employee_id,staff.employeeId);assert.equal(a.status,'inactive');assert.equal(a.operator_id,station.operator_id);
+      assert.equal((await c.query('SELECT count(*)::int n FROM core.role_assignment WHERE account_id=$1',[a.id])).rows[0].n,0);
+      const e=(await c.query('SELECT id,name,source,external_id,archived_at FROM core.employee WHERE id=$1 FOR UPDATE',[staff.employeeId])).rows[0];
+      assert.equal(e.name,staff.name);assert.equal(e.name,f.name+' staff');assert.equal(e.source,'platform');assert.equal(e.external_id,null);
+      if(!e.archived_at){await c.query('UPDATE core.employee SET archived_at=now(),updated_at=now() WHERE id=$1',[e.id]);await audit('qa.employee.retire','employee',e.id,{archived:false},{archived:true,accountInactive:true});}
+    }
+    await c.query('COMMIT');
+  }catch(e){await c.query('ROLLBACK');throw e;}
+  await c.query('BEGIN READ ONLY');
+  try {
+    const counts=(await c.query("SELECT (SELECT count(*)::int FROM core.session WHERE station_id=$1 AND revoked_at IS NULL AND expires_at>now()) active_sessions,(SELECT count(*)::int FROM edge.station_session WHERE station_id=$1) working_rows,(SELECT count(*)::int FROM edge.print_job WHERE box_id=$2 AND status IN ('queued','failed')) pending_prints,(SELECT count(*)::int FROM edge.box_print_job WHERE box_id=$2) box_print_queue,(SELECT count(*)::int FROM edge.box_command WHERE box_id=$2 AND state IN ('queued','running')) pending_commands,(SELECT count(*)::int FROM pos.band WHERE sale_id=ANY($3::uuid[]) AND status<>'revoked') live_bands",[f.stationId,f.boxId,saleIds])).rows[0];
+    for(const [key,value]of Object.entries(counts))assert.equal(value,0,key);
+    const wallets=(await c.query('SELECT DISTINCT w.id,w.balance_satang::int balance,w.status FROM pos.wallet w JOIN pos.wallet_entry e ON e.wallet_id=w.id WHERE e.sale_id=ANY($1::uuid[]) ORDER BY w.id',[saleIds])).rows;
+    const payments=(await c.query('SELECT id,sale_id,status,provider,amount_satang::int amount FROM pos.payment_attempt WHERE sale_id=ANY($1::uuid[]) OR id=(SELECT payment_attempt_id FROM pos.booking WHERE id=$2) ORDER BY id',[saleIds,f.bookingId])).rows;
+    assert.ok(payments.every(x=>x.status==='approved'));
+    const staffRead=staff?(await c.query('SELECT a.status,e.archived_at IS NOT NULL employee_archived,(SELECT count(*)::int FROM core.role_assignment WHERE account_id=a.id) roles,(SELECT count(*)::int FROM core.session WHERE account_id=a.id AND revoked_at IS NULL AND expires_at>now()) sessions FROM core.account a JOIN core.employee e ON e.id=a.employee_id WHERE a.id=$1',[staff.accountId])).rows[0]:null;
+    if(staffRead){assert.equal(staffRead.status,'inactive');assert.equal(staffRead.employee_archived,true);assert.equal(staffRead.roles,0);assert.equal(staffRead.sessions,0);}
+    return {passed:true,readBackAt:new Date().toISOString(),counts,staff:staffRead,saleIds,payments,wallets,retained:'Paid sales, payments, booking redemption, wallet grants and pickup evidence remain as financial and safety history; all synthetic bands are revoked.'};
+  }finally{await c.query('ROLLBACK');}
+}
+export async function cleanupDatabase(receipt) {
+  assert.equal(process.env.S736_WINDOW_CLAIMED,'true');
+  const s={fixture:receipt.fixture,fixtureCleanup:receipt.fixtureCleanup,staff:receipt.staff,actorId:receipt.identity.actorId};
+  const event='s736_cleanup';
+  const program=`(async()=>{require('tsx/cjs');const {Client}=require('pg'),{drizzle}=require('drizzle-orm/node-postgres'),{audit}=require('./src/services/audit.ts'),{newId}=require('@oto/shared'),c=new Client({connectionString:process.env.DATABASE_URL,options:'-c statement_timeout=15000'});await c.connect();try{const result=await (${retireFixture.toString()})(c,${JSON.stringify(s)},{drizzle,audit,newId});console.log(JSON.stringify({event:'${event}',...result}));}finally{await c.end();}})().catch(e=>{console.error(JSON.stringify({event:'${event}_error',name:e.name,code:e.code??'ASSERTION',message:e.code?'Query failed':e.message}));process.exitCode=1;});`;
+  return job(program,event,receipt.source);
+}

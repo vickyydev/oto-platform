@@ -1,0 +1,76 @@
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+
+// Only identities recorded before this proof created them may be retired.
+// Sales, payments, registrations and pickup evidence remain as audit history.
+export async function cleanupApi({receipt:r,save,api,post,till,tillCtx,posOrigin,stopRunner}) {
+  const f=r.fixture;
+  assert.ok(f.name.startsWith('ZZ TEST SCRUM-736 '));
+  const c=r.fixtureCleanup??={started:new Date().toISOString(),steps:[]};save();
+  const done=(name,details={})=>{c.steps.push({name,...details});save();};
+  const own=(await api('GET','/stations/'+f.stationId)).station;
+  assert.equal(own.name,f.name+' till');assert.equal(own.boxId,f.boxId);assert.equal(own.branchId,f.branchId);
+  const before=await api('GET','/checkin/registrations/'+f.registrationId);
+  const stay=before.children.find(x=>x.id===f.checkinId);
+  assert.equal(stay.childName??stay.name,f.child);
+  if(stay.status==='in_park') {
+    const b64=await till.evaluate(()=>{const canvas=document.createElement('canvas');canvas.width=640;canvas.height=480;const g=canvas.getContext('2d');g.fillStyle='#173444';g.fillRect(0,0,640,480);g.fillStyle='#fff';g.font='26px sans-serif';g.fillText('ZZ TEST SCRUM-736',80,180);g.fillText('Synthetic pickup image',80,225);g.fillText('No person photographed',80,270);return canvas.toDataURL('image/png').split(',')[1];});
+    c.pickupFileId??=randomUUID();save();
+    await post('/files',{id:c.pickupFileId,contentType:'image/png',ownerEntityType:'registration',ownerEntityId:f.registrationId,filename:'zz-test-s736-pickup.png'});
+    const uploaded=await tillCtx.request.put(posOrigin+'/api/files/'+c.pickupFileId+'/content',{data:Buffer.from(b64,'base64'),headers:{'content-type':'image/png'}});assert.equal(uploaded.status(),204);
+    await post('/checkin/pickups/stays/'+f.checkinId+'/release',{id:randomUUID(),collector:{kind:'dropper_off'},pickupPhotoFileId:c.pickupFileId,stationId:f.stationId});
+  }
+  const after=await api('GET','/checkin/registrations/'+f.registrationId);
+  assert.equal(after.children.find(x=>x.id===f.checkinId).status,'out');done('Own synthetic child collected and read out');
+  const paidBooking=await api('GET','/public/bookings/'+f.bookingId+'/status');
+  assert.ok(['paid','redeemed'].includes(paidBooking.status));
+  if(paidBooking.status==='paid') {
+    const redeemed=await post('/bookings/'+f.bookingId+'/redeem',{stationId:f.stationId});
+    assert.equal(redeemed.booking.id,f.bookingId);assert.equal(redeemed.booking.status,'redeemed');
+    c.bookingSaleId=redeemed.sale.id;c.bookingBandIds=redeemed.bands.map(x=>x.id);save();
+  }
+  assert.equal((await api('GET','/public/bookings/'+f.bookingId+'/status')).status,'redeemed');done('Own simulator booking redeemed and no longer waiting');
+  const sales=(await api('GET',`/sales?branchId=${f.branchId}&stationId=${f.stationId}&limit=50`)).sales;
+  assert.equal(sales.length,3);assert.ok(sales.every(x=>[f.saleId,f.voucherSaleId,c.bookingSaleId].includes(x.id)&&x.status==='finalised'));
+  c.sales=sales.map(x=>({id:x.id,status:x.status}));save();
+  const deadline=Date.now()+45000;
+  for(;;){
+    const jobs=(await api('GET','/boxes/'+f.boxId+'/print-jobs')).jobs;
+    const pending=jobs.filter(x=>x.status==='queued'||x.status==='failed');
+    if(!pending.length)break;
+    assert.ok(Date.now()<deadline,'Own print jobs must finish before stopping the runner');
+    await new Promise(resolve=>setTimeout(resolve,500));
+  }
+  for(const id of [f.saleId,f.voucherSaleId,c.bookingSaleId]) {
+    const d=await api('GET','/sales/'+id);assert.equal(d.sale.stationId,f.stationId);
+    c.printJobs??=[];c.printJobs.push(...(d.printJobs??[]).map(x=>({id:x.id,status:x.status,errorCode:x.errorCode})));save();
+  }
+  // Native sign-out releases the station lease before archiving it.
+  await till.goto(posOrigin+'/');
+  await till.getByRole('button',{name:'Lock screen',exact:true}).click();
+  await till.getByRole('button',{name:'Sign out and hand over the till',exact:true}).click();
+  await till.locator('input[type="tel"],input[inputmode="tel"]').first().waitFor();
+  assert.equal((await tillCtx.request.get(posOrigin+'/api/me')).status(),401);done('Own till session ended and refused on readback');
+  await stopRunner();
+  await api('DELETE','/stations/'+f.stationId);
+  const devices=(await api('GET','/boxes/'+f.boxId+'/devices?includeArchived=true')).devices;
+  for(const [id,label] of [[f.printerId,f.name+' receipt'],[f.bandPrinterId,f.name+' band']]) {
+    assert.equal(devices.find(x=>x.id===id)?.label,label);await api('DELETE','/devices/'+id);
+  }
+  const boxes=(await api('GET','/branches/'+f.branchId+'/boxes?includeArchived=true')).boxes;
+  assert.equal(boxes.find(x=>x.id===f.boxId)?.name,f.name);
+  await api('PATCH','/boxes/'+f.boxId,{bridgeOrigin:null,status:'disabled'});
+  await api('DELETE','/boxes/'+f.boxId);
+  const st=(await api('GET','/branches/'+f.branchId+'/stations?includeArchived=true')).stations.find(x=>x.id===f.stationId);
+  const bx=(await api('GET','/branches/'+f.branchId+'/boxes?includeArchived=true')).boxes.find(x=>x.id===f.boxId);
+  const dev=(await api('GET','/boxes/'+f.boxId+'/devices?includeArchived=true')).devices;
+  assert.ok(st.archived&&bx.archived);assert.equal(bx.status,'disabled');assert.equal(bx.bridgeOrigin,null);
+  assert.ok([f.printerId,f.bandPrinterId].every(id=>dev.find(x=>x.id===id)?.archived));
+  done('Own station, printers and box archived; address removed; box disabled', {stationId:f.stationId,boxId:f.boxId});
+  if(r.staff) {
+    await api('PATCH','/accounts/'+r.staff.accountId,{status:'inactive'});
+    await api('DELETE',`/accounts/${r.staff.accountId}/role-assignments/${r.staff.grantId}`);
+    done('Own staff login inactive and its sole role removed');
+  }
+  c.apiPassed=true;c.finished=new Date().toISOString();save();return c;
+}
