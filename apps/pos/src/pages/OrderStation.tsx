@@ -34,7 +34,7 @@ import {
   VOUCHER_AFTER_SALE,
   VOUCHER_BEING_PRICED,
   VOUCHER_NOT_COMBINABLE,
-  looksLikeVoucherCode,
+  looksLikeTypedFnbVoucher,
   useTillVoucher,
   voucherUnpricedReason,
   type HeldVoucher,
@@ -1375,9 +1375,9 @@ export default function OrderStation() {
           /*
            * S2-10b — THE BAND FIELD TAKES A VOUCHER TOO. The band field has the
            * keyboard on this screen, so a USB scanner's voucher lands in it, and
-           * so does one typed off the slip. A value with a booth voucher's shape
-           * (`looksLikeVoucherCode`, which no band code has) is
-           * taken off the form on its way down, before the band lookup sees it,
+           * so does one typed off the slip. A printed band short code reaches
+           * the band lookup first: a four-character prefix can also look like
+           * a legacy voucher. Other voucher-shaped values are claimed here,
            * and handled as the box's scan is: a guest order opens and the voucher
            * is held. Every other value reaches the band lookup unchanged.
            * `ScanWristband` is shared with the shop screen and the phone order
@@ -1388,7 +1388,7 @@ export default function OrderStation() {
             onSubmitCapture={(event) => {
               const typed =
                 (event.target as HTMLFormElement).querySelector('input')?.value.trim() ?? '';
-              if (!looksLikeVoucherCode(typed)) return;
+              if (!looksLikeTypedFnbVoucher(typed)) return;
               event.preventDefault();
               event.stopPropagation();
               redeemScannedVoucher(typed);

@@ -642,10 +642,17 @@ limit and `A-Z0-9` only:
 
 - `PREFIX` is `PGW_INVOICE_PREFIX`, empty in production and set in sandbox so
   test invoices can never collide with real ones.
-- `STATION` is the station code (`station.code`, upper alphanumeric, 3).
+- `STATION` is the three-character invoice segment. Existing one-to-three-character
+  station codes keep their original spelling (`T1` becomes `T01`). Four-to-six-character
+  codes use a stable compact segment, excluding the booking site's reserved `WEB`.
+  This segment is not a unique station identity; distinct codes may share it.
 - `YYMMDD` is the **branch business date** (Asia/Bangkok), so the number is
   readable on a settlement line and unique across days.
-- `SEQ` is a per-station, per-day counter from the database, zero-padded to 6.
+- `SEQ` is shared by the complete invoice stem (prefix, segment and business date),
+  zero-padded to 6. A transaction-scoped advisory lock serialises attempts across
+  every station sharing that stem, including legacy and compact-code aliases.
+  The global invoice unique index remains the final guard. Never allocate this
+  sequence per station or wrap it after 999999.
 - The generator lives in the package, is unit-tested for length, charset and
   uniqueness, and stores the value on `payment_attempt.provider_invoice_no`
   with a unique index.

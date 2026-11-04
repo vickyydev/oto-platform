@@ -178,8 +178,8 @@ describe('buildInvoiceNo', () => {
     // Two stations whose codes differ only in the part that was cut off would
     // mint the same number for two different tills.
     expect(() =>
-      buildInvoiceNo({ stationCode: 'TILL1', businessDate: '2026-09-20', seq: 1 }),
-    ).toThrow(/three characters/);
+      buildInvoiceNo({ stationCode: 'TOOLONG', businessDate: '2026-09-20', seq: 1 }),
+    ).toThrow(/six characters/);
   });
 
   it('refuses a prefix over five characters and an unparseable date', () => {
@@ -251,7 +251,7 @@ describe('invoiceStationSegment (S2-12)', () => {
     expect(invoiceStationSegment('B7')).toBe('B07');
     expect(invoiceStationSegment('7')).toBe('007');
     // A code that cannot number an invoice at all.
-    expect(invoiceStationSegment('TILL1')).toBeNull();
+    expect(invoiceStationSegment('TOOLONG')).toBeNull();
     expect(invoiceStationSegment('')).toBeNull();
   });
 

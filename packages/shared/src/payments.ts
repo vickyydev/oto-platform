@@ -311,19 +311,30 @@ const LETTERS_THEN_DIGITS = /^([A-Z]+)(\d+)$/;
  * The park's prefixes are two characters (`T1`, `B1`, `T3`) and the format
  * wants three, so the zero goes where it reads as a station number —
  * `T1` -> `T01`, which is the spelling `PAYMENT_GATEWAY.md` already uses.
- * Anything that is not letters-then-digits is left-padded instead, and a code
- * of more than three characters is REFUSED rather than truncated: two stations
- * whose codes differ only in the part that was cut off would mint the same
- * invoice number, and 2C2P would refuse the second sale of the day with no
- * explanation anybody at a counter could act on.
+ * Anything that is not letters-then-digits is left-padded instead. These
+ * existing spellings never change. Supported four-to-six-character codes use
+ * a stable compact segment, excluding the booking site's reserved WEB.
+ *
+ * This segment is NOT a unique station identity. Existing T1/T01 aliases and
+ * compact-code collisions share the same locked counter in nextInvoiceNo;
+ * that counter and the global unique index guarantee invoice uniqueness.
+ * Never count per station, truncate an invoice, or wrap its daily sequence.
  */
 function encodeStationCode(raw: string): string {
   const clean = raw.toUpperCase().replace(ALNUM_ONLY, '');
   if (clean.length === 0) throw new Error('An invoice number needs a station code');
-  if (clean.length > 3) {
+  if (clean.length > 6) {
     throw new Error(
-      `Station code "${raw}" is longer than the three characters an invoice number has room for`,
+      `Station code "${raw}" is longer than the six characters a station supports`,
     );
+  }
+  if (clean.length > 3) {
+    // FNV-1a is a stable distribution, not a credential or a uniqueness test.
+    let hash = 0x811c9dc5;
+    for (const character of clean) hash = Math.imul(hash ^ character.charCodeAt(0), 0x01000193) >>> 0;
+    const reserved = Number.parseInt(WEB_INVOICE_STATION_CODE, 36);
+    const slot = hash % (36 ** 3 - 1);
+    return (slot >= reserved ? slot + 1 : slot).toString(36).toUpperCase().padStart(3, '0');
   }
   if (clean.length === 3) return clean;
   const split = LETTERS_THEN_DIGITS.exec(clean);
@@ -346,8 +357,8 @@ export const WEB_INVOICE_STATION_CODE = 'WEB';
 /**
  * The three characters a station code takes in an invoice number, or null for
  * a code that cannot number an invoice at all. Two different codes can take
- * the same three (`T1` and `T01` are both `T01`), which is why a counter is
- * kept per invoice stem rather than per station.
+ * the same three (`T1` and `T01` are both `T01`, and longer codes can compact
+ * alike), which is why a counter is kept per invoice stem rather than station.
  */
 export function invoiceStationSegment(raw: string): string | null {
   try {
