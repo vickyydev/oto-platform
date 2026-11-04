@@ -107,10 +107,11 @@ it; no picker and no "This session is locked" line, then and 15 seconds later.
 
 CI already runs the spec in its till end-to-end step; no workflow change.
 
-Rebased onto main at `ba64e70ba` (the board card and display button
-landing), with no conflict; the change is `423f1bb84` there. On the rebased
-lane the typecheck, eslint, the 29 POS unit files (431 cases) and the
-locked-reload spec under Vite (2 of 2, desktop and phone) passed again.
+Rebased onto main at `3f70f3bad` (the board card and display button
+landing and its staging proof), with no conflict; the change is `3bf820733`
+there. On the rebased lane the typecheck, eslint, the 29 POS unit files
+(431 cases), the locked-reload spec under Vite (2 of 2, desktop and phone)
+and `pnpm api-types:check` (no api change) passed again.
 
 Rerun: `pnpm --filter @oto/pos e2e e2e/locked-reload.spec.ts`, with
 `POS_E2E_EVIDENCE_DIR` naming a folder for the screens and `POS_E2E_BUILT=1`
