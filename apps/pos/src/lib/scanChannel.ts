@@ -1,7 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { VOUCHER_CODE_HANDLER, WALLET_QR_HANDLER } from '@oto/shared';
+import { hasBridgeOrigin, watchBridgeSnapshots } from '@/api/bridge';
 
 // THE STATION CHANNEL, FOR SCANS (S2-09b).
+//
+// SCRUM-736: a configured box also speaks directly over its authenticated
+// staff bridge, so an internet outage does not cut off the scanner. The box
+// gives both paths one scanId and this listener admits it once. Virtual boxes
+// retain the platform path; no second same-origin stream is needed.
 //
 // The api streams each station's session to every screen watching it:
 // `GET /stations/:id/channel`, server-sent events (apps/api/src/routes/
@@ -35,6 +41,7 @@ import { VOUCHER_CODE_HANDLER, WALLET_QR_HANDLER } from '@oto/shared';
 /** One scan as the channel carries it — `StationScanMessage` in `@oto/box-agent`. */
 export interface StationScanEvent {
   kind: 'scan';
+  scanId?: string;
   source: string;
   codeKind: string;
   codeFingerprint: string;
@@ -305,9 +312,21 @@ export function useStationScans(
     /** Set on unmount and on a change of station: nothing is delivered after it. */
     let stopped = false;
 
+    const seen = new Set<string>();
     const deliver = (message: StationScanEvent) => {
-      if (!stopped && !screenHidden() && message.kind === 'scan') handler.current(message);
+      if (stopped || message.kind !== 'scan') return;
+      // Remember even a hidden read: its delayed second copy must not act
+      // after the screen wakes. A new read of the same code has a new id.
+      if (message.scanId) {
+        if (seen.has(message.scanId)) return;
+        seen.add(message.scanId);
+        if (seen.size > 256) seen.delete(seen.values().next().value!);
+      }
+      if (!screenHidden()) handler.current(message);
     };
+    const stopBox = hasBridgeOrigin() ? watchBridgeSnapshots(stationId, {
+      onScan: deliver, onSnapshot: () => {}, onState: () => {}, onFailure: () => {},
+    }) : undefined;
 
     // --- The poll -------------------------------------------------------------
     let polling = false;
@@ -440,6 +459,7 @@ export function useStationScans(
 
     return () => {
       stopped = true;
+      stopBox?.();
       if (typeof document !== 'undefined') {
         document.removeEventListener('visibilitychange', onVisibility);
       }

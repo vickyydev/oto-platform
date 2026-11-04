@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import {
   BAND_CODE_BODY_LENGTH,
@@ -1017,6 +1017,7 @@ export class ScanRouter {
     try {
       this.options.publish(stationId, {
         kind: 'scan',
+        scanId: randomUUID(),
         source: input.source,
         codeKind: result.kind,
         codeFingerprint: result.codeFingerprint,
