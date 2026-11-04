@@ -2,31 +2,64 @@
 
 ## Take-over, 4 November 2026 — current state (supersedes the pause note below)
 
-The paused work continues on lane/scanner736-20261104, cut from a6de88847,
-which already sits on main 4fa176286 (the deployment-column correction), so
-no rebase was needed. The runtime commits are unchanged; this lane adds one
-POS test and this note. Nothing is on main, nothing is deployed, no staging
-setting or record was touched, and the release slot is not claimed here.
+The paused work continues on lane/scanner736-20261104, cut from a6de88847 on
+main 4fa176286 (the deployment-column correction). Main has since moved only
+by the documentation commit 76f507574 (STATUS and both handovers), so the code
+under these gates is main's code; the planner's landing rebase resolves the
+three prepended STATUS/handover blocks, keeping both sides, newest first.
+Nothing is on main, nothing is deployed, no staging setting or record was
+touched, and the release slot is not claimed here.
 
-Local gates on this tree, all exit 0, output read:
+Lane CI 41799939342 passed all six jobs on full SHA
+2c797483ab0353224510f354db42061a033255a9 (the take-over head before the
+barcode change below). It supersedes lane run 41795390765 on ba59e33b0, whose
+ci job failed on the deployment-column inventory that 4fa176286 corrected.
+The CI run for the head carrying the barcode change is reported in the
+hand-back to the planner by its full SHA.
 
-- typecheck: @oto/shared, @oto/box-agent, @oto/api-types, @oto/api, @oto/pos
-- eslint on every changed .ts/.tsx (no errors)
-- box agent, whole suite: 888/888
+### Barcodes on a Pi (added at take-over)
+
+Only the api put a product barcode handler on a scanner, and only on the
+virtual box it runs in-process (services/box.ts, services/station-scans.ts).
+A Pi's router claimed voucher, band, booking, benefit and wallet QR shapes and
+nothing else, so a retail barcode on its cradle classified `unknown` and the
+shop added nothing, online or offline; the relayed copy carries a fingerprint
+and no code, so the platform could not resolve it either.
+
+The box now resolves a barcode itself from the `catalogue` scope it already
+pulls for offline selling, which ships whole product rows with `sku` and
+`variants[].barcode` (packages/box-agent/src/product-barcode-cache.ts). The
+answer is the api's: merch only, the item's own code first, then a size's code
+with the older row winning a tie, retired-but-listed rows still answering, and
+"Unknown barcode" for a code nobody sells or before the first pull. It is on by
+default only on a Pi (a box with a config cache, the rule the scanner readers
+already follow); the virtual box keeps the api's database lookup, whose
+registration is idempotent by name. Both paths then carry the same answer under
+one scanId, so MerchStation's existing readProductScan adds the line once.
+
+Local gates at take-over, all exit 0, output read:
+
+- typecheck: @oto/box-agent, and @oto/api, which builds the virtual box from
+  it
+- eslint on every changed .ts (no errors)
+- box agent, whole suite: 891/891, including three new barcode cases
+  (catalogue resolution, a Pi online and with the link down under one scanId,
+  default on a Pi and off on the virtual box)
 - api, 12 files with --pool=forks: the four route guards (routes-guarded,
-  route-write-conformance, id-conformance, route-scope-target), station-scans,
-  station-scans-poll, box-api, box-scanner, scanning-product,
+  route-write-conformance, id-conformance, route-scope-target),
+  station-scans, station-scans-poll, box-api, box-scanner, scanning-product,
   scanning-staff-token, s731-band-wallet-scan, s736-scanner-relay-review:
   200/200
-- POS, whole suite, including the new re-unlock case: 139 files, 1957/1957
+- POS: no POS file changed after the take-over test commit 1d2e71993, on
+  which the whole suite passed, 139 files, 1957/1957
 - pnpm api-types:check: packages/api-types matches the api
 
 Review of the delivery, read from the code:
 
-- Voucher, booking QR and wristband all leave the box the same way: the box's
-  scan router decides the code once and publishes one message with a fresh
-  scanId. The box's staff channel carries it over the counter network to the
-  till (box session bearer, never the display credential); while the box's
+- Voucher, booking QR, wristband and barcode all leave the box the same way:
+  the box's scan router decides the code once and publishes one message with a
+  fresh scanId. The box's staff channel carries it over the counter network to
+  the till (box session bearer, never the display credential); while the box's
   link is up and not forced offline it also posts the same message to
   POST /box/v1/scans (at most eight in flight, two-second answer, no outbox,
   no retry). The till's listener admits each scanId once across both paths,
@@ -44,7 +77,7 @@ Review of the delivery, read from the code:
   api; the tape already holds that scanId, so the copy is dropped.
 - A lock now ends the direct stream; the next unlock reopens it on the new
   session. A till that unlocked while its box was unreachable sends one
-  refused request and then waits for a fresh unlock (new test).
+  refused request and then waits for a fresh unlock.
 
 Points for the planner, unchanged in code:
 
@@ -55,11 +88,57 @@ Points for the planner, unchanged in code:
   the post. One instance today, as the station-session notes already record.
 - A scan whose detail exceeds 16 KB is refused by the relay (413); the
   counter-network copy is unaffected.
+- A product added to the catalogue reaches a Pi's barcode lookup at the box's
+  next catalogue pull; until then that code reads "Unknown barcode" there.
 
-Still for the planner, in order: the released slot, landing with branch and
-main CI green by full SHA, the four approved temporary staging settings with
-exact restoration, the staging proof, and only after the owner installs the
-next box release, the park Pi with the real cradle in HID and CDC.
+### Staging proof plan (for the planner, after landing)
+
+Preconditions: the released slot; the lane rebased onto main; branch and main
+CI green by full SHA; API and both POS builds live on that SHA. Then the four
+owner-approved temporary settings, localhost only, one key per write with
+fingerprints read first: BOX_BRIDGE_ZONE and BOX_BRIDGE_ALLOW_LOOPBACK on the
+API (57 to 59), VITE_BOX_BRIDGE_ZONE and VITE_BOX_BRIDGE_ALLOW_LOOPBACK on the
+POS build (4 to 6), the same source redeployed. Signing key and
+BOX_AGENT_TEST_SLOT untouched.
+
+Cases, on an own ZZ TEST box and till with the local native runner, cash and
+the simulator only, each online and then with the runner's platform link cut:
+
+1. Printed band QR at F&B (the till) opens the band.
+2. Printed band QR at the shop opens the band.
+3. Credit voucher QR reaches the till and applies.
+4. Booking QR reaches the till and opens the booking.
+5. Printed band QR at History opens the band online. With the link cut the
+   scan arrives and History's existing platform lookup refuses: that half is
+   SCRUM-753, recorded, not a 736 result.
+6. A ZZ TEST merch item's barcode, and one size's barcode, at the shop add one
+   line each; an unknown barcode shows "Unknown barcode" and adds nothing.
+7. Every online case acts once: one line, one opened record, although the
+   counter-network and relayed copies both arrive.
+8. Virtual box unchanged: a Console simulator scan reaches a till on the
+   virtual box through the platform channel and the poll.
+
+Then restore: the four keys removed, API back to 57 and POS to 4 with every
+original fingerprint, the same source redeployed, live health and identity
+read. Clean only own fixtures, sessions and credentials and read the result
+back independently. Open the PNGs and publish them inline before Deployed.
+
+### The park Pi, after the owner installs the next box release
+
+The real DS2278 on the park's Pi, in HID and CDC, is tested only after the
+owner installs a box release carrying this change and moves the cradle.
+
+Precondition nobody has set yet: once the staging proof restores the bridge
+zone settings, BOX_BRIDGE_ZONE and VITE_BOX_BRIDGE_ZONE are empty again, and an
+empty zone means a staging or production till accepts no box address
+(hasBridgeOrigin() is false). Such a till hears a Pi only through the online
+relay, which needs the platform. The direct path, and with it every scan with
+the link down, needs a permanent park-controlled box DNS zone with an HTTPS
+name for the box (docs/ops/BOX_BRIDGE_BENCH.md), set as permanent API and POS
+build settings. No ticket sets these, and new settings need the owner's go
+(question Q736-3). Until then the park Pi test proves the online relay for the
+band QR at F&B, the shop and History, a voucher and a barcode, and records the
+link-down cases as waiting on that zone.
 
 ## Paused checkpoint — 4 November 2026, 15:05 Bangkok (history)
 

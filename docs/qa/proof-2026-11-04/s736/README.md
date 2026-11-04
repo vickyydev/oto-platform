@@ -69,7 +69,9 @@ deliberately failed cloud request; none required a product change.
 The lower credit offered offline follows the existing wallet spending cap;
 this unit changes scan delivery, not credit limits. Product-barcode catalog
 resolution on a standalone box is not covered by these native cases: its
-product handler is currently installed by the API's in-process registration.
+product handler was then installed only by the API's in-process registration.
+At take-over a Pi resolves barcodes from its own catalogue copy; see
+RESUME.md, "Barcodes on a Pi", and its staging proof case 6.
 No physical device, private HTTPS or printer acceptance is claimed.
 
 All five stopped local runner homes created by this walkthrough were removed
