@@ -1,0 +1,57 @@
+{
+  "at": "2026-11-04T02:45:58.518Z",
+  "source": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+  "deployments": [
+    {
+      "name": "oto-pos-web-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhlbedkc73a2i8ug",
+      "finishedAt": "2026-11-04T02:41:46.080628Z"
+    },
+    {
+      "name": "oto-inbox-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhtbedkc73a2i9c0",
+      "finishedAt": "2026-11-04T02:39:50.284943Z"
+    },
+    {
+      "name": "oto-booth-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhlbedkc73a2i990",
+      "finishedAt": "2026-11-04T02:39:50.929757Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "commit": "773fd25f5436bf07f663af183761481b3197a3ef",
+      "deployId": "dep-dbl3udp42hec73d3g5mg",
+      "finishedAt": "2026-11-03T20:11:18.348148Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhlbedkc73a2i92g",
+      "finishedAt": "2026-11-04T02:39:54.38375Z"
+    },
+    {
+      "name": "oto-launcher-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhtbedkc73a2i9l0",
+      "finishedAt": "2026-11-04T02:39:51.288318Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhlbedkc73a2i960",
+      "finishedAt": "2026-11-04T02:39:52.314668Z"
+    },
+    {
+      "name": "oto-api-staging",
+      "commit": "84f3b1b0d8363140b2692dc4162fbc47e4291a95",
+      "deployId": "dep-dbl9lhlbedkc73a2i7vg",
+      "finishedAt": "2026-11-04T02:42:56.030949Z"
+    }
+  ],
+  "ci": 41759572637,
+  "status": "Testing",
+  "stagingProof": "not started"
+}
