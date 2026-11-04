@@ -1,0 +1,26 @@
+*Proof on staging, 4 November 2026, 15:57 to 16:32 Bangkok, live commit 4fa1762860ec468eefc658fbf6b7356c21f9fd45 (API, Console, POS and OTO App all live on it).* Everything below was done in a real browser on the staging Console and the staging till, with ZZ TEST records only and cash only. No SMS was sent and no park device was used.
+
+*What the Support page (Console, Watch, Support) can now find, and what it keeps hidden*
+* *A band's trips through the gate.* Type the short code printed on a wristband (for example Z3-ENP9EH). The new "Gate events" section lists each passage at each park: when, entry or exit, which gate lane, which park, and why the gate said no when it refused (here ANTI_PASSBACK, "already inside"). The band's secret QR code is never shown, only the short code. A band with no passages shows "Nothing found".
+* *A promotion voucher.* Type the voucher code as it appears on the slip, with its spaces (for example "Z3 XXXX XXXX X"). The "Promotion voucher" section shows its status, what it is worth, the park, and only the last four characters, never the whole code and never a staff name. Once used, it also shows where and when it was used and the receipt number (here Z3-000001). A code that does not exist shows "Nothing found" with the note that park promo codes are not searched here.
+* *Searching never locks a till.* Ten made-up codes searched in the Console, then the real voucher redeemed straight away at a ZZ TEST till: the till took it the first time, with no lock and no warning, and the database recorded zero wrong-code attempts against the person or the till.
+* *OTO App records by phone.* Type a phone number the way people say it (089 674 0001). The new "OTO App records" section lists what the OTO App holds for that number. It follows the OTO App's own rules: someone without permission to see personal details sees the names as "Masked"; a manager for one park sees only that park's records; an OTO App user who is not a manager gets the app's own answer ("Insufficient permissions") and nothing else.
+* *Every search is recorded.* Activity shows one console.support.lookup row per search (15 searches by the admin, 15 rows), listing only what kind of thing was searched and which sections answered, never the value typed. An OTO App phone search also leaves its own sign-in row (auth.handoff_issue) for the hand-off into the OTO App.
+
+*How it was set up (all ZZ TEST, all removed afterwards)*
+A ZZ TEST till and a ZZ TEST voucher type (20 baht off) at Central Floresta; two vouchers issued at that till; one walk-in ticket (1 child, 1 adult) sold for 1,020 baht cash with one voucher. Staging has no gate that can send a passage, so three passages for the adult band were written straight into staging's database as clearly marked test rows, through a ZZ TEST gate lane that no box runs; the Support page read them exactly as it reads real ones. Two ZZ TEST OTO App staff records shared one ZZ TEST phone, one at Central Floresta and one at Robinson Chalong. Two ZZ TEST Console users had the Support role: a manager for Central Floresta only, and a staff-level user.
+
+*How to retest*
+# Sign in to the staging Console, open Watch, Support.
+# Type a wristband short code from any recent test sale: the Gate events section answers (found, or Nothing found if it never went through a gate).
+# Type a voucher code from a test slip with its spaces: status, worth, park and last four characters; after it is used, where and the receipt.
+# Type a test phone number: the OTO App records section answers by your own OTO App access.
+# Open Watch, Activity and filter by your name: one console.support.lookup row per search.
+
+*Small things noticed, not changed here*
+* The Activity page's "Data access" button does not list these support searches yet (the rows are there under Everything). That button only knows a fixed list of actions, which does not include the support search. A one-line follow-up would add it.
+* A voucher issued at a till says "Counter (station not recorded)" for where it came from. That is how vouchers issued at a till are stored today; the redemption side names the till correctly.
+
+*Cleaned up:* both ZZ TEST users switched off, unlinked from the OTO App and their roles removed; their OTO App logins, the two OTO App staff records and the three test gate passages deleted; the unused voucher voided; the till, the gate lane, its box and the voucher type archived. The paid ZZ TEST sale, its receipt, wristbands and its 350 baht credit stay for the record, as with earlier proofs. Read back from the database afterwards.
+
+Pictures, in order: gate events found; a band with no passages; voucher issued; made-up code; voucher used; tenth made-up code; the till taking the voucher first time; the till's paid screen; OTO App records as admin; as the one-park manager (masked, one park); as the staff-level user (refused); the Activity rows; one row opened.

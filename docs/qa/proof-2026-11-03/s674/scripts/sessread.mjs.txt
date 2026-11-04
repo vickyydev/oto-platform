@@ -1,0 +1,7 @@
+import { job } from './job.mjs';
+import { receipt, save, LIVE } from './common.mjs';
+const r = receipt(); const ids = r.cleanup.dbSpec.accountIds;
+const program = `(async()=>{const {Client}=require('pg');const c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();try{await c.query('BEGIN READ ONLY');const rows=(await c.query("select (revoked_at is not null) revoked, revoked_reason, (expires_at > now()) unexpired from core.session where account_id = any($1::uuid[]) order by created_at",[${JSON.stringify(ids)}])).rows;await c.query('ROLLBACK');console.log(JSON.stringify({event:'s674_sess',rows,live:rows.filter(x=>!x.revoked&&x.unexpired).length}));}catch(e){console.log(JSON.stringify({event:'s674_sess_error',message:String(e.message).slice(0,200)}));}finally{await c.end();}})();`;
+const res = await job(program, 's674_sess', LIVE);
+r.cleanup.sessions = res.rows; save(r);
+console.log(JSON.stringify(res.rows));

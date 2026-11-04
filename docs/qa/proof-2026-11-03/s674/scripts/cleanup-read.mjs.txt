@@ -1,0 +1,24 @@
+// Read-back of the cleanup, read only, from the database the staging services use.
+import { job } from './job.mjs';
+import { receipt, save, LIVE } from './common.mjs';
+const r = receipt(); const f = r.fixtures; const s0 = r.cleanup.dbSpec;
+const spec = { ...s0, voucherB: r.issue.vouchers.find((v) => v.key === 'voucherB').id, stations: [f.stationId, f.gateStationId], boxId: f.gateBoxId, saleId: r.sale.id, bandIds: r.sale.bands.map((b) => b.id) };
+const program = `(async()=>{const {Client}=require('pg');const s=${JSON.stringify(spec)};const c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();try{await c.query('BEGIN READ ONLY');const one=async(q,a)=>(await c.query(q,a)).rows;const n=async(q,a)=>(await c.query(q,a)).rows[0].n;const out={
+syntheticPassages:await n("select count(*)::int n from pos.band_event where detail->>'zzTest'='SCRUM-674 synthetic gate passage'"),
+gateFactsOnBands:await n("select count(*)::int n from pos.band_event where band_id = any($1::uuid[]) and kind in ('entry','exit','denied','timeout','alarm')",[s.bandIds]),
+vouchers:await one("select id,status from promo.voucher where id = any($1::uuid[]) order by status",[[s.voucherA,s.voucherB]]),
+voucherType:await one("select active,(archived_at is not null) archived from promo.voucher_definition where id=$1",[s.definitionId]),
+stations:await one("select kind,(archived_at is not null) archived from core.station where id = any($1::uuid[])",[s.stations]),
+gateBox:await one("select status,(archived_at is not null) archived from core.box where id=$1",[s.boxId]),
+accounts:await one("select status from core.account where id = any($1::uuid[])",[s.accountIds]),
+roleAssignments:await n("select count(*)::int n from core.role_assignment where account_id = any($1::uuid[])",[s.accountIds]),
+appIdentities:await n("select count(*)::int n from core.app_identity where account_id = any($1::uuid[])",[s.accountIds]),
+liveSessions:await n("select count(*)::int n from core.session where account_id = any($1::uuid[]) and expires_at > now()",[s.accountIds]),
+employees:await one("select (archived_at is not null) archived from core.employee where id = any($1::uuid[])",[s.employeeIds]),
+appEmployees:await n("select count(*)::int n from otoapp.employees where id = any($1::text[])",[s.appEmployeeIds]),
+appUsers:await n("select count(*)::int n from otoapp.users where id = any($1::text[])",[s.appUserIds]),
+appBranchAccess:await n("select count(*)::int n from otoapp.user_branch_access where user_id = any($1::text[])",[s.appUserIds]),
+sale:await one("select status,receipt_number from pos.sale where id=$1",[s.saleId])};await c.query('ROLLBACK');console.log(JSON.stringify({event:'s674_cleanup_read',at:new Date().toISOString(),...out}));}catch(e){console.log(JSON.stringify({event:'s674_cleanup_read_error',message:String(e.message).slice(0,300)}));process.exitCode=1;}finally{await c.end();}})();`;
+const res = await job(program, 's674_cleanup_read', LIVE);
+r.cleanup.readBack = { jobId: res.jobId, status: res.status, rows: res.rows }; r.cleanup.finishedAt = new Date().toISOString(); save(r);
+console.log(JSON.stringify(r.cleanup.readBack, null, 1));

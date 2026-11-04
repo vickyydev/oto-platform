@@ -1,0 +1,59 @@
+// (c) part two: straight after the ten Console searches, ZZ TEST voucher B is redeemed at the ZZ TEST till on a
+// walk-in ticket (1 kid, 1 adult) and the rest is paid in cash. The till must take it first time, with no lock.
+import { launch, api, ok, receipt, save, secrets, OUT } from './common.mjs';
+import { atTill } from './till.mjs';
+import { grouped } from './search.mjs';
+const r = receipt(); const s = secrets();
+r.walk ??= {}; r.walk.c2Tries = [...(r.walk.c2Tries ?? []), ...(r.walk.c2 ? [r.walk.c2] : [])]; const w = (r.walk.c2 = { startedAt: new Date().toISOString(), steps: [] });
+const browser = await launch();
+let page;
+const note = (k, v) => { w[k] = v; save(r); };
+try {
+  const t = await atTill(browser, { width: 1440, height: 900 });
+  page = t.page; note('signedIn', t.who);
+  page.on('response', async (res) => {
+    const u = res.url();
+    if (/\/api\/(sales(\/[^/]+\/finalise)?|vouchers\/(hold|lookup)[^?]*)(\?|$)/.test(u) && res.request().method() !== 'GET' || /\/api\/vouchers\/lookup/.test(u)) {
+      const b = await res.json().catch(() => null);
+      w.steps.push({ at: new Date().toISOString(), method: res.request().method(), path: new URL(u).pathname, status: res.status(), code: b?.error?.code ?? null, message: b?.error?.message ?? null, saleId: b?.sale?.id ?? b?.id ?? null, receiptNumber: b?.sale?.receiptNumber ?? null, saleStatus: b?.sale?.status ?? null });
+      save(r);
+    }
+  });
+  await page.getByRole('button', { name: 'Skip — walk-in (Tourist)' }).click();
+  await page.getByRole('heading', { name: 'Tourist' }).first().click().catch(() => {});
+  await page.getByRole('heading', { name: '1 Hour Play' }).first().click();
+  await page.getByRole('heading', { name: /^Configure:/ }).waitFor({ timeout: 15000 });
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  await page.waitForTimeout(2000);
+  const field = page.getByLabel('Redeem voucher');
+  await field.fill(grouped(s.voucherB));
+  await page.getByRole('button', { name: 'Redeem', exact: true }).click();
+  await page.waitForTimeout(4000);
+  const text1 = await page.evaluate(() => document.body.innerText);
+  note('afterRedeem', { showsType: text1.includes(r.fixtures.voucherDefinitionName), mentions20: /฿20/.test(text1), locked: /locked|too many|wrong code/i.test(text1), refusal: (text1.match(/[^\n]*(not|refus|locked|wrong)[^\n]*/gi) ?? []).slice(0, 6) });
+  const codeLine = page.getByText(/Z3[0-9A-Z]{9}/);
+  await page.screenshot({ path: `${OUT}/s674-c2-till-takes-the-voucher-first-time.png`, mask: [field, codeLine] });
+  await page.getByRole('button', { name: /^Pay ฿/ }).click();
+  await page.waitForTimeout(2000);
+  // The customer display's turn (step 4): the walk-in leaves the details empty and presses Done.
+  await page.getByRole('button', { name: 'Done', exact: true }).last().click();
+  await page.waitForTimeout(2500);
+  await page.getByRole('heading', { name: 'Cash', exact: true }).first().click();
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: `${OUT}/s674-c3-till-payment-step.png`, mask: [page.getByText(/Z3[0-9A-Z]{9}/)] });
+  const submit = page.getByRole('button', { name: /Confirm Payment Received|Record|Complete Sale|Take|Charge/ }).last();
+  note('submitLabel', await submit.innerText().catch(() => null));
+  await submit.click();
+  await page.waitForTimeout(6000);
+  const text2 = await page.evaluate(() => document.body.innerText);
+  note('confirmation', { voucherUsedLine: (text2.match(/[^\n]*voucher[^\n]*/gi) ?? []).slice(0, 6), receipt: (text2.match(/Z3-\d{6}/) ?? [null])[0] });
+  await page.screenshot({ path: `${OUT}/s674-c4-till-sale-paid-voucher-used.png`, mask: [page.getByText(/Z3[0-9A-Z]{9}/)] });
+  w.finishedAt = new Date().toISOString(); save(r);
+  console.log(JSON.stringify(w, null, 1));
+} catch (e) {
+  w.error = String(e?.message ?? e).slice(0, 500); save(r); console.log('ERROR', w.error, JSON.stringify(w.steps));
+  if (page) await page.screenshot({ path: 'C:/Users/waqar/AppData/Local/Temp/claude/9d4c56906b777e8e/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/s674/disc/error-c2.png' }).catch(() => {});
+} finally {
+  if (page) await api(page, 'POST', '/auth/sign-out', {}).catch(() => {});
+  await browser.close();
+}

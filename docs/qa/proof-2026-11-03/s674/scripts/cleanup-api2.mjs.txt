@@ -1,0 +1,18 @@
+import { launch, consoleSession, api, receipt, save } from './common.mjs';
+const r = receipt(); const f = r.fixtures; const C = r.cleanup; delete C.error;
+const browser = await launch();
+try {
+  const { page } = await consoleSession(browser);
+  const list = await api(page, 'GET', '/voucher-definitions?includeArchived=true');
+  const defs = list.body?.definitions ?? list.body ?? [];
+  const mine = (Array.isArray(defs) ? defs : []).find((d) => d.id === f.voucherDefinitionId);
+  if (!mine || mine.nameEn !== f.voucherDefinitionName) throw new Error('Refusing to archive voucher type (list ' + list.status + ')');
+  const res = await api(page, 'DELETE', `/voucher-definitions/${f.voucherDefinitionId}`);
+  C.steps.push({ what: 'archive voucher type', status: res.status, error: res.status >= 300 ? JSON.stringify(res.body).slice(0, 300) : null, id: f.voucherDefinitionId, unredeemedBefore: mine.unredeemed ?? mine.unredeemedCount ?? null });
+  const again = await api(page, 'GET', '/voucher-definitions?includeArchived=true');
+  const after = ((again.body?.definitions ?? again.body) || []).find?.((d) => d.id === f.voucherDefinitionId);
+  C.voucherTypeAfter = { archivedAt: after?.archivedAt ?? null, active: after?.active ?? null };
+  save(r);
+  await api(page, 'POST', '/auth/sign-out', {});
+  console.log(JSON.stringify({ last: C.steps.at(-1), after: C.voucherTypeAfter, reader: C.reader, refused: C.refused }, null, 1));
+} catch (e) { C.error = String(e?.message ?? e).slice(0, 500); save(r); console.log('ERROR', C.error); } finally { await browser.close(); }

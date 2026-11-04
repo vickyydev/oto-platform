@@ -1,0 +1,36 @@
+// (d) fixtures, written by one checked transaction in a one-off job (no SMS is ever sent: the account create route
+// would send a set-up code, so the two ZZ TEST accounts are written invited, as SCRUM-727's proof did):
+//  - two ZZ TEST OTO App staff records on one ZZ TEST phone, one at Central Floresta and one at Robinson Chalong,
+//    both recorded as having LEFT, so the employee copy never copies them and no rota or roster lists them;
+//  - two ZZ TEST platform accounts, invited, each with a ZZ TEST employee at Central Floresta.
+// Every write is audited with the staging admin as actor and a qa.* action.
+import { randomUUID } from 'node:crypto';
+import { job } from './job.mjs';
+import { launch, consoleSession, api, ok, receipt, save, LIVE } from './common.mjs';
+const r = receipt();
+if (r.people?.result?.status === "succeeded") { console.log('people exist'); process.exit(0); }
+const browser = await launch();
+let actorId;
+try { const { page } = await consoleSession(browser); const me = ok(await api(page, 'GET', '/me'), 'me'); actorId = me.account?.id ?? me.accountId; await api(page, 'POST', '/auth/sign-out', {}); } finally { await browser.close(); }
+const p = (r.people = {
+  searchedPhone: '+66896740001',
+  operatorId: '01a0bbdc-8c41-7204-bd58-2b92bd7dda75', actorId,
+  tenantId: '681b18d1-4c75-415d-9271-5fe3afc30993',
+  appRecords: [
+    { id: randomUUID(), name: `ZZ TEST SCRUM-674 ${r.stamp} Central staff record`, nickname: 'ZZ674C', email: `zz-s674-${r.stamp}-central@example.com`, otoappBranchId: '540f6e5e-e94b-4ce9-a79a-5947e841e1fb', park: 'Oto Play Park, Central Floresta' },
+    { id: randomUUID(), name: `ZZ TEST SCRUM-674 ${r.stamp} Robinson staff record`, nickname: 'ZZ674R', email: `zz-s674-${r.stamp}-robinson@example.com`, otoappBranchId: '81e87667-8cec-4602-9467-bcf3be70e300', park: 'Oto Play Park, Robinson Chalong' },
+  ],
+  accounts: [
+    { key: 'reader', accountId: randomUUID(), employeeId: randomUUID(), phone: '+66896740011', name: `ZZ TEST SCRUM-674 ${r.stamp} park manager`, appRole: 'manager' },
+    { key: 'refused', accountId: randomUUID(), employeeId: randomUUID(), phone: '+66896740012', name: `ZZ TEST SCRUM-674 ${r.stamp} staff-level reader`, appRole: 'staff' },
+  ],
+  branchId: r.fixtures.branchId,
+});
+save(r);
+if (!actorId) throw new Error('no admin account id');
+const program = `(async()=>{require('tsx/cjs');const assert=require('node:assert/strict'),{Client}=require('pg'),{drizzle}=require('drizzle-orm/node-postgres'),{audit}=require('./src/services/audit.ts');const s=${JSON.stringify(p)};const c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();try{await c.query('BEGIN');await c.query("SET LOCAL statement_timeout='20s'");const phones=[s.searchedPhone,...s.accounts.map(a=>a.phone)];const digits=phones.map(x=>x.replace(/[^0-9]/g,''));const local=digits.map(d=>'0'+d.slice(2));const any=[...digits,...local];assert.equal((await c.query('select count(*)::int n from core.account where phone = any($1)',[phones])).rows[0].n,0,'account phone in use');assert.equal((await c.query('select count(*)::int n from core.employee where phone = any($1)',[phones])).rows[0].n,0,'employee phone in use');assert.equal((await c.query('select count(*)::int n from crm.member where phone = any($1)',[phones])).rows[0].n,0,'member phone in use');assert.equal((await c.query("select count(*)::int n from otoapp.employees where phone_e164 = any($1) or regexp_replace(coalesce(phone,''),'[^0-9]','','g') = any($2)",[phones,any])).rows[0].n,0,'app employee phone in use');assert.equal((await c.query("select count(*)::int n from otoapp.users where phone_e164 = any($1)",[phones])).rows[0].n,0,'app user phone in use');const a=(await c.query("select a.id from core.account a join core.role_assignment ra on ra.account_id=a.id join core.role r on r.id=ra.role_id where a.id=$1 and a.operator_id=$2 and a.status='active' and r.name='platform_admin'",[s.actorId,s.operatorId])).rows;assert.ok(a.length>=1,'actor is not the platform admin');const db=drizzle(c);for(const e of s.appRecords){await c.query("insert into otoapp.employees (id,tenant_id,full_name,nickname,email,phone,phone_e164,branch_id,status,employment_state) values ($1,$2,$3,$4,$5,$6,$7,$8,'resigned','LEFT')",[e.id,s.tenantId,e.name,e.nickname,e.email,'0'+s.searchedPhone.slice(3),s.searchedPhone,e.otoappBranchId]);await audit.record(db,{actorAccountId:s.actorId,operatorId:s.operatorId,action:'qa.fixture.create',entityType:'otoapp_employee',entityId:e.id,sourceApp:'console',origin:'job',reason:'SCRUM-674 proof: ZZ TEST OTO App staff record, employment LEFT so it is never copied; no SMS',after:{name:e.name,otoappBranchId:e.otoappBranchId,status:'resigned',employmentState:'LEFT'}});}for(const x of s.accounts){await c.query('insert into core.employee (id,operator_id,name,phone,branch_id) values ($1,$2,$3,$4,$5)',[x.employeeId,s.operatorId,x.name,x.phone,s.branchId]);await c.query("insert into core.account (id,operator_id,employee_id,phone,status) values ($1,$2,$3,$4,'invited')",[x.accountId,s.operatorId,x.employeeId,x.phone]);await audit.record(db,{actorAccountId:s.actorId,operatorId:s.operatorId,action:'qa.account.create',entityType:'account',entityId:x.accountId,sourceApp:'console',origin:'job',reason:'SCRUM-674 proof: ZZ TEST support reader; written invited so no set-up SMS is sent',after:{employeeId:x.employeeId,name:x.name,status:'invited',roles:[]}});}await c.query('COMMIT');console.log(JSON.stringify({event:'s674_people',at:new Date().toISOString(),appRecords:s.appRecords.map(e=>e.id),accounts:s.accounts.map(x=>x.accountId),sms:false,passed:true}));}catch(e){await c.query('ROLLBACK').catch(()=>{});console.log(JSON.stringify({event:'s674_people_error',name:e.name,code:e.code??null,message:String(e.message).slice(0,300)}));process.exitCode=1;}finally{await c.end();}})();`;
+const res = await job(program, 's674_people', LIVE);
+p.result = { jobId: res.jobId, status: res.status, rows: res.rows };
+if (res.status !== 'succeeded') delete p.result.ok;
+save(r);
+console.log(JSON.stringify(p.result, null, 1));

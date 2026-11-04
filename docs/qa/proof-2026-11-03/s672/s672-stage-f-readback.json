@@ -1,0 +1,153 @@
+{
+  "unit": "SCRUM-672",
+  "stage": "f",
+  "liveCommit": "4fa1762860ec468eefc658fbf6b7356c21f9fd45",
+  "startedAt": "2026-11-04T08:57:29.794Z",
+  "screens": [
+    {
+      "file": "s672-f1-releases-new-fields-not-recorded.png",
+      "url": "https://oto-console-staging.onrender.com/watch/releases",
+      "at": "2026-11-04T08:57:51.217Z",
+      "note": "full-page capture replaced by the legible crop listed under crops"
+    },
+    {
+      "file": "s672-f2-health-no-release-feed-job.png",
+      "url": "https://oto-console-staging.onrender.com/watch/health",
+      "at": "2026-11-04T08:57:57.743Z",
+      "note": "full-page capture replaced by the legible crop listed under crops"
+    },
+    {
+      "file": "s672-f3-environment-feed-settings-not-set.png",
+      "url": "https://oto-console-staging.onrender.com/platform/environment",
+      "at": "2026-11-04T08:58:04.185Z",
+      "note": "full-page capture replaced by the legible crop listed under crops"
+    }
+  ],
+  "live": [
+    {
+      "name": "oto-api-staging",
+      "status": "live",
+      "commit": "4fa1762860ec468eefc658fbf6b7356c21f9fd45",
+      "deployId": "dep-dbleqao473hc73b41330",
+      "finishedAt": "2026-11-04T08:34:10.316322Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "status": "live",
+      "commit": "4fa1762860ec468eefc658fbf6b7356c21f9fd45",
+      "deployId": "dep-dbleqao473hc73b414c0",
+      "finishedAt": "2026-11-04T08:31:30.563533Z"
+    }
+  ],
+  "releases": {
+    "total": 0,
+    "count": 0,
+    "newFields": []
+  },
+  "healthJobs": [
+    "job:assistant.purge",
+    "job:benefit.period_rollover",
+    "job:booth.duty_sync",
+    "job:demo.fail",
+    "job:events.cache_refresh",
+    "job:housekeeping.handoff",
+    "job:housekeeping.idempotency",
+    "job:housekeeping.retention",
+    "job:inbox.ai",
+    "job:inbox.retention",
+    "job:inbox.send",
+    "job:integration.expiry",
+    "job:nanny.duty_sync",
+    "job:occupancy.facts",
+    "job:otoapp.attention",
+    "job:otoapp.employee_sync",
+    "job:otoapp.midnight",
+    "job:otoapp.no_show",
+    "job:otoapp.presence",
+    "job:otoapp.reconcile",
+    "job:payments.inquiry",
+    "job:payments.pending",
+    "job:rollup.booth",
+    "job:rollup.daily",
+    "job:rollup.hourly",
+    "job:settlement.2c2p_fixture_import",
+    "job:stock.daily",
+    "job:suite_control.expiry",
+    "job:wallet.expiry",
+    "job:wallet.liability",
+    "job:watchdog"
+  ],
+  "releaseFeedOnHealth": false,
+  "platformJobs": [
+    "job:assistant.purge",
+    "job:benefit.period_rollover",
+    "job:booth.duty_sync",
+    "job:demo.fail",
+    "job:events.cache_refresh",
+    "job:housekeeping.handoff",
+    "job:housekeeping.idempotency",
+    "job:housekeeping.retention",
+    "job:inbox.ai",
+    "job:inbox.retention",
+    "job:inbox.send",
+    "job:integration.expiry",
+    "job:nanny.duty_sync",
+    "job:occupancy.facts",
+    "job:otoapp.attention",
+    "job:otoapp.employee_sync",
+    "job:otoapp.midnight",
+    "job:otoapp.no_show",
+    "job:otoapp.presence",
+    "job:otoapp.reconcile",
+    "job:payments.inquiry",
+    "job:payments.pending",
+    "job:rollup.booth",
+    "job:rollup.daily",
+    "job:rollup.hourly",
+    "job:settlement.2c2p_fixture_import",
+    "job:stock.daily",
+    "job:suite_control.expiry",
+    "job:wallet.expiry",
+    "job:wallet.liability",
+    "job:watchdog"
+  ],
+  "environment": [
+    {
+      "name": "RELEASE_FEED_RENDER_API_KEY",
+      "required": false,
+      "present": false
+    },
+    {
+      "name": "RELEASE_FEED_SERVICES",
+      "required": false,
+      "present": false
+    },
+    {
+      "name": "RELEASE_FEED_GITHUB_TOKEN",
+      "required": false,
+      "present": false
+    }
+  ],
+  "environmentPageShowsNames": [
+    true,
+    true,
+    true
+  ],
+  "finishedAt": "2026-11-04T08:58:04.774Z",
+  "crops": [
+    {
+      "file": "s672-f1-releases-history-card.png",
+      "text": "Recorded releases\nRead at 4 Nov 2026, 15:58:36 GMT+7\n\nNo releases are recorded.\n\nNothing has reported a deploy to this history yet. That is not a statement that nothing was deployed; no deployment status is inferred.\n\n0 records\nNewer releases\nOlder releases",
+      "at": "2026-11-04T08:58:39.541Z"
+    },
+    {
+      "file": "s672-f2-health-scheduled-jobs-card.png",
+      "mentionsReleaseFeed": false,
+      "at": "2026-11-04T08:58:44.771Z"
+    },
+    {
+      "file": "s672-f3-environment-feed-settings-not-set.png",
+      "at": "2026-11-04T08:58:48.804Z"
+    }
+  ]
+}

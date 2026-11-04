@@ -1,0 +1,13 @@
+import { launch, consoleSession, api, ok, receipt, save } from './common.mjs';
+const r = receipt();
+const saleId = r.walk.c2.steps.find((s) => s.path.endsWith('/finalise')).saleId;
+const browser = await launch();
+try {
+  const { page } = await consoleSession(browser);
+  const sale = ok(await api(page, 'GET', `/sales/${saleId}`), 'sale');
+  r.sale = { id: saleId, receiptNumber: sale.sale?.receiptNumber ?? sale.receiptNumber, status: sale.sale?.status ?? sale.status, stationId: sale.sale?.stationId ?? null,
+    bands: (sale.bands ?? []).map((b) => ({ id: b.id, kind: b.kind, shortCode: b.shortCode, status: b.status, gateAccess: b.gateAccess ?? null })) };
+  save(r);
+  await api(page, 'POST', '/auth/sign-out', {});
+  console.log(JSON.stringify(r.sale, null, 1));
+} finally { await browser.close(); }

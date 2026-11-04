@@ -1,0 +1,45 @@
+// (e) The Console's Activity page: one console.support.lookup data-access row per search, naming the kinds and no
+// searched value; an OTO App phone search also leaves its auth.handoff_issue row, in its own category.
+import { launch, consoleSession, api, ok, receipt, save, secrets, OUT, CONSOLE } from './common.mjs';
+import { grouped } from './search.mjs';
+const r = receipt(); const s = secrets(); const p = r.people;
+const w = (r.walk.e = { startedAt: new Date().toISOString() });
+const from = r.walk.c1.startedAt;
+const browser = await launch();
+try {
+  const { page } = await consoleSession(browser, { width: 1500, height: 1100 });
+  const me = ok(await api(page, 'GET', '/me'), 'me'); const adminId = me.account?.id ?? me.accountId;
+  const reader = p.accounts.find((a) => a.key === 'reader'); const refused = p.accounts.find((a) => a.key === 'refused');
+  const q = (o) => new URLSearchParams({ from, limit: '200', count: 'true', ...o }).toString();
+  const adminRows = ok(await api(page, 'GET', `/audit?${q({ action: 'console.support.lookup', actorAccountId: adminId })}`), 'admin rows');
+  const readerRows = ok(await api(page, 'GET', `/audit?${q({ actorAccountId: reader.accountId })}`), 'reader rows');
+  const refusedRows = ok(await api(page, 'GET', `/audit?${q({ actorAccountId: refused.accountId })}`), 'refused rows');
+  const searched = [s.voucherA, s.voucherB, ...s.madeUp, ...s.madeUp.map(grouped), grouped(s.voucherA), grouped(s.voucherB), '089 674 0001', '+66896740001', '0896740001', ...r.sale.bands.map((b) => b.shortCode)];
+  const blob = JSON.stringify([adminRows, readerRows, refusedRows]);
+  w.adminLookupRows = { total: adminRows.total, expectedFromThisProof: r.walk.c1.searches.length + r.walk.c3.searches.length + 1,
+    kinds: adminRows.entries.map((e) => (e.after?.kinds ?? []).join('+')), categories: [...new Set(adminRows.entries.map((e) => e.category))] };
+  const brief = (e) => ({ action: e.action, category: e.category ?? null, entityType: e.entityType, requestId: e.requestId, targetApp: e.targetApp ?? null, after: e.after ? Object.keys(e.after) : null, at: e.createdAt });
+  w.readerRows = { total: readerRows.total, rows: readerRows.entries.map(brief) };
+  w.refusedRows = { total: refusedRows.total, rows: refusedRows.entries.map(brief) };
+  const lookup = readerRows.entries.find((e) => e.action === 'console.support.lookup');
+  w.readerLookupAfter = lookup?.after ?? null;
+  w.handoffSameRequest = readerRows.entries.filter((e) => e.action === 'auth.handoff_issue').map((e) => ({ requestId: e.requestId, sameAsLookup: lookup && e.requestId.startsWith(lookup.requestId), category: e.category }));
+  w.noSearchedValueInAudit = !searched.some((v) => v && blob.includes(v));
+  save(r);
+  // The page itself.
+  await page.goto(CONSOLE + '/watch/activity', { waitUntil: 'domcontentloaded' });
+  await page.getByText('Filters', { exact: true }).first().waitFor({ timeout: 30000 });
+  await page.waitForTimeout(2000);
+  await page.getByLabel('Actor account id').fill(reader.accountId);
+  await page.waitForTimeout(4000);
+  const list = page.locator('section, article').filter({ has: page.getByText('console.support.lookup').first() }).last();
+  await page.screenshot({ path: `${OUT}/s674-e1-activity-park-manager-rows.png`, fullPage: true });
+  await page.getByText('console.support.lookup', { exact: false }).first().click();
+  await page.waitForTimeout(2500);
+  await page.screenshot({ path: `${OUT}/s674-e2-lookup-row-names-kinds-no-value.png` });
+  const related = page.getByRole('tab', { name: /related/i }).or(page.getByRole('button', { name: /related/i })).first();
+  if (await related.count()) { await related.click(); await page.waitForTimeout(3000); await page.screenshot({ path: `${OUT}/s674-e3-same-request-handoff-row.png` }); w.relatedTab = true; } else w.relatedTab = false;
+  w.finishedAt = new Date().toISOString(); save(r);
+  await api(page, 'POST', '/auth/sign-out', {});
+  console.log(JSON.stringify(w, null, 1).slice(0, 6000));
+} catch (e) { w.error = String(e?.message ?? e).slice(0, 500); save(r); console.log('ERROR', w.error); } finally { await browser.close(); }

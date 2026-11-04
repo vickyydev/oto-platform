@@ -1,0 +1,30 @@
+// Cleanup, part two, one checked transaction in a one-off job, this proof's rows only:
+//  - the three synthetic gate passages are deleted (they never came from a gate);
+//  - voucher A, issued and never used, is voided (no route voids one), audited;
+//  - the two ZZ TEST employees behind the switched-off accounts are archived, audited;
+//  - the two ZZ TEST OTO App staff records and the two switched-off ZZ TEST OTO App users are deleted only when no
+//    foreign key anywhere points at them; otherwise they stay switched off / LEFT and the run says so.
+import { job } from './job.mjs';
+import { receipt, save, LIVE } from './common.mjs';
+const r = receipt(); const f = r.fixtures; const p = r.people;
+const spec = {
+  operatorId: p.operatorId, actorId: p.actorId,
+  gateIds: r.gateInsert.rows[0].ids, bandId: r.sale.bands.find((b) => b.kind === 'adult').id,
+  voucherA: r.issue.vouchers.find((v) => v.key === 'voucherA').id, definitionId: f.voucherDefinitionId,
+  employeeIds: p.accounts.map((a) => a.employeeId), accountIds: p.accounts.map((a) => a.accountId),
+  appEmployeeIds: p.appRecords.map((e) => e.id),
+  appUserIds: p.accounts.map((a) => p.grants[a.key].otoApp.externalUserId),
+};
+r.cleanup.dbSpec = spec; save(r);
+const program = `(async()=>{require('tsx/cjs');const assert=require('node:assert/strict'),{Client}=require('pg'),{drizzle}=require('drizzle-orm/node-postgres'),{audit}=require('./src/services/audit.ts');const s=${JSON.stringify(spec)};const c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();const out={};try{await c.query('BEGIN');await c.query("SET LOCAL statement_timeout='30s'");const db=drizzle(c);
+const g=await c.query("delete from pos.band_event where id = any($1::uuid[]) and band_id=$2 and detail->>'zzTest'='SCRUM-674 synthetic gate passage'",[s.gateIds,s.bandId]);assert.equal(g.rowCount,3);out.gatePassagesDeleted=g.rowCount;
+const v=await c.query("update promo.voucher set status='void', updated_at=now() where id=$1 and status='issued' and voucher_definition_id=$2 and operator_id=$3",[s.voucherA,s.definitionId,s.operatorId]);assert.equal(v.rowCount,1);await audit.record(db,{actorAccountId:s.actorId,operatorId:s.operatorId,action:'qa.voucher.void',entityType:'voucher',entityId:s.voucherA,sourceApp:'console',origin:'job',reason:'SCRUM-674 proof cleanup: ZZ TEST voucher issued for the proof and never used',before:{status:'issued'},after:{status:'void'}});out.voucherVoided=v.rowCount;
+const e=await c.query("update core.employee set archived_at=now() where id = any($1::uuid[]) and operator_id=$2 and name like 'ZZ TEST SCRUM-674 %' and archived_at is null",[s.employeeIds,s.operatorId]);assert.equal(e.rowCount,2);for(const id of s.employeeIds)await audit.record(db,{actorAccountId:s.actorId,operatorId:s.operatorId,action:'qa.employee.archive',entityType:'employee',entityId:id,sourceApp:'console',origin:'job',reason:'SCRUM-674 proof cleanup: employee behind a switched-off ZZ TEST account'});out.employeesArchived=e.rowCount;
+const acc=(await c.query("select id,status from core.account where id = any($1::uuid[])",[s.accountIds])).rows;out.accounts=acc;assert.ok(acc.length===2&&acc.every(a=>a.status==='inactive'));
+const refs=async(schema,table,ids)=>{const fks=(await c.query("select tc.table_schema s, tc.table_name t, kcu.column_name col from information_schema.table_constraints tc join information_schema.key_column_usage kcu on kcu.constraint_name=tc.constraint_name and kcu.table_schema=tc.table_schema join information_schema.constraint_column_usage ccu on ccu.constraint_name=tc.constraint_name and ccu.table_schema=tc.table_schema where tc.constraint_type='FOREIGN KEY' and ccu.table_schema=$1 and ccu.table_name=$2 and ccu.column_name='id'",[schema,table])).rows;let n=0;const hits=[];for(const fk of fks){const k=(await c.query('select count(*)::int n from "'+fk.s+'"."'+fk.t+'" where "'+fk.col+'"::text = any($1::text[])',[ids])).rows[0].n;n+=k;if(k)hits.push(fk.s+'.'+fk.t+'.'+fk.col+':'+k);}return {columns:fks.length,n,hits};};
+const ae=await refs('otoapp','employees',s.appEmployeeIds);out.appEmployeeRefs=ae;if(ae.n===0){const d=await c.query("delete from otoapp.employees where id = any($1::text[]) and full_name like 'ZZ TEST SCRUM-674 %' and employment_state='LEFT'",[s.appEmployeeIds]);assert.equal(d.rowCount,2);out.appEmployeesDeleted=d.rowCount;for(const id of s.appEmployeeIds)await audit.record(db,{actorAccountId:s.actorId,operatorId:s.operatorId,action:'qa.fixture.delete',entityType:'otoapp_employee',entityId:id,sourceApp:'console',origin:'job',reason:'SCRUM-674 proof cleanup: ZZ TEST OTO App staff record, nothing points at it'});}
+const au=await refs('otoapp','users',s.appUserIds);out.appUserRefs=au;const users=(await c.query("select id,is_active,platform_user_id from otoapp.users where id = any($1::text[])",[s.appUserIds])).rows;out.appUsersBefore=users.map(u=>({id:u.id,active:u.is_active,stamped:u.platform_user_id!==null}));assert.ok(users.length===2&&users.every(u=>u.is_active===false&&u.platform_user_id===null));if(au.n===0){const d=await c.query("delete from otoapp.users where id = any($1::text[]) and is_active=false and platform_user_id is null and email like 'zz-s674-%@example.com'",[s.appUserIds]);assert.equal(d.rowCount,2);out.appUsersDeleted=d.rowCount;for(const id of s.appUserIds)await audit.record(db,{actorAccountId:s.actorId,operatorId:s.operatorId,action:'qa.fixture.delete',entityType:'otoapp_user',entityId:id,sourceApp:'console',origin:'job',reason:'SCRUM-674 proof cleanup: switched-off ZZ TEST OTO App user, nothing points at it'});}
+await c.query('COMMIT');console.log(JSON.stringify({event:'s674_cleanup',at:new Date().toISOString(),...out}));}catch(e){await c.query('ROLLBACK').catch(()=>{});console.log(JSON.stringify({event:'s674_cleanup_error',name:e.name,code:e.code??null,message:String(e.message).slice(0,300),out}));process.exitCode=1;}finally{await c.end();}})();`;
+const res = await job(program, 's674_cleanup', LIVE);
+r.cleanup.db = { jobId: res.jobId, status: res.status, rows: res.rows }; save(r);
+console.log(JSON.stringify(r.cleanup.db, null, 1));

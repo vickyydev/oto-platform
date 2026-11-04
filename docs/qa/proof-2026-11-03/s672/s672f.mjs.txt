@@ -1,0 +1,39 @@
+// SCRUM-672 stage (f) only: the feed's settings are not set, so Releases shows the new fields as Not recorded
+// (or an empty history), and job:release.feed is absent from Health. Admin account; reads only.
+import { launch, consoleSession, api, ok, CONSOLE, OUT672, LIVE } from './common.mjs';
+import { render, service } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/render.mjs';
+import { writeFileSync } from 'node:fs';
+const out = { unit: 'SCRUM-672', stage: 'f', liveCommit: LIVE, startedAt: new Date().toISOString(), screens: [] };
+const liveOf = async (name) => { const s = await service(name); const d = (await render('GET', `/services/${s.id}/deploys?limit=1`))[0].deploy; return { name, status: d.status, commit: d.commit.id, deployId: d.id, finishedAt: d.finishedAt }; };
+out.live = [await liveOf('oto-api-staging'), await liveOf('oto-console-staging')];
+if (out.live.some((l) => l.status !== 'live' || l.commit !== LIVE)) throw new Error('not live on ' + LIVE);
+const browser = await launch();
+try {
+  const { page } = await consoleSession(browser, { width: 1440, height: 1000 });
+  const rel = ok(await api(page, 'GET', '/console/releases?limit=50&offset=0'), 'releases');
+  out.releases = { total: rel.total ?? null, count: rel.deployments?.length ?? null,
+    newFields: (rel.deployments ?? []).slice(0, 10).map((d) => ({ commit: d.commit, service: d.service ?? null, source: d.source ?? null, sourceEventId: d.sourceEventId ?? null, finishedAt: d.finishedAt ?? null, deployedAt: d.deployedAt ?? null, recordedAt: d.recordedAt ?? null })) };
+  const health = ok(await api(page, 'GET', '/ops/health'), 'health');
+  out.healthJobs = (health.jobs ?? []).map((j) => j.name ?? j.job ?? j.id);
+  out.releaseFeedOnHealth = out.healthJobs.some((n) => /release/i.test(String(n)));
+  const pj = await api(page, 'GET', '/platform/jobs');
+  out.platformJobs = pj.status === 200 ? (pj.body.jobs ?? []).map((j) => j.name ?? j.job ?? j.id) : pj.status;
+  const env = await api(page, 'GET', '/platform/environment');
+  out.environment = env.status === 200 ? (env.body.variables ?? []).filter((v) => v.name.startsWith('RELEASE_FEED')).map((v) => ({ name: v.name, required: v.required, present: v.present })) : env.status;
+  const shot = async (path, file, wait) => {
+    await page.goto(CONSOLE + path, { waitUntil: 'domcontentloaded' });
+    if (wait) await wait();
+    await page.waitForTimeout(3500);
+    await page.screenshot({ path: `${OUT672}/${file}`, fullPage: true });
+    out.screens.push({ file, url: page.url(), at: new Date().toISOString() });
+  };
+  await shot('/watch/releases', 's672-f1-releases-new-fields-not-recorded.png', () => page.getByText('Deployment', { exact: false }).first().waitFor({ timeout: 20000 }).catch(() => {}));
+  await shot('/watch/health', 's672-f2-health-no-release-feed-job.png', () => page.getByText(/job/i).first().waitFor({ timeout: 20000 }).catch(() => {}));
+  await shot('/platform/environment', 's672-f3-environment-feed-settings-not-set.png', () => page.getByText('RELEASE_FEED_RENDER_API_KEY').first().waitFor({ timeout: 20000 }).catch(() => {}));
+  const bodyText = await page.evaluate(() => document.body.innerText);
+  out.environmentPageShowsNames = ['RELEASE_FEED_RENDER_API_KEY', 'RELEASE_FEED_SERVICES', 'RELEASE_FEED_GITHUB_TOKEN'].map((n) => bodyText.includes(n));
+  await api(page, 'POST', '/auth/sign-out', {});
+} catch (e) { out.error = String(e?.message ?? e).slice(0, 500); } finally { await browser.close(); }
+out.finishedAt = new Date().toISOString();
+writeFileSync(OUT672 + '/s672-stage-f-readback.json', JSON.stringify(out, null, 2) + '\n');
+console.log(JSON.stringify(out, null, 1).slice(0, 5000));

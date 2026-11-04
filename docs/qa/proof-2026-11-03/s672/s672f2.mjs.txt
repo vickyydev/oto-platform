@@ -1,0 +1,36 @@
+// Legible crops for SCRUM-672 stage (f): the Recorded releases card, the Scheduled jobs card, the three feed settings.
+import { launch, consoleSession, api, CONSOLE, OUT672 } from './common.mjs';
+import { readFileSync, writeFileSync } from 'node:fs';
+const rb = JSON.parse(readFileSync(OUT672 + '/s672-stage-f-readback.json', 'utf8'));
+const browser = await launch();
+const cardOf = (page, text) => page.locator('section, article, [class*="card"], [class*="Card"]').filter({ has: page.getByText(text, { exact: true }) }).last();
+try {
+  const { page } = await consoleSession(browser, { width: 1440, height: 1000 });
+  rb.crops = [];
+  await page.goto(CONSOLE + '/watch/releases', { waitUntil: 'domcontentloaded' });
+  await page.getByText('Recorded releases', { exact: true }).first().waitFor({ timeout: 30000 });
+  await page.waitForTimeout(2500);
+  let el = cardOf(page, 'Recorded releases');
+  await el.scrollIntoViewIfNeeded();
+  await el.screenshot({ path: OUT672 + '/s672-f1-releases-history-card.png' });
+  rb.crops.push({ file: 's672-f1-releases-history-card.png', text: (await el.innerText()).slice(0, 600), at: new Date().toISOString() });
+  await page.goto(CONSOLE + '/watch/health', { waitUntil: 'domcontentloaded' });
+  await page.getByText('Scheduled jobs', { exact: true }).first().waitFor({ timeout: 30000 });
+  await page.waitForTimeout(3000);
+  el = cardOf(page, 'Scheduled jobs');
+  await el.scrollIntoViewIfNeeded();
+  await el.screenshot({ path: OUT672 + '/s672-f2-health-scheduled-jobs-card.png' });
+  const jobsText = await el.innerText();
+  rb.crops.push({ file: 's672-f2-health-scheduled-jobs-card.png', mentionsReleaseFeed: /release/i.test(jobsText), at: new Date().toISOString() });
+  await page.goto(CONSOLE + '/platform/environment', { waitUntil: 'domcontentloaded' });
+  await page.getByText('RELEASE_FEED_RENDER_API_KEY').first().waitFor({ timeout: 30000 });
+  await page.waitForTimeout(1500);
+  const row = page.getByText('RELEASE_FEED_RENDER_API_KEY').first();
+  await row.scrollIntoViewIfNeeded();
+  const box = await row.boundingBox();
+  await page.screenshot({ path: OUT672 + '/s672-f3-environment-feed-settings-not-set.png', clip: { x: 0, y: Math.max(0, box.y - 260), width: 1440, height: 620 } });
+  rb.crops.push({ file: 's672-f3-environment-feed-settings-not-set.png', at: new Date().toISOString() });
+  await api(page, 'POST', '/auth/sign-out', {});
+} catch (e) { rb.cropError = String(e?.message ?? e).slice(0, 400); } finally { await browser.close(); }
+writeFileSync(OUT672 + '/s672-stage-f-readback.json', JSON.stringify(rb, null, 2) + '\n');
+console.log(JSON.stringify(rb.crops ?? rb.cropError, null, 1), rb.cropError ?? '');

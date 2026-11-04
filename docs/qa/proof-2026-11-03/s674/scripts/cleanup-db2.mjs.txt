@@ -1,0 +1,17 @@
+// The two switched-off ZZ TEST OTO App users: the only rows pointing at them are their own two branch-access rows,
+// made by the same link. Those go first, then the users, only if every other foreign key still reads empty.
+import { job } from './job.mjs';
+import { receipt, save, LIVE } from './common.mjs';
+const r = receipt(); const s0 = r.cleanup.dbSpec;
+const spec = { operatorId: s0.operatorId, actorId: s0.actorId, appUserIds: s0.appUserIds };
+const program = `(async()=>{require('tsx/cjs');const assert=require('node:assert/strict'),{Client}=require('pg'),{drizzle}=require('drizzle-orm/node-postgres'),{audit}=require('./src/services/audit.ts');const s=${JSON.stringify(spec)};const c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();const out={};try{await c.query('BEGIN');await c.query("SET LOCAL statement_timeout='30s'");const db=drizzle(c);
+const users=(await c.query("select id from otoapp.users where id = any($1::text[]) and is_active=false and platform_user_id is null and email like 'zz-s674-%@example.com'",[s.appUserIds])).rows;assert.equal(users.length,2);
+const access=(await c.query("select count(*)::int n from otoapp.user_branch_access where user_id = any($1::text[])",[s.appUserIds])).rows[0].n;assert.equal(access,2);
+const fks=(await c.query("select tc.table_schema s, tc.table_name t, kcu.column_name col from information_schema.table_constraints tc join information_schema.key_column_usage kcu on kcu.constraint_name=tc.constraint_name and kcu.table_schema=tc.table_schema join information_schema.constraint_column_usage ccu on ccu.constraint_name=tc.constraint_name and ccu.table_schema=tc.table_schema where tc.constraint_type='FOREIGN KEY' and ccu.table_schema='otoapp' and ccu.table_name='users' and ccu.column_name='id'")).rows;let other=0;for(const fk of fks){if(fk.s==='otoapp'&&fk.t==='user_branch_access'&&fk.col==='user_id')continue;other+=(await c.query('select count(*)::int n from "'+fk.s+'"."'+fk.t+'" where "'+fk.col+'"::text = any($1::text[])',[s.appUserIds])).rows[0].n;}assert.equal(other,0);out.otherRefs=other;out.fkColumns=fks.length;
+const a=await c.query("delete from otoapp.user_branch_access where user_id = any($1::text[])",[s.appUserIds]);assert.equal(a.rowCount,2);out.accessDeleted=a.rowCount;
+const d=await c.query("delete from otoapp.users where id = any($1::text[]) and is_active=false and platform_user_id is null and email like 'zz-s674-%@example.com'",[s.appUserIds]);assert.equal(d.rowCount,2);out.usersDeleted=d.rowCount;
+for(const id of s.appUserIds)await audit.record(db,{actorAccountId:s.actorId,operatorId:s.operatorId,action:'qa.fixture.delete',entityType:'otoapp_user',entityId:id,sourceApp:'console',origin:'job',reason:'SCRUM-674 proof cleanup: switched-off ZZ TEST OTO App user and its own branch access; nothing else points at it'});
+await c.query('COMMIT');console.log(JSON.stringify({event:'s674_cleanup2',at:new Date().toISOString(),...out}));}catch(e){await c.query('ROLLBACK').catch(()=>{});console.log(JSON.stringify({event:'s674_cleanup2_error',name:e.name,code:e.code??null,message:String(e.message).slice(0,300),out}));process.exitCode=1;}finally{await c.end();}})();`;
+const res = await job(program, 's674_cleanup2', LIVE);
+r.cleanup.db2 = { jobId: res.jobId, status: res.status, rows: res.rows }; save(r);
+console.log(JSON.stringify(r.cleanup.db2, null, 1));

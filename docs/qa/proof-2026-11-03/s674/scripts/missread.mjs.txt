@@ -1,0 +1,10 @@
+// (c) read-only: no voucher miss was written for the ten Console searches, neither against the staging admin who
+// searched nor against the ZZ TEST till, between the first search and now.
+import { job } from './job.mjs';
+import { receipt, save, LIVE } from './common.mjs';
+const r = receipt();
+const spec = { from: r.walk.c1.startedAt, stationId: r.fixtures.stationId, adminId: r.people.actorId, operatorId: r.people.operatorId };
+const program = `(async()=>{const {Client}=require('pg');const s=${JSON.stringify(spec)};const c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();try{await c.query('BEGIN READ ONLY');const n=async(q,a)=>(await c.query(q,a)).rows[0].n;const out={byAdmin:await n('select count(*)::int n from promo.voucher_miss where account_id=$1 and occurred_at>=$2',[s.adminId,s.from]),atTill:await n('select count(*)::int n from promo.voucher_miss where station_id=$1',[s.stationId]),operatorSince:await n('select count(*)::int n from promo.voucher_miss where operator_id=$1 and occurred_at>=$2',[s.operatorId,s.from])};await c.query('ROLLBACK');console.log(JSON.stringify({event:'s674_miss',at:new Date().toISOString(),...out}));}catch(e){console.log(JSON.stringify({event:'s674_miss_error',message:String(e.message).slice(0,200)}));}finally{await c.end();}})();`;
+const res = await job(program, 's674_miss', LIVE);
+r.walk.c2.missRead = { jobId: res.jobId, status: res.status, rows: res.rows }; save(r);
+console.log(JSON.stringify(r.walk.c2.missRead));

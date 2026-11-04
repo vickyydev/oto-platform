@@ -1,0 +1,17 @@
+import { attach, commentWithImages, statusOf, images } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/jira.mjs';
+import { readFileSync, writeFileSync } from 'node:fs';
+const D = 'C:/oto-lanes/console-support-20261103/docs/qa/proof-2026-11-03/';
+const plan = {
+  'SCRUM-674': { text: 'c674.txt', files: ['s674-a1-band-gate-events-found.png', 's674-a2-band-no-passages-whole-answer.png', 's674-b1-voucher-issued-found.png', 's674-b2-made-up-code-empty-with-note.png', 's674-b3-voucher-redeemed-where-and-receipt.png', 's674-c1-tenth-made-up-code.png', 's674-c2-till-takes-the-voucher-first-time.png', 's674-c4-till-sale-paid-voucher-used.png', 's674-d1-admin-oto-app-records.png', 's674-d2-park-manager-masked-whole-answer.png', 's674-d3-staff-level-refused-oto-app-records.png', 's674-e1-activity-park-manager-lookup-and-handoff-rows.png', 's674-e3-lookup-row-opened-kinds-no-value.png'].map((f) => 's674/' + f) },
+  'SCRUM-672': { text: 'c672.txt', files: ['s672-f1-releases-history-card.png', 's672-f2-health-scheduled-jobs-card.png', 's672-f3-environment-feed-settings-not-set.png'].map((f) => 's672/' + f) },
+};
+const out = {};
+for (const [key, p] of Object.entries(plan)) {
+  const a = await attach(key, p.files.map((f) => D + f));
+  if (a.status >= 300) throw new Error(key + ' attach ' + a.status + ' ' + (a.body ?? ''));
+  const names = p.files.map((f) => f.split('/').pop());
+  const c = await commentWithImages(key, readFileSync(p.text, 'utf8').trim(), names);
+  out[key] = { attachStatus: a.status, attached: a.files, commentStatus: c.status ?? null, commentId: c.body?.id ?? c.id ?? null, status: (await statusOf(key)).status, imagesOnTicket: (await images(key)).length };
+}
+writeFileSync('jira-publication.json', JSON.stringify(out, null, 2));
+console.log(JSON.stringify(out, null, 1));

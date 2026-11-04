@@ -1,0 +1,26 @@
+// (b) part one and (c) part one, as the staging admin in the Console: the issued ZZ TEST voucher by its grouped
+// on-screen form, then ten made-up codes of the same till's shape, each a Console search.
+import { launch, consoleSession, api, ok, receipt, save, secrets } from './common.mjs';
+import { openSupport, search, grouped } from './search.mjs';
+const r = receipt(); const s = secrets();
+r.walk ??= {}; const w = (r.walk.c1 = { startedAt: new Date().toISOString(), searches: [] });
+const browser = await launch();
+try {
+  const { page } = await consoleSession(browser, { width: 1440, height: 1000 });
+  const me = ok(await api(page, 'GET', '/me'), 'me'); w.signedIn = { name: me.employee?.name, platformAdmin: me.isPlatformAdmin };
+  await openSupport(page);
+  const a = await search(page, grouped(s.voucherA), { file: 's674-b1-voucher-issued-found.png', mask: true });
+  w.searches.push({ what: 'ZZ TEST voucher A, grouped on-screen form (input masked in the picture)', typedShape: grouped(s.voucherA).replace(/[A-Z0-9]/g, 'x'), ...a });
+  save(r);
+  for (let i = 0; i < s.madeUp.length; i += 1) {
+    const file = i === 0 ? 's674-b2-made-up-code-empty-with-note.png' : i === s.madeUp.length - 1 ? 's674-c1-tenth-made-up-code.png' : null;
+    const m = await search(page, grouped(s.madeUp[i]), { file });
+    w.searches.push({ what: `made-up code ${i + 1} of 10`, typed: grouped(s.madeUp[i]), ...m });
+    save(r);
+  }
+  w.finishedAt = new Date().toISOString(); save(r);
+  await api(page, 'POST', '/auth/sign-out', {});
+  console.log(JSON.stringify(w.searches.map((x) => ({ what: x.what, status: x.status, kinds: x.kinds, sections: x.sections.map((q) => `${q.key}:${q.status}:${q.rowCount}`) })), null, 1));
+  console.log(JSON.stringify(w.searches[0].sections.find((q) => q.key === 'pos.promo_voucher'), null, 1));
+  console.log(JSON.stringify(w.searches[1].sections.find((q) => q.key === 'pos.promo_voucher'), null, 1));
+} catch (e) { w.error = String(e?.message ?? e).slice(0, 500); save(r); console.log('ERROR', w.error); } finally { await browser.close(); }

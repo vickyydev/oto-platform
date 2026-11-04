@@ -1,0 +1,38 @@
+// SCRUM-674 staging fixtures, made for this proof only, at Oto Play Park, Central Floresta:
+// one ZZ TEST till on Virtual box 1 (the box the api process runs; never the Pi, its tills or FWBooth1),
+// one ZZ TEST gate lane with no box (nothing runs it), and one ZZ TEST voucher type worth 20 baht off.
+import { launch, consoleSession, api, ok, receipt, save, LIVE } from './common.mjs';
+const BRANCH = '01a0bbdc-8c42-7753-b7e3-5ae19fb66d33';
+const r = receipt();
+if (r.fixtures?.stationId) { console.log('fixtures already exist'); process.exit(0); }
+const stamp = Date.now().toString(36);
+const name = 'ZZ TEST SCRUM-674 ' + stamp;
+Object.assign(r, { unit: 'SCRUM-674/672', liveCommit: LIVE, name, stamp, startedAt: new Date().toISOString(), fixtures: { branchId: BRANCH } });
+const f = r.fixtures;
+const browser = await launch();
+try {
+  const { page } = await consoleSession(browser);
+  const me = ok(await api(page, 'GET', '/me'), 'me');
+  if (me.branch?.id !== BRANCH) throw new Error('Signed-in branch is not Central Floresta');
+  const boxes = ok(await api(page, 'GET', `/branches/${BRANCH}/boxes`), 'boxes').boxes;
+  const vb = boxes.find((b) => b.role === 'virtual' && b.slot === 'virtual-1' && b.status === 'online' && !b.archived);
+  if (!vb || /FWBooth|Pi|Fortune/i.test(vb.name)) throw new Error('Virtual box 1 not online');
+  f.boxId = vb.id; f.boxName = vb.name; save(r);
+  const stations = ok(await api(page, 'GET', `/branches/${BRANCH}/stations?includeArchived=true`), 'stations').stations;
+  const used = new Set(stations.map((s) => (s.codePrefix ?? '').toUpperCase()));
+  const alphabet = '23456789ABCDEFGHJKMNPQRSTVWXYZ';
+  const prefix = [...alphabet].map((c) => 'Z' + c).find((c) => !used.has(c));
+  if (!prefix) throw new Error('no free two-character prefix');
+  const till = ok(await api(page, 'POST', `/branches/${BRANCH}/stations`, { name: name + ' till', kind: 'till', boxId: vb.id, codePrefix: prefix, accessScope: 'all_staff', devices: [], paymentRouting: { card: 'manual', qr: 'none' } }), 'till');
+  f.stationId = till.station.id; f.stationName = till.station.name; f.codePrefix = prefix; f.stationReady = till.station.ready; save(r);
+  const gate = ok(await api(page, 'POST', `/branches/${BRANCH}/stations`, { name: name + ' gate lane', kind: 'gate', boxId: null, accessScope: 'all_staff', devices: [] }), 'gate');
+  f.gateStationId = gate.station.id; f.gateStationName = gate.station.name; save(r);
+  const def = await api(page, 'POST', '/voucher-definitions', { code: 'zz-s674-' + stamp, nameEn: name + ' 20 baht off', kind: 'discount', valueType: 'amount', valueSatang: 2000, expiryDays: 30, singleUse: true, active: true, titleEn: 'ZZ TEST voucher', instructionEn: 'ZZ TEST proof only' });
+  if (def.status !== 200 && def.status !== 201) throw new Error('definition ' + def.status + ' ' + JSON.stringify(def.body).slice(0, 400));
+  f.voucherDefinitionId = (def.body.definition ?? def.body).id; f.voucherDefinitionName = (def.body.definition ?? def.body).nameEn;
+  r.createdAt = new Date().toISOString(); save(r);
+  await api(page, 'POST', '/auth/sign-out', {});
+  console.log(JSON.stringify(r, null, 2));
+} catch (e) {
+  r.error = String(e?.message ?? e).slice(0, 500); save(r); console.log('ERROR', r.error, JSON.stringify(r.fixtures));
+} finally { await browser.close(); }

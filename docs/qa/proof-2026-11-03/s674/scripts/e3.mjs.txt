@@ -1,0 +1,26 @@
+// (e) one row opened: the park manager's console.support.lookup row, and the rows under the same request.
+import { launch, consoleSession, api, receipt, save, OUT, CONSOLE } from './common.mjs';
+const r = receipt(); const p = r.people; const w = r.walk.e;
+const reader = p.accounts.find((a) => a.key === 'reader');
+const browser = await launch();
+let page;
+try {
+  ({ page } = await consoleSession(browser, { width: 1500, height: 1100 }));
+  await page.goto(CONSOLE + '/watch/activity', { waitUntil: 'domcontentloaded' });
+  await page.getByText('Filters', { exact: true }).first().waitFor({ timeout: 30000 });
+  await page.waitForTimeout(2500);
+  await page.locator('select').filter({ has: page.locator('option', { hasText: 'Anyone' }) }).first().selectOption({ label: reader.name });
+  await page.getByPlaceholder('member.update').fill('console.support.lookup');
+  await page.waitForTimeout(4500);
+  await page.screenshot({ path: `${OUT}/s674-e2-activity-one-lookup-row-for-one-search.png` });
+  await page.getByText('console.support.lookup', { exact: true }).last().click();
+  await page.waitForTimeout(3000);
+  await page.screenshot({ path: `${OUT}/s674-e3-lookup-row-opened-kinds-no-value.png` });
+  const dlg = page.locator('[role="dialog"]').first();
+  w.drawerText = (await dlg.innerText().catch(() => '')).slice(0, 3000);
+  w.drawerTabs = await dlg.getByRole('tab').allInnerTexts().catch(() => []);
+  w.drawerButtons = (await dlg.getByRole('button').allInnerTexts().catch(() => [])).slice(0, 20);
+  save(r);
+  console.log(JSON.stringify({ tabs: w.drawerTabs, buttons: w.drawerButtons, drawer: w.drawerText.slice(0, 2000) }, null, 1));
+  await api(page, 'POST', '/auth/sign-out', {});
+} catch (e) { w.uiError3 = String(e?.message ?? e).slice(0, 500); save(r); console.log('ERROR', w.uiError3); } finally { await browser.close(); }

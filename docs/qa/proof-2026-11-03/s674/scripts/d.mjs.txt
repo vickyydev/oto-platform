@@ -1,0 +1,34 @@
+// (d) The one ZZ TEST phone, typed as the desk would ("089 674 0001"), searched by three people in the Console:
+// the staging admin (holds admin:audit:read_sensitive), the ZZ TEST park manager (support role, OTO App manager at
+// Central Floresta only, no admin:audit:read_sensitive) and the ZZ TEST staff-level reader (OTO App staff role).
+import { launch, consoleSession, consoleSignIn, api, ok, receipt, save, secrets, OUT } from './common.mjs';
+import { openSupport, search } from './search.mjs';
+const r = receipt(); const s = secrets(); const p = r.people;
+const typed = '089 674 0001';
+const w = (r.walk.d = { startedAt: new Date().toISOString(), typed, runs: [] });
+const browser = await launch();
+const sectionShot = async (page, key, file) => { const el = page.locator(`[data-section="${key}"]`).first(); await el.scrollIntoViewIfNeeded(); await el.screenshot({ path: `${OUT}/${file}` }); return file; };
+const run = async (who, page, prefix) => {
+  const me = ok(await api(page, 'GET', '/me'), 'me ' + who);
+  await openSupport(page);
+  const ans = await search(page, typed, { file: `${prefix}-whole-answer.png` });
+  ans.crop = await sectionShot(page, 'oto_app.records', `${prefix}-oto-app-records.png`);
+  const banner = await page.getByText('Personal details are masked', { exact: false }).count();
+  w.runs.push({ who, signedIn: { name: me.employee?.name, seat: me.branch?.name, platformAdmin: me.isPlatformAdmin ?? false }, maskedBanner: banner > 0, ...ans });
+  save(r);
+  await api(page, 'POST', '/auth/sign-out', {});
+};
+try {
+  { const { page, ctx } = await consoleSession(browser, { width: 1440, height: 1000 }); await run('staging admin', page, 's674-d1-admin'); await ctx.close(); }
+  for (const [key, prefix] of [['reader', 's674-d2-park-manager-masked'], ['refused', 's674-d3-staff-level-refused']]) {
+    const { page, ctx } = await consoleSignIn(browser, s[key].phone, s[key].password, { width: 1440, height: 1000 });
+    if (await page.locator('input[type="password"]').count()) throw new Error(key + ' still on the sign-in screen');
+    await run(p.accounts.find((a) => a.key === key).name, page, prefix);
+    await ctx.close();
+  }
+  w.finishedAt = new Date().toISOString(); save(r);
+  for (const x of w.runs) {
+    const oa = x.sections.find((q) => q.key === 'oto_app.records');
+    console.log(x.who, JSON.stringify({ seat: x.signedIn.seat, masked: x.masked, banner: x.maskedBanner, otoApp: { status: oa?.status, n: oa?.rowCount, masked: oa?.masked, note: oa?.note, permission: oa?.permission, rows: oa?.rows?.map((row) => ({ record: row.record, name: row.name, park: row.park, status: row.status })) }, others: x.sections.filter((q) => q.key !== 'oto_app.records').map((q) => `${q.key}:${q.status}`) }));
+  }
+} catch (e) { w.error = String(e?.message ?? e).slice(0, 500); save(r); console.log('ERROR', w.error); } finally { await browser.close(); }

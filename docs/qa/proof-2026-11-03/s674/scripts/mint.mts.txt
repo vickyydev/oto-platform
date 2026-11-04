@@ -1,0 +1,10 @@
+import { randomInt } from 'node:crypto';
+import { writeFileSync, readFileSync } from 'node:fs';
+import { mintBoothCode, normaliseBoothCode, hasBoothCodeShape } from 'file:///C:/oto-lanes/console-support-20261103/packages/shared/src/booth-code.ts';
+const path = process.argv[2];
+const s = JSON.parse(readFileSync(path, 'utf8'));
+const made: string[] = [];
+while (made.length < 10) { const c = mintBoothCode('Z3', (m) => randomInt(m)); if (c !== s.voucherA && c !== s.voucherB) made.push(c); }
+s.madeUp = made;
+writeFileSync(path, JSON.stringify(s, null, 2) + '\n');
+console.log('minted', made.length, 'shape ok', made.every((c) => hasBoothCodeShape(normaliseBoothCode(c))));

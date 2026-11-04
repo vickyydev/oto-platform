@@ -1,0 +1,46 @@
+// The two ZZ TEST accounts get, through the Console's own admin routes: the support role operator-wide (the Console
+// door and the lookup, no admin:audit:read_sensitive), an OTO App user at Central Floresta only (manager for the
+// reader, staff for the refused one), and a temporary password. Then each signs in once and sets its own password.
+import { randomBytes } from 'node:crypto';
+import { launch, consoleSession, api, ok, receipt, save, secrets, saveSecrets, CONSOLE } from './common.mjs';
+const r = receipt(); const s = secrets(); const p = r.people;
+p.grants ??= {};
+const browser = await launch();
+try {
+  const { page } = await consoleSession(browser);
+  for (const a of p.accounts) {
+    const g = (p.grants[a.key] ??= {});
+    if (!g.role) { const res = ok(await api(page, 'POST', `/accounts/${a.accountId}/role-assignments`, { roleName: 'support', scopeType: 'operator', scopeId: null }), 'role ' + a.key); g.role = { assignmentId: res.id, roleName: 'support', scope: 'operator' }; save(r); }
+    if (!g.otoApp) {
+      const res = ok(await api(page, 'POST', '/admin/apps/oto_app/users', { accountId: a.accountId, branchIds: [p.branchId], otoApp: { email: `zz-s674-${r.stamp}-${a.key}@example.com`, fullName: a.name, role: a.appRole } }), 'link ' + a.key);
+      g.otoApp = { identityId: res.id ?? res.identity?.id ?? null, externalUserId: res.externalUserId ?? res.identity?.externalUserId ?? null, role: a.appRole, branchIds: [p.branchId], raw: Object.keys(res) }; save(r);
+    }
+    if (!s[a.key]?.password) {
+      const t = ok(await api(page, 'POST', `/accounts/${a.accountId}/temp-password`), 'temp ' + a.key);
+      s[a.key] = { phone: a.phone, temp: t.temporaryPassword }; saveSecrets(s);
+      g.tempPasswordAt = new Date().toISOString(); save(r);
+    }
+    const perms = ok(await api(page, 'GET', `/accounts/${a.accountId}/permissions`), 'perms ' + a.key);
+    g.assignments = perms.assignments.map((x) => ({ roleName: x.roleName, scopeType: x.scopeType, scopeId: x.scopeId }));
+    const eff = perms.effective ?? [];
+    g.holds = Object.fromEntries(['console:support:lookup', 'app:console:access', 'app:oto_app:access', 'admin:audit:read_sensitive'].map((k) => [k, eff.filter((e) => e.permission === k).map((e) => `${e.scopeType}:${e.scopeId ?? '-'}`)]));
+    save(r);
+  }
+  await api(page, 'POST', '/auth/sign-out', {});
+  // Each signs in with its temporary password and sets its own (the forced change), in its own browser context.
+  for (const a of p.accounts) {
+    if (s[a.key].password) continue;
+    const ctx = await browser.newContext(); const pg = await ctx.newPage();
+    await pg.goto(CONSOLE, { waitUntil: 'domcontentloaded' });
+    const sign = await api(pg, 'POST', '/auth/sign-in', { phone: a.phone, password: s[a.key].temp });
+    if (sign.status !== 200) throw new Error('sign-in ' + a.key + ' ' + sign.status + ' ' + JSON.stringify(sign.body?.error ?? null));
+    const pw = 'Zz674-' + randomBytes(9).toString('base64url');
+    const ch = await api(pg, 'POST', '/auth/change-password', { currentPassword: s[a.key].temp, password: pw });
+    if (ch.status !== 200) throw new Error('change ' + a.key + ' ' + ch.status + ' ' + JSON.stringify(ch.body?.error ?? null));
+    s[a.key].password = pw; delete s[a.key].temp; saveSecrets(s);
+    p.grants[a.key].passwordChangedAt = new Date().toISOString(); p.grants[a.key].mustChangeAtFirst = sign.body?.mustChangePassword ?? null; save(r);
+    await api(pg, 'POST', '/auth/sign-out', {});
+    await ctx.close();
+  }
+  console.log(JSON.stringify(p.grants, null, 1));
+} catch (e) { p.grantError = String(e?.message ?? e).slice(0, 500); save(r); console.log('ERROR', p.grantError); } finally { await browser.close(); }

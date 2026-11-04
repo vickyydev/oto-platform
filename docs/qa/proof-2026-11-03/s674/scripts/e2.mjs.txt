@@ -1,0 +1,32 @@
+// (e) on the page: Activity, actor = the ZZ TEST park manager, Data access then Sign-in log, and one row opened.
+import { launch, consoleSession, api, receipt, save, OUT, CONSOLE } from './common.mjs';
+const r = receipt(); const p = r.people; const w = r.walk.e;
+const reader = p.accounts.find((a) => a.key === 'reader');
+const browser = await launch();
+let page;
+try {
+  ({ page } = await consoleSession(browser, { width: 1500, height: 1100 }));
+  await page.goto(CONSOLE + '/watch/activity', { waitUntil: 'domcontentloaded' });
+  await page.getByText('Filters', { exact: true }).first().waitFor({ timeout: 30000 });
+  await page.waitForTimeout(2500);
+  const sel = page.locator('select').filter({ has: page.locator('option', { hasText: 'Anyone' }) }).first();
+  await sel.selectOption({ label: reader.name });
+  await page.waitForTimeout(1000);
+  await page.getByRole('button', { name: 'Data access', exact: true }).click();
+  await page.waitForTimeout(4000);
+  await page.screenshot({ path: `${OUT}/s674-e1-activity-data-access-one-row.png` });
+  w.dataAccessText = (await page.locator('main').innerText()).split('\n').filter((l) => /console\.support|data_access|records|row/i.test(l)).slice(0, 12);
+  await page.getByRole('button', { name: 'Sign-in log', exact: true }).click();
+  await page.waitForTimeout(4000);
+  await page.screenshot({ path: `${OUT}/s674-e3-activity-sign-in-log-handoff.png` });
+  w.authText = (await page.locator('main').innerText()).split('\n').filter((l) => /auth\.|handoff/i.test(l)).slice(0, 20);
+  await page.getByRole('button', { name: 'Data access', exact: true }).click();
+  await page.waitForTimeout(3500);
+  await page.getByText('console.support.lookup', { exact: false }).first().click();
+  await page.waitForTimeout(3000);
+  await page.screenshot({ path: `${OUT}/s674-e2-lookup-row-opened.png` });
+  w.drawerText = (await page.locator('[role="dialog"]').first().innerText().catch(() => '')).slice(0, 3000);
+  save(r);
+  await api(page, 'POST', '/auth/sign-out', {});
+  console.log(JSON.stringify({ dataAccessText: w.dataAccessText, authText: w.authText, drawer: w.drawerText.slice(0, 1500) }, null, 1));
+} catch (e) { w.uiError = String(e?.message ?? e).slice(0, 500); save(r); console.log('ERROR', w.uiError); if (page) await page.screenshot({ path: 'C:/Users/waqar/AppData/Local/Temp/claude/9d4c56906b777e8e/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/s674/disc/e-err.png', fullPage: true }); } finally { await browser.close(); }

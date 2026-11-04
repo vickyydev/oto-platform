@@ -1,0 +1,2323 @@
+{
+  "unit": "SCRUM-674/672",
+  "liveCommit": "4fa1762860ec468eefc658fbf6b7356c21f9fd45",
+  "fixtures": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "boxName": "Virtual box 1",
+    "stationId": "01a1a5c8-f6a9-7ed3-b7df-bf960a39300d",
+    "stationName": "ZZ TEST SCRUM-674 mw1vxv8u till",
+    "codePrefix": "Z3",
+    "stationReady": true,
+    "gateBoxId": "01a1a5c9-b4a3-7a06-9181-daacc65aefc5",
+    "gateBoxName": "ZZ TEST SCRUM-674 mw1vxv8u gate box",
+    "gateBoxStatus": "unclaimed",
+    "gateStationId": "01a1a5c9-b669-7fe5-a38e-d5889420cea8",
+    "gateStationName": "ZZ TEST SCRUM-674 mw1vxv8u gate lane",
+    "voucherDefinitionId": "01a1a5c9-b828-7b46-9e65-7ac990a0131b",
+    "voucherDefinitionName": "ZZ TEST SCRUM-674 mw1vxv8u 20 baht off"
+  },
+  "name": "ZZ TEST SCRUM-674 mw1vxv8u",
+  "stamp": "mw1vxv8u",
+  "startedAt": "2026-11-04T08:59:19.278Z",
+  "createdAt": "2026-11-04T09:00:22.855Z",
+  "issue": {
+    "signedIn": {
+      "name": "Som (Reception)",
+      "branch": "Oto Play Park, Central Floresta",
+      "station": "ZZ TEST SCRUM-674 mw1vxv8u till",
+      "at": "2026-11-04T09:00:49.347Z"
+    },
+    "vouchers": [
+      {
+        "key": "voucherA",
+        "id": "01a1a5ca-20b3-7a2f-9d9f-10f631e08a10",
+        "last4": "QMSA",
+        "length": 11,
+        "print": "skipped",
+        "issuedAt": "2026-11-04T09:00:49.447Z"
+      },
+      {
+        "key": "voucherB",
+        "id": "01a1a5ca-2114-7007-bc1e-6c07a884dfd6",
+        "last4": "2DVM",
+        "length": 11,
+        "print": "skipped",
+        "issuedAt": "2026-11-04T09:00:49.535Z"
+      }
+    ]
+  },
+  "walk": {
+    "c1": {
+      "startedAt": "2026-11-04T09:03:04.770Z",
+      "searches": [
+        {
+          "what": "ZZ TEST voucher A, grouped on-screen form (input masked in the picture)",
+          "typedShape": "xx xxxx xxxx x",
+          "status": 200,
+          "at": "2026-11-04T09:03:22.150Z",
+          "kinds": [
+            "voucher"
+          ],
+          "masked": false,
+          "sections": [
+            {
+              "key": "pos.wallet",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:wallet:read",
+              "note": null,
+              "rows": []
+            },
+            {
+              "key": "pos.promo_voucher",
+              "kind": "voucher",
+              "status": "found",
+              "rowCount": 1,
+              "masked": false,
+              "permission": "admin:booth:read",
+              "note": null,
+              "rows": [
+                {
+                  "status": "issued",
+                  "type": "ZZ TEST SCRUM-674 mw1vxv8u 20 baht off",
+                  "value": "฿20 off",
+                  "codeLast4": "QMSA",
+                  "park": "Oto Play Park, Central Floresta",
+                  "expiresAt": "2026-12-04T09:00:49.712Z",
+                  "issuedAt": "2026-11-04T09:00:49.712Z",
+                  "issuedFrom": "Counter (station not recorded)",
+                  "record": "voucher",
+                  "id": "01a1a5ca-20b3-7a2f-9d9f-10f631e08a10",
+                  "typeKind": "discount",
+                  "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                  "businessDate": "2026-11-04",
+                  "redeemedAt": null,
+                  "redeemedWhere": null,
+                  "receiptNumber": null,
+                  "saleId": null,
+                  "redeemedSatang": null,
+                  "prize": null,
+                  "printCount": 0,
+                  "source": "manual"
+                }
+              ]
+            }
+          ],
+          "file": "s674-b1-voucher-issued-found.png"
+        },
+        {
+          "what": "made-up code 1 of 10",
+          "typed": "Z3 WH7Y FXEF 7",
+          "status": 200,
+          "at": "2026-11-04T09:03:24.064Z",
+          "kinds": [
+            "voucher"
+          ],
+          "masked": false,
+          "sections": [
+            {
+              "key": "pos.wallet",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:wallet:read",
+              "note": null,
+              "rows": []
+            },
+            {
+              "key": "pos.promo_voucher",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "admin:booth:read",
+              "note": "Searches voucher codes and shared voucher-type codes. A park promo code that a till takes as a discount is not searched here.",
+              "rows": []
+            }
+          ],
+          "file": "s674-b2-made-up-code-empty-with-note.png"
+        },
+        {
+          "what": "made-up code 2 of 10",
+          "typed": "Z3 MBAQ 3XK5 Z",
+          "status": 200,
+          "at": "2026-11-04T09:03:25.913Z",
+          "kinds": [
+            "voucher"
+          ],
+          "masked": false,
+          "sections": [
+            {
+              "key": "pos.wallet",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:wallet:read",
+              "note": null,
+              "rows": []
+            },
+            {
+              "key": "pos.promo_voucher",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "admin:booth:read",
+              "note": "Searches voucher codes and shared voucher-type codes. A park promo code that a till takes as a discount is not searched here.",
+              "rows": []
+            }
+          ]
+        },
+        {
+          "what": "made-up code 3 of 10",
+          "typed": "Z3 HAZ3 AQEE B",
+          "status": 200,
+          "at": "2026-11-04T09:03:27.630Z",
+          "kinds": [
+            "voucher"
+          ],
+          "masked": false,
+          "sections": [
+            {
+              "key": "pos.wallet",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:wallet:read",
+              "note": null,
+              "rows": []
+            },
+            {
+              "key": "pos.promo_voucher",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "admin:booth:read",
+              "note": "Searches voucher codes and shared voucher-type codes. A park promo code that a till takes as a discount is not searched here.",
+              "rows": []
+            }
+          ]
+        },
+        {
+          "what": "made-up code 4 of 10",
+          "typed": "Z3 E4X3 PS8T 7",
+          "status": 200,
+          "at": "2026-11-04T09:03:29.178Z",
+          "kinds": [
+            "voucher"
+          ],
+          "masked": false,
+          "sections": [
+            {
+              "key": "pos.wallet",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:wallet:read",
+              "note": null,
+              "rows": []
+            },
+            {
+              "key": "pos.promo_voucher",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "admin:booth:read",
+              "note": "Searches voucher codes and shared voucher-type codes. A park promo code that a till takes as a discount is not searched here.",
+              "rows": []
+            }
+          ]
+        },
+        {
+          "what": "made-up code 5 of 10",
+          "typed": "Z3 KBKB 73JC Z",
+          "status": 200,
+          "at": "2026-11-04T09:03:30.791Z",
+          "kinds": [
+            "voucher"
+          ],
+          "masked": false,
+          "sections": [
+            {
+              "key": "pos.wallet",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:wallet:read",
+              "note": null,
+              "rows": []
+            },
+            {
+              "key": "pos.promo_voucher",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "admin:booth:read",
+              "note": "Searches voucher codes and shared voucher-type codes. A park promo code that a till takes as a discount is not searched here.",
+              "rows": []
+            }
+          ]
+        },
+        {
+          "what": "made-up code 6 of 10",
+          "typed": "Z3 XFAB WTEY E",
+          "status": 200,
+          "at": "2026-11-04T09:03:32.415Z",
+          "kinds": [
+            "voucher"
+          ],
+          "masked": false,
+          "sections": [
+            {
+              "key": "pos.wallet",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:wallet:read",
+              "note": null,
+              "rows": []
+            },
+            {
+              "key": "pos.promo_voucher",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "admin:booth:read",
+              "note": "Searches voucher codes and shared voucher-type codes. A park promo code that a till takes as a discount is not searched here.",
+              "rows": []
+            }
+          ]
+        },
+        {
+          "what": "made-up code 7 of 10",
+          "typed": "Z3 JCTR V6XM Y",
+          "status": 200,
+          "at": "2026-11-04T09:03:34.563Z",
+          "kinds": [
+            "voucher"
+          ],
+          "masked": false,
+          "sections": [
+            {
+              "key": "pos.wallet",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:wallet:read",
+              "note": null,
+              "rows": []
+            },
+            {
+              "key": "pos.promo_voucher",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "admin:booth:read",
+              "note": "Searches voucher codes and shared voucher-type codes. A park promo code that a till takes as a discount is not searched here.",
+              "rows": []
+            }
+          ]
+        },
+        {
+          "what": "made-up code 8 of 10",
+          "typed": "Z3 JVVZ X8VA E",
+          "status": 200,
+          "at": "2026-11-04T09:03:35.995Z",
+          "kinds": [
+            "voucher"
+          ],
+          "masked": false,
+          "sections": [
+            {
+              "key": "pos.wallet",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:wallet:read",
+              "note": null,
+              "rows": []
+            },
+            {
+              "key": "pos.promo_voucher",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "admin:booth:read",
+              "note": "Searches voucher codes and shared voucher-type codes. A park promo code that a till takes as a discount is not searched here.",
+              "rows": []
+            }
+          ]
+        },
+        {
+          "what": "made-up code 9 of 10",
+          "typed": "Z3 F6QJ 2YR9 B",
+          "status": 200,
+          "at": "2026-11-04T09:03:37.471Z",
+          "kinds": [
+            "voucher"
+          ],
+          "masked": false,
+          "sections": [
+            {
+              "key": "pos.wallet",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:wallet:read",
+              "note": null,
+              "rows": []
+            },
+            {
+              "key": "pos.promo_voucher",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "admin:booth:read",
+              "note": "Searches voucher codes and shared voucher-type codes. A park promo code that a till takes as a discount is not searched here.",
+              "rows": []
+            }
+          ]
+        },
+        {
+          "what": "made-up code 10 of 10",
+          "typed": "Z3 ZDHR 3PHB V",
+          "status": 200,
+          "at": "2026-11-04T09:03:38.940Z",
+          "kinds": [
+            "voucher"
+          ],
+          "masked": false,
+          "sections": [
+            {
+              "key": "pos.wallet",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:wallet:read",
+              "note": null,
+              "rows": []
+            },
+            {
+              "key": "pos.promo_voucher",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "admin:booth:read",
+              "note": "Searches voucher codes and shared voucher-type codes. A park promo code that a till takes as a discount is not searched here.",
+              "rows": []
+            }
+          ],
+          "file": "s674-c1-tenth-made-up-code.png"
+        }
+      ],
+      "signedIn": {
+        "name": "Khun Anan (Owner)",
+        "platformAdmin": true
+      },
+      "finishedAt": "2026-11-04T09:03:39.074Z"
+    },
+    "c2": {
+      "startedAt": "2026-11-04T09:06:30.683Z",
+      "steps": [
+        {
+          "at": "2026-11-04T09:06:44.536Z",
+          "method": "GET",
+          "path": "/api/vouchers/lookup",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "saleId": null,
+          "receiptNumber": null,
+          "saleStatus": null
+        },
+        {
+          "at": "2026-11-04T09:06:50.740Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "saleId": "01a1a5cf-8ab7-746e-8d65-32c1c2b91b76",
+          "receiptNumber": null,
+          "saleStatus": "tendering"
+        },
+        {
+          "at": "2026-11-04T09:06:55.007Z",
+          "method": "POST",
+          "path": "/api/sales/01a1a5cf-8ab7-746e-8d65-32c1c2b91b76/finalise",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "saleId": "01a1a5cf-8ab7-746e-8d65-32c1c2b91b76",
+          "receiptNumber": "Z3-000001",
+          "saleStatus": "finalised"
+        }
+      ],
+      "signedIn": {
+        "name": "Som (Reception)",
+        "branch": "Oto Play Park, Central Floresta",
+        "station": "ZZ TEST SCRUM-674 mw1vxv8u till",
+        "at": "2026-11-04T09:06:40.731Z"
+      },
+      "afterRedeem": {
+        "showsType": true,
+        "mentions20": true,
+        "locked": false,
+        "refusal": []
+      },
+      "submitLabel": "Confirm Payment Received",
+      "confirmation": {
+        "voucherUsedLine": [
+          "Voucher •••••••2DVM used · 20 THB off the ticket order"
+        ],
+        "receipt": "Z3-000001"
+      },
+      "finishedAt": "2026-11-04T09:07:00.890Z",
+      "missRead": {
+        "jobId": "job-dblfjf942hec7383tvfg",
+        "status": "succeeded",
+        "rows": [
+          {
+            "event": "s674_miss",
+            "at": "2026-11-04T09:25:03.419Z",
+            "byAdmin": 0,
+            "atTill": 0,
+            "operatorSince": 0
+          }
+        ]
+      }
+    },
+    "c2Tries": [
+      {
+        "startedAt": "2026-11-04T09:05:27.206Z",
+        "steps": [
+          {
+            "at": "2026-11-04T09:05:41.181Z",
+            "method": "GET",
+            "path": "/api/vouchers/lookup",
+            "status": 200,
+            "code": null,
+            "message": null,
+            "saleId": null,
+            "receiptNumber": null,
+            "saleStatus": null
+          }
+        ],
+        "signedIn": {
+          "name": "Som (Reception)",
+          "branch": "Oto Play Park, Central Floresta",
+          "station": "ZZ TEST SCRUM-674 mw1vxv8u till",
+          "at": "2026-11-04T09:05:37.330Z"
+        },
+        "afterRedeem": {
+          "showsType": true,
+          "mentions20": true,
+          "locked": false,
+          "refusal": []
+        },
+        "error": "locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('heading', { name: 'Cash', exact: true }).first()\u001b[22m\n"
+      }
+    ],
+    "c3": {
+      "startedAt": "2026-11-04T09:11:50.320Z",
+      "searches": [
+        {
+          "what": "ZZ TEST voucher B after its redemption, grouped on-screen form (input masked)",
+          "status": 200,
+          "at": "2026-11-04T09:12:06.543Z",
+          "kinds": [
+            "voucher"
+          ],
+          "masked": false,
+          "sections": [
+            {
+              "key": "pos.wallet",
+              "kind": "voucher",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:wallet:read",
+              "note": null,
+              "rows": []
+            },
+            {
+              "key": "pos.promo_voucher",
+              "kind": "voucher",
+              "status": "found",
+              "rowCount": 1,
+              "masked": false,
+              "permission": "admin:booth:read",
+              "note": null,
+              "rows": [
+                {
+                  "status": "redeemed",
+                  "type": "ZZ TEST SCRUM-674 mw1vxv8u 20 baht off",
+                  "value": "฿20 off",
+                  "codeLast4": "2DVM",
+                  "park": "Oto Play Park, Central Floresta",
+                  "redeemedAt": "2026-11-04T09:06:55.187Z",
+                  "redeemedWhere": "Oto Play Park, Central Floresta, ZZ TEST SCRUM-674 mw1vxv8u till",
+                  "receiptNumber": "Z3-000001",
+                  "expiresAt": "2026-12-04T09:00:49.810Z",
+                  "issuedAt": "2026-11-04T09:00:49.810Z",
+                  "issuedFrom": "Counter (station not recorded)",
+                  "record": "voucher",
+                  "id": "01a1a5ca-2114-7007-bc1e-6c07a884dfd6",
+                  "typeKind": "discount",
+                  "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                  "businessDate": "2026-11-04",
+                  "saleId": "01a1a5cf-8ab7-746e-8d65-32c1c2b91b76",
+                  "redeemedSatang": 2000,
+                  "prize": null,
+                  "printCount": 0,
+                  "source": "manual"
+                }
+              ]
+            }
+          ],
+          "file": "s674-b3-voucher-redeemed-where-and-receipt.png"
+        },
+        {
+          "what": "ZZ TEST adult band short code",
+          "typed": "Z3-ENP9EH",
+          "status": 200,
+          "at": "2026-11-04T09:12:08.077Z",
+          "kinds": [
+            "band"
+          ],
+          "masked": false,
+          "sections": [
+            {
+              "key": "pos.sales",
+              "kind": "band",
+              "status": "found",
+              "rowCount": 1,
+              "masked": false,
+              "permission": "pos:sale:read",
+              "note": null,
+              "rows": [
+                {
+                  "id": "01a1a5cf-8ab7-746e-8d65-32c1c2b91b76",
+                  "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                  "stationId": "01a1a5c8-f6a9-7ed3-b7df-bf960a39300d",
+                  "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+                  "memberId": null,
+                  "visitId": null,
+                  "businessDate": "2026-11-04",
+                  "occurredAt": "2026-11-04T09:06:50.628Z",
+                  "status": "finalised",
+                  "salesChannel": "till",
+                  "pricingMode": "weekday",
+                  "pricingModeReason": "Weekday pricing",
+                  "customerTier": "tourist",
+                  "engineVersion": "2026.10.06-1",
+                  "receiptNumber": "Z3-000001",
+                  "receiptSeries": "Z3",
+                  "receiptSeq": 1,
+                  "finalisedAt": "2026-11-04T09:06:55.187Z",
+                  "note": null,
+                  "voidedAt": null,
+                  "voidedByAccountId": null,
+                  "voidedByName": null,
+                  "voidReason": null,
+                  "totals": {
+                    "subtotalSatang": 104000,
+                    "manualDiscountSatang": 0,
+                    "promoDiscountSatang": 2000,
+                    "discountSatang": 2000,
+                    "netSatang": 95327,
+                    "serviceChargeSatang": 0,
+                    "taxInclusiveSatang": 6673,
+                    "taxExclusiveSatang": 0,
+                    "grossSatang": 102000,
+                    "unappliedDiscountSatang": 0,
+                    "refundedSatang": 0
+                  },
+                  "tierClaim": null,
+                  "soldBy": {
+                    "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+                    "name": "Som"
+                  },
+                  "stationName": "ZZ TEST SCRUM-674 mw1vxv8u till",
+                  "member": null,
+                  "lineKinds": [
+                    "kids",
+                    "adults_paid"
+                  ],
+                  "revenueCategories": [
+                    "tickets"
+                  ]
+                }
+              ]
+            },
+            {
+              "key": "pos.wallet",
+              "kind": "band",
+              "status": "found",
+              "rowCount": 1,
+              "masked": false,
+              "permission": "pos:wallet:read",
+              "note": null,
+              "rows": [
+                {
+                  "id": "01a1a5cf-b47a-7130-bd8c-4d5741ea1cb7",
+                  "expiresAt": "2026-11-04T22:00:00.000Z",
+                  "lapsedSatang": 0,
+                  "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                  "memberId": null,
+                  "holderName": "Walk-in guest",
+                  "status": "active",
+                  "balanceSatang": 35000,
+                  "keys": [
+                    {
+                      "kind": "voucher_qr",
+                      "display": "QR-••••••••••••••••362G"
+                    },
+                    {
+                      "kind": "band",
+                      "display": "Z3-ENP9EH"
+                    }
+                  ],
+                  "createdAt": "2026-11-04T09:06:55.187Z",
+                  "ledgerEntries": 1
+                }
+              ]
+            },
+            {
+              "key": "pos.gate_events",
+              "kind": "band",
+              "status": "found",
+              "rowCount": 3,
+              "masked": false,
+              "permission": "pos:checkin:read",
+              "note": null,
+              "rows": [
+                {
+                  "at": "2026-11-04T09:08:54.504Z",
+                  "kind": "exit",
+                  "direction": "exit",
+                  "stationName": "ZZ TEST SCRUM-674 mw1vxv8u gate lane",
+                  "park": "Oto Play Park, Central Floresta",
+                  "bandShortCode": "Z3-ENP9EH",
+                  "bandKind": "adult",
+                  "id": "69fca65a-1d15-4a7a-840e-482a5a5eb11f",
+                  "bandId": "01a1a5cf-b48c-7f51-9006-16dede4609a3",
+                  "clockTrusted": true,
+                  "stationId": "01a1a5c9-b669-7fe5-a38e-d5889420cea8",
+                  "side": "right",
+                  "reason": null,
+                  "alarm": null,
+                  "exitWithoutEntry": false,
+                  "revoked": false,
+                  "offline": false
+                },
+                {
+                  "at": "2026-11-04T09:07:54.504Z",
+                  "kind": "denied",
+                  "direction": "entry",
+                  "stationName": "ZZ TEST SCRUM-674 mw1vxv8u gate lane",
+                  "park": "Oto Play Park, Central Floresta",
+                  "reason": "ANTI_PASSBACK",
+                  "bandShortCode": "Z3-ENP9EH",
+                  "bandKind": "adult",
+                  "id": "9f9f3372-7170-40c5-a761-8a37078a54f3",
+                  "bandId": "01a1a5cf-b48c-7f51-9006-16dede4609a3",
+                  "clockTrusted": true,
+                  "stationId": "01a1a5c9-b669-7fe5-a38e-d5889420cea8",
+                  "side": "left",
+                  "alarm": null,
+                  "exitWithoutEntry": false,
+                  "revoked": false,
+                  "offline": false
+                },
+                {
+                  "at": "2026-11-04T09:07:20.000Z",
+                  "kind": "entry",
+                  "direction": "entry",
+                  "stationName": "ZZ TEST SCRUM-674 mw1vxv8u gate lane",
+                  "park": "Oto Play Park, Central Floresta",
+                  "bandShortCode": "Z3-ENP9EH",
+                  "bandKind": "adult",
+                  "id": "639cfffb-c2fe-4514-ae35-4433adf4d84b",
+                  "bandId": "01a1a5cf-b48c-7f51-9006-16dede4609a3",
+                  "clockTrusted": true,
+                  "stationId": "01a1a5c9-b669-7fe5-a38e-d5889420cea8",
+                  "side": "left",
+                  "reason": null,
+                  "alarm": null,
+                  "exitWithoutEntry": false,
+                  "revoked": false,
+                  "offline": false
+                }
+              ]
+            }
+          ],
+          "file": "s674-a1-band-gate-events-whole-answer.png",
+          "crop": "s674-a1-band-gate-events-found.png"
+        },
+        {
+          "what": "ZZ TEST kid band short code (no passages)",
+          "typed": "Z3-B6CVZM",
+          "status": 200,
+          "at": "2026-11-04T09:12:09.770Z",
+          "kinds": [
+            "band"
+          ],
+          "masked": false,
+          "sections": [
+            {
+              "key": "pos.sales",
+              "kind": "band",
+              "status": "found",
+              "rowCount": 1,
+              "masked": false,
+              "permission": "pos:sale:read",
+              "note": null,
+              "rows": [
+                {
+                  "id": "01a1a5cf-8ab7-746e-8d65-32c1c2b91b76",
+                  "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                  "stationId": "01a1a5c8-f6a9-7ed3-b7df-bf960a39300d",
+                  "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+                  "memberId": null,
+                  "visitId": null,
+                  "businessDate": "2026-11-04",
+                  "occurredAt": "2026-11-04T09:06:50.628Z",
+                  "status": "finalised",
+                  "salesChannel": "till",
+                  "pricingMode": "weekday",
+                  "pricingModeReason": "Weekday pricing",
+                  "customerTier": "tourist",
+                  "engineVersion": "2026.10.06-1",
+                  "receiptNumber": "Z3-000001",
+                  "receiptSeries": "Z3",
+                  "receiptSeq": 1,
+                  "finalisedAt": "2026-11-04T09:06:55.187Z",
+                  "note": null,
+                  "voidedAt": null,
+                  "voidedByAccountId": null,
+                  "voidedByName": null,
+                  "voidReason": null,
+                  "totals": {
+                    "subtotalSatang": 104000,
+                    "manualDiscountSatang": 0,
+                    "promoDiscountSatang": 2000,
+                    "discountSatang": 2000,
+                    "netSatang": 95327,
+                    "serviceChargeSatang": 0,
+                    "taxInclusiveSatang": 6673,
+                    "taxExclusiveSatang": 0,
+                    "grossSatang": 102000,
+                    "unappliedDiscountSatang": 0,
+                    "refundedSatang": 0
+                  },
+                  "tierClaim": null,
+                  "soldBy": {
+                    "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+                    "name": "Som"
+                  },
+                  "stationName": "ZZ TEST SCRUM-674 mw1vxv8u till",
+                  "member": null,
+                  "lineKinds": [
+                    "kids",
+                    "adults_paid"
+                  ],
+                  "revenueCategories": [
+                    "tickets"
+                  ]
+                }
+              ]
+            },
+            {
+              "key": "pos.wallet",
+              "kind": "band",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:wallet:read",
+              "note": null,
+              "rows": []
+            },
+            {
+              "key": "pos.gate_events",
+              "kind": "band",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:checkin:read",
+              "note": null,
+              "rows": []
+            }
+          ],
+          "file": "s674-a2-band-no-passages-whole-answer.png",
+          "crop": "s674-a2-band-no-passages-empty.png"
+        }
+      ],
+      "noSecretInAnswers": true,
+      "finishedAt": "2026-11-04T09:12:09.979Z"
+    },
+    "d": {
+      "startedAt": "2026-11-04T09:17:11.937Z",
+      "typed": "089 674 0001",
+      "runs": [
+        {
+          "who": "staging admin",
+          "signedIn": {
+            "name": "Khun Anan (Owner)",
+            "seat": "Oto Play Park, Central Floresta",
+            "platformAdmin": true
+          },
+          "maskedBanner": false,
+          "status": 200,
+          "at": "2026-11-04T09:17:29.157Z",
+          "kinds": [
+            "phone"
+          ],
+          "masked": false,
+          "sections": [
+            {
+              "key": "crm.member",
+              "kind": "phone",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:member:read",
+              "note": null,
+              "rows": []
+            },
+            {
+              "key": "pos.checkins",
+              "kind": "phone",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:checkin:read",
+              "note": null,
+              "rows": []
+            },
+            {
+              "key": "pos.sales",
+              "kind": "phone",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:sale:read",
+              "note": null,
+              "rows": []
+            },
+            {
+              "key": "pos.bookings",
+              "kind": "phone",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:booking:read",
+              "note": null,
+              "rows": []
+            },
+            {
+              "key": "inbox.conversations",
+              "kind": "phone",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "inbox:conversation:read",
+              "note": null,
+              "rows": []
+            },
+            {
+              "key": "platform.accounts",
+              "kind": "phone",
+              "status": "empty",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "admin:account:read",
+              "note": null,
+              "rows": []
+            },
+            {
+              "key": "oto_app.records",
+              "kind": "phone",
+              "status": "found",
+              "rowCount": 2,
+              "masked": false,
+              "permission": "app:oto_app:access",
+              "note": null,
+              "rows": [
+                {
+                  "personKind": "employee",
+                  "name": "ZZ TEST SCRUM-674 mw1vxv8u Central staff record",
+                  "nickname": "ZZ674C",
+                  "status": "resigned",
+                  "park": "Oto Play Park, Central Floresta ",
+                  "record": "person",
+                  "id": "a5c07a94-ebb4-4bf5-910e-0d80199f0bca",
+                  "branchId": "540f6e5e-e94b-4ce9-a79a-5947e841e1fb"
+                },
+                {
+                  "personKind": "employee",
+                  "name": "ZZ TEST SCRUM-674 mw1vxv8u Robinson staff record",
+                  "nickname": "ZZ674R",
+                  "status": "resigned",
+                  "park": "Oto Play Park, Robinson Chalong",
+                  "record": "person",
+                  "id": "7ee12a78-55bf-48b4-86f8-0bc7707c71e4",
+                  "branchId": "81e87667-8cec-4602-9467-bcf3be70e300"
+                }
+              ]
+            }
+          ],
+          "file": "s674-d1-admin-whole-answer.png",
+          "crop": "s674-d1-admin-oto-app-records.png"
+        },
+        {
+          "who": "ZZ TEST SCRUM-674 mw1vxv8u park manager",
+          "signedIn": {
+            "name": "ZZ TEST SCRUM-674 mw1vxv8u park manager",
+            "seat": "Oto Play Park, Central Floresta",
+            "platformAdmin": true
+          },
+          "maskedBanner": true,
+          "status": 200,
+          "at": "2026-11-04T09:17:46.411Z",
+          "kinds": [
+            "phone"
+          ],
+          "masked": true,
+          "sections": [
+            {
+              "key": "crm.member",
+              "kind": "phone",
+              "status": "denied",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:member:read",
+              "note": "Missing permission pos:member:read",
+              "rows": []
+            },
+            {
+              "key": "pos.checkins",
+              "kind": "phone",
+              "status": "denied",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:checkin:read",
+              "note": "Not readable at Demo Branch 2, Oto Play Park, Central Floresta, Oto Play Park, Robinson Chalong.",
+              "rows": []
+            },
+            {
+              "key": "pos.sales",
+              "kind": "phone",
+              "status": "denied",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:sale:read",
+              "note": "Missing permission pos:sale:read",
+              "rows": []
+            },
+            {
+              "key": "pos.bookings",
+              "kind": "phone",
+              "status": "denied",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:booking:read",
+              "note": "Not readable at Demo Branch 2, Oto Play Park, Central Floresta, Oto Play Park, Robinson Chalong.",
+              "rows": []
+            },
+            {
+              "key": "inbox.conversations",
+              "kind": "phone",
+              "status": "denied",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "inbox:conversation:read",
+              "note": "Missing permission inbox:conversation:read",
+              "rows": []
+            },
+            {
+              "key": "platform.accounts",
+              "kind": "phone",
+              "status": "denied",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "admin:account:read",
+              "note": "Missing permission admin:account:read",
+              "rows": []
+            },
+            {
+              "key": "oto_app.records",
+              "kind": "phone",
+              "status": "found",
+              "rowCount": 1,
+              "masked": true,
+              "permission": "app:oto_app:access",
+              "note": null,
+              "rows": [
+                {
+                  "personKind": "employee",
+                  "name": "[redacted]",
+                  "nickname": "[redacted]",
+                  "status": "resigned",
+                  "park": "Oto Play Park, Central Floresta ",
+                  "record": "person",
+                  "id": "a5c07a94-ebb4-4bf5-910e-0d80199f0bca",
+                  "branchId": "540f6e5e-e94b-4ce9-a79a-5947e841e1fb"
+                }
+              ]
+            }
+          ],
+          "file": "s674-d2-park-manager-masked-whole-answer.png",
+          "crop": "s674-d2-park-manager-masked-oto-app-records.png"
+        },
+        {
+          "who": "ZZ TEST SCRUM-674 mw1vxv8u staff-level reader",
+          "signedIn": {
+            "name": "ZZ TEST SCRUM-674 mw1vxv8u staff-level reader",
+            "seat": "Oto Play Park, Central Floresta",
+            "platformAdmin": true
+          },
+          "maskedBanner": false,
+          "status": 200,
+          "at": "2026-11-04T09:18:03.142Z",
+          "kinds": [
+            "phone"
+          ],
+          "masked": false,
+          "sections": [
+            {
+              "key": "crm.member",
+              "kind": "phone",
+              "status": "denied",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:member:read",
+              "note": "Missing permission pos:member:read",
+              "rows": []
+            },
+            {
+              "key": "pos.checkins",
+              "kind": "phone",
+              "status": "denied",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:checkin:read",
+              "note": "Not readable at Demo Branch 2, Oto Play Park, Central Floresta, Oto Play Park, Robinson Chalong.",
+              "rows": []
+            },
+            {
+              "key": "pos.sales",
+              "kind": "phone",
+              "status": "denied",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:sale:read",
+              "note": "Missing permission pos:sale:read",
+              "rows": []
+            },
+            {
+              "key": "pos.bookings",
+              "kind": "phone",
+              "status": "denied",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "pos:booking:read",
+              "note": "Not readable at Demo Branch 2, Oto Play Park, Central Floresta, Oto Play Park, Robinson Chalong.",
+              "rows": []
+            },
+            {
+              "key": "inbox.conversations",
+              "kind": "phone",
+              "status": "denied",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "inbox:conversation:read",
+              "note": "Missing permission inbox:conversation:read",
+              "rows": []
+            },
+            {
+              "key": "platform.accounts",
+              "kind": "phone",
+              "status": "denied",
+              "rowCount": 0,
+              "masked": false,
+              "permission": "admin:account:read",
+              "note": "Missing permission admin:account:read",
+              "rows": []
+            },
+            {
+              "key": "oto_app.records",
+              "kind": "phone",
+              "status": "denied",
+              "rowCount": 0,
+              "masked": false,
+              "permission": null,
+              "note": "Insufficient permissions",
+              "rows": []
+            }
+          ],
+          "file": "s674-d3-staff-level-refused-whole-answer.png",
+          "crop": "s674-d3-staff-level-refused-oto-app-records.png"
+        }
+      ],
+      "finishedAt": "2026-11-04T09:18:03.869Z"
+    },
+    "e": {
+      "startedAt": "2026-11-04T09:18:50.544Z",
+      "adminLookupRows": {
+        "total": 15,
+        "expectedFromThisProof": 15,
+        "kinds": [
+          "phone",
+          "band",
+          "band",
+          "voucher",
+          "voucher",
+          "voucher",
+          "voucher",
+          "voucher",
+          "voucher",
+          "voucher",
+          "voucher",
+          "voucher",
+          "voucher",
+          "voucher",
+          "voucher"
+        ],
+        "categories": [
+          null
+        ]
+      },
+      "readerRows": {
+        "total": 19,
+        "rows": [
+          {
+            "action": "auth.sign_out",
+            "category": null,
+            "entityType": "session",
+            "requestId": "8a6221e3-f9eb-4719-bcb1-dd25a6bb400c",
+            "targetApp": null,
+            "after": null,
+            "at": "2026-11-04T09:17:47.288Z"
+          },
+          {
+            "action": "console.support.lookup",
+            "category": null,
+            "entityType": "data_access",
+            "requestId": "8c3d30f4-1e90-4207-bbc8-97db926cb5e2",
+            "targetApp": "console",
+            "after": [
+              "kinds",
+              "masked",
+              "category",
+              "detected",
+              "sections"
+            ],
+            "at": "2026-11-04T09:17:45.707Z"
+          },
+          {
+            "action": "auth.handoff_exchange",
+            "category": null,
+            "entityType": "session",
+            "requestId": "8c3d30f4-1e90-4207-bbc8-97db926cb5e2.h",
+            "targetApp": null,
+            "after": [
+              "jti",
+              "audience"
+            ],
+            "at": "2026-11-04T09:17:45.406Z"
+          },
+          {
+            "action": "auth.handoff_claim",
+            "category": null,
+            "entityType": "handoff",
+            "requestId": "8c3d30f4-1e90-4207-bbc8-97db926cb5e2.h",
+            "targetApp": null,
+            "after": [
+              "audience",
+              "sessionId"
+            ],
+            "at": "2026-11-04T09:17:45.385Z"
+          },
+          {
+            "action": "auth.handoff_issue",
+            "category": null,
+            "entityType": "session",
+            "requestId": "8c3d30f4-1e90-4207-bbc8-97db926cb5e2",
+            "targetApp": null,
+            "after": [
+              "jti",
+              "askId",
+              "audience"
+            ],
+            "at": "2026-11-04T09:17:45.225Z"
+          },
+          {
+            "action": "auth.permission_denied",
+            "category": "denial",
+            "entityType": "request",
+            "requestId": "8c3d30f4-1e90-4207-bbc8-97db926cb5e2.t10",
+            "targetApp": null,
+            "after": [
+              "url",
+              "code",
+              "method",
+              "message"
+            ],
+            "at": "2026-11-04T09:17:45.223Z"
+          },
+          {
+            "action": "auth.permission_denied",
+            "category": "denial",
+            "entityType": "request",
+            "requestId": "8c3d30f4-1e90-4207-bbc8-97db926cb5e2.t9",
+            "targetApp": null,
+            "after": [
+              "url",
+              "code",
+              "method",
+              "message"
+            ],
+            "at": "2026-11-04T09:17:45.213Z"
+          },
+          {
+            "action": "auth.permission_denied",
+            "category": "denial",
+            "entityType": "request",
+            "requestId": "8c3d30f4-1e90-4207-bbc8-97db926cb5e2.t6",
+            "targetApp": null,
+            "after": [
+              "url",
+              "code",
+              "method",
+              "message"
+            ],
+            "at": "2026-11-04T09:17:45.202Z"
+          },
+          {
+            "action": "auth.permission_denied",
+            "category": "denial",
+            "entityType": "request",
+            "requestId": "8c3d30f4-1e90-4207-bbc8-97db926cb5e2.t8",
+            "targetApp": null,
+            "after": [
+              "url",
+              "code",
+              "method",
+              "message"
+            ],
+            "at": "2026-11-04T09:17:45.202Z"
+          },
+          {
+            "action": "auth.permission_denied",
+            "category": "denial",
+            "entityType": "request",
+            "requestId": "8c3d30f4-1e90-4207-bbc8-97db926cb5e2.t7",
+            "targetApp": null,
+            "after": [
+              "url",
+              "code",
+              "method",
+              "message"
+            ],
+            "at": "2026-11-04T09:17:45.201Z"
+          },
+          {
+            "action": "auth.permission_denied",
+            "category": "denial",
+            "entityType": "request",
+            "requestId": "8c3d30f4-1e90-4207-bbc8-97db926cb5e2.t5",
+            "targetApp": null,
+            "after": [
+              "url",
+              "code",
+              "method",
+              "message"
+            ],
+            "at": "2026-11-04T09:17:45.186Z"
+          },
+          {
+            "action": "auth.permission_denied",
+            "category": "denial",
+            "entityType": "request",
+            "requestId": "8c3d30f4-1e90-4207-bbc8-97db926cb5e2.t2",
+            "targetApp": null,
+            "after": [
+              "url",
+              "code",
+              "method",
+              "message"
+            ],
+            "at": "2026-11-04T09:17:45.125Z"
+          },
+          {
+            "action": "auth.permission_denied",
+            "category": "denial",
+            "entityType": "request",
+            "requestId": "8c3d30f4-1e90-4207-bbc8-97db926cb5e2.t4",
+            "targetApp": null,
+            "after": [
+              "url",
+              "code",
+              "method",
+              "message"
+            ],
+            "at": "2026-11-04T09:17:45.124Z"
+          },
+          {
+            "action": "auth.permission_denied",
+            "category": "denial",
+            "entityType": "request",
+            "requestId": "8c3d30f4-1e90-4207-bbc8-97db926cb5e2.t3",
+            "targetApp": null,
+            "after": [
+              "url",
+              "code",
+              "method",
+              "message"
+            ],
+            "at": "2026-11-04T09:17:45.122Z"
+          },
+          {
+            "action": "auth.permission_denied",
+            "category": "denial",
+            "entityType": "request",
+            "requestId": "8c3d30f4-1e90-4207-bbc8-97db926cb5e2.t1",
+            "targetApp": null,
+            "after": [
+              "url",
+              "code",
+              "method",
+              "message"
+            ],
+            "at": "2026-11-04T09:17:45.107Z"
+          },
+          {
+            "action": "auth.sign_in",
+            "category": null,
+            "entityType": "session",
+            "requestId": "717040a5-9f41-4313-9182-c9aedc51b326",
+            "targetApp": null,
+            "after": null,
+            "at": "2026-11-04T09:17:34.896Z"
+          },
+          {
+            "action": "auth.sign_out",
+            "category": null,
+            "entityType": "session",
+            "requestId": "d3ee80f9-2057-491d-896b-f3a9e4497549",
+            "targetApp": null,
+            "after": null,
+            "at": "2026-11-04T09:16:54.810Z"
+          },
+          {
+            "action": "auth.password_change",
+            "category": null,
+            "entityType": "account",
+            "requestId": "1d1aa764-e6c6-473e-a0a4-05b4dd1d9c02",
+            "targetApp": null,
+            "after": null,
+            "at": "2026-11-04T09:16:54.004Z"
+          },
+          {
+            "action": "auth.sign_in",
+            "category": null,
+            "entityType": "session",
+            "requestId": "c757f573-1d32-41cd-9824-7b42da07a038",
+            "targetApp": null,
+            "after": null,
+            "at": "2026-11-04T09:16:53.570Z"
+          }
+        ]
+      },
+      "refusedRows": {
+        "total": 19,
+        "rows": [
+          {
+            "action": "auth.sign_out",
+            "category": null,
+            "entityType": "session",
+            "requestId": "3cbdea30-b6eb-42a9-9a67-ee8c540afca9",
+            "targetApp": null,
+            "after": null,
+            "at": "2026-11-04T09:18:04.000Z"
+          },
+          {
+            "action": "console.support.lookup",
+            "category": null,
+            "entityType": "data_access",
+            "requestId": "8b3ea24e-5341-4c2e-9a62-231d7ab8d312",
+            "targetApp": "console",
+            "after": [
+              "kinds",
+              "masked",
+              "category",
+              "detected",
+              "sections"
+            ],
+            "at": "2026-11-04T09:18:02.461Z"
+          },
+          {
+            "action": "auth.handoff_exchange",
+            "category": null,
+            "entityType": "session",
+            "requestId": "8b3ea24e-5341-4c2e-9a62-231d7ab8d312.h",
+            "targetApp": null,
+            "after": [
+              "jti",
+              "audience"
+            ],
+            "at": "2026-11-04T09:18:02.150Z"
+          },
+          {
+            "action": "auth.handoff_claim",
+            "category": null,
+            "entityType": "handoff",
+            "requestId": "8b3ea24e-5341-4c2e-9a62-231d7ab8d312.h",
+            "targetApp": null,
+            "after": [
+              "audience",
+              "sessionId"
+            ],
+            "at": "2026-11-04T09:18:02.129Z"
+          },
+          {
+            "action": "auth.handoff_issue",
+            "category": null,
+            "entityType": "session",
+            "requestId": "8b3ea24e-5341-4c2e-9a62-231d7ab8d312",
+            "targetApp": null,
+            "after": [
+              "jti",
+              "askId",
+              "audience"
+            ],
+            "at": "2026-11-04T09:18:01.984Z"
+          },
+          {
+            "action": "auth.permission_denied",
+            "category": "denial",
+            "entityType": "request",
+            "requestId": "8b3ea24e-5341-4c2e-9a62-231d7ab8d312.t10",
+            "targetApp": null,
+            "after": [
+              "url",
+              "code",
+              "method",
+              "message"
+            ],
+            "at": "2026-11-04T09:18:01.981Z"
+          },
+          {
+            "action": "auth.permission_denied",
+            "category": "denial",
+            "entityType": "request",
+            "requestId": "8b3ea24e-5341-4c2e-9a62-231d7ab8d312.t9",
+            "targetApp": null,
+            "after": [
+              "url",
+              "code",
+              "method",
+              "message"
+            ],
+            "at": "2026-11-04T09:18:01.968Z"
+          },
+          {
+            "action": "auth.permission_denied",
+            "category": "denial",
+            "entityType": "request",
+            "requestId": "8b3ea24e-5341-4c2e-9a62-231d7ab8d312.t7",
+            "targetApp": null,
+            "after": [
+              "url",
+              "code",
+              "method",
+              "message"
+            ],
+            "at": "2026-11-04T09:18:01.957Z"
+          },
+          {
+            "action": "auth.permission_denied",
+            "category": "denial",
+            "entityType": "request",
+            "requestId": "8b3ea24e-5341-4c2e-9a62-231d7ab8d312.t8",
+            "targetApp": null,
+            "after": [
+              "url",
+              "code",
+              "method",
+              "message"
+            ],
+            "at": "2026-11-04T09:18:01.957Z"
+          },
+          {
+            "action": "auth.permission_denied",
+            "category": "denial",
+            "entityType": "request",
+            "requestId": "8b3ea24e-5341-4c2e-9a62-231d7ab8d312.t6",
+            "targetApp": null,
+            "after": [
+              "url",
+              "code",
+              "method",
+              "message"
+            ],
+            "at": "2026-11-04T09:18:01.956Z"
+          },
+          {
+            "action": "auth.permission_denied",
+            "category": "denial",
+            "entityType": "request",
+            "requestId": "8b3ea24e-5341-4c2e-9a62-231d7ab8d312.t5",
+            "targetApp": null,
+            "after": [
+              "url",
+              "code",
+              "method",
+              "message"
+            ],
+            "at": "2026-11-04T09:18:01.943Z"
+          },
+          {
+            "action": "auth.permission_denied",
+            "category": "denial",
+            "entityType": "request",
+            "requestId": "8b3ea24e-5341-4c2e-9a62-231d7ab8d312.t4",
+            "targetApp": null,
+            "after": [
+              "url",
+              "code",
+              "method",
+              "message"
+            ],
+            "at": "2026-11-04T09:18:01.932Z"
+          },
+          {
+            "action": "auth.permission_denied",
+            "category": "denial",
+            "entityType": "request",
+            "requestId": "8b3ea24e-5341-4c2e-9a62-231d7ab8d312.t2",
+            "targetApp": null,
+            "after": [
+              "url",
+              "code",
+              "method",
+              "message"
+            ],
+            "at": "2026-11-04T09:18:01.931Z"
+          },
+          {
+            "action": "auth.permission_denied",
+            "category": "denial",
+            "entityType": "request",
+            "requestId": "8b3ea24e-5341-4c2e-9a62-231d7ab8d312.t3",
+            "targetApp": null,
+            "after": [
+              "url",
+              "code",
+              "method",
+              "message"
+            ],
+            "at": "2026-11-04T09:18:01.930Z"
+          },
+          {
+            "action": "auth.permission_denied",
+            "category": "denial",
+            "entityType": "request",
+            "requestId": "8b3ea24e-5341-4c2e-9a62-231d7ab8d312.t1",
+            "targetApp": null,
+            "after": [
+              "url",
+              "code",
+              "method",
+              "message"
+            ],
+            "at": "2026-11-04T09:18:01.918Z"
+          },
+          {
+            "action": "auth.sign_in",
+            "category": null,
+            "entityType": "session",
+            "requestId": "10941bb0-3650-451b-9b7b-6b2d5b98107e",
+            "targetApp": null,
+            "after": null,
+            "at": "2026-11-04T09:17:52.221Z"
+          },
+          {
+            "action": "auth.sign_out",
+            "category": null,
+            "entityType": "session",
+            "requestId": "b51ad1cf-bec2-43a0-b428-cc6ce3f41376",
+            "targetApp": null,
+            "after": null,
+            "at": "2026-11-04T09:16:56.474Z"
+          },
+          {
+            "action": "auth.password_change",
+            "category": null,
+            "entityType": "account",
+            "requestId": "c42d6088-495b-41ad-90e0-c136422ef1b9",
+            "targetApp": null,
+            "after": null,
+            "at": "2026-11-04T09:16:56.038Z"
+          },
+          {
+            "action": "auth.sign_in",
+            "category": null,
+            "entityType": "session",
+            "requestId": "28f63393-97ff-4d2a-81af-0aaa945d1ea1",
+            "targetApp": null,
+            "after": null,
+            "at": "2026-11-04T09:16:55.605Z"
+          }
+        ]
+      },
+      "readerLookupAfter": {
+        "kinds": [
+          "phone"
+        ],
+        "masked": true,
+        "category": "data_access",
+        "detected": true,
+        "sections": [
+          {
+            "app": "crm",
+            "key": "crm.member",
+            "kind": "phone",
+            "rows": 0,
+            "status": "denied"
+          },
+          {
+            "app": "pos",
+            "key": "pos.checkins",
+            "kind": "phone",
+            "rows": 0,
+            "status": "denied"
+          },
+          {
+            "app": "pos",
+            "key": "pos.sales",
+            "kind": "phone",
+            "rows": 0,
+            "status": "denied"
+          },
+          {
+            "app": "pos",
+            "key": "pos.bookings",
+            "kind": "phone",
+            "rows": 0,
+            "status": "denied"
+          },
+          {
+            "app": "inbox",
+            "key": "inbox.conversations",
+            "kind": "phone",
+            "rows": 0,
+            "status": "denied"
+          },
+          {
+            "app": "platform",
+            "key": "platform.accounts",
+            "kind": "phone",
+            "rows": 0,
+            "status": "denied"
+          },
+          {
+            "app": "oto_app",
+            "key": "oto_app.records",
+            "kind": "phone",
+            "rows": 1,
+            "status": "found"
+          }
+        ]
+      },
+      "handoffSameRequest": [
+        {
+          "requestId": "8c3d30f4-1e90-4207-bbc8-97db926cb5e2",
+          "sameAsLookup": true,
+          "category": null
+        }
+      ],
+      "noSearchedValueInAudit": true,
+      "error": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByLabel('Actor account id')\u001b[22m\n",
+      "uiError": "locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('console.support.lookup').first()\u001b[22m\n",
+      "dataAccessText": [
+        "You hold admin:audit:read_sensitive, so these rows carry the personal data in full — and each read of them is recorded as audit.read_sensitive against your account.",
+        "Widen the window, or clear a filter — the log keeps everything, so an empty result is a narrow question.",
+        "Open a row for the full before-and-after"
+      ],
+      "authText": [
+        "auth.sign_out",
+        "auth.handoff_exchange",
+        "auth.handoff_claim",
+        "handoff",
+        "auth.handoff_issue",
+        "auth.permission_denied",
+        "auth.permission_denied",
+        "auth.permission_denied",
+        "auth.permission_denied",
+        "auth.permission_denied",
+        "auth.permission_denied",
+        "auth.permission_denied",
+        "auth.permission_denied",
+        "auth.permission_denied",
+        "auth.permission_denied",
+        "auth.sign_in",
+        "auth.sign_out",
+        "auth.password_change",
+        "auth.sign_in"
+      ],
+      "drawerText": "console.support.lookup\nZZ TEST SCRUM-674 mw1vxv8u park manager · 4 Nov 2026, 16:17:45 GMT+7\nACTOR\nZZ TEST SCRUM-674 mw1vxv8u park manager\nBRANCH\nNot branch-scoped\nENTITY\ndata_access\n8c3d30f4-1e90-4207-bbc8-97db926cb5e2\nWHEN\n4 Nov 2026, 16:17:45 GMT+7\nTARGET APP\nconsole\nREQUEST ID\n8c3d30f4-1e90-4207-bbc8-97db926cb5e2\nYou are reading these rows unmasked. That read is recorded as audit.read_sensitive against your account.\nChanges\nRaw record\nRelated\n\nCATEGORY\n\nnow data_access\n\nDETECTED\n\nnow true\n\nKINDS\n\nnow\n[\"phone\"]\n\nMASKED\n\nnow true\n\nSECTIONS\n\nnow\n[{\"app\":\"crm\",\"key\":\"crm.member\",\"kind\":\"phone\",\"rows\":0,\"status\":\"denied\"},{\"app\":\"pos\",\"key\":\"pos.checkins\",\"kind\":\"phone\",\"rows\":0,\"status\":\"denied\"},{\"app\":\"pos\",\"key\":\"pos.sales\",\"kind\":\"phone\",\"rows\":0,\"status\":\"denied\"},{\"app\":\"pos\",\"key\":\"pos.bookings\",\"kind\":\"phone\",\"rows\":0,\"status\":\"denied\"},{\"app\":\"inbox\",\"key\":\"inbox.conversations\",\"kind\":\"phone\",\"rows\":0,\"status\":\"denied\"},{\"app\":\"platform\",\"key\":\"platform.accounts\",\"kind\":\"phone\",\"rows\":0,\"status\":\"denied\"},{\"app\":\"oto_app\",\"key\":\"oto_app.records\",\"kind\":\"phone\",\"rows\":1,\"status\":\"found\"}]",
+      "drawerTabs": [],
+      "drawerButtons": [
+        "",
+        "Changes",
+        "Raw record",
+        "Related"
+      ]
+    }
+  },
+  "sale": {
+    "id": "01a1a5cf-8ab7-746e-8d65-32c1c2b91b76",
+    "receiptNumber": "Z3-000001",
+    "status": "finalised",
+    "stationId": "01a1a5c8-f6a9-7ed3-b7df-bf960a39300d",
+    "bands": [
+      {
+        "id": "01a1a5cf-b489-70cf-b1d7-c82144c227ac",
+        "kind": "kid",
+        "shortCode": "Z3-B6CVZM",
+        "status": "active",
+        "gateAccess": null
+      },
+      {
+        "id": "01a1a5cf-b48c-7f51-9006-16dede4609a3",
+        "kind": "adult",
+        "shortCode": "Z3-ENP9EH",
+        "status": "active",
+        "gateAccess": null
+      }
+    ]
+  },
+  "gateInsert": {
+    "jobId": "job-dblfcd6417fc738dc520",
+    "source": "4fa1762860ec468eefc658fbf6b7356c21f9fd45",
+    "status": "succeeded",
+    "startedAt": "2026-11-04T09:09:08.412Z",
+    "rows": [
+      {
+        "event": "s674_gate_insert",
+        "at": "2026-11-04T09:09:54.519Z",
+        "ids": [
+          "639cfffb-c2fe-4514-ae35-4433adf4d84b",
+          "9f9f3372-7170-40c5-a761-8a37078a54f3",
+          "69fca65a-1d15-4a7a-840e-482a5a5eb11f"
+        ],
+        "back": [
+          {
+            "id": "639cfffb-c2fe-4514-ae35-4433adf4d84b",
+            "kind": "entry",
+            "direction": "entry",
+            "reason": null,
+            "created_at": "2026-11-04T09:06:54.504Z"
+          },
+          {
+            "id": "01a1a5cf-b48e-7438-b93d-348096af1d0f",
+            "kind": "minted",
+            "direction": null,
+            "reason": null,
+            "created_at": "2026-11-04T09:06:55.188Z"
+          },
+          {
+            "id": "9f9f3372-7170-40c5-a761-8a37078a54f3",
+            "kind": "denied",
+            "direction": "entry",
+            "reason": "ANTI_PASSBACK",
+            "created_at": "2026-11-04T09:07:54.504Z"
+          },
+          {
+            "id": "69fca65a-1d15-4a7a-840e-482a5a5eb11f",
+            "kind": "exit",
+            "direction": "exit",
+            "reason": null,
+            "created_at": "2026-11-04T09:08:54.504Z"
+          }
+        ]
+      }
+    ]
+  },
+  "gateFix": {
+    "jobId": "job-dblfd23bc2fs73e4n9a0",
+    "status": "succeeded",
+    "rows": [
+      {
+        "event": "s674_gate_fix",
+        "updated": 1
+      }
+    ]
+  },
+  "people": {
+    "searchedPhone": "+66896740001",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "actorId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "tenantId": "681b18d1-4c75-415d-9271-5fe3afc30993",
+    "appRecords": [
+      {
+        "id": "a5c07a94-ebb4-4bf5-910e-0d80199f0bca",
+        "name": "ZZ TEST SCRUM-674 mw1vxv8u Central staff record",
+        "nickname": "ZZ674C",
+        "email": "zz-s674-mw1vxv8u-central@example.com",
+        "otoappBranchId": "540f6e5e-e94b-4ce9-a79a-5947e841e1fb",
+        "park": "Oto Play Park, Central Floresta"
+      },
+      {
+        "id": "7ee12a78-55bf-48b4-86f8-0bc7707c71e4",
+        "name": "ZZ TEST SCRUM-674 mw1vxv8u Robinson staff record",
+        "nickname": "ZZ674R",
+        "email": "zz-s674-mw1vxv8u-robinson@example.com",
+        "otoappBranchId": "81e87667-8cec-4602-9467-bcf3be70e300",
+        "park": "Oto Play Park, Robinson Chalong"
+      }
+    ],
+    "accounts": [
+      {
+        "key": "reader",
+        "accountId": "ffa5151a-4f40-4144-a07d-5e4eedd9ed5d",
+        "employeeId": "a9fb70bd-bb73-4639-a4a8-f13a3ee466a4",
+        "phone": "+66896740011",
+        "name": "ZZ TEST SCRUM-674 mw1vxv8u park manager",
+        "appRole": "manager"
+      },
+      {
+        "key": "refused",
+        "accountId": "b414e4b5-81ad-47a0-a7ad-9fd61031b710",
+        "employeeId": "868658cb-1660-41d5-b320-eae03d5527ef",
+        "phone": "+66896740012",
+        "name": "ZZ TEST SCRUM-674 mw1vxv8u staff-level reader",
+        "appRole": "staff"
+      }
+    ],
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "result": {
+      "jobId": "job-dblff5tg1s2s73ej6hr0",
+      "status": "succeeded",
+      "rows": [
+        {
+          "event": "s674_people",
+          "at": "2026-11-04T09:15:59.010Z",
+          "appRecords": [
+            "a5c07a94-ebb4-4bf5-910e-0d80199f0bca",
+            "7ee12a78-55bf-48b4-86f8-0bc7707c71e4"
+          ],
+          "accounts": [
+            "ffa5151a-4f40-4144-a07d-5e4eedd9ed5d",
+            "b414e4b5-81ad-47a0-a7ad-9fd61031b710"
+          ],
+          "sms": false,
+          "passed": true
+        }
+      ]
+    },
+    "grants": {
+      "reader": {
+        "role": {
+          "assignmentId": "01a1a5d8-c00a-7758-ab24-b12bdc1a052e",
+          "roleName": "support",
+          "scope": "operator"
+        },
+        "otoApp": {
+          "identityId": "01a1a5d8-c314-7d6b-a048-328b5ed5599f",
+          "externalUserId": "01a1a5d8-c315-71bb-8ae7-37de63dc74c8",
+          "role": "manager",
+          "branchIds": [
+            "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+          ],
+          "raw": [
+            "id",
+            "app",
+            "accountId",
+            "externalUserId",
+            "accountCreated",
+            "appUserCreated",
+            "appBranch"
+          ]
+        },
+        "tempPasswordAt": "2026-11-04T09:16:49.099Z",
+        "assignments": [
+          {
+            "roleName": "app_access_oto_app",
+            "scopeType": "branch",
+            "scopeId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+          },
+          {
+            "roleName": "support",
+            "scopeType": "operator",
+            "scopeId": null
+          }
+        ],
+        "holds": {
+          "console:support:lookup": [
+            "operator:-"
+          ],
+          "app:console:access": [
+            "operator:-"
+          ],
+          "app:oto_app:access": [
+            "branch:01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+          ],
+          "admin:audit:read_sensitive": []
+        },
+        "passwordChangedAt": "2026-11-04T09:16:53.886Z",
+        "mustChangeAtFirst": true
+      },
+      "refused": {
+        "role": {
+          "assignmentId": "01a1a5d8-c894-74d4-8005-2a4b20239b09",
+          "roleName": "support",
+          "scope": "operator"
+        },
+        "otoApp": {
+          "identityId": "01a1a5d8-ca4c-75f2-aab1-e0c76c58de47",
+          "externalUserId": "01a1a5d8-ca4f-7416-b811-dd8cecc965e8",
+          "role": "staff",
+          "branchIds": [
+            "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+          ],
+          "raw": [
+            "id",
+            "app",
+            "accountId",
+            "externalUserId",
+            "accountCreated",
+            "appUserCreated",
+            "appBranch"
+          ]
+        },
+        "tempPasswordAt": "2026-11-04T09:16:50.968Z",
+        "assignments": [
+          {
+            "roleName": "app_access_oto_app",
+            "scopeType": "branch",
+            "scopeId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+          },
+          {
+            "roleName": "support",
+            "scopeType": "operator",
+            "scopeId": null
+          }
+        ],
+        "holds": {
+          "console:support:lookup": [
+            "operator:-"
+          ],
+          "app:console:access": [
+            "operator:-"
+          ],
+          "app:oto_app:access": [
+            "branch:01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+          ],
+          "admin:audit:read_sensitive": []
+        },
+        "passwordChangedAt": "2026-11-04T09:16:55.918Z",
+        "mustChangeAtFirst": true
+      }
+    }
+  },
+  "cleanup": {
+    "startedAt": "2026-11-04T09:26:33.274Z",
+    "steps": [
+      {
+        "what": "switch off account",
+        "status": 200,
+        "error": null,
+        "key": "reader"
+      },
+      {
+        "what": "unlink from the OTO App",
+        "status": 200,
+        "error": null,
+        "key": "reader"
+      },
+      {
+        "what": "remove support role",
+        "status": 200,
+        "error": null,
+        "key": "reader"
+      },
+      {
+        "what": "switch off account",
+        "status": 200,
+        "error": null,
+        "key": "refused"
+      },
+      {
+        "what": "unlink from the OTO App",
+        "status": 200,
+        "error": null,
+        "key": "refused"
+      },
+      {
+        "what": "remove support role",
+        "status": 200,
+        "error": null,
+        "key": "refused"
+      },
+      {
+        "what": "archive station",
+        "status": 200,
+        "error": null,
+        "id": "01a1a5c9-b669-7fe5-a38e-d5889420cea8",
+        "name": "ZZ TEST SCRUM-674 mw1vxv8u gate lane"
+      },
+      {
+        "what": "archive station",
+        "status": 200,
+        "error": null,
+        "id": "01a1a5c8-f6a9-7ed3-b7df-bf960a39300d",
+        "name": "ZZ TEST SCRUM-674 mw1vxv8u till"
+      },
+      {
+        "what": "archive gate box",
+        "status": 200,
+        "error": null,
+        "id": "01a1a5c9-b4a3-7a06-9181-daacc65aefc5",
+        "name": "ZZ TEST SCRUM-674 mw1vxv8u gate box"
+      },
+      {
+        "what": "archive voucher type",
+        "status": 200,
+        "error": null,
+        "id": "01a1a5c9-b828-7b46-9e65-7ac990a0131b",
+        "unredeemedBefore": null
+      }
+    ],
+    "reader": {
+      "assignmentsAfter": 0,
+      "effectiveAfter": 0,
+      "statusAfter": "inactive",
+      "identitiesAfter": 0
+    },
+    "refused": {
+      "assignmentsAfter": 0,
+      "effectiveAfter": 0,
+      "statusAfter": "inactive",
+      "identitiesAfter": 0
+    },
+    "voucherTypeAfter": {
+      "archivedAt": "2026-11-04T09:27:56.009Z",
+      "active": false
+    },
+    "dbSpec": {
+      "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+      "actorId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "gateIds": [
+        "639cfffb-c2fe-4514-ae35-4433adf4d84b",
+        "9f9f3372-7170-40c5-a761-8a37078a54f3",
+        "69fca65a-1d15-4a7a-840e-482a5a5eb11f"
+      ],
+      "bandId": "01a1a5cf-b48c-7f51-9006-16dede4609a3",
+      "voucherA": "01a1a5ca-20b3-7a2f-9d9f-10f631e08a10",
+      "definitionId": "01a1a5c9-b828-7b46-9e65-7ac990a0131b",
+      "employeeIds": [
+        "a9fb70bd-bb73-4639-a4a8-f13a3ee466a4",
+        "868658cb-1660-41d5-b320-eae03d5527ef"
+      ],
+      "accountIds": [
+        "ffa5151a-4f40-4144-a07d-5e4eedd9ed5d",
+        "b414e4b5-81ad-47a0-a7ad-9fd61031b710"
+      ],
+      "appEmployeeIds": [
+        "a5c07a94-ebb4-4bf5-910e-0d80199f0bca",
+        "7ee12a78-55bf-48b4-86f8-0bc7707c71e4"
+      ],
+      "appUserIds": [
+        "01a1a5d8-c315-71bb-8ae7-37de63dc74c8",
+        "01a1a5d8-ca4f-7416-b811-dd8cecc965e8"
+      ]
+    },
+    "db": {
+      "jobId": "job-dblflegae00c73c4i2c0",
+      "status": "succeeded",
+      "rows": [
+        {
+          "event": "s674_cleanup",
+          "at": "2026-11-04T09:29:18.225Z",
+          "gatePassagesDeleted": 3,
+          "voucherVoided": 1,
+          "employeesArchived": 2,
+          "accounts": [
+            {
+              "id": "ffa5151a-4f40-4144-a07d-5e4eedd9ed5d",
+              "status": "inactive"
+            },
+            {
+              "id": "b414e4b5-81ad-47a0-a7ad-9fd61031b710",
+              "status": "inactive"
+            }
+          ],
+          "appEmployeeRefs": {
+            "columns": 76,
+            "n": 0,
+            "hits": []
+          },
+          "appEmployeesDeleted": 2,
+          "appUserRefs": {
+            "columns": 165,
+            "n": 2,
+            "hits": [
+              "otoapp.user_branch_access.user_id:2"
+            ]
+          },
+          "appUsersBefore": [
+            {
+              "id": "01a1a5d8-c315-71bb-8ae7-37de63dc74c8",
+              "active": false,
+              "stamped": false
+            },
+            {
+              "id": "01a1a5d8-ca4f-7416-b811-dd8cecc965e8",
+              "active": false,
+              "stamped": false
+            }
+          ]
+        }
+      ]
+    },
+    "db2": {
+      "jobId": "job-dblfm461egvs73f60lg0",
+      "status": "succeeded",
+      "rows": [
+        {
+          "event": "s674_cleanup2",
+          "at": "2026-11-04T09:30:48.208Z",
+          "otherRefs": 0,
+          "fkColumns": 165,
+          "accessDeleted": 2,
+          "usersDeleted": 2
+        }
+      ]
+    },
+    "readBack": {
+      "jobId": "job-dblfmq61egvs73f62em0",
+      "status": "succeeded",
+      "rows": [
+        {
+          "event": "s674_cleanup_read",
+          "at": "2026-11-04T09:32:10.826Z",
+          "syntheticPassages": 0,
+          "gateFactsOnBands": 0,
+          "vouchers": [
+            {
+              "id": "01a1a5ca-2114-7007-bc1e-6c07a884dfd6",
+              "status": "redeemed"
+            },
+            {
+              "id": "01a1a5ca-20b3-7a2f-9d9f-10f631e08a10",
+              "status": "void"
+            }
+          ],
+          "voucherType": [
+            {
+              "active": false,
+              "archived": true
+            }
+          ],
+          "stations": [
+            {
+              "kind": "till",
+              "archived": true
+            },
+            {
+              "kind": "gate",
+              "archived": true
+            }
+          ],
+          "gateBox": [
+            {
+              "status": "unclaimed",
+              "archived": true
+            }
+          ],
+          "accounts": [
+            {
+              "status": "inactive"
+            },
+            {
+              "status": "inactive"
+            }
+          ],
+          "roleAssignments": 0,
+          "appIdentities": 0,
+          "liveSessions": 4,
+          "employees": [
+            {
+              "archived": true
+            },
+            {
+              "archived": true
+            }
+          ],
+          "appEmployees": 0,
+          "appUsers": 0,
+          "appBranchAccess": 0,
+          "sale": [
+            {
+              "status": "finalised",
+              "receipt_number": "Z3-000001"
+            }
+          ]
+        }
+      ]
+    },
+    "finishedAt": "2026-11-04T09:32:23.415Z",
+    "sessions": [
+      {
+        "event": "s674_sess",
+        "rows": [
+          {
+            "revoked": true,
+            "revoked_reason": "sign_out",
+            "unexpired": true
+          },
+          {
+            "revoked": true,
+            "revoked_reason": "sign_out",
+            "unexpired": true
+          },
+          {
+            "revoked": true,
+            "revoked_reason": "sign_out",
+            "unexpired": true
+          },
+          {
+            "revoked": true,
+            "revoked_reason": "sign_out",
+            "unexpired": true
+          }
+        ],
+        "live": 0
+      }
+    ]
+  }
+}

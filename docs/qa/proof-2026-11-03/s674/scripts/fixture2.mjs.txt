@@ -1,0 +1,26 @@
+// The gate lane needs a box. A ZZ TEST gate box is registered and never claimed: no agent ever runs it, and a box
+// nobody has registered against never raises (ops.ts expectedAlive). Its one-time claim code is discarded unread.
+import { launch, consoleSession, api, ok, receipt, save } from './common.mjs';
+const r = receipt(); const f = r.fixtures; delete r.error;
+const browser = await launch();
+try {
+  const { page } = await consoleSession(browser);
+  if (!f.gateBoxId) {
+    const made = await api(page, 'POST', `/branches/${f.branchId}/boxes`, { name: r.name + ' gate box', slot: 'zz-test-s674-' + r.stamp, role: 'gate' });
+    if (made.status !== 200) throw new Error('box ' + made.status + ' ' + JSON.stringify(made.body?.error ?? null));
+    f.gateBoxId = made.body.box.id; f.gateBoxName = made.body.box.name; f.gateBoxStatus = made.body.box.status; save(r);
+  }
+  if (!f.gateStationId) {
+    const gate = ok(await api(page, 'POST', `/branches/${f.branchId}/stations`, { name: r.name + ' gate lane', kind: 'gate', boxId: f.gateBoxId, accessScope: 'all_staff', devices: [] }), 'gate');
+    f.gateStationId = gate.station.id; f.gateStationName = gate.station.name; save(r);
+  }
+  if (!f.voucherDefinitionId) {
+    const def = await api(page, 'POST', '/voucher-definitions', { code: 'zz-s674-' + r.stamp, nameEn: r.name + ' 20 baht off', kind: 'discount', valueType: 'amount', valueSatang: 2000, expiryDays: 30, singleUse: true, active: true, titleEn: 'ZZ TEST voucher', instructionEn: 'ZZ TEST proof only' });
+    if (def.status !== 200 && def.status !== 201) throw new Error('definition ' + def.status + ' ' + JSON.stringify(def.body).slice(0, 400));
+    const d = def.body.definition ?? def.body;
+    f.voucherDefinitionId = d.id; f.voucherDefinitionName = d.nameEn; save(r);
+  }
+  r.createdAt = new Date().toISOString(); save(r);
+  await api(page, 'POST', '/auth/sign-out', {});
+  console.log(JSON.stringify(r.fixtures, null, 2));
+} catch (e) { r.error = String(e?.message ?? e).slice(0, 500); save(r); console.log('ERROR', r.error); } finally { await browser.close(); }

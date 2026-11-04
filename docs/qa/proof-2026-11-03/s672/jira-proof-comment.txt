@@ -1,0 +1,12 @@
+*Proof on staging, 4 November 2026, 15:57 to 15:58 Bangkok, live commit 4fa1762860ec468eefc658fbf6b7356c21f9fd45 (API and Console live on it).* Only the first stage of the plan is proved. This ticket stays at Testing.
+
+*What the Releases page shows today*
+* Watch, Releases, "Recorded releases" reads "No releases are recorded", with the page's own line that this does not mean nothing was deployed. Each release card now has places for Service, Source and Finished at; they will fill in once releases are recorded.
+* Watch, Health, "Scheduled jobs" has no job:release.feed: the release feed is switched off, as intended.
+* Platform, Environment lists the three settings the feed needs (RELEASE_FEED_RENDER_API_KEY, RELEASE_FEED_SERVICES, RELEASE_FEED_GITHUB_TOKEN) as "Not configured". Names only; no values are shown.
+
+*Why the rest waits*
+The feed reads finished deployments from Render. To do that it needs a Render key set on the staging API, and that key can change far more than releases. That is a decision for the owner, so the three settings were deliberately not set. Until then these stages are not proved: the job running every five minutes and showing as succeeded on Health; the landing's own API deployment appearing once in Releases with its full commit, service, Render's deployment id, CI result and finish time; and a second pass adding nothing new.
+
+*How to retest today*
+Open the staging Console as an administrator: Watch, Releases (empty history); Watch, Health (no job:release.feed); Platform, Environment (the three RELEASE_FEED names, Not configured). Nothing was created on staging for this stage, so there is nothing to clean up.

@@ -1,0 +1,9 @@
+// The synthetic entry was stamped 0.7 s before the band was printed; move it to 09:07:20Z, after the sale, before the refusal.
+import { job } from './job.mjs';
+import { receipt, save, LIVE } from './common.mjs';
+const r = receipt();
+const id = r.gateInsert.rows[0].ids[0];
+const program = `(async()=>{const assert=require('node:assert/strict'),{Client}=require('pg');const c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();try{await c.query('BEGIN');const u=await c.query("update pos.band_event set created_at='2026-11-04T09:07:20Z' where id=$1 and kind='entry' and detail->>'zzTest'='SCRUM-674 synthetic gate passage'",[${JSON.stringify(id)}]);assert.equal(u.rowCount,1);await c.query('COMMIT');console.log(JSON.stringify({event:'s674_gate_fix',updated:u.rowCount}));}catch(e){await c.query('ROLLBACK').catch(()=>{});console.log(JSON.stringify({event:'s674_gate_fix_error',message:String(e.message).slice(0,200)}));process.exitCode=1;}finally{await c.end();}})();`;
+const res = await job(program, 's674_gate_fix', LIVE);
+r.gateFix = { jobId: res.jobId, status: res.status, rows: res.rows }; save(r);
+console.log(JSON.stringify(r.gateFix));

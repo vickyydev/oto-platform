@@ -1,0 +1,27 @@
+// (b) part two and (a), as the staging admin in the Console: the redeemed voucher B, then the adult band that went
+// through the ZZ TEST gate lane, then the kid band from the same sale, which has no passages.
+import { launch, consoleSession, api, ok, receipt, save, secrets, OUT } from './common.mjs';
+import { openSupport, search, grouped } from './search.mjs';
+const r = receipt(); const s = secrets();
+const w = (r.walk.c3 = { startedAt: new Date().toISOString(), searches: [] });
+const browser = await launch();
+const sectionShot = async (page, key, file) => { const el = page.locator(`[data-section="${key}"]`).first(); await el.scrollIntoViewIfNeeded(); await el.screenshot({ path: `${OUT}/${file}` }); return file; };
+try {
+  const { page } = await consoleSession(browser, { width: 1440, height: 1000 });
+  await openSupport(page);
+  const b = await search(page, grouped(s.voucherB), { file: 's674-b3-voucher-redeemed-where-and-receipt.png', mask: true });
+  w.searches.push({ what: 'ZZ TEST voucher B after its redemption, grouped on-screen form (input masked)', ...b }); save(r);
+  const adult = r.sale.bands.find((x) => x.kind === 'adult'); const kid = r.sale.bands.find((x) => x.kind === 'kid');
+  const a1 = await search(page, adult.shortCode, { file: 's674-a1-band-gate-events-whole-answer.png' });
+  a1.crop = await sectionShot(page, 'pos.gate_events', 's674-a1-band-gate-events-found.png');
+  w.searches.push({ what: 'ZZ TEST adult band short code', typed: adult.shortCode, ...a1 }); save(r);
+  const a2 = await search(page, kid.shortCode, { file: 's674-a2-band-no-passages-whole-answer.png' });
+  a2.crop = await sectionShot(page, 'pos.gate_events', 's674-a2-band-no-passages-empty.png');
+  w.searches.push({ what: 'ZZ TEST kid band short code (no passages)', typed: kid.shortCode, ...a2 }); save(r);
+  const blob = JSON.stringify(w.searches);
+  w.noSecretInAnswers = !blob.includes(s.voucherB) && !blob.includes(s.voucherA) && !/"code":/.test(blob);
+  w.finishedAt = new Date().toISOString(); save(r);
+  await api(page, 'POST', '/auth/sign-out', {});
+  for (const x of w.searches) console.log(x.what, JSON.stringify(x.sections.map((q) => ({ key: q.key, status: q.status, n: q.rowCount, note: q.note, rows: q.key === 'pos.gate_events' || q.key === 'pos.promo_voucher' ? q.rows : undefined }))));
+  console.log('noSecretInAnswers', w.noSecretInAnswers);
+} catch (e) { w.error = String(e?.message ?? e).slice(0, 500); save(r); console.log('ERROR', w.error); } finally { await browser.close(); }

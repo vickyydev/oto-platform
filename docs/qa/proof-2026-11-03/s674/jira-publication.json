@@ -1,0 +1,96 @@
+{
+  "SCRUM-674": {
+    "attachStatus": 200,
+    "attached": [
+      {
+        "id": "12510",
+        "name": "s674-a1-band-gate-events-found.png"
+      },
+      {
+        "id": "12511",
+        "name": "s674-a2-band-no-passages-whole-answer.png"
+      },
+      {
+        "id": "12512",
+        "name": "s674-b1-voucher-issued-found.png"
+      },
+      {
+        "id": "12513",
+        "name": "s674-b2-made-up-code-empty-with-note.png"
+      },
+      {
+        "id": "12514",
+        "name": "s674-b3-voucher-redeemed-where-and-receipt.png"
+      },
+      {
+        "id": "12515",
+        "name": "s674-c1-tenth-made-up-code.png"
+      },
+      {
+        "id": "12516",
+        "name": "s674-c2-till-takes-the-voucher-first-time.png"
+      },
+      {
+        "id": "12517",
+        "name": "s674-c4-till-sale-paid-voucher-used.png"
+      },
+      {
+        "id": "12518",
+        "name": "s674-d1-admin-oto-app-records.png"
+      },
+      {
+        "id": "12519",
+        "name": "s674-d2-park-manager-masked-whole-answer.png"
+      },
+      {
+        "id": "12520",
+        "name": "s674-d3-staff-level-refused-oto-app-records.png"
+      },
+      {
+        "id": "12521",
+        "name": "s674-e1-activity-park-manager-lookup-and-handoff-rows.png"
+      },
+      {
+        "id": "12522",
+        "name": "s674-e3-lookup-row-opened-kinds-no-value.png"
+      }
+    ],
+    "commentStatus": 201,
+    "commentId": null,
+    "status": "Testing",
+    "imagesOnTicket": 13,
+    "comment": {
+      "id": "13449",
+      "created": "2026-11-04T16:35:23.122+0700",
+      "renderedImages": 13,
+      "startsWith": "*Proof on staging, 4 November 2026, 15:57 to 16:32 Bangkok, live commit 4fa17628"
+    }
+  },
+  "SCRUM-672": {
+    "attachStatus": 200,
+    "attached": [
+      {
+        "id": "12523",
+        "name": "s672-f1-releases-history-card.png"
+      },
+      {
+        "id": "12524",
+        "name": "s672-f2-health-scheduled-jobs-card.png"
+      },
+      {
+        "id": "12525",
+        "name": "s672-f3-environment-feed-settings-not-set.png"
+      }
+    ],
+    "commentStatus": 201,
+    "commentId": null,
+    "status": "Testing",
+    "imagesOnTicket": 3,
+    "comment": {
+      "id": "13450",
+      "created": "2026-11-04T16:35:26.750+0700",
+      "renderedImages": 3,
+      "startsWith": "*Proof on staging, 4 November 2026, 15:57 to 15:58 Bangkok, live commit 4fa17628"
+    }
+  }
+}

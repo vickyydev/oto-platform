@@ -1,0 +1,43 @@
+// Cleanup, part one, through the Console's own routes and only for this proof's records (each checked by id and name):
+// both ZZ TEST accounts switched off (which also switches off their OTO App users and ends their sessions), unlinked
+// from the OTO App, their support role removed; the ZZ TEST gate lane, gate box and till archived; the ZZ TEST voucher
+// type archived. The paid ZZ TEST sale, its receipt, bands and credit, and every audit row stay for the record.
+import { launch, consoleSession, api, receipt, save } from './common.mjs';
+const r = receipt(); const f = r.fixtures; const p = r.people;
+const C = (r.cleanup ??= { startedAt: new Date().toISOString(), steps: [] });
+const step = (what, res, extra = {}) => { C.steps.push({ what, status: res?.status ?? null, error: res && res.status >= 300 ? JSON.stringify(res.body).slice(0, 300) : null, ...extra }); save(r); };
+const browser = await launch();
+try {
+  const { page } = await consoleSession(browser);
+  for (const a of p.accounts) {
+    const acc = await api(page, 'GET', `/accounts?q=${encodeURIComponent(a.phone)}`);
+    const mine = (acc.body?.accounts ?? []).find((x) => x.id === a.accountId && x.phone === a.phone);
+    if (!mine) throw new Error('Refusing: account ' + a.accountId + ' is not this proof\'s');
+    step('switch off account', await api(page, 'PATCH', `/accounts/${a.accountId}`, { status: 'inactive' }), { key: a.key });
+    step('unlink from the OTO App', await api(page, 'DELETE', `/admin/apps/oto_app/users/${a.accountId}`), { key: a.key });
+    const g = p.grants[a.key];
+    step('remove support role', await api(page, 'DELETE', `/accounts/${a.accountId}/role-assignments/${g.role.assignmentId}`), { key: a.key });
+    const perms = await api(page, 'GET', `/accounts/${a.accountId}/permissions`);
+    C[a.key] = { assignmentsAfter: perms.body?.assignments?.length ?? null, effectiveAfter: perms.body?.effective?.length ?? null };
+    const after = await api(page, 'GET', `/accounts?q=${encodeURIComponent(a.phone)}`);
+    C[a.key].statusAfter = (after.body?.accounts ?? []).find((x) => x.id === a.accountId)?.status ?? null;
+    const ident = await api(page, 'GET', `/admin/apps/users/${a.accountId}`);
+    C[a.key].identitiesAfter = ident.body?.identities?.length ?? ident.status;
+    save(r);
+  }
+  for (const [id, name] of [[f.gateStationId, f.gateStationName], [f.stationId, f.stationName]]) {
+    const own = (await api(page, 'GET', `/stations/${id}`)).body?.station;
+    if (!own || own.name !== name || !name.startsWith('ZZ TEST SCRUM-674')) throw new Error('Refusing to archive station ' + id);
+    step('archive station', await api(page, 'DELETE', `/stations/${id}`), { id, name });
+  }
+  const boxes = (await api(page, 'GET', `/branches/${f.branchId}/boxes`)).body?.boxes ?? [];
+  const gb = boxes.find((b) => b.id === f.gateBoxId);
+  if (!gb || !gb.name.startsWith('ZZ TEST SCRUM-674') || gb.status !== 'unclaimed') throw new Error('Refusing to archive box ' + f.gateBoxId);
+  step('archive gate box', await api(page, 'DELETE', `/boxes/${f.gateBoxId}`), { id: f.gateBoxId, name: gb.name });
+  const def = (await api(page, 'GET', `/voucher-definitions/${f.voucherDefinitionId}`)).body;
+  const dn = def?.definition?.nameEn ?? def?.nameEn;
+  if (dn !== f.voucherDefinitionName) throw new Error('Refusing to archive voucher type ' + f.voucherDefinitionId);
+  step('archive voucher type', await api(page, 'DELETE', `/voucher-definitions/${f.voucherDefinitionId}`), { id: f.voucherDefinitionId });
+  await api(page, 'POST', '/auth/sign-out', {});
+  console.log(JSON.stringify(C, null, 1));
+} catch (e) { C.error = String(e?.message ?? e).slice(0, 500); save(r); console.log('ERROR', C.error, JSON.stringify(C.steps)); } finally { await browser.close(); }

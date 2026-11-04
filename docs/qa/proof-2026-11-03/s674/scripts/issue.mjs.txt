@@ -1,0 +1,18 @@
+// Two ZZ TEST promotion vouchers issued at the ZZ TEST till, as its "Issue a voucher" does. Codes go to the scratchpad only.
+import { launch, api, ok, receipt, save, secrets, saveSecrets } from './common.mjs';
+import { atTill } from './till.mjs';
+const r = receipt(); const f = r.fixtures; const s = secrets();
+if (s.voucherA && s.voucherB) { console.log('vouchers exist'); process.exit(0); }
+const browser = await launch();
+try {
+  const { page, who } = await atTill(browser);
+  r.issue = { signedIn: who, vouchers: [] };
+  for (const key of ['voucherA', 'voucherB']) {
+    const res = ok(await api(page, 'POST', '/vouchers/issue', { definitionId: f.voucherDefinitionId }), 'issue ' + key);
+    s[key] = res.voucher.code; saveSecrets(s);
+    r.issue.vouchers.push({ key, id: res.voucher.id, last4: res.voucher.code.replace(/\s/g, '').slice(-4), length: res.voucher.code.replace(/\s/g, '').length, print: res.print?.status ?? null, issuedAt: new Date().toISOString() });
+    save(r);
+  }
+  await api(page, 'POST', '/auth/sign-out', {});
+  console.log(JSON.stringify(r.issue, null, 1));
+} catch (e) { r.issueError = String(e?.message ?? e).slice(0, 500); save(r); console.log('ERROR', r.issueError); } finally { await browser.close(); }

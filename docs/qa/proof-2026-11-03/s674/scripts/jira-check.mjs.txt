@@ -1,0 +1,11 @@
+import { jget } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/jira.mjs';
+import { readFileSync, writeFileSync } from 'node:fs';
+const pub = JSON.parse(readFileSync('jira-publication.json', 'utf8'));
+for (const key of ['SCRUM-674', 'SCRUM-672']) {
+  const j = await jget(`/rest/api/2/issue/${key}/comment?orderBy=-created&maxResults=3&expand=renderedBody`);
+  const c = (j.comments ?? []).sort((a, b) => b.created.localeCompare(a.created))[0];
+  const imgs = (c?.renderedBody?.match(/<img [^>]*>/g) ?? []).length;
+  pub[key].comment = { id: c?.id, created: c?.created, renderedImages: imgs, startsWith: c?.body?.slice(0, 80) };
+  console.log(key, JSON.stringify(pub[key].comment));
+}
+writeFileSync('jira-publication.json', JSON.stringify(pub, null, 2));
