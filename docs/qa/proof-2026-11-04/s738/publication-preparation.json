@@ -1,0 +1,20 @@
+{
+  "at": "2026-11-04T00:02:54.352Z",
+  "scripts": [
+    {
+      "name": "s738-staging-live.mjs",
+      "sha256": "9c3c9bd702f6db45054c77f9f225746023b9bf900cf797c71b8adb88091f0d69"
+    },
+    {
+      "name": "pack-s738-staging.mjs",
+      "sha256": "d8b6689985ece8f3124ac9619f666e7af4c4cfefdb19d49558cfc9c8c1937a8d"
+    },
+    {
+      "name": "publish-s738-proof.mjs",
+      "sha256": "13bfe824f731d1677271bde261cc3c0cc28e0ebee2856f741649797f0ca8a168"
+    }
+  ],
+  "nodeSyntaxChecksPassed": true,
+  "stagingExecution": false,
+  "jiraPublication": false
+}
