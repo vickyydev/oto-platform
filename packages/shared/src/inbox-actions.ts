@@ -151,6 +151,8 @@ export const INBOX_BOOK_DATE_REFUSALS = [
   'EVENTS_CALENDAR_REFUSED',
   /** 503: the Events module did not answer (or this deployment has none); nothing was booked here. */
   'EVENTS_CALENDAR_UNAVAILABLE',
+  /** 409 (Create BEO, `…/open-beo`): no date is booked yet, so there is no event to open. */
+  'NO_EVENT_YET',
 ] as const;
 export type InboxBookDateRefusal = (typeof INBOX_BOOK_DATE_REFUSALS)[number];
 
@@ -194,3 +196,22 @@ export const InboxBookDateResultSchema = z.object({
 });
 export type InboxBookDateResult = z.infer<typeof InboxBookDateResultSchema>;
 
+
+/**
+ * `POST /inbox/conversations/{id}/open-beo` — Create BEO on a conversation
+ * whose date is booked: a one-use suite hand-off into the OTO App, landing on
+ * the event's BEO form (`launchUrl` already carries `beoPath` as its target).
+ * The mint is recorded as `auth.handoff_issue` naming the conversation and the
+ * event (`purpose: inbox.create_beo`). The answer IS a credential: it is never
+ * kept for a replay, and a second press mints a second one-use hand-off.
+ * Refused 409 `NO_EVENT_YET` before Book Date has made the event.
+ */
+export const InboxOpenBeoResultSchema = z.object({
+  conversationId: Uuid,
+  eventId: Uuid,
+  beoPath: z.string(),
+  /** The OTO App's hand-off address, with the BEO form as its target. One use, about a minute. */
+  launchUrl: z.string(),
+  expiresAt: z.string().datetime(),
+});
+export type InboxOpenBeoResult = z.infer<typeof InboxOpenBeoResultSchema>;

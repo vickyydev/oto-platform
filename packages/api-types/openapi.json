@@ -85909,6 +85909,9 @@
                         "statusName": {
                           "type": "string"
                         },
+                        "archived": {
+                          "type": "boolean"
+                        },
                         "kids": {
                           "type": "integer",
                           "nullable": true
@@ -85938,6 +85941,7 @@
                         "branchName",
                         "status",
                         "statusName",
+                        "archived",
                         "kids",
                         "adults",
                         "bookedAt",
@@ -88624,6 +88628,9 @@
                         "statusName": {
                           "type": "string"
                         },
+                        "archived": {
+                          "type": "boolean"
+                        },
                         "kids": {
                           "type": "integer",
                           "nullable": true
@@ -88653,6 +88660,7 @@
                         "branchName",
                         "status",
                         "statusName",
+                        "archived",
                         "kids",
                         "adults",
                         "bookedAt",
@@ -88669,6 +88677,98 @@
                     "conversationId",
                     "event",
                     "created"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/conversations/{id}/open-beo": {
+      "post": {
+        "description": "Create BEO (SCRUM-775): open the event Book Date made, at its BEO form in the OTO App's Events module, as the signed-in person. Answers a one-use suite hand-off (`launchUrl`, about a minute, its target the BEO form at `beoPath`), minted as `POST /auth/handoff` mints one and recorded as `auth.handoff_issue` naming the conversation and the event (`purpose: inbox.create_beo`). A second call mints a second hand-off; nothing is written to the conversation. Refusals: 409 NOT_A_BIRTHDAY; 409 NO_EVENT_YET before Book Date; 403 without app:oto_app:access; 503 HANDOFF_NOT_CONFIGURED where the suite hand-off is not set up. Whoever can see the conversation may open its BEO; the OTO App decides what they may do there. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversationId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "eventId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "beoPath": {
+                      "type": "string"
+                    },
+                    "launchUrl": {
+                      "type": "string"
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "conversationId",
+                    "eventId",
+                    "beoPath",
+                    "launchUrl",
+                    "expiresAt"
                   ],
                   "additionalProperties": false
                 }

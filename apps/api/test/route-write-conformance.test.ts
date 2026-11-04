@@ -172,6 +172,24 @@ describe('Book Date write registration (SCRUM-775)', () => {
   });
 });
 
+describe('Create BEO registration (SCRUM-775)', () => {
+  it('mints through the audited hand-off at the conversation, answers in its schema, and keeps no replay', () => {
+    const key = 'POST /inbox/conversations/:id/open-beo';
+    const route = routes.find((r) => `${r.method} ${r.path}` === key);
+    expect(route).toBeDefined();
+    expect(route!.optionsText).toContain('200: InboxOpenBeoResultSchema');
+    expect(reachesText(route!.handlerText, (text) => /\bopenConversationBeo\s*\(/.test(text), functions)).toBe(true);
+    expect(reachesText(route!.handlerText, (text) => /\bissueHandoffAudited\s*\(/.test(text), functions, 2)).toBe(true);
+    expect(reachesText(route!.handlerText, (text) => /\bloadVisibleConversation\s*\(/.test(text), functions, 2)).toBe(true);
+    const config = configs.get(key);
+    expect(config?.dynamicPermission).toBe(true);
+    expect(config?.secretResponse).toBe(true);
+    expect(config?.replaysByOwnId).not.toBe(true);
+    expect(config?.credential).toBeUndefined();
+    expect(config?.public).not.toBe(true);
+  });
+});
+
 describe('Platform read registration (SCRUM-639)', () => {
   it('adds exactly three reads without a mutation exemption or a control runner', () => {
     const paths = ['/platform/alerts', '/platform/jobs', '/platform/environment'];
@@ -794,6 +812,14 @@ const OUTSIDE_THE_REPLAY_STORE = [
    * would have named bands revoked since, for a day, before the route ran.
    */
   'POST /events/:id/attendees/:attendeeId/checkin [replaysByOwnId]',
+  /**
+   * SCRUM-775 — the inbox's Create BEO: a one-use suite hand-off into the OTO
+   * App landing on a birthday's BEO form, minted as `POST /auth/handoff` mints
+   * one (and recorded naming the conversation and the event). The answer IS
+   * a credential; a second press mints a second hand-off and writes nothing
+   * to the conversation.
+   */
+  'POST /inbox/conversations/:id/open-beo [secretResponse]',
   /**
    * S2-20 K2 — a kiosk pairs as a display does, from its own browser secret:
    * the code is a single-use credential that never enters the store, and

@@ -8,16 +8,19 @@ import {
   InboxBranchBodySchema,
   InboxBranchResultSchema,
   InboxMoveBodySchema,
+  InboxOpenBeoResultSchema,
   InboxPrimaryBodySchema,
   InboxSupportBodySchema,
   InboxSupportParamsSchema,
   type Permission,
 } from '@oto/shared';
 import type { App } from '../app';
-import { PermissionDeniedError } from '../plugins/session';
+import { errors } from '../lib/errors';
+import { PermissionDeniedError, SESSION_COOKIE } from '../plugins/session';
 import { opCtx, withTx } from '../services/tx';
 import { REPLAY_HEADER, wasReplay } from '../services/client-id';
-import { bookConversationDate } from '../services/inbox/book-date';
+import { handoffConfig } from '../services/handoff';
+import { bookConversationDate, openConversationBeo } from '../services/inbox/book-date';
 import { holdsAnywhere, viewerScopeOf } from '../services/inbox/read-visibility';
 import {
   addSupport,
@@ -242,6 +245,61 @@ export async function inboxActionRoutes(app: App): Promise<void> {
         { conversationId: req.params.id, ...req.body },
       );
       if (wasReplay(answer)) reply.header(REPLAY_HEADER, 'true');
+      return answer;
+    },
+  );
+
+  app.post(
+    '/conversations/:id/open-beo',
+    {
+      // `secretResponse`: the answer carries a one-use hand-off token, so no
+      // key is taken and nothing is kept for a replay (as `POST /auth/handoff`).
+      config: { dynamicPermission: true, secretResponse: true },
+      schema: {
+        description:
+          "Create BEO (SCRUM-775): open the event Book Date made, at its BEO form in the OTO App's Events module, as " +
+          'the signed-in person. Answers a one-use suite hand-off (`launchUrl`, about a minute, its target the BEO ' +
+          'form at `beoPath`), minted as `POST /auth/handoff` mints one and recorded as `auth.handoff_issue` naming ' +
+          'the conversation and the event (`purpose: inbox.create_beo`). A second call mints a second hand-off; ' +
+          'nothing is written to the conversation. Refusals: 409 NOT_A_BIRTHDAY; 409 NO_EVENT_YET before Book Date; ' +
+          '403 without app:oto_app:access; 503 HANDOFF_NOT_CONFIGURED where the suite hand-off is not set up. ' +
+          'Whoever can see the conversation may open its BEO; the OTO App decides what they may do there. ' +
+          REFUSALS,
+        params: ConversationParams,
+        response: { 200: InboxOpenBeoResultSchema, 409: InboxActionRefusalSchema },
+      },
+    },
+    async (req, reply) => {
+      const ctx = await actionCtx(req, 'inbox:conversation:read');
+      const auth = req.requireAuth();
+      // Present by definition: `requireAuth` resolved the session from it.
+      const sessionToken = req.cookies[SESSION_COOKIE];
+      if (!sessionToken) throw errors.unauthorized();
+      const answer = await openConversationBeo(
+        {
+          db: app.db,
+          handoff: () =>
+            handoffConfig({
+              signingKey: app.env.HANDOFF_SIGNING_KEY,
+              appOrigins: app.env.HANDOFF_APP_ORIGINS,
+              ttlSeconds: app.env.HANDOFF_TOKEN_TTL_S,
+            }),
+        },
+        ctx,
+        opCtx(req),
+        {
+          conversationId: req.params.id,
+          session: {
+            sessionId: auth.sessionId,
+            accountId: auth.accountId,
+            operatorId: auth.operatorId,
+            branchId: auth.branchId,
+            sessionToken,
+          },
+          requestId: req.id,
+        },
+      );
+      reply.header('cache-control', 'no-store');
       return answer;
     },
   );

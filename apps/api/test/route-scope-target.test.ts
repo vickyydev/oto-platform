@@ -345,6 +345,20 @@ describe('operator-wide settings are changed at operator scope (SCRUM-606)', () 
     expect(establishesOwnership(route!.handlerText)).toBe(true);
     expect(reachesText(route!.handlerText, (text) => /\bloadVisibleConversation\s*\(/.test(text), functions, 2)).toBe(true);
     expect(reachesText(route!.handlerText, (text) => /\bmayBook\s*\(/.test(text), functions, 2)).toBe(true);
+    // The park the event goes to is checked too, not only the conversation.
+    expect(reachesText(route!.handlerText, (text) => /\bmayBookAt\s*\(/.test(text), functions, 2)).toBe(true);
+  });
+
+  it("Create BEO loads the conversation inside the caller's operator, then checks the OTO App at the session (SCRUM-775)", () => {
+    const key = 'POST /inbox/conversations/:id/open-beo';
+    const route = routes.find((r) => `${r.method} ${r.path}` === key);
+    expect(route).toBeDefined();
+    expect(configs.get(key)?.dynamicPermission).toBe(true);
+    expect(configs.get(key)?.target).toBeUndefined();
+    expect(route!.handlerText).toContain("actionCtx(req, 'inbox:conversation:read')");
+    expect(establishesOwnership(route!.handlerText)).toBe(true);
+    expect(reachesText(route!.handlerText, (text) => /\bloadVisibleConversation\s*\(/.test(text), functions, 2)).toBe(true);
+    expect(reachesText(route!.handlerText, (text) => /\bappAccessPermission\s*\(\s*'oto_app'\s*\)/.test(text), functions, 2)).toBe(true);
   });
 
   it('every operator-wide write declares the operator target, and nothing else', () => {
