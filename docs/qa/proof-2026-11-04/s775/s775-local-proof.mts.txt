@@ -2,7 +2,8 @@
 // the OTO App (its own server, dev build) on one disposable database. A ZZ TEST
 // birthday chat, Book Date, the tentative event in the app's calendar with the
 // link both ways, Create BEO opening the pre-filled BEO form through the suite
-// hand-off, and a double press making one event. Screenshots and readbacks go
+// hand-off (`POST /inbox/conversations/{id}/open-beo`, recorded naming the
+// conversation and the event), and a double press making one event. Screenshots and readbacks go
 // to docs/qa/proof-2026-11-04/s775/. Nothing here reaches staging.
 import assert from 'node:assert/strict';
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
@@ -267,6 +268,23 @@ try {
   await tab.waitForTimeout(1500);
   log.beoTabUrl = tab.url();
   await shot(tab, 's775-04-create-beo-opens-prefilled-beo-form');
+  // Create BEO's hand-off on the record, naming the conversation and the event (never the token).
+  log.createBeoAuditRows = await pq(
+    `select action, actor_account_id, entity_type, after from core.audit_log
+      where action = 'auth.handoff_issue' and after->>'purpose' = 'inbox.create_beo' order by created_at`,
+  );
+  assert.equal((log.createBeoAuditRows as unknown[]).length, 1, 'one Create BEO hand-off on the record');
+  // Through the api alone: the same open, as an agent would ask for it.
+  const opened = await ctx.app.inject({ method: 'POST', url: `/inbox/conversations/${conv.id}/open-beo`, headers: { cookie } });
+  const openedBody = opened.json() as { eventId?: string; beoPath?: string; launchUrl?: string };
+  log.apiOpenBeo = {
+    status: opened.statusCode,
+    eventId: openedBody.eventId,
+    beoPath: openedBody.beoPath,
+    launchUrlTarget: openedBody.launchUrl ? decodeURIComponent(/&to=([^&]+)/.exec(new URL(openedBody.launchUrl).hash)?.[1] ?? '') : null,
+  };
+  assert.equal(opened.statusCode, 200, opened.body);
+  assert.equal(openedBody.eventId, ev.id);
 
   // The event in the app's calendar and board, tentative.
   await tab.setViewportSize({ width: 1920, height: 900 });
