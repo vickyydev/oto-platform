@@ -1,0 +1,95 @@
+{
+  "mode": "local",
+  "source": "29c08ca2b64e9b7d1ca93d4eecff968b06d8012d",
+  "startedAt": "2026-11-04T10:51:53.480Z",
+  "cases": [
+    {
+      "name": "Hold sale on till A, resumed on till B, paid there",
+      "saleId": "01a1a630-22bb-72ad-a3e1-042e33fc3f40",
+      "receipt": "ZHB-000001",
+      "bandsWhileHeld": 0,
+      "bandsAfterPayment": 2,
+      "passed": true
+    },
+    {
+      "name": "Save as partly paid, resumed on till B for the balance only",
+      "saleId": "01a1a630-78b7-7173-8635-8669f548aac2",
+      "grossSatang": 124000,
+      "paidFirstSatang": 20000,
+      "bandsAfterBalance": 2,
+      "passed": true
+    },
+    {
+      "name": "End of Day shows the counts and refuses to close over a part-paid sale",
+      "counts": {
+        "held": 1,
+        "partPaid": 1
+      },
+      "apiStatus": 409,
+      "apiCode": "PART_PAID_SALES",
+      "apiMessage": "End of Day cannot close: 1 sale is partly paid — ZZ TEST Khun Gail (in Held sales), ฿350 paid, balance ฿890. Take the balance or refund what was paid, from Held sales on a till, then close the day.",
+      "passed": true
+    },
+    {
+      "name": "midnight: held sale voided as not collected, part-paid flagged and kept",
+      "clock": "2026-11-04T17:00:00.000Z",
+      "summary": {
+        "checked": 2,
+        "voided": 1,
+        "flagged": 1,
+        "skipped": 0,
+        "alertsOpened": 1,
+        "alertsCleared": 0
+      },
+      "eve": {
+        "status": "voided",
+        "voidReason": "not collected"
+      },
+      "gail": {
+        "status": "tendering"
+      },
+      "passed": true
+    }
+  ],
+  "screens": [
+    "s774-01-payment-step-hold-buttons.png",
+    "s774-02-hold-dialog.png",
+    "s774-03-held-list-till-a.png",
+    "s774-04-held-list-till-b.png",
+    "s774-05-resumed-on-till-b.png",
+    "s774-06-paid-on-till-b-bands-issued.png",
+    "s774-07-part-payment-taken.png",
+    "s774-08-part-paid-in-held-sales.png",
+    "s774-09-resumed-asks-balance-only.png",
+    "s774-10-balance-paid-bands-issued.png",
+    "s774-11-end-of-day-counts-and-refusal.png",
+    "s774-12-close-day-shut-with-its-reason.png",
+    "s774-13-after-midnight-held-voided-part-paid-flagged.png"
+  ],
+  "outcome": "passed",
+  "phase": "midnight",
+  "fixture": {
+    "boxId": "01a1a62f-f76c-7c17-bcb3-a82cd8cb6e47",
+    "tills": {
+      "A": {
+        "id": "01a1a62f-f894-778a-872d-ad8862abb8ae",
+        "name": "ZZ TEST SCRUM-774 till A"
+      },
+      "B": {
+        "id": "01a1a62f-f8a7-7fd1-849f-d8649c56a36b",
+        "name": "ZZ TEST SCRUM-774 till B"
+      }
+    }
+  },
+  "browser": "153.0.8010.12",
+  "holdRowOverflow": {
+    "s774-01-payment-step-hold-buttons": false,
+    "s774-02-hold-dialog": false,
+    "s774-05-resumed-on-till-b": false,
+    "s774-07-part-payment-taken": false,
+    "s774-09-resumed-asks-balance-only": false
+  },
+  "smsCount": 0,
+  "finishedAt": "2026-11-04T10:53:05.188Z",
+  "databaseDropped": true
+}
