@@ -1,0 +1,319 @@
+// SCRUM-775 local proof: the real platform api, the inbox (vite preview) and
+// the OTO App (its own server, dev build) on one disposable database. A ZZ TEST
+// birthday chat, Book Date, the tentative event in the app's calendar with the
+// link both ways, Create BEO opening the pre-filled BEO form through the suite
+// hand-off, and a double press making one event. Screenshots and readbacks go
+// to docs/qa/proof-2026-11-04/s775/. Nothing here reaches staging.
+import assert from 'node:assert/strict';
+import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
+import { randomBytes, randomUUID } from 'node:crypto';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:net';
+import { createRequire } from 'node:module';
+
+const ROOT = 'C:/oto-lanes/inbox775-20261104';
+const OUT = `${ROOT}/docs/qa/proof-2026-11-04/s775`;
+mkdirSync(OUT, { recursive: true });
+const helpers = await import(`file:///${ROOT}/apps/api/test/helpers.ts`);
+const appRequire = createRequire(`${ROOT}/apps/oto-app/package.json`);
+const apiRequire = createRequire(`${ROOT}/apps/api/package.json`);
+const { chromium } = appRequire('playwright-core');
+const pg = apiRequire('pg');
+
+const free = () =>
+  new Promise<number>((resolve, reject) => {
+    const s = createServer();
+    s.on('error', reject);
+    s.listen(0, '127.0.0.1', () => {
+      const a = s.address();
+      assert.ok(a && typeof a !== 'string');
+      s.close(() => resolve(a.port));
+    });
+  });
+const [apiPort, inboxPort, appPort] = await Promise.all([free(), free(), free()]);
+const origin = (p: number) => `http://127.0.0.1:${p}`;
+const INBOX = origin(inboxPort);
+const OTOAPP = origin(appPort);
+const SIM_SECRET = randomBytes(16).toString('hex');
+const DIRECTORY_KEY = 'odk_' + randomBytes(24).toString('base64url');
+const run = Date.now().toString(36);
+const children: ChildProcess[] = [];
+const log: Record<string, unknown> = { at: new Date().toISOString(), run, ports: { api: apiPort, inbox: inboxPort, app: appPort } };
+const shots: string[] = [];
+
+const ctx = await helpers.createTestContext({
+  otoapp: true,
+  env: {
+    DEPLOY_ENV: 'local',
+    COOKIE_SECURE: 'false',
+    INBOX_SIMULATOR: 'on',
+    INBOX_SIMULATOR_SECRET: SIM_SECRET,
+    HANDOFF_SIGNING_KEY: `zz775:${randomBytes(32).toString('hex')}`,
+    HANDOFF_APP_ORIGINS: `inbox=${INBOX},oto_app=${OTOAPP}`,
+    ALLOWED_ORIGINS: `${INBOX},${OTOAPP}`,
+    OTOAPP_DIRECTORY_URL: OTOAPP,
+    OTOAPP_DIRECTORY_KEY: DIRECTORY_KEY,
+  },
+});
+const url = (ctx.db as unknown as { $client: { options: { connectionString: string } } }).$client.options.connectionString;
+const appPool = new pg.Pool({ connectionString: url, options: '-c search_path=otoapp', max: 3 });
+const platPool = new pg.Pool({ connectionString: url, max: 3 });
+const q = async (text: string, args: unknown[] = []) => (await appPool.query(text, args)).rows;
+const pq = async (text: string, args: unknown[] = []) => (await platPool.query(text, args)).rows;
+
+let code = 1;
+let browser: { close(): Promise<void> } | undefined;
+try {
+  const central = await helpers.branchIdByCode(ctx.db, helpers.CENTRAL_BRANCH_CODE);
+  const oto = await helpers.operatorIdByName(ctx.db, helpers.OTO_OPERATOR_NAME);
+  const [adminAccount] = (await pq(`select id from core.account where phone = $1 limit 1`, [helpers.ADMIN.phone])) as Array<{ id: string }>;
+  assert.ok(adminAccount, 'the seeded admin');
+
+  // --- The OTO App's side: a park group, Central mapped, the directory key, the admin as an app admin.
+  const tenant = randomUUID();
+  const appBranch = randomUUID();
+  const appUser = randomUUID();
+  await q(`insert into tenants (id, name, slug) values ($1, $2, $3)`, [tenant, `ZZ TEST 775 ${run}`, `zz-775-${run}`]);
+  await q(`insert into branches (id, tenant_id, name, address, core_branch_id) values ($1, $2, 'Central Floresta', 'ZZ TEST local', $3)`, [appBranch, tenant, central]);
+  const { createHash } = await import('node:crypto');
+  await q(`insert into directory_clients (tenant_id, name, key_hash, scopes, is_active) values ($1, 'ZZ TEST 775 platform', $2, $3, true)`, [
+    tenant,
+    createHash('sha256').update(DIRECTORY_KEY).digest('hex'),
+    ['events:write'],
+  ]);
+  await q(
+    `insert into users (id, email, password, full_name, role, is_active, must_change_password, platform_user_id)
+     values ($1, $2, 'x', 'ZZ TEST 775 Admin', 'admin', true, false, $3)`,
+    [appUser, `zz-775-${run}@example.com`, adminAccount.id],
+  );
+  await q(`insert into user_branch_access (tenant_id, user_id, branch_id, access_scope) values ($1, $2, null, 'all_branches')`, [tenant, appUser]);
+
+  // --- The platform api.
+  await ctx.app.listen({ port: apiPort, host: '::' });
+  const base = Object.fromEntries(
+    ['PATH', 'Path', 'SystemRoot', 'TEMP', 'TMP', 'LOCALAPPDATA', 'USERPROFILE', 'APPDATA', 'ProgramFiles', 'ComSpec']
+      .filter((k) => process.env[k])
+      .map((k) => [k, process.env[k]]),
+  );
+
+  // --- The OTO App, its own server and client.
+  const app = spawn(process.execPath, [`${ROOT}/apps/oto-app/node_modules/tsx/dist/cli.mjs`, 'server/index.ts'], {
+    cwd: `${ROOT}/apps/oto-app`,
+    env: {
+      ...base,
+      NODE_ENV: 'development',
+      PORT: String(appPort),
+      DATABASE_URL: url,
+      APP_ENV: 'dev',
+      DEPLOY_ENV: 'local',
+      OBJECT_STORAGE: 'local',
+      STORAGE_ENV_PREFIX: 'zz-test-775',
+      SESSION_SECRET: randomBytes(24).toString('hex'),
+      OTOAPP_JOBS: 'platform',
+      PLATFORM_API_URL: origin(apiPort),
+      OTOAPP_PUBLIC_ORIGIN: OTOAPP,
+      LOG_LEVEL: 'warn',
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true,
+  });
+  children.push(app);
+  let appOut = '';
+  app.stdout!.on('data', (c: Buffer) => (appOut += c.toString()));
+  app.stderr!.on('data', (c: Buffer) => (appOut += c.toString()));
+
+  // --- The inbox, its production build behind vite preview's /api proxy.
+  const inbox = spawn(process.execPath, [`${ROOT}/apps/inbox/node_modules/vite/bin/vite.js`, 'preview', '--config', 'vite.config.ts'], {
+    cwd: `${ROOT}/apps/inbox`,
+    env: { ...base, INBOX_PORT: String(inboxPort), API_PORT: String(apiPort) },
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true,
+  });
+  children.push(inbox);
+
+  const up = async (u: string, what: string, tries = 240) => {
+    for (let i = 0; i < tries; i++) {
+      if (await fetch(u).then((r) => r.status < 500).catch(() => false)) return;
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    throw new Error(`${what} did not start: ${what === 'OTO App' ? appOut.slice(-2000) : ''}`);
+  };
+  await up(INBOX, 'inbox');
+  await up(`${OTOAPP}/api/user`, 'OTO App');
+
+  // --- A ZZ TEST birthday chat, played through the simulator's signed webhook.
+  const ca = randomUUID();
+  await pq(
+    `insert into inbox.channel_account (id, operator_id, branch_id, channel, provider, external_id, display_name, default_category, can_reply, status)
+     values ($1, $2, $3, 'whatsapp', 'simulator', $4, 'ZZ TEST 775 WhatsApp', 'general', true, 'active')`,
+    [ca, oto, central, `zz-775-${run}`],
+  );
+  const { schema } = await import(`file:///${ROOT}/packages/db/src/index.ts`);
+  const { eq } = apiRequire('drizzle-orm');
+  const [row] = await ctx.db.select().from(schema.channelAccount).where(eq(schema.channelAccount.id, ca)).limit(1);
+  const sim = ctx.app.inboxChannels.simulatorFor({ ...row });
+  assert.ok(sim, 'the simulator');
+  const say = async (text: string) => {
+    const played = sim.inbound({ from: '66810007750', name: 'ZZ TEST Olga', text, hint: { category: 'birthdays', language: 'en' } });
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/webhooks/inbox/${ca}`,
+      headers: played.webhook.headers as Record<string, string>,
+      payload: played.webhook.rawBody as string,
+    });
+    assert.equal(res.json().outcome, 'processed');
+  };
+  await say('Hi! We would like a birthday party at Central for 15 kids on 21/mar');
+  await say('My son will be 6 years old, can you send the packages?');
+  const [conv] = (await pq(`select id from inbox.conversation where channel_account_id = $1`, [ca])) as Array<{ id: string }>;
+  assert.ok(conv);
+  log.conversationId = conv.id;
+
+  // --- The browser: the admin signed into the inbox through a hand-off, as the launcher does.
+  const cookie = await helpers.signInAs(ctx.app, helpers.ADMIN.phone, helpers.ADMIN.password);
+  const mint = await ctx.app.inject({ method: 'POST', url: '/auth/handoff', headers: { cookie, 'idempotency-key': randomUUID() }, payload: { app: 'inbox' } });
+  assert.equal(mint.statusCode, 200, mint.body);
+  const launch = (mint.json() as { launchUrl: string }).launchUrl;
+
+  const b = await chromium.launch({ headless: true });
+  browser = b;
+  const context = await b.newContext({ viewport: { width: 1440, height: 1250 }, timezoneId: 'Asia/Bangkok' });
+  const page = await context.newPage();
+  const shot = async (p: { screenshot(o: { path: string; fullPage?: boolean }): Promise<unknown> }, name: string) => {
+    const path = `${OUT}/${name}.png`;
+    await p.screenshot({ path });
+    shots.push(`${name}.png`);
+  };
+  await page.goto(launch);
+  await page.waitForSelector('text=ZZ TEST Olga', { timeout: 60_000 });
+  await page.click('text=ZZ TEST Olga');
+  await page.waitForSelector('button:has-text("Book Date")', { timeout: 30_000 });
+  await page.waitForTimeout(800);
+  await shot(page, 's775-01-birthday-chat-book-date-live');
+
+  await page.locator('button', { hasText: /^Book Date$/ }).first().click();
+  await page.waitForSelector('text=Book Date — ZZ TEST Olga');
+  await page.waitForTimeout(300);
+  await shot(page, 's775-02-book-date-confirm-prefilled');
+  const dialogValues = {
+    date: await page.inputValue('input[aria-label="Date"]'),
+    startTime: await page.inputValue('input[aria-label="Start time"]'),
+    park: await page.$eval('select[aria-label="Park"]', (el: { selectedOptions: ArrayLike<{ textContent: string | null }> }) => el.selectedOptions[0]?.textContent ?? ''),
+    kids: await page.inputValue('input[aria-label="Kids"]'),
+    bookingName: await page.inputValue('input[aria-label="Booking name"]'),
+    phone: await page.inputValue('input[aria-label="Phone"]'),
+    age: await page.inputValue('input[aria-label="Turning age"]'),
+  };
+  log.dialogValues = dialogValues;
+  await page.fill('input[aria-label="Child\'s name"]', 'ZZ TEST Mali');
+  // A double press on Save: one dialog, one id.
+  await page.locator('[role="dialog"] button', { hasText: /^Book date$/ }).dblclick({ delay: 30 });
+  const outcome = await Promise.race([
+    page.waitForSelector('[data-testid="event-chip"]', { timeout: 30_000 }).then(() => 'chip'),
+    page.waitForSelector('[role="dialog"] [role="alert"]', { timeout: 30_000 }).then(() => 'alert'),
+  ]);
+  if (outcome !== 'chip') {
+    log.dialogAlert = await page.textContent('[role="dialog"] [role="alert"]');
+    log.appLogTail = appOut.slice(-3000);
+    await shot(page, 'debug-book-date-refused');
+    throw new Error('Book Date was refused: ' + String(log.dialogAlert));
+  }
+  await page.waitForTimeout(800);
+  await shot(page, 's775-03-event-chip-date-booked');
+
+  // The readback: one event in the app, linked both ways.
+  const events = await q(`select id, event_type, status, title, event_date, start_time, num_children, child_name, kid_turning_age,
+     booking_name, whatsapp_phone_e164, inbox_conversation_id, branch_id from core_events where inbox_conversation_id = $1`, [conv.id]);
+  assert.equal(events.length, 1, 'one event after a double press');
+  const ev = events[0];
+  const [convRow] = (await pq(`select event_order_ref from inbox.conversation where id = $1`, [conv.id])) as Array<{ event_order_ref: string }>;
+  assert.equal(convRow.event_order_ref, ev.id);
+  log.eventAfterUiPress = ev;
+  log.conversationEventOrderRef = convRow.event_order_ref;
+
+  // A double press through the api alone: the same id twice is the same event.
+  const apiConv = conv.id;
+  const again = await ctx.app.inject({
+    method: 'POST',
+    url: `/inbox/conversations/${apiConv}/book-date`,
+    headers: { cookie, 'idempotency-key': randomUUID() },
+    payload: { id: ev.id, branchId: central, date: ev.event_date, startTime: ev.start_time, kids: 15, adults: null, contactName: 'ZZ TEST Olga', phone: null, childName: 'ZZ TEST Mali', childAge: 6 },
+  });
+  log.apiReplay = { status: again.statusCode, replayHeader: again.headers['x-oto-replay'] ?? null, created: (again.json() as { created?: boolean }).created };
+  const fresh = await ctx.app.inject({
+    method: 'POST',
+    url: `/inbox/conversations/${apiConv}/book-date`,
+    headers: { cookie, 'idempotency-key': randomUUID() },
+    payload: { id: randomUUID(), branchId: central, date: ev.event_date, startTime: ev.start_time, kids: 15, adults: null, contactName: 'ZZ TEST Olga', phone: null, childName: null, childAge: null },
+  });
+  log.apiSecondDate = { status: fresh.statusCode, code: (fresh.json() as { error?: { code: string } }).error?.code };
+  log.eventsAfterApiPresses = (await q(`select count(*)::int as n from core_events where inbox_conversation_id = $1`, [conv.id]))[0];
+  const audits = await pq(
+    `select action, actor_account_id, (after->>'eventOrderRef') as event, (after->>'status') as status from core.audit_log
+      where entity_id = $1 and action like 'inbox.conversation.book_date%' order by created_at`,
+    [conv.id],
+  );
+  log.auditRows = audits;
+  const statuses = await q(`select name, value, color, sort_order from event_statuses where tenant_id = $1 order by sort_order`, [tenant]);
+  log.appStatuses = statuses;
+
+  // --- Create BEO: a new tab, the hand-off into the OTO App, the BEO form.
+  const [tab] = await Promise.all([
+    context.waitForEvent('page', { timeout: 30_000 }),
+    page.locator('button', { hasText: /^Create BEO$/ }).first().click(),
+  ]);
+  await tab.waitForLoadState('domcontentloaded');
+  await tab.waitForSelector('[data-testid="badge-from-inbox"]', { timeout: 120_000 });
+  await tab.waitForTimeout(1500);
+  log.beoTabUrl = tab.url();
+  await shot(tab, 's775-04-create-beo-opens-prefilled-beo-form');
+
+  // The event in the app's calendar and board, tentative.
+  await tab.setViewportSize({ width: 1920, height: 900 });
+  await tab.goto(`${OTOAPP}/studio/events/kanban`);
+  const column = tab.locator('h3', { hasText: /^Tentative$/ }).first();
+  await column.waitFor({ timeout: 60_000 });
+  await column.scrollIntoViewIfNeeded();
+  await tab.waitForSelector(`[data-testid="card-event-${ev.id}"]`, { timeout: 60_000 });
+  await tab.locator(`[data-testid="card-event-${ev.id}"]`).scrollIntoViewIfNeeded();
+  await tab.waitForTimeout(1500);
+  await shot(tab, 's775-05-events-board-tentative-column');
+  const month = String(ev.event_date).slice(0, 7);
+  await tab.goto(`${OTOAPP}/studio/events/calendar/${month}`);
+  await tab.waitForTimeout(4000);
+  await shot(tab, 's775-06-events-calendar-on-the-date');
+
+  // Back in the inbox: the pill, and the dashboard's BEO card.
+  await page.bringToFront();
+  await page.waitForTimeout(500);
+  log.pill = await page.locator('text=Date blocked in the Events calendar').first().textContent();
+  await page.locator('text=Date blocked in the Events calendar').first().scrollIntoViewIfNeeded();
+  await shot(page, 's775-07-inbox-pill-and-chip');
+  await page.goto(`${INBOX}/`);
+  await page.waitForSelector('text=BEOs created · week', { timeout: 30_000 });
+  await page.waitForTimeout(800);
+  await shot(page, 's775-08-dashboard-beo-card');
+
+  code = 0;
+} catch (error) {
+  console.error('LOCAL PROOF FAILED', (error as Error).message);
+  try {
+    for (const p of (browser as unknown as { contexts(): Array<{ pages(): Array<{ screenshot(o: { path: string }): Promise<unknown> }> }> } | undefined)?.contexts() ?? []) {
+      let i = 0;
+      for (const pg of p.pages()) await pg.screenshot({ path: `${OUT}/debug-${i++}.png` }).catch(() => undefined);
+    }
+  } catch {
+    // nothing more to show
+  }
+  log.failure = (error as Error).message;
+} finally {
+  log.screenshots = shots;
+  writeFileSync(`${OUT}/local-proof.json`, JSON.stringify(log, null, 2) + '\n');
+  await browser?.close().catch(() => undefined);
+  for (const c of children) if (c.pid && c.exitCode === null) spawnSync('taskkill', ['/pid', String(c.pid), '/t', '/f'], { windowsHide: true, stdio: 'ignore' });
+  await appPool.end().catch(() => undefined);
+  await platPool.end().catch(() => undefined);
+  await ctx.close().catch(() => undefined);
+  await helpers.teardownAll().catch(() => undefined);
+}
+process.exit(code);
