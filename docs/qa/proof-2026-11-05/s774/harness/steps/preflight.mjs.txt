@@ -1,0 +1,10 @@
+export default async function (S) {
+  const f = S.st.fixture;
+  const held = await S.pageApi('A', 'GET', `/sales/held?branchId=${f.branchId}`);
+  const jobs = await S.adminApi('GET', '/platform/jobs');
+  const list = jobs.body?.jobs ?? jobs.body;
+  const mine = Array.isArray(list) ? list.filter((j) => /held_midnight/.test(j.name ?? j.job ?? '')) : list;
+  S.st.steps.s0 = { at: new Date().toISOString(), heldStatus: held.status, heldBody: held.body, jobsStatus: jobs.status, job: mine };
+  S.save();
+  return S.st.steps.s0;
+}

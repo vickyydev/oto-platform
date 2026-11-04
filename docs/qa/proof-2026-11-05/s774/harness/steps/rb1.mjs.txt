@@ -1,0 +1,9 @@
+export default async function (S) {
+  const f = S.st.fixture;
+  const id = S.st.steps.s1.saleId;
+  const d = await S.lib.readSale(S, id);
+  f.businessDate = d.sale.businessDate;
+  S.st.steps.s1.readback = { grants: d.grants?.length ?? null, printJobs: d.printJobs?.length ?? null, pickupCode: d.pickupCode ?? null, attempts: (d.attempts ?? []).length, saleKeys: Object.keys(d.sale).filter((k) => /check|visit|wallet|band|receipt/i.test(k)).map((k) => [k, d.sale[k]]) };
+  S.save();
+  return S.st.steps.s1.readback;
+}

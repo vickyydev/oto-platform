@@ -1,0 +1,6 @@
+export default async function (S) {
+  const label = S.st.lookAt ?? 'A';
+  const page = S.pages[label].page;
+  await page.screenshot({ path: S.lib.LOOK });
+  return { url: page.url(), text: (await S.lib.text(page, 2500)).replace(/\+?\d{8,}/g, '[phone]') };
+}

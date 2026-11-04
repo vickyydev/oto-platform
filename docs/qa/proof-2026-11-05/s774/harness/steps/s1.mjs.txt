@@ -1,0 +1,53 @@
+// Step 1: Hold sale on till A for a ZZ TEST member with two children.
+export default async function (S) {
+  const { text, heldRow, readSale, sleep } = S.lib;
+  const f = S.st.fixture;
+  const page = S.pages.A.page;
+  const before = new Set((await S.adminApi('GET', `/sales?branchId=${f.branchId}&stationId=${f.tills.A.id}&limit=50`)).body.sales.map((s) => s.id));
+  await S.lib.unlockIfLocked(S, page);
+  await page.getByText('Membership Check', { exact: true }).first().waitFor({ timeout: 30000 });
+  const digits = f.member.phone.replace(/^\+66/, '');
+  for (const d of digits) await page.getByRole('button', { name: d, exact: true }).last().click();
+  await page.getByRole('button', { name: 'Find my membership' }).click();
+  await page.getByRole('button', { name: 'Confirm 2 children' }).click();
+  await page.getByRole('heading', { name: 'Tourist', exact: true }).click();
+  await page.getByRole('heading', { name: '2 Hours Play', exact: true }).click();
+  await page.getByRole('button', { name: 'Add one Kids' }).first().click();
+  await sleep(800);
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  await S.expect(page.getByRole('heading', { name: 'Amount Due' })).toBeVisible();
+  await S.expect(page.getByTestId('hold-sale-buttons')).toBeVisible();
+  let saleId = null;
+  for (let i = 0; i < 30 && !saleId; i++) {
+    const l = (await S.adminApi('GET', `/sales?branchId=${f.branchId}&stationId=${f.tills.A.id}&status=tendering&limit=20`)).body.sales;
+    saleId = l.find((s) => !before.has(s.id))?.id ?? null;
+    if (!saleId) await sleep(500);
+  }
+  if (!saleId) throw new Error('no tendering sale');
+  S.st.created.push({ kind: 'sale', id: saleId, step: 1, at: new Date().toISOString() }); S.save();
+  const partReason = await page.getByTestId('part-paid-reason').innerText();
+  await S.shot('A', 's774-st-01-payment-step-hold-buttons');
+  await page.getByRole('button', { name: 'Hold sale', exact: true }).click();
+  const dialog = page.getByTestId('hold-sale-dialog');
+  await dialog.waitFor();
+  const prefilled = await dialog.getByLabel('Customer’s name or band').inputValue();
+  await dialog.getByLabel('Note (optional)').fill('ZZ TEST back after lunch');
+  await S.shot('A', 's774-st-02-hold-dialog');
+  await dialog.getByRole('button', { name: 'Hold sale', exact: true }).click();
+  await S.expect(page.getByText('Membership Check', { exact: true }).first()).toBeVisible();
+  await S.expect(heldRow(page, prefilled)).toBeVisible();
+  await sleep(1500);
+  await S.shot('A', 's774-st-03-held-list-till-a');
+  const rowText = (await heldRow(page, prefilled).innerText()).replace(/\s+/g, ' ');
+  const d = await readSale(S, saleId);
+  const held = (await S.pageApi('A', 'GET', `/sales/held?branchId=${f.branchId}`)).body;
+  const mine = held.sales.filter((s) => s.saleId === saleId);
+  S.st.steps.s1 = {
+    at: new Date().toISOString(), saleId, partReason, prefilled, rowText,
+    sale: { status: d.sale.status, receiptNumber: d.sale.receiptNumber ?? null, businessDate: d.sale.businessDate, stationId: d.sale.stationId, gross: d.sale.totals?.grossSatang },
+    bands: d.bands?.length ?? null, keys: Object.keys(d), checkins: d.checkins?.length ?? d.checkIns?.length ?? null, wallet: d.walletCredits ?? d.wallet ?? null,
+    heldList: mine,
+  };
+  S.save();
+  return S.st.steps.s1;
+}

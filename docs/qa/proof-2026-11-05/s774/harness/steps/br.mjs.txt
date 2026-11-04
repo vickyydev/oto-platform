@@ -1,0 +1,8 @@
+export default async function (S) {
+  const b = await S.adminApi('GET', `/branches/${S.st.fixture.branchId}`);
+  const x = b.body.branch ?? b.body;
+  const eod = await S.adminApi('GET', `/branches/${S.st.fixture.branchId}/end-of-day?date=2026-11-05`);
+  const eod4 = await S.adminApi('GET', `/branches/${S.st.fixture.branchId}/end-of-day?date=2026-11-04`);
+  const pick = (e) => ({ status: e.status, state: e.body?.status ?? e.body?.state ?? e.body?.closedAt ?? null, keys: Object.keys(e.body ?? {}).slice(0, 30), openSales: e.body?.openSales, provisional: e.body?.provisional, err: e.body?.error });
+  return { tz: x.timezone, dayStart: x.businessDayStart ?? x.business_day_start, eod5: pick(eod), eod4: pick(eod4) };
+}

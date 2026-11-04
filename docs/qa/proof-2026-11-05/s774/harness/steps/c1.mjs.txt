@@ -1,0 +1,8 @@
+export default async function (S) {
+  const { LOOK, text } = S.lib;
+  const page = S.pages.A.page;
+  await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+  await page.waitForTimeout(2000);
+  await page.screenshot({ path: LOOK });
+  return { text: (await text(page, 4000)).replace(/\+?\d{8,}/g, '[phone]').split('Review →')[1] };
+}

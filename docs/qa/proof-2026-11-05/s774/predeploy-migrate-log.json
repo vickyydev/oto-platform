@@ -1,0 +1,62 @@
+{
+ "n": 14,
+ "rows": [
+  {
+   "t": "2026-11-04T21:20:28.313192314Z",
+   "m": "\u001b[0;34m\u001b[1m==> \u001b[0m\u001b[1mStarting pre-deploy: pnpm db:migrate && pnpm db:platform-sync\u001b[0m"
+  },
+  {
+   "t": "2026-11-04T21:21:18.55698887Z",
+   "m": "\u001b[32m\u001b[1m==>\u001b(B\u001b[m \u001b[1mRunning 'pnpm db:migrate && pnpm db:platform-sync'\u001b(B\u001b[m"
+  },
+  {
+   "t": "2026-11-04T21:21:20.023332845Z",
+   "m": "> oto-platform@0.1.0 db:migrate /opt/render/project/src"
+  },
+  {
+   "t": "2026-11-04T21:21:20.023338565Z",
+   "m": "> pnpm --filter @oto/db migrate"
+  },
+  {
+   "t": "2026-11-04T21:21:20.424479386Z",
+   "m": "> @oto/db@0.1.0 migrate /opt/render/project/src/packages/db"
+  },
+  {
+   "t": "2026-11-04T21:21:20.424484526Z",
+   "m": "> drizzle-kit migrate"
+  },
+  {
+   "t": "2026-11-04T21:21:21.619384202Z",
+   "m": "[⣷] applying migrations...\u001b[2K\u001b[1G[⣯] applying migrations...\u001b[2K\u001b[1G[✓] migrations applied successfully!"
+  },
+  {
+   "t": "2026-11-04T21:45:28.749903554Z",
+   "m": "\u001b[0;34m\u001b[1m==> \u001b[0m\u001b[1mStarting pre-deploy: pnpm db:migrate && pnpm db:platform-sync\u001b[0m"
+  },
+  {
+   "t": "2026-11-04T21:46:06.459280316Z",
+   "m": "\u001b[32m\u001b[1m==>\u001b(B\u001b[m \u001b[1mRunning 'pnpm db:migrate && pnpm db:platform-sync'\u001b(B\u001b[m"
+  },
+  {
+   "t": "2026-11-04T21:46:08.067765011Z",
+   "m": "> oto-platform@0.1.0 db:migrate /opt/render/project/src"
+  },
+  {
+   "t": "2026-11-04T21:46:08.067769251Z",
+   "m": "> pnpm --filter @oto/db migrate"
+  },
+  {
+   "t": "2026-11-04T21:46:08.460647165Z",
+   "m": "> @oto/db@0.1.0 migrate /opt/render/project/src/packages/db"
+  },
+  {
+   "t": "2026-11-04T21:46:08.460650485Z",
+   "m": "> drizzle-kit migrate"
+  },
+  {
+   "t": "2026-11-04T21:46:09.701133268Z",
+   "m": "[⣷] applying migrations...\u001b[2K\u001b[1G[✓] migrations applied successfully!"
+  }
+ ],
+ "hasMore": false
+}

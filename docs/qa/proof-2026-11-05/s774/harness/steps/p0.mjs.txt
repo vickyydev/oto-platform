@@ -1,0 +1,11 @@
+export default async function (S) {
+  const { tillSignIn, sleep, text, LOOK } = S.lib;
+  const f = S.st.fixture;
+  let page = S.pages.PHONE?.page;
+  if (!page) page = await tillSignIn(S, 'PHONE', f.tills.C.name, 'RECEPTION', { width: 390, height: 844 });
+  await sleep(2500);
+  for (const close of await page.locator('[toast-close]').all()) await close.click({ force: true }).catch(() => {});
+  await sleep(1000);
+  await page.screenshot({ path: LOOK, fullPage: true });
+  return { url: page.url(), text: (await text(page, 2500)) };
+}

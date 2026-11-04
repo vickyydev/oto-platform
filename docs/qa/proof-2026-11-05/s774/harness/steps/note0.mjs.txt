@@ -1,0 +1,8 @@
+export default async function (S) {
+  if (!S.st.created.some((c) => c.id === '01a1a890-1b0d-7482-a224-2d225f15f0aa')) {
+    S.st.created.push({ kind: 'sale', id: '01a1a890-1b0d-7482-a224-2d225f15f0aa', note: 'rung up at 04:56 on business date 2026-11-04, before the 05:00 boundary, while exploring the screens; cancelled at once from Current Order (voided, unpaid) so every proof sale sits on 2026-11-05', status: 'voided' });
+  }
+  S.st.people = S.st.people ?? {};
+  S.save();
+  return S.st.created;
+}

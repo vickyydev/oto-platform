@@ -1,0 +1,16 @@
+// Step 4 set-up: one more ZZ TEST sale held with no money (left for the End of Day counts, voided from the list at the end).
+export default async function (S) {
+  const { heldRow, ringUp, readSale, sleep } = S.lib;
+  const guest = 'ZZ TEST Khun Eve 774';
+  const page = S.pages.A.page;
+  const saleId = await ringUp(S, 'A', guest);
+  await page.getByRole('button', { name: 'Hold sale', exact: true }).click();
+  const dialog = page.getByTestId('hold-sale-dialog');
+  await dialog.getByRole('button', { name: 'Hold sale', exact: true }).click();
+  await S.expect(heldRow(page, guest)).toBeVisible();
+  const d = await readSale(S, saleId);
+  S.st.fixture.eve = { saleId, guest };
+  S.st.steps.s4a = { at: new Date().toISOString(), saleId, status: d.sale.status, businessDate: d.sale.businessDate, bands: d.bands?.length ?? null };
+  S.save();
+  return S.st.steps.s4a;
+}

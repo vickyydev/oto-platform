@@ -1,0 +1,40 @@
+// Step 3: a part cash payment on till A, then Save as partly paid; seen on till A and till B; no bands, no receipt.
+export default async function (S) {
+  const { heldRow, refreshHeld, payCash, readSale, ringUp, sleep } = S.lib;
+  const f = S.st.fixture;
+  const guest = 'ZZ TEST Khun Ben 774';
+  const page = S.pages.A.page;
+  const saleId = await ringUp(S, 'A', guest);
+  const gross = (await readSale(S, saleId)).sale.totals.grossSatang;
+  await payCash(page, '200');
+  await S.expect(page.getByTestId('hold-sale-reason')).toHaveText('฿200 has been paid on this sale — use Save as partly paid.', { timeout: 30000 });
+  await sleep(1000);
+  await S.shot('A', 's774-st-07-part-payment-taken');
+  const mid = await readSale(S, saleId);
+  await page.getByRole('button', { name: 'Save as partly paid', exact: true }).click();
+  const dialog = page.getByTestId('hold-sale-dialog');
+  const prefilled = await dialog.getByLabel('Customer’s name or band').inputValue();
+  await dialog.getByLabel('Note (optional)').fill('ZZ TEST paying the rest at 18:00');
+  await S.shot('A', 's774-st-08-save-as-partly-paid-dialog');
+  await dialog.getByRole('button', { name: 'Save as partly paid', exact: true }).click();
+  await S.expect(page.getByText('Membership Check', { exact: true }).first()).toBeVisible();
+  const want = `฿200 paid · balance ฿${((gross - 20000) / 100).toLocaleString('en-US')}`;
+  await S.expect(heldRow(page, guest)).toContainText(want);
+  await sleep(1200);
+  await S.shot('A', 's774-st-09-part-paid-in-held-sales-till-a');
+  const pageB = S.pages.B.page;
+  await refreshHeld(pageB);
+  await S.expect(heldRow(pageB, guest)).toContainText(want);
+  await S.shot('B', 's774-st-10-part-paid-in-held-sales-till-b');
+  const d = await readSale(S, saleId);
+  S.st.fixture.ben = { saleId, gross, guest };
+  S.st.steps.s3 = {
+    at: new Date().toISOString(), saleId, gross, prefilled, want,
+    afterPartPayment: { status: mid.sale.status, bands: mid.bands?.length ?? null, receipt: mid.sale.receiptNumber ?? null },
+    rowA: (await heldRow(page, guest).innerText()).replace(/\s+/g, ' '),
+    rowB: (await heldRow(pageB, guest).innerText()).replace(/\s+/g, ' '),
+    after: { status: d.sale.status, businessDate: d.sale.businessDate, bands: d.bands?.length ?? null, receipt: d.sale.receiptNumber ?? null, payments: (d.payments ?? d.tenders ?? []).map((p) => ({ status: p.status, amount: p.amountSatang, method: p.method ?? p.kind })) },
+  };
+  S.save();
+  return S.st.steps.s3;
+}

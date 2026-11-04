@@ -1,0 +1,45 @@
+{
+  "readAt": "2026-11-04T21:52:00.606Z",
+  "services": {
+    "oto-api-staging": {
+      "liveDeploy": "dep-dblqe83ncjis73fsgdbg",
+      "commit": "a720b2c7601d9b800898aa8f981e6f4c7fa301a3",
+      "finishedAt": "2026-11-04T21:47:54.053531Z",
+      "newest": {
+        "id": "dep-dblqe83ncjis73fsgdbg",
+        "status": "live",
+        "commit": "a720b2c7601d9b800898aa8f981e6f4c7fa301a3"
+      }
+    },
+    "oto-pos-web-staging": {
+      "liveDeploy": "dep-dblqe83ncjis73fsgeag",
+      "commit": "a720b2c7601d9b800898aa8f981e6f4c7fa301a3",
+      "finishedAt": "2026-11-04T21:47:06.165603Z",
+      "newest": {
+        "id": "dep-dblqe83ncjis73fsgeag",
+        "status": "live",
+        "commit": "a720b2c7601d9b800898aa8f981e6f4c7fa301a3"
+      }
+    },
+    "oto-pos-staging": {
+      "liveDeploy": "dep-dblqe83ncjis73fsgeeg",
+      "commit": "a720b2c7601d9b800898aa8f981e6f4c7fa301a3",
+      "finishedAt": "2026-11-04T21:44:50.912351Z",
+      "newest": {
+        "id": "dep-dblqe83ncjis73fsgeeg",
+        "status": "live",
+        "commit": "a720b2c7601d9b800898aa8f981e6f4c7fa301a3"
+      }
+    },
+    "oto-console-staging": {
+      "liveDeploy": "dep-dblqe8bncjis73fsgek0",
+      "commit": "a720b2c7601d9b800898aa8f981e6f4c7fa301a3",
+      "finishedAt": "2026-11-04T21:44:46.697899Z",
+      "newest": {
+        "id": "dep-dblqe8bncjis73fsgek0",
+        "status": "live",
+        "commit": "a720b2c7601d9b800898aa8f981e6f4c7fa301a3"
+      }
+    }
+  }
+}

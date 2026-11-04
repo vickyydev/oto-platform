@@ -1,0 +1,10 @@
+export default async function (S) {
+  const page = S.pages.A.page;
+  const html = await page.evaluate(() => {
+    const el = [...document.querySelectorAll('*')].find((e) => e.childElementCount === 0 && e.textContent?.trim() === 'Kids');
+    let p = el; for (let i = 0; i < 4 && p; i++) p = p.parentElement;
+    return p?.outerHTML.replace(/class="[^"]*"/g, '').slice(0, 1500);
+  });
+  const labels = await page.locator('button[aria-label]').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')).filter((l) => /kid|adult|increase|decrease|add|more/i.test(l)).slice(0, 20));
+  return { html, labels };
+}

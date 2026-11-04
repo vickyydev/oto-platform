@@ -1,0 +1,40 @@
+// Step 6: the manager cancels the part-paid sale through the whole refund from Held sales; refund = what was taken; hold ends 'refunded'.
+export default async function (S) {
+  const { tillSignIn, heldRow, refreshHeld, readSale, sleep } = S.lib;
+  const f = S.st.fixture;
+  const { saleId, guest } = f.cara;
+  S.st.who = { ...(S.st.who ?? {}), D: 'MANAGER' };
+  let page = S.pages.D?.page;
+  if (!page) page = await tillSignIn(S, 'D', f.tills.D.name, 'MANAGER');
+  await sleep(2500);
+  await S.lib.unlockIfLocked(S, page, 'MANAGER');
+  await page.getByText('Membership Check', { exact: true }).first().waitFor({ timeout: 30000 });
+  await refreshHeld(page);
+  const row = heldRow(page, guest);
+  await S.expect(row).toBeVisible();
+  await row.getByRole('button', { name: 'Cancel and refund' }).click();
+  await page.locator('#held-reason').fill('ZZ TEST customer left before paying the rest');
+  await sleep(800);
+  await S.shot('D', 's774-st-19-manager-cancel-and-refund-dialog');
+  const dialogText = (await page.getByRole('dialog').innerText()).replace(/\s+/g, ' ');
+  await page.getByRole('button', { name: 'Refund and cancel' }).click();
+  await S.expect(page.getByText('Refunded and cancelled').first()).toBeVisible({ timeout: 30000 });
+  await sleep(1000);
+  await S.shot('D', 's774-st-20-manager-refunded-and-cancelled');
+  const toast = (await page.getByText('Refunded and cancelled').first().locator('..').innerText()).replace(/\s+/g, ' ');
+  const d = await readSale(S, saleId);
+  const audit = await S.adminApi('GET', `/audit?entityType=sale&entityId=${saleId}&limit=50`);
+  const held = (await S.adminApi('GET', `/sales/held?branchId=${f.branchId}`)).body;
+  S.st.steps.s6 = {
+    at: new Date().toISOString(), saleId, dialogText, toast,
+    sale: { status: d.sale.status, receipt: d.sale.receiptNumber ?? null, voidReason: d.sale.voidReason ?? null },
+    refunds: (d.refunds ?? []).map((r) => ({ number: r.number, amount: r.amountSatang, status: r.status, mode: r.mode, by: r.approvedByName ?? r.createdByName ?? null })),
+    refundStatus: d.refundStatus, refundableSatang: d.refundableSatang,
+    attempts: (d.attempts ?? []).map((a) => ({ method: a.method, status: a.status, amount: a.amountSatang })),
+    bands: d.bands?.length ?? null,
+    stillListed: held.sales.some((s) => s.saleId === saleId),
+    audit: (audit.body?.entries ?? []).map((e) => ({ action: e.action, at: e.createdAt, actor: e.actorName, reason: e.after?.reason ?? null })),
+  };
+  S.save();
+  return S.st.steps.s6;
+}

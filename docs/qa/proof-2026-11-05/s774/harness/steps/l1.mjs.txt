@@ -1,0 +1,11 @@
+export default async function (S) {
+  const { LOOK, text } = S.lib;
+  const page = S.pages.A.page;
+  await page.getByText('Membership Check', { exact: true }).first().waitFor({ timeout: 30000 });
+  const digits = S.st.fixture.member.phone.replace(/^\+66/, '');
+  for (const d of digits) await page.getByRole('button', { name: d, exact: true }).last().click();
+  await page.getByRole('button', { name: 'Find my membership' }).click();
+  await page.waitForTimeout(4000);
+  await page.screenshot({ path: LOOK });
+  return { text: (await text(page, 2500)).replace(/\+?\d{8,}/g, '[phone]') };
+}

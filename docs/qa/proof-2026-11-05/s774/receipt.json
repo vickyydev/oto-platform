@@ -1,0 +1,1292 @@
+{
+  "unit": "SCRUM-774",
+  "liveCommit": "a720b2c7601d9b800898aa8f981e6f4c7fa301a3",
+  "startedAt": "2026-11-04T21:52:32.966Z",
+  "fixture": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "boxName": "Virtual box 1",
+    "tills": {
+      "A": {
+        "id": "01a1a88d-42a1-75b3-a4b6-af61569cc36d",
+        "name": "ZZ TEST SCRUM-774 till A",
+        "prefix": "Z774A",
+        "ready": true
+      },
+      "B": {
+        "id": "01a1a88d-430b-7dcb-a58b-07babc00517f",
+        "name": "ZZ TEST SCRUM-774 till B",
+        "prefix": "Z774B",
+        "ready": true
+      },
+      "C": {
+        "id": "01a1a88d-43a4-7338-a7b6-167d6dd19d17",
+        "name": "ZZ TEST SCRUM-774 till C",
+        "prefix": "Z774C",
+        "ready": true
+      },
+      "D": {
+        "id": "01a1a897-6d54-7c5a-9ee7-c23140881489",
+        "name": "ZZ TEST SCRUM-774 till D",
+        "prefix": "Z774D",
+        "ready": true
+      }
+    },
+    "member": {
+      "id": "01a1a88d-b612-730c-9b01-16b9d095af14",
+      "phone": "+66 (ZZ TEST number, not recorded)",
+      "nickname": "ZZ TEST Khun Mali 774",
+      "children": [
+        {
+          "id": "01a1a88d-b66b-7e2d-bdaa-a245a2cbddd9",
+          "name": "ZZ TEST Ploy"
+        },
+        {
+          "id": "01a1a88d-b6bf-7fb8-8ef2-53d6fc3991f7",
+          "name": "ZZ TEST Pim"
+        }
+      ]
+    },
+    "businessDate": "2026-11-05",
+    "ben": {
+      "saleId": "01a1a895-82b2-73a8-979c-a8b10795e227",
+      "gross": 124000,
+      "guest": "ZZ TEST Khun Ben 774"
+    },
+    "eve": {
+      "saleId": "01a1a895-fe17-73cb-80ba-8f96d255e7b1",
+      "guest": "ZZ TEST Khun Eve 774"
+    },
+    "cara": {
+      "saleId": "01a1a897-7b16-7fb4-b7c0-5f9b5f4f9821",
+      "gross": 124000,
+      "guest": "ZZ TEST Khun Cara 774"
+    },
+    "dao": {
+      "saleId": "01a1a898-6d19-7b3e-8734-47749e520694",
+      "guest": "ZZ TEST Khun Dao 774",
+      "gross": 124000
+    }
+  },
+  "steps": {
+    "s0": {
+      "at": "2026-11-04T21:54:32.907Z",
+      "heldStatus": 200,
+      "heldBody": {
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "sales": [],
+        "counts": {
+          "held": 0,
+          "partPaid": 0
+        }
+      },
+      "jobsStatus": 200,
+      "job": [
+        {
+          "name": "job:sales.held_midnight",
+          "status": "ok",
+          "lastRunAt": "2026-11-04T21:52:47.545Z",
+          "lastOutcome": "ok",
+          "expectedEverySeconds": 300,
+          "ageSeconds": 106,
+          "lastError": null,
+          "waitingOn": []
+        }
+      ]
+    },
+    "s1": {
+      "at": "2026-11-04T22:01:15.282Z",
+      "saleId": "01a1a894-8f86-71d8-8aed-53535b422d2f",
+      "partReason": "Take a part payment first — nothing has been paid on this sale yet.",
+      "prefilled": "ZZ TEST Khun Mali 774",
+      "rowText": "ZZ TEST Khun Mali 774 ฿2,130 to pay Held by Som at ZZ TEST SCRUM-774 till A · 05:01 “ZZ TEST back after lunch” Held Resume Void",
+      "sale": {
+        "status": "tendering",
+        "receiptNumber": null,
+        "businessDate": "2026-11-05",
+        "stationId": "01a1a88d-42a1-75b3-a4b6-af61569cc36d",
+        "gross": 213000
+      },
+      "bands": 0,
+      "keys": [
+        "timeExtension",
+        "sale",
+        "correctionBandShortCode",
+        "refundStatus",
+        "refundableSatang",
+        "refunds",
+        "printJobs",
+        "bands",
+        "grants",
+        "pickupCode",
+        "attempts",
+        "taxBreakdown",
+        "taxConfig",
+        "lines",
+        "discounts"
+      ],
+      "checkins": null,
+      "wallet": null,
+      "heldList": [
+        {
+          "holdId": "01a1a894-9ae0-7dce-bf80-e8ac7ea31c28",
+          "saleId": "01a1a894-8f86-71d8-8aed-53535b422d2f",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "kind": "held",
+          "label": "ZZ TEST Khun Mali 774",
+          "note": "ZZ TEST back after lunch",
+          "grossSatang": 213000,
+          "paidSatang": 0,
+          "balanceSatang": 213000,
+          "businessDate": "2026-11-05",
+          "heldAt": "2026-11-04T22:01:13.691Z",
+          "heldBy": {
+            "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+            "name": "Som"
+          },
+          "heldStation": {
+            "id": "01a1a88d-42a1-75b3-a4b6-af61569cc36d",
+            "name": "ZZ TEST SCRUM-774 till A"
+          },
+          "flaggedAt": null
+        }
+      ],
+      "readback": {
+        "grants": 0,
+        "printJobs": 0,
+        "pickupCode": null,
+        "attempts": 0,
+        "saleKeys": [
+          [
+            "visitId",
+            "01a1a894-87b6-7eb5-9fe0-9e69d955f658"
+          ],
+          [
+            "receiptNumber",
+            null
+          ],
+          [
+            "receiptSeries",
+            null
+          ],
+          [
+            "receiptSeq",
+            null
+          ]
+        ]
+      }
+    },
+    "s2": {
+      "at": "2026-11-04T22:01:50.578Z",
+      "listText": "ZZ TEST Khun Mali 774 ฿2,130 to pay Held by Som at ZZ TEST SCRUM-774 till A · 05:01 “ZZ TEST back after lunch” Held Resume Void",
+      "notice": "Resumed from Held sales: ZZ TEST Khun Mali 774 — “ZZ TEST back after lunch”. Take the payment, hold it again, or Cancel to void it.",
+      "tenderAt": "2026-11-04T22:01:46.938Z",
+      "whileResumed": {
+        "status": "tendering",
+        "stationId": "01a1a88d-430b-7dcb-a58b-07babc00517f",
+        "bands": 0
+      },
+      "after": {
+        "status": "finalised",
+        "receiptNumber": "Z774B-000001",
+        "stationId": "01a1a88d-430b-7dcb-a58b-07babc00517f",
+        "tillB": "01a1a88d-430b-7dcb-a58b-07babc00517f",
+        "bands": 3,
+        "bandTimes": [
+          "2026-11-04T22:01:48.013Z",
+          "2026-11-04T22:01:48.014Z",
+          "2026-11-04T22:01:48.015Z"
+        ]
+      },
+      "stillListed": false,
+      "auditStatus": 200,
+      "audit": [
+        {
+          "action": "sale.print",
+          "at": "2026-11-04T22:01:48.012Z",
+          "actor": "Som (Reception)",
+          "after": null
+        },
+        {
+          "action": "sale.finalise",
+          "at": "2026-11-04T22:01:48.012Z",
+          "actor": "Som (Reception)",
+          "after": null
+        },
+        {
+          "action": "sale.hold.resume",
+          "at": "2026-11-04T22:01:45.977Z",
+          "actor": "Som (Reception)",
+          "after": "resumed"
+        },
+        {
+          "action": "sale.hold",
+          "at": "2026-11-04T22:01:13.691Z",
+          "actor": "Som (Reception)",
+          "after": true
+        },
+        {
+          "action": "sale.create",
+          "at": "2026-11-04T22:01:11.818Z",
+          "actor": "Som (Reception)",
+          "after": null
+        }
+      ],
+      "readback": {
+        "grants": 1,
+        "printJobs": [
+          {
+            "kind": "adult_wristband",
+            "status": "skipped"
+          },
+          {
+            "kind": "kids_wristband",
+            "status": "skipped"
+          },
+          {
+            "kind": "kids_wristband",
+            "status": "skipped"
+          },
+          {
+            "kind": "receipt",
+            "status": "skipped"
+          }
+        ],
+        "attempts": [
+          {
+            "method": "cash",
+            "status": "approved",
+            "amount": 213000,
+            "at": "2026-11-04T22:01:48.012Z"
+          }
+        ]
+      }
+    },
+    "s3": {
+      "at": "2026-11-04T22:02:24.715Z",
+      "saleId": "01a1a895-82b2-73a8-979c-a8b10795e227",
+      "gross": 124000,
+      "prefilled": "ZZ TEST Khun Ben 774",
+      "want": "฿200 paid · balance ฿1,040",
+      "afterPartPayment": {
+        "status": "tendering",
+        "bands": 0,
+        "receipt": null
+      },
+      "rowA": "ZZ TEST Khun Ben 774 ฿200 paid · balance ฿1,040 Held by Som at ZZ TEST SCRUM-774 till A · 05:02 “ZZ TEST paying the rest at 18:00” Partly paid Resume — take the balance Cancel and refund A refund needs a manager’s approval — ask a manager to make it.",
+      "rowB": "ZZ TEST Khun Ben 774 ฿200 paid · balance ฿1,040 Held by Som at ZZ TEST SCRUM-774 till A · 05:02 “ZZ TEST paying the rest at 18:00” Partly paid Resume — take the balance Cancel and refund A refund needs a manager’s approval — ask a manager to make it.",
+      "after": {
+        "status": "tendering",
+        "businessDate": "2026-11-05",
+        "bands": 0,
+        "receipt": null,
+        "payments": []
+      }
+    },
+    "s4a": {
+      "at": "2026-11-04T22:02:45.833Z",
+      "saleId": "01a1a895-fe17-73cb-80ba-8f96d255e7b1",
+      "status": "tendering",
+      "businessDate": "2026-11-05",
+      "bands": 0
+    },
+    "s4": {
+      "at": "2026-11-04T22:02:50.987Z",
+      "date": "2026-11-05",
+      "counts": {
+        "partPaid": "Partly paid: 1",
+        "held": "Held: 1"
+      },
+      "reason": "End of Day cannot close: 1 sale is partly paid — ZZ TEST Khun Ben 774 (in Held sales), ฿200 paid, balance ฿1,040. Take the balance or refund what was paid, from Held sales on a till, then close the day.",
+      "closeDayDisabled": true,
+      "apiOpenSales": {
+        "held": 1,
+        "partPaid": 1,
+        "rows": [
+          {
+            "saleId": "01a1a895-82b2-73a8-979c-a8b10795e227",
+            "kind": "part_paid",
+            "label": "ZZ TEST Khun Ben 774",
+            "held": true,
+            "stationName": "ZZ TEST SCRUM-774 till A",
+            "counter": "ticket",
+            "carriedFrom": null,
+            "grossSatang": 124000,
+            "paidSatang": 20000,
+            "balanceSatang": 104000,
+            "flaggedAt": null
+          },
+          {
+            "saleId": "01a1a895-fe17-73cb-80ba-8f96d255e7b1",
+            "kind": "held",
+            "label": "ZZ TEST Khun Eve 774",
+            "held": true,
+            "stationName": "ZZ TEST SCRUM-774 till A",
+            "counter": "ticket",
+            "carriedFrom": null,
+            "grossSatang": 124000,
+            "paidSatang": 0,
+            "balanceSatang": 124000,
+            "flaggedAt": null
+          }
+        ]
+      },
+      "close": {
+        "by": "Khun Lek (Manager)",
+        "status": 409,
+        "code": "PART_PAID_SALES",
+        "message": "End of Day cannot close: 1 sale is partly paid — ZZ TEST Khun Ben 774 (in Held sales), ฿200 paid, balance ฿1,040. Take the balance or refund what was paid, from Held sales on a till, then close the day.",
+        "details": {
+          "saleIds": [
+            "01a1a895-82b2-73a8-979c-a8b10795e227"
+          ]
+        }
+      },
+      "dayStillOpen": "open"
+    },
+    "s4phone": {
+      "at": "2026-11-04T22:03:20.728Z",
+      "cardText": "Held sales Held: 1 Partly paid: 1 ZZ TEST Khun Ben 774 · ฿200 paid, balance ฿1,040 · in Held sales ZZ TEST Khun Eve 774 · ฿1,240 to pay, nothing paid · in Held sales End of Day cannot close: 1 sale is partly paid — ZZ TEST Khun Ben 774 (in Held sales), ฿200 paid, balance ฿1,040. Take the balance or refund what was paid, from Held sales on a till, then close the day.",
+      "reason": "End of Day cannot close: 1 sale is partly paid — ZZ TEST Khun Ben 774 (in Held sales), ฿200 paid, balance ฿1,040. Take the balance or refund what was paid, from Held sales on a till, then close the day.",
+      "closeDayDisabled": true
+    },
+    "s5": {
+      "at": "2026-11-04T22:03:44.230Z",
+      "saleId": "01a1a895-82b2-73a8-979c-a8b10795e227",
+      "notice": "Resumed from Held sales: ZZ TEST Khun Ben 774 — “ZZ TEST paying the rest at 18:00”. ฿200 already paid — take the balance. Bands and the receipt are issued when it is paid.",
+      "balance": "฿1040",
+      "tenderAt": "2026-11-04T22:03:40.730Z",
+      "whileResumed": {
+        "status": "tendering",
+        "stationId": "01a1a88d-430b-7dcb-a58b-07babc00517f",
+        "bands": 0,
+        "receipt": null
+      },
+      "after": {
+        "status": "finalised",
+        "receiptNumber": "Z774B-000002",
+        "stationId": "01a1a88d-430b-7dcb-a58b-07babc00517f",
+        "bands": 2,
+        "bandTimes": [
+          "2026-11-04T22:03:41.800Z",
+          "2026-11-04T22:03:41.801Z"
+        ]
+      },
+      "attempts": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amount": 20000,
+          "at": "2026-11-04T22:02:14.905Z",
+          "station": null
+        },
+        {
+          "method": "cash",
+          "status": "approved",
+          "amount": 104000,
+          "at": "2026-11-04T22:03:41.800Z",
+          "station": null
+        }
+      ],
+      "audit": [
+        {
+          "action": "sale.print",
+          "at": "2026-11-04T22:03:41.800Z",
+          "actor": "Som (Reception)",
+          "reason": null
+        },
+        {
+          "action": "sale.finalise",
+          "at": "2026-11-04T22:03:41.800Z",
+          "actor": "Som (Reception)",
+          "reason": null
+        },
+        {
+          "action": "sale.hold.resume",
+          "at": "2026-11-04T22:03:39.470Z",
+          "actor": "Som (Reception)",
+          "reason": "resumed"
+        },
+        {
+          "action": "sale.hold",
+          "at": "2026-11-04T22:02:17.380Z",
+          "actor": "Som (Reception)",
+          "reason": null
+        },
+        {
+          "action": "sale.tender",
+          "at": "2026-11-04T22:02:14.905Z",
+          "actor": "Som (Reception)",
+          "reason": null
+        },
+        {
+          "action": "sale.create",
+          "at": "2026-11-04T22:02:14.068Z",
+          "actor": "Som (Reception)",
+          "reason": null
+        }
+      ]
+    },
+    "s6a": {
+      "at": "2026-11-04T22:04:26.987Z",
+      "saleId": "01a1a897-7b16-7fb4-b7c0-5f9b5f4f9821",
+      "gross": 124000,
+      "receptionRefundDisabled": true,
+      "rowText": "ZZ TEST Khun Cara 774 ฿300 paid · balance ฿940 Held by Som at ZZ TEST SCRUM-774 till A · 05:04 Partly paid Resume — take the balance Cancel and refund A refund needs a manager’s approval — ask a manager to make it."
+    },
+    "s6": {
+      "at": "2026-11-04T22:04:51.259Z",
+      "saleId": "01a1a897-7b16-7fb4-b7c0-5f9b5f4f9821",
+      "dialogText": "Cancel and refund ฿300 ZZ TEST Khun Cara 774: everything paid on this sale goes back the normal way — the same tender, or cash — and the sale is closed. Nothing was issued for it. Reason Back Refund and cancel Close",
+      "toast": "Refunded and cancelled ZZ TEST Khun Cara 774 — ฿300 refunded (Z774D-R-000001). The sale is closed.",
+      "sale": {
+        "status": "voided",
+        "receipt": null,
+        "voidReason": "ZZ TEST customer left before paying the rest"
+      },
+      "refunds": [
+        {
+          "number": "Z774D-R-000001",
+          "amount": 30000,
+          "mode": "whole",
+          "by": null
+        }
+      ],
+      "refundStatus": "partially_refunded",
+      "refundableSatang": 0,
+      "attempts": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amount": 30000
+        }
+      ],
+      "bands": 0,
+      "stillListed": false,
+      "audit": [
+        {
+          "action": "sale.refund",
+          "at": "2026-11-04T22:04:50.253Z",
+          "actor": "Khun Lek (Manager)",
+          "reason": "ZZ TEST customer left before paying the rest"
+        },
+        {
+          "action": "sale.hold.release",
+          "at": "2026-11-04T22:04:50.253Z",
+          "actor": "Khun Lek (Manager)",
+          "reason": "refunded"
+        },
+        {
+          "action": "sale.hold",
+          "at": "2026-11-04T22:04:26.184Z",
+          "actor": "Som (Reception)",
+          "reason": null
+        },
+        {
+          "action": "sale.tender",
+          "at": "2026-11-04T22:04:24.016Z",
+          "actor": "Som (Reception)",
+          "reason": null
+        },
+        {
+          "action": "sale.create",
+          "at": "2026-11-04T22:04:23.195Z",
+          "actor": "Som (Reception)",
+          "reason": null
+        }
+      ]
+    },
+    "s7": {
+      "at": "2026-11-04T22:05:42.750Z",
+      "saleId": "01a1a898-6d19-7b3e-8734-47749e520694",
+      "listText": "Held sales 1 held · 1 partly paid ZZ TEST Khun Eve 774 ฿1,240 to pay Held by Som at ZZ TEST SCRUM-774 till A · 05:02 Held Resume Void ZZ TEST Khun Dao 774 ฿250 paid · balance ฿990 Held by Som at ZZ TEST SCRUM-774 till A · 05:05 Partly paid Resume — take the balance Cancel and refund A refund needs a manager’s approval — ask a manager to make it.",
+      "notice": "Resumed from Held sales: ZZ TEST Khun Dao 774. ฿250 already paid — take the balance. Bands and the receipt are issued when it is paid.",
+      "holdReason": "A payment is in progress — finish or cancel it first.",
+      "rowA": "ZZ TEST Khun Dao 774 ฿250 paid · balance ฿990 Held by Som at ZZ TEST SCRUM-774 till C · 05:05 “ZZ TEST back at 18:00 for the rest” Partly paid Resume — take the balance Cancel and refund A refund needs a manager’s approval — ask a manager to make it.",
+      "tenderAt": "2026-11-04T22:05:39.360Z",
+      "whileResumedOnPhone": {
+        "status": "tendering",
+        "stationId": "01a1a88d-43a4-7338-a7b6-167d6dd19d17",
+        "tillC": "01a1a88d-43a4-7338-a7b6-167d6dd19d17",
+        "bands": 0
+      },
+      "after": {
+        "status": "finalised",
+        "receipt": "Z774C-000001",
+        "stationId": "01a1a88d-43a4-7338-a7b6-167d6dd19d17",
+        "bands": 2,
+        "bandTimes": [
+          "2026-11-04T22:05:40.445Z",
+          "2026-11-04T22:05:40.446Z"
+        ]
+      },
+      "attempts": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amount": 25000,
+          "at": "2026-11-04T22:05:25.792Z"
+        },
+        {
+          "method": "cash",
+          "status": "approved",
+          "amount": 99000,
+          "at": "2026-11-04T22:05:40.445Z"
+        }
+      ]
+    },
+    "s8": {
+      "at": "2026-11-04T22:06:55.538Z",
+      "job": {
+        "name": "job:sales.held_midnight",
+        "status": "ok",
+        "lastRunAt": "2026-11-04T22:02:47.529Z",
+        "lastOutcome": "ok",
+        "expectedEverySeconds": 300,
+        "ageSeconds": 221,
+        "lastError": null,
+        "waitingOn": []
+      },
+      "consoleRow": "job:sales.held_midnight ok ok",
+      "eveStillHeld": {
+        "status": "tendering",
+        "heldAt": "2026-11-04T22:02:46.560Z",
+        "listed": true
+      },
+      "note": "Eve was held at 05:02 Bangkok; the job ran at least once after that (lastRunAt) and left her sale tendering and listed, because her calendar day ends at 00:00 on 6 November Bangkok."
+    },
+    "s8b": {
+      "at": "2026-11-04T22:08:00.417Z",
+      "job": {
+        "name": "job:sales.held_midnight",
+        "status": "ok",
+        "lastRunAt": "2026-11-04T22:07:47.535Z",
+        "lastOutcome": "ok",
+        "expectedEverySeconds": 300,
+        "ageSeconds": 14,
+        "lastError": null,
+        "waitingOn": []
+      },
+      "eve": {
+        "status": "tendering",
+        "listed": true,
+        "flaggedAt": null
+      },
+      "eveAudit": [
+        "sale.hold",
+        "sale.create"
+      ]
+    },
+    "s9": {
+      "at": "2026-11-04T22:08:28.610Z",
+      "dialogText": "Void this held sale ZZ TEST Khun Eve 774: the sale is closed as void and can never be paid. Nothing was issued for it. Reason Back Void sale Close",
+      "eve": {
+        "status": "voided",
+        "voidReason": "ZZ TEST proof finished"
+      },
+      "audit": [
+        {
+          "action": "sale.void",
+          "actor": "Som (Reception)",
+          "reason": "ZZ TEST proof finished"
+        },
+        {
+          "action": "sale.hold.release",
+          "actor": "Som (Reception)",
+          "reason": "voided"
+        },
+        {
+          "action": "sale.hold",
+          "actor": "Som (Reception)",
+          "reason": null
+        },
+        {
+          "action": "sale.create",
+          "actor": "Som (Reception)",
+          "reason": null
+        }
+      ],
+      "eodCardShown": 1,
+      "eodBlockedReasonShown": 0,
+      "closeDayDisabled": false,
+      "closeDayNearbyText": "Close Day",
+      "apiOpenSales": {
+        "held": 0,
+        "partPaid": 0,
+        "rows": []
+      },
+      "dayStatus": "open"
+    },
+    "alerts": {
+      "at": "2026-11-04T22:08:41.435Z",
+      "status": 200,
+      "partPaidAlertMentions": [],
+      "alertKeys": [
+        "status",
+        "checks",
+        "jobs",
+        "boxes",
+        "alerts",
+        "watchdogAgeSeconds",
+        "generatedAt",
+        "reach",
+        "rollups",
+        "evidence"
+      ]
+    }
+  },
+  "images": [
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-01-payment-step-hold-buttons.png",
+      "at": "2026-11-04T22:01:12.028Z",
+      "page": "A",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-02-hold-dialog.png",
+      "at": "2026-11-04T22:01:12.645Z",
+      "page": "A",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-03-held-list-till-a.png",
+      "at": "2026-11-04T22:01:14.971Z",
+      "page": "A",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-04-held-list-till-b.png",
+      "at": "2026-11-04T22:01:44.928Z",
+      "page": "B",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-05-resumed-on-till-b.png",
+      "at": "2026-11-04T22:01:46.937Z",
+      "page": "B",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-06-paid-on-till-b-bands-issued.png",
+      "at": "2026-11-04T22:01:50.278Z",
+      "page": "B",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-07-part-payment-taken.png",
+      "at": "2026-11-04T22:02:15.658Z",
+      "page": "A",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-08-save-as-partly-paid-dialog.png",
+      "at": "2026-11-04T22:02:16.340Z",
+      "page": "A",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-09-part-paid-in-held-sales-till-a.png",
+      "at": "2026-11-04T22:02:18.381Z",
+      "page": "A",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-10-part-paid-in-held-sales-till-b.png",
+      "at": "2026-11-04T22:02:24.618Z",
+      "page": "B",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-11-end-of-day-counts.png",
+      "at": "2026-11-04T22:02:49.099Z",
+      "page": "A",
+      "url": "https://oto-pos-web-staging.onrender.com/end-of-day",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-12-close-day-shut-with-its-reason.png",
+      "at": "2026-11-04T22:02:50.480Z",
+      "page": "A",
+      "url": "https://oto-pos-web-staging.onrender.com/end-of-day",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-13-phone-end-of-day-counts.png",
+      "at": "2026-11-04T22:03:19.356Z",
+      "page": "PHONE",
+      "url": "https://oto-pos-web-staging.onrender.com/today",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-14-phone-close-day-shut-with-its-reason.png",
+      "at": "2026-11-04T22:03:20.728Z",
+      "page": "PHONE",
+      "url": "https://oto-pos-web-staging.onrender.com/today",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-15-resumed-asks-balance-only.png",
+      "at": "2026-11-04T22:03:40.639Z",
+      "page": "B",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-16-balance-paid-bands-issued.png",
+      "at": "2026-11-04T22:03:44.066Z",
+      "page": "B",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-17-part-payment-taken-hold-shut-with-reason.png",
+      "at": "2026-11-04T22:04:24.836Z",
+      "page": "A",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-18-reception-cancel-and-refund-shut-with-reason.png",
+      "at": "2026-11-04T22:04:26.986Z",
+      "page": "A",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-19-manager-cancel-and-refund-dialog.png",
+      "at": "2026-11-04T22:04:49.207Z",
+      "page": "D",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-20-manager-refunded-and-cancelled.png",
+      "at": "2026-11-04T22:04:51.026Z",
+      "page": "D",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-21-phone-held-sales.png",
+      "at": "2026-11-04T22:05:31.787Z",
+      "page": "PHONE",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-22-phone-resumed-balance-and-buttons.png",
+      "at": "2026-11-04T22:05:33.933Z",
+      "page": "PHONE",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-23-phone-saved-as-partly-paid-seen-on-till-a.png",
+      "at": "2026-11-04T22:05:38.842Z",
+      "page": "A",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-24-phone-balance-paid-bands-issued.png",
+      "at": "2026-11-04T22:05:42.668Z",
+      "page": "PHONE",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-24-phone-balance-paid-bands-issued.png",
+      "at": "2026-11-04T22:05:59.972Z",
+      "page": "PHONE",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-25-console-platform-jobs-held-midnight.png",
+      "at": "2026-11-04T22:06:55.535Z",
+      "page": "CONSOLE",
+      "url": "https://oto-console-staging.onrender.com/platform/jobs",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-26-void-held-sale-from-the-list.png",
+      "at": "2026-11-04T22:08:20.323Z",
+      "page": "A",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-27-held-sale-voided.png",
+      "at": "2026-11-04T22:08:22.343Z",
+      "page": "A",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-28-end-of-day-after-cleanup.png",
+      "at": "2026-11-04T22:08:27.115Z",
+      "page": "A",
+      "url": "https://oto-pos-web-staging.onrender.com/end-of-day",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s774/s774-st-29-close-day-no-longer-refused-over-part-paid.png",
+      "at": "2026-11-04T22:08:28.510Z",
+      "page": "A",
+      "url": "https://oto-pos-web-staging.onrender.com/end-of-day",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1a88d-42a1-75b3-a4b6-af61569cc36d",
+      "name": "ZZ TEST SCRUM-774 till A",
+      "at": "2026-11-04T21:53:11.427Z"
+    },
+    {
+      "kind": "station",
+      "id": "01a1a88d-430b-7dcb-a58b-07babc00517f",
+      "name": "ZZ TEST SCRUM-774 till B",
+      "at": "2026-11-04T21:53:11.578Z"
+    },
+    {
+      "kind": "station",
+      "id": "01a1a88d-43a4-7338-a7b6-167d6dd19d17",
+      "name": "ZZ TEST SCRUM-774 till C",
+      "at": "2026-11-04T21:53:11.675Z"
+    },
+    {
+      "kind": "member",
+      "id": "01a1a88d-b612-730c-9b01-16b9d095af14",
+      "nickname": "ZZ TEST Khun Mali 774",
+      "at": "2026-11-04T21:53:40.967Z"
+    },
+    {
+      "kind": "child",
+      "id": "01a1a88d-b66b-7e2d-bdaa-a245a2cbddd9",
+      "name": "ZZ TEST Ploy",
+      "at": "2026-11-04T21:53:41.054Z"
+    },
+    {
+      "kind": "child",
+      "id": "01a1a88d-b6bf-7fb8-8ef2-53d6fc3991f7",
+      "name": "ZZ TEST Pim",
+      "at": "2026-11-04T21:53:41.137Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1a890-1b0d-7482-a224-2d225f15f0aa",
+      "note": "rung up at 04:56 on business date 2026-11-04, before the 05:00 boundary, while exploring the screens; cancelled at once from Current Order (voided, unpaid) so every proof sale sits on 2026-11-05",
+      "status": "voided"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1a894-8f86-71d8-8aed-53535b422d2f",
+      "step": 1,
+      "at": "2026-11-04T22:01:11.452Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1a895-82b2-73a8-979c-a8b10795e227",
+      "guest": "ZZ TEST Khun Ben 774",
+      "till": "A",
+      "at": "2026-11-04T22:02:13.719Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1a895-fe17-73cb-80ba-8f96d255e7b1",
+      "guest": "ZZ TEST Khun Eve 774",
+      "till": "A",
+      "at": "2026-11-04T22:02:45.215Z"
+    },
+    {
+      "kind": "station",
+      "id": "01a1a897-6d54-7c5a-9ee7-c23140881489",
+      "name": "ZZ TEST SCRUM-774 till D",
+      "at": "2026-11-04T22:04:17.703Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1a897-7b16-7fb4-b7c0-5f9b5f4f9821",
+      "guest": "ZZ TEST Khun Cara 774",
+      "till": "A",
+      "at": "2026-11-04T22:04:22.768Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1a898-6d19-7b3e-8734-47749e520694",
+      "guest": "ZZ TEST Khun Dao 774",
+      "till": "A",
+      "at": "2026-11-04T22:05:24.706Z"
+    }
+  ],
+  "browser": "156.0.4314.58",
+  "adminActorId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+  "people": {
+    "RECEPTION": {
+      "name": "Som (Reception)",
+      "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+      "has": {
+        "pos:sale:update": true,
+        "pos:sale:void": true,
+        "pos:refund:create": true,
+        "pos:refund:approve": false,
+        "pos:cash:approve": false,
+        "pos:eod:close": false,
+        "pos:eod:read": false
+      },
+      "sample": [
+        "pos:refund:read@branch",
+        "pos:refund:create@branch",
+        "pos:cash:session_open@branch",
+        "pos:cash:session_close@branch",
+        "pos:cash:movement@branch",
+        "pos:cash:read@branch",
+        "pos:cash:day_close@branch"
+      ]
+    },
+    "MANAGER": {
+      "name": "Khun Lek (Manager)",
+      "accountId": "01a0c9ae-5377-7b34-a9ab-22bf8086f5f7",
+      "has": {
+        "pos:sale:update": true,
+        "pos:sale:void": true,
+        "pos:refund:create": true,
+        "pos:refund:approve": true,
+        "pos:cash:approve": true,
+        "pos:eod:close": false,
+        "pos:eod:read": false
+      },
+      "sample": [
+        "pos:refund:read@branch",
+        "pos:refund:create@branch",
+        "pos:refund:approve@branch",
+        "pos:cash:session_open@branch",
+        "pos:cash:session_close@branch",
+        "pos:cash:movement@branch",
+        "pos:cash:approve@branch",
+        "pos:cash:day_close@branch",
+        "pos:cash:read@branch"
+      ]
+    }
+  },
+  "checkinReads": [
+    {
+      "at": "2026-11-04T22:01:32.423Z",
+      "boardStatus": 200,
+      "boardMentions": []
+    },
+    {
+      "at": "2026-11-04T22:02:08.294Z",
+      "boardStatus": 200,
+      "boardMentions": []
+    }
+  ],
+  "who": {
+    "D": "MANAGER"
+  },
+  "cleanup": {
+    "startedAt": "2026-11-04T22:09:04.185Z",
+    "actions": [
+      {
+        "what": "archive member ZZ TEST Khun Mali 774",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "till A sign-out",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "till B sign-out",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "till PHONE sign-out",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "till D sign-out",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive station ZZ TEST SCRUM-774 till A",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive station ZZ TEST SCRUM-774 till B",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive station ZZ TEST SCRUM-774 till C",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive station ZZ TEST SCRUM-774 till D",
+        "status": 200,
+        "code": null
+      }
+    ],
+    "salesBefore": {
+      "A": [
+        {
+          "id": "01a1a897-7b16-7fb4-b7c0-5f9b5f4f9821",
+          "receipt": null,
+          "status": "voided",
+          "gross": 124000
+        },
+        {
+          "id": "01a1a895-fe17-73cb-80ba-8f96d255e7b1",
+          "receipt": null,
+          "status": "voided",
+          "gross": 124000
+        },
+        {
+          "id": "01a1a890-1b0d-7482-a224-2d225f15f0aa",
+          "receipt": null,
+          "status": "voided",
+          "gross": 213000
+        }
+      ],
+      "B": [
+        {
+          "id": "01a1a895-82b2-73a8-979c-a8b10795e227",
+          "receipt": "Z774B-000002",
+          "status": "finalised",
+          "gross": 124000
+        },
+        {
+          "id": "01a1a894-8f86-71d8-8aed-53535b422d2f",
+          "receipt": "Z774B-000001",
+          "status": "finalised",
+          "gross": 213000
+        }
+      ],
+      "C": [
+        {
+          "id": "01a1a898-6d19-7b3e-8734-47749e520694",
+          "receipt": "Z774C-000001",
+          "status": "finalised",
+          "gross": 124000
+        }
+      ],
+      "D": []
+    },
+    "meAAfterSignOut": 401,
+    "meBAfterSignOut": 401,
+    "mePHONEAfterSignOut": 401,
+    "meDAfterSignOut": 401,
+    "readBack": {
+      "at": "2026-11-04T22:09:06.466Z",
+      "stations": [
+        {
+          "name": "ZZ TEST SCRUM-774 till A",
+          "archived": true
+        },
+        {
+          "name": "ZZ TEST SCRUM-774 till B",
+          "archived": true
+        },
+        {
+          "name": "ZZ TEST SCRUM-774 till C",
+          "archived": true
+        },
+        {
+          "name": "ZZ TEST SCRUM-774 till D",
+          "archived": true
+        }
+      ],
+      "salesAfter": {
+        "A": [
+          {
+            "receipt": null,
+            "status": "voided",
+            "gross": 124000
+          },
+          {
+            "receipt": null,
+            "status": "voided",
+            "gross": 124000
+          },
+          {
+            "receipt": null,
+            "status": "voided",
+            "gross": 213000
+          }
+        ],
+        "B": [
+          {
+            "receipt": "Z774B-000002",
+            "status": "finalised",
+            "gross": 124000
+          },
+          {
+            "receipt": "Z774B-000001",
+            "status": "finalised",
+            "gross": 213000
+          }
+        ],
+        "C": [
+          {
+            "receipt": "Z774C-000001",
+            "status": "finalised",
+            "gross": 124000
+          }
+        ],
+        "D": []
+      },
+      "member": {
+        "status": 404,
+        "archivedAt": null,
+        "code": "NOT_FOUND",
+        "lookupStatus": 200,
+        "lookupFinds": false
+      },
+      "heldListMine": 0,
+      "heldCounts": {
+        "held": 0,
+        "partPaid": 0
+      },
+      "eod": {
+        "status": "open",
+        "openSales": {
+          "held": 0,
+          "partPaid": 0,
+          "rows": []
+        }
+      },
+      "untouched": [
+        {
+          "name": "FWBooth1",
+          "archived": false
+        },
+        {
+          "name": "Reception Till 1",
+          "archived": false
+        },
+        {
+          "name": "Till 1 (Pi)",
+          "archived": false
+        },
+        {
+          "name": "Till 2 (test)",
+          "archived": false
+        }
+      ]
+    },
+    "finishedAt": "2026-11-04T22:09:06.466Z",
+    "console": {
+      "signOut": 200,
+      "meAfter": 401
+    }
+  },
+  "finishedAt": "2026-11-04T22:09:18Z"
+}

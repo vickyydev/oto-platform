@@ -1,0 +1,37 @@
+// Step 5: the part-paid sale resumed on till B asks only for the balance; bands and the receipt only once it is paid.
+export default async function (S) {
+  const { heldRow, refreshHeld, payCash, readSale, codeMasks, fixScroll, sleep } = S.lib;
+  const f = S.st.fixture;
+  const { saleId, gross, guest } = f.ben;
+  const page = S.pages.B.page;
+  await page.goto(S.POS + '/', { waitUntil: 'domcontentloaded' });
+  await sleep(2500);
+  await S.lib.unlockIfLocked(S, page);
+  await page.getByText('Membership Check', { exact: true }).first().waitFor({ timeout: 30000 });
+  await refreshHeld(page);
+  await heldRow(page, guest).getByRole('button', { name: 'Resume — take the balance' }).click();
+  await S.expect(page.getByTestId('resumed-held-notice')).toContainText('฿200 already paid');
+  const balance = `฿${(gross - 20000) / 100}`;
+  await S.expect(page.getByRole('heading', { name: 'Amount Due' }).locator('..')).toContainText(balance);
+  await sleep(1200);
+  await fixScroll(page);
+  await S.shot('B', 's774-st-15-resumed-asks-balance-only');
+  const notice = (await page.getByTestId('resumed-held-notice').innerText()).replace(/\s+/g, ' ');
+  const mid = await readSale(S, saleId);
+  const tenderAt = new Date().toISOString();
+  await payCash(page);
+  await S.expect(page.getByRole('heading', { name: 'Payment Successful' })).toBeVisible({ timeout: 60000 });
+  await sleep(2500);
+  await S.shot('B', 's774-st-16-balance-paid-bands-issued', { mask: codeMasks(page) });
+  const d = await readSale(S, saleId);
+  const audit = await S.adminApi('GET', `/audit?entityType=sale&entityId=${saleId}&limit=50`);
+  S.st.steps.s5 = {
+    at: new Date().toISOString(), saleId, notice, balance, tenderAt,
+    whileResumed: { status: mid.sale.status, stationId: mid.sale.stationId, bands: mid.bands?.length ?? null, receipt: mid.sale.receiptNumber ?? null },
+    after: { status: d.sale.status, receiptNumber: d.sale.receiptNumber, stationId: d.sale.stationId, bands: d.bands?.length ?? null, bandTimes: (d.bands ?? []).map((b) => b.createdAt ?? b.issuedAt ?? null) },
+    attempts: (d.attempts ?? []).map((a) => ({ method: a.method, status: a.status, amount: a.amountSatang, at: a.createdAt, station: a.stationId ?? null })),
+    audit: (audit.body?.entries ?? []).map((e) => ({ action: e.action, at: e.createdAt, actor: e.actorName, reason: e.after?.reason ?? null })),
+  };
+  S.save();
+  return S.st.steps.s5;
+}

@@ -1,0 +1,27 @@
+// ZZ TEST fixtures for SCRUM-774: three ZZ TEST tills on Virtual box 1 (no devices, card manual, no QR),
+// one ZZ TEST member with two children. Never the Pi, its tills, FWBooth1 or Reception Till 1.
+export default async function (S) {
+  const { adminApi, st, save } = S;
+  const f = st.fixture;
+  const BR = f.branchId;
+  if (!f.tills) {
+    const boxes = (await adminApi('GET', `/branches/${BR}/boxes`)).body.boxes;
+    const vb = boxes.find((b) => b.role === 'virtual' && b.slot === 'virtual-1' && b.status === 'online' && !b.archived);
+    if (!vb) throw new Error('Virtual box 1 not online');
+    const stations = (await adminApi('GET', `/branches/${BR}/stations?includeArchived=true`)).body.stations;
+    const used = new Set(stations.map((s) => s.codePrefix));
+    const names = new Set(stations.map((s) => s.name));
+    f.boxId = vb.id; f.boxName = vb.name; f.tills = {};
+    for (const key of ['A', 'B', 'C']) {
+      const codePrefix = 'Z774' + key;
+      const name = `ZZ TEST SCRUM-774 till ${key}`;
+      if (used.has(codePrefix) || names.has(name)) throw new Error('prefix or name in use: ' + codePrefix);
+      const r = await adminApi('POST', `/branches/${BR}/stations`, { name, kind: 'till', boxId: vb.id, codePrefix, accessScope: 'all_staff', paymentRouting: { card: 'manual', qr: 'none' }, capabilities: [], devices: [] });
+      if (r.status !== 201 && r.status !== 200) throw new Error('station ' + key + ' ' + r.status + ' ' + JSON.stringify(r.body).slice(0, 300));
+      f.tills[key] = { id: r.body.station.id, name: r.body.station.name, prefix: codePrefix, ready: r.body.station.ready };
+      st.created.push({ kind: 'station', id: r.body.station.id, name, at: new Date().toISOString() });
+      save();
+    }
+  }
+  return { tills: f.tills, box: f.boxName };
+}

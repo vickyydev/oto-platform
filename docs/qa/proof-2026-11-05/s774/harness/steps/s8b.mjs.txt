@@ -1,0 +1,11 @@
+export default async function (S) {
+  const f = S.st.fixture;
+  const jobs = await S.adminApi('GET', '/platform/jobs');
+  const job = (jobs.body?.jobs ?? []).find((j) => j.name === 'job:sales.held_midnight');
+  const eve = await S.lib.readSale(S, f.eve.saleId);
+  const held = (await S.adminApi('GET', `/sales/held?branchId=${f.branchId}`)).body;
+  const audit = await S.adminApi('GET', `/audit?entityType=sale&entityId=${f.eve.saleId}&limit=50`);
+  S.st.steps.s8b = { at: new Date().toISOString(), job, eve: { status: eve.sale.status, listed: held.sales.some((s) => s.saleId === f.eve.saleId), flaggedAt: held.sales.find((s) => s.saleId === f.eve.saleId)?.flaggedAt ?? null }, eveAudit: (audit.body?.entries ?? []).map((e) => e.action) };
+  S.save();
+  return S.st.steps.s8b;
+}

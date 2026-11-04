@@ -1,0 +1,11 @@
+export default async function (S) {
+  const f = S.st.fixture;
+  if (f.tills.D) return f.tills.D;
+  const name = 'ZZ TEST SCRUM-774 till D';
+  const r = await S.adminApi('POST', `/branches/${f.branchId}/stations`, { name, kind: 'till', boxId: f.boxId, codePrefix: 'Z774D', accessScope: 'all_staff', paymentRouting: { card: 'manual', qr: 'none' }, capabilities: [], devices: [] });
+  if (r.status !== 201 && r.status !== 200) throw new Error('station D ' + r.status + ' ' + JSON.stringify(r.body).slice(0, 300));
+  f.tills.D = { id: r.body.station.id, name, prefix: 'Z774D', ready: r.body.station.ready };
+  S.st.created.push({ kind: 'station', id: r.body.station.id, name, at: new Date().toISOString() });
+  S.save();
+  return f.tills.D;
+}

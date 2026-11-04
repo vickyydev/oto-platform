@@ -1,0 +1,26 @@
+export default async function (S) {
+  const f = S.st.fixture;
+  if (f.member) return f.member;
+  let phone = null;
+  for (let n = 77401; n < 77499; n += 1) {
+    const p = '+668977' + String(n).padStart(5, '0');
+    const look = await S.pageApi('A', 'GET', '/members/lookup?phone=' + encodeURIComponent(p));
+    if (look.status === 404 || (look.status === 200 && !look.body?.member)) { phone = p; break; }
+  }
+  if (!phone) throw new Error('no free test phone');
+  const m = await S.pageApi('A', 'POST', '/members', { phone, nickname: 'ZZ TEST Khun Mali 774', createdVia: 'pos' });
+  if (m.status !== 201 && m.status !== 200) throw new Error('member ' + m.status + ' ' + JSON.stringify(m.body).slice(0, 300));
+  const id = m.body.member.id;
+  S.st.created.push({ kind: 'member', id, nickname: 'ZZ TEST Khun Mali 774', at: new Date().toISOString() });
+  f.member = { id, phone, nickname: 'ZZ TEST Khun Mali 774', children: [] };
+  S.save();
+  for (const [name, ageYears] of [['ZZ TEST Ploy', 6], ['ZZ TEST Pim', 4]]) {
+    const c = await S.pageApi('A', 'POST', `/members/${id}/children`, { name, ageYears });
+    if (c.status !== 201 && c.status !== 200) throw new Error('child ' + c.status + ' ' + JSON.stringify(c.body).slice(0, 300));
+    const cid = c.body.child?.id ?? c.body.id;
+    f.member.children.push({ id: cid, name });
+    S.st.created.push({ kind: 'child', id: cid, name, at: new Date().toISOString() });
+    S.save();
+  }
+  return { id, nickname: f.member.nickname, children: f.member.children.map((c) => c.name) };
+}

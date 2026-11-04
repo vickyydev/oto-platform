@@ -1,0 +1,35 @@
+// Step 8 (read-only): the midnight job is registered and running on staging, and it leaves today's holds alone before midnight.
+export default async function (S) {
+  const { sleep, text } = S.lib;
+  const f = S.st.fixture;
+  const jobs = await S.adminApi('GET', '/platform/jobs');
+  const job = (jobs.body?.jobs ?? []).find((j) => j.name === 'job:sales.held_midnight');
+  const eve = await S.lib.readSale(S, f.eve.saleId);
+  const held = (await S.adminApi('GET', `/sales/held?branchId=${f.branchId}`)).body;
+  const { page } = await S.newPage('CONSOLE', { width: 1500, height: 1000 });
+  await page.goto(S.CONSOLE, { waitUntil: 'domcontentloaded' });
+  await sleep(4000);
+  if (await page.locator('input[type="password"]').count()) {
+    const field = page.locator('input[type="tel"], input[inputmode="tel"]').last();
+    const prefix = await field.evaluate((el) => /\+(\d{1,4})/.exec(el.parentElement?.textContent ?? '')?.[1] ?? null).catch(() => null);
+    const phone = S.need('STAGING_ADMIN_PHONE');
+    await field.fill(prefix === '66' ? `0${phone.slice(3)}` : phone.replace(/^\+66/, '0'));
+    await page.locator('input[type="password"]').last().fill(S.need('STAGING_ADMIN_PASSWORD'));
+    await page.getByRole('button', { name: /sign in/i }).first().click();
+    await sleep(6000);
+  }
+  if (await page.locator('input[type="password"]').count()) throw new Error('Console still on the sign-in screen');
+  await page.goto(S.CONSOLE + '/platform/jobs', { waitUntil: 'domcontentloaded' });
+  await page.getByText('job:sales.held_midnight').first().waitFor({ timeout: 30000 });
+  await page.getByText('job:sales.held_midnight').first().scrollIntoViewIfNeeded();
+  await sleep(1500);
+  await S.shot('CONSOLE', 's774-st-25-console-platform-jobs-held-midnight');
+  const rowText = (await page.getByText('job:sales.held_midnight').first().locator('xpath=ancestor::*[self::tr or self::li or self::div][1]').innerText()).replace(/\s+/g, ' ').slice(0, 400);
+  S.st.steps.s8 = {
+    at: new Date().toISOString(), job, consoleRow: rowText,
+    eveStillHeld: { status: eve.sale.status, heldAt: held.sales.find((s) => s.saleId === f.eve.saleId)?.heldAt ?? null, listed: held.sales.some((s) => s.saleId === f.eve.saleId) },
+    note: 'Eve was held at 05:02 Bangkok; the job ran at least once after that (lastRunAt) and left her sale tendering and listed, because her calendar day ends at 00:00 on 6 November Bangkok.',
+  };
+  S.save();
+  return S.st.steps.s8;
+}

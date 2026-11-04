@@ -1,0 +1,9 @@
+export default async function (S) {
+  const f = S.st.fixture;
+  const b = await S.pageApi('A', 'GET', `/checkin/board?branchId=${f.branchId}`);
+  const s = JSON.stringify(b.body ?? {});
+  const hits = ['ZZ TEST Ploy', 'ZZ TEST Pim', 'ZZ TEST Khun Mali 774'].filter((n) => s.includes(n));
+  const r = { at: new Date().toISOString(), boardStatus: b.status, boardMentions: hits };
+  (S.st.checkinReads = S.st.checkinReads ?? []).push(r); S.save();
+  return r;
+}

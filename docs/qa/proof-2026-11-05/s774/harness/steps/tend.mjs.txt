@@ -1,0 +1,9 @@
+export default async function (S) {
+  const f = S.st.fixture;
+  const out = {};
+  for (const k of ['A', 'B', 'C']) {
+    const r = await S.adminApi('GET', `/sales?branchId=${f.branchId}&stationId=${f.tills[k].id}&limit=20`);
+    out[k] = (r.body?.sales ?? []).map((s) => ({ id: s.id, status: s.status, businessDate: s.businessDate, gross: s.totals?.grossSatang ?? s.grossSatang, receipt: s.receiptNumber, at: s.occurredAt ?? s.createdAt }));
+  }
+  return out;
+}

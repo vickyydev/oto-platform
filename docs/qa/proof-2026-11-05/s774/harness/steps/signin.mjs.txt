@@ -1,0 +1,12 @@
+export default async function (S) {
+  const { tillSignIn, text, readLeftBehind } = S.lib;
+  const f = S.st.fixture;
+  const out = {};
+  for (const [label, key] of [['A', 'A'], ['B', 'B']]) {
+    if (S.pages[label]) continue;
+    const page = await tillSignIn(S, label, f.tills[key].name, 'RECEPTION');
+    await page.getByText('Membership Check', { exact: true }).first().waitFor({ timeout: 30000 });
+    out[label] = { url: page.url(), leftBehind: await readLeftBehind(page), heldSales: await page.getByTestId('held-sales').count() };
+  }
+  return out;
+}

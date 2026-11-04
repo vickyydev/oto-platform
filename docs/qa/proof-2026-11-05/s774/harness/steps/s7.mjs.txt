@@ -1,0 +1,67 @@
+// Step 7: the phone till — Held sales listed, resumed for the balance, saved as partly paid again, then paid there.
+export default async function (S) {
+  const { heldRow, refreshHeld, payCash, readSale, ringUp, codeMasks, fixScroll, sleep } = S.lib;
+  const f = S.st.fixture;
+  const guest = 'ZZ TEST Khun Dao 774';
+  const pageA = S.pages.A.page;
+  let saleId = f.dao?.saleId;
+  if (!saleId) {
+    saleId = await ringUp(S, 'A', guest);
+    await payCash(pageA, '250');
+    await S.expect(pageA.getByTestId('hold-sale-reason')).toHaveText('฿250 has been paid on this sale — use Save as partly paid.', { timeout: 30000 });
+    await pageA.getByRole('button', { name: 'Save as partly paid', exact: true }).click();
+    await pageA.getByTestId('hold-sale-dialog').getByRole('button', { name: 'Save as partly paid', exact: true }).click();
+    await S.expect(heldRow(pageA, guest)).toContainText('฿250 paid');
+    f.dao = { saleId, guest, gross: (await readSale(S, saleId)).sale.totals.grossSatang };
+    S.save();
+  }
+  const phone = S.pages.PHONE.page;
+  await phone.goto(S.POS + '/', { waitUntil: 'domcontentloaded' });
+  await sleep(3000);
+  await S.lib.unlockIfLocked(S, phone);
+  for (const close of await phone.locator('[toast-close]').all()) await close.click({ force: true }).catch(() => {});
+  await S.expect(heldRow(phone, guest)).toBeVisible({ timeout: 30000 });
+  await phone.getByTestId('held-sales').scrollIntoViewIfNeeded();
+  await sleep(1000);
+  await S.shot('PHONE', 's774-st-21-phone-held-sales');
+  const listText = (await phone.getByTestId('held-sales').innerText()).replace(/\s+/g, ' ');
+  await heldRow(phone, guest).getByRole('button', { name: 'Resume — take the balance' }).click();
+  await S.expect(phone.getByTestId('resumed-held-notice')).toContainText('฿250 already paid');
+  await S.expect(phone.getByTestId('hold-sale-buttons')).toBeVisible();
+  const holdReason = await phone.getByTestId('hold-sale-reason').innerText();
+  const mid = await readSale(S, saleId);
+  await phone.getByTestId('hold-sale-buttons').scrollIntoViewIfNeeded();
+  await sleep(1000);
+  await fixScroll(phone);
+  await S.shot('PHONE', 's774-st-22-phone-resumed-balance-and-buttons');
+  const notice = (await phone.getByTestId('resumed-held-notice').innerText()).replace(/\s+/g, ' ');
+  await phone.getByRole('button', { name: 'Save as partly paid', exact: true }).click();
+  await phone.getByTestId('hold-sale-dialog').getByLabel('Note (optional)').fill('ZZ TEST back at 18:00 for the rest');
+  await phone.getByTestId('hold-sale-dialog').getByRole('button', { name: 'Save as partly paid', exact: true }).click();
+  await S.expect(heldRow(phone, guest)).toContainText('ZZ TEST back at 18:00 for the rest');
+  await pageA.goto(S.POS + '/', { waitUntil: 'domcontentloaded' });
+  await sleep(2500);
+  await S.lib.unlockIfLocked(S, pageA);
+  await pageA.getByText('Membership Check', { exact: true }).first().waitFor({ timeout: 30000 });
+  await refreshHeld(pageA);
+  await S.expect(heldRow(pageA, guest)).toContainText('ZZ TEST back at 18:00 for the rest');
+  await S.shot('A', 's774-st-23-phone-saved-as-partly-paid-seen-on-till-a');
+  const rowA = (await heldRow(pageA, guest).innerText()).replace(/\s+/g, ' ');
+  await heldRow(phone, guest).getByRole('button', { name: 'Resume — take the balance' }).click();
+  await S.expect(phone.getByTestId('resumed-held-notice')).toBeVisible();
+  await phone.getByRole('heading', { name: 'Cash', exact: true }).scrollIntoViewIfNeeded();
+  const tenderAt = new Date().toISOString();
+  await payCash(phone);
+  await S.expect(phone.getByRole('heading', { name: 'Payment Successful' })).toBeVisible({ timeout: 60000 });
+  await sleep(2500);
+  await S.shot('PHONE', 's774-st-24-phone-balance-paid-bands-issued', { mask: codeMasks(phone) });
+  const d = await readSale(S, saleId);
+  S.st.steps.s7 = {
+    at: new Date().toISOString(), saleId, listText, notice, holdReason, rowA, tenderAt,
+    whileResumedOnPhone: { status: mid.sale.status, stationId: mid.sale.stationId, tillC: f.tills.C.id, bands: mid.bands?.length ?? null },
+    after: { status: d.sale.status, receipt: d.sale.receiptNumber, stationId: d.sale.stationId, bands: d.bands?.length ?? null, bandTimes: (d.bands ?? []).map((b) => b.createdAt ?? null) },
+    attempts: (d.attempts ?? []).map((a) => ({ method: a.method, status: a.status, amount: a.amountSatang, at: a.createdAt })),
+  };
+  S.save();
+  return S.st.steps.s7;
+}

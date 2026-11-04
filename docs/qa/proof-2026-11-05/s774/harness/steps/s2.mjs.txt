@@ -1,0 +1,39 @@
+// Step 2: the held sale listed and resumed on till B, paid in full there; bands and the receipt only then.
+export default async function (S) {
+  const { heldRow, refreshHeld, payCash, readSale, codeMasks, sleep } = S.lib;
+  const f = S.st.fixture;
+  const s1 = S.st.steps.s1;
+  const page = S.pages.B.page;
+  await page.goto(S.POS + '/', { waitUntil: 'domcontentloaded' });
+  await sleep(2500);
+  await S.lib.unlockIfLocked(S, page);
+  await page.getByText('Membership Check', { exact: true }).first().waitFor({ timeout: 30000 });
+  await refreshHeld(page);
+  await S.expect(heldRow(page, s1.prefilled)).toBeVisible();
+  await S.shot('B', 's774-st-04-held-list-till-b');
+  const listText = (await heldRow(page, s1.prefilled).innerText()).replace(/\s+/g, ' ');
+  await heldRow(page, s1.prefilled).getByRole('button', { name: /^Resume/ }).click();
+  await S.expect(page.getByTestId('resumed-held-notice')).toBeVisible();
+  await sleep(1000);
+  const resumed = await readSale(S, s1.saleId);
+  await S.shot('B', 's774-st-05-resumed-on-till-b');
+  const notice = (await page.getByTestId('resumed-held-notice').innerText()).replace(/\s+/g, ' ');
+  const tenderAt = new Date().toISOString();
+  await payCash(page);
+  await S.expect(page.getByRole('heading', { name: 'Payment Successful' })).toBeVisible({ timeout: 60000 });
+  await sleep(2500);
+  await S.shot('B', 's774-st-06-paid-on-till-b-bands-issued', { mask: codeMasks(page) });
+  const d = await readSale(S, s1.saleId);
+  const held = (await S.pageApi('B', 'GET', `/sales/held?branchId=${f.branchId}`)).body;
+  const audit = await S.adminApi('GET', `/audit?entityType=sale&entityId=${s1.saleId}&limit=50`);
+  S.st.steps.s2 = {
+    at: new Date().toISOString(), listText, notice, tenderAt,
+    whileResumed: { status: resumed.sale.status, stationId: resumed.sale.stationId, bands: resumed.bands?.length ?? null },
+    after: { status: d.sale.status, receiptNumber: d.sale.receiptNumber, stationId: d.sale.stationId, tillB: f.tills.B.id, bands: d.bands?.length ?? null, bandTimes: (d.bands ?? []).map((b) => b.createdAt ?? b.issuedAt ?? null) },
+    stillListed: held.sales.some((s) => s.saleId === s1.saleId),
+    auditStatus: audit.status,
+    audit: (audit.body?.entries ?? audit.body?.rows ?? audit.body?.items ?? []).map((e) => ({ action: e.action, at: e.createdAt, actor: e.actorName ?? e.actorAccountId ?? e.actor?.name ?? null, after: e.after && (e.after.reason ?? e.after.held ?? null) })),
+  };
+  S.save();
+  return S.st.steps.s2;
+}

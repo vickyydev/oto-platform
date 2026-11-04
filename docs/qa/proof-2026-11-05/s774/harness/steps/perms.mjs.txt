@@ -1,0 +1,19 @@
+// Who holds what: reception and the manager, read from a signed-in api context each (names and permission keys only).
+export default async function (S) {
+  const out = {};
+  for (const who of ['RECEPTION', 'MANAGER']) {
+    const ctx = await S.expect ? null : null;
+    const req = await (await import('node:module')).createRequire(S.LANE + '/apps/pos/package.json')('@playwright/test').request.newContext({ baseURL: S.POS });
+    const r = await req.post('/api/auth/sign-in', { data: { phone: S.need(`STAGING_${who}_PHONE`), password: S.need(`STAGING_${who}_PASSWORD`) } });
+    if (r.status() !== 200) { out[who] = { signIn: r.status() }; await req.dispose(); continue; }
+    const me = await (await req.get('/api/me')).json();
+    const p = await (await req.get('/api/me/permissions')).json();
+    const list = (p.permissions ?? p.effective ?? []).map((x) => (typeof x === 'string' ? x : `${x.permission}@${x.scopeType ?? x.scope?.type ?? ''}`));
+    const want = ['pos:sale:update', 'pos:sale:void', 'pos:refund:create', 'pos:refund:approve', 'pos:cash:approve', 'pos:eod:close', 'pos:eod:read'];
+    out[who] = { name: me.employee?.name, accountId: me.account?.id, has: Object.fromEntries(want.map((w) => [w, list.some((l) => l.startsWith(w + '@') || l === w)])), sample: list.filter((l) => /eod|end_of_day|cash|refund/.test(l)).slice(0, 20) };
+    await req.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } }).catch(() => {});
+    await req.dispose();
+  }
+  S.st.people = out; S.save();
+  return out;
+}

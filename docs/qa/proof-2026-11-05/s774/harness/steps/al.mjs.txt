@@ -1,0 +1,8 @@
+export default async function (S) {
+  const h = await S.adminApi('GET', '/ops/health');
+  const s = JSON.stringify(h.body ?? {});
+  const hits = (s.match(/sales\.part_paid[^"]*/g) ?? []).slice(0, 5);
+  const r = { at: new Date().toISOString(), status: h.status, partPaidAlertMentions: hits, alertKeys: Object.keys(h.body ?? {}) };
+  S.st.steps.alerts = r; S.save();
+  return r;
+}

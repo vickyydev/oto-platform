@@ -1,0 +1,27 @@
+// Step 6 set-up: another ZZ TEST part-paid sale on till A (฿300 cash), saved as partly paid; reception's refund button shut with its reason.
+export default async function (S) {
+  const { heldRow, payCash, readSale, ringUp, fixScroll, sleep } = S.lib;
+  const guest = 'ZZ TEST Khun Cara 774';
+  const page = S.pages.A.page;
+  const saleId = await ringUp(S, 'A', guest);
+  const gross = (await readSale(S, saleId)).sale.totals.grossSatang;
+  await payCash(page, '300');
+  await S.expect(page.getByTestId('hold-sale-reason')).toHaveText('฿300 has been paid on this sale — use Save as partly paid.', { timeout: 30000 });
+  await sleep(1000);
+  await fixScroll(page);
+  await S.shot('A', 's774-st-17-part-payment-taken-hold-shut-with-reason');
+  await page.getByRole('button', { name: 'Save as partly paid', exact: true }).click();
+  await page.getByTestId('hold-sale-dialog').getByRole('button', { name: 'Save as partly paid', exact: true }).click();
+  await S.expect(page.getByText('Membership Check', { exact: true }).first()).toBeVisible();
+  const row = heldRow(page, guest);
+  await S.expect(row).toContainText('฿300 paid');
+  const refundBtn = row.getByRole('button', { name: 'Cancel and refund' });
+  const disabled = await refundBtn.isDisabled();
+  await row.scrollIntoViewIfNeeded();
+  await sleep(1000);
+  await S.shot('A', 's774-st-18-reception-cancel-and-refund-shut-with-reason');
+  S.st.fixture.cara = { saleId, gross, guest };
+  S.st.steps.s6a = { at: new Date().toISOString(), saleId, gross, receptionRefundDisabled: disabled, rowText: (await row.innerText()).replace(/\s+/g, ' ') };
+  S.save();
+  return S.st.steps.s6a;
+}

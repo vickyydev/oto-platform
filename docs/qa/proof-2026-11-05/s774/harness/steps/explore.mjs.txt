@@ -1,0 +1,16 @@
+export default async function (S) {
+  const { adminApi, st, save } = S;
+  const me = await adminApi('GET', '/me');
+  const BR = me.body.operatorContext?.branchId;
+  const branches = await adminApi('GET', '/branches');
+  const boxes = (await adminApi('GET', `/branches/${BR}/boxes`)).body;
+  const stations = (await adminApi('GET', `/branches/${BR}/stations?includeArchived=true`)).body;
+  st.fixture.branchId = BR; st.adminActorId = me.body.account?.id; save();
+  return {
+    me: { branch: BR, name: me.body.employee?.name, ctx: me.body.operatorContext },
+    branches: branches.status === 200 ? (branches.body.branches ?? branches.body).map?.((b) => ({ id: b.id, name: b.name, code: b.code, archived: b.archivedAt })) : branches,
+    boxes: (boxes.boxes ?? []).map((b) => ({ id: b.id, name: b.name, slot: b.slot, role: b.role, status: b.status, archived: b.archived })),
+    stations: (stations.stations ?? []).filter((s) => !s.archivedAt).map((s) => ({ id: s.id, name: s.name, kind: s.kind, prefix: s.codePrefix, box: s.boxName ?? s.boxId })),
+    prefixes: (stations.stations ?? []).map((s) => s.codePrefix),
+  };
+}

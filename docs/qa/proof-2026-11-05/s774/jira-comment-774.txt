@@ -1,0 +1,22 @@
+Checked on staging (the test system) on 5 November 2026, 05:01 to 05:09 Bangkok, on the live version a720b2c7 (the till, the phone till, the Console and the platform were all on it). Only test records were used (names start with ZZ TEST), cash only, on four test tills made for this check and removed afterwards.
+
+What a person can do now:
+- At the payment step there are two new buttons under the payment methods: Hold sale and Save as partly paid. A button that cannot be used yet is greyed out and says why underneath.
+- Hold sale parks the sale under the customer's name (filled in for a member, or typed), with an optional note. Nothing is issued while it waits: no bracelets, no receipt, no credit.
+- The held sale shows in Held sales on every till at the branch, including the phone till. Any till can press Resume and take the payment there; the bracelets and the receipt are issued only then, at that till.
+- If the customer pays part of the money, staff press Save as partly paid. Held sales shows what was paid and the balance. Resume asks only for the balance.
+- A partly paid sale can be cancelled with "Cancel and refund", which gives back exactly what was paid. Only a manager can do this; for other staff the button is greyed out and says "A refund needs a manager's approval — ask a manager to make it."
+- A held sale with no money that is still waiting at midnight is cancelled by itself as "not collected". A partly paid sale is never cancelled by itself: it is flagged for the manager.
+- End of Day shows how many sales are held and partly paid. While a partly paid sale is open it refuses to close and says why on the screen, for example "End of Day cannot close: 1 sale is partly paid — ZZ TEST Khun Ben 774 (in Held sales), 200 baht paid, balance 1,040 baht. Take the balance or refund what was paid, from Held sales on a till, then close the day." The phone till's End of Day says the same.
+
+How to retest:
+- On a staging till, sign in as reception and ring up a ticket (a test member or a walk-in named ZZ TEST ...). At the payment step press Hold sale, add a note and confirm. The till goes back to the start and the sale is in Held sales.
+- On another till at the same branch (or the phone till), find it in Held sales and press Resume. Pay by cash: the bracelets and the receipt appear now.
+- Ring up another ticket, choose Cash and take part of the money (for example 200 baht), then press Save as partly paid. Held sales shows "200 baht paid · balance ...".
+- Open Today > End of Day: it lists the sale and Close Day is greyed out with the reason written above it. Do not close the day.
+- Resume the partly paid sale on any till: it asks only for the balance. Pay it, and End of Day no longer refuses.
+- As a manager, try Cancel and refund on a partly paid test sale: the money paid is refunded and the sale closes. As reception, the button is greyed out with the reason.
+
+Not watched on staging: the midnight cancel itself. It happens at 00:00 and could not be watched at 5 a.m. The check confirmed that the midnight job is running every 5 minutes on staging and leaves today's held sales alone before midnight; the midnight cancel was shown on a local test copy and is covered by the automatic checks.
+
+The full record is in the repository under docs/qa/proof-2026-11-05/s774.

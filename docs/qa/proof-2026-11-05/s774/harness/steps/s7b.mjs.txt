@@ -1,0 +1,11 @@
+export default async function (S) {
+  const { codeMasks, sleep } = S.lib;
+  const phone = S.pages.PHONE.page;
+  for (const close of await phone.locator('[toast-close]').all()) await close.click({ force: true }).catch(() => {});
+  await sleep(1500);
+  await phone.evaluate(() => window.scrollTo(0, 0));
+  await phone.getByRole('heading', { name: 'Payment Successful' }).scrollIntoViewIfNeeded();
+  await sleep(800);
+  await S.shot('PHONE', 's774-st-24-phone-balance-paid-bands-issued', { mask: codeMasks(phone) });
+  return { heading: await phone.getByRole('heading', { name: 'Payment Successful' }).isVisible(), text: (await S.lib.text(phone, 600)) };
+}

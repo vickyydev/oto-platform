@@ -1,0 +1,6 @@
+export default async function (S) {
+  const d = await S.lib.readSale(S, S.st.steps.s1.saleId);
+  S.st.steps.s2.readback = { grants: d.grants?.length ?? null, printJobs: (d.printJobs ?? []).map((p) => ({ kind: p.kind, status: p.status })), attempts: (d.attempts ?? []).map((a) => ({ method: a.method, status: a.status, amount: a.amountSatang, at: a.createdAt })) };
+  S.save();
+  return S.st.steps.s2.readback;
+}

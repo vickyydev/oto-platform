@@ -1,0 +1,6 @@
+import { render, service } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/render.mjs';
+const api = await service('oto-api-staging');
+const qs = new URLSearchParams({ ownerId: api.ownerId, resource: api.id, startTime: '2026-11-04T21:00:00Z', endTime: '2026-11-04T21:55:00Z', limit: '100', direction: 'forward', text: process.argv[2] });
+const logs = await render('GET', `/logs?${qs}`);
+const rows = (logs.logs ?? []).map((l) => ({ t: l.timestamp, m: String(l.message).replace(/postgres(ql)?:\/\/\S+/gi, '[db]').slice(0, 220) }));
+console.log(JSON.stringify({ n: rows.length, rows: rows.slice(0, 20), hasMore: logs.hasMore }, null, 1));

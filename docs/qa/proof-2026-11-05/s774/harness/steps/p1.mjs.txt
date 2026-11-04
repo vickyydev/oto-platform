@@ -1,0 +1,22 @@
+// Step 4 (phone): the phone layout's End of Day shows the counts and the Close Day reason.
+export default async function (S) {
+  const { sleep, text } = S.lib;
+  const page = S.pages.PHONE.page;
+  await S.lib.unlockIfLocked(S, page);
+  await page.getByRole('button', { name: /^Today/ }).last().click();
+  await sleep(2000);
+  const eodTab = page.getByRole('button', { name: /End of Day/ }).or(page.getByRole('tab', { name: /End of Day/ })).first();
+  await eodTab.click();
+  const card = page.getByTestId('eod-open-sales');
+  await S.expect(card).toBeVisible({ timeout: 30000 });
+  await card.scrollIntoViewIfNeeded();
+  await sleep(1200);
+  await S.shot('PHONE', 's774-st-13-phone-end-of-day-counts');
+  const reasonLoc = page.getByTestId('close-day-blocked-reason');
+  const reason = (await reasonLoc.count()) ? await reasonLoc.first().innerText() : null;
+  const btn = page.getByRole('button', { name: 'Close Day' });
+  if (await btn.count()) { await btn.first().scrollIntoViewIfNeeded(); await sleep(800); await S.shot('PHONE', 's774-st-14-phone-close-day-shut-with-its-reason'); }
+  S.st.steps.s4phone = { at: new Date().toISOString(), cardText: (await card.innerText()).replace(/\s+/g, ' '), reason, closeDayDisabled: (await btn.count()) ? await btn.first().isDisabled() : null };
+  S.save();
+  return S.st.steps.s4phone;
+}

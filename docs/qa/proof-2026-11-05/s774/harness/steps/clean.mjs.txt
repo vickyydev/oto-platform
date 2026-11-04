@@ -1,0 +1,48 @@
+// Clean-up, own records only: void any unpaid sale left on the four ZZ TEST tills, archive the ZZ TEST member,
+// sign every session out, archive the four ZZ TEST tills, then read everything back.
+export default async function (S) {
+  const f = S.st.fixture;
+  const C = (S.st.cleanup = { startedAt: new Date().toISOString(), actions: [] });
+  const act = (what, res, extra = {}) => { C.actions.push({ what, status: res.status, code: res.body?.error?.code ?? null, ...extra }); S.save(); return res; };
+  const tills = Object.entries(f.tills);
+  for (const [k, t] of tills) if (!t.name.startsWith('ZZ TEST SCRUM-774 till ')) throw new Error('Refusing: ' + t.name);
+  // 1. Unpaid sales on this run's tills, by exact id.
+  C.salesBefore = {};
+  for (const [k, t] of tills) {
+    const list = (await S.adminApi('GET', `/sales?branchId=${f.branchId}&stationId=${t.id}&limit=50`)).body.sales ?? [];
+    C.salesBefore[k] = list.map((s) => ({ id: s.id, receipt: s.receiptNumber ?? null, status: s.status, gross: s.totals?.grossSatang ?? null }));
+    for (const s of list.filter((s) => s.status === 'tendering')) act('void unpaid sale', await S.adminApi('POST', `/sales/${s.id}/void`, { reason: 'ZZ TEST SCRUM-774 proof: not paid' }), { saleId: s.id });
+  }
+  // 2. The ZZ TEST member, from the till it was made on.
+  const m = f.member;
+  const now = (await S.pageApi('A', 'GET', `/members/${m.id}`)).body.member;
+  if (now.nickname !== m.nickname || !m.nickname.startsWith('ZZ TEST')) throw new Error('Refusing to archive member ' + m.id);
+  act('archive member ' + m.nickname, await S.pageApi('A', 'DELETE', `/members/${m.id}`));
+  // 3. Every till session signed out.
+  for (const label of ['A', 'B', 'PHONE', 'D']) {
+    if (!S.pages[label]) continue;
+    act(`till ${label} sign-out`, await S.pageApi(label, 'POST', '/auth/sign-out', {}));
+    C[`me${label}AfterSignOut`] = (await S.pageApi(label, 'GET', '/me')).status;
+  }
+  // 4. The four ZZ TEST tills.
+  for (const [k, t] of tills) act('archive station ' + t.name, await S.adminApi('DELETE', `/stations/${t.id}`));
+  // 5. Read back.
+  const stations = (await S.adminApi('GET', `/branches/${f.branchId}/stations?includeArchived=true`)).body.stations;
+  const mineAfter = tills.map(([k, t]) => { const s = stations.find((x) => x.id === t.id); return { name: s?.name, archived: s?.archived ?? !!s?.archivedAt }; });
+  const salesAfter = {};
+  for (const [k, t] of tills) salesAfter[k] = ((await S.adminApi('GET', `/sales?branchId=${f.branchId}&stationId=${t.id}&limit=50`)).body.sales ?? []).map((s) => ({ receipt: s.receiptNumber ?? null, status: s.status, gross: s.totals?.grossSatang ?? null }));
+  const g = await S.adminApi('GET', `/members/${m.id}`);
+  const look = await S.adminApi('GET', '/members/lookup?phone=' + encodeURIComponent(m.phone));
+  const held = (await S.adminApi('GET', `/sales/held?branchId=${f.branchId}`)).body;
+  const eod = await S.adminApi('GET', `/branches/${f.branchId}/end-of-day?date=${f.businessDate}`);
+  C.readBack = {
+    at: new Date().toISOString(), stations: mineAfter, salesAfter,
+    member: { status: g.status, archivedAt: g.body?.member?.archivedAt ?? null, code: g.body?.error?.code ?? null, lookupStatus: look.status, lookupFinds: !!look.body?.member },
+    heldListMine: held.sales.filter((s) => /774/.test(s.label)).length, heldCounts: held.counts,
+    eod: { status: eod.body.status, openSales: eod.body.openSales },
+    untouched: stations.filter((s) => /Till 1 \(Pi\)|Till 2 \(test\)|FWBooth1|Reception Till 1/.test(s.name)).map((s) => ({ name: s.name, archived: s.archived ?? !!s.archivedAt })),
+  };
+  C.finishedAt = new Date().toISOString();
+  S.save();
+  return C;
+}

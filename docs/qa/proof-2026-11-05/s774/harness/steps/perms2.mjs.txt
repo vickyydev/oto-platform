@@ -1,0 +1,14 @@
+export default async function (S) {
+  const out = {};
+  for (const who of ['RECEPTION', 'MANAGER']) {
+    const req = await (await import('node:module')).createRequire(S.LANE + '/apps/pos/package.json')('@playwright/test').request.newContext({ baseURL: S.POS });
+    const r = await req.post('/api/auth/sign-in', { data: { phone: S.need(`STAGING_${who}_PHONE`), password: S.need(`STAGING_${who}_PASSWORD`) } });
+    const sb = await r.json().catch(() => null);
+    const p = await (await req.get('/api/me/permissions')).json();
+    const rows = (p.permissions ?? p.effective ?? []).filter((x) => typeof x !== 'string' && /refund:approve|sale:update/.test(x.permission));
+    out[who] = { signInBranches: (sb?.branches ?? sb?.session?.branches ?? []).map?.((b) => b.name ?? b.id), keys: Object.keys(p), rows: rows.slice(0, 6) };
+    await req.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } }).catch(() => {});
+    await req.dispose();
+  }
+  return out;
+}

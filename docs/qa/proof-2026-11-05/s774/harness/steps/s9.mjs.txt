@@ -1,0 +1,45 @@
+// Step 9: clean up — the leftover held sale voided from the list with a reason; End of Day no longer refuses over part-paid sales.
+export default async function (S) {
+  const { heldRow, refreshHeld, readSale, sleep } = S.lib;
+  const f = S.st.fixture;
+  const { saleId, guest } = f.eve;
+  const page = S.pages.A.page;
+  await page.goto(S.POS + '/', { waitUntil: 'domcontentloaded' });
+  await sleep(2500);
+  await S.lib.unlockIfLocked(S, page);
+  await page.getByText('Membership Check', { exact: true }).first().waitFor({ timeout: 30000 });
+  await refreshHeld(page);
+  const row = heldRow(page, guest);
+  await row.getByRole('button', { name: 'Void', exact: true }).click();
+  await page.locator('#held-reason').fill('ZZ TEST proof finished');
+  await sleep(800);
+  await S.shot('A', 's774-st-26-void-held-sale-from-the-list');
+  const dialogText = (await page.getByRole('dialog').innerText()).replace(/\s+/g, ' ');
+  await page.getByRole('button', { name: 'Void sale', exact: true }).click();
+  await S.expect(page.getByText('Held sale voided').first()).toBeVisible({ timeout: 30000 });
+  await sleep(1200);
+  await S.shot('A', 's774-st-27-held-sale-voided');
+  const d = await readSale(S, saleId);
+  const audit = await S.adminApi('GET', `/audit?entityType=sale&entityId=${saleId}&limit=50`);
+  await page.goto(S.POS + '/end-of-day', { waitUntil: 'domcontentloaded' });
+  await sleep(4000);
+  const card = page.getByTestId('eod-open-sales');
+  const cardCount = await card.count();
+  const blocked = await page.getByTestId('close-day-blocked-reason').count();
+  await S.shot('A', 's774-st-28-end-of-day-after-cleanup');
+  const btn = page.getByRole('button', { name: 'Close Day' });
+  await btn.scrollIntoViewIfNeeded();
+  await sleep(800);
+  await S.shot('A', 's774-st-29-close-day-no-longer-refused-over-part-paid');
+  const eod = await S.adminApi('GET', `/branches/${f.branchId}/end-of-day?date=${f.businessDate}`);
+  S.st.steps.s9 = {
+    at: new Date().toISOString(), dialogText,
+    eve: { status: d.sale.status, voidReason: d.sale.voidReason ?? null },
+    audit: (audit.body?.entries ?? []).map((e) => ({ action: e.action, actor: e.actorName, reason: e.after?.reason ?? null })),
+    eodCardShown: cardCount, eodBlockedReasonShown: blocked, closeDayDisabled: await btn.isDisabled(),
+    closeDayNearbyText: (await btn.locator('..').innerText()).replace(/\s+/g, ' ').slice(0, 300),
+    apiOpenSales: eod.body.openSales, dayStatus: eod.body.status,
+  };
+  S.save();
+  return S.st.steps.s9;
+}
