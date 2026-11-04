@@ -1,8 +1,14 @@
 import * as React from 'react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DisplayPayment, DisplayTenderCart } from '@oto/shared';
+import type { SupportedLang } from '@/i18n/types';
 vi.mock('react', async () => ({ ...await vi.importActual('react'), ...await import('./support/hooks') }));
 vi.mock('@/lib/payments', () => ({ paymentMethodKind: (method: string) => method === 'promptpay' ? 'qr' : method }));
+const language = vi.hoisted(() => ({ current: 'en' as SupportedLang }));
+vi.mock('@/i18n/LanguageContext', async () => {
+  const actual = await vi.importActual<typeof import('@/i18n/LanguageContext')>('@/i18n/LanguageContext');
+  return { ...actual, useLanguage: () => ({ lang: language.current, t: actual.tFor(language.current) }) };
+});
 import { useTenderPresentation } from '@/lib/tenderDisplay';
 import type { StationDisplayState } from '@/lib/displaySession';
 import { TenderCustomerDisplay } from '@/components/shared/TenderCustomerDisplay';
@@ -12,6 +18,7 @@ import { renderHook } from './support/hooks';
 const payment: DisplayPayment = { saleId: null, amountSatang: 12345, qrPayload: 'ZZ TEST gateway payload', qrImageUrl: null,
   expiresAt: '2026-11-05T00:00:00.000Z', status: 'pending', offline: false, online: true };
 const cart: DisplayTenderCart = { kind: 'tender', supported: true, subject: 'party_balance', method: 'qr' };
+beforeEach(() => { language.current = 'en'; });
 afterEach(() => vi.unstubAllGlobals());
 
 describe('SCRUM-738 read-only tender presentation', () => {
@@ -75,5 +82,28 @@ describe('SCRUM-738 read-only tender presentation', () => {
     const text = JSON.stringify(tree);
     expect(text).toContain('Event pass'); expect(text).toContain('Pay by card');
     expect(text).not.toContain(payment.qrPayload);
+  });
+
+  it.each([
+    ['en', 'Party balance', 'Event pass', 'Pay by card'],
+    ['th', 'ยอดคงเหลือของงานปาร์ตี้', 'บัตรผ่านกิจกรรม', 'ชำระด้วยบัตร'],
+    ['zh', '派对尾款', '活动通行证', '银行卡付款'],
+    ['ru', 'Остаток за праздник', 'Пропуск на мероприятие', 'Оплатите картой'],
+    ['fr', 'Solde de la fête', 'Pass événement', 'Payer par carte'],
+  ] as const)('MEDIUM: the separate tender screen follows the display language (%s)', (lang, party, pass, card) => {
+    language.current = lang;
+    vi.stubGlobal('React', React);
+    const qr = JSON.stringify(TenderCustomerDisplay({ cart, payment }));
+    expect(qr).toContain(party);
+    const cardText = JSON.stringify(TenderCustomerDisplay({ cart: { ...cart, subject: 'event_pass', method: 'card' }, payment }));
+    expect(cardText).toContain(pass);
+    expect(cardText).toContain(card);
+    expect(cardText).not.toContain(payment.qrPayload);
+    if (lang !== 'en') {
+      expect(qr).not.toContain('Party balance');
+      expect(qr).not.toContain('Waiting for payment confirmation');
+      const refused = JSON.stringify(TenderCustomerDisplay({ cart, payment: { ...payment, status: 'failed' } }));
+      expect(refused).not.toContain('Please follow the staff screen');
+    }
   });
 });

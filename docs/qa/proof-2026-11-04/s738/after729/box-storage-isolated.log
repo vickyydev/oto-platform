@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: SCRUM-502 review — two presses at once really collide on the Pi’s one connection; the loser waits, is told in the counter’s words, and spends no receipt number
+ok 1 - SCRUM-502 review — two presses at once really collide on the Pi’s one connection; the loser waits, is told in the counter’s words, and spends no receipt number
+  ---
+  duration_ms: 168.4602
+  type: 'test'
+  ...
+# Subtest: SCRUM-502 review — a press carrying money and the last meal: one is served and paid, the other refused in the counter’s words with nothing taken
+ok 2 - SCRUM-502 review — a press carrying money and the last meal: one is served and paid, the other refused in the counter’s words with nothing taken
+  ---
+  duration_ms: 63.1252
+  type: 'test'
+  ...
+# Subtest: SCRUM-502 review — a prepaid press that meets the store held waits its turn and is served once the store frees
+ok 3 - SCRUM-502 review — a prepaid press that meets the store held waits its turn and is served once the store frees
+  ---
+  duration_ms: 268.6654
+  type: 'test'
+  ...
+# Subtest: SCRUM-502 review — a paid order with no prepaid line is answered at once with the store’s own error, as before the fix
+ok 4 - SCRUM-502 review — a paid order with no prepaid line is answered at once with the store’s own error, as before the fix
+  ---
+  duration_ms: 4.4014
+  type: 'test'
+  ...
+# Subtest: SCRUM-502 review — a prepaid press whose store fails for another reason is not waited out
+ok 5 - SCRUM-502 review — a prepaid press whose store fails for another reason is not waited out
+  ---
+  duration_ms: 86.8295
+  type: 'test'
+  ...
+# Subtest: SCRUM-502 review — a store still held after the store’s own five seconds: the press gives up with the store’s error and writes nothing
+ok 6 - SCRUM-502 review — a store still held after the store’s own five seconds: the press gives up with the store’s error and writes nothing
+  ---
+  duration_ms: 6242.3069
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7504.3996

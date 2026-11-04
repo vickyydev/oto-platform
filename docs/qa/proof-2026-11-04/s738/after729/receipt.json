@@ -1,0 +1,42 @@
+{
+  "at": "2026-11-04T00:12:17.419Z",
+  "baseMain": "690d44dbfa31d8a3c487dfb3def0be9dfa3e105c",
+  "parent": "67fc564b59b9905148fa57e1a390242cb8a90e0b",
+  "files": [
+    {
+      "path": "apps/pos/src/components/shared/TenderCustomerDisplay.tsx",
+      "sha256": "7ae89510c2a80f919208b36208831f86f6609de31c5c9f886b38032d6acbf70d"
+    },
+    {
+      "path": "apps/pos/src/i18n/dictionary.ts",
+      "sha256": "30113a1feec117f694390900515e7842cdd9397c454a25d1dfb50111c98f8561"
+    },
+    {
+      "path": "apps/pos/test/s738-tender-display.test.ts",
+      "sha256": "88a8d2c08cddd4d77c746df456fee8bc551c639a8189b0b0a92f34a3f218d4ad"
+    }
+  ],
+  "checks": {
+    "pos": 1907,
+    "apiWholeFiles": 7,
+    "apiPassed": 136,
+    "posTypes": true,
+    "apiTypes": true,
+    "lint": true,
+    "generatedContracts": true,
+    "posBuild": true
+  },
+  "languageBefore": {
+    "failed": 4,
+    "passed": 7
+  },
+  "languageAfter": {
+    "passed": 11
+  },
+  "workspace": {
+    "concurrentRun": "failed one existing busy-store timing bound at 10295 ms",
+    "isolatedWholeFile": "6 passed unchanged; bounded case 6242 ms",
+    "serialPackageRun": "running"
+  },
+  "staging": false
+}
