@@ -1,0 +1,1963 @@
+{
+  "unit": "SCRUM-765/773",
+  "liveCommit": "8ad993e11ddfa18701eec668a5e67afa30edc12a",
+  "startedAt": "2026-11-04T20:13:42.916Z",
+  "fixture": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "till": {
+      "id": "01a0bbdc-8cd7-7208-8e05-84eaf2963a9a",
+      "status": 200,
+      "name": "Reception Till 1",
+      "ready": true,
+      "reasons": [],
+      "paymentRouting": null,
+      "accessScope": "all_staff",
+      "devices": [
+        {
+          "role": "adult_band",
+          "label": "Band Printer (adults)",
+          "transport": "simulated",
+          "deviceId": "01a0be8c-89b2-7f21-84e0-74c754838f5b"
+        },
+        {
+          "role": "card_terminal",
+          "label": "EDC 1",
+          "transport": "simulated",
+          "deviceId": "01a0be8c-89b8-7153-bd24-678c65024de8"
+        },
+        {
+          "role": "kids_band",
+          "label": "Band Printer (kids)",
+          "transport": "simulated",
+          "deviceId": "01a0be8c-89af-7c2b-861f-f3d1f0f5d27b"
+        },
+        {
+          "role": "kitchen",
+          "label": "Kitchen Printer",
+          "transport": "simulated",
+          "deviceId": "01a0be8c-89a9-7c0b-a630-a16c81fdea52"
+        },
+        {
+          "role": "qr_terminal",
+          "label": "EDC 3",
+          "transport": "simulated",
+          "deviceId": "01a0be8c-89bb-7f43-b557-b0e8e876ccac"
+        },
+        {
+          "role": "receipt",
+          "label": "Receipt Printer 1",
+          "transport": "simulated",
+          "deviceId": "01a0be8c-89a4-756b-aca1-3be1082c669d"
+        },
+        {
+          "role": "scanner",
+          "label": "Scanner 1",
+          "transport": "simulated",
+          "deviceId": "01a0be8c-89b5-7058-805e-0d66c670753b"
+        }
+      ]
+    },
+    "members": {
+      "socks": {
+        "id": "01a1a833-76dd-7caf-826b-37821b419a67",
+        "nickname": "ZZ TEST 765 Socks",
+        "phone": "+66897676501",
+        "tierCode": "tourist",
+        "createdAt": "2026-11-04T20:15:06.624Z"
+      },
+      "nowallet": {
+        "id": "01a1a833-7782-76c8-abcd-9163c1bac2c3",
+        "nickname": "ZZ TEST 765 No Wallet",
+        "phone": "+66897676511",
+        "tierCode": "tourist",
+        "createdAt": "2026-11-04T20:15:06.785Z"
+      },
+      "licence": {
+        "id": "01a1a833-781b-7975-9365-af246b95ed63",
+        "nickname": "ZZ TEST 773 Licence",
+        "phone": "+66897677301",
+        "tierCode": "tourist",
+        "createdAt": "2026-11-04T20:15:06.938Z"
+      },
+      "other": {
+        "id": "01a1a833-78b9-782d-866f-6dd7a924eda3",
+        "nickname": "ZZ TEST 773 Other",
+        "phone": "+66897677311",
+        "tierCode": "tourist",
+        "createdAt": "2026-11-04T20:15:07.097Z"
+      },
+      "walkin": {
+        "id": "01a1a846-fd42-7dfe-8429-6474f26a3994",
+        "nickname": "ZZ TEST 773 Walk-in",
+        "phone": "+66897677321",
+        "createdAt": "2026-11-04T20:36:45.311Z"
+      }
+    },
+    "walkInPhone": "+66897677321"
+  },
+  "steps": {
+    "s1": {
+      "startedAt": "2026-11-04T20:22:12.579Z",
+      "orderText": "\nTOURIST\nZZ TEST 765 Socks\n2 Hours Play\n฿1550\nKids\n฿890 each\n1\nAdults\n฿350 each\n1\nRegular Socks\n฿0 each\n0\nBracelet Workshop\n฿150\nGrip Socks × 2\n฿160\nApply\nRedeem\nIssue a voucher…\nAdd manual discount\nSubtotal\n฿1550\nVAT included\n฿101.4\nTotal\n฿1550\nCancel\nPay ฿1550\nEnglish\nCustomer\nZZ TEST 765 Socks\n\nPlease pay\n\n฿1550.00\n\nto our staff"
+    },
+    "s2": {
+      "startedAt": "2026-11-04T20:22:25.453Z",
+      "network": [
+        {
+          "at": "2026-11-04T20:22:27.099Z",
+          "method": "POST",
+          "path": "/api/sales/01a1a839-f5d7-76d8-849c-b420828afbd3/finalise",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:28:26.742Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:28:27.130Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:30:25.393Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:30:25.748Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:30:36.110Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:30:38.787Z",
+          "method": "POST",
+          "path": "/api/sales/01a1a841-a1e3-7969-a230-f401ceeaa981/finalise",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:33:23.837Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:33:23.959Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:33:26.289Z",
+          "method": "POST",
+          "path": "/api/sales/01a1a844-310d-7af7-b9e7-a942a389d02d/finalise",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:34:43.665Z",
+          "method": "POST",
+          "path": "/api/sales/tier-claims",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:34:45.609Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:36:27.167Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:36:46.167Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:36:46.343Z",
+          "method": "POST",
+          "path": "/api/sales/01a1a847-4764-7baf-a0e1-f6f372c454f9/finalise",
+          "status": 200
+        }
+      ],
+      "afterPay": "\n\nOto Play Park\n\nPayment Successful\n\nReceipt T1-000084 • ฿1550 • Cash\n\nVAT included ฿101.4\n\nThank you for visiting! · Tax ID 0105500000000\n\nBracelets to Print\n2 TOTAL\n1× Child bracelet\n2 Hours • 2 Hours Play\nT1-HVZA9R\n2 HOURS\n1× Adult bracelet\n2 Hours • 2 Hours Play\nT1-QTWJQM\n2 HOURS\nCredit Grants to Print\n3 TOTAL\nCredit\n฿350 credit\n#1\nBracelet Workshop\n×1 to collect\n#2\nGrip Socks\n×2 to collect\n#3\nStart New Sale\nEnglish\nCustomer\nZZ TEST 765 Socks\nThank you!\n\nHere's what you're receiving — enjoy your play!\n\n1\nChild bracelet\n1\nAdult bracelet\nCredit Grants\nCredit\n฿350\nItems to Collect\nBracelet Workshop\n×1\nGrip Socks\n×2\nSending to printers\nItem voucher\n→ Receipt Printer 1\nAdult bracelet\n→ Band Printer (adults)\nKids bracelet\n→ Band Printer (kids)\nReceipt\n→ Receipt Printer 1",
+      "finishedAt": "2026-11-04T20:22:31.748Z"
+    },
+    "s4": {
+      "readAt": "2026-11-04T20:22:49.904Z",
+      "status": 200,
+      "keys": [
+        "timeExtension",
+        "sale",
+        "correctionBandShortCode",
+        "refundStatus",
+        "refundableSatang",
+        "refunds",
+        "printJobs",
+        "bands",
+        "grants",
+        "pickupCode",
+        "attempts",
+        "taxBreakdown",
+        "taxConfig",
+        "lines",
+        "discounts"
+      ],
+      "sale": {
+        "id": "01a1a839-f5d7-76d8-849c-b420828afbd3",
+        "receipt": "T1-000084",
+        "status": "finalised",
+        "gross": 155000,
+        "member": "01a1a833-76dd-7caf-826b-37821b419a67"
+      },
+      "lines": [
+        {
+          "kind": "kids",
+          "label": "Kids",
+          "qty": 1,
+          "productCode": null
+        },
+        {
+          "kind": "adults_paid",
+          "label": "Adults",
+          "qty": 1,
+          "productCode": null
+        },
+        {
+          "kind": "addon",
+          "label": "Bracelet Workshop",
+          "qty": 1,
+          "productCode": null
+        },
+        {
+          "kind": "addon",
+          "label": "Grip Socks (2×M)",
+          "qty": 2,
+          "productCode": null
+        }
+      ],
+      "printJobs": [
+        {
+          "kind": "item_voucher",
+          "status": "printed",
+          "role": "receipt",
+          "device": "Receipt Printer 1",
+          "label": null
+        },
+        {
+          "kind": "adult_wristband",
+          "status": "printed",
+          "role": "adult_band",
+          "device": "Band Printer (adults)",
+          "label": null
+        },
+        {
+          "kind": "kids_wristband",
+          "status": "printed",
+          "role": "kids_band",
+          "device": "Band Printer (kids)",
+          "label": null
+        },
+        {
+          "kind": "receipt",
+          "status": "printed",
+          "role": "receipt",
+          "device": "Receipt Printer 1",
+          "label": null
+        }
+      ],
+      "grants": 1,
+      "printouts": {
+        "receipt": [
+          {
+            "seq": 1,
+            "h": 1279,
+            "w": 576,
+            "bytes": 92185,
+            "truncated": false
+          },
+          {
+            "seq": 2,
+            "h": 185,
+            "w": 576,
+            "bytes": 13353,
+            "truncated": false
+          },
+          {
+            "seq": 3,
+            "h": 0,
+            "w": 576,
+            "bytes": 5,
+            "truncated": true
+          }
+        ],
+        "kids": [
+          {
+            "seq": 1,
+            "h": 236,
+            "w": 400,
+            "bytes": 11934,
+            "truncated": false
+          }
+        ],
+        "adult": [
+          {
+            "seq": 1,
+            "h": 240,
+            "w": 400,
+            "bytes": 12134,
+            "truncated": false
+          }
+        ]
+      }
+    },
+    "s4screen": {
+      "at": "2026-11-04T20:26:57.101Z",
+      "detail": "1\nin park\nno gate\nOto Play Park, Central Floresta\nTickets\nF&B\nShop\nEvents\nCheck-in\nHistory\nToday\n7\nMessages\nCash\nWeekday pricing\nReception Till 1\nSom\n13 out of stock · 1 low\nGlow Band, Locker Rental, Mascot Keyring, Oto Mascot Plush +10 more\nBack to history\nPaid\nTicket sale T1-000084\nZZ TEST 765 Socks\n· +66897676501\n05 Nov, 03:22 · sold by Som\nReception Till 1 · trading day 2026-11-04 · Tourist · Weekday pricing\n2 Hours Play · Tourist\n฿1550\nKids 1× ฿890\n฿890\nAdults 1× ฿350\n฿350\nBracelet Workshop 1× ฿150\n฿150\nGrip Socks (2×M) 2× ฿80\n฿160\nBRACELETS PRINTED\n2\n1 child\n1 adult\nT1-HVZA9R\nT1-QTWJQM\nSubtotal\n฿1550\nVAT (included)\n฿101.4\nTotal paid\n฿1550\nPayment\nCash · Approved\n05 Nov, 03:22\n฿1550\nReprint\nAdd time\nRefund (฿1550 left)\nAdd time, refunds, voids and reprints need the platform: with the station offline, a refund can only be noted as requested, for a manager to make once it is back online.",
+      "reprintList": "Reprint\n\nBy Som (Reception) · pick everything or just the items you need.\n\nItems to reprint\n\nSelect all\nFull receipt\nChild bracelet\n×1\nAdult bracelet\n×1\nSelect what to reprint\nClose",
+      "reprintButtons": [
+        "Select all",
+        "Full receipt",
+        "Child bracelet×1",
+        "Adult bracelet×1",
+        "Select what to reprint",
+        "Close"
+      ]
+    },
+    "s5": {
+      "startedAt": "2026-11-04T20:30:23.688Z",
+      "note": "Thai Full Day Pass with the free adult: the only staging package and tier where nobody earns a wallet with an adult on the sale (a kid alone opens the children-playing-alone flow).",
+      "configure": "\nConfigure: Full Day Pass\nBack to tickets\nParticipants\nKids\nRequires adult supervision\n1\nAdults\nReceives F&B credit\n1\nExtras & Add-ons\nBracelet Workshop\n+฿150\n0\nZZ TEST Addon 496\n+฿5\n0\nRegular Socks\n+฿50\nOut of stock\n0\nGrip Socks\n+฿80\n2×M\n2 · sizes\nLocker Rental\n+฿100\nOut of stock\n0\nRefillable Drink Cup\n+฿150\nOut of stock\n0\nGlow Band\n+฿60\nOut of stock\n0\nAdd Another Ticket\nContinue\nCurrent Order\nTHAI\nZZ TEST 765 No Wallet\nFull Day Pass\nEDITING\n฿780\nKids\n฿620 each\n1\nAdults\n฿0 each\n1\nRegular Socks\n฿0 each\n0\nGrip Socks × 2\n฿160\nApply\nRedeem\nIssue a voucher…\nAdd manual discount\nSubtotal\n฿780\nVAT included\n฿51.03\nTotal\n฿780\nCancel\nPay ฿780\nCustomer\nZZ TEST 765 No Wallet\nO\nOto Play Park\nYour Order\nEnglish\nFull Day Pass\n฿780\nKids1 × ฿620\n฿620\nAdults (free)1 × ฿0\n฿0\nGrip Socks (2×M)2 × ฿80\n฿160\nMember rate applied\nVAT included\n฿51.03\nTotal\n฿780\nThai rate verified\nPassport · recorded by Som (Reception)",
+      "network": [
+        {
+          "at": "2026-11-04T20:30:36.110Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:30:38.787Z",
+          "method": "POST",
+          "path": "/api/sales/01a1a841-a1e3-7969-a230-f401ceeaa981/finalise",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:33:23.837Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:33:23.959Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:33:26.289Z",
+          "method": "POST",
+          "path": "/api/sales/01a1a844-310d-7af7-b9e7-a942a389d02d/finalise",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:34:43.665Z",
+          "method": "POST",
+          "path": "/api/sales/tier-claims",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:34:45.609Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:36:27.168Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:36:46.167Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:36:46.343Z",
+          "method": "POST",
+          "path": "/api/sales/01a1a847-4764-7baf-a0e1-f6f372c454f9/finalise",
+          "status": 200
+        }
+      ],
+      "orderText": "\nTHAI\nZZ TEST 765 No Wallet\nFull Day Pass\n฿780\nKids\n฿620 each\n1\nAdults\n฿0 each\n1\nRegular Socks\n฿0 each\n0\nGrip Socks × 2\n฿160\nApply\nRedeem\nIssue a voucher…\nAdd manual discount\nSubtotal\n฿780\nVAT included\n฿51.03\nTotal\n฿780\nCancel\nPay ฿780\nEnglish\nCustomer\nZZ TEST 765 No Wallet\n\nPlease pay\n\n฿780.00\n\nto our staff",
+      "afterPay": "\n\nOto Play Park\n\nPayment Successful\n\nReceipt T1-000085 • ฿780 • Cash\n\nVAT included ฿51.03\n\nThank you for visiting! · Tax ID 0105500000000\n\nBracelets to Print\n2 TOTAL\n1× Child bracelet\nAll Day • Full Day Pass\nT1-9JA784\nALL DAY\n1× Adult bracelet\nAll Day • Full Day Pass\nT1-QBEX94\nALL DAY\nCredit Grants to Print\n1 TOTAL\nGrip Socks\n×2 to collect\n#1\nStart New Sale\nEnglish\nCustomer\nZZ TEST 765 No Wallet\nThank you!\n\nHere's what you're receiving — enjoy your play!\n\n1\nChild bracelet\n1\nAdult bracelet\nItems to Collect\nGrip Socks\n×2\nSending to printers\nAdult bracelet\n→ Band Printer (adults)\nKids bracelet\n→ Band Printer (kids)\nReceipt\n→ Receipt Printer 1",
+      "paidAt": "2026-11-04T20:30:43.517Z",
+      "readBack": {
+        "at": "2026-11-04T20:31:06.175Z",
+        "sale": {
+          "id": "01a1a841-a1e3-7969-a230-f401ceeaa981",
+          "receipt": "T1-000085",
+          "status": "finalised",
+          "gross": 78000,
+          "tier": "thai",
+          "member": "01a1a833-7782-76c8-abcd-9163c1bac2c3"
+        },
+        "lines": [
+          {
+            "kind": "kids",
+            "label": "Kids",
+            "qty": 1
+          },
+          {
+            "kind": "adults_free",
+            "label": "Adults (free)",
+            "qty": 1
+          },
+          {
+            "kind": "addon",
+            "label": "Grip Socks (2×M)",
+            "qty": 2
+          }
+        ],
+        "grants": [],
+        "printJobs": [
+          {
+            "kind": "adult_wristband",
+            "status": "printed",
+            "device": "Band Printer (adults)",
+            "subjectType": "band"
+          },
+          {
+            "kind": "kids_wristband",
+            "status": "printed",
+            "device": "Band Printer (kids)",
+            "subjectType": "band"
+          },
+          {
+            "kind": "receipt",
+            "status": "printed",
+            "device": "Receipt Printer 1",
+            "subjectType": "sale"
+          }
+        ],
+        "printouts": {
+          "receipt": [
+            {
+              "seq": 1,
+              "h": 1279,
+              "bytes": 92185
+            },
+            {
+              "seq": 2,
+              "h": 185,
+              "bytes": 13353
+            },
+            {
+              "seq": 3,
+              "h": 0,
+              "bytes": 5
+            },
+            {
+              "seq": 4,
+              "h": 737,
+              "bytes": 53129
+            },
+            {
+              "seq": 5,
+              "h": 0,
+              "bytes": 5
+            }
+          ],
+          "kids": [
+            {
+              "seq": 1,
+              "h": 236,
+              "bytes": 11934
+            },
+            {
+              "seq": 2,
+              "h": 244,
+              "bytes": 12334
+            }
+          ],
+          "adult": [
+            {
+              "seq": 1,
+              "h": 240,
+              "bytes": 12134
+            },
+            {
+              "seq": 2,
+              "h": 244,
+              "bytes": 12334
+            }
+          ]
+        }
+      }
+    },
+    "s6": {
+      "startedAt": "2026-11-04T20:31:32.942Z",
+      "memberBefore": "\n\nChoose the pricing tier to start the sale.\n\nZ\nZZ TEST 773 Licence\n+66897677301\nNo verified rate\nTourist\n\nStandard pricing\n\nExpat\n\nResident pricing\n\nProof required — verify now\n\nThai\n\nLocal pricing\n\nProof required — verify now\n\nCurrent Order\nTOURIST\nZZ TEST 773 Licence\n\nNo items added yet\n\nApply\nRe",
+      "offered": [
+        "Passport",
+        "Driving licence",
+        "School card",
+        "Other"
+      ],
+      "residenceCertificateShown": false
+    },
+    "s7": {
+      "startedAt": "2026-11-04T20:31:46.155Z",
+      "expiry": "2030-06-30",
+      "dialog": "Verify Thai rate\n\nSaved to the member profile so they won’t be asked again.\n\nZ\nZZ TEST 773 Licence\n+66897677301\n\nProof checked *\n\nPassport\nDriving licence\nSchool card\nOther\nDocument expiry date\nChecked by Som (Reception) — recorded automatically with date & time.\nVerify Thai — Driving licence\nSpecial case, approve by hand\nClose",
+      "verifyLabel": "Verify Thai — Driving licence",
+      "verifiedAt": "2026-11-04T20:31:48.222Z",
+      "after": "\nAdd to Sale\nAdd drop-off child\nAdd ticket — select a play ticket for kids and adults\n1 Hour Play\n1 Hour\n฿420\nper person\n2 Hours Play\n2 Hours\n฿520\nper person\nFull Day Pass\nAll Day\n฿620\nper person\nEat & Play Kids Pass\nAll Day + Meal\n฿1300\nper person\nCurrent Order\nTHAI\nZZ TEST 773 Licence\n\nNo items added yet\n\nApply\nRedeem\nIssue a voucher…\nAdd manual discount\nSubtotal\n฿0\nTotal\n฿0\nCancel\nPay ฿0\nEnglish\nCustomer\nZZ TEST 773 Licence\nO\nWelcome back, ZZ TEST 773 Licence!\n\nGreat to see you again. Let's get you ready to play!\n\nMember rate applied\nOur staff will help you at the counter\nThai rate verified\nDriving licence · valid until 2030-06-30 · recorded by Som (Reception)",
+      "member": {
+        "status": 200,
+        "tierCode": "thai",
+        "tierVerification": {
+          "tier": "thai",
+          "proofType": "Driving licence",
+          "note": null,
+          "verifiedAt": "2026-11-04T20:31:48.331Z",
+          "verifiedBy": "Som (Reception)",
+          "expiresAt": "2030-06-30",
+          "reverifyDue": false
+        }
+      },
+      "lookupAgain": {
+        "at": "2026-11-04T20:32:19.522Z",
+        "reads": "Thai · verified; Thai card: Driving licence — no proof needed"
+      }
+    },
+    "s8": {
+      "startedAt": "2026-11-04T20:32:43.112Z",
+      "inputs": [
+        {
+          "tag": "INPUT",
+          "type": "text",
+          "id": "tier-evidence-note",
+          "ph": "e.g. Work permit",
+          "required": false,
+          "aria": null
+        },
+        {
+          "tag": "INPUT",
+          "type": "date",
+          "id": "tier-evidence-expiry",
+          "ph": "",
+          "required": false,
+          "aria": null
+        }
+      ],
+      "dialog": "Verify Thai rate\n\nSaved to the member profile so they won’t be asked again.\n\nZ\nZZ TEST 773 Other\n+66897677311\n\nProof checked *\n\nPassport\nDriving licence\nSchool card\nOther\nWhat did you check? *\nDocument expiry date\nChecked by Som (Reception) — recorded automatically with date & time.\nVerify Thai — Other\nSpecial case, approve by hand\nClose",
+      "pastDate": {
+        "value": "2025-01-31",
+        "verifyDisabled": true,
+        "dialog": "Verify Thai rate\n\nSaved to the member profile so they won’t be asked again.\n\nZ\nZZ TEST 773 Other\n+66897677311\n\nProof checked *\n\nPassport\nDriving licence\nSchool card\nOther\nWhat did you check? *\nDocument expiry date\n\nThe document has already expired.\n\nChecked by Som (Reception) — recorded automatically with date & time.\nVerify Thai — Other — Work permit\nSpecial case, approve by hand\nClose"
+      },
+      "expiry": "2029-12-31",
+      "futureDialog": "Verify Thai rate\n\nSaved to the member profile so they won’t be asked again.\n\nZ\nZZ TEST 773 Other\n+66897677311\n\nProof checked *\n\nPassport\nDriving licence\nSchool card\nOther\nWhat did you check? *\nDocument expiry date\nChecked by Som (Reception) — recorded automatically with date & time.\nVerify Thai — Other — Work permit\nSpecial case, approve by hand\nClose",
+      "verifiedAt": "2026-11-04T20:33:08.712Z",
+      "after": "ss\nAll Day\n฿620\nper person\nEat & Play Kids Pass\nAll Day + Meal\n฿1300\nper person\nCurrent Order\nTHAI\nZZ TEST 773 Other\n\nNo items added yet\n\nApply\nRedeem\nIssue a voucher…\nAdd manual discount\nSubtotal\n฿0\nTotal\n฿0\nCancel\nPay ฿0\nEnglish\nCustomer\nZZ TEST 773 Other\nO\nWelcome back, ZZ TEST 773 Other!\n\nGreat to see you again. Let's get you ready to play!\n\nMember rate applied\nOur staff will help you at the counter\nThai rate verified\nOther — Work permit · valid until 2029-12-31 · recorded by Som (Reception)",
+      "member": {
+        "status": 200,
+        "tierCode": "thai",
+        "tierVerification": {
+          "tier": "thai",
+          "proofType": "Other",
+          "note": "Work permit",
+          "verifiedAt": "2026-11-04T20:33:09.325Z",
+          "verifiedBy": "Som (Reception)",
+          "expiresAt": "2029-12-31",
+          "reverifyDue": false
+        }
+      }
+    },
+    "s9": {
+      "startedAt": "2026-11-04T20:33:23.650Z",
+      "network": [
+        {
+          "at": "2026-11-04T20:33:23.837Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:33:23.959Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:33:26.289Z",
+          "method": "POST",
+          "path": "/api/sales/01a1a844-310d-7af7-b9e7-a942a389d02d/finalise",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:34:43.665Z",
+          "method": "POST",
+          "path": "/api/sales/tier-claims",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:34:45.609Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:36:27.168Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:36:46.167Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:36:46.343Z",
+          "method": "POST",
+          "path": "/api/sales/01a1a847-4764-7baf-a0e1-f6f372c454f9/finalise",
+          "status": 200
+        }
+      ],
+      "orderText": "\nTHAI\nZZ TEST 773 Other\nFull Day Pass\n฿620\nKids\n฿620 each\n1\nAdults\n฿0 each\n1\nRegular Socks\n฿0 each\n0\nApply\nRedeem\nIssue a voucher…\nAdd manual discount\nSubtotal\n฿620\nVAT included\n฿40.56\nTotal\n฿620\nCancel\nPay ฿620\nEnglish\nCustomer\nZZ TEST 773 Other\n\nPlease pay\n\n฿620.00\n\nto our staff",
+      "afterPay": "\n\nOto Play Park\n\nPayment Successful\n\nReceipt T1-000086 • ฿620 • Cash\n\nVAT included ฿40.56\n\nThank you for visiting! · Tax ID 0105500000000\n\nBracelets to Print\n2 TOTAL\n1× Child bracelet\nAll Day • Full Day Pass\nT1-YQ7PQE\nALL DAY\n1× Adult bracelet\nAll Day • Full Day Pass\nT1-ZDNKE7\nALL DAY\nStart New Sale\nEnglish\nCustomer\nZZ TEST 773 Other\nThank you!\n\nHere's what you're receiving — enjoy your play!\n\n1\nChild bracelet\n1\nAdult bracelet\nSending to printers\nAdult bracelet\n→ Band Printer (adults)\nKids bracelet\n→ Band Printer (kids)\nReceipt\n→ Receipt Printer 1",
+      "detail": "\nPaid\nTicket sale T1-000086\nZZ TEST 773 Other\n· +66897677311\n05 Nov, 03:33 · sold by Som\nReception Till 1 · trading day 2026-11-04 · Thai · Weekday pricing\nFull Day Pass · Thai\n฿620\nKids 1× ฿620\n฿620\nAdults (free) 1× ฿0\n฿0\nBRACELETS PRINTED\n2\n1 child\n1 adult\nT1-YQ7PQE\nT1-ZDNKE7\nSubtotal\n฿620\nVAT (included)\n฿40.56\nTotal paid\n฿620\nPayment\nCash · Approved\n05 Nov, 03:33\n฿620\nReprint\nAdd time\nRefund (฿620 left)\nAdd time, refunds, voids and reprints need the platform: with the station offline, a refund can only be noted as requested, for a manager to make once it is back online.",
+      "readBack": {
+        "receipt": "T1-000086",
+        "status": "finalised",
+        "tier": "thai",
+        "gross": 62000,
+        "tierClaim": null,
+        "printJobs": [
+          "adult_wristband",
+          "kids_wristband",
+          "receipt"
+        ]
+      }
+    },
+    "s9w": {
+      "startedAt": "2026-11-04T20:34:29.262Z",
+      "network": [
+        {
+          "at": "2026-11-04T20:34:43.665Z",
+          "method": "POST",
+          "path": "/api/sales/tier-claims",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:34:45.609Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:36:27.168Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:36:46.167Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:36:46.343Z",
+          "method": "POST",
+          "path": "/api/sales/01a1a847-4764-7baf-a0e1-f6f372c454f9/finalise",
+          "status": 200
+        }
+      ],
+      "why": "A member who is already verified carries the document on the member record, and the sale names no tier claim (tierClaim null, by design: a verified member wins over a claim). The sale-level document line is written for a walk-in claim, so it is shown on one, as the local rehearsal did.",
+      "dialog": "Verify Thai rate\n\nSaved to their profile once they enter their details.\n\nProof checked *\n\nPassport\nDriving licence\nSchool card\nOther\nWhat did you check? *\nDocument expiry date\nChecked by Som (Reception) — recorded automatically with date & time.\nVerify Thai — Other — Work permit\nSpecial case, approve by hand\nClose",
+      "afterDetails": "\nAmount Due\n฿620\nSelect Payment Method\nCash\nCard\nPromptPay\nBack\nConfirm Payment Received\nCurrent Order\nTHAI\nZZ TEST 773 Walk-in\nFull Day Pass\n฿620\nKids\n฿620 each\n1\nAdults\n฿0 each\n1\nRegular Socks\n฿0 each\n0\nApply\nRedeem\nIssue a voucher…\nAdd manual discount\nSubtotal\n฿620\nVAT included\n฿40.56\nTotal\n฿620\nCancel\nPay ฿620\nEnglish\nCustomer\nZZ TEST 773 Walk-in\n\nPlease pay\n\n฿620.00\n\nto our staff\n\nThai rate saved to ZZ TEST 773 Walk-in\nOther (Work permit) · valid until 2029-12-31",
+      "afterPay": "\n\nOto Play Park\n\nPayment Successful\n\nReceipt T1-000087 • ฿620 • Cash\n\nVAT included ฿40.56\n\nThank you for visiting! · Tax ID 0105500000000\n\nBracelets to Print\n2 TOTAL\n1× Child bracelet\nAll Day • Full Day Pass\nT1-BKFPVW\nALL DAY\n1× Adult bracelet\nAll Day • Full Day Pass\nT1-EZTT32\nALL DAY\nStart New Sale\nEnglish\nCustomer\nZZ TEST 773 Walk-in\nThank you!\n\nHere's what you're receiving — enjoy your play!\n\n1"
+    },
+    "s9h": {
+      "at": "2026-11-04T20:48:40.141Z",
+      "detail": "\nPaid\nTicket sale T1-000087\nZZ TEST 773 Walk-in\n· +66897677321\n05 Nov, 03:36 · sold by Som\nReception Till 1 · trading day 2026-11-04 · Thai · Weekday pricing\nFull Day Pass · Thai\n฿620\nKids 1× ฿620\n฿620\nAdults (free) 1× ฿0\n฿0\nBRACELETS PRINTED\n2\n1 child\n1 adult\nT1-BKFPVW\nT1-EZTT32\nSubtotal\n฿620\nVAT (included)\n฿40.56\nTotal paid\n฿620\nPayment\nCash · Approved\n05 Nov, 03:36\n฿620\nReprint\nAdd time\nRefund (฿620 left)\nAdd time, refunds, voids and reprints need the platform: with the station offline, a refund can only be noted as requested, for a manager to make once it is back online.",
+      "priced": false,
+      "readBack": {
+        "at": "2026-11-04T20:48:40.141Z",
+        "receipt": "T1-000087",
+        "status": "finalised",
+        "tier": "thai",
+        "member": null,
+        "tierClaim": null
+      },
+      "note": "Read with the Read tool on 2026-11-04T20:52Z: this walk-in gave a phone and a nickname, so the rate was saved to the new profile ZZ TEST 773 Walk-in and the sale was priced from it (tierClaim null); no sale-level document line is shown. Image renamed to s773-st-09f-history-walk-in-with-details-priced-from-profile.png. Step 9 is proved by s9n (T1-000088)."
+    },
+    "s9n": {
+      "startedAt": "2026-11-04T20:55:37.472Z",
+      "network": [
+        {
+          "at": "2026-11-04T20:55:39.843Z",
+          "method": "POST",
+          "path": "/api/sales/tier-claims",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:55:41.582Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:55:42.986Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T20:55:45.774Z",
+          "method": "POST",
+          "path": "/api/sales/01a1a858-a029-7d66-92bf-cb005483bc4c/finalise",
+          "status": 200
+        }
+      ],
+      "why": "A sale shows its own document line only when the rate was claimed on the sale itself: a walk-in who leaves their details empty. A member sale (09c) and a walk-in who entered their details (09f) are priced from the member profile, which carries the document instead.",
+      "dialog": "Verify Thai rate\n\nSaved to their profile once they enter their details.\n\nProof checked *\n\nPassport\nDriving licence\nSchool card\nOther\nWhat did you check? *\nDocument expiry date\nChecked by Som (Reception) — recorded automatically with date & time.\nVerify Thai — Other — Work permit\nSpecial case, approve by hand\nClose",
+      "step4": "\nTHAI\nFull Day Pass\n฿620\nKids\n฿620 each\n1\nAdults\n฿0 each\n1\nRegular Socks\n฿0 each\n0\nApply\nRedeem\nIssue a voucher…\nYour sale rung up at this till was left unpaid\nUnpaid sale at Reception Till 1 · rung up 5 Nov 2026 03:36 · ฿620\nResume this saleVoid that unpaid sale\nYour sale rung up at this till was left unpaid\nUnpaid sale at Reception Till 1 · rung up 6 Oct 2026 22:52 · ฿30\nResume this saleVoid that unpaid sale\nYour sale rung up at this till was left unpaid\nUnpaid sale at Reception Till 1 · rung up 1 Oct 2026 16:51 · ฿1935\nResume this saleVoid that unpaid sale\nYour sale rung up at this till was left unpaid\nUnpaid sale at Reception Till 1 · rung up 23 Sep 2026 17:49 · ฿1040\nResume this saleVoid that unpaid sale\nYour sale rung up at this till was left unpaid\nUnpaid sale at Reception Till 1 · rung up 23 Sep 2026 17:44 · ฿1040\nResume this saleVoid that unpaid sale\nYour sale rung up at this ti",
+      "orderText": "\nTHAI\nFull Day Pass\n฿620\nKids\n฿620 each\n1\nAdults\n฿0 each\n1\nRegular Socks\n฿0 each\n0\nApply\nRedeem\nIssue a voucher…\nYour sale rung up at this till was left unpaid\nUnpaid sale at Reception Till 1 · rung up 5 Nov 2026 03:36 · ฿620\nResume this saleVoid that unpaid sale\nYour sale rung up at this till was left unpaid\nUnpaid sale at Reception Till 1 · rung up 6 Oct 2026 22:52 · ฿30\nResume this saleVoid that unpaid sale\nYour sale rung up at this till was left unpaid\nUnpaid sale at Reception Till 1 · rung up 1 Oct 2026 16:51 · ฿1935\nResume this saleVoid that unpaid sale\nYour sale rung up at this till was left unpaid\nUnpaid sale at Reception Till 1 · rung up 23 Sep 2026 17:49 · ฿1040\nResume this saleVoi",
+      "afterPay": "\n\nOto Play Park\n\nPayment Successful\n\nReceipt T1-000088 • ฿620 • Cash\n\nVAT included ฿40.56\n\nThank you for visiting! · Tax ID 0105500000000\n\nBracelets to Print\n2 TOTAL\n1× Child bracelet\nAll Day • Full Day Pass\nT1-FYVZB2\nALL DAY\n1× Adult bracelet\nAll Day • Full Day Pass\nT1-NTTCMM\nALL DAY\nStart New Sale\nEnglish\nThank you!\n\nHere's what you're receiving — enjoy your play!\n\n1\nChild bracelet\n1\nAdult bracelet\nSending to printers\nAdult bracelet\n→ Band Printer (adults)\nKids bracelet\n→ Band Printer (kids)\nReceipt\n→ Receipt Printer 1",
+      "receipt": "T1-000088",
+      "detail": "\nPaid\nTicket sale T1-000088\nWalk-in\n05 Nov, 03:55 · sold by Som\nReception Till 1 · trading day 2026-11-04 · Thai · Weekday pricing · Priced on other (Work permit), checked 05 Nov, 03:55\nFull Day Pass · Thai\n฿620\nKids 1× ฿620\n฿620\nAdults (free) 1× ฿0\n฿0\nBRACELETS PRINTED\n2\n1 child\n1 adult\nT1-FYVZB2\nT1-NTTCMM\nSubtotal\n฿620\nVAT (included)\n฿40.56\nTotal paid\n฿620\nPayment\nCash · Approved\n05 Nov, 03:55\n฿620\nReprint\nAdd time\nRefund (฿620 left)\nAdd time, refunds, voids and reprints need the platform: with the station offline, a refund can only be noted as requested, for a manager to make once it is back online.",
+      "pricedOnLine": "Priced on other (Work permit), checked 05 Nov, 03:55",
+      "readBack": {
+        "at": "2026-11-04T20:56:02.825Z",
+        "id": "01a1a858-a029-7d66-92bf-cb005483bc4c",
+        "receipt": "T1-000088",
+        "status": "finalised",
+        "tier": "thai",
+        "memberId": null,
+        "gross": 62000,
+        "tierClaim": {
+          "id": "01a1a858-97c6-7263-b553-c63ba730e397",
+          "documentKind": "Other",
+          "documentNote": "Work permit",
+          "toTier": "thai",
+          "evidenceExpiresOn": "2029-12-31",
+          "verifiedAt": "2026-11-04T20:55:40.740Z",
+          "approval": null
+        },
+        "printJobs": [
+          "adult_wristband",
+          "kids_wristband",
+          "receipt"
+        ]
+      }
+    },
+    "s10": {
+      "startedAt": "2026-11-04T20:56:46.182Z",
+      "row": "ZZ TEST 773 Licence +66897677301 Thai · exp 2030-06-30 ",
+      "dialog": "Edit member\n\nUpdate this member’s profile and verified tier.\n\nNickname\nFull name\nEmail\nPhone\n🇹🇭\n+66\n\nStored as: +66897677301\n\nWhatsApp\nTelegram\nLINE\nNone\nNotes\nVerified tier\n\nPick the verified rate, or leave as Tourist (full price). Setting a tier records the document checked, its expiry, and who checked it.\n\nHolds Thai on a Driving licence, valid to 2030-06-30 — verified by Som (Reception).\n\nThai\nTourist (no proof)\nExpat\nThai\nDriving licence\nPassport\nDriving licence\nSchool card\n\nSelect the document you checked.\n\nDocument expiry date\n\nThe rate stops applying on this date and the member is asked for fresh proof.\n\nThe document type, its expiry and the staff member who checked it are recorded. The document itself is never uploaded or stored.\n\nCancel\nSave changes\nClose",
+      "options": [
+        "Passport",
+        "Driving licence",
+        "School card"
+      ],
+      "dialogClosed": true,
+      "verifications": [
+        "ZZ TEST 773 Walk-in",
+        "ZZ TEST 773 Other",
+        "ZZ TEST 773 Licence",
+        "ZZ TEST 765 No Wallet"
+      ]
+    },
+    "s11": {
+      "at": "2026-11-04T20:57:24.496Z",
+      "listStatus": 200,
+      "rowsRead": 26,
+      "residenceCertificateRows": [
+        {
+          "member": "Mama",
+          "zz": false,
+          "verifiedAt": "2026-10-30T07:10:37.817Z"
+        },
+        {
+          "member": "ZZ TEST Tier Thai",
+          "zz": true,
+          "verifiedAt": "2026-10-02T13:04:45.889Z"
+        },
+        {
+          "member": "Mali",
+          "zz": false,
+          "verifiedAt": "2026-09-30T10:58:15.903Z"
+        },
+        {
+          "member": "Mali",
+          "zz": false,
+          "verifiedAt": "2026-09-30T10:51:30.854Z"
+        },
+        {
+          "member": "zz-shot",
+          "zz": false,
+          "verifiedAt": "2026-09-22T17:26:03.636Z"
+        },
+        {
+          "member": "Mali",
+          "zz": false,
+          "verifiedAt": "2026-09-22T17:20:33.330Z"
+        },
+        {
+          "member": "Siti",
+          "zz": false,
+          "verifiedAt": "2026-09-19T22:49:48.469Z"
+        },
+        {
+          "member": "Mali",
+          "zz": false,
+          "verifiedAt": "2026-09-19T22:49:48.457Z"
+        }
+      ],
+      "zzResidenceCertificate": 1,
+      "zzMember": {
+        "id": "01a0fcb5-11fe-7066-b6dc-20029dae26e0",
+        "nickname": "ZZ TEST Tier Thai",
+        "archivedAt": null,
+        "tier": "thai",
+        "current": {
+          "proof": "Residence certificate",
+          "expires": null,
+          "by": "Som (Reception)",
+          "reverifyDue": false
+        },
+        "history": [
+          {
+            "evidenceType": "Residence certificate",
+            "verifiedAt": "2026-10-02T13:04:45.889Z",
+            "expires": null
+          }
+        ]
+      },
+      "till": {
+        "at": "2026-11-04T20:57:59.419Z",
+        "card": "\n\nChoose the pricing tier to start the sale.\n\nZ\nZZ TEST Tier Thai\n+66894940001\nThai · verified\nTourist\n\nStandard pricing\n\nExpat\n\nResident pricing\n\nProof required — verify now\n\nVerified\nThai\n\nLocal pricing\n\nResidence certificate — no proof needed\n\nCurrent Order\nTHAI\nZZ TEST Tier Thai\n\nNo items added yet\n\nApply\nRedeem\nIssue a voucher…\nYour sale rung up at this till was left unpaid\nUnpaid sale at Reception Till 1 · rung up 6 Oct 2026 22:52 · ฿30\nResume this saleVoid that unpaid sale\nYour sale rung up at this till was left unpaid\nUnpaid sale at Reception Till 1 · rung up 1 Oct 2026 16:51 · ฿1935\nResume this saleVoid that unpaid sale\nYour sale rung up at this till was left unpaid\nUnpaid sale at R",
+        "readsResidence": true,
+        "afterCancel": true,
+        "consoleOptions": [
+          "Residence certificate (recorded)",
+          "Passport",
+          "Driving licence",
+          "School card"
+        ],
+        "consoleHolds": "Holds Thai on a Residence certificate — verified by Som (Reception).",
+        "consoleDialogClosed": true
+      }
+    },
+    "s12": {
+      "at": "2026-11-04T20:57:24.496Z",
+      "auditStatus": 200,
+      "masked": false,
+      "entries": [
+        {
+          "at": "2026-11-04T20:36:28.166Z",
+          "action": "member.tier_verify",
+          "entityId": "01a1a846-fdba-7489-bb83-18d73d6d9e8c",
+          "actor": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+          "actorName": "Som (Reception)",
+          "evidence": "Other",
+          "note": null,
+          "expires": "2029-12-31"
+        },
+        {
+          "at": "2026-11-04T20:33:09.325Z",
+          "action": "member.tier_verify",
+          "entityId": "01a1a843-f506-7b67-810c-355ca63c8180",
+          "actor": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+          "actorName": "Som (Reception)",
+          "evidence": "Other",
+          "note": null,
+          "expires": "2029-12-31"
+        },
+        {
+          "at": "2026-11-04T20:31:48.331Z",
+          "action": "member.tier_verify",
+          "entityId": "01a1a842-b8a6-7df3-b97e-41f57e1171fa",
+          "actor": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+          "actorName": "Som (Reception)",
+          "evidence": "Driving licence",
+          "note": null,
+          "expires": "2030-06-30"
+        },
+        {
+          "at": "2026-11-04T20:30:24.701Z",
+          "action": "member.tier_verify",
+          "entityId": "01a1a841-71f8-79ea-ba5d-0341f3ccac5a",
+          "actor": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+          "actorName": "Som (Reception)",
+          "evidence": "Passport",
+          "note": null,
+          "expires": null
+        }
+      ],
+      "allByReception": true,
+      "verificationsTonight": [
+        {
+          "id": "01a1a846-fdba-7489-bb83-18d73d6d9e8c",
+          "member": "ZZ TEST 773 Walk-in",
+          "evidenceType": "Other",
+          "note": "Work permit",
+          "expires": "2029-12-31",
+          "verifiedBy": "Som (Reception)",
+          "verifiedAt": "2026-11-04T20:36:28.166Z"
+        },
+        {
+          "id": "01a1a843-f506-7b67-810c-355ca63c8180",
+          "member": "ZZ TEST 773 Other",
+          "evidenceType": "Other",
+          "note": "Work permit",
+          "expires": "2029-12-31",
+          "verifiedBy": "Som (Reception)",
+          "verifiedAt": "2026-11-04T20:33:09.325Z"
+        },
+        {
+          "id": "01a1a842-b8a6-7df3-b97e-41f57e1171fa",
+          "member": "ZZ TEST 773 Licence",
+          "evidenceType": "Driving licence",
+          "note": null,
+          "expires": "2030-06-30",
+          "verifiedBy": "Som (Reception)",
+          "verifiedAt": "2026-11-04T20:31:48.331Z"
+        },
+        {
+          "id": "01a1a841-71f8-79ea-ba5d-0341f3ccac5a",
+          "member": "ZZ TEST 765 No Wallet",
+          "evidenceType": "Passport",
+          "note": null,
+          "expires": null,
+          "verifiedBy": "Som (Reception)",
+          "verifiedAt": "2026-11-04T20:30:24.701Z"
+        }
+      ]
+    }
+  },
+  "images": [
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s765-st-01a-configure-two-grip-socks-and-bracelet-workshop.png",
+      "at": "2026-11-04T20:22:13.177Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s765-st-01-order-with-two-pairs-of-socks.png",
+      "at": "2026-11-04T20:22:15.330Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s765-st-02a-cash-chosen.png",
+      "at": "2026-11-04T20:22:26.878Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s765-st-02-payment-successful-socks-card.png",
+      "at": "2026-11-04T20:22:31.748Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s765-st-03-console-virtual-box-1-print-queue.png",
+      "at": "2026-11-04T20:25:24.070Z",
+      "page": "console",
+      "url": "https://oto-console-staging.onrender.com/devices",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s765-st-03e-console-receipt-printer-1-paper.png",
+      "at": "2026-11-04T20:25:29.087Z",
+      "page": "console",
+      "url": "https://oto-console-staging.onrender.com/devices",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s765-st-03f-console-band-printer-kids-paper.png",
+      "at": "2026-11-04T20:25:34.120Z",
+      "page": "console",
+      "url": "https://oto-console-staging.onrender.com/devices",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s765-st-03g-console-band-printer-adults-paper.png",
+      "at": "2026-11-04T20:25:39.140Z",
+      "page": "console",
+      "url": "https://oto-console-staging.onrender.com/devices",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s765-st-04a-history-sale-detail.png",
+      "at": "2026-11-04T20:26:57.696Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s765-st-04b-history-reprint-list-no-socks-slip.png",
+      "at": "2026-11-04T20:27:08.222Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s765-st-05a-no-wallet-order-with-two-pairs-of-socks.png",
+      "at": "2026-11-04T20:30:37.873Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s765-st-05b-no-wallet-payment-successful-socks-card.png",
+      "at": "2026-11-04T20:30:43.516Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-06-verify-thai-document-list.png",
+      "at": "2026-11-04T20:31:34.907Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-07a-driving-licence-with-expiry.png",
+      "at": "2026-11-04T20:31:47.341Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-07b-thai-rate-verified-driving-licence.png",
+      "at": "2026-11-04T20:31:50.858Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-07c-member-looked-up-again-thai-verified-driving-licence.png",
+      "at": "2026-11-04T20:32:19.521Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-07c-member-looked-up-again-thai-verified-driving-licence.png",
+      "at": "2026-11-04T20:32:29.466Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-08a-other-description-and-expiry-date.png",
+      "at": "2026-11-04T20:32:46.037Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-08b-other-past-expiry-refused.png",
+      "at": "2026-11-04T20:32:57.102Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-08c-other-work-permit-future-expiry.png",
+      "at": "2026-11-04T20:33:08.331Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-08d-thai-rate-verified-other-work-permit.png",
+      "at": "2026-11-04T20:33:11.362Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-09a-thai-rate-order-other-work-permit.png",
+      "at": "2026-11-04T20:33:25.474Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-09b-thai-rate-paid.png",
+      "at": "2026-11-04T20:33:29.967Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-09c-history-member-sale-priced-from-profile.png",
+      "at": "2026-11-04T20:33:43.163Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      },
+      "renamedFrom": "s773-st-09c-history-sale-document-other-work-permit.png",
+      "renamedBy": "proof agent 3, 2026-11-04T21:00Z"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-09d-walk-in-other-work-permit-with-expiry.png",
+      "at": "2026-11-04T20:34:43.467Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-09e-walk-in-thai-rate-saved-other-work-permit.png",
+      "at": "2026-11-04T20:36:45.220Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-09f-history-walk-in-with-details-priced-from-profile.png",
+      "at": "2026-11-04T20:48:40.054Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      },
+      "renamedFrom": "s773-st-09f-history-walk-in-sale-priced-on-other-work-permit.png",
+      "renamedBy": "proof agent 3, 2026-11-04T21:00Z"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-09k-finding-unpaid-duplicate-after-walk-in-entered-details.png",
+      "at": "2026-11-04T20:55:16.071Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "note": "photographed only; nothing on the notice was pressed"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-09g-walk-in-claim-other-work-permit-with-expiry.png",
+      "at": "2026-11-04T20:55:39.743Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-09h-walk-in-thai-rate-order-no-details.png",
+      "at": "2026-11-04T20:55:44.983Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-09i-walk-in-thai-rate-paid.png",
+      "at": "2026-11-04T20:55:49.407Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-09j-history-walk-in-sale-priced-on-other-work-permit.png",
+      "at": "2026-11-04T20:56:02.737Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-10a-console-member-proof-type-list.png",
+      "at": "2026-11-04T20:56:54.607Z",
+      "page": "console",
+      "url": "https://oto-console-staging.onrender.com/catalogue/members",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-10b-console-tier-verifications.png",
+      "at": "2026-11-04T20:57:01.167Z",
+      "page": "console",
+      "url": "https://oto-console-staging.onrender.com/catalogue/tier-verifications",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-11a-till-member-recorded-residence-certificate.png",
+      "at": "2026-11-04T20:58:00.029Z",
+      "page": "till",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1050
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s765-773/s773-st-11b-console-recorded-residence-certificate-option.png",
+      "at": "2026-11-04T20:58:46.179Z",
+      "page": "console",
+      "url": "https://oto-console-staging.onrender.com/catalogue/members",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    }
+  ],
+  "created": [
+    {
+      "kind": "member",
+      "id": "01a1a833-76dd-7caf-826b-37821b419a67",
+      "name": "ZZ TEST 765 Socks"
+    },
+    {
+      "kind": "member",
+      "id": "01a1a833-7782-76c8-abcd-9163c1bac2c3",
+      "name": "ZZ TEST 765 No Wallet"
+    },
+    {
+      "kind": "member",
+      "id": "01a1a833-781b-7975-9365-af246b95ed63",
+      "name": "ZZ TEST 773 Licence"
+    },
+    {
+      "kind": "member",
+      "id": "01a1a833-78b9-782d-866f-6dd7a924eda3",
+      "name": "ZZ TEST 773 Other"
+    },
+    {
+      "kind": "member",
+      "id": "01a1a846-fd42-7dfe-8429-6474f26a3994",
+      "name": "ZZ TEST 773 Walk-in"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1a858-a029-7d66-92bf-cb005483bc4c",
+      "name": "walk-in Thai claim on Other (Work permit), cash, kept for the record",
+      "receipt": "T1-000088"
+    }
+  ],
+  "browser": "156.0.4314.58",
+  "adminActorId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+  "tills": {
+    "till": {
+      "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+      "accountName": "Som (Reception)",
+      "signedInAt": "2026-11-04T20:54:56.167Z",
+      "stationId": "01a0bbdc-8cd7-7208-8e05-84eaf2963a9a",
+      "onReceptionTill1": true
+    }
+  },
+  "seqBaseline": {
+    "2026-11-04T20:15:14.486Z": {
+      "receipt": {
+        "status": 200,
+        "max": 0,
+        "n": 0,
+        "last": []
+      },
+      "kids": {
+        "status": 200,
+        "max": 0,
+        "n": 0,
+        "last": []
+      },
+      "adult": {
+        "status": 200,
+        "max": 0,
+        "n": 0,
+        "last": []
+      }
+    }
+  },
+  "incidents": [
+    {
+      "at": "2026-11-04T20:15:56.546Z",
+      "what": "The first notice-dismiss loop pressed \"Resume this sale\" on an old unpaid ZZ TEST Parent sale of 1 Oct (฿1935) at Reception Till 1. Resume only reads the sale; the tab was closed without paying, cancelling or voiding it.",
+      "removedKeys": 2,
+      "signOut": 200
+    },
+    {
+      "at": "2026-11-04T20:20:00.621Z",
+      "what": "HARNESS FAULT: the notice loop pressed the first button of each old \"left unpaid\" notice at Reception Till 1, which is \"Void that unpaid sale\" on most of them, in two passes (20:15:26-28 UTC and 20:18:24-25 UTC; the second pass ran the old helper from the module cache). 16 old unpaid sales (tendering, no money taken) from 23 Sep to 14 Oct were voided with the left-behind reason, voided by Som. Two others were opened with Resume and left unpaid. The tab was closed without paying or voiding anything else.",
+      "voided": [
+        "01a1371e-886b-7531-bf28-d007c4ab265e",
+        "01a1359b-b46a-7492-9364-2d123098adbc",
+        "01a13597-94df-7857-89aa-ec023f31708b",
+        "01a13593-6631-721b-a33f-c19801aaef4a",
+        "01a13592-7f77-7bae-84fe-5623f3947098",
+        "01a10d04-9054-7e35-89c8-8ec0d7c11d6e",
+        "01a10c71-5d22-7e1b-b9c5-cb871a76078f",
+        "01a0f6df-852c-7849-bbe0-68e7a71dc177",
+        "01a0f6de-7969-7fc8-abce-4c66b2c938bc",
+        "01a0f6dc-a6c2-7d6b-ac69-c893325f5ef6",
+        "01a0f6db-d843-7317-8541-d8a537068e0c",
+        "01a0f6db-19e7-7db9-91cd-c5438737299b",
+        "756a23dd-7f9b-4238-ad23-1ace4581dea2",
+        "4b623dd6-1aa8-42e2-9f5b-cf6c96507a42",
+        "c7e10757-3abf-44d4-a1ab-221a754f0a65",
+        "01a0cde7-ea0a-7fcf-b9d0-8a1231ea0aeb"
+      ],
+      "removedKeys": 2,
+      "signOut": 200
+    }
+  ],
+  "voidedTonight": [
+    {
+      "id": "01a1371e-886b-7531-bf28-d007c4ab265e",
+      "occurredAt": "2026-10-13T21:15:10.316Z",
+      "gross": 20000,
+      "voidedAt": "2026-11-04T20:15:26.532Z",
+      "voidedBy": "Som",
+      "soldBy": "Anan",
+      "reason": "Left unpaid at the till (page reloaded or left mid-payment)",
+      "member": null,
+      "lineKinds": [
+        "kids",
+        "adults_paid"
+      ],
+      "channel": "till"
+    },
+    {
+      "id": "01a1359b-b46a-7492-9364-2d123098adbc",
+      "occurredAt": "2026-10-13T14:12:39.146Z",
+      "gross": 5400,
+      "voidedAt": "2026-11-04T20:15:26.713Z",
+      "voidedBy": "Som",
+      "soldBy": "Anan",
+      "reason": "Left unpaid at the till (page reloaded or left mid-payment)",
+      "member": null,
+      "lineKinds": [
+        "fnb_item"
+      ],
+      "channel": "fnb"
+    },
+    {
+      "id": "01a13597-94df-7857-89aa-ec023f31708b",
+      "occurredAt": "2026-10-13T14:08:08.927Z",
+      "gross": 5400,
+      "voidedAt": "2026-11-04T20:15:26.941Z",
+      "voidedBy": "Som",
+      "soldBy": "Anan",
+      "reason": "Left unpaid at the till (page reloaded or left mid-payment)",
+      "member": null,
+      "lineKinds": [
+        "fnb_item"
+      ],
+      "channel": "fnb"
+    },
+    {
+      "id": "01a13593-6631-721b-a33f-c19801aaef4a",
+      "occurredAt": "2026-10-13T14:03:34.833Z",
+      "gross": 5400,
+      "voidedAt": "2026-11-04T20:15:27.287Z",
+      "voidedBy": "Som",
+      "soldBy": "Anan",
+      "reason": "Left unpaid at the till (page reloaded or left mid-payment)",
+      "member": null,
+      "lineKinds": [
+        "fnb_item"
+      ],
+      "channel": "fnb"
+    },
+    {
+      "id": "01a13592-7f77-7bae-84fe-5623f3947098",
+      "occurredAt": "2026-10-13T14:02:35.768Z",
+      "gross": 5400,
+      "voidedAt": "2026-11-04T20:15:27.477Z",
+      "voidedBy": "Som",
+      "soldBy": "Anan",
+      "reason": "Left unpaid at the till (page reloaded or left mid-payment)",
+      "member": null,
+      "lineKinds": [
+        "fnb_item"
+      ],
+      "channel": "fnb"
+    },
+    {
+      "id": "01a10d04-9054-7e35-89c8-8ec0d7c11d6e",
+      "occurredAt": "2026-10-05T17:02:45.332Z",
+      "gross": 91500,
+      "voidedAt": "2026-11-04T20:15:27.851Z",
+      "voidedBy": "Som",
+      "soldBy": "Anan",
+      "reason": "Left unpaid at the till (page reloaded or left mid-payment)",
+      "member": null,
+      "lineKinds": [
+        "kids",
+        "service_fee"
+      ],
+      "channel": "till"
+    },
+    {
+      "id": "01a10c71-5d22-7e1b-b9c5-cb871a76078f",
+      "occurredAt": "2026-10-05T14:21:58.434Z",
+      "gross": 124000,
+      "voidedAt": "2026-11-04T20:15:28.033Z",
+      "voidedBy": "Som",
+      "soldBy": "Anan",
+      "reason": "Left unpaid at the till (page reloaded or left mid-payment)",
+      "member": null,
+      "lineKinds": [
+        "kids",
+        "adults_paid"
+      ],
+      "channel": "till"
+    },
+    {
+      "id": "01a0f6df-852c-7849-bbe0-68e7a71dc177",
+      "occurredAt": "2026-10-01T09:50:38.892Z",
+      "gross": 193500,
+      "voidedAt": "2026-11-04T20:15:28.579Z",
+      "voidedBy": "Som",
+      "soldBy": "Som",
+      "reason": "Left unpaid at the till (page reloaded or left mid-payment)",
+      "member": "ZZ TEST Parent",
+      "lineKinds": [
+        "kids",
+        "service_fee"
+      ],
+      "channel": "till"
+    },
+    {
+      "id": "01a0f6de-7969-7fc8-abce-4c66b2c938bc",
+      "occurredAt": "2026-10-01T09:49:30.345Z",
+      "gross": 193500,
+      "voidedAt": "2026-11-04T20:18:24.671Z",
+      "voidedBy": "Som",
+      "soldBy": "Som",
+      "reason": "Left unpaid at the till (page reloaded or left mid-payment)",
+      "member": "ZZ TEST Parent",
+      "lineKinds": [
+        "kids",
+        "service_fee"
+      ],
+      "channel": "till"
+    },
+    {
+      "id": "01a0f6dc-a6c2-7d6b-ac69-c893325f5ef6",
+      "occurredAt": "2026-10-01T09:47:30.883Z",
+      "gross": 193500,
+      "voidedAt": "2026-11-04T20:18:24.858Z",
+      "voidedBy": "Som",
+      "soldBy": "Som",
+      "reason": "Left unpaid at the till (page reloaded or left mid-payment)",
+      "member": "ZZ TEST Parent",
+      "lineKinds": [
+        "kids",
+        "service_fee"
+      ],
+      "channel": "till"
+    },
+    {
+      "id": "01a0f6db-d843-7317-8541-d8a537068e0c",
+      "occurredAt": "2026-10-01T09:46:38.019Z",
+      "gross": 193500,
+      "voidedAt": "2026-11-04T20:18:25.044Z",
+      "voidedBy": "Som",
+      "soldBy": "Som",
+      "reason": "Left unpaid at the till (page reloaded or left mid-payment)",
+      "member": "ZZ TEST Parent",
+      "lineKinds": [
+        "kids",
+        "service_fee"
+      ],
+      "channel": "till"
+    },
+    {
+      "id": "01a0f6db-19e7-7db9-91cd-c5438737299b",
+      "occurredAt": "2026-10-01T09:45:49.287Z",
+      "gross": 193500,
+      "voidedAt": "2026-11-04T20:18:25.233Z",
+      "voidedBy": "Som",
+      "soldBy": "Som",
+      "reason": "Left unpaid at the till (page reloaded or left mid-payment)",
+      "member": "ZZ TEST Parent",
+      "lineKinds": [
+        "kids",
+        "service_fee"
+      ],
+      "channel": "till"
+    },
+    {
+      "id": "756a23dd-7f9b-4238-ad23-1ace4581dea2",
+      "occurredAt": "2026-09-23T12:48:49.020Z",
+      "gross": 69000,
+      "voidedAt": "2026-11-04T20:18:25.417Z",
+      "voidedBy": "Som",
+      "soldBy": "Som",
+      "reason": "Left unpaid at the till (page reloaded or left mid-payment)",
+      "member": null,
+      "lineKinds": [
+        "kids"
+      ],
+      "channel": "till"
+    },
+    {
+      "id": "4b623dd6-1aa8-42e2-9f5b-cf6c96507a42",
+      "occurredAt": "2026-09-23T12:47:15.507Z",
+      "gross": 69000,
+      "voidedAt": "2026-11-04T20:18:25.604Z",
+      "voidedBy": "Som",
+      "soldBy": "Som",
+      "reason": "Left unpaid at the till (page reloaded or left mid-payment)",
+      "member": null,
+      "lineKinds": [
+        "kids"
+      ],
+      "channel": "till"
+    },
+    {
+      "id": "c7e10757-3abf-44d4-a1ab-221a754f0a65",
+      "occurredAt": "2026-09-23T12:46:35.489Z",
+      "gross": 69000,
+      "voidedAt": "2026-11-04T20:18:25.790Z",
+      "voidedBy": "Som",
+      "soldBy": "Som",
+      "reason": "Left unpaid at the till (page reloaded or left mid-payment)",
+      "member": null,
+      "lineKinds": [
+        "kids"
+      ],
+      "channel": "till"
+    },
+    {
+      "id": "01a0cde7-ea0a-7fcf-b9d0-8a1231ea0aeb",
+      "occurredAt": "2026-09-23T10:55:23.147Z",
+      "gross": 104000,
+      "voidedAt": "2026-11-04T20:18:25.972Z",
+      "voidedBy": "Som",
+      "soldBy": "Som",
+      "reason": "Left unpaid at the till (page reloaded or left mid-payment)",
+      "member": null,
+      "lineKinds": [
+        "kids",
+        "adults_paid"
+      ],
+      "channel": "till"
+    }
+  ],
+  "dismissCheck": {
+    "at": "2026-11-04T20:20:43.954Z",
+    "notices": 6,
+    "tenderingBefore": 6,
+    "tenderingAfter": 6,
+    "same": true
+  },
+  "wantPreviews": [
+    [
+      "receipt-printer",
+      4,
+      "s765-st-05c-no-wallet-receipt-printer-receipt"
+    ],
+    [
+      "kids-band-printer",
+      2,
+      "s765-st-05d-no-wallet-kids-band"
+    ],
+    [
+      "adult-band-printer",
+      2,
+      "s765-st-05e-no-wallet-adult-band"
+    ]
+  ],
+  "printoutFiles": [
+    {
+      "printer": "receipt-printer",
+      "seq": 1,
+      "file": "docs/qa/proof-2026-11-05/s765-773/s765-st-03a-receipt-printer-receipt.png",
+      "at": "2026-11-04T20:23:11.708Z"
+    },
+    {
+      "printer": "receipt-printer",
+      "seq": 2,
+      "file": "docs/qa/proof-2026-11-05/s765-773/s765-st-03b-receipt-printer-bracelet-workshop-slip.png",
+      "at": "2026-11-04T20:23:11.789Z"
+    },
+    {
+      "printer": "kids-band-printer",
+      "seq": 1,
+      "file": "docs/qa/proof-2026-11-05/s765-773/s765-st-03c-kids-band.png",
+      "at": "2026-11-04T20:23:11.864Z"
+    },
+    {
+      "printer": "adult-band-printer",
+      "seq": 1,
+      "file": "docs/qa/proof-2026-11-05/s765-773/s765-st-03d-adult-band.png",
+      "at": "2026-11-04T20:23:11.933Z"
+    },
+    {
+      "printer": "receipt-printer",
+      "seq": 4,
+      "file": "docs/qa/proof-2026-11-05/s765-773/s765-st-05c-no-wallet-receipt-printer-receipt.png",
+      "at": "2026-11-04T20:31:12.187Z"
+    },
+    {
+      "printer": "kids-band-printer",
+      "seq": 2,
+      "file": "docs/qa/proof-2026-11-05/s765-773/s765-st-05d-no-wallet-kids-band.png",
+      "at": "2026-11-04T20:31:12.258Z"
+    },
+    {
+      "printer": "adult-band-printer",
+      "seq": 2,
+      "file": "docs/qa/proof-2026-11-05/s765-773/s765-st-05e-no-wallet-adult-band.png",
+      "at": "2026-11-04T20:31:12.332Z"
+    }
+  ],
+  "redactJobs": [],
+  "redacted": [
+    {
+      "file": "s765-st-03a-receipt-printer-receipt",
+      "boxes": [
+        [
+          96,
+          996,
+          384,
+          186
+        ]
+      ],
+      "at": "2026-11-04T20:23:31.392Z"
+    },
+    {
+      "file": "s765-st-02-payment-successful-socks-card",
+      "boxes": [
+        [
+          448,
+          622,
+          70,
+          70
+        ],
+        [
+          448,
+          725,
+          70,
+          70
+        ],
+        [
+          448,
+          827,
+          70,
+          68
+        ],
+        [
+          926,
+          710,
+          72,
+          72
+        ],
+        [
+          926,
+          864,
+          72,
+          72
+        ],
+        [
+          926,
+          972,
+          72,
+          72
+        ]
+      ],
+      "at": "2026-11-04T20:23:41.629Z"
+    },
+    {
+      "file": "s765-st-05b-no-wallet-payment-successful-socks-card",
+      "boxes": [
+        [
+          448,
+          622,
+          70,
+          70
+        ],
+        [
+          926,
+          710,
+          72,
+          72
+        ]
+      ],
+      "at": "2026-11-04T20:31:05.500Z"
+    }
+  ],
+  "products": {
+    "01a0cb02-13a9-790f-85a1-73e71f2f57f7": {
+      "status": 404,
+      "code": null,
+      "kind": null
+    },
+    "01a0d4ed-9353-7325-9684-72605ecc7f09": {
+      "status": 404,
+      "code": null,
+      "kind": null
+    }
+  },
+  "abandonedPath": {
+    "at": "2026-11-04T20:28Z",
+    "what": "A first step 5 attempt (1 Hour Play, one kid and no adult) opened the children-playing-alone screen; it was backed out before anything was rung up (no sale request sent) and its two pictures were deleted."
+  },
+  "cleanup": {
+    "leftoverSale": {
+      "id": "01a1a846-fd17-7c53-a2a3-b51c435dcbbf",
+      "at": "2026-11-04T20:55:16.393Z",
+      "voidStatus": 200,
+      "error": null,
+      "readBack": {
+        "status": "voided",
+        "voidedAt": "2026-11-04T20:55:17.178Z",
+        "voidReason": "ZZ TEST proof clean-up: unpaid duplicate left by the SCRUM-773 staging proof run",
+        "tierClaim": null
+      }
+    },
+    "at": "2026-11-04T20:59:22.740Z",
+    "members": {
+      "socks": {
+        "nickname": "ZZ TEST 765 Socks",
+        "archiveStatus": 200,
+        "readStatus": 404,
+        "archivedAt": null
+      },
+      "nowallet": {
+        "nickname": "ZZ TEST 765 No Wallet",
+        "archiveStatus": 200,
+        "readStatus": 404,
+        "archivedAt": null
+      },
+      "licence": {
+        "nickname": "ZZ TEST 773 Licence",
+        "archiveStatus": 200,
+        "readStatus": 404,
+        "archivedAt": null
+      },
+      "other": {
+        "nickname": "ZZ TEST 773 Other",
+        "archiveStatus": 200,
+        "readStatus": 404,
+        "archivedAt": null
+      },
+      "walkin": {
+        "nickname": "ZZ TEST 773 Walk-in",
+        "archiveStatus": 200,
+        "readStatus": 404,
+        "archivedAt": null
+      }
+    },
+    "salesTonight": [
+      {
+        "id": "01a1a858-a029-7d66-92bf-cb005483bc4c",
+        "receipt": "T1-000088",
+        "status": "finalised",
+        "at": "2026-11-04T20:55:42.889Z",
+        "gross": 62000,
+        "member": null
+      },
+      {
+        "id": "01a1a847-4764-7baf-a0e1-f6f372c454f9",
+        "receipt": "T1-000087",
+        "status": "finalised",
+        "at": "2026-11-04T20:36:46.052Z",
+        "gross": 62000,
+        "member": "ZZ TEST 773 Walk-in"
+      },
+      {
+        "id": "01a1a846-fd17-7c53-a2a3-b51c435dcbbf",
+        "receipt": null,
+        "status": "voided",
+        "at": "2026-11-04T20:36:27.031Z",
+        "gross": 62000,
+        "member": null
+      },
+      {
+        "id": "01a1a844-310d-7af7-b9e7-a942a389d02d",
+        "receipt": "T1-000086",
+        "status": "finalised",
+        "at": "2026-11-04T20:33:23.725Z",
+        "gross": 62000,
+        "member": "ZZ TEST 773 Other"
+      },
+      {
+        "id": "01a1a841-a1e3-7969-a230-f401ceeaa981",
+        "receipt": "T1-000085",
+        "status": "finalised",
+        "at": "2026-11-04T20:30:36.003Z",
+        "gross": 78000,
+        "member": "ZZ TEST 765 No Wallet"
+      },
+      {
+        "id": "01a1a839-f5d7-76d8-849c-b420828afbd3",
+        "receipt": "T1-000084",
+        "status": "finalised",
+        "at": "2026-11-04T20:22:13.207Z",
+        "gross": 155000,
+        "member": "ZZ TEST 765 Socks"
+      }
+    ],
+    "openTonight": [],
+    "openTotal": 6,
+    "zzTierThaiUnchanged": {
+      "proof": "Residence certificate",
+      "archivedAt": null
+    },
+    "sessions": {
+      "at": "2026-11-04T20:59:33.983Z",
+      "till": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "console": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "admin": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    }
+  },
+  "finishedAt": "2026-11-04T20:59:39.700Z",
+  "renames": {
+    "at": "2026-11-04T21:00:00Z",
+    "why": "Opened with the Read tool, neither image shows a sale-level document line: both sales were priced from the member profile, which carries the document instead (tierClaim null on both). The names now say what the pictures show. The sale-level line is shown by 09j, on a walk-in claim with no details given.",
+    "map": {
+      "s773-st-09c-history-sale-document-other-work-permit": "s773-st-09c-history-member-sale-priced-from-profile",
+      "s773-st-09f-history-walk-in-sale-priced-on-other-work-permit": "s773-st-09f-history-walk-in-with-details-priced-from-profile"
+    }
+  },
+  "proofAgent3": {
+    "at": "2026-11-04T20:50Z to 2026-11-04T21:00Z (03:50-04:00 Bangkok)",
+    "liveCommit": "8ad993e11ddfa18701eec668a5e67afa30edc12a",
+    "harnessChange": "Before any browser work the notice helper dismissLeftBehind was replaced by one that throws, and every step that called it was moved out of the harness. In this run no button on any till notice was pressed; the notices were only read (n1) and one was photographed (09k). Nothing older than today was voided.",
+    "reviewed": "The 33 captured images were each opened with the Read tool. 31 show what their names claim on the live commit. 09c and 09f were named for a sale-level document line they do not show (both sales were priced from the member profile) and were renamed; step 9 was re-run as s9n on a walk-in claim with no details given.",
+    "newImages": [
+      "s773-st-09g-walk-in-claim-other-work-permit-with-expiry.png",
+      "s773-st-09h-walk-in-thai-rate-order-no-details.png",
+      "s773-st-09i-walk-in-thai-rate-paid.png",
+      "s773-st-09j-history-walk-in-sale-priced-on-other-work-permit.png",
+      "s773-st-09k-finding-unpaid-duplicate-after-walk-in-entered-details.png",
+      "s773-st-10a-console-member-proof-type-list.png",
+      "s773-st-10b-console-tier-verifications.png",
+      "s773-st-11a-till-member-recorded-residence-certificate.png",
+      "s773-st-11b-console-recorded-residence-certificate-option.png"
+    ],
+    "finding": {
+      "what": "A walk-in who claims a tier on the till and then types a phone and nickname on the customer display leaves an unpaid copy of the sale behind. The payment screen records the sale as a walk-in with the claim as soon as Done is pressed (01a1a846-fd17, 20:36:27Z); the member is saved a second later (member.tier_verify 20:36:28Z); the Confirm press then records a second sale under the new member (01a1a847-4764, T1-000087, 20:36:46Z) and the first stays tendering, so the till later shows it as \"Your sale rung up at this till was left unpaid\" (09k).",
+      "scope": "Not part of SCRUM-765 or SCRUM-773: the deferred tier save (SCRUM-227) meeting the sale recorded when the payment screen opens (S2-09a).",
+      "cleanup": "The copy left by this proof was voided through the API on the till session with a ZZ TEST clean-up reason (cleanup.leftoverSale)."
+    }
+  }
+}

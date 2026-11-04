@@ -1,0 +1,1 @@
+export default async function (S) { S.st.wantPreviews = [['receipt-printer', 4, 's765-st-05c-no-wallet-receipt-printer-receipt'], ['kids-band-printer', 2, 's765-st-05d-no-wallet-kids-band'], ['adult-band-printer', 2, 's765-st-05e-no-wallet-adult-band']]; S.save(); return 'ok'; }

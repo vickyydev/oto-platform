@@ -1,0 +1,1 @@
+export default async function (S) { S.st.redactJobs = [{ file: 's765-st-02-payment-successful-socks-card', boxes: [[448, 622, 70, 70], [448, 725, 70, 70], [448, 827, 70, 68], [926, 710, 72, 72], [926, 864, 72, 72], [926, 972, 72, 72]] }]; S.save(); return 'ok'; }

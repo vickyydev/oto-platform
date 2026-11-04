@@ -1,0 +1,101 @@
+{
+  "SCRUM-765": {
+    "key": "SCRUM-765",
+    "at": "2026-11-04T21:04:04.248Z",
+    "attached": [
+      "s765-st-01a-configure-two-grip-socks-and-bracelet-workshop.png",
+      "s765-st-01-order-with-two-pairs-of-socks.png",
+      "s765-st-02a-cash-chosen.png",
+      "s765-st-02-payment-successful-socks-card.png",
+      "s765-st-03a-receipt-printer-receipt.png",
+      "s765-st-03b-receipt-printer-bracelet-workshop-slip.png",
+      "s765-st-03c-kids-band.png",
+      "s765-st-03d-adult-band.png",
+      "s765-st-03-console-virtual-box-1-print-queue.png",
+      "s765-st-03e-console-receipt-printer-1-paper.png",
+      "s765-st-03f-console-band-printer-kids-paper.png",
+      "s765-st-03g-console-band-printer-adults-paper.png",
+      "s765-st-04a-history-sale-detail.png",
+      "s765-st-04b-history-reprint-list-no-socks-slip.png",
+      "s765-st-05a-no-wallet-order-with-two-pairs-of-socks.png",
+      "s765-st-05b-no-wallet-payment-successful-socks-card.png",
+      "s765-st-05c-no-wallet-receipt-printer-receipt.png",
+      "s765-st-05d-no-wallet-kids-band.png",
+      "s765-st-05e-no-wallet-adult-band.png"
+    ],
+    "attachStatus": 200,
+    "commentStatus": 201,
+    "commentId": "13492",
+    "shown": [
+      "s765-st-01-order-with-two-pairs-of-socks.png",
+      "s765-st-02-payment-successful-socks-card.png",
+      "s765-st-03a-receipt-printer-receipt.png",
+      "s765-st-03b-receipt-printer-bracelet-workshop-slip.png",
+      "s765-st-03-console-virtual-box-1-print-queue.png",
+      "s765-st-05b-no-wallet-payment-successful-socks-card.png",
+      "s765-st-05c-no-wallet-receipt-printer-receipt.png"
+    ],
+    "walkedTo": "Deployed",
+    "statusReadBack": "Deployed",
+    "imagesOnTicket": 19,
+    "commentCreated": "2026-11-05T04:03:59.830+0700",
+    "imagesShownInComment": 7,
+    "commitLinks": [
+      "https://github.com/vickyydev/oto-platform/commit/5d073fa6f37ed54d63b9015045246ee9c26c3f27",
+      "https://github.com/vickyydev/oto-platform/commit/d9d6bf0f0014f6d1ecfc995994e5ef481878a7fd"
+    ],
+    "commitLinksCommentId": "13493"
+  },
+  "SCRUM-773": {
+    "key": "SCRUM-773",
+    "at": "2026-11-04T21:04:20.881Z",
+    "attached": [
+      "s773-st-06-verify-thai-document-list.png",
+      "s773-st-07a-driving-licence-with-expiry.png",
+      "s773-st-07b-thai-rate-verified-driving-licence.png",
+      "s773-st-07c-member-looked-up-again-thai-verified-driving-licence.png",
+      "s773-st-08a-other-description-and-expiry-date.png",
+      "s773-st-08b-other-past-expiry-refused.png",
+      "s773-st-08c-other-work-permit-future-expiry.png",
+      "s773-st-08d-thai-rate-verified-other-work-permit.png",
+      "s773-st-09a-thai-rate-order-other-work-permit.png",
+      "s773-st-09b-thai-rate-paid.png",
+      "s773-st-09c-history-member-sale-priced-from-profile.png",
+      "s773-st-09d-walk-in-other-work-permit-with-expiry.png",
+      "s773-st-09e-walk-in-thai-rate-saved-other-work-permit.png",
+      "s773-st-09f-history-walk-in-with-details-priced-from-profile.png",
+      "s773-st-09g-walk-in-claim-other-work-permit-with-expiry.png",
+      "s773-st-09h-walk-in-thai-rate-order-no-details.png",
+      "s773-st-09i-walk-in-thai-rate-paid.png",
+      "s773-st-09j-history-walk-in-sale-priced-on-other-work-permit.png",
+      "s773-st-10a-console-member-proof-type-list.png",
+      "s773-st-10b-console-tier-verifications.png",
+      "s773-st-11a-till-member-recorded-residence-certificate.png",
+      "s773-st-11b-console-recorded-residence-certificate-option.png"
+    ],
+    "attachStatus": 200,
+    "commentStatus": 201,
+    "commentId": "13494",
+    "shown": [
+      "s773-st-06-verify-thai-document-list.png",
+      "s773-st-07b-thai-rate-verified-driving-licence.png",
+      "s773-st-07c-member-looked-up-again-thai-verified-driving-licence.png",
+      "s773-st-08a-other-description-and-expiry-date.png",
+      "s773-st-08b-other-past-expiry-refused.png",
+      "s773-st-08d-thai-rate-verified-other-work-permit.png",
+      "s773-st-09j-history-walk-in-sale-priced-on-other-work-permit.png",
+      "s773-st-10a-console-member-proof-type-list.png",
+      "s773-st-10b-console-tier-verifications.png",
+      "s773-st-11b-console-recorded-residence-certificate-option.png"
+    ],
+    "walkedTo": "Deployed",
+    "statusReadBack": "Deployed",
+    "imagesOnTicket": 22,
+    "commentCreated": "2026-11-05T04:04:17.758+0700",
+    "imagesShownInComment": 10,
+    "commitLinks": [
+      "https://github.com/vickyydev/oto-platform/commit/340cd5be26ecf50b26ea4fb34d3745391fe471e9"
+    ],
+    "commitLinksCommentId": "13495"
+  }
+}

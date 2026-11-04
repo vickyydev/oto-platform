@@ -1,0 +1,21 @@
+Checked on staging (the test system) on 5 November 2026, 03:22 to 03:31 Bangkok, on the live version 8ad993e1 (the till, the Console and the platform were all on it). Only test records were used (names start with ZZ TEST), cash only, on Reception Till 1 with its test printers.
+
+What a person can do now:
+- Socks picked from a ticket's add-ons print on the main receipt only: once as a line with the price, and again under "Credit issued" as "2× Grip Socks to collect".
+- No separate socks slip prints any more.
+- Other add-ons still print their own slip: on the same sale the Bracelet Workshop slip printed as before.
+- The payment screen still shows the socks in the "Credit Grants to Print" card ("Grip Socks ×2 to collect"), and the customer display lists them under "Items to Collect". This is true even on a sale where nobody earns any credit.
+
+What was checked:
+- Sale T1-000084 (1,550 baht): one child, one adult, Bracelet Workshop and 2 pairs of Grip Socks. The receipt printer printed the receipt and the Bracelet Workshop slip, and nothing for the socks. The band printers printed the two bands. The Console's print list for the box shows the same four jobs: the Bracelet Workshop slip, two bands and the receipt.
+- Sale T1-000085 (780 baht): a Thai Full Day Pass with the free adult and 2 pairs of Grip Socks, so nobody earns credit. The card still showed "Grip Socks ×2 to collect". Only the receipt and the two bands printed.
+
+How to retest:
+- On the staging till, sign in as reception and look up a test member (or make one whose name starts with ZZ TEST).
+- Add a play ticket. Under Extras & Add-ons, add 2 pairs of socks and one other add-on, such as Bracelet Workshop. Pay by cash.
+- Check the receipt: the socks show as a line and in the "to collect" list. The other add-on's slip prints, and no socks slip prints.
+- Regular Socks is out of stock on staging, so Grip Socks was used. Both kinds of socks work the same way.
+
+Not shown on staging: the park's own counter box. It starts doing this when it gets its normal box update.
+
+The full record is in the repository under docs/qa/proof-2026-11-05/s765-773.

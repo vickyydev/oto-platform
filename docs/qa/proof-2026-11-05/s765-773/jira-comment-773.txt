@@ -1,0 +1,18 @@
+Checked on staging (the test system) on 5 November 2026, 03:31 to 03:59 Bangkok, on the live version 8ad993e1 (the till, the Console and the platform were all on it). Only test records were used (names start with ZZ TEST), cash only, on Reception Till 1 and in the Console.
+
+What a person can do now:
+- When staff verify the Thai rate, the proof list reads Passport, Driving licence, School card, Other. Residence certificate is no longer offered.
+- Driving licence can be chosen with an optional expiry date, and it is saved to the member. When the member is looked up again, the till shows "Thai · verified" and "Driving licence — no proof needed".
+- Choosing Other asks "What did you check?" (for example Work permit) and asks for the document expiry date again. A date in the past is refused with "The document has already expired."
+- A walk-in sale priced on Other shows the document in History, for example "Priced on other (Work permit), checked 05 Nov, 03:55".
+- In the Console, a member's proof list reads Passport, Driving licence, School card. Tier verifications lists the new checks, with Som (Reception) as the person who checked them.
+- An older member who was recorded with a Residence certificate still reads "Residence certificate" on the till. In the Console it shows as "Residence certificate (recorded)".
+
+How to retest:
+- On the staging till, sign in as reception and look up a test member (or make one whose name starts with ZZ TEST).
+- Pick Thai and check the list of documents.
+- Pick Driving licence, add an expiry date and press Verify. Look the same member up again: it says Thai, verified, on a Driving licence.
+- On another test member, pick Other. Type an expiry date in the past: it is refused. Then type "Work permit" with a future date and press Verify.
+- In the Console, open Catalogue & money > Tier verifications: both checks show, with your name.
+
+The full record is in the repository under docs/qa/proof-2026-11-05/s765-773.
