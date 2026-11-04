@@ -1,0 +1,17 @@
+import { render, service } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/render.mjs';
+const want = process.argv.slice(2); // name=deployId pairs
+const end = Date.now() + 25 * 60000;
+while (Date.now() < end) {
+  const states = [];
+  for (const pair of want) {
+    const [name, dep] = pair.split('=');
+    const s = await service(name);
+    const d = await render('GET', `/services/${s.id}/deploys/${dep}`);
+    states.push(`${name}:${d.status}:${(d.commit?.id ?? '').slice(0, 8)}:${d.finishedAt ?? ''}`);
+  }
+  console.log(new Date().toISOString(), states.join(' | '));
+  if (states.every((x) => x.split(':')[1] === 'live')) process.exit(0);
+  if (states.some((x) => /failed|canceled|deactivated/.test(x.split(':')[1]))) process.exit(2);
+  await new Promise((r) => setTimeout(r, 20000));
+}
+process.exit(1);

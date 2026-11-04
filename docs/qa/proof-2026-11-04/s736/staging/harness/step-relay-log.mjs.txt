@@ -1,0 +1,27 @@
+// Watch the box's relayed copies (POST /box/v1/scans) as they leave this machine: time, answer, kind. Never the code.
+export default async function (S) {
+  if (!globalThis.__s736RelayWrapped) {
+    const original = globalThis.fetch;
+    S.relayLog = [];
+    globalThis.fetch = async (url, init) => {
+      const u = String(url);
+      if (!u.endsWith('/box/v1/scans')) return original(url, init);
+      const started = Date.now();
+      let kind = null, bytes = 0;
+      try { const b = JSON.parse(String(init?.body ?? '{}')); kind = `${b.scan?.codeKind}/${b.scan?.outcome}/${b.scan?.handler}`; bytes = String(init?.body ?? '').length; } catch {}
+      const rec = { at: new Date(started).toISOString(), kind, bytes };
+      S.relayLog.push(rec);
+      try {
+        const res = await original(url, init);
+        rec.status = res.status; rec.ms = Date.now() - started;
+        if (res.status >= 300) { try { const t = await res.clone().text(); rec.error = JSON.parse(t)?.error?.code ?? t.slice(0, 120); } catch {} }
+        return res;
+      } catch (e) {
+        rec.failed = String(e?.name ?? e) + ': ' + String(e?.message ?? '').slice(0, 120); rec.ms = Date.now() - started;
+        throw e;
+      }
+    };
+    globalThis.__s736RelayWrapped = true;
+  }
+  return { wrapped: true, entries: S.relayLog.length };
+}

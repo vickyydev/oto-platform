@@ -1,0 +1,93 @@
+{
+  "note": "Names, counts and deploys only. Value fingerprints were compared on this machine and are not published.",
+  "enable": {
+    "action": "enable",
+    "source": "b8286644d37daa604caf761f32bac7614c5d3f92",
+    "ciRun": "41818481483",
+    "startedAt": "2026-11-04T11:51:11.061Z",
+    "finishedAt": "2026-11-04T11:51:18.130Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "countBefore": 57,
+        "countAfter": 59,
+        "changedNames": [
+          "BOX_BRIDGE_ZONE",
+          "BOX_BRIDGE_ALLOW_LOOPBACK"
+        ],
+        "untouchedValuesByteIdentical": true,
+        "restoredToOriginalFingerprints": false,
+        "deployId": "dep-dblhock9v7es73a2eks0",
+        "deployRequestedAt": "2026-11-04T11:51:14.681Z"
+      },
+      {
+        "name": "oto-pos-web-staging",
+        "countBefore": 4,
+        "countAfter": 6,
+        "changedNames": [
+          "VITE_BOX_BRIDGE_ZONE",
+          "VITE_BOX_BRIDGE_ALLOW_LOOPBACK"
+        ],
+        "untouchedValuesByteIdentical": true,
+        "restoredToOriginalFingerprints": false,
+        "deployId": "dep-dblhodk9v7es73a2en4g",
+        "deployRequestedAt": "2026-11-04T11:51:18.129Z"
+      }
+    ]
+  },
+  "restore": {
+    "action": "restore",
+    "source": "b8286644d37daa604caf761f32bac7614c5d3f92",
+    "ciRun": "41818481483",
+    "startedAt": "2026-11-04T12:06:55.739Z",
+    "finishedAt": "2026-11-04T12:07:03.154Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "countBefore": 59,
+        "countAfter": 57,
+        "changedNames": [
+          "BOX_BRIDGE_ZONE",
+          "BOX_BRIDGE_ALLOW_LOOPBACK"
+        ],
+        "untouchedValuesByteIdentical": true,
+        "restoredToOriginalFingerprints": true,
+        "deployId": "dep-dblhvooae00c73cadsq0",
+        "deployRequestedAt": "2026-11-04T12:06:59.588Z"
+      },
+      {
+        "name": "oto-pos-web-staging",
+        "countBefore": 6,
+        "countAfter": 4,
+        "changedNames": [
+          "VITE_BOX_BRIDGE_ZONE",
+          "VITE_BOX_BRIDGE_ALLOW_LOOPBACK"
+        ],
+        "untouchedValuesByteIdentical": true,
+        "restoredToOriginalFingerprints": true,
+        "deployId": "dep-dblhvpvf3r2c73a77q00",
+        "deployRequestedAt": "2026-11-04T12:07:03.154Z"
+      }
+    ]
+  },
+  "finalReadback": {
+    "at": "2026-11-04T12:12:24.517Z",
+    "oto-api-staging": {
+      "count": 57,
+      "testKeysPresent": [],
+      "live": "b8286644d37daa604caf761f32bac7614c5d3f92",
+      "deploy": "dep-dblhvooae00c73cadsq0",
+      "liveAt": "2026-11-04T12:10:59Z",
+      "health": 200,
+      "ready": 200,
+      "relayWithoutCredential": 401
+    },
+    "oto-pos-web-staging": {
+      "count": 4,
+      "testKeysPresent": [],
+      "live": "b8286644d37daa604caf761f32bac7614c5d3f92",
+      "deploy": "dep-dblhvpvf3r2c73a77q00",
+      "liveAt": "2026-11-04T12:10:05Z"
+    }
+  }
+}

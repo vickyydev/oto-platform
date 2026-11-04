@@ -1,0 +1,139 @@
+{
+  "key": "SCRUM-736",
+  "attachStatus": 200,
+  "attached": [
+    {
+      "id": "12536",
+      "name": "s736-online-band.png"
+    },
+    {
+      "id": "12537",
+      "name": "s736-offline-band.png"
+    },
+    {
+      "id": "12538",
+      "name": "s736-online-shop-band.png"
+    },
+    {
+      "id": "12539",
+      "name": "s736-offline-shop-band.png"
+    },
+    {
+      "id": "12540",
+      "name": "s736-online-voucher.png"
+    },
+    {
+      "id": "12541",
+      "name": "s736-offline-voucher.png"
+    },
+    {
+      "id": "12542",
+      "name": "s736-online-booking.png"
+    },
+    {
+      "id": "12543",
+      "name": "s736-offline-booking.png"
+    },
+    {
+      "id": "12544",
+      "name": "s736-online-shop-barcode-unknown.png"
+    },
+    {
+      "id": "12545",
+      "name": "s736-offline-shop-barcode-unknown.png"
+    },
+    {
+      "id": "12546",
+      "name": "s736-online-history-band.png"
+    },
+    {
+      "id": "12547",
+      "name": "s736-offline-history-band.png"
+    },
+    {
+      "id": "12548",
+      "name": "s736-virtual-box-poll-band.png"
+    }
+  ],
+  "commentStatus": 201,
+  "commentId": "13464",
+  "imagesShownInline": [
+    {
+      "file": "s736-online-band.png",
+      "attachmentId": "12536",
+      "inRenderedComment": true
+    },
+    {
+      "file": "s736-offline-band.png",
+      "attachmentId": "12537",
+      "inRenderedComment": true
+    },
+    {
+      "file": "s736-online-shop-band.png",
+      "attachmentId": "12538",
+      "inRenderedComment": true
+    },
+    {
+      "file": "s736-offline-shop-band.png",
+      "attachmentId": "12539",
+      "inRenderedComment": true
+    },
+    {
+      "file": "s736-online-voucher.png",
+      "attachmentId": "12540",
+      "inRenderedComment": true
+    },
+    {
+      "file": "s736-offline-voucher.png",
+      "attachmentId": "12541",
+      "inRenderedComment": true
+    },
+    {
+      "file": "s736-online-booking.png",
+      "attachmentId": "12542",
+      "inRenderedComment": true
+    },
+    {
+      "file": "s736-offline-booking.png",
+      "attachmentId": "12543",
+      "inRenderedComment": true
+    },
+    {
+      "file": "s736-online-shop-barcode-unknown.png",
+      "attachmentId": "12544",
+      "inRenderedComment": true
+    },
+    {
+      "file": "s736-offline-shop-barcode-unknown.png",
+      "attachmentId": "12545",
+      "inRenderedComment": true
+    },
+    {
+      "file": "s736-online-history-band.png",
+      "attachmentId": "12546",
+      "inRenderedComment": true
+    },
+    {
+      "file": "s736-offline-history-band.png",
+      "attachmentId": "12547",
+      "inRenderedComment": true
+    },
+    {
+      "file": "s736-virtual-box-poll-band.png",
+      "attachmentId": "12548",
+      "inRenderedComment": true
+    }
+  ],
+  "statusAfterComment": "Testing",
+  "imagesOnTicket": 13,
+  "commentCreated": "2026-11-04T19:15:48.252+0700",
+  "allInline": true,
+  "walk": {
+    "target": "Deployed",
+    "readBack": "Deployed",
+    "commitLinksAdded": 4,
+    "commitLinksTotal": 4,
+    "at": "2026-11-04T12:16:24.300Z",
+    "note": "Never Done."
+  }
+}

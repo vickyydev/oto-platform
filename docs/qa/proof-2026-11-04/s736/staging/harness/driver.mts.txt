@@ -1,0 +1,195 @@
+// SCRUM-736 staging proof driver: one browser, one local counter box and one proxy kept alive; step files run on request.
+// Never prints or saves a phone, password, claim code, band code, voucher code or booking QR into the lane.
+import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
+import { request as httpsRequest } from 'node:https';
+import { createRequire } from 'node:module';
+import { randomUUID, randomBytes } from 'node:crypto';
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+import { DatabaseSync } from 'node:sqlite';
+import { need } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs';
+import { render, service } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/render.mjs';
+import { claimBox, startRunner } from 'file:///C:/oto-lanes/scanner736-20261104/packages/box-agent/src/runner/runtime.ts';
+import { HidBurstReader, SerialScanReader, simulateHidKeys, simulateSerialRecord } from 'file:///C:/oto-lanes/scanner736-20261104/packages/box-agent/src/scan-input.ts';
+import { bandShortCode } from 'file:///C:/oto-lanes/scanner736-20261104/packages/shared/src/band-code.ts';
+
+const LANE = 'C:/oto-lanes/scanner736-20261104';
+const HERE = 'C:/Users/waqar/AppData/Local/Temp/claude/9d4c56906b777e8e/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/s736';
+const OUT = LANE + '/docs/qa/proof-2026-11-04/s736/staging';
+const SOURCE = 'b8286644d37daa604caf761f32bac7614c5d3f92';
+const CI = '41818481483';
+const { chromium, expect } = createRequire(LANE + '/apps/pos/package.json')('@playwright/test');
+const qrReq = createRequire('C:/Users/waqar/AppData/Local/Temp/claude/c--Users-waqar-OneDrive-Desktop-Projects-oto-pos/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/s731deps/package.json');
+const jsQR = qrReq('jsqr');
+const { PNG } = qrReq('pngjs');
+const API = 'https://oto-api-staging.onrender.com';
+const POS = 'https://oto-pos-web-staging.onrender.com';
+const CONSOLE = 'https://oto-console-staging.onrender.com';
+const LAUNCHER = 'https://oto-launcher-staging.onrender.com';
+mkdirSync(OUT, { recursive: true });
+const receiptFile = OUT + '/receipt.json';
+const st: any = existsSync(receiptFile)
+  ? JSON.parse(readFileSync(receiptFile, 'utf8'))
+  : { ticket: 'SCRUM-736', source: SOURCE, ciRun: CI, startedAt: new Date().toISOString(), fixture: {}, steps: {}, images: [], checks: [] };
+const save = () => writeFileSync(receiptFile, JSON.stringify(st, null, 2) + '\n');
+save();
+const SECRET_FILE = HERE + '/secrets.json';
+const secrets: any = existsSync(SECRET_FILE) ? JSON.parse(readFileSync(SECRET_FILE, 'utf8')) : {};
+const saveSecrets = () => writeFileSync(SECRET_FILE, JSON.stringify(secrets, null, 2) + '\n');
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const until = async (label: string, run: () => Promise<any>, ms = 90000) => {
+  const end = Date.now() + ms;
+  let last: any;
+  while (Date.now() < end) {
+    try { const v = await run(); if (v) return v; } catch (e) { last = e; }
+    await sleep(500);
+  }
+  throw Error('Timed out: ' + label + (last ? ' (' + String((last as Error).message ?? last).slice(0, 200) + ')' : ''));
+};
+const listen = (server: any, port = 0) => new Promise<number>((resolve, reject) => {
+  server.once('error', reject);
+  server.listen(port, '127.0.0.1', () => resolve(server.address().port));
+});
+const free = async () => { const s = createServer(); const p = await listen(s); await new Promise<void>((r) => s.close(() => r())); return p; };
+
+// The counter box's link to the platform: a local proxy the step files can cut.
+let cloudDown = false;
+const proxy = createServer((req, res) => {
+  if (cloudDown) { req.socket.destroy(); return; }
+  const up = httpsRequest(API + req.url, { method: req.method, headers: { ...req.headers, host: new URL(API).host } }, (r) => {
+    res.writeHead(r.statusCode ?? 502, r.headers);
+    r.pipe(res);
+  });
+  up.on('error', () => { if (!res.headersSent) res.writeHead(502); res.end(); });
+  req.on('aborted', () => up.destroy());
+  res.on('close', () => up.destroy());
+  req.pipe(up);
+});
+const proxyPort = await listen(proxy);
+const ports = st.ports ?? { bridge: await free(), kiosk: await free() };
+st.ports = ports;
+save();
+
+let browser: any;
+try { browser = await chromium.launch({ channel: 'msedge' }); } catch { browser = await chromium.launch(); }
+st.browser = browser.version();
+save();
+
+const S: any = {
+  LANE, HERE, OUT, SOURCE, CI, API, POS, CONSOLE, LAUNCHER, st, save, secrets, saveSecrets, sleep, until, randomUUID, randomBytes,
+  need, render, service, chromium, expect, browser, jsQR, PNG, claimBox, startRunner, HidBurstReader, SerialScanReader,
+  simulateHidKeys, simulateSerialRecord, bandShortCode, proxyPort, ports, assert,
+  setCloudDown: (v: boolean) => { cloudDown = v; },
+  isCloudDown: () => cloudDown,
+  runner: null as any,
+  admin: null as any,
+  tills: {} as any,
+};
+S.cache = (scope: string) => {
+  const db = new DatabaseSync(S.home + '/box.sqlite', { readOnly: true });
+  try {
+    const row = db.prepare('select payload from box_cache where scope=?').get(scope) as { payload: string } | undefined;
+    return row ? JSON.parse(row.payload) : null;
+  } finally { db.close(); }
+};
+// Console session of the staging administrator, through the launcher hand-off, as a person signs in.
+S.consoleIn = async () => {
+  if (S.admin) return S.admin;
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  ctx.setDefaultTimeout(30000);
+  assert.equal((await ctx.request.post(LAUNCHER + '/api/auth/sign-in', { data: { phone: need('STAGING_ADMIN_PHONE'), password: need('STAGING_ADMIN_PASSWORD') } })).status(), 200);
+  const hand = await (await ctx.request.post(LAUNCHER + '/api/auth/handoff', { data: { app: 'console' } })).json();
+  const page = await ctx.newPage();
+  await page.goto(hand.launchUrl);
+  await page.waitForURL('**/overview', { timeout: 60000 });
+  st.launcherSignOut = (await ctx.request.post(LAUNCHER + '/api/auth/sign-out', { data: {} })).status();
+  save();
+  S.admin = { ctx, page };
+  return S.admin;
+};
+S.apiRaw = async (method: string, path: string, body?: any) => {
+  const { ctx } = await S.consoleIn();
+  const r = await ctx.request.fetch(CONSOLE + '/api' + path, { method, data: body, headers: method === 'GET' ? {} : { 'Idempotency-Key': randomUUID() } });
+  const b = await r.json().catch(() => null);
+  return { status: r.status(), body: b };
+};
+S.api = async (method: string, path: string, body?: any, okStatuses = [200, 201, 204]) => {
+  const r = await S.apiRaw(method, path, body);
+  assert.ok(okStatuses.includes(r.status), `${method} ${path.split('?')[0]}: ${r.status} ${r.body?.error?.code ?? ''} ${String(r.body?.error?.message ?? '').slice(0, 200)}`);
+  return r.body;
+};
+S.newTill = async (label: string) => {
+  if (S.tills[label]) return S.tills[label];
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  ctx.setDefaultTimeout(25000);
+  // What a person answers "Allow" to when the browser asks to reach apps on this device (the box on the counter network).
+  await ctx.grantPermissions(['local-network-access'], { origin: POS });
+  const page = await ctx.newPage();
+  const log: any[] = [];
+  const short = (u: URL) => u.pathname.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, ':id');
+  page.on('response', (res: any) => {
+    const u = new URL(res.url());
+    if (/\/(channel|scans)$/.test(u.pathname) || u.pathname.startsWith('/box/v1/')) {
+      log.push({ at: new Date().toISOString(), method: res.request().method(), host: u.hostname.endsWith('localhost') ? 'counter-box' : u.hostname, path: short(u), status: res.status() });
+      if (log.length > 600) log.shift();
+    }
+  });
+  page.on('requestfailed', (req: any) => {
+    const u = new URL(req.url());
+    if (/\/(channel|scans)$/.test(u.pathname) || u.pathname.startsWith('/box/v1/')) {
+      log.push({ at: new Date().toISOString(), method: req.method(), host: u.hostname.endsWith('localhost') ? 'counter-box' : u.hostname, path: short(u), failed: req.failure()?.errorText ?? 'failed' });
+    }
+  });
+  const till: any = { ctx, page, log };
+  till.activity = setInterval(() => { void page.keyboard.press('Shift').catch(() => {}); }, 15000);
+  S.tills[label] = till;
+  return till;
+};
+S.tillApi = async (label: string, method: string, path: string, body?: any) => {
+  const { ctx } = S.tills[label];
+  const r = await ctx.request.fetch(POS + '/api' + path, { method, data: body, headers: method === 'GET' ? {} : { 'Idempotency-Key': randomUUID() } });
+  return { status: r.status(), body: await r.json().catch(() => null) };
+};
+S.capture = async (page: any, file: string, extraMasks: any[] = []) => {
+  await page.screenshot({ path: OUT + '/' + file, animations: 'disabled', maskColor: '#d6d3d1', mask: [page.locator('input[type="password"]'), page.getByText(/^#QR-/), ...extraMasks] });
+  if (!st.images.includes(file)) st.images.push(file);
+  save();
+  return OUT + '/' + file;
+};
+S.check = (name: string, details: any = {}) => { st.checks.push({ name, ...details, passed: true, at: new Date().toISOString() }); save(); };
+
+const server = createServer(async (req, res) => {
+  let body = '';
+  for await (const c of req) body += c;
+  if (body === 'STOP') {
+    res.end('stopping');
+    for (const t of Object.values(S.tills) as any[]) clearInterval(t.activity);
+    await browser.close().catch(() => {});
+    if (S.runner) await S.runner.stop().catch(() => {});
+    proxy.closeAllConnections();
+    proxy.close();
+    server.close();
+    st.driverStoppedAt = new Date().toISOString();
+    save();
+    process.exit(0);
+  }
+  const file = body.trim();
+  const started = Date.now();
+  const name = file.split(/[\\/]/).pop();
+  try {
+    const mod = await import(pathToFileURL(file).href + '?v=' + Date.now());
+    const result = await mod.default(S);
+    st.steps[name!] = { at: new Date().toISOString(), ms: Date.now() - started, ok: true };
+    save();
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, ms: Date.now() - started, result }, null, 1));
+  } catch (e: any) {
+    st.steps[name!] = { at: new Date().toISOString(), ms: Date.now() - started, ok: false, error: String(e?.message ?? e).slice(0, 600) };
+    save();
+    res.writeHead(500, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: String(e?.message ?? e).slice(0, 1500), stack: String(e?.stack ?? '').split('\n').slice(0, 6).join('\n') }));
+  }
+});
+await listen(server, 47736);
+console.log('driver ready on 47736; browser', st.browser, 'proxy', proxyPort, 'ports', JSON.stringify(ports));

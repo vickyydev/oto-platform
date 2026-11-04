@@ -1,0 +1,155 @@
+// One scan case on the counter box: the till opened on its screen online, the box's platform link and the browser's
+// platform requests optionally cut, then the code read by the box's own scanner readers (keyboard-wedge burst or
+// CDC record, as the DS2278 sends it) and delivered by the box's scanning service. What the person sees is captured.
+const PATHS = { band: '/order-station', voucher: '/order-station', booking: '/', 'shop-band': '/merch-station', 'shop-barcode': '/merch-station', 'history-band': '/history' };
+
+export async function unlockCounter(S, page) {
+  const { st, secrets, assert } = S;
+  const f = st.fixture;
+  const bridge = `http://zz-test-s736.localhost:${S.ports.bridge}`;
+  if (!(await page.getByRole('button', { name: 'Unlock', exact: true }).isVisible())) await page.getByRole('button', { name: 'Lock screen', exact: true }).click();
+  await page.locator('input[type="password"]').fill(secrets.staffPassword);
+  const reply = page.waitForResponse((r) => r.url() === bridge + `/box/v1/station/${f.stationId}/unlock` && r.request().method() === 'POST', { timeout: 30000 });
+  await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  assert.equal((await reply).status(), 200, 'the box accepted the unlock');
+}
+
+export async function readyFor(S, page, kind) {
+  if (kind === 'booking') return page.getByText('Membership Check', { exact: true }).waitFor();
+  if (kind.startsWith('shop')) return page.getByRole('heading', { name: 'Retail Sale', exact: true }).waitFor();
+  if (kind === 'history-band') return page.getByLabel('Search transactions').waitFor();
+  return page.getByRole('heading', { name: 'Scan Wristband', exact: true }).waitFor();
+}
+
+export async function boxScan(S, code, mode) {
+  const { st, assert } = S;
+  let input;
+  if (mode === 'serial') input = new S.SerialScanReader({ source: 'box_serial' }).push(S.simulateSerialRecord(code), Date.now())[0];
+  else {
+    const reader = new S.HidBurstReader({ source: 'box_hid' });
+    for (const key of S.simulateHidKeys(code, { startAt: Date.now(), interCharDelayMs: 20 })) { const e = reader.push(key); if (e?.kind === 'scan') input = e.input; }
+  }
+  assert.ok(input, 'the reader recognised the scan');
+  const result = await S.runner.agent.scanner().deliver(st.fixture.stationId, input, { screen: 'box' });
+  return { kind: result.kind, outcome: result.outcome, handler: result.handler, errorCode: result.errorCode ?? null, reader: mode === 'serial' ? 'CDC record' : 'keyboard-wedge burst' };
+}
+
+export async function tapeCursor(S) {
+  const r = await S.tillApi('counter', 'GET', `/stations/${S.st.fixture.stationId}/scans?view=staff`);
+  S.assert.equal(r.status, 200, 'tape read ' + r.status);
+  return r.body.next;
+}
+export async function tapeSince(S, after) {
+  const r = await S.tillApi('counter', 'GET', `/stations/${S.st.fixture.stationId}/scans?view=staff&after=${after}`);
+  S.assert.equal(r.status, 200, 'tape read ' + r.status);
+  return r.body.scans.map((x) => ({ scanId: x.scanId ?? null, source: x.source, codeKind: x.codeKind, outcome: x.outcome, handler: x.handler, errorCode: x.errorCode, scannedAt: x.scannedAt }));
+}
+
+export async function prepare(S, kind, offline) {
+  const { st, save, POS, until, assert } = S;
+  const f = st.fixture;
+  const till = S.tills.counter;
+  const page = till.page;
+  S.setCloudDown(false);
+  await till.ctx.unroute(POS + '/api/**').catch(() => {});
+  await S.runner.agent.syncConfig(); await S.runner.agent.syncCache();
+  await until('box link back up', async () => (await (await fetch(`http://127.0.0.1:${S.ports.bridge}/box/v1/station/${f.stationId}/status`)).json()).link?.lane !== 'box', 60000).catch(() => null);
+  await page.goto(POS + PATHS[kind]);
+  await unlockCounter(S, page);
+  await readyFor(S, page, kind);
+  await S.sleep(2500);
+  let cursor = null;
+  if (!offline) cursor = await tapeCursor(S);
+  if (offline) {
+    S.setCloudDown(true);
+    await till.ctx.route(POS + '/api/**', (route) => route.abort('internetdisconnected'));
+    await S.runner.agent.syncConfig().catch(() => false);
+    await until('box offline (link lane box)', async () => (await (await fetch(`http://127.0.0.1:${S.ports.bridge}/box/v1/station/${f.stationId}/status`)).json()).link?.lane === 'box', 60000);
+  }
+  return { page, cursor, logFrom: till.log.length };
+}
+
+export async function finish(S, kind, offline, ctx, results, file, note = {}) {
+  const { st, save, expect } = S;
+  const { page, cursor, logFrom } = ctx;
+  await S.sleep(4500);
+  await expect(page.getByText(/This (wristband|credit voucher) is already open/)).toHaveCount(0);
+  const rec = { kind, mode: offline ? 'platform link cut' : 'online', at: new Date().toISOString(), scans: results, ...note };
+  if (!offline) {
+    const tape = await tapeSince(S, cursor);
+    rec.platformTape = tape;
+    S.assert.equal(tape.length, results.length, `the platform tape holds ${results.length} entr${results.length === 1 ? 'y' : 'ies'} for ${results.length} read(s)`);
+    S.assert.ok(tape.every((x) => typeof x.scanId === 'string'), 'each tape entry carries a scanId');
+    S.assert.equal(new Set(tape.map((x) => x.scanId)).size, tape.length, 'one scanId per read');
+  }
+  rec.network = S.tills.counter.log.slice(logFrom).filter((x) => !/\/status$/.test(x.path));
+  const shot = await S.capture(page, file);
+  rec.image = file;
+  st.cases ??= {};
+  st.cases[`${offline ? 'offline' : 'online'}-${kind}`] = rec; save();
+  return { rec, shot };
+}
+
+export async function runCase(S, kind, offline) {
+  const { st, secrets, expect } = S;
+  const f = st.fixture, fam = f.family;
+  const ctx = await prepare(S, kind, offline);
+  const { page } = ctx;
+  const results = [];
+  const note = {};
+  if (kind === 'band') {
+    results.push(await boxScan(S, secrets.bandCode, 'hid'));
+    await page.getByText(`Allergy / medical alert · ${fam.child}`).waitFor({ timeout: 30000 });
+    await expect(page.getByText('ZZ TEST peanut allergy', { exact: true })).toBeVisible();
+  } else if (kind === 'voucher') {
+    results.push(await boxScan(S, secrets.walletQr, 'serial'));
+    await page.getByText(/฿[\d,.]+ credit/).first().waitFor({ timeout: 30000 });
+    note.creditShown = await page.getByText(/฿[\d,.]+ credit/).first().innerText();
+  } else if (kind === 'booking') {
+    results.push(await boxScan(S, secrets.bookingQr, 'hid'));
+    await page.getByRole('dialog').getByText(secrets.bookingReference, { exact: true }).waitFor({ timeout: 30000 });
+    await expect(page.getByRole('button', { name: 'Confirm & Issue', exact: true })).toBeEnabled();
+  } else if (kind === 'shop-band') {
+    results.push(await boxScan(S, secrets.bandCode, 'serial'));
+    await expect(page.getByRole('heading', { name: 'Retail Sale', exact: true })).toBeHidden({ timeout: 30000 });
+    await page.getByText(fam.child).first().waitFor();
+  } else if (kind === 'history-band') {
+    results.push(await boxScan(S, secrets.bandCode, 'hid'));
+    if (!offline) {
+      await page.getByText('#' + fam.bandShortCode).first().waitFor({ timeout: 30000 });
+      await page.getByText('Total spent').first().waitFor();
+    } else {
+      await page.getByText('No connection to the platform, so a bracelet cannot be looked up here.').waitFor({ timeout: 30000 });
+      note.scope = 'SCRUM-753: the scan arrived with the link cut; History looks a bracelet up on the platform only. Recorded, not counted as a SCRUM-736 result.';
+    }
+  } else if (kind === 'shop-barcode') {
+    results.push(await boxScan(S, secrets.barcodes.item, 'hid'));
+    await page.getByText(f.shop.itemName).first().waitFor({ timeout: 30000 });
+    await S.sleep(1500);
+    results.push(await boxScan(S, secrets.barcodes.sizeM, 'serial'));
+    await page.getByText(f.shop.sizedName).first().waitFor({ timeout: 30000 });
+    await S.sleep(1500);
+    results.push(await boxScan(S, secrets.barcodes.unknown, 'hid'));
+    await page.getByText('Unknown barcode').first().waitFor({ timeout: 30000 });
+    await S.sleep(2500);
+    note.unknownToastsVisible = await page.getByText('Unknown barcode', { exact: true }).count();
+    note.unknownImage = `s736-${offline ? 'offline' : 'online'}-shop-barcode-unknown.png`;
+    await S.capture(page, note.unknownImage);
+    note.expected = ['the cap (own barcode) added once', 'the socks, size M (size barcode) added once', 'an unknown barcode: Unknown barcode, nothing added'];
+    S.assert.deepEqual(results.map((r) => `${r.kind}/${r.outcome}/${r.handler}`), ['product/handled/product-barcode', 'product/handled/product-barcode', 'product/refused/product-barcode']);
+  }
+  for (const r of results) if (kind !== 'shop-barcode') S.assert.equal(r.outcome, 'handled', `${kind}: ${JSON.stringify(r)}`);
+  if (kind === 'shop-barcode') {
+    // Leave a moment for the relayed copies, then read the sale panel's text: two lines, each once.
+    await S.sleep(3000);
+    note.panelText = (await page.locator('body').innerText()).split('\n').filter((l) => /ZZ TEST SCRUM-736|฿|Unknown barcode|Nothing was added|×|Qty|Total/i.test(l)).slice(0, 40);
+  }
+  const file = `s736-${offline ? 'offline' : 'online'}-${kind}.png`;
+  return finish(S, kind, offline, ctx, results, file, note);
+}
+
+export async function restoreLink(S) {
+  S.setCloudDown(false);
+  await S.tills.counter.ctx.unroute(S.POS + '/api/**').catch(() => {});
+  await S.runner.agent.syncConfig().catch(() => false);
+}

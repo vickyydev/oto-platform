@@ -1,0 +1,74 @@
+// Own ZZ TEST fixtures: a counter box run by a local agent on this machine (its platform link through a proxy the proof
+// can cut), two simulated printers, a till on it, the box's address set to a loopback test name (never a real box
+// address); two ZZ TEST shop items with barcodes; a second ZZ TEST till on Virtual box 1 for the unchanged virtual path.
+import { mkdirSync } from 'node:fs';
+const A = '23456789ABCDEFGHJKMNPQRSTVWXYZ';
+export default async function (S) {
+  const { st, save, secrets, saveSecrets, assert, api, ports, proxyPort, POS, until } = S;
+  const f = st.fixture, id = st.identity, B = id.branchId, name = f.name;
+  assert.ok(name?.startsWith('ZZ TEST SCRUM-736 '));
+  const stations = (await api('GET', `/branches/${B}/stations?includeArchived=true`)).stations;
+  const used = new Set(stations.map((s) => s.codePrefix));
+  const prefix = () => { for (let i = 0; i < 4000; i++) { const c = 'Z' + A[Math.floor(Math.random() * A.length)] + A[Math.floor(Math.random() * A.length)]; if (!used.has(c)) { used.add(c); return c; } } throw Error('no prefix'); };
+  S.home = f.home ??= 'C:/oto-lanes/s736-agent-' + st.stamp; save();
+  mkdirSync(S.home, { recursive: true });
+  const bridge = `http://zz-test-s736.localhost:${ports.bridge}`;
+  if (!f.boxId) {
+    const box = await api('POST', `/branches/${B}/boxes`, { name, slot: 'zz-test-s736-' + st.stamp, role: 'counter' });
+    f.boxId = box.box.id; save();
+    const claimed = await S.claimBox({ home: S.home, apiBaseUrl: `http://127.0.0.1:${proxyPort}`, code: box.claimCode, hostname: name });
+    delete box.claimCode;
+    assert.equal(claimed.boxId, f.boxId); f.claimedAt = new Date().toISOString(); save();
+  }
+  if (!f.printerId) {
+    const p = await api('POST', `/boxes/${f.boxId}/devices`, { kind: 'receipt_printer', label: name + ' receipt', transport: 'simulated', address: 'zz-s736-receipt:9100', protocol: 'escpos', model: 'Welltech G4 (Xprinter XP-C260)' });
+    f.printerId = p.device.id; save();
+  }
+  if (!f.bandPrinterId) {
+    const p = await api('POST', `/boxes/${f.boxId}/devices`, { kind: 'band_printer', label: name + ' band', transport: 'simulated', address: 'zz-s736-band:9100', protocol: 'tspl2', model: '4B-2082A' });
+    f.bandPrinterId = p.device.id; save();
+  }
+  if (!f.stationId) {
+    f.codePrefix = prefix(); save();
+    const s = (await api('POST', `/branches/${B}/stations`, { name: name + ' till', kind: 'till', boxId: f.boxId, codePrefix: f.codePrefix, paymentRouting: { card: 'manual', qr: 'none' }, accessScope: 'all_staff', capabilities: [], devices: [{ deviceId: f.printerId, role: 'receipt' }, { deviceId: f.bandPrinterId, role: 'kids_band' }] })).station;
+    f.stationId = s.id; f.stationName = s.name; save();
+  }
+  if (!f.bridgeOriginSet) {
+    await api('PATCH', `/boxes/${f.boxId}`, { bridgeOrigin: bridge });
+    f.bridgeOriginSet = new Date().toISOString(); f.bridgeOriginKind = 'loopback test name zz-test-s736.localhost (this machine only)'; save();
+  }
+  // Two ZZ TEST shop items: one sold by its own barcode, one with two sizes each carrying a barcode.
+  // Barcodes start 2 (GS1 in-store numbers, never printed on a real product); an unknown one is kept for the miss.
+  if (!f.shop) {
+    const code13 = () => '2' + Array.from({ length: 12 }, () => Math.floor(Math.random() * 10)).join('');
+    secrets.barcodes = { item: code13(), sizeS: code13(), sizeM: code13(), unknown: code13() }; saveSecrets();
+    const cat = await api('POST', '/menu/categories', { name: name + ' shop', taxableCategory: 'merch' });
+    f.shop = { categoryId: cat.id }; save();
+    f.shop.itemName = name + ' cap'; f.shop.sizedName = name + ' socks';
+    f.shop.itemId = (await api('POST', `/branches/${B}/menu/products`, { name: f.shop.itemName, kind: 'merch', categoryId: cat.id, priceSatang: 5000, priceWeekendSatang: 5000, stockLinks: [], active: true, sku: secrets.barcodes.item })).id; save();
+    f.shop.sizedId = (await api('POST', `/branches/${B}/menu/products`, { name: f.shop.sizedName, kind: 'merch', categoryId: cat.id, priceSatang: 7000, priceWeekendSatang: 7000, stockLinks: [], active: true, variants: [{ id: 's', label: 'S', barcode: secrets.barcodes.sizeS }, { id: 'm', label: 'M', barcode: secrets.barcodes.sizeM }] })).id; save();
+  }
+  // The virtual path's till: Virtual box 1 is the box the api process runs; a till on it has no box address.
+  if (!f.virtual) {
+    const boxes = (await api('GET', `/branches/${B}/boxes`)).boxes;
+    const vb = boxes.find((b) => b.slot === 'virtual-1' && b.role === 'virtual');
+    assert.ok(vb && !vb.bridgeOrigin, 'Virtual box 1 present with no box address');
+    f.virtual = { boxId: vb.id, boxName: vb.name, boxStatus: vb.status }; save();
+    const vp = prefix();
+    const vs = (await api('POST', `/branches/${B}/stations`, { name: name + ' virtual till', kind: 'till', boxId: vb.id, codePrefix: vp, paymentRouting: { card: 'manual', qr: 'none' }, accessScope: 'all_staff', capabilities: [], devices: [] })).station;
+    f.virtual.stationId = vs.id; f.virtual.stationName = vs.name; f.virtual.codePrefix = vp; save();
+  }
+  if (!S.runner) {
+    S.runner = await S.startRunner({ home: S.home, apiBaseUrl: `http://127.0.0.1:${proxyPort}`, port: ports.kiosk, bridge: { port: ports.bridge, origins: [POS] }, heartbeatIntervalMs: 1000, pollIntervalMs: 1000, syncIntervalMs: 1000, cacheRefreshIntervalMs: 3000 });
+    assert.equal(S.runner.storeFault, null);
+    f.runnerStartedAt = new Date().toISOString(); save();
+  }
+  await until('station in the box config', async () => S.runner.agent.config()?.stations.some((s) => s.id === f.stationId));
+  await S.runner.agent.syncCache();
+  await until('shop items in the box catalogue copy', async () => { const c = JSON.stringify(S.cache('catalogue') ?? {}); return c.includes(f.shop.itemId) && c.includes(f.shop.sizedId); }, 60000);
+  const st1 = await (await fetch(`http://127.0.0.1:${ports.bridge}/box/v1/station/${f.stationId}/status`)).json().catch(() => null);
+  f.bridgeStatusAtStart = st1 ? { lane: st1.link?.lane ?? null } : null; save();
+  const readBox = (await api('GET', `/branches/${B}/boxes`)).boxes.find((b) => b.id === f.boxId);
+  f.boxReadback = { status: readBox?.status, role: readBox?.role, hasAddress: !!readBox?.bridgeOrigin, addressIsLoopbackTest: readBox?.bridgeOrigin === bridge }; save();
+  return { fixture: { ...f, home: undefined } };
+}

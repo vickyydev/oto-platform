@@ -1,0 +1,4 @@
+import signin from './signin.mjs';
+export default async function (S) {
+  return signin(S, 'virtual');
+}

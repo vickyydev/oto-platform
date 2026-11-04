@@ -1,0 +1,22 @@
+// The Console session belongs to the launcher sign-on: signing out of the launcher ended it. Keep the launcher session
+// for as long as the Console one is used, and sign both out at the end (admin-out).
+export default async function (S) {
+  const { st, save, assert, need, LAUNCHER, CONSOLE } = S;
+  if (S.admin) { await S.admin.ctx.close().catch(() => {}); S.admin = null; }
+  S.consoleIn = async () => {
+    if (S.admin) return S.admin;
+    const ctx = await S.browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    ctx.setDefaultTimeout(30000);
+    assert.equal((await ctx.request.post(LAUNCHER + '/api/auth/sign-in', { data: { phone: need('STAGING_ADMIN_PHONE'), password: need('STAGING_ADMIN_PASSWORD') } })).status(), 200);
+    const hand = await (await ctx.request.post(LAUNCHER + '/api/auth/handoff', { data: { app: 'console' } })).json();
+    const page = await ctx.newPage();
+    await page.goto(hand.launchUrl);
+    await page.waitForURL('**/overview', { timeout: 60000 });
+    S.admin = { ctx, page };
+    return S.admin;
+  };
+  st.adminSessions = (st.adminSessions ?? 0) + 1; save();
+  const me = await S.apiRaw('GET', '/me');
+  assert.equal(me.status, 200);
+  return { console: me.status };
+}

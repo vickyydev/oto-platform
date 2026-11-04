@@ -1,0 +1,27 @@
+// The dedicated ZZ TEST reception login signs in on the POS lock screen and picks a till, as a person does.
+const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export default async function (S, label = globalThis.__s736Label ?? 'counter') {
+  const { st, save, secrets, POS, assert } = S;
+  const f = st.fixture;
+  const stationName = label === 'counter' ? f.stationName : f.virtual.stationName;
+  const stationId = label === 'counter' ? f.stationId : f.virtual.stationId;
+  const till = await S.newTill(label);
+  const page = till.page;
+  await page.goto(POS + '/');
+  await page.getByRole('heading', { name: 'Oto POS is locked' }).waitFor({ timeout: 60000 });
+  await page.locator('input[type="tel"], input[inputmode="tel"]').first().fill(secrets.staffPhone.replace(/^\+66/, '0'));
+  await page.locator('input[type="password"]').fill(secrets.staffPassword);
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.getByRole('heading', { name: 'Which station are you on?' }).waitFor({ timeout: 30000 });
+  await page.getByRole('button', { name: new RegExp(esc(stationName)) }).click();
+  await page.getByText('Membership Check', { exact: true }).waitFor({ timeout: 30000 });
+  const me = await S.tillApi(label, 'GET', '/me');
+  assert.equal(me.status, 200);
+  const sessionStation = me.body.session?.stationId ?? me.body.operatorContext?.stationId ?? null;
+  assert.equal(sessionStation, stationId, 'the session is on our till');
+  st.tillSessions ??= {};
+  st.tillSessions[label] = { accountId: me.body.account.id, stationId: sessionStation, signedInAt: new Date().toISOString() };
+  assert.equal(me.body.account.id, st.staff.accountId, 'signed in as the dedicated ZZ TEST login');
+  save();
+  return st.tillSessions[label];
+}

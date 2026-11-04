@@ -1,0 +1,48 @@
+// A dedicated ZZ TEST reception login for this proof, made without any SMS: a checked one-off job writes the invited
+// account (no password, no role) with an audit row, the Console grants reception at this branch and issues a temporary
+// password, and the person changes it at first sign-in. Its phone and password stay in the scratchpad, never the lane.
+import { job } from '../job.mjs';
+export default async function (S) {
+  const { st, save, secrets, saveSecrets, assert, randomUUID, randomBytes, SOURCE, POS } = S;
+  const id = st.identity;
+  st.stamp ??= Date.now().toString(36); save();
+  const name = 'ZZ TEST SCRUM-736 ' + st.stamp;
+  st.fixture.name = name; save();
+  const staff = (st.staff ??= {});
+  if (!staff.accountId) {
+    staff.accountId = randomUUID(); staff.employeeId = randomUUID(); staff.name = name + ' staff'; save();
+    secrets.staffPhone = '+6690006' + String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+    secrets.staffPassword = randomBytes(24).toString('base64url'); saveSecrets();
+  }
+  if (!staff.provision) {
+    const spec = { accountId: staff.accountId, employeeId: staff.employeeId, name: staff.name, phone: secrets.staffPhone, actorId: id.actorId, operatorId: id.operatorId };
+    const program = `(async()=>{require('tsx/cjs');const assert=require('node:assert/strict'),{Client}=require('pg'),{drizzle}=require('drizzle-orm/node-postgres'),{audit}=require('./src/services/audit.ts');const s=${JSON.stringify(spec)},c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();try{assert.ok(s.name.startsWith('ZZ TEST SCRUM-736 '));await c.query('BEGIN');await c.query("SET LOCAL statement_timeout='15s'");const a=(await c.query("SELECT a.id FROM core.account a JOIN core.role_assignment ra ON ra.account_id=a.id JOIN core.role r ON r.id=ra.role_id WHERE a.id=$1 AND a.operator_id=$2 AND a.status='active' AND r.name='platform_admin'",[s.actorId,s.operatorId])).rows;assert.ok(a.length>=1,'actor is an active platform administrator');assert.equal((await c.query('SELECT id FROM core.account WHERE phone=$1 OR id=$2',[s.phone,s.accountId])).rowCount,0);assert.equal((await c.query('SELECT id FROM core.employee WHERE id=$1',[s.employeeId])).rowCount,0);await c.query('INSERT INTO core.employee (id,operator_id,name,phone) VALUES ($1,$2,$3,$4)',[s.employeeId,s.operatorId,s.name,s.phone]);await c.query("INSERT INTO core.account (id,operator_id,employee_id,phone,status) VALUES ($1,$2,$3,$4,'invited')",[s.accountId,s.operatorId,s.employeeId,s.phone]);await audit.record(drizzle(c),{actorAccountId:s.actorId,operatorId:s.operatorId,action:'qa.account.create',entityType:'account',entityId:s.accountId,sourceApp:'console',origin:'job',reason:'SCRUM-736 dedicated ZZ TEST reception login for the staging proof; no SMS',after:{employeeId:s.employeeId,name:s.name,status:'invited',roles:[]}});await c.query('COMMIT');console.log(JSON.stringify({event:'s736_fixture_account',at:new Date().toISOString(),accountId:s.accountId,employeeId:s.employeeId,status:'invited',roles:0,sms:false,passed:true}));}catch(e){await c.query('ROLLBACK').catch(()=>{});console.log(JSON.stringify({event:'s736_fixture_account_error',name:e.name,code:e.code??'ASSERTION',message:String(e.message).slice(0,200)}));process.exitCode=1;}finally{await c.end();}})();`;
+    const r = await job(program, 's736_fixture_account', SOURCE);
+    staff.provision = { jobId: r.jobId, status: r.status, result: r.result, errors: r.errors }; save();
+    assert.equal(r.status, 'succeeded', JSON.stringify(r.errors));
+    assert.ok(r.result?.passed);
+  }
+  if (!staff.grantId) {
+    const grant = await S.api('POST', `/accounts/${staff.accountId}/role-assignments`, { roleName: 'reception', scopeType: 'branch', scopeId: id.branchId });
+    staff.grantId = grant.id ?? grant.assignment?.id; save();
+    assert.ok(staff.grantId, 'role assignment id ' + JSON.stringify(grant).slice(0, 200));
+  }
+  if (!staff.passwordSet) {
+    const temp = await S.api('POST', `/accounts/${staff.accountId}/temp-password`, {});
+    const ctx = await S.browser.newContext();
+    try {
+      const si = await ctx.request.post(POS + '/api/auth/sign-in', { data: { phone: secrets.staffPhone, password: temp.temporaryPassword } });
+      assert.equal(si.status(), 200, 'temporary sign-in ' + si.status());
+      const ch = await ctx.request.post(POS + '/api/auth/change-password', { data: { currentPassword: temp.temporaryPassword, password: secrets.staffPassword }, headers: { 'Idempotency-Key': randomUUID() } });
+      assert.equal(ch.status(), 200, 'change password ' + ch.status() + ' ' + (await ch.text()).slice(0, 200));
+      const so = await ctx.request.post(POS + '/api/auth/sign-out', { data: {} });
+      assert.equal(so.status(), 200);
+      assert.equal((await ctx.request.get(POS + '/api/me')).status(), 401);
+    } finally { delete temp.temporaryPassword; await ctx.close(); }
+    staff.passwordSet = new Date().toISOString(); save();
+  }
+  const read = await S.apiRaw('GET', `/accounts/${staff.accountId}/permissions`);
+  const assignments = read.body?.assignments ?? read.body?.roleAssignments ?? read.body?.roles ?? [];
+  staff.readback = { status: read.status, assignments: Array.isArray(assignments) ? assignments.map((x) => `${x.roleName ?? x.role?.name ?? x.name}@${x.scopeType ?? x.scope?.type}`) : null, keys: Object.keys(read.body ?? {}) }; save();
+  return { staff: { accountId: staff.accountId, name: staff.name, grantId: staff.grantId, provision: staff.provision?.status, readback: staff.readback } };
+}

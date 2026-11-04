@@ -1,0 +1,29 @@
+// A separate read-only readback after the restore: own fixtures retired, nothing of the proof left live.
+import { readFileSync, writeFileSync } from 'node:fs';
+import { job } from './job.mjs';
+const D = 'C:/oto-lanes/scanner736-20261104/docs/qa/proof-2026-11-04/s736/staging/';
+const st = JSON.parse(readFileSync(D + 'receipt.json', 'utf8'));
+const f = st.fixture, fam = f.family, cl = st.cleanup;
+const s = { stations: [f.stationId, f.virtual.stationId], boxId: f.boxId, virtualBoxId: f.virtual.boxId, accountId: st.staff.accountId, employeeId: st.staff.employeeId,
+  saleIds: [fam.saleId, fam.voucherSaleId, cl.bookingSaleId], products: [f.shop.itemId, f.shop.sizedId], categoryId: f.shop.categoryId, checkinId: fam.checkinId, bookingId: fam.bookingId };
+const event = 's736_final_readback';
+const program = `(async()=>{const {Client}=require('pg');const s=${JSON.stringify(s)};const c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();try{await c.query('BEGIN READ ONLY');const q=async(t,p)=>(await c.query(t,p)).rows;const out={};
+out.stations=await q('SELECT id,archived_at IS NOT NULL archived FROM core.station WHERE id=ANY($1::uuid[])',[s.stations]);
+out.box=(await q('SELECT status,archived_at IS NOT NULL archived,bridge_origin IS NULL no_address,secret_hash IS NULL no_secret FROM core.box WHERE id=$1',[s.boxId]))[0];
+out.devices=await q('SELECT kind,archived_at IS NOT NULL archived FROM core.device WHERE box_id=$1',[s.boxId]);
+out.virtualBox1=(await q('SELECT status,archived_at IS NOT NULL archived,bridge_origin IS NULL no_address FROM core.box WHERE id=$1',[s.virtualBoxId]))[0];
+out.account=(await q('SELECT a.status,(SELECT count(*)::int FROM core.role_assignment WHERE account_id=a.id) roles,(SELECT count(*)::int FROM core.session WHERE account_id=a.id AND revoked_at IS NULL AND expires_at>now()) live_sessions,e.archived_at IS NOT NULL employee_archived FROM core.account a JOIN core.employee e ON e.id=a.employee_id WHERE a.id=$1',[s.accountId]))[0];
+out.tillSessions=(await q('SELECT count(*)::int n FROM core.session WHERE station_id=ANY($1::uuid[]) AND revoked_at IS NULL AND expires_at>now()',[s.stations]))[0].n;
+out.workingRows=(await q('SELECT count(*)::int n FROM edge.station_session WHERE station_id=ANY($1::uuid[])',[s.stations]))[0].n;
+out.liveBands=(await q("SELECT count(*)::int n FROM pos.band WHERE sale_id=ANY($1::uuid[]) AND status<>'revoked'",[s.saleIds]))[0].n;
+out.sales=await q('SELECT status,count(*)::int n FROM pos.sale WHERE station_id=ANY($1::uuid[]) GROUP BY status',[s.stations]);
+out.child=(await q('SELECT status FROM pos.checkin WHERE id=$1',[s.checkinId]))[0];
+out.booking=(await q('SELECT status FROM pos.booking WHERE id=$1',[s.bookingId]))[0];
+out.products=await q('SELECT active,archived_at IS NOT NULL archived FROM pos.product WHERE id=ANY($1::uuid[])',[s.products]);
+out.pendingCommands=(await q("SELECT count(*)::int n FROM edge.box_command WHERE box_id=$1 AND state IN ('queued','running')",[s.boxId]))[0].n;
+out.pendingPrints=(await q("SELECT count(*)::int n FROM edge.print_job WHERE box_id=$1 AND status IN ('queued','failed')",[s.boxId]))[0].n;
+await c.query('ROLLBACK');console.log(JSON.stringify({event:'${event}',at:new Date().toISOString(),...out}));}catch(e){await c.query('ROLLBACK').catch(()=>{});console.log(JSON.stringify({event:'${event}_error',code:e.code??null,message:String(e.message).slice(0,200)}));process.exitCode=1;}finally{await c.end();}})();`;
+const r = await job(program, event, 'b8286644d37daa604caf761f32bac7614c5d3f92');
+st.finalReadback = { jobId: r.jobId, status: r.status, result: r.result, errors: r.errors };
+writeFileSync(D + 'receipt.json', JSON.stringify(st, null, 2) + '\n');
+console.log(JSON.stringify(st.finalReadback, null, 1));

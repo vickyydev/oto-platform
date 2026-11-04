@@ -1,5 +1,12 @@
 # SCRUM-736 resume notes
 
+## Staging proof done, 4 November 2026, 19:15 Bangkok
+
+The eight-case staging proof ran on live b8286644d and passed; SCRUM-736 is Deployed (comment 13464, 13 images
+inline). The four temporary settings are removed (API 57, POS web 4) and every fixture is retired and read back.
+See staging/README.md and staging/receipt.json. What remains is the park Pi check after the next box release,
+and the owner's question Q736-3 (a permanent box zone for scans with the internet down).
+
 ## Take-over, 4 November 2026 — current state (supersedes the pause note below)
 
 The paused work continues on lane/scanner736-20261104, cut from a6de88847 on

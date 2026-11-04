@@ -1,0 +1,22 @@
+Staging proof, 4 November 2026, 18:51 to 19:10 Bangkok, on live commit b8286644 (main CI 41818481483 green on that commit). Test records only (named ZZ TEST), cash and the payment simulator only, no SMS, no park device touched.
+
+What a person can do now: a wristband, a credit voucher, a booking QR or a shop barcode read by the scanner plugged into the counter box reaches the till and opens the right thing, and it still does with the internet down, because the box now talks to the till directly over the counter network as well as through the platform. Each read acts once, even though two copies of it arrive while the internet is up.
+
+How it was shown: a box program on a test computer, built from the same commit, played the counter box, with a ZZ TEST till, a ZZ TEST staff login, a ZZ TEST child with an allergy, a ZZ TEST credit voucher, a ZZ TEST booking and two ZZ TEST shop items. Each code was fed through the same reader the real scanner uses. Every case ran once with the internet up and once with it cut for both the box and the till's browser (only the counter network left). The pictures of the two look the same because the till behaves the same.
+
+- F&B: the printed wristband opens the child's order with the allergy alert, online and with the internet cut.
+- Shop: the same wristband opens the child's sale, online and cut.
+- Credit voucher: its tab opens with ฿350 credit online; with the internet cut it opens with ฿300, the existing offline spending limit.
+- Booking QR: the booking opens ready to Confirm & Issue, online and cut.
+- Shop barcodes: the item's own barcode adds one line, a size's barcode adds one line of that size, an unknown barcode says "Unknown barcode, nothing was added". Same online and cut.
+- History: online the wristband opens its orders. With the internet cut the scan arrives but History says it cannot look a bracelet up without the platform. That part is SCRUM-753 and is not counted here.
+- Each read acted once: one line or one opened screen, and the platform's scan record held exactly one entry per read.
+- Tills on the virtual box work as before: a simulated scan opened the wristband there through the platform, and again when the till had to fall back to checking every second and a half.
+
+One thing seen: in the first online voucher run the platform's copy was turned away for too many requests (the test box was set to check in every second, far more often than a real box). The till had already opened the voucher from the direct copy. A rerun and every later scan went through normally.
+
+Important for the park: the real scanner cradle on the park's Pi works like this only after the next box release with this change is installed on the Pi. Until the park has a permanent box address the tills can use (question Q736-3 for the owner), a park till hears the Pi's scanner only while the internet is up. Looking a wristband up in History with the internet down is SCRUM-753.
+
+How to retest once the box release is installed: sign in on a till on the park's Pi box, open F&B and scan a wristband, then the shop and scan the same wristband and a product barcode, then scan a credit voucher at F&B and a booking QR on the Tickets screen. Each should open once. With the internet unplugged, repeat once the permanent box address exists.
+
+Clean-up done and read back: the test child picked up, the booking redeemed, both test tills signed out and archived, the test box, printers, shop items and category archived, the test login switched off, the test wristbands cancelled, and the four temporary staging settings removed (back to 57 and 4). The paid test sales stay as records. Evidence: docs/qa/proof-2026-11-04/s736/staging in the repository.

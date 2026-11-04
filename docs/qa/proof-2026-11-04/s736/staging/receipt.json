@@ -1,0 +1,1487 @@
+{
+  "ticket": "SCRUM-736",
+  "source": "b8286644d37daa604caf761f32bac7614c5d3f92",
+  "ciRun": "41818481483",
+  "startedAt": "2026-11-04T11:52:06.930Z",
+  "fixture": {
+    "name": "ZZ TEST SCRUM-736 mw22ag5p",
+    "home": "C:/oto-lanes/s736-agent-mw22ag5p",
+    "boxId": "01a1a66c-adf6-72b4-8f18-a6de105d6e19",
+    "claimedAt": "2026-11-04T11:58:22.722Z",
+    "printerId": "01a1a66c-b240-7844-ab61-bb7cd165ccfd",
+    "bandPrinterId": "01a1a66c-b3f6-7a55-9ca5-066cf82b2abd",
+    "codePrefix": "ZAH",
+    "stationId": "01a1a66c-b5a2-7f50-8c75-0030c077b5b1",
+    "stationName": "ZZ TEST SCRUM-736 mw22ag5p till",
+    "bridgeOriginSet": "2026-11-04T11:58:24.832Z",
+    "bridgeOriginKind": "loopback test name zz-test-s736.localhost (this machine only)",
+    "shop": {
+      "categoryId": "01a1a66c-b8fa-73ff-8e5c-92b3a71d68c6",
+      "itemName": "ZZ TEST SCRUM-736 mw22ag5p cap",
+      "sizedName": "ZZ TEST SCRUM-736 mw22ag5p socks",
+      "itemId": "01a1a66c-baa8-7aab-8f6b-dc5e6a50f72b",
+      "sizedId": "01a1a66c-bc58-7095-bec7-3e5e1eb703a2"
+    },
+    "virtual": {
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "boxName": "Virtual box 1",
+      "boxStatus": "online",
+      "stationId": "01a1a66c-c01a-7f35-bf6e-cd89df2f6463",
+      "stationName": "ZZ TEST SCRUM-736 mw22ag5p virtual till",
+      "codePrefix": "Z22"
+    },
+    "runnerStartedAt": "2026-11-04T11:58:28.033Z",
+    "bridgeStatusAtStart": {
+      "lane": "platform"
+    },
+    "boxReadback": {
+      "status": "online",
+      "role": "counter",
+      "hasAddress": true,
+      "addressIsLoopbackTest": true
+    },
+    "family": {
+      "packages": {
+        "ticket": "2 Hours Play",
+        "credit": "Eat & Play Kids Pass"
+      },
+      "registrationId": "862ac44d-85a3-4a3a-b43a-3fb21ac97678",
+      "checkinId": "eedd5ba6-642a-4944-b31c-ce3126debdfc",
+      "saleId": "3c0b9225-7c27-4350-b295-59de71471153",
+      "child": "ZZ TEST SCRUM-736 mw22ag5p child",
+      "registeredAt": "2026-11-04T11:58:46.451Z",
+      "saleCreated": true,
+      "saleFinalised": true,
+      "receiptNumber": "ZAH-000001",
+      "bandId": "01a1a66d-0dd3-74f9-96ff-0bb4c78a6fa4",
+      "checkedInAt": "2026-11-04T11:58:46.824Z",
+      "printout": {
+        "seq": 1,
+        "widthDots": 400,
+        "heightDots": 392,
+        "qrDecoded": true
+      },
+      "bandShortCode": "ZAH-WPDEKG",
+      "voucherSaleId": "7ed6b191-d5d7-47dc-a2da-ef36f04c232f",
+      "voucherReceipt": "ZAH-000002",
+      "voucherIssued": true,
+      "bookingId": "01a1a66d-1679-7373-b164-0a2537371c09",
+      "bookingReference": "OTO-CL3W-O29C",
+      "bookingPaidBy": "payment simulator"
+    }
+  },
+  "steps": {
+    "preflight.mjs": {
+      "at": "2026-11-04T11:57:00.545Z",
+      "ms": 5014,
+      "ok": true
+    },
+    "admin-reset.mjs": {
+      "at": "2026-11-04T11:56:55.420Z",
+      "ms": 4229,
+      "ok": true
+    },
+    "staff.mjs": {
+      "at": "2026-11-04T11:58:18.119Z",
+      "ms": 74173,
+      "ok": true
+    },
+    "fixture.mjs": {
+      "at": "2026-11-04T11:58:29.131Z",
+      "ms": 7688,
+      "ok": true
+    },
+    "signin.mjs": {
+      "at": "2026-11-04T11:58:35.444Z",
+      "ms": 2782,
+      "ok": true
+    },
+    "family.mjs": {
+      "at": "2026-11-04T11:58:51.441Z",
+      "ms": 5249,
+      "ok": true
+    },
+    "c-online-band.mjs": {
+      "at": "2026-11-04T11:59:05.667Z",
+      "ms": 9894,
+      "ok": true
+    },
+    "c-online-voucher.mjs": {
+      "at": "2026-11-04T12:00:42.090Z",
+      "ms": 9905,
+      "ok": true
+    },
+    "c-online-booking.mjs": {
+      "at": "2026-11-04T11:59:35.435Z",
+      "ms": 9701,
+      "ok": true
+    },
+    "c-online-shop-band.mjs": {
+      "at": "2026-11-04T11:59:45.392Z",
+      "ms": 9851,
+      "ok": true
+    },
+    "relay-log.mjs": {
+      "at": "2026-11-04T12:00:32.101Z",
+      "ms": 1,
+      "ok": true
+    },
+    "relay-read.mjs": {
+      "at": "2026-11-04T12:04:52.823Z",
+      "ms": 2,
+      "ok": true
+    },
+    "c-online-history-band.mjs": {
+      "at": "2026-11-04T12:01:05.234Z",
+      "ms": 9870,
+      "ok": true
+    },
+    "c-online-shop-barcode.mjs": {
+      "at": "2026-11-04T12:01:23.620Z",
+      "ms": 18285,
+      "ok": true
+    },
+    "c-offline-band.mjs": {
+      "at": "2026-11-04T12:01:47.849Z",
+      "ms": 9522,
+      "ok": true
+    },
+    "c-offline-voucher.mjs": {
+      "at": "2026-11-04T12:01:57.737Z",
+      "ms": 9803,
+      "ok": true
+    },
+    "c-offline-booking.mjs": {
+      "at": "2026-11-04T12:02:07.555Z",
+      "ms": 9677,
+      "ok": true
+    },
+    "c-offline-shop-band.mjs": {
+      "at": "2026-11-04T12:02:30.421Z",
+      "ms": 10228,
+      "ok": true
+    },
+    "c-offline-shop-barcode.mjs": {
+      "at": "2026-11-04T12:02:48.890Z",
+      "ms": 18359,
+      "ok": true
+    },
+    "c-offline-history-band.mjs": {
+      "at": "2026-11-04T12:02:58.788Z",
+      "ms": 9753,
+      "ok": true
+    },
+    "link-up.mjs": {
+      "at": "2026-11-04T12:02:58.980Z",
+      "ms": 79,
+      "ok": true
+    },
+    "signin-virtual.mjs": {
+      "at": "2026-11-04T12:03:16.297Z",
+      "ms": 2599,
+      "ok": true
+    },
+    "virtual.mjs": {
+      "at": "2026-11-04T12:03:35.054Z",
+      "ms": 18654,
+      "ok": true
+    },
+    "note-429.mjs": {
+      "at": "2026-11-04T12:04:52.698Z",
+      "ms": 3,
+      "ok": true
+    },
+    "cleanup-api.mjs": {
+      "at": "2026-11-04T12:05:14.555Z",
+      "ms": 21633,
+      "ok": true
+    },
+    "cleanup-db.mjs": {
+      "at": "2026-11-04T12:06:33.202Z",
+      "ms": 74385,
+      "ok": true
+    },
+    "admin-out.mjs": {
+      "at": "2026-11-04T12:06:45.129Z",
+      "ms": 3263,
+      "ok": true
+    }
+  },
+  "images": [
+    "s736-online-band.png",
+    "s736-online-booking.png",
+    "s736-online-shop-band.png",
+    "s736-online-voucher.png",
+    "s736-online-history-band.png",
+    "s736-online-shop-barcode-unknown.png",
+    "s736-online-shop-barcode.png",
+    "s736-offline-band.png",
+    "s736-offline-voucher.png",
+    "s736-offline-booking.png",
+    "s736-offline-shop-band.png",
+    "s736-offline-shop-barcode-unknown.png",
+    "s736-offline-shop-barcode.png",
+    "s736-offline-history-band.png",
+    "s736-virtual-box-platform-channel-band.png",
+    "s736-virtual-box-poll-band.png"
+  ],
+  "checks": [
+    {
+      "name": "ZZ TEST child sold in cash and checked in, band QR read off the simulated printout; ZZ TEST credit voucher sold in cash; ZZ TEST booking paid through the simulator; box caches hold them",
+      "passed": true,
+      "at": "2026-11-04T11:58:51.441Z"
+    }
+  ],
+  "ports": {
+    "bridge": 52786,
+    "kiosk": 52787
+  },
+  "browser": "156.0.4314.58",
+  "launcherSignOut": 200,
+  "adminSessions": 1,
+  "preflight": {
+    "at": "2026-11-04T11:56:57.290Z",
+    "ci": {
+      "run": "41818481483",
+      "headSha": "b8286644d37daa604caf761f32bac7614c5d3f92",
+      "conclusion": "success",
+      "jobs": [
+        "oto-app: success",
+        "ci: success",
+        "pos-tests: success",
+        "api-tests (2): success",
+        "api-tests (3): success",
+        "api-tests (1): success"
+      ]
+    },
+    "services": {
+      "oto-api-staging": {
+        "deployId": "dep-dblhock9v7es73a2eks0",
+        "status": "live",
+        "commit": "b8286644d37daa604caf761f32bac7614c5d3f92",
+        "finishedAt": "2026-11-04T11:55:19.264227Z",
+        "settingCount": 59,
+        "testKeys": [
+          "BOX_BRIDGE_ALLOW_LOOPBACK",
+          "BOX_BRIDGE_ZONE"
+        ]
+      },
+      "oto-pos-web-staging": {
+        "deployId": "dep-dblhodk9v7es73a2en4g",
+        "status": "live",
+        "commit": "b8286644d37daa604caf761f32bac7614c5d3f92",
+        "finishedAt": "2026-11-04T11:54:15.01814Z",
+        "settingCount": 6,
+        "testKeys": [
+          "VITE_BOX_BRIDGE_ALLOW_LOOPBACK",
+          "VITE_BOX_BRIDGE_ZONE"
+        ]
+      }
+    },
+    "gatewayIsSimulator": true,
+    "apiHealth": 200,
+    "apiReady": 200,
+    "console": {
+      "actorId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+    }
+  },
+  "identity": {
+    "actorId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+  },
+  "stamp": "mw22ag5p",
+  "staff": {
+    "accountId": "4806857a-3253-402c-b75f-dd051237e420",
+    "employeeId": "112f15a0-c634-4171-81af-1aca5d55620a",
+    "name": "ZZ TEST SCRUM-736 mw22ag5p staff",
+    "provision": {
+      "jobId": "job-dblhr4ajnfac7382dp00",
+      "status": "succeeded",
+      "result": {
+        "event": "s736_fixture_account",
+        "at": "2026-11-04T11:57:51.927Z",
+        "accountId": "4806857a-3253-402c-b75f-dd051237e420",
+        "employeeId": "112f15a0-c634-4171-81af-1aca5d55620a",
+        "status": "invited",
+        "roles": 0,
+        "sms": false,
+        "passed": true
+      },
+      "errors": []
+    },
+    "grantId": "01a1a66c-96f1-7d9b-94f5-fe6726c53de7",
+    "passwordSet": "2026-11-04T11:58:17.584Z",
+    "readback": {
+      "status": 200,
+      "assignments": [
+        "reception@branch"
+      ],
+      "keys": [
+        "assignments",
+        "effective"
+      ]
+    }
+  },
+  "tillSessions": {
+    "counter": {
+      "accountId": "4806857a-3253-402c-b75f-dd051237e420",
+      "stationId": "01a1a66c-b5a2-7f50-8c75-0030c077b5b1",
+      "signedInAt": "2026-11-04T11:58:35.444Z"
+    },
+    "virtual": {
+      "accountId": "4806857a-3253-402c-b75f-dd051237e420",
+      "stationId": "01a1a66c-c01a-7f35-bf6e-cd89df2f6463",
+      "signedInAt": "2026-11-04T12:03:16.296Z"
+    }
+  },
+  "cases": {
+    "online-band": {
+      "kind": "band",
+      "mode": "online",
+      "at": "2026-11-04T11:59:05.515Z",
+      "scans": [
+        {
+          "kind": "band",
+          "outcome": "handled",
+          "handler": "band",
+          "errorCode": null,
+          "reader": "keyboard-wedge burst"
+        }
+      ],
+      "platformTape": [
+        {
+          "scanId": "b4804652-07b8-4718-94ef-60f88e08b0d0",
+          "source": "box_hid",
+          "codeKind": "band",
+          "outcome": "handled",
+          "handler": "band",
+          "errorCode": null,
+          "scannedAt": "2026-11-04T11:59:01.738Z"
+        }
+      ],
+      "network": [
+        {
+          "at": "2026-11-04T11:59:02.539Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T11:59:04.055Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T11:59:05.563Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        }
+      ],
+      "image": "s736-online-band.png"
+    },
+    "online-booking": {
+      "kind": "booking",
+      "mode": "online",
+      "at": "2026-11-04T11:59:35.290Z",
+      "scans": [
+        {
+          "kind": "booking",
+          "outcome": "handled",
+          "handler": "booking",
+          "errorCode": null,
+          "reader": "keyboard-wedge burst"
+        }
+      ],
+      "platformTape": [
+        {
+          "scanId": "992acf95-7d83-4e1e-9ad1-8f4d3402a2e6",
+          "source": "box_hid",
+          "codeKind": "booking",
+          "outcome": "handled",
+          "handler": "booking",
+          "errorCode": null,
+          "scannedAt": "2026-11-04T11:59:31.614Z"
+        }
+      ],
+      "network": [
+        {
+          "at": "2026-11-04T11:59:31.090Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T11:59:32.595Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T11:59:34.102Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        }
+      ],
+      "image": "s736-online-booking.png"
+    },
+    "online-shop-band": {
+      "kind": "shop-band",
+      "mode": "online",
+      "at": "2026-11-04T11:59:45.268Z",
+      "scans": [
+        {
+          "kind": "band",
+          "outcome": "handled",
+          "handler": "band",
+          "errorCode": null,
+          "reader": "CDC record"
+        }
+      ],
+      "platformTape": [
+        {
+          "scanId": "966aab68-a7f7-4a8b-8e32-5b41e9637a90",
+          "source": "box_serial",
+          "codeKind": "band",
+          "outcome": "handled",
+          "handler": "band",
+          "errorCode": null,
+          "scannedAt": "2026-11-04T11:59:40.646Z"
+        }
+      ],
+      "network": [
+        {
+          "at": "2026-11-04T11:59:42.295Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T11:59:43.804Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T11:59:45.322Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        }
+      ],
+      "image": "s736-online-shop-band.png"
+    },
+    "online-voucher": {
+      "kind": "voucher",
+      "mode": "online",
+      "at": "2026-11-04T12:00:41.956Z",
+      "scans": [
+        {
+          "kind": "wallet",
+          "outcome": "handled",
+          "handler": "wallet-qr",
+          "errorCode": null,
+          "reader": "CDC record"
+        }
+      ],
+      "creditShown": "฿350 credit",
+      "platformTape": [
+        {
+          "scanId": "808133a5-63d8-4267-aea8-0475d3f97057",
+          "source": "box_serial",
+          "codeKind": "wallet",
+          "outcome": "handled",
+          "handler": "wallet-qr",
+          "errorCode": null,
+          "scannedAt": "2026-11-04T12:00:37.341Z"
+        }
+      ],
+      "network": [
+        {
+          "at": "2026-11-04T12:00:39.003Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:00:40.508Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:00:42.020Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        }
+      ],
+      "image": "s736-online-voucher.png"
+    },
+    "online-history-band": {
+      "kind": "history-band",
+      "mode": "online",
+      "at": "2026-11-04T12:01:05.125Z",
+      "scans": [
+        {
+          "kind": "band",
+          "outcome": "handled",
+          "handler": "band",
+          "errorCode": null,
+          "reader": "keyboard-wedge burst"
+        }
+      ],
+      "platformTape": [
+        {
+          "scanId": "284fe6c2-3329-4435-a503-815fbe5bf3c6",
+          "source": "box_hid",
+          "codeKind": "band",
+          "outcome": "handled",
+          "handler": "band",
+          "errorCode": null,
+          "scannedAt": "2026-11-04T12:01:01.367Z"
+        }
+      ],
+      "network": [],
+      "image": "s736-online-history-band.png"
+    },
+    "online-shop-barcode": {
+      "kind": "shop-barcode",
+      "mode": "online",
+      "at": "2026-11-04T12:01:23.501Z",
+      "scans": [
+        {
+          "kind": "product",
+          "outcome": "handled",
+          "handler": "product-barcode",
+          "errorCode": null,
+          "reader": "keyboard-wedge burst"
+        },
+        {
+          "kind": "product",
+          "outcome": "handled",
+          "handler": "product-barcode",
+          "errorCode": null,
+          "reader": "CDC record"
+        },
+        {
+          "kind": "product",
+          "outcome": "refused",
+          "handler": "product-barcode",
+          "errorCode": "UNKNOWN_BARCODE",
+          "reader": "keyboard-wedge burst"
+        }
+      ],
+      "unknownToastsVisible": 1,
+      "unknownImage": "s736-online-shop-barcode-unknown.png",
+      "expected": [
+        "the cap (own barcode) added once",
+        "the socks, size M (size barcode) added once",
+        "an unknown barcode: Unknown barcode, nothing added"
+      ],
+      "panelText": [
+        "ZZ TEST SCRUM-736 mw22ag5p staff",
+        "ZZ TEST SCRUM-736 mw22ag5p shop",
+        "฿0",
+        "฿0",
+        "ZZ TEST SCRUM-736 mw22ag5p cap",
+        "฿50",
+        "ZZ TEST SCRUM-736 mw22ag5p socks",
+        "฿70",
+        "฿10",
+        "฿350",
+        "฿250",
+        "฿120",
+        "฿180",
+        "฿450",
+        "฿60",
+        "฿90",
+        "ZZ TEST SCRUM-736 mw22ag5p cap",
+        "฿50 each",
+        "฿50",
+        "ZZ TEST SCRUM-736 mw22ag5p socks(M)",
+        "฿70 each",
+        "฿70",
+        "฿7.85",
+        "Charge ฿120",
+        "ZZ TEST SCRUM-736 mw22ag5p cap",
+        "฿50 each",
+        "฿50",
+        "ZZ TEST SCRUM-736 mw22ag5p socks — M",
+        "฿70 each",
+        "฿70",
+        "฿7.85",
+        "Total",
+        "฿120"
+      ],
+      "platformTape": [
+        {
+          "scanId": "bb572d1c-daea-4a2b-8f88-f683344cb98c",
+          "source": "box_hid",
+          "codeKind": "product",
+          "outcome": "handled",
+          "handler": "product-barcode",
+          "errorCode": null,
+          "scannedAt": "2026-11-04T12:01:10.629Z"
+        },
+        {
+          "scanId": "b5770c3d-5d94-4e1f-b409-38069e7fcdcf",
+          "source": "box_serial",
+          "codeKind": "product",
+          "outcome": "handled",
+          "handler": "product-barcode",
+          "errorCode": null,
+          "scannedAt": "2026-11-04T12:01:11.893Z"
+        },
+        {
+          "scanId": "20c39220-9579-4575-9aae-79e4800584eb",
+          "source": "box_hid",
+          "codeKind": "product",
+          "outcome": "refused",
+          "handler": "product-barcode",
+          "errorCode": "UNKNOWN_BARCODE",
+          "scannedAt": "2026-11-04T12:01:13.671Z"
+        }
+      ],
+      "network": [
+        {
+          "at": "2026-11-04T12:01:11.963Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:01:13.617Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:01:15.135Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:01:16.641Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:01:18.146Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:01:19.654Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:01:21.172Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:01:22.676Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        }
+      ],
+      "image": "s736-online-shop-barcode.png"
+    },
+    "offline-band": {
+      "kind": "band",
+      "mode": "platform link cut",
+      "at": "2026-11-04T12:01:47.802Z",
+      "scans": [
+        {
+          "kind": "band",
+          "outcome": "handled",
+          "handler": "band",
+          "errorCode": null,
+          "reader": "keyboard-wedge burst"
+        }
+      ],
+      "network": [
+        {
+          "at": "2026-11-04T12:01:43.273Z",
+          "method": "POST",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/intents",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:01:43.277Z",
+          "method": "POST",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/intents",
+          "status": 404
+        },
+        {
+          "at": "2026-11-04T12:01:44.842Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:01:46.362Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        }
+      ],
+      "image": "s736-offline-band.png"
+    },
+    "offline-voucher": {
+      "kind": "voucher",
+      "mode": "platform link cut",
+      "at": "2026-11-04T12:01:57.674Z",
+      "scans": [
+        {
+          "kind": "wallet",
+          "outcome": "handled",
+          "handler": "wallet-qr",
+          "errorCode": null,
+          "reader": "CDC record"
+        }
+      ],
+      "creditShown": "฿300 credit",
+      "network": [
+        {
+          "at": "2026-11-04T12:01:53.093Z",
+          "method": "POST",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/intents",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:01:53.109Z",
+          "method": "POST",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/intents",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:01:54.682Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:01:56.189Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        }
+      ],
+      "image": "s736-offline-voucher.png"
+    },
+    "offline-booking": {
+      "kind": "booking",
+      "mode": "platform link cut",
+      "at": "2026-11-04T12:02:07.481Z",
+      "scans": [
+        {
+          "kind": "booking",
+          "outcome": "handled",
+          "handler": "booking",
+          "errorCode": null,
+          "reader": "keyboard-wedge burst"
+        }
+      ],
+      "network": [
+        {
+          "at": "2026-11-04T12:02:02.913Z",
+          "method": "POST",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/intents",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:02:03.386Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:02:04.895Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:02:06.403Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        }
+      ],
+      "image": "s736-offline-booking.png"
+    },
+    "offline-shop-band": {
+      "kind": "shop-band",
+      "mode": "platform link cut",
+      "at": "2026-11-04T12:02:30.371Z",
+      "scans": [
+        {
+          "kind": "band",
+          "outcome": "handled",
+          "handler": "band",
+          "errorCode": null,
+          "reader": "CDC record"
+        }
+      ],
+      "network": [
+        {
+          "at": "2026-11-04T12:02:25.842Z",
+          "method": "POST",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/intents",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:02:25.844Z",
+          "method": "POST",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/intents",
+          "status": 404
+        },
+        {
+          "at": "2026-11-04T12:02:27.421Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:02:28.929Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        }
+      ],
+      "image": "s736-offline-shop-band.png"
+    },
+    "offline-shop-barcode": {
+      "kind": "shop-barcode",
+      "mode": "platform link cut",
+      "at": "2026-11-04T12:02:48.836Z",
+      "scans": [
+        {
+          "kind": "product",
+          "outcome": "handled",
+          "handler": "product-barcode",
+          "errorCode": null,
+          "reader": "keyboard-wedge burst"
+        },
+        {
+          "kind": "product",
+          "outcome": "handled",
+          "handler": "product-barcode",
+          "errorCode": null,
+          "reader": "CDC record"
+        },
+        {
+          "kind": "product",
+          "outcome": "refused",
+          "handler": "product-barcode",
+          "errorCode": "UNKNOWN_BARCODE",
+          "reader": "keyboard-wedge burst"
+        }
+      ],
+      "unknownToastsVisible": 1,
+      "unknownImage": "s736-offline-shop-barcode-unknown.png",
+      "expected": [
+        "the cap (own barcode) added once",
+        "the socks, size M (size barcode) added once",
+        "an unknown barcode: Unknown barcode, nothing added"
+      ],
+      "panelText": [
+        "ZZ TEST SCRUM-736 mw22ag5p staff",
+        "ZZ TEST SCRUM-736 mw22ag5p shop",
+        "฿0",
+        "฿0",
+        "ZZ TEST SCRUM-736 mw22ag5p cap",
+        "฿50",
+        "ZZ TEST SCRUM-736 mw22ag5p socks",
+        "฿70",
+        "฿10",
+        "฿350",
+        "฿250",
+        "฿120",
+        "฿180",
+        "฿450",
+        "฿60",
+        "฿90",
+        "ZZ TEST SCRUM-736 mw22ag5p cap",
+        "฿50 each",
+        "฿50",
+        "ZZ TEST SCRUM-736 mw22ag5p socks(M)",
+        "฿70 each",
+        "฿70",
+        "฿7.85",
+        "Charge ฿120",
+        "ZZ TEST SCRUM-736 mw22ag5p cap",
+        "฿50 each",
+        "฿50",
+        "ZZ TEST SCRUM-736 mw22ag5p socks — M",
+        "฿70 each",
+        "฿70",
+        "฿7.85",
+        "Total",
+        "฿120"
+      ],
+      "network": [
+        {
+          "at": "2026-11-04T12:02:35.763Z",
+          "method": "POST",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/intents",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:02:37.292Z",
+          "method": "POST",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/intents",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:02:37.293Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:02:38.858Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:02:40.366Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:02:41.885Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:02:43.401Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:02:44.912Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:02:46.418Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:02:47.936Z",
+          "method": "GET",
+          "host": "counter-box",
+          "path": "/box/v1/station/:id/displays",
+          "status": 200
+        }
+      ],
+      "image": "s736-offline-shop-barcode.png"
+    },
+    "offline-history-band": {
+      "kind": "history-band",
+      "mode": "platform link cut",
+      "at": "2026-11-04T12:02:58.754Z",
+      "scans": [
+        {
+          "kind": "band",
+          "outcome": "handled",
+          "handler": "band",
+          "errorCode": null,
+          "reader": "keyboard-wedge burst"
+        }
+      ],
+      "scope": "SCRUM-753: the scan arrived with the link cut; History looks a bracelet up on the platform only. Recorded, not counted as a SCRUM-736 result.",
+      "network": [],
+      "image": "s736-offline-history-band.png"
+    }
+  },
+  "relayLog": [
+    {
+      "at": "2026-11-04T12:00:37.343Z",
+      "kind": "wallet/handled/wallet-qr",
+      "bytes": 365,
+      "status": 204,
+      "ms": 61
+    },
+    {
+      "at": "2026-11-04T12:01:00.508Z",
+      "kind": "band/handled/band",
+      "bytes": 512,
+      "status": 204,
+      "ms": 65
+    },
+    {
+      "at": "2026-11-04T12:01:10.372Z",
+      "kind": "product/handled/product-barcode",
+      "bytes": 685,
+      "status": 204,
+      "ms": 69
+    },
+    {
+      "at": "2026-11-04T12:01:11.898Z",
+      "kind": "product/handled/product-barcode",
+      "bytes": 712,
+      "status": 204,
+      "ms": 119
+    },
+    {
+      "at": "2026-11-04T12:01:13.412Z",
+      "kind": "product/refused/product-barcode",
+      "bytes": 391,
+      "status": 204,
+      "ms": 64
+    }
+  ],
+  "virtualCase": {
+    "a": {
+      "scan": {
+        "kind": "band",
+        "outcome": "handled",
+        "handler": "band",
+        "recognised": true,
+        "mode": "hid"
+      },
+      "network": [
+        {
+          "at": "2026-11-04T12:03:17.252Z",
+          "method": "GET",
+          "host": "oto-pos-web-staging.onrender.com",
+          "path": "/api/stations/:id/channel",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:03:17.307Z",
+          "method": "GET",
+          "host": "oto-pos-web-staging.onrender.com",
+          "path": "/api/stations/:id/channel",
+          "failed": "net::ERR_ABORTED"
+        },
+        {
+          "at": "2026-11-04T12:03:18.292Z",
+          "method": "GET",
+          "host": "oto-pos-web-staging.onrender.com",
+          "path": "/api/stations/:id/channel",
+          "status": 200
+        }
+      ],
+      "counterBoxRequests": 0,
+      "channelAnswers": [
+        200,
+        "net::ERR_ABORTED",
+        200
+      ],
+      "polls": 0,
+      "image": "s736-virtual-box-platform-channel-band.png"
+    },
+    "b": {
+      "scan": {
+        "kind": "band",
+        "outcome": "handled",
+        "handler": "band",
+        "recognised": true,
+        "mode": "hid"
+      },
+      "network": [
+        {
+          "at": "2026-11-04T12:03:29.158Z",
+          "method": "GET",
+          "host": "oto-pos-web-staging.onrender.com",
+          "path": "/api/stations/:id/channel",
+          "status": 503
+        },
+        {
+          "at": "2026-11-04T12:03:29.234Z",
+          "method": "GET",
+          "host": "oto-pos-web-staging.onrender.com",
+          "path": "/api/stations/:id/scans",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:03:30.167Z",
+          "method": "GET",
+          "host": "oto-pos-web-staging.onrender.com",
+          "path": "/api/stations/:id/channel",
+          "status": 503
+        },
+        {
+          "at": "2026-11-04T12:03:30.257Z",
+          "method": "GET",
+          "host": "oto-pos-web-staging.onrender.com",
+          "path": "/api/stations/:id/scans",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:03:31.834Z",
+          "method": "GET",
+          "host": "oto-pos-web-staging.onrender.com",
+          "path": "/api/stations/:id/scans",
+          "status": 200
+        },
+        {
+          "at": "2026-11-04T12:03:33.423Z",
+          "method": "GET",
+          "host": "oto-pos-web-staging.onrender.com",
+          "path": "/api/stations/:id/scans",
+          "status": 200
+        }
+      ],
+      "counterBoxRequests": 0,
+      "channelAnswers": [
+        503,
+        503
+      ],
+      "polls": 4,
+      "image": "s736-virtual-box-poll-band.png"
+    }
+  },
+  "observations": [
+    {
+      "at": "2026-11-04T12:04:52.697Z",
+      "what": "First online voucher run (11:59:17-11:59:27 UTC): the till opened the voucher (credit shown), but the platform scan tape held no entry. Render request log: POST /box/v1/scans at 11:59:21.375Z answered 429 (rate limited). The box sends a relayed copy once with no retry, by design, so that copy was dropped; the counter-network copy had already reached the till.",
+      "cause": "The proof runs its local box with 1-second heartbeat, command poll and sync intervals (real boxes use 60-second heartbeats and a few-second poll), close to the per-box ceiling of 240 box requests a minute (BOX_RATE_LIMIT_MAX) that every box route shares, the relay included.",
+      "rerun": "The same case rerun at 12:00:37Z: relay answered 204 in 61 ms and the tape held exactly one entry for that scanId. All later online relays answered 204 (relay timings in relayLog)."
+    }
+  ],
+  "cleanup": {
+    "startedAt": "2026-11-04T12:04:52.924Z",
+    "steps": [
+      {
+        "what": "child picked up and read out",
+        "at": "2026-11-04T12:04:57.393Z"
+      },
+      {
+        "what": "booking redeemed",
+        "at": "2026-11-04T12:04:58.718Z"
+      },
+      {
+        "what": "counter till signed out; /me answers 401",
+        "at": "2026-11-04T12:05:02.278Z"
+      },
+      {
+        "what": "virtual till signed out; /me answers 401",
+        "at": "2026-11-04T12:05:04.293Z"
+      },
+      {
+        "what": "local counter box stopped",
+        "at": "2026-11-04T12:05:04.299Z"
+      },
+      {
+        "what": "tills, printers, box, shop items and category archived",
+        "at": "2026-11-04T12:05:11.412Z"
+      },
+      {
+        "what": "ZZ TEST login inactive and its role removed",
+        "at": "2026-11-04T12:05:12.286Z"
+      }
+    ],
+    "salesOn_counter": [
+      {
+        "id": "7ed6b191-d5d7-47dc-a2da-ef36f04c232f",
+        "status": "finalised",
+        "receipt": "ZAH-000002"
+      },
+      {
+        "id": "3c0b9225-7c27-4350-b295-59de71471153",
+        "status": "finalised",
+        "receipt": "ZAH-000001"
+      }
+    ],
+    "salesOn_virtual": [],
+    "pickupFileId": "29c4325f-e51f-44e5-a457-609c189a215d",
+    "bookingSaleId": "01a1a672-b824-7a31-94e5-64036d7d33f1",
+    "bookingBandIds": [
+      "01a1a672-b869-7637-87ec-badc0e947501",
+      "01a1a672-b86d-7bda-88d9-ca1953e5fdf9"
+    ],
+    "printJobs": [
+      {
+        "id": "01a1a672-b887-73e7-8046-bfcd05f5a22a",
+        "status": "skipped"
+      },
+      {
+        "id": "01a1a672-b882-7f5a-a69f-c905952572d6",
+        "status": "printed"
+      },
+      {
+        "id": "01a1a672-b87d-74d7-996c-4eed8fa0126a",
+        "status": "printed"
+      },
+      {
+        "id": "01a1a66d-135e-71f2-99ca-22832ea9fdad",
+        "status": "skipped"
+      },
+      {
+        "id": "01a1a66d-1359-70d0-9463-3cb56209c3c2",
+        "status": "printed"
+      },
+      {
+        "id": "01a1a66d-0ddb-7c96-9ba2-61ba07de734c",
+        "status": "printed"
+      },
+      {
+        "id": "01a1a66d-0d65-73bc-a640-3023fad6df01",
+        "status": "printed"
+      }
+    ],
+    "readback": {
+      "tills": [
+        {
+          "id": "01a1a66c-b5a2-7f50-8c75-0030c077b5b1",
+          "archived": true
+        },
+        {
+          "id": "01a1a66c-c01a-7f35-bf6e-cd89df2f6463",
+          "archived": true
+        }
+      ],
+      "box": {
+        "archived": true,
+        "status": "disabled",
+        "addressRemoved": true
+      },
+      "printers": [
+        {
+          "id": "01a1a66c-b240-7844-ab61-bb7cd165ccfd",
+          "archived": true
+        },
+        {
+          "id": "01a1a66c-b3f6-7a55-9ca5-066cf82b2abd",
+          "archived": true
+        }
+      ],
+      "shop": [
+        {
+          "id": "01a1a66c-baa8-7aab-8f6b-dc5e6a50f72b",
+          "archived": true,
+          "active": false
+        },
+        {
+          "id": "01a1a66c-bc58-7095-bec7-3e5e1eb703a2",
+          "archived": true,
+          "active": false
+        }
+      ],
+      "category": true,
+      "virtualBox1": {
+        "status": "online",
+        "archived": false
+      }
+    },
+    "apiPassed": true,
+    "apiFinishedAt": "2026-11-04T12:05:14.554Z",
+    "databaseJob": {
+      "jobId": "job-dblhv01srm7s73bfade0",
+      "status": "succeeded",
+      "result": {
+        "event": "s736_cleanup",
+        "sales": [
+          {
+            "id": "01a1a672-b824-7a31-94e5-64036d7d33f1",
+            "status": "finalised",
+            "till": "counter"
+          },
+          {
+            "id": "3c0b9225-7c27-4350-b295-59de71471153",
+            "status": "finalised",
+            "till": "counter"
+          },
+          {
+            "id": "7ed6b191-d5d7-47dc-a2da-ef36f04c232f",
+            "status": "finalised",
+            "till": "counter"
+          }
+        ],
+        "bandsFound": 4,
+        "bandsRevoked": 4,
+        "workingRowsRemoved": 2,
+        "counts": {
+          "active_till_sessions": 0,
+          "active_staff_sessions": 0,
+          "working_rows": 0,
+          "pending_prints": 0,
+          "pending_commands": 0,
+          "live_bands": 0,
+          "open_sales": 0
+        },
+        "staff": {
+          "status": "inactive",
+          "employee_archived": true,
+          "roles": 0
+        },
+        "payments": [
+          {
+            "id": "01a1a66d-0d40-71d3-9607-a82341c99793",
+            "status": "approved",
+            "provider": "manual"
+          },
+          {
+            "id": "01a1a66d-1329-784b-81d5-8438f3685597",
+            "status": "approved",
+            "provider": "manual"
+          },
+          {
+            "id": "01a1a66d-1825-700d-8ed5-40f13dffbb9a",
+            "status": "approved",
+            "provider": "simulator"
+          },
+          {
+            "id": "01a1a672-b845-78ac-8217-a59798b1ad4c",
+            "status": "approved",
+            "provider": "manual"
+          }
+        ],
+        "passed": true,
+        "readBackAt": "2026-11-04T12:06:13.659Z"
+      },
+      "errors": []
+    }
+  },
+  "adminSignOut": {
+    "console": 200,
+    "launcher": 200,
+    "consoleMe": 401,
+    "launcherMe": 401,
+    "at": "2026-11-04T12:06:45.102Z"
+  },
+  "driverStoppedAt": "2026-11-04T12:06:45.523Z",
+  "finalReadback": {
+    "jobId": "job-dbli34bncjis73du17l0",
+    "status": "succeeded",
+    "result": {
+      "event": "s736_final_readback",
+      "at": "2026-11-04T12:14:57.765Z",
+      "stations": [
+        {
+          "id": "01a1a66c-b5a2-7f50-8c75-0030c077b5b1",
+          "archived": true
+        },
+        {
+          "id": "01a1a66c-c01a-7f35-bf6e-cd89df2f6463",
+          "archived": true
+        }
+      ],
+      "box": {
+        "status": "disabled",
+        "archived": true,
+        "no_address": true,
+        "no_secret": true
+      },
+      "devices": [
+        {
+          "kind": "receipt_printer",
+          "archived": true
+        },
+        {
+          "kind": "band_printer",
+          "archived": true
+        }
+      ],
+      "virtualBox1": {
+        "status": "online",
+        "archived": false,
+        "no_address": true
+      },
+      "account": {
+        "status": "inactive",
+        "roles": 0,
+        "live_sessions": 0,
+        "employee_archived": true
+      },
+      "tillSessions": 0,
+      "workingRows": 0,
+      "liveBands": 0,
+      "sales": [
+        {
+          "status": "finalised",
+          "n": 3
+        }
+      ],
+      "child": {
+        "status": "out"
+      },
+      "booking": {
+        "status": "redeemed"
+      },
+      "products": [
+        {
+          "active": false,
+          "archived": true
+        },
+        {
+          "active": false,
+          "archived": true
+        }
+      ],
+      "pendingCommands": 0,
+      "pendingPrints": 0
+    },
+    "errors": []
+  }
+}

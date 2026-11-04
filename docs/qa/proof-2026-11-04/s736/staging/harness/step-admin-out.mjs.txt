@@ -1,0 +1,14 @@
+// Sign the administrator out of the Console and the launcher, and read both back as signed out.
+export default async function (S) {
+  const { st, save, LAUNCHER, CONSOLE, assert } = S;
+  if (!S.admin) return { already: true };
+  const { ctx } = S.admin;
+  const c = await ctx.request.post(CONSOLE + '/api/auth/sign-out', { data: {} });
+  const l = await ctx.request.post(LAUNCHER + '/api/auth/sign-out', { data: {} });
+  const meC = (await ctx.request.get(CONSOLE + '/api/me')).status();
+  const meL = (await ctx.request.get(LAUNCHER + '/api/me')).status();
+  st.adminSignOut = { console: c.status(), launcher: l.status(), consoleMe: meC, launcherMe: meL, at: new Date().toISOString() }; save();
+  assert.equal(meC, 401);
+  await ctx.close(); S.admin = null;
+  return st.adminSignOut;
+}

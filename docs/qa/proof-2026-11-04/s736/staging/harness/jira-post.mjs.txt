@@ -1,0 +1,18 @@
+// Attach the opened proof images to SCRUM-736 and show them inside one plain comment; read back what Jira holds.
+import { attach, commentWithImages, statusOf, images, jget } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/jira.mjs';
+import { readFileSync, writeFileSync } from 'node:fs';
+const D = 'C:/oto-lanes/scanner736-20261104/docs/qa/proof-2026-11-04/s736/staging/';
+const key = 'SCRUM-736';
+const files = JSON.parse(readFileSync(D + 'jira-images.json', 'utf8'));
+const text = readFileSync(D + 'jira-comment-736.txt', 'utf8').trim();
+const a = await attach(key, files.map((f) => D + f));
+if (a.status >= 300) throw new Error('attach ' + a.status + ' ' + (a.body ?? ''));
+const c = await commentWithImages(key, text, files);
+let commentId = null; try { commentId = JSON.parse(c.body).id; } catch {}
+const rendered = commentId ? await jget(`/rest/api/2/issue/${key}/comment/${commentId}?expand=renderedBody`) : null;
+const html = rendered?.renderedBody ?? '';
+const out = { key, attachStatus: a.status, attached: a.files, commentStatus: c.status, commentId,
+  imagesShownInline: files.map((f) => ({ file: f, attachmentId: a.files.find((x) => x.name === f)?.id ?? null, inRenderedComment: html.includes(String(a.files.find((x) => x.name === f)?.id ?? '__none__')) })),
+  statusAfterComment: (await statusOf(key)).status, imagesOnTicket: (await images(key)).length };
+writeFileSync(D + 'jira-publication.json', JSON.stringify(out, null, 2) + '\n');
+console.log(JSON.stringify(out, null, 1));

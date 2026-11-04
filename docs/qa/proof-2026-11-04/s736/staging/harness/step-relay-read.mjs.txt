@@ -1,0 +1,4 @@
+export default async function (S) {
+  S.st.relayLog = S.relayLog; S.save();
+  return S.relayLog;
+}

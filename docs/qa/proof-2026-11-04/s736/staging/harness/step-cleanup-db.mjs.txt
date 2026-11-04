@@ -1,0 +1,86 @@
+// The last exact-identity retirement, one checked and audited transaction in a one-off job, then a read-only readback:
+// the proof's bands (no physical band exists) revoked, the two tills' empty inactive working rows removed, the ZZ TEST
+// employee archived. Nothing is selected by a ZZ TEST prefix; no sale, payment or pickup record is deleted.
+import { job } from '../job.mjs';
+async function retire(c, s, h) {
+  const assert = (await import('node:assert/strict')).default;
+  const out = {};
+  assert.ok(s.name.startsWith('ZZ TEST SCRUM-736 '));
+  const saleIds = s.saleIds; assert.equal(new Set(saleIds).size, saleIds.length);
+  await c.query('BEGIN');
+  try {
+    await c.query("SET LOCAL statement_timeout='20s'");
+    const stations = (await c.query('SELECT id,name,box_id,branch_id,operator_id,archived_at FROM core.station WHERE id=ANY($1::uuid[]) FOR UPDATE', [[s.stationId, s.virtualStationId]])).rows;
+    assert.equal(stations.length, 2);
+    for (const x of stations) { assert.ok(x.name.startsWith(s.name)); assert.ok(x.archived_at); assert.equal(x.branch_id, s.branchId); }
+    const counter = stations.find((x) => x.id === s.stationId);
+    assert.equal(counter.box_id, s.boxId);
+    assert.equal(stations.find((x) => x.id === s.virtualStationId).box_id, s.virtualBoxId);
+    const box = (await c.query('SELECT name,status,archived_at,bridge_origin IS NULL no_address FROM core.box WHERE id=$1 FOR UPDATE', [s.boxId])).rows[0];
+    assert.equal(box.name, s.name); assert.equal(box.status, 'disabled'); assert.ok(box.archived_at && box.no_address);
+    const sales = (await c.query('SELECT id,status,station_id FROM pos.sale WHERE station_id=ANY($1::uuid[]) ORDER BY id', [[s.stationId, s.virtualStationId]])).rows;
+    out.sales = sales.map((x) => ({ id: x.id, status: x.status, till: x.station_id === s.stationId ? 'counter' : 'virtual' }));
+    assert.ok(sales.every((x) => ['finalised', 'voided', 'void'].includes(x.status)), 'every sale on the two tills is paid or voided');
+    for (const id of saleIds) assert.ok(sales.some((x) => x.id === id && x.status === 'finalised'));
+    const stay = (await c.query('SELECT child_name,status,registration_id FROM pos.checkin WHERE id=$1', [s.checkinId])).rows[0];
+    assert.equal(stay.child_name, s.child); assert.equal(stay.status, 'out');
+    const booking = (await c.query('SELECT status FROM pos.booking WHERE id=$1', [s.bookingId])).rows[0];
+    assert.equal(booking.status, 'redeemed');
+    const db = h.drizzle(c);
+    const audit = (action, entityType, entityId, before, after) => h.audit.record(db, { actorAccountId: s.actorId, operatorId: counter.operator_id, branchId: counter.branch_id, action, entityType, entityId, before, after, sourceApp: 'console', origin: 'job', reason: 'SCRUM-736 staging proof clean-up: exact ZZ TEST fixtures; financial and pickup history kept' });
+    const bands = (await c.query('SELECT id,sale_id,status FROM pos.band WHERE sale_id=ANY($1::uuid[]) FOR UPDATE', [saleIds])).rows;
+    out.bandsFound = bands.length; out.bandsRevoked = 0;
+    for (const b of bands) {
+      if (b.status === 'revoked') continue;
+      assert.equal(b.status, 'active');
+      assert.equal((await c.query("SELECT count(*)::int n FROM pos.band_event WHERE band_id=$1 AND kind IN ('entry','exit')", [b.id])).rows[0].n, 0);
+      await c.query("UPDATE pos.band SET status='revoked',updated_at=now() WHERE id=$1", [b.id]);
+      await c.query("INSERT INTO pos.band_event(id,band_id,kind,station_id,box_id,detail) VALUES($1,$2,'revoked',$3,$4,$5::jsonb)", [h.newId(), b.id, s.stationId, s.boxId, JSON.stringify({ reason: 'ZZ TEST SCRUM-736 proof finished; no physical band issued', accountId: s.actorId })]);
+      await audit('qa.band.retire', 'band', b.id, { status: b.status }, { status: 'revoked', saleRetained: true });
+      out.bandsRevoked += 1;
+    }
+    out.workingRowsRemoved = 0;
+    for (const [stationId, boxId] of [[s.stationId, s.boxId], [s.virtualStationId, s.virtualBoxId]]) {
+      const rows = (await c.query('SELECT stage,lease_id IS NOT NULL AND lease_expires_at>now() live_lease,member IS NULL no_member,payment IS NULL no_payment FROM edge.station_session WHERE station_id=$1 AND box_id=$2 FOR UPDATE', [stationId, boxId])).rows;
+      assert.ok(rows.length <= 1);
+      if (rows.length) {
+        const w = rows[0]; assert.ok(!w.live_lease && w.no_member && w.no_payment, 'only an inactive empty working row can be retired');
+        await c.query('DELETE FROM edge.station_session WHERE station_id=$1 AND box_id=$2', [stationId, boxId]);
+        await audit('qa.station_session.retire', 'station', stationId, { rows: 1, stage: w.stage }, { rows: 0 });
+        out.workingRowsRemoved += 1;
+      }
+    }
+    const a = (await c.query('SELECT status,employee_id,operator_id FROM core.account WHERE id=$1 FOR UPDATE', [s.staff.accountId])).rows[0];
+    assert.equal(a.employee_id, s.staff.employeeId); assert.equal(a.status, 'inactive');
+    assert.equal((await c.query('SELECT count(*)::int n FROM core.role_assignment WHERE account_id=$1', [s.staff.accountId])).rows[0].n, 0);
+    const e = (await c.query('SELECT name,source,external_id,archived_at FROM core.employee WHERE id=$1 FOR UPDATE', [s.staff.employeeId])).rows[0];
+    assert.equal(e.name, s.staff.name); assert.equal(e.source, 'platform'); assert.equal(e.external_id, null);
+    if (!e.archived_at) { await c.query('UPDATE core.employee SET archived_at=now(),updated_at=now() WHERE id=$1', [s.staff.employeeId]); await audit('qa.employee.retire', 'employee', s.staff.employeeId, { archived: false }, { archived: true, accountInactive: true }); }
+    await c.query('COMMIT');
+  } catch (err) { await c.query('ROLLBACK'); throw err; }
+  await c.query('BEGIN READ ONLY');
+  try {
+    const q = await c.query("SELECT (SELECT count(*)::int FROM core.session WHERE station_id=ANY($1::uuid[]) AND revoked_at IS NULL AND expires_at>now()) active_till_sessions,(SELECT count(*)::int FROM core.session WHERE account_id=$4 AND revoked_at IS NULL AND expires_at>now()) active_staff_sessions,(SELECT count(*)::int FROM edge.station_session WHERE station_id=ANY($1::uuid[])) working_rows,(SELECT count(*)::int FROM edge.print_job WHERE box_id=$2 AND status IN ('queued','failed')) pending_prints,(SELECT count(*)::int FROM edge.box_command WHERE box_id=$2 AND state IN ('queued','running')) pending_commands,(SELECT count(*)::int FROM pos.band WHERE sale_id=ANY($3::uuid[]) AND status<>'revoked') live_bands,(SELECT count(*)::int FROM pos.sale WHERE station_id=ANY($1::uuid[]) AND status NOT IN ('finalised','voided','void')) open_sales", [[s.stationId, s.virtualStationId], s.boxId, saleIds, s.staff.accountId]);
+    out.counts = q.rows[0];
+    for (const [k, v] of Object.entries(out.counts)) assert.equal(v, 0, k);
+    const sr = (await c.query('SELECT a.status,e.archived_at IS NOT NULL employee_archived,(SELECT count(*)::int FROM core.role_assignment WHERE account_id=a.id) roles FROM core.account a JOIN core.employee e ON e.id=a.employee_id WHERE a.id=$1', [s.staff.accountId])).rows[0];
+    out.staff = sr; assert.equal(sr.status, 'inactive'); assert.equal(sr.employee_archived, true); assert.equal(sr.roles, 0);
+    out.payments = (await c.query('SELECT id,status,provider FROM pos.payment_attempt WHERE sale_id=ANY($1::uuid[]) OR id=(SELECT payment_attempt_id FROM pos.booking WHERE id=$2) ORDER BY id', [saleIds, s.bookingId])).rows;
+    out.passed = true; out.readBackAt = new Date().toISOString();
+    return out;
+  } finally { await c.query('ROLLBACK'); }
+}
+export default async function (S) {
+  const { st, save, assert, SOURCE } = S;
+  const f = st.fixture, fam = f.family, cl = st.cleanup;
+  assert.equal(cl?.apiPassed, true, 'run cleanup-api first');
+  const spec = { name: f.name, branchId: st.identity.branchId, actorId: st.identity.actorId, stationId: f.stationId, virtualStationId: f.virtual.stationId, boxId: f.boxId, virtualBoxId: f.virtual.boxId,
+    saleIds: [fam.saleId, fam.voucherSaleId, cl.bookingSaleId].filter(Boolean), checkinId: fam.checkinId, child: fam.child, bookingId: fam.bookingId, staff: { accountId: st.staff.accountId, employeeId: st.staff.employeeId, name: st.staff.name } };
+  const event = 's736_cleanup';
+  const program = `(async()=>{require('tsx/cjs');const {Client}=require('pg'),{drizzle}=require('drizzle-orm/node-postgres'),{audit}=require('./src/services/audit.ts'),{newId}=require('@oto/shared'),c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();try{const result=await (${retire.toString()})(c,${JSON.stringify(spec)},{drizzle,audit,newId});console.log(JSON.stringify({event:'${event}',...result}));}catch(e){console.log(JSON.stringify({event:'${event}_error',name:e.name,code:e.code??'ASSERTION',message:String(e.message).slice(0,300)}));process.exitCode=1;}finally{await c.end();}})();`;
+  const r = await job(program, event, SOURCE);
+  cl.databaseJob = { jobId: r.jobId, status: r.status, result: r.result, errors: r.errors }; save();
+  assert.equal(r.status, 'succeeded', JSON.stringify(r.errors));
+  assert.equal(r.result?.passed, true);
+  return cl.databaseJob;
+}

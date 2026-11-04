@@ -1,0 +1,12 @@
+export default async function (S) {
+  const { st, save } = S;
+  st.observations ??= [];
+  st.observations.push({
+    at: new Date().toISOString(),
+    what: 'First online voucher run (11:59:17-11:59:27 UTC): the till opened the voucher (credit shown), but the platform scan tape held no entry. Render request log: POST /box/v1/scans at 11:59:21.375Z answered 429 (rate limited). The box sends a relayed copy once with no retry, by design, so that copy was dropped; the counter-network copy had already reached the till.',
+    cause: 'The proof runs its local box with 1-second heartbeat, command poll and sync intervals (real boxes use 60-second heartbeats and a few-second poll), close to the per-box ceiling of 240 box requests a minute (BOX_RATE_LIMIT_MAX) that every box route shares, the relay included.',
+    rerun: 'The same case rerun at 12:00:37Z: relay answered 204 in 61 ms and the tape held exactly one entry for that scanId. All later online relays answered 204 (relay timings in relayLog).',
+  });
+  save();
+  return st.observations;
+}

@@ -1,0 +1,2 @@
+import { runCase } from '../caselib.mjs';
+export default async function (S) { return runCase(S, 'band', false); }

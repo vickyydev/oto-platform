@@ -1,0 +1,71 @@
+// Through the counter till's own session (the calls the till makes): a ZZ TEST child with an allergy, registered
+// with no phone so no message can go out, sold a ticket in cash and checked in (the band prints on the box's simulated
+// band printer and its QR is read off the printout, as a scanner reads paper); a ZZ TEST credit voucher sold in cash;
+// a ZZ TEST booking paid through the payment simulator. Codes stay in the scratchpad only.
+export default async function (S) {
+  const { st, save, secrets, saveSecrets, assert, randomUUID, until, PNG, jsQR, api } = S;
+  const f = st.fixture, B = st.identity.branchId;
+  const fam = (f.family ??= {});
+  const tapi = async (m, p, d) => { const r = await S.tillApi('counter', m, p, d); assert.ok([200, 201].includes(r.status), `${m} ${p.split('?')[0]} ${r.status} ${JSON.stringify(r.body?.error ?? '').slice(0, 300)}`); return r.body; };
+  const cfg = await tapi('GET', `/checkin/config?branchId=${B}`);
+  const confirmationIds = (cfg.policy?.confirmations ?? []).map((c) => c.id);
+  const packages = (await tapi('GET', `/branches/${B}/ticket-packages`)).packages.filter((p) => p.active && !p.archivedAt);
+  const ticket = packages.find((p) => p.name === '2 Hours Play'), credit = packages.find((p) => p.name === 'Eat & Play Kids Pass');
+  assert.ok(ticket && credit, 'packages present');
+  fam.packages = { ticket: ticket.name, credit: credit.name }; save();
+  if (!fam.registeredAt) {
+    fam.registrationId ??= randomUUID(); fam.checkinId ??= randomUUID(); fam.saleId ??= randomUUID();
+    fam.child = f.name + ' child'; save();
+    await tapi('POST', '/checkin/registrations', { id: fam.registrationId, branchId: B, stationId: f.stationId, guardianName: f.name + ' guardian', contactChannel: 'whatsapp', consentAcknowledged: true, acknowledgedConfirmationIds: confirmationIds,
+      children: [{ checkinId: fam.checkinId, name: fam.child, ageYears: 9, allergies: 'ZZ TEST peanut allergy', foodRestrictions: 'ZZ TEST no dairy', service: 'none', foodProvision: { mode: 'none', paidSatang: 0 } }] });
+    fam.registeredAt = new Date().toISOString(); save();
+  }
+  if (!fam.saleFinalised) {
+    if (!fam.saleCreated) { await tapi('POST', '/sales', { id: fam.saleId, stationId: f.stationId, lines: [{ id: fam.checkinId, packageId: ticket.id, kids: 1, adults: 0 }] }); fam.saleCreated = true; save(); }
+    const paid = await tapi('POST', `/sales/${fam.saleId}/finalise`, { method: 'cash' });
+    fam.saleFinalised = true; fam.receiptNumber = paid.sale?.receiptNumber ?? paid.receiptNumber ?? null; save();
+  }
+  if (!fam.bandId) {
+    const admitted = await tapi('POST', '/checkin/check-in-now', { saleId: fam.saleId, entries: [{ checkinId: fam.checkinId, nannyId: null }] });
+    fam.bandId = admitted.bands?.[0]?.id ?? null; fam.checkedInAt = new Date().toISOString(); save();
+  }
+  if (!secrets.bandCode) {
+    const paper = await until('the band printout on the simulated band printer', async () => S.runner.agent.printing()?.printouts(f.bandPrinterId, 10).at(-1), 90000);
+    const pixels = PNG.sync.read(Buffer.from(paper.preview));
+    const decoded = jsQR(new Uint8ClampedArray(pixels.data), pixels.width, pixels.height, { inversionAttempts: 'attemptBoth' });
+    assert.ok(decoded, 'printed band QR decoded');
+    secrets.bandCode = decoded.data; saveSecrets();
+    fam.printout = { seq: paper.seq, widthDots: paper.widthDots, heightDots: paper.heightDots, qrDecoded: true }; save();
+  }
+  fam.bandShortCode = S.bandShortCode(secrets.bandCode); save();
+  if (!secrets.walletQr) {
+    fam.voucherSaleId ??= randomUUID(); save();
+    await tapi('POST', '/sales', { id: fam.voucherSaleId, stationId: f.stationId, lines: [{ id: randomUUID(), packageId: credit.id, kids: 0, adults: 1 }] });
+    const paid = await tapi('POST', `/sales/${fam.voucherSaleId}/finalise`, { method: 'cash' });
+    const qr = paid.grants?.find((g) => g.qrCode)?.qrCode;
+    assert.ok(typeof qr === 'string' && qr.startsWith('QR-'), 'credit voucher issued');
+    secrets.walletQr = qr; saveSecrets();
+    fam.voucherReceipt = paid.sale?.receiptNumber ?? null; fam.voucherIssued = true; save();
+  }
+  if (!secrets.bookingQr) {
+    const branches = (await api('GET', '/branches')).branches;
+    const code = branches.find((b) => b.id === B).code;
+    const visitDate = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
+    if (!fam.bookingId) {
+      const made = await api('POST', '/public/bookings', { branchCode: code, phone: '0800000736', parentName: f.name + ' booking', tier: 'thai', visitDate, consentAck: true, acknowledgedConfirmationIds: confirmationIds, lines: [{ packageId: ticket.id, kids: 1, adults: 1 }] });
+      fam.bookingId = made.id; save();
+    }
+    const opened = await api('POST', `/public/bookings/${fam.bookingId}/checkout`, { method: 'card' });
+    const { ctx } = await S.consoleIn();
+    const response = await ctx.request.post(S.CONSOLE + `/api/webhooks/2c2p/hosted/${opened.attemptId}`, { form: { action: 'pay' } });
+    assert.equal(response.status(), 200, 'simulator pay ' + response.status());
+    const booking = await api('GET', `/public/bookings/${fam.bookingId}/status`);
+    assert.equal(booking.status, 'paid');
+    secrets.bookingQr = booking.qr; secrets.bookingReference = booking.reference; saveSecrets();
+    fam.bookingReference = booking.reference; fam.bookingPaidBy = 'payment simulator'; save();
+  }
+  await S.runner.agent.syncCache(); await S.runner.agent.syncConfig();
+  await until('booking and child in the box caches', async () => JSON.stringify(S.cache('bookings') ?? {}).includes(fam.bookingId) && JSON.stringify(S.cache('checkin') ?? {}).includes(fam.checkinId), 90000);
+  S.check('ZZ TEST child sold in cash and checked in, band QR read off the simulated printout; ZZ TEST credit voucher sold in cash; ZZ TEST booking paid through the simulator; box caches hold them');
+  return { family: { ...fam } };
+}

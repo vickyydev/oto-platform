@@ -1,0 +1,57 @@
+// Case 8: the virtual box is unchanged. A ZZ TEST till on Virtual box 1 (no box address, so no counter-network stream)
+// hears a Console scanner-simulator read of the printed band through the platform: first as the page opens its
+// platform listener normally, then with the platform stream refused so the page must poll the scan tape.
+export default async function (S) {
+  const { st, save, secrets, assert, POS, expect } = S;
+  const f = st.fixture, fam = f.family, v = f.virtual;
+  const till = S.tills.virtual;
+  assert.ok(till, 'sign the virtual till in first');
+  const page = till.page;
+  const unlock = async () => {
+    if (!(await page.getByRole('button', { name: 'Unlock', exact: true }).isVisible())) await page.getByRole('button', { name: 'Lock screen', exact: true }).click();
+    await page.locator('input[type="password"]').fill(secrets.staffPassword);
+    await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+    await page.getByRole('heading', { name: 'Scan Wristband', exact: true }).waitFor({ timeout: 30000 });
+  };
+  const simulate = async () => {
+    const r = await S.apiRaw('POST', `/stations/${v.stationId}/scan/simulate`, { code: secrets.bandCode, mode: 'hid' });
+    assert.equal(r.status, 200, 'console simulate ' + r.status + ' ' + JSON.stringify(r.body?.error ?? '').slice(0, 200));
+    return { kind: r.body.kind, outcome: r.body.outcome, handler: r.body.handler, recognised: r.body.recognised, mode: r.body.mode };
+  };
+  const out = (st.virtualCase ??= {});
+  // A: the platform listener as the page opens it.
+  let from = till.log.length;
+  await page.goto(POS + '/order-station');
+  await unlock();
+  await S.sleep(6000);
+  out.a = { scan: await simulate() };
+  await page.getByText(`Allergy / medical alert · ${fam.child}`).waitFor({ timeout: 30000 });
+  await expect(page.getByText('ZZ TEST peanut allergy', { exact: true })).toBeVisible();
+  await S.sleep(3000);
+  out.a.network = till.log.slice(from);
+  out.a.counterBoxRequests = out.a.network.filter((x) => x.host === 'counter-box').length;
+  out.a.channelAnswers = out.a.network.filter((x) => x.path.endsWith('/channel')).map((x) => x.status ?? x.failed);
+  out.a.polls = out.a.network.filter((x) => x.path.endsWith('/scans')).length;
+  out.a.image = 's736-virtual-box-platform-channel-band.png';
+  await S.capture(page, out.a.image);
+  save();
+  // B: the stream refused, so the page polls the tape.
+  await till.ctx.route('**/api/stations/*/channel*', (route) => route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":{"code":"S736_PROOF_STREAM_REFUSED","message":"stream refused for the poll case"}}' }));
+  from = till.log.length;
+  await page.goto(POS + '/order-station');
+  await unlock();
+  await S.until('the page polls the scan tape', async () => till.log.slice(from).filter((x) => x.path.endsWith('/scans') && x.status === 200).length >= 2, 30000);
+  out.b = { scan: await simulate() };
+  await page.getByText(`Allergy / medical alert · ${fam.child}`).waitFor({ timeout: 30000 });
+  await S.sleep(3000);
+  out.b.network = till.log.slice(from);
+  out.b.counterBoxRequests = out.b.network.filter((x) => x.host === 'counter-box').length;
+  out.b.channelAnswers = out.b.network.filter((x) => x.path.endsWith('/channel')).map((x) => x.status ?? x.failed);
+  out.b.polls = out.b.network.filter((x) => x.path.endsWith('/scans')).length;
+  out.b.image = 's736-virtual-box-poll-band.png';
+  await S.capture(page, out.b.image);
+  await till.ctx.unroute('**/api/stations/*/channel*');
+  save();
+  assert.equal(out.a.counterBoxRequests + out.b.counterBoxRequests, 0, 'a till with no box address makes no counter-network request');
+  return { a: { scan: out.a.scan, channelAnswers: out.a.channelAnswers, polls: out.a.polls }, b: { scan: out.b.scan, channelAnswers: out.b.channelAnswers, polls: out.b.polls } };
+}

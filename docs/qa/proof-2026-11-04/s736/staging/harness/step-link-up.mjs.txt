@@ -1,0 +1,2 @@
+import { restoreLink } from '../caselib.mjs';
+export default async function (S) { await restoreLink(S); return { restored: true }; }

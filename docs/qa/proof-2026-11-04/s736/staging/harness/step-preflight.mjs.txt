@@ -1,0 +1,29 @@
+// Preflight: main CI green on the exact source, API and POS web live on it, the four temporary settings present
+// (names and counts only), the gateway is the simulator (yes/no, no value printed), the Console signs in.
+import { execFileSync } from 'node:child_process';
+export default async function (S) {
+  const { st, save, assert, render, service, SOURCE, CI, LANE } = S;
+  const ci = JSON.parse(execFileSync('gh', ['run', 'view', CI, '--json', 'headSha,conclusion,jobs'], { cwd: LANE, encoding: 'utf8' }));
+  assert.equal(ci.headSha, SOURCE); assert.equal(ci.conclusion, 'success');
+  const pre = { at: new Date().toISOString(), ci: { run: CI, headSha: ci.headSha, conclusion: ci.conclusion, jobs: ci.jobs.map((j) => `${j.name}: ${j.conclusion}`) }, services: {} };
+  for (const name of ['oto-api-staging', 'oto-pos-web-staging']) {
+    const s = await service(name);
+    const live = (await render('GET', `/services/${s.id}/deploys?limit=1`))[0].deploy;
+    const rows = (await render('GET', `/services/${s.id}/env-vars?limit=100`)).map((r) => r.envVar ?? r);
+    const names = rows.map((r) => r.key);
+    pre.services[name] = { deployId: live.id, status: live.status, commit: live.commit.id, finishedAt: live.finishedAt, settingCount: names.length,
+      testKeys: names.filter((k) => /BOX_BRIDGE_(ZONE|ALLOW_LOOPBACK)$/.test(k)).sort() };
+    assert.equal(live.status, 'live'); assert.equal(live.commit.id, SOURCE);
+    if (name === 'oto-api-staging') {
+      assert.equal(names.length, 59);
+      pre.gatewayIsSimulator = rows.some((r) => r.key === 'PGW_PROVIDER' && r.value === 'simulator');
+      assert.ok(pre.gatewayIsSimulator, 'staging gateway must be the simulator');
+    } else assert.equal(names.length, 6);
+  }
+  const health = await fetch(S.API + '/health'); pre.apiHealth = health.status;
+  const ready = await fetch(S.API + '/ready'); pre.apiReady = ready.status;
+  const me = await S.api('GET', '/me');
+  pre.console = { actorId: me.account.id, branchId: me.operatorContext.branchId, operatorId: me.operatorContext.effectiveOperatorId };
+  st.preflight = pre; st.identity = { actorId: me.account.id, branchId: me.operatorContext.branchId, operatorId: me.operatorContext.effectiveOperatorId }; save();
+  return pre;
+}

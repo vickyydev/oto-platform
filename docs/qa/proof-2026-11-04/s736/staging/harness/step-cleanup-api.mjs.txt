@@ -1,0 +1,107 @@
+// Clean-up through the routes a person uses, own records only, each read before it is changed: unpaid sales on the two
+// ZZ TEST tills voided by exact id; the ZZ TEST child picked up (synthetic picture) and out; the ZZ TEST booking redeemed
+// at the ZZ TEST till so it no longer waits; both tills signed out; the local box stopped; tills, printers, box, shop items
+// and category archived (the box address removed, the box disabled); the ZZ TEST login made inactive with its role removed.
+import { restoreLink } from '../caselib.mjs';
+export default async function (S) {
+  const { st, save, assert, POS, api, randomUUID, until } = S;
+  const f = st.fixture, fam = f.family, B = st.identity.branchId;
+  assert.ok(f.name.startsWith('ZZ TEST SCRUM-736 '));
+  const c = (st.cleanup ??= { startedAt: new Date().toISOString(), steps: [] });
+  const done = (what, extra = {}) => { c.steps.push({ what, at: new Date().toISOString(), ...extra }); save(); };
+  if (S.runner) await restoreLink(S);
+  const till = S.tills.counter;
+  const tapi = async (label, m, p, d, ok = [200, 201, 204]) => { const r = await S.tillApi(label, m, p, d); assert.ok(ok.includes(r.status), `${m} ${p.split('?')[0]} ${r.status} ${JSON.stringify(r.body?.error ?? '').slice(0, 300)}`); return r.body; };
+  // 1. Unpaid sales on our two tills, by exact id.
+  for (const [label, stationId] of [['counter', f.stationId], ['virtual', f.virtual.stationId]]) {
+    const list = (await api('GET', `/sales?branchId=${B}&stationId=${stationId}&limit=50`)).sales;
+    const open = list.filter((x) => x.status !== 'finalised' && x.status !== 'voided' && x.status !== 'void');
+    for (const sale of open) {
+      const v = await api('POST', `/sales/${sale.id}/void`, { reason: 'ZZ TEST SCRUM-736 proof: not paid' });
+      done('void unpaid sale', { till: label, saleId: sale.id, statusBefore: sale.status, statusAfter: v.sale?.status ?? v.status ?? null });
+    }
+    c[`salesOn_${label}`] = (await api('GET', `/sales?branchId=${B}&stationId=${stationId}&limit=50`)).sales.map((x) => ({ id: x.id, status: x.status, receipt: x.receiptNumber ?? null })); save();
+  }
+  // 2. The child: picked up by the dropper-off with a synthetic picture, then read out.
+  const reg = await api('GET', `/checkin/registrations/${fam.registrationId}`);
+  const stay = reg.children.find((x) => x.id === fam.checkinId);
+  assert.equal(stay.childName ?? stay.name, fam.child);
+  if (stay.status === 'in_park') {
+    const b64 = await till.page.evaluate(() => { const cv = document.createElement('canvas'); cv.width = 640; cv.height = 480; const g = cv.getContext('2d'); g.fillStyle = '#173444'; g.fillRect(0, 0, 640, 480); g.fillStyle = '#fff'; g.font = '26px sans-serif'; g.fillText('ZZ TEST SCRUM-736', 80, 180); g.fillText('Synthetic pickup image', 80, 225); g.fillText('No person photographed', 80, 270); return cv.toDataURL('image/png').split(',')[1]; });
+    c.pickupFileId ??= randomUUID(); save();
+    await tapi('counter', 'POST', '/files', { id: c.pickupFileId, contentType: 'image/png', ownerEntityType: 'registration', ownerEntityId: fam.registrationId, filename: 'zz-test-s736-pickup.png' });
+    const up = await till.ctx.request.put(POS + '/api/files/' + c.pickupFileId + '/content', { data: Buffer.from(b64, 'base64'), headers: { 'content-type': 'image/png' } });
+    assert.equal(up.status(), 204);
+    await tapi('counter', 'POST', `/checkin/pickups/stays/${fam.checkinId}/release`, { id: randomUUID(), collector: { kind: 'dropper_off' }, pickupPhotoFileId: c.pickupFileId, stationId: f.stationId });
+  }
+  const after = await api('GET', `/checkin/registrations/${fam.registrationId}`);
+  assert.equal(after.children.find((x) => x.id === fam.checkinId).status, 'out');
+  done('child picked up and read out');
+  // 3. The booking: redeemed at the ZZ TEST till so it no longer waits for today.
+  const paid = await api('GET', `/public/bookings/${fam.bookingId}/status`);
+  if (paid.status === 'paid') {
+    const red = await tapi('counter', 'POST', `/bookings/${fam.bookingId}/redeem`, { stationId: f.stationId });
+    c.bookingSaleId = red.sale.id; c.bookingBandIds = (red.bands ?? []).map((x) => x.id); save();
+  }
+  assert.equal((await api('GET', `/public/bookings/${fam.bookingId}/status`)).status, 'redeemed');
+  done('booking redeemed');
+  // 4. Own print jobs finished before the box stops.
+  if (S.runner) {
+    await until('own print jobs finished', async () => { const jobs = (await api('GET', `/boxes/${f.boxId}/print-jobs`)).jobs; c.printJobs = jobs.map((j) => ({ id: j.id, status: j.status })); return !jobs.some((j) => j.status === 'queued' || j.status === 'failed'); }, 60000).catch((e) => { c.printJobsNote = String(e.message); });
+    save();
+  }
+  // 5. Both tills signed out from the lock screen, as staff hand a till over.
+  for (const label of ['counter', 'virtual']) {
+    const t = S.tills[label];
+    if (!t) continue;
+    if ((await S.tillApi(label, 'GET', '/me')).status === 200) {
+      await t.page.goto(POS + '/');
+      if (!(await t.page.getByRole('button', { name: 'Sign out and hand over the till', exact: true }).isVisible().catch(() => false))) {
+        await t.page.getByRole('button', { name: 'Lock screen', exact: true }).click();
+      }
+      await t.page.getByRole('button', { name: 'Sign out and hand over the till', exact: true }).click();
+      await t.page.locator('input[type="tel"],input[inputmode="tel"]').first().waitFor();
+    }
+    assert.equal((await S.tillApi(label, 'GET', '/me')).status, 401);
+    clearInterval(t.activity);
+    done(`${label} till signed out; /me answers 401`);
+  }
+  // 6. The local box stops; then tills, printers, box, shop items and category are archived.
+  if (S.runner) { await S.runner.stop(); S.runner = null; done('local counter box stopped'); }
+  for (const id of [f.stationId, f.virtual.stationId]) {
+    const s = (await api('GET', `/stations/${id}`)).station;
+    assert.ok(s.name.startsWith(f.name));
+    if (!s.archived && !s.archivedAt) await api('DELETE', `/stations/${id}`);
+  }
+  const devices = (await api('GET', `/boxes/${f.boxId}/devices?includeArchived=true`)).devices;
+  for (const [id, label] of [[f.printerId, f.name + ' receipt'], [f.bandPrinterId, f.name + ' band']]) {
+    const d = devices.find((x) => x.id === id); assert.equal(d?.label, label);
+    if (!d.archived) await api('DELETE', `/devices/${id}`);
+  }
+  const boxes = (await api('GET', `/branches/${B}/boxes?includeArchived=true`)).boxes;
+  const bx0 = boxes.find((x) => x.id === f.boxId); assert.equal(bx0?.name, f.name);
+  if (!bx0.archived) { await api('PATCH', `/boxes/${f.boxId}`, { bridgeOrigin: null, status: 'disabled' }); await api('DELETE', `/boxes/${f.boxId}`); }
+  for (const pid of [f.shop.itemId, f.shop.sizedId]) await api('DELETE', `/branches/${B}/menu/products/${pid}`, undefined, [200, 204, 404]);
+  await api('DELETE', `/menu/categories/${f.shop.categoryId}`, undefined, [200, 204, 404]);
+  done('tills, printers, box, shop items and category archived');
+  // 7. The ZZ TEST login: inactive, its only role removed.
+  await api('PATCH', `/accounts/${st.staff.accountId}`, { status: 'inactive' });
+  await api('DELETE', `/accounts/${st.staff.accountId}/role-assignments/${st.staff.grantId}`, undefined, [200, 204, 404]);
+  done('ZZ TEST login inactive and its role removed');
+  // Read back.
+  const stations = (await api('GET', `/branches/${B}/stations?includeArchived=true`)).stations;
+  const boxesAfter = (await api('GET', `/branches/${B}/boxes?includeArchived=true`)).boxes;
+  const devAfter = (await api('GET', `/boxes/${f.boxId}/devices?includeArchived=true`)).devices;
+  const menu = await api('GET', `/branches/${B}/menu?includeArchived=true`).catch(() => null);
+  const bx = boxesAfter.find((x) => x.id === f.boxId);
+  c.readback = {
+    tills: [f.stationId, f.virtual.stationId].map((id) => { const s = stations.find((x) => x.id === id); return { id, archived: !!(s?.archived || s?.archivedAt) }; }),
+    box: { archived: !!(bx?.archived || bx?.archivedAt), status: bx?.status, addressRemoved: bx?.bridgeOrigin == null },
+    printers: [f.printerId, f.bandPrinterId].map((id) => ({ id, archived: !!devAfter.find((x) => x.id === id)?.archived })),
+    shop: menu ? [f.shop.itemId, f.shop.sizedId].map((id) => { const p = (menu.products ?? []).find((x) => x.id === id); return { id, archived: !!p?.archivedAt, active: p?.active ?? null }; }) : 'menu read unavailable',
+    category: menu ? !!(menu.categories ?? []).find((x) => x.id === f.shop.categoryId)?.archivedAt : null,
+    virtualBox1: (() => { const v = boxesAfter.find((x) => x.id === f.virtual.boxId); return { status: v?.status, archived: !!(v?.archived || v?.archivedAt) }; })(),
+  };
+  c.apiPassed = true; c.apiFinishedAt = new Date().toISOString(); save();
+  return c;
+}
