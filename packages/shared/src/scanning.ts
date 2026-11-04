@@ -65,6 +65,24 @@ export type ScanCodeKind = (typeof SCAN_CODE_KINDS)[number];
 export const SCAN_OUTCOMES = ['handled', 'unhandled', 'refused', 'error'] as const;
 export type ScanOutcome = (typeof SCAN_OUTCOMES)[number];
 
+/** Live staff-channel answer, not the redacted diagnostic event stored on disk. */
+export const StationScanMessageSchema = z.object({
+  kind: z.literal('scan'),
+  // Optional while an older box release is still installed. New routers mint
+  // one identity per read, shared by the LAN and platform deliveries.
+  scanId: z.string().uuid().optional(),
+  source: z.string().max(64),
+  codeKind: z.string().max(64),
+  codeFingerprint: z.string().max(64),
+  outcome: z.string().max(32),
+  handler: z.string().max(64).nullable(),
+  errorCode: z.string().max(64).nullable(),
+  detail: z.record(z.string(), z.unknown()).nullable(),
+  actionId: z.string().max(128).nullable(),
+  scannedAt: z.string().max(64),
+});
+export type StationScanEvent = z.infer<typeof StationScanMessageSchema>;
+
 /**
  * The name the box's Lucky Wheel voucher handler goes by on the tape, in the
  * Box log drawer and on the station channel. The box registers its handler

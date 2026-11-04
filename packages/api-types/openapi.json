@@ -24545,6 +24545,10 @@
                               "scan"
                             ]
                           },
+                          "scanId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
                           "source": {
                             "type": "string"
                           },
@@ -93170,6 +93174,116 @@
                     "nextCursor"
                   ],
                   "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/box/v1/scans": {
+      "post": {
+        "description": "Deliver a live scanner answer to this box's own station. Never stored as a business fact or retried from the box outbox.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "stationId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "scan": {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "scan"
+                        ]
+                      },
+                      "scanId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "source": {
+                        "type": "string",
+                        "maxLength": 64
+                      },
+                      "codeKind": {
+                        "type": "string",
+                        "maxLength": 64
+                      },
+                      "codeFingerprint": {
+                        "type": "string",
+                        "maxLength": 64
+                      },
+                      "outcome": {
+                        "type": "string",
+                        "maxLength": 32
+                      },
+                      "handler": {
+                        "type": "string",
+                        "maxLength": 64,
+                        "nullable": true
+                      },
+                      "errorCode": {
+                        "type": "string",
+                        "maxLength": 64,
+                        "nullable": true
+                      },
+                      "detail": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "nullable": true
+                      },
+                      "actionId": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "nullable": true
+                      },
+                      "scannedAt": {
+                        "type": "string",
+                        "maxLength": 64
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "scanId",
+                      "source",
+                      "codeKind",
+                      "codeFingerprint",
+                      "outcome",
+                      "handler",
+                      "errorCode",
+                      "detail",
+                      "actionId",
+                      "scannedAt"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "stationId",
+                  "scan"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "enum": [
+                    "null"
+                  ],
+                  "nullable": true
                 }
               }
             }

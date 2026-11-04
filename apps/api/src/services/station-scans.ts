@@ -7,7 +7,9 @@ import {
 } from '@oto/box-agent';
 import type { Db } from '@oto/db';
 import { stationScanTape, type StationScanPage } from '../lib/station-scan-tape';
-import { inProcessBox } from './box';
+import { inProcessBox, type BoxAuth } from './box';
+import { loadStationRow, managerForStation } from './station-session';
+import { AppError } from '../lib/errors';
 import { registerProductBarcodeHandler } from './scanning-product';
 
 /**
@@ -44,9 +46,8 @@ import { registerProductBarcodeHandler } from './scanning-product';
  * the api's scan route when this process does not run the box
  * (`publishStationScan`, called from `routes/scanning.ts`).
  *
- * A box on a Raspberry Pi is not reached by any of this — its scanner
- * publishes inside the Pi, and nothing yet carries a scan from a Pi to the
- * cloud's screens or to its tape.
+ * A Raspberry Pi also relays its live scan through its own credential.
+ * The station must still belong to that box; no scan is replayed from disk.
  */
 
 /** Managers whose `emitScan` already puts every scan on the tape. */
@@ -149,8 +150,19 @@ export function publishStationScan(
   stationId: string,
   scan: StationScanMessage,
 ): void {
+  if (scan.scanId && stationScanTape.has(stationId, scan.scanId)) return;
   stationScanTape.record(stationId, scan);
   manager.emitScan(stationId, scan);
+}
+
+/** The machine may publish only to an active station on its own box/branch. */
+export async function relayBoxScan(db: Db, auth: BoxAuth, stationId: string, scan: StationScanMessage): Promise<void> {
+  const row = await loadStationRow(db, auth.operatorId, stationId);
+  if (row.boxId !== auth.boxId || row.branchId !== auth.branchId) {
+    throw new AppError(403, 'SCAN_STATION_NOT_ON_BOX', 'That station is not on this box');
+  }
+  const { manager } = managerForStation(db, row);
+  publishStationScan(manager, stationId, scan);
 }
 
 /**
