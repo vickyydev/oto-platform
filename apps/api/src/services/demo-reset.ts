@@ -17,6 +17,7 @@ import {
   endOfDay,
   eventAttendeeLink,
   eventPassHold,
+  saleHold,
   eventCheckin,
   guardian,
   kioskSession,
@@ -294,6 +295,8 @@ async function resetDemoDataIn(tx: Tx): Promise<DemoResetCounts> {
     await tx.delete(eventAttendeeLink).returning({ id: eventAttendeeLink.id })
   ).length;
   counts.event_pass_hold = (await tx.delete(eventPassHold).returning({ id: eventPassHold.id })).length;
+  // SCRUM-774: a sale parked in Held sales names its sale (ON DELETE RESTRICT), so the holds go first.
+  counts.sale_hold = (await tx.delete(saleHold).returning({ id: saleHold.id })).length;
 
   /**
    * SCRUM-503: S2-13's supervised stays are a day of play too — a drop-off or

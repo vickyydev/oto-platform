@@ -20,6 +20,7 @@ import {
   sale,
   saleDiscount,
   saleExtension,
+  saleHold,
   saleLine,
   saleTierClaim,
   station,
@@ -179,6 +180,7 @@ import {
   type CartVoucherClaim,
   type VoucherEffect,
 } from './vouchers';
+import { releaseOpenHold } from './sale-hold-release';
 
 /**
  * S2-09a (SCRUM-203) — the service that prices a cart and writes a sale.
@@ -4197,6 +4199,13 @@ export interface FinaliseSaleInput {
    * can (`redeemSalePrepaid`'s `file`).
    */
   prepaidGate?: PrepaidGate;
+  /**
+   * SCRUM-774 — `refuse` when a counter is taking money now (the sales
+   * route): a sale parked in Held sales is taken back to a till first
+   * (`POST /sales/:id/resume`), so two screens are never collecting for it.
+   * A close that cannot be refused (a paid QR, a box's replay) is never asked.
+   */
+  heldGate?: 'refuse';
 }
 
 /** The change owed back on a cash tender, and a refusal if the cash is short. */
@@ -4357,6 +4366,7 @@ export async function finaliseSale(
     throw errors.conflict('SALE_CLOSED', `This sale is ${row.status} and cannot be finalised`);
   }
   await assertSaleExtensionCollectable(tx, row.id);
+  if (input.heldGate === 'refuse') await assertSaleNotHeld(tx, row.id);
   // S2-21 round 3 — a sale whose staff benefit was taken off, voided or moved
   // to the order rung up again is not closed with its relief and no claim.
   await assertSaleBenefitsLive(tx, row.id);
@@ -4805,6 +4815,8 @@ export async function finaliseSale(
     .returning();
   const after = updated[0];
   if (!after) throw new Error('the sale was not finalised');
+  // SCRUM-774 — a sale that closes while parked leaves Held sales with its payment.
+  await releaseOpenHold(tx, saleId, 'paid', actor, now);
   await applySaleExtension(tx, after, actor, now);
   // SCRUM-732 — a pass waiting for this money lands on the roster with it.
   await applyEventPassHold(tx, after, actor, now);
@@ -4934,6 +4946,30 @@ export interface VoidSaleResult {
 }
 
 /**
+ * Who voids: a person, or — SCRUM-774 — the platform itself (`accountId`
+ * null), when the midnight job voids a held sale nobody came back for.
+ */
+export type VoidActor = Omit<ActorContext, 'accountId'> & { accountId: string | null };
+
+/**
+ * SCRUM-774 — the refusal a counter's tender meets on a sale parked in Held
+ * sales, naming who parked it and under what.
+ */
+async function assertSaleNotHeld(tx: Tx, saleId: string): Promise<void> {
+  const [held] = await tx
+    .select({ id: saleHold.id, label: saleHold.label, kind: saleHold.kind })
+    .from(saleHold)
+    .where(and(eq(saleHold.saleId, saleId), isNull(saleHold.releasedAt)))
+    .limit(1);
+  if (!held) return;
+  throw errors.conflict(
+    'SALE_HELD',
+    `This sale is parked in Held sales under ${held.label} — resume it from Held sales on this till to take payment.`,
+    { holdId: held.id, kind: held.kind },
+  );
+}
+
+/**
  * S2-10b — THE TILL'S CANCEL: void a sale that was rung up and took no money.
  *
  * WHAT IT IS FOR. A sale is rung up the moment Pay is pressed, and from then on
@@ -4963,7 +4999,7 @@ export interface VoidSaleResult {
  */
 export async function voidSale(
   tx: Tx,
-  actor: ActorContext,
+  actor: VoidActor,
   saleId: string,
   input: VoidSaleInput,
   now: Date = new Date(),
@@ -5047,6 +5083,8 @@ export async function voidSale(
     .where(eq(sale.id, saleId))
     .returning();
   if (!after) throw new Error('the sale was not voided');
+  // SCRUM-774 — a held sale voided at a till or from the list leaves Held sales.
+  await releaseOpenHold(tx, saleId, 'voided', actor, now);
   await cancelSaleExtension(tx, after, actor, now);
   await releaseEventPassHold(tx, after, actor, now);
   // The trigger in 0021 has released `held` and written their ledger rows in
@@ -5172,6 +5210,12 @@ export interface SaleListItem extends SaleReadView {
   member: { id: string; name: string | null; nickname: string; phone: string } | null;
   lineKinds: SaleLineKind[];
   revenueCategories: string[];
+  /**
+   * SCRUM-774 — the sale is parked in the branch's Held sales list. The till's
+   * left-behind card reads this: a held sale is resumed from Held sales, never
+   * offered back to the screen that rang it up.
+   */
+  hold: { holdId: string; kind: 'held' | 'part_paid'; label: string } | null;
 }
 
 /** An id no row has, for an `in` over an empty list — Postgres refuses `in ()`. */
@@ -5252,6 +5296,14 @@ export async function listSales(
     db,
     rows.map((row) => row.sale),
   );
+  // SCRUM-774 — which of them wait in Held sales, in one query.
+  const openHolds = ids.length
+    ? await db
+        .select({ saleId: saleHold.saleId, id: saleHold.id, kind: saleHold.kind, label: saleHold.label })
+        .from(saleHold)
+        .where(and(inArray(saleHold.saleId, ids), isNull(saleHold.releasedAt)))
+    : [];
+  const holdOf = new Map(openHolds.map((h) => [h.saleId, { holdId: h.id, kind: h.kind, label: h.label }]));
   // SCRUM-430 — who voided each voided sale on the page, by name, in one query.
   const voiderNameOf = await accountNamesOf(
     db,
@@ -5283,6 +5335,7 @@ export async function listSales(
         : null,
       lineKinds: [...(kindsBySale.get(row.sale.id) ?? [])],
       revenueCategories: [...(areasBySale.get(row.sale.id) ?? [])],
+      hold: holdOf.get(row.sale.id) ?? null,
     })),
   };
 }

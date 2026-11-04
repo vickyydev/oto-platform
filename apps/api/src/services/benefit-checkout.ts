@@ -527,6 +527,9 @@ export interface BenefitActor {
   actionId?: string | null;
 }
 
+/** SCRUM-774 — a release the platform makes on its own (the midnight void of a held sale) names no account. */
+export type BenefitReleaseActor = Omit<BenefitActor, 'accountId'> & { accountId: string | null };
+
 /** What the audit rows say about where it happened. */
 interface Where {
   saleId: string;
@@ -543,7 +546,7 @@ interface Where {
 async function releaseApplication(
   tx: Tx,
   row: ApplicationRow,
-  actor: BenefitActor,
+  actor: BenefitReleaseActor,
   reason: BenefitRemovalReason,
   now: Date,
   extra: Record<string, unknown> = {},
@@ -770,7 +773,7 @@ export async function applyCartBenefit(
 export async function releaseSaleBenefits(
   tx: Tx,
   saleId: string,
-  actor: BenefitActor,
+  actor: BenefitReleaseActor,
   reason: BenefitRemovalReason,
   now: Date,
 ): Promise<string[]> {

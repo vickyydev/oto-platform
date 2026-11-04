@@ -51,6 +51,8 @@ export * from './band-food';
 export * from './voucher-promo';
 export * from './stock';
 export * from './end-of-day';
+// SCRUM-774: Held sales and the End of Day's view of open sales.
+export * from './sale-hold';
 export * from './settlement';
 export * from './booking-supervision';
 export * from './analytics';

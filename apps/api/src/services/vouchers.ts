@@ -2989,7 +2989,7 @@ export async function auditVoidReleases(
   tx: Tx,
   scope: SaleVoucherScope,
   released: readonly { id: string; code: string }[],
-  actor: { accountId: string; requestId?: string },
+  actor: { accountId: string | null; requestId?: string },
   reason: string,
 ): Promise<void> {
   for (const v of released) {

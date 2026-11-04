@@ -4,7 +4,8 @@ import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import type { Tx } from './tx';
 
-type Actor = { accountId: string; requestId?: string | null };
+// SCRUM-774: a null account is the platform itself (the midnight void of a held sale).
+type Actor = { accountId: string | null; requestId?: string | null };
 
 /** The source row is already locked by the refund writer. */
 export async function assertNoPendingExtensions(tx: Tx, sourceSaleId: string) {

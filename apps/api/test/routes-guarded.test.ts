@@ -326,9 +326,12 @@ describe('route guards (S2-01b)', () => {
       'POST /sales/:id/extensions',
       'POST /sales/:id/extensions/:extensionId/bands',
       'POST /sales/:id/finalise',
+      // SCRUM-774: parking a sale in Held sales and taking it back are online only, as its tender is.
+      'POST /sales/:id/hold',
       // S2-11: a refund and a reprint are online-only, like the sale they correct.
       'POST /sales/:id/refunds',
       'POST /sales/:id/reprints',
+      'POST /sales/:id/resume',
       'POST /sales/:id/void',
       'POST /sales/:id/vouchers',
       'POST /sales/quote',

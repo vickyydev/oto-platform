@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { wallClockMinutesInTz } from './business-date';
 import { isoDateInTz } from './dates';
 import { formatTHB, type Satang } from './money';
+import { EodOpenSalesSchema } from './sale-hold';
 
 /**
  * S2-15a round 1 — THE END OF DAY, the prototype's rules in satang.
@@ -223,6 +224,12 @@ export const EndOfDayRecordSchema = z.object({
   provisional: z.array(EodProvisionalBoxSchema).optional(),
   /** Open day only: who is still counted inside. Close needs a manager's override while any is listed. */
   stranded: z.array(EodStrandedRowSchema).optional(),
+  /**
+   * SCRUM-774 — open day only: the day's held and part-paid sales. Close is
+   * refused while any is part-paid (`partPaidCloseRefusal`); a held sale with
+   * no money does not stand in the way and is voided at midnight.
+   */
+  openSales: EodOpenSalesSchema.optional(),
   /** Closed day only: the manager's override, when the day closed over stranded rows. */
   override: EodOverrideSchema.nullable().optional(),
   /** Closed day only: the End of Day receipt. */

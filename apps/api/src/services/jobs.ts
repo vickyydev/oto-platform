@@ -36,6 +36,7 @@ import { INBOX_AI_INTERVAL_S, INBOX_AI_JOB, runInboxAiJob } from './inbox/ai-eng
 import { buildInboxAiRuntime, type InboxAiRuntime } from './inbox/ai-runtime';
 import { flagPendingPayments, gatewayFor, pollPendingAttempts } from './payments/gateway';
 import { PRINT_RETENTION_DAYS, purgeOldPrintJobs } from './print';
+import { HELD_SALES_MIDNIGHT_JOB, runHeldSalesMidnight } from './sale-holds';
 import {
   buildAlertChannels,
   fleetHealth,
@@ -653,6 +654,23 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
       description: 'Flags payment attempts with no outcome on the Failures page, clears the flag when they are answered, and ends unpaid booking holds that have run out',
       intervalSeconds: 60,
       run: async ({ db, env, log, now }) => ({ detail: await flagPendingPayments(db, env, now, log) }),
+    },
+    /**
+     * `job:sales.held_midnight` — A HELD SALE NOBODY CAME BACK FOR (SCRUM-774).
+     *
+     * Every five minutes: each held sale whose calendar day has ended in its
+     * branch's timezone — midnight, the owner's day end for Held sales, not
+     * the 05:00 business-day boundary — is voided as "not collected" when no
+     * money was taken on it, and flagged for the manager (an alert per
+     * branch, and the End of Day's refusal) when part of it was paid. A
+     * part-paid sale is never voided by the platform (`services/sale-holds.ts`).
+     */
+    {
+      name: HELD_SALES_MIDNIGHT_JOB,
+      description:
+        'Voids held sales still waiting at midnight in their branch as not collected, and flags part-paid ones for the manager',
+      intervalSeconds: 300,
+      run: async ({ db, env, log, now }) => ({ detail: await runHeldSalesMidnight(db, env, now, log) }),
     },
     /**
      * `job:booth.duty_sync` — THE DAY'S BOOTH STAFF, AT THE BRANCH'S OPEN

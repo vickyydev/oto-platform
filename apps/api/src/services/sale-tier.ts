@@ -782,7 +782,8 @@ export async function spendTierClaim(
  */
 export async function restoreTierClaimOf(
   tx: Tx,
-  actor: { accountId: string; operatorId: string; requestId?: string },
+  // SCRUM-774: a null account is the platform itself (the midnight void of a held sale).
+  actor: { accountId: string | null; operatorId: string; requestId?: string },
   saleId: string,
   branchId: string,
 ): Promise<string | null> {

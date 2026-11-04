@@ -4548,6 +4548,141 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sales/{id}/hold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Park an open sale in the branch’s Held sales list under the customer’s name or band, with an optional note: `kind: held` (Hold sale — nothing paid) or `kind: part_paid` (Save as partly paid — after a part payment). Nothing is issued while it is held: no bands, no receipt, no check-in, no wallet credit. Refused, with the reason, when the sale is closed or voided, already held, has a payment in progress, owes nothing, or when the kind does not match the money on it. Replaying the same `actionId` answers the hold it made. Needs `pos:sale:update` at the sale’s branch. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        kind: "held" | "part_paid";
+                        label: string;
+                        note?: string | null;
+                        actionId?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            replay: boolean;
+                            hold: {
+                                /** Format: uuid */
+                                holdId: string;
+                                /** Format: uuid */
+                                saleId: string;
+                                /** Format: uuid */
+                                branchId: string;
+                                /** @enum {string} */
+                                kind: "held" | "part_paid";
+                                label: string;
+                                note: string | null;
+                                grossSatang: number;
+                                paidSatang: number;
+                                balanceSatang: number;
+                                businessDate: string;
+                                heldAt: string;
+                                heldBy: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                heldStation: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                };
+                                flaggedAt: string | null;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sales/{id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Take a sale out of Held sales to the till this session took: the hold ends, the sale moves to this till (its receipt and bands print here, the money taken now goes in this drawer) and the till asks for the balance only. Refused, with the reason, without a till, at another branch, or when the sale was already resumed, paid or voided. Needs `pos:sale:update` at the sale’s branch. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        actionId?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            replay: boolean;
+                            /** Format: uuid */
+                            saleId: string;
+                            /** Format: uuid */
+                            stationId: string;
+                            /** @enum {string} */
+                            kind: "held" | "part_paid";
+                            label: string;
+                            note: string | null;
+                            grossSatang: number;
+                            paidSatang: number;
+                            balanceSatang: number;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sales/{id}/benefit/preview": {
         parameters: {
             query?: never;
@@ -4821,6 +4956,79 @@ export interface paths {
                 };
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sales/held": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The branch’s Held sales list, oldest first: each held sale with its name or band, note, who held it, where and when, and its money read live — paid, balance, and whether it is `held` (nothing paid) or `part_paid` — plus the counts of each. A part-paid sale the midnight job left for the manager carries `flaggedAt`. */
+        get: {
+            parameters: {
+                query: {
+                    branchId: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            branchId: string;
+                            sales: {
+                                /** Format: uuid */
+                                holdId: string;
+                                /** Format: uuid */
+                                saleId: string;
+                                /** Format: uuid */
+                                branchId: string;
+                                /** @enum {string} */
+                                kind: "held" | "part_paid";
+                                label: string;
+                                note: string | null;
+                                grossSatang: number;
+                                paidSatang: number;
+                                balanceSatang: number;
+                                businessDate: string;
+                                heldAt: string;
+                                heldBy: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                heldStation: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                };
+                                flaggedAt: string | null;
+                            }[];
+                            counts: {
+                                held: number;
+                                partPaid: number;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -25399,6 +25607,23 @@ export interface paths {
                                     phone: string | null;
                                 } | null;
                             }[];
+                            openSales?: {
+                                held: number;
+                                partPaid: number;
+                                rows: {
+                                    /** Format: uuid */
+                                    saleId: string;
+                                    /** @enum {string} */
+                                    kind: "held" | "part_paid";
+                                    label: string;
+                                    held: boolean;
+                                    stationName: string | null;
+                                    grossSatang: number;
+                                    paidSatang: number;
+                                    balanceSatang: number;
+                                    flaggedAt: string | null;
+                                }[];
+                            };
                             override?: {
                                 by: {
                                     /** Format: uuid */
@@ -25614,6 +25839,23 @@ export interface paths {
                                     phone: string | null;
                                 } | null;
                             }[];
+                            openSales?: {
+                                held: number;
+                                partPaid: number;
+                                rows: {
+                                    /** Format: uuid */
+                                    saleId: string;
+                                    /** @enum {string} */
+                                    kind: "held" | "part_paid";
+                                    label: string;
+                                    held: boolean;
+                                    stationName: string | null;
+                                    grossSatang: number;
+                                    paidSatang: number;
+                                    balanceSatang: number;
+                                    flaggedAt: string | null;
+                                }[];
+                            };
                             override?: {
                                 by: {
                                     /** Format: uuid */
@@ -25887,6 +26129,23 @@ export interface paths {
                                     phone: string | null;
                                 } | null;
                             }[];
+                            openSales?: {
+                                held: number;
+                                partPaid: number;
+                                rows: {
+                                    /** Format: uuid */
+                                    saleId: string;
+                                    /** @enum {string} */
+                                    kind: "held" | "part_paid";
+                                    label: string;
+                                    held: boolean;
+                                    stationName: string | null;
+                                    grossSatang: number;
+                                    paidSatang: number;
+                                    balanceSatang: number;
+                                    flaggedAt: string | null;
+                                }[];
+                            };
                             override?: {
                                 by: {
                                     /** Format: uuid */

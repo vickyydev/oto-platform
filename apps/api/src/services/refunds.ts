@@ -35,6 +35,7 @@ import { accountNames, refundViewOf, settleRefundSlice, type RefundView } from '
 import { allocateReceipt, saleViewOf, type SaleView } from './sale';
 import { restoreForRefund, takeBackPrepaidForRefund, walletTenderOf } from './wallet';
 import { restockForRefund } from './stock';
+import { releaseOpenHold } from './sale-hold-release';
 import { withTx, type Exec, type OpContext, type Tx } from './tx';
 
 /**
@@ -565,6 +566,8 @@ export async function refundSale(
 
   let partPaidClose: { releasedVoucherIds: string[]; releasedBenefitApplicationIds: string[]; restoredTierClaimId: string | null } | null = null;
   if (partPaid) {
+    // SCRUM-774 — a part-paid sale refunded whole from Held sales leaves the list closed.
+    await releaseOpenHold(tx, saleId, 'refunded', actor, now);
     const voucherScope = { saleId, operatorId: row.operatorId, branchId: row.branchId, stationId: row.stationId };
     await auditVoidReleases(tx, voucherScope, heldVouchers, { accountId: actor.accountId, requestId: actor.requestId }, reason);
     const benefitActor = { accountId: actor.accountId, operatorId: actor.operatorId, requestId: actor.requestId ?? null };

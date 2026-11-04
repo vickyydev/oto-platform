@@ -2043,10 +2043,15 @@ describe('the seam between this and the till', () => {
       '/sales/{id}/finalise',
       // S2-10b — the till's cancel of a sale that took no money.
       '/sales/{id}/void',
+      // SCRUM-774 — Hold sale / Save as partly paid, and taking a held sale back to a till.
+      '/sales/{id}/hold',
+      '/sales/{id}/resume',
       // S2-21 round 3 — a staff benefit previewed on the cart, and taken off a
       // rung-up sale (the commit itself applies it).
       '/sales/{id}/benefit/preview',
       '/sales/{id}/benefit',
+      // SCRUM-774 — the branch's Held sales list.
+      '/sales/held',
       // S2-11 — History's band and phone search, a refund, and a reprint.
       '/sales/lookup',
       '/sales/{id}/refunds',
@@ -2104,6 +2109,9 @@ describe('the seam between this and the till', () => {
       'GET /sales dynamic no-target',
       'GET /sales/:id pos:sale:read no-target',
       'GET /sales/:id/extensions pos:sale:read no-target',
+      // SCRUM-774 — the Held sales list names its branch; hold and resume check
+      // the branch on the sale row, as finalise and void do.
+      'GET /sales/held pos:sale:read query.branchId',
       // S2-11 — the lookup is dynamic for the list's reason; a refund and a
       // reprint check their branch on the sale row, as finalise does.
       'GET /sales/lookup dynamic no-target',
@@ -2115,8 +2123,10 @@ describe('the seam between this and the till', () => {
       'POST /sales/:id/extensions pos:sale:create no-target',
       'POST /sales/:id/extensions/:extensionId/bands pos:sale:create no-target',
       'POST /sales/:id/finalise pos:sale:update no-target',
+      'POST /sales/:id/hold pos:sale:update no-target',
       'POST /sales/:id/refunds pos:refund:create no-target',
       'POST /sales/:id/reprints pos:print:reprint no-target',
+      'POST /sales/:id/resume pos:sale:update no-target',
       'POST /sales/:id/void pos:sale:void no-target',
       'POST /sales/:id/vouchers dynamic no-target',
       'POST /sales/quote pos:sale:create body.branchId',

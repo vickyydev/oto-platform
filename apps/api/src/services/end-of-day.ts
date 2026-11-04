@@ -24,6 +24,7 @@ import {
   countsAsTillTakings,
   newId,
   parseDayStart,
+  partPaidCloseRefusal,
   recomputeEndOfDay,
   wallClockMinutesInTz,
   type CashMovementBody,
@@ -51,6 +52,7 @@ import { OtoAppSeamNotGrantedError, getBranchEvents, otoAppEventsInstalled } fro
 import { hasPermission, type EffectivePermission } from './permissions';
 import { accountNames } from './refund-slices';
 import { allocateReceipt } from './sale';
+import { openSalesOfDay } from './sale-holds';
 import { endOfDayReceiptJobs, queueEndOfDayReceipt } from './sale-printing';
 import { boxBacklogOf } from './station-session';
 import { boxOutboxState } from './sync';
@@ -554,6 +556,8 @@ export async function getEndOfDay(
     ...open,
     provisional: await provisionalBoxesOf(db, clock, now),
     stranded: (await strandedOf(db, { operatorId, branchId, date, now })).rows,
+    // SCRUM-774 — the day's held and part-paid sales: the counts, and what refuses Close Day.
+    openSales: await openSalesOfDay(db, operatorId, branchId, date),
   };
 }
 
@@ -927,6 +931,20 @@ export async function closeEndOfDay(
 
   const provisional = await provisionalBoxesOf(tx, clock, now);
   if (provisional.length > 0) throw dayProvisional(provisional);
+  /**
+   * SCRUM-774 — A PART-PAID SALE IS RESOLVED BEFORE THE DAY CLOSES: money was
+   * taken on it and the rest never came, so the day's takings are not final.
+   * No override: it is resolved by taking the balance or refunding what was
+   * paid, from Held sales. A held sale with no money does not stand in the
+   * way; the midnight job voids it as not collected.
+   */
+  const openSales = await openSalesOfDay(tx, actor.operatorId, branchId, input.date);
+  const partPaidRefusal = partPaidCloseRefusal(openSales.rows);
+  if (partPaidRefusal) {
+    throw new AppError(409, 'PART_PAID_SALES', partPaidRefusal, {
+      saleIds: openSales.rows.filter((r) => r.kind === 'part_paid').map((r) => r.saleId),
+    });
+  }
   const { rows: stranded } = await strandedOf(tx, { operatorId: actor.operatorId, branchId, date: input.date, now });
   const overrideReason = stranded.length > 0 ? (input.override?.reason?.trim() ?? '') : '';
   if (stranded.length > 0) {

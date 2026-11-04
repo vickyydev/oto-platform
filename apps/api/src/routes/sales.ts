@@ -7,8 +7,13 @@ import {
   CartBandHolderSchema,
   CartBenefitSchema,
   CartPrepaidSchema,
+  HeldSalesAnswerSchema,
   REFUND_MODES,
   SALE_REPRINT_KINDS,
+  SaleHoldAnswerSchema,
+  SaleHoldBodySchema,
+  SaleResumeAnswerSchema,
+  SaleResumeBodySchema,
   TaxableCategorySchema,
   WalletTenderInstructionSchema,
   normalizePhone,
@@ -28,6 +33,7 @@ import { opCtx, withTx } from '../services/tx';
 import { queueDrawerKick, type DrawerKick } from '../services/payments/drawer';
 import { writeBackSalePass } from '../services/booking-event-passes';
 import { removeSaleBenefit } from '../services/benefit-checkout';
+import { holdSale, listHeldSales, resumeHeldSale } from '../services/sale-holds';
 import {
   commitSale,
   finaliseSale,
@@ -613,6 +619,8 @@ export async function saleRoutes(app: App): Promise<void> {
           ...(body.wallet ? { wallet: body.wallet } : {}),
           // SCRUM-494 — the counter is confirming now: a prepaid line it can no longer serve is refused.
           prepaidGate: 'refuse',
+          // SCRUM-774 — a sale parked in Held sales is resumed to a till before money is taken on it.
+          heldGate: 'refuse',
         });
         const { drawerKick: kick, ...response } = result;
         drawerKick = kick;
@@ -672,6 +680,75 @@ export async function saleRoutes(app: App): Promise<void> {
       const actor = actorOf(req, 'pos:sale:void');
       const result = await withTx(app.db, opCtx(req), 'sale.void', (tx) =>
         voidSale(tx, actor, req.params.id, { reason: req.body.reason }),
+      );
+      if (result.replay) reply.header('x-oto-replay', 'true');
+      return result;
+    },
+  );
+
+  /**
+   * SCRUM-774 — HOLD SALE and SAVE AS PARTLY PAID, the payment step's two
+   * buttons. The sale is parked in the branch's Held sales list under the
+   * customer's name or band; nothing is issued while it waits. Like finalise
+   * and void, the branch is the sale's own and is checked on the row once it
+   * is loaded (`services/sale-holds.ts`).
+   */
+  const pressOf = (req: FastifyRequest, bodyActionId: string | undefined): string | undefined => {
+    const header = req.headers['x-oto-action-id'];
+    return bodyActionId ?? (typeof header === 'string' ? header : undefined);
+  };
+  app.post(
+    '/:id/hold',
+    {
+      config: { permission: 'pos:sale:update', stationTrading: true },
+      schema: {
+        description:
+          'Park an open sale in the branch’s Held sales list under the customer’s name or band, with an optional ' +
+          'note: `kind: held` (Hold sale — nothing paid) or `kind: part_paid` (Save as partly paid — after a part ' +
+          'payment). Nothing is issued while it is held: no bands, no receipt, no check-in, no wallet credit. ' +
+          'Refused, with the reason, when the sale is closed or voided, already held, has a payment in progress, ' +
+          'owes nothing, or when the kind does not match the money on it. Replaying the same `actionId` answers the ' +
+          'hold it made. Needs `pos:sale:update` at the sale’s branch.',
+        params: z.object({ id: z.string().uuid() }),
+        body: SaleHoldBodySchema,
+        response: { 200: SaleHoldAnswerSchema },
+      },
+    },
+    async (req, reply) => {
+      const auth = req.requireAuth();
+      const seller = actorOf(req, 'pos:sale:update');
+      const actor = { ...seller, stationId: auth.stationId ?? null };
+      const actionId = pressOf(req, req.body.actionId);
+      const result = await withTx(app.db, opCtx(req), 'sale.hold', (tx) =>
+        holdSale(tx, actor, req.params.id, { ...req.body, ...(actionId ? { actionId } : {}) }),
+      );
+      if (result.replay) reply.header('x-oto-replay', 'true');
+      return result;
+    },
+  );
+
+  app.post(
+    '/:id/resume',
+    {
+      config: { permission: 'pos:sale:update', stationTrading: true },
+      schema: {
+        description:
+          'Take a sale out of Held sales to the till this session took: the hold ends, the sale moves to this till ' +
+          '(its receipt and bands print here, the money taken now goes in this drawer) and the till asks for the ' +
+          'balance only. Refused, with the reason, without a till, at another branch, or when the sale was already ' +
+          'resumed, paid or voided. Needs `pos:sale:update` at the sale’s branch.',
+        params: z.object({ id: z.string().uuid() }),
+        body: SaleResumeBodySchema,
+        response: { 200: SaleResumeAnswerSchema },
+      },
+    },
+    async (req, reply) => {
+      const auth = req.requireAuth();
+      const seller = actorOf(req, 'pos:sale:update');
+      const actor = { ...seller, stationId: auth.stationId ?? null };
+      const actionId = pressOf(req, req.body.actionId);
+      const result = await withTx(app.db, opCtx(req), 'sale.resume', (tx) =>
+        resumeHeldSale(tx, actor, req.params.id, { ...(actionId ? { actionId } : {}) }),
       );
       if (result.replay) reply.header('x-oto-replay', 'true');
       return result;
@@ -781,6 +858,27 @@ export async function saleRoutes(app: App): Promise<void> {
           req.params.id,
         ),
       );
+    },
+  );
+
+  /** SCRUM-774 — the branch's Held sales list: every till at the branch reads it. */
+  app.get(
+    '/held',
+    {
+      config: { permission: 'pos:sale:read', target: { branchId: 'query.branchId' } },
+      schema: {
+        description:
+          'The branch’s Held sales list, oldest first: each held sale with its name or band, note, who held it, ' +
+          'where and when, and its money read live — paid, balance, and whether it is `held` (nothing paid) or ' +
+          '`part_paid` — plus the counts of each. A part-paid sale the midnight job left for the manager carries ' +
+          '`flaggedAt`.',
+        querystring: z.object({ branchId: z.string().uuid() }),
+        response: { 200: HeldSalesAnswerSchema },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      return listHeldSales(app.db, auth.operatorId, req.query.branchId);
     },
   );
 
