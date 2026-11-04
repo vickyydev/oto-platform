@@ -1,0 +1,89 @@
+{
+  "at": "2026-11-04T10:47:35.917Z",
+  "audit": [
+    {
+      "id": "01a1a628-f737-7c2c-bf64-8e5e4e18e23a",
+      "action": "sale_tier_claim.approve_by_hand",
+      "entityType": "sale_tier_claim",
+      "entityId": "01a1a628-f735-7e02-bf39-d07d11355668",
+      "actorAccountId": "01a1a626-c167-7a2a-90b9-bea4598c6897",
+      "actorName": "Som (Reception)",
+      "branchId": "01a1a626-c130-7b5a-8af5-7e502376ae92",
+      "requestId": "e1d4bfad-9c97-418b-93b6-b7f238ba72af",
+      "before": null,
+      "after": {
+        "toTier": "thai",
+        "expiresAt": "2026-11-04T11:14:25.005Z",
+        "approvalNote": "Mother is Thai, father British",
+        "evidenceType": "Approved by hand",
+        "approvalReason": "thai_child_foreign_parent",
+        "approvalReasonText": null
+      },
+      "createdAt": "2026-11-04T10:44:25.005Z",
+      "app": null,
+      "targetApp": null,
+      "category": null
+    }
+  ],
+  "sale": {
+    "id": "01a1a628-fbf4-71ec-9d84-58d8b1fdac4b",
+    "receiptNumber": "T1-000001",
+    "customerTier": "thai",
+    "memberId": "01a1a628-d69d-78b5-b9e8-8a368884e724",
+    "status": "finalised",
+    "tierClaim": {
+      "id": "01a1a628-f735-7e02-bf39-d07d11355668",
+      "documentKind": "Approved by hand",
+      "documentNote": null,
+      "toTier": "thai",
+      "evidenceExpiresOn": null,
+      "verifiedAt": "2026-11-04T10:44:25.005Z",
+      "approval": {
+        "reason": "thai_child_foreign_parent",
+        "reasonLabel": "Thai child with a foreign parent",
+        "note": "Mother is Thai, father British",
+        "approvedByAccountId": "01a1a626-c167-7a2a-90b9-bea4598c6897",
+        "approvedBy": "Som (Reception)"
+      }
+    }
+  },
+  "handApproval": {
+    "id": "01a1a628-d69d-78b5-b9e8-8a368884e724",
+    "nickname": "ZZ TEST Hand Approval",
+    "tierCode": "tourist",
+    "tierVerification": null
+  },
+  "documentCheck": {
+    "id": "01a1a628-d91b-734c-811a-cf71904da7f9",
+    "nickname": "ZZ TEST Document Check",
+    "tierCode": "thai",
+    "tierVerification": {
+      "tier": "thai",
+      "proofType": "Passport",
+      "note": null,
+      "verifiedAt": "2026-11-04T10:46:49.008Z",
+      "verifiedBy": "Som (Reception)",
+      "expiresAt": null,
+      "reverifyDue": false
+    }
+  },
+  "cancelPath": {
+    "id": "01a1a628-db8a-75fa-bbb4-220cdc110d62",
+    "nickname": "ZZ TEST Cancel Path",
+    "tierCode": "tourist",
+    "tierVerification": null
+  },
+  "counts": {
+    "since": "2026-10-05T10:47:36.144Z",
+    "days": 30,
+    "staff": [
+      {
+        "accountId": "01a1a626-c167-7a2a-90b9-bea4598c6897",
+        "name": "Som (Reception)",
+        "recent": 1,
+        "total": 1,
+        "lastApprovedAt": "2026-11-04T10:44:25.005Z"
+      }
+    ]
+  }
+}
