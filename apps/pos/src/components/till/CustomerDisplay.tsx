@@ -160,17 +160,22 @@ function ChargeBanner({ target }: { target: ChargeTarget }) {
 
 function Shell({
   customerName,
+  languageInHeader = false,
   children,
 }: {
   customerName?: string;
+  /** SCRUM-745 — the screen's header holds the language button, beside its heading rather than over it. */
+  languageInHeader?: boolean;
   children: React.ReactNode;
 }) {
   const { t } = useLanguage();
   return (
     <div className="h-full w-full bg-[image:var(--cd-gradient)] text-foreground flex flex-col relative">
-      <div className="absolute top-4 right-4 z-40">
-        <LanguageSwitcher variant="dark" />
-      </div>
+      {!languageInHeader && (
+        <div className="absolute top-4 right-4 z-40">
+          <LanguageSwitcher variant="dark" />
+        </div>
+      )}
       {customerName ? (
         <div className="shrink-0 flex items-center gap-2 px-8 py-3 bg-foreground/5 border-b border-foreground/10">
           <User className="w-4 h-4 text-primary" />
@@ -423,11 +428,15 @@ export function CustomerDisplay({
     const unquotable = unpriced.length > 0 || awaitingLength.size > 0
       || !!lineBreakdowns && sale.lines.some(line => !lineBreakdowns[line.id]?.priced);
     return (
-      <Shell customerName={displayName}>
+      <Shell customerName={displayName} languageInHeader>
         {chargeTarget && <ChargeBanner target={chargeTarget} />}
         <div className="p-8 flex items-center justify-between border-b border-foreground/10">
           <Brand />
-          <span className="text-lg text-foreground/60">{t('till.order.yourOrder')}</span>
+          {/* SCRUM-745 — the language button sits after "Your Order", never over it. */}
+          <div className="flex items-center gap-4">
+            <span className="text-lg text-foreground/60">{t('till.order.yourOrder')}</span>
+            <LanguageSwitcher variant="dark" />
+          </div>
         </div>
         <div className="flex-1 overflow-y-auto p-8 space-y-4">
           {sale.lines.length === 0 ? (
