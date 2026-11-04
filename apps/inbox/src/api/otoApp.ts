@@ -1,32 +1,25 @@
 // Opening a page of the OTO App as the person signed in here (SCRUM-775: the
-// inbox's Create BEO opens a birthday's BEO form). The suite hand-off the
-// launcher and the Console use: the api mints a one-use token for the OTO App
-// (`POST /auth/handoff`, audited as `auth.handoff_issue`), and the page rides
-// beside it in the fragment (`withHandoffTarget`), which the OTO App checks
-// again before it lands there. Nothing here reaches a server but the mint.
-import type { ApiBody, ApiResponse } from '@oto/api-types';
-import { withHandoffTarget } from '@oto/shared/handoff-target';
-import { api, idemKey } from './client';
+// inbox's Create BEO opens a birthday's BEO form). The api mints the suite
+// hand-off the launcher and the Console use, with the BEO form as its target
+// (`POST /inbox/conversations/{id}/open-beo`, recorded as `auth.handoff_issue`
+// naming the conversation and the event); the OTO App checks the target again
+// before it lands there. The address is checked here before a tab goes to it.
+import { inboxApi } from './inbox';
 
 export const OTO_APP_UNREACHABLE = 'The OTO App has no configured address here.';
 
-/** The hand-off address for one OTO App page, or a refusal in words. */
-export async function otoAppAddress(target: string): Promise<string> {
-  const issued = await api.post<ApiResponse<'/auth/handoff', 'post'>>(
-    '/auth/handoff',
-    { app: 'oto_app' } satisfies ApiBody<'/auth/handoff', 'post'>,
-    { idempotencyKey: idemKey() },
-  );
-  if (!issued?.launchUrl) throw new Error(OTO_APP_UNREACHABLE);
+/** A hand-off address as the api answered it, checked before a tab is sent there; a refusal in words otherwise. */
+export function checkedLaunchUrl(launchUrl: string | null | undefined): string {
+  if (!launchUrl) throw new Error(OTO_APP_UNREACHABLE);
   try {
-    const destination = new URL(issued.launchUrl);
-    if (!['https:', 'http:'].includes(destination.protocol) || !/^#handoff=[^&]+$/.test(destination.hash)) {
+    const destination = new URL(launchUrl);
+    if (!['https:', 'http:'].includes(destination.protocol) || !/^#handoff=[^&]+(&to=[^&]+)?$/.test(destination.hash)) {
       throw new Error();
     }
   } catch {
     throw new Error(OTO_APP_UNREACHABLE);
   }
-  return withHandoffTarget(issued.launchUrl, target);
+  return launchUrl;
 }
 
 /**
@@ -44,11 +37,15 @@ export function openBlankTab(): Window | null {
   }
 }
 
-/** Send the tab (or, with none, this one) to the OTO App page; a refusal closes the tab and is thrown. */
-export async function openOtoAppPage(target: string, tab: Window | null): Promise<void> {
+/**
+ * Create BEO: send the tab (or, with none, this one) to the conversation's
+ * event's BEO form in the OTO App. A refusal closes the tab and is thrown.
+ */
+export async function openConversationBeo(conversationId: string, tab: Window | null): Promise<void> {
   let address: string;
   try {
-    address = await otoAppAddress(target);
+    const opened = await inboxApi.openBeo(conversationId);
+    address = checkedLaunchUrl(opened?.launchUrl);
   } catch (err) {
     tab?.close();
     throw err;

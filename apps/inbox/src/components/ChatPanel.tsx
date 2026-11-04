@@ -29,7 +29,7 @@ import {
   type InboxMe,
   type Message,
 } from '@/api/inbox';
-import { openBlankTab, openOtoAppPage } from '@/api/otoApp';
+import { openBlankTab, openConversationBeo } from '@/api/otoApp';
 import { Avatar, CategoryBadge, ChannelDot, ChipView, StatusBadge } from '@/components/atoms';
 import { BookDateDialog, type BookDateValues } from '@/components/BookDateDialog';
 import { Composer, MANAGER_REOPENS, type InsertedTemplate } from '@/components/Composer';
@@ -301,11 +301,14 @@ export function ChatPanel({
     setBookError(null);
     setBooking({ conversationId: conv.id, eventId: newId(), thenBeo });
   };
-  const openBeo = async (ev: ConversationEvent, tab: Window | null = openBlankTab()) => {
+  // Book Date and Create BEO say why they are off: writes not switched on here
+  // yet (as every other control), or not this person's to press.
+  const bookOffReason = live ? BOOK_DATE_NOT_YOURS_REASON : WRITES_PENDING_REASON;
+  const openBeo = async (conversationId: string, tab: Window | null = openBlankTab()) => {
     setBusy('beo');
     setError(null);
     try {
-      await openOtoAppPage(ev.beoPath, tab);
+      await openConversationBeo(conversationId, tab);
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : 'The BEO could not be opened here.');
     } finally {
@@ -323,7 +326,7 @@ export function ChatPanel({
       setBooking(null);
       setNote(`${eventChipLabel(eventChipOf(r.event))} · tentative in the Events calendar`);
       await onChanged();
-      if (booking.thenBeo) await openBeo(r.event, tab);
+      if (booking.thenBeo) await openBeo(r.conversationId, tab);
     } catch (err) {
       tab?.close();
       if (err instanceof ApiError && err.code === 'EVENT_ALREADY_BOOKED') {
@@ -341,6 +344,7 @@ export function ChatPanel({
   const eventChipOf = (ev: ConversationEvent) => ({
     date: ev.date,
     branchName: branchOptionLabel(ev.branchId) ?? ev.branchName,
+    archived: ev.archived,
   });
   const branchOptionLabel = (branchId: string) => branchSelectOptions(me.teams).find((b) => b.value === branchId)?.label ?? null;
   const bookDraft = useMemo(
@@ -719,14 +723,19 @@ export function ChatPanel({
               <>
                 {event ? (
                   // The prototype's booked state (:1986-1996): the date is held, the press is spent.
+                  // An event archived in the Events module says so; it is restored there.
                   <button
                     type="button"
                     disabled
-                    title="Date already blocked in the Events calendar"
+                    title={
+                      event.archived
+                        ? 'The event was archived in the Events calendar. Restore it there to use it again.'
+                        : 'Date already blocked in the Events calendar'
+                    }
                     className="inline-flex cursor-default items-center gap-1.5 rounded-lg bg-amber-50 dark:bg-amber-500/15 px-2.5 py-1 text-[12px] font-medium text-amber-700 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-500/30"
                   >
                     <Calendar className="h-3.5 w-3.5" />
-                    Date Booked
+                    {event.archived ? 'Event archived' : 'Date Booked'}
                   </button>
                 ) : mayBook ? (
                   <button
@@ -741,7 +750,7 @@ export function ChatPanel({
                   </button>
                 ) : (
                   <PendingControl
-                    reason={BOOK_DATE_NOT_YOURS_REASON}
+                    reason={bookOffReason}
                     label="Book Date"
                     className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-2.5 py-1 text-[12px] font-medium text-white ring-1 ring-amber-500"
                   >
@@ -752,7 +761,7 @@ export function ChatPanel({
                 {event || mayBook ? (
                   <button
                     type="button"
-                    onClick={() => (event ? void openBeo(event) : askBookDate(true))}
+                    onClick={() => (event ? void openBeo(conv.id) : askBookDate(true))}
                     disabled={busy !== null}
                     title={event ? "Open this event's BEO in the OTO App" : 'Book the date, then open its BEO in the OTO App'}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-2.5 py-1 text-[12px] font-medium text-white ring-1 ring-violet-600 hover:bg-violet-700 disabled:opacity-60"
@@ -762,7 +771,7 @@ export function ChatPanel({
                   </button>
                 ) : (
                   <PendingControl
-                    reason={BOOK_DATE_NOT_YOURS_REASON}
+                    reason={bookOffReason}
                     label="Create BEO"
                     className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-2.5 py-1 text-[12px] font-medium text-white ring-1 ring-violet-600"
                   >
@@ -773,9 +782,9 @@ export function ChatPanel({
                 {event && (
                   <button
                     type="button"
-                    onClick={() => void openBeo(event)}
+                    onClick={() => void openBeo(conv.id)}
                     disabled={busy !== null}
-                    title={`${event.title} · ${event.statusName} in the Events calendar. Opens it in the OTO App.`}
+                    title={`${event.title} · ${event.archived ? 'Archived' : event.statusName} in the Events calendar. Opens it in the OTO App.`}
                     data-testid="event-chip"
                     className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-200 ring-1 ring-amber-200 dark:ring-amber-500/30 hover:bg-amber-100 dark:hover:bg-amber-500/25 disabled:opacity-60"
                   >

@@ -21,7 +21,14 @@ import type { ConversationRow, Message } from '@/api/inbox';
 
 export interface BeoData {
   customerName: string;
+  /** The prototype's free "contact": the phone, else the channel handle (an Instagram or LINE id is no phone). */
   contact: string;
+  /**
+   * The contact's phone, only when the channel gives one (WhatsApp), else
+   * empty: what Book Date's Phone field opens with, since the Events module
+   * stores a phone there and a channel handle cannot be read as one.
+   */
+  phone: string;
   language: string | null;
   branchId: string | null;
   /** The phrase as the chat said it ("21/mar", "saturday"), or empty. */
@@ -87,6 +94,7 @@ export function parseBeoFromConversation(
   return {
     customerName: conv.contact.erased ? '' : conv.contact.displayName?.trim() || conv.contact.handle,
     contact: conv.contact.phone ?? (conv.contact.erased ? '' : conv.contact.handle),
+    phone: conv.contact.phone ?? '',
     language: conv.language,
     branchId: conv.branchId,
     eventDate,
@@ -179,7 +187,7 @@ export function bookDateDraft(data: BeoData, today: string, branchId: string | n
     kids: data.numKids,
     adults: data.numAdults,
     contactName: data.customerName,
-    phone: data.contact,
+    phone: data.phone,
     childName: '',
     childAge: data.age,
   };
@@ -192,10 +200,10 @@ export function countOf(field: string): number | null {
   return /^\d+$/.test(t) ? Number(t) : Number.NaN;
 }
 
-/** "Event: 21 Mar at Central Floresta", the conversation's chip. */
-export function eventChipLabel(event: { date: string; branchName: string | null }): string {
+/** "Event: 21 Mar 2027 at Central Floresta", the conversation's chip; "· Archived" once the Events module archived it. */
+export function eventChipLabel(event: { date: string; branchName: string | null; archived?: boolean }): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(event.date);
   const names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const day = m ? `${Number(m[3])} ${names[Number(m[2]) - 1]} ${m[1]}` : event.date;
-  return `Event: ${day}${event.branchName ? ` at ${event.branchName}` : ''}`;
+  return `Event: ${day}${event.branchName ? ` at ${event.branchName}` : ''}${event.archived ? ' · Archived' : ''}`;
 }
