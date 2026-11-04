@@ -7,6 +7,7 @@ import {
   bandShortCode,
   mintBoothCode,
   saleReceiptDocument,
+  salePrintRequests,
   verifyBandCode,
   type BridgeSaleAnswer,
 } from '@oto/shared';
@@ -55,6 +56,9 @@ const MEMBER = '018f0000-0000-7000-8000-00000000d001';
 const PLOY = '018f0000-0000-7000-8000-00000000c0c1';
 const TON = '018f0000-0000-7000-8000-00000000c0c2';
 const CARD = '018f0000-0000-7000-8000-00000000ed01';
+const ADDONS = '018f0000-0000-7000-8000-0000000007c0';
+const SOCKS = '018f0000-0000-7000-8000-0000000007c1';
+const LOCKER = '018f0000-0000-7000-8000-0000000007c2';
 const PAX = '018f0000-0000-7000-8000-00000000ed03';
 
 const quiet = { info() {}, warn() {}, error() {} };
@@ -78,6 +82,7 @@ function catalogueItem(kidWeekday = 35000) {
     ],
     categories: [
       { id: DRINKS, parentId: null, taxableCategory: 'fnb', name: 'Drinks', defaultPrepStation: 'bar' },
+      { id: ADDONS, parentId: null, taxableCategory: 'addons', name: 'Add-ons', defaultPrepStation: null },
     ],
     products: [
       {
@@ -93,6 +98,21 @@ function catalogueItem(kidWeekday = 35000) {
         active: true,
         archivedAt: null,
       },
+      // SCRUM-765 — the park's socks and a locker, as ticket add-ons with their catalogue codes.
+      ...[
+        { id: SOCKS, code: 'AO-SOCKS', name: 'Regular Socks', priceSatang: 5000 },
+        { id: LOCKER, code: 'AO-LOCKER', name: 'Locker Rental', priceSatang: 10000 },
+      ].map((p) => ({
+        ...p,
+        kind: 'addon',
+        priceWeekendSatang: null,
+        categoryId: ADDONS,
+        taxCategoryOverride: null,
+        prepStationOverride: null,
+        variants: [],
+        active: true,
+        archivedAt: null,
+      })),
     ],
     modifierGroups: [
       {
@@ -124,6 +144,7 @@ function catalogueItem(kidWeekday = 35000) {
         categoryRules: [
           { category: 'tickets', taxRateId: 'vat', taxMode: 'inclusive' },
           { category: 'fnb', taxRateId: 'vat', taxMode: 'inclusive' },
+          { category: 'addons', taxRateId: 'vat', taxMode: 'inclusive' },
         ],
         discountPlacement: 'before_tax',
       },
@@ -758,6 +779,47 @@ test('an F&B order prints its prep ticket at its station with the pick-up code',
     assert.deepEqual(line.payload?.modifiers?.map((m) => m.optionName), ['Oat']);
     assert.equal(line.payload?.pickupCode, '42');
     assert.equal(line.payload?.prepStation, 'bar');
+  } finally {
+    box.close();
+  }
+});
+
+test('SCRUM-765: socks picked from the add-ons print on the receipt only; another add-on keeps its slip', async () => {
+  const box = await openSellingBox();
+  try {
+    const cart = {
+      memberId: MEMBER,
+      lines: [
+        {
+          id: uuidv7(),
+          packageId: PACKAGE,
+          kids: 2,
+          adults: 1,
+          addOns: [
+            { id: SOCKS, quantity: 2 },
+            { id: LOCKER, quantity: 1 },
+          ],
+        },
+      ],
+    };
+    const total = await quote(box, cart);
+    const { body } = await ticketSale(box);
+    const answer = await send(box, 'sale.finalise', {
+      ...body,
+      cart: { ...cart, expectedTotalSatang: total },
+      tender: { actionId: `cash-${uuidv7().slice(-12)}`, method: 'cash', kind: 'cash', amountSatang: total, tenderedSatang: total },
+    });
+    assert.equal(answer.finalised, true);
+    const kinds = answer.printing.jobs.map((j) => j.kind);
+    assert.equal(kinds.filter((k) => k === 'receipt').length, 1);
+    assert.equal(kinds.filter((k) => k === 'item_voucher').length, 1, 'the locker slip only: no socks slip');
+    const logged = await box.agent.sales()!.recorded(answer.sale.id);
+    const lines = logged!.snapshot!.lines;
+    assert.equal(lines.find((l) => l.label === 'Regular Socks')?.productCode, 'AO-SOCKS');
+    const slips = salePrintRequests(logged!.snapshot!).filter((r) => r.kind === 'item_voucher');
+    assert.deepEqual(slips.map((r) => lines.find((l) => l.id === r.subjectId)?.label), ['Locker Rental']);
+    const receipt = saleReceiptDocument(logged!.snapshot!);
+    assert.deepEqual(receipt.creditGrants, ['2× Regular Socks to collect', '1× Locker Rental to collect']);
   } finally {
     box.close();
   }

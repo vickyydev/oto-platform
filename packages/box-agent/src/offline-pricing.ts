@@ -118,6 +118,8 @@ interface ProductRow {
   id: string;
   kind: string;
   name: string;
+  /** The catalogue code (`AO-SOCKS`…), null when the product has none. */
+  code: string | null;
   priceSatang: number;
   priceWeekendSatang: number | null;
   categoryId: string | null;
@@ -226,6 +228,7 @@ export function readOfflineCatalogue(
       id,
       kind: str(row.kind) ?? 'menu',
       name: str(row.name) ?? 'Item',
+      code: str(row.code),
       priceSatang: int(row.priceSatang) ?? 0,
       priceWeekendSatang: int(row.priceWeekendSatang),
       categoryId: str(row.categoryId),
@@ -1130,6 +1133,10 @@ export function offlineLedgerLines(
         : null,
       stayHours: pkg?.hours ?? null,
       stayDurationLabel: pkg?.durationLabel ?? null,
+      // SCRUM-765 — a ticket add-on's product code, as the platform's
+      // snapshot reads it, so socks picked from the add-ons print on the
+      // receipt only at an offline counter too.
+      productCode: kind === 'addon' && row ? (catalogue.products.get(row.key)?.code ?? null) : null,
       kidCount: cartLine?.kids ?? 0,
       adultCount: cartLine?.adults ?? 0,
       freeAdultCount: row?.key === 'adults-free' ? row.quantity : 0,

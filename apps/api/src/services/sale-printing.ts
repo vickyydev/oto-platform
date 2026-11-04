@@ -15,6 +15,7 @@ import {
   paymentAttempt,
   printJob,
   printTemplate,
+  product,
   sale,
   saleDiscount,
   saleLine,
@@ -1090,6 +1091,19 @@ export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<S
   // beyond what was left for the child) was not served, so no paper lists it:
   // not the prep ticket, not the receipt (it is ฿0, the totals stand).
   const lines = (await linesOf(db, saleRow.id)).filter((l) => !isPrepaidSetAside(l));
+  // SCRUM-765 — each line's product code, so socks picked from the add-ons
+  // (`AO-SOCKS`) print on the receipt only, as the socks count's lines do.
+  const productIds = [...new Set(lines.map((l) => l.productId).filter((id): id is string => !!id))];
+  const productCodes = new Map(
+    productIds.length > 0
+      ? (
+          await db
+            .select({ id: product.id, code: product.code })
+            .from(product)
+            .where(inArray(product.id, productIds))
+        ).map((row) => [row.id, row.code] as const)
+      : [],
+  );
   const [names] = await db
     .select({ operatorName: operator.name, branchName: branch.name })
     .from(branch)
@@ -1147,6 +1161,7 @@ export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<S
       payload: (l.payload ?? null) as SalePrintSnapshot['lines'][number]['payload'],
       stayHours: l.stayHours,
       stayDurationLabel: l.stayDurationLabel,
+      productCode: l.productId ? (productCodes.get(l.productId) ?? null) : null,
     })),
     subtotalSatang: saleRow.subtotalSatang,
     grossSatang: saleRow.grossSatang,

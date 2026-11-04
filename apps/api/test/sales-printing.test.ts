@@ -320,6 +320,55 @@ describe('a finalised ticket sale prints its receipt and its signed bands', () =
   });
 });
 
+describe('SCRUM-765 — socks print on the receipt only', () => {
+  it('socks picked from the add-ons queue no slip of their own; another add-on keeps its slip', async () => {
+    const socksId = productByCode.get('AO-SOCKS')!;
+    const gripId = productByCode.get('AO-GRIPSOCKS')!;
+    const lockerId = productByCode.get('AO-LOCKER')!;
+    const { saleId } = await commit({
+      memberId: jamesId,
+      lines: [
+        {
+          id: newId(),
+          packageId: twoHoursId,
+          kids: 1,
+          adults: 1,
+          addOns: [
+            { id: socksId, name: 'Regular Socks', unitSatang: 5_000, quantity: 2 },
+            {
+              id: gripId,
+              name: 'Grip Socks',
+              unitSatang: 8_000,
+              quantity: 1,
+              variantBreakdown: [{ variantId: 'm', variantLabel: 'M', quantity: 1 }],
+            },
+            { id: lockerId, name: 'Locker Rental', unitSatang: 10_000, quantity: 1 },
+          ],
+        },
+      ],
+    });
+    const done = await finalise(saleId);
+    const jobs = done.printing.jobs as { id: string; kind: string; subjectId: string }[];
+    expect(jobs.map((j) => j.kind)).toEqual(['receipt', 'kids_wristband', 'adult_wristband', 'item_voucher']);
+
+    // The one slip is the locker's.
+    const slip = (await documentOf(jobs.find((j) => j.kind === 'item_voucher')!.id)).json();
+    expect(slip.job).toMatchObject({ kind: 'item_voucher', data: { label: 'Locker Rental', quantity: 1 } });
+
+    // The receipt carries the socks as before: their lines and their rows to collect.
+    const receipt = (await documentOf(jobs.find((j) => j.kind === 'receipt')!.id)).json();
+    const names = (receipt.job.data.lines as { qty: number; name: string }[]).map((l) => `${l.qty} ${l.name}`);
+    expect(names).toEqual(
+      expect.arrayContaining(['2 Regular Socks', expect.stringMatching(/^1 Grip Socks/), '1 Locker Rental']),
+    );
+    expect(receipt.job.data.creditGrants).toEqual([
+      '2× Regular Socks to collect',
+      expect.stringMatching(/^1× Grip Socks.* to collect$/),
+      '1× Locker Rental to collect',
+    ]);
+  });
+});
+
 // --- Printing an F&B order (printRouting.tsx:fnbPrintJobs) --------------------
 
 describe('SCRUM-527 — the printed receipt carries the sale’s discounts', () => {
