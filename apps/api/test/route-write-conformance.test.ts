@@ -729,6 +729,9 @@ const OUTSIDE_THE_REPLAY_STORE = [
   'POST /box/v1/photos/:id/upload-url [credential:box]',
   'POST /box/v1/print-jobs/:id/result [credential:box]',
   'POST /box/v1/register [secretResponse,credential:box-claim]',
+  // SCRUM-736: an ephemeral box-authenticated scan is not a business write.
+  // Its scanId deduplicates live delivery; its code never enters the replay store.
+  'POST /box/v1/scans [credential:box]',
   'POST /box/v1/sync/key [credential:box]',
   'POST /box/v1/sync/push [credential:box]',
   /**

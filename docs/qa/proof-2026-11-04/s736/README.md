@@ -41,17 +41,18 @@ says it cannot look up the bracelet. The failure and its screenshot are retained
 under local/extended, alongside nine opened success images. Voucher keys are
 masked at capture. No cached History behavior has been added.
 
-Q736-1 (owner approval pending): temporary staging test settings. A read-only
+Q736-1 (approved by the owner, 4 November): temporary staging test settings. A read-only
 census found the API's two bridge-zone/test-loopback keys absent among 57 names
 and the corresponding two POS build-time keys absent among four. The prepared
 single-key procedure adds only those four keys for a local test agent, then
 restores all original fingerprints and counts: API 57 to 59 to 57; POS 4 to 6
 to 4. The signing key and BOX_AGENT_TEST_SLOT are untouched. No setting has
-been written. The owner was asked because the current authorization explicitly
-excludes a new setting. Full gates continue independently.
+been written. The owner explicitly approved this bounded temporary change and exact
+restoration. It still waits for this lane to hold the staging slot.
 
-Q736-2 (owner scope decision pending): keep delivery as this unit and record
-offline History as a follow-up, or expand the unit to define cached History.
+Q736-2 (resolved by the owner, 4 November): keep delivery as this unit and
+track offline History separately. SCRUM-753 now records that follow-up, To Do,
+with the opened local failure image inline in its comment.
 History.tsx openBand calls the platform-only lookupSales route. Substituting
 partial local records needs a rule for what incomplete history should show.
 The failed extra walkthrough is not a pass and is not removed or weakened.
@@ -70,3 +71,21 @@ this unit changes scan delivery, not credit limits. Product-barcode catalog
 resolution on a standalone box is not covered by these native cases: its
 product handler is currently installed by the API's in-process registration.
 No physical device, private HTTPS or printer acceptance is claimed.
+
+All five stopped local runner homes created by this walkthrough were removed
+after resolved-path checks, then read absent; see local/agent-home-cleanup.json.
+The earlier stopped SCRUM-727 cache was not touched.
+
+At 14:50, the complete API run has only four strict inventory failures in two
+files. Both inventories now explicitly name the new box-authenticated scan
+route, and the exact route count increases from 13 to 14. The two whole
+files plus the scanner review pass 59 tests; no guard is relaxed. All fifteen
+non-API workspace packages pass, including 888 box tests. The normal POS
+browser smoke passes 7/7. Console browser checks and final rebase checks remain.
+Source-bound receipts and original failures are in gates/checkpoint.json.
+
+A further native run decodes the actual simulated wristband printout and
+compares it with the issued credential in memory. All eight agreed scan cases
+pass; all eight images were opened. See local/printed-qr. The earlier missing
+printer-address fixture failures remain in the external local receipts.
+Exact staging cleanup is being rehearsed locally before any staging write.

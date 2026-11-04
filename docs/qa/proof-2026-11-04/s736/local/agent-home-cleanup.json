@@ -1,0 +1,36 @@
+{
+  "at": "2026-11-04T07:32:10.317Z",
+  "scope": "Only this proof own stopped local runner homes",
+  "items": [
+    {
+      "path": "C:/oto-lanes/s736-agent-mw1s2jkt",
+      "agentStopped": true,
+      "databaseDropped": true,
+      "removed": true
+    },
+    {
+      "path": "C:/oto-lanes/s736-agent-mw1s4bts",
+      "agentStopped": true,
+      "databaseDropped": true,
+      "removed": true
+    },
+    {
+      "path": "C:/oto-lanes/s736-agent-mw1s6a4a",
+      "agentStopped": true,
+      "databaseDropped": true,
+      "removed": true
+    },
+    {
+      "path": "C:/oto-lanes/s736-agent-mw1s7xe1",
+      "agentStopped": true,
+      "databaseDropped": true,
+      "removed": true
+    },
+    {
+      "path": "C:/oto-lanes/s736-agent-mw1sbe03",
+      "agentStopped": true,
+      "databaseDropped": true,
+      "removed": true
+    }
+  ]
+}
