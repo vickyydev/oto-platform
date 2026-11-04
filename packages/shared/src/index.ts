@@ -9,6 +9,7 @@ export * from './impersonation';
 export * from './catalog-shapes';
 export * from './menu-shapes';
 export * from './tier-proof';
+export * from './tier-approval';
 export * from './engine';
 export * from './rounding';
 export * from './pricing';
