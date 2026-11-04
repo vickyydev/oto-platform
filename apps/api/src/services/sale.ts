@@ -1653,9 +1653,23 @@ export async function priceCart(
         now,
       )
     : { claim: null, refusal: null };
+  /**
+   * SCRUM-772 — a rate approved by hand prices a cart that names a member
+   * (`resolveTierClaim`), so the member is looked up WHATEVER THE CLAIM:
+   * `resolveTier` is where a member archived since the till found them
+   * (SCRUM-273) or a member of another operator is refused, and a claim must
+   * not carry a cart past that. Without a member on the cart there is nothing
+   * to look up, and a claim or the operator's default prices it as before.
+   */
+  const memberTier =
+    !priceBasis && input.memberId
+      ? await resolveTier(db, actor.operatorId, input.memberId, input.tier)
+      : null;
   const resolvedTier: PricedCart['tier'] = priceBasis
     ? { code: priceBasis.tier, source: input.memberId ? 'member' : 'default' }
-    : claimed.claim ?? (await resolveTier(db, actor.operatorId, input.memberId, input.tier));
+    : claimed.claim ??
+      memberTier ??
+      (await resolveTier(db, actor.operatorId, input.memberId, input.tier));
   const catalogue = await loadCatalogue(db, scope, input);
   if (priceBasis) await applyPriceBasis(db, scope, catalogue, priceBasis);
 
