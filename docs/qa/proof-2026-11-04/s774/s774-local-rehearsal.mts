@@ -1,7 +1,7 @@
 /**
  * SCRUM-774 local browser rehearsal: Hold sale, Save as partly paid, Held
- * sales on two tills of one branch, the midnight void, and the End of Day's
- * refusal. Real local API (embedded Postgres, dropped after), a ZZ TEST
+ * sales on two counter tills and a phone till of one branch, the midnight
+ * void, the End of Day's refusal, and the close once it is resolved. Real local API (embedded Postgres, dropped after), a ZZ TEST
  * virtual box run by the in-process edge agent, the Vite POS and Playwright.
  * Every record is ZZ TEST; nothing reaches staging; no SMS.
  *
@@ -74,8 +74,8 @@ try {
     if (!online) await sleep(1000);
   }
   assert.ok(online, 'the ZZ TEST virtual box did not come online');
-  const tills: Record<'A' | 'B', { id: string; name: string }> = {} as never;
-  for (const [key, codePrefix] of [['A', 'ZHA'], ['B', 'ZHB']] as const) {
+  const tills: Record<'A' | 'B' | 'C', { id: string; name: string }> = {} as never;
+  for (const [key, codePrefix] of [['A', 'ZHA'], ['B', 'ZHB'], ['C', 'ZHC']] as const) {
     const name = `ZZ TEST SCRUM-774 till ${key}`;
     const res = await admin('POST', `/branches/${branchId}/stations`, { name, kind: 'till', codePrefix, boxId,
       paymentRouting: { card: 'manual', qr: 'gateway' }, capabilities: [], accessScope: 'all_staff', staffAccountIds: [], devices: [] });
@@ -100,8 +100,8 @@ try {
     await page.screenshot({ path: `${out}/${label}.png`, fullPage: true, mask: [page.locator('input[type=password], input[type=tel]')] });
     r.screens.push(`${label}.png`); save();
   };
-  const tillPage = async (till: { id: string; name: string }) => {
-    const context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
+  const tillPage = async (till: { id: string; name: string }, phone = false) => {
+    const context = await browser.newContext({ viewport: phone ? { width: 390, height: 844 } : { width: 1600, height: 1000 } });
     context.setDefaultTimeout(30_000);
     const signIn = await context.request.post(`${origin}/api/auth/sign-in`, { data: { phone: H.RECEPTION.phone, password: H.RECEPTION.password } });
     assert.equal(signIn.status(), 200);
@@ -110,7 +110,8 @@ try {
     await page.goto(origin);
     await expect(page.getByRole('heading', { name: 'Which station are you on?' })).toBeVisible();
     await page.getByRole('button', { name: new RegExp(escapeRe(till.name)) }).click();
-    await expect(page.getByText('Membership Check', { exact: true })).toBeVisible();
+    // The phone's ticket till opens on its first step; the counter's on Membership Check.
+    if (!phone) await expect(page.getByText('Membership Check', { exact: true })).toBeVisible();
     return page;
   };
   const read = async (saleId: string) => admin('GET', `/sales/${saleId}`);
@@ -293,6 +294,56 @@ try {
   await shot('s774-13-after-midnight-held-voided-part-paid-flagged', pageB);
   r.cases.push({ name: 'midnight: held sale voided as not collected, part-paid flagged and kept', clock: midnight.toISOString(),
     summary, eve: { status: eveAfter.sale.status, voidReason: eveAfter.sale.voidReason }, gail: { status: gailAfter.sale.status }, passed: true }); save();
+
+  // 5 — The phone's ticket till: the same Held sales list, the same two buttons.
+  r.phase = 'phone till'; save();
+  const phone = await tillPage(tills.C, true);
+  // The station picker's note is closed once it is up; the picture is of the till under it.
+  await expect(phone.getByText(/is yours$/)).toBeVisible();
+  for (const close of await phone.locator('[toast-close]').all()) await close.click({ force: true }).catch(() => {});
+  await expect(phone.getByText(/is yours$/)).toHaveCount(0, { timeout: 15_000 });
+  await expect(heldRow(phone, gail)).toBeVisible();
+  await expect(heldRow(phone, gail)).toContainText('Flagged for the manager');
+  await phone.getByTestId('held-sales').scrollIntoViewIfNeeded();
+  await shot('s774-14-phone-held-sales', phone);
+  await heldRow(phone, gail).getByRole('button', { name: 'Resume — take the balance' }).click();
+  await expect(phone.getByTestId('resumed-held-notice')).toContainText('฿350 already paid');
+  await expect(phone.getByTestId('hold-sale-buttons')).toBeVisible();
+  await expect(phone.getByTestId('hold-sale-reason')).toHaveText('฿350 has been paid on this sale — use Save as partly paid.');
+  detail = await read(gailSale);
+  assert.equal(detail.sale.stationId, tills.C.id, 'the resumed sale did not move to the phone till');
+  assert.equal(detail.bands.length, 0);
+  await phone.getByTestId('hold-sale-buttons').scrollIntoViewIfNeeded();
+  await shot('s774-15-phone-resumed-balance-and-buttons', phone);
+  // Saved as partly paid again from the phone: back in the list on every till.
+  await phone.getByRole('button', { name: 'Save as partly paid', exact: true }).click();
+  await phone.getByTestId('hold-sale-dialog').getByLabel('Note (optional)').fill('Paying the rest at 18:00');
+  await phone.getByTestId('hold-sale-dialog').getByRole('button', { name: 'Save as partly paid', exact: true }).click();
+  await expect(heldRow(phone, gail)).toContainText('Paying the rest at 18:00');
+  await pageA.goto(origin);
+  await expect(pageA.getByText('Membership Check', { exact: true })).toBeVisible();
+  await refreshHeld(pageA);
+  await expect(heldRow(pageA, gail)).toContainText('Paying the rest at 18:00');
+  await shot('s774-16-phone-saved-as-partly-paid-seen-on-till-a', pageA);
+  // Resumed on the phone again, the balance taken there: bands only now.
+  await heldRow(phone, gail).getByRole('button', { name: 'Resume — take the balance' }).click();
+  await expect(phone.getByTestId('resumed-held-notice')).toBeVisible();
+  await phone.getByRole('heading', { name: 'Cash', exact: true }).scrollIntoViewIfNeeded();
+  await payCash(phone);
+  await expect(phone.getByRole('heading', { name: 'Payment Successful' })).toBeVisible();
+  detail = await read(gailSale);
+  assert.equal(detail.sale.status, 'finalised');
+  assert.ok(detail.bands.length > 0, 'no bands when the phone took the balance');
+  await shot('s774-17-phone-balance-paid-bands-issued', phone);
+  r.cases.push({ name: 'phone till: Held sales listed, resumed for the balance, saved as partly paid again, paid there', saleId: gailSale,
+    receipt: detail.sale.receiptNumber, bandsAfterBalance: detail.bands.length, passed: true }); save();
+
+  // 6 — Every part-paid sale resolved: Close Day goes through.
+  r.phase = 'close once resolved'; save();
+  const closed = await as(managerCookie)('POST', `/branches/${branchId}/end-of-day/close`,
+    { date, actuals: [], countedSatang: null, floatLeftSatang: null, override: { reason: 'ZZ TEST rehearsal day' } });
+  assert.equal(closed.status, 200, JSON.stringify(closed.body).slice(0, 300));
+  r.cases.push({ name: 'End of Day closes once the part-paid sale is paid', apiStatus: closed.status, passed: true }); save();
 
   r.smsCount = ctx.smsLog.length;
   assert.equal(ctx.smsLog.length, 0);

@@ -1,11 +1,11 @@
 {
   "mode": "local",
-  "source": "29c08ca2b64e9b7d1ca93d4eecff968b06d8012d",
-  "startedAt": "2026-11-04T10:51:53.480Z",
+  "source": "75e3c5aab06f61c5aa15385eb53ea5576035592c",
+  "startedAt": "2026-11-04T11:37:09.591Z",
   "cases": [
     {
       "name": "Hold sale on till A, resumed on till B, paid there",
-      "saleId": "01a1a630-22bb-72ad-a3e1-042e33fc3f40",
+      "saleId": "01a1a659-8817-798e-b127-5c4bc8de1dda",
       "receipt": "ZHB-000001",
       "bandsWhileHeld": 0,
       "bandsAfterPayment": 2,
@@ -13,7 +13,7 @@
     },
     {
       "name": "Save as partly paid, resumed on till B for the balance only",
-      "saleId": "01a1a630-78b7-7173-8635-8669f548aac2",
+      "saleId": "01a1a659-df30-7462-a0b8-0ac248f384b8",
       "grossSatang": 124000,
       "paidFirstSatang": 20000,
       "bandsAfterBalance": 2,
@@ -49,6 +49,18 @@
         "status": "tendering"
       },
       "passed": true
+    },
+    {
+      "name": "phone till: Held sales listed, resumed for the balance, saved as partly paid again, paid there",
+      "saleId": "01a1a65a-2c23-7afe-8541-28bc8a44ee5d",
+      "receipt": "ZHC-000001",
+      "bandsAfterBalance": 2,
+      "passed": true
+    },
+    {
+      "name": "End of Day closes once the part-paid sale is paid",
+      "apiStatus": 200,
+      "passed": true
     }
   ],
   "screens": [
@@ -64,20 +76,28 @@
     "s774-10-balance-paid-bands-issued.png",
     "s774-11-end-of-day-counts-and-refusal.png",
     "s774-12-close-day-shut-with-its-reason.png",
-    "s774-13-after-midnight-held-voided-part-paid-flagged.png"
+    "s774-13-after-midnight-held-voided-part-paid-flagged.png",
+    "s774-14-phone-held-sales.png",
+    "s774-15-phone-resumed-balance-and-buttons.png",
+    "s774-16-phone-saved-as-partly-paid-seen-on-till-a.png",
+    "s774-17-phone-balance-paid-bands-issued.png"
   ],
   "outcome": "passed",
-  "phase": "midnight",
+  "phase": "close once resolved",
   "fixture": {
-    "boxId": "01a1a62f-f76c-7c17-bcb3-a82cd8cb6e47",
+    "boxId": "01a1a659-5f5f-7702-af4e-791ebd304a26",
     "tills": {
       "A": {
-        "id": "01a1a62f-f894-778a-872d-ad8862abb8ae",
+        "id": "01a1a659-6078-79fb-ba98-9d59092b4933",
         "name": "ZZ TEST SCRUM-774 till A"
       },
       "B": {
-        "id": "01a1a62f-f8a7-7fd1-849f-d8649c56a36b",
+        "id": "01a1a659-608c-71b6-b323-47e5f22723cc",
         "name": "ZZ TEST SCRUM-774 till B"
+      },
+      "C": {
+        "id": "01a1a659-6096-7cf5-a345-452260afaeb0",
+        "name": "ZZ TEST SCRUM-774 till C"
       }
     }
   },
@@ -87,9 +107,10 @@
     "s774-02-hold-dialog": false,
     "s774-05-resumed-on-till-b": false,
     "s774-07-part-payment-taken": false,
-    "s774-09-resumed-asks-balance-only": false
+    "s774-09-resumed-asks-balance-only": false,
+    "s774-15-phone-resumed-balance-and-buttons": false
   },
   "smsCount": 0,
-  "finishedAt": "2026-11-04T10:53:05.188Z",
+  "finishedAt": "2026-11-04T11:38:26.135Z",
   "databaseDropped": true
 }
