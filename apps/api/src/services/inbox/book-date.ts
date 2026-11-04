@@ -43,7 +43,7 @@ import { loadVisibleConversation } from './read-visibility';
  *   - the conversation keeps the event's id in `event_order_ref` (the soft key
  *     the inbox schema kept for this, owner Q23) and a `date_booked` pill with
  *     what was booked;
- *   - the event keeps the conversation's id (the app's migration 0034) and its
+ *   - the event keeps the conversation's id (the app's migration 0035) and its
  *     BEO editor says "From the inbox".
  *
  * Create BEO writes nothing here: it opens `beoPath` in the OTO App through the

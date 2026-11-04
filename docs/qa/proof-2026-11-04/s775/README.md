@@ -61,7 +61,7 @@ The harness is `s775-local-proof.mts.txt` (run from `apps/api` with tsx).
 ## Staging proof plan (for the landing; ZZ TEST only)
 
 Preconditions: the lane landed on main, CI green on its exact SHA, the api,
-inbox and OTO App services live on that SHA, the OTO App migration 0034
+inbox and OTO App services live on that SHA, the OTO App migration 0035
 applied (`otoapp.__drizzle_migrations`). No new setting: the api already holds
 `OTOAPP_DIRECTORY_URL` and `OTOAPP_DIRECTORY_KEY`; confirm read-only that the
 key's directory client carries `events:write` (the attendee write uses the
