@@ -1,0 +1,166 @@
+{
+  "source": "fb48bc7b67dac764e5a1d7be2bcafd43b90726e1",
+  "original": {
+    "id": "0e068be3-569d-4eb8-8f5c-c3bb709097d5",
+    "itemId": "ac314ec3-2e79-4608-a7df-02b373d033a1",
+    "branch": "Demo Branch 2"
+  },
+  "copy": {
+    "id": "d8b9c666-686b-4405-b10a-481fcfac8665"
+  },
+  "media": {
+    "item": {
+      "id": "ee7ed9c1-1c54-4c00-adf8-11c8467af677",
+      "key": "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/items/ac314ec3-2e79-4608-a7df-02b373d033a1/d74b5198-372e-448c-8dec-6a5492cf6672.png"
+    },
+    "header": {
+      "id": "53fc0f39-b159-4cee-b3c4-67ef57b0f6d3",
+      "key": "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/header/72a39800-eb6d-4d09-b93e-16c87810c76d.png"
+    }
+  },
+  "originalOnly": {
+    "id": "e2f6a73c-0a3e-460a-99c1-40194941beec",
+    "key": "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/items/ac314ec3-2e79-4608-a7df-02b373d033a1/f026993a-7cfe-4487-bb6e-921331b2094a.png"
+  },
+  "before": {
+    "at": "2026-11-04T16:11:31.820Z",
+    "rows": {
+      "jobId": "job-dblli09srm7s73ev1te0",
+      "event": "s750_rows_before",
+      "at": "2026-11-04T16:10:45.940Z",
+      "readOnly": true,
+      "rows": [
+        {
+          "id": "ee7ed9c1-1c54-4c00-adf8-11c8467af677",
+          "checklist_template_id": null,
+          "checklist_template_item_id": "ac314ec3-2e79-4608-a7df-02b373d033a1",
+          "type": "image",
+          "s3_key": "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/items/ac314ec3-2e79-4608-a7df-02b373d033a1/d74b5198-372e-448c-8dec-6a5492cf6672.png",
+          "template": "ZZ TEST S750 delete"
+        },
+        {
+          "id": "53fc0f39-b159-4cee-b3c4-67ef57b0f6d3",
+          "checklist_template_id": "0e068be3-569d-4eb8-8f5c-c3bb709097d5",
+          "checklist_template_item_id": null,
+          "type": "image",
+          "s3_key": "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/header/72a39800-eb6d-4d09-b93e-16c87810c76d.png",
+          "template": "ZZ TEST S750 delete"
+        },
+        {
+          "id": "707ab9e9-4c7f-4850-9602-a950991e161c",
+          "checklist_template_id": null,
+          "checklist_template_item_id": "ef27a130-bd92-4872-81be-0816ddd5e6c3",
+          "type": "image",
+          "s3_key": "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/items/ac314ec3-2e79-4608-a7df-02b373d033a1/d74b5198-372e-448c-8dec-6a5492cf6672.png",
+          "template": "ZZ TEST S750 copy"
+        },
+        {
+          "id": "e34680f9-0aec-4dad-a853-1828ee5c716e",
+          "checklist_template_id": "d8b9c666-686b-4405-b10a-481fcfac8665",
+          "checklist_template_item_id": null,
+          "type": "image",
+          "s3_key": "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/header/72a39800-eb6d-4d09-b93e-16c87810c76d.png",
+          "template": "ZZ TEST S750 copy"
+        },
+        {
+          "id": "e2f6a73c-0a3e-460a-99c1-40194941beec",
+          "checklist_template_id": null,
+          "checklist_template_item_id": "ac314ec3-2e79-4608-a7df-02b373d033a1",
+          "type": "image",
+          "s3_key": "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/items/ac314ec3-2e79-4608-a7df-02b373d033a1/f026993a-7cfe-4487-bb6e-921331b2094a.png",
+          "template": "ZZ TEST S750 delete"
+        }
+      ],
+      "templates": [
+        {
+          "id": "0e068be3-569d-4eb8-8f5c-c3bb709097d5",
+          "name": "ZZ TEST S750 delete"
+        },
+        {
+          "id": "d8b9c666-686b-4405-b10a-481fcfac8665",
+          "name": "ZZ TEST S750 copy"
+        }
+      ],
+      "runs": 0
+    },
+    "heads": {
+      "jobId": "job-dblli2ui0phs73b35gbg",
+      "event": "s750_heads_before",
+      "at": "2026-11-04T16:11:13.385Z",
+      "heads": {
+        "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/items/ac314ec3-2e79-4608-a7df-02b373d033a1/d74b5198-372e-448c-8dec-6a5492cf6672.png": 200,
+        "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/header/72a39800-eb6d-4d09-b93e-16c87810c76d.png": 200,
+        "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/items/ac314ec3-2e79-4608-a7df-02b373d033a1/f026993a-7cfe-4487-bb6e-921331b2094a.png": 200
+      }
+    }
+  },
+  "afterOriginalDeleted": {
+    "at": "2026-11-04T16:12:16.173Z",
+    "rows": {
+      "jobId": "job-dblligec6qcc73bjcdvg",
+      "event": "s750_rows_after_original",
+      "at": "2026-11-04T16:11:50.735Z",
+      "readOnly": true,
+      "rows": [
+        {
+          "id": "707ab9e9-4c7f-4850-9602-a950991e161c",
+          "checklist_template_id": null,
+          "checklist_template_item_id": "ef27a130-bd92-4872-81be-0816ddd5e6c3",
+          "type": "image",
+          "s3_key": "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/items/ac314ec3-2e79-4608-a7df-02b373d033a1/d74b5198-372e-448c-8dec-6a5492cf6672.png",
+          "template": "ZZ TEST S750 copy"
+        },
+        {
+          "id": "e34680f9-0aec-4dad-a853-1828ee5c716e",
+          "checklist_template_id": "d8b9c666-686b-4405-b10a-481fcfac8665",
+          "checklist_template_item_id": null,
+          "type": "image",
+          "s3_key": "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/header/72a39800-eb6d-4d09-b93e-16c87810c76d.png",
+          "template": "ZZ TEST S750 copy"
+        }
+      ],
+      "templates": [
+        {
+          "id": "d8b9c666-686b-4405-b10a-481fcfac8665",
+          "name": "ZZ TEST S750 copy"
+        }
+      ],
+      "runs": 0
+    },
+    "heads": {
+      "jobId": "job-dbllije1egvs73aupugg",
+      "event": "s750_heads_after_original",
+      "at": "2026-11-04T16:12:02.809Z",
+      "heads": {
+        "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/items/ac314ec3-2e79-4608-a7df-02b373d033a1/d74b5198-372e-448c-8dec-6a5492cf6672.png": 200,
+        "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/header/72a39800-eb6d-4d09-b93e-16c87810c76d.png": 200,
+        "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/items/ac314ec3-2e79-4608-a7df-02b373d033a1/f026993a-7cfe-4487-bb6e-921331b2094a.png": 404
+      }
+    },
+    "linkStatus": 404
+  },
+  "afterCopyDeleted": {
+    "at": "2026-11-04T16:14:09.695Z",
+    "rows": {
+      "jobId": "job-dbllipe1egvs73auqah0",
+      "event": "s750_rows_after_copy",
+      "at": "2026-11-04T16:13:16.834Z",
+      "readOnly": true,
+      "rows": [],
+      "templates": [],
+      "runs": 0
+    },
+    "heads": {
+      "jobId": "job-dbllj8hsrm7s73ev55kg",
+      "event": "s750_heads_after_copy",
+      "at": "2026-11-04T16:13:49.174Z",
+      "heads": {
+        "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/items/ac314ec3-2e79-4608-a7df-02b373d033a1/d74b5198-372e-448c-8dec-6a5492cf6672.png": 404,
+        "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/header/72a39800-eb6d-4d09-b93e-16c87810c76d.png": 404,
+        "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/items/ac314ec3-2e79-4608-a7df-02b373d033a1/f026993a-7cfe-4487-bb6e-921331b2094a.png": 404
+      }
+    },
+    "linkStatus": 404
+  },
+  "note": "Signed links are not recorded. Uploads went through the app's own server upload route (the staging bucket refuses a browser's direct upload)."
+}

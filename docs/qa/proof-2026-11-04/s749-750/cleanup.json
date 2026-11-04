@@ -1,0 +1,102 @@
+{
+  "source": "fb48bc7b67dac764e5a1d7be2bcafd43b90726e1",
+  "steps": [
+    {
+      "step": "Step 5: deleted today's ZZ TEST runs at the archived branch (items first)",
+      "jobId": "job-dbllasbl550s73f99h8g",
+      "runs": 1,
+      "items": 1,
+      "at": "2026-11-04T15:56:35.571Z"
+    },
+    {
+      "step": "Step 6: deleted the 46 leftover Wave1 runs (items first) at the two archived 659 branches in one transaction",
+      "event": "s749_cleanup46",
+      "at": "2026-11-04T16:01:16.504Z",
+      "branches": [
+        "ZZ TEST 659 A mw1nq25m",
+        "ZZ TEST 659 B mw1nq25m",
+        "ZZ TEST S749 Open 4 Nov"
+      ],
+      "runsDeleted": 46,
+      "itemsDeleted": 46,
+      "leftInTransaction": 0
+    },
+    {
+      "step": "Step 6: read back 0 at both archived 659 branches and the S749 branch after opening the board at 659 A and at All Branches",
+      "event": "s749_step6_after",
+      "at": "2026-11-04T16:02:52.785Z",
+      "readOnly": true,
+      "wave1AtOld659": [],
+      "total46": 0,
+      "allRunsAtOurThreeBranches": 0,
+      "allArchivedZzTestBranches": {
+        "branches": 12,
+        "runs": 276,
+        "last_day": "2026-11-04",
+        "last_made": "2026-11-04 05:22:33.007"
+      }
+    },
+    {
+      "step": "Step 7: deleted the original in Studio; its own file is gone (HEAD 404, link 404); the two shared files stay with the copy (HEAD 200)",
+      "heads": {
+        "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/items/ac314ec3-2e79-4608-a7df-02b373d033a1/d74b5198-372e-448c-8dec-6a5492cf6672.png": 200,
+        "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/header/72a39800-eb6d-4d09-b93e-16c87810c76d.png": 200,
+        "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/items/ac314ec3-2e79-4608-a7df-02b373d033a1/f026993a-7cfe-4487-bb6e-921331b2094a.png": 404
+      },
+      "at": "2026-11-04T16:12:16.174Z"
+    },
+    {
+      "step": "Step 7: deleted the copy in Studio; no row names the files and each HEAD answers 404",
+      "heads": {
+        "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/items/ac314ec3-2e79-4608-a7df-02b373d033a1/d74b5198-372e-448c-8dec-6a5492cf6672.png": 404,
+        "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/header/72a39800-eb6d-4d09-b93e-16c87810c76d.png": 404,
+        "checklists/0e068be3-569d-4eb8-8f5c-c3bb709097d5/items/ac314ec3-2e79-4608-a7df-02b373d033a1/f026993a-7cfe-4487-bb6e-921331b2094a.png": 404
+      },
+      "at": "2026-11-04T16:14:09.696Z"
+    },
+    {
+      "step": "Clean-up: deleted ZZ TEST S749 named through Studio; no ZZ TEST S749/S750 checklist is left",
+      "at": "2026-11-04T16:16:47.073Z"
+    },
+    {
+      "step": "Clean-up: the ZZ TEST S749 admin login is inactive, with no grants, and unlinked from the OTO App",
+      "unlink": 200,
+      "at": "2026-11-04T16:16:49.279Z"
+    }
+  ],
+  "readBack": {
+    "jobId": "job-dbllksu1egvs73auvg80",
+    "event": "s749_cleanup_read",
+    "at": "2026-11-04T16:17:47.286Z",
+    "readOnly": true,
+    "templates": [],
+    "runsAtBranch": 0,
+    "runsAt659": 0,
+    "attachments": 0,
+    "branch": [
+      {
+        "name": "ZZ TEST S749 Open 4 Nov",
+        "archived": true
+      }
+    ],
+    "account": [
+      {
+        "status": "inactive",
+        "grants": 0,
+        "sessions": 0,
+        "links": 0
+      }
+    ],
+    "appUser": [
+      {
+        "is_active": false
+      }
+    ]
+  },
+  "orphanFile": {
+    "deleted": [
+      "checklists/e922bbe0-be07-487d-a5c8-5169e926d246/items/cdaaa54e-f4da-4328-b4ed-e3cdbe09ce07/23df3225-3297-41ff-87a0-827b1358d0fa.png"
+    ],
+    "listedAfter": []
+  }
+}

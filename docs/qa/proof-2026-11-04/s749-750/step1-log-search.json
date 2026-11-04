@@ -1,0 +1,18 @@
+{
+  "service": "oto-app-staging",
+  "liveCommit": "fb48bc7b67dac764e5a1d7be2bcafd43b90726e1",
+  "deployFinishedAt": "2026-11-04T15:36:35.405123Z",
+  "searched": {
+    "text": "PLATFORM_BRANCHES",
+    "startTime": "2026-11-04T15:36:35.405123Z",
+    "endTime": "2026-11-04T16:18:05.601Z"
+  },
+  "matches": 0,
+  "lines": [],
+  "controlLinesInWindow": 5,
+  "positiveControl": {
+    "text": "studio/branches",
+    "matches": 33,
+    "note": "the same search over the same window finds the app request lines for /api/studio/branches, so the text search reaches this log"
+  }
+}

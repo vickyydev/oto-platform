@@ -1,0 +1,52 @@
+{
+  "source": "fb48bc7b67dac764e5a1d7be2bcafd43b90726e1",
+  "branch": {
+    "id": "9787ffc9-87bb-4f98-90b4-e4c76225bbf4",
+    "name": "ZZ TEST S749 Open 4 Nov",
+    "appBranchId": "01a1a741-4761-722b-b1ce-b96a832dc0fb",
+    "createdAt": "2026-11-04T15:50:35.153Z"
+  },
+  "named": {
+    "id": "378ab263-962d-4afc-bc09-9f132278550a",
+    "branchId": "01a1a741-4761-722b-b1ce-b96a832dc0fb",
+    "branchIds": []
+  },
+  "archivedAt": "2026-11-04T15:54:27.498Z",
+  "runsDeleted": {
+    "at": "2026-11-04T15:56:17.738Z",
+    "jobId": "job-dbllasbl550s73f99h8g",
+    "before": {
+      "event": "s749_step5_before",
+      "at": "2026-11-04T15:55:21.645Z",
+      "readOnly": true,
+      "runs": [
+        {
+          "id": "c5c9c275-0171-4b78-a8e4-20236b2cda72",
+          "name": "ZZ TEST Wave1 Everyone",
+          "status": "pending",
+          "bangkok_day": "2026-11-04",
+          "created_at": "2026-11-04 15:51:45.604",
+          "items": 1
+        }
+      ],
+      "coreArchivedAt": "2026-11-04 15:54:27.96+00"
+    },
+    "event": "s749_step5_delete",
+    "runsDeleted": 1,
+    "itemsDeleted": 1,
+    "leftAtBranch": 0
+  },
+  "at": "2026-11-04T15:58:14.148Z",
+  "inHeaderSelector": true,
+  "boardRunsAtBranch": 0,
+  "readBack": {
+    "jobId": "job-dbllbjm1egvs73au9h1g",
+    "event": "s749_step5_after",
+    "at": "2026-11-04T15:57:49.953Z",
+    "readOnly": true,
+    "runs": [],
+    "coreArchivedAt": "2026-11-04 15:54:27.96+00"
+  },
+  "editShowsBranch": 1,
+  "editText": "ZZ TEST S749 Open 4 Nov"
+}

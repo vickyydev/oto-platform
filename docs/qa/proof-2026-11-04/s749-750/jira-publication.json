@@ -1,0 +1,33 @@
+{
+  "at": "2026-11-04T16:21:03.188Z",
+  "source": "fb48bc7b67dac764e5a1d7be2bcafd43b90726e1",
+  "SCRUM-749": {
+    "statusBefore": "Testing",
+    "statusAfter": "Deployed",
+    "proofCommentId": "13479",
+    "attachments": [
+      "s749-01-new-branch-board-today-only.png",
+      "s749-02-archived-branch-board-no-runs.png",
+      "s749-02b-create-picker-archived-branch-absent.png",
+      "s749-02c-edit-still-shows-archived-branch.png",
+      "s749-04b-archived-659-branch-after-cleanup-no-runs-return.png"
+    ],
+    "commitLinksAdded": 2,
+    "done": false
+  },
+  "SCRUM-750": {
+    "statusBefore": "Testing",
+    "statusAfter": "Deployed",
+    "proofCommentId": "13481",
+    "attachments": [
+      "s750-01b-list-original-and-copy.png",
+      "s750-01c-list-after-original-deleted.png",
+      "s750-01d-copy-still-shows-shared-photo.png",
+      "s750-01e-original-only-file-gone-404.png",
+      "s750-01f-list-no-s750-checklists.png",
+      "s750-01g-shared-file-gone-404-after-last-delete.png"
+    ],
+    "commitLinksAdded": 1,
+    "done": false
+  }
+}

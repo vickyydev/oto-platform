@@ -1,0 +1,33 @@
+{
+  "source": "fb48bc7b67dac764e5a1d7be2bcafd43b90726e1",
+  "at": "2026-11-04T15:49:25.329Z",
+  "archivedCount": 14,
+  "openCount": 5,
+  "createShown": 5,
+  "allBranchesTicked": 5,
+  "opsShown": 5,
+  "taskShown": 5,
+  "openBranchIds": [
+    "01a11808-70e9-7204-8b35-414b32f0094a",
+    "9bbaaea5-933f-4dc7-a1d6-6340bee94692",
+    "37c136ab-0849-4504-b054-f312ca1c51ab",
+    "540f6e5e-e94b-4ce9-a79a-5947e841e1fb",
+    "81e87667-8cec-4602-9467-bcf3be70e300"
+  ],
+  "archivedBranchIds": [
+    "01a16855-da68-7248-98fa-bddfb6985309",
+    "01a1685c-d14a-71e7-9a6d-048cd11d1e00",
+    "01a16863-e142-7c4e-b587-e4774e2ad824",
+    "01a16882-cc69-737b-82f2-78f6b9bea811",
+    "01a16899-aaf2-7de0-94cb-34ee17ad95ca",
+    "01a1a4f6-49ab-7211-9059-c5f7c92da15b",
+    "01a1a4f6-4b81-7a39-a984-9390601b0132",
+    "01a10dbf-2137-76f7-9f01-e37c0fa55faf",
+    "01a11225-f218-7ed1-9da3-fbe3390c4886",
+    "01a1a3d8-3676-7b3b-b4b8-9b6a5e0f073d",
+    "01a1a3fd-3c9c-7cb3-98a3-a4e849be24c5",
+    "01a162f7-c9b6-7998-9bce-1acb13f67cd0",
+    "01a16308-b044-7728-9dab-28493d5873d4",
+    "01a1a4b4-5ab5-7494-b64f-f7665cbba778"
+  ]
+}

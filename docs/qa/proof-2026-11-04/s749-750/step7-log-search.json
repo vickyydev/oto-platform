@@ -1,0 +1,13 @@
+{
+  "service": "oto-app-staging",
+  "liveCommit": "fb48bc7b67dac764e5a1d7be2bcafd43b90726e1",
+  "deployFinishedAt": "2026-11-04T15:36:35.405123Z",
+  "searched": {
+    "text": "S3 delete error",
+    "startTime": "2026-11-04T15:36:35.405123Z",
+    "endTime": "2026-11-04T16:18:07.934Z"
+  },
+  "matches": 0,
+  "lines": [],
+  "controlLinesInWindow": 5
+}

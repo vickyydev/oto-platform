@@ -1,0 +1,68 @@
+{
+  "source": "fb48bc7b67dac764e5a1d7be2bcafd43b90726e1",
+  "at": "2026-11-04T16:01:04.752Z",
+  "before": {
+    "jobId": "job-dbllcjrl550s73f9dh50",
+    "event": "s749_step2_before",
+    "at": "2026-11-04T15:59:54.224Z",
+    "readOnly": true,
+    "wave1AtOld659": [
+      {
+        "branch_id": "01a1a4f6-49ab-7211-9059-c5f7c92da15b",
+        "name": "ZZ TEST 659 A mw1nq25m",
+        "n": 23,
+        "first_day": "2026-10-13",
+        "last_day": "2026-11-04",
+        "last_made": "2026-11-04 05:22:33.007"
+      },
+      {
+        "branch_id": "01a1a4f6-4b81-7a39-a984-9390601b0132",
+        "name": "ZZ TEST 659 B mw1nq25m",
+        "n": 23,
+        "first_day": "2026-10-13",
+        "last_day": "2026-11-04",
+        "last_made": "2026-11-04 05:22:33.007"
+      }
+    ],
+    "total46": 46,
+    "allRunsAtOurThreeBranches": 46,
+    "allArchivedZzTestBranches": {
+      "branches": 14,
+      "runs": 322,
+      "last_day": "2026-11-04",
+      "last_made": "2026-11-04 05:22:33.007"
+    }
+  },
+  "after": {
+    "jobId": "job-dbllddmtlv9c73c3740g",
+    "event": "s749_step2_after",
+    "at": "2026-11-04T16:00:59.996Z",
+    "readOnly": true,
+    "wave1AtOld659": [
+      {
+        "branch_id": "01a1a4f6-49ab-7211-9059-c5f7c92da15b",
+        "name": "ZZ TEST 659 A mw1nq25m",
+        "n": 23,
+        "first_day": "2026-10-13",
+        "last_day": "2026-11-04",
+        "last_made": "2026-11-04 05:22:33.007"
+      },
+      {
+        "branch_id": "01a1a4f6-4b81-7a39-a984-9390601b0132",
+        "name": "ZZ TEST 659 B mw1nq25m",
+        "n": 23,
+        "first_day": "2026-10-13",
+        "last_day": "2026-11-04",
+        "last_made": "2026-11-04 05:22:33.007"
+      }
+    ],
+    "total46": 46,
+    "allRunsAtOurThreeBranches": 46,
+    "allArchivedZzTestBranches": {
+      "branches": 14,
+      "runs": 322,
+      "last_day": "2026-11-04",
+      "last_made": "2026-11-04 05:22:33.007"
+    }
+  }
+}
