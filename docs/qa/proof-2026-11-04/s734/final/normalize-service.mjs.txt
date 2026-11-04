@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+const p='C:/oto-lanes/codex-branch-clone-20261103/apps/api/src/services/catalog-clone.ts',before=readFileSync(p,'utf8');
+assert.equal((before.match(/\0/g)||[]).length,1);
+assert.ok(before.includes('`${p.kind}\0${p.name}`'));
+const after=before.replaceAll('\r\n','\n').replace('\0','\\u0000');
+assert.equal(after.replace('\\u0000','\0'),before.replaceAll('\r\n','\n'));
+assert.equal(Function('p','return `${p.kind}\\u0000${p.name}`')({kind:'menu',name:'ZZ TEST'}),'menu\0ZZ TEST');
+writeFileSync(p,after);
+writeFileSync('C:/oto-lanes/s734-normalization.json',JSON.stringify({at:new Date().toISOString(),file:'apps/api/src/services/catalog-clone.ts',changes:['CRLF to LF','one literal NUL written as its equivalent Unicode escape'],otherwiseExact:true,beforeSha256:createHash('sha256').update(before).digest('hex'),afterSha256:createHash('sha256').update(after).digest('hex')},null,2)+'\n');
+console.log(JSON.stringify({normalized:true,otherwiseExact:true}));

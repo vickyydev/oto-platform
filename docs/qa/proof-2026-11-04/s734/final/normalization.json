@@ -1,0 +1,11 @@
+{
+  "at": "2026-11-04T05:44:16.669Z",
+  "file": "apps/api/src/services/catalog-clone.ts",
+  "changes": [
+    "CRLF to LF",
+    "one literal NUL written as its equivalent Unicode escape"
+  ],
+  "otherwiseExact": true,
+  "beforeSha256": "e796c61c90bc436c45420c9ecef53736f40b05e20d94031bd735cd1600e31e7c",
+  "afterSha256": "a42baf01a2d6ddd66c935a7c535349c16b331886708a3ae4d1d7e143e0429da9"
+}
