@@ -48,11 +48,16 @@
 //      the checklist was made, as before. A branch the platform has archived
 //      (`core.branch.archived_at`, read through `branches.core_branch_id`) gets
 //      no runs, from a checklist for every branch or one naming it; a mapped
-//      branch still open does. The Studio branch list marks the archived one and
-//      the pickers leave it out, unless the record being edited names it.
+//      branch still open does. The Studio and app branch lists mark the archived
+//      one and the pickers leave it out, unless the record being edited names it.
 //      CI's database holds the app's schema alone, so a stand-in `core.branch`
 //      with the columns the app reads is made for the run and removed after; on
 //      a database the platform has migrated, real rows are written and removed.
+//
+//      An edit that adds a branch to a checklist, by naming no choice, "share"
+//      or widening it to every branch, records the day, and the branch's first
+//      run is for that day: a branch open for months gets today's run, not
+//      every run since the checklist was made.
 //
 // SCRUM-750, deleting a whole checklist:
 //
@@ -84,6 +89,7 @@ import {
   sharedChecklistNote,
 } from "../client/src/lib/checklist-branch-edit";
 import { pickerBranches } from "../client/src/lib/branch-picker";
+import { branchAddedAt, branchesAddedByEdit, checklistRunStartDate } from "../server/lib/checklistBranchStart";
 
 const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -1133,6 +1139,23 @@ try {
 
   // ── 13. Runs start when the branch opens, and stop when it is archived ────
 
+  // The branches below, for the checks after the first.
+  const b749 = { openLong: "", closed: "" };
+  const runsAt = async (template: string, branchId: string) =>
+    q<{ day: string; status: string }>(
+      `select to_char(period_start at time zone 'UTC' at time zone 'Asia/Bangkok', 'YYYY-MM-DD') as day, status
+         from checklist_runs where template_id = $1 and branch_id = $2 order by period_start`,
+      [template, branchId],
+    );
+  const todayInBangkok = async () =>
+    (await q<{ today: string }>("select to_char(now() at time zone 'Asia/Bangkok', 'YYYY-MM-DD') as today"))[0].today;
+  const loadBoard = async () => {
+    for (let i = 0; i < 2; i++) {
+      const board = await api("admin", "GET", "/api/checklist-runs/ops?branchId=all");
+      assert.equal(board.status, 200, JSON.stringify(board.body).slice(0, 300));
+    }
+  };
+
   await check("a branch opened today gets today's run only, an open branch keeps its runs, an archived branch gets none", async () => {
     // The platform's branch table: the real one when the platform has migrated
     // this database, otherwise a stand-in with the columns the app reads.
@@ -1174,23 +1197,16 @@ try {
     const openLong = await appBranch("Open long", { openedDaysAgo: 60, coreBranchId: (await platformBranch("Open", false)).toUpperCase() });
     const openedToday = await appBranch("Opened today", { openedDaysAgo: 0 });
     const closed = await appBranch("Closed", { openedDaysAgo: 60, coreBranchId: await platformBranch("Closed", true) });
+    b749.openLong = openLong;
+    b749.closed = closed;
 
     const everywhere = await fullChecklist("Every branch 749", { recurrence: "daily", weeklyDays: [], branchIds: [] });
     const named = await fullChecklist("Named 749", { recurrence: "daily", weeklyDays: [], branchIds: [hkt] });
     await q("update checklist_templates set branch_id = $2, branch_ids = $3::jsonb where id = $1", [named.id, openLong, JSON.stringify([openLong, closed])]);
     await q("update checklist_templates set created_at = now() - interval '30 days' where id = any($1::uuid[])", [[everywhere.id, named.id]]);
 
-    for (let i = 0; i < 2; i++) {
-      const board = await api("admin", "GET", "/api/checklist-runs/ops?branchId=all");
-      assert.equal(board.status, 200, JSON.stringify(board.body).slice(0, 300));
-    }
-    const runsAt = async (template: string, branchId: string) =>
-      q<{ day: string; status: string }>(
-        `select to_char(period_start at time zone 'UTC' at time zone 'Asia/Bangkok', 'YYYY-MM-DD') as day, status
-           from checklist_runs where template_id = $1 and branch_id = $2 order by period_start`,
-        [template, branchId],
-      );
-    const [{ today }] = await q<{ today: string }>("select to_char(now() at time zone 'Asia/Bangkok', 'YYYY-MM-DD') as today");
+    await loadBoard();
+    const today = await todayInBangkok();
 
     const fresh = await runsAt(everywhere.id, openedToday);
     assert.deepEqual(fresh.map((r) => r.day), [today], "a branch opened today was given runs from before it opened");
@@ -1208,6 +1224,73 @@ try {
     }
   });
 
+  await check("a branch an edit adds to an older checklist starts with that day's run, whichever way the edit adds it", async () => {
+    const { openLong, closed } = b749;
+    const daily = { recurrence: "daily", weeklyDays: [], branchIds: [hkt] };
+    const noChoice = await fullChecklist("Shared later 749", daily);
+    const shared = await fullChecklist("Share choice 749", daily);
+    const widened = await fullChecklist("Widened 749", daily);
+    const templates = [noChoice.id, shared.id, widened.id];
+    await q("update checklist_templates set created_at = now() - interval '30 days' where id = any($1::uuid[])", [templates]);
+    await loadBoard();
+
+    // SCRUM-659's edit: no choice named, and "share"; and a checklist widened to every branch.
+    const edits: Array<[string, Record<string, unknown>]> = [
+      [noChoice.id, { branchIds: [hkt, openLong] }],
+      [shared.id, { branchIds: [hkt, openLong], branchCopyChoice: "share" }],
+      [widened.id, { branchId: null, branchIds: [] }],
+    ];
+    for (const [template, body] of edits) {
+      const saved = await api("admin", "PATCH", `/api/checklists/templates/${template}`, body);
+      assert.equal(saved.status, 200, JSON.stringify(saved.body).slice(0, 300));
+    }
+    await loadBoard();
+    const today = await todayInBangkok();
+    for (const template of templates) {
+      const runs = await runsAt(template, openLong);
+      assert.deepEqual(runs.map((r) => r.day), [today], "a branch open for months was given every run since the checklist was made");
+      assert.equal(runs[0].status, "pending");
+      assert.deepEqual((await runsAt(template, hkt)).map((r) => r.day), [today]);
+    }
+    assert.deepEqual(await runsAt(widened.id, closed), [], "an archived branch was given runs");
+
+    const addedTo = async (template: string) =>
+      Object.keys(
+        (await q<{ added: Record<string, string> }>("select branch_added_at as added from checklist_templates where id = $1", [template]))[0].added,
+      ).sort();
+    assert.deepEqual(await addedTo(noChoice.id), [openLong], "the edit did not record the branch it added, or recorded one already on it");
+    assert.deepEqual(await addedTo(shared.id), [openLong]);
+    const parkGroup = (await q<{ id: string }>("select id from branches where tenant_id = $1 and id <> $2", [tenant, hkt])).map((r) => r.id).sort();
+    assert.deepEqual(await addedTo(widened.id), parkGroup, "widening to every branch did not record each branch it added");
+
+    // An edit that adds nothing records nothing, and loading the board again makes no more runs.
+    const rename = await api("admin", "PATCH", `/api/checklists/templates/${noChoice.id}`, { name: `${noChoice.name} renamed` });
+    assert.equal(rename.status, 200);
+    assert.deepEqual(await addedTo(noChoice.id), [openLong]);
+    await loadBoard();
+    assert.equal((await runsAt(noChoice.id, openLong)).length, 1);
+  });
+
+  await check("the first run day: the latest of made, opened and added; a branch with runs carries on unless added again after them", () => {
+    const start = (latestRunDate: string | null, branchOpenedDate: string | null, branchAddedDate: string | null) =>
+      checklistRunStartDate({ latestRunDate, checklistMadeDate: "2026-10-01", branchOpenedDate, branchAddedDate });
+    assert.equal(start(null, null, null), "2026-10-01", "a branch on the checklist from the start");
+    assert.equal(start(null, "2025-01-01", null), "2026-10-01", "a branch open before the checklist");
+    assert.equal(start(null, "2026-11-04", null), "2026-11-04", "a branch opened after the checklist");
+    assert.equal(start(null, "2025-01-01", "2026-11-02"), "2026-11-02", "a branch added after the checklist was made");
+    assert.equal(start("2026-11-03", "2025-01-01", null), "2026-11-03", "a branch with runs carries on from its latest");
+    assert.equal(start("2026-11-03", "2025-01-01", "2026-10-15"), "2026-11-03", "an earlier addition holds no branch back");
+    assert.equal(start("2026-10-10", "2025-01-01", "2026-11-04"), "2026-11-04", "a branch put back on the checklist filled in the days it was off");
+    assert.deepEqual(branchesAddedByEdit(["hkt"], ["hkt", "rob"], []), ["rob"]);
+    assert.deepEqual(branchesAddedByEdit(["hkt", "rob"], ["hkt"], []), [], "removing a branch adds nothing");
+    assert.deepEqual(branchesAddedByEdit([], ["hkt"], ["hkt", "rob"]), [], "a checklist for every branch already ran at it");
+    assert.deepEqual(branchesAddedByEdit(["hkt"], [], ["hkt", "rob", "pat"]), ["rob", "pat"]);
+    assert.equal(branchAddedAt({ rob: "2026-11-04T05:00:00.000Z" }, "rob")?.toISOString(), "2026-11-04T05:00:00.000Z");
+    assert.equal(branchAddedAt({ rob: "not a time" }, "rob"), null);
+    assert.equal(branchAddedAt(null, "rob"), null);
+    assert.equal(branchAddedAt({}, "rob"), null);
+  });
+
   await check("the Studio branch list marks the archived branch, and the pickers leave it out unless the record names it", async () => {
     const listed = await api("admin", "GET", "/api/studio/branches");
     assert.equal(listed.status, 200);
@@ -1216,6 +1299,22 @@ try {
     assert.equal(byName.get(`ZZ TEST 749 Open long ${run}`)?.archived, false);
     assert.equal(byName.get(`ZZ TEST 749 Opened today ${run}`)?.archived, false);
     assert.equal(byName.get(`ZZ TEST HKT ${run}`)?.archived, false, "a branch with no platform branch reads as archived");
+
+    // The app's own branch list, which the SOP, training, knowledge base and
+    // event pickers read, says the same; the flag is never written back.
+    const appList = await api("admin", "GET", "/api/branches");
+    assert.equal(appList.status, 200);
+    const appByName = new Map((appList.body as { id: string; name: string; archived: boolean }[]).map((b) => [b.name, b]));
+    assert.equal(appByName.get(`ZZ TEST 749 Closed ${run}`)?.archived, true);
+    assert.equal(appByName.get(`ZZ TEST 749 Open long ${run}`)?.archived, false);
+    assert.equal(appByName.get(`ZZ TEST HKT ${run}`)?.archived, false);
+    const echoed = await api("admin", "PATCH", `/api/branches/${b749.closed}`, { archived: false });
+    assert.equal(echoed.status, 200, JSON.stringify(echoed.body).slice(0, 300));
+    assert.equal(
+      ((await api("admin", "GET", "/api/branches")).body as { id: string; archived: boolean }[]).find((b) => b.id === b749.closed)?.archived,
+      true,
+      "a branch edit carrying the list's flag changed it",
+    );
 
     const branches = [
       { id: "hkt", name: "HKT Central", archived: false },

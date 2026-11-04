@@ -172,6 +172,7 @@ import { deleteBranchWhole, deleteEmployeeWhole, deletePersonWhole } from "./lib
 import { FACE_CLOCK_OFF_REFUSAL, FACE_ENROLMENT_OFF_REFUSAL, FACE_OFF_NO_MATCH, faceClockInOn } from "./lib/faceOff";
 import { SHIFT_GROUP_DELETE_NEEDS_TARGET, SHIFT_GROUP_REQUIRED, noShiftGroup, shiftStillOnRota } from "./lib/shiftGroupRequired";
 import { archivedBranchIds } from "./lib/platformBranches";
+import { branchAddedAt, branchesAddedByEdit, checklistRunStartDate } from "./lib/checklistBranchStart";
 import {
   BRANCH_NOT_FOUND,
   CATALOG_ITEM_NOT_FOUND,
@@ -199,7 +200,7 @@ import { generateInstanceForDefinition } from "./core/taskGeneration";
 import { personFence, fenceAllows, fenceRows, EMPLOYEE_DENIED } from "./core/personScope";
 import { resolveSelfEmployeeId } from "./core/selfEmployee";
 import { requestedChecklistAssignees, setChecklistAssignees, withChecklistAssignees } from "./core/checklistAssignees";
-import { canReachChecklistTemplate, checklistCopyBranchRefusal, checklistCopyRequest, checklistEditChangesOriginal, createChecklistCopies, createPreparedChecklistTemplates, loadChecklistCopySource, planBranchCopies, prepareChecklistTemplates, type PreparedChecklistTemplates } from "./core/checklistCopies";
+import { canReachChecklistTemplate, checklistCopyBranchRefusal, checklistCopyRequest, checklistEditChangesOriginal, checklistTemplateBranches, createChecklistCopies, createPreparedChecklistTemplates, loadChecklistCopySource, planBranchCopies, prepareChecklistTemplates, type PreparedChecklistTemplates } from "./core/checklistCopies";
 
 async function requireAuthOrKiosk(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
@@ -1874,7 +1875,13 @@ export async function registerRoutes(
       if (!userWithAccess?.tenantId) {
         return res.status(403).json({ message: "Access denied" });
       }
-      const tenantBranches = (await storage.getBranches()).filter(b => b.tenantId === userWithAccess.tenantId);
+      // Every branch stays in the list, so the header and older records still
+      // read it; `archived` says which the platform has archived, and the Studio
+      // pickers leave those out (SCRUM-749).
+      const archived = await archivedBranchIds(userWithAccess.tenantId);
+      const tenantBranches = (await storage.getBranches())
+        .filter(b => b.tenantId === userWithAccess.tenantId)
+        .map(b => ({ ...b, archived: archived.has(b.id) }));
       if (!userWithAccess.hasAllBranchesAccess) {
         const allowedIds = new Set(userWithAccess.allowedBranchIds);
         const linkedEmp = await db.select({ branchId: employees.branchId }).from(employees)
@@ -1964,6 +1971,8 @@ export async function registerRoutes(
         coreSyncStatus: _ignoredCoreSyncStatus,
         coreSyncedAt: _ignoredCoreSyncedAt,
         coreSyncError: _ignoredCoreSyncError,
+        // Read from the platform for the branch list (SCRUM-749), never written here.
+        archived: _ignoredArchived,
         ...branchUpdates
       } = req.body;
       // Nothing left to write is an edit that changes nothing, not an error.
@@ -21445,6 +21454,26 @@ OTO Company Limited`,
         });
       }
       
+      // When this edit adds a branch, so the run creator starts that branch's
+      // runs from today, not from the day the checklist was made (SCRUM-749).
+      // A branch already on the checklist keeps its entry, or has none.
+      const branchesBefore = checklistTemplateBranches(existingTemplate);
+      const branchesAfter = checklistTemplateBranches({
+        branchId: "branchId" in updateData ? updateData.branchId : existingTemplate.branchId,
+        branchIds: "branchIds" in updateData
+          ? (Array.isArray(updateData.branchIds) ? updateData.branchIds : [])
+          : existingTemplate.branchIds,
+      });
+      const parkGroupBranchIds = branchesBefore.length > 0 && branchesAfter.length === 0
+        ? (await db.select({ id: branches.id }).from(branches).where(eq(branches.tenantId, tenantId))).map((b) => b.id)
+        : [];
+      const addedBranches = branchesAddedByEdit(branchesBefore, branchesAfter, parkGroupBranchIds);
+      if (addedBranches.length > 0) {
+        const addedAt = (updateData.updatedAt as Date).toISOString();
+        const additions = Object.fromEntries(addedBranches.map((branchId) => [branchId, addedAt]));
+        updateData.branchAddedAt = sql`coalesce(${checklistTemplates.branchAddedAt}, '{}'::jsonb) || ${JSON.stringify(additions)}::jsonb`;
+      }
+
       const newVersion = (existingTemplate.templateVersion || 1) + 1;
       updateData.templateVersion = newVersion;
       
@@ -21755,16 +21784,20 @@ OTO Company Limited`,
             .from(checklistTemplateItems)
             .where(eq(checklistTemplateItems.templateId, template.id));
 
-          // A branch's first run is for the later of the day the checklist was
-          // made and the day the branch opened (SCRUM-749): a branch opened
-          // today starts with today's run, not with every run it would have had
-          // since the checklist was made. A branch that already has runs carries
-          // on from its latest, as before.
-          const checklistMadeDate = getLocalDateString(template.createdAt || now, timezone);
-          const branchOpenedDate = targetBranch?.createdAt ? getLocalDateString(targetBranch.createdAt, timezone) : checklistMadeDate;
-          let candidateDate = latestRun?.periodStart
-            ? getLocalDateString(latestRun.periodStart, timezone)
-            : branchOpenedDate > checklistMadeDate ? branchOpenedDate : checklistMadeDate;
+          // A branch's first run is for the latest of the day the checklist was
+          // made, the day the branch opened and the day an edit added the branch
+          // to it (SCRUM-749): a branch opened today, or shared onto an older
+          // checklist today, starts with today's run, not with every run it
+          // would have had since the checklist was made. A branch that already
+          // has runs carries on from its latest, as before, unless an edit put
+          // it back on the checklist after that run.
+          const addedAt = branchAddedAt(template.branchAddedAt, targetBranchId);
+          let candidateDate = checklistRunStartDate({
+            latestRunDate: latestRun?.periodStart ? getLocalDateString(latestRun.periodStart, timezone) : null,
+            checklistMadeDate: getLocalDateString(template.createdAt || now, timezone),
+            branchOpenedDate: targetBranch?.createdAt ? getLocalDateString(targetBranch.createdAt, timezone) : null,
+            branchAddedDate: addedAt ? getLocalDateString(addedAt, timezone) : null,
+          });
           // Catch up elapsed occurrences after downtime or long periods without
           // dashboard visits. The cap prevents a legacy template from causing
           // unbounded work on its first lifecycle-aware request.

@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { pickerBranches } from "@/lib/branch-picker";
 import { useAuth } from "@/lib/auth";
 import { Redirect } from "wouter";
 import {
@@ -256,6 +257,13 @@ export default function EventSettingsPage() {
     const unique = [...new Set(allIds)];
     return unique.map(id => getBranchName(id)).join(", ");
   };
+
+  // What the branch pickers offer (SCRUM-749): no branch the platform has archived,
+  // except one the record being edited already names, so it can still be read.
+  const offeredBranches = pickerBranches(
+    branches,
+    editingLocation ? [editingLocation.branchId, ...(editingLocation.branchIds || [])].filter((id): id is string => !!id) : [],
+  );
 
   const getSelectedBranchIds = () => {
     return [...new Set([locationForm.branchId, ...locationForm.branchIds].filter(Boolean))];
@@ -499,7 +507,7 @@ export default function EventSettingsPage() {
             <div className="space-y-2">
               <Label>Branches *</Label>
               <div className="border rounded-md p-3 space-y-2 max-h-40 overflow-y-auto" data-testid="select-location-branches">
-                {branches.map((branch: any) => (
+                {offeredBranches.map((branch: any) => (
                   <div key={branch.id} className="flex items-center gap-2">
                     <Checkbox
                       id={`branch-${branch.id}`}

@@ -356,6 +356,10 @@ export const checklistTemplates = pgTable(
     assignedDepartmentId: varchar("assigned_department_id").references(() => departments.id),
     // Checker-specific: allowed roles for execution (JSON array of role names)
     allowedCheckerRoles: jsonb("allowed_checker_roles").$type<string[]>().default([]),
+    // When an edit added each branch to this checklist (SCRUM-749): branch id to
+    // ISO timestamp. The recurring run creator starts a branch's runs no earlier
+    // than this. A branch with no entry has been on it since it was made.
+    branchAddedAt: jsonb("branch_added_at").$type<Record<string, string>>().notNull().default({}),
     createdBy: varchar("created_by").references(() => users.id),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),

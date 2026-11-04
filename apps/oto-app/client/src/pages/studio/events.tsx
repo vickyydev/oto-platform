@@ -66,6 +66,7 @@ import { useAuth } from "@/lib/auth";
 import { EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_SHORT, ONE_OFF_EVENT_COLOR_OPTIONS, DEFAULT_ONE_OFF_EVENT_COLOR, OTHER_EVENT_LEGEND_COLORS, getEventCalendarColor } from "@/lib/event-types";
 import { useLocation, useRoute } from "wouter";
 import { useBranchContext } from "@/hooks/use-branch-context";
+import { pickerBranches } from "@/lib/branch-picker";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { cn } from "@/lib/utils";
 import { campCreationExcludedDays } from "@/lib/camp-days";
@@ -443,6 +444,9 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
     queryKey: ["/api/branches"],
     enabled: !!user,
   });
+  // What the branch pickers offer (SCRUM-749): no branch the platform has archived,
+  // except one the record being edited already names, so it can still be read.
+  const offeredBranches = (named: string | null | undefined) => pickerBranches(branches ?? [], named ? [named] : []);
 
   // Fetch dynamic event statuses
   const { data: eventStatuses } = useQuery<Array<{ id: string; name: string; value: string; color: string; sortOrder: number; isDefault: boolean }>>({
@@ -2479,7 +2483,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
                     <SelectValue placeholder="Select branch" />
                   </SelectTrigger>
                   <SelectContent>
-                    {branches.map((b) => (
+                    {offeredBranches(editingEvent?.branchId).map((b) => (
                       <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -2897,7 +2901,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
                   <Label>Branch <span className="text-destructive">*</span></Label>
                   <Select value={oneOffFormData.branchId || ""} onValueChange={(v) => setOneOffFormData(prev => ({ ...prev, branchId: v }))}>
                     <SelectTrigger data-testid="select-oneoff-branch"><SelectValue placeholder="Select branch" /></SelectTrigger>
-                    <SelectContent>{branches?.map((b) => (<SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>))}</SelectContent>
+                    <SelectContent>{offeredBranches(editingOneOffEvent?.branchId).map((b) => (<SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
               )}
@@ -3250,7 +3254,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
                     <SelectValue placeholder="Select branch" />
                   </SelectTrigger>
                   <SelectContent>
-                    {branches.map((b) => (
+                    {offeredBranches(editingCampEvent?.branchId).map((b) => (
                       <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                     ))}
                   </SelectContent>

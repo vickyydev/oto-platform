@@ -13,6 +13,7 @@ import { LoadingScreen } from "@/components/ui/loading-spinner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/lib/auth";
 import { useBranchContext } from "@/hooks/use-branch-context";
+import { pickerBranches } from "@/lib/branch-picker";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import type { QuizQuestion, TrainingModule } from "@shared/schema";
@@ -53,6 +54,10 @@ export default function StudioQuizzesPage() {
     },
     enabled: !!user,
   });
+
+  // What the branch picker offers (SCRUM-749): no branch the platform has archived,
+  // except one the record being edited already names, so it can be taken off.
+  const offeredBranches = pickerBranches(branches, modules.find(module => module.id === editingId)?.branchIds ?? []);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -196,7 +201,7 @@ export default function StudioQuizzesPage() {
                 <option value="GLOBAL">All branches</option><option value="BRANCHES">Selected branches</option>
               </select>
               {form.scope === "BRANCHES" && <div className="mt-2 grid grid-cols-2 gap-2">
-                {branches.map(branch => <label key={branch.id} className="flex items-center gap-2 text-sm">
+                {offeredBranches.map(branch => <label key={branch.id} className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={form.branchIds.includes(branch.id)} onChange={event => setForm(current => ({ ...current, branchIds: event.target.checked ? [...current.branchIds, branch.id] : current.branchIds.filter(id => id !== branch.id) }))} />
                   {branch.name}
                 </label>)}

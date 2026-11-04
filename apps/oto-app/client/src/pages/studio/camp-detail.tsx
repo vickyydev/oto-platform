@@ -84,6 +84,7 @@ import {
   Star,
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { pickerBranches } from "@/lib/branch-picker";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInDays, differenceInYears, eachDayOfInterval } from "date-fns";
@@ -195,6 +196,10 @@ export default function CampDetailPage() {
       return res.json();
     },
   });
+
+  // What the branch pickers offer (SCRUM-749): no branch the platform has archived,
+  // except one the record being edited already names, so it can still be read.
+  const offeredBranches = pickerBranches(branches, event?.branchId ? [event.branchId] : []);
 
   const { data: allEmployees = [] } = useQuery<any[]>({
     queryKey: ["/api/employees"],
@@ -1506,7 +1511,7 @@ export default function CampDetailPage() {
                 >
                   <SelectTrigger><SelectValue placeholder="Select branch" /></SelectTrigger>
                   <SelectContent>
-                    {branches.map((b: any) => (
+                    {offeredBranches.map((b: any) => (
                       <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                     ))}
                   </SelectContent>

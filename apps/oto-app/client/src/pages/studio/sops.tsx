@@ -25,6 +25,7 @@ import {
 import { useAuth } from "@/lib/auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useBranchContext } from "@/hooks/use-branch-context";
+import { pickerBranches } from "@/lib/branch-picker";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -452,6 +453,9 @@ export default function StudioSopsPage() {
   const [content, setContent] = useState("");
   const [scope, setScope] = useState<"GLOBAL" | "BRANCHES">("GLOBAL");
   const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
+  // What the branch picker offers (SCRUM-749): no branch the platform has archived,
+  // except one the record being edited already names, so it can be taken off.
+  const offeredBranches = pickerBranches(branches, editingSop?.branchIds ?? []);
   const [steps, setSteps] = useState<LocalStep[]>([]);
 
   const branchParam = isAllBranches ? 'all' : activeBranchId;
@@ -800,7 +804,7 @@ export default function StudioSopsPage() {
                   <div className="space-y-2">
                     <Label>Select Branches</Label>
                     <div className="border rounded-md p-2 max-h-40 overflow-y-auto space-y-1">
-                      {branches.map((branch) => (
+                      {offeredBranches.map((branch) => (
                         <div
                           key={branch.id}
                           className={`flex items-center gap-2 p-2 rounded-md cursor-pointer hover-elevate ${
