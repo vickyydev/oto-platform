@@ -1,0 +1,151 @@
+{
+  "mode": "local",
+  "source": "ee30216cca6805583cb93f7a8d846381568b1537",
+  "startedAt": "2026-11-04T08:39:53.335Z",
+  "cases": [
+    {
+      "name": "typed band short code on a four-character till opens the band order",
+      "code": "ZI7C-Z5X6WR",
+      "voucherRequests": [],
+      "passed": true
+    },
+    {
+      "name": "genuine voucher typed at F&B opens its tab and is held",
+      "passed": true
+    },
+    {
+      "name": "gateway QR on a six-character till",
+      "invoiceNo": "0AX261104000001",
+      "segment": "0AX",
+      "passed": true
+    }
+  ],
+  "screens": [
+    "s746-typed-band-four-character-till.png",
+    "s746-genuine-voucher-opens-its-tab.png",
+    "s747-gateway-qr-six-character-till.png",
+    "s747-gateway-qr-six-character-till-paid.png"
+  ],
+  "requests": [
+    {
+      "method": "POST",
+      "path": "/branches/01a1a5b7-1dd1-7b1b-b7ea-d8752abeafa0/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a1a5b7-1dd1-7b1b-b7ea-d8752abeafa0/boxes",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/01a1a5b7-1dd1-7b1b-b7ea-d8752abeafa0/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/01a1a5b7-1dd1-7b1b-b7ea-d8752abeafa0/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a1a5b7-1dd1-7b1b-b7ea-d8752abeafa0/ticket-packages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/config",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/me/session/station",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/registrations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/payments/attempts",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/webhooks/2c2p/simulator",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/check-in-now",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/4e00736a-34f9-42a6-ac3e-6e7a13a17e9e",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/05c96551-c830-44e5-8713-baffebf16e4c",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a1a5b7-1dd1-7b1b-b7ea-d8752abeafa0/menu",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/voucher-definitions",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/webhooks/2c2p/simulator",
+      "status": 200
+    }
+  ],
+  "outcome": "passed",
+  "box": {
+    "id": "01a1a5b7-2196-7e35-9a42-6759d2f1d4f0",
+    "name": "ZZ TEST SCRUM-747 virtual box",
+    "role": "virtual",
+    "status": "online",
+    "devices": null
+  },
+  "till4": {
+    "id": "01a1a5b7-22dd-7db6-817a-f2c36e447254",
+    "codePrefix": "ZI7C",
+    "ready": true,
+    "invoiceSegment": "LO7"
+  },
+  "till6": {
+    "id": "01a1a5b7-22f2-79a9-94a1-40f1bf65da02",
+    "codePrefix": "ZZ747A",
+    "ready": true,
+    "invoiceSegment": "0AX"
+  },
+  "phase": "six-character QR",
+  "qrOnFourCharacterTill": {
+    "invoiceNo": "LO7261104000001",
+    "segment": "LO7"
+  },
+  "bandShortCode": "ZI7C-Z5X6WR",
+  "childName": "ZZ TEST SCRUM-746 child",
+  "voucher": {
+    "definitionId": "01a1a5b7-2486-7e6e-bb45-b83fe760bd02",
+    "product": "Chicken Nuggets"
+  },
+  "browser": "153.0.8010.12",
+  "smsCount": 0,
+  "finishedAt": "2026-11-04T08:40:23.222Z",
+  "databaseDropped": true
+}
