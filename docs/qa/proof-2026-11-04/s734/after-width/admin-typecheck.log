@@ -1,0 +1,3 @@
+
+> @oto/admin-screens@0.1.0 typecheck C:\oto-lanes\codex-branch-clone-20261103\packages\admin-screens
+> tsc -p tsconfig.json --noEmit

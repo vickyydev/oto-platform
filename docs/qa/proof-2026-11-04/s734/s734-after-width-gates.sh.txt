@@ -11,3 +11,4 @@ pnpm exec eslint apps/api/src/services/catalog-clone.ts apps/api/test/s734-branc
 pnpm exec turbo run test --filter='!@oto/api' --concurrency=1 > C:/oto-lanes/s734-after-width-workspace.log 2>&1
 pnpm build > C:/oto-lanes/s734-after-width-build.log 2>&1
 pnpm --filter @oto/api exec tsx C:/oto-lanes/s734-local-native.mts > C:/oto-lanes/s734-after-width-native.log 2>&1
+pnpm --filter @oto/api exec tsx C:/oto-lanes/s734-readback-rehearsal.mts > C:/oto-lanes/s734-after-width-readers.log 2>&1

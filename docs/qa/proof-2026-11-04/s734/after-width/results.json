@@ -1,0 +1,105 @@
+{
+  "source": "822d3ac48985aeb79c678fd0160876399b4c3458",
+  "startedAt": "2026-11-04T04:15:50.970Z",
+  "script": "C:/oto-lanes/s734-after-width-gates.sh",
+  "outcome": "passed",
+  "exitCode": 0,
+  "signal": null,
+  "finishedAt": "2026-11-04T04:19:13.331Z",
+  "previousFullApiSource": "b83641d45c7ad4304f6d8062be791ed7f31b7942",
+  "changedRuntimePathsFromFullApi": [
+    "packages/admin-screens/src/lifted/components/admin/supervision/SupervisionPanel.tsx"
+  ],
+  "focusedApi": {
+    "files": 3,
+    "passed": 48
+  },
+  "workspaceTasks": 15,
+  "buildTasks": 5,
+  "apiTypesAndLintOutputBytes": 0,
+  "generatedContractsUnchanged": true,
+  "logs": [
+    {
+      "name": "focused",
+      "path": "docs/qa/proof-2026-11-04/s734/after-width/focused.log",
+      "rawSha256": "a76194b8b858dc7d4ba6ba00293cf605b63a21256403c2eefbbfe4f59057d56f",
+      "normalizedSha256": "22cee0ba031587bc2b14c6fd3f027c57ff82909558df911a571bc8b03d0e2ae3"
+    },
+    {
+      "name": "api-typecheck",
+      "path": "docs/qa/proof-2026-11-04/s734/after-width/api-typecheck.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "normalizedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "admin-typecheck",
+      "path": "docs/qa/proof-2026-11-04/s734/after-width/admin-typecheck.log",
+      "rawSha256": "3a4e06579a88ea77d165eb08eb85a92e2af9da491ec172e2b0bc41a2ff8b26c7",
+      "normalizedSha256": "7c2cbfc385997a767b39ecd967dcc05ffd9bed0a4c548f2fc92cdac0887622c0"
+    },
+    {
+      "name": "console-typecheck",
+      "path": "docs/qa/proof-2026-11-04/s734/after-width/console-typecheck.log",
+      "rawSha256": "ec268208f35208c876b1e995ad517709f92c8a5f2821f1f91dec3e1d7dd498bb",
+      "normalizedSha256": "cf0a0c9132d6057a4e838111c463a25fbafe034cbb0d809a1d14e272afc62cec"
+    },
+    {
+      "name": "pos-typecheck",
+      "path": "docs/qa/proof-2026-11-04/s734/after-width/pos-typecheck.log",
+      "rawSha256": "1e6483e7824960ff24d11c90c8737f6d1eb9c4f0ece71c37cdc7dd3e3e471466",
+      "normalizedSha256": "a2e3b60deb22f5fd4c08a2606da0ea0339cd904816414dbc57beede39d7da048"
+    },
+    {
+      "name": "contracts",
+      "path": "docs/qa/proof-2026-11-04/s734/after-width/contracts.log",
+      "rawSha256": "32756e265dd03816fe1c786116d05e59d4abec6b9746f2c04cc243dc1a1865e0",
+      "normalizedSha256": "32756e265dd03816fe1c786116d05e59d4abec6b9746f2c04cc243dc1a1865e0"
+    },
+    {
+      "name": "lint",
+      "path": "docs/qa/proof-2026-11-04/s734/after-width/lint.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "normalizedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "workspace",
+      "path": "docs/qa/proof-2026-11-04/s734/after-width/workspace.log",
+      "rawSha256": "bdde6458f8c19ebec4493e1d7edf03964cfbee0cc39453a68afd4ccfc51d4c9c",
+      "normalizedSha256": "31a1dc63f8d7338bf4f671c493dd2a1acb008248b8e61f3a22dbccdbe8131271"
+    },
+    {
+      "name": "build",
+      "path": "docs/qa/proof-2026-11-04/s734/after-width/build.log",
+      "rawSha256": "f3aca4e3d18dd9c98d3ccc66685f47c98aaaca006b010b7b6150fea794a4a9c1",
+      "normalizedSha256": "51bd00aa053e725c64b2ad8af16e800ac29286fe60a79e59e57f1982119a6e3a"
+    },
+    {
+      "name": "native",
+      "path": "docs/qa/proof-2026-11-04/s734/after-width/native.log",
+      "rawSha256": "5855e34b76cb17d9667f5d789fce50c0271c6b6b1a053f39fc2faaaa844f7bcc",
+      "normalizedSha256": "d8e08c1b3fe9c8c6f8622f8f57be6906b6d6d15a04b895ca6c669604da4293ef"
+    },
+    {
+      "name": "readers",
+      "path": "docs/qa/proof-2026-11-04/s734/after-width/readers.log",
+      "rawSha256": "05541def7b4f783bf8449f1536946fe5d3d43e66ea38fca076556c40624092a7",
+      "normalizedSha256": "ebd739ab7863ec41d855dce0d0c6c6fa40eb226ead14d5389cda5402faf0bece"
+    }
+  ],
+  "native": {
+    "run": "mw1lwugf",
+    "receipt": "docs/qa/proof-2026-11-04/s734/local/mw1lwugf/receipt.json",
+    "openedImages": 5,
+    "maximumAgeVisible": true,
+    "databaseDropped": true
+  },
+  "independentReaders": {
+    "source": "822d3ac48985aeb79c678fd0160876399b4c3458",
+    "passed": true,
+    "databaseDropped": true,
+    "referenceColumns": 76
+  },
+  "staging": false,
+  "cachedWorkspaceTasks": 11,
+  "cachedBuildTasks": 4
+}

@@ -1,0 +1,32 @@
+{
+  "source": "822d3ac48985aeb79c678fd0160876399b4c3458",
+  "run": "mw1lwugf",
+  "openedAt": "2026-11-04T04:20:29.521Z",
+  "maximumAgeVisible": true,
+  "screens": [
+    {
+      "file": "s734-clone-preview.png",
+      "sha256": "87d1e2dfbbce59c167f9f7040076a2a96c123e8f520a60b5ffb172471f723178"
+    },
+    {
+      "file": "s734-clone-completed.png",
+      "sha256": "ca40e6a8afd5c52b39be01e0ad8e141febe5ae87585b584b923f5910dc0159dd"
+    },
+    {
+      "file": "s734-copied-care-settings.png",
+      "sha256": "031bef206327c22de0a3cc7b1a06e8c44995a5e26afcad1db89b58021592dc12"
+    },
+    {
+      "file": "s734-copied-stock.png",
+      "sha256": "57f08aceedfb1977a0806fe8e94bf17736306d2a766cee3a6bdad183efbed4f5"
+    },
+    {
+      "file": "s734-copied-stock-pack.png",
+      "sha256": "7e0622a979c70159c42731f5a0b8380671da01358bcb331ee8efb4e28ab011d0"
+    }
+  ],
+  "staging": false,
+  "limitations": [
+    "The native walkthrough used the disposable platform database without a running OTO App. The independent SQL rehearsal separately used the current app schema."
+  ]
+}

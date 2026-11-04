@@ -1,0 +1,8 @@
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+const root='C:/oto-lanes/codex-branch-clone-20261103',expected=process.argv[2];
+const git=args=>execFileSync('git',args,{cwd:root,encoding:'utf8',maxBuffer:32*1024*1024});
+assert.equal(git(['rev-parse','REBASE_HEAD']).trim(),expected);
+const files=git(['diff','--name-only','--diff-filter=U']).trim().split('\n'),allowed=['docs/progress/STATUS.md','docs/handover/CODEX_HANDOVER.md','docs/handover/CLOUD_HANDOVER.md'];assert.ok(files.length>0&&files.every(x=>allowed.includes(x)));
+for(const p of files){const text=readFileSync(root+'/'+p,'utf8');let count=0;const merged=text.replace(/^<<<<<<< HEAD\r?\n([\s\S]*?)^=======\r?\n([\s\S]*?)^>>>>>>> (.+)\r?\n/gm,(_match,a,b,label)=>{assert.ok(expected.startsWith(label.split(' ')[0]));count++;return a+'\n'+b;});assert.ok(count);assert.ok(!/^(<<<<<<<|=======|>>>>>>>)/m.test(merged));const lines=new Set(merged.split(/\r?\n/).filter(Boolean));for(const stage of [2,3])assert.ok(git(['show',':'+stage+':'+p]).split(/\r?\n/).filter(Boolean).every(line=>lines.has(line)));writeFileSync(root+'/'+p,merged);console.log(JSON.stringify({path:p,conflictsResolved:count,allLinesFromBothSidesPreserved:true}));}

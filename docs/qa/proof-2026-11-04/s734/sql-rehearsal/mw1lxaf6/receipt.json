@@ -1,0 +1,615 @@
+{
+  "source": "822d3ac48985aeb79c678fd0160876399b4c3458",
+  "startedAt": "2026-11-04T04:18:56.131Z",
+  "staging": false,
+  "name": "ZZ TEST SCRUM-734 mw1lxaf6",
+  "programs": [
+    {
+      "mode": "proof",
+      "exitCode": 0,
+      "result": {
+        "event": "s734_proof_read",
+        "at": "2026-11-04T04:19:12.058Z",
+        "mode": "proof",
+        "readOnly": true,
+        "referenceCensus": {
+          "columns": 76,
+          "sha256": "902810c6d7dacb920cde10b05ff0b7f3283b32869e385168f2cb28e4faf4f6de"
+        },
+        "category": {
+          "id": "01a1a4c8-48b6-73f2-a838-8c13754e82f0",
+          "name": "ZZ TEST SCRUM-734 mw1lxaf6 food",
+          "archived": false
+        },
+        "rows": [
+          {
+            "branch": {
+              "id": "01a1a4c8-486e-76b5-b033-596f970f0412",
+              "name": "ZZ TEST SCRUM-734 mw1lxaf6 source",
+              "archived": false
+            },
+            "policy": {
+              "id": "01a1a4c8-4897-76ed-ad76-7f5ddda8a129",
+              "value": {
+                "bands": [
+                  {
+                    "id": "zz-young",
+                    "label": "ZZ TEST young",
+                    "maxAge": 6,
+                    "minAge": 0,
+                    "requirement": "nanny"
+                  },
+                  {
+                    "id": "zz-older",
+                    "label": "ZZ TEST older",
+                    "maxAge": null,
+                    "minAge": 7,
+                    "requirement": "none"
+                  }
+                ],
+                "guardian_min_age": 12,
+                "nanny_match_text": "Nanny",
+                "waiver_staff_only": true,
+                "nanny_ratio_soft_max": 4,
+                "photo_retention_days": 30,
+                "waivable_requirement": "drop_off",
+                "sibling_waiver_enabled": false
+              }
+            },
+            "pricing": {
+              "id": "01a1a4c8-48ac-7101-9e97-5f0168c67328",
+              "value": {
+                "full_day_hours": 7,
+                "prepaid_food_unused": "forfeit",
+                "extra_hour_weekday_satang": 6700,
+                "extra_hour_weekend_satang": 7800,
+                "nanny_hourly_weekday_satang": 34500,
+                "nanny_hourly_weekend_satang": 45600,
+                "one_time_fee_weekday_satang": 12300,
+                "one_time_fee_weekend_satang": 23400
+              }
+            },
+            "confirmations": [
+              {
+                "id": "01a1a4c8-48a1-7817-9835-6ffdabd8041a",
+                "code": "zz-required",
+                "text": "ZZ TEST required confirmation",
+                "required": true,
+                "sort_order": 2,
+                "archived_at": null
+              },
+              {
+                "id": "01a1a4c8-48a2-70f6-a1c5-427d479a02c1",
+                "code": "zz-optional",
+                "text": "ZZ TEST optional confirmation",
+                "required": false,
+                "sort_order": 7,
+                "archived_at": null
+              }
+            ],
+            "products": [
+              {
+                "id": "01a1a4c8-48c2-703a-a744-1a9b9a740b10",
+                "name": "ZZ TEST SCRUM-734 mw1lxaf6 cup",
+                "stock_item_id": "01a1a4c8-48dc-734f-bfa4-ba01ac93174d",
+                "active": true,
+                "archived_at": null
+              }
+            ],
+            "rooms": [
+              {
+                "id": "01a1a4c8-48d0-7c7b-b74c-b88f25dc98cb",
+                "name": "ZZ TEST SCRUM-734 mw1lxaf6 shelf",
+                "type": "bulk",
+                "active": true,
+                "sell_point": false,
+                "archived_at": null
+              }
+            ],
+            "items": [
+              {
+                "id": "01a1a4c8-48dc-734f-bfa4-ba01ac93174d",
+                "name": "ZZ TEST SCRUM-734 mw1lxaf6 cups",
+                "active": true,
+                "archived_at": null,
+                "product_id": "01a1a4c8-48c2-703a-a744-1a9b9a740b10",
+                "variant_id": null,
+                "variant_label": null,
+                "unit_cost_satang": 12,
+                "low_stock_threshold": 3,
+                "par_by_location": {
+                  "01a1a4c8-48d0-7c7b-b74c-b88f25dc98cb": 5
+                },
+                "reorder_point": 4,
+                "reorder_quantity": 12,
+                "lead_time_days": 2,
+                "supplier_name": "ZZ TEST supplier",
+                "supplier_contact": "ZZ TEST contact",
+                "payload": {
+                  "groupId": "01a1a4c8-48db-7e00-a249-0e2c598455fb"
+                }
+              }
+            ],
+            "units": [
+              {
+                "id": "01a1a4c8-48e0-7397-a9c7-a2caa0a7a16d",
+                "stock_item_id": "01a1a4c8-48dc-734f-bfa4-ba01ac93174d",
+                "code": "zz-test-case-of-12",
+                "label": "ZZ TEST case of 12",
+                "eaches": 12,
+                "archived_at": null
+              }
+            ],
+            "counts": {
+              "stations": 0,
+              "boxes": 0,
+              "sales": 0,
+              "movements": 0,
+              "quantity": 0
+            },
+            "printTemplates": {
+              "count": 6,
+              "sha256": "8cd2d18ce5d90e2efbc5ac222c57a7f259b0e2e3dd8f090c8e2cffa92014114f"
+            },
+            "app": [
+              {
+                "id": "e7cc60f3-82e4-49d1-bc43-5ffaa8daaec8",
+                "name": "ZZ TEST SCRUM-734 mw1lxaf6 source",
+                "core_branch_id": "01a1a4c8-486e-76b5-b033-596f970f0412"
+              }
+            ],
+            "appReferences": {
+              "checked": 76,
+              "nonzero": 0
+            }
+          },
+          {
+            "branch": {
+              "id": "01a1a4c8-4884-75a8-b461-3e9e97a04181",
+              "name": "ZZ TEST SCRUM-734 mw1lxaf6 target",
+              "archived": false
+            },
+            "policy": {
+              "id": "01a1a4c8-492a-7f73-bb4e-6feae16887b0",
+              "value": {
+                "bands": [
+                  {
+                    "id": "zz-young",
+                    "label": "ZZ TEST young",
+                    "maxAge": 6,
+                    "minAge": 0,
+                    "requirement": "nanny"
+                  },
+                  {
+                    "id": "zz-older",
+                    "label": "ZZ TEST older",
+                    "maxAge": null,
+                    "minAge": 7,
+                    "requirement": "none"
+                  }
+                ],
+                "guardian_min_age": 12,
+                "nanny_match_text": "Nanny",
+                "waiver_staff_only": true,
+                "nanny_ratio_soft_max": 4,
+                "photo_retention_days": 30,
+                "waivable_requirement": "drop_off",
+                "sibling_waiver_enabled": false
+              }
+            },
+            "pricing": {
+              "id": "01a1a4c8-492b-7dff-af36-384235f2f49f",
+              "value": {
+                "full_day_hours": 7,
+                "prepaid_food_unused": "forfeit",
+                "extra_hour_weekday_satang": 6700,
+                "extra_hour_weekend_satang": 7800,
+                "nanny_hourly_weekday_satang": 34500,
+                "nanny_hourly_weekend_satang": 45600,
+                "one_time_fee_weekday_satang": 12300,
+                "one_time_fee_weekend_satang": 23400
+              }
+            },
+            "confirmations": [
+              {
+                "id": "01a1a4c8-492b-7dff-af36-3841848e1fc4",
+                "code": "zz-required",
+                "text": "ZZ TEST required confirmation",
+                "required": true,
+                "sort_order": 2,
+                "archived_at": null
+              },
+              {
+                "id": "01a1a4c8-492b-7dff-af36-384001f06023",
+                "code": "zz-optional",
+                "text": "ZZ TEST optional confirmation",
+                "required": false,
+                "sort_order": 7,
+                "archived_at": null
+              }
+            ],
+            "products": [
+              {
+                "id": "01a1a4c8-492c-7775-9c68-affeee2f16e3",
+                "name": "ZZ TEST SCRUM-734 mw1lxaf6 cup",
+                "stock_item_id": "01a1a4c8-492e-7e24-836c-b6ad5a7309aa",
+                "active": true,
+                "archived_at": null
+              }
+            ],
+            "rooms": [
+              {
+                "id": "01a1a4c8-492a-7f73-bb4e-6fe9578561d2",
+                "name": "ZZ TEST SCRUM-734 mw1lxaf6 shelf",
+                "type": "bulk",
+                "active": true,
+                "sell_point": false,
+                "archived_at": null
+              }
+            ],
+            "items": [
+              {
+                "id": "01a1a4c8-492e-7e24-836c-b6ad5a7309aa",
+                "name": "ZZ TEST SCRUM-734 mw1lxaf6 cups",
+                "active": true,
+                "archived_at": null,
+                "product_id": "01a1a4c8-492c-7775-9c68-affeee2f16e3",
+                "variant_id": null,
+                "variant_label": null,
+                "unit_cost_satang": 12,
+                "low_stock_threshold": 3,
+                "par_by_location": {
+                  "01a1a4c8-492a-7f73-bb4e-6fe9578561d2": 5
+                },
+                "reorder_point": 4,
+                "reorder_quantity": 12,
+                "lead_time_days": 2,
+                "supplier_name": "ZZ TEST supplier",
+                "supplier_contact": "ZZ TEST contact",
+                "payload": {
+                  "groupId": "01a1a4c8-492e-7e24-836c-b6aeb50bbff8"
+                }
+              }
+            ],
+            "units": [
+              {
+                "id": "01a1a4c8-492e-7e24-836c-b6af1bebb69b",
+                "stock_item_id": "01a1a4c8-492e-7e24-836c-b6ad5a7309aa",
+                "code": "zz-test-case-of-12",
+                "label": "ZZ TEST case of 12",
+                "eaches": 12,
+                "archived_at": null
+              }
+            ],
+            "counts": {
+              "stations": 0,
+              "boxes": 0,
+              "sales": 0,
+              "movements": 0,
+              "quantity": 0
+            },
+            "printTemplates": {
+              "count": 6,
+              "sha256": "8cd2d18ce5d90e2efbc5ac222c57a7f259b0e2e3dd8f090c8e2cffa92014114f"
+            },
+            "app": [
+              {
+                "id": "329cb3ba-3e16-4410-a102-5eb479881bf9",
+                "name": "ZZ TEST SCRUM-734 mw1lxaf6 target",
+                "core_branch_id": "01a1a4c8-4884-75a8-b461-3e9e97a04181"
+              }
+            ],
+            "appReferences": {
+              "checked": 76,
+              "nonzero": 0
+            }
+          }
+        ],
+        "passed": true
+      },
+      "errors": [],
+      "resultBytes": 5649
+    },
+    {
+      "mode": "cleanup",
+      "exitCode": 0,
+      "result": {
+        "event": "s734_cleanup_read",
+        "at": "2026-11-04T04:19:12.402Z",
+        "mode": "cleanup",
+        "readOnly": true,
+        "referenceCensus": {
+          "columns": 76,
+          "sha256": "902810c6d7dacb920cde10b05ff0b7f3283b32869e385168f2cb28e4faf4f6de"
+        },
+        "category": {
+          "id": "01a1a4c8-48b6-73f2-a838-8c13754e82f0",
+          "name": "ZZ TEST SCRUM-734 mw1lxaf6 food",
+          "archived": true
+        },
+        "rows": [
+          {
+            "branch": {
+              "id": "01a1a4c8-486e-76b5-b033-596f970f0412",
+              "name": "ZZ TEST SCRUM-734 mw1lxaf6 source",
+              "archived": true
+            },
+            "policy": {
+              "id": "01a1a4c8-4897-76ed-ad76-7f5ddda8a129",
+              "value": {
+                "bands": [
+                  {
+                    "id": "zz-young",
+                    "label": "ZZ TEST young",
+                    "maxAge": 6,
+                    "minAge": 0,
+                    "requirement": "nanny"
+                  },
+                  {
+                    "id": "zz-older",
+                    "label": "ZZ TEST older",
+                    "maxAge": null,
+                    "minAge": 7,
+                    "requirement": "none"
+                  }
+                ],
+                "guardian_min_age": 12,
+                "nanny_match_text": "Nanny",
+                "waiver_staff_only": true,
+                "nanny_ratio_soft_max": 4,
+                "photo_retention_days": 30,
+                "waivable_requirement": "drop_off",
+                "sibling_waiver_enabled": false
+              }
+            },
+            "pricing": {
+              "id": "01a1a4c8-48ac-7101-9e97-5f0168c67328",
+              "value": {
+                "full_day_hours": 7,
+                "prepaid_food_unused": "forfeit",
+                "extra_hour_weekday_satang": 6700,
+                "extra_hour_weekend_satang": 7800,
+                "nanny_hourly_weekday_satang": 34500,
+                "nanny_hourly_weekend_satang": 45600,
+                "one_time_fee_weekday_satang": 12300,
+                "one_time_fee_weekend_satang": 23400
+              }
+            },
+            "confirmations": [
+              {
+                "id": "01a1a4c8-48a1-7817-9835-6ffdabd8041a",
+                "code": "zz-required",
+                "text": "ZZ TEST required confirmation",
+                "required": true,
+                "sort_order": 2,
+                "archived_at": null
+              },
+              {
+                "id": "01a1a4c8-48a2-70f6-a1c5-427d479a02c1",
+                "code": "zz-optional",
+                "text": "ZZ TEST optional confirmation",
+                "required": false,
+                "sort_order": 7,
+                "archived_at": null
+              }
+            ],
+            "products": [
+              {
+                "id": "01a1a4c8-48c2-703a-a744-1a9b9a740b10",
+                "name": "ZZ TEST SCRUM-734 mw1lxaf6 cup",
+                "stock_item_id": "01a1a4c8-48dc-734f-bfa4-ba01ac93174d",
+                "active": false,
+                "archived_at": "2026-11-04T04:19:12.098Z"
+              }
+            ],
+            "rooms": [
+              {
+                "id": "01a1a4c8-48d0-7c7b-b74c-b88f25dc98cb",
+                "name": "ZZ TEST SCRUM-734 mw1lxaf6 shelf",
+                "type": "bulk",
+                "active": false,
+                "sell_point": false,
+                "archived_at": null
+              }
+            ],
+            "items": [
+              {
+                "id": "01a1a4c8-48dc-734f-bfa4-ba01ac93174d",
+                "name": "ZZ TEST SCRUM-734 mw1lxaf6 cups",
+                "active": false,
+                "archived_at": null,
+                "product_id": "01a1a4c8-48c2-703a-a744-1a9b9a740b10",
+                "variant_id": null,
+                "variant_label": null,
+                "unit_cost_satang": 12,
+                "low_stock_threshold": 3,
+                "par_by_location": {
+                  "01a1a4c8-48d0-7c7b-b74c-b88f25dc98cb": 5
+                },
+                "reorder_point": 4,
+                "reorder_quantity": 12,
+                "lead_time_days": 2,
+                "supplier_name": "ZZ TEST supplier",
+                "supplier_contact": "ZZ TEST contact",
+                "payload": {
+                  "groupId": "01a1a4c8-48db-7e00-a249-0e2c598455fb"
+                }
+              }
+            ],
+            "units": [
+              {
+                "id": "01a1a4c8-48e0-7397-a9c7-a2caa0a7a16d",
+                "stock_item_id": "01a1a4c8-48dc-734f-bfa4-ba01ac93174d",
+                "code": "zz-test-case-of-12",
+                "label": "ZZ TEST case of 12",
+                "eaches": 12,
+                "archived_at": null
+              }
+            ],
+            "counts": {
+              "stations": 0,
+              "boxes": 0,
+              "sales": 0,
+              "movements": 0,
+              "quantity": 0
+            },
+            "printTemplates": {
+              "count": 6,
+              "sha256": "8cd2d18ce5d90e2efbc5ac222c57a7f259b0e2e3dd8f090c8e2cffa92014114f"
+            },
+            "app": [],
+            "appReferences": {
+              "checked": 0,
+              "nonzero": 0
+            }
+          },
+          {
+            "branch": {
+              "id": "01a1a4c8-4884-75a8-b461-3e9e97a04181",
+              "name": "ZZ TEST SCRUM-734 mw1lxaf6 target",
+              "archived": true
+            },
+            "policy": {
+              "id": "01a1a4c8-492a-7f73-bb4e-6feae16887b0",
+              "value": {
+                "bands": [
+                  {
+                    "id": "zz-young",
+                    "label": "ZZ TEST young",
+                    "maxAge": 6,
+                    "minAge": 0,
+                    "requirement": "nanny"
+                  },
+                  {
+                    "id": "zz-older",
+                    "label": "ZZ TEST older",
+                    "maxAge": null,
+                    "minAge": 7,
+                    "requirement": "none"
+                  }
+                ],
+                "guardian_min_age": 12,
+                "nanny_match_text": "Nanny",
+                "waiver_staff_only": true,
+                "nanny_ratio_soft_max": 4,
+                "photo_retention_days": 30,
+                "waivable_requirement": "drop_off",
+                "sibling_waiver_enabled": false
+              }
+            },
+            "pricing": {
+              "id": "01a1a4c8-492b-7dff-af36-384235f2f49f",
+              "value": {
+                "full_day_hours": 7,
+                "prepaid_food_unused": "forfeit",
+                "extra_hour_weekday_satang": 6700,
+                "extra_hour_weekend_satang": 7800,
+                "nanny_hourly_weekday_satang": 34500,
+                "nanny_hourly_weekend_satang": 45600,
+                "one_time_fee_weekday_satang": 12300,
+                "one_time_fee_weekend_satang": 23400
+              }
+            },
+            "confirmations": [
+              {
+                "id": "01a1a4c8-492b-7dff-af36-3841848e1fc4",
+                "code": "zz-required",
+                "text": "ZZ TEST required confirmation",
+                "required": true,
+                "sort_order": 2,
+                "archived_at": null
+              },
+              {
+                "id": "01a1a4c8-492b-7dff-af36-384001f06023",
+                "code": "zz-optional",
+                "text": "ZZ TEST optional confirmation",
+                "required": false,
+                "sort_order": 7,
+                "archived_at": null
+              }
+            ],
+            "products": [
+              {
+                "id": "01a1a4c8-492c-7775-9c68-affeee2f16e3",
+                "name": "ZZ TEST SCRUM-734 mw1lxaf6 cup",
+                "stock_item_id": "01a1a4c8-492e-7e24-836c-b6ad5a7309aa",
+                "active": false,
+                "archived_at": "2026-11-04T04:19:12.276Z"
+              }
+            ],
+            "rooms": [
+              {
+                "id": "01a1a4c8-492a-7f73-bb4e-6fe9578561d2",
+                "name": "ZZ TEST SCRUM-734 mw1lxaf6 shelf",
+                "type": "bulk",
+                "active": false,
+                "sell_point": false,
+                "archived_at": null
+              }
+            ],
+            "items": [
+              {
+                "id": "01a1a4c8-492e-7e24-836c-b6ad5a7309aa",
+                "name": "ZZ TEST SCRUM-734 mw1lxaf6 cups",
+                "active": false,
+                "archived_at": null,
+                "product_id": "01a1a4c8-492c-7775-9c68-affeee2f16e3",
+                "variant_id": null,
+                "variant_label": null,
+                "unit_cost_satang": 12,
+                "low_stock_threshold": 3,
+                "par_by_location": {
+                  "01a1a4c8-492a-7f73-bb4e-6fe9578561d2": 5
+                },
+                "reorder_point": 4,
+                "reorder_quantity": 12,
+                "lead_time_days": 2,
+                "supplier_name": "ZZ TEST supplier",
+                "supplier_contact": "ZZ TEST contact",
+                "payload": {
+                  "groupId": "01a1a4c8-492e-7e24-836c-b6aeb50bbff8"
+                }
+              }
+            ],
+            "units": [
+              {
+                "id": "01a1a4c8-492e-7e24-836c-b6af1bebb69b",
+                "stock_item_id": "01a1a4c8-492e-7e24-836c-b6ad5a7309aa",
+                "code": "zz-test-case-of-12",
+                "label": "ZZ TEST case of 12",
+                "eaches": 12,
+                "archived_at": null
+              }
+            ],
+            "counts": {
+              "stations": 0,
+              "boxes": 0,
+              "sales": 0,
+              "movements": 0,
+              "quantity": 0
+            },
+            "printTemplates": {
+              "count": 6,
+              "sha256": "8cd2d18ce5d90e2efbc5ac222c57a7f259b0e2e3dd8f090c8e2cffa92014114f"
+            },
+            "app": [],
+            "appReferences": {
+              "checked": 0,
+              "nonzero": 0
+            }
+          }
+        ],
+        "passed": true
+      },
+      "errors": [],
+      "resultBytes": 5410
+    }
+  ],
+  "limits": [
+    "This rehearses the exact SQL readers on the local lifted schema. Empty app branches are removed locally; the staging app HTTP removal remains unproven."
+  ],
+  "smsCount": 0,
+  "passed": true,
+  "databaseDropped": true,
+  "finishedAt": "2026-11-04T04:19:13.270Z"
+}

@@ -1,0 +1,110 @@
+
+> oto-platform@0.1.0 build C:\oto-lanes\codex-branch-clone-20261103
+> turbo run build
+
+• turbo 2.10.12
+
+   • Packages in scope: @oto/admin-screens, @oto/api, @oto/api-types, @oto/assistant, @oto/booth, @oto/box-agent, @oto/config, @oto/console, @oto/db, @oto/inbox, @oto/launcher, @oto/messaging, @oto/payments-2c2p, @oto/pos, @oto/print, @oto/shared, @oto/telemetry
+   • Running build in 17 packages
+   • Remote caching disabled, using shared worktree cache
+
+@oto/console:build: cache miss, executing e4536c9e3dfc44a1
+@oto/launcher:build: cache hit, replaying logs 627eac8e697edef8
+@oto/pos:build: cache hit, replaying logs b52ce31ab0ee6c8b
+@oto/booth:build: cache hit, replaying logs 0fadc423f61fc0ea
+@oto/inbox:build: cache hit, replaying logs 1246bac605902796
+@oto/launcher:build:
+@oto/launcher:build: > @oto/launcher@0.1.0 build C:\oto-lanes\codex-branch-clone-20261103\apps\launcher
+@oto/launcher:build: > vite build --config vite.config.ts
+@oto/launcher:build:
+@oto/launcher:build: vite v7.3.6 building client environment for production...
+@oto/launcher:build: transforming...
+@oto/launcher:build: ✓ 1739 modules transformed.
+@oto/launcher:build: rendering chunks...
+@oto/launcher:build: computing gzip size...
+@oto/launcher:build: dist/public/index.html                      1.59 kB │ gzip:   0.72 kB
+@oto/launcher:build: dist/public/assets/logo-oto-nNYXf9Wy.png  173.77 kB
+@oto/launcher:build: dist/public/assets/index-BtHhzWnQ.css      35.93 kB │ gzip:   7.41 kB
+@oto/launcher:build: dist/public/assets/index-DAnn4erx.js      354.21 kB │ gzip: 107.43 kB
+@oto/launcher:build: ✓ built in 4.17s
+@oto/booth:build:
+@oto/booth:build: > @oto/booth@0.1.0 build C:\oto-lanes\codex-branch-clone-20261103\apps\booth
+@oto/booth:build: > vite build --config vite.config.ts
+@oto/booth:build:
+@oto/booth:build: vite v7.3.6 building client environment for production...
+@oto/booth:build: transforming...
+@oto/booth:build: ✓ 307 modules transformed.
+@oto/booth:build: rendering chunks...
+@oto/booth:build: computing gzip size...
+@oto/booth:build: dist/public/index.html                                  1.80 kB │ gzip:   0.95 kB
+@oto/booth:build: dist/public/assets/NotoSansThai-Regular-BtLaeNM3.ttf   37.78 kB
+@oto/booth:build: dist/public/assets/NotoSansThai-Bold-DqyRvOXX.ttf      37.82 kB
+@oto/booth:build: dist/public/assets/index-CAhefUVD.css                  19.44 kB │ gzip:   4.41 kB
+@oto/booth:build: dist/public/assets/index-BD_cJbmH.js                  438.44 kB │ gzip: 131.29 kB
+@oto/booth:build: ✓ built in 2.06s
+@oto/pos:build:
+@oto/pos:build: > @oto/pos@0.1.0 build C:\oto-lanes\codex-branch-clone-20261103\apps\pos
+@oto/pos:build: > tsc -p server/tsconfig.json && vite build --config vite.config.ts && node server/dist/compress.js
+@oto/pos:build:
+@oto/pos:build: vite v7.3.6 building client environment for production...
+@oto/pos:build: transforming...
+@oto/pos:build: ✓ 2405 modules transformed.
+@oto/pos:build: [plugin vite:reporter]
+@oto/pos:build: (!) C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/api/platform.ts is dynamically imported by C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/api/catalogBridge.ts but also statically imported by C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/api/catalogBridge.ts, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/api/members.ts, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/auth/OperatorContext.tsx, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/branch/BranchContext.tsx, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/components/auth/LockScreen.tsx, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/components/book/BookCheckingPayment.tsx, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/components/book/BookIdentify.tsx, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/components/book/BookVerifyFamily.tsx, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/components/history/SaleDetail.tsx, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/components/mobile/MobileTill.tsx, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/components/mobile/history/MobileHistory.tsx, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/components/shared/PricingModeIndicator.tsx, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/components/shared/PrinterHealthIndicator.tsx, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/components/shared/VerifyTierModal.tsx, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/components/till/VisitChildrenModal.tsx, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/lib/deferredTierVerification.ts, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/lib/demoControls.ts, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/lib/displaySession.ts, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/lib/themePref.ts, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/pages/Book.tsx, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/pages/History.tsx, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/pages/StationSetup.tsx, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/pages/Till.tsx, C:/oto-lanes/codex-branch-clone-20261103/apps/pos/src/station/StationContext.tsx, dynamic import will not move module into another chunk.
+@oto/pos:build:
+@oto/pos:build: rendering chunks...
+@oto/pos:build: computing gzip size...
+@oto/pos:build: dist/public/index.html                                 1.98 kB │ gzip:   0.82 kB
+@oto/pos:build: dist/public/sw.js                                      7.75 kB
+@oto/pos:build: dist/public/assets/inter-cyrillic-DqGufNeO.woff2      18.75 kB
+@oto/pos:build: dist/public/assets/inter-latin-Dx4kXJAl.woff2         48.26 kB
+@oto/pos:build: dist/public/assets/inter-latin-ext-DO1Apj_S.woff2     85.07 kB
+@oto/pos:build: dist/public/assets/logo-oto-nNYXf9Wy.png             173.77 kB
+@oto/pos:build:
+@oto/pos:build: dist/public/assets/index-Bfz3q8p_.css                202.05 kB │ gzip:  29.59 kB
+@oto/pos:build: (!) Some chunks are larger than 500 kB after minification. Consider:
+@oto/pos:build: - Using dynamic import() to code-split the application
+@oto/pos:build: - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+@oto/pos:build: - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+@oto/pos:build: dist/public/assets/index-D30a8YUX.js               2,439.61 kB │ gzip: 679.64 kB
+@oto/pos:build: ✓ built in 8.97s
+@oto/inbox:build:
+@oto/inbox:build: > @oto/inbox@0.1.0 build C:\oto-lanes\codex-branch-clone-20261103\apps\inbox
+@oto/inbox:build: > vite build --config vite.config.ts
+@oto/inbox:build:
+@oto/inbox:build: vite v7.3.6 building client environment for production...
+@oto/inbox:build: transforming...
+@oto/inbox:build: ✓ 1724 modules transformed.
+@oto/inbox:build: rendering chunks...
+@oto/inbox:build: computing gzip size...
+@oto/inbox:build: dist/public/index.html                   1.10 kB │ gzip:  0.53 kB
+@oto/inbox:build: dist/public/assets/index-qQ3aiq3L.css   59.81 kB │ gzip: 10.30 kB
+@oto/inbox:build: dist/public/assets/vendor-Bzwbm8pt.js   76.21 kB │ gzip: 20.30 kB
+@oto/inbox:build: dist/public/assets/react-CMVXFKhj.js   185.16 kB │ gzip: 58.31 kB
+@oto/inbox:build: dist/public/assets/index-DBYinLeH.js   217.18 kB │ gzip: 54.17 kB
+@oto/inbox:build: ✓ built in 4.23s
+@oto/console:build:
+@oto/console:build: > @oto/console@0.1.0 build C:\oto-lanes\codex-branch-clone-20261103\apps\console
+@oto/console:build: > vite build --config vite.config.ts
+@oto/console:build:
+@oto/console:build: vite v7.3.6 building client environment for production...
+@oto/console:build: transforming...
+@oto/console:build: ✓ 2327 modules transformed.
+@oto/console:build: rendering chunks...
+@oto/console:build: computing gzip size...
+@oto/console:build: dist/public/index.html                        1.33 kB │ gzip:   0.58 kB
+@oto/console:build: dist/public/assets/logo-oto-nNYXf9Wy.png    173.77 kB
+@oto/console:build: dist/public/assets/index-CKt7s-RR.css       100.05 kB │ gzip:  16.31 kB
+@oto/console:build: dist/public/assets/react-C6LhzTnE.js        185.71 kB │ gzip:  58.56 kB
+@oto/console:build: dist/public/assets/vendor-C2Oq016q.js       400.12 kB │ gzip: 117.41 kB
+@oto/console:build: dist/public/assets/index-CcPL8loO.js      1,436.62 kB │ gzip: 389.76 kB
+@oto/console:build:
+@oto/console:build: (!) Some chunks are larger than 500 kB after minification. Consider:
+@oto/console:build: - Using dynamic import() to code-split the application
+@oto/console:build: - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+@oto/console:build: - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+@oto/console:build: ✓ built in 4.87s
+
+ Tasks:    5 successful, 5 total
+Cached:    4 cached, 5 total
+  Time:    6.083s
