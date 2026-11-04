@@ -1,0 +1,24 @@
+{
+  "mode": "local",
+  "name": "ZZ TEST SCRUM-738 mw1gifuk",
+  "branchId": "01a1a43d-5128-7c56-becc-7b0c9a47ac8d",
+  "day": "2026-11-04",
+  "events": {
+    "pass": {
+      "id": "87a539e0-47e7-491c-a467-61de82cbc3a1",
+      "title": "ZZ TEST SCRUM-738 mw1gifuk pass",
+      "type": "workshop"
+    },
+    "party": {
+      "id": "82935cf7-358c-4d43-9be9-44adcedc8106",
+      "title": "ZZ TEST SCRUM-738 mw1gifuk party",
+      "type": "birthday"
+    },
+    "mobile": {
+      "id": "f5790c9b-838e-4c43-9e9a-5a55f4a2c691",
+      "title": "ZZ TEST SCRUM-738 mw1gifuk mobile",
+      "type": "birthday"
+    }
+  },
+  "out": "C:/oto-lanes/codex-tender-display-20261104/docs/qa/proof-2026-11-04/s738/local/mw1gifuk"
+}

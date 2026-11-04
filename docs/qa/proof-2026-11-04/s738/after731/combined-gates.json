@@ -1,0 +1,130 @@
+{
+  "source": "cbe56b17d2a0fcecf40e09e997ea1f5fd7fa764f",
+  "branch": "lane/codex-tender-display-20261104-r5",
+  "recordedAt": "2026-11-04T01:49:45.257Z",
+  "api": {
+    "files": 9,
+    "passed": 165
+  },
+  "workspace": {
+    "tasks": 15,
+    "pos": 1947,
+    "box": 886,
+    "shared": 887,
+    "console": 589,
+    "consoleTodo": 3,
+    "database": 388
+  },
+  "types": "passed; API output empty",
+  "contracts": "generated and checked with no working-tree change",
+  "lint": "passed with empty output after correcting the Windows argument invocation",
+  "build": "passed",
+  "logs": {
+    "api": {
+      "rawSha256": "d99c7ab9ae59f56888a8dc0ad6e2fc4f85d6706ef86492fe166e19858bdf137a",
+      "committedSha256": "5694ce9ef936901062a6bcac01019ded4d026c3bdb2967a668874fb388a1e8f0",
+      "normalization": "LF, no trailing horizontal whitespace, one final newline for nonempty logs"
+    },
+    "workspace": {
+      "rawSha256": "466b3757f47da952cc9c3104e5d5524bb550178da840291edb2e74a9d4e1d112",
+      "committedSha256": "8a0fb3db4bda752e8c079262526f27ceef814012e657c259c44b3f6ee12218f1",
+      "normalization": "LF, no trailing horizontal whitespace, one final newline for nonempty logs"
+    },
+    "api-typecheck": {
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "committedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "normalization": "LF, no trailing horizontal whitespace, one final newline for nonempty logs"
+    },
+    "pos-typecheck": {
+      "rawSha256": "090f2b59d8bf7da91472435e51d3de1953f6a2895dc68a6a0cd5c7182aecab0d",
+      "committedSha256": "9d38420bc3beaf9bddc58036443f5f2041204ed4e8c3d9c70b33ca8c564f82bf",
+      "normalization": "LF, no trailing horizontal whitespace, one final newline for nonempty logs"
+    },
+    "shared-typecheck": {
+      "rawSha256": "ec21f08787e18be7b7ceadfbc210082eae061bdd443551c23903f9ced5cdc0c4",
+      "committedSha256": "538edd1765030297b96404c3de89906dfe65e06133fe1ea47d43918e90bdb9ec",
+      "normalization": "LF, no trailing horizontal whitespace, one final newline for nonempty logs"
+    },
+    "box-typecheck": {
+      "rawSha256": "f7b56d03955dc672bb43a092eb960bcf41d10d1c50b150d465ddc153dda77c79",
+      "committedSha256": "29bc206d782a42b22fdc820ff7d70135e573b410b55b8ad3e823ec5a5736911a",
+      "normalization": "LF, no trailing horizontal whitespace, one final newline for nonempty logs"
+    },
+    "api-types": {
+      "rawSha256": "9b9ba225981971c1a9bac0e772825fcdfe721f712365822ca53f3db2ad92c279",
+      "committedSha256": "9b9ba225981971c1a9bac0e772825fcdfe721f712365822ca53f3db2ad92c279",
+      "normalization": "LF, no trailing horizontal whitespace, one final newline for nonempty logs"
+    },
+    "lint": {
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "committedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "normalization": "LF, no trailing horizontal whitespace, one final newline for nonempty logs"
+    },
+    "lint-invocation": {
+      "rawSha256": "39ea1574597593947e62a4854eb2c3c70f3dce02471489ea8d141f1e1d600bd0",
+      "committedSha256": "90e11f70ca95443c4d436bb7e2a696dcc009f6e030372f86b78aabc292a89c6b",
+      "normalization": "LF, no trailing horizontal whitespace, one final newline for nonempty logs"
+    },
+    "build": {
+      "rawSha256": "3990e80135f3f1b39206ececa1cf09253818066d966fdcd6d880f88d8e028bb7",
+      "committedSha256": "796b7ceb526b879233c58e92890de605d42f07485c1cfd2f510e4282e9a2a0c2",
+      "normalization": "LF, no trailing horizontal whitespace, one final newline for nonempty logs"
+    },
+    "native": {
+      "rawSha256": "bcf5af2df9dd33ca99c62d40e4e113e73912f74e879acfe1cb8a9233af32075f",
+      "committedSha256": "0f483010ada676421fb1fc8eaff85f26ce39700171c73abaf4f526af54b72663",
+      "normalization": "LF, no trailing horizontal whitespace, one final newline for nonempty logs"
+    }
+  },
+  "local": {
+    "run": "mw1gifuk",
+    "cases": 4,
+    "imagesOpenedAt": "2026-11-04T01:49:45.258Z",
+    "imagesOpened": [
+      {
+        "name": "till-pass-pending-display.png",
+        "sha256": "8e9ba4007c98de6980cc5a17c4154971bb05ae257489beca0ef02e41c60c58f2"
+      },
+      {
+        "name": "party-balance-pending-display.png",
+        "sha256": "0d4c1ba9165fb1b6e29b924aedc8a1b16dd7c8021640d1a664dea949447ff327"
+      },
+      {
+        "name": "dropoff-pass-pending-display.png",
+        "sha256": "f5e28837126ba06fe1d18d9325b31da3b6d1fb572ddd4e7749dd4f36dae2e4fc"
+      },
+      {
+        "name": "mobile-party-balance-pending-display.png",
+        "sha256": "5934434d3ac31b2c8455bb0ea8b2e22a467242109049d34ecad18f1f0a79dc2e"
+      },
+      {
+        "name": "till-pass-restored-display.png",
+        "sha256": "a69bc01103c6d4677096b4eb563156278d459c9894905c9f5d2f14b09585f114"
+      },
+      {
+        "name": "party-balance-restored-display.png",
+        "sha256": "09535634105f3609ef80611935449ce6d46fef8ea8407989efd2b0a697b7bfdc"
+      },
+      {
+        "name": "signed-out-staff.png",
+        "sha256": "45fe700951a98927c77d848866df30174719dd74f7f2d926cf96c048cfb6904c"
+      },
+      {
+        "name": "signed-out-display.png",
+        "sha256": "a69bc01103c6d4677096b4eb563156278d459c9894905c9f5d2f14b09585f114"
+      }
+    ],
+    "databaseDropped": true
+  },
+  "priorCompleteApi": {
+    "source": "7eb53c7e5b6ac1b83986189e4a48452c0d3bd167",
+    "passed": 6253,
+    "skipped": 401,
+    "todo": 4,
+    "receipt": "docs/qa/proof-2026-11-04/s738/after729/api-full.json"
+  },
+  "limits": [
+    "Local app attendee writer bound in-process; staging cross-service acceptance is still required.",
+    "No physical park hardware, real bank payment or new full-main-CI claim."
+  ]
+}

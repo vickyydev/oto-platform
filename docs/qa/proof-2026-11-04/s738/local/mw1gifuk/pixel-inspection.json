@@ -1,0 +1,38 @@
+{
+  "method": "Read original PNG pixels without modifying the images",
+  "rows": [
+    {
+      "file": "till-pass-pending-display.png",
+      "bright_pixels": {
+        "heading": 2241,
+        "qr_container": 3780,
+        "instructions": 1591
+      }
+    },
+    {
+      "file": "party-balance-pending-display.png",
+      "bright_pixels": {
+        "heading": 2241,
+        "qr_container": 3780,
+        "instructions": 1591
+      }
+    },
+    {
+      "file": "dropoff-pass-pending-display.png",
+      "bright_pixels": {
+        "heading": 2241,
+        "qr_container": 3780,
+        "instructions": 1591
+      }
+    },
+    {
+      "file": "mobile-party-balance-pending-display.png",
+      "bright_pixels": {
+        "heading": 2241,
+        "qr_container": 3780,
+        "instructions": 1591
+      }
+    }
+  ],
+  "passed": true
+}

@@ -1,0 +1,3 @@
+
+> @oto/box-agent@0.1.0 typecheck C:\oto-lanes\codex-tender-display-20261104\packages\box-agent
+> tsc -p tsconfig.json && tsc -p tsconfig.test.json
