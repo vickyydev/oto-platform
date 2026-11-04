@@ -68,6 +68,7 @@ import {
   refundStatusOf,
   refundableSatang,
   splitLedgerUnitMoney,
+  tierApprovalReasonLabel,
   type CartAddOn,
   type CartPromo,
   type DiscountComponentTarget,
@@ -2587,6 +2588,26 @@ export interface SaleTierClaimView {
   evidenceExpiresOn: string | null;
   /** When reception checked it: the claim row's `created_at`. */
   verifiedAt: string;
+  /**
+   * SCRUM-772 — set when the rate was approved by hand rather than on a
+   * document: who approved it, and why. Null for a document check. The till
+   * reads it as "Thai rate approved by hand by <name>: <reason>".
+   */
+  approval: SaleTierApprovalView | null;
+}
+
+/** SCRUM-772 — a hand approval as a sale read carries it. */
+export interface SaleTierApprovalView {
+  /** One of `TIER_APPROVAL_REASONS`. */
+  reason: string;
+  /** The reason as it reads: the list's words, or what staff typed for Other. */
+  reasonLabel: string;
+  /** The optional note; null when none was added. */
+  note: string | null;
+  /** The account that approved it — the session's, never a name the caller sent. */
+  approvedByAccountId: string;
+  /** That account's name, as a sale names its seller. */
+  approvedBy: string | null;
 }
 
 /**
@@ -2619,11 +2640,20 @@ async function tierClaimsOf(
       note: saleTierClaim.note,
       evidenceExpiresAt: saleTierClaim.evidenceExpiresAt,
       createdAt: saleTierClaim.createdAt,
+      accountId: saleTierClaim.accountId,
+      approvalReason: saleTierClaim.approvalReason,
+      approvalReasonText: saleTierClaim.approvalReasonText,
+      approvalNote: saleTierClaim.approvalNote,
     })
     .from(saleTierClaim)
     .where(inArray(saleTierClaim.id, claimIds));
+  // SCRUM-772 — the approver's name, for the claims approved by hand only.
+  const approverName = await accountNamesOf(
+    db,
+    claims.filter((claim) => claim.approvalReason !== null).map((claim) => claim.accountId),
+  );
   const byClaimId = new Map(
-    claims.map((claim) => [
+    claims.map((claim): [string, SaleTierClaimView] => [
       claim.id,
       {
         id: claim.id,
@@ -2632,6 +2662,16 @@ async function tierClaimsOf(
         toTier: claim.toTier,
         evidenceExpiresOn: claim.evidenceExpiresAt,
         verifiedAt: claim.createdAt.toISOString(),
+        approval:
+          claim.approvalReason === null
+            ? null
+            : {
+                reason: claim.approvalReason,
+                reasonLabel: tierApprovalReasonLabel(claim.approvalReason, claim.approvalReasonText),
+                note: claim.approvalNote,
+                approvedByAccountId: claim.accountId,
+                approvedBy: approverName(claim.accountId),
+              },
       },
     ]),
   );

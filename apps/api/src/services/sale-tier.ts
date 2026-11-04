@@ -1,7 +1,7 @@
-import { and, desc, eq, gte, isNull } from 'drizzle-orm';
-import { saleTierClaim, tier } from '@oto/db';
-import { newId } from '@oto/shared';
-import { errors } from '../lib/errors';
+import { and, count, desc, eq, gte, isNotNull, isNull, max, sql } from 'drizzle-orm';
+import { account, employee, saleTierClaim, tier } from '@oto/db';
+import { TIER_APPROVAL_EVIDENCE, newId, tierApprovalProblem } from '@oto/shared';
+import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import { isEvidenceExpired } from './members';
 import type { Exec, Tx } from './tx';
@@ -68,6 +68,8 @@ import type { Exec, Tx } from './tx';
 export const TIER_CLAIM_ENTITY = 'sale_tier_claim';
 const CLAIM_CREATE_ACTION = 'sale_tier_claim.create';
 const CLAIM_RESTORE_ACTION = 'sale_tier_claim.restore';
+/** SCRUM-772 — the Thai rate approved by hand: its own action in the log. */
+export const CLAIM_APPROVE_BY_HAND_ACTION = 'sale_tier_claim.approve_by_hand';
 
 /**
  * HOW LONG A CLAIM CAN PRICE A CART.
@@ -111,6 +113,16 @@ export interface TierClaimInput {
   note?: string | null;
 }
 
+/** SCRUM-772 — what a hand approval records beside the claim. */
+export interface TierApprovalView {
+  /** One of `TIER_APPROVAL_REASONS`. */
+  reason: string;
+  /** What staff typed when the reason is Other; null otherwise. */
+  reasonText: string | null;
+  /** The optional note; null when none was added. */
+  note: string | null;
+}
+
 /** A claim as the till and the tests read it back. */
 export interface TierClaimView {
   id: string;
@@ -122,6 +134,12 @@ export interface TierClaimView {
   evidenceExpiresAt: string | null;
   /** What staff typed for an Other document (SCRUM-697); null otherwise. */
   note: string | null;
+  /**
+   * SCRUM-772 — the rate approved by hand rather than on a document, with the
+   * reason staff chose; null for a document check. Who approved it is
+   * `verifiedByAccountId`, when is `createdAt`.
+   */
+  approval: TierApprovalView | null;
   /** The account the session authenticated — never a name the caller sent. */
   verifiedByAccountId: string;
   createdAt: string;
@@ -201,6 +219,14 @@ function viewOf(row: typeof saleTierClaim.$inferSelect): TierClaimView {
     evidenceType: row.evidenceType,
     evidenceExpiresAt: row.evidenceExpiresAt,
     note: row.note,
+    approval:
+      row.approvalReason === null
+        ? null
+        : {
+            reason: row.approvalReason,
+            reasonText: row.approvalReasonText,
+            note: row.approvalNote,
+          },
     verifiedByAccountId: row.accountId,
     createdAt: row.createdAt.toISOString(),
     expiresAt: new Date(row.createdAt.getTime() + TIER_CLAIM_WINDOW_MS).toISOString(),
@@ -332,6 +358,7 @@ function sameTapOrRefuse(
   existing: TierClaimView,
   actor: TierClaimActor,
   input: TierClaimInput & { evidenceExpiresAt: string | null; note: string | null },
+  approval: TierApprovalView | null = null,
 ): TierClaimView {
   if (
     existing.verifiedByAccountId !== actor.accountId ||
@@ -339,7 +366,12 @@ function sameTapOrRefuse(
     existing.toTier !== input.toTier ||
     existing.evidenceType !== input.evidenceType ||
     existing.evidenceExpiresAt !== input.evidenceExpiresAt ||
-    existing.note !== input.note
+    existing.note !== input.note ||
+    // A document check and a hand approval are two different acts, and two
+    // hand approvals for different reasons are two decisions (SCRUM-772).
+    existing.approval?.reason !== approval?.reason ||
+    existing.approval?.reasonText !== approval?.reasonText ||
+    existing.approval?.note !== approval?.note
   ) {
     throw errors.conflict(
       'TIER_CLAIM_ACTION_REUSED',
@@ -364,6 +396,189 @@ async function claimByAction(
     )
     .limit(1);
   return row ? viewOf(row) : null;
+}
+
+/** SCRUM-772 — a hand approval, as the till sends it. */
+export interface TierApprovalInput {
+  /** `x-oto-action-id` of the press that approved it: the key the cart names. */
+  actionId: string;
+  toTier: string;
+  /** One of `TIER_APPROVAL_REASONS`. */
+  reason: string;
+  /** What staff typed when the reason is Other. */
+  reasonText?: string | null;
+  /** An optional note. */
+  note?: string | null;
+}
+
+/**
+ * SCRUM-772 — THE THAI RATE APPROVED BY HAND, for the special cases a
+ * document check does not fit: a Thai child with a foreign parent, a Thai ID
+ * seen earlier and not to hand, or another reason staff type.
+ *
+ * It is a tier claim like a document check — the same table, the same window,
+ * spent by one sale — with the reason in place of a document. Nobody else
+ * confirms it: the staff member on the till approves alone, so the customer
+ * does not wait, and the record is what makes it answerable. The approver is
+ * the session's account, the branch is the session's, the time is the row's;
+ * the claim names the sale once one spends it, and the audit row is its own
+ * action (`sale_tier_claim.approve_by_hand`) carrying the reason and the
+ * note, which the rule has already kept free of document numbers.
+ *
+ * IT NEVER TOUCHES THE MEMBER. No `member_tier_verification` is written, so
+ * the member's profile is not marked as a verified tier and the next visit
+ * asks again. It prices a member's cart through the claim instead
+ * (`resolveTierClaim`).
+ */
+export async function recordTierApproval(
+  tx: Tx,
+  actor: TierClaimActor,
+  input: TierApprovalInput,
+  now: Date = new Date(),
+): Promise<TierClaimView> {
+  const problem = tierApprovalProblem(input);
+  if (problem) throw new AppError(400, 'TIER_APPROVAL', problem);
+
+  const [tierRow] = await tx
+    .select()
+    .from(tier)
+    .where(
+      and(
+        eq(tier.operatorId, actor.operatorId),
+        eq(tier.code, input.toTier),
+        isNull(tier.archivedAt),
+      ),
+    )
+    .limit(1);
+  if (!tierRow) throw errors.badRequest(`Unknown tier "${input.toTier}"`);
+
+  const approval: TierApprovalView = {
+    reason: input.reason,
+    reasonText: input.reason === 'other' ? input.reasonText?.trim() || null : null,
+    note: input.note?.trim() || null,
+  };
+  const claimInput = {
+    actionId: input.actionId,
+    toTier: input.toTier,
+    evidenceType: TIER_APPROVAL_EVIDENCE,
+    evidenceExpiresAt: null,
+    note: null,
+  };
+
+  const existing = await claimByAction(tx, actor.operatorId, input.actionId);
+  if (existing) return sameTapOrRefuse(existing, actor, claimInput, approval);
+
+  const id = newId();
+  const expiresAt = new Date(now.getTime() + TIER_CLAIM_WINDOW_MS);
+  const [written] = await tx
+    .insert(saleTierClaim)
+    .values({
+      id,
+      operatorId: actor.operatorId,
+      branchId: actor.branchId,
+      accountId: actor.accountId,
+      actionId: input.actionId,
+      toTier: input.toTier,
+      evidenceType: TIER_APPROVAL_EVIDENCE,
+      evidenceExpiresAt: null,
+      note: null,
+      approvalReason: approval.reason,
+      approvalReasonText: approval.reasonText,
+      approvalNote: approval.note,
+      createdAt: now,
+    })
+    .onConflictDoNothing()
+    .returning();
+  if (!written) {
+    const raced = await claimByAction(tx, actor.operatorId, input.actionId);
+    if (!raced) {
+      throw errors.conflict(
+        'TIER_CLAIM_UNAVAILABLE',
+        'That approval could not be recorded — try it again',
+      );
+    }
+    return sameTapOrRefuse(raced, actor, claimInput, approval);
+  }
+
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId: actor.branchId,
+    action: CLAIM_APPROVE_BY_HAND_ACTION,
+    entityType: TIER_CLAIM_ENTITY,
+    entityId: id,
+    after: {
+      toTier: input.toTier,
+      evidenceType: TIER_APPROVAL_EVIDENCE,
+      approvalReason: approval.reason,
+      approvalReasonText: approval.reasonText,
+      approvalNote: approval.note,
+      expiresAt: expiresAt.toISOString(),
+    },
+    actionId: input.actionId,
+    requestId: actor.requestId ?? null,
+  });
+
+  return viewOf(written);
+}
+
+/** SCRUM-772 — one staff member's hand approvals, as the Console counts them. */
+export interface TierApprovalCount {
+  accountId: string;
+  /** Nickname, then name, then the phone the account signs in by. */
+  name: string | null;
+  /** Approvals in the last `TIER_APPROVAL_COUNT_DAYS` days. */
+  recent: number;
+  /** Every approval this account has made. */
+  total: number;
+  lastApprovedAt: string;
+}
+
+/** The Console's recent window for hand approvals, in days. */
+export const TIER_APPROVAL_COUNT_DAYS = 30;
+
+/**
+ * SCRUM-772 — how many times each staff member has approved the Thai rate by
+ * hand, so the Console can show whether it is used more than the special
+ * cases call for. Most recent use first; one operator's rows only.
+ */
+export async function tierApprovalCounts(
+  db: Exec,
+  operatorId: string,
+  now: Date = new Date(),
+): Promise<{ since: string; staff: TierApprovalCount[] }> {
+  const since = new Date(now.getTime() - TIER_APPROVAL_COUNT_DAYS * 24 * 60 * 60 * 1000);
+  const recent = sql<number>`count(*) filter (where ${saleTierClaim.createdAt} >= ${since})`.mapWith(
+    Number,
+  );
+  const rows = await db
+    .select({
+      accountId: saleTierClaim.accountId,
+      nickname: employee.nickname,
+      name: employee.name,
+      phone: account.phone,
+      recent,
+      total: count(),
+      lastApprovedAt: max(saleTierClaim.createdAt),
+    })
+    .from(saleTierClaim)
+    .leftJoin(account, eq(saleTierClaim.accountId, account.id))
+    .leftJoin(employee, eq(account.employeeId, employee.id))
+    .where(and(eq(saleTierClaim.operatorId, operatorId), isNotNull(saleTierClaim.approvalReason)))
+    .groupBy(saleTierClaim.accountId, employee.nickname, employee.name, account.phone);
+  const staff = rows
+    .map((row) => ({
+      accountId: row.accountId,
+      name: row.nickname ?? row.name ?? row.phone ?? null,
+      recent: row.recent,
+      total: row.total,
+      lastApprovedAt: (row.lastApprovedAt ?? now).toISOString(),
+    }))
+    .sort(
+      (a, b) =>
+        b.recent - a.recent || b.total - a.total || a.accountId.localeCompare(b.accountId),
+    );
+  return { since: since.toISOString(), staff };
 }
 
 /**
@@ -434,10 +649,19 @@ export async function resolveTierClaim(
   now: Date = new Date(),
 ): Promise<TierClaimResolution> {
   const nothing: TierClaimResolution = { claim: null, refusal: null };
-  if (cart.memberId || !cart.tierClaimActionId) return nothing;
+  if (!cart.tierClaimActionId) return nothing;
 
   const claim = await findClaim(db, actor, branchId, cart.tierClaimActionId, now);
   if (!claim) return nothing;
+  /**
+   * SCRUM-772 — EXCEPT A RATE APPROVED BY HAND. That approval is for THIS
+   * SALE, and it deliberately writes nothing to the member: the profile holds
+   * a verified tier only when a document was checked, so the next visit asks
+   * again. A member on the cart therefore has no record of what staff just
+   * decided, and the approval is what prices it. A document check keeps the
+   * rule above: the member's own record wins.
+   */
+  if (cart.memberId && claim.approval === null) return nothing;
   /**
    * ONE DOCUMENT CHECK, ONE SALE. A claim that has already priced a sale
    * prices nothing else: without this, the passport checked for the family at

@@ -291,6 +291,9 @@ describe('route guards (S2-01b)', () => {
       'POST /sales/:id/void',
       'POST /sales/:id/vouchers',
       'POST /sales/quote',
+      // SCRUM-772: the Thai rate approved by hand is the document check's
+      // twin — a platform record before it prices anything, online only.
+      'POST /sales/tier-approvals',
       'POST /sales/tier-claims',
       'POST /visits',
       // SCRUM-339: the second screen's children join the family's open visit.

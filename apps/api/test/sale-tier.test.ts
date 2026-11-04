@@ -779,13 +779,17 @@ describe('a read of the sale names the document check it was priced on', () => {
     expect(claimed.tierClaim.evidenceExpiresOn).toBe(VALID_UNTIL);
     expect(new Date(claimed.tierClaim.verifiedAt).getTime()).toBe(claimRow!.createdAt.getTime());
     expect(claimed.tierClaim.documentNote).toBeNull();
+    // A document check, not a hand approval (SCRUM-772).
+    expect(claimed.tierClaim.approval).toBeNull();
     /**
-     * EXACTLY THESE SIX, which is the assertion that keeps a document number
-     * out of a read. The claim row holds no number to leak today — its one
-     * free-text field, `documentNote` (SCRUM-697), refuses digit runs at the
-     * route; this fails the day somebody widens the mapper to the whole row.
+     * EXACTLY THESE SEVEN, which is the assertion that keeps a document number
+     * out of a read. The claim row holds no number to leak today — its
+     * free-text fields, `documentNote` (SCRUM-697) and a hand approval's
+     * reason and note (SCRUM-772), refuse digit runs at the route; this fails
+     * the day somebody widens the mapper to the whole row.
      */
     expect(Object.keys(claimed.tierClaim).sort()).toEqual([
+      'approval',
       'documentKind',
       'documentNote',
       'evidenceExpiresOn',

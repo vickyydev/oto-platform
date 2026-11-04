@@ -2054,6 +2054,10 @@ describe('the seam between this and the till', () => {
       '/sales/{id}',
       '/sales/{id}/extensions',
       '/sales/{id}/extensions/{extensionId}/bands',
+      // SCRUM-772 — the Thai rate approved by hand, and the Console's count
+      // of those approvals per staff member.
+      '/sales/tier-approvals',
+      '/sales/tier-approvals/by-staff',
       // SCRUM-307 — the document check that prices a walk-in's cart.
       '/sales/tier-claims',
       // S2-10b — a voucher held on the cart the till is ringing up, and taken
@@ -2103,6 +2107,9 @@ describe('the seam between this and the till', () => {
       // S2-11 — the lookup is dynamic for the list's reason; a refund and a
       // reprint check their branch on the sale row, as finalise does.
       'GET /sales/lookup dynamic no-target',
+      // SCRUM-772 — the Console's count reads operator-wide, as the tier
+      // verification records it sits beside do.
+      'GET /sales/tier-approvals/by-staff pos:member:list no-target',
       'POST /sales pos:sale:create body.branchId',
       'POST /sales/:id/benefit/preview pos:benefit:apply body.branchId',
       'POST /sales/:id/extensions pos:sale:create no-target',
@@ -2113,6 +2120,9 @@ describe('the seam between this and the till', () => {
       'POST /sales/:id/void pos:sale:void no-target',
       'POST /sales/:id/vouchers dynamic no-target',
       'POST /sales/quote pos:sale:create body.branchId',
+      // SCRUM-772 — the hand approval takes the document check's permission
+      // and target: no new role, the handler re-checking the branch.
+      'POST /sales/tier-approvals pos:member:update body.branchId',
       'POST /sales/tier-claims pos:member:update body.branchId',
     ]);
   });
