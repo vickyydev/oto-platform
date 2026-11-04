@@ -1,0 +1,42 @@
+// SCRUM-741/745 staging fixture, made for this proof only: one ZZ TEST till on Virtual box 1
+// (simulated band and receipt printers, as the SCRUM-730 proof used). Reads first; creates only when absent.
+import assert from 'node:assert/strict';
+const VB1 = '01a0be8c-89a0-74fa-9495-fb4a4acb65bc';
+const NAME = 'ZZ TEST SCRUM-741 till';
+export default async function (S) {
+  const { st, save, adminApi } = S;
+  const f = st.fixture;
+  const me = await adminApi('GET', '/me');
+  assert.equal(me.status, 200);
+  const BRANCH = me.body.operatorContext.branchId;
+  assert.equal(BRANCH, '01a0bbdc-8c42-7753-b7e3-5ae19fb66d33');
+  f.branchId = BRANCH; f.boxId = VB1; f.boxName = 'Virtual box 1'; st.adminActorId = me.body.account.id; save();
+  const stations = (await adminApi('GET', `/branches/${BRANCH}/stations?includeArchived=true`)).body.stations;
+  const used = new Set(stations.map((s) => s.codePrefix));
+  assert.ok(!used.has('Z741'), 'prefix Z741 already used');
+  let s = stations.find((x) => x.name === NAME && !x.archivedAt);
+  if (!s && !f.stationId) {
+    const made = await adminApi('POST', `/branches/${BRANCH}/stations`, {
+      name: NAME, kind: 'till', boxId: VB1, codePrefix: 'Z741', accessScope: 'all_staff', capabilities: [], staffAccountIds: [],
+      devices: [
+        { role: 'kids_band', deviceId: '01a0be8c-89af-7c2b-861f-f3d1f0f5d27b' },
+        { role: 'adult_band', deviceId: '01a0be8c-89b2-7f21-84e0-74c754838f5b' },
+        { role: 'receipt', deviceId: '01a0be8c-89a4-756b-aca1-3be1082c669d' },
+      ],
+    });
+    assert.equal(made.status, 200, JSON.stringify(made.body?.error ?? made.status));
+    s = made.body.station;
+    f.stationId = s.id; f.stationName = s.name; f.codePrefix = 'Z741'; f.stationCreatedAt = new Date().toISOString(); save();
+  }
+  f.stationId = f.stationId ?? s.id; f.stationName = NAME; save();
+  if (!f.routingSet) {
+    const r = await adminApi('PATCH', `/stations/${f.stationId}`, { paymentRouting: { qr: 'none', card: 'manual' } });
+    assert.equal(r.status, 200, JSON.stringify(r.body?.error ?? r.status));
+    f.routingSet = new Date().toISOString(); save();
+  }
+  const back = await adminApi('GET', `/stations/${f.stationId}`);
+  const sb = back.body.station ?? back.body;
+  f.readback = { name: sb.name, kind: sb.kind, box: sb.boxName ?? null, ready: sb.ready ?? null, reasons: sb.reasons ?? null, paymentRouting: sb.paymentRouting, devices: (sb.devices ?? []).map((d) => [d.role, d.label, d.transport]) };
+  save();
+  return f;
+}

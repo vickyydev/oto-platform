@@ -1,0 +1,29 @@
+// 745 at 1440: one non-order display screen (the corner button), then a ZZ TEST walk-in ticket on the till,
+// and the display switched to Thai, Russian and English through its own button.
+import assert from 'node:assert/strict';
+import { eachLanguage } from './lib745.mjs';
+import { noticeGone } from './lib.mjs';
+export default async function (S) {
+  const { st, save, pages, shot } = S;
+  const page = pages.desktop.page;
+  if (await page.getByRole('button', { name: 'Tickets', exact: true }).count()) { await page.getByRole('button', { name: 'Tickets', exact: true }).click(); await page.waitForTimeout(1500); }
+  await page.getByRole('button', { name: 'Skip — walk-in (Tourist)' }).waitFor({ timeout: 30000 });
+  await noticeGone(page);
+  const harness = await page.getByText(/^Test harness/).count();
+  const corner = page.getByRole('button', { name: 'Change language', exact: true });
+  const cornerBox = await corner.boundingBox();
+  const memberHeading = await page.getByText('Are you a member?', { exact: true }).boundingBox().catch(() => null);
+  await shot('desktop', 's745', 's745-st-1440-00-membership-screen-corner-button');
+  await page.getByRole('button', { name: 'Skip — walk-in (Tourist)' }).click();
+  await page.getByRole('heading', { name: 'Tourist', exact: true }).click();
+  await page.getByRole('heading', { name: '1 Hour Play', exact: true }).dispatchEvent('click');
+  await page.getByText('Your Order', { exact: true }).waitFor({ timeout: 20000 });
+  await page.waitForTimeout(1000);
+  const order = page.getByRole('heading', { name: 'Current Order' }).locator('../..');
+  const orderText = (await order.innerText()).replace(/\n/g, ' | ').slice(0, 300);
+  const rows = await eachLanguage(S, 1440);
+  st.steps.s745 = { ...(st.steps.s745 ?? {}), harnessBanner: harness, nonOrder: { cornerBox, memberHeading }, orderText1440: orderText, at1440: rows, at1440At: new Date().toISOString() };
+  save();
+  assert.equal(harness, 1);
+  return st.steps.s745;
+}

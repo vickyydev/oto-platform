@@ -1,0 +1,32 @@
+// 741 step 5 at 390 px: the family's detail screen on the phone till.
+import assert from 'node:assert/strict';
+import { signIn, noticeGone, escapeRe } from './lib.mjs';
+export default async function (S) {
+  const { st, save, pages, shot } = S;
+  const b = st.bookings.family;
+  const sib = st.sibling.name;
+  const page = pages.phone?.page ?? (await signIn(S, 'phone', { width: 390, height: 844 }, { mobile: true }));
+  await page.getByRole('link', { name: 'Check-in' }).click();
+  await page.waitForTimeout(1500);
+  const search = page.getByPlaceholder(/Search/);
+  if (await search.count()) { await search.first().fill(b.parent); await page.waitForTimeout(1000); }
+  await page.getByRole('button', { name: new RegExp(escapeRe(b.parent)) }).first().click();
+  await page.getByText(`Booked & paid · ${b.child}`, { exact: true }).waitFor({ timeout: 30000 });
+  await noticeGone(page);
+  const seen = {
+    paidPill: await page.getByText(`Booked & paid · ${b.child}`, { exact: true }).count(),
+    toPayPill: await page.getByText(`To pay · ${sib}`, { exact: true }).count(),
+    oldPill: await page.getByText('Booked & paid · no payment needed').count(),
+    plainCheckIn: await page.getByRole('button', { name: 'Check In', exact: true }).count(),
+    paidPress: await page.getByRole('button', { name: `Check In ${b.child}`, exact: true }).count(),
+    siblingPress: await page.getByRole('button', { name: `Check In ${sib}`, exact: true }).count(),
+    at: new Date().toISOString(),
+  };
+  await page.getByText(`To pay · ${sib}`, { exact: true }).scrollIntoViewIfNeeded();
+  await page.getByRole('button', { name: `Check In ${sib}`, exact: true }).scrollIntoViewIfNeeded();
+  await shot('phone', 's741', 's741-st-06-phone-family-paid-and-to-pay');
+  st.steps.phone = seen; save();
+  assert.equal(seen.paidPill, 1); assert.equal(seen.toPayPill, 1); assert.equal(seen.oldPill, 0); assert.equal(seen.plainCheckIn, 0);
+  assert.equal(seen.paidPress, 1); assert.equal(seen.siblingPress, 1);
+  return seen;
+}

@@ -1,0 +1,18 @@
+Checked on staging on 4 November 2026, 20:56 to 21:08 Bangkok, on the live commit ba64e70b (the till web page and the platform both run it). Test records only: a test till called "ZZ TEST SCRUM-741 till", and a test family "ZZ TEST SCRUM-741 Ying" whose child Bua was booked and paid on the booking site's simulated payment page (no real money), with her brother Nok added at the till's door. No payment was taken at the till.
+
+What a person sees now:
+1. On Check-in, Drop-off, Upcoming, the family's card says which child is paid and which is still to pay: a green "Booked & paid · ZZ TEST SCRUM-741 Bua" and an amber "To pay · ZZ TEST SCRUM-741 Nok". It no longer says "no payment needed" for the whole family.
+2. Each button carries the child's name: "Check in ZZ TEST SCRUM-741 Bua" and "Check in ZZ TEST SCRUM-741 Nok", instead of two buttons both called "Check in".
+3. Bua's button opens her paid booking with nothing to charge. Nok's button puts only Nok on the till to pay.
+4. On a phone, the family's screen shows the same two labels and two named buttons.
+5. A family where every child was paid online still shows "Booked & paid · no payment needed" and one "Check in", as before.
+
+How to retest: book and pay one drop-off child on the booking site; at the till press Add drop-off child, open that family, press Add sibling, give a name and age, Add & attach, then Cancel the sale; go to Check-in, Drop-off, Upcoming and search the parent's name. Expected: the green and amber labels and the two named buttons. Press each: the paid child opens the booking (Close leaves it), the sibling goes to the till (Cancel leaves it). Open the same family on a phone for the same picture.
+
+Pictures, in order:
+1) Before (3 November): one "Booked & paid · no payment needed" and two buttons both called "Check in".
+2) Now, computer: the green paid label, the amber to-pay label and the two named buttons.
+3) Now: Bua's button opens her paid booking, nothing to charge.
+4) Now: Nok's button puts only Nok on the till.
+5) Now, phone: the same labels and named buttons.
+6) Now: a family who all paid online, unchanged.

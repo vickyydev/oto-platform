@@ -1,0 +1,117 @@
+{
+ "at": "2026-11-04T14:08:16.456Z",
+ "out": [
+  {
+   "name": "oto-api-staging",
+   "serviceId": "srv-danh2ljtqb8s73bt9en0",
+   "autoDeploy": "yes",
+   "deploys": [
+    {
+     "id": "dep-dbljebavcj2c738r8t90",
+     "status": "live",
+     "commit": "ba64e70baf91",
+     "msg": "docs(qa): record the board card and display button landing rebase",
+     "finishedAt": "2026-11-04T13:50:06.559756Z"
+    },
+    {
+     "id": "dep-dblikvp7lnhs739phs60",
+     "status": "deactivated",
+     "commit": "a671f7bd0e8c",
+     "msg": "docs(qa): record the locked till reload landing rebase",
+     "finishedAt": "2026-11-04T12:55:52.924804Z"
+    },
+    {
+     "id": "dep-dblhvooae00c73cadsq0",
+     "status": "deactivated",
+     "commit": "b8286644d37d",
+     "msg": "docs(pos): record the scanner lane landing rebase",
+     "finishedAt": "2026-11-04T12:10:59.122535Z"
+    }
+   ]
+  },
+  {
+   "name": "oto-pos-web-staging",
+   "serviceId": "srv-dbk7qu8n74is73bm894g",
+   "autoDeploy": "yes",
+   "deploys": [
+    {
+     "id": "dep-dbljebavcj2c738r8u8g",
+     "status": "live",
+     "commit": "ba64e70baf91",
+     "msg": "docs(qa): record the board card and display button landing rebase",
+     "finishedAt": "2026-11-04T13:48:52.050802Z"
+    },
+    {
+     "id": "dep-dblikvp7lnhs739pht60",
+     "status": "deactivated",
+     "commit": "a671f7bd0e8c",
+     "msg": "docs(qa): record the locked till reload landing rebase",
+     "finishedAt": "2026-11-04T12:54:43.335411Z"
+    },
+    {
+     "id": "dep-dblhvpvf3r2c73a77q00",
+     "status": "deactivated",
+     "commit": "b8286644d37d",
+     "msg": "docs(pos): record the scanner lane landing rebase",
+     "finishedAt": "2026-11-04T12:10:05.083489Z"
+    }
+   ]
+  },
+  {
+   "name": "oto-pos-staging",
+   "serviceId": "srv-danh2mf40ujc73bu80j0",
+   "autoDeploy": "yes",
+   "deploys": [
+    {
+     "id": "dep-dbljebavcj2c738r8ucg",
+     "status": "live",
+     "commit": "ba64e70baf91",
+     "msg": "docs(qa): record the board card and display button landing rebase",
+     "finishedAt": "2026-11-04T13:47:03.396367Z"
+    },
+    {
+     "id": "dep-dblikvp7lnhs739phti0",
+     "status": "deactivated",
+     "commit": "a671f7bd0e8c",
+     "msg": "docs(qa): record the locked till reload landing rebase",
+     "finishedAt": "2026-11-04T12:53:05.654853Z"
+    },
+    {
+     "id": "dep-dblhe0avcj2c738oaej0",
+     "status": "deactivated",
+     "commit": "b8286644d37d",
+     "msg": "docs(pos): record the scanner lane landing rebase",
+     "finishedAt": "2026-11-04T11:29:45.113327Z"
+    }
+   ]
+  },
+  {
+   "name": "oto-console-staging",
+   "serviceId": "srv-danng2p42hec73f38e3g",
+   "autoDeploy": "yes",
+   "deploys": [
+    {
+     "id": "dep-dbljebavcj2c738r8ug0",
+     "status": "live",
+     "commit": "ba64e70baf91",
+     "msg": "docs(qa): record the board card and display button landing rebase",
+     "finishedAt": "2026-11-04T13:47:01.282631Z"
+    },
+    {
+     "id": "dep-dblikvp7lnhs739phteg",
+     "status": "deactivated",
+     "commit": "a671f7bd0e8c",
+     "msg": "docs(qa): record the locked till reload landing rebase",
+     "finishedAt": "2026-11-04T12:52:56.539779Z"
+    },
+    {
+     "id": "dep-dblhe0qvcj2c738oaf8g",
+     "status": "deactivated",
+     "commit": "b8286644d37d",
+     "msg": "docs(pos): record the scanner lane landing rebase",
+     "finishedAt": "2026-11-04T11:29:48.127911Z"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,70 @@
+// Two ZZ TEST families book a drop-off on the booking site, as a guest walks it, and pay on the
+// simulated hosted page (no real money). Creates nothing until Pay. Skips a family already booked.
+import assert from 'node:assert/strict';
+const SPECS = [
+  { key: 'family', parent: 'ZZ TEST SCRUM-741 Ying', child: 'ZZ TEST SCRUM-741 Bua', phone: '897410011', age: 6, shots: true },
+  { key: 'allPaid', parent: 'ZZ TEST SCRUM-741 Dao', child: 'ZZ TEST SCRUM-741 Mint', phone: '897410012', age: 6, shots: false },
+];
+export default async function (S) {
+  const { st, save, newPage, closePage, shot, POS } = S;
+  st.bookings = st.bookings ?? {};
+  const out = {};
+  for (const s of SPECS) {
+    if (st.bookings[s.key]) { out[s.key] = 'already booked'; continue; }
+    const { page } = await newPage('guest', { width: 1280, height: 1000 });
+    const trail = [];
+    const t = (x) => trail.push(new Date().toISOString().slice(11, 19) + ' ' + x);
+    await page.goto(`${POS}/book`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(3000);
+    await page.locator('input[type="tel"]').first().fill(s.phone);
+    await page.locator('input').nth(1).fill(s.parent);
+    await page.waitForTimeout(800);
+    await page.getByRole('button', { name: /^continue$/i }).first().click();
+    await page.waitForTimeout(2000); t('details in');
+    await page.getByText('1 Hour Play', { exact: true }).first().click();
+    await page.waitForTimeout(1200);
+    await page.locator('button').filter({ hasNotText: /./ }).nth(2).click();
+    await page.waitForTimeout(300);
+    await page.getByRole('button', { name: /Add to booking/ }).click();
+    await page.waitForTimeout(1200); t('package added');
+    await page.getByPlaceholder("Child's name").fill(s.child);
+    await page.getByRole('button', { name: 'Tap to set age' }).click();
+    await page.waitForTimeout(400);
+    await page.getByRole('button', { name: String(s.age), exact: true }).click();
+    await page.getByRole('button', { name: 'Jan', exact: true }).click();
+    await page.getByRole('button', { name: '15', exact: true }).click();
+    await page.getByRole('button', { name: 'Confirm', exact: true }).click();
+    await page.waitForTimeout(1000); t('child named');
+    await page.getByRole('button', { name: /Accept drop-off/ }).click();
+    await page.waitForTimeout(500);
+    await page.getByRole('button', { name: /Continue to child details/ }).click();
+    await page.waitForTimeout(1200);
+    await page.getByRole('button', { name: /^I authorize Oto Play Park/ }).click();
+    for (const x of ['I will remain within 15 minutes of the venue', 'I understand early pickup does not qualify for refund', 'I acknowledge the emergency evacuation point'])
+      await page.getByRole('button', { name: x }).click();
+    await page.waitForTimeout(400);
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await page.waitForTimeout(1200); t('at payment');
+    const bookingResp = page.waitForResponse((r) => r.url().includes('/public/bookings') && r.request().method() === 'POST' && !r.url().includes('checkout'), { timeout: 60000 });
+    await page.getByRole('button', { name: /card|credit/i }).first().click();
+    await page.waitForTimeout(500);
+    await page.getByRole('button', { name: /^Pay/ }).last().click();
+    const made = await (await bookingResp).json();
+    t('booking ' + made.reference);
+    await page.waitForURL(/2c2p\/hosted/, { timeout: 60000 });
+    await page.waitForTimeout(800);
+    assert.ok((await page.locator('body').innerText()).includes('Simulated payment page — no real money moves'), 'not the simulated page; stopping before Pay');
+    if (s.shots) await shot('guest', 's741', 's741-st-00a-guest-simulated-hosted-page');
+    await page.getByRole('button', { name: 'Pay', exact: true }).click();
+    await page.waitForURL(/\/book/, { timeout: 60000 });
+    await page.getByText(made.reference).first().waitFor({ timeout: 60000 });
+    await page.waitForTimeout(800);
+    if (s.shots) await shot('guest', 's741', 's741-st-00b-guest-booking-paid');
+    const confirmation = (await page.locator('body').innerText()).slice(0, 300).replace(/\n/g, ' | ');
+    st.bookings[s.key] = { bookingId: made.id, reference: made.reference, parent: s.parent, child: s.child, ageYears: s.age, visitDate: made.visitDate, totalSatang: made.totalSatang, paidAt: new Date().toISOString(), route: 'booking site page, simulated hosted page in a browser', trail, confirmation };
+    save();
+    await closePage('guest');
+    out[s.key] = st.bookings[s.key];
+  }
+  return out;
+}

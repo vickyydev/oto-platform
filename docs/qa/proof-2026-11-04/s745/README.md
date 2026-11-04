@@ -43,3 +43,7 @@ Re-run at about 20:25 Bangkok on the lane rebased onto main at `43993d793` (no
 conflicts): this spec passed its three widths again, alongside the POS typecheck,
 eslint, the whole POS unit suite and the api types check. See the SCRUM-741 README
 for the full list.
+
+## Staging
+
+Proved on staging on live `ba64e70b` at about 21:01 Bangkok on a ZZ TEST till: see `staging/README.md`. SCRUM-745 is Deployed.

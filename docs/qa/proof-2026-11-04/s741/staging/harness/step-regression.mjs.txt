@@ -1,0 +1,29 @@
+// 741 step 6: a family entirely paid online keeps "Booked & paid · no payment needed" and one plain Check in.
+import assert from 'node:assert/strict';
+import { familyCard, noticeGone } from './lib.mjs';
+export default async function (S) {
+  const { st, save, pages, shot } = S;
+  const page = pages.desktop.page;
+  const b = st.bookings.allPaid;
+  await page.getByRole('button', { name: 'Check-in', exact: true }).click();
+  await page.waitForTimeout(1500);
+  await page.locator('button, [role=tab]').filter({ hasText: /^\s*Upcoming\s*\d+\s*$/ }).first().click();
+  await page.getByPlaceholder(/Search child/).fill(b.parent);
+  await page.waitForTimeout(1200);
+  const card = familyCard(page, b.parent, 'Check in');
+  await card.waitFor({ state: 'visible', timeout: 30000 });
+  await noticeGone(page);
+  const seen = {
+    oldPill: await card.getByText('Booked & paid · no payment needed', { exact: true }).count(),
+    namedPaidPill: await card.getByText(`Booked & paid · ${b.child}`, { exact: true }).count(),
+    toPay: await card.getByText(/^To pay ·/).count(),
+    plainCheckIn: await card.getByRole('button', { name: 'Check in', exact: true }).count(),
+    namedPress: await card.getByRole('button', { name: `Check in ${b.child}`, exact: true }).count(),
+    cardText: (await card.innerText()).replace(/\n/g, ' | ').slice(-300),
+    at: new Date().toISOString(),
+  };
+  await shot('desktop', 's741', 's741-st-05-desktop-all-paid-family-unchanged');
+  st.steps.regression = seen; save();
+  assert.equal(seen.oldPill, 1); assert.equal(seen.namedPaidPill, 0); assert.equal(seen.toPay, 0); assert.equal(seen.plainCheckIn, 1); assert.equal(seen.namedPress, 0);
+  return seen;
+}

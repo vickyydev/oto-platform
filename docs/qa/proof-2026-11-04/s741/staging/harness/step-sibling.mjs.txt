@@ -1,0 +1,48 @@
+// The sibling joins at the door: the till's Add drop-off child picker, the family's Add sibling, a name and an age.
+// The sale the picker opens is cancelled: no payment is taken.
+import assert from 'node:assert/strict';
+const SIBLING = 'ZZ TEST SCRUM-741 Nok';
+export default async function (S) {
+  const { st, save, pages, shot, pageApi } = S;
+  const page = pages.desktop.page;
+  const b = st.bookings.family;
+  const seen = {};
+  if (await page.getByRole('button', { name: 'Tickets', exact: true }).count()) { await page.getByRole('button', { name: 'Tickets', exact: true }).click(); await page.waitForTimeout(1200); }
+  await page.getByRole('button', { name: 'Skip — walk-in (Tourist)' }).click();
+  await page.waitForTimeout(800);
+  await page.getByRole('heading', { name: 'Tourist' }).click();
+  await page.waitForTimeout(800);
+  await page.getByRole('button', { name: 'Add drop-off child' }).click();
+  const family = page.getByRole('dialog').locator('div').filter({ hasText: `${b.parent}'s booking` }).filter({ has: page.getByRole('button', { name: 'Add sibling' }) }).last();
+  await family.getByText(b.child).waitFor({ timeout: 30000 });
+  await family.scrollIntoViewIfNeeded();
+  await family.getByRole('button', { name: 'Add sibling' }).click();
+  await family.getByPlaceholder('Child name').fill(SIBLING);
+  await family.getByRole('button', { name: 'Tap to set age' }).click();
+  await page.getByRole('button', { name: '5', exact: true }).click();
+  await page.getByRole('button', { name: 'Jan', exact: true }).click();
+  await page.getByRole('button', { name: '15', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirm', exact: true }).click();
+  await page.waitForTimeout(400);
+  await shot('desktop', 's741', 's741-st-01-desktop-sibling-added-at-the-door');
+  await family.getByRole('button', { name: 'Add & attach' }).click();
+  await page.getByRole('heading', { name: `${SIBLING} · 5y` }).waitFor({ timeout: 30000 });
+  await page.waitForTimeout(1200);
+  const order = page.getByRole('heading', { name: 'Current Order' }).locator('../..');
+  seen.orderText = (await order.innerText()).replace(/\n/g, ' | ').slice(0, 400);
+  seen.paidChildOnSale = await order.getByText(b.child).count();
+  // Take no payment: the order is cancelled.
+  await order.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await page.waitForTimeout(1500);
+  seen.afterCancel = (await page.locator('body').innerText()).replace(/\n/g, ' | ').slice(0, 300);
+  const confirm = page.getByRole('dialog').getByRole('button', { name: /^(Cancel order|Yes|Discard|Clear)/ });
+  seen.confirmDialog = await confirm.count();
+  const me = await pageApi('desktop', 'GET', '/me');
+  const regs = await pageApi('desktop', 'GET', `/checkin/registrations?branchId=${me.body.branch.id}`);
+  const reg = (regs.body?.registrations ?? []).find((r) => r.guardianName === b.parent);
+  seen.registration = reg ? { id: reg.id, children: (reg.children ?? []).map((c) => ({ id: c.id, name: c.childName ?? c.name, status: c.status, saleId: c.saleId ?? null, bookingId: c.bookingId ?? null })) } : null;
+  assert.ok(reg, 'the family registration');
+  st.sibling = { name: SIBLING, ageYears: 5, addedAt: new Date().toISOString(), ...seen };
+  save();
+  return st.sibling;
+}

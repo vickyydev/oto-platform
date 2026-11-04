@@ -1,0 +1,14 @@
+Checked on staging on 4 November 2026 at about 21:01 Bangkok, on the live commit ba64e70b, on a test till ("ZZ TEST SCRUM-741 till") with the customer display shown beside it. A test walk-in ticket was put on the till to show the display's order screen, and then cancelled; no payment was taken.
+
+What a person sees now: on the customer display's order screen, the language button sits to the right of the "Your Order" heading instead of on top of it. Checked in Thai, Russian and English, at a computer width (1440) and an upright iPad width (768). The heading is whole and readable every time. At 768 the heading takes two lines, and the button still sits beside it. Other display screens, such as "Are you a member?", keep the button in the top corner as before.
+
+How to retest: sign in on a till with the customer display showing beside it; press Skip, walk-in (Tourist), then pick a ticket such as 1 Hour Play; on the display press the language button and choose Thai, then Russian, then English. Expected: each time the heading stays whole and the button sits to its right. Then Cancel the order.
+
+Pictures, in order:
+1) Thai at 1440.
+2) Russian at 1440.
+3) English at 1440.
+4) Thai at 768.
+5) Russian at 768.
+6) English at 768.
+7) The "Are you a member?" screen: the button stays in its corner.

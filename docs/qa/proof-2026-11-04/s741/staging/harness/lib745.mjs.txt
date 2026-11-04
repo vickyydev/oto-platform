@@ -1,0 +1,35 @@
+import assert from 'node:assert/strict';
+export const LANGUAGES = [
+  { code: 'th', label: 'ไทย', change: 'เปลี่ยนภาษา', heading: 'คำสั่งซื้อของคุณ' },
+  { code: 'ru', label: 'Русский', change: 'Сменить язык', heading: 'Ваш заказ' },
+  { code: 'en', label: 'English', change: 'Change language', heading: 'Your Order' },
+];
+const overlap = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+/** Switch the display through its own button to each language; measure the heading and the button; screen each. */
+export async function eachLanguage(S, width) {
+  const { pages, shot } = S;
+  const page = pages.desktop.page;
+  const out = [];
+  let current = page.getByRole('button', { name: 'Change language', exact: true });
+  for (const lang of LANGUAGES) {
+    await current.click();
+    await page.getByRole('button', { name: lang.label, exact: true }).click();
+    const button = page.getByRole('button', { name: lang.change, exact: true });
+    const heading = page.getByText(lang.heading, { exact: true });
+    await heading.waitFor({ timeout: 10000 });
+    await page.waitForTimeout(600);
+    const b = await button.boundingBox();
+    const h = await heading.boundingBox();
+    const row = {
+      lang: lang.code, width, buttons: await button.count(), button: b, heading: h,
+      overlap: overlap(b, h), headingEndsBeforeButton: h.x + h.width <= b.x, buttonOnScreen: b.x + b.width <= width,
+      sameRow: Math.abs((b.y + b.height / 2) - (h.y + h.height / 2)) < Math.max(b.height, h.height),
+      buttonText: (await button.innerText()).trim(),
+    };
+    await shot('desktop', 's745', `s745-st-${width}-${lang.code}`);
+    out.push(row);
+    assert.equal(row.buttons, 1); assert.ok(!row.overlap, `${lang.code} at ${width}: overlap`); assert.ok(row.headingEndsBeforeButton); assert.ok(row.buttonOnScreen);
+    current = button;
+  }
+  return out;
+}

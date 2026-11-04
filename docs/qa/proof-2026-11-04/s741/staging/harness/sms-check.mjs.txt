@@ -1,0 +1,6 @@
+import { service, envValue } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/render.mjs';
+const s = await service('oto-api-staging');
+const v = await envValue(s.id, 'SMS_PROVIDER');
+console.log('SMS_PROVIDER is console/dev/log/unset:', [null, '', 'dev', 'console', 'log', 'logger'].includes(v));
+const w = await envValue(s.id, 'WHATSAPP_PROVIDER'); console.log('WHATSAPP_PROVIDER set:', w !== null && w !== '');
+const m = await envValue(s.id, 'MESSAGING_PROVIDER'); console.log('MESSAGING_PROVIDER set:', m !== null && m !== '');

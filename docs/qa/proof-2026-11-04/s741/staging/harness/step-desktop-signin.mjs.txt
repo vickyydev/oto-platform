@@ -1,0 +1,6 @@
+import { signIn } from './lib.mjs';
+export default async function (S) {
+  const page = await signIn(S, 'desktop', { width: 1440, height: 1024 });
+  await page.getByText('Membership Check', { exact: true }).waitFor({ timeout: 40000 });
+  return S.st.tills.desktop;
+}

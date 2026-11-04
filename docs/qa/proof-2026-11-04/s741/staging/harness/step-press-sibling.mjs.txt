@@ -1,0 +1,35 @@
+// 741 step 4: the sibling's named press takes Nok, and only Nok, to the till. Cancelled without charging.
+import assert from 'node:assert/strict';
+import { familyCard } from './lib.mjs';
+export default async function (S) {
+  const { st, save, pages, shot } = S;
+  const page = pages.desktop.page;
+  const b = st.bookings.family;
+  const sib = st.sibling.name;
+  await page.getByRole('button', { name: 'Check-in', exact: true }).click();
+  await page.waitForTimeout(1500);
+  await page.locator('button, [role=tab]').filter({ hasText: /^\s*Upcoming\s*\d+\s*$/ }).first().click();
+  await page.getByPlaceholder(/Search child/).fill(b.parent);
+  await page.waitForTimeout(1200);
+  const card = familyCard(page, b.parent, `Check in ${sib}`);
+  await card.waitFor({ state: 'visible', timeout: 30000 });
+  await card.getByRole('button', { name: `Check in ${sib}`, exact: true }).click();
+  const order = page.getByRole('heading', { name: 'Current Order' }).locator('../..');
+  await order.getByText(sib, { exact: true }).first().waitFor({ timeout: 30000 });
+  await page.waitForTimeout(1500);
+  const seen = {
+    orderText: (await order.innerText()).replace(/\n/g, ' | ').slice(0, 600),
+    siblingOnSale: await order.getByText(sib, { exact: true }).count(),
+    paidChildOnSale: await order.getByText(b.child).count(),
+    pay: ((await order.getByRole('button', { name: /^Pay/ }).first().innerText().catch(() => '')) || '').replace(/\s+/g, ' '),
+    at: new Date().toISOString(),
+  };
+  await shot('desktop', 's741', 's741-st-04-desktop-sibling-goes-to-the-till');
+  await order.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await page.waitForTimeout(1500);
+  seen.afterCancelNoItems = await page.getByText('No items added yet', { exact: true }).count();
+  seen.tookNoPayment = true;
+  st.steps.pressSibling = seen; save();
+  assert.ok(seen.siblingOnSale >= 1); assert.equal(seen.paidChildOnSale, 0);
+  return seen;
+}

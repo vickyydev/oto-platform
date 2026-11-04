@@ -35,3 +35,7 @@ conflicts (the till scanner, typed band and locked reload work landed since; non
 of them touch these files). On the rebased tree the POS typecheck, eslint on the
 changed files, the whole POS unit suite (143 files, 1988 tests), this spec and the
 SCRUM-745 spec (three cases each) and the api types check all passed.
+
+## Staging
+
+Proved on staging on live `ba64e70b` at about 21:00 Bangkok with ZZ TEST records: see `staging/README.md`. SCRUM-741 is Deployed.

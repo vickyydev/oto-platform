@@ -1,0 +1,47 @@
+{
+  "key": "SCRUM-745",
+  "statusBefore": "Testing",
+  "imagesBefore": 0,
+  "attachStatus": 200,
+  "attached": [
+    {
+      "id": "12563",
+      "name": "s745-st-1440-th.png"
+    },
+    {
+      "id": "12564",
+      "name": "s745-st-1440-ru.png"
+    },
+    {
+      "id": "12565",
+      "name": "s745-st-1440-en.png"
+    },
+    {
+      "id": "12566",
+      "name": "s745-st-768-th.png"
+    },
+    {
+      "id": "12567",
+      "name": "s745-st-768-ru.png"
+    },
+    {
+      "id": "12568",
+      "name": "s745-st-768-en.png"
+    },
+    {
+      "id": "12569",
+      "name": "s745-st-1440-00-membership-screen-corner-button.png"
+    }
+  ],
+  "commentStatus": 201,
+  "commentId": "13471",
+  "renderedImages": 8,
+  "imagesOnTicket": 7,
+  "walk": {
+    "to": "Deployed",
+    "via": "node scripts/agent/jira.mjs walk SCRUM-745 Deployed",
+    "commitLinksAdded": 1,
+    "statusReadBack": "Deployed",
+    "at": "2026-11-04T14:10:51.520Z"
+  }
+}

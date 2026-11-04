@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict';
+const BS = String.fromCharCode(92);
+export const escapeRe = (s) => [...s].map((c) => ('.*+?^$' + '{}()|[]' + BS).includes(c) ? BS + c : c).join('');
+export async function signIn(S, label, viewport, opts = {}) {
+  const { st, save, newPage, expect, need, POS, pageApi } = S;
+  const f = st.fixture;
+  const { page } = await newPage(label, viewport, opts);
+  await page.goto(POS + '/');
+  await expect(page.getByRole('heading', { name: 'Oto POS is locked' })).toBeVisible({ timeout: 60000 });
+  await page.locator('input[inputmode="tel"], input[type="tel"]').first().fill(need('STAGING_RECEPTION_PHONE').replace(/^\+66/, '0'));
+  await page.locator('input[type="password"][autocomplete="current-password"]').fill(need('STAGING_RECEPTION_PASSWORD'));
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Which station are you on?' })).toBeVisible({ timeout: 30000 });
+  await page.getByRole('button', { name: new RegExp(escapeRe(f.stationName)) }).click();
+  await expect(page.getByRole('heading', { name: 'Which station are you on?' })).toBeHidden({ timeout: 30000 });
+  await page.waitForTimeout(2500);
+  const me = await pageApi(label, 'GET', '/me');
+  assert.equal(me.status, 200);
+  const link = await pageApi(label, 'GET', '/me/station/link');
+  st.tills = st.tills ?? {};
+  st.tills[label] = { accountId: me.body.account.id, viewport, signedInAt: new Date().toISOString(), onTheZzTestTill: link.body?.stationId === f.stationId };
+  save();
+  assert.ok(st.tills[label].onTheZzTestTill, 'the session is on the ZZ TEST till');
+  return page;
+}
+/** Wait for the station's "is yours" notice to go, so it covers nothing in a screen. */
+export async function noticeGone(page) {
+  await page.getByText(/till is yours/).first().waitFor({ state: 'hidden', timeout: 20000 }).catch(() => {});
+}
+export const familyCard = (page, parent, button) =>
+  page.locator('[class*="bg-card"]').filter({ hasText: parent }).filter({ has: page.getByRole('button', { name: button, exact: true }) }).last();

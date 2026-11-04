@@ -1,0 +1,48 @@
+// Cleanup and readback: both till sessions sign out, the ZZ TEST till is archived, and every ZZ TEST record is read
+// back through the API (bookings, stays, sales, payments, bands, print jobs; no open sale at the till).
+import assert from 'node:assert/strict';
+export default async function (S) {
+  const { st, save, pages, pageApi, adminApi } = S;
+  const f = st.fixture;
+  const c = st.cleanup = st.cleanup ?? { actions: [] };
+  const act = (what, r) => { c.actions.push({ at: new Date().toISOString(), what, status: r.status, code: r.body?.error?.code ?? null }); save(); return r; };
+  // Readback first, while the till still lists its sales.
+  const rb = { capturedAt: new Date().toISOString(), families: {} };
+  const list = await adminApi('GET', `/sales?branchId=${f.branchId}&stationId=${f.stationId}&limit=50`);
+  rb.salesAtTheTestTill = (list.body?.sales ?? list.body?.items ?? []).map((r) => ({ id: r.id, status: r.status, receipt: r.receiptNumber }));
+  for (const [k, v] of Object.entries(st.bookings)) {
+    const b = await adminApi('GET', `/bookings/by-reference/${v.reference}`);
+    const reg = await adminApi('GET', `/checkin/registrations/${b.body.registrationId}`);
+    const kids = reg.body.children ?? [];
+    const saleIds = [...new Set(kids.map((x) => x.saleId).filter(Boolean))];
+    const sales = [];
+    for (const id of saleIds) {
+      const s = await adminApi('GET', `/sales/${id}`);
+      sales.push({ id, receipt: s.body.sale.receiptNumber, status: s.body.sale.status, channel: s.body.sale.salesChannel, note: s.body.sale.note, grossSatang: s.body.sale.totals.grossSatang, refundedSatang: s.body.sale.totals.refundedSatang,
+        payments: s.body.attempts.map((a) => ({ provider: a.provider, method: a.method, status: a.status, amountSatang: a.amountSatang })),
+        bands: s.body.bands.map((x) => ({ code: x.shortCode, status: x.status })), printJobs: s.body.printJobs.map((j) => ({ kind: j.kind, status: j.status, device: j.deviceLabel })),
+        lines: s.body.lines.map((l) => ({ label: l.label, grossSatang: l.grossSatang })) });
+    }
+    rb.families[k] = { reference: v.reference, bookingStatus: b.body.status, bookingTotalSatang: b.body.totalSatang, registrationId: b.body.registrationId,
+      stays: kids.map((x) => ({ id: x.id, name: x.childName, service: x.service, status: x.status, saleId: x.saleId, bandId: x.bandId, photo: !!x.photoFileId, checkedOutAt: x.checkedOutAt ?? null })), sales };
+  }
+  st.readback = rb; save();
+  // Sign out both till sessions.
+  for (const label of ['phone', 'desktop']) {
+    if (!pages[label] || c[label + 'SignedOut']) continue;
+    act(`${label} till sign-out`, await pageApi(label, 'POST', '/auth/sign-out'));
+    c[label + 'SignedOut'] = { meAfter: (await pageApi(label, 'GET', '/me')).status }; save();
+  }
+  // Archive the ZZ TEST till (mine by name).
+  if (!c.tillArchived) {
+    const s0 = await adminApi('GET', `/stations/${f.stationId}`);
+    assert.equal((s0.body.station ?? s0.body).name, 'ZZ TEST SCRUM-741 till');
+    const r = act('archive the ZZ TEST till', await adminApi('DELETE', `/stations/${f.stationId}`));
+    assert.equal(r.status, 200, JSON.stringify(r.body?.error ?? r.body));
+    c.tillArchived = new Date().toISOString(); save();
+  }
+  const live = (await adminApi('GET', `/branches/${f.branchId}/stations`)).body.stations;
+  c.readback = { tillInLiveList: live.some((x) => x.id === f.stationId), zz741StationsLive: live.filter((x) => /SCRUM-741/.test(x.name)).length };
+  save();
+  return { readback: rb, cleanup: c };
+}

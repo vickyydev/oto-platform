@@ -1,0 +1,35 @@
+// 741 step 2 at 1440: the family's card on Check-in > Drop-off > Upcoming.
+import assert from 'node:assert/strict';
+import { familyCard, noticeGone } from './lib.mjs';
+export default async function (S) {
+  const { st, save, pages, shot } = S;
+  const page = pages.desktop.page;
+  const b = st.bookings.family;
+  const sib = st.sibling.name;
+  await page.getByRole('button', { name: 'Check-in', exact: true }).click();
+  await page.waitForTimeout(1500);
+  const dropTab = page.getByRole('button', { name: 'Drop-off', exact: true });
+  if (await dropTab.count()) await dropTab.first().click();
+  await page.locator('button, [role=tab]').filter({ hasText: /^\s*Upcoming\s*\d+\s*$/ }).first().click();
+  await page.getByPlaceholder(/Search child/).fill(b.parent);
+  await page.waitForTimeout(1200);
+  const card = familyCard(page, b.parent, `Check in ${b.child}`);
+  await card.waitFor({ state: 'visible', timeout: 30000 });
+  await noticeGone(page);
+  const seen = {
+    paidPill: await card.getByText(`Booked & paid · ${b.child}`, { exact: true }).count(),
+    toPayPill: await card.getByText(`To pay · ${sib}`, { exact: true }).count(),
+    oldPill: await card.getByText('Booked & paid · no payment needed').count(),
+    plainCheckIn: await card.getByRole('button', { name: 'Check in', exact: true }).count(),
+    paidPress: await card.getByRole('button', { name: `Check in ${b.child}`, exact: true }).count(),
+    siblingPress: await card.getByRole('button', { name: `Check in ${sib}`, exact: true }).count(),
+    cardText: (await card.innerText()).replace(/\n/g, ' | ').slice(0, 900),
+    at: new Date().toISOString(),
+  };
+  await card.scrollIntoViewIfNeeded();
+  await shot('desktop', 's741', 's741-st-02-desktop-board-paid-and-to-pay');
+  st.steps.board = seen; save();
+  assert.equal(seen.paidPill, 1); assert.equal(seen.toPayPill, 1); assert.equal(seen.oldPill, 0); assert.equal(seen.plainCheckIn, 0);
+  assert.equal(seen.paidPress, 1); assert.equal(seen.siblingPress, 1);
+  return seen;
+}

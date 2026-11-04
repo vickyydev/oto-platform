@@ -1,0 +1,23 @@
+// Read only: the staff branch, Virtual box 1 and its devices, the station prefixes in use.
+import assert from 'node:assert/strict';
+export default async function (S) {
+  const { adminApi } = S;
+  const me = await adminApi('GET', '/me');
+  assert.equal(me.status, 200);
+  const BRANCH = me.body.operatorContext.branchId;
+  const boxes = (await adminApi('GET', `/branches/${BRANCH}/boxes`)).body.boxes;
+  const vb1 = boxes.find((b) => b.name === 'Virtual box 1');
+  const stations = (await adminApi('GET', `/branches/${BRANCH}/stations?includeArchived=true`)).body.stations;
+  const s730 = stations.find((s) => s.name === 'ZZ TEST SCRUM-730 till');
+  const devs = await adminApi('GET', `/boxes/${vb1?.id}/devices`);
+  return {
+    branch: BRANCH,
+    boxes: boxes.map((b) => ({ id: b.id, name: b.name, role: b.role, status: b.status })),
+    vb1: vb1 ? { id: vb1.id, name: vb1.name, role: vb1.role } : null,
+    devicesStatus: devs.status,
+    devices: (devs.body?.devices ?? []).map((d) => ({ id: d.id, label: d.label, kind: d.kind, transport: d.transport })),
+    s730Station: s730 ? { id: s730.id, archivedAt: s730.archivedAt ?? null, devices: (s730.devices ?? []).map((d) => [d.role, d.deviceId ?? d.id, d.label, d.transport]), paymentRouting: s730.paymentRouting } : null,
+    prefixes: stations.map((s) => s.codePrefix).filter((p) => /^Z7/.test(p ?? '')),
+    zz741: stations.filter((s) => /SCRUM-741/.test(s.name)).map((s) => ({ id: s.id, name: s.name, archivedAt: s.archivedAt ?? null })),
+  };
+}

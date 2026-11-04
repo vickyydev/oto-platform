@@ -1,0 +1,30 @@
+// 741 step 3: the paid child's named press opens Bua's booking, nothing to charge. Cancelled out.
+import assert from 'node:assert/strict';
+import { familyCard } from './lib.mjs';
+export default async function (S) {
+  const { st, save, pages, shot } = S;
+  const page = pages.desktop.page;
+  const b = st.bookings.family;
+  const card = familyCard(page, b.parent, `Check in ${b.child}`);
+  await card.getByRole('button', { name: `Check in ${b.child}`, exact: true }).click();
+  const d = page.getByRole('dialog');
+  await d.getByText(b.reference).waitFor({ timeout: 30000 });
+  await page.waitForTimeout(1200);
+  const seen = { dialog: (await d.innerText()).replace(/\n/g, ' | ').slice(0, 700), at: new Date().toISOString() };
+  seen.namesBua = seen.dialog.includes(b.child);
+  seen.namesNok = seen.dialog.includes(st.sibling.name);
+  await shot('desktop', 's741', 's741-st-03-desktop-paid-child-opens-the-booking');
+  // Behind the dialog: the order holds nothing to charge.
+  seen.behind = {
+    noItems: await page.getByText('No items added yet', { exact: true }).count(),
+    pay: ((await page.getByRole('button', { name: /^Pay /, includeHidden: true }).first().innerText().catch(() => '')) || '').replace(/\s+/g, ' '),
+  };
+  // Cancel out: the dialog's own Close.
+  const close = d.getByRole('button', { name: 'Close', exact: true });
+  if (await close.count()) await close.first().click(); else await page.keyboard.press('Escape');
+  await page.waitForTimeout(1200);
+  seen.dialogAfterClose = await page.getByRole('dialog').count();
+  st.steps.pressPaid = seen; save();
+  assert.ok(seen.namesBua); assert.ok(!seen.namesNok);
+  return seen;
+}

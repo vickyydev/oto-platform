@@ -1,0 +1,93 @@
+// Close-out, as the SCRUM-730 proof did: each paid ZZ TEST child goes the real way through the till with no new
+// payment (redeem the paid booking, check in with a synthetic photo, band on the simulated printer, pick-up).
+// The unpaid sibling stays registered: nothing in the product removes a waiting child.
+import assert from 'node:assert/strict';
+import { familyCard, escapeRe } from './lib.mjs';
+const tab = (page, name) => page.locator('button, [role=tab]').filter({ hasText: new RegExp(String.raw`^\s*` + name + String.raw`\s*\d+\s*$`) }).first();
+async function board(page, name, parent) {
+  await page.getByRole('button', { name: 'Check-in', exact: true }).click().catch(() => {});
+  await page.waitForTimeout(1200);
+  await tab(page, name).click();
+  await page.getByPlaceholder(/Search child/).fill(parent);
+  await page.waitForTimeout(1200);
+}
+export default async function (S) {
+  const { st, save, pages } = S;
+  const page = pages.desktop.page;
+  const c = st.closeout = st.closeout ?? {};
+  const fams = [
+    { key: 'family', ...st.bookings.family, press: `Check in ${st.bookings.family.child}` },
+    { key: 'allPaid', ...st.bookings.allPaid, press: 'Check in' },
+  ];
+  for (const f of fams) {
+    const r = c[f.key] = c[f.key] ?? {};
+    if (!r.redeemed) {
+      await board(page, 'Upcoming', f.parent);
+      const card = familyCard(page, f.parent, f.press);
+      await card.waitFor({ state: 'visible', timeout: 30000 });
+      await card.getByRole('button', { name: f.press, exact: true }).click();
+      const d = page.getByRole('dialog');
+      await d.getByText(f.reference).waitFor({ timeout: 30000 });
+      const redeem = page.waitForResponse((x) => /\/bookings\/[^/]+\/redeem/.test(x.url()) && x.request().method() === 'POST', { timeout: 60000 });
+      await d.getByRole('button', { name: 'Confirm & Issue' }).click();
+      const got = await redeem;
+      r.redeemStatus = got.status();
+      assert.equal(r.redeemStatus, 200, 'redeem');
+      await page.getByRole('button', { name: 'Check in now', exact: true }).waitFor({ timeout: 40000 });
+      await page.getByRole('button', { name: 'Check in now', exact: true }).click();
+      await page.waitForTimeout(2000);
+      r.redeemed = new Date().toISOString(); save();
+    }
+    if (!r.checkedIn) {
+      await board(page, 'Upcoming', f.parent);
+      const card = familyCard(page, f.parent, f.press);
+      await card.waitFor({ state: 'visible', timeout: 30000 });
+      await card.getByRole('button', { name: f.press, exact: true }).click();
+      const issue = page.getByRole('button', { name: /^Check in & issue band/ });
+      await issue.waitFor({ timeout: 30000 });
+      const modal = page.getByRole('dialog');
+      const modalText = (await modal.innerText()).replace(/\n/g, ' | ').slice(0, 300);
+      r.modal = modalText;
+      assert.ok(modalText.includes(f.child), 'the check-in is for the paid child');
+      assert.ok(!modalText.includes(st.sibling.name), 'the sibling is not in the paid check-in');
+      if (await modal.getByRole('button', { name: 'Start camera' }).count()) {
+        await modal.getByRole('button', { name: 'Start camera' }).click();
+        await modal.getByRole('button', { name: 'Take photo' }).click({ timeout: 20000 });
+        await page.waitForTimeout(800);
+      }
+      const consent = modal.getByRole('checkbox');
+      if (await consent.count()) await consent.first().click();
+      const resp = page.waitForResponse((x) => x.url().includes('/checkin/check-in-booked') && x.request().method() === 'POST', { timeout: 60000 });
+      await issue.click();
+      const got = await resp;
+      const body = await got.json().catch(() => ({}));
+      r.checkInStatus = got.status();
+      assert.equal(r.checkInStatus, 200, 'check-in-booked ' + JSON.stringify(body?.error ?? ''));
+      r.saleIds = body.saleIds; r.stays = (body.children ?? []).map((x) => ({ id: x.id, name: x.childName, status: x.status, bandId: x.bandId }));
+      r.checkedIn = new Date().toISOString(); save();
+      await page.waitForTimeout(1500);
+    }
+    if (!r.out) {
+      await board(page, 'In Park', f.parent);
+      const card = page.locator('[class*="bg-card"]').filter({ hasText: f.parent }).filter({ has: page.getByRole('button', { name: 'Check Out', exact: true }) }).last();
+      await card.waitFor({ state: 'visible', timeout: 30000 });
+      await card.getByRole('button', { name: 'Check Out', exact: true }).click();
+      const d = page.getByRole('dialog');
+      await page.waitForTimeout(1500);
+      await d.getByRole('button').filter({ hasText: new RegExp(escapeRe(f.parent)) }).first().click();
+      await d.getByRole('button', { name: 'Start camera' }).click({ timeout: 20000 });
+      await d.getByRole('button', { name: 'Take photo' }).click({ timeout: 20000 });
+      const confirm = d.getByRole('button', { name: 'Confirm pickup & check out' });
+      await confirm.waitFor({ timeout: 30000 });
+      await page.waitForTimeout(800);
+      const resp = page.waitForResponse((x) => /\/stays\/[^/]+\/release/.test(x.url()) && x.request().method() === 'POST', { timeout: 60000 });
+      await confirm.click();
+      const got = await resp;
+      r.releaseStatus = got.status();
+      assert.equal(r.releaseStatus, 200, 'release');
+      r.out = new Date().toISOString(); save();
+      await page.waitForTimeout(1200);
+    }
+  }
+  return c;
+}

@@ -1,0 +1,24 @@
+// Resume the first family on the simulated hosted page the guest already reached (the check that the page is the
+// simulator now reads the page itself: the checkout's answer was not readable after the redirect).
+import assert from 'node:assert/strict';
+export default async function (S) {
+  const { st, save, pages, closePage, shot } = S;
+  const page = pages.guest.page;
+  assert.match(page.url(), /2c2p\/hosted/);
+  const top = (await page.locator('body').innerText()).replace(/\n/g, ' | ');
+  assert.ok(top.includes('Simulated payment page — no real money moves'), 'not the simulated page');
+  const ref = /OTO-[A-Z0-9]{4}-[A-Z0-9]{4}/.exec(top)?.[0];
+  assert.ok(ref);
+  await shot('guest', 's741', 's741-st-00a-guest-simulated-hosted-page');
+  await page.getByRole('button', { name: 'Pay', exact: true }).click();
+  await page.waitForURL(/\/book/, { timeout: 60000 });
+  await page.getByText(ref).first().waitFor({ timeout: 60000 });
+  await page.waitForTimeout(800);
+  await shot('guest', 's741', 's741-st-00b-guest-booking-paid');
+  const confirmation = (await page.locator('body').innerText()).slice(0, 300).replace(/\n/g, ' | ');
+  st.bookings = st.bookings ?? {};
+  st.bookings.family = { reference: ref, parent: 'ZZ TEST SCRUM-741 Ying', child: 'ZZ TEST SCRUM-741 Bua', ageYears: 6, hostedPage: top.slice(0, 200), paidAt: new Date().toISOString(), route: 'booking site page, simulated hosted page in a browser', confirmation };
+  save();
+  await closePage('guest');
+  return st.bookings.family;
+}

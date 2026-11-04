@@ -1,0 +1,720 @@
+{
+  "unit": "SCRUM-741/745",
+  "source": "ba64e70baf91b0de9146e644672dfa82fcee78d7",
+  "startedAt": "2026-11-04T13:56:54.346Z",
+  "fixture": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "boxName": "Virtual box 1",
+    "stationId": "01a1a6d9-878b-7617-8350-8ad081a59326",
+    "stationName": "ZZ TEST SCRUM-741 till",
+    "codePrefix": "Z741",
+    "stationCreatedAt": "2026-11-04T13:57:15.775Z",
+    "routingSet": "2026-11-04T13:57:15.876Z",
+    "readback": {
+      "name": "ZZ TEST SCRUM-741 till",
+      "kind": "till",
+      "box": "Virtual box 1",
+      "ready": true,
+      "reasons": [],
+      "paymentRouting": {
+        "qr": "none",
+        "card": "manual"
+      },
+      "devices": [
+        [
+          "adult_band",
+          "Band Printer (adults)",
+          "simulated"
+        ],
+        [
+          "kids_band",
+          "Band Printer (kids)",
+          "simulated"
+        ],
+        [
+          "receipt",
+          "Receipt Printer 1",
+          "simulated"
+        ]
+      ]
+    }
+  },
+  "steps": {
+    "board": {
+      "paidPill": 1,
+      "toPayPill": 1,
+      "oldPill": 0,
+      "plainCheckIn": 0,
+      "paidPress": 1,
+      "siblingPress": 1,
+      "cardText": "ZZ TEST SCRUM-741 Ying | 2 children | +66897410011 | Message | Awaiting confirmation |  | Waiting for parent to tap \"Confirm received\" in WhatsApp. |  | 🇹🇭 | +66 | WhatsApp | Telegram | LINE |  | Stored as: +66897410011 |  | Save & re-send | Resend | Sim: parent confirms | Couldn't reach | Z | ZZ TEST SCRUM-741 Bua | 6 yrs | DROP-OFF | Z | ZZ TEST SCRUM-741 Nok | 5 yrs | DROP-OFF | No arrival time set | Booked & paid · ZZ TEST SCRUM-741 Bua | To pay · ZZ TEST SCRUM-741 Nok | Check in ZZ TEST SCRUM-741 Bua | Check in ZZ TEST SCRUM-741 Nok",
+      "at": "2026-11-04T14:00:14.268Z"
+    },
+    "pressPaid": {
+      "dialog": "Redeem Online Booking |  | Scan or type the booking reference from the customer's QR code. |  | OTO-YJLN-QLDK | Tourist | Drop-off: ZZ TEST SCRUM-741 Bua | Card | ฿915 paid |  | Will issue at the door: |  | • 1 child wristband | • Drop-off check-in for ZZ TEST SCRUM-741 Bua | After confirming, you'll be prompted to check in the drop-off child via the registration flow. | Back | Confirm & Issue | Close",
+      "at": "2026-11-04T14:00:27.510Z",
+      "namesBua": true,
+      "namesNok": false,
+      "behind": {
+        "noItems": 1,
+        "pay": "Pay ฿0"
+      },
+      "dialogAfterClose": 0
+    },
+    "pressSibling": {
+      "orderText": "Current Order | TOURIST | ZZ TEST SCRUM-741 Nok | EDITING | — | Choose length | Drop-off service | Configure | Apply | Redeem | Issue a voucher… | Add manual discount | Subtotal | — | Total | — | Priced on this till. A drop-off child has no play length chosen yet. | Cancel | Pay —",
+      "siblingOnSale": 1,
+      "paidChildOnSale": 0,
+      "pay": "Pay —",
+      "at": "2026-11-04T14:00:45.048Z",
+      "afterCancelNoItems": 1,
+      "tookNoPayment": true
+    },
+    "regression": {
+      "oldPill": 1,
+      "namedPaidPill": 0,
+      "toPay": 0,
+      "plainCheckIn": 1,
+      "namedPress": 0,
+      "cardText": "t to tap \"Confirm received\" in WhatsApp. |  | 🇹🇭 | +66 | WhatsApp | Telegram | LINE |  | Stored as: +66897410012 |  | Save & re-send | Resend | Sim: parent confirms | Couldn't reach | Z | ZZ TEST SCRUM-741 Mint | 6 yrs | DROP-OFF | No arrival time set | Booked & paid · no payment needed | Check in",
+      "at": "2026-11-04T14:01:00.870Z"
+    },
+    "phone": {
+      "paidPill": 1,
+      "toPayPill": 1,
+      "oldPill": 0,
+      "plainCheckIn": 0,
+      "paidPress": 1,
+      "siblingPress": 1,
+      "at": "2026-11-04T14:01:21.007Z"
+    },
+    "s745": {
+      "harnessBanner": 1,
+      "nonOrder": {
+        "cornerBox": {
+          "x": 1326.609375,
+          "y": 222,
+          "width": 97.390625,
+          "height": 34
+        },
+        "memberHeading": {
+          "x": 752,
+          "y": 270,
+          "width": 656,
+          "height": 48
+        }
+      },
+      "orderText1440": "Current Order | TOURIST | 1 Hour Play | EDITING | ฿1040 | Kids | ฿690 each | 1 | Adults | ฿350 each | 1 | Regular Socks | ฿0 each | 0 | Apply | Redeem | Issue a voucher… | Add manual discount | Subtotal | ฿1040 | VAT included | ฿68.04 | Total | ฿1040 | Cancel | Pay ฿1040",
+      "at1440": [
+        {
+          "lang": "th",
+          "width": 1440,
+          "buttons": 1,
+          "button": {
+            "x": 1333.15625,
+            "y": 243,
+            "width": 74.84375,
+            "height": 34
+          },
+          "heading": {
+            "x": 1197.421875,
+            "y": 246,
+            "width": 119.734375,
+            "height": 28
+          },
+          "overlap": false,
+          "headingEndsBeforeButton": true,
+          "buttonOnScreen": true,
+          "sameRow": true,
+          "buttonText": "ไทย"
+        },
+        {
+          "lang": "ru",
+          "width": 1440,
+          "buttons": 1,
+          "button": {
+            "x": 1301.5625,
+            "y": 243,
+            "width": 106.4375,
+            "height": 34
+          },
+          "heading": {
+            "x": 1196.046875,
+            "y": 246,
+            "width": 89.515625,
+            "height": 28
+          },
+          "overlap": false,
+          "headingEndsBeforeButton": true,
+          "buttonOnScreen": true,
+          "sameRow": true,
+          "buttonText": "Русский"
+        },
+        {
+          "lang": "en",
+          "width": 1440,
+          "buttons": 1,
+          "button": {
+            "x": 1310.609375,
+            "y": 243,
+            "width": 97.390625,
+            "height": 34
+          },
+          "heading": {
+            "x": 1201.953125,
+            "y": 246,
+            "width": 92.65625,
+            "height": 28
+          },
+          "overlap": false,
+          "headingEndsBeforeButton": true,
+          "buttonOnScreen": true,
+          "sameRow": true,
+          "buttonText": "English"
+        }
+      ],
+      "at1440At": "2026-11-04T14:01:52.796Z",
+      "harnessBanner768": 1,
+      "at768": [
+        {
+          "lang": "th",
+          "width": 768,
+          "buttons": 1,
+          "button": {
+            "x": 661.15625,
+            "y": 309,
+            "width": 74.84375,
+            "height": 34
+          },
+          "heading": {
+            "x": 578.09375,
+            "y": 298,
+            "width": 67.0625,
+            "height": 56
+          },
+          "overlap": false,
+          "headingEndsBeforeButton": true,
+          "buttonOnScreen": true,
+          "sameRow": true,
+          "buttonText": "ไทย"
+        },
+        {
+          "lang": "ru",
+          "width": 768,
+          "buttons": 1,
+          "button": {
+            "x": 629.5625,
+            "y": 309,
+            "width": 106.4375,
+            "height": 34
+          },
+          "heading": {
+            "x": 565.796875,
+            "y": 298,
+            "width": 47.765625,
+            "height": 56
+          },
+          "overlap": false,
+          "headingEndsBeforeButton": true,
+          "buttonOnScreen": true,
+          "sameRow": true,
+          "buttonText": "Русский"
+        },
+        {
+          "lang": "en",
+          "width": 768,
+          "buttons": 1,
+          "button": {
+            "x": 638.609375,
+            "y": 309,
+            "width": 97.390625,
+            "height": 34
+          },
+          "heading": {
+            "x": 574.078125,
+            "y": 298,
+            "width": 48.53125,
+            "height": 56
+          },
+          "overlap": false,
+          "headingEndsBeforeButton": true,
+          "buttonOnScreen": true,
+          "sameRow": true,
+          "buttonText": "English"
+        }
+      ],
+      "at768At": "2026-11-04T14:02:09.421Z",
+      "cancelled": {
+        "noItems": 1,
+        "at": "2026-11-04T14:02:36.322Z",
+        "tookNoPayment": true
+      }
+    }
+  },
+  "images": [
+    {
+      "file": "docs/qa/proof-2026-11-04/s741/staging/s741-st-00a-guest-simulated-hosted-page.png",
+      "at": "2026-11-04T13:58:09.331Z",
+      "page": "guest",
+      "url": "https://oto-pos-web-staging.onrender.com/api/webhooks/2c2p/hosted/01a1a6da-0b81-7806-807f-0cfb0b763ad1",
+      "viewport": {
+        "width": 1280,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s741/staging/s741-st-00b-guest-booking-paid.png",
+      "at": "2026-11-04T13:58:11.286Z",
+      "page": "guest",
+      "url": "https://oto-pos-web-staging.onrender.com/book?payment=completed&booking=01a1a6da-0b2a-7588-9e2b-2f6f7c6d7d72",
+      "viewport": {
+        "width": 1280,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s741/staging/s741-st-01-desktop-sibling-added-at-the-door.png",
+      "at": "2026-11-04T13:59:54.613Z",
+      "page": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s741/staging/s741-st-02-desktop-board-paid-and-to-pay.png",
+      "at": "2026-11-04T14:00:14.748Z",
+      "page": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/drop-off",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s741/staging/s741-st-03-desktop-paid-child-opens-the-booking.png",
+      "at": "2026-11-04T14:00:27.972Z",
+      "page": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s741/staging/s741-st-04-desktop-sibling-goes-to-the-till.png",
+      "at": "2026-11-04T14:00:45.517Z",
+      "page": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s741/staging/s741-st-05-desktop-all-paid-family-unchanged.png",
+      "at": "2026-11-04T14:01:01.327Z",
+      "page": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/drop-off",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s741/staging/s741-st-06-phone-family-paid-and-to-pay.png",
+      "at": "2026-11-04T14:01:21.830Z",
+      "page": "phone",
+      "url": "https://oto-pos-web-staging.onrender.com/drop-off",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s745/staging/s745-st-1440-00-membership-screen-corner-button.png",
+      "at": "2026-11-04T14:01:47.514Z",
+      "page": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s745/staging/s745-st-1440-th.png",
+      "at": "2026-11-04T14:01:50.529Z",
+      "page": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s745/staging/s745-st-1440-ru.png",
+      "at": "2026-11-04T14:01:51.665Z",
+      "page": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s745/staging/s745-st-1440-en.png",
+      "at": "2026-11-04T14:01:52.796Z",
+      "page": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s745/staging/s745-st-768-th.png",
+      "at": "2026-11-04T14:02:07.188Z",
+      "page": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s745/staging/s745-st-768-ru.png",
+      "at": "2026-11-04T14:02:08.300Z",
+      "page": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s745/staging/s745-st-768-en.png",
+      "at": "2026-11-04T14:02:09.421Z",
+      "page": "desktop",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      }
+    }
+  ],
+  "browser": "156.0.4314.58",
+  "adminActorId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+  "bookings": {
+    "family": {
+      "reference": "OTO-YJLN-QLDK",
+      "parent": "ZZ TEST SCRUM-741 Ying",
+      "child": "ZZ TEST SCRUM-741 Bua",
+      "ageYears": 6,
+      "hostedPage": "Simulated payment page — no real money moves. The real one is 2C2P's. |  | ฿915 |  | OTO Park booking OTO-YJLN-QLDK |  | Invoice SBXWEB261104000002 · CC |  | Pay | Fail",
+      "paidAt": "2026-11-04T13:58:11.288Z",
+      "route": "booking site page, simulated hosted page in a browser",
+      "confirmation": "English | You're booked, ZZ TEST SCRUM-741 Ying! |  | ฿915 paid · see you at the park |  | Your visit: Wednesday, November 4, 2026 |  | BOOKING REFERENCE | OTO-YJLN-QLDK | On arrival, scan this at reception to receive: | Child bracelets | × 1 |  | Bracelets and credit are issued when you check in — keep this QR handy. |  | Super"
+    },
+    "allPaid": {
+      "bookingId": "01a1a6da-a841-7f7e-8dd4-ba508bd0d98c",
+      "reference": "OTO-S81C-0DP5",
+      "parent": "ZZ TEST SCRUM-741 Dao",
+      "child": "ZZ TEST SCRUM-741 Mint",
+      "ageYears": 6,
+      "visitDate": "2026-11-04",
+      "totalSatang": 91500,
+      "paidAt": "2026-11-04T13:58:31.993Z",
+      "route": "booking site page, simulated hosted page in a browser",
+      "trail": [
+        "13:58:21 details in",
+        "13:58:24 package added",
+        "13:58:25 child named",
+        "13:58:29 at payment",
+        "13:58:29 booking OTO-S81C-0DP5"
+      ],
+      "confirmation": "English | You're booked, ZZ TEST SCRUM-741 Dao! |  | ฿915 paid · see you at the park |  | Your visit: Wednesday, November 4, 2026 |  | BOOKING REFERENCE | OTO-S81C-0DP5 | On arrival, scan this at reception to receive: | Child bracelets | × 1 |  | Bracelets and credit are issued when you check in — keep this QR handy. |  | Superv"
+    }
+  },
+  "tills": {
+    "desktop": {
+      "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "signedInAt": "2026-11-04T13:58:51.224Z",
+      "onTheZzTestTill": true
+    },
+    "phone": {
+      "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "signedInAt": "2026-11-04T14:01:18.427Z",
+      "onTheZzTestTill": true
+    }
+  },
+  "sibling": {
+    "name": "ZZ TEST SCRUM-741 Nok",
+    "ageYears": 5,
+    "addedAt": "2026-11-04T13:59:57.863Z",
+    "orderText": "Current Order | TOURIST | ZZ TEST SCRUM-741 Nok | EDITING | — | Choose length | Drop-off service | Configure | Apply | Redeem | Issue a voucher… | Add manual discount | Subtotal | — | Total | — | Priced on this till. A drop-off child has no play length chosen yet. | Cancel | Pay —",
+    "paidChildOnSale": 0,
+    "afterCancel": "Test harness — staff till and customer display share one live sale. | Hide customer display | 1 | in park | no gate | Oto Play Park, Central Floresta | Tickets | F&B | Shop | Events | Check-in | History | Today | 7 | Messages | Cash | Weekday pricing | Som | 13 out of stock · 1 low | Glow Band, Lock",
+    "confirmDialog": 0,
+    "registration": {
+      "id": "01a1a6da-5962-76a9-a335-8db6b14a739a",
+      "children": [
+        {
+          "id": "01a1a6da-5964-7028-859a-3ef6c5a21d5c",
+          "name": "ZZ TEST SCRUM-741 Bua",
+          "status": "registered",
+          "saleId": null,
+          "bookingId": null
+        },
+        {
+          "id": "01a1a6db-f208-7519-a218-9de4cc2eab91",
+          "name": "ZZ TEST SCRUM-741 Nok",
+          "status": "registered",
+          "saleId": null,
+          "bookingId": null
+        }
+      ]
+    }
+  },
+  "closeout": {
+    "family": {
+      "redeemStatus": 200,
+      "redeemed": "2026-11-04T14:04:21.159Z",
+      "modal": "Check in child |  | ZZ TEST SCRUM-741 Ying · already booked & paid — no payment needed. |  | ZZ TEST SCRUM-741 Bua | 6 yrs | Drop-Off | No prepaid food |  | Consent & photo needed before check-in |  | ZZ TEST SCRUM-741 Bua's photo (with parent / guardian in the shot) | No photo yet | Start camera | ",
+      "checkInStatus": 200,
+      "saleIds": [
+        "01a1a6df-fbc1-7aaf-9d85-8fb64a2969cb"
+      ],
+      "stays": [
+        {
+          "id": "01a1a6da-5964-7028-859a-3ef6c5a21d5c",
+          "name": "ZZ TEST SCRUM-741 Bua",
+          "status": "in_park",
+          "bandId": "01a1a6e0-8d40-7862-a5d6-ea0afc5d760c"
+        }
+      ],
+      "checkedIn": "2026-11-04T14:04:55.984Z",
+      "releaseStatus": 200,
+      "out": "2026-11-04T14:05:33.442Z"
+    },
+    "allPaid": {
+      "redeemStatus": 200,
+      "redeemed": "2026-11-04T14:06:10.147Z",
+      "modal": "Check in child |  | ZZ TEST SCRUM-741 Dao · already booked & paid — no payment needed. |  | ZZ TEST SCRUM-741 Mint | 6 yrs | Drop-Off | No prepaid food |  | Consent & photo needed before check-in |  | ZZ TEST SCRUM-741 Mint's photo (with parent / guardian in the shot) | No photo yet | Start camera |",
+      "checkInStatus": 200,
+      "saleIds": [
+        "01a1a6e1-a55d-7a06-8fad-87e1f44407b5"
+      ],
+      "stays": [
+        {
+          "id": "01a1a6da-acab-7168-8b61-35ff619fc807",
+          "name": "ZZ TEST SCRUM-741 Mint",
+          "status": "in_park",
+          "bandId": "01a1a6e2-38a9-7a46-8ce5-92d0b22e0ca7"
+        }
+      ],
+      "checkedIn": "2026-11-04T14:06:45.400Z",
+      "releaseStatus": 200,
+      "out": "2026-11-04T14:07:22.803Z"
+    }
+  },
+  "cleanup": {
+    "actions": [
+      {
+        "at": "2026-11-04T14:07:47.837Z",
+        "what": "phone till sign-out",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-04T14:07:48.040Z",
+        "what": "desktop till sign-out",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-04T14:07:48.285Z",
+        "what": "archive the ZZ TEST till",
+        "status": 200,
+        "code": null
+      }
+    ],
+    "phoneSignedOut": {
+      "meAfter": 401
+    },
+    "desktopSignedOut": {
+      "meAfter": 401
+    },
+    "tillArchived": "2026-11-04T14:07:48.286Z",
+    "readback": {
+      "tillInLiveList": false,
+      "zz741StationsLive": 0
+    }
+  },
+  "readback": {
+    "capturedAt": "2026-11-04T14:07:47.029Z",
+    "families": {
+      "family": {
+        "reference": "OTO-YJLN-QLDK",
+        "bookingStatus": "redeemed",
+        "bookingTotalSatang": 91500,
+        "registrationId": "01a1a6da-5962-76a9-a335-8db6b14a739a",
+        "stays": [
+          {
+            "id": "01a1a6da-5964-7028-859a-3ef6c5a21d5c",
+            "name": "ZZ TEST SCRUM-741 Bua",
+            "service": "drop_off",
+            "status": "out",
+            "saleId": "01a1a6df-fbc1-7aaf-9d85-8fb64a2969cb",
+            "bandId": "01a1a6e0-8d40-7862-a5d6-ea0afc5d760c",
+            "photo": true,
+            "checkedOutAt": null
+          },
+          {
+            "id": "01a1a6db-f208-7519-a218-9de4cc2eab91",
+            "name": "ZZ TEST SCRUM-741 Nok",
+            "service": "drop_off",
+            "status": "registered",
+            "saleId": null,
+            "bandId": null,
+            "photo": false,
+            "checkedOutAt": null
+          }
+        ],
+        "sales": [
+          {
+            "id": "01a1a6df-fbc1-7aaf-9d85-8fb64a2969cb",
+            "receipt": "Z741-000001",
+            "status": "finalised",
+            "channel": "booking",
+            "note": "Online booking OTO-YJLN-QLDK",
+            "grossSatang": 91500,
+            "refundedSatang": 0,
+            "payments": [
+              {
+                "provider": "manual",
+                "method": "transfer",
+                "status": "approved",
+                "amountSatang": 91500
+              }
+            ],
+            "bands": [
+              {
+                "code": "Z741-8FQBVM",
+                "status": "active"
+              }
+            ],
+            "printJobs": [
+              {
+                "kind": "kids_wristband",
+                "status": "printed",
+                "device": "Band Printer (kids)"
+              },
+              {
+                "kind": "receipt",
+                "status": "printed",
+                "device": "Receipt Printer 1"
+              }
+            ],
+            "lines": [
+              {
+                "label": "Kids",
+                "grossSatang": 69000
+              },
+              {
+                "label": "Drop-off",
+                "grossSatang": 22500
+              }
+            ]
+          }
+        ]
+      },
+      "allPaid": {
+        "reference": "OTO-S81C-0DP5",
+        "bookingStatus": "redeemed",
+        "bookingTotalSatang": 91500,
+        "registrationId": "01a1a6da-aca9-72db-93f0-610eef31faa9",
+        "stays": [
+          {
+            "id": "01a1a6da-acab-7168-8b61-35ff619fc807",
+            "name": "ZZ TEST SCRUM-741 Mint",
+            "service": "drop_off",
+            "status": "out",
+            "saleId": "01a1a6e1-a55d-7a06-8fad-87e1f44407b5",
+            "bandId": "01a1a6e2-38a9-7a46-8ce5-92d0b22e0ca7",
+            "photo": true,
+            "checkedOutAt": null
+          }
+        ],
+        "sales": [
+          {
+            "id": "01a1a6e1-a55d-7a06-8fad-87e1f44407b5",
+            "receipt": "Z741-000002",
+            "status": "finalised",
+            "channel": "booking",
+            "note": "Online booking OTO-S81C-0DP5",
+            "grossSatang": 91500,
+            "refundedSatang": 0,
+            "payments": [
+              {
+                "provider": "manual",
+                "method": "transfer",
+                "status": "approved",
+                "amountSatang": 91500
+              }
+            ],
+            "bands": [
+              {
+                "code": "Z741-P2TR8X",
+                "status": "active"
+              }
+            ],
+            "printJobs": [
+              {
+                "kind": "kids_wristband",
+                "status": "printed",
+                "device": "Band Printer (kids)"
+              },
+              {
+                "kind": "receipt",
+                "status": "printed",
+                "device": "Receipt Printer 1"
+              }
+            ],
+            "lines": [
+              {
+                "label": "Kids",
+                "grossSatang": 69000
+              },
+              {
+                "label": "Drop-off",
+                "grossSatang": 22500
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "salesAtTheTestTill": [
+      {
+        "id": "01a1a6e1-a55d-7a06-8fad-87e1f44407b5",
+        "status": "finalised",
+        "receipt": "Z741-000002"
+      },
+      {
+        "id": "01a1a6df-fbc1-7aaf-9d85-8fb64a2969cb",
+        "status": "finalised",
+        "receipt": "Z741-000001"
+      }
+    ]
+  }
+}

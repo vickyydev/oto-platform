@@ -1,0 +1,16 @@
+// 745 at 768 (iPad portrait): the same till window narrowed, the order still on it; Thai, Russian, English.
+import assert from 'node:assert/strict';
+import { eachLanguage } from './lib745.mjs';
+export default async function (S) {
+  const { st, save, pages } = S;
+  const page = pages.desktop.page;
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.waitForTimeout(1500);
+  const harness = await page.getByText(/^Test harness/).count();
+  await page.getByText('Your Order', { exact: true }).waitFor({ timeout: 20000 });
+  const rows = await eachLanguage(S, 768);
+  st.steps.s745 = { ...(st.steps.s745 ?? {}), harnessBanner768: harness, at768: rows, at768At: new Date().toISOString() };
+  save();
+  assert.equal(harness, 1);
+  return rows;
+}

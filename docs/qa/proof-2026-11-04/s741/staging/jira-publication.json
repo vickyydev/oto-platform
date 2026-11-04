@@ -1,0 +1,43 @@
+{
+  "key": "SCRUM-741",
+  "statusBefore": "Testing",
+  "imagesBefore": 0,
+  "attachStatus": 200,
+  "attached": [
+    {
+      "id": "12557",
+      "name": "staging-after-14-family-with-paid-child-and-sibling.png"
+    },
+    {
+      "id": "12558",
+      "name": "s741-st-02-desktop-board-paid-and-to-pay.png"
+    },
+    {
+      "id": "12559",
+      "name": "s741-st-03-desktop-paid-child-opens-the-booking.png"
+    },
+    {
+      "id": "12560",
+      "name": "s741-st-04-desktop-sibling-goes-to-the-till.png"
+    },
+    {
+      "id": "12561",
+      "name": "s741-st-06-phone-family-paid-and-to-pay.png"
+    },
+    {
+      "id": "12562",
+      "name": "s741-st-05-desktop-all-paid-family-unchanged.png"
+    }
+  ],
+  "commentStatus": 201,
+  "commentId": "13470",
+  "renderedImages": 12,
+  "imagesOnTicket": 6,
+  "walk": {
+    "to": "Deployed",
+    "via": "node scripts/agent/jira.mjs walk SCRUM-741 Deployed",
+    "commitLinksAdded": 1,
+    "statusReadBack": "Deployed",
+    "at": "2026-11-04T14:10:51.518Z"
+  }
+}

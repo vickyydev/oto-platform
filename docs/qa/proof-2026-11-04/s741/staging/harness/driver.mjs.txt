@@ -1,0 +1,77 @@
+// SCRUM-741/745 staging proof driver: one real browser kept open, steps run on request.
+// Never prints a phone, a password or a setting's value.
+import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
+import { createRequire } from 'node:module';
+import { randomUUID } from 'node:crypto';
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+import { need } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs';
+const LANE = 'C:/oto-lanes/boardui741-20261104';
+const STEPS = 'C:/Users/waqar/AppData/Local/Temp/claude/9d4c56906b777e8e/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/s741/steps/';
+const { chromium, expect, request } = createRequire(LANE + '/apps/pos/package.json')('@playwright/test');
+const POS = 'https://oto-pos-web-staging.onrender.com';
+const SOURCE = 'ba64e70baf91b0de9146e644672dfa82fcee78d7';
+const REL = { s741: 'docs/qa/proof-2026-11-04/s741/staging', s745: 'docs/qa/proof-2026-11-04/s745/staging' };
+for (const r of Object.values(REL)) mkdirSync(LANE + '/' + r, { recursive: true });
+const receiptFile = LANE + '/' + REL.s741 + '/receipt.json';
+const st = existsSync(receiptFile) ? JSON.parse(readFileSync(receiptFile, 'utf8')) : { unit: 'SCRUM-741/745', source: SOURCE, startedAt: new Date().toISOString(), fixture: {}, steps: {}, images: [] };
+const save = () => writeFileSync(receiptFile, JSON.stringify(st, null, 2) + '\n');
+save();
+// Chromium's own fake camera stands in for the counter camera: a test pattern, not a person.
+const args = ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'];
+let browser;
+try { browser = await chromium.launch({ channel: 'msedge', args }); } catch { browser = await chromium.launch({ args }); }
+st.browser = browser.version(); save();
+const pages = {};
+const newPage = async (label, viewport, opts = {}) => {
+  if (pages[label]) return pages[label];
+  const ctx = await browser.newContext({ viewport, ...(opts.mobile ? { isMobile: true, hasTouch: true, deviceScaleFactor: 2 } : {}) });
+  ctx.setDefaultTimeout(30000);
+  await ctx.grantPermissions(['camera'], { origin: POS });
+  const page = await ctx.newPage();
+  page.on('pageerror', (e) => { (st.pageErrors = st.pageErrors ?? []).push({ at: new Date().toISOString(), label, message: String(e.message).slice(0, 300) }); });
+  pages[label] = { ctx, page };
+  return pages[label];
+};
+const closePage = async (label) => { if (!pages[label]) return; await pages[label].ctx.close(); delete pages[label]; };
+const admin = await request.newContext({ baseURL: POS });
+const adminIn = await admin.post('/api/auth/sign-in', { data: { phone: need('STAGING_ADMIN_PHONE'), password: need('STAGING_ADMIN_PASSWORD') } });
+assert.equal(adminIn.status(), 200, 'admin sign-in');
+const call = async (ctxReq, method, path, data) => {
+  const action = randomUUID();
+  const res = await ctxReq.fetch(POS + '/api' + path, { method, ...(data !== undefined ? { data } : {}), headers: method === 'GET' ? {} : { 'idempotency-key': action, 'x-oto-action-id': action } });
+  let body = null; try { body = await res.json(); } catch {}
+  return { status: res.status(), body };
+};
+const adminApi = (m, p, d) => call(admin, m, p, d);
+const pageApi = (label, m, p, d) => call(pages[label].page.request, m, p, d);
+const shot = async (label, unit, name, opts = {}) => {
+  const page = pages[label].page;
+  const file = LANE + '/' + REL[unit] + '/' + name + '.png';
+  await page.evaluate(async () => { await document.fonts.ready; await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))); });
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: file, animations: 'disabled', mask: [page.locator('input[type=password]'), ...(opts.mask ?? [])], ...(opts.fullPage ? { fullPage: true } : {}) });
+  st.images.push({ file: REL[unit] + '/' + name + '.png', at: new Date().toISOString(), page: label, url: page.url(), viewport: page.viewportSize() });
+  save();
+  return file;
+};
+const S = { st, save, pages, newPage, closePage, browser, admin, adminApi, pageApi, call, shot, expect, need, POS, LANE, REL, SOURCE, randomUUID };
+const server = createServer(async (req, res) => {
+  let data = ''; for await (const c of req) data += c;
+  const file = data.trim();
+  let out;
+  try {
+    if (file === 'STOP') { out = { stopping: true }; res.end(JSON.stringify(out)); await adminApi('POST', '/auth/sign-out').catch(() => {}); await admin.dispose(); await browser.close(); server.close(); process.exit(0); }
+    assert.ok(file.startsWith(STEPS) && /step-[a-z0-9-]+\.mjs$/.test(file), 'bad step path');
+    const step = await import(pathToFileURL(file).href + '?at=' + Date.now());
+    out = { file, result: await step.default(S) };
+  } catch (e) {
+    out = { file, error: e.name, message: String(e.message).slice(0, 3000) };
+    for (const [label, p] of Object.entries(pages)) { try { await p.page.screenshot({ path: LANE + '/' + REL.s741 + '/debug-' + label + '-' + Date.now() + '.png' }); } catch {} }
+  }
+  save();
+  res.setHeader('content-type', 'application/json');
+  res.end(JSON.stringify(out, null, 1));
+});
+server.listen(47441, '127.0.0.1', () => console.log('driver ready'));
