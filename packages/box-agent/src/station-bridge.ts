@@ -898,6 +898,9 @@ function bookingCatalogue(
       name: held?.name ?? (line.name || 'Ticket'),
       prices: prices as CataloguePackage['prices'],
       adultRules,
+      // SCRUM-768 — the booking was priced with no free items, so the
+      // redemption reproduces it with none.
+      freebies: null,
       active: true,
       archivedAt: null,
       hours: held?.hours ?? null,

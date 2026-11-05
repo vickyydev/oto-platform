@@ -13,10 +13,140 @@ import type { TaxableCategory, TierAdultRuleShape } from './catalog-shapes';
  *   - adults per tier: same_as_kid (default when absent) | set_price |
  *     free_adults (first N free PER LINE, overflow at kid price or the set price).
  *   - a line is kids + adults + socks + add-ons + any service fee.
+ *   - SCRUM-768 — the free items set on the ticket in Admin (a free adult,
+ *     child or add-on, for chosen tiers) ride every child ticket charged at
+ *     the rate; see `resolveLineFreebies`.
  */
 export interface PackagePricingShape {
   prices: Record<string, WWPrice>;
   adultRules?: Record<string, TierAdultRuleShape> | null;
+  /** SCRUM-768 — Admin's "Free items in the rate" (`TicketFreebieSchema`). Absent = none. */
+  freebies?: readonly TicketFreebieRule[] | null;
+}
+
+/**
+ * One free item bundled into a ticket's rate, as Admin → Tickets saves it
+ * ("Bundle a free adult, child or add-on into this ticket"): what is free, how
+ * many, and for which tiers. An empty tier list is shown in Admin as covering
+ * every tier, and is read the same way here.
+ */
+export interface TicketFreebieRule {
+  kind: 'adult' | 'child' | 'addon';
+  /** Which add-on, when `kind` is `addon`. */
+  addOnId?: string;
+  quantity: number;
+  tiers: readonly string[];
+}
+
+/**
+ * What the ticket's free items make free on one line, counted, never priced:
+ * the till's own engine and this one both read it, so the two cannot part.
+ */
+export interface LineFreebies {
+  /** Child tickets charged at the rate; each brings the bundle. */
+  paidKids: number;
+  /** Children entering free as a bundled "Free child". */
+  freeKids: number;
+  /** Adults entering free on top of the adult rule's own allowance. */
+  freeAdults: number;
+  /** Socks free, when the bundled add-on is the socks the line counts. */
+  freeSocks: number;
+  /** Units free of each add-on, by its index in the line's `addOns`. */
+  freeAddOns: number[];
+}
+
+/** The free items of this ticket that apply at this tier. */
+export function freebiesForTier(pkg: Pick<PackagePricingShape, 'freebies'>, tier: string): TicketFreebieRule[] {
+  const rules = Array.isArray(pkg.freebies) ? pkg.freebies : [];
+  return rules.filter(
+    (f) =>
+      Number.isInteger(f.quantity) &&
+      f.quantity > 0 &&
+      (!Array.isArray(f.tiers) || f.tiers.length === 0 || f.tiers.includes(tier)),
+  );
+}
+
+/**
+ * SCRUM-768 — THE TICKET'S FREE ITEMS, ON ONE LINE.
+ *
+ * Admin bundles free items "into this ticket" and lists them as "Free items in
+ * the rate", so each child ticket charged at the rate carries the bundle:
+ *
+ *   - a Free child: each paid child brings that many more children free (the
+ *     prototype's own example is "a second child free"), so one child on a
+ *     line is always charged;
+ *   - a Free adult: that many adults per paid child enter free, on top of the
+ *     adult rule's own free allowance, out of the adults it would charge;
+ *   - a Free add-on: that many of the add-on per paid child are free, out of
+ *     what the line carries. The till does not add the item by itself; once
+ *     staff add it, the bundled units are ฿0.
+ *
+ * A free child is one of the bundled items and brings none of its own. Every
+ * count is capped by what is on the line, so a free item never pays money
+ * back, and a ticket with no free items prices exactly as before.
+ */
+export function resolveLineFreebies(
+  pkg: Pick<PackagePricingShape, 'freebies'>,
+  tier: string,
+  line: { kids: number; socks: number; addOns: readonly { id: string; quantity: number }[] },
+  /** The adults the adult rule charges on this line. */
+  adultsCharged: number,
+  /** The add-on id the line's `socks` count is sold under. */
+  socksAddOnId: string,
+): LineFreebies {
+  const rules = freebiesForTier(pkg, tier);
+  const kids = Math.max(0, line.kids);
+  const none: LineFreebies = {
+    paidKids: kids,
+    freeKids: 0,
+    freeAdults: 0,
+    freeSocks: 0,
+    freeAddOns: line.addOns.map(() => 0),
+  };
+  if (rules.length === 0 || kids === 0) return none;
+
+  const sum = (kind: TicketFreebieRule['kind']) =>
+    rules.filter((r) => r.kind === kind).reduce((total, r) => total + r.quantity, 0);
+  const perChild = sum('child');
+  const paidKids = perChild > 0 ? Math.ceil(kids / (1 + perChild)) : kids;
+  const freeAdults = Math.min(Math.max(0, adultsCharged), sum('adult') * paidKids);
+
+  // One allowance per bundled add-on, spent on the socks count first, then on
+  // the line's add-ons of that id in cart order.
+  const allowance = new Map<string, number>();
+  for (const r of rules) {
+    if (r.kind !== 'addon' || !r.addOnId) continue;
+    allowance.set(r.addOnId, (allowance.get(r.addOnId) ?? 0) + r.quantity * paidKids);
+  }
+  const take = (id: string, wanted: number): number => {
+    const left = allowance.get(id) ?? 0;
+    const taken = Math.min(left, Math.max(0, wanted));
+    if (taken > 0) allowance.set(id, left - taken);
+    return taken;
+  };
+  const freeSocks = take(socksAddOnId, line.socks);
+  const freeAddOns = line.addOns.map((addOn) => take(addOn.id, addOn.quantity));
+  return { paidKids, freeKids: kids - paidKids, freeAdults, freeSocks, freeAddOns };
+}
+
+/**
+ * The sizes of a split add-on, divided between its free units and the rest:
+ * the free ones are taken from the sizes in the order staff added them.
+ */
+export function splitVariantBreakdown<T extends { quantity: number }>(
+  breakdown: readonly T[],
+  free: number,
+): { free: T[]; paid: T[] } {
+  const freeParts: T[] = [];
+  const paidParts: T[] = [];
+  let left = free;
+  for (const part of breakdown) {
+    const taken = Math.min(left, part.quantity);
+    left -= taken;
+    if (taken > 0) freeParts.push({ ...part, quantity: taken });
+    if (part.quantity - taken > 0) paidParts.push({ ...part, quantity: part.quantity - taken });
+  }
+  return { free: freeParts, paid: paidParts };
 }
 
 export function priceForTier(pkg: PackagePricingShape, tier: string, mode: RateMode): Satang {
@@ -200,10 +330,14 @@ export interface TicketCartLine extends LinePricingInput {
 export function computeLineTotal(input: LinePricingInput, ctx: PricingContext): Satang {
   const kidPrice = priceForTier(input.package, input.tier, ctx.mode);
   const adultLine = resolveAdultLine(input.package, input.tier, input.adults, ctx.mode);
+  // SCRUM-768 — the ticket's free items take their units off what is charged.
+  const free = resolveLineFreebies(input.package, input.tier, input, adultLine.paidCount, ctx.socks.addOnId);
 
-  let total = input.kids * kidPrice + adultLine.total;
-  total += ctx.socks.price * input.socks;
-  for (const addOn of input.addOns) total += addOn.price * addOn.quantity;
+  let total = free.paidKids * kidPrice + (adultLine.paidCount - free.freeAdults) * adultLine.paidUnit;
+  total += ctx.socks.price * (input.socks - free.freeSocks);
+  input.addOns.forEach((addOn, i) => {
+    total += addOn.price * (addOn.quantity - (free.freeAddOns[i] ?? 0));
+  });
   total += input.serviceFee?.amount ?? 0;
   return total;
 }
@@ -252,6 +386,12 @@ export interface LineBreakdownItem {
    */
   itemKind?: 'menu' | 'merch';
   categoryIds?: readonly string[];
+  /**
+   * SCRUM-768 — the sizes THIS row takes, present only on an add-on row split
+   * between free and paid units, so each row's stock is its own and a size is
+   * never taken twice. Absent = the add-on's own breakdown, as before.
+   */
+  variantBreakdown?: readonly { variantId: string; variantLabel: string; quantity: number }[];
 }
 
 /** Compact size summary for a multi-variant add-on, e.g. "1×S, 2×M". */
@@ -267,6 +407,12 @@ export function addOnVariantSummary(
  * add-ons in cart order, service fee. Mirrors `computeLineTotal` exactly so the
  * rows sum to the line total. Port of prototype `computeLineBreakdown`
  * (lib/pricing.ts:188).
+ *
+ * SCRUM-768 — a ticket's free items add their own ฿0 rows beside the row they
+ * come out of, as the free adults always have: `kids-free` after kids, the
+ * bundled adults inside `adults-free`, `socks-free` after socks, and a free
+ * add-on row under the add-on's own key after its paid row. A line with no
+ * free items renders exactly the rows it did.
  */
 export function computeLineBreakdown(
   line: TicketCartLine,
@@ -280,6 +426,8 @@ export function computeLineBreakdown(
 
   const kidPrice = priceForTier(line.package, line.tier, ctx.mode);
   const items: LineBreakdownItem[] = [];
+  const adultLine = resolveAdultLine(line.package, line.tier, line.adults, ctx.mode);
+  const free = resolveLineFreebies(line.package, line.tier, line, adultLine.paidCount, ctx.socks.addOnId);
 
   if (line.kids > 0) {
     items.push({
@@ -287,23 +435,34 @@ export function computeLineBreakdown(
       kind: 'kids',
       label: 'Kids',
       unitPrice: kidPrice,
-      quantity: line.kids,
-      subtotal: line.kids * kidPrice,
+      quantity: free.paidKids,
+      subtotal: free.paidKids * kidPrice,
+    });
+  }
+  if (free.freeKids > 0) {
+    items.push({
+      key: 'kids-free',
+      kind: 'kids',
+      label: 'Kids (free)',
+      unitPrice: 0,
+      quantity: free.freeKids,
+      subtotal: 0,
     });
   }
   if (line.adults > 0) {
-    const adultLine = resolveAdultLine(line.package, line.tier, line.adults, ctx.mode);
-    if (adultLine.paidCount > 0) {
+    const paidAdults = adultLine.paidCount - free.freeAdults;
+    const freeAdults = adultLine.freeCount + free.freeAdults;
+    if (paidAdults > 0) {
       items.push({
         key: 'adults',
         kind: 'adults',
         label: 'Adults',
         unitPrice: adultLine.paidUnit,
-        quantity: adultLine.paidCount,
-        subtotal: adultLine.paidCount * adultLine.paidUnit,
+        quantity: paidAdults,
+        subtotal: paidAdults * adultLine.paidUnit,
       });
     }
-    if (adultLine.freeCount > 0) {
+    if (freeAdults > 0) {
       // Free adults get their own row at ฿0 so the guest can see they were
       // counted and not charged.
       items.push({
@@ -311,39 +470,70 @@ export function computeLineBreakdown(
         kind: 'adults',
         label: 'Adults (free)',
         unitPrice: 0,
-        quantity: adultLine.freeCount,
+        quantity: freeAdults,
         subtotal: 0,
       });
     }
   }
-  if (line.socks > 0) {
+  const paidSocks = line.socks - free.freeSocks;
+  if (paidSocks > 0) {
     items.push({
       key: 'socks',
       kind: 'socks',
       label: ctx.socks.label,
       unitPrice: ctx.socks.price,
-      quantity: line.socks,
-      subtotal: line.socks * ctx.socks.price,
+      quantity: paidSocks,
+      subtotal: paidSocks * ctx.socks.price,
     });
   }
-  for (const addOn of line.addOns) {
-    const label =
-      addOn.variantBreakdown && addOn.variantBreakdown.length > 0
-        ? `${addOn.name} (${addOnVariantSummary(addOn.variantBreakdown)})`
-        : addOn.name;
+  if (free.freeSocks > 0) {
     items.push({
-      key: addOn.id,
-      kind: 'addon',
-      label,
-      unitPrice: addOn.price,
-      quantity: addOn.quantity,
-      subtotal: addOn.price * addOn.quantity,
-      // Carried through so the discount scopes can tell an F&B or shop item
-      // from a ticket add-on; absent on every ticket add-on (SCRUM-344).
+      key: 'socks-free',
+      kind: 'socks',
+      label: `${ctx.socks.label} (free)`,
+      unitPrice: 0,
+      quantity: free.freeSocks,
+      subtotal: 0,
+    });
+  }
+  line.addOns.forEach((addOn, i) => {
+    const freeUnits = free.freeAddOns[i] ?? 0;
+    const sized = addOn.variantBreakdown && addOn.variantBreakdown.length > 0 ? addOn.variantBreakdown : null;
+    const split = sized && freeUnits > 0 ? splitVariantBreakdown(sized, freeUnits) : null;
+    const labelOf = (parts: readonly { variantLabel: string; quantity: number }[] | null) =>
+      parts && parts.length > 0 ? `${addOn.name} (${addOnVariantSummary(parts)})` : addOn.name;
+    // Carried through so the discount scopes can tell an F&B or shop item
+    // from a ticket add-on; absent on every ticket add-on (SCRUM-344).
+    const scopes = {
       ...(addOn.itemKind ? { itemKind: addOn.itemKind } : {}),
       ...(addOn.categoryIds ? { categoryIds: addOn.categoryIds } : {}),
-    });
-  }
+    };
+    const paidUnits = addOn.quantity - freeUnits;
+    if (paidUnits > 0 || freeUnits === 0) {
+      items.push({
+        key: addOn.id,
+        kind: 'addon',
+        label: labelOf(split ? split.paid : sized),
+        unitPrice: addOn.price,
+        quantity: paidUnits,
+        subtotal: addOn.price * paidUnits,
+        ...scopes,
+        ...(split ? { variantBreakdown: split.paid } : {}),
+      });
+    }
+    if (freeUnits > 0) {
+      items.push({
+        key: addOn.id,
+        kind: 'addon',
+        label: `${labelOf(split ? split.free : sized)} (free)`,
+        unitPrice: 0,
+        quantity: freeUnits,
+        subtotal: 0,
+        ...scopes,
+        ...(split ? { variantBreakdown: split.free } : {}),
+      });
+    }
+  });
   // The service-fee row reuses the 'addon' kind so icon maps stay exhaustive,
   // and comes last so the rows sum to the line total.
   if (line.serviceFee && line.serviceFee.amount > 0) {

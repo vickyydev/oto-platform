@@ -10,7 +10,9 @@ import {
   adultUnitDisplay,
   componentKey,
   isAdultRulePriced,
+  lineFreeNotes,
   priceForTier,
+  ticketFreebiesOnLine,
   tierPriceTHB,
   unpricedCartLines,
   unpricedLineReason,
@@ -201,7 +203,9 @@ function QtyRow({
  * quoted a figure the till never charged on every package this branch sells.
  */
 function AdultQtyRow({ line, onChange }: { line: CartLine; onChange: (next: number) => void }) {
-  const { unitPrice, note } = adultUnitDisplay(line.ticketType, line.tier, line.adults);
+  const { unitPrice, note: ruleNote } = adultUnitDisplay(line.ticketType, line.tier, line.adults);
+  // SCRUM-768 — adults the ticket bundles free count in the same hint.
+  const note = lineFreeNotes(line).adults ?? ruleNote;
   // The rule that charges the next adult on this line may have no price behind
   // it (SCRUM-228); "฿0 each" would read as an adult going in free.
   const priced = isAdultRulePriced(line.ticketType, line.tier, Math.max(line.adults, 1));
@@ -238,8 +242,20 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
   // A drop-off child's own extras (socks + add-ons), excluding the service fee.
   const socksAddOn = getAddOns().find((a) => a.id === 'a-socks');
   const socksPrice = socksAddOn ? resolveRateToday(socksAddOn.price) : 0;
-  const dropOffExtras = (line: CartLine) =>
-    line.socks * socksPrice + line.addOns.reduce((sum, a) => sum + a.price * a.quantity, 0);
+  // SCRUM-768 — less the socks and add-ons the ticket bundles free.
+  const dropOffExtras = (line: CartLine) => {
+    const free = ticketFreebiesOnLine(line.ticketType, line.tier, line, 0);
+    return (
+      (line.socks - free.freeSocks) * socksPrice +
+      line.addOns.reduce((sum, a, i) => sum + a.price * (a.quantity - (free.freeAddOns[i] ?? 0)), 0)
+    );
+  };
+  /** SCRUM-768 — what one add-on row on the panel charges, and its "N free" hint. */
+  const addOnCharge = (line: CartLine, index: number) => {
+    const a = line.addOns[index]!;
+    const free = ticketFreebiesOnLine(line.ticketType, line.tier, line, 0).freeAddOns[index] ?? 0;
+    return { amount: a.price * (a.quantity - free), note: free > 0 ? ` · ${free} free` : '' };
+  };
 
   /**
    * WHAT THIS CART CANNOT BE SOLD AT (SCRUM-228).
@@ -420,21 +436,27 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
                             <div className="flex items-center justify-between gap-2">
                               <span className="flex items-center gap-2 min-w-0">
                                 <Footprints className="w-4 h-4 shrink-0" />
-                                <span className="truncate">Regular Socks × {line.socks}</span>
+                                <span className="truncate">
+                                  Regular Socks × {line.socks}
+                                  {lineFreeNotes(line).socks ? ` · ${lineFreeNotes(line).socks}` : ''}
+                                </span>
                               </span>
-                              <span className="tabular-nums shrink-0">฿{line.socks * socksPrice}</span>
+                              <span className="tabular-nums shrink-0">
+                                ฿{(line.socks - ticketFreebiesOnLine(line.ticketType, line.tier, line, 0).freeSocks) * socksPrice}
+                              </span>
                             </div>
                           )}
-                          {line.addOns.map((a) => (
+                          {line.addOns.map((a, i) => (
                             <div key={a.id} className="flex items-center justify-between gap-2">
                               <span className="flex items-center gap-2 min-w-0">
                                 <ShoppingBag className="w-4 h-4 shrink-0" />
                                 <span className="truncate">
                                   {a.name}
                                   {a.quantity > 1 && ` × ${a.quantity}`}
+                                  {addOnCharge(line, i).note}
                                 </span>
                               </span>
-                              <span className="tabular-nums shrink-0">฿{a.price * a.quantity}</span>
+                              <span className="tabular-nums shrink-0">฿{addOnCharge(line, i).amount}</span>
                             </div>
                           ))}
                         </>
@@ -503,6 +525,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
                     label="Kids"
                     value={line.kids}
                     unitPrice={tierPriceTHB(line.ticketType, line.tier) ?? undefined}
+                    unitNote={lineFreeNotes(line).kids}
                     unitWarning="no price set"
                     onChange={(v) => onUpdateLine(line.id, { kids: v })}
                   />
@@ -517,12 +540,13 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
                     label="Regular Socks"
                     value={line.socks}
                     unitPrice={socksPrice}
+                    unitNote={lineFreeNotes(line).socks}
                     onChange={(v) => onUpdateLine(line.id, { socks: v })}
                   />
                   {renderComponentDiscounts(line.id, 'socks')}
                   {line.addOns.length > 0 && (
                     <div className="pt-1 space-y-1 text-sm text-muted-foreground">
-                      {line.addOns.map((a) => (
+                      {line.addOns.map((a, i) => (
                         <div key={a.id}>
                           <div className="flex items-center justify-between gap-2">
                             <span className="flex items-center gap-2 min-w-0">
@@ -530,9 +554,10 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
                               <span className="truncate">
                                 {a.name}
                                 {a.quantity > 1 && ` × ${a.quantity}`}
+                                {addOnCharge(line, i).note}
                               </span>
                             </span>
-                            <span className="tabular-nums shrink-0">฿{a.price * a.quantity}</span>
+                            <span className="tabular-nums shrink-0">฿{addOnCharge(line, i).amount}</span>
                           </div>
                           {renderComponentDiscounts(line.id, `addon:${a.id}`)}
                         </div>
