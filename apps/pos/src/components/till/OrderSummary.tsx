@@ -10,9 +10,9 @@ import {
   adultUnitDisplay,
   componentKey,
   isAdultRulePriced,
+  lineExtrasCharge,
   lineFreeNotes,
   priceForTier,
-  ticketFreebiesOnLine,
   tierPriceTHB,
   unpricedCartLines,
   unpricedLineReason,
@@ -243,18 +243,11 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
   const socksAddOn = getAddOns().find((a) => a.id === 'a-socks');
   const socksPrice = socksAddOn ? resolveRateToday(socksAddOn.price) : 0;
   // SCRUM-768 — less the socks and add-ons the ticket bundles free.
-  const dropOffExtras = (line: CartLine) => {
-    const free = ticketFreebiesOnLine(line.ticketType, line.tier, line, 0);
-    return (
-      (line.socks - free.freeSocks) * socksPrice +
-      line.addOns.reduce((sum, a, i) => sum + a.price * (a.quantity - (free.freeAddOns[i] ?? 0)), 0)
-    );
-  };
+  const dropOffExtras = (line: CartLine) => lineExtrasCharge(line, socksPrice).total;
   /** SCRUM-768 — what one add-on row on the panel charges, and its "N free" hint. */
   const addOnCharge = (line: CartLine, index: number) => {
-    const a = line.addOns[index]!;
-    const free = ticketFreebiesOnLine(line.ticketType, line.tier, line, 0).freeAddOns[index] ?? 0;
-    return { amount: a.price * (a.quantity - free), note: free > 0 ? ` · ${free} free` : '' };
+    const charge = lineExtrasCharge(line, socksPrice).addOns[index]!;
+    return { amount: charge.amount, note: charge.free > 0 ? ` · ${charge.free} free` : '' };
   };
 
   /**
@@ -442,7 +435,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
                                 </span>
                               </span>
                               <span className="tabular-nums shrink-0">
-                                ฿{(line.socks - ticketFreebiesOnLine(line.ticketType, line.tier, line, 0).freeSocks) * socksPrice}
+                                ฿{lineExtrasCharge(line, socksPrice).socks.amount}
                               </span>
                             </div>
                           )}

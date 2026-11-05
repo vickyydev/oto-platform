@@ -4,7 +4,7 @@ import { getTicketTypes, getDropOffPricing, getAddOns } from '@/mockApi';
 import type { ApiNanny } from '@/api/checkin';
 import { useBranch } from '@/branch/BranchContext';
 import { getInventoryItem } from '@/store/catalogStore';
-import { priceForTier, setAddOnQty, setAddOnVariants } from '@/lib/pricing';
+import { lineExtrasCharge, priceForTier, setAddOnQty, setAddOnVariants } from '@/lib/pricing';
 import { resolveDropOffPricing } from '@/lib/dropoff';
 import { useNannyRoster } from '@/lib/nannyRoster';
 import { tFor } from '@/i18n/LanguageContext';
@@ -108,10 +108,10 @@ export function DropOffLineConfig({
 
   // The child's own extras subtotal (socks + add-ons), shown in the summary and —
   // for nanny — added to the play-ticket figure (the shared fee is its own row).
+  // SCRUM-768 — less the units the ticket bundles free, as the order panel shows them.
   const socksPrice = socksItem ? resolveRateToday(socksItem.price) : 0;
-  const extrasTotal =
-    socksPrice * line.socks +
-    line.addOns.reduce((sum, a) => sum + a.price * a.quantity, 0);
+  const extras = lineExtrasCharge(line, socksPrice);
+  const extrasTotal = extras.total;
   const ownTotal = priceForTier(line.ticketType, tier) + extrasTotal;
   // The roster counts children already in the park; this child is not checked
   // in yet, so her own nanny is never counted against herself.
@@ -336,17 +336,19 @@ export function DropOffLineConfig({
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">
                     Regular Socks × {line.socks}
+                    {extras.socks.free > 0 && ` · ${extras.socks.free} free`}
                   </span>
-                  <span className="tabular-nums">฿{socksPrice * line.socks}</span>
+                  <span className="tabular-nums">฿{extras.socks.amount}</span>
                 </div>
               )}
-              {line.addOns.map((a) => (
+              {line.addOns.map((a, i) => (
                 <div key={a.id} className="flex justify-between">
                   <span className="text-muted-foreground">
                     {a.name}
                     {a.quantity > 1 && ` × ${a.quantity}`}
+                    {(extras.addOns[i]?.free ?? 0) > 0 && ` · ${extras.addOns[i]!.free} free`}
                   </span>
-                  <span className="tabular-nums">฿{a.price * a.quantity}</span>
+                  <span className="tabular-nums">฿{extras.addOns[i]?.amount ?? 0}</span>
                 </div>
               ))}
               {d.service === 'nanny' ? (
