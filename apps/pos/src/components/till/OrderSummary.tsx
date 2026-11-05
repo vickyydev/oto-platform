@@ -5,10 +5,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { computeNannyGroups, resolveDropOffPricing } from '@/lib/dropoff';
 import { taxRowsOf, ticketTotals, unpricedDropOffLines, type OrderTotals } from '@/lib/cartWire';
-import { getDropOffPricing, getAddOns } from '@/mockApi';
+import { getDropOffPricing } from '@/mockApi';
 import {
   adultUnitDisplay,
   componentKey,
+  counterSocksPrice,
   isAdultRulePriced,
   lineExtrasCharge,
   lineFreeNotes,
@@ -17,7 +18,6 @@ import {
   unpricedCartLines,
   unpricedLineReason,
 } from '@/lib/pricing';
-import { resolveRateToday } from '@/lib/pricingMode';
 import { formatDiscountDetail, formatDiscountTarget } from '@/lib/manualDiscount';
 import { Ticket, User, Baby, Trash2, Tag, BadgePercent, Footprints, Minus, Plus, HandHeart, UserCheck, Pencil, AlertTriangle, ShoppingBag, PartyPopper, Gift, type LucideIcon } from 'lucide-react';
 
@@ -240,8 +240,8 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
   const nannyGroups = computeNannyGroups(lines, resolveDropOffPricing(getDropOffPricing()));
 
   // A drop-off child's own extras (socks + add-ons), excluding the service fee.
-  const socksAddOn = getAddOns().find((a) => a.id === 'a-socks');
-  const socksPrice = socksAddOn ? resolveRateToday(socksAddOn.price) : 0;
+  // SCRUM-768 — the branch's Regular Socks product prices the counter (฿0 when it sells none).
+  const socksPrice = counterSocksPrice();
   // SCRUM-768 — less the socks and add-ons the ticket bundles free.
   const dropOffExtras = (line: CartLine) => lineExtrasCharge(line, socksPrice).total;
   /** SCRUM-768 — what one add-on row on the panel charges, and its "N free" hint. */

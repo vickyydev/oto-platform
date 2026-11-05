@@ -7,10 +7,26 @@ import type { SupportedLang } from '@/i18n/types';
 // first (e.g. under HMR) mockApi's seed code ran pricing helpers while this
 // module's `SOCKS_ID` const was still in its temporal dead zone -> crash.
 import { getAddOns } from '@/store/catalogStore';
+import { socksAddOnOf } from '@/api/menu';
 import { RateMode, resolveRate, todayRateMode } from '@/lib/pricingMode';
 import { resolveLineFreebies, splitVariantBreakdown, type LineFreebies } from '@oto/shared';
 
 const SOCKS_ID = 'a-socks';
+
+/**
+ * SCRUM-768 — the socks the order panel's counter sells, priced at and freed
+ * by the branch's Regular Socks product (`socksAddOnOf`). The line still counts
+ * them under the prototype's `a-socks`, as the till sends them.
+ */
+export function counterSocksAddOn(): AddOn | undefined {
+  return socksAddOnOf(getAddOns());
+}
+
+/** Today's price of one sock on the counter, in baht: ฿0 when the branch sells none. */
+export function counterSocksPrice(mode: RateMode = todayRateMode().mode): number {
+  const socks = counterSocksAddOn();
+  return socks ? resolveRate(socks.price, mode) : 0;
+}
 
 /**
  * SCRUM-768 — WHAT THE TICKET'S FREE ITEMS MAKE FREE ON THIS LINE.
@@ -26,7 +42,11 @@ export function ticketFreebiesOnLine(
   line: { kids: number; socks: number; addOns: readonly { id: string; quantity: number }[] },
   adultsCharged: number,
 ): LineFreebies {
-  return resolveLineFreebies({ freebies: ticket.freebies ?? null }, tier, line, adultsCharged, SOCKS_ID);
+  // The counter's socks answer to the prototype's id and to the branch's socks
+  // product, which is the id Admin saves a free Regular Socks under.
+  const socks = counterSocksAddOn();
+  const socksIds = socks && socks.id !== SOCKS_ID ? [SOCKS_ID, socks.id] : [SOCKS_ID];
+  return resolveLineFreebies({ freebies: ticket.freebies ?? null }, tier, line, adultsCharged, socksIds);
 }
 
 /**
@@ -373,10 +393,7 @@ export function computeLineTotal(
 
   let total = free.paidKids * ticketPrice + (adultLine.paidCount - free.freeAdults) * adultLine.paidUnit;
 
-  const socksItem = getAddOns().find((a) => a.id === SOCKS_ID);
-  if (socksItem) {
-    total += resolveRate(socksItem.price, mode) * (socks - free.freeSocks);
-  }
+  total += counterSocksPrice(mode) * (socks - free.freeSocks);
 
   // addOns already carry a resolved concrete `price` snapshot (see setAddOnQty).
   addOns.forEach((a, i) => {
@@ -469,8 +486,7 @@ export function computeLineBreakdown(
     }
   }
   if (line.socks > 0) {
-    const socksItem = getAddOns().find((a) => a.id === SOCKS_ID);
-    const socksPrice = socksItem ? resolveRate(socksItem.price, mode) : 0;
+    const socksPrice = counterSocksPrice(mode);
     const paidSocks = line.socks - free.freeSocks;
     if (paidSocks > 0) {
       items.push({

@@ -15,6 +15,7 @@ import type {
   WeekdayWeekendPrice,
 } from '@/types';
 import { getAddOns, getMenuCategories, getTaxConfig } from '@/store/catalogStore';
+import { socksAddOnOf } from '@/api/menu';
 import { effectiveTaxCategory, getEffectiveModifierGroups } from '@/lib/menu';
 import { resolveRate, todayRateMode, type RateMode } from '@/lib/pricingMode';
 import {
@@ -170,7 +171,11 @@ export function localIdFor(localIds: readonly string[], platformKey: string): st
 /** satang → ฿, for feeding an engine answer back into the prototype's components. */
 export const toBaht = (satang: number): number => satang / 100;
 
-/** The prototype's hard-coded socks add-on id (`lib/pricing.ts:10`, and seven other files). */
+/**
+ * The prototype's hard-coded socks add-on id (`lib/pricing.ts:10`, and seven
+ * other files). The counter's socks are sent under it; their price and a free
+ * Regular Socks come from the branch's socks product (SCRUM-768).
+ */
 export const SOCKS_ADDON_ID = 'a-socks';
 
 /** The prototype's socks row label (`lib/pricing.ts:331`). */
@@ -220,13 +225,18 @@ export function packagePricingShape(ticket: TicketType): PackagePricingShape {
  * was added at.
  */
 export function pricingContext(mode: RateMode = todayRateMode().mode): PricingContext {
-  const socks = getAddOns().find((a) => a.id === SOCKS_ADDON_ID);
+  // SCRUM-768 — the counter's socks are the branch's Regular Socks product on a
+  // live catalogue (`socksAddOnOf`): priced at it, and freed by a free Regular
+  // Socks Admin saved on the ticket under it. They still travel as `a-socks`,
+  // the id the platform and the box take the socks' stock by.
+  const socks = socksAddOnOf(getAddOns());
   return {
     mode,
     socks: {
       addOnId: SOCKS_ADDON_ID,
       price: socks ? toSatang(resolveRate(socks.price, mode)) : 0,
       label: SOCKS_LABEL,
+      ...(socks && socks.id !== SOCKS_ADDON_ID ? { productId: socks.id } : {}),
     },
   };
 }

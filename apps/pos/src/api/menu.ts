@@ -86,6 +86,18 @@ export function isSocksAddOnId(id: string): boolean {
   return id === 'a-socks' || serverFields.get(id)?.code === SOCKS_PRODUCT_CODE;
 }
 
+/**
+ * SCRUM-768 — THE SOCKS THE ORDER PANEL'S COUNTER SELLS: the branch's Regular
+ * Socks product (code `AO-SOCKS`) on a live catalogue, the prototype's
+ * `a-socks` on the demo one. The counter charges its price, and a free Regular
+ * Socks Admin saved on a ticket under it is a free sock on the counter.
+ * Undefined when the branch sells no socks: the counter then charges ฿0, as it
+ * always has.
+ */
+export function socksAddOnOf<T extends { id: string }>(addOns: readonly T[]): T | undefined {
+  return addOns.find((a) => isSocksAddOnId(a.id));
+}
+
 const categoryIdByArea = new Map<TaxableCategory, Map<string, string>>();
 
 const categoryNameById = new Map<string, string>();

@@ -4,6 +4,7 @@ import { getTicketTypes, getDropOffPricing, getAddOns } from '@/mockApi';
 import type { ApiNanny } from '@/api/checkin';
 import { useBranch } from '@/branch/BranchContext';
 import { getInventoryItem } from '@/store/catalogStore';
+import { socksAddOnOf } from '@/api/menu';
 import { lineExtrasCharge, priceForTier, setAddOnQty, setAddOnVariants } from '@/lib/pricing';
 import { resolveDropOffPricing } from '@/lib/dropoff';
 import { useNannyRoster } from '@/lib/nannyRoster';
@@ -15,8 +16,6 @@ import { TicketCard } from './TicketCard';
 import { AddOnsGrid } from './AddOnsGrid';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { ArrowLeft, Baby, UserCheck, AlertTriangle, Users, Footprints } from 'lucide-react';
-
-const SOCKS_ID = 'a-socks';
 
 // Semantic patch the till applies to a drop-off line (it recomputes the fee +
 // lineTotal). Keeps pricing logic in one place (handleUpdateDropOffLine).
@@ -86,7 +85,8 @@ export function DropOffLineConfig({
   const tickets = useMemo(() => getTicketTypes(), []);
   const pricing = useMemo(() => resolveDropOffPricing(getDropOffPricing()), []);
   const allAddOns = useMemo(() => getAddOns(), []);
-  const socksItem = allAddOns.find((a) => a.id === SOCKS_ID);
+  // SCRUM-768 — the branch's Regular Socks product, as the order panel's counter reads it.
+  const socksItem = socksAddOnOf(allAddOns);
   // Stock cap for the socks stepper — prevents oversell when inventory is tracked.
   const socksInvItem = socksItem?.inventoryItemId
     ? getInventoryItem(socksItem.inventoryItemId)
