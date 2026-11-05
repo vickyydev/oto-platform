@@ -1290,6 +1290,12 @@ export const OfflinePriceBasisSchema = z.object({
           z.object({ weekday: z.number().int().min(0), weekend: z.number().int().min(0) }),
         ),
         adultRules: z.unknown().nullable(),
+        /**
+         * SCRUM-768 — the ticket's free items as the box priced the sale. A
+         * basis without them (an older box, a booking's redemption) priced
+         * none, and the sale is filed with none.
+         */
+        freebies: z.unknown().nullable().optional(),
       }),
     )
     .max(50)

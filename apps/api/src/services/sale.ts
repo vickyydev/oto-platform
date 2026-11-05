@@ -60,6 +60,7 @@ import {
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
   PAYMENT_ATTEMPT_TERMINAL_STATUSES,
   PRICING_ENGINE_VERSION,
+  readTicketFreebies,
   bandShortCode,
   LEGACY_SATANG_ENGINE_VERSION,
   DEFAULT_ROUNDING,
@@ -1149,6 +1150,9 @@ async function applyPriceBasis(
       ...row,
       prices: priced.prices as typeof row.prices,
       adultRules: (priced.adultRules ?? row.adultRules) as typeof row.adultRules,
+      // SCRUM-768 — the free items the sale was priced with; a basis naming
+      // none (an older box, a booking's redemption) priced none.
+      freebies: (priced.freebies ?? null) as typeof row.freebies,
     });
   }
 
@@ -1759,7 +1763,8 @@ export async function priceCart(
     const cartLine: TicketCartLine = {
       id: line.id,
       packageId: pkg.id,
-      package: { prices, adultRules: pkg.adultRules as never },
+      // SCRUM-768 — with the free items Admin set on the ticket for chosen tiers.
+      package: { prices, adultRules: pkg.adultRules as never, freebies: readTicketFreebies(pkg.freebies) },
       tier: resolvedTier.code,
       kids: line.kids,
       adults: line.adults,
@@ -2276,9 +2281,12 @@ function buildPricedLines(
      * (`lib/pricing.ts`'s `setAddOnVariants`), so the cart line's add-on with
      * this row's key is the one.
      */
+    // SCRUM-768 — a row split between free and paid units names its own sizes.
     const breakdown =
       kind === 'addon' && row
-        ? cartLine?.addOns.find((a) => a.id === row.key)?.variantBreakdown?.filter((b) => b.quantity > 0)
+        ? (row.variantBreakdown ?? cartLine?.addOns.find((a) => a.id === row.key)?.variantBreakdown)?.filter(
+            (b) => b.quantity > 0,
+          )
         : undefined;
     const sized: SaleLinePayload | null =
       breakdown && breakdown.length > 0 ? { variantBreakdown: breakdown } : null;

@@ -51,6 +51,23 @@ export const TicketFreebieSchema = z.object({
   quantity: z.number().int().positive(),
   tiers: z.array(z.string()),
 });
+export type TicketFreebieShape = z.infer<typeof TicketFreebieSchema>;
+
+/**
+ * SCRUM-768 — a ticket's stored free items as the engine reads them, wherever
+ * the package row comes from (the platform's own table, a box's copy of it, an
+ * offline sale's price basis). A stored item this shape cannot read is no free
+ * item rather than a refused sale; a ticket with none is null.
+ */
+export function readTicketFreebies(raw: unknown): TicketFreebieShape[] | null {
+  if (!Array.isArray(raw)) return null;
+  const out: TicketFreebieShape[] = [];
+  for (const item of raw) {
+    const parsed = TicketFreebieSchema.safeParse(item);
+    if (parsed.success && (parsed.data.kind !== 'addon' || parsed.data.addOnId)) out.push(parsed.data);
+  }
+  return out.length > 0 ? out : null;
+}
 
 export const TicketCreditRuleSchema = z.object({
   appliesTo: z.enum(['none', 'adults', 'kids', 'both']),

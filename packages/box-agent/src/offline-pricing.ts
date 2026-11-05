@@ -25,6 +25,7 @@ import {
   parseDayStart,
   priceCartLine,
   PRICING_ENGINE_VERSION,
+  readTicketFreebies,
   splitLedgerUnitMoney,
   staffBenefitDiscount,
   TaxConfigSchema,
@@ -44,6 +45,7 @@ import {
   type TaxConfigShape,
   type TicketCartLine,
   type TicketCartTotals,
+  type TicketFreebieShape,
 } from '@oto/shared';
 import type { BenefitOnBox } from './benefit-credential';
 
@@ -96,6 +98,8 @@ interface PackageRow {
   name: string;
   prices: Record<string, { weekday: number; weekend: number }>;
   adultRules: unknown;
+  /** SCRUM-768 — the free items Admin set on the ticket for chosen tiers. */
+  freebies: TicketFreebieShape[] | null;
   active: boolean;
   archivedAt: string | null;
   /** How long a band from it admits: the receipt and the band print it. */
@@ -212,6 +216,7 @@ export function readOfflineCatalogue(
       name: str(row.name) ?? 'Ticket',
       prices: (record(row.prices) ?? {}) as PackageRow['prices'],
       adultRules: row.adultRules ?? null,
+      freebies: readTicketFreebies(row.freebies),
       active: row.active !== false,
       archivedAt: str(row.archivedAt),
       hours: int(row.hours),
@@ -655,7 +660,7 @@ export function priceOfflineSale(
     const cartLine: TicketCartLine = {
       id: line.id,
       packageId: found.id,
-      package: { prices: found.prices, adultRules: found.adultRules as never },
+      package: { prices: found.prices, adultRules: found.adultRules as never, freebies: found.freebies },
       tier: tierCode,
       kids: line.kids,
       adults: line.adults,
@@ -966,7 +971,9 @@ export function priceOfflineSale(
     taxConfig: catalogue.taxConfig,
     packages: [...new Set(cart.lines.map((l) => l.packageId))].flatMap((id) => {
       const pkg = catalogue.packages.get(id);
-      return pkg ? [{ id: pkg.id, prices: pkg.prices, adultRules: pkg.adultRules ?? null }] : [];
+      return pkg
+        ? [{ id: pkg.id, prices: pkg.prices, adultRules: pkg.adultRules ?? null, ...(pkg.freebies ? { freebies: pkg.freebies } : {}) }]
+        : [];
     }),
     products: [...productsUsed].flatMap((id) => {
       const product = catalogue.products.get(id);

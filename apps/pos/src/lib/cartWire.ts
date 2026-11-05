@@ -201,7 +201,12 @@ export function packagePricingShape(ticket: TicketType): PackagePricingShape {
       ...(rule.overflow ? { overflow: rule.overflow } : {}),
     };
   }
-  return { prices, adultRules: Object.keys(adultRules).length > 0 ? adultRules : null };
+  return {
+    prices,
+    adultRules: Object.keys(adultRules).length > 0 ? adultRules : null,
+    // SCRUM-768 — Admin's free items in the rate, priced by the same engine.
+    ...(ticket.freebies && ticket.freebies.length > 0 ? { freebies: ticket.freebies } : {}),
+  };
 }
 
 /**
