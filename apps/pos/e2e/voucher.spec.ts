@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { walkInByPhone } from './walk-in';
 
 /**
  * THE LUCKY WHEEL VOUCHER AT THE TICKET TILL — the closing audit's till findings
@@ -65,7 +66,7 @@ async function signIn(page: Page): Promise<void> {
 
 /** A walk-in at the tourist rate, with one "1 Hour Play" line when `ticket` is set. */
 async function walkIn(page: Page, { ticket }: { ticket: boolean }): Promise<void> {
-  await page.getByRole('button', { name: 'Skip — walk-in (Tourist)' }).click();
+  await walkInByPhone(page, '812076203');
   await page.getByRole('heading', { name: 'Tourist' }).click();
   if (!ticket) return;
   await page.getByRole('heading', { name: '1 Hour Play' }).click();

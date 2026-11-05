@@ -1,6 +1,7 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { walkInByPhone } from './walk-in';
 
 /**
  * SCRUM-730 — A FAMILY WHO PAID ONLINE FOR DROP-OFF IS NEVER OFFERED A CHARGE.
@@ -169,7 +170,7 @@ test('The Add drop-off picker never adds a paid online child to a sale, and a si
   await paidBooking(request, parent, { childName: paidChild, ageYears: 6 });
 
   await signIn(page);
-  await page.getByRole('button', { name: 'Skip — walk-in (Tourist)' }).click();
+  await walkInByPhone(page, '812076204');
   await page.getByRole('heading', { name: 'Tourist' }).click();
   await page.getByRole('button', { name: 'Add drop-off child' }).click();
 

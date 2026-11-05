@@ -40,7 +40,7 @@ const screen = (lang: SupportedLang, stage: CustomerStage): string => {
     children: createElement(CustomerDisplay, {
       stage, sale, phone: '', nickname: '', member: null,
       onPhoneChange: () => undefined, onNicknameChange: () => undefined, onIdentify: () => undefined,
-      onSkipIdentify: () => undefined, onCustomerDone: () => undefined,
+      onCustomerDone: () => undefined,
     }),
   }));
 };

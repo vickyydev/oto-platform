@@ -22,6 +22,7 @@ import { resolveAutoTier, tierLabel } from '@/lib/membership';
 import { tierProofLabel } from '@/lib/tierProof';
 import { tierApprovalReasonLabel, type TierApprovalChoice } from '@/lib/tierApproval';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
+import { routeToPayment } from '@/lib/customerContact';
 import { setSaleOpen } from '@/pwa/openSale';
 import { getAddOns } from '@/store/catalogStore';
 import { inventoryFor, refreshSellableStock } from '@/api/stock';
@@ -995,13 +996,10 @@ export default function Till() {
     })();
   };
   const handleIdentify = () => identifyPhone(customerPhone);
-
-  // Walk-in: no membership, default to Tourist.
-  const handleSkipIdentify = () => {
-    setMember(null);
-    setConfirmedVisitId(null);
-    setStep(2);
-  };
+  // SCRUM-762 — there is no walk-in skip here any more: the number is
+  // required, for the child's safety, and a family who is not a member goes on
+  // at the default rate with the number on the sale, exactly as an unknown
+  // number always has (`identifyPhone`).
 
   // SCRUM-32 — children re-confirm modal state (opens after a lookup finds
   // saved children); SCRUM-31 — create-member offer when lookup finds nobody.
@@ -1909,8 +1907,10 @@ export default function Till() {
       }
     }
     setSuperParentName('');
-    setSuperParentPhone('');
-    setSuperParentContactMethod('whatsapp');
+    // SCRUM-762 — the number given at the start (or the member's own) is the
+    // one the drop-off and nanny forms use; the family is not asked again.
+    setSuperParentPhone(customerPhone.trim() || member?.phone || '');
+    setSuperParentContactMethod(customerContactChannel);
     gateRegistrationIdRef.current = null;
     gateStayIdsRef.current = new Map();
     gateWaiverIdsRef.current = new Map();
@@ -2562,8 +2562,7 @@ export default function Till() {
       openSupervisionGate();
       return;
     }
-    // A known member (or a resolved supervision flow) skips the customer input step.
-    setStep(member || supervisionResolved ? 5 : 4);
+    proceedToPayment();
   };
 
   const handlePay = () => {
@@ -2572,8 +2571,38 @@ export default function Till() {
         openSupervisionGate();
         return;
       }
-      // A known member (or a resolved supervision flow) skips the customer input step.
-      setStep(member || supervisionResolved ? 5 : 4);
+      proceedToPayment();
+    }
+  };
+
+  /**
+   * SCRUM-762 — THE CUSTOMER'S DETAILS STEP IS ASKED ONLY FOR WHAT IS MISSING.
+   *
+   * A known member, or a resolved supervision flow, goes straight to payment
+   * as before. So does a family who gave their number on the first screen:
+   * that number is the one the sale carries, and they are not asked for it
+   * again. The details screen still appears for the two things it is the only
+   * place to collect — a number that was never given (an order loaded from
+   * elsewhere), or the name a discounted rate needs before it can be saved to
+   * a new profile (SCRUM-227) — and then shows the kept number rather than
+   * asking for it.
+   */
+  const proceedToPayment = () => {
+    const phone = customerPhone.trim();
+    const route = routeToPayment({
+      hasMember: member !== null,
+      supervisionResolved,
+      phone,
+      nickname: customerNickname,
+      verificationPending: pendingVerification !== null,
+    });
+    if (route === 'payment') {
+      setStep(5);
+    } else if (route === 'contact_known') {
+      finishCustomerContact(phone, customerNickname, customerContactChannel);
+    } else {
+      setInputPhoneKept(phone.length > 0);
+      setStep(4);
     }
   };
 
@@ -2616,6 +2645,8 @@ export default function Till() {
     setStep(5);
   };
   const handleCustomerDone = () => finishCustomerContact(customerPhone, customerNickname, customerContactChannel);
+  /** SCRUM-762 — the details step opened with the number already given: it is shown, not asked. */
+  const [inputPhoneKept, setInputPhoneKept] = useState(false);
 
   /**
    * EVERYTHING THAT MUST BE TRUE BEFORE THIS CART BECOMES A SALE.
@@ -3248,6 +3279,8 @@ export default function Till() {
     // A resumed sale has no order step behind it: it is paid, or Cancel voids it.
     if (orderFrozen()) return;
     setPendingPaymentMethod(null);
+    // SCRUM-762 — a number already given is shown on the details screen, not asked again.
+    setInputPhoneKept(customerPhone.trim().length > 0);
     setStep(4);
   };
 
@@ -3368,6 +3401,9 @@ export default function Till() {
     canContinue: consentStaffReady && (!consentRequired || !!superParentName.trim() && superConsentAck)
       && consentConfirmations.every(item => !item.required || item.acknowledged),
   };
+  /** SCRUM-762 — the parent's number on the forms is still the one given at the start. */
+  const startPhone = (customerPhone.trim() || member?.phone || '').trim();
+  const gatePhoneKept = startPhone.length > 0 && superParentPhone.trim() === startPhone;
   const consentSignature = JSON.stringify(consentBase);
   const consentCandidate = { ...consentBase, completed: consentCompletedScope === consentSignature };
   const consent = step === 7 && displayOnline && !consentStaffOnly
@@ -3458,8 +3494,6 @@ export default function Till() {
       if (answer.nickname !== undefined) setCustomerNickname(answer.nickname);
       if (answer.contactChannel !== undefined) handleCustomerContactChannelChange(answer.contactChannel);
       identifyPhone(answer.phone);
-    } else if (answer.type === 'skip_identify' && step === 1) {
-      handleSkipIdentify();
     } else if (answer.type === 'contact_done' && step === 4 && answer.phone !== undefined
       && answer.nickname !== undefined && answer.contactChannel !== undefined) {
       setCustomerPhone(answer.phone);
@@ -3491,7 +3525,8 @@ export default function Till() {
               phone={customerPhone}
               nickname={customerNickname}
               member={member}
-              onSkip={handleSkipIdentify}
+              onShowCustomerScreen={!showCustomerDisplay && linkedDisplay.connected.length === 0
+                ? () => setShowCustomerDisplay(true) : undefined}
               onRedeemBooking={() => {
                 setScannedBooking(null);
                 setShowRedeemModal(true);
@@ -3848,6 +3883,7 @@ export default function Till() {
               policy={supervisionPolicy}
               parentPhone={superParentPhone}
               parentContactMethod={superParentContactMethod}
+              parentPhoneKept={gatePhoneKept}
               onParentNameChange={setSuperParentName}
               onParentPhoneChange={setSuperParentPhone}
               onParentContactMethodChange={setSuperParentContactMethod}
@@ -3890,8 +3926,8 @@ export default function Till() {
               onPhoneChange={setCustomerPhone}
               onNicknameChange={setCustomerNickname}
               onIdentify={handleIdentify}
-              onSkipIdentify={handleSkipIdentify}
               onCustomerDone={handleCustomerDone}
+              fixedPhone={step === 4 && inputPhoneKept ? customerPhone : undefined}
               contactChannel={customerContactChannel}
               onContactChannelChange={handleCustomerContactChannelChange}
               totals={saleResult ? undefined : cart.totals}

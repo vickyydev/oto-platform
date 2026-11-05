@@ -2494,7 +2494,6 @@ export default function MobileTill() {
             onPhoneChange={setCustomerPhone}
             onNicknameChange={setCustomerNickname}
             onIdentify={() => {}}
-            onSkipIdentify={() => {}}
             onCustomerDone={handleCustomerDone}
             contactChannel={customerContactChannel}
             onContactChannelChange={handleCustomerContactChannelChange}
@@ -2530,7 +2529,6 @@ export default function MobileTill() {
             onPhoneChange={() => {}}
             onNicknameChange={() => {}}
             onIdentify={() => {}}
-            onSkipIdentify={() => {}}
             onCustomerDone={() => {}}
           />
         );

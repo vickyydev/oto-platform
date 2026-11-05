@@ -152,7 +152,7 @@ const onDisplay = (lang: SupportedLang, stage: 'order' | 'thankyou', step: numbe
     stage: view!.stage, sale: view!.sale, phone: '', nickname: '', member: null, totals: view!.totals,
     lineBreakdowns: view!.lineBreakdowns, showGrantQr: false,
     onPhoneChange: () => undefined, onNicknameChange: () => undefined, onIdentify: () => undefined,
-    onSkipIdentify: () => undefined, onCustomerDone: () => undefined,
+    onCustomerDone: () => undefined,
   }));
 };
 
@@ -453,7 +453,7 @@ describe.each(['en', 'ru', 'th'] as const)('the keys and hand-over screens a fam
     const html = under(lang, createElement(CustomerDisplay, {
       stage, sale, phone: '', nickname: '', member: null, totals, showGrantQr: false,
       onPhoneChange: () => undefined, onNicknameChange: () => undefined, onIdentify: () => undefined,
-      onSkipIdentify: () => undefined, onCustomerDone: () => undefined,
+      onCustomerDone: () => undefined,
     }));
     expect(html).toContain(`>${words.clear}</button>`);
     expect(html).toContain(`aria-label="${words.backspace}"`);
@@ -532,7 +532,7 @@ describe.each(['en', 'ru', 'th'] as const)('the keys and hand-over screens a fam
       stage: 'payment', sale: { ...sale, paymentMethod: 'promptpay' }, phone: '', nickname: '', member: null, totals, showGrantQr: false,
       payment: { ...qrPayment, qrImageUrl: 'https://example.test/qr.png' },
       onPhoneChange: () => undefined, onNicknameChange: () => undefined, onIdentify: () => undefined,
-      onSkipIdentify: () => undefined, onCustomerDone: () => undefined,
+      onCustomerDone: () => undefined,
     } as never));
     expect(html).toContain(`alt="${t('display.qr.ready')}"`);
     if (lang !== 'en') expect(html.includes('alt="Payment QR"')).toBe(false);

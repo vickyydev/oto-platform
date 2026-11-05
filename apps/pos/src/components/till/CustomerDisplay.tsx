@@ -51,6 +51,7 @@ import {
   BadgeCheck,
   AlertTriangle,
   Gift,
+  ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -105,8 +106,14 @@ interface CustomerDisplayProps {
   onPhoneChange: (v: string) => void;
   onNicknameChange: (v: string) => void;
   onIdentify: () => void;
-  onSkipIdentify: () => void;
   onCustomerDone: () => void;
+  /**
+   * SCRUM-762 — the number the family gave on the first screen. The details
+   * screen then shows it rather than asking for it again, and asks only for
+   * the name. Absent or empty: the number was never given, and the details
+   * screen asks for it as before.
+   */
+  fixedPhone?: string;
   /** When the order is billed to a party tab, show which party on the display. */
   chargeTarget?: ChargeTarget;
   /** Channel selector attached to the phone field (both identify + input stages). */
@@ -273,8 +280,8 @@ export function CustomerDisplay({
   onPhoneChange,
   onNicknameChange,
   onIdentify,
-  onSkipIdentify,
   onCustomerDone,
+  fixedPhone,
   chargeTarget,
   contactChannel,
   onContactChannelChange,
@@ -294,6 +301,13 @@ export function CustomerDisplay({
       <p className="text-xl mt-4">{t('till.payment.received')}</p>
     </div></Shell>;
   }
+  /**
+   * SCRUM-762 — THE NUMBER IS ASKED ONCE, AT THE START, AND IT IS REQUIRED.
+   * Agreed by the park on 30 October: no Skip, a line saying why the number is
+   * needed, a member recognised from it, and the same number used at payment
+   * and on the drop-off and nanny forms. Continue stays off until a number is
+   * typed; the station's box refuses an identify answer without one as well.
+   */
   if (stage === 'identify') {
     return (
       <Shell>
@@ -305,6 +319,10 @@ export function CustomerDisplay({
             </div>
             <h2 className="text-5xl font-black">{t('till.identify.title')}</h2>
             <p className="text-foreground/60 text-lg mt-2">{t('till.identify.subtitle')}</p>
+            <p className="mx-auto mt-4 flex max-w-md items-start justify-center gap-2 text-left text-base text-foreground/75" data-testid="identify-safety">
+              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <span>{t('till.identify.safety')}</span>
+            </p>
           </div>
 
           <div className="mx-auto w-full max-w-md space-y-6">
@@ -326,22 +344,14 @@ export function CustomerDisplay({
             </div>
           </div>
         </div>
-        <div className="p-8 border-t border-foreground/10 space-y-3">
+        <div className="p-8 border-t border-foreground/10">
           <Button
             size="lg"
             className="w-full h-20 text-2xl font-bold rounded-2xl"
             disabled={phone.trim().length === 0}
             onClick={onIdentify}
           >
-            {t('till.identify.findMembership')}
-          </Button>
-          <Button
-            variant="ghost"
-            size="lg"
-            className="w-full h-14 text-lg text-foreground/60 hover:text-foreground hover:bg-foreground/5 rounded-2xl"
-            onClick={onSkipIdentify}
-          >
-            {t('till.identify.skip')}
+            {t('common.continue')}
           </Button>
         </div>
       </Shell>
@@ -649,6 +659,9 @@ export function CustomerDisplay({
   }
 
   if (stage === 'input') {
+    // SCRUM-762 — the number given at the start is shown, never asked again;
+    // this screen is then here only for the name the profile needs.
+    const keptPhone = fixedPhone?.trim() ?? '';
     return (
       <Shell customerName={displayName}>
         <div className="flex-1 flex flex-col p-8 overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
@@ -662,14 +675,25 @@ export function CustomerDisplay({
           </div>
 
           <div className="mx-auto w-full max-w-md space-y-6">
-            <PhoneInput
-              value={phone}
-              onChange={onPhoneChange}
-              showKeypad
-              channel={contactChannel}
-              onChannelChange={onContactChannelChange}
-              translate
-            />
+            {keptPhone ? (
+              <div data-testid="input-kept-phone">
+                <label className="text-foreground/70 text-lg">{t('superviseConsent.phoneNumber')}</label>
+                <div className="mt-2 flex h-16 items-center gap-3 rounded-md border border-foreground/10 bg-foreground/5 px-5 text-2xl font-semibold tabular-nums">
+                  <Smartphone className="h-6 w-6 shrink-0 text-foreground/50" />
+                  {keptPhone}
+                </div>
+                <p className="mt-2 text-base text-foreground/50">{t('till.input.phoneKept')}</p>
+              </div>
+            ) : (
+              <PhoneInput
+                value={phone}
+                onChange={onPhoneChange}
+                showKeypad
+                channel={contactChannel}
+                onChannelChange={onContactChannelChange}
+                translate
+              />
+            )}
 
             <div>
               <label className="text-foreground/70 text-lg">{t('till.identify.nickname')}</label>

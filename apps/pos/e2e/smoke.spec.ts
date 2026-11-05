@@ -237,8 +237,8 @@ async function pairedDisplay(browser: Browser, staff: Page, baseURL: string, str
     if (streaming) expect(await opened).not.toBeNull();
     else await displayPrompt(display, payload.prompt.requestId);
     await expect(display.getByTestId('display-station')).toContainText(STATION_NAME, { timeout: 20_000 });
-    await expect(display.getByRole('button', { name: 'Find my membership', exact: true })).toBeVisible({ timeout: 20_000 });
-    await expect(staff.getByRole('button', { name: 'Find my membership', exact: true })).toHaveCount(0);
+    await expect(display.getByRole('button', { name: 'Continue', exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(staff.getByRole('button', { name: 'Continue', exact: true })).toHaveCount(0);
     expect((await display.request.get('/api/me')).status()).toBe(401);
     return { display, admin, revoke, releaseLease, cleanup };
   } catch (error) {
@@ -273,7 +273,7 @@ test('lock → sign in → membership lookup → child confirm → sign out', as
     expect((await displayPrompt(fixture.display)) === promptId).toBe(true);
     const answered = fixture.display.waitForResponse((response) => response.url().endsWith('/display/intents')
       && response.request().method() === 'POST' && response.request().postDataJSON()?.type === 'display.identify');
-    await fixture.display.getByRole('button', { name: 'Find my membership', exact: true }).click();
+    await fixture.display.getByRole('button', { name: 'Continue', exact: true }).click();
     expect((await answered).status()).toBe(200);
     await expect(page.getByText("Who's visiting today?", { exact: true })).toHaveCount(0);
     const lookup = page.waitForResponse((response) => response.url().includes('/api/members/lookup?') && response.status() === 200);
@@ -346,7 +346,7 @@ test('unknown phone offers the create-member path (SCRUM-31)', async ({ page, br
       && response.request().method() === 'POST' && response.request().postDataJSON()?.type === 'display.identify');
     const lookup = page.waitForResponse(response => response.url().includes('/api/members/lookup?')
       && response.request().method() === 'GET').catch(() => null);
-    await fixture.display.getByRole('button', { name: 'Find my membership', exact: true }).click();
+    await fixture.display.getByRole('button', { name: 'Continue', exact: true }).click();
     const answer = await answered;
     expect(answer.status()).toBe(200);
     expect(answer.request().postDataJSON()?.payload?.phone === expectedPhone).toBe(true);
@@ -406,7 +406,7 @@ test('separate display saved-child review persists before Done and retries a los
   try {
     const lookup = page.waitForResponse(response => response.url().includes('/api/members/lookup?') && response.status() === 200);
     await typePhone(fixture.display, MEMBER_PHONE);
-    await fixture.display.getByRole('button', { name: 'Find my membership', exact: true }).click();
+    await fixture.display.getByRole('button', { name: 'Continue', exact: true }).click();
     const original = (await (await lookup).json()).member;
     expect(Array.isArray(original?.children) && original.children.length === 2).toBe(true);
     await expect(page.getByText("Who's visiting today?", { exact: true })).toBeVisible({ timeout: 20_000 });
@@ -722,7 +722,7 @@ test('separate display guardian acknowledgement retains lock and retry, while st
   try {
     const lookup = page.waitForResponse(response => response.url().includes('/api/members/lookup?') && response.status() === 200);
     await typePhone(fixture.display, MEMBER_PHONE);
-    await fixture.display.getByRole('button', { name: 'Find my membership', exact: true }).click();
+    await fixture.display.getByRole('button', { name: 'Continue', exact: true }).click();
     await lookup;
     await expect(page.getByText("Who's visiting today?", { exact: true })).toBeVisible({ timeout: 20_000 });
     for (const button of await page.getByRole('dialog').getByRole('button', { name: /^Details/ }).all()) {
@@ -982,7 +982,7 @@ test('separate display streams till changes and customer answers, then holds and
   try {
     const lookup = page.waitForResponse(response => response.url().includes('/api/members/lookup?') && response.status() === 200);
     await typePhone(fixture.display, MEMBER_PHONE);
-    await fixture.display.getByRole('button', { name: 'Find my membership', exact: true }).click();
+    await fixture.display.getByRole('button', { name: 'Continue', exact: true }).click();
     await lookup;
     await expect(page.getByText("Who's visiting today?", { exact: true })).toBeVisible();
     await page.getByRole('dialog').getByRole('button', { name: 'Skip for now', exact: true }).click();

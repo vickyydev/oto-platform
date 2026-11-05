@@ -5,14 +5,20 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Member, OtoEvent } from '@/types';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
 import { EventPassCard } from '@/components/till/EventPassCard';
-import { Smartphone, User, Loader2, IdCard, QrCode, Ticket, BadgeCheck, Baby } from 'lucide-react';
+import { Smartphone, User, Loader2, IdCard, QrCode, Ticket, BadgeCheck, Baby, Monitor } from 'lucide-react';
 
 interface StepIdentifyProps {
   phone: string;
   nickname: string;
   /** Member resolved from the entered phone (null while unknown / no phone). */
   member?: Member | null;
-  onSkip: () => void;
+  /**
+   * SCRUM-762 — the phone number is required, so there is no Skip. When no
+   * screen in front of the customer can take it (no display connected and the
+   * till's own customer half hidden), this opens that half so the number can
+   * be typed there.
+   */
+  onShowCustomerScreen?: () => void;
   onRedeemBooking?: () => void;
   /** Active camp/event passes for today, sold at a flat entry price (no tier). */
   eventPasses?: OtoEvent[];
@@ -29,7 +35,7 @@ export function StepIdentify({
   phone,
   nickname,
   member,
-  onSkip,
+  onShowCustomerScreen,
   onRedeemBooking,
   eventPasses = [],
   onSellEventPass,
@@ -108,6 +114,9 @@ export function StepIdentify({
               <IdCard className="w-4 h-4" />
               Enter phone to look up membership
             </p>
+            <p className="text-muted-foreground mt-1 text-sm" data-testid="identify-phone-required">
+              A phone number is required for every visit — it is how the team reaches the family about their child’s safety.
+            </p>
 
             <div className="grid grid-cols-2 gap-4 mt-6 w-full max-w-xl">
               <Card className="p-5 flex items-center gap-4 text-left">
@@ -182,9 +191,12 @@ export function StepIdentify({
             Redeem Booking
           </Button>
         )}
-        <Button variant="outline" size="lg" className="h-16 px-8" onClick={onSkip}>
-          Skip — walk-in (Tourist)
-        </Button>
+        {onShowCustomerScreen && (
+          <Button variant="outline" size="lg" className="h-16 px-8 flex items-center gap-2" onClick={onShowCustomerScreen}>
+            <Monitor className="w-5 h-5" />
+            Show customer screen to enter the phone
+          </Button>
+        )}
       </div>
     </div>
   );

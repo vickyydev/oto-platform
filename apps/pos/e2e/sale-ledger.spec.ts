@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { walkInByPhone } from './walk-in';
 
 /**
  * PAY RECORDS THE SALE; THE TENDER CLOSES IT — S2-09a (SCRUM-203).
@@ -33,7 +34,7 @@ test('Pay records the sale unpaid; Confirm Payment Received closes it', async ({
   await expect(page.getByText('Membership Check')).toBeVisible({ timeout: 15_000 });
 
   // A walk-in: no member, tourist rate, one kid and one adult.
-  await page.getByRole('button', { name: 'Skip — walk-in (Tourist)' }).click();
+  await walkInByPhone(page, '812076201');
   await page.getByRole('heading', { name: 'Tourist' }).click();
   await page.getByRole('heading', { name: '1 Hour Play' }).click();
   await expect(page.getByRole('heading', { name: /^Configure:/ })).toBeVisible({ timeout: 15_000 });
@@ -113,7 +114,7 @@ test('a corrected order is sold as its own sale', async ({ page }) => {
   };
   const before = new Set((await listSales()).map((s) => s.id));
 
-  await page.getByRole('button', { name: 'Skip — walk-in (Tourist)' }).click();
+  await walkInByPhone(page, '812076202');
   await page.getByRole('heading', { name: 'Tourist' }).click();
   await page.getByRole('heading', { name: '2 Hours Play' }).click();
   await page.getByRole('button', { name: 'Continue', exact: true }).click();

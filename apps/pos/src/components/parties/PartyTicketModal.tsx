@@ -394,7 +394,6 @@ export function PartyTicketModal({
                 onPhoneChange={() => {}}
                 onNicknameChange={() => {}}
                 onIdentify={() => {}}
-                onSkipIdentify={() => {}}
                 onCustomerDone={() => {}}
               />
             </div>

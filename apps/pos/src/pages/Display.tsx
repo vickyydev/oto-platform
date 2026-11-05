@@ -350,6 +350,10 @@ export default function Display() {
     ? { cart: tenderCart, payment: tenderPayment.data } : null;
   const view = document && !isFnb && !isMerch && !isTender ? readTicketDisplayView(document) : null;
   const answer = document?.prompt?.answer;
+  // SCRUM-762 — on the details screen, a number the till already holds was
+  // given on the first screen: it is shown there, not asked for again.
+  const keptPhone = view?.stage === 'input' && document?.prompt?.kind === 'contact'
+    && typeof document.prompt.phone === 'string' ? document.prompt.phone : undefined;
   // The public response deliberately omits the staff wizard step. Its validated
   // input prompt identifies the review without exposing that staff-only state.
   const childReview = view?.childReview ?? null;
@@ -420,7 +424,7 @@ export default function Display() {
           voucherPrize={view.voucherPrize} nothingToPay={view.nothingToPay} showGrantQr={false}
           contactChannel={contactChannel} onPhoneChange={setPhone} onNicknameChange={setNickname} onContactChannelChange={setContactChannel}
           onIdentify={() => { void send('display.identify', { requestId, phone, nickname, contactChannel }); }}
-          onSkipIdentify={() => { void send('display.skip_identify', { requestId }); }}
+          fixedPhone={keptPhone}
           onCustomerDone={() => { void send('display.contact_done', { requestId, phone, nickname, contactChannel }); }} />
       </div>
       {(busy || !!answer) && <p role="status" className="shrink-0 text-center py-3">{busy ? t('display.sending') : t('display.thankYouWait')}</p>}

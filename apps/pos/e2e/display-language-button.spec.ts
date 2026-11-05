@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { walkInByPhone } from './walk-in';
 
 /**
  * SCRUM-745 — ON THE TILL'S CUSTOMER DISPLAY, THE LANGUAGE BUTTON NEVER COVERS
@@ -50,7 +51,7 @@ async function ticketOnTheTill(page: Page): Promise<void> {
     })
     .toBe(true);
   if (await picker.isVisible()) await page.getByRole('button', { name: /Reception Till 1/ }).first().click();
-  await page.getByRole('button', { name: 'Skip — walk-in (Tourist)' }).click();
+  await walkInByPhone(page, '812076205');
   await page.getByRole('heading', { name: 'Tourist', exact: true }).click();
   // At an iPad's portrait width the staff side's ticket cards overlap one another
   // (the till's own layout, not this check's), so the press goes to the card itself.
