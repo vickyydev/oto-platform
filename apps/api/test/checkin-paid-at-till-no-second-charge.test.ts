@@ -1,9 +1,9 @@
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { auditLog, band, branch, checkin, sale, station, ticketPackage } from '@oto/db';
+import { auditLog, band, branch, checkin, paymentAttempt, sale, station, ticketPackage } from '@oto/db';
 import { newId } from '@oto/shared';
 import { checkinCacheItem } from '../src/services/sync-checkin';
-import { RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import { RECEPTION, createTestContext, signInAs, takeStation, teardownAll, type TestContext } from './helpers';
 
 /**
  * SCRUM-740 — A CHILD PAID FOR AT THE TILL IS NEVER CHARGED A SECOND TIME.
@@ -251,6 +251,99 @@ describe('a child paid for at the till with no choice made after payment', () =>
     expect(checked.statusCode, checked.body).toBe(200);
     const [inPark] = await ctx.db.select().from(checkin).where(eq(checkin.id, stayId));
     expect(inPark).toMatchObject({ status: 'in_park', saleId: paid.saleId });
+  });
+});
+
+describe('a sale rung up before another sale paid for the same child', () => {
+  const finalise = (saleId: string, cookie = reception) =>
+    ctx.app.inject({
+      method: 'POST',
+      url: `/sales/${saleId}/finalise`,
+      headers: { cookie },
+      payload: {},
+    });
+
+  async function attemptsOn(saleId: string) {
+    return ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId));
+  }
+
+  it('is refused at its cash confirm, named, left as it was, and on the trail', async () => {
+    const { stayId } = await registeredChild('ZZ TEST Kaew');
+    // Till 1 rings the family up and the screen is left open.
+    const staleId = newId();
+    expect((await ringUp(stayId, staleId)).statusCode).toBe(200);
+    // Till 2 rings the same child up and takes the money.
+    const paid = await paidAtTill(stayId);
+
+    const res = await finalise(staleId);
+    expect(res.statusCode, res.body).toBe(409);
+    expect(res.json().error.code).toBe('CHECKIN_PAID_AT_TILL');
+    expect(res.json().error.message).toContain('ZZ TEST Kaew');
+    expect(res.json().error.message).toContain(paid.receiptNumber);
+    expect(res.json().error.message).toContain('Nothing was charged');
+    expect(res.json().error.details).toMatchObject({ checkinId: stayId, saleId: paid.saleId });
+    // No money recorded and nothing numbered: the stale sale is as it was.
+    const [stale] = await ctx.db.select().from(sale).where(eq(sale.id, staleId));
+    expect(stale).toMatchObject({ status: 'tendering', receiptNumber: null });
+    expect(await attemptsOn(staleId)).toHaveLength(0);
+    const [refused] = await refusalsFor(stayId);
+    expect(refused).toMatchObject({ operatorId, branchId, actorAccountId: expect.any(String) });
+    expect(refused!.after).toMatchObject({
+      code: 'CHECKIN_PAID_AT_TILL',
+      paidOnSaleId: paid.saleId,
+      receiptNumber: paid.receiptNumber,
+      refusedSaleId: staleId,
+      stationId,
+      at: 'tender',
+    });
+    // The board still checks the child in on the sale that paid.
+    expect((await checkInBooked(stayId)).statusCode).toBe(200);
+  });
+
+  it('is refused before a card is asked for', async () => {
+    const { stayId } = await registeredChild();
+    const staleId = newId();
+    expect((await ringUp(stayId, staleId)).statusCode).toBe(200);
+    await paidAtTill(stayId);
+
+    const card = await ctx.app.inject({
+      method: 'POST',
+      url: '/payments/attempts',
+      headers: { cookie: reception },
+      payload: { saleId: staleId, tender: 'card' },
+    });
+    expect(card.statusCode, card.body).toBe(409);
+    expect(card.json().error.code).toBe('CHECKIN_PAID_AT_TILL');
+    expect(await attemptsOn(staleId)).toHaveLength(0);
+    expect(await refusalsFor(stayId)).toHaveLength(1);
+  });
+
+  it('is refused when it was held and is resumed after the other sale paid', async () => {
+    const till = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    await takeStation(ctx.app, till, stationId);
+    const { stayId } = await registeredChild();
+    const heldId = newId();
+    expect((await ringUp(stayId, heldId)).statusCode).toBe(200);
+    const held = await ctx.app.inject({
+      method: 'POST',
+      url: `/sales/${heldId}/hold`,
+      headers: { cookie: till },
+      payload: { kind: 'held', label: 'ZZ TEST Khun Ploy' },
+    });
+    expect(held.statusCode, held.body).toBe(200);
+    await paidAtTill(stayId);
+    const resumed = await ctx.app.inject({
+      method: 'POST',
+      url: `/sales/${heldId}/resume`,
+      headers: { cookie: till },
+      payload: {},
+    });
+    expect(resumed.statusCode, resumed.body).toBe(200);
+
+    const res = await finalise(heldId, till);
+    expect(res.statusCode, res.body).toBe(409);
+    expect(res.json().error.code).toBe('CHECKIN_PAID_AT_TILL');
+    expect(await attemptsOn(heldId)).toHaveLength(0);
   });
 });
 

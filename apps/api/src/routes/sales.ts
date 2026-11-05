@@ -637,6 +637,14 @@ export async function saleRoutes(app: App): Promise<void> {
         const { drawerKick: kick, ...response } = result;
         drawerKick = kick;
         return response;
+      }).catch(async (err: unknown) => {
+        // SCRUM-740 — the confirm refused for a child another sale has paid
+        // for since; its trail is written after the rollback.
+        await recordPaidAtTillRefusal(app.db, saleActor, err, {
+          saleId: req.params.id,
+          stationId: null,
+        }).catch((auditErr: unknown) => req.log.error({ err: auditErr, reqId: req.id }, 'refusal audit failed'));
+        throw err;
       });
       /**
        * S2-10a (O-4) — THE DRAWER, once the money is committed and not before.

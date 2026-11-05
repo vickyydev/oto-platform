@@ -55,6 +55,7 @@ import { assertSaleVouchersHeld } from '../vouchers';
 import { assertSalePromoUsesLeft } from '../promo-codes';
 import { assertSaleExtensionCollectable, extensionHoldsClose } from '../sale-extension-lifecycle';
 import { assertSaleBenefitsLive } from '../benefit-checkout';
+import { refuseTenderOnStaysPaidAtTill } from '../checkin-paid-at-till';
 import {
   attemptView,
   failAttempt,
@@ -608,6 +609,8 @@ export async function openQrAttempt(
        */
       if ((await outstandingAfter(tx, saleRow)) === saleRow.grossSatang) {
         await assertSalePromoUsesLeft(tx, saleRow);
+        // SCRUM-740 — nor for a child another sale has paid for since (CHECKIN_PAID_AT_TILL).
+        await refuseTenderOnStaysPaidAtTill(tx, saleRow);
       }
     }
     await input.reserve?.(tx);
