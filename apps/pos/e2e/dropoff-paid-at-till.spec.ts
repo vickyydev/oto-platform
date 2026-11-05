@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { walkInByPhone } from './walk-in';
 
 /**
  * SCRUM-740 — A CHILD PAID FOR AT THE TILL IS NEVER OFFERED A SECOND CHARGE.
@@ -170,7 +171,7 @@ test('the Add drop-off picker lists a child paid for at the till as paid, with n
   bookedFamily = await paidAtTill(page, booked.parent, booked.child, true);
   noChoiceFamily = await paidAtTill(page, noChoice.parent, noChoice.child, false);
 
-  await page.getByRole('button', { name: 'Skip — walk-in (Tourist)' }).click();
+  await walkInByPhone(page, '812076206');
   await page.getByRole('heading', { name: 'Tourist' }).click();
   await page.getByRole('button', { name: 'Add drop-off child' }).click();
   const dialog = page.getByRole('dialog');

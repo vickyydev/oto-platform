@@ -1,6 +1,7 @@
 import { expect, request as playwrightRequest, test, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { walkInByPhone } from './walk-in';
 
 /**
  * SCRUM-768 — THE FREE ITEMS SET ON A TICKET IN ADMIN ARE APPLIED AT THE TILL.
@@ -102,7 +103,7 @@ test('a ticket bundling a free child and a free adult is charged without them, a
   ]);
   try {
     await signIn(page);
-    await page.getByRole('button', { name: 'Skip — walk-in (Tourist)' }).click();
+    await walkInByPhone(page, '812076207');
     await page.getByRole('heading', { name: 'Tourist' }).click();
     await page.getByRole('heading', { name: TICKET }).click();
     await expect(page.getByRole('heading', { name: /^Configure:/ })).toBeVisible({ timeout: 15_000 });
