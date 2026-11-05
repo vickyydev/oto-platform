@@ -1368,13 +1368,18 @@ export class CheckinDesk {
     return this.edit(station, caller, body, actionId);
   }
 
-  /** The sale's deferred bands, when this box took the sale: the ledger line each stay admits against. */
-  private async deferredOf(saleId: string): Promise<{ onBox: boolean; bands: DeferredBand[] }> {
+  /**
+   * The sale's deferred bands, when this box took the sale: the ledger line
+   * each stay admits against, and the receipt number the box printed for it.
+   */
+  private async deferredOf(
+    saleId: string,
+  ): Promise<{ onBox: boolean; bands: DeferredBand[]; receiptNumber: string | null }> {
     const recorded = await this.host.sales()?.recorded(saleId).catch(() => null);
-    if (!recorded) return { onBox: false, bands: [] };
+    if (!recorded) return { onBox: false, bands: [], receiptNumber: null };
     const memo = rec(recorded.memo);
     const deferred = Array.isArray(memo?.deferredBands) ? (memo.deferredBands as DeferredBand[]) : [];
-    return { onBox: true, bands: deferred };
+    return { onBox: true, bands: deferred, receiptNumber: recorded.receipt?.number ?? null };
   }
 
   private nannyCheck(view: DeskView, nannyId: string, excludeCheckinId: string, now: Date): { name: string; warning: string | null } {
@@ -1654,6 +1659,18 @@ export class CheckinDesk {
           scheduledFor,
           bookedMinutes: bookedMinutes ?? null,
         };
+        /**
+         * SCRUM-740 — the stay is now paid for on this sale, and the copy says
+         * so: the platform's copy carries `paidAtTill: null` on every unpaid
+         * waiting child, and a picker served by this box reads that null as
+         * "not paid", so the overlay names the sale itself.
+         */
+        const paidAtTill: NonNullable<BridgeCheckinChild['paidAtTill']> = {
+          saleId: body.saleId,
+          receiptNumber:
+            deferred.receiptNumber ??
+            (s.child.paidAtTill?.saleId === body.saleId ? s.child.paidAtTill.receiptNumber : null),
+        };
         return {
           fact: { type: CHECKIN_FACTS.updated, payload: fact as unknown as Record<string, unknown> },
           overlay: [
@@ -1662,7 +1679,13 @@ export class CheckinDesk {
               entityId: s.child.id,
               memberId: s.family.registrationId,
               phone: null,
-              record: { ...s.child, scheduledFor, bookedMinutes, saleId: body.saleId } as unknown as Record<string, unknown>,
+              record: {
+                ...s.child,
+                scheduledFor,
+                bookedMinutes,
+                saleId: body.saleId,
+                paidAtTill,
+              } as unknown as Record<string, unknown>,
             },
           ],
         };

@@ -435,3 +435,97 @@ test('s740 — a child a till sale already paid for is on no other sale at the b
     box.close();
   }
 });
+
+test('s740 — a child the box itself left as booked on its sale is named paid at the till, so the picker adds nobody', async () => {
+  const box = await openBox();
+  try {
+    const checkinId = uuidv7();
+    // The platform's copy names every unpaid waiting child `paidAtTill: null`.
+    await box.harness.store.writeBundle(BOX_ID, {
+      scope: 'checkin',
+      schemaVersion: 1,
+      cursorSeq: 0,
+      payload: {
+        items: [
+          {
+            ...checkinItem(),
+            families: [
+              {
+                registrationId: uuidv7(),
+                branchId: BRANCH_ID,
+                memberId: null,
+                guardianName: 'ZZ TEST Ploy',
+                guardianPhone: '+66812345678',
+                contactChannel: 'whatsapp',
+                consentRecordedAt: new Date().toISOString(),
+                source: 'pos',
+                photoFileId: null,
+                createdAt: new Date().toISOString(),
+                contact: null,
+                tab: 'registered',
+                guardians: [],
+                children: [
+                  {
+                    id: checkinId,
+                    childId: null,
+                    childName: 'ZZ TEST Fah',
+                    childAgeYears: 6,
+                    dateOfBirth: null,
+                    allergies: null,
+                    foodRestrictions: null,
+                    mayOrderFood: false,
+                    foodProvision: null,
+                    service: 'drop_off',
+                    status: 'registered',
+                    scheduledFor: null,
+                    bookedMinutes: 60,
+                    nannyId: null,
+                    nannyName: null,
+                    checkedInAt: null,
+                    checkedOutAt: null,
+                    saleId: null,
+                    bandId: null,
+                    visitId: null,
+                    photoFileId: null,
+                    paidOnline: null,
+                    paidAtTill: null,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      appliedAt: new Date().toISOString(),
+    });
+
+    // With the link down, the counter takes the money on the box and presses Leave as booked.
+    const cart = {
+      lines: [{ id: checkinId, packageId: PACKAGE, kids: 1, adults: 0, serviceFee: { label: 'Drop-off service', amountSatang: 22_500 } }],
+    };
+    const quote = await ask(box, 'cart.quote', cart);
+    const gross = quote.quote.totals.grossSatang as number;
+    const saleId = uuidv7();
+    const paid = await ask(box, 'sale.finalise', {
+      saleId,
+      actionId: `pay-${saleId.slice(-8)}`,
+      cart: { ...cart, expectedTotalSatang: gross },
+      tender: { actionId: `cash-${saleId.slice(-8)}`, method: 'cash', kind: 'cash', amountSatang: gross },
+    });
+    const left = await ask(box, 'checkin.update', { event: 'leave_as_booked', saleId, entries: [{ checkinId }] });
+    assert.equal(left.saleId, saleId);
+
+    // The picker served by the box reads the child as paid on that sale, with its receipt.
+    const waiting = await ask(box, BRIDGE_CHECKIN_INTENTS.awaiting, {});
+    const child = waiting.registrations[0].children[0];
+    assert.equal(child.saleId, saleId);
+    assert.deepEqual(child.paidAtTill, { saleId, receiptNumber: paid.sale.receiptNumber });
+    assert.ok(child.paidAtTill.receiptNumber);
+
+    // And a second sale is refused for the child at the box.
+    const refused = await refusal(ask(box, 'checkin.update', { event: 'check_in_now', saleId: uuidv7(), entries: [{ checkinId }] }));
+    assert.equal(refused.code, 'CHECKIN_OTHER_SALE');
+  } finally {
+    box.close();
+  }
+});
