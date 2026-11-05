@@ -48,6 +48,7 @@ import {
   type TicketFreebieShape,
 } from '@oto/shared';
 import type { BenefitOnBox } from './benefit-credential';
+import { PROTOTYPE_SOCKS_ADD_ON_ID, STOCK_SOCKS_CODE } from './stock-lane';
 
 /**
  * PRICING A CART ON THE BOX (offline plan §2.4 step 1, Round 3).
@@ -562,6 +563,14 @@ function prepStationOf(product: ProductRow, categories: readonly CategoryRow[]):
   return parent?.defaultPrepStation ?? 'kitchen';
 }
 
+/** The branch's socks product in this box's copy (code `AO-SOCKS`), as the bridge's stock link reads it. */
+function socksProductOf(catalogue: OfflineCatalogue): ProductRow | undefined {
+  for (const product of catalogue.products.values()) {
+    if (product.code === STOCK_SOCKS_CODE && !product.archivedAt) return product;
+  }
+  return undefined;
+}
+
 /**
  * Price a sale from the box's catalogue: the quote the till shows, and the
  * engine's own cart lines and totals, which the ledger lines of an offline
@@ -619,12 +628,22 @@ export function priceOfflineSale(
   const tierSource: OfflineQuote['tierSource'] = context.memberTier !== null && !defaultChosen ? 'member' : 'default';
 
   const socksProduct = cart.socks ? catalogue.products.get(cart.socks.addOnId) : undefined;
+  /**
+   * SCRUM-768 — socks named by the prototype's id (the till's counter) are the
+   * branch's socks product, found in this copy by its code as the platform
+   * finds it (`socksStockProductOf`), so a free Regular Socks Admin saved on
+   * the ticket under that product comes off the counter's socks. The price
+   * stays the till's, as before.
+   */
+  const socksAlias =
+    !socksProduct && cart.socks?.addOnId === PROTOTYPE_SOCKS_ADD_ON_ID ? socksProductOf(catalogue) : undefined;
   const ctx: PricingContext = {
     mode: rate.mode,
     socks: {
       addOnId: socksProduct?.id ?? cart.socks?.addOnId ?? 'socks-not-configured',
       price: socksProduct?.priceSatang ?? cart.socks?.unitSatang ?? 0,
       label: socksProduct?.name ?? cart.socks?.label ?? 'Socks',
+      ...(socksAlias ? { productId: socksAlias.id } : {}),
     },
   };
 
