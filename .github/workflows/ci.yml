@@ -179,6 +179,7 @@ jobs:
           PAYMENTS_SIMULATOR=on pnpm --filter @oto/pos e2e e2e/dropoff-paid-online.spec.ts
           pnpm --filter @oto/pos e2e e2e/dropoff-paid-at-till.spec.ts
           pnpm --filter @oto/pos e2e e2e/ticket-free-items.spec.ts
+          pnpm --filter @oto/pos e2e e2e/ticket-free-socks.spec.ts
           # SCRUM-744: a till locked by the inactivity timeout and reloaded
           # unlocks onto its own station, at desktop and at phone width.
           pnpm --filter @oto/pos e2e e2e/locked-reload.spec.ts
