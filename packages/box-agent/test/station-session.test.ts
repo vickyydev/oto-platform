@@ -263,6 +263,30 @@ test('SCRUM-764: the family fills the form on their screen and the step reaches 
   } finally { h.close(); }
 });
 
+test('SCRUM-764: a step that changes nothing waits on the screen until the till publishes a new request', async () => {
+  const h = await openConsent();
+  try {
+    const prompt = consentPrompt({ slots: [{ id: 'slot', name: 'Child one', ageYears: 6, requirement: 'drop_off',
+      dateOfBirth: null, allergiesMedical: '', foodRestrictions: '' }] });
+    assert.ok((await h.publish(prompt)).ok);
+    // Back, then Continue: the form exactly as the till already holds it.
+    const unchanged = { action: 'fill', requestId: prompt.requestId, visitorId: prompt.visitorId,
+      slots: [{ id: 'slot', name: 'Child one', dateOfBirth: null, ageYears: 6, allergiesMedical: '', foodRestrictions: '' }],
+      guardianName: '', consentAcknowledged: false, acknowledgedConfirmationIds: [] };
+    assert.ok((await h.send(unchanged, 'unchanged-step')).ok);
+    // The same form again under the same request keeps the answer: the screen still waits.
+    const same = await h.publish(prompt);
+    assert.ok(same.ok);
+    assert.equal((same.document.prompt?.answer as { actionId: string }).actionId, 'unchanged-step');
+    assert.equal((await h.send({ ...unchanged, guardianName: 'Guardian' }, 'next-step')).ok, false);
+    // A new request clears it, and the family's next step goes through.
+    const moved = await h.publish({ ...prompt, requestId: 'guardian-request-next' });
+    assert.ok(moved.ok);
+    assert.equal(moved.document.prompt?.answer, undefined);
+    assert.ok((await h.send({ ...unchanged, requestId: 'guardian-request-next', guardianName: 'Guardian' }, 'next-step')).ok);
+  } finally { h.close(); }
+});
+
 test('guardian acknowledgement refuses foreign prompts, stages, sources, checklist fields and premature Done', async () => {
   const h = await openConsent();
   try {

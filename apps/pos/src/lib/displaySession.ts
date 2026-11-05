@@ -48,6 +48,13 @@ export interface TicketDisplayState {
   reviewRevision?: number;
   consent?: Omit<ConsentPrompt, 'kind' | 'requestId'>;
   consentRevision?: string;
+  /**
+   * SCRUM-764 — moves on with every answer the till takes that may leave the
+   * screen as it was. The station keeps an answer on the screen until the till
+   * publishes under a new request, and the screen waits while it does, so an
+   * answer that changed nothing would otherwise leave the family waiting.
+   */
+  answerRevision?: number;
 }
 
 const roundMoney = (value: number) => Math.round(value * 100) / 100;
@@ -481,7 +488,7 @@ const clearedHandoff: StationDisplayState = { key: 'tender:finished', supported:
 export function useTicketDisplay(stationId: string | null, state: TicketDisplayState, onAnswer: (answer: DisplayAnswer) => void | boolean | Promise<void | boolean>, active = true) {
   const refreshingInput = state.quoteRefreshing === true && (state.step === 7 || state.step === 8);
   return useStationDisplay(stationId, {
-    key: `${state.sessionKey}:${state.stage}:${state.step}:${state.reviewRevision ?? 0}:${state.online === true}:${state.childReview?.visitorId ?? ''}:${state.consentRevision ?? ''}:${state.consent?.visitorId ?? ''}`,
+    key: `${state.sessionKey}:${state.stage}:${state.step}:${state.reviewRevision ?? 0}:${state.online === true}:${state.childReview?.visitorId ?? ''}:${state.consentRevision ?? ''}:${state.consent?.visitorId ?? ''}:${state.answerRevision ?? 0}`,
     supported: ticketDisplayPresentation(state, '').cart.supported,
     presentation: requestId => ticketDisplayPresentation(state, requestId),
   }, active, onAnswer, refreshingInput);

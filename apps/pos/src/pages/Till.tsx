@@ -23,7 +23,7 @@ import { tierProofLabel } from '@/lib/tierProof';
 import { tierApprovalReasonLabel, type TierApprovalChoice } from '@/lib/tierApproval';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { routeToPayment } from '@/lib/customerContact';
-import { consentSlotPatches } from '@/lib/consentForm';
+import { staffTicksAgreements, takeConsentAction } from '@/lib/consentForm';
 import { setSaleOpen } from '@/pwa/openSale';
 import { getAddOns } from '@/store/catalogStore';
 import { inventoryFor, refreshSellableStock } from '@/api/stock';
@@ -527,6 +527,12 @@ export default function Till() {
   const [reviewVisitorId, setReviewVisitorId] = useState(() => crypto.randomUUID());
   const [reviewReferenceDate, setReviewReferenceDate] = useState(reviewDate);
   const [reviewRevision, setReviewRevision] = useState(0);
+  /**
+   * SCRUM-764 — bumped on every answer the till takes from the customer screen
+   * that might leave the screen as it was: the station keeps an answer until
+   * the till publishes under a new request, and the screen waits while it does.
+   */
+  const [displayAnswerRevision, setDisplayAnswerRevision] = useState(0);
   const [reviewStaffOnly, setReviewStaffOnly] = useState(false);
   const [consentStaffOnly, setConsentStaffOnly] = useState(false);
   const [consentPrivateOpen, setConsentPrivateOpen] = useState(false);
@@ -3471,6 +3477,7 @@ export default function Till() {
     quoteRefreshing: reviewOnline && cart.pending,
     payment: paymentDisplay, voucherPrize: voucher.held?.view.prize ?? null, nothingToPay: saleOwesNothing,
     childReview, reviewRevision, consent, consentRevision: `${consentSignature}:${consentCandidate.completed}:${consentStaffOnly}`,
+    answerRevision: displayAnswerRevision,
   }, async answer => {
     if (answer.type === 'consent') {
       const current = consentContext.current;
@@ -3479,23 +3486,15 @@ export default function Till() {
         || current.step !== 7 || !current.online || !current.consent || !action.success) return false;
       const prompt = ConsentPromptSchema.safeParse({ ...current.consent, kind: 'consent', requestId: action.data.requestId });
       if (!prompt.success || !consentActionAllowed(prompt.data, action.data)) return false;
-      if (action.data.action === 'staff_help') setConsentStaffOnly(true);
-      else if (action.data.action === 'acknowledge') {
-        setSuperParentName(action.data.guardianName);
-        setSuperConsentAck(action.data.consentAcknowledged);
-        setSuperAcknowledgedConfirmationIds(action.data.acknowledgedConfirmationIds);
-        setConsentCompletedScope(null);
-      } else if (action.data.action === 'fill') {
-        // SCRUM-764 — a step of the form as the family filled it, mirrored here.
-        const filled = action.data;
-        for (const { id, patch } of consentSlotPatches(superSlots, filled.slots)) handleUpdateSlot(id, patch);
-        setSuperParentName(filled.guardianName);
-        // A number given at the start stays: the form asks only when there was none.
-        if (filled.guardianPhone && !superParentPhone.trim()) setSuperParentPhone(filled.guardianPhone);
-        setSuperConsentAck(filled.consentAcknowledged);
-        setSuperAcknowledgedConfirmationIds(filled.acknowledgedConfirmationIds);
-        setConsentCompletedScope(null);
-      } else setConsentCompletedScope(current.signature);
+      // SCRUM-764 — the family's step, mirrored here; every answer taken moves
+      // their screen on to a new request, even one that changed nothing.
+      takeConsentAction(action.data, {
+        slots: superSlots, guardianPhone: superParentPhone, signature: current.signature,
+        updateSlot: handleUpdateSlot, setGuardianName: setSuperParentName, setGuardianPhone: setSuperParentPhone,
+        setConsentAcknowledged: setSuperConsentAck, setAcknowledgedConfirmationIds: setSuperAcknowledgedConfirmationIds,
+        setCompletedSignature: setConsentCompletedScope, askedForHelp: () => setConsentStaffOnly(true),
+        answered: () => setDisplayAnswerRevision(previous => previous + 1),
+      });
       // Acknowledgement never authorises registration, policy changes or payment.
       // Continue remains the existing staff action after all private checks.
       return true;
@@ -3558,6 +3557,11 @@ export default function Till() {
     }
   }, !locked);
   const inlineDisplay = showCustomerDisplay && (!linkedDisplay.connected.length || !linkedDisplay.supported || !!linkedDisplay.error);
+  // SCRUM-764 — the agreement ticks are the family's while the form is on
+  // their screen; when the paired display cannot take it (the counter box lane,
+  // a price still being worked out), staff go through them with the family here.
+  const staffTicks = staffTicksAgreements({ formPublished: !!consent, displayConnected: linkedDisplay.connected.length > 0,
+    displaySupported: linkedDisplay.supported, displayError: !!linkedDisplay.error });
   const displayInUse = linkedDisplay.connected.length > 0;
   useEffect(() => {
     // A visitor may be typing on the separate display while staff are locked.
@@ -3723,7 +3727,9 @@ export default function Till() {
           {step === 7 && tier && (
             <div className="flex h-full min-h-0 flex-col">
               {linkedDisplay.connected.length > 0 && <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm text-muted-foreground">{consentCandidate.completed
+                <p className="text-sm text-muted-foreground">{staffTicks
+                  ? 'The display cannot show the form right now: open Private child details and go through it with the family, agreements included.'
+                  : consentCandidate.completed
                   ? 'The family has finished the form on the display. Check the photo and details before Continue.'
                   : consentStaffOnly
                     ? 'The family asked for help: fill the form here with them. The agreement ticks stay theirs, on the display.'
@@ -4004,7 +4010,7 @@ export default function Till() {
             <DialogDescription>Complete the child and guardian checks on this staff screen before continuing.</DialogDescription>
           </DialogHeader>
           <div className="flex-1 min-h-0 dark" inert={gateSaving}>
-            <ConsentCapture staffScreen slots={superSlots} ticksReadOnly parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
+            <ConsentCapture staffScreen slots={superSlots} ticksReadOnly={!staffTicks} parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
               parentPhone={superParentPhone} parentContactMethod={superParentContactMethod}
               onParentNameChange={setSuperParentName} onParentPhoneChange={setSuperParentPhone}
               onParentContactMethodChange={setSuperParentContactMethod} onConsentAckChange={setSuperConsentAck}

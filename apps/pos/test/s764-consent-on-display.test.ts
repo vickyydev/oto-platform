@@ -132,11 +132,14 @@ describe('the till follows the form', () => {
     expect(view?.consent?.slots[0]).toMatchObject({ name: '', ageYears: null });
   });
 
-  it('takes a filled step into the gate, and keeps the form on the display when the family asks for help', () => {
+  it('the counter till takes each answer through the form’s own handler, and keeps the form on the display when the family asks for help', () => {
+    // What the handler does is driven in s764-form-sync.test.ts; this pins that the page uses it.
     const till = readFileSync(path.resolve(import.meta.dirname, '..', 'src', 'pages', 'Till.tsx'), 'utf8');
-    expect(till).toMatch(/action\.data\.action === 'fill'\) \{[\s\S]*?consentSlotPatches\(superSlots, filled\.slots\)[\s\S]*?setSuperConsentAck\(filled\.consentAcknowledged\)/);
+    expect(till).toMatch(/consentActionAllowed\(prompt\.data, action\.data\)\) return false;\s*\/\/[\s\S]*?takeConsentAction\(action\.data, \{[\s\S]*?answered: \(\) => setDisplayAnswerRevision\(previous => previous \+ 1\),/);
+    expect(till).toMatch(/answerRevision: displayAnswerRevision,/);
     expect(till).toMatch(/const consent = step === 7 && displayOnline\n/);
     expect(till).toMatch(/<ConsentTicksStatus consentRequired=\{consentRequired\}/);
+    expect(till).toMatch(/ticksReadOnly=\{!staffTicks\}/);
   });
 });
 
