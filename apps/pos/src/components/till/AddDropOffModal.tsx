@@ -45,7 +45,8 @@ interface AddDropOffModalProps {
 /**
  * One family on the picker: who they are, the button that adds them to the sale,
  * and each waiting child. SCRUM-730 — a child paid for online stays listed, so a
- * sibling can still join the family, and is never added to a sale.
+ * sibling can still join the family, and is never added to a sale. SCRUM-740 —
+ * nor is a child a till sale already paid for: the board checks them in.
  */
 export function WaitingFamily({
   group,
@@ -56,9 +57,14 @@ export function WaitingFamily({
   attached: ReadonlySet<string>;
   onAddToSale: (children: CheckIn[]) => void;
 }) {
-  const chargeable = group.children.filter((c) => !c.paidOnline);
+  const chargeable = group.children.filter((c) => !c.paidOnline && !c.paidAtTill);
   const fresh = chargeable.filter((c) => !attached.has(c.id));
-  const allPaidOnline = group.children.length > 0 && chargeable.length === 0;
+  const allPaid = group.children.length > 0 && chargeable.length === 0;
+  const paidLabel = group.children.every((c) => c.paidOnline)
+    ? 'Paid online'
+    : group.children.every((c) => !c.paidOnline)
+      ? 'Paid at till'
+      : 'Paid';
   return (
     <>
       <div className="flex items-start justify-between gap-3">
@@ -82,7 +88,7 @@ export function WaitingFamily({
           }}
           className="shrink-0"
         >
-          {allPaidOnline ? 'Paid online' : fresh.length === 0 ? 'Added' : 'Add to sale'}
+          {allPaid ? paidLabel : fresh.length === 0 ? 'Added' : 'Add to sale'}
         </Button>
       </div>
 
@@ -114,9 +120,13 @@ export function WaitingFamily({
               {isAttached && (
                 <span className="text-xs text-muted-foreground shrink-0">In sale</span>
               )}
-              {c.paidOnline && (
+              {c.paidOnline ? (
                 <span className="text-xs text-emerald-400 shrink-0">Paid online</span>
-              )}
+              ) : c.paidAtTill ? (
+                <span className="text-xs text-emerald-400 shrink-0">
+                  Paid at till{c.paidAtTill.receiptNumber ? ` · ${c.paidAtTill.receiptNumber}` : ''}
+                </span>
+              ) : null}
             </div>
           );
         })}

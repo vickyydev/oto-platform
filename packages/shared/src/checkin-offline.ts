@@ -458,6 +458,12 @@ export interface BridgeCheckinChild {
    * which needs the link: the box never takes this child on a sale.
    */
   paidOnline?: { bookingId: string; reference: string } | null;
+  /**
+   * SCRUM-740 — the till sale that already paid for this waiting child, on a
+   * copy built since it was answered: the picker lists them as paid, and the
+   * box takes them on no other sale.
+   */
+  paidAtTill?: { saleId: string; receiptNumber: string | null } | null;
 }
 
 /** One person on a pickup list, as the box keeps it. */

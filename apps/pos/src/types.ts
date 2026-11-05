@@ -1766,6 +1766,11 @@ export interface CheckIn {
    * booking's own sale carries them. Never a line to charge, either way.
    */
   paidOnline?: { bookingId: string; reference: string; redeemed: boolean };
+  /**
+   * SCRUM-740 — the till sale that already paid for this waiting child. Never
+   * a line to charge: the board checks them in on that sale with no payment.
+   */
+  paidAtTill?: { saleId: string; receiptNumber: string | null };
   registeredAt: string;
   checkedInAt?: string; // set on Enter Park (drives the timer)
   checkedOutAt?: string; // set on Check Out

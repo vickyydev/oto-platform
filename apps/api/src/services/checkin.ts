@@ -50,6 +50,7 @@ import {
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import { paidOnlineRefusal, paidOnlineStaysOf, type PaidOnlineBooking } from './booking-supervision';
+import { paidAtTillStaysOf, type PaidAtTill } from './checkin-paid-at-till';
 import { BandKeyMissingError, mintSaleBands } from './bands';
 import { idInUse } from './client-id';
 import { mirrorNotice } from './inbox/mirror';
@@ -221,6 +222,12 @@ export interface CheckinView {
    * child is never a line to charge.
    */
   paidOnline?: PaidOnlineBooking | null;
+  /**
+   * SCRUM-740 — the till sale that already paid for this waiting child, on the
+   * same two reads: the picker never offers them as a line to charge, and the
+   * board checks them in on that sale with no payment.
+   */
+  paidAtTill?: PaidAtTill | null;
 }
 
 export interface RegistrationView {
@@ -323,9 +330,14 @@ export async function registrationsAwaitingCheckIn(
   const out: RegistrationView[] = [];
   for (const row of rows) out.push(await registrationViewOf(db, row));
   const paidOnline = await paidOnlineStaysOf(db, operatorId, out.flatMap((r) => r.children));
+  const paidAtTill = await paidAtTillStaysOf(db, operatorId, out.flatMap((r) => r.children.filter((c) => c.status === 'registered')));
   return out.map((r) => ({
     ...r,
-    children: r.children.map((c) => ({ ...c, paidOnline: paidOnline.get(c.id) ?? null })),
+    children: r.children.map((c) => ({
+      ...c,
+      paidOnline: paidOnline.get(c.id) ?? null,
+      paidAtTill: paidAtTill.get(c.id) ?? null,
+    })),
   }));
 }
 
@@ -1200,12 +1212,18 @@ export interface BoardFilter {
   due?: boolean;
 }
 
-function boardChildOf(row: CheckinRow, nannyName: string | null, paidOnline?: PaidOnlineBooking | null): BoardChild {
+function boardChildOf(
+  row: CheckinRow,
+  nannyName: string | null,
+  paidOnline?: PaidOnlineBooking | null,
+  paidAtTill?: PaidAtTill | null,
+): BoardChild {
   return {
     ...checkinViewOf(row),
     nannyName,
     checkedOutAt: row.checkedOutAt?.toISOString() ?? null,
     ...(paidOnline !== undefined ? { paidOnline } : {}),
+    ...(paidAtTill !== undefined ? { paidAtTill } : {}),
   };
 }
 
@@ -1357,10 +1375,16 @@ export async function boardOf(db: Exec, operatorId: string, branchId: string, no
   const counts: Record<BoardTab, number> = { registered: 0, in_park: 0, out: 0 };
   for (const s of stays) counts[tabOfStay(s.status)] += 1;
   const paidOnline = await paidOnlineStaysOf(db, operatorId, stays.filter((s) => s.status === 'registered'));
+  const paidAtTill = await paidAtTillStaysOf(db, operatorId, stays.filter((s) => s.status === 'registered'));
 
   const families: BoardFamily[] = regs.map((r) => {
     const children = (byReg.get(r.id) ?? []).map((s) =>
-      boardChildOf(s, s.nannyId ? (names.get(s.nannyId) ?? null) : null, paidOnline.get(s.id) ?? null),
+      boardChildOf(
+        s,
+        s.nannyId ? (names.get(s.nannyId) ?? null) : null,
+        paidOnline.get(s.id) ?? null,
+        paidAtTill.get(s.id) ?? null,
+      ),
     );
     return {
       registrationId: r.id,
@@ -1876,6 +1900,9 @@ export async function checkinHistory(db: Exec, operatorId: string, checkinId: st
  * paid on: in the park with the timer started, the band minted on their own
  * line and queued for print — the same one transaction as the till's
  * "Check in now", so a child never stands in the park without a band.
+ *
+ * SCRUM-740 — a child whose sale was paid at the till with neither choice made
+ * after payment is booked and paid too: they are checked in on that sale.
  */
 export async function checkInBooked(
   tx: Tx,
@@ -1896,6 +1923,11 @@ export async function checkInBooked(
   if (new Set(stays.map((s) => s.branchId)).size !== 1) throw errors.badRequest('These children were registered at different parks.');
   const nannyOf = new Map(input.entries.map((e) => [e.checkinId, e.nannyId ?? null]));
   const paidOnline = await paidOnlineStaysOf(tx, actor.operatorId, stays.filter((s) => !s.saleId));
+  // SCRUM-740 — paid at the till with the choice after payment never made: the
+  // sale that paid is the one the band is minted on, as "Leave as booked" would
+  // have filed it.
+  const paidAtTill = await paidAtTillStaysOf(tx, actor.operatorId, stays.filter((s) => !s.saleId && s.status === 'registered'));
+  const saleOfStay = (s: CheckinRow): string | null => s.saleId ?? paidAtTill.get(s.id)?.saleId ?? null;
 
   // --- Validate all before committing any ---
   for (const s of stays) {
@@ -1915,7 +1947,7 @@ export async function checkInBooked(
         { ...paid },
       );
     }
-    if (!s.scheduledFor || !s.saleId) {
+    if (s.saleId ? !s.scheduledFor : !paidAtTill.has(s.id)) {
       throw errors.conflict(
         'CHECKIN_NOT_BOOKED',
         `${s.childName} has not been paid for yet — check them in at the till, where the payment is taken.`,
@@ -1953,9 +1985,10 @@ export async function checkInBooked(
   const bySale = new Map<string, { checkinId: string; nannyId: string | null }[]>();
   for (const s of stays) {
     const entry = { checkinId: s.id, nannyId: s.service === 'nanny' ? (nannyOf.get(s.id) ?? s.nannyId) : null };
-    const list = bySale.get(s.saleId!);
+    const paidOn = saleOfStay(s)!;
+    const list = bySale.get(paidOn);
     if (list) list.push(entry);
-    else bySale.set(s.saleId!, [entry]);
+    else bySale.set(paidOn, [entry]);
   }
   const result: CheckInNowResult & { saleIds: string[] } = {
     saleId: '',
