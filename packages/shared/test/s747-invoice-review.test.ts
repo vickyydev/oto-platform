@@ -25,11 +25,19 @@ describe('SCRUM-747: preserve invoice identity while supporting saved till codes
     expect(invoiceStationSegment(' zi-7c ')).toBe(invoiceStationSegment('ZI7C'));
     expect(invoiceStationSegment('ZI7C')).toBe('LO7');
     expect(invoiceStationSegment('ZZ747A')).toBe('0AX');
+    // Every one of the 50,000 codes is still checked. The offenders are
+    // gathered and asserted once: two expect calls per code cost about fifty
+    // times the encoder itself, which took this case past the 5 s limit on a
+    // busy CI runner.
+    const offenders: string[] = [];
     for (let i = 0; i < 50_000; i += 1) {
-      const segment = invoiceStationSegment(`Z${i.toString(36).toUpperCase().padStart(5, '0')}`);
-      expect(segment).toMatch(/^[A-Z0-9]{3}$/);
-      expect(segment).not.toBe('WEB');
+      const code = `Z${i.toString(36).toUpperCase().padStart(5, '0')}`;
+      const segment = invoiceStationSegment(code);
+      if (segment === null || !/^[A-Z0-9]{3}$/.test(segment) || segment === 'WEB') {
+        offenders.push(`${code} -> ${String(segment)}`);
+      }
     }
+    expect(offenders).toEqual([]);
   });
 
   it('still refuses an unsupported length rather than truncating it', () => {
