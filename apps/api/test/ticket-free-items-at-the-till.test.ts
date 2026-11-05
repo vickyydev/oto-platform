@@ -221,6 +221,127 @@ describe('a ticket bundling a free adult, child and add-on for the walk-in tier'
   });
 });
 
+/**
+ * SCRUM-768 follow-up — A FREE REGULAR SOCKS ON THE SOCKS COUNTER.
+ *
+ * Admin saves a free Regular Socks under the branch's socks product
+ * (`AO-SOCKS`), while the till names the socks on its order panel's counter by
+ * the prototype's `a-socks`, priced at the socks product's price. The platform
+ * reads that id as the socks product, so the bundled socks come off the
+ * counter's socks at ฿0 and the rest are charged at the price the till sent.
+ */
+describe('a free Regular Socks on the ticket, with the socks on the order panel counter', () => {
+  let socks: typeof product.$inferSelect;
+  const counterSocks = (unitSatang: number) => ({ addOnId: 'a-socks', unitSatang, label: 'Regular Socks' });
+  const freeSocks = (tiers: string[]): Array<TicketFreebieRule & { id: string }> => [
+    { id: 'fb-socks', kind: 'addon', addOnId: socks.id, quantity: 1, tiers },
+  ];
+  /** One child, one adult and two socks on the counter: the child brings one sock free. */
+  const kidWithSocks = (lineId: string, lineTotalSatang?: number) => ({
+    id: lineId,
+    packageId: twoHours.id,
+    kids: 1,
+    adults: 1,
+    socks: 2,
+    ...(lineTotalSatang !== undefined ? { lineTotalSatang } : {}),
+  });
+  const kidPrice = (mode: 'weekday' | 'weekend') =>
+    (twoHours.prices as Record<string, { weekday: number; weekend: number }>).tourist![mode];
+  const adultPrice = (mode: 'weekday' | 'weekend') => {
+    const rule = (twoHours.adultRules as Record<string, { kind: string; price?: { weekday: number; weekend: number } }>).tourist!;
+    return rule.kind === 'set_price' ? rule.price![mode] : kidPrice(mode);
+  };
+  const socksPrice = (mode: 'weekday' | 'weekend') =>
+    mode === 'weekend' ? (socks.priceWeekendSatang ?? socks.priceSatang) : socks.priceSatang;
+
+  beforeAll(async () => {
+    const [row] = await ctx.db.select().from(product).where(eq(product.code, 'AO-SOCKS'));
+    socks = row!;
+    expect(socks.priceSatang).toBeGreaterThan(0);
+  });
+
+  it('files one sock at the socks price and the bundled one as "Regular Socks (free)" at ฿0, both off the shelf, and prints both', async () => {
+    await setFreebies(twoHours.id, freeSocks(['tourist']));
+    const probe = await ctx.app.inject({
+      method: 'POST',
+      url: '/sales/quote',
+      headers: { cookie: reception },
+      payload: { stationId, socks: counterSocks(socks.priceSatang), lines: [kidWithSocks('0190a0a0-0000-7000-8000-0000000d5c01')] },
+    });
+    expect(probe.statusCode, probe.body).toBe(200);
+    const mode = (probe.json().quote as { pricingMode: 'weekday' | 'weekend' }).pricingMode;
+    const unit = socksPrice(mode);
+    const charged = kidPrice(mode) + adultPrice(mode) + unit;
+
+    const saleId = newId();
+    const commit = await ctx.app.inject({
+      method: 'POST',
+      url: '/sales',
+      headers: { cookie: reception },
+      // The till's own figure for the line agrees: one sock charged, one free.
+      payload: { id: saleId, stationId, socks: counterSocks(unit), lines: [kidWithSocks(newId(), charged)] },
+    });
+    expect(commit.statusCode, commit.body).toBe(200);
+    const lines = await ctx.db
+      .select()
+      .from(saleLine)
+      .where(eq(saleLine.saleId, saleId))
+      .orderBy(asc(saleLine.lineNo));
+    expect(lines.map((l) => [l.kind, l.componentKey, l.label, l.quantity, l.grossSatang])).toEqual([
+      ['kids', 'kids', 'Kids', 1, kidPrice(mode)],
+      ['adults_paid', 'adults', 'Adults', 1, adultPrice(mode)],
+      ['socks', 'socks', 'Regular Socks', 1, unit],
+      ['socks', 'socks-free', 'Regular Socks (free)', 1, 0],
+    ]);
+    // Both socks are handed over, so both lines name Regular Socks for its stock.
+    expect(lines.filter((l) => l.kind === 'socks').map((l) => l.productId)).toEqual([socks.id, socks.id]);
+
+    const fin = await ctx.app.inject({ method: 'POST', url: `/sales/${saleId}/finalise`, headers: { cookie: reception }, payload: {} });
+    expect(fin.statusCode, fin.body).toBe(200);
+    const [closed] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+    expect(closed!.grossSatang).toBe(charged);
+    const receipt = salePrintDocumentOf(await salePrintSnapshotOf(ctx.db, closed!), {
+      kind: 'receipt',
+      subjectType: 'sale',
+      subjectId: saleId,
+    });
+    const printed = (receipt!.data as { lines: Array<{ qty: number; name: string; price: string }> }).lines;
+    expect(printed.find((l) => l.name.includes('Regular Socks (free)'))).toMatchObject({ qty: 1, price: '฿0' });
+    expect(printed.find((l) => l.name.includes('Regular Socks') && !l.name.includes('(free)'))).toMatchObject({ qty: 1 });
+  });
+
+  it('charges every sock at a tier the free socks were not set for', async () => {
+    await setFreebies(twoHours.id, freeSocks(['thai']));
+    const saleId = newId();
+    const commit = await ctx.app.inject({
+      method: 'POST',
+      url: '/sales',
+      headers: { cookie: reception },
+      payload: { id: saleId, stationId, socks: counterSocks(socks.priceSatang), lines: [kidWithSocks(newId())] },
+    });
+    expect(commit.statusCode, commit.body).toBe(200);
+    const lines = await ctx.db.select().from(saleLine).where(eq(saleLine.saleId, saleId));
+    expect(lines.filter((l) => l.kind === 'socks').map((l) => [l.label, l.quantity, l.grossSatang])).toEqual([
+      ['Regular Socks', 2, 2 * socks.priceSatang],
+    ]);
+  });
+
+  it('files a till still pricing the counter socks at ฿0 as it was sent, without refusing it', async () => {
+    await setFreebies(twoHours.id, freeSocks(['tourist']));
+    const quote = await ctx.app.inject({
+      method: 'POST',
+      url: '/sales/quote',
+      headers: { cookie: reception },
+      payload: { stationId, socks: counterSocks(0), lines: [kidWithSocks('0190a0a0-0000-7000-8000-0000000d5c02')] },
+    });
+    expect(quote.statusCode, quote.body).toBe(200);
+    const quoted = quote.json().quote as { pricingMode: 'weekday' | 'weekend'; lineTotals: Record<string, number> };
+    expect(quoted.lineTotals['0190a0a0-0000-7000-8000-0000000d5c02']).toBe(
+      kidPrice(quoted.pricingMode) + adultPrice(quoted.pricingMode),
+    );
+  });
+});
+
 describe('a booking paid online', () => {
   it('is redeemed for exactly what it was paid, free items on the ticket or not', async () => {
     await setFreebies(oneHourId, bundle(['tourist', 'thai', 'expat']));

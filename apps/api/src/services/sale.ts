@@ -1015,11 +1015,13 @@ interface CatalogueLookup {
   /**
    * S2-14b — the branch's socks product when the cart names its socks by the
    * prototype's id (`a-socks`), which is how the till sends them
-   * (`apps/pos/src/lib/cartWire.ts`). It is the STOCK link only: the socks are
+   * (`apps/pos/src/lib/cartWire.ts`). It is the STOCK link: the socks are
    * still priced as before (the till's snapshot), but the line carries this
    * product so the guard sees it and finalise takes Regular Socks off the shelf
    * for every ticket line's socks count, as the prototype does
-   * (`mockApi.ts:1304-1311`).
+   * (`mockApi.ts:1304-1311`). SCRUM-768 — it is also the id a free Regular
+   * Socks on the ticket is saved under, so the engine counts that free item
+   * against these socks (`PricingContext.socks.productId`).
    */
   socksStockProductId: string | null;
 }
@@ -1705,6 +1707,11 @@ export async function priceCart(
       addOnId: socksProduct?.row.id ?? input.socks?.addOnId ?? 'socks-not-configured',
       price: socksProduct?.row.priceSatang ?? input.socks?.unitSatang ?? 0,
       label: socksProduct?.row.name ?? input.socks?.label ?? 'Socks',
+      // SCRUM-768 — socks named by the prototype's id are the branch's socks
+      // product (`socksStockProductOf`), so a free Regular Socks Admin saved
+      // on the ticket under that product comes off the counter's socks. The
+      // price stays the till's, as before.
+      ...(!socksProduct && catalogue.socksStockProductId ? { productId: catalogue.socksStockProductId } : {}),
     },
   };
 
