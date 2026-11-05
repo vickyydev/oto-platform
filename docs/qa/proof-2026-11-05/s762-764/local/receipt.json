@@ -1,0 +1,51 @@
+{
+  "mode": "local",
+  "browser": "msedge",
+  "source": "e6cbcdef78de14dab17d1e72cf3dfc065ad164c9",
+  "startedAt": "2026-11-05T10:06:20.026Z",
+  "cases": [
+    {
+      "name": "SCRUM-779 walk-in with Thai claim names themselves after Pay",
+      "saleId": "01a1ab2c-d105-78e5-bea4-54925d0dc46d",
+      "salesRungUp": 1,
+      "memberId": "01a1ab2c-d119-7f02-8bd3-eca51744083e",
+      "customerTier": "thai",
+      "status": "finalised",
+      "passed": true
+    },
+    {
+      "name": "SCRUM-762 phone once, required, kept on the details screen",
+      "passed": true
+    },
+    {
+      "name": "SCRUM-764 drop-off form filled on the display, mirrored on the till, ticks from the family only",
+      "passed": true
+    }
+  ],
+  "screens": [
+    "s762-00-harness-phone-first-no-skip.png",
+    "s762-01-display-phone-required-no-skip.png",
+    "s762-02-till-membership-check-no-skip.png",
+    "s762-03-display-details-kept-phone-name-only.png",
+    "s779-01-payment-screen-one-sale-member-attached.png",
+    "s779-02-paid-one-sale.png",
+    "s779-03-till-after-reload-nothing-left-unpaid.png",
+    "s764-01-display-form-opens-on-children-step.png",
+    "s764-02-till-gate-mirrors-the-child.png",
+    "s764-03-display-care-step.png",
+    "s764-04a-display-agreements-number-from-the-start.png",
+    "s764-04-display-agreements-kept-phone.png",
+    "s764-05-till-shows-the-family-ticks.png",
+    "s764-06-staff-copy-ticks-read-only.png",
+    "s764-07-display-form-finished.png",
+    "s764-08-registered-from-the-family-form.png"
+  ],
+  "outcome": "passed",
+  "phase": "764",
+  "fixture": {
+    "boxId": "01a1ab2c-94da-7e4d-9dd4-cd4fd5a2f19e",
+    "stationId": "01a1ab2c-95ef-75b4-b16a-1baa79dcdb6b"
+  },
+  "browserVersion": "156.0.4314.58",
+  "finishedAt": "2026-11-05T10:06:57.834Z"
+}
