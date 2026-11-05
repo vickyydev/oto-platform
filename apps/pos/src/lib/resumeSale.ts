@@ -1,5 +1,6 @@
 import type {
   AddOn,
+  AddOnVariantQty,
   CartLine,
   CustomerTier,
   Discount,
@@ -115,15 +116,34 @@ function standInPackage(cartLineId: string, tier: CustomerTier, rows: readonly A
   };
 }
 
-function addOnOf(row: ApiSaleLine, catalogue: ResumeCatalogue): SelectedAddOn {
-  const id = row.componentKey ?? row.id;
+/**
+ * One add-on of a cart line, from every ledger row filed under its id.
+ *
+ * SCRUM-768 — a ticket's free add-on is filed as two rows under the same id:
+ * the units charged at the add-on's price, and the free units at ฿0. The cart
+ * held them as ONE add-on, and the till's engine splits it again from the
+ * ticket's free items, so the rows are put back together here: the count is
+ * both rows', the price is the charged row's, and the sizes are the free
+ * row's first, as the split took them from the front of the add-on's sizes.
+ */
+function addOnOf(rows: readonly ApiSaleLine[], catalogue: ResumeCatalogue): SelectedAddOn {
+  const first = rows[0]!;
+  const id = first.componentKey ?? first.id;
   const known = catalogue.addOns.find((a) => a.id === id);
-  const breakdown = (row.variantBreakdown ?? []).filter((b) => b.quantity > 0);
+  const charged = rows.find((r) => r.unitSatang > 0) ?? first;
+  const ordered = [...rows.filter((r) => r.unitSatang === 0), ...rows.filter((r) => r.unitSatang !== 0)];
+  const breakdown: AddOnVariantQty[] = [];
+  for (const part of ordered.flatMap((r) => r.variantBreakdown ?? [])) {
+    if (part.quantity <= 0) continue;
+    const same = breakdown.find((b) => b.variantId === part.variantId);
+    if (same) same.quantity += part.quantity;
+    else breakdown.push({ ...part });
+  }
   return {
     id,
-    name: known?.name ?? row.label,
-    price: toBaht(row.unitSatang),
-    quantity: row.quantity,
+    name: known?.name ?? charged.label,
+    price: toBaht(charged.unitSatang),
+    quantity: rows.reduce((sum, r) => sum + r.quantity, 0),
     ...(known?.inventoryItemId ? { inventoryItemId: known.inventoryItemId } : {}),
     ...(known?.taxCategoryOverride ? { taxCategoryOverride: known.taxCategoryOverride } : {}),
     ...(breakdown.length > 1 ? { variantBreakdown: breakdown } : {}),
@@ -142,7 +162,8 @@ function cartLineOf(
   let kids = 0;
   let adults = 0;
   let socks = 0;
-  const addOns: SelectedAddOn[] = [];
+  // Each add-on's rows by its id, in the order the ledger first names it.
+  const addOnRows = new Map<string, ApiSaleLine[]>();
   let promoItem: CartLine['promoItem'];
   let supervised = false;
   let gross = 0;
@@ -159,9 +180,11 @@ function cartLineOf(
       case 'socks':
         socks += row.quantity;
         break;
-      case 'addon':
-        addOns.push(addOnOf(row, catalogue));
+      case 'addon': {
+        const key = row.componentKey ?? row.id;
+        addOnRows.set(key, [...(addOnRows.get(key) ?? []), row]);
         break;
+      }
       case 'promo_item':
         promoItem = {
           itemId: row.componentKey?.startsWith(PROMO_ITEM_PREFIX)
@@ -181,6 +204,7 @@ function cartLineOf(
         break;
     }
   }
+  const addOns = [...addOnRows.values()].map((group) => addOnOf(group, catalogue));
   const packageId = rows.find((r) => r.ticketPackageId)?.ticketPackageId ?? null;
   const ticketType =
     (packageId ? catalogue.ticketTypes.find((t) => t.id === packageId) : undefined) ??

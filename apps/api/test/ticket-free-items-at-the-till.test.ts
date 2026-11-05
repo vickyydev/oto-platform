@@ -61,7 +61,8 @@ beforeAll(async () => {
   twoHours = packages.find((p) => p.name === '2 Hours Play')!;
   oneHourId = packages.find((p) => p.name === '1 Hour Play')!.id;
   // One size, so the counter is never asked which.
-  [grip] = await ctx.db.select().from(product).where(eq(product.code, 'AO-GLOW'));
+  const [glow] = await ctx.db.select().from(product).where(eq(product.code, 'AO-GLOW'));
+  grip = glow!;
   const [till] = await ctx.db.select().from(station).where(eq(station.name, 'Reception Till 1'));
   stationId = till!.id;
   const stood = await ctx.app.inject({

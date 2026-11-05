@@ -227,6 +227,30 @@ export function adultUnitDisplay(
 }
 
 /**
+ * SCRUM-768 — WHAT A LINE'S SOCKS AND ADD-ONS CHARGE ON THE TILL'S PANELS, less
+ * the units the ticket bundles free. The order panel and a drop-off or nanny
+ * child's own panel (`DropOffLineConfig`) both read these figures, so the two
+ * show the same amount for the same line. `socksPrice` is the panel's own
+ * reading of today's socks rate; each figure is in baht.
+ */
+export function lineExtrasCharge(
+  line: Pick<CartLine, 'ticketType' | 'tier' | 'kids' | 'socks' | 'addOns'>,
+  socksPrice: number,
+): {
+  socks: { amount: number; free: number };
+  addOns: { amount: number; free: number }[];
+  total: number;
+} {
+  const free = ticketFreebiesOnLine(line.ticketType, line.tier, line, 0);
+  const socks = { amount: (line.socks - free.freeSocks) * socksPrice, free: free.freeSocks };
+  const addOns = line.addOns.map((a, i) => {
+    const units = free.freeAddOns[i] ?? 0;
+    return { amount: a.price * (a.quantity - units), free: units };
+  });
+  return { socks, addOns, total: socks.amount + addOns.reduce((sum, a) => sum + a.amount, 0) };
+}
+
+/**
  * SCRUM-768 — the order panel's "N free" hint for a line's kids, adults, socks
  * and each add-on, from the same count that charges the line. Empty when the
  * ticket bundles nothing for this tier.
