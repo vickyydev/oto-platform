@@ -129,6 +129,39 @@ describe('the member joins the sale already rung up', () => {
     expect(attach).toHaveBeenCalledExactlyOnceWith(first!.saleId, MEMBER);
   });
 
+  it('a member who arrives after the sale’s ids were decided but before they went out still joins that one sale', async () => {
+    // The payment screen decides the walk-in sale's ids first (a voucher moves
+    // onto them), and only then sends the commit; the deferred member save can
+    // land in between.
+    const { result } = renderHook(() => useSaleWriter());
+    const decided = result.current.prepare(order(1));
+    expect(await result.current.attachMember(MEMBER)).toEqual({ attached: false, reason: 'nothing-rung-up' });
+    expect(commit).not.toHaveBeenCalled();
+
+    const rungUp = await result.current.commit(order(1));
+    expect(rungUp).toMatchObject({ ok: true, written: true, saleId: decided });
+    // Confirm, with the cart now naming the member: the same sale, closed — never a second.
+    const confirm = await result.current.commit(order(1, { memberId: MEMBER, customerNickname: 'Nok' }));
+    expect(commit).toHaveBeenCalledTimes(1);
+    expect(sent()[0]!.cart.memberId).toBeNull();
+    expect(confirm).toMatchObject({ ok: true, written: true, replay: true, saleId: decided });
+    expect(attach).toHaveBeenCalledExactlyOnceWith(decided, MEMBER);
+    expect(result.current.committed).toMatchObject({ id: decided, memberId: MEMBER });
+  });
+
+  it('a member never joins a sale rung up for an order since changed', async () => {
+    const { result } = renderHook(() => useSaleWriter());
+    await result.current.commit(order(1));
+    // The order changes and the payment screen decides new ids; the member arrives before they go out.
+    const decided = result.current.prepare(order(2));
+    expect(await result.current.attachMember(MEMBER)).toEqual({ attached: false, reason: 'nothing-rung-up' });
+    expect(attach).not.toHaveBeenCalled();
+    await result.current.commit(order(2));
+    await result.current.commit(order(2, { memberId: MEMBER }));
+    expect(sent().map((args) => args.saleId)).toEqual([expect.any(String), decided]);
+    expect(attach).toHaveBeenCalledExactlyOnceWith(decided, MEMBER);
+  });
+
   it('when the platform cannot add the member, the open sale is still the one sale', async () => {
     attach.mockRejectedValueOnce(new NetworkError(new TypeError('Failed to fetch')));
     const { result } = renderHook(() => useSaleWriter());

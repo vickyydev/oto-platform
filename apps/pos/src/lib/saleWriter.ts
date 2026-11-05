@@ -312,6 +312,14 @@ interface MemberJoin {
   /** The sale the platform has added the member to, once it has. */
   attachedSaleId: string | null;
   settled: Promise<MemberJoinOutcome>;
+  /** On its way to the platform: a second caller waits for it rather than sending another. */
+  running: boolean;
+  /**
+   * No sale of this attempt had landed when it last looked — the ids were
+   * decided (the payment screen's `prepare`) but the commit had not gone out.
+   * The commit that lands it then adds the member.
+   */
+  waiting: boolean;
 }
 
 export interface SaleWriter {
@@ -504,7 +512,7 @@ export function useSaleWriter(): SaleWriter {
     // trip at the moment money changes hands is a round trip that can fail.
     const held = committedRef.current;
     if (held && saleRef.current?.signature === signature) {
-      if (rejoined) await joinRef.current?.settled;
+      if (rejoined) await joinSettled();
       const current = committedRef.current ?? held;
       return { ok: true, written: true, sale: current, replay: true, saleId: current.id };
     }
@@ -514,7 +522,7 @@ export function useSaleWriter(): SaleWriter {
     if (inFlight && inFlight.signature === signature && saleRef.current?.signature === signature) {
       if (!rejoined) return inFlight.promise;
       const outcome = await inFlight.promise;
-      await joinRef.current?.settled;
+      await joinSettled();
       return outcome.ok && outcome.written && committedRef.current?.id === outcome.saleId
         ? { ...outcome, sale: committedRef.current }
         : outcome;
@@ -670,7 +678,20 @@ export function useSaleWriter(): SaleWriter {
     void promise.finally(() => {
       if (inFlightRef.current?.promise === promise) inFlightRef.current = null;
     });
-    if (!rejoined) return promise;
+    if (!rejoined) {
+      // The walk-in's sale going out for the attempt a member already joined
+      // (the member arrived between the payment screen deciding the sale's ids
+      // and sending it): once it lands, the member goes onto it.
+      const join = joinRef.current;
+      if (join && join.attemptKey === ids.actionId) {
+        void promise.then((outcome) => {
+          if (outcome.ok && outcome.written && joinRef.current === join && join.waiting && !join.running) {
+            void attachRef.current?.(join);
+          }
+        });
+      }
+      return promise;
+    }
     // A retry of the walk-in's sale after the member joined: once it lands, the
     // member goes onto it too.
     const outcome = await promise;
@@ -709,13 +730,23 @@ export function useSaleWriter(): SaleWriter {
    */
   const attachRef = useRef<((join: MemberJoin) => Promise<MemberJoinOutcome>) | null>(null);
   attachRef.current = (join: MemberJoin): Promise<MemberJoinOutcome> => {
+    if (join.running) return join.settled;
+    join.running = true;
     const epoch = epochRef.current;
     const live = () => epochRef.current === epoch && joinRef.current === join;
     const settled = (async (): Promise<MemberJoinOutcome> => {
       const inFlight = inFlightRef.current;
       if (inFlight) await inFlight.promise.catch(() => undefined);
       const held = committedRef.current;
-      if (!live() || !held) return { attached: false, reason: 'nothing-rung-up' };
+      const attempt = saleRef.current;
+      // Only the sale rung up for the attempt the member joined is theirs: a
+      // sale from an order since changed is not, and ids decided but not yet
+      // sent have no sale behind them until the commit lands.
+      if (!live() || !held || attempt?.actionId !== join.attemptKey || held.id !== attempt.saleId) {
+        join.waiting = true;
+        return { attached: false, reason: 'nothing-rung-up' };
+      }
+      join.waiting = false;
       if (held.memberId === join.memberId) {
         join.attachedSaleId = held.id;
         return { attached: true, saleId: held.id };
@@ -738,15 +769,30 @@ export function useSaleWriter(): SaleWriter {
       } catch (err) {
         return { attached: false, reason: 'refused', message: messageOf(err) };
       }
-    })();
+    })().finally(() => {
+      join.running = false;
+    });
     join.settled = settled;
     return settled;
   };
 
+  /**
+   * The joined member's outcome for the Confirm press: run now when a sale has
+   * landed for the attempt since the join last looked, else the one in hand.
+   */
+  const joinSettled = (): Promise<MemberJoinOutcome> | undefined => {
+    const join = joinRef.current;
+    if (!join) return undefined;
+    return join.waiting && !join.running ? attachRef.current!(join) : join.settled;
+  };
+
   const attachMember = useCallback((memberId: string): Promise<MemberJoinOutcome> => {
     const attempt = saleRef.current;
-    // Nothing rung up for this order yet: the member rides with the cart.
-    if (!attempt || !sentRef.current.has(attempt.saleId)) {
+    // Nothing decided for this order yet: the member rides with the cart. Ids
+    // decided and not yet sent (the payment screen's `prepare`, a voucher
+    // still moving to the sale) are joined all the same, so the walk-in's
+    // commit that follows takes the member instead of Confirm ringing a second.
+    if (!attempt) {
       return Promise.resolve({ attached: false, reason: 'nothing-rung-up' });
     }
     // The sale already belongs to somebody: a member is not swapped here.
@@ -760,6 +806,8 @@ export function useSaleWriter(): SaleWriter {
       attemptKey: attempt.actionId,
       attachedSaleId: null,
       settled: Promise.resolve({ attached: false, reason: 'nothing-rung-up' }),
+      running: false,
+      waiting: true,
     };
     joinRef.current = join;
     return attachRef.current!(join);
