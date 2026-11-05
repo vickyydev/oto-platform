@@ -19,7 +19,9 @@ export const DUE_SOON_MINUTES = 15;
  *   - `toRedeem` (SCRUM-730): booked and paid online, with no sale until the
  *     booking is redeemed. The board sends staff to redeem it, never to a charge;
  *     the prototype took no payment for them (`checkInFamilyBooked`).
- *   - `booked`: on a sale already, checked in with no payment.
+ *   - `booked`: on a sale already, checked in with no payment. SCRUM-740 — a
+ *     child a till sale paid for with neither choice made after payment is
+ *     on that sale too, with no booked time.
  *   - `walkUp`: not paid for yet, so the till takes the payment.
  */
 export function familyCheckInActions(family: readonly CheckIn[]): {
@@ -32,8 +34,8 @@ export function familyCheckInActions(family: readonly CheckIn[]): {
   const rest = waiting.filter((c) => !awaitsRedemption(c));
   return {
     toRedeem: waiting.filter(awaitsRedemption),
-    booked: rest.filter((c) => !!c.scheduledFor),
-    walkUp: rest.filter((c) => !c.scheduledFor),
+    booked: rest.filter((c) => !!c.scheduledFor || !!c.paidAtTill),
+    walkUp: rest.filter((c) => !c.scheduledFor && !c.paidAtTill),
   };
 }
 

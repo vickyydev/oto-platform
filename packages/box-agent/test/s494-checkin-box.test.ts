@@ -362,3 +362,76 @@ test('s730 — a child an online booking paid for is on no sale at the box, unti
     box.close();
   }
 });
+
+test('s740 — a child a till sale already paid for is on no other sale at the box', async () => {
+  const box = await openBox();
+  try {
+    const checkinId = uuidv7();
+    const paidSaleId = uuidv7();
+    const otherSaleId = uuidv7();
+    const family = (child: Record<string, unknown>) => ({
+      registrationId: uuidv7(),
+      branchId: BRANCH_ID,
+      memberId: null,
+      guardianName: 'ZZ TEST Ploy',
+      guardianPhone: '+66812345678',
+      contactChannel: 'whatsapp',
+      consentRecordedAt: new Date().toISOString(),
+      source: 'pos',
+      photoFileId: null,
+      createdAt: new Date().toISOString(),
+      contact: null,
+      tab: 'registered',
+      guardians: [],
+      children: [
+        {
+          id: checkinId,
+          childId: null,
+          childName: 'ZZ TEST Mint',
+          childAgeYears: 6,
+          dateOfBirth: null,
+          allergies: null,
+          foodRestrictions: null,
+          mayOrderFood: false,
+          foodProvision: null,
+          service: 'drop_off',
+          status: 'registered',
+          scheduledFor: null,
+          bookedMinutes: 60,
+          nannyId: null,
+          nannyName: null,
+          checkedInAt: null,
+          checkedOutAt: null,
+          saleId: null,
+          bandId: null,
+          visitId: null,
+          photoFileId: null,
+          paidOnline: null,
+          // Paid at the till, with neither choice made after the payment.
+          paidAtTill: { saleId: paidSaleId, receiptNumber: 'T1-000042' },
+          ...child,
+        },
+      ],
+    });
+    await box.harness.store.writeBundle(BOX_ID, {
+      scope: 'checkin',
+      schemaVersion: 1,
+      cursorSeq: 0,
+      payload: { items: [{ ...checkinItem(), families: [family({})] }] },
+      appliedAt: new Date().toISOString(),
+    });
+
+    // The till reads who is waiting through the box: the paid sale reaches its picker.
+    const waiting = await ask(box, BRIDGE_CHECKIN_INTENTS.awaiting, {});
+    assert.equal(waiting.registrations[0].children[0].paidAtTill.receiptNumber, 'T1-000042');
+
+    for (const event of ['check_in_now', 'leave_as_booked']) {
+      const refused = await refusal(ask(box, 'checkin.update', { event, saleId: otherSaleId, entries: [{ checkinId }] }));
+      assert.equal(refused.code, 'CHECKIN_OTHER_SALE');
+      assert.match(refused.message, /ZZ TEST Mint/);
+    }
+    assert.deepEqual(await updatedFacts(box), []);
+  } finally {
+    box.close();
+  }
+});

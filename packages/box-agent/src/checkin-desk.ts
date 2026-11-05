@@ -233,6 +233,16 @@ function refusePaidOnline(child: BridgeCheckinChild): void {
   );
 }
 
+/**
+ * SCRUM-740 — a child a till sale already paid for, with the choice after
+ * payment never made, is on no other sale here either: the platform's
+ * `loadChoice` refuses the same once the copy says which sale paid.
+ */
+function refusePaidAtTill(child: BridgeCheckinChild, saleId: string): void {
+  if (!child.paidAtTill || child.saleId || child.paidAtTill.saleId === saleId) return;
+  throw new DeskRefusal(409, 'CHECKIN_OTHER_SALE', `${child.childName} was paid for on another sale.`);
+}
+
 function tabOf(children: readonly { status: string }[]): BridgeCheckinFamily['tab'] {
   if (children.some((c) => c.status === 'in_park')) return 'in_park';
   if (children.some((c) => c.status === 'registered')) return 'registered';
@@ -1437,6 +1447,7 @@ export class CheckinDesk {
         throw new DeskRefusal(409, 'CHECKIN_OTHER_SALE', `${s.child.childName} was paid for on another sale.`);
       }
       refusePaidOnline(s.child);
+      refusePaidAtTill(s.child, body.saleId);
       if (deferred.onBox && !deferred.bands.some((b) => b.cartLineId === s.child.id)) {
         throw new DeskRefusal(
           409,
@@ -1622,6 +1633,7 @@ export class CheckinDesk {
         throw new DeskRefusal(409, 'CHECKIN_OTHER_SALE', `${found.child.childName} was paid for on another sale.`);
       }
       refusePaidOnline(found.child);
+      refusePaidAtTill(found.child, body.saleId);
       return found;
     });
     if (stays.every((s) => s.child.saleId === body.saleId && s.child.scheduledFor)) {

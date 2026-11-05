@@ -1,0 +1,167 @@
+import { and, asc, eq, inArray } from 'drizzle-orm';
+import { sale, saleLine } from '@oto/db';
+import { AppError, errors } from '../lib/errors';
+import { audit } from './audit';
+import type { Exec } from './tx';
+
+/**
+ * SCRUM-740 — THE TILL SALE THAT ALREADY PAID FOR A STAY.
+ *
+ * A child registered for drop-off is put on a sale under the stay's own id
+ * (`sale_line.cart_line_id = checkin.id`, `services/checkin.ts` `loadChoice`
+ * reads the same link back). Once the sale is paid the counter chooses "Check
+ * in now" or "Leave as booked"; either one files the sale on the stay. Until
+ * the child is checked in they still wait on the board and in the till's Add
+ * drop-off picker, and nothing stopped a second sale from taking the money
+ * again: only Check in refused afterwards, with "was paid for on another sale".
+ *
+ * Two ways a waiting child is already on a till sale:
+ *
+ *   - LINKED: the stay names its sale ("Leave as booked"). Whatever became of
+ *     that sale since, `loadChoice` refuses any other sale for this child, so
+ *     a second charge is refused for the same reason before money is taken.
+ *   - PAID, NOT YET LINKED: a paid or finalised sale carries the stay's kids
+ *     line, and the choice after payment was never made (the screen was
+ *     reloaded, or both presses failed). The child is paid for all the same.
+ *
+ * Only a paid or finalised sale counts as paid for the views: a voided or
+ * refunded sale still linked to a stay is refused at the money press (the
+ * check-in would refuse it anyway) but is not shown as paid.
+ */
+export interface PaidAtTill {
+  saleId: string;
+  receiptNumber: string | null;
+}
+
+interface TillSaleOfStay extends PaidAtTill {
+  /** The sale is paid or finalised: the money is held. */
+  live: boolean;
+  status: string;
+}
+
+const LIVE_SALE_STATUSES = ['paid', 'finalised'] as const;
+const isLive = (status: string) => (LIVE_SALE_STATUSES as readonly string[]).includes(status);
+
+/** The till sale each of these stays is already on, by stay id. */
+async function tillSalesOfStays(
+  db: Exec,
+  operatorId: string,
+  stays: readonly { id: string; saleId: string | null }[],
+): Promise<Map<string, TillSaleOfStay>> {
+  const out = new Map<string, TillSaleOfStay>();
+  if (stays.length === 0) return out;
+
+  const linked = stays.filter((s): s is { id: string; saleId: string } => !!s.saleId);
+  if (linked.length > 0) {
+    const rows = await db
+      .select({ id: sale.id, receiptNumber: sale.receiptNumber, status: sale.status })
+      .from(sale)
+      .where(and(eq(sale.operatorId, operatorId), inArray(sale.id, [...new Set(linked.map((s) => s.saleId))])));
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    for (const s of linked) {
+      const row = byId.get(s.saleId);
+      const status = row?.status ?? 'finalised';
+      out.set(s.id, { saleId: s.saleId, receiptNumber: row?.receiptNumber ?? null, status, live: isLive(status) });
+    }
+  }
+
+  const unlinked = stays.filter((s) => !s.saleId).map((s) => s.id);
+  if (unlinked.length > 0) {
+    const rows = await db
+      .select({ stayId: saleLine.cartLineId, saleId: sale.id, receiptNumber: sale.receiptNumber, status: sale.status })
+      .from(saleLine)
+      .innerJoin(sale, eq(sale.id, saleLine.saleId))
+      .where(
+        and(
+          inArray(saleLine.cartLineId, unlinked),
+          eq(saleLine.kind, 'kids'),
+          eq(sale.operatorId, operatorId),
+          inArray(sale.status, [...LIVE_SALE_STATUSES]),
+        ),
+      )
+      .orderBy(asc(sale.createdAt), asc(sale.id));
+    for (const r of rows) {
+      if (out.has(r.stayId)) continue;
+      out.set(r.stayId, { saleId: r.saleId, receiptNumber: r.receiptNumber, status: r.status, live: true });
+    }
+  }
+  return out;
+}
+
+/**
+ * Which of these waiting stays a till sale has already paid for, by stay id —
+ * answered on the board and the waiting list, so the picker never offers the
+ * child as a line to charge and the board checks them in with no payment.
+ */
+export async function paidAtTillStaysOf(
+  db: Exec,
+  operatorId: string,
+  stays: readonly { id: string; saleId: string | null }[],
+): Promise<Map<string, PaidAtTill>> {
+  const out = new Map<string, PaidAtTill>();
+  for (const [id, found] of await tillSalesOfStays(db, operatorId, stays)) {
+    if (found.live) out.set(id, { saleId: found.saleId, receiptNumber: found.receiptNumber });
+  }
+  return out;
+}
+
+export const CHECKIN_PAID_AT_TILL = 'CHECKIN_PAID_AT_TILL';
+
+/**
+ * Refused before anything is priced or written: no new sale may carry a line
+ * under a stay a till sale already holds. `saleId` is the sale being written,
+ * which a retry of the same sale may name.
+ */
+export async function refusePaidAtTillStays(
+  db: Exec,
+  operatorId: string,
+  saleId: string,
+  stays: readonly { id: string; childName: string; saleId: string | null }[],
+): Promise<void> {
+  if (stays.length === 0) return;
+  const found = await tillSalesOfStays(db, operatorId, stays);
+  for (const s of stays) {
+    const hit = found.get(s.id);
+    if (!hit || hit.saleId === saleId) continue;
+    const receipt = hit.receiptNumber ? ` on receipt ${hit.receiptNumber}` : '';
+    throw errors.conflict(
+      CHECKIN_PAID_AT_TILL,
+      hit.live
+        ? `${s.childName} is already paid for at the till${receipt}, so there is nothing to charge. Check them in from the Drop-Off board. Nothing was saved.`
+        : `${s.childName} is still filed on an earlier sale${receipt}, which was ${hit.status === 'refunded' ? 'refunded' : 'cancelled'}, so they cannot go on a second sale. Ask a manager. Nothing was saved.`,
+      { checkinId: s.id, saleId: hit.saleId, receiptNumber: hit.receiptNumber },
+    );
+  }
+}
+
+/**
+ * The refusal above is thrown inside the sale's transaction, which takes back
+ * everything written in it, so its trail is written here, after the rollback:
+ * one row on the stay the second charge was refused for.
+ */
+export async function recordPaidAtTillRefusal(
+  db: Exec,
+  actor: { accountId: string | null; operatorId: string; branchId: string | null; requestId?: string | null },
+  err: unknown,
+  attempted: { saleId: string | null; stationId: string | null },
+): Promise<void> {
+  if (!(err instanceof AppError) || err.code !== CHECKIN_PAID_AT_TILL) return;
+  const details = (err.details ?? {}) as { checkinId?: string; saleId?: string; receiptNumber?: string | null };
+  if (!details.checkinId) return;
+  await audit.record(db, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId: actor.branchId,
+    action: 'checkin.second_charge_refused',
+    entityType: 'checkin',
+    entityId: details.checkinId,
+    requestId: actor.requestId ?? null,
+    after: {
+      code: err.code,
+      paidOnSaleId: details.saleId ?? null,
+      receiptNumber: details.receiptNumber ?? null,
+      refusedSaleId: attempted.saleId,
+      stationId: attempted.stationId,
+    },
+  });
+}

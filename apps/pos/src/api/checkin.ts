@@ -161,6 +161,8 @@ export interface ApiCheckin {
   photoFileId: string | null;
   /** SCRUM-730 — the online booking that paid for this child, on the board and the waiting list. */
   paidOnline?: { bookingId: string; reference: string } | null;
+  /** SCRUM-740 — the till sale that already paid for this waiting child, on the board and the waiting list. */
+  paidAtTill?: { saleId: string; receiptNumber: string | null } | null;
 }
 
 export interface ApiRegistration {
@@ -247,6 +249,21 @@ export function foodProvisionFromWire(fp: ApiFoodProvision | null | undefined): 
 }
 
 /**
+ * SCRUM-740 — the till sale that already paid for a waiting child, or null.
+ *
+ * The platform names it (`paidAtTill`), including a sale whose choice after
+ * payment was never made, and answers null for a sale since voided or
+ * refunded. A copy without the field — a box that has not pulled since — still
+ * says it for a child "Leave as booked" filed on a sale, which every copy
+ * carries as `saleId`. A child paid for online is SCRUM-730's.
+ */
+export function paidAtTillOf(c: Pick<ApiCheckin, 'status' | 'saleId' | 'paidOnline' | 'paidAtTill'>): { saleId: string; receiptNumber: string | null } | null {
+  if (c.status !== 'registered' || c.paidOnline) return null;
+  if (c.paidAtTill !== undefined) return c.paidAtTill;
+  return c.saleId ? { saleId: c.saleId, receiptNumber: null } : null;
+}
+
+/**
  * A platform stay in the prototype's `CheckIn` shape, which the till's
  * drop-off line builder (`makeDropOffLine`) and its pickers read. The id is
  * the platform's: the drop-off cart line takes it as its own id, which is how
@@ -273,6 +290,7 @@ export function apiCheckinToCheckIn(c: ApiCheckin, reg: Pick<ApiRegistration, 'g
     status: c.status,
     ...(c.scheduledFor ? { scheduledFor: c.scheduledFor } : {}),
     ...(c.paidOnline ? { paidOnline: { ...c.paidOnline, redeemed: !!c.saleId } } : {}),
+    ...(paidAtTillOf(c) ? { paidAtTill: paidAtTillOf(c)! } : {}),
     registeredAt: reg.createdAt,
   } as CheckIn;
 }
@@ -429,7 +447,7 @@ export async function waitingStaysOf(
   const reg = registrations.find((r) => r.id === registrationId);
   if (!reg) return [];
   return reg.children
-    .filter((c) => c.status === 'registered' && !c.saleId && !c.paidOnline)
+    .filter((c) => c.status === 'registered' && !c.saleId && !c.paidOnline && !paidAtTillOf(c))
     .map((c) => {
       const base = apiCheckinToCheckIn(c, reg);
       if (!c.nannyId) return base;

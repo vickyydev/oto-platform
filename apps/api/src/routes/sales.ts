@@ -34,6 +34,7 @@ import { queueDrawerKick, type DrawerKick } from '../services/payments/drawer';
 import { writeBackSalePass } from '../services/booking-event-passes';
 import { removeSaleBenefit } from '../services/benefit-checkout';
 import { holdSale, listHeldSales, resumeHeldSale } from '../services/sale-holds';
+import { recordPaidAtTillRefusal } from '../services/checkin-paid-at-till';
 import {
   commitSale,
   finaliseSale,
@@ -549,7 +550,18 @@ export async function saleRoutes(app: App): Promise<void> {
       // reprint and a figure nobody can explain.
       const result = await withTx(app.db, opCtx(req), 'sale.create', (tx) =>
         commitSale(tx, actor, input),
-      );
+      ).catch(async (err: unknown) => {
+        // SCRUM-740 — a second charge for a child a till sale already paid
+        // for is refused inside the sale's transaction; its trail is written
+        // after the rollback.
+        await recordPaidAtTillRefusal(
+          app.db,
+          { ...actor, branchId: cart.branchId ?? actor.branchId },
+          err,
+          { saleId: input.id ?? null, stationId },
+        ).catch((auditErr: unknown) => req.log.error({ err: auditErr, reqId: req.id }, 'refusal audit failed'));
+        throw err;
+      });
       if (result.replay) reply.header('x-oto-replay', 'true');
       return result;
     },
