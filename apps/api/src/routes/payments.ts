@@ -32,6 +32,7 @@ import {
 import { writeBackSalePass } from '../services/booking-event-passes';
 import { cancelQrAttempt } from '../services/payments/gateway';
 import { startPaymentTender } from '../services/payments/routing';
+import { recordPaidAtTillRefusal } from '../services/checkin-paid-at-till';
 
 /**
  * THE TENDER SURFACE (S2-10a, SCRUM-206) — gateway QR, the card terminal, the inquiry, the
@@ -257,6 +258,17 @@ export async function paymentRoutes(app: App): Promise<void> {
           : { requestQrPayload: req.body.requestQrPayload }),
         cashier: req.body.cashier ?? null,
         actionId,
+      }).catch(async (err: unknown) => {
+        // SCRUM-740 — a card or QR refused for a child another sale has paid
+        // for since; its trail is written after the rollback.
+        const auth = req.requireAuth();
+        await recordPaidAtTillRefusal(
+          app.db,
+          { accountId: auth.accountId, operatorId: auth.operatorId, branchId: auth.branchId, requestId: req.id },
+          err,
+          { saleId: req.body.saleId, stationId: null },
+        ).catch((auditErr: unknown) => req.log.error({ err: auditErr, reqId: req.id }, 'refusal audit failed'));
+        throw err;
       });
       if (result.replayed) reply.header('x-oto-replay', 'true');
       return result;

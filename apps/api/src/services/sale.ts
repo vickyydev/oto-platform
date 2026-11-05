@@ -88,7 +88,7 @@ import {
 import { errors } from '../lib/errors';
 import { audit } from './audit';
 import { paidOnlineRefusal, paidOnlineStaysOf } from './booking-supervision';
-import { refusePaidAtTillStays } from './checkin-paid-at-till';
+import { refusePaidAtTillStays, refuseTenderOnStaysPaidAtTill } from './checkin-paid-at-till';
 import {
   attemptView,
   attemptsForSale,
@@ -4467,6 +4467,13 @@ export async function finaliseSale(
      * code as the commit priced it.
      */
     await assertSalePromoUsesLeft(tx, row);
+    /**
+     * SCRUM-740 — nor is a child another sale paid for since this one was
+     * rung up charged again here (CHECKIN_PAID_AT_TILL): a sale held and
+     * resumed, or rung up at a second till at the same time, is refused at
+     * its money press, before any tender is recorded.
+     */
+    await refuseTenderOnStaysPaidAtTill(tx, row);
   } else {
     settledAtPickup = await prepaidSettledAtPickup(tx, row);
     // Food a box handed over offline was served already: its redemption files

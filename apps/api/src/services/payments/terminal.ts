@@ -36,6 +36,7 @@ import { assertSaleVouchersHeld } from '../vouchers';
 import { assertSalePromoUsesLeft } from '../promo-codes';
 import { assertSaleExtensionCollectable } from '../sale-extension-lifecycle';
 import { assertSaleBenefitsLive } from '../benefit-checkout';
+import { refuseTenderOnStaysPaidAtTill } from '../checkin-paid-at-till';
 import { settleRefundSlice } from '../refund-slices';
 import { finaliseSale } from '../sale';
 import {
@@ -616,6 +617,8 @@ export async function startTerminalTender(
    */
   if ((await outstandingAfter(tx, saleRow)) === saleRow.grossSatang) {
     await assertSalePromoUsesLeft(tx, saleRow);
+    // SCRUM-740 — nor for a child another sale has paid for since (CHECKIN_PAID_AT_TILL).
+    await refuseTenderOnStaysPaidAtTill(tx, saleRow);
   }
 
   const owed = await outstandingAfter(tx, saleRow);

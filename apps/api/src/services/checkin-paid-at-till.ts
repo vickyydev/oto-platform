@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray } from 'drizzle-orm';
-import { sale, saleLine } from '@oto/db';
+import { checkin, sale, saleLine } from '@oto/db';
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import type { Exec } from './tx';
@@ -107,16 +107,28 @@ export async function paidAtTillStaysOf(
 
 export const CHECKIN_PAID_AT_TILL = 'CHECKIN_PAID_AT_TILL';
 
+/** The sale a money press was refused on, named on the refusal so its trail can name it. */
+interface TenderedSale {
+  id: string;
+  branchId: string;
+  stationId: string | null;
+}
+
 /**
  * Refused before anything is priced or written: no new sale may carry a line
  * under a stay a till sale already holds. `saleId` is the sale being written,
  * which a retry of the same sale may name.
+ *
+ * `tendered` names a sale already rung up whose money press is refused (see
+ * `refuseTenderOnStaysPaidAtTill`): the sale stays as it was, and the counter
+ * is told to take the child off it.
  */
 export async function refusePaidAtTillStays(
   db: Exec,
   operatorId: string,
   saleId: string,
   stays: readonly { id: string; childName: string; saleId: string | null }[],
+  tendered?: TenderedSale,
 ): Promise<void> {
   if (stays.length === 0) return;
   const found = await tillSalesOfStays(db, operatorId, stays);
@@ -124,14 +136,66 @@ export async function refusePaidAtTillStays(
     const hit = found.get(s.id);
     if (!hit || hit.saleId === saleId) continue;
     const receipt = hit.receiptNumber ? ` on receipt ${hit.receiptNumber}` : '';
+    const message = hit.live
+      ? tendered
+        ? `${s.childName} is already paid for at the till${receipt}, so this sale cannot take their money again. Cancel this sale and ring it up again without them, then check them in from the Drop-Off board. Nothing was charged.`
+        : `${s.childName} is already paid for at the till${receipt}, so there is nothing to charge. Check them in from the Drop-Off board. Nothing was saved.`
+      : `${s.childName} is still filed on an earlier sale${receipt}, which was ${hit.status === 'refunded' ? 'refunded' : 'cancelled'}, so they cannot go on a second sale. Ask a manager. ${tendered ? 'Nothing was charged.' : 'Nothing was saved.'}`;
     throw errors.conflict(
       CHECKIN_PAID_AT_TILL,
-      hit.live
-        ? `${s.childName} is already paid for at the till${receipt}, so there is nothing to charge. Check them in from the Drop-Off board. Nothing was saved.`
-        : `${s.childName} is still filed on an earlier sale${receipt}, which was ${hit.status === 'refunded' ? 'refunded' : 'cancelled'}, so they cannot go on a second sale. Ask a manager. Nothing was saved.`,
-      { checkinId: s.id, saleId: hit.saleId, receiptNumber: hit.receiptNumber },
+      message,
+      {
+        checkinId: s.id,
+        saleId: hit.saleId,
+        receiptNumber: hit.receiptNumber,
+        ...(tendered ? { tenderedSale: tendered } : {}),
+      },
     );
   }
+}
+
+/**
+ * THE MONEY PRESS ON A SALE ALREADY RUNG UP.
+ *
+ * The refusal above runs when a sale is first written. A sale rung up earlier
+ * can still reach its money press after another sale paid for the same child:
+ * a sale parked in Held sales and resumed (SCRUM-774), two tills that rang the
+ * family up at the same time, a screen left open. So the counter's own money
+ * presses ask again — the cash confirm (`finaliseSale`), a card sent to the
+ * terminal (`startTerminalTender`) and a QR shown to the guest
+ * (`openQrAttempt`) — and only while no money has been taken on this sale, the
+ * same rule SCRUM-514 keeps for a promo code's last use: a part payment
+ * already in is not left on a sale that cannot close. A box's replay, a paid
+ * QR's settlement and a booking's redemption are not asked.
+ */
+export async function refuseTenderOnStaysPaidAtTill(
+  db: Exec,
+  tendered: { id: string; operatorId: string; branchId: string; stationId: string | null },
+): Promise<void> {
+  const lines = await db
+    .selectDistinct({ stayId: saleLine.cartLineId })
+    .from(saleLine)
+    .where(and(eq(saleLine.saleId, tendered.id), eq(saleLine.kind, 'kids')));
+  if (lines.length === 0) return;
+  const stays = await db
+    .select({ id: checkin.id, childName: checkin.childName, saleId: checkin.saleId, status: checkin.status })
+    .from(checkin)
+    .where(
+      and(
+        inArray(
+          checkin.id,
+          lines.map((l) => l.stayId),
+        ),
+        eq(checkin.operatorId, tendered.operatorId),
+      ),
+    );
+  await refusePaidAtTillStays(
+    db,
+    tendered.operatorId,
+    tendered.id,
+    stays.filter((s) => s.status === 'registered'),
+    { id: tendered.id, branchId: tendered.branchId, stationId: tendered.stationId },
+  );
 }
 
 /**
@@ -146,12 +210,19 @@ export async function recordPaidAtTillRefusal(
   attempted: { saleId: string | null; stationId: string | null },
 ): Promise<void> {
   if (!(err instanceof AppError) || err.code !== CHECKIN_PAID_AT_TILL) return;
-  const details = (err.details ?? {}) as { checkinId?: string; saleId?: string; receiptNumber?: string | null };
+  const details = (err.details ?? {}) as {
+    checkinId?: string;
+    saleId?: string;
+    receiptNumber?: string | null;
+    tenderedSale?: TenderedSale;
+  };
   if (!details.checkinId) return;
+  // A money press names the sale it was refused on; a new sale is the caller's.
+  const refused = details.tenderedSale ?? null;
   await audit.record(db, {
     actorAccountId: actor.accountId,
     operatorId: actor.operatorId,
-    branchId: actor.branchId,
+    branchId: refused?.branchId ?? actor.branchId,
     action: 'checkin.second_charge_refused',
     entityType: 'checkin',
     entityId: details.checkinId,
@@ -160,8 +231,9 @@ export async function recordPaidAtTillRefusal(
       code: err.code,
       paidOnSaleId: details.saleId ?? null,
       receiptNumber: details.receiptNumber ?? null,
-      refusedSaleId: attempted.saleId,
-      stationId: attempted.stationId,
+      refusedSaleId: refused?.id ?? attempted.saleId,
+      stationId: refused?.stationId ?? attempted.stationId,
+      ...(refused ? { at: 'tender' } : {}),
     },
   });
 }
