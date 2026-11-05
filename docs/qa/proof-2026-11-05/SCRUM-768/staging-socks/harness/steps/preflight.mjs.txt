@@ -1,0 +1,30 @@
+// Read-only: the branch, Virtual box 1, stations, the Regular Socks product and its stock, ZZ TEST tickets.
+export default async function (S) {
+  const { adminApi, st, save } = S;
+  const me = await adminApi('GET', '/me');
+  const branches = (await adminApi('GET', '/branches')).body.branches;
+  const br = branches.find((b) => b.code === 'hkt-central');
+  st.fixture.branchId = br.id; st.fixture.branchName = br.name;
+  const boxes = (await adminApi('GET', `/branches/${br.id}/boxes`)).body.boxes;
+  const stations = (await adminApi('GET', `/branches/${br.id}/stations?includeArchived=true`)).body.stations;
+  const devs = await adminApi('GET', `/branches/${br.id}/devices`);
+  const menu = (await adminApi('GET', `/branches/${br.id}/menu`)).body;
+  const socks = (menu.products ?? []).filter((p) => p.code === 'AO-SOCKS' || /socks/i.test(p.name));
+  const levels = await adminApi('GET', `/branches/${br.id}/stock/levels`);
+  const sellable = await adminApi('GET', `/branches/${br.id}/stock/sellable`);
+  const pk = await adminApi('GET', `/branches/${br.id}/ticket-packages?includeArchived=true`);
+  const plist = Array.isArray(pk.body) ? pk.body : (pk.body.packages ?? []);
+  save();
+  return {
+    me: { status: me.status, name: me.body?.employee?.name ?? me.body?.account?.name },
+    branch: { id: br.id, name: br.name },
+    boxes: boxes.map((b) => ({ id: b.id, name: b.name, role: b.role, slot: b.slot, status: b.status, archived: b.archived })),
+    stations: stations.filter((s) => !s.archived && !s.archivedAt).map((s) => ({ id: s.id, name: s.name, kind: s.kind, box: s.boxId, prefix: s.codePrefix, devices: (s.devices ?? []).map((d) => d.role + ':' + d.label + ':' + d.deviceId) })),
+    usedPrefixes: stations.map((s) => s.codePrefix).filter((p) => /^Z/.test(p ?? '')),
+    devices: devs.status === 200 ? (devs.body.devices ?? []).map((d) => ({ id: d.id, label: d.label ?? d.name, kind: d.kind, box: d.boxId })) : devs.status,
+    socks: socks.map((p) => ({ id: p.id, code: p.code, name: p.name, price: p.priceSatang, keys: Object.keys(p).join(',') })),
+    levelsStatus: levels.status, levelsKeys: Object.keys(levels.body ?? {}), levelsSample: JSON.stringify(levels.body).slice(0, 800),
+    sellableStatus: sellable.status, sellableSocks: JSON.stringify(sellable.body).match(/.{0,300}[Ss]ocks.{0,300}/g)?.slice(0, 3),
+    zzTickets: plist.filter((p) => /ZZ TEST/.test(p.name)).map((p) => ({ id: p.id, name: p.name, active: p.active, archivedAt: p.archivedAt })),
+  };
+}

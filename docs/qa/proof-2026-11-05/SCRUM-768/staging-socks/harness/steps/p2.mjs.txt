@@ -1,0 +1,14 @@
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const page = S.pages.T.page;
+  await page.getByText('Hide customer display', { exact: true }).click();
+  await sleep(2000);
+  await S.lib.fixScroll(page);
+  const card = page.getByText('Regular Socks', { exact: true });
+  const n = await card.count();
+  await S.shot('T', 'st-05b-plain-ticket-counter-socks-50-matches-add-on-card');
+  const grid = one(await page.locator('body').innerText());
+  const i = grid.indexOf('Extras & Add-ons');
+  const showBtn = await page.getByText(/Show customer display/).count();
+  return { n, grid: grid.slice(i, i + 400), showBtn };
+}

@@ -1,0 +1,31 @@
+// ZZ TEST fixture: one till on Virtual box 1 with its simulated band and receipt printers (shared, not changed).
+// Never the Pi, its tills, FWBooth1 or Reception Till 1.
+export default async function (S) {
+  const { adminApi, st, save } = S;
+  const f = st.fixture;
+  const BR = f.branchId;
+  f.phones = f.phones ?? { socks: '+66897680011', plain: '+66897680012' };
+  const lookups = {};
+  for (const [k, p] of Object.entries(f.phones)) { const r = await adminApi('GET', `/members/lookup?phone=${encodeURIComponent(p)}`); lookups[k] = { status: r.status, found: !!r.body?.member }; }
+  for (const [k, v] of Object.entries(lookups)) if (v.found) throw new Error('number already a member: ' + k);
+  if (!f.till) {
+    const boxes = (await adminApi('GET', `/branches/${BR}/boxes`)).body.boxes;
+    const vb = boxes.find((b) => b.role === 'virtual' && b.slot === 'virtual-1' && b.status === 'online' && !b.archived);
+    if (!vb) throw new Error('Virtual box 1 not online');
+    const stations = (await adminApi('GET', `/branches/${BR}/stations?includeArchived=true`)).body.stations;
+    const name = 'ZZ TEST SCRUM-768 socks till';
+    if (stations.some((s) => s.codePrefix === 'Z768S' || s.name === name)) throw new Error('prefix or name in use');
+    const devices = [
+      { role: 'kids_band', deviceId: '01a0be8c-89af-7c2b-861f-f3d1f0f5d27b' },
+      { role: 'adult_band', deviceId: '01a0be8c-89b2-7f21-84e0-74c754838f5b' },
+      { role: 'receipt', deviceId: '01a0be8c-89a4-756b-aca1-3be1082c669d' },
+    ];
+    const r = await adminApi('POST', `/branches/${BR}/stations`, { name, kind: 'till', boxId: vb.id, codePrefix: 'Z768S', accessScope: 'all_staff', paymentRouting: { card: 'manual', qr: 'none' }, capabilities: [], devices });
+    if (r.status !== 201 && r.status !== 200) throw new Error('station ' + r.status + ' ' + JSON.stringify(r.body).slice(0, 400));
+    f.boxId = vb.id; f.boxName = vb.name;
+    f.till = { id: r.body.station.id, name: r.body.station.name, prefix: 'Z768S', ready: r.body.station.ready, devices: (r.body.station.devices ?? []).map((d) => d.role + ':' + d.label) };
+    st.created.push({ kind: 'station', id: f.till.id, name, at: new Date().toISOString() });
+    save();
+  }
+  return { lookups, till: f.till };
+}

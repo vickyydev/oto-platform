@@ -1,0 +1,18 @@
+export default async function (S) {
+  const { sleep, one, salesOf } = S.lib;
+  const page = S.pages.T.page;
+  const f = S.st.fixture;
+  await page.getByText('Show customer display', { exact: true }).click().catch(() => {});
+  await sleep(1500);
+  const writes = S.pages.T.net.filter((n) => n.at >= S.st.steps.paid.at && !/quote|intents|session\/station/.test(n.path)).map((n) => ({ at: n.at, method: n.method, path: n.path, status: n.status }));
+  await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+  await sleep(1500);
+  const dlg = page.getByRole('alertdialog').or(page.getByRole('dialog'));
+  let dialog = null;
+  if (await dlg.count()) dialog = one(await dlg.first().innerText()).slice(0, 400);
+  await S.look('T');
+  const sales = (await salesOf(S, f.till.id)).map((s) => ({ id: s.id, receipt: s.receiptNumber ?? null, status: s.status, gross: s.totals?.grossSatang ?? null }));
+  S.st.steps.plainCancelled = { at: new Date().toISOString(), writesSincePaid: writes, dialog, sales };
+  S.save();
+  return { ...S.st.steps.plainCancelled, t: one(await page.locator('body').innerText()).slice(300, 900) };
+}

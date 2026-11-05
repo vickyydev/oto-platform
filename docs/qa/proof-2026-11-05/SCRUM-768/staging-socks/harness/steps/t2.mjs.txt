@@ -1,0 +1,23 @@
+// Plan step 2: walk-in by phone (ZZ TEST number), Tourist, the ZZ TEST ticket, 1 kid + 1 adult, socks counter at 2.
+export default async function (S) {
+  const { sleep, one, keypad, stepTo } = S.lib;
+  const page = S.pages.T.page;
+  await keypad(page, '897680011');
+  await page.getByRole('button', { name: 'Continue', exact: true }).last().click();
+  const offer = page.getByRole('button', { name: 'Continue as walk-in', exact: true });
+  const tiers = page.getByRole('heading', { name: 'Tourist', exact: true });
+  for (let i = 0; i < 30; i += 1) { if (await offer.isVisible().catch(() => false) || await tiers.isVisible().catch(() => false)) break; await sleep(500); }
+  if (await offer.isVisible().catch(() => false)) await offer.click();
+  await sleep(1500);
+  await tiers.click();
+  await sleep(1500);
+  await page.getByRole('heading', { name: 'ZZ TEST 768 Socks Staging', exact: true }).click();
+  await page.getByRole('heading', { name: /^Configure:/ }).waitFor({ timeout: 15000 });
+  const order = page.getByRole('heading', { name: 'Current Order' }).locator('../..');
+  const k = await stepTo(order, 'Kids', 1);
+  const a = await stepTo(order, 'Adults', 1);
+  const s = await stepTo(order, 'Regular Socks', 2);
+  await sleep(2500);
+  await S.look('T');
+  return { k, a, s, panel: one(await order.innerText()).slice(0, 700), body: one(await page.locator('body').innerText()).slice(-900) };
+}

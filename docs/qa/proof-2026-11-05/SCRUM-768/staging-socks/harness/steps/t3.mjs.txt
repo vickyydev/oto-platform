@@ -1,0 +1,11 @@
+export default async function (S) {
+  const { one, fixScroll } = S.lib;
+  const page = S.pages.T.page;
+  await fixScroll(page);
+  await S.shot('T', 'st-02a-order-panel-and-display-one-socks-charged-one-free');
+  const order = page.getByRole('heading', { name: 'Current Order' }).locator('../..');
+  const q = S.pages.T.net.filter((n) => n.path === '/api/sales/quote').slice(-1)[0];
+  S.st.steps.order = { at: new Date().toISOString(), panel: one(await order.innerText()).slice(0, 600), display: one(await page.locator('body').innerText()).slice(-330), quote: q ? { at: q.at, status: q.status, lines: (q.response?.quote?.lines ?? []).map((l) => [l.kind, l.label, l.quantity, l.grossSatang]), total: q.response?.quote?.totals?.grossSatang ?? null } : null };
+  S.save();
+  return S.st.steps.order;
+}

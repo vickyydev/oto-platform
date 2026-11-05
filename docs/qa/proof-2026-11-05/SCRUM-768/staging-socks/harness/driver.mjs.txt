@@ -1,0 +1,90 @@
+// SCRUM-768 socks staging proof driver: one real Edge kept open, steps run on request.
+// Never prints a phone, a password or a setting's value.
+import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
+import { createRequire } from 'node:module';
+import { randomUUID } from 'node:crypto';
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+import { need } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs';
+const LANE = 'C:/oto-lanes/socks768-20261105';
+const HERE = 'C:/Users/waqar/AppData/Local/Temp/claude/9d4c56906b777e8e/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/h768s/';
+const STEPS = HERE + 'steps/';
+const { chromium, expect, request } = createRequire(LANE + '/apps/pos/package.json')('@playwright/test');
+const POS = 'https://oto-pos-web-staging.onrender.com';
+const CONSOLE = 'https://oto-console-staging.onrender.com';
+const SOURCE = '33a60bbd57bcf4911218fde6e99386561528dbfa';
+const REL = 'docs/qa/proof-2026-11-05/SCRUM-768/staging-socks';
+const OUT = LANE + '/' + REL;
+const receiptFile = HERE + 'receipt.json';
+const st = existsSync(receiptFile) ? JSON.parse(readFileSync(receiptFile, 'utf8')) : { unit: 'SCRUM-768 socks', liveCommit: SOURCE, startedAt: new Date().toISOString(), fixture: {}, steps: {}, images: [], created: [] };
+const save = () => writeFileSync(receiptFile, JSON.stringify(st, null, 2) + '\n');
+save();
+let browser;
+const args = ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'];
+try { browser = await chromium.launch({ channel: 'msedge', args }); } catch (e) { console.error('msedge failed, chromium', e.message); browser = await chromium.launch({ args }); }
+st.browser = browser.version(); save();
+const pages = {};
+const newPage = async (label, viewport) => {
+  if (pages[label]) return pages[label];
+  const ctx = await browser.newContext({ viewport, timezoneId: 'Asia/Bangkok', locale: 'en-GB', permissions: ['camera'] });
+  ctx.setDefaultTimeout(30000);
+  const page = await ctx.newPage();
+  page.on('pageerror', (e) => { (st.pageErrors = st.pageErrors ?? []).push({ at: new Date().toISOString(), label, message: String(e.message).slice(0, 300) }); save(); });
+  pages[label] = { ctx, page, net: [] };
+  page.on('response', async (res) => {
+    try {
+      const u = new URL(res.url());
+      if (!u.pathname.startsWith('/api/')) return;
+      const m = res.request().method();
+      if (m === 'GET') return;
+      let body = null; try { body = await res.json(); } catch {}
+      let reqBody = null; try { reqBody = res.request().postDataJSON(); } catch {}
+      pages[label].net.push({ at: new Date().toISOString(), method: m, path: u.pathname, status: res.status(), request: reqBody, response: body });
+      if (pages[label].net.length > 200) pages[label].net.shift();
+    } catch {}
+  });
+  return pages[label];
+};
+const closePage = async (label) => { if (!pages[label]) return; await pages[label].ctx.close(); delete pages[label]; };
+const admin = await request.newContext({ baseURL: POS });
+const adminIn = await admin.post('/api/auth/sign-in', { data: { phone: need('STAGING_ADMIN_PHONE'), password: need('STAGING_ADMIN_PASSWORD') } });
+assert.equal(adminIn.status(), 200, 'admin sign-in');
+const call = async (ctxReq, method, path, data) => {
+  const action = randomUUID();
+  const res = await ctxReq.fetch(POS + '/api' + path, { method, ...(data !== undefined ? { data } : {}), headers: method === 'GET' ? {} : { 'idempotency-key': action, 'x-oto-action-id': action } });
+  let body = null; try { body = await res.json(); } catch {}
+  return { status: res.status(), body };
+};
+const adminApi = (m, p, d) => call(admin, m, p, d);
+const pageApi = (label, m, p, d) => call(pages[label].page.request, m, p, d);
+const shot = async (label, name, opts = {}) => {
+  const page = pages[label].page;
+  const file = OUT + '/' + name + '.png';
+  mkdirSync(file.slice(0, file.lastIndexOf('/')), { recursive: true });
+  await page.mouse.move(2, 2).catch(() => {});
+  await page.evaluate(async () => { await document.fonts.ready; await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))); });
+  await page.waitForTimeout(opts.wait ?? 500);
+  await page.screenshot({ path: file, animations: 'disabled', mask: [page.locator('input[type=password]'), ...(opts.mask ?? [])], ...(opts.fullPage ? { fullPage: true } : {}), ...(opts.clip ? { clip: opts.clip } : {}) });
+  st.images.push({ file: REL + '/' + name + '.png', at: new Date().toISOString(), page: label, url: page.url(), viewport: page.viewportSize() });
+  save();
+  return file;
+};
+const look = async (label, name = 'look') => { const p = pages[label].page; await p.screenshot({ path: HERE + name + '.png' }); return HERE + name + '.png'; };
+const S = { st, save, pages, newPage, closePage, browser, admin, adminApi, pageApi, call, shot, look, expect, need, POS, CONSOLE, LANE, REL, OUT, SOURCE, HERE, randomUUID };
+const server = createServer(async (req, res) => {
+  const file = decodeURIComponent((req.url ?? '/').slice(1));
+  let out;
+  try {
+    if (file === 'STOP') { out = { stopping: true }; res.end(JSON.stringify(out)); await adminApi('POST', '/auth/sign-out').catch(() => {}); await admin.dispose(); await browser.close(); server.close(); process.exit(0); }
+    S.lib = await import(pathToFileURL(STEPS + 'lib.mjs').href + '?t=' + Date.now());
+    const mod = await import(pathToFileURL(STEPS + file).href + '?t=' + Date.now());
+    out = { ok: true, result: await mod.default(S) };
+  } catch (e) {
+    out = { ok: false, error: String(e?.stack ?? e).slice(0, 3000) };
+  }
+  save();
+  res.setHeader('content-type', 'application/json');
+  res.end(JSON.stringify(out, null, 2));
+});
+server.listen(47768, '127.0.0.1', () => console.log('driver ready on 47768'));

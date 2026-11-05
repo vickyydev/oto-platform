@@ -1,0 +1,20 @@
+// Plan step 4: pay cash; the paid screen; the sale read back.
+export default async function (S) {
+  const { sleep, one, payCash, readSale, codeMasks, fixScroll } = S.lib;
+  const page = S.pages.T.page;
+  const f = S.st.fixture;
+  const mark = S.pages.T.net.length;
+  await payCash(page);
+  await page.getByRole('heading', { name: 'Payment Successful' }).waitFor({ timeout: 45000 });
+  await sleep(3000);
+  const sale = await readSale(S, f.sale.id);
+  f.sale.receipt = sale.sale.receiptNumber ?? null;
+  const net = S.pages.T.net.slice(mark).map((n) => ({ at: n.at, method: n.method, path: n.path, status: n.status }));
+  const sellable = (await S.adminApi('GET', `/branches/${f.branchId}/stock/sellable`)).body;
+  const socks = JSON.stringify(sellable).match(/\{"productId":"01a0cb02-13a9-790f-85a1-73e6ccf9f9da".{0,260}/)?.[0];
+  S.st.steps.paid = { at: new Date().toISOString(), status: sale.sale.status, receipt: sale.sale.receiptNumber, gross: sale.sale.totals?.grossSatang, tier: sale.sale.customerTier, lines: (sale.lines ?? []).map((l) => [l.kind, l.label, l.quantity, l.grossSatang]), net, socksStockAfter: socks };
+  S.save();
+  await fixScroll(page);
+  await S.shot('T', 'st-04a-paid-in-cash', { mask: codeMasks(page) });
+  return { ...S.st.steps.paid, body: one(await page.locator('body').innerText()).slice(300, 1400) };
+}

@@ -1,0 +1,50 @@
+// Clean-up, own records only: sign out, unassign the ZZ TEST till's printers, archive it, read everything back.
+export default async function (S) {
+  const f = S.st.fixture;
+  const C = (S.st.cleanup = S.st.cleanup ?? { actions: [] });
+  C.actions = C.actions ?? [];
+  C.startedAt = C.startedAt ?? new Date().toISOString();
+  const act = (what, res, extra = {}) => { C.actions.push({ what, status: res.status, code: res.body?.error?.code ?? null, ...extra }); S.save(); return res; };
+  if (!f.till.name.startsWith('ZZ TEST SCRUM-768')) throw new Error('Refusing: ' + f.till.name);
+  const list = (await S.adminApi('GET', `/sales?branchId=${f.branchId}&stationId=${f.till.id}&limit=50`)).body.sales ?? [];
+  C.salesBefore = list.map((s) => ({ id: s.id, receipt: s.receiptNumber ?? null, status: s.status, gross: s.totals?.grossSatang ?? null }));
+  for (const s of list.filter((s) => s.status === 'tendering')) act('void unpaid sale', await S.adminApi('POST', `/sales/${s.id}/void`, { reason: 'ZZ TEST SCRUM-768 proof: not paid' }), { saleId: s.id });
+  for (const label of ['T', 'CON']) {
+    if (!S.pages[label]) continue;
+    act(`${label} sign-out`, await S.pageApi(label, 'POST', '/auth/sign-out', {}));
+    C[`me${label}AfterSignOut`] = (await S.pageApi(label, 'GET', '/me')).status;
+  }
+  act('unassign printers on ' + f.till.name, await S.adminApi('PATCH', `/stations/${f.till.id}`, { devices: [] }));
+  act('archive station ' + f.till.name, await S.adminApi('DELETE', `/stations/${f.till.id}`));
+  const stations = (await S.adminApi('GET', `/branches/${f.branchId}/stations?includeArchived=true`)).body.stations;
+  const mine = stations.find((x) => x.id === f.till.id);
+  const rt1 = stations.find((s) => s.name === 'Reception Till 1');
+  const branches = (await S.adminApi('GET', '/branches')).body.branches.filter((b) => !b.archivedAt);
+  const liveFreebies = [];
+  for (const b of branches) {
+    const pk = await S.adminApi('GET', `/branches/${b.id}/ticket-packages`);
+    const l = Array.isArray(pk.body) ? pk.body : (pk.body.packages ?? []);
+    for (const p of l.filter((p) => !p.archivedAt)) if (Array.isArray(p.freebies) && p.freebies.length > 0) liveFreebies.push({ branch: b.name, ticket: p.name, freebies: p.freebies.length });
+  }
+  const pk = await S.adminApi('GET', `/branches/${f.branchId}/ticket-packages?includeArchived=true`);
+  const plist = Array.isArray(pk.body) ? pk.body : (pk.body.packages ?? []);
+  const t = plist.find((p) => p.id === f.ticket.id);
+  const lookups = {};
+  for (const [k, p] of Object.entries(f.phones)) { const r = await S.adminApi('GET', `/members/lookup?phone=${encodeURIComponent(p)}`); lookups[k] = { status: r.status, found: !!r.body?.member }; }
+  const socks = JSON.stringify((await S.adminApi('GET', `/branches/${f.branchId}/stock/sellable`)).body).match(/\{"productId":"01a0cb02-13a9-790f-85a1-73e6ccf9f9da".{0,200}/)?.[0];
+  const salesAfter = ((await S.adminApi('GET', `/sales?branchId=${f.branchId}&stationId=${f.till.id}&limit=50`)).body.sales ?? []).map((s) => ({ receipt: s.receiptNumber ?? null, status: s.status, gross: s.totals?.grossSatang ?? null }));
+  C.readBack = {
+    at: new Date().toISOString(),
+    till: { name: mine?.name, archived: mine?.archived ?? !!mine?.archivedAt, devices: (mine?.devices ?? []).length },
+    salesAfter,
+    ticket: { name: t?.name, active: t?.active, archivedAt: t?.archivedAt },
+    liveTicketsWithFreeItems: liveFreebies,
+    walkInNumbersAreNotMembers: lookups,
+    regularSocksStock: socks,
+    receptionTill1Devices: (rt1?.devices ?? []).map((d) => d.label),
+    untouched: stations.filter((s) => /Till 1 \(Pi\)|Till 2 \(test\)|FWBooth1|Reception Till 1/.test(s.name)).map((s) => ({ name: s.name, archived: s.archived ?? !!s.archivedAt })),
+  };
+  C.finishedAt = new Date().toISOString();
+  S.save();
+  return C;
+}

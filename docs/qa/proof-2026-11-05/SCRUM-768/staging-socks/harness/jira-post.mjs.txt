@@ -1,0 +1,10 @@
+import { commentWithImages, jget } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/jira.mjs';
+import { readFileSync, writeFileSync } from 'node:fs';
+const imgs = ['st-01b-saved-ticket-free-regular-socks-tourist-only.png', 'st-02a-order-panel-and-display-one-socks-charged-one-free.png', 'st-03-amount-due-one-socks-charged.png', 'st-04a-paid-in-cash.png', 'st-04b-receipt-printed-regular-socks-and-free-socks.png', 'st-05a-plain-ticket-counter-socks-charged-50.png', 'st-05b-plain-ticket-counter-socks-50-matches-add-on-card.png'];
+const text = readFileSync(new URL('./c768.txt', import.meta.url), 'utf8').trim();
+const r = await commentWithImages('SCRUM-768', text, imgs);
+const j = await jget('/rest/api/2/issue/SCRUM-768/comment?orderBy=-created&maxResults=5');
+const c = (j.comments ?? []).sort((a, b) => b.created.localeCompare(a.created))[0];
+const out = { status: r.status, commentId: c.id, created: c.created, imagesInBody: (c.body.match(/!st-[0-9a-z-]+\.png\|width=760!/g) ?? []).length, images: imgs };
+writeFileSync(new URL('./posted.json', import.meta.url), JSON.stringify(out, null, 2));
+console.log(JSON.stringify(out));

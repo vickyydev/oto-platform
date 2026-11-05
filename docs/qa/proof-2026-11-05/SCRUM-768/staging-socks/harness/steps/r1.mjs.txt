@@ -1,0 +1,5 @@
+export default async function (S) {
+  const r = await S.adminApi('GET', '/devices/01a0be8c-89a4-756b-aca1-3be1082c669d/printouts?limit=5');
+  const list = r.body?.printouts ?? [];
+  return { status: r.status, keys: Object.keys(r.body ?? {}), items: list.map((p) => ({ seq: p.seq, at: p.createdAt ?? p.printedAt ?? p.at, h: p.heightDots, kind: p.kind ?? p.job?.kind ?? null, keys: Object.keys(p).join(',') })) };
+}

@@ -1,0 +1,36 @@
+export default async function (S) {
+  const { sleep } = S.lib;
+  const page = S.pages.CON.page;
+  const dlg = page.getByRole('dialog');
+  await dlg.locator('#tt-name').fill('ZZ TEST 768 Socks Staging');
+  await dlg.locator('#tt-duration').fill('2 Hours');
+  await dlg.locator('#tt-hours').fill('2');
+  const nums = dlg.locator('input[type=number]:not(#tt-hours)');
+  const vals = ['500', '600', '500', '600', '500', '600'];
+  for (let i = 0; i < 6; i += 1) await nums.nth(i).fill(vals[i]);
+  // One free item: a free add-on, Regular Socks, for Tourist only.
+  await dlg.getByRole('button', { name: 'Add', exact: true }).click();
+  await sleep(600);
+  const rows = dlg.locator('div.rounded-xl').filter({ has: page.getByLabel('Quantity') });
+  const n = await rows.count();
+  const row = rows.nth(0);
+  await row.getByRole('combobox').first().click();
+  await sleep(300);
+  await page.getByRole('option', { name: 'Free add-on', exact: true }).click();
+  await sleep(400);
+  await row.getByRole('combobox').nth(1).click();
+  await sleep(300);
+  const options = await page.getByRole('option').allInnerTexts();
+  await page.getByRole('option', { name: 'Regular Socks', exact: true }).click();
+  await sleep(400);
+  for (const tier of ['Expat', 'Thai']) {
+    const b = row.getByRole('radio', { name: tier }).or(row.getByRole('button', { name: tier, exact: true })).first();
+    const pressed = (await b.getAttribute('aria-pressed')) ?? (await b.getAttribute('aria-checked')) ?? (await b.getAttribute('data-state'));
+    if (pressed === 'true' || pressed === 'on') await b.click();
+    await sleep(200);
+  }
+  const toggles = await row.locator('[data-state],[aria-pressed]').evaluateAll((els) => els.filter((e) => /Tourist|Expat|Thai/.test(e.textContent ?? '')).map((e) => (e.textContent ?? '').trim() + ':' + (e.getAttribute('data-state') ?? e.getAttribute('aria-pressed'))));
+  const qty = await row.getByLabel('Quantity').inputValue();
+  await S.look('CON');
+  return { n, options, rowText: (await row.innerText()).replace(/\s+/g, ' '), toggles, qty };
+}

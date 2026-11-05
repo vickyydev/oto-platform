@@ -1,0 +1,23 @@
+export default async function (S) {
+  const { sleep } = S.lib;
+  const con = S.pages.CON.page;
+  await con.goto(S.CONSOLE + '/catalogue/tickets', { waitUntil: 'domcontentloaded' });
+  await sleep(4000);
+  await con.getByRole('button', { name: 'Delete ZZ TEST 768 Socks Staging' }).click();
+  await sleep(1200);
+  const dlg = con.getByRole('alertdialog').or(con.getByRole('dialog')).first();
+  const dt = await dlg.innerText().catch(() => '');
+  const mark = S.pages.CON.net.length;
+  await dlg.getByRole('button', { name: 'Delete', exact: true }).click();
+  await sleep(3000);
+  const net = S.pages.CON.net.slice(mark).map((n) => ({ at: n.at, method: n.method, path: n.path, status: n.status }));
+  const f = S.st.fixture;
+  const pk = await S.adminApi('GET', `/branches/${f.branchId}/ticket-packages?includeArchived=true`);
+  const list = Array.isArray(pk.body) ? pk.body : (pk.body.packages ?? []);
+  const mine = list.find((p) => p.id === f.ticket.id);
+  S.st.cleanup = S.st.cleanup ?? { actions: [] };
+  S.st.cleanup.ticket = { at: new Date().toISOString(), confirm: dt.replace(/\s+/g, ' ').slice(0, 300), net, mine: { name: mine?.name, active: mine?.active, archivedAt: mine?.archivedAt } };
+  S.save();
+  await S.shot('CON', 'st-06-zz-test-768-socks-staging-ticket-archived');
+  return S.st.cleanup.ticket;
+}

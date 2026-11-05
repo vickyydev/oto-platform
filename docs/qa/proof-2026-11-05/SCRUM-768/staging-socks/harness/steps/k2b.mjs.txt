@@ -1,0 +1,11 @@
+export default async function (S) {
+  const { sleep } = S.lib;
+  const page = S.pages.CON.page;
+  await page.mouse.move(5, 5);
+  await sleep(600);
+  const dlg = page.getByRole('dialog');
+  const row = dlg.locator('div.rounded-xl').filter({ has: page.getByLabel('Quantity') }).nth(0);
+  const attrs = await row.locator('button').evaluateAll((els) => els.filter((e) => /^(Tourist|Expat|Thai)$/.test((e.textContent ?? '').trim())).map((e) => ({ t: e.textContent.trim(), role: e.getAttribute('role'), pressed: e.getAttribute('aria-pressed'), checked: e.getAttribute('aria-checked'), state: e.getAttribute('data-state'), cls: e.className.slice(0, 120) })));
+  await S.look('CON');
+  return attrs;
+}

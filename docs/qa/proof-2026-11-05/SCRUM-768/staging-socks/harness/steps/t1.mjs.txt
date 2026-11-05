@@ -1,0 +1,13 @@
+export default async function (S) {
+  const { tillSignIn, text, sleep, one } = S.lib;
+  const f = S.st.fixture;
+  if (!S.pages.T) await tillSignIn(S, 'T', f.till.name, 'RECEPTION', { width: 1600, height: 1000 });
+  const page = S.pages.T.page;
+  await page.getByText('Membership Check', { exact: true }).first().waitFor({ timeout: 30000 });
+  await sleep(1500);
+  const show = page.getByRole('button', { name: /Show customer screen/ });
+  const hasShow = await show.isVisible().catch(() => false);
+  if (hasShow) { await show.click(); await sleep(2000); }
+  await S.look('T');
+  return { hasShow, t: one(await text(page, 3000)).slice(0, 1500) };
+}

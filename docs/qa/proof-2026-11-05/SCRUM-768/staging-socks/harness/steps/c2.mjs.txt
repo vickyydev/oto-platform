@@ -1,0 +1,15 @@
+export default async function (S) {
+  const { sleep } = S.lib;
+  const page = S.pages.CON.page;
+  // The Regular Socks add-on card (by its product id), its Adjust button.
+  const card = page.locator('div').filter({ hasText: '01a0cb02-13a9-790f-85a1-73e6ccf9f9da' }).filter({ has: page.getByRole('button', { name: 'Adjust' }) }).last();
+  const cardText = (await card.innerText()).replace(/\s+/g, ' ');
+  const btns = card.getByRole('button', { name: 'Adjust' });
+  const n = await btns.count();
+  await card.scrollIntoViewIfNeeded();
+  await btns.first().click();
+  await sleep(1500);
+  const dlg = page.getByRole('dialog');
+  await S.look('CON');
+  return { cardText, n, dialog: (await dlg.innerText().catch(() => '')).slice(0, 1200), inputs: await dlg.locator('input,textarea,select,button').evaluateAll((els) => els.map((e) => ({ tag: e.tagName, id: e.id, type: e.type, ph: e.placeholder, text: (e.innerText ?? '').slice(0, 40) }))) };
+}

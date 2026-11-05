@@ -1,0 +1,539 @@
+{
+  "unit": "SCRUM-768 socks",
+  "liveCommit": "33a60bbd57bcf4911218fde6e99386561528dbfa",
+  "startedAt": "2026-11-05T14:53:56.217Z",
+  "fixture": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "branchName": "Oto Play Park, Central Floresta",
+    "ticket": {
+      "id": "01a1ac35-a1c1-78d4-82f1-b7256ecfc1f9",
+      "name": "ZZ TEST 768 Socks Staging"
+    },
+    "phones": {
+      "socks": "+66897680011",
+      "plain": "+66897680012"
+    },
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "boxName": "Virtual box 1",
+    "till": {
+      "id": "01a1ac36-2f2e-7126-bac8-06cadea55564",
+      "name": "ZZ TEST SCRUM-768 socks till",
+      "prefix": "Z768S",
+      "ready": true,
+      "devices": [
+        "adult_band:Band Printer (adults)",
+        "kids_band:Band Printer (kids)",
+        "receipt:Receipt Printer 1"
+      ]
+    },
+    "sale": {
+      "id": "01a1ac36-eea2-7d12-a5ea-e4fe25ad2a1b",
+      "receipt": "Z768S-000001"
+    }
+  },
+  "steps": {
+    "stockAdded": {
+      "at": "2026-11-05T14:55:08.328Z",
+      "delta": 5,
+      "reason": "ZZ TEST SCRUM-768 staging proof: 5 Regular Socks for the socks counter test",
+      "net": [
+        {
+          "at": "2026-11-05T14:55:05.000Z",
+          "method": "POST",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/adjustments",
+          "status": 200,
+          "resp": "{\"stockItemId\":\"01a0fa0b-8a6f-7a87-97f4-c118e0be28ff\",\"delta\":5,\"movements\":[{\"locationId\":\"01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed\",\"quantity\":5,\"levelAfter\":5}]}"
+        }
+      ],
+      "sellableAfter": "{\"productId\":\"01a0cb02-13a9-790f-85a1-73e6ccf9f9da\",\"name\":\"Regular Socks\",\"sizes\":[{\"variantId\":null,\"label\":null,\"stockItemId\":\"01a0fa0b-8a6f-7a87-97f4-c118e0be28ff\",\"available\":5,\"atSellPoint\":5,\"lowStockThreshold\":20,\"status\":\"low\"}]},{\"productId\":\"01a0cb02-13a9-790f-85a1-73ddb7e2ff86\",\"name\":\"Slushie\",\"sizes\":[{\"variantId\":\"red\",\"label\":\"Red\",\""
+    },
+    "ticketSaved": {
+      "at": "2026-11-05T14:56:01.163Z",
+      "net": [
+        {
+          "at": "2026-11-05T14:55:58.006Z",
+          "method": "POST",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/ticket-packages",
+          "status": 200,
+          "id": "01a1ac35-a1c1-78d4-82f1-b7256ecfc1f9",
+          "err": null
+        }
+      ],
+      "name": "ZZ TEST 768 Socks Staging",
+      "active": true,
+      "freebies": [
+        {
+          "id": "fb-x7vv310",
+          "kind": "addon",
+          "tiers": [
+            "tourist"
+          ],
+          "addOnId": "01a0cb02-13a9-790f-85a1-73e6ccf9f9da",
+          "quantity": 1
+        }
+      ],
+      "prices": {
+        "thai": {
+          "weekday": 50000,
+          "weekend": 60000
+        },
+        "expat": {
+          "weekday": 50000,
+          "weekend": 60000
+        },
+        "tourist": {
+          "weekday": 50000,
+          "weekend": 60000
+        }
+      }
+    },
+    "order": {
+      "at": "2026-11-05T14:57:09.332Z",
+      "panel": "Current Order TOURIST ZZ TEST 768 Socks Staging EDITING ฿1050 Kids ฿500 each 1 Adults ฿500 each 1 Regular Socks ฿50 each · 1 free 2 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1050 VAT included ฿68.69 Total ฿1050 Cancel Pay ฿1050",
+      "display": "ocks ฿50 each · 1 free 2 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1050 VAT included ฿68.69 Total ฿1050 Cancel Pay ฿1050 O Oto Play Park Your Order English ZZ TEST 768 Socks Staging ฿1050 Kids1 × ฿500 ฿500 Adults1 × ฿500 ฿500 Regular Socks1 × ฿50 ฿50 Regular Socks (free)1 × ฿0 ฿0 VAT included ฿68.69 Total ฿1050",
+      "quote": {
+        "at": "2026-11-05T14:56:59.199Z",
+        "status": 200,
+        "lines": [
+          [
+            "kids",
+            "Kids",
+            1,
+            50000
+          ],
+          [
+            "adults_paid",
+            "Adults",
+            1,
+            50000
+          ],
+          [
+            "socks",
+            "Regular Socks",
+            1,
+            5000
+          ],
+          [
+            "socks",
+            "Regular Socks (free)",
+            1,
+            0
+          ]
+        ],
+        "total": 105000
+      }
+    },
+    "amountDue": {
+      "at": "2026-11-05T14:57:34.225Z",
+      "status": "tendering",
+      "gross": 105000,
+      "lines": [
+        [
+          "kids",
+          "Kids",
+          1,
+          50000
+        ],
+        [
+          "adults_paid",
+          "Adults",
+          1,
+          50000
+        ],
+        [
+          "socks",
+          "Regular Socks",
+          1,
+          5000
+        ],
+        [
+          "socks",
+          "Regular Socks (free)",
+          1,
+          0
+        ]
+      ]
+    },
+    "paid": {
+      "at": "2026-11-05T14:57:48.937Z",
+      "status": "finalised",
+      "receipt": "Z768S-000001",
+      "gross": 105000,
+      "tier": "tourist",
+      "lines": [
+        [
+          "kids",
+          "Kids",
+          1,
+          50000
+        ],
+        [
+          "adults_paid",
+          "Adults",
+          1,
+          50000
+        ],
+        [
+          "socks",
+          "Regular Socks",
+          1,
+          5000
+        ],
+        [
+          "socks",
+          "Regular Socks (free)",
+          1,
+          0
+        ]
+      ],
+      "net": [
+        {
+          "at": "2026-11-05T14:57:45.719Z",
+          "method": "POST",
+          "path": "/api/sales/01a1ac36-eea2-7d12-a5ea-e4fe25ad2a1b/finalise",
+          "status": 200
+        },
+        {
+          "at": "2026-11-05T14:57:45.794Z",
+          "method": "POST",
+          "path": "/api/box/v1/station/01a1ac36-2f2e-7126-bac8-06cadea55564/intents",
+          "status": 200
+        }
+      ],
+      "socksStockAfter": "{\"productId\":\"01a0cb02-13a9-790f-85a1-73e6ccf9f9da\",\"name\":\"Regular Socks\",\"sizes\":[{\"variantId\":null,\"label\":null,\"stockItemId\":\"01a0fa0b-8a6f-7a87-97f4-c118e0be28ff\",\"available\":3,\"atSellPoint\":3,\"lowStockThreshold\":20,\"status\":\"low\"}]},{\"productId\":\"01a0cb02-13a9-790f-85a1-73ddb7e2ff86\",\"name\":\"Slushie\",\"si"
+    },
+    "plain": {
+      "at": "2026-11-05T14:59:18.536Z",
+      "k": 1,
+      "a": 1,
+      "s": 1,
+      "panel": "Current Order TOURIST 2 Hours Play EDITING ฿1290 Kids ฿890 each 1 Adults ฿350 each 1 Regular Socks ฿50 each 1 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1290 VAT included ฿84.39 Total ฿1290 Cancel Pay ฿1290",
+      "display": " ฿350 each 1 Regular Socks ฿50 each 1 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1290 VAT included ฿84.39 Total ฿1290 Cancel Pay ฿1290 O Oto Play Park Your Order English 2 Hours Play ฿1290 Kids1 × ฿890 ฿890 Adults1 × ฿350 ฿350 Regular Socks1 × ฿50 ฿50 VAT included ฿84.39 Total ฿1290",
+      "quote": {
+        "at": "2026-11-05T14:59:15.478Z",
+        "status": 200,
+        "lines": [
+          [
+            "kids",
+            "Kids",
+            1,
+            89000
+          ],
+          [
+            "adults_paid",
+            "Adults",
+            1,
+            35000
+          ],
+          [
+            "socks",
+            "Regular Socks",
+            1,
+            5000
+          ]
+        ],
+        "total": 129000
+      }
+    },
+    "plainCancelled": {
+      "at": "2026-11-05T14:59:46.843Z",
+      "writesSincePaid": [],
+      "dialog": null,
+      "sales": [
+        {
+          "id": "01a1ac36-eea2-7d12-a5ea-e4fe25ad2a1b",
+          "receipt": "Z768S-000001",
+          "status": "finalised",
+          "gross": 105000
+        }
+      ]
+    }
+  },
+  "images": [
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging-socks/st-00a-console-zz-test-stock-adjustment-regular-socks-plus-5.png",
+      "at": "2026-11-05T14:55:04.148Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/inventory",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging-socks/st-00b-console-regular-socks-in-stock-5.png",
+      "at": "2026-11-05T14:55:09.729Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/inventory",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging-socks/st-01a-console-tickets-list-zz-test-768-socks-staging.png",
+      "at": "2026-11-05T14:56:13.727Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/tickets",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging-socks/st-01b-saved-ticket-free-regular-socks-tourist-only.png",
+      "at": "2026-11-05T14:56:16.683Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/tickets",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging-socks/st-02a-order-panel-and-display-one-socks-charged-one-free.png",
+      "at": "2026-11-05T14:57:09.331Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging-socks/st-03-amount-due-one-socks-charged.png",
+      "at": "2026-11-05T14:57:34.108Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging-socks/st-04a-paid-in-cash.png",
+      "at": "2026-11-05T14:57:49.525Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging-socks/st-04b-receipt-printed-regular-socks-and-free-socks.png",
+      "at": "2026-11-05T14:58:42.272Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/devices",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging-socks/st-04b-receipt-printed-regular-socks-and-free-socks.png",
+      "at": "2026-11-05T14:58:52.946Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/devices",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging-socks/st-05a-plain-ticket-counter-socks-charged-50.png",
+      "at": "2026-11-05T14:59:18.535Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging-socks/st-05b-plain-ticket-counter-socks-50-matches-add-on-card.png",
+      "at": "2026-11-05T14:59:28.928Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging-socks/st-06-zz-test-768-socks-staging-ticket-archived.png",
+      "at": "2026-11-05T15:00:05.085Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/tickets",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging-socks/st-07-console-regular-socks-unused-test-stock-taken-back.png",
+      "at": "2026-11-05T15:00:30.595Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/inventory",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    }
+  ],
+  "created": [
+    {
+      "kind": "stock-adjustment",
+      "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+      "delta": 5,
+      "at": "2026-11-05T14:55:08.328Z"
+    },
+    {
+      "kind": "ticket-package",
+      "id": "01a1ac35-a1c1-78d4-82f1-b7256ecfc1f9",
+      "name": "ZZ TEST 768 Socks Staging",
+      "at": "2026-11-05T14:56:01.071Z"
+    },
+    {
+      "kind": "station",
+      "id": "01a1ac36-2f2e-7126-bac8-06cadea55564",
+      "name": "ZZ TEST SCRUM-768 socks till",
+      "at": "2026-11-05T14:56:34.051Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1ac36-eea2-7d12-a5ea-e4fe25ad2a1b",
+      "what": "768 socks: 1 kid, 1 adult, 2 socks (1 free)",
+      "at": "2026-11-05T14:57:27.777Z"
+    }
+  ],
+  "browser": "156.0.4314.58",
+  "cleanup": {
+    "actions": [
+      {
+        "what": "T sign-out",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "CON sign-out",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "unassign printers on ZZ TEST SCRUM-768 socks till",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive station ZZ TEST SCRUM-768 socks till",
+        "status": 200,
+        "code": null
+      }
+    ],
+    "ticket": {
+      "at": "2026-11-05T15:00:04.523Z",
+      "confirm": "Delete ticket type? \"ZZ TEST 768 Socks Staging\" will be removed and no longer selectable in the POS. Cancel Delete",
+      "net": [
+        {
+          "at": "2026-11-05T15:00:02.375Z",
+          "method": "DELETE",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/ticket-packages/01a1ac35-a1c1-78d4-82f1-b7256ecfc1f9",
+          "status": 200
+        }
+      ],
+      "mine": {
+        "name": "ZZ TEST 768 Socks Staging",
+        "active": false,
+        "archivedAt": "2026-11-05T15:00:02.728Z"
+      }
+    },
+    "stock": {
+      "at": "2026-11-05T15:00:29.217Z",
+      "head": "Adjust stock — Regular Socks Variant: Default · Current: 3 Adjustment (+/−) * Reason * Received shipment Inventory recou",
+      "before": "{\"productId\":\"01a0cb02-13a9-790f-85a1-73e6ccf9f9da\",\"name\":\"Regular Socks\",\"sizes\":[{\"variantId\":null,\"label\":null,\"stockItemId\":\"01a0fa0b-8a6f-7a87-97f4-c118e0be28ff\",\"available\":3,\"atSellPoint\":3,\"lowStockThreshold\":20,\"status\":\"low\"}]},{\"productId\":\"01a0cb02-13a9-790f-85a1-73ddb7e2ff86\",\"name\":\"Slushie\",\"si",
+      "delta": -3,
+      "net": [
+        {
+          "at": "2026-11-05T15:00:25.595Z",
+          "method": "POST",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/adjustments",
+          "status": 200,
+          "resp": "{\"stockItemId\":\"01a0fa0b-8a6f-7a87-97f4-c118e0be28ff\",\"delta\":-3,\"movements\":[{\"locationId\":\"01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed\",\"quantity\":-3,\"levelAfter\":0}]}"
+        }
+      ],
+      "after": "{\"productId\":\"01a0cb02-13a9-790f-85a1-73e6ccf9f9da\",\"name\":\"Regular Socks\",\"sizes\":[{\"variantId\":null,\"label\":null,\"stockItemId\":\"01a0fa0b-8a6f-7a87-97f4-c118e0be28ff\",\"available\":0,\"atSellPoint\":0,\"lowStockThreshold\":20,\"status\":\"out\"}]},{\"productId\":\"01a0cb02-13a9-790f-85a1-73ddb7e2ff86\",\"name\":\"Slushie\",\"si"
+    },
+    "startedAt": "2026-11-05T15:00:46.986Z",
+    "salesBefore": [
+      {
+        "id": "01a1ac36-eea2-7d12-a5ea-e4fe25ad2a1b",
+        "receipt": "Z768S-000001",
+        "status": "finalised",
+        "gross": 105000
+      }
+    ],
+    "meTAfterSignOut": 401,
+    "meCONAfterSignOut": 401,
+    "readBack": {
+      "at": "2026-11-05T15:00:48.575Z",
+      "till": {
+        "name": "ZZ TEST SCRUM-768 socks till",
+        "archived": true,
+        "devices": 0
+      },
+      "salesAfter": [
+        {
+          "receipt": "Z768S-000001",
+          "status": "finalised",
+          "gross": 105000
+        }
+      ],
+      "ticket": {
+        "name": "ZZ TEST 768 Socks Staging",
+        "active": false,
+        "archivedAt": "2026-11-05T15:00:02.728Z"
+      },
+      "liveTicketsWithFreeItems": [],
+      "walkInNumbersAreNotMembers": {
+        "socks": {
+          "status": 200,
+          "found": false
+        },
+        "plain": {
+          "status": 200,
+          "found": false
+        }
+      },
+      "regularSocksStock": "{\"productId\":\"01a0cb02-13a9-790f-85a1-73e6ccf9f9da\",\"name\":\"Regular Socks\",\"sizes\":[{\"variantId\":null,\"label\":null,\"stockItemId\":\"01a0fa0b-8a6f-7a87-97f4-c118e0be28ff\",\"available\":0,\"atSellPoint\":0,\"lowStockThreshold\":20,\"status\":\"out\"}]},{\"productId\"",
+      "receptionTill1Devices": [
+        "Band Printer (adults)",
+        "EDC 1",
+        "Band Printer (kids)",
+        "Kitchen Printer",
+        "EDC 3",
+        "Receipt Printer 1",
+        "Scanner 1"
+      ],
+      "untouched": [
+        {
+          "name": "FWBooth1",
+          "archived": false
+        },
+        {
+          "name": "Reception Till 1",
+          "archived": false
+        },
+        {
+          "name": "Till 1 (Pi)",
+          "archived": false
+        },
+        {
+          "name": "Till 2 (test)",
+          "archived": false
+        }
+      ]
+    },
+    "finishedAt": "2026-11-05T15:00:48.575Z"
+  }
+}

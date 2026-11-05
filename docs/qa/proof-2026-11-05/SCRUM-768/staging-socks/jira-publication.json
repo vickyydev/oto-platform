@@ -1,0 +1,28 @@
+{
+  "key": "SCRUM-768",
+  "commentId": "13520",
+  "created": "2026-11-05T22:01:53.462+0700",
+  "imagesShownInsideTheComment": 7,
+  "images": [
+    "st-01b-saved-ticket-free-regular-socks-tourist-only.png",
+    "st-02a-order-panel-and-display-one-socks-charged-one-free.png",
+    "st-03-amount-due-one-socks-charged.png",
+    "st-04a-paid-in-cash.png",
+    "st-04b-receipt-printed-regular-socks-and-free-socks.png",
+    "st-05a-plain-ticket-counter-socks-charged-50.png",
+    "st-05b-plain-ticket-counter-socks-50-matches-add-on-card.png"
+  ],
+  "attachmentIds": [
+    "12735",
+    "12736",
+    "12737",
+    "12738",
+    "12739",
+    "12740",
+    "12741"
+  ],
+  "walkedTo": "Deployed",
+  "commitLinksAdded": 10,
+  "statusReadBack": "Deployed",
+  "note": "Never set Done."
+}

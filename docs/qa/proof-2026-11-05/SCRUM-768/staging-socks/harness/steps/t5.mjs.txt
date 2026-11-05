@@ -1,0 +1,11 @@
+export default async function (S) {
+  const { sleep, fixScroll, readSale } = S.lib;
+  const page = S.pages.T.page;
+  const f = S.st.fixture;
+  await fixScroll(page);
+  await S.shot('T', 'st-03-amount-due-one-socks-charged');
+  const pre = await readSale(S, f.sale.id);
+  S.st.steps.amountDue = { at: new Date().toISOString(), status: pre.sale.status, gross: pre.sale.totals?.grossSatang, lines: (pre.lines ?? []).map((l) => [l.kind, l.label, l.quantity, l.grossSatang]) };
+  S.save();
+  return S.st.steps.amountDue;
+}

@@ -1,0 +1,31 @@
+// Clean-up: take back the three ZZ TEST socks the sale did not use (5 added, 2 sold), through the Console.
+export default async function (S) {
+  const { sleep } = S.lib;
+  const page = S.pages.CON.page;
+  const f = S.st.fixture;
+  const pre = JSON.stringify((await S.adminApi('GET', `/branches/${f.branchId}/stock/sellable`)).body).match(/\{"productId":"01a0cb02-13a9-790f-85a1-73e6ccf9f9da".{0,260}/)?.[0];
+  const avail = Number(/"available":(\d+)/.exec(pre ?? '')?.[1]);
+  if (avail !== 3) return { refused: 'expected 3 left, found ' + avail, pre };
+  await page.goto(S.CONSOLE + '/catalogue/inventory', { waitUntil: 'domcontentloaded' });
+  await sleep(5000);
+  const card = page.locator('div').filter({ hasText: '01a0cb02-13a9-790f-85a1-73e6ccf9f9da' }).filter({ has: page.getByRole('button', { name: 'Adjust' }) }).last();
+  await card.scrollIntoViewIfNeeded();
+  await card.getByRole('button', { name: 'Adjust' }).first().click();
+  await sleep(1200);
+  const dlg = page.getByRole('dialog');
+  const head = (await dlg.innerText()).replace(/\s+/g, ' ').slice(0, 120);
+  await dlg.locator('#adj-delta').fill('-3');
+  await dlg.getByPlaceholder('Or type a custom reason…').fill('ZZ TEST SCRUM-768 staging proof: take back the 3 unused test socks');
+  const mark = S.pages.CON.net.length;
+  await dlg.getByRole('button', { name: 'Apply adjustment' }).click();
+  await sleep(4000);
+  const net = S.pages.CON.net.slice(mark).map((n) => ({ at: n.at, method: n.method, path: n.path, status: n.status, resp: JSON.stringify(n.response).slice(0, 400) }));
+  const after = JSON.stringify((await S.adminApi('GET', `/branches/${f.branchId}/stock/sellable`)).body).match(/\{"productId":"01a0cb02-13a9-790f-85a1-73e6ccf9f9da".{0,260}/)?.[0];
+  S.st.cleanup = S.st.cleanup ?? { actions: [] };
+  S.st.cleanup.stock = { at: new Date().toISOString(), head, before: pre, delta: -3, net, after };
+  S.save();
+  await card.scrollIntoViewIfNeeded();
+  await sleep(800);
+  await S.shot('CON', 'st-07-console-regular-socks-unused-test-stock-taken-back');
+  return S.st.cleanup.stock;
+}

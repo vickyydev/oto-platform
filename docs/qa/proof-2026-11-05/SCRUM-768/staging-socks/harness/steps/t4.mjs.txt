@@ -1,0 +1,28 @@
+// Plan step 3: the amount due charges exactly one socks at the product price.
+export default async function (S) {
+  const { sleep, one, salesOf } = S.lib;
+  const page = S.pages.T.page;
+  const f = S.st.fixture;
+  const before = new Set((await salesOf(S, f.till.id)).map((s) => s.id));
+  const mark = S.pages.T.net.length;
+  await page.getByRole('button', { name: 'Continue', exact: true }).first().click();
+  await sleep(2000);
+  const amountDue = page.getByRole('heading', { name: 'Amount Due' });
+  const seen = [];
+  for (let i = 0; i < 8 && !(await amountDue.isVisible().catch(() => false)); i += 1) {
+    const pay = page.getByRole('button', { name: /^Pay ฿/ });
+    const done = page.getByRole('button', { name: 'Done', exact: true });
+    if (await done.last().isVisible().catch(() => false) && await done.last().isEnabled().catch(() => false)) { seen.push('done'); await done.last().click(); }
+    else if (await pay.isVisible().catch(() => false) && await pay.isEnabled().catch(() => false)) { seen.push('pay ' + (await pay.innerText())); await pay.click(); }
+    else seen.push('wait');
+    await sleep(1500);
+  }
+  const vis = await amountDue.isVisible().catch(() => false);
+  await sleep(2000);
+  await S.look('T');
+  const net = S.pages.T.net.slice(mark).filter((n) => !/quote/.test(n.path)).map((n) => ({ at: n.at, method: n.method, path: n.path, status: n.status, err: n.response?.error?.code ?? null, msg: n.response?.error?.message?.slice(0, 200) ?? null }));
+  let fresh = null;
+  for (let i = 0; i < 20 && vis; i += 1) { fresh = (await salesOf(S, f.till.id)).find((s) => !before.has(s.id)); if (fresh) break; await sleep(500); }
+  if (fresh) { f.sale = { id: fresh.id }; S.st.created.push({ kind: 'sale', id: fresh.id, what: '768 socks: 1 kid, 1 adult, 2 socks (1 free)', at: new Date().toISOString() }); S.save(); }
+  return { seen, vis, net, fresh: fresh ? { id: fresh.id, status: fresh.status } : null, body: one(await page.locator('body').innerText()).slice(300, 1800) };
+}

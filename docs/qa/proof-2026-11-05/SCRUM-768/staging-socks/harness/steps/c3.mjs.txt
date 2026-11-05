@@ -1,0 +1,24 @@
+export default async function (S) {
+  const { sleep } = S.lib;
+  const page = S.pages.CON.page;
+  const f = S.st.fixture;
+  const dlg = page.getByRole('dialog');
+  await dlg.locator('#adj-delta').fill('5');
+  await dlg.getByPlaceholder('Or type a custom reason…').fill('ZZ TEST SCRUM-768 staging proof: 5 Regular Socks for the socks counter test');
+  await sleep(600);
+  await S.shot('CON', 'st-00a-console-zz-test-stock-adjustment-regular-socks-plus-5');
+  const mark = S.pages.CON.net.length;
+  await dlg.getByRole('button', { name: 'Apply adjustment' }).click();
+  await sleep(4000);
+  const net = S.pages.CON.net.slice(mark).map((n) => ({ at: n.at, method: n.method, path: n.path, status: n.status, resp: JSON.stringify(n.response).slice(0, 500) }));
+  const sellable = (await S.adminApi('GET', `/branches/${f.branchId}/stock/sellable`)).body;
+  const socks = JSON.stringify(sellable).match(/\{"productId":"01a0cb02-13a9-790f-85a1-73e6ccf9f9da".{0,300}/)?.[0];
+  S.st.steps.stockAdded = { at: new Date().toISOString(), delta: 5, reason: 'ZZ TEST SCRUM-768 staging proof: 5 Regular Socks for the socks counter test', net, sellableAfter: socks };
+  S.st.created.push({ kind: 'stock-adjustment', stockItemId: '01a0fa0b-8a6f-7a87-97f4-c118e0be28ff', delta: 5, at: new Date().toISOString() });
+  S.save();
+  const card = page.locator('div').filter({ hasText: '01a0cb02-13a9-790f-85a1-73e6ccf9f9da' }).filter({ has: page.getByRole('button', { name: 'Adjust' }) }).last();
+  await card.scrollIntoViewIfNeeded();
+  await sleep(800);
+  await S.shot('CON', 'st-00b-console-regular-socks-in-stock-5');
+  return { net, socks, card: (await card.innerText()).replace(/\s+/g, ' ') };
+}

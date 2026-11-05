@@ -1,0 +1,32 @@
+// Plan step 5: a ticket with no free items (2 Hours Play), 1 socks on the counter: ฿50, as the add-on card.
+export default async function (S) {
+  const { sleep, one, keypad, stepTo, unlockIfLocked } = S.lib;
+  const page = S.pages.T.page;
+  await unlockIfLocked(S, page, 'RECEPTION');
+  const next = page.getByRole('button', { name: 'Start New Sale' });
+  if (await next.isVisible().catch(() => false)) { await next.click(); await sleep(2000); }
+  await page.getByText('Membership Check', { exact: true }).first().waitFor({ timeout: 30000 });
+  await sleep(1000);
+  await keypad(page, '897680012');
+  await page.getByRole('button', { name: 'Continue', exact: true }).last().click();
+  const offer = page.getByRole('button', { name: 'Continue as walk-in', exact: true });
+  const tiers = page.getByRole('heading', { name: 'Tourist', exact: true });
+  for (let i = 0; i < 30; i += 1) { if (await offer.isVisible().catch(() => false) || await tiers.isVisible().catch(() => false)) break; await sleep(500); }
+  if (await offer.isVisible().catch(() => false)) await offer.click();
+  await sleep(1500);
+  await tiers.click();
+  await sleep(1500);
+  await page.getByRole('heading', { name: '2 Hours Play', exact: true }).click();
+  await page.getByRole('heading', { name: /^Configure:/ }).waitFor({ timeout: 15000 });
+  const order = page.getByRole('heading', { name: 'Current Order' }).locator('../..');
+  const k = await stepTo(order, 'Kids', 1);
+  const a = await stepTo(order, 'Adults', 1);
+  const s = await stepTo(order, 'Regular Socks', 1);
+  await sleep(2500);
+  await S.lib.fixScroll(page);
+  await S.shot('T', 'st-05a-plain-ticket-counter-socks-charged-50');
+  const q = S.pages.T.net.filter((n) => n.path === '/api/sales/quote').slice(-1)[0];
+  S.st.steps.plain = { at: new Date().toISOString(), k, a, s, panel: one(await order.innerText()).slice(0, 500), display: one(await page.locator('body').innerText()).slice(-300), quote: q ? { at: q.at, status: q.status, lines: (q.response?.quote?.lines ?? []).map((l) => [l.kind, l.label, l.quantity, l.grossSatang]), total: q.response?.quote?.totals?.grossSatang ?? null } : null };
+  S.save();
+  return S.st.steps.plain;
+}

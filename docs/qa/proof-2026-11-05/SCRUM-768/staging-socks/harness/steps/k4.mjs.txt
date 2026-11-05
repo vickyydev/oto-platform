@@ -1,0 +1,24 @@
+export default async function (S) {
+  const { sleep } = S.lib;
+  const page = S.pages.CON.page;
+  await page.goto(S.CONSOLE + '/catalogue/tickets', { waitUntil: 'domcontentloaded' });
+  await sleep(4000);
+  const row = page.locator('tr').filter({ hasText: 'ZZ TEST 768 Socks Staging' }).first();
+  await row.scrollIntoViewIfNeeded();
+  await sleep(600);
+  await S.shot('CON', 'st-01a-console-tickets-list-zz-test-768-socks-staging');
+  await page.getByRole('button', { name: 'Edit ZZ TEST 768 Socks Staging' }).click();
+  const dlg = page.getByRole('dialog');
+  await dlg.waitFor();
+  await sleep(1500);
+  const last = dlg.getByRole('button', { name: 'Save changes' });
+  await last.scrollIntoViewIfNeeded();
+  await sleep(800);
+  await S.shot('CON', 'st-01b-saved-ticket-free-regular-socks-tourist-only');
+  const t = await dlg.innerText();
+  const i = t.indexOf('Free items in the rate');
+  const res = t.slice(i, i + 600);
+  await dlg.getByRole('button', { name: 'Cancel' }).click();
+  await sleep(800);
+  return { row: (await row.innerText()).replace(/\s+/g, ' '), res };
+}

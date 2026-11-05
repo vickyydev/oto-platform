@@ -1,0 +1,24 @@
+export default async function (S) {
+  const { sleep, text } = S.lib;
+  const page = S.pages.CON.page;
+  await page.goto(S.CONSOLE + '/devices', { waitUntil: 'domcontentloaded' });
+  await sleep(4000);
+  const opens = page.getByText('Open →');
+  const n = await opens.count();
+  let idx = -1;
+  for (let i = 0; i < n; i += 1) {
+    const t = await opens.nth(i).evaluate((el) => { let p = el; for (let k = 0; k < 6 && p; k += 1) { p = p.parentElement; if (p && /virtual-1 ·/.test(p.textContent)) return p.textContent.slice(0, 80); } return null; });
+    if (t && /Virtual box 1/.test(t) && !/Virtual box 2/.test(t)) { idx = i; break; }
+  }
+  if (idx < 0) return { n, url: page.url(), t: (await text(page, 3000)).slice(0, 1500) };
+  await opens.nth(idx).click();
+  await sleep(3000);
+  const printing = page.getByRole('heading', { name: 'Printing', exact: true });
+  await printing.waitFor({ timeout: 30000 });
+  await printing.scrollIntoViewIfNeeded();
+  await sleep(2500);
+  const scope = (await page.getByRole('dialog').count()) ? page.getByRole('dialog').first() : page;
+  const btns = (await scope.getByRole('button').allInnerTexts()).filter((b) => /Printer|Receipt|Band|Kitchen/.test(b));
+  await S.look('CON');
+  return { idx, btns, imgs: await scope.locator('img[alt^="Printout"]').count() };
+}
