@@ -587,6 +587,11 @@ const BridgePromoSchema = z.object({
 
 const BridgeCartBodySchema = z.object({
   memberId: z.string().uuid().nullish(),
+  /**
+   * SCRUM-762 — the number the family gave at the counter, as `POST /sales`
+   * takes it: printed on a child's band when an adult stays.
+   */
+  customerPhone: z.string().max(40).nullish(),
   tier: z.string().max(40).optional(),
   tierClaimActionId: z.string().min(1).max(200).optional(),
   pricingMode: z.enum(['weekday', 'weekend']).optional(),

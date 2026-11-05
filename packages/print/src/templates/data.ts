@@ -93,6 +93,12 @@ export interface BandData {
   partyName?: string;
   dietaryRequirement?: string;
   assignedNannyName?: string;
+  /**
+   * SCRUM-762 — the number of the adult staying with the child, already
+   * formatted to read ("+66 81 234 5678"). Kids bands only, and only when an
+   * adult stays: a dropped-off or nanny child's band has the badge instead.
+   */
+  guardianPhone?: string;
   /** Kids bands only; the adult template has no allergy field at all. */
   allergy?: string;
   /**

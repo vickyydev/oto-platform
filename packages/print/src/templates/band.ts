@@ -86,6 +86,14 @@ export function buildBand({ template, type, data, device }: BandInput): PrintDoc
     blocks.push(text(`Nanny: ${data.assignedNannyName}`, small));
   }
 
+  // SCRUM-762 — "if an adult stays with the child, the number is printed on
+  // the wristband" (the park, 30 October). Not a template toggle: the number
+  // is there for the child's safety, so a saved template cannot leave it off.
+  // The kids band only; the composer sends it only when an adult stays.
+  if (type === 'kids_wristband' && data.guardianPhone) {
+    blocks.push(text(`Tel ${data.guardianPhone}`, smallBold));
+  }
+
   // Applicable on the kids band only; `fieldOn` returns false for the adult
   // type because the field is not in its APPLICABLE_FIELDS list.
   if (fieldOn(template, type, 'allergyLine') && data.allergy) {

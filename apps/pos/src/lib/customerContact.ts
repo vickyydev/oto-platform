@@ -13,7 +13,8 @@
  * - `payment` — a member is on the sale, or the supervision gate already took
  *   the family's details: straight to the payment screen, as before.
  * - `contact_known` — the number was given at the start: the details step is
- *   skipped and the sale carries that number. A rate verified before the
+ *   skipped and the sale carries that number (`pos.sale.customer_phone`, and
+ *   on the child's band when an adult stays). A rate verified before the
  *   family was known is saved to their profile on the way (SCRUM-227).
  * - `details` — there is no number yet (an order that reached the till some
  *   other way), or a verified rate needs a name before it can be saved to a new

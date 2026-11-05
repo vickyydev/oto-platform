@@ -729,6 +729,13 @@
       "when": 1793787401152,
       "tag": "0103_sale_hold",
       "breakpoints": true
+    },
+    {
+      "idx": 104,
+      "version": "7",
+      "when": 1793875841678,
+      "tag": "0104_sale_customer_phone",
+      "breakpoints": true
     }
   ]
 }

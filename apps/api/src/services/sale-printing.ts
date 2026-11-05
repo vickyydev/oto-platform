@@ -1111,7 +1111,11 @@ export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<S
     .where(eq(branch.id, saleRow.branchId))
     .limit(1);
   const [memberRow] = saleRow.memberId
-    ? await db.select({ nickname: member.nickname }).from(member).where(eq(member.id, saleRow.memberId)).limit(1)
+    ? await db
+        .select({ nickname: member.nickname, phone: member.phone })
+        .from(member)
+        .where(eq(member.id, saleRow.memberId))
+        .limit(1)
     : [];
   const attempts = await db
     .select()
@@ -1151,6 +1155,9 @@ export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<S
     branchName: names?.branchName ?? null,
     staffName: (await staffNameOf(db, saleRow.createdByAccountId)) ?? null,
     memberNickname: memberRow?.nickname ?? null,
+    // SCRUM-762 — the number the family gave, else the member's own: on a
+    // child's band when an adult stays with the child.
+    customerPhone: saleRow.customerPhone ?? memberRow?.phone ?? null,
     lines: lines.map((l) => ({
       id: l.id,
       kind: l.kind,

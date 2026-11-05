@@ -6,6 +6,7 @@ import {
   PRICING_ENGINE_VERSION,
   bandShortCode,
   mintBoothCode,
+  saleBandDocument,
   saleReceiptDocument,
   salePrintRequests,
   verifyBandCode,
@@ -432,6 +433,24 @@ test('SCRUM-717: changing routing never abandons an uncertain terminal payment o
   } finally { box.close(); }
 });
 
+test('SCRUM-762: the number typed at the counter is the one the box keeps, prints on a child’s band and carries up', async () => {
+  const box = await openSellingBox();
+  try {
+    const { body } = await ticketSale(box);
+    const answer = await send(box, 'sale.finalise', { ...body, cart: { ...body.cart, customerPhone: '081 234 5678' } });
+    assert.equal(answer.finalised, true);
+    const logged = await box.agent.sales()!.recorded(body.saleId);
+    assert.equal(logged!.snapshot!.customerPhone, '+66812345678');
+    const kid = logged!.snapshot!.bands.find((b) => b.kind === 'kid')!;
+    assert.equal(saleBandDocument(logged!.snapshot!, kid).guardianPhone, '+66 81 234 5678');
+    // The fact carries the till's cart as sent, so the platform keeps the number too.
+    const batch = await box.harness.store.takeBatch(BOX_ID, { maxEvents: 10, maxBytes: 1_000_000, now: new Date().toISOString() });
+    assert.equal((batch.events[0]!.payload as { cart: { customerPhone?: string } }).cart.customerPhone, '081 234 5678');
+  } finally {
+    box.close();
+  }
+});
+
 test('cash on the box lane: numbered from the mark, banded with the park key, printed from the box queue, one fact', async () => {
   const box = await openSellingBox();
   try {
@@ -525,6 +544,13 @@ test('cash on the box lane: numbered from the mark, banded with the park key, pr
     ]);
     assert.equal(receipt.bandCodes?.length, 3);
     assert.ok(receipt.tenders?.some((t) => t.label === 'Change'));
+
+    // SCRUM-762 — an adult stays with these children, so their bands carry the
+    // number: the member's own, as the cart named no other. The adult's does not.
+    assert.equal(logged!.snapshot!.customerPhone, '+66811111111');
+    const [kidBand, , adultBand] = logged!.snapshot!.bands;
+    assert.equal(saleBandDocument(logged!.snapshot!, kidBand!).guardianPhone, '+66 81 111 1111');
+    assert.equal(saleBandDocument(logged!.snapshot!, adultBand!).guardianPhone, undefined);
   } finally {
     box.close();
   }

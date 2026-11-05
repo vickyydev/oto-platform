@@ -129,6 +129,8 @@ import type { Tx } from '../tx';
  */
 const OfflineCartSchema = z.object({
   memberId: z.string().uuid().nullish(),
+  /** SCRUM-762 — the family's number, as the till's own commit carries it. Optional: an older box sends none. */
+  customerPhone: z.string().max(40).nullish(),
   visitId: z.string().uuid().nullish(),
   channel: z.enum(['till', 'fnb', 'shop']).optional(),
   tier: z.string().max(40).optional(),
@@ -570,6 +572,7 @@ export async function replayOfflineSale(
     stationId: scope.stationId,
     branchId: scope.branchId,
     memberId: cart.memberId ?? null,
+    customerPhone: cart.customerPhone ?? null,
     visitId: cart.visitId ?? null,
     ...(cart.channel ? { channel: cart.channel } : {}),
     ...(cart.tier ? { tier: cart.tier } : {}),

@@ -825,3 +825,48 @@ describe('a sale carries its membership visit', () => {
     expect(await ctx.db.select().from(sale).where(eq(sale.visitId, foreignVisitId))).toHaveLength(0);
   });
 });
+
+// --- SCRUM-762: the number of the adult who stays, on the child's band --------
+
+describe('SCRUM-762 — the family’s number on the sale and on the child’s band', () => {
+  const jobsOf = (done: { printing: { jobs: { id: string; kind: string }[] } }, kind: string) =>
+    done.printing.jobs.filter((j) => j.kind === kind);
+
+  it('a walk-in’s number, typed in the Thai way, is kept normalised and printed on the kids band only', async () => {
+    const { saleId } = await commit({
+      customerPhone: '081 234 5678',
+      lines: [{ id: newId(), packageId: twoHoursId, kids: 1, adults: 1 }],
+    });
+    expect((await saleRow(saleId)).customerPhone).toBe('+66812345678');
+    const done = await finalise(saleId);
+    const [kidJob] = jobsOf(done, 'kids_wristband');
+    const [adultJob] = jobsOf(done, 'adult_wristband');
+    const kid = (await documentOf(kidJob!.id)).json();
+    expect(kid.job.kind).toBe('kids_wristband');
+    expect(kid.job.data.guardianPhone).toBe('+66 81 234 5678');
+    const adult = (await documentOf(adultJob!.id)).json();
+    expect(adult.job.data.guardianPhone).toBeUndefined();
+  });
+
+  it('a member’s sale with no number typed prints the member’s own', async () => {
+    const { saleId } = await commit({
+      memberId: jamesId,
+      lines: [{ id: newId(), packageId: twoHoursId, kids: 1, adults: 1 }],
+    });
+    expect((await saleRow(saleId)).customerPhone).toBeNull();
+    const done = await finalise(saleId);
+    const kid = (await documentOf(jobsOf(done, 'kids_wristband')[0]!.id)).json();
+    expect(kid.job.data.guardianPhone).toBe('+66 82 222 2222');
+  });
+
+  it('a value that is not a number is kept as none, and nothing is printed', async () => {
+    const { saleId } = await commit({
+      customerPhone: 'not a number',
+      lines: [{ id: newId(), packageId: twoHoursId, kids: 1, adults: 1 }],
+    });
+    expect((await saleRow(saleId)).customerPhone).toBeNull();
+    const done = await finalise(saleId);
+    const kid = (await documentOf(jobsOf(done, 'kids_wristband')[0]!.id)).json();
+    expect(kid.job.data.guardianPhone).toBeUndefined();
+  });
+});

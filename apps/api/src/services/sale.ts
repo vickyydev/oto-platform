@@ -130,7 +130,7 @@ import { assertCartStock, stockSharesForLines, takeStockForSale } from './stock'
 import { printJobsOfSale, routeSalePrinting, type SalePrintingResult } from './sale-printing';
 import { debitForSale, grantSaleCredit, grantsOfSale } from './wallet';
 import type { CartBandHolderInput, CartPrepaidInput, WalletGrantView, WalletTenderInstruction } from '@oto/shared';
-import { BAND_FOOD_REFUSALS } from '@oto/shared';
+import { BAND_FOOD_REFUSALS, normalizePhone } from '@oto/shared';
 import {
   BENEFIT_CHECKOUT_REFUSALS,
   BENEFIT_CHECKOUT_WORDS,
@@ -497,6 +497,13 @@ export interface PromoDiscountInput {
 export interface CommitSaleInput extends CartInput {
   /** Client-minted UUIDv7. Re-sending it returns the sale that exists. */
   id?: string;
+  /**
+   * SCRUM-762 — the number the family gave at the counter, as the till holds
+   * it: typed on the customer screen's first step, or the member's own. Kept on
+   * the sale normalised (`pos.sale.customer_phone`) and printed on a child's
+   * band when an adult stays; a value that is not a number is kept as none.
+   */
+  customerPhone?: string | null;
   stationId: string;
   visitId?: string | null;
   note?: string;
@@ -3678,6 +3685,8 @@ export async function commitSale(
     // S2-20 K1 — the kiosk's credential when no person rang it up (`sale_actor_check`).
     deviceCredentialId: actor.deviceCredentialId ?? null,
     memberId: input.memberId ?? null,
+    // SCRUM-762 — the family's number, for the child's band when an adult stays.
+    customerPhone: normalizePhone(input.customerPhone ?? '') ?? null,
     visitId: input.visitId ?? null,
     bookingId: input.bookingId ?? null,
     pricingMode: priced.scope.pricingMode,

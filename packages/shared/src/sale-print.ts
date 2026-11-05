@@ -2,6 +2,7 @@ import { bandShortCode } from './band-code';
 import { wallClockMinutesInTz } from './business-date';
 import { isoDateInTz } from './dates';
 import { formatTHB } from './money';
+import { formatDisplayPhone } from './phone';
 import { groupPrepTickets, type PrintKind } from './print';
 import { summarizeTax, type TaxBreakdown } from './tax';
 
@@ -121,6 +122,13 @@ export interface SalePrintSnapshot {
   branchName: string | null;
   staffName: string | null;
   memberNickname: string | null;
+  /**
+   * SCRUM-762 — the number the family gave at the counter (else the member's
+   * own), E.164. Printed on a child's band when an adult stays with the child
+   * (`saleBandDocument`). Optional so a snapshot written before it existed (a
+   * box's stored printout) prints exactly as it did.
+   */
+  customerPhone?: string | null;
   lines: SalePrintLine[];
   subtotalSatang: number;
   grossSatang: number;
@@ -253,6 +261,8 @@ export interface SaleBandDocument {
   /** S2-13 — the badge on a supervised child's kids band. The template's own field names (`BandData`). */
   supervisionMode?: 'DROP-OFF' | 'NANNY';
   assignedNannyName?: string;
+  /** SCRUM-762 — the number of the adult staying with the child, formatted to read. Kids bands only. */
+  guardianPhone?: string;
   bandCode?: string;
   shortCode?: string;
 }
@@ -508,6 +518,7 @@ export function saleBandDocument(snapshot: SalePrintSnapshot, band: SalePrintBan
           .filter((v): v is string => !!v)
           .join('; ') || undefined
       : undefined;
+  const guardianPhone = guardianPhoneFor(snapshot, band);
   return {
     holderName:
       band.kind === 'kid' ? (band.childName ?? undefined) : snapshot.memberNickname || undefined,
@@ -518,9 +529,27 @@ export function saleBandDocument(snapshot: SalePrintSnapshot, band: SalePrintBan
     ...(band.kind === 'kid' && band.supervisionBadge && band.nannyName?.trim()
       ? { assignedNannyName: band.nannyName.trim() }
       : {}),
+    ...(guardianPhone ? { guardianPhone } : {}),
     bandCode: band.code,
     shortCode: bandShortCode(band.code) ?? undefined,
   };
+}
+
+/**
+ * SCRUM-762 — "IF AN ADULT STAYS WITH THE CHILD, THE NUMBER IS PRINTED ON THE
+ * WRISTBAND" (agreed by the park on 30 October).
+ *
+ * An adult stays when the sale issued an adult band and the child is not left
+ * in the park's care: a dropped-off or nanny-supervised child's band carries
+ * the badge instead, and the guardian's number is on their registration. The
+ * number is the one the family gave at the counter, else the member's own;
+ * nothing prints when there is none.
+ */
+function guardianPhoneFor(snapshot: SalePrintSnapshot, band: SalePrintBand): string | null {
+  if (band.kind !== 'kid' || band.supervisionBadge) return null;
+  if (!snapshot.bands.some((b) => b.kind === 'adult')) return null;
+  const phone = snapshot.customerPhone?.trim();
+  return phone ? formatDisplayPhone(phone) : null;
 }
 
 /** An item voucher: the label and how many of it the sale owes. */

@@ -109,6 +109,51 @@ describe('a missing template means print everything', () => {
   });
 });
 
+describe('SCRUM-762 — the number of the adult staying with the child', () => {
+  // "If an adult stays with the child, the number is printed on the wristband."
+  const kid = {
+    holderName: 'Mali',
+    duration: '2 Hours Play · valid until 12:00',
+    allergy: 'Peanuts',
+    guardianPhone: '+66 81 234 5678',
+    bandCode: 'T1229E98P2DRXHTB6MKV5J2A7K3M1.Q4W8E2R6T0YP',
+    shortCode: 'T1-A7K3M1',
+  };
+
+  it.each(['tspl200', 'tspl400'])('prints on the kids band, on one line, and the band still fits (%s)', (profile) => {
+    const job = renderJob({ kind: 'kids_wristband', data: kid }, { device: PROFILES[profile]!, templates: TEMPLATES });
+    expect(textOf(job)).toContain('Tel +66 81 234 5678');
+    expect(job.overflow).toEqual([]);
+  });
+
+  it('fits the park’s band stock: 25 mm wide, the white window 80 mm long, with the name, time, allergy and QR', () => {
+    const park = {
+      ...PROFILES.tspl200!,
+      media: { widthMm: 25, lengthMm: 246, gapMm: 4, sensing: 'bline' as const, printOffsetMm: 50, printLengthMm: 80 },
+    };
+    const job = renderJob({ kind: 'kids_wristband', data: kid }, { device: park, templates: TEMPLATES });
+    expect(textOf(job)).toContain('Tel +66 81 234 5678');
+    expect(job.overflow).toEqual([]);
+  });
+
+  it('prints whatever the saved template says, because a template written before it has no field for it', () => {
+    const job = renderJob({ kind: 'kids_wristband', data: kid }, { device: tspl400, templates: TEMPLATES });
+    expect(job.template?.id).toBe('tpl-kids-wristband');
+    expect(textOf(job).join('\n')).toContain('+66 81 234 5678');
+  });
+
+  it('never on an adult band', () => {
+    const job = renderJob({ kind: 'adult_wristband', data: kid }, { device: tspl400, templates: TEMPLATES });
+    expect(textOf(job).join('\n')).not.toContain('+66 81 234 5678');
+  });
+
+  it('nothing when no number was given', () => {
+    const { guardianPhone: _none, ...withoutPhone } = kid;
+    const job = renderJob({ kind: 'kids_wristband', data: withoutPhone }, { device: tspl400, templates: TEMPLATES });
+    expect(textOf(job).join('\n')).not.toContain('Tel');
+  });
+});
+
 describe('toggling a field changes the next printout', () => {
   const receiptData = {
     title: 'Receipt',

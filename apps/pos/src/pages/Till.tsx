@@ -1005,8 +1005,10 @@ export default function Till() {
   const handleIdentify = () => identifyPhone(customerPhone);
   // SCRUM-762 — there is no walk-in skip here any more: the number is
   // required, for the child's safety, and a family who is not a member goes on
-  // at the default rate with the number on the sale, exactly as an unknown
-  // number always has (`identifyPhone`).
+  // at the default rate, exactly as an unknown number always has
+  // (`identifyPhone`). The cart carries the number; the platform keeps it on
+  // the sale (`pos.sale.customer_phone`) and prints it on the child's band
+  // when an adult stays.
 
   // SCRUM-32 — children re-confirm modal state (opens after a lookup finds
   // saved children); SCRUM-31 — create-member offer when lookup finds nobody.

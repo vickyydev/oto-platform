@@ -323,6 +323,26 @@ describe('a forced-offline virtual station sells, prints from the box queue, and
     expect(again.sale.receiptNumber).toBe(taken[0]!.receipt);
     expect((await agent.outbox()!.depth()).queued).toBe(depth);
   });
+
+  it('SCRUM-762: the number typed at the counter lands with the sale, and both ends print it on the kids bands', async () => {
+    const cart = { ...familyCart(), customerPhone: '081 234 5678' };
+    const total = await platformTotal(familyCart());
+    await goOffline();
+    const sold = await onBox('sale.finalise', saleBody(cart, total, cash(total)));
+    expect(sold.finalised).toBe(true);
+    await goOnline();
+    const row = await saleRow(sold.sale.id);
+    expect(row!.origin).toBe('box');
+    expect(row!.customerPhone).toBe('+66812345678');
+    const logged = await agent.sales()!.recorded(sold.sale.id);
+    const platform = await salePrintSnapshotOf(ctx.db, row!);
+    for (const b of platform.bands) {
+      const boxBand = logged!.snapshot!.bands.find((x) => x.id === b.id)!;
+      const document = saleBandDocument(platform, b);
+      expect(document).toEqual(saleBandDocument(logged!.snapshot!, boxBand));
+      expect(document.guardianPhone).toBe(b.kind === 'kid' ? '+66 81 234 5678' : undefined);
+    }
+  });
 });
 
 it('syncs an offline Other payment as Other, without cash received or change', async () => {

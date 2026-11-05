@@ -2597,6 +2597,8 @@ export class StationBridge {
         branchName: s(header?.name),
         staffName: body.staffName ?? null,
         memberNickname: shown?.nickname ?? null,
+        // SCRUM-762 — the family's number, else the member's: on a child's band when an adult stays.
+        customerPhone: normalizePhone(cart.customerPhone ?? '') ?? (owner?.member.phone || null),
         lines: lines.map((line) => ({
           id: line.id,
           kind: line.kind,

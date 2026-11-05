@@ -333,6 +333,17 @@ export const sale = pos.table(
      */
     staffTokenJti: uuid('staff_token_jti'),
     memberId: uuid('member_id').references(() => member.id, { onDelete: 'restrict' }),
+    /**
+     * SCRUM-762 — THE NUMBER THE FAMILY GAVE AT THE COUNTER, E.164.
+     *
+     * The customer screen asks for it first, required, because it is needed
+     * for the child's safety; a member is recognised from it, and a family who
+     * is not a member goes on with it on the sale. When an adult stays with the
+     * child it is printed on the child's band (`saleBandDocument` in
+     * `@oto/shared`). Normalised on write; null when none was given or it is
+     * not a number (a sale rung up before the number was asked, a booking).
+     */
+    customerPhone: text('customer_phone'),
     visitId: uuid('visit_id').references(() => visit.id, { onDelete: 'restrict' }),
     bookingId: uuid('booking_id').references(() => booking.id, { onDelete: 'restrict' }),
 
@@ -489,6 +500,11 @@ export const sale = pos.table(
     ),
     check('sale_pricing_mode_check', sql`${t.pricingMode} in ('weekday','weekend')`),
     check('sale_clock_trust_check', sql`${t.clockTrust} in ('trusted','skewed','untrusted')`),
+    /** SCRUM-762 — the family's number is E.164 or nothing (SCRUM-292's rule for every phone column). */
+    check(
+      'sale_customer_phone_check',
+      sql`${t.customerPhone} is null or ${t.customerPhone} ~ '^\\+[1-9][0-9]{6,14}$'`,
+    ),
     /**
      * S2-20 K1 — somebody rang it up: a person, or a paired device. The rule
      * the NOT NULL on `created_by_account_id` used to hold, widened by the one

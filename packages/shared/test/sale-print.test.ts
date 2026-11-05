@@ -210,6 +210,29 @@ describe('the bands, the prep ticket and the voucher', () => {
     expect(adult.allergy).toBeUndefined();
   });
 
+  it('SCRUM-762: the kids band carries the number of the adult who stays, and only then', () => {
+    // "If an adult stays with the child, the number is printed on the wristband."
+    const s = snapshot({ customerPhone: '+66812345678' });
+    expect(saleBandDocument(s, s.bands[0]!).guardianPhone).toBe('+66 81 234 5678');
+    // The adult's own band does not carry it.
+    expect(saleBandDocument(s, s.bands[1]!).guardianPhone).toBeUndefined();
+    // A dropped-off or nanny child: the adult has left, and the badge is on the band instead.
+    const dropOff = { ...s, bands: [{ ...s.bands[0]!, supervisionBadge: 'DROP-OFF' as const }, s.bands[1]!] };
+    expect(saleBandDocument(dropOff, dropOff.bands[0]!).guardianPhone).toBeUndefined();
+    // No adult on the sale: nobody stays.
+    const alone = { ...s, bands: [s.bands[0]!] };
+    expect(saleBandDocument(alone, alone.bands[0]!).guardianPhone).toBeUndefined();
+    // No number given, or a snapshot written before the number was kept: nothing printed.
+    expect(saleBandDocument(snapshot(), snapshot().bands[0]!).guardianPhone).toBeUndefined();
+    expect(saleBandDocument(snapshot({ customerPhone: null }), snapshot().bands[0]!).guardianPhone).toBeUndefined();
+    // A visitor's number from abroad reads as it was given.
+    const abroad = snapshot({ customerPhone: '+447700900123' });
+    expect(saleBandDocument(abroad, abroad.bands[0]!).guardianPhone).toBe('+44 7700 900123');
+    // The document the box and the platform both print from carries it.
+    expect(salePrintDocumentOf(s, { kind: 'kids_wristband', subjectType: 'band', subjectId: s.bands[0]!.id }))
+      .toMatchObject({ kind: 'kids_wristband', data: { guardianPhone: '+66 81 234 5678' } });
+  });
+
   it('asks for the receipt, the kids bands, the adult bands, the vouchers, then each prep station — in that order', () => {
     const s = snapshot({
       lines: [
