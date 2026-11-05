@@ -1,0 +1,23 @@
+// SCRUM-762 1b: display unpaired, customer half hidden: the till offers to show the customer screen; no Skip.
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const page = S.pages.T.page;
+  const disp = (await S.adminApi('GET', `/stations/${S.st.fixture.till.id}/displays`)).body;
+  await page.getByRole('button', { name: 'Hide customer display', exact: true }).click();
+  await sleep(1500);
+  const show = page.getByRole('button', { name: 'Show customer screen to enter the phone', exact: true });
+  await show.waitFor({ timeout: 15000 });
+  const skip = await page.getByRole('button', { name: /Skip/ }).count();
+  const required = one(await page.getByTestId('identify-phone-required').innerText());
+  await S.shot('T', 's762-01b-till-no-display-offers-customer-screen-no-skip');
+  S.st.steps.b1 = { at: new Date().toISOString(), displaysPaired: (disp.displays ?? []).length, skip, required, showButton: true };
+  // Press it: the customer half opens for the number.
+  await show.click();
+  await sleep(1500);
+  const keypadVisible = await page.getByRole('button', { name: '7', exact: true }).last().isVisible();
+  const headingVisible = await page.getByText("What's your phone number?", { exact: true }).isVisible();
+  S.st.steps.b1.afterPress = { keypadVisible, headingVisible, showButtonGone: (await show.count()) === 0 };
+  await S.shot('T', 's762-01c-till-customer-half-open-phone-first');
+  S.save();
+  return S.st.steps.b1;
+}

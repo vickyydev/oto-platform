@@ -1,0 +1,18 @@
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const t = S.pages.T.page;
+  const d = S.pages.D.page;
+  const before = await S.lib.salesOf(S, S.st.fixture.till.id);
+  await t.getByRole('button', { name: 'Cancel', exact: true }).last().click();
+  await sleep(1500);
+  const dlg = t.getByRole('alertdialog').or(t.getByRole('dialog'));
+  let dialog = null;
+  if (await dlg.first().isVisible().catch(() => false)) {
+    dialog = one(await dlg.first().innerText()).slice(0, 400);
+    const yes = dlg.first().getByRole('button', { name: /Cancel sale|Yes|Discard|Clear|Confirm/ }).first();
+    if (await yes.count()) await yes.click();
+  }
+  await sleep(3000);
+  const after = await S.lib.salesOf(S, S.st.fixture.till.id);
+  return { dialog, salesBefore: before.map((s) => s.status), salesAfter: after.map((s) => s.status), till: one(await t.locator('body').innerText()).slice(500, 900), display: one(await d.locator('body').innerText()).slice(0, 300) };
+}

@@ -1,0 +1,27 @@
+// SCRUM-762 1d: an unknown ZZ TEST number goes on as a walk-in at the default rate; kids ticket with an adult; to the payment screen.
+export default async function (S) {
+  const { sleep, one, keypad } = S.lib;
+  const t = S.pages.T.page;
+  const d = S.pages.D.page;
+  await keypad(d, '0897620002');
+  await d.getByRole('button', { name: 'Continue', exact: true }).click();
+  const offer = t.getByRole('button', { name: 'Continue as walk-in', exact: true });
+  await offer.waitFor({ timeout: 30000 });
+  await sleep(1000);
+  const offerText = one(await t.locator('body').innerText()).slice(500, 1500);
+  await S.shot('T', 's762-03a-till-unknown-number-offer-walk-in');
+  await offer.click();
+  await sleep(2000);
+  const tierScreen = one(await t.locator('body').innerText()).slice(500, 1300);
+  await t.getByRole('heading', { name: 'Tourist', exact: true }).click();
+  await sleep(1500);
+  await t.getByRole('heading', { name: '1 Hour Play', exact: true }).click();
+  await sleep(1500);
+  const kids = await S.lib.stepTo(t, 'Kids', 1);
+  const adults = await S.lib.stepTo(t, 'Adults', 1);
+  await sleep(800);
+  S.st.steps.d1 = { at: new Date().toISOString(), offerText, tierScreen, kids, adults };
+  S.save();
+  await S.look('T');
+  return S.st.steps.d1;
+}

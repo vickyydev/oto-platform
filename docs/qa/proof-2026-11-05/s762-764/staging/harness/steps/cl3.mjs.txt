@@ -1,0 +1,28 @@
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const page = S.pages.T.page;
+  const card = page.locator('[class*="bg-card"]').filter({ hasText: 'ZZ TEST 764 Mai' }).last();
+  await card.getByRole('button', { name: 'Check Out', exact: true }).click();
+  await sleep(1500);
+  let d = page.getByRole('dialog').first();
+  const first = one(await d.innerText()).slice(0, 500);
+  const who = d.getByRole('button', { name: /Parent \/ dropper-off/ }).first();
+  if (await who.count()) { await who.click(); await sleep(1500); }
+  d = page.getByRole('dialog').first();
+  await d.getByRole('button', { name: 'Start camera', exact: true }).click();
+  const take = d.getByRole('button', { name: /Take photo/ });
+  await take.waitFor({ timeout: 15000 });
+  await sleep(1000);
+  await take.click();
+  await sleep(2000);
+  const btns = (await d.getByRole('button').allInnerTexts()).map(one);
+  const mark = S.pages.T.net.length;
+  const confirm = d.getByRole('button', { name: /Check out|Confirm|Release|Hand over/i }).last();
+  const label = await confirm.innerText().catch(() => null);
+  await confirm.click();
+  await sleep(3500);
+  const net = S.pages.T.net.slice(mark).map((n) => ({ method: n.method, path: n.path, status: n.status, code: n.response?.error?.code ?? null }));
+  S.st.cleanup.actions.push({ what: 'check out ZZ TEST 764 Mai with pickup photo', label, net });
+  S.save();
+  return { first, btns, label, net };
+}

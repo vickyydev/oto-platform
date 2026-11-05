@@ -1,0 +1,15 @@
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const d = S.pages.D.page;
+  const form = d.getByTestId('display-consent');
+  await form.getByPlaceholder('Full name').fill('ZZ TEST 764 Mai');
+  await sleep(500);
+  // Close an on-screen keyboard if it opened.
+  const kbDone = d.getByRole('button', { name: 'Done', exact: true });
+  if (await kbDone.isVisible().catch(() => false)) { await kbDone.click(); await sleep(400); }
+  await form.getByRole('button', { name: /Tap to set age/ }).click();
+  await sleep(800);
+  const picker = d.getByRole('dialog');
+  await S.look('D', 'lookD');
+  return { dialog: one(await picker.innerText()).slice(0, 800), btns: (await picker.getByRole('button').allInnerTexts()).map(one).slice(0, 60) };
+}

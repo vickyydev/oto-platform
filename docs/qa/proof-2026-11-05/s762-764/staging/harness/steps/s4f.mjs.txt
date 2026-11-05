@@ -1,0 +1,16 @@
+// Step 4: a saved-profile child on the display's care step: "Saved on your profile", no care notes.
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const d = S.pages.D.page;
+  const form = d.getByTestId('display-consent');
+  const nameVal = await form.getByPlaceholder('Full name').inputValue().catch(() => null);
+  await form.getByRole('button', { name: 'Continue', exact: true }).click();
+  await form.getByTestId('consent-care').waitFor({ timeout: 30000 });
+  await sleep(1500);
+  const care = one(await form.getByTestId('consent-care').innerText());
+  const body = one(await d.locator('body').innerText());
+  const r = { at: new Date().toISOString(), childNameOnDisplay: nameVal, care, savedLine: body.includes('Saved on your profile — tell the team if anything has changed.'), careNotesOnDisplay: /tree nuts|no dairy|ZZ TEST saved note/.test(body), allergyFieldsShown: await form.getByPlaceholder(/^e.g. peanut allergy/).count() };
+  await S.shot('D', 's764-09-display-saved-child-care-step-no-notes');
+  S.st.steps.saved4 = r; S.save();
+  return r;
+}

@@ -1,0 +1,28 @@
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const t = S.pages.T.page;
+  const d = S.pages.D.page;
+  const f = S.st.fixture;
+  const verify = t.getByRole('dialog');
+  await verify.getByRole('button', { name: /^Verify Thai/ }).click();
+  await sleep(2000);
+  await t.getByRole('heading', { name: '2 Hours Play', exact: true }).click();
+  await sleep(1500);
+  const kids = await S.lib.stepTo(t, 'Kids', 1);
+  const adults = await S.lib.stepTo(t, 'Adults', 1);
+  await t.getByRole('button', { name: 'Continue', exact: true }).click();
+  await sleep(2000);
+  const before = (await S.lib.salesOf(S, f.till.id)).map((s) => s.id);
+  S.st.steps.m2 = { at: new Date().toISOString(), kids, adults, salesBefore: before };
+  S.save();
+  const order = one(await t.locator('body').innerText()).slice(600, 1600);
+  await t.getByRole('button', { name: /^Pay ฿/ }).click();
+  const kept = d.getByTestId('input-kept-phone');
+  await kept.waitFor({ timeout: 30000 });
+  await sleep(1500);
+  const keptText = one(await kept.innerText());
+  await S.shot('D', 's779-01-display-details-number-kept-name-asked');
+  S.st.steps.m2.keptOnDisplay = keptText.replace(/\d(?=\d{4})/g, '•');
+  S.save();
+  return { order, keptText: S.st.steps.m2.keptOnDisplay, display: one(await d.locator('body').innerText()).slice(0, 800) };
+}

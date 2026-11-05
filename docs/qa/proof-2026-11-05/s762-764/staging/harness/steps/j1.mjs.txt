@@ -1,0 +1,25 @@
+// SCRUM-764 3j: the display language switched to Thai, then Russian; the form shows in that language.
+const PILL = ['Change language', 'Сменить язык', 'เปลี่ยนภาษา', '更改语言', 'Changer de langue'];
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const d = S.pages.D.page;
+  const pill = d.locator(PILL.map((l) => `button[aria-label="${l}"]`).join(', ')).first();
+  const out = {};
+  await pill.click();
+  await sleep(600);
+  out.menu = (await d.getByRole('button').allInnerTexts()).map(one).filter(Boolean).slice(0, 20);
+  await d.getByRole('button', { name: 'ไทย', exact: true }).click();
+  await sleep(1500);
+  const form = d.getByTestId('display-consent');
+  out.th = one(await form.innerText()).slice(0, 500);
+  await S.shot('D', 's764-10b-display-nanny-form-in-thai');
+  await pill.click();
+  await sleep(600);
+  await d.getByRole('button', { name: 'Русский', exact: true }).click();
+  await sleep(1500);
+  out.ru = one(await form.innerText()).slice(0, 500);
+  await S.shot('D', 's764-10c-display-nanny-form-in-russian');
+  S.st.steps.j1 = { at: new Date().toISOString(), ...out };
+  S.save();
+  return S.st.steps.j1;
+}

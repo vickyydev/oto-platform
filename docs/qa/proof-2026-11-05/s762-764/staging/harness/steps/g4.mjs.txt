@@ -1,0 +1,26 @@
+// SCRUM-764 3h: Done on the display, then Continue on the till registers the child from the family's form.
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const t = S.pages.T.page;
+  const d = S.pages.D.page;
+  const form = d.getByTestId('display-consent');
+  await form.getByRole('button', { name: 'Continue', exact: true }).click();
+  await form.getByTestId('consent-kept-phone').waitFor({ timeout: 30000 });
+  const done = form.getByRole('button', { name: 'Done', exact: true });
+  await S.expect(done).toBeEnabled({ timeout: 30000 });
+  await done.click();
+  await S.expect(form.getByText('Thank you. The team will complete the staff checks.', { exact: true })).toBeVisible({ timeout: 30000 });
+  await sleep(1500);
+  await S.shot('D', 's764-09a-display-form-done');
+  const tillMsg = one(await t.locator('body').innerText()).slice(600, 900);
+  const mark = S.pages.T.net.length;
+  await t.getByRole('button', { name: 'Continue to payment', exact: true }).click();
+  await S.expect(t.getByText('ZZ TEST peanuts', { exact: true }).first()).toBeVisible({ timeout: 45000 });
+  await sleep(2500);
+  const net = S.pages.T.net.slice(mark).map((n) => ({ method: n.method, path: n.path, status: n.status, regId: n.response?.registration?.id ?? n.response?.id ?? null }));
+  const body = one(await t.locator('body').innerText());
+  const r = { at: new Date().toISOString(), tillMsg, net, after: body.slice(500, 2500) };
+  await S.shot('T', 's764-09b-till-registered-from-family-form');
+  S.st.steps.g4 = r; S.save();
+  return r;
+}

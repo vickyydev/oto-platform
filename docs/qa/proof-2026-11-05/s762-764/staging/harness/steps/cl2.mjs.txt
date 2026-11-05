@@ -1,0 +1,12 @@
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const page = S.pages.T.page;
+  const inPark = page.getByRole('tab', { name: /In Park/ }).or(page.getByRole('button', { name: /^In Park/ })).first();
+  await inPark.click();
+  await sleep(2500);
+  const card = page.locator('[class*="bg-card"]').filter({ hasText: 'ZZ TEST 764 Mai' }).last();
+  await card.waitFor({ timeout: 20000 });
+  const btns = (await card.getByRole('button').allInnerTexts()).map(one);
+  await S.look('T');
+  return { btns, card: one(await card.innerText()).slice(0, 400) };
+}

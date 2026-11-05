@@ -1,0 +1,17 @@
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const t = S.pages.T.page;
+  await S.lib.unlockIfLocked(S, t, 'RECEPTION');
+  const next = t.getByRole('button', { name: 'Start New Sale' });
+  if (await next.isVisible().catch(() => false)) await next.click();
+  await sleep(1500);
+  await t.getByRole('button', { name: 'History', exact: true }).click();
+  await sleep(4000);
+  const row = t.getByText('Z762-000001').first();
+  await row.waitFor({ timeout: 30000 });
+  const list = one(await t.locator('body').innerText()).slice(0, 2000);
+  await row.click();
+  await sleep(3000);
+  await S.look('T');
+  return { list, detail: one(await t.locator('body').innerText()).slice(0, 3000) };
+}

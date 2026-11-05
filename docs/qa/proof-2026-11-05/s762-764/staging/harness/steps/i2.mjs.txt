@@ -1,0 +1,32 @@
+// SCRUM-764 3i/3j: the nanny form carried on in Russian to its agreements; the till's gate mirrors the nanny child.
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const d = S.pages.D.page;
+  const t = S.pages.T.page;
+  const form = d.getByTestId('display-consent');
+  await form.getByRole('button', { name: 'Продолжить', exact: true }).click();
+  await form.getByTestId('consent-care').waitFor({ timeout: 30000 });
+  await sleep(1200);
+  const care = one(await form.getByTestId('consent-care').innerText());
+  await form.getByRole('button', { name: 'Продолжить', exact: true }).click();
+  await form.getByTestId('consent-kept-phone').waitFor({ timeout: 30000 });
+  await sleep(1200);
+  await form.locator('#public-consent-guardian').fill('ZZ TEST 764 Khun Dao');
+  const kb = d.getByRole('button', { name: /^(Done|Готово)$/ });
+  if (await kb.isVisible().catch(() => false)) { await kb.click(); await sleep(300); }
+  for (const b of await form.getByRole('checkbox').all()) await b.check();
+  await sleep(800);
+  await form.getByTestId('consent-kept-phone').scrollIntoViewIfNeeded();
+  await S.lib.fixScroll(d);
+  await S.shot('D', 's764-10d-display-nanny-agreements-in-russian-number-kept');
+  const agreements = one(await form.innerText()).slice(0, 900);
+  await form.getByRole('button', { name: 'Продолжить', exact: true }).click();
+  await S.expect(t.getByTestId('consent-ticks-status')).toContainText('Supervision and photo consent · ticked', { timeout: 30000 });
+  await sleep(2000);
+  const gate = one(await t.locator('body').innerText());
+  const i = gate.indexOf('The family');
+  await S.shot('T', 's764-10e-till-gate-nanny-required-family-ticks');
+  S.st.steps.i2 = { at: new Date().toISOString(), care, agreements, gate: gate.slice(i, i + 1100) };
+  S.save();
+  return S.st.steps.i2;
+}

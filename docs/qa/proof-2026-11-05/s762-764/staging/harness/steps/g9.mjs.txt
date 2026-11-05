@@ -1,0 +1,1 @@
+export default async function (S) { await S.shot('T', 's764-09c-board-child-registered-from-family-form'); return 'ok'; }

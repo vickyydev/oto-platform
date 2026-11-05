@@ -1,0 +1,9 @@
+export default async function (S) {
+  const t = S.pages.T.page;
+  const masks = [t.getByText(/^Z762-(?![0-9]{6}$)[A-Z0-9]{6}$/), ...S.lib.codeMasks(t)];
+  const n = await t.getByText(/^Z762-(?![0-9]{6}$)[A-Z0-9]{6}$/).count();
+  await S.shot('T', 's762-04c-history-sale-walk-in-paid', { mask: masks });
+  S.st.steps.history1d = { at: new Date().toISOString(), receipt: 'Z762-000001', shows: 'Walk-in, Tourist, 1 Hour Play kids 1 + adults 1, cash paid; no phone number shown in History', bandCodesMasked: n };
+  S.save();
+  return S.st.steps.history1d;
+}

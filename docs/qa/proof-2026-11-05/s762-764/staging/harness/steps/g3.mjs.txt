@@ -1,0 +1,17 @@
+// SCRUM-764 3g: the family presses "Ask the team": the form stays on the display; the till says the family asked for help.
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const t = S.pages.T.page;
+  const d = S.pages.D.page;
+  const pf = t.getByRole('dialog', { name: 'Private child details', exact: true });
+  if (await pf.isVisible().catch(() => false)) { await pf.getByRole('button', { name: 'Close', exact: true }).last().click(); await sleep(800); }
+  const form = d.getByTestId('display-consent');
+  await form.getByRole('button', { name: 'Ask the team', exact: true }).click();
+  await S.expect(t.getByText('The family asked for help: fill the form here with them. The agreement ticks stay theirs, on the display.', { exact: true })).toBeVisible({ timeout: 30000 });
+  await sleep(1500);
+  const r = { at: new Date().toISOString(), displayStillHasForm: await form.isVisible(), teamComing: await d.getByText('The team is coming to help you.', { exact: true }).isVisible(), tillHeader: true, ticks: one(await t.getByTestId('consent-ticks-status').innerText()) };
+  await S.shot('D', 's764-08a-display-asked-the-team-form-stays');
+  await S.shot('T', 's764-08b-till-header-family-asked-for-help');
+  S.st.steps.g3 = r; S.save();
+  return r;
+}

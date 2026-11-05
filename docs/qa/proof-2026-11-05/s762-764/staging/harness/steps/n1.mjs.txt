@@ -1,0 +1,9 @@
+export default async function (S) {
+  const { consoleSignIn, sleep, text } = S.lib;
+  const page = await consoleSignIn(S);
+  await page.goto(S.CONSOLE + '/watch/activity', { waitUntil: 'domcontentloaded' });
+  await sleep(5000);
+  const n = await page.getByText('sale.member_attach').count();
+  await S.look('CON');
+  return { n, text: (await text(page, 4000)).slice(0, 2500) };
+}

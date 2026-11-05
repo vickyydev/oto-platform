@@ -1,0 +1,30 @@
+// SCRUM-764 3a: same walk-in family as 1d, a child with no adult on the sale; the display opens the form on the children step.
+export default async function (S) {
+  const { sleep, one, keypad } = S.lib;
+  const t = S.pages.T.page;
+  const d = S.pages.D.page;
+  await S.lib.unlockIfLocked(S, t, 'RECEPTION');
+  await d.getByTestId('identify-safety').waitFor({ timeout: 30000 });
+  await keypad(d, '0897620002');
+  await d.getByRole('button', { name: 'Continue', exact: true }).click();
+  const offer = t.getByRole('button', { name: 'Continue as walk-in', exact: true });
+  await offer.waitFor({ timeout: 30000 });
+  await offer.click();
+  await sleep(1500);
+  await t.getByRole('heading', { name: 'Tourist', exact: true }).click();
+  await sleep(1500);
+  await t.getByRole('heading', { name: '1 Hour Play', exact: true }).click();
+  await sleep(1500);
+  await S.lib.stepTo(t, 'Kids', 1);
+  await S.lib.stepTo(t, 'Adults', 0);
+  await sleep(800);
+  await t.getByRole('button', { name: 'Continue', exact: true }).click();
+  await t.getByRole('heading', { name: 'Children playing alone', exact: true }).waitFor({ timeout: 30000 });
+  const form = d.getByTestId('display-consent');
+  await form.waitFor({ timeout: 30000 });
+  await sleep(2000);
+  const r = { at: new Date().toISOString(), children: await form.getByTestId('consent-child').count(), nameValue: await form.getByPlaceholder('Full name').inputValue().catch(() => null), steps: one(await form.getByTestId('consent-steps').innerText()), display: one(await d.locator('body').innerText()).slice(0, 700) };
+  await S.shot('D', 's764-01-display-form-opens-on-children-step');
+  S.st.steps.f1 = r; S.save();
+  return r;
+}

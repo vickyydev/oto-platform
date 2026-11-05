@@ -1,0 +1,14 @@
+import { bandShot } from './k3.mjs';
+export default async function (S) {
+  const { sleep } = S.lib;
+  const page = S.pages.CON.page;
+  const scope = (await page.getByRole('dialog').count()) ? page.getByRole('dialog').first() : page;
+  await scope.getByRole('button', { name: 'Band Printer (adults)', exact: true }).click();
+  await sleep(3000);
+  const img = scope.locator('img[alt^="Printout"]').first();
+  await img.waitFor({ timeout: 20000 });
+  const alt = await img.getAttribute('alt');
+  S.which = 'Band Printer (adults)';
+  const r = await bandShot(S, 's762-04b-adult-band-printed-no-number', 0.105);
+  return { alt, ...r };
+}

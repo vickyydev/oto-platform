@@ -1,0 +1,20 @@
+export default async function (S) {
+  const { sleep, text } = S.lib;
+  const page = S.pages.CON.page;
+  const row = page.getByText('sale.member_attach').first();
+  await row.scrollIntoViewIfNeeded();
+  await sleep(800);
+  const rowText = await row.evaluate((el) => { let p = el; for (let k = 0; k < 4 && p; k += 1) p = p.parentElement; return (p?.textContent ?? '').slice(0, 400); });
+  await S.shot('CON', 's779-06a-console-activity-sale-member-attach-row');
+  await row.click();
+  await sleep(2500);
+  const t = await text(page, 15000);
+  const i = t.indexOf('member_attach');
+  const opened = t.slice(Math.max(0, i - 300), i + 2500);
+  const saleIdShown = opened.includes(S.st.fixture.sale779.id) || opened.includes(S.st.fixture.sale779.id.slice(0, 8));
+  const memberShown = opened.includes(S.st.fixture.member779.id) || opened.includes(S.st.fixture.member779.id.slice(0, 8));
+  await S.shot('CON', 's779-06b-console-activity-row-opened-sale-and-member');
+  S.st.steps.n2 = { at: new Date().toISOString(), rowText, saleIdShown, memberShown, opened };
+  S.save();
+  return S.st.steps.n2;
+}

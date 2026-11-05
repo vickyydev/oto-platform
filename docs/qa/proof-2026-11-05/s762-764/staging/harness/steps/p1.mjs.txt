@@ -1,0 +1,19 @@
+// Pair a separate ZZ TEST customer display (its own browser context) to the ZZ TEST till.
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const f = S.st.fixture;
+  const { page: d } = await S.newPage('D', { width: 1024, height: 768 });
+  await d.goto(S.POS + '/display', { waitUntil: 'domcontentloaded' });
+  await d.getByRole('heading', { name: 'Set up this display' }).waitFor({ timeout: 60000 });
+  const code = (await d.getByTestId('display-pairing-code').textContent())?.trim();
+  if (!/^\d{6}$/.test(code ?? '')) throw new Error('no pairing code');
+  const claim = await S.adminApi('POST', `/stations/${f.till.id}/displays/claim`, { pairingCode: code, name: 'ZZ TEST SCRUM-762 display' });
+  if (claim.status !== 200 && claim.status !== 201) throw new Error('claim ' + claim.status + ' ' + JSON.stringify(claim.body).slice(0, 300));
+  f.display = { credentialId: claim.body.device?.id ?? null, name: claim.body.device?.name ?? 'ZZ TEST SCRUM-762 display' };
+  S.st.created.push({ kind: 'display-credential', id: f.display.credentialId, name: f.display.name, at: new Date().toISOString() });
+  S.save();
+  await d.getByTestId('display-station').waitFor({ timeout: 45000 }).catch(() => {});
+  await sleep(4000);
+  await S.look('D', 'lookD');
+  return { claim: claim.status, keys: Object.keys(claim.body ?? {}), display: f.display, text: one(await d.locator('body').innerText()).slice(0, 800) };
+}

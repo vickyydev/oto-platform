@@ -1,0 +1,16 @@
+// SCRUM-779 2d: the till reloaded: no "left unpaid" notice.
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const t = S.pages.T.page;
+  await t.getByRole('button', { name: 'Tickets', exact: true }).click().catch(() => {});
+  await sleep(1000);
+  await t.reload({ waitUntil: 'domcontentloaded' });
+  await sleep(4000);
+  await S.lib.unlockIfLocked(S, t, 'RECEPTION');
+  await t.getByText('Membership Check', { exact: true }).first().waitFor({ timeout: 45000 });
+  await sleep(4000);
+  const r = { at: new Date().toISOString(), leftUnpaidText: await t.getByText(/left unpaid/i).count(), leftBehindNotices: await t.getByTestId('left-behind-sale').count(), unpaidText: await t.getByText(/recorded, unpaid/i).count(), tendering: (await S.lib.salesOf(S, S.st.fixture.till.id, '&status=tendering')).length };
+  await S.shot('T', 's779-05-till-reloaded-nothing-left-unpaid');
+  S.st.steps.m6 = r; S.save();
+  return r;
+}

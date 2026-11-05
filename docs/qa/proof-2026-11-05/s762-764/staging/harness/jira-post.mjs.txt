@@ -1,0 +1,15 @@
+import { commentWithImages } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/jira.mjs';
+import { readFileSync, writeFileSync } from 'node:fs';
+const plan = {
+  'SCRUM-762': ['c762.txt', ['s762-01a-display-phone-required-no-skip.png', 's762-01b-till-no-display-offers-customer-screen-no-skip.png', 's762-02a-till-recognises-member-and-children-from-local-number.png', 's762-03a-till-unknown-number-offer-walk-in.png', 's762-04a-kids-band-printed-tel-number.png', 's762-04b-adult-band-printed-no-number.png', 's779-01-display-details-number-kept-name-asked.png', 's764-04a-display-agreements-number-from-start-not-asked.png']],
+  'SCRUM-779': ['c779.txt', ['s779-02-payment-screen-thai-rate-saved-to-new-member.png', 's779-03-paid-cash-one-sale.png', 's779-04a-history-one-sale-under-new-member.png', 's779-04b-history-sale-thai-rate-member-paid.png', 's779-05-till-reloaded-nothing-left-unpaid.png', 's779-06a-console-activity-sale-member-attach-row.png']],
+  'SCRUM-764': ['c764.txt', ['s764-01-display-form-opens-on-children-step.png', 's764-02b-till-gate-mirrors-name-age-drop-off.png', 's764-03-display-care-step-family-types-notes.png', 's764-05-till-card-agreements-ticked-by-family.png', 's764-06-till-staff-copy-family-notes-ticks-read-only.png', 's764-07-display-shows-detail-typed-by-staff.png', 's764-08b-till-header-family-asked-for-help.png', 's764-09-display-saved-child-care-step-no-notes.png', 's764-09c-board-child-registered-from-family-form.png', 's764-10a-display-nanny-requirement-and-hourly-rate-en.png', 's764-10c-display-nanny-form-in-russian.png']],
+};
+const out = {};
+for (const [key, [file, imgs]] of Object.entries(plan)) {
+  const text = readFileSync(file, 'utf8').trim();
+  const r = await commentWithImages(key, text, imgs);
+  out[key] = { status: r.status, id: r.body?.id ?? r.id ?? null, images: imgs };
+  console.log(key, JSON.stringify(out[key]).slice(0, 200));
+}
+writeFileSync('posted.json', JSON.stringify(out, null, 2));

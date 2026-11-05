@@ -1,0 +1,25 @@
+// SCRUM-764 3h read-back: paid in cash, left as booked; the Check-in board shows the child as the family filled the form.
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const t = S.pages.T.page;
+  const s = (await S.lib.readSale(S, S.st.fixture.sale764.id)).sale;
+  S.st.fixture.sale764.receipt = s.receiptNumber; S.st.fixture.sale764.status = s.status;
+  await t.getByRole('button', { name: 'Leave as booked', exact: true }).click();
+  await sleep(2500);
+  const left = one(await t.locator('body').innerText()).slice(400, 1100);
+  const next = t.getByRole('button', { name: 'Start New Sale' });
+  if (await next.isVisible().catch(() => false)) await next.click();
+  await sleep(1500);
+  await t.getByRole('button', { name: 'Check-in', exact: true }).click();
+  await sleep(2500);
+  await t.getByPlaceholder('Search child, parent or phone…').fill('ZZ TEST 764');
+  await sleep(3000);
+  const card = t.locator('[class*="bg-card"]').filter({ hasText: 'ZZ TEST 764 Mai' }).last();
+  await card.waitFor({ timeout: 20000 });
+  const cardText = one(await card.innerText()).slice(0, 600);
+  await card.scrollIntoViewIfNeeded();
+  await S.shot('T', 's764-09c-board-child-registered-from-family-form', { mask: [t.getByText(/\+66\d{9}/)] });
+  S.st.steps.g8 = { at: new Date().toISOString(), receipt: s.receiptNumber, status: s.status, left, cardText: cardText.replace(/\+66\d{5}(\d{4})/g, '+66•••••$1') };
+  S.save();
+  return S.st.steps.g8;
+}

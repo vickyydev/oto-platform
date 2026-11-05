@@ -1,0 +1,12 @@
+export default async function (S) {
+  const { sleep } = S.lib;
+  const t = S.pages.T.page;
+  const pf = t.getByRole('dialog', { name: 'Private child details', exact: true });
+  const a = pf.getByPlaceholder(/^e.g. peanut allergy/);
+  await a.evaluate((el) => el.scrollIntoView({ block: 'start' }));
+  await sleep(300);
+  await pf.locator('label').filter({ hasText: /Allergies/ }).first().evaluate((el) => el.scrollIntoView({ block: 'start' })).catch(() => {});
+  await sleep(600);
+  await S.shot('T', 's764-06b-till-staff-copy-family-typed-allergy-and-diet');
+  return 'ok';
+}

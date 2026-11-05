@@ -1,0 +1,21 @@
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const t = S.pages.T.page;
+  await S.lib.unlockIfLocked(S, t, 'RECEPTION');
+  const next = t.getByRole('button', { name: 'Start New Sale' });
+  if (await next.isVisible().catch(() => false)) await next.click();
+  await sleep(1500);
+  await t.getByRole('button', { name: 'History', exact: true }).click();
+  await sleep(4000);
+  await t.getByText('Z762-000002', { exact: false }).first().waitFor({ timeout: 30000 });
+  const list = one(await t.locator('body').innerText());
+  const rows = list.slice(list.indexOf('sales recorded'), list.indexOf('sales recorded') + 700);
+  await S.shot('T', 's779-04a-history-one-sale-under-new-member');
+  await t.getByText('Z762-000002', { exact: false }).first().click();
+  await sleep(3000);
+  const detail = one(await t.locator('body').innerText()).slice(200, 1200);
+  await S.shot('T', 's779-04b-history-sale-thai-rate-member-paid', { mask: [t.getByText(/^Z762-(?![0-9]{6}$)[A-Z0-9]{6}$/), ...S.lib.codeMasks(t)] });
+  S.st.steps.m5 = { at: new Date().toISOString(), rows, detail };
+  S.save();
+  return S.st.steps.m5;
+}

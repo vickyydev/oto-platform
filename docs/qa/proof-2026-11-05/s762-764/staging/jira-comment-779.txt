@@ -1,0 +1,14 @@
+Checked on the staging site on 5 November, 20:55 to 20:58 Bangkok, on the live version 9dc7c28, with test records named ZZ TEST and cash only.
+
+What was wrong: a walk-in who claimed a member rate (for example the Thai rate after staff checked a document) and typed their name on the customer screen after Pay ended up with two sales, and the first one stayed unpaid.
+
+What a person sees now at the counter: one sale. On staging a walk-in gave a new number at the start, staff chose Thai with a driving licence, added 2 Hours Play and pressed Pay, and the family typed the nickname "ZZ TEST 779 Khun Nok" on the customer screen. The payment screen said "Thai rate saved to ZZ TEST 779 Khun Nok". Paid in cash as receipt Z762-000002, ฿870. History holds exactly that one sale for the order, under the new member, at the Thai rate, paid, and nothing unpaid. After reloading the till there is no "left unpaid" notice. The Console's Activity shows the order once: sale created, member created, Thai rate verified, member attached to the sale, sale finalised.
+
+How to retest on staging:
+# On a till with its customer screen, type a new test number on the customer screen and press Continue as walk-in on the till.
+# Choose Thai, pick Driving licence and press Verify Thai.
+# Add 2 Hours Play, press Continue, then Pay.
+# On the customer screen type a nickname and press Done. The payment screen says the Thai rate was saved to that name.
+# Pay cash. History shows one sale for the order under that name, paid. Reload the till: no "left unpaid" notice.
+
+The counter box and the booth need the next box release before the display forms and the band number work when the box runs the till; until then the till falls back to staff ticking.

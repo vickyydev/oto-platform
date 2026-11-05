@@ -1,0 +1,2 @@
+import { bandShot } from './k3.mjs';
+export default async function (S) { S.which = 'Band Printer (adults)'; return bandShot(S, 's762-04b-adult-band-printed-no-number', 0.105); }

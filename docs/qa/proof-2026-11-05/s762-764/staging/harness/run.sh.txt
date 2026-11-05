@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -o pipefail
+curl -s --max-time 600 "http://127.0.0.1:47762/$1"
+echo

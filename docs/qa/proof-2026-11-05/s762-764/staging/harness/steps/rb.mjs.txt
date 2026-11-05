@@ -1,0 +1,30 @@
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const f = S.st.fixture;
+  const C = S.st.cleanup;
+  const stations = (await S.adminApi('GET', `/branches/${f.branchId}/stations?includeArchived=true`)).body.stations;
+  const mine = stations.find((s) => s.id === f.till.id);
+  const rt1 = stations.find((s) => s.name === 'Reception Till 1');
+  const lookups = {};
+  for (const [k, p] of Object.entries(f.phones)) { const r = await S.adminApi('GET', `/members/lookup?phone=${encodeURIComponent(p)}`); lookups[k] = r.body?.member ? 'FOUND ' + r.body.member.nickname : 'none'; }
+  const members = {};
+  for (const m of [f.member, f.member779, f.member764].filter(Boolean)) { const r = (await S.adminApi('GET', `/members/${m.id}`)); members[m.nickname] = { status: r.status, archived: !!(r.body?.member?.archivedAt ?? (r.status === 404)) }; }
+  const regs = (await S.adminApi('GET', `/checkin/registrations?branchId=${f.branchId}`)).body.registrations ?? [];
+  const mineRegs = regs.filter((r) => /ZZ TEST 76[24]/.test(r.guardianName ?? '') || (r.children ?? []).some((c) => /ZZ TEST 76[24]/.test(c.childName))).map((r) => ({ guardian: r.guardianName, children: r.children.map((c) => ({ name: c.childName, status: c.status })) }));
+  const sales = (await S.lib.salesOf(S, f.till.id)).map((s) => ({ receipt: s.receiptNumber, status: s.status, gross: s.totals?.grossSatang }));
+  // the display device's own screen after the revoke
+  const d = S.pages.D.page;
+  await d.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
+  await sleep(5000);
+  const displayAfter = one(await d.locator('body').innerText()).slice(0, 200);
+  C.readBack = {
+    at: new Date().toISOString(),
+    till: { name: mine?.name, archived: mine?.archived ?? !!mine?.archivedAt, devices: (mine?.devices ?? []).length },
+    receptionTill1Devices: (rt1?.devices ?? []).map((x) => x.label),
+    memberLookups: lookups, members, registrationsOfThisRun: mineRegs, sales, displayAfter,
+    untouched: stations.filter((s) => /Till 1 \(Pi\)|Till 2 \(test\)|FWBooth1|Reception Till 1/.test(s.name)).map((s) => ({ name: s.name, archived: s.archived ?? !!s.archivedAt })),
+  };
+  C.finishedAt = new Date().toISOString();
+  S.save();
+  return C.readBack;
+}

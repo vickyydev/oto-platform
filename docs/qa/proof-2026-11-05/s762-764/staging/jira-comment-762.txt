@@ -1,0 +1,14 @@
+Checked on the staging site on 5 November, 20:46 to 21:09 Bangkok, on the live version 9dc7c28, with test records named ZZ TEST and cash only.
+
+What was wrong: the customer screen asked for the phone number at the start with a Skip button, then again before payment, and again on the drop-off form.
+
+What a person sees now at the counter: the customer screen opens on "What's your phone number?" with a line saying the number is needed for the child's safety. There is no Skip, and Continue stays grey until a number is typed. The till's Membership Check has no Skip either; when no customer screen is showing, the till offers "Show customer screen to enter the phone". A member is found from the number even when it is typed the Thai way with a leading 0, and their children come up on the till. After that the number is not asked again: the details screen before payment and the drop-off and nanny forms show it with "We will use the number you gave at the start." The number is printed only on the kids band, and only when an adult stays with the child: the kids band reads "Tel +66 89 762 0002", the adult band has no number. History lists the sale as a walk-in and does not show the number.
+
+How to retest on staging:
+# Open a till and its customer screen. The customer screen asks for the phone number, shows the safety line, has no Skip, and Continue stays grey until you type.
+# Type the number of a test member starting with 0. The till shows the member and their children.
+# Start a new order with a test number nobody has and press Continue as walk-in. Sell 1 Hour Play with 1 kid and 1 adult and pay cash.
+# In the Console open Devices, Virtual box 1, Printing, Band Printer (kids): the band reads "Tel +66 ...". Band Printer (adults) shows no number. (This needs a till whose band printers are the Virtual box 1 printers.)
+# Start an order for a child with no adult: the drop-off form shows the number from the start and does not ask for it.
+
+The counter box and the booth need the next box release before the display forms and the band number work when the box runs the till; until then the till falls back to staff ticking.

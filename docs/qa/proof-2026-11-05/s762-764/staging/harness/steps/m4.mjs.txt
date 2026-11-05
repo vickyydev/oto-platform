@@ -1,0 +1,17 @@
+// SCRUM-779 2c: cash; exactly one sale for the order, under the new member, Thai rate, paid.
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const t = S.pages.T.page;
+  const f = S.st.fixture;
+  await S.lib.payCash(t);
+  await t.getByRole('heading', { name: 'Payment Successful' }).waitFor({ timeout: 45000 });
+  await sleep(2500);
+  const before = new Set(S.st.steps.m2.salesBefore);
+  const fresh = (await S.lib.salesOf(S, f.till.id)).filter((s) => !before.has(s.id));
+  const s = (await S.lib.readSale(S, f.sale779.id)).sale;
+  f.sale779.receipt = s.receiptNumber;
+  S.st.steps.m4 = { at: new Date().toISOString(), salesForOrder: fresh.length, statuses: fresh.map((x) => x.status), tendering: fresh.filter((x) => x.status === 'tendering').length, receipt: s.receiptNumber, status: s.status, tier: s.customerTier, memberId: s.memberId, gross: s.totals?.grossSatang ?? null };
+  S.save();
+  await S.shot('T', 's779-03-paid-cash-one-sale', { mask: S.lib.codeMasks(t) });
+  return S.st.steps.m4;
+}

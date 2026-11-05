@@ -1,0 +1,10 @@
+export default async function (S) {
+  const f = S.st.fixture;
+  const regs = (await S.adminApi('GET', `/checkin/registrations?branchId=${f.branchId}`)).body.registrations ?? [];
+  const reg = regs.find((r) => r.id === f.reg764);
+  const c = reg.children[0];
+  S.st.steps.g5 = { at: new Date().toISOString(), registration: reg.id, guardianName: reg.guardianName, guardianPhone: /^\+66\d{9}$/.test(reg.guardianPhone ?? '') ? 'E.164, ends ' + reg.guardianPhone.slice(-4) : 'NOT E.164', consentRecordedAt: reg.consentRecordedAt, acknowledged: (reg.acknowledgedConfirmations ?? []).length, source: reg.source, photo: !!reg.photoFileId,
+    child: { name: c.childName, ageYears: c.childAgeYears, dateOfBirth: c.dateOfBirth, allergies: c.allergies, foodRestrictions: c.foodRestrictions, service: c.service, status: c.status } };
+  S.save();
+  return S.st.steps.g5;
+}

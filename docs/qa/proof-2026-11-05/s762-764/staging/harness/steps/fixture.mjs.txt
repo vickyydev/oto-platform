@@ -1,0 +1,45 @@
+// ZZ TEST fixture: one till on Virtual box 1 (simulated band and receipt printers), one ZZ TEST member with a saved child.
+// Never the Pi, its tills, FWBooth1 or Reception Till 1 (its simulated printers are only shared, not changed).
+export default async function (S) {
+  const { adminApi, st, save } = S;
+  const f = st.fixture;
+  const BR = f.branchId;
+  f.phones = f.phones ?? { member: '+66897620001', walkIn: '+66897620002', s779: '+66897790001', nanny: '+66897640001' };
+  const lookups = {};
+  for (const [k, p] of Object.entries(f.phones)) { const r = await adminApi('GET', `/members/lookup?phone=${encodeURIComponent(p)}`); lookups[k] = { status: r.status, found: !!r.body?.member, name: r.body?.member?.nickname ?? null }; }
+  if (!f.till) {
+    for (const [k, v] of Object.entries(lookups)) if (v.found && k !== 'member') throw new Error('number already a member: ' + k);
+    const boxes = (await adminApi('GET', `/branches/${BR}/boxes`)).body.boxes;
+    const vb = boxes.find((b) => b.role === 'virtual' && b.slot === 'virtual-1' && b.status === 'online' && !b.archived);
+    if (!vb) throw new Error('Virtual box 1 not online');
+    const stations = (await adminApi('GET', `/branches/${BR}/stations?includeArchived=true`)).body.stations;
+    const name = 'ZZ TEST SCRUM-762 till';
+    if (stations.some((s) => s.codePrefix === 'Z762' || s.name === name)) throw new Error('prefix or name in use');
+    const devices = [
+      { role: 'kids_band', deviceId: '01a0be8c-89af-7c2b-861f-f3d1f0f5d27b' },
+      { role: 'adult_band', deviceId: '01a0be8c-89b2-7f21-84e0-74c754838f5b' },
+      { role: 'receipt', deviceId: '01a0be8c-89a4-756b-aca1-3be1082c669d' },
+    ];
+    const r = await adminApi('POST', `/branches/${BR}/stations`, { name, kind: 'till', boxId: vb.id, codePrefix: 'Z762', accessScope: 'all_staff', paymentRouting: { card: 'manual', qr: 'none' }, capabilities: [], devices });
+    if (r.status !== 201 && r.status !== 200) throw new Error('station ' + r.status + ' ' + JSON.stringify(r.body).slice(0, 400));
+    f.boxId = vb.id; f.boxName = vb.name;
+    f.till = { id: r.body.station.id, name: r.body.station.name, prefix: 'Z762', ready: r.body.station.ready, devices: (r.body.station.devices ?? []).map((d) => d.role + ':' + d.label) };
+    st.created.push({ kind: 'station', id: f.till.id, name, at: new Date().toISOString() });
+    save();
+  }
+  if (!f.member) {
+    if (lookups.member.found) throw new Error('member number already taken');
+    const m = await adminApi('POST', '/members', { phone: f.phones.member, nickname: 'ZZ TEST 762 Mum', createdVia: 'pos' });
+    if (m.status !== 201 && m.status !== 200) throw new Error('member ' + m.status + ' ' + JSON.stringify(m.body).slice(0, 300));
+    f.member = { id: m.body.member.id, nickname: m.body.member.nickname };
+    st.created.push({ kind: 'member', id: f.member.id, name: 'ZZ TEST 762 Mum', at: new Date().toISOString() });
+    save();
+    const c = await adminApi('POST', `/members/${f.member.id}/children`, { name: 'ZZ TEST 762 Fon', ageYears: 6, allergies: 'ZZ TEST saved note: tree nuts', dietary: 'ZZ TEST saved note: no dairy' });
+    if (c.status !== 201 && c.status !== 200) throw new Error('child ' + c.status + ' ' + JSON.stringify(c.body).slice(0, 300));
+    f.member.childId = c.body.child?.id ?? c.body.id ?? null;
+    st.created.push({ kind: 'child', id: f.member.childId, name: 'ZZ TEST 762 Fon', at: new Date().toISOString() });
+    save();
+  }
+  const back = await adminApi('GET', `/members/${f.member.id}`);
+  return { lookups, till: f.till, member: { id: f.member.id, nickname: back.body.member?.nickname, tier: back.body.member?.tierCode, children: (back.body.member?.children ?? []).map((c) => ({ name: c.name, age: c.ageYears, hasAllergy: !!c.allergies })) } };
+}

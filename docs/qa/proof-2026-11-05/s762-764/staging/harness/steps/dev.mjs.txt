@@ -1,0 +1,6 @@
+export default async function (S) {
+  const f = S.st.fixture;
+  const st = (await S.adminApi('GET', `/branches/${f.branchId}/stations`)).body.stations;
+  const rt1 = st.find((s) => s.name === 'Reception Till 1');
+  return { devices: rt1.devices, policy: (await S.adminApi('GET', `/branches/${f.branchId}/supervision-policy`)).status };
+}

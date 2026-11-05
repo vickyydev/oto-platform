@@ -1,0 +1,35 @@
+// SCRUM-779 2b: the name typed on the display after Pay; the payment screen shows the Thai rate saved to the new member; one sale.
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const t = S.pages.T.page;
+  const d = S.pages.D.page;
+  const f = S.st.fixture;
+  const guest = 'ZZ TEST 779 Khun Nok';
+  await d.getByPlaceholder('e.g. Mama, John').fill(guest);
+  await d.getByRole('button', { name: 'Done', exact: true }).click();
+  await t.getByRole('heading', { name: 'Amount Due' }).waitFor({ timeout: 45000 });
+  const before = new Set(S.st.steps.m2.salesBefore);
+  let open = [];
+  let detail = null;
+  for (let i = 0; i < 40; i += 1) {
+    open = (await S.lib.salesOf(S, f.till.id)).filter((s) => !before.has(s.id));
+    if (open.length >= 1) { detail = await S.lib.readSale(S, open[0].id); if ((detail.sale ?? detail).memberId) break; }
+    await sleep(750);
+  }
+  const s = detail ? (detail.sale ?? detail) : null;
+  f.sale779 = s ? { id: s.id } : null;
+  if (s) S.st.created.push({ kind: 'sale', id: s.id, what: '779 Thai walk-in became member', at: new Date().toISOString() });
+  let member = null;
+  if (s?.memberId) {
+    const m = (await S.adminApi('GET', `/members/${s.memberId}`)).body.member;
+    member = { id: m.id, nickname: m.nickname, tier: m.tierCode, phoneLast4: m.phone.slice(-4), phoneE164: /^\+66\d{9}$/.test(m.phone), verification: m.tierVerification ? { tier: m.tierVerification.tier, proof: m.tierVerification.proofType } : null };
+    f.member779 = { id: m.id, nickname: m.nickname };
+    S.st.created.push({ kind: 'member', id: m.id, name: m.nickname, at: new Date().toISOString() });
+  }
+  await sleep(1500);
+  const pay = one(await t.locator('body').innerText()).slice(500, 2200);
+  await S.shot('T', 's779-02-payment-screen-thai-rate-saved-to-new-member');
+  S.st.steps.m3 = { at: new Date().toISOString(), salesForOrder: open.length, saleStatus: s?.status, customerTier: s?.customerTier, memberId: s?.memberId ?? null, member, tierClaim: s?.tierClaim ?? null };
+  S.save();
+  return { ...S.st.steps.m3, pay };
+}

@@ -1,0 +1,24 @@
+// SCRUM-779 2a: walk-in, Thai rate by a document check, 2 Hours Play, Pay.
+export default async function (S) {
+  const { sleep, one, keypad } = S.lib;
+  const t = S.pages.T.page;
+  const d = S.pages.D.page;
+  await S.lib.unlockIfLocked(S, t, 'RECEPTION');
+  await t.getByRole('button', { name: 'Tickets', exact: true }).click();
+  await sleep(2500);
+  await d.getByTestId('identify-safety').waitFor({ timeout: 30000 });
+  await keypad(d, '0897790001');
+  await d.getByRole('button', { name: 'Continue', exact: true }).click();
+  const offer = t.getByRole('button', { name: 'Continue as walk-in', exact: true });
+  await offer.waitFor({ timeout: 30000 });
+  await offer.click();
+  await sleep(1500);
+  await t.getByRole('heading', { name: 'Thai', exact: true }).click();
+  const verify = t.getByRole('dialog');
+  await verify.waitFor({ timeout: 15000 });
+  const dlgText = one(await verify.innerText()).slice(0, 600);
+  await verify.getByRole('button', { name: 'Driving licence', exact: true }).click();
+  await sleep(500);
+  await S.look('T');
+  return { dlgText, btns: (await verify.getByRole('button').allInnerTexts()).map(one) };
+}

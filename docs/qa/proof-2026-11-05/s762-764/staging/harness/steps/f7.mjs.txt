@@ -1,0 +1,15 @@
+// SCRUM-764 3e: the till's card lists each agreement as ticked by the family.
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const d = S.pages.D.page;
+  const t = S.pages.T.page;
+  const form = d.getByTestId('display-consent');
+  await form.getByRole('button', { name: 'Continue', exact: true }).click();
+  const status = t.getByTestId('consent-ticks-status');
+  await S.expect(status).toContainText('Supervision and photo consent · ticked', { timeout: 30000 });
+  await sleep(2000);
+  const r = { at: new Date().toISOString(), status: one(await status.innerText()), display: one(await form.innerText()).slice(0, 600) };
+  await S.shot('T', 's764-05-till-card-agreements-ticked-by-family');
+  S.st.steps.f7 = r; S.save();
+  return r;
+}

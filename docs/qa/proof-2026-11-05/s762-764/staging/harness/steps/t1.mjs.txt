@@ -1,0 +1,12 @@
+export default async function (S) {
+  const { sleep, text, one } = S.lib;
+  const f = S.st.fixture;
+  const page = await S.lib.tillSignIn(S, 'T', f.till.name, 'RECEPTION');
+  await page.getByText('Membership Check', { exact: true }).first().waitFor({ timeout: 30000 });
+  await sleep(2500);
+  const me = await S.pageApi('T', 'GET', '/me');
+  S.st.who = { T: { name: me.body?.employee?.name, station: me.body?.station?.name } }; S.save();
+  await S.look('T');
+  const btns = (await page.getByRole('button').allInnerTexts()).map(one).filter(Boolean);
+  return { who: S.st.who, skip: await page.getByRole('button', { name: /Skip/ }).count(), btns: btns.slice(0, 60), body: one(await text(page, 2500)) };
+}

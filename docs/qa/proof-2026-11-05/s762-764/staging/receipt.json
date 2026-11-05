@@ -1,0 +1,1062 @@
+{
+  "unit": "SCRUM-762/779/764",
+  "liveCommit": "9dc7c2862f879605b3977d76419257cf526148e3",
+  "startedAt": "2026-11-05T13:45:24.055Z",
+  "fixture": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "branchName": "Oto Play Park, Central Floresta",
+    "branchCode": "hkt-central",
+    "phones": {
+      "member": "+66897620001",
+      "walkIn": "+66897620002",
+      "s779": "+66897790001",
+      "nanny": "+66897640001"
+    },
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "boxName": "Virtual box 1",
+    "till": {
+      "id": "01a1abf6-daae-7630-ab9f-92ee90c5571a",
+      "name": "ZZ TEST SCRUM-762 till",
+      "prefix": "Z762",
+      "ready": true,
+      "devices": [
+        "adult_band:Band Printer (adults)",
+        "kids_band:Band Printer (kids)",
+        "receipt:Receipt Printer 1"
+      ]
+    },
+    "member": {
+      "id": "01a1abf6-db11-7c76-b4b2-e18f13e5bfd6",
+      "nickname": "ZZ TEST 762 Mum",
+      "childId": "01a1abf6-db74-7d2e-bbb3-0b58acf4dd9d"
+    },
+    "display": {
+      "credentialId": "01a1abf7-70f1-7514-a853-132bb9cf13d3",
+      "name": "ZZ TEST SCRUM-762 display"
+    },
+    "sale1d": {
+      "id": "01a1abfa-d486-7ce3-9428-959d0fe67c0d",
+      "receipt": "Z762-000001"
+    },
+    "sale779": {
+      "id": "01a1abff-5843-7975-98e7-4917736d4192",
+      "receipt": "Z762-000002"
+    },
+    "member779": {
+      "id": "01a1abff-588d-76cd-afb2-b7874dbc4339",
+      "nickname": "ZZ TEST 779 Khun Nok"
+    },
+    "reg764": "01a1ac03-e92b-75ff-ad9e-0581f6aee048",
+    "sale764": {
+      "id": "01a1ac03-eca9-70fd-9229-01bda17bb942",
+      "receipt": "Z762-000003",
+      "status": "finalised"
+    },
+    "member764": {
+      "id": "01a1ac03-e7f3-7c2f-90ce-5339d18e0b91",
+      "nickname": "ZZ TEST 764 Khun Ying",
+      "children": [
+        "ZZ TEST 764 Mai"
+      ]
+    }
+  },
+  "steps": {
+    "b1": {
+      "at": "2026-11-05T13:47:47.942Z",
+      "displaysPaired": 0,
+      "skip": 0,
+      "required": "A phone number is required for every visit — it is how the team reaches the family about their child’s safety.",
+      "showButton": true,
+      "afterPress": {
+        "keypadVisible": true,
+        "headingVisible": true,
+        "showButtonGone": true
+      }
+    },
+    "a1": {
+      "at": "2026-11-05T13:48:16.432Z",
+      "heading": true,
+      "safety": "We need a phone number for every visit, so we can reach you about your child's safety.",
+      "continueDisabled": true,
+      "skipOnDisplay": 0,
+      "tillSkip": 0,
+      "tillRequired": true,
+      "tillHarnessHalfShown": false
+    },
+    "c1": {
+      "at": "2026-11-05T13:48:41.943Z",
+      "typed": "Thai local form with leading 0 (0897…0001)",
+      "recognised": "ZZ TEST 762 Mum",
+      "storedAs": "E.164 +66 (masked in receipt)",
+      "children": [
+        "ZZ TEST 762 Fon"
+      ]
+    },
+    "saved4": {
+      "at": "2026-11-05T13:50:16.369Z",
+      "childNameOnDisplay": "ZZ TEST 762 Fon",
+      "care": "ZZ TEST 762 Fon Saved on your profile — tell the team if anything has changed.",
+      "savedLine": true,
+      "careNotesOnDisplay": false,
+      "allergyFieldsShown": 0
+    },
+    "d1": {
+      "at": "2026-11-05T13:51:31.359Z",
+      "offerText": "g Expat Resident pricing Proof required — verify now Thai Local pricing Proof required — verify now Current Order No items added yet Apply Redeem Issue a voucher… Add manual discount Subtotal ฿0 Total ฿0 Cancel Pay ฿0 New member? No membership found for +660897620002. Create one from just the phone and a name — details can be added later. Name / nickname Continue as walk-in Create member Close",
+      "tierScreen": "g Expat Resident pricing Proof required — verify now Thai Local pricing Proof required — verify now Current Order No items added yet Apply Redeem Issue a voucher… Add manual discount Subtotal ฿0 Total ฿0 Cancel Pay ฿0",
+      "kids": 1,
+      "adults": 1
+    },
+    "d2": {
+      "at": "2026-11-05T13:51:44.755Z",
+      "before": []
+    },
+    "d3": {
+      "at": "2026-11-05T13:51:57.869Z",
+      "status": "finalised",
+      "receipt": "Z762-000001",
+      "tier": "tourist",
+      "memberId": null,
+      "customerPhoneStored": "(not in the read)",
+      "customerPhoneBeforePay": "(not in the read)",
+      "keys": [
+        "id",
+        "branchId",
+        "stationId",
+        "boxId",
+        "memberId",
+        "visitId",
+        "businessDate",
+        "occurredAt",
+        "status",
+        "salesChannel",
+        "pricingMode",
+        "pricingModeReason",
+        "customerTier",
+        "engineVersion",
+        "receiptNumber",
+        "receiptSeries",
+        "receiptSeq",
+        "finalisedAt",
+        "note",
+        "voidedAt",
+        "voidedByAccountId",
+        "voidedByName",
+        "voidReason",
+        "totals",
+        "tierClaim"
+      ]
+    },
+    "history1d": {
+      "at": "2026-11-05T13:55:52.606Z",
+      "receipt": "Z762-000001",
+      "shows": "Walk-in, Tourist, 1 Hour Play kids 1 + adults 1, cash paid; no phone number shown in History",
+      "bandCodesMasked": 2
+    },
+    "m2": {
+      "at": "2026-11-05T13:56:24.094Z",
+      "kids": 1,
+      "adults": 1,
+      "salesBefore": [
+        "01a1abfa-d486-7ce3-9428-959d0fe67c0d"
+      ],
+      "keptOnDisplay": "Phone number +••••••••0001 We will use the number you gave at the start."
+    },
+    "m3": {
+      "at": "2026-11-05T13:56:44.014Z",
+      "salesForOrder": 1,
+      "saleStatus": "tendering",
+      "customerTier": "thai",
+      "memberId": "01a1abff-588d-76cd-afb2-b7874dbc4339",
+      "member": {
+        "id": "01a1abff-588d-76cd-afb2-b7874dbc4339",
+        "nickname": "ZZ TEST 779 Khun Nok",
+        "tier": "thai",
+        "phoneLast4": "0001",
+        "phoneE164": true,
+        "verification": {
+          "tier": "thai",
+          "proof": "Driving licence"
+        }
+      },
+      "tierClaim": {
+        "id": "01a1abff-03eb-7d79-af61-2fb5ff50d915",
+        "documentKind": "Driving licence",
+        "documentNote": null,
+        "toTier": "thai",
+        "evidenceExpiresOn": null,
+        "verifiedAt": "2026-11-05T13:56:19.043Z",
+        "approval": null
+      }
+    },
+    "m4": {
+      "at": "2026-11-05T13:56:56.611Z",
+      "salesForOrder": 1,
+      "statuses": [
+        "finalised"
+      ],
+      "tendering": 0,
+      "receipt": "Z762-000002",
+      "status": "finalised",
+      "tier": "thai",
+      "memberId": "01a1abff-588d-76cd-afb2-b7874dbc4339",
+      "gross": 87000
+    },
+    "m5": {
+      "at": "2026-11-05T13:57:16.407Z",
+      "rows": "sales recorded at Oto Play Park, Central Floresta Add time, refunds, voids and reprints need the platform: with the station offline, a refund can only be noted as requested, for a manager to make once it is back online. Z762-000002 · ZZ TEST 779 Khun Nok 05 Nov, 20:56 Som Paid ฿870 Z762-000001 05 Nov, 20:51 Som Paid ฿1040 Z768-000001 05 Nov, 19:33 Som Paid ฿1500 Z740-000002 05 Nov, 19:22 Som Paid ฿1115 Z740-000001 05 Nov, 19:21 Som Paid ฿2230 Z774C-000001 05 Nov, 05:05 Som Paid ฿1240 No receipt number 05 Nov, 05:04 Som Voided ฿1240 No receipt number 05 Nov, 05:02 Som Voided ฿1240 Z774B-000002 05 Nov, 05:02 Som Paid ฿1240 Z774B-000001 · ZZ TEST Khun Mali 774 05 Nov, 05:01 Som Paid ฿2130",
+      "detail": "ntal, Mascot Keyring, Oto Mascot Plush +10 more Back to history Paid Ticket sale Z762-000002 ZZ TEST 779 Khun Nok · +66897790001 05 Nov, 20:56 · sold by Som ZZ TEST SCRUM-762 till · trading day 2026-11-05 · Thai · Weekday pricing · Priced on driving licence, checked 05 Nov, 20:56 2 Hours Play · Thai ฿870 Kids 1× ฿520 ฿520 Adults 1× ฿350 ฿350 BRACELETS PRINTED 2 1 child 1 adult Z762-EG9BFQ Z762-SGEP2S Subtotal ฿870 VAT (included) ฿56.92 Total paid ฿870 Payment Cash · Approved 05 Nov, 20:56 ฿870 Reprint Add time Refund (฿870 left) Add time, refunds, voids and reprints need the platform: with the station offline, a refund can only be noted as requested, for a manager to make once it is back online."
+    },
+    "m6": {
+      "at": "2026-11-05T13:57:36.302Z",
+      "leftUnpaidText": 0,
+      "leftBehindNotices": 0,
+      "unpaidText": 0,
+      "tendering": 0
+    },
+    "n2": {
+      "at": "2026-11-05T13:58:06.467Z",
+      "rowText": "5 Nov, 20:57app_identity.lifecycle_deactivation.failedoperationThe system5 Nov, 20:57app_identity.lifecycle_deactivation.failedoperationThe system5 Nov, 20:57app_identity.lifecycle_deactivation.failedoperationThe system5 Nov, 20:57app_identity.lifecycle_deactivation.failedoperationThe system5 Nov, 20:57app_identity.lifecycle_deactivation.failedoperationThe system5 Nov, 20:57app_identity.lifecycle_",
+      "saleIdShown": false,
+      "memberShown": false,
+      "opened": "ion)\nCentral Floresta\n5 Nov, 20:56\nsale.print\nsale\nSom (Reception)\nCentral Floresta\n5 Nov, 20:56\nwallet.grant\nwallet\nSom (Reception)\nCentral Floresta\n5 Nov, 20:56\nwallet.create\nwallet\nSom (Reception)\nCentral Floresta\n5 Nov, 20:56\nsale.finalise\nsale\nSom (Reception)\nCentral Floresta\n5 Nov, 20:56\nsale.member_attach\nsale\nSom (Reception)\nCentral Floresta\n5 Nov, 20:56\nmember.tier_verify\nmember_tier_verification\nSom (Reception)\nCentral Floresta\n5 Nov, 20:56\nmember.create\nmember\nSom (Reception)\nCentral Floresta\n5 Nov, 20:56\nsale.create\nsale\nSom (Reception)\nCentral Floresta\n5 Nov, 20:56\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:56\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:56\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:56\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:56\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:56\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:56\nsale_tier_claim.create\nsale_tier_claim\nSom (Reception)\nCentral Floresta\n5 Nov, 20:56\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:56\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:56\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:56\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:56\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:56\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:55\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:55\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:55\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:55\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:55\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:55\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:55\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:55\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:55\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:55\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:55\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:55\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\n5 Nov, 20:54\nsession.unlock\nsession\nSom (Reception)\n5 Nov, 20:54\napp_identity.lifecycle_deactivation.failed\noperation\nThe system\nOpen a row for the full before-and-after\nLoad more\nsale.member_attach\nSom (Reception) · 5 Nov 2026, 20:56:41 GMT+7\nACTOR\nSom (Reception)\nBRANCH\nOto Play Park, Central"
+    },
+    "f1": {
+      "at": "2026-11-05T13:59:07.369Z",
+      "children": 1,
+      "nameValue": "",
+      "steps": "1. Your children 2. Care details 3. Agreements",
+      "display": "ZZ TEST SCRUM-762 till · ZZ TEST SCRUM-762 display English PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. 1. Your children 2. Care details 3. Agreements Step 1 of 3 · The team sees what you fill in and can help. Child's name Age Tap to set age Add each child's name and age to continue. Ask the team Continue"
+    },
+    "f4": {
+      "at": "2026-11-05T13:59:36.100Z",
+      "gate": "Display connected: ZZ TEST SCRUM-762 display Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST SCRUM-762 till Som 13 out of stock · 1 low Glow Band, Locker Rental, Mascot Keyring, Oto Mascot Plush +10 more 5 overdue Review → The family is filling in the form on the display; it appears here as they go. Help with the details here if they ask. Private child details Agreements — ticked by the family on their screen Supervision and photo consent · not ticked yet I will remain within 15 minutes of the venue · not ticked yet I understand early pickup does not qualify for refund · not ticked yet I acknowledge the emergency evacuation point · not ticked yet Children playing alone No adult on this sale. Name each child and confirm their age so we know who needs supervision. 6 yrs Drop-off required Before payment • ZZ TEST 764 Mai (age 6) needs drop-off supervision. • ZZ TEST 764 Mai needs a photo taken. • Parent must give their name and consent on the customer screen. • Parent must accept every required confirmation on the customer screen. Back Continue to payment"
+    },
+    "f5": {
+      "at": "2026-11-05T13:59:48.955Z",
+      "dietPlaceholder": "e.g. halal, no pork — optional",
+      "care": "ZZ TEST 764 Mai Allergies / medical Dietary notes"
+    },
+    "f6": {
+      "at": "2026-11-05T14:00:03.008Z",
+      "keptText": "+••••••••0002 We will use the number you gave at the start.",
+      "phoneInputs": 0,
+      "keypadKeys": 0,
+      "checkboxes": 4,
+      "checked": 4
+    },
+    "f7": {
+      "at": "2026-11-05T14:00:15.010Z",
+      "status": "Agreements — ticked by the family on their screen Supervision and photo consent · ticked I will remain within 15 minutes of the venue · ticked I understand early pickup does not qualify for refund · ticked I acknowledge the emergency evacuation point · ticked",
+      "display": "English PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. 1. Your children 2. Care details 3. Agreements Step 3 of 3 · The team sees what you fill in and can help. Parent / guardian name Phone number +660897620002 We will use the number you gave at the start. I authorize Oto Play Park staff to supervise my child, and I consent to a photo of my child and me (parent / guardian) together being taken for safe check-in and pickup verification. Please confirm I will remain within 15 minutes of the venue I understand early pickup does not qua"
+    },
+    "f8": {
+      "at": "2026-11-05T14:00:33.735Z",
+      "allergy": "ZZ TEST peanuts",
+      "inputs": [
+        {
+          "ph": "Full name",
+          "v": "ZZ TEST 764 Mai",
+          "type": "text",
+          "disabled": false
+        },
+        {
+          "ph": "e.g. peanut allergy, asthma inhaler — leave blank if none",
+          "v": "ZZ TEST peanuts",
+          "type": "textarea",
+          "disabled": false
+        },
+        {
+          "ph": "e.g. halal, no pork — optional",
+          "v": "ZZ TEST no gluten",
+          "type": "text",
+          "disabled": false
+        },
+        {
+          "ph": "Your full name",
+          "v": "ZZ TEST 764 Khun Ying",
+          "type": "text",
+          "disabled": false
+        },
+        {
+          "ph": "818953926",
+          "v": "0897620002",
+          "type": "tel",
+          "disabled": false
+        }
+      ],
+      "ackDisabled": true,
+      "confDisabled": [
+        true,
+        true,
+        true
+      ],
+      "statusUnchanged": true,
+      "after": "Agreements — ticked by the family on their screen Supervision and photo consent · ticked I will remain within 15 minutes of the venue · ticked I understand early pickup does not qualify for refund · ticked I acknowledge the emergency evacuation point · ticked",
+      "btns": [
+        "English",
+        "6 yrs",
+        "Start camera",
+        "No food",
+        "Prepaid credit",
+        "Choose items",
+        "🇹🇭 +66",
+        "WhatsApp",
+        "Telegram",
+        "LINE",
+        "I authorize Oto Play Park staff to supervise my child, and I consent to a photo of my child and me (parent / guardian) together being taken for safe check-in and pickup verification.(ticked by the family)",
+        "I will remain within 15 minutes of the venue(ticked by the family)",
+        "I understand early pickup does not qualify for refund(ticked by the family)",
+        "I acknowledge the emergency evacuation point(ticked by the family)",
+        "Close"
+      ]
+    },
+    "g2": {
+      "at": "2026-11-05T14:01:09.814Z",
+      "dietOnDisplay": "ZZ TEST no gluten, no egg (typed by staff)",
+      "allergyOnDisplay": "ZZ TEST peanuts"
+    },
+    "g3": {
+      "at": "2026-11-05T14:01:22.415Z",
+      "displayStillHasForm": true,
+      "teamComing": true,
+      "tillHeader": true,
+      "ticks": "Agreements — ticked by the family on their screen Supervision and photo consent · ticked I will remain within 15 minutes of the venue · ticked I understand early pickup does not qualify for refund · ticked I acknowledge the emergency evacuation point · ticked"
+    },
+    "g5": {
+      "at": "2026-11-05T14:02:54.602Z",
+      "registration": "01a1ac03-e92b-75ff-ad9e-0581f6aee048",
+      "guardianName": "ZZ TEST 764 Khun Ying",
+      "guardianPhone": "E.164, ends 0002",
+      "consentRecordedAt": "2026-11-05T14:01:40.504Z",
+      "acknowledged": 3,
+      "source": "till",
+      "photo": true,
+      "child": {
+        "name": "ZZ TEST 764 Mai",
+        "ageYears": 6,
+        "dateOfBirth": "2020-01-05",
+        "allergies": "ZZ TEST peanuts",
+        "foodRestrictions": "ZZ TEST no gluten, no egg (typed by staff)",
+        "service": "drop_off",
+        "status": "registered"
+      }
+    },
+    "g8": {
+      "at": "2026-11-05T14:04:14.251Z",
+      "receipt": "Z762-000003",
+      "status": "finalised",
+      "left": " VAT included ฿59.86 Thank you for visiting! · Tax ID 0105500000000 Bracelets to Print 0 TOTAL Start New Sale Left as booked ZZ TEST 764 Mai — checkable later from the Drop-Off board.",
+      "cardText": "ZZ TEST 764 Khun Ying +66•••••0002 Message Awaiting confirmation Waiting for parent to tap \"Confirm received\" in WhatsApp. 🇹🇭 +66 WhatsApp Telegram LINE Stored as: +66•••••0002 Save & re-send Resend Sim: parent confirms Couldn't reach ZZ TEST 764 Mai 6 yrs DROP-OFF ZZ TEST peanuts Overdue · 21:03 Booked & paid · no payment needed Check in"
+    },
+    "i1": {
+      "at": "2026-11-05T14:06:27.662Z",
+      "form": "English PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. 1. Your children 2. Care details 3. Agreements Step 1 of 3 · The team sees what you fill in and can help. Child's name Age 3 yrs A nanny will look after them Required for this age — ฿330/hour Ask the team Continue"
+    },
+    "j1": {
+      "at": "2026-11-05T14:06:42.741Z",
+      "menu": [
+        "English",
+        "English",
+        "中文",
+        "ไทย",
+        "Русский",
+        "Français",
+        "1. Your children",
+        "2. Care details",
+        "3. Agreements",
+        "3 yrs",
+        "Ask the team",
+        "Continue"
+      ],
+      "th": "ไทย มาเล่นกับเราวันนี้ บอกเราเกี่ยวกับลูกของคุณ กรอกชื่อและอายุของเด็กแต่ละคน เพื่อให้ทีมงานของเราดูแลความปลอดภัยได้ 1. ลูก ๆ ของคุณ 2. ข้อมูลการดูแล 3. ข้อตกลง ขั้นตอนที่ 1 จาก 3 · ทีมงานเห็นสิ่งที่คุณกรอกและพร้อมช่วยเหลือ ชื่อเด็ก อายุ 3 ปี จะมีพี่เลี้ยงดูแล จำเป็นสำหรับอายุนี้ — ฿330/ชั่วโมง ขอความช่วยเหลือจากทีมงาน ดำเนินการต่อ",
+      "ru": "Русский ИГРАЕМ У НАС СЕГОДНЯ Расскажите нам о вашем ребёнке Укажите имя и возраст каждого ребёнка, чтобы наша команда могла обеспечить их безопасность. 1. Ваши дети 2. Сведения об уходе 3. Согласия Шаг 1 из 3 · Сотрудники видят, что вы заполняете, и могут помочь. Имя ребёнка Возраст 3 г. За ним/ней присмотрит няня Обязательно для этого возраста — ฿330/час Обратиться к сотрудникам Продолжить"
+    },
+    "i2": {
+      "at": "2026-11-05T14:07:03.453Z",
+      "care": "ZZ TEST 764 Pim Аллергии / медицинские сведения Заметки о питании",
+      "agreements": "Русский ИГРАЕМ У НАС СЕГОДНЯ Расскажите нам о вашем ребёнке Укажите имя и возраст каждого ребёнка, чтобы наша команда могла обеспечить их безопасность. 1. Ваши дети 2. Сведения об уходе 3. Согласия Шаг 3 из 3 · Сотрудники видят, что вы заполняете, и могут помочь. Имя родителя/опекуна Номер телефона +660897640001 Мы используем номер, который вы указали в начале. Я разрешаю персоналу Oto Play Park присматривать за моим ребёнком и даю согласие на совместное фото со мной (родителем/опекуном) для безопасной регистрации и проверки при заборе. Пожалуйста, подтвердите I will remain within 15 minutes of the venue I understand early pickup does not qualify for refund I acknowledge the emergency evacuation point Обратиться к сотрудникам Назад Продолжить",
+      "gate": "The family is filling in the form on the display; it appears here as they go. Help with the details here if they ask. Private child details Agreements — ticked by the family on their screen Supervision and photo consent · ticked I will remain within 15 minutes of the venue · ticked I understand early pickup does not qualify for refund · ticked I acknowledge the emergency evacuation point · ticked Children playing alone No adult on this sale. Name each child and confirm their age so we know who needs supervision. 3 yrs Nanny required Before payment • ZZ TEST 764 Pim (age 3) needs a nanny before payment. • ZZ TEST 764 Pim needs a photo taken. Back Continue to payment"
+    },
+    "i3": {
+      "at": "2026-11-05T14:07:26.276Z",
+      "writes": [],
+      "nannyRegistrations": 0,
+      "nannyNumberMember": false,
+      "tendering": 0,
+      "till": "ty. Phone — Nickname — EVENT PASSES Flat day entry — no membership needed No active events Today's camp sessions and upcoming events appear here. Redeem Booking Current Order No items added yet Apply ",
+      "display": "ZZ TEST SCRUM-762 till · ZZ TEST SCRUM-762 display English MEMBERS SAVE What's your phone number? Members are recognised automatically and get their member rate. We need a phone number for every visit"
+    }
+  },
+  "images": [
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s762-01b-till-no-display-offers-customer-screen-no-skip.png",
+      "at": "2026-11-05T13:47:47.942Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s762-01c-till-customer-half-open-phone-first.png",
+      "at": "2026-11-05T13:47:50.056Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s762-01a-display-phone-required-no-skip.png",
+      "at": "2026-11-05T13:48:16.988Z",
+      "page": "D",
+      "url": "https://oto-pos-web-staging.onrender.com/display",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s762-01d-till-membership-check-display-paired-no-skip.png",
+      "at": "2026-11-05T13:48:19.071Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s762-02a-till-recognises-member-and-children-from-local-number.png",
+      "at": "2026-11-05T13:48:41.319Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s762-02b-display-welcome-back-member.png",
+      "at": "2026-11-05T13:48:41.860Z",
+      "page": "D",
+      "url": "https://oto-pos-web-staging.onrender.com/display",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s764-09-display-saved-child-care-step-no-notes.png",
+      "at": "2026-11-05T13:50:16.923Z",
+      "page": "D",
+      "url": "https://oto-pos-web-staging.onrender.com/display",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s762-03a-till-unknown-number-offer-walk-in.png",
+      "at": "2026-11-05T13:51:25.446Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s762-03b-paid-cash-walk-in-kids-and-adult.png",
+      "at": "2026-11-05T13:51:58.434Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s762-04a-kids-band-printed-tel-number.png",
+      "at": "2026-11-05T13:53:24.576Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/devices",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s762-04b-adult-band-printed-no-number.png",
+      "at": "2026-11-05T13:53:47.308Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/devices",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s762-04c-history-sale-walk-in-paid.png",
+      "at": "2026-11-05T13:55:52.606Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s779-01-display-details-number-kept-name-asked.png",
+      "at": "2026-11-05T13:56:26.171Z",
+      "page": "D",
+      "url": "https://oto-pos-web-staging.onrender.com/display",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s779-02-payment-screen-thai-rate-saved-to-new-member.png",
+      "at": "2026-11-05T13:56:44.013Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s779-03-paid-cash-one-sale.png",
+      "at": "2026-11-05T13:56:57.187Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s779-04a-history-one-sale-under-new-member.png",
+      "at": "2026-11-05T13:57:12.791Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s779-04b-history-sale-thai-rate-member-paid.png",
+      "at": "2026-11-05T13:57:16.407Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s779-05-till-reloaded-nothing-left-unpaid.png",
+      "at": "2026-11-05T13:57:36.983Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s779-06a-console-activity-sale-member-attach-row.png",
+      "at": "2026-11-05T13:58:03.362Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/watch/activity",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s779-06b-console-activity-row-opened-sale-and-member.png",
+      "at": "2026-11-05T13:58:06.467Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/watch/activity",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s764-01-display-form-opens-on-children-step.png",
+      "at": "2026-11-05T13:59:07.929Z",
+      "page": "D",
+      "url": "https://oto-pos-web-staging.onrender.com/display",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s764-02a-display-child-named-age-drop-off-fee.png",
+      "at": "2026-11-05T13:59:34.075Z",
+      "page": "D",
+      "url": "https://oto-pos-web-staging.onrender.com/display",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s764-02b-till-gate-mirrors-name-age-drop-off.png",
+      "at": "2026-11-05T13:59:36.665Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s764-03-display-care-step-family-types-notes.png",
+      "at": "2026-11-05T13:59:48.954Z",
+      "page": "D",
+      "url": "https://oto-pos-web-staging.onrender.com/display",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s764-04a-display-agreements-number-from-start-not-asked.png",
+      "at": "2026-11-05T14:00:01.582Z",
+      "page": "D",
+      "url": "https://oto-pos-web-staging.onrender.com/display",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s764-04b-display-agreements-ticked-by-family.png",
+      "at": "2026-11-05T14:00:03.008Z",
+      "page": "D",
+      "url": "https://oto-pos-web-staging.onrender.com/display",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s764-05-till-card-agreements-ticked-by-family.png",
+      "at": "2026-11-05T14:00:15.576Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s764-06-till-staff-copy-family-notes-ticks-read-only.png",
+      "at": "2026-11-05T14:00:33.734Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s764-06b-till-staff-copy-family-typed-allergy-and-diet.png",
+      "at": "2026-11-05T14:00:43.947Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s764-07-display-shows-detail-typed-by-staff.png",
+      "at": "2026-11-05T14:01:10.372Z",
+      "page": "D",
+      "url": "https://oto-pos-web-staging.onrender.com/display",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s764-08a-display-asked-the-team-form-stays.png",
+      "at": "2026-11-05T14:01:22.979Z",
+      "page": "D",
+      "url": "https://oto-pos-web-staging.onrender.com/display",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s764-08b-till-header-family-asked-for-help.png",
+      "at": "2026-11-05T14:01:23.544Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s764-09a-display-form-done.png",
+      "at": "2026-11-05T14:01:39.481Z",
+      "page": "D",
+      "url": "https://oto-pos-web-staging.onrender.com/display",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s764-09b-till-registered-payment-screen.png",
+      "at": "2026-11-05T14:02:40.452Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s764-09c-board-child-registered-from-family-form.png",
+      "at": "2026-11-05T14:04:34.193Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/drop-off",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s764-10a-display-nanny-requirement-and-hourly-rate-en.png",
+      "at": "2026-11-05T14:06:27.661Z",
+      "page": "D",
+      "url": "https://oto-pos-web-staging.onrender.com/display",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s764-10b-display-nanny-form-in-thai.png",
+      "at": "2026-11-05T14:06:40.026Z",
+      "page": "D",
+      "url": "https://oto-pos-web-staging.onrender.com/display",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s764-10c-display-nanny-form-in-russian.png",
+      "at": "2026-11-05T14:06:42.741Z",
+      "page": "D",
+      "url": "https://oto-pos-web-staging.onrender.com/display",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s764-10d-display-nanny-agreements-in-russian-number-kept.png",
+      "at": "2026-11-05T14:07:00.661Z",
+      "page": "D",
+      "url": "https://oto-pos-web-staging.onrender.com/display",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/s762-764/staging/s764-10e-till-gate-nanny-required-family-ticks.png",
+      "at": "2026-11-05T14:07:03.452Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1abf6-daae-7630-ab9f-92ee90c5571a",
+      "name": "ZZ TEST SCRUM-762 till",
+      "at": "2026-11-05T13:47:23.711Z"
+    },
+    {
+      "kind": "member",
+      "id": "01a1abf6-db11-7c76-b4b2-e18f13e5bfd6",
+      "name": "ZZ TEST 762 Mum",
+      "at": "2026-11-05T13:47:23.806Z"
+    },
+    {
+      "kind": "child",
+      "id": "01a1abf6-db74-7d2e-bbb3-0b58acf4dd9d",
+      "name": "ZZ TEST 762 Fon",
+      "at": "2026-11-05T13:47:23.894Z"
+    },
+    {
+      "kind": "display-credential",
+      "id": "01a1abf7-70f1-7514-a853-132bb9cf13d3",
+      "name": "ZZ TEST SCRUM-762 display",
+      "at": "2026-11-05T13:48:02.162Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1abfa-d486-7ce3-9428-959d0fe67c0d",
+      "what": "762 walk-in kids+adult",
+      "at": "2026-11-05T13:51:47.437Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1abff-5843-7975-98e7-4917736d4192",
+      "what": "779 Thai walk-in became member",
+      "at": "2026-11-05T13:56:41.851Z"
+    },
+    {
+      "kind": "member",
+      "id": "01a1abff-588d-76cd-afb2-b7874dbc4339",
+      "name": "ZZ TEST 779 Khun Nok",
+      "at": "2026-11-05T13:56:41.927Z"
+    },
+    {
+      "kind": "registration",
+      "id": "01a1ac03-e92b-75ff-ad9e-0581f6aee048",
+      "guardian": "ZZ TEST 764 Khun Ying",
+      "at": "2026-11-05T14:02:39.805Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1ac03-eca9-70fd-9229-01bda17bb942",
+      "what": "764 drop-off",
+      "at": "2026-11-05T14:02:39.887Z"
+    },
+    {
+      "kind": "member",
+      "id": "01a1ac03-e7f3-7c2f-90ce-5339d18e0b91",
+      "name": "ZZ TEST 764 Khun Ying",
+      "via": "drop-off gate (find or create the parent)"
+    }
+  ],
+  "browser": "156.0.4314.58",
+  "who": {
+    "T": {
+      "name": "Som (Reception)"
+    }
+  },
+  "cleanup": {
+    "actions": [
+      {
+        "what": "board check-in ZZ TEST 764 Mai (paid, left as booked)",
+        "net": [
+          {
+            "at": "2026-11-05T14:07:59.169Z",
+            "method": "POST",
+            "path": "/api/checkin/check-in-booked",
+            "status": 200
+          }
+        ],
+        "amountDue": 0
+      },
+      {
+        "what": "check out ZZ TEST 764 Mai with pickup photo",
+        "label": "Confirm pickup & check out",
+        "net": [
+          {
+            "method": "POST",
+            "path": "/api/checkin/pickups/stays/01a1ac03-e92b-75ff-ad9e-058240cf9c90/release",
+            "status": 200,
+            "code": null
+          }
+        ]
+      },
+      {
+        "what": "revoke the ZZ TEST SCRUM-762 display",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "T sign-out",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "CON sign-out",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "clear the printer assignments on the ZZ TEST SCRUM-762 till",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive station ZZ TEST SCRUM-762 till",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive member ZZ TEST 762 Mum",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive member ZZ TEST 779 Khun Nok",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive member ZZ TEST 764 Khun Ying",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "expire the display page’s new pairing code",
+        "after": "Set up this display In the Console, open Devices, choose Pair a display, and enter this code for the station. This code has expired. Create a new code when you are ready to pair this display. New code"
+      }
+    ],
+    "startedAt": "2026-11-05T14:08:49.818Z",
+    "salesBefore": [
+      {
+        "id": "01a1ac03-eca9-70fd-9229-01bda17bb942",
+        "receipt": "Z762-000003",
+        "status": "finalised",
+        "gross": 91500
+      },
+      {
+        "id": "01a1abff-5843-7975-98e7-4917736d4192",
+        "receipt": "Z762-000002",
+        "status": "finalised",
+        "gross": 87000
+      },
+      {
+        "id": "01a1abfa-d486-7ce3-9428-959d0fe67c0d",
+        "receipt": "Z762-000001",
+        "status": "finalised",
+        "gross": 104000
+      }
+    ],
+    "displays": {
+      "before": [
+        {
+          "name": "ZZ TEST SCRUM-762 display",
+          "connected": true,
+          "revokedAt": null
+        }
+      ],
+      "after": []
+    },
+    "meTAfterSignOut": 401,
+    "meCONAfterSignOut": 401,
+    "readBack": {
+      "at": "2026-11-05T14:09:09.602Z",
+      "till": {
+        "name": "ZZ TEST SCRUM-762 till",
+        "archived": true,
+        "devices": 0
+      },
+      "receptionTill1Devices": [
+        "Band Printer (adults)",
+        "EDC 1",
+        "Band Printer (kids)",
+        "Kitchen Printer",
+        "EDC 3",
+        "Receipt Printer 1",
+        "Scanner 1"
+      ],
+      "memberLookups": {
+        "member": "none",
+        "walkIn": "none",
+        "s779": "none",
+        "nanny": "none"
+      },
+      "members": {
+        "ZZ TEST 762 Mum": {
+          "status": 404,
+          "archived": true
+        },
+        "ZZ TEST 779 Khun Nok": {
+          "status": 404,
+          "archived": true
+        },
+        "ZZ TEST 764 Khun Ying": {
+          "status": 404,
+          "archived": true
+        }
+      },
+      "registrationsOfThisRun": [],
+      "sales": [
+        {
+          "receipt": "Z762-000003",
+          "status": "finalised",
+          "gross": 91500
+        },
+        {
+          "receipt": "Z762-000002",
+          "status": "finalised",
+          "gross": 87000
+        },
+        {
+          "receipt": "Z762-000001",
+          "status": "finalised",
+          "gross": 104000
+        }
+      ],
+      "displayAfter": "Set up this display In the Console, open Devices, choose Pair a display, and enter this code for the station. 914657 This code expires at 21:19. Expire code now",
+      "untouched": [
+        {
+          "name": "FWBooth1",
+          "archived": false
+        },
+        {
+          "name": "Reception Till 1",
+          "archived": false
+        },
+        {
+          "name": "Till 1 (Pi)",
+          "archived": false
+        },
+        {
+          "name": "Till 2 (test)",
+          "archived": false
+        }
+      ]
+    },
+    "finishedAt": "2026-11-05T14:09:09.603Z"
+  },
+  "finishedAt": "2026-11-05T14:09:09.603Z",
+  "jira": {
+    "SCRUM-762": {
+      "comment": 13513,
+      "images": 8,
+      "status": "Deployed",
+      "commitLinks": 4
+    },
+    "SCRUM-779": {
+      "comment": 13514,
+      "images": 6,
+      "status": "Deployed",
+      "commitLinks": 2
+    },
+    "SCRUM-764": {
+      "comment": 13515,
+      "images": 11,
+      "status": "Deployed",
+      "commitLinks": 3
+    }
+  }
+}

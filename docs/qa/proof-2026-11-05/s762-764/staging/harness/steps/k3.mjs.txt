@@ -1,0 +1,34 @@
+// Shot of the newest printout in the open panel, enlarged; the QR and barcode (a band code someone could use) masked.
+export async function bandShot(S, name, maskTop = 0.14) {
+  const { sleep } = S.lib;
+  const page = S.pages.CON.page;
+  const scope = (await page.getByRole('dialog').count()) ? page.getByRole('dialog').first() : page;
+  const img = scope.locator('img[alt^="Printout"]').first();
+  await img.evaluate((el) => { el.style.width = '520px'; el.style.maxWidth = 'none'; el.style.height = 'auto'; });
+  await sleep(800);
+  await img.evaluate((el) => el.scrollIntoView({ block: 'end' }));
+  await sleep(800);
+  await img.evaluate((el, top) => {
+    document.getElementById('zz-mask')?.remove();
+    const r = el.getBoundingClientRect();
+    const m = document.createElement('div');
+    m.id = 'zz-mask';
+    m.style.cssText = `position:fixed;left:${r.left + 4}px;top:${r.top + r.height * top}px;width:${r.width - 8}px;height:${r.height * (1 - top) - 4}px;background:#ff00ff;z-index:99999;color:#fff;font:600 16px system-ui;display:flex;align-items:center;justify-content:center`;
+    m.textContent = 'band code hidden in this picture';
+    document.body.appendChild(m);
+  }, maskTop);
+  await sleep(500);
+  const box = await img.boundingBox();
+  const near = await img.evaluate((el) => (el.parentElement?.parentElement?.textContent ?? '').slice(0, 200));
+  const vp = page.viewportSize();
+  const chip = await scope.getByRole('button', { name: S.which ?? 'Band Printer (kids)', exact: true }).boundingBox();
+  const x = Math.max(0, box.x - 10), y = Math.max(0, Math.min(chip?.y ?? box.y, box.y) - 10);
+  const clip = { x, y, width: Math.min(box.width + 20, vp.width - x), height: Math.min(box.y + box.height + 60 - y, vp.height - y) };
+  await S.shot('CON', name, { clip });
+  await page.evaluate(() => document.getElementById('zz-mask')?.remove());
+  return { box, clip, near };
+}
+export default async function (S) {
+  S.which = 'Band Printer (kids)';
+  return bandShot(S, 's762-04a-kids-band-printed-tel-number', 0.18);
+}

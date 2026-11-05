@@ -1,0 +1,22 @@
+// SCRUM-762 1a: the separate display asks for the number, with the safety line; Continue off; no Skip. Till: no Skip.
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const d = S.pages.D.page;
+  const t = S.pages.T.page;
+  const cont = d.getByRole('button', { name: 'Continue', exact: true });
+  const r = {
+    at: new Date().toISOString(),
+    heading: await d.getByRole('heading', { name: "What's your phone number?" }).isVisible(),
+    safety: one(await d.getByTestId('identify-safety').innerText()),
+    continueDisabled: await cont.isDisabled(),
+    skipOnDisplay: await d.getByRole('button', { name: /skip/i }).count(),
+  };
+  await S.shot('D', 's762-01a-display-phone-required-no-skip');
+  await sleep(1500);
+  r.tillSkip = await t.getByRole('button', { name: /Skip/ }).count();
+  r.tillRequired = await t.getByTestId('identify-phone-required').isVisible();
+  r.tillHarnessHalfShown = await t.getByText("What's your phone number?", { exact: true }).isVisible().catch(() => false);
+  await S.shot('T', 's762-01d-till-membership-check-display-paired-no-skip');
+  S.st.steps.a1 = r; S.save();
+  return r;
+}

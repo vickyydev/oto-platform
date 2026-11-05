@@ -1,0 +1,8 @@
+export default async function (S) {
+  const out = {};
+  for (const [k, id] of [['kids', '01a0be8c-89af-7c2b-861f-f3d1f0f5d27b'], ['adult', '01a0be8c-89b2-7f21-84e0-74c754838f5b'], ['receipt', '01a0be8c-89a4-756b-aca1-3be1082c669d']]) {
+    const r = await S.adminApi('GET', `/devices/${id}/printouts?limit=3`);
+    out[k] = { status: r.status, printouts: (r.body?.printouts ?? []).map((p) => ({ seq: p.seq, at: p.at, w: p.widthDots, h: p.heightDots })), events: (r.body?.events ?? []).slice(-4).map((e) => ({ at: e.at, kind: e.kind })) };
+  }
+  return out;
+}

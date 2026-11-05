@@ -1,0 +1,1 @@
+export default async function (S) { const t = S.pages.T.page; await S.look('T'); return { body: S.lib.one(await t.locator('body').innerText()).slice(400, 2500), net: S.pages.T.net.slice(-8).map((n) => ({ at: n.at, method: n.method, path: n.path, status: n.status, err: n.response?.error?.code ?? null })) }; }

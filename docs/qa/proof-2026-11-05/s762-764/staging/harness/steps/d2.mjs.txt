@@ -1,0 +1,27 @@
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const t = S.pages.T.page;
+  const d = S.pages.D.page;
+  const f = S.st.fixture;
+  const before = new Set((await S.lib.salesOf(S, f.till.id)).map((s) => s.id));
+  S.st.steps.d2 = { at: new Date().toISOString(), before: [...before] };
+  await t.getByRole('button', { name: 'Continue', exact: true }).click();
+  await sleep(2500);
+  const amountDue = t.getByRole('heading', { name: 'Amount Due' });
+  const pay = t.getByRole('button', { name: /^Pay ฿/ });
+  for (let i = 0; i < 6 && !(await amountDue.isVisible().catch(() => false)); i += 1) {
+    if (await pay.isVisible().catch(() => false) && await pay.isEnabled().catch(() => false)) { await pay.click(); await sleep(2500); continue; }
+    await sleep(1500);
+  }
+  await S.look('T'); await S.look('D', 'lookD');
+  const vis = await amountDue.isVisible().catch(() => false);
+  let fresh = null;
+  for (let i = 0; i < 30 && vis; i += 1) {
+    const l = await S.lib.salesOf(S, f.till.id);
+    fresh = l.find((s) => !before.has(s.id));
+    if (fresh) break;
+    await sleep(500);
+  }
+  if (fresh) { f.sale1d = { id: fresh.id }; S.st.created.push({ kind: 'sale', id: fresh.id, what: '762 walk-in kids+adult', at: new Date().toISOString() }); S.save(); }
+  return { amountDue: vis, fresh: fresh ? { id: fresh.id, status: fresh.status } : null, till: one(await t.locator('body').innerText()).slice(500, 1800), display: one(await d.locator('body').innerText()).slice(0, 600) };
+}

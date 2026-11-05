@@ -1,0 +1,12 @@
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const t = S.pages.T.page;
+  const d = S.pages.D.page;
+  await S.lib.stepTo(t, 'Adults', 0);
+  await sleep(800);
+  await t.getByRole('button', { name: 'Continue', exact: true }).click();
+  await sleep(5000);
+  await S.look('T');
+  await S.look('D', 'lookD');
+  return { till: one(await t.locator('body').innerText()).slice(0, 2500), display: one(await d.locator('body').innerText()).slice(0, 1500) };
+}

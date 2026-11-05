@@ -1,0 +1,26 @@
+// SCRUM-764 3e (staff copy): the family's notes arrive; the ticks are shown and cannot be changed by staff.
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const t = S.pages.T.page;
+  await t.getByRole('button', { name: 'Private child details', exact: true }).click();
+  const pf = t.getByRole('dialog', { name: 'Private child details', exact: true });
+  await pf.waitFor({ timeout: 15000 });
+  await sleep(1000);
+  const allergy = await pf.getByPlaceholder(/^e.g. peanut allergy/).inputValue();
+  const inputs = await pf.locator('input, textarea').evaluateAll((els) => els.map((e) => ({ ph: e.getAttribute('placeholder'), v: e.value, type: e.type, disabled: e.disabled })));
+  const staffTick = pf.getByTestId('consent-ack');
+  const ackDisabled = await staffTick.isDisabled();
+  const confDisabled = [];
+  for (const item of await pf.getByTestId('consent-confirmation').all()) confDisabled.push(await item.isDisabled());
+  const status = t.getByTestId('consent-ticks-status');
+  const before = one(await status.innerText());
+  await staffTick.click({ force: true }).catch(() => {});
+  await sleep(1200);
+  const after = one(await status.innerText());
+  await staffTick.scrollIntoViewIfNeeded();
+  await sleep(500);
+  await S.shot('T', 's764-06-till-staff-copy-family-notes-ticks-read-only');
+  const r = { at: new Date().toISOString(), allergy, inputs, ackDisabled, confDisabled, statusUnchanged: before === after, after, btns: (await pf.getByRole('button').allInnerTexts()).map(one) };
+  S.st.steps.f8 = r; S.save();
+  return r;
+}

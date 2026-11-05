@@ -1,0 +1,18 @@
+// SCRUM-764 3b: the till's gate mirrors the name, the age and the requirement.
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const d = S.pages.D.page;
+  const t = S.pages.T.page;
+  const form = d.getByTestId('display-consent');
+  await S.shot('D', 's764-02a-display-child-named-age-drop-off-fee');
+  await form.getByRole('button', { name: 'Continue', exact: true }).click();
+  await S.expect(t.getByPlaceholder("Child's name")).toHaveValue('ZZ TEST 764 Mai', { timeout: 30000 });
+  await sleep(2000);
+  const gate = one(await t.locator('body').innerText());
+  const i = gate.indexOf('Children playing alone');
+  const r = { at: new Date().toISOString(), gate: gate.slice(Math.max(0, i - 900), i + 700) };
+  await S.shot('T', 's764-02b-till-gate-mirrors-name-age-drop-off');
+  await form.getByTestId('consent-care').waitFor({ timeout: 30000 });
+  S.st.steps.f4 = r; S.save();
+  return r;
+}

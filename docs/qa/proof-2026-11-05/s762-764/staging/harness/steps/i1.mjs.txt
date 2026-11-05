@@ -1,0 +1,45 @@
+// SCRUM-764 3i: a child whose requirement is nanny: the display shows the nanny requirement and the hourly rate.
+export default async function (S) {
+  const { sleep, one, keypad } = S.lib;
+  const t = S.pages.T.page;
+  const d = S.pages.D.page;
+  await S.lib.unlockIfLocked(S, t, 'RECEPTION');
+  await t.getByRole('button', { name: 'Tickets', exact: true }).click();
+  await sleep(2500);
+  await d.getByTestId('identify-safety').waitFor({ timeout: 30000 });
+  await keypad(d, '0897640001');
+  await d.getByRole('button', { name: 'Continue', exact: true }).click();
+  const offer = t.getByRole('button', { name: 'Continue as walk-in', exact: true });
+  await offer.waitFor({ timeout: 30000 });
+  await offer.click();
+  await sleep(1500);
+  await t.getByRole('heading', { name: 'Tourist', exact: true }).click();
+  await sleep(1500);
+  await t.getByRole('heading', { name: '1 Hour Play', exact: true }).click();
+  await sleep(1500);
+  await S.lib.stepTo(t, 'Kids', 1);
+  await S.lib.stepTo(t, 'Adults', 0);
+  await t.getByRole('button', { name: 'Continue', exact: true }).click();
+  await t.getByRole('heading', { name: 'Children playing alone', exact: true }).waitFor({ timeout: 30000 });
+  const form = d.getByTestId('display-consent');
+  await form.waitFor({ timeout: 30000 });
+  await form.getByPlaceholder('Full name').fill('ZZ TEST 764 Pim');
+  const kb = d.getByRole('button', { name: 'Done', exact: true });
+  if (await kb.isVisible().catch(() => false)) { await kb.click(); await sleep(300); }
+  await form.getByRole('button', { name: /Tap to set age/ }).click();
+  const picker = d.getByRole('dialog');
+  await picker.getByRole('button', { name: '3', exact: true }).click();
+  await sleep(400);
+  await picker.getByRole('button', { name: 'Mar', exact: true }).click();
+  await sleep(400);
+  await picker.getByRole('button', { name: '10', exact: true }).click();
+  await sleep(400);
+  await picker.getByRole('button', { name: /Confirm/ }).click();
+  await sleep(1200);
+  const txt = one(await form.innerText());
+  await S.lib.fixScroll(d);
+  await S.shot('D', 's764-10a-display-nanny-requirement-and-hourly-rate-en');
+  S.st.steps.i1 = { at: new Date().toISOString(), form: txt.slice(0, 700) };
+  S.save();
+  return S.st.steps.i1;
+}

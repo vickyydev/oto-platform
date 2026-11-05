@@ -1,0 +1,10 @@
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const d = S.pages.D.page;
+  await d.getByRole('button', { name: 'Expire code now', exact: true }).click();
+  await sleep(2500);
+  const after = one(await d.locator('body').innerText()).slice(0, 200);
+  S.st.cleanup.actions.push({ what: 'expire the display page’s new pairing code', after: after.replace(/\b\d{6}\b/g, '••••••') });
+  S.save();
+  return after.replace(/\b\d{6}\b/g, '••••••');
+}

@@ -1,0 +1,10 @@
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const t = S.pages.T.page;
+  await t.getByRole('heading', { name: '1 Hour Play', exact: true }).click();
+  await sleep(1500);
+  const btns = (await t.getByRole('button').allInnerTexts()).map(one).filter(Boolean);
+  const aria = await t.locator('button[aria-label]').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')).filter((a) => /Add one|Remove one/.test(a)));
+  await S.look('T');
+  return { aria, btns: btns.slice(0, 80), till: one(await t.locator('body').innerText()).slice(0, 2000) };
+}

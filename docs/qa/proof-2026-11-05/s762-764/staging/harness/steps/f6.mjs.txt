@@ -1,0 +1,24 @@
+// SCRUM-764 3d + SCRUM-762 1e: agreements step: the number from the start shown read-only, not asked again; the family ticks.
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const d = S.pages.D.page;
+  const form = d.getByTestId('display-consent');
+  const kept = form.getByTestId('consent-kept-phone');
+  const keptText = one(await kept.innerText());
+  const phoneInputs = await form.locator('input[type="tel"], input[inputmode="tel"]').count();
+  const keypadKeys = await form.getByRole('button', { name: '7', exact: true }).count();
+  await form.getByLabel('Parent / guardian name', { exact: true }).fill('ZZ TEST 764 Khun Ying');
+  const kb = d.getByRole('button', { name: 'Done', exact: true });
+  if (await kb.isVisible().catch(() => false)) { await kb.click(); await sleep(300); }
+  await kept.scrollIntoViewIfNeeded();
+  await S.lib.fixScroll(d);
+  await sleep(500);
+  await S.shot('D', 's764-04a-display-agreements-number-from-start-not-asked');
+  const boxes = await form.getByRole('checkbox').all();
+  for (const b of boxes) await b.check();
+  await sleep(800);
+  await S.shot('D', 's764-04b-display-agreements-ticked-by-family', { fullPage: true });
+  const r = { at: new Date().toISOString(), keptText: keptText.replace(/\d(?=\d{4})/g, '•'), phoneInputs, keypadKeys, checkboxes: boxes.length, checked: await form.getByRole('checkbox', { checked: true }).count() };
+  S.st.steps.f6 = r; S.save();
+  return r;
+}

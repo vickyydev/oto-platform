@@ -1,0 +1,6 @@
+export default async function (S) {
+  const r = await S.adminApi('GET', `/audit?action=app_identity.lifecycle_deactivation.failed&limit=3`);
+  const rows = r.body?.rows ?? r.body?.entries ?? r.body?.items ?? r.body;
+  const list = Array.isArray(rows) ? rows : [];
+  return { status: r.status, keys: Object.keys(r.body ?? {}), n: list.length, first: list[0] ? { at: list[0].createdAt, entityType: list[0].entityType, after: JSON.stringify(list[0].after).slice(0, 600) } : JSON.stringify(r.body).slice(0, 600) };
+}

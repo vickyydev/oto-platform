@@ -1,0 +1,14 @@
+export default async function (S) {
+  const f = S.st.fixture;
+  const regId = '01a1ac03-e92b-75ff-ad9e-0581f6aee048';
+  const regs = (await S.adminApi('GET', `/checkin/registrations?branchId=${f.branchId}`)).body.registrations ?? [];
+  const reg = regs.find((r) => r.id === regId);
+  f.reg764 = regId;
+  S.st.created.push({ kind: 'registration', id: regId, guardian: reg?.guardianName ?? null, at: new Date().toISOString() });
+  const sales = (await S.lib.salesOf(S, f.till.id)).filter((s) => s.status === 'tendering');
+  if (sales[0]) { f.sale764 = { id: sales[0].id }; S.st.created.push({ kind: 'sale', id: sales[0].id, what: '764 drop-off', at: new Date().toISOString() }); }
+  S.save();
+  const t = S.pages.T.page;
+  await S.shot('T', 's764-09b-till-registered-payment-screen');
+  return { reg: reg ? { guardianName: reg.guardianName, guardianPhoneLast4: (reg.guardianPhone ?? '').slice(-4), guardianPhoneE164: /^\+66\d{9}$/.test(reg.guardianPhone ?? ''), keys: Object.keys(reg), children: (reg.children ?? []).map((c) => ({ name: c.childName, age: c.ageYears ?? c.age, allergies: c.allergiesMedical ?? c.allergies, food: c.foodRestrictions ?? c.dietary, status: c.status, keys: Object.keys(c) })) } : null, tendering: sales.map((s) => s.id) };
+}

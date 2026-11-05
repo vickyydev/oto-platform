@@ -1,0 +1,7 @@
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const t = S.pages.T.page;
+  await t.getByRole('button', { name: 'Back', exact: true }).last().click();
+  await sleep(2500);
+  return { till: one(await t.locator('body').innerText()).slice(500, 1500), btns: (await t.getByRole('button').allInnerTexts()).map(one).filter(Boolean).slice(10, 40) };
+}

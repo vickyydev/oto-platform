@@ -1,0 +1,36 @@
+// Clean-up, own records only: revoke the display, sign sessions out, clear and archive the ZZ TEST till, archive the ZZ TEST members; read back.
+export default async function (S) {
+  const f = S.st.fixture;
+  const C = S.st.cleanup;
+  C.startedAt = C.startedAt ?? new Date().toISOString();
+  const act = (what, res, extra = {}) => { C.actions.push({ what, status: res.status, code: res.body?.error?.code ?? null, ...extra }); S.save(); return res; };
+  if (!f.till.name.startsWith('ZZ TEST SCRUM-762')) throw new Error('refusing ' + f.till.name);
+  // 1. Unpaid sales on this till (none expected).
+  const sales = await S.lib.salesOf(S, f.till.id);
+  C.salesBefore = sales.map((s) => ({ id: s.id, receipt: s.receiptNumber ?? null, status: s.status, gross: s.totals?.grossSatang ?? null }));
+  for (const s of sales.filter((s) => s.status === 'tendering')) act('void unpaid sale', await S.adminApi('POST', `/sales/${s.id}/void`, { reason: 'ZZ TEST SCRUM-762/779/764 proof: not paid' }), { saleId: s.id });
+  // 2. The display credential.
+  const dBefore = (await S.adminApi('GET', `/stations/${f.till.id}/displays`)).body?.displays ?? [];
+  act('revoke the ZZ TEST SCRUM-762 display', await S.adminApi('POST', `/credentials/${f.display.credentialId}/revoke`, { reason: 'ZZ TEST SCRUM-762/779/764 staging proof clean-up' }));
+  const dAfter = (await S.adminApi('GET', `/stations/${f.till.id}/displays`)).body?.displays ?? [];
+  C.displays = { before: dBefore.map((x) => ({ name: x.name, connected: x.connected, revokedAt: x.revokedAt ?? null })), after: dAfter.map((x) => ({ name: x.name, connected: x.connected, revokedAt: x.revokedAt ?? null })) };
+  // 3. Sessions.
+  for (const label of ['T', 'CON']) {
+    if (!S.pages[label]) continue;
+    act(`${label} sign-out`, await S.pageApi(label, 'POST', '/auth/sign-out', {}));
+    C[`me${label}AfterSignOut`] = (await S.pageApi(label, 'GET', '/me')).status;
+  }
+  // 4. The till: its shared simulated printers unassigned, then archived.
+  act('clear the printer assignments on the ZZ TEST SCRUM-762 till', await S.adminApi('PATCH', `/stations/${f.till.id}`, { devices: [] }));
+  act('archive station ZZ TEST SCRUM-762 till', await S.adminApi('DELETE', `/stations/${f.till.id}`));
+  // 5. The ZZ TEST members this run made (the fixture one, the 779 one, and the one the drop-off gate made from the 764 parent's number).
+  const gate = (await S.adminApi('GET', `/members/lookup?phone=${encodeURIComponent(f.phones.walkIn)}`)).body?.member ?? null;
+  if (gate) { f.member764 = { id: gate.id, nickname: gate.nickname, children: (gate.children ?? []).map((c) => c.name) }; S.st.created.push({ kind: 'member', id: gate.id, name: gate.nickname, via: 'drop-off gate (find or create the parent)' }); }
+  for (const m of [f.member, f.member779, f.member764].filter(Boolean)) {
+    const cur = (await S.adminApi('GET', `/members/${m.id}`)).body?.member;
+    if (!cur || !/^ZZ TEST/.test(cur.nickname)) { act('refused to archive a member not named ZZ TEST', { status: 0, body: {} }, { id: m.id }); continue; }
+    act('archive member ' + cur.nickname, await S.adminApi('DELETE', `/members/${m.id}`));
+  }
+  S.save();
+  return C;
+}

@@ -1,0 +1,23 @@
+// SCRUM-764 3c: the family types the allergies and dietary notes on the display.
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const d = S.pages.D.page;
+  const form = d.getByTestId('display-consent');
+  const care = form.getByTestId('consent-care');
+  await care.getByPlaceholder(/^e.g. peanut allergy/).fill('ZZ TEST peanuts');
+  const kb = d.getByRole('button', { name: 'Done', exact: true });
+  if (await kb.isVisible().catch(() => false)) { await kb.click(); await sleep(300); }
+  const diet = care.locator('input').last();
+  const dietPh = await diet.getAttribute('placeholder');
+  await diet.fill('ZZ TEST no gluten');
+  if (await kb.isVisible().catch(() => false)) { await kb.click(); await sleep(300); }
+  await sleep(800);
+  await S.lib.fixScroll(d);
+  await S.shot('D', 's764-03-display-care-step-family-types-notes');
+  const r = { at: new Date().toISOString(), dietPlaceholder: dietPh, care: one(await care.innerText()) };
+  await form.getByRole('button', { name: 'Continue', exact: true }).click();
+  await form.getByTestId('consent-kept-phone').waitFor({ timeout: 30000 });
+  await sleep(1500);
+  S.st.steps.f5 = r; S.save();
+  return r;
+}

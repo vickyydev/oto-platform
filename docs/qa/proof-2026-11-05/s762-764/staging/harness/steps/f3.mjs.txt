@@ -1,0 +1,19 @@
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const d = S.pages.D.page;
+  const picker = d.getByRole('dialog');
+  await picker.getByRole('button', { name: '6', exact: true }).click();
+  await sleep(600);
+  const m = one(await picker.innerText()).slice(0, 400);
+  await picker.getByRole('button', { name: 'Jan', exact: true }).click().catch(async () => picker.getByRole('button').filter({ hasText: /^Jan/ }).first().click());
+  await sleep(600);
+  const dd = one(await picker.innerText()).slice(0, 400);
+  await picker.getByRole('button', { name: '5', exact: true }).click();
+  await sleep(600);
+  const c = one(await picker.innerText()).slice(0, 400);
+  const confirm = picker.getByRole('button', { name: /Confirm/ });
+  if (await confirm.count()) await confirm.click();
+  await sleep(800);
+  const form = d.getByTestId('display-consent');
+  return { m, dd, c, after: one(await form.innerText()).slice(0, 500) };
+}

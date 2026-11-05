@@ -1,0 +1,14 @@
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const t = S.pages.T.page;
+  await S.lib.unlockIfLocked(S, t, 'RECEPTION');
+  await S.lib.payCash(t);
+  await t.getByRole('heading', { name: 'Payment Successful' }).waitFor({ timeout: 45000 });
+  await sleep(2500);
+  const body = one(await t.locator('body').innerText());
+  const btns = (await t.getByRole('button').allInnerTexts()).map(one).filter(Boolean);
+  const s = (await S.lib.readSale(S, S.st.fixture.sale764.id)).sale;
+  S.st.fixture.sale764.receipt = s.receiptNumber;
+  S.save();
+  return { receipt: s.receiptNumber, status: s.status, btns: btns.slice(10, 40), body: body.slice(400, 1500) };
+}

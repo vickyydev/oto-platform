@@ -1,0 +1,1 @@
+export default async function (S) { const p = S.pages.T.page; await S.look('T'); return { btns: (await p.getByRole('button').allInnerTexts()).map(S.lib.one).filter(Boolean).slice(0, 30), url: p.url() }; }

@@ -1,0 +1,8 @@
+export default async function (S) {
+  await S.shot('T', 's762-02a-till-recognises-member-and-children-from-local-number');
+  await S.shot('D', 's762-02b-display-welcome-back-member');
+  const m = (await S.adminApi('GET', `/members/${S.st.fixture.member.id}`)).body.member;
+  S.st.steps.c1 = { at: new Date().toISOString(), typed: 'Thai local form with leading 0 (0897…0001)', recognised: m.nickname, storedAs: 'E.164 +66 (masked in receipt)', children: m.children.map((c) => c.name) };
+  S.save();
+  return S.st.steps.c1;
+}

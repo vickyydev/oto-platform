@@ -1,0 +1,21 @@
+// SCRUM-764 3f: staff type a child detail on the till at the family's request; it shows on the display.
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const t = S.pages.T.page;
+  const d = S.pages.D.page;
+  const pf = t.getByRole('dialog', { name: 'Private child details', exact: true });
+  const diet = pf.getByPlaceholder('e.g. halal, no pork — optional');
+  await diet.fill('ZZ TEST no gluten, no egg (typed by staff)');
+  await sleep(600);
+  // the photo, as staff take it
+  await pf.getByRole('button', { name: 'Start camera', exact: true }).click();
+  await sleep(2500);
+  const take = pf.getByRole('button', { name: 'Take photo', exact: true });
+  let photo = 'no take button';
+  if (await take.isVisible().catch(() => false)) { await take.click(); await sleep(1500); photo = (await pf.getByAltText('Captured', { exact: true }).count()) ? 'captured' : 'not captured'; }
+  await sleep(2500);
+  const form = d.getByTestId('display-consent');
+  const onDisplayNow = one(await form.innerText()).slice(0, 900);
+  await S.look('T');
+  return { photo, onDisplayNow };
+}

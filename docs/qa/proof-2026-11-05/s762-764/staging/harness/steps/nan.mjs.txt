@@ -1,0 +1,5 @@
+export default async function (S) {
+  const r = await S.adminApi('GET', `/checkin/config?branchId=${S.st.fixture.branchId}`);
+  const n = r.body?.nannies ?? [];
+  return { status: r.status, keys: Object.keys(r.body ?? {}), nannies: n.map((x) => ({ name: x.name, onShift: x.onShift ?? x.on_shift ?? null, keys: Object.keys(x) })).slice(0, 10), policy: JSON.stringify(r.body?.policy ?? r.body?.supervisionPolicy ?? '').slice(0, 500) };
+}

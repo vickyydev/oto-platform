@@ -1,0 +1,16 @@
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const d = S.pages.D.page;
+  const form = d.getByTestId('display-consent');
+  await form.getByRole('button', { name: 'Back', exact: true }).click();
+  const care = form.getByTestId('consent-care');
+  await care.waitFor({ timeout: 15000 });
+  await sleep(1500);
+  const diet = await care.locator('input').last().inputValue();
+  const allergy = await care.getByPlaceholder(/^e.g. peanut allergy/).inputValue();
+  const r = { at: new Date().toISOString(), dietOnDisplay: diet, allergyOnDisplay: allergy };
+  if (diet.includes('typed by staff')) await S.shot('D', 's764-07-display-shows-detail-typed-by-staff');
+  else await S.look('D', 'lookD');
+  S.st.steps.g2 = r; S.save();
+  return r;
+}

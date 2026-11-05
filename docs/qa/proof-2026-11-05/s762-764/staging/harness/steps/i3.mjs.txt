@@ -1,0 +1,27 @@
+// The nanny order stops here: Back from the gate, Cancel; nothing written (no registration, no sale).
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const t = S.pages.T.page;
+  const d = S.pages.D.page;
+  const f = S.st.fixture;
+  const mark = S.pages.T.net.length;
+  await t.getByRole('button', { name: 'Back', exact: true }).last().click();
+  await sleep(2000);
+  await t.getByRole('button', { name: 'Cancel', exact: true }).last().click();
+  await sleep(3000);
+  const writes = S.pages.T.net.slice(mark).filter((n) => !/intents|lease|quote/.test(n.path)).map((n) => ({ method: n.method, path: n.path, status: n.status }));
+  const regs = (await S.adminApi('GET', `/checkin/registrations?branchId=${f.branchId}`)).body.registrations ?? [];
+  const nannyRegs = regs.filter((r) => (r.children ?? []).some((c) => c.childName === 'ZZ TEST 764 Pim')).length;
+  const nannyMember = (await S.adminApi('GET', `/members/lookup?phone=${encodeURIComponent(f.phones.nanny)}`)).body?.member ?? null;
+  const tendering = (await S.lib.salesOf(S, f.till.id, '&status=tendering')).length;
+  // the display back to English for the next family
+  const PILL = ['Change language', 'Сменить язык', 'เปลี่ยนภาษา'];
+  const pill = d.locator(PILL.map((l) => `button[aria-label="${l}"]`).join(', ')).first();
+  await pill.click().catch(() => {});
+  await sleep(500);
+  await d.getByRole('button', { name: 'English', exact: true }).last().click().catch(() => {});
+  await sleep(1000);
+  S.st.steps.i3 = { at: new Date().toISOString(), writes, nannyRegistrations: nannyRegs, nannyNumberMember: !!nannyMember, tendering, till: one(await t.locator('body').innerText()).slice(600, 800), display: one(await d.locator('body').innerText()).slice(0, 200) };
+  S.save();
+  return S.st.steps.i3;
+}

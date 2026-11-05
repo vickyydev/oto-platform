@@ -1,0 +1,17 @@
+Checked on the staging site on 5 November, 20:49 to 21:07 Bangkok, on the live version 9dc7c28, with test records named ZZ TEST and cash only.
+
+What was wrong: only the consent part reached the customer screen. Staff typed the children's details and the parent's phone, staff could tick the agreements too, and the nanny form was not on the customer screen at all.
+
+What a person sees now at the counter: when a child plays without an adult, the form opens on the customer screen in three steps (the children, care details, agreements), in the language chosen on that screen; Thai and Russian were checked. The family types the child's name and picks the age, and sees what is needed and the price: drop-off at ฿225 one-time, or a nanny at ฿330 an hour. The till follows each step and reception can help on its private copy; a note staff typed there showed on the family's screen. "Ask the team" keeps the form on the family's screen and the till says the family asked for help. The family's own typed allergy and dietary notes appear on their screen, while saved profile notes never do: for a member's saved child the screen only says "Saved on your profile — tell the team if anything has changed." The agreement ticks are the family's: the till lists each one as ticked or not, and pressing a tick on staff's copy changes nothing. Staff can tick agreements only when no customer screen can take them. Done on the customer screen, then Continue on the till registered the child with the name, age, allergy, dietary note and parent the family gave. One step was not run on staging: going on from a nanny child to the nanny assignment, because no nanny is on shift on staging tonight and that order could not have been finished; the nanny form itself was filled up to its agreements and the till marked the child "Nanny required".
+
+How to retest on staging:
+# On a till with its customer screen, type a test number on the customer screen and continue as a walk-in. Sell 1 Hour Play with 1 kid and no adult and press Continue.
+# On the customer screen type the child's name and pick age 6 (drop-off) or 3 (nanny): the requirement and price show, and the till shows the same name and age.
+# Type an allergy and a dietary note, then on the agreements step type the parent's name and tick the boxes. The till's card shows each agreement as ticked.
+# On the till open Private child details: the notes are there, the ticks cannot be changed, and staff take the photo there.
+# Press Ask the team on the customer screen: the till says the family asked for help.
+# Press Done on the customer screen, then Continue to payment on the till: the child is registered as the family filled it in.
+# Change the language on the customer screen to Thai or Russian: the form changes language.
+# For a test member with a saved child, the care step says "Saved on your profile" and shows none of the saved notes.
+
+The counter box and the booth need the next box release before the display forms and the band number work when the box runs the till; until then the till falls back to staff ticking.

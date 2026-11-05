@@ -1,0 +1,24 @@
+// Clean-up: the ZZ TEST 764 child, paid and left as booked, checked in from the board (no payment) then checked out.
+export default async function (S) {
+  const { sleep, one, unlockIfLocked } = S.lib;
+  const page = S.pages.T.page;
+  await unlockIfLocked(S, page, 'RECEPTION');
+  await page.getByRole('button', { name: 'Check-in', exact: true }).click();
+  await sleep(2500);
+  await page.getByPlaceholder('Search child, parent or phone…').fill('ZZ TEST 764');
+  await sleep(3000);
+  const card = page.locator('[class*="bg-card"]').filter({ hasText: 'ZZ TEST 764 Mai' }).filter({ has: page.getByRole('button', { name: 'Check in', exact: true }) }).last();
+  await card.waitFor({ timeout: 20000 });
+  const mark = S.pages.T.net.length;
+  await card.getByRole('button', { name: 'Check in', exact: true }).click();
+  await page.getByRole('button', { name: /Check in & issue band/ }).waitFor({ timeout: 20000 });
+  await sleep(1000);
+  const amountDue = await page.getByRole('heading', { name: 'Amount Due', includeHidden: true }).count();
+  await page.getByRole('button', { name: /Check in & issue band/ }).click();
+  await sleep(4000);
+  const net = S.pages.T.net.slice(mark).map((n) => ({ at: n.at, method: n.method, path: n.path, status: n.status }));
+  S.st.cleanup = S.st.cleanup ?? { actions: [] };
+  S.st.cleanup.actions.push({ what: 'board check-in ZZ TEST 764 Mai (paid, left as booked)', net, amountDue });
+  S.save();
+  return { amountDue, net, t: one(await page.locator('body').innerText()).slice(-500) };
+}

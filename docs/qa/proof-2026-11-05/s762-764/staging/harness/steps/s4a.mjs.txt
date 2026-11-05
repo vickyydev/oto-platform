@@ -1,0 +1,10 @@
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const t = S.pages.T.page;
+  await t.getByRole('button', { name: 'Confirm 1 child', exact: true }).click();
+  await sleep(2000);
+  await t.getByRole('heading', { name: 'Tourist', exact: true }).click();
+  await sleep(2000);
+  await S.look('T');
+  return { till: one(await t.locator('body').innerText()).slice(0, 2500) };
+}

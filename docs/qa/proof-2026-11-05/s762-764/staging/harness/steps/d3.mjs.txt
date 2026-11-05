@@ -1,0 +1,16 @@
+export default async function (S) {
+  const { sleep, one } = S.lib;
+  const t = S.pages.T.page;
+  const f = S.st.fixture;
+  const pre = await S.lib.readSale(S, f.sale1d.id);
+  await S.lib.payCash(t);
+  await t.getByRole('heading', { name: 'Payment Successful' }).waitFor({ timeout: 45000 });
+  await sleep(3000);
+  const sale = await S.lib.readSale(S, f.sale1d.id);
+  const s = sale.sale ?? sale;
+  f.sale1d.receipt = s.receiptNumber ?? null;
+  S.st.steps.d3 = { at: new Date().toISOString(), status: s.status, receipt: s.receiptNumber, tier: s.customerTier, memberId: s.memberId ?? null, customerPhoneStored: s.customerPhone ?? '(not in the read)', customerPhoneBeforePay: (pre.sale ?? pre).customerPhone ?? '(not in the read)', keys: Object.keys(s).slice(0, 60) };
+  S.save();
+  await S.shot('T', 's762-03b-paid-cash-walk-in-kids-and-adult', { mask: S.lib.codeMasks(t) });
+  return S.st.steps.d3;
+}

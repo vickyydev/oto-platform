@@ -1,0 +1,14 @@
+// SCRUM-762 1c: the member's number typed in Thai local form (leading 0) on the display; the till recognises the member and children.
+export default async function (S) {
+  const { sleep, one, keypad } = S.lib;
+  const d = S.pages.D.page;
+  const t = S.pages.T.page;
+  await keypad(d, '0897620001');
+  await sleep(500);
+  const typed = await d.locator('input').first().inputValue().catch(() => null);
+  await d.getByRole('button', { name: 'Continue', exact: true }).click();
+  await sleep(5000);
+  await S.look('T');
+  await S.look('D', 'lookD');
+  return { typedMasked: typed ? typed.replace(/\d(?=\d{4})/g, '•') : null, till: one(await t.locator('body').innerText()).slice(0, 1500), display: one(await d.locator('body').innerText()).slice(0, 600) };
+}
