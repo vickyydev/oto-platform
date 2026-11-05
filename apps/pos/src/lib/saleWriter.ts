@@ -261,12 +261,57 @@ function signatureOf(input: SaleWriteInput): string {
   return JSON.stringify([input.cart, input.finalise, input.note ?? null, input.visitId ?? null]);
 }
 
+/** Who a cart belongs to, as the commit body names them. */
+interface CartWho {
+  memberId: string | null;
+  customerPhone: string | null;
+  customerNickname: string | null;
+}
+const whoOf = (input: SaleWriteInput): CartWho => ({
+  memberId: input.cart.memberId ?? null,
+  customerPhone: input.cart.customerPhone ?? null,
+  customerNickname: input.cart.customerNickname ?? null,
+});
+/**
+ * SCRUM-779 — the cart with who it belongs to left out: what is being sold.
+ * Two carts with the same body and a member added to the second are the same
+ * order once that member has joined the sale (`attachMember`).
+ */
+function bodySignatureOf(input: SaleWriteInput): string {
+  const { memberId: _member, customerPhone: _phone, customerNickname: _nickname, ...cart } = input.cart;
+  return JSON.stringify([cart, input.finalise, input.note ?? null, input.visitId ?? null]);
+}
+
 interface SaleAttempt {
   saleId: string;
   actionId: string;
   /** Minted with the ids, so every attempt at this cart sends the same body. */
   occurredAt: string;
   signature: string;
+  /** SCRUM-779 — `bodySignatureOf` the same cart, and who it was rung up for. */
+  body: string;
+  who: CartWho;
+}
+
+/**
+ * SCRUM-779 — what became of a member who arrived after the sale was rung up.
+ * `nothing-rung-up`: no sale yet, so the member simply rides with the cart.
+ * Every other answer keeps the sale that is open as THE sale for this order:
+ * `attached` when the platform added the member to it, otherwise the reason it
+ * stays a walk-in's (a box-lane sale the platform does not hold yet, a sale
+ * already closed, or the platform's refusal in its own words).
+ */
+export type MemberJoinOutcome =
+  | { attached: true; saleId: string }
+  | { attached: false; reason: 'nothing-rung-up' | 'box' | 'closed' | 'refused'; message?: string };
+
+interface MemberJoin {
+  memberId: string;
+  /** The attempt the member joined — its action id, which no other cart shares. */
+  attemptKey: string;
+  /** The sale the platform has added the member to, once it has. */
+  attachedSaleId: string | null;
+  settled: Promise<MemberJoinOutcome>;
 }
 
 export interface SaleWriter {
@@ -304,6 +349,22 @@ export interface SaleWriter {
   declareUnwritten: (reason: string) => string;
   /** Finish with this sale: new ids next time, and any answer still in flight is ignored. */
   reset: () => void;
+  /**
+   * SCRUM-779 — A MEMBER WHO ARRIVED AFTER PAY JOINS THE SALE ALREADY RUNG UP.
+   *
+   * The customer display's details become a member a moment after the payment
+   * screen rang the sale up as a walk-in. The cart then names a member the sale
+   * does not, and the next commit — the Confirm press — would have been a
+   * different sale: the same order rung up twice, the first left unpaid.
+   *
+   * From this call on, a cart that differs from the sale rung up ONLY in who it
+   * belongs to is that sale: `commit` sends it exactly as it was rung up, and
+   * the platform adds the member to the open sale (`POST /sales/:id/member`),
+   * waiting first for a commit still on the wire. When the platform cannot add
+   * the member, the sale stays a walk-in's — still one sale — and the answer
+   * says why. A cart whose ORDER changes is a different sale, as it always was.
+   */
+  attachMember: (memberId: string) => Promise<MemberJoinOutcome>;
   /**
    * TAKE OVER A SALE THE PLATFORM ALREADY HOLDS, rung up by this account at
    * this station before the page was reloaded (`lib/resumeSale.ts`). The
@@ -355,6 +416,8 @@ export function useSaleWriter(): SaleWriter {
    * (`cancel`), so throwing the order away leaves none of them behind.
    */
   const supersededRef = useRef<Map<string, ApiSale>>(new Map());
+  /** SCRUM-779 — the member who joined the sale on screen after it was rung up. */
+  const joinRef = useRef<MemberJoin | null>(null);
 
   useEffect(() => {
     return () => { epochRef.current += 1; };
@@ -373,7 +436,8 @@ export function useSaleWriter(): SaleWriter {
    * key was spent); a different cart is a different sale and takes new ones,
    * starting from the voucher's id when there is one it may take.
    */
-  const decideIds = useCallback((signature: string, preferSaleId?: string): SaleAttempt => {
+  const decideIds = useCallback((input: SaleWriteInput, preferSaleId?: string): SaleAttempt => {
+    const signature = signatureOf(input);
     const previous = saleRef.current;
     if (previous && previous.signature === signature) {
       return renewKeyRef.current ? { ...previous, saleId: newId() } : previous;
@@ -391,11 +455,34 @@ export function useSaleWriter(): SaleWriter {
       actionId: newId(),
       occurredAt: new Date().toISOString(),
       signature,
+      body: bodySignatureOf(input),
+      who: whoOf(input),
+    };
+  }, []);
+
+  /**
+   * SCRUM-779 — the cart as it was rung up, when the only difference is the
+   * member who joined that sale since. Anything else comes back unchanged.
+   */
+  const asRungUp = useCallback((input: SaleWriteInput): SaleWriteInput => {
+    const join = joinRef.current;
+    const attempt = saleRef.current;
+    if (!join || !attempt || join.attemptKey !== attempt.actionId) return input;
+    if ((input.cart.memberId ?? null) !== join.memberId || bodySignatureOf(input) !== attempt.body) return input;
+    return {
+      ...input,
+      cart: {
+        ...input.cart,
+        memberId: attempt.who.memberId,
+        customerPhone: attempt.who.customerPhone,
+        customerNickname: attempt.who.customerNickname,
+      },
     };
   }, []);
 
   const reset = useCallback(() => {
     epochRef.current += 1;
+    joinRef.current = null;
     saleRef.current = null;
     committedRef.current = null;
     attemptsRef.current = 0;
@@ -406,7 +493,10 @@ export function useSaleWriter(): SaleWriter {
     setState({ kind: 'idle' });
   }, []);
 
-  const commit = useCallback(async (input: SaleWriteInput): Promise<SaleWriteOutcome> => {
+  const commit = useCallback(async (offered: SaleWriteInput): Promise<SaleWriteOutcome> => {
+    // SCRUM-779 — a member who joined the rung-up sale does not make it another sale.
+    const input = asRungUp(offered);
+    const rejoined = input !== offered;
     const signature = signatureOf(input);
 
     // This exact cart is already on the platform. Pressing Confirm after Pay
@@ -414,20 +504,27 @@ export function useSaleWriter(): SaleWriter {
     // trip at the moment money changes hands is a round trip that can fail.
     const held = committedRef.current;
     if (held && saleRef.current?.signature === signature) {
-      return { ok: true, written: true, sale: held, replay: true, saleId: held.id };
+      if (rejoined) await joinRef.current?.settled;
+      const current = committedRef.current ?? held;
+      return { ok: true, written: true, sale: current, replay: true, saleId: current.id };
     }
     // The same cart is already going out. Join that attempt rather than opening
     // a second one — a double press, or a screen that mounts twice.
     const inFlight = inFlightRef.current;
     if (inFlight && inFlight.signature === signature && saleRef.current?.signature === signature) {
-      return inFlight.promise;
+      if (!rejoined) return inFlight.promise;
+      const outcome = await inFlight.promise;
+      await joinRef.current?.settled;
+      return outcome.ok && outcome.written && committedRef.current?.id === outcome.saleId
+        ? { ...outcome, sale: committedRef.current }
+        : outcome;
     }
 
     // The same cart keeps its number — a retry has to be the same sale, and a
     // burnt key takes a new number while keeping the press, so
     // `sale_action_unique` still refuses a second sale if the first landed. A
     // different cart is a different sale (`decideIds`).
-    const ids = decideIds(signature, input.preferSaleId);
+    const ids = decideIds(input, input.preferSaleId);
     renewKeyRef.current = false;
     saleRef.current = ids;
     sentRef.current.add(ids.saleId);
@@ -573,11 +670,21 @@ export function useSaleWriter(): SaleWriter {
     void promise.finally(() => {
       if (inFlightRef.current?.promise === promise) inFlightRef.current = null;
     });
-    return promise;
-  }, [decideIds, isCurrent]);
+    if (!rejoined) return promise;
+    // A retry of the walk-in's sale after the member joined: once it lands, the
+    // member goes onto it too.
+    const outcome = await promise;
+    if (outcome.ok && outcome.written) {
+      const join = joinRef.current;
+      if (join && join.attachedSaleId !== outcome.saleId) await attachRef.current?.(join);
+      if (committedRef.current?.id === outcome.saleId) return { ...outcome, sale: committedRef.current };
+    }
+    return outcome;
+  }, [asRungUp, decideIds, isCurrent]);
 
   const prepare = useCallback(
-    (input: SaleWriteInput): string => {
+    (offered: SaleWriteInput): string => {
+      const input = asRungUp(offered);
       const signature = signatureOf(input);
       // Already on the platform, or already going out: that sale's id.
       const held = committedRef.current;
@@ -587,13 +694,76 @@ export function useSaleWriter(): SaleWriter {
         return saleRef.current.saleId;
       }
       // Decided now and kept: `commit` finds this cart's ids and uses them.
-      const ids = decideIds(signature, input.preferSaleId);
+      const ids = decideIds(input, input.preferSaleId);
       renewKeyRef.current = false;
       saleRef.current = ids;
       return ids.saleId;
     },
-    [decideIds],
+    [asRungUp, decideIds],
   );
+
+  /**
+   * SCRUM-779 — add the joined member to the sale rung up for this order, once
+   * any commit of it still on the wire has landed. Kept in a ref so `commit`
+   * can run it again for a retry that lands after the member joined.
+   */
+  const attachRef = useRef<((join: MemberJoin) => Promise<MemberJoinOutcome>) | null>(null);
+  attachRef.current = (join: MemberJoin): Promise<MemberJoinOutcome> => {
+    const epoch = epochRef.current;
+    const live = () => epochRef.current === epoch && joinRef.current === join;
+    const settled = (async (): Promise<MemberJoinOutcome> => {
+      const inFlight = inFlightRef.current;
+      if (inFlight) await inFlight.promise.catch(() => undefined);
+      const held = committedRef.current;
+      if (!live() || !held) return { attached: false, reason: 'nothing-rung-up' };
+      if (held.memberId === join.memberId) {
+        join.attachedSaleId = held.id;
+        return { attached: true, saleId: held.id };
+      }
+      if (held.status === 'finalised' || held.status === 'voided' || held.status === 'refunded') {
+        return { attached: false, reason: 'closed' };
+      }
+      // Rung up on the counter box while the link was down: the platform holds
+      // no row of it until it is paid, so it stays a walk-in's sale.
+      if (laneSale(held.id)?.lane === 'box') return { attached: false, reason: 'box' };
+      try {
+        await salesApi.attachMember(held.id, join.memberId);
+        join.attachedSaleId = held.id;
+        if (live() && committedRef.current?.id === held.id) {
+          const sale = { ...committedRef.current, memberId: join.memberId };
+          committedRef.current = sale;
+          setState((state) => (state.kind === 'committed' && state.saleId === held.id ? { ...state, sale } : state));
+        }
+        return { attached: true, saleId: held.id };
+      } catch (err) {
+        return { attached: false, reason: 'refused', message: messageOf(err) };
+      }
+    })();
+    join.settled = settled;
+    return settled;
+  };
+
+  const attachMember = useCallback((memberId: string): Promise<MemberJoinOutcome> => {
+    const attempt = saleRef.current;
+    // Nothing rung up for this order yet: the member rides with the cart.
+    if (!attempt || !sentRef.current.has(attempt.saleId)) {
+      return Promise.resolve({ attached: false, reason: 'nothing-rung-up' });
+    }
+    // The sale already belongs to somebody: a member is not swapped here.
+    if (attempt.who.memberId && attempt.who.memberId !== memberId) {
+      return Promise.resolve({ attached: false, reason: 'refused', message: 'This sale already belongs to another member.' });
+    }
+    const known = joinRef.current;
+    if (known && known.attemptKey === attempt.actionId && known.memberId === memberId) return known.settled;
+    const join: MemberJoin = {
+      memberId,
+      attemptKey: attempt.actionId,
+      attachedSaleId: null,
+      settled: Promise.resolve({ attached: false, reason: 'nothing-rung-up' }),
+    };
+    joinRef.current = join;
+    return attachRef.current!(join);
+  }, []);
 
   const finalise = useCallback(async (tender?: SaleTenderPayload, actionId?: string): Promise<SaleWriteOutcome> => {
     const ids = saleRef.current;
@@ -800,6 +970,7 @@ export function useSaleWriter(): SaleWriter {
     if (sale.status !== 'tendering' && sale.status !== 'paid') return false;
     // A new sale on screen: whatever was in flight for the last one is dropped.
     epochRef.current += 1;
+    joinRef.current = null;
     attemptsRef.current = 0;
     renewKeyRef.current = false;
     inFlightRef.current = null;
@@ -813,6 +984,8 @@ export function useSaleWriter(): SaleWriter {
       actionId: newId(),
       occurredAt: sale.occurredAt,
       signature: `resumed:${sale.id}`,
+      body: `resumed:${sale.id}`,
+      who: { memberId: sale.memberId ?? null, customerPhone: null, customerNickname: null },
     };
     sentRef.current = new Set([sale.id]);
     committedRef.current = sale;
@@ -828,6 +1001,8 @@ export function useSaleWriter(): SaleWriter {
         actionId: newId(),
         occurredAt: new Date().toISOString(),
         signature: '',
+        body: '',
+        who: { memberId: null, customerPhone: null, customerNickname: null },
       } satisfies SaleAttempt);
     saleRef.current = ids;
     setState({ kind: 'unwritten', saleId: ids.saleId, reason });
@@ -843,6 +1018,7 @@ export function useSaleWriter(): SaleWriter {
     declareUnwritten,
     reset,
     adopt,
+    attachMember,
     saleId: saleRef.current?.saleId ?? null,
     committed: committedRef.current,
     ownsSale,

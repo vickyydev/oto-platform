@@ -822,6 +822,19 @@ export const salesApi = {
       { reason },
       { idempotencyKey: idemKey() },
     ),
+  /**
+   * SCRUM-779 — the member a walk-in became, added to the sale already rung up
+   * for them (`attachMember` in lib/saleWriter.ts). Only the member changes on
+   * the platform: the lines, the money, the tier and the claim stay as rung up.
+   * The key names the sale and the member, so a retry after a lost answer is
+   * the same request, and the same member again is answered as a replay.
+   */
+  attachMember: (saleId: string, memberId: string) =>
+    api.post<ApiResponse<'/sales/{id}/member', 'post'>>(
+      `/sales/${encodeURIComponent(saleId)}/member`,
+      { memberId },
+      { idempotencyKey: `sale-member:${saleId}:${memberId}` },
+    ),
   get: (id: string) => api.get<{ sale: ApiSale }>(`/sales/${encodeURIComponent(id)}`),
   list: (
     params: {

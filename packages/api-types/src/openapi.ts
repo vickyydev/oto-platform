@@ -4683,6 +4683,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sales/{id}/member": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Add the member a walk-in became to their open sale — the customer display’s details saved to a new or found profile after the payment screen rang the sale up. Only the member changes: the lines, the money, the tier it was priced at and the tier claim behind it stay as rung up. Refused, with the reason, for a sale not on the platform, one already closed or voided, one that belongs to another member, and a member who is not this operator’s. The same member again answers a replay. Needs `pos:sale:update` at the sale’s branch. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        memberId: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            replay: boolean;
+                            /** Format: uuid */
+                            saleId: string;
+                            /** Format: uuid */
+                            memberId: string;
+                            status: string;
+                            customerTier: string;
+                            /** Format: uuid */
+                            tierClaimId: string | null;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sales/{id}/benefit/preview": {
         parameters: {
             query?: never;

@@ -1563,6 +1563,18 @@ export default function MobileTill() {
             title: `${tierLabel(verification.tier)} rate saved to ${saved.nickname}`,
             description: `${tierProofLabel(verification.proofType, verification.note)} · valid until ${verification.expiresAt ?? '—'}`,
           });
+          // SCRUM-779 — the sale the payment screen already rang up for this order
+          // takes the member; the Confirm press closes that sale rather than ringing
+          // the order up again under the member and leaving the first one unpaid.
+          void saleWriter.attachMember(saved.id).then((outcome) => {
+            if (saleEpochRef.current !== epoch || outcome.attached || outcome.reason === 'nothing-rung-up') return;
+            toast({
+              title: 'This sale stays a walk-in sale',
+              description: `${outcome.message ?? (outcome.reason === 'box'
+                ? 'It was rung up on the counter box while the connection was down.'
+                : 'It is already closed.')} The rate is saved to ${saved.nickname}; take the payment on this sale as it is.`,
+            });
+          });
         })
         .catch((err: unknown) => {
           if (saleEpochRef.current !== epoch) return;

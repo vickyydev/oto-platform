@@ -2046,6 +2046,8 @@ describe('the seam between this and the till', () => {
       // SCRUM-774 — Hold sale / Save as partly paid, and taking a held sale back to a till.
       '/sales/{id}/hold',
       '/sales/{id}/resume',
+      // SCRUM-779 — the member a walk-in became joins their open sale.
+      '/sales/{id}/member',
       // S2-21 round 3 — a staff benefit previewed on the cart, and taken off a
       // rung-up sale (the commit itself applies it).
       '/sales/{id}/benefit/preview',
@@ -2124,6 +2126,8 @@ describe('the seam between this and the till', () => {
       'POST /sales/:id/extensions/:extensionId/bands pos:sale:create no-target',
       'POST /sales/:id/finalise pos:sale:update no-target',
       'POST /sales/:id/hold pos:sale:update no-target',
+      // SCRUM-779 — the member joins the open sale, the branch checked on the row as for the hold.
+      'POST /sales/:id/member pos:sale:update no-target',
       'POST /sales/:id/refunds pos:refund:create no-target',
       'POST /sales/:id/reprints pos:print:reprint no-target',
       'POST /sales/:id/resume pos:sale:update no-target',

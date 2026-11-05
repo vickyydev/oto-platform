@@ -9477,6 +9477,87 @@
         }
       }
     },
+    "/sales/{id}/member": {
+      "post": {
+        "description": "Add the member a walk-in became to their open sale — the customer display’s details saved to a new or found profile after the payment screen rang the sale up. Only the member changes: the lines, the money, the tier it was priced at and the tier claim behind it stay as rung up. Refused, with the reason, for a sale not on the platform, one already closed or voided, one that belongs to another member, and a member who is not this operator’s. The same member again answers a replay. Needs `pos:sale:update` at the sale’s branch.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "memberId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "memberId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "replay": {
+                      "type": "boolean"
+                    },
+                    "saleId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "memberId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "customerTier": {
+                      "type": "string"
+                    },
+                    "tierClaimId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "replay",
+                    "saleId",
+                    "memberId",
+                    "status",
+                    "customerTier",
+                    "tierClaimId"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/sales/{id}/benefit/preview": {
       "post": {
         "description": "Preview a scanned staff benefit on this F&B cart: the platform verifies the QR, reads the staff member’s profile for the sale’s trading day and their usage this period, and answers the four amounts (comp, free items, credit, standing discount), what comes off the bill after the order’s own manual discounts, each line’s share, and the cart’s totals with it. Writes nothing and claims nothing — the commit (`POST /sales` with `benefit`) applies it. `:id` is the till’s own sale id; a sale already closed is refused. Refused in the prototype’s words for a QR this park did not issue (`No staff benefit found for \"<code>\".`, echoed short of its signature) or a person with nothing set up, and `BENEFIT_FNB_ONLY` away from the F&B station.",

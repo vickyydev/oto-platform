@@ -35,6 +35,7 @@ import { writeBackSalePass } from '../services/booking-event-passes';
 import { removeSaleBenefit } from '../services/benefit-checkout';
 import { holdSale, listHeldSales, resumeHeldSale } from '../services/sale-holds';
 import { recordPaidAtTillRefusal } from '../services/checkin-paid-at-till';
+import { attachSaleMember } from '../services/sale-member';
 import {
   commitSale,
   finaliseSale,
@@ -769,6 +770,49 @@ export async function saleRoutes(app: App): Promise<void> {
       const actionId = pressOf(req, req.body.actionId);
       const result = await withTx(app.db, opCtx(req), 'sale.resume', (tx) =>
         resumeHeldSale(tx, actor, req.params.id, { ...(actionId ? { actionId } : {}) }),
+      );
+      if (result.replay) reply.header('x-oto-replay', 'true');
+      return result;
+    },
+  );
+
+  /**
+   * SCRUM-779 — THE MEMBER A WALK-IN BECAME AFTER THE SALE WAS RUNG UP. The
+   * open sale takes the member; its lines, its money, its tier and the claim
+   * that priced it stay as rung up, so the till never rings the same order up
+   * twice. The rules are `services/sale-member.ts`'s; like hold and void, the
+   * branch is the sale's own and is checked on the row once it is loaded.
+   */
+  app.post(
+    '/:id/member',
+    {
+      config: { permission: 'pos:sale:update', stationTrading: true },
+      schema: {
+        description:
+          'Add the member a walk-in became to their open sale — the customer display’s details saved to a new ' +
+          'or found profile after the payment screen rang the sale up. Only the member changes: the lines, the ' +
+          'money, the tier it was priced at and the tier claim behind it stay as rung up. Refused, with the reason, ' +
+          'for a sale not on the platform, one already closed or voided, one that belongs to another member, and a ' +
+          'member who is not this operator’s. The same member again answers a replay. Needs `pos:sale:update` at ' +
+          'the sale’s branch.',
+        params: z.object({ id: z.string().uuid() }),
+        body: z.object({ memberId: z.string().uuid() }).strict(),
+        response: {
+          200: z.object({
+            replay: z.boolean(),
+            saleId: z.string().uuid(),
+            memberId: z.string().uuid(),
+            status: z.string(),
+            customerTier: z.string(),
+            tierClaimId: z.string().uuid().nullable(),
+          }),
+        },
+      },
+    },
+    async (req, reply) => {
+      const actor = actorOf(req, 'pos:sale:update');
+      const result = await withTx(app.db, opCtx(req), 'sale.member_attach', (tx) =>
+        attachSaleMember(tx, actor, req.params.id, req.body),
       );
       if (result.replay) reply.header('x-oto-replay', 'true');
       return result;
