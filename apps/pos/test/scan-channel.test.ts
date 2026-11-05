@@ -177,9 +177,13 @@ describe('SCRUM-201 — separate display transport and station presentation', ()
     const view = readTicketDisplayView(presented(input));
     expect(view?.consent?.guardianName).toBe('Guardian');
     expect(readTicketDisplayView({ ...presented(input), step: null })?.consent).toEqual(view?.consent);
+    // SCRUM-764 — the family's own care notes are part of the form on their
+    // screen; the photo, a waiver and anything the form does not declare are not.
     const privateDraft = { ...consent(), medicalNotes: 'Private health', slots: consent().slots.map(slot =>
-      ({ ...slot, allergiesMedical: 'Private health', childPhotoUrl: 'Private photo', waived: true })) };
-    expect(JSON.stringify(presented({ ...input, consent: privateDraft }))).not.toMatch(/Private health|Private photo|waived|allergiesMedical/);
+      ({ ...slot, allergiesMedical: 'Family typed', childPhotoUrl: 'Private photo', waived: true })) };
+    const shown = JSON.stringify(presented({ ...input, consent: privateDraft }));
+    expect(shown).not.toMatch(/Private health|Private photo|waived|medicalNotes|childPhotoUrl/);
+    expect(shown).toContain('"allergiesMedical":"Family typed"');
     for (const invalid of [{ ...input, online: false }, { ...input, consent: undefined },
       { ...input, consent: { ...consent(), staffReady: false } }]) {
       expect(ticketDisplayPresentation(invalid, 'prompt-1').cart.supported).toBe(false);
