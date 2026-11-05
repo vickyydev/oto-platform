@@ -9,7 +9,7 @@ import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { takeBookingRedeemHandoff, takeDropOffHandoff } from '@/lib/dropoffHandoff';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { childReviewPatch, useChildReviewSave, useTicketDisplay } from '@/lib/displaySession';
-import { ChildReviewPromptSchema, childReviewAge, ConsentActionSchema, ConsentPromptSchema, consentActionAllowed,
+import { ChildReviewPromptSchema, childReviewAge, ConsentActionSchema, ConsentPromptSchema, consentSlotsComplete, consentActionAllowed,
   newId, stockSizeName, type ChildReviewPrompt, type ConsentPrompt } from '@oto/shared';
 import { useCustomerTheme } from '@/lib/themePref';
 import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines } from '@/lib/pricing';
@@ -23,6 +23,7 @@ import { tierProofLabel } from '@/lib/tierProof';
 import { tierApprovalReasonLabel, type TierApprovalChoice } from '@/lib/tierApproval';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { routeToPayment } from '@/lib/customerContact';
+import { consentSlotPatches } from '@/lib/consentForm';
 import { setSaleOpen } from '@/pwa/openSale';
 import { getAddOns } from '@/store/catalogStore';
 import { inventoryFor, refreshSellableStock } from '@/api/stock';
@@ -136,7 +137,7 @@ import { ManualDiscountModal } from '@/components/shared/ManualDiscountModal';
 import { VerifyTierModal } from '@/components/shared/VerifyTierModal';
 import { CustomerDisplay, CustomerStage } from '@/components/till/CustomerDisplay';
 import { SupervisionGate, slotAge, type SupervisedSlot } from '@/components/till/SupervisionGate';
-import { ConsentCapture } from '@/components/till/ConsentCapture';
+import { ConsentCapture, ConsentTicksStatus } from '@/components/till/ConsentCapture';
 import { RedeemBookingModal } from '@/components/till/RedeemBookingModal';
 import { KioskDeskPanel } from '@/components/till/KioskDeskPanel';
 import { DoorCheckInChoiceModal, type DoorCheckInGroup } from '@/components/till/DoorCheckInChoiceModal';
@@ -3397,20 +3398,50 @@ export default function Till() {
     save: reviewSave.save, canContinue: reviewCanContinue,
   };
   const displayOnline = reviewOnline && cart.quote.source === 'platform' && !cart.pending && !cart.error;
-  const consentRequirements = resolveGroupRequirements(superSlots.map(slot => ({ id: slot.id, age: slotAge(slot) ?? -1 })), supervisionPolicy);
-  const consentRows = superSlots.map(slot => ({ slot, outcome: resolveSupervisionOutcome(
-    consentRequirements.find(item => item.id === slot.id)?.requirement ?? 'none', slot.waived, slot.optIn) }));
+  // Only a child with an age has a requirement: one not yet aged is shown as
+  // waiting for it, never priced as the youngest band (SCRUM-764).
+  const consentRequirements = resolveGroupRequirements(superSlots.flatMap(slot => {
+    const age = slotAge(slot);
+    return age === null ? [] : [{ id: slot.id, age }];
+  }), supervisionPolicy);
+  const consentRows = superSlots.map(slot => ({ slot, outcome: slotAge(slot) === null
+    ? { effective: 'none' as const, needsConsent: false, service: null }
+    : resolveSupervisionOutcome(consentRequirements.find(item => item.id === slot.id)?.requirement ?? 'none', slot.waived, slot.optIn) }));
   const consentRequired = consentRows.some(row => row.outcome.needsConsent);
   const consentStaffReady = !gateSaving && consentRows.every(row => !row.outcome.needsConsent || !!row.slot.childPhotoUrl);
   const consentConfirmations = sortedConfirmations(supervisionPolicy).map(item => ({ id: item.id, text: item.text,
     required: item.required, acknowledged: superAcknowledgedConfirmationIds.includes(item.id) }));
+  /**
+   * SCRUM-764 — THE DROP-OFF AND NANNY FORMS ON THE CUSTOMER SCREEN.
+   *
+   * The family fills each child's name, age and care notes, their own name,
+   * the consent and the confirmations on their own screen, in their language,
+   * step by step; every step lands here (`fill`), so the staff gate and the
+   * private details follow the form as it is filled and reception can help with
+   * it. A child from the family's saved profile keeps their care notes off the
+   * public screen: the profile holds them, and the screen says to tell the team
+   * if anything has changed. The photo, the food choice and the waivers stay
+   * with staff, and the agreement ticks are the family's alone.
+   */
+  const slotAgeOf = (slot: SupervisedSlot): number | null => {
+    const age = slotAge(slot);
+    return age === null || age > 17 ? null : age;
+  };
   const consentBase: Omit<ConsentPrompt, 'kind' | 'requestId' | 'completed'> = {
     visitorId: reviewVisitorId,
-    slots: consentRows.map(({ slot, outcome }) => ({ id: slot.id, name: slot.name,
-      ageYears: slotAge(slot) ?? -1, requirement: outcome.effective })),
+    slots: consentRows.map(({ slot, outcome }) => ({ id: slot.id, name: slot.name.slice(0, 100),
+      ageYears: slotAgeOf(slot), requirement: outcome.effective,
+      dateOfBirth: slot.dateOfBirth ?? null,
+      ...(slot.savedChildId ? { saved: true } : {
+        allergiesMedical: slot.allergiesMedical.slice(0, 500), foodRestrictions: slot.foodRestrictions.slice(0, 200),
+      }) })),
     guardianName: superParentName, consentRequired, consentAcknowledged: superConsentAck,
-    confirmations: consentConfirmations, staffReady: consentStaffReady,
-    canContinue: consentStaffReady && (!consentRequired || !!superParentName.trim() && superConsentAck)
+    confirmations: consentConfirmations,
+    guardianPhone: superParentPhone.trim().slice(0, 32),
+    fees: { nannyHourlyTHB: dropOffPricing.nannyHourlyRateTHB, dropOffFeeTHB: dropOffPricing.oneTimeFeeTHB },
+    staffReady: consentStaffReady,
+    canContinue: consentStaffReady && consentSlotsComplete(consentRows.map(({ slot }) => ({ name: slot.name, ageYears: slotAgeOf(slot) })))
+      && (!consentRequired || !!superParentName.trim() && superConsentAck)
       && consentConfirmations.every(item => !item.required || item.acknowledged),
   };
   /** SCRUM-762 — the parent's number on the forms is still the one given at the start. */
@@ -3418,7 +3449,9 @@ export default function Till() {
   const gatePhoneKept = startPhone.length > 0 && superParentPhone.trim() === startPhone;
   const consentSignature = JSON.stringify(consentBase);
   const consentCandidate = { ...consentBase, completed: consentCompletedScope === consentSignature };
-  const consent = step === 7 && displayOnline && !consentStaffOnly
+  // SCRUM-764 — the form stays on the family’s screen when they ask for help:
+  // reception helps with the details here, and the agreement ticks stay theirs.
+  const consent = step === 7 && displayOnline
     && ConsentPromptSchema.safeParse({ ...consentCandidate, kind: 'consent', requestId: 'validation' }).success
     ? consentCandidate : undefined;
   const consentScope = `${reviewScope}:${consentSignature}`;
@@ -3451,6 +3484,16 @@ export default function Till() {
         setSuperParentName(action.data.guardianName);
         setSuperConsentAck(action.data.consentAcknowledged);
         setSuperAcknowledgedConfirmationIds(action.data.acknowledgedConfirmationIds);
+        setConsentCompletedScope(null);
+      } else if (action.data.action === 'fill') {
+        // SCRUM-764 — a step of the form as the family filled it, mirrored here.
+        const filled = action.data;
+        for (const { id, patch } of consentSlotPatches(superSlots, filled.slots)) handleUpdateSlot(id, patch);
+        setSuperParentName(filled.guardianName);
+        // A number given at the start stays: the form asks only when there was none.
+        if (filled.guardianPhone && !superParentPhone.trim()) setSuperParentPhone(filled.guardianPhone);
+        setSuperConsentAck(filled.consentAcknowledged);
+        setSuperAcknowledgedConfirmationIds(filled.acknowledgedConfirmationIds);
         setConsentCompletedScope(null);
       } else setConsentCompletedScope(current.signature);
       // Acknowledgement never authorises registration, policy changes or payment.
@@ -3681,10 +3724,14 @@ export default function Till() {
             <div className="flex h-full min-h-0 flex-col">
               {linkedDisplay.connected.length > 0 && <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm text-muted-foreground">{consentCandidate.completed
-                  ? 'The guardian has finished the display acknowledgements. Review the private details before Continue.'
-                  : 'The guardian can acknowledge on the display. Private child details stay on this screen.'}</p>
+                  ? 'The family has finished the form on the display. Check the photo and details before Continue.'
+                  : consentStaffOnly
+                    ? 'The family asked for help: fill the form here with them. The agreement ticks stay theirs, on the display.'
+                    : 'The family is filling in the form on the display; it appears here as they go. Help with the details here if they ask.'}</p>
                 <Button size="sm" variant="outline" disabled={gateSaving} onClick={() => setConsentPrivateOpen(true)}>Private child details</Button>
               </div>}
+              <ConsentTicksStatus consentRequired={consentRequired} consentAcknowledged={superConsentAck}
+                confirmations={consentConfirmations} />
               <div className="flex-1 min-h-0"><SupervisionGate
               slots={superSlots}
               parentName={superParentName}
@@ -3957,7 +4004,7 @@ export default function Till() {
             <DialogDescription>Complete the child and guardian checks on this staff screen before continuing.</DialogDescription>
           </DialogHeader>
           <div className="flex-1 min-h-0 dark" inert={gateSaving}>
-            <ConsentCapture staffScreen slots={superSlots} parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
+            <ConsentCapture staffScreen slots={superSlots} ticksReadOnly parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
               parentPhone={superParentPhone} parentContactMethod={superParentContactMethod}
               onParentNameChange={setSuperParentName} onParentPhoneChange={setSuperParentPhone}
               onParentContactMethodChange={setSuperParentContactMethod} onConsentAckChange={setSuperConsentAck}

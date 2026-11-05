@@ -743,8 +743,9 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     expect(document.step === null && document.prompt.slots.length === 1 && document.prompt.staffReady === false).toBe(true);
     const consent = fixture.display.getByTestId('display-consent');
     await expect(consent).toBeVisible({ timeout: 20_000 });
+    // SCRUM-764 — a saved child's care notes stay off the public form: the profile holds them.
     expect(document.prompt.slots.every((slot: Record<string, unknown>) => Object.keys(slot).every(key =>
-      ['id', 'name', 'ageYears', 'requirement'].includes(key)))).toBe(true);
+      ['id', 'name', 'ageYears', 'requirement', 'dateOfBirth', 'saved'].includes(key)))).toBe(true);
     expect(/allergies|medical|foodRestrictions|childPhotoUrl|waived|savedChildId|policy/.test(JSON.stringify(document))).toBe(false);
     await expect(consent.locator('video, canvas, input[type="file"]')).toHaveCount(0);
     for (const viewport of [{ width: 1024, height: 768 }, { width: 1280, height: 800 }]) {
@@ -753,6 +754,12 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     }
     await fixture.display.setViewportSize({ width: 1024, height: 768 });
     page.on('request', observe); fixture.display.on('request', observe);
+    // SCRUM-764 — the form is three steps on the family's screen: the children
+    // (already named from the saved profile), their care, then the agreements.
+    await expect(consent.getByTestId('consent-child')).toHaveCount(1);
+    await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+    await expect(consent.getByText('Saved on your profile — tell the team if anything has changed.', { exact: true })).toBeVisible();
+    await consent.getByRole('button', { name: 'Continue', exact: true }).click();
     await consent.getByLabel('Parent / guardian name', { exact: true }).fill('Local guardian');
     for (const checkbox of await consent.getByRole('checkbox').all()) await checkbox.check();
     await page.getByLabel('Lock screen').click();
@@ -764,7 +771,7 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     });
     await fixture.display.route('**/display/intents', async route => {
       const body = route.request().postDataJSON();
-      if (body.type !== 'display.consent' || body.payload.action !== 'acknowledge') { await route.continue(); return; }
+      if (body.type !== 'display.consent' || body.payload.action !== 'fill') { await route.continue(); return; }
       publicWrites += 1;
       if (publicWrites === 1) {
         originalGesture = { actionId: body.actionId, payload: body.payload };
@@ -825,8 +832,10 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     await privateForm.getByRole('button', { name: 'Close', exact: true }).click();
     await expect(consent.getByRole('button', { name: 'Ask the team', exact: true })).toBeVisible({ timeout: 20_000 });
     await consent.getByRole('button', { name: 'Ask the team', exact: true }).click();
-    await expect(fixture.display.getByText('Please follow the staff screen.', { exact: true })).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByPlaceholder('Your full name', { exact: true })).toBeVisible();
+    // SCRUM-764 — the form stays on the family's screen (the ticks are theirs);
+    // the till says they asked, and reception helps with the details there.
+    await expect(consent.getByText('The team is coming to help you.', { exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(/The family asked for help/)).toBeVisible({ timeout: 20_000 });
     expect(businessWrites === 0).toBe(true);
   } catch (error) {
     await captureLocalCheck(page, 'consent-failure-staff-local.png').catch(() => undefined);

@@ -197,10 +197,13 @@ describe('finite guardian acknowledgement (SCRUM-201)', () => {
     ]) expect(ConsentPromptSchema.safeParse(invalid).success).toBe(false);
   });
   it('strips private fields from the finite public prompt and refuses private action writes', () => {
+    // SCRUM-764 — the family's own care notes are part of the form they fill
+    // on their screen; the photo, a waiver and the policy never are.
     const parsed = ConsentPromptSchema.parse({ ...prompt, policy: 'Private marker',
-      slots: prompt.slots.map(slot => ({ ...slot, allergiesMedical: 'Private marker', childPhotoUrl: 'Private marker', waived: true })),
+      slots: prompt.slots.map(slot => ({ ...slot, allergiesMedical: 'Peanuts', childPhotoUrl: 'Private marker', waived: true })),
       confirmations: prompt.confirmations.map(item => ({ ...item, appliedBy: 'Private marker' })) });
-    expect(parsed).toEqual(prompt);
+    expect(parsed).toEqual({ ...prompt, slots: prompt.slots.map(slot => ({ ...slot, allergiesMedical: 'Peanuts' })) });
+    expect(JSON.stringify(parsed)).not.toMatch(/Private marker|waived|childPhotoUrl/);
     const action = { action: 'acknowledge', requestId: 'request', visitorId: 'visitor', guardianName: ' Guardian ',
       consentAcknowledged: true, acknowledgedConfirmationIds: ['safety'] };
     expect(ConsentActionSchema.parse(action)).toMatchObject({ guardianName: 'Guardian' });
@@ -215,6 +218,36 @@ describe('finite guardian acknowledgement (SCRUM-201)', () => {
     }
     expect(consentActionAllowed(current, { action: 'done', requestId: 'request', visitorId: 'visitor' })).toBe(true);
     expect(consentActionAllowed({ ...current, staffReady: false, canContinue: false }, { action: 'done', requestId: 'request', visitorId: 'visitor' })).toBe(false);
+  });
+  it('SCRUM-764: shows the form before the children are named, and Done only once every child is named and aged', () => {
+    const empty = { ...prompt, slots: [{ id: 'slot', name: '', ageYears: null, requirement: 'none' }],
+      consentRequired: false, consentAcknowledged: false, guardianName: '',
+      confirmations: [{ ...prompt.confirmations[0], acknowledged: false }], canContinue: false };
+    expect(ConsentPromptSchema.safeParse(empty).success).toBe(true);
+    // A form with a child still unnamed or unaged cannot say it may be finished.
+    expect(ConsentPromptSchema.safeParse({ ...prompt, slots: [{ ...prompt.slots[0], name: '' }] }).success).toBe(false);
+    expect(ConsentPromptSchema.safeParse({ ...prompt, slots: [{ ...prompt.slots[0], ageYears: null, requirement: 'none' }],
+      consentRequired: true }).success).toBe(false);
+    expect(ConsentPromptSchema.safeParse({ ...prompt, guardianPhone: '+66812345678',
+      fees: { nannyHourlyTHB: 300, dropOffFeeTHB: 200 } }).success).toBe(true);
+  });
+  it('SCRUM-764: a filled step names only this form’s children, and its ticks need the guardian’s name', () => {
+    const current = ConsentPromptSchema.parse(prompt);
+    const fill = { action: 'fill', requestId: 'request', visitorId: 'visitor',
+      slots: [{ id: 'slot', name: ' Mai ', dateOfBirth: '2020-01-02', ageYears: 6, allergiesMedical: 'Peanuts', foodRestrictions: '' }],
+      guardianName: 'Guardian', consentAcknowledged: true, acknowledgedConfirmationIds: ['safety'] };
+    const parsed = ConsentActionSchema.parse(fill);
+    expect(parsed).toMatchObject({ slots: [{ name: 'Mai' }] });
+    expect(consentActionAllowed(current, parsed)).toBe(true);
+    for (const refused of [
+      { ...fill, slots: [{ ...fill.slots[0], id: 'someone-else' }] },
+      { ...fill, guardianName: ' ' },
+      { ...fill, acknowledgedConfirmationIds: ['unknown'] },
+    ]) expect(consentActionAllowed(current, ConsentActionSchema.parse(refused))).toBe(false);
+    // Nothing the till decides crosses with it.
+    expect(ConsentActionSchema.safeParse({ ...fill, slots: [{ ...fill.slots[0], waived: true }] }).success).toBe(false);
+    expect(ConsentActionSchema.safeParse({ ...fill, childPhotoUrl: 'data:' }).success).toBe(false);
+    expect(ConsentActionSchema.safeParse({ ...fill, slots: [fill.slots[0], fill.slots[0]] }).success).toBe(false);
   });
   it('records prompt metadata only, without guardian, child details or acknowledgement answers', () => {
     const frame = { stationId: '018f0000-0000-7000-8000-000000000001', boxId: '018f0000-0000-7000-8000-000000000002',

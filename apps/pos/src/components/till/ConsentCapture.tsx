@@ -24,6 +24,8 @@ import {
   UserCheck,
   Phone,
   ClipboardCheck,
+  CircleDashed,
+  CheckCircle2,
 } from 'lucide-react';
 
 const DEFAULT_PROVISION: ChildFoodProvision = { mode: 'none', paidTHB: 0 };
@@ -66,6 +68,45 @@ interface ConsentCaptureProps {
    * whatever the customer's half is set to (SCRUM-698, SCRUM-729).
    */
   staffScreen?: boolean;
+  /**
+   * SCRUM-764 — the agreement ticks are the family's alone, given on their own
+   * screen. Staff see whether each one is ticked; they cannot tick it.
+   */
+  ticksReadOnly?: boolean;
+}
+
+/**
+ * SCRUM-764 — the agreements as the family has ticked them on the customer
+ * screen, for reception to follow. Staff English, like the rest of the till.
+ */
+export function ConsentTicksStatus({
+  consentRequired,
+  consentAcknowledged,
+  confirmations,
+}: {
+  consentRequired: boolean;
+  consentAcknowledged: boolean;
+  confirmations: { id: string; text: string; required: boolean; acknowledged: boolean }[];
+}) {
+  if (!consentRequired && confirmations.length === 0) return null;
+  const Tick = ({ on }: { on: boolean }) =>
+    on ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" /> : <CircleDashed className="h-4 w-4 shrink-0 text-muted-foreground" />;
+  return (
+    <div className="mb-3 rounded-xl border border-border bg-card/60 px-4 py-3 text-sm" data-testid="consent-ticks-status">
+      <div className="mb-1.5 font-semibold">Agreements — ticked by the family on their screen</div>
+      <ul className="space-y-1">
+        {consentRequired && (
+          <li className="flex items-center gap-2"><Tick on={consentAcknowledged} />
+            Supervision and photo consent · {consentAcknowledged ? 'ticked' : 'not ticked yet'}</li>
+        )}
+        {confirmations.map((item) => (
+          <li key={item.id} className="flex items-center gap-2"><Tick on={item.acknowledged} />
+            <span className="min-w-0 truncate">{item.text}</span>
+            <span className="shrink-0 text-muted-foreground">· {item.acknowledged ? 'ticked' : item.required ? 'not ticked yet' : 'optional, not ticked'}</span></li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 /**
@@ -96,6 +137,7 @@ export function ConsentCapture({
   acknowledgedConfirmationIds,
   onToggleConfirmation,
   staffScreen = false,
+  ticksReadOnly = false,
 }: ConsentCaptureProps) {
   const customer = useLanguage();
   const t = staffScreen ? tFor('en') : customer.t;
@@ -332,16 +374,20 @@ export function ConsentCapture({
             )}
             <button
               type="button"
+              disabled={ticksReadOnly}
               onClick={() => onConsentAckChange(!consentAck)}
-              className="flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left"
+              className="flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left disabled:cursor-default"
+              data-testid="consent-ack"
             >
               <Checkbox
                 checked={consentAck}
+                disabled={ticksReadOnly}
                 onCheckedChange={(v) => onConsentAckChange(v === true)}
                 className="mt-1 h-6 w-6 border-foreground/30 data-[state=checked]:bg-primary"
               />
               <span className="text-lg leading-snug text-foreground/80">
                 {t('superviseConsent.consentText')}
+                {ticksReadOnly && <span className="ml-2 text-sm text-foreground/50">({consentAck ? 'ticked by the family' : 'the family ticks this on their screen'})</span>}
               </span>
             </button>
           </div>
@@ -365,11 +411,14 @@ export function ConsentCapture({
                 <button
                   key={c.id}
                   type="button"
+                  disabled={ticksReadOnly}
                   onClick={() => onToggleConfirmation(c.id)}
-                  className="flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left"
+                  className="flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left disabled:cursor-default"
+                  data-testid="consent-confirmation"
                 >
                   <Checkbox
                     checked={checked}
+                    disabled={ticksReadOnly}
                     onCheckedChange={() => onToggleConfirmation(c.id)}
                     className="mt-1 h-6 w-6 border-foreground/30 data-[state=checked]:bg-primary"
                   />
@@ -378,6 +427,7 @@ export function ConsentCapture({
                     {!c.required && (
                       <span className="ml-2 text-sm text-foreground/40">({t('superviseConsent.optional')})</span>
                     )}
+                    {ticksReadOnly && <span className="ml-2 text-sm text-foreground/50">({checked ? 'ticked by the family' : 'the family ticks this on their screen'})</span>}
                   </span>
                 </button>
               );

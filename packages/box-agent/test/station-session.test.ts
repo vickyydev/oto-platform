@@ -216,21 +216,50 @@ test('guardian acknowledgement exposes finite public facts and never private chi
   const h = await openConsent();
   try {
     const prompt = consentPrompt();
+    // SCRUM-764 — the family's own care notes are part of the form on their
+    // screen; the photo, a waiver, the policy and a forged answer never are.
     const published = await h.publish({ ...prompt, policy: 'private-policy',
-      slots: prompt.slots.map(slot => ({ ...slot, childPhotoUrl: 'private-photo', allergiesMedical: 'private-health', waived: true })),
+      slots: prompt.slots.map(slot => ({ ...slot, childPhotoUrl: 'private-photo', allergiesMedical: 'Family typed peanuts', waived: true })),
       answer: { type: 'consent', actionId: 'forged-answer', payload: { action: 'done' } } });
     assert.ok(published.ok);
     const publicDoc = h.manager.snapshotFor(published.document, 'customer', null).document;
-    assert.deepEqual(publicDoc.prompt, prompt);
+    assert.deepEqual(publicDoc.prompt, { ...prompt, slots: prompt.slots.map(slot => ({ ...slot, allergiesMedical: 'Family typed peanuts' })) });
     assert.equal(publicDoc.step, null);
-    assert.doesNotMatch(JSON.stringify(publicDoc), /private-policy|private-photo|private-health|waived|forged-answer/);
+    assert.doesNotMatch(JSON.stringify(publicDoc), /private-policy|private-photo|waived|forged-answer/);
     const answer = await h.send({ action: 'acknowledge', requestId: prompt.requestId, visitorId: prompt.visitorId,
       guardianName: 'Guardian private', consentAcknowledged: true, acknowledgedConfirmationIds: ['safety'] }, 'guardian-ack');
     assert.ok(answer.ok);
     assert.equal(answer.document.stage, 'input');
     assert.equal(answer.document.step, 7);
-    assert.doesNotMatch(JSON.stringify(h.events), /Guardian private|Child one|pickup arrangements/);
+    assert.doesNotMatch(JSON.stringify(h.events), /Guardian private|Child one|pickup arrangements|Family typed peanuts/);
     assert.equal(h.facts.length, 0, 'public acknowledgement cannot register a child or collect payment');
+  } finally { h.close(); }
+});
+
+test('SCRUM-764: the family fills the form on their screen and the step reaches the till, nothing the staff decide', async () => {
+  const h = await openConsent();
+  try {
+    // The form is on the screen before any child is named.
+    const prompt = consentPrompt({ slots: [{ id: 'slot', name: '', ageYears: null, requirement: 'none' }],
+      consentRequired: false, guardianPhone: '+66812345678', fees: { nannyHourlyTHB: 300, dropOffFeeTHB: 200 } });
+    const published = await h.publish(prompt);
+    assert.ok(published.ok);
+    assert.deepEqual(h.manager.snapshotFor(published.document, 'customer', null).document.prompt, prompt);
+    const step = { action: 'fill', requestId: prompt.requestId, visitorId: prompt.visitorId,
+      slots: [{ id: 'slot', name: 'Child one', dateOfBirth: '2020-01-02', ageYears: 6, allergiesMedical: 'Peanuts', foodRestrictions: '' }],
+      guardianName: 'Guardian private', consentAcknowledged: true, acknowledgedConfirmationIds: ['safety'] };
+    const answered = await h.send(step, 'guardian-fill');
+    assert.ok(answered.ok);
+    assert.equal((answered.document.prompt?.answer as { payload: { action: string } }).payload.action, 'fill');
+    for (const [index, invalid] of [{ ...step, slots: [{ ...step.slots[0], id: 'another-child' }] },
+      { ...step, slots: [{ ...step.slots[0], waived: true }] }, { ...step, childPhotoUrl: 'private-photo' }].entries()) {
+      const refreshed = await h.publish({ ...prompt, requestId: `guardian-request-${index}` });
+      assert.ok(refreshed.ok);
+      const refused = await h.send({ ...invalid, requestId: `guardian-request-${index}` }, `refused-fill-${index}`);
+      assert.equal(refused.ok, false);
+    }
+    assert.doesNotMatch(JSON.stringify(h.events), /Guardian private|Child one|Peanuts/);
+    assert.equal(h.facts.length, 0, 'a filled form cannot register a child or collect payment');
   } finally { h.close(); }
 });
 

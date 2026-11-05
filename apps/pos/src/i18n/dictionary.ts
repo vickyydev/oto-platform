@@ -225,6 +225,14 @@ export const DICTIONARY: Record<string, Record<SupportedLang, string>> = {
   'handToCustomer.paymentReceivedHandBack': { en: 'Payment received — return phone to staff', zh: '已收款——请将手机交还给工作人员', th: 'ได้รับการชำระเงินแล้ว — คืนโทรศัพท์ให้พนักงาน', ru: 'Оплата получена — верните телефон сотруднику', fr: 'Paiement reçu — rendez le téléphone au personnel' },
 
   // --- Supervise consent (till / /book unaccompanied drop-off consent) ----
+  'superviseConsent.stepChildren': { en: "Your children", zh: "您的孩子", th: "ลูก ๆ ของคุณ", ru: "Ваши дети", fr: "Vos enfants" },
+  'superviseConsent.stepCare': { en: "Care details", zh: "照护信息", th: "ข้อมูลการดูแล", ru: "Сведения об уходе", fr: "Informations de soin" },
+  'superviseConsent.stepAgreements': { en: "Agreements", zh: "同意事项", th: "ข้อตกลง", ru: "Согласия", fr: "Accords" },
+  'superviseConsent.stepOf': { en: "Step {{n}} of {{total}}", zh: "第 {{n}} 步，共 {{total}} 步", th: "ขั้นตอนที่ {{n}} จาก {{total}}", ru: "Шаг {{n}} из {{total}}", fr: "Étape {{n}} sur {{total}}" },
+  'superviseConsent.teamFollowing': { en: "The team sees what you fill in and can help.", zh: "工作人员能看到您填写的内容，并可以协助您。", th: "ทีมงานเห็นสิ่งที่คุณกรอกและพร้อมช่วยเหลือ", ru: "Сотрудники видят, что вы заполняете, и могут помочь.", fr: "L'équipe voit ce que vous remplissez et peut vous aider." },
+  'superviseConsent.nameAndAgeFirst': { en: "Add each child's name and age to continue.", zh: "请填写每个孩子的姓名和年龄后继续。", th: "กรอกชื่อและอายุของเด็กทุกคนเพื่อดำเนินการต่อ", ru: "Укажите имя и возраст каждого ребёнка, чтобы продолжить.", fr: "Indiquez le nom et l'âge de chaque enfant pour continuer." },
+  'superviseConsent.savedOnProfile': { en: "Saved on your profile — tell the team if anything has changed.", zh: "已保存在您的资料中——如有变化，请告诉工作人员。", th: "บันทึกไว้ในโปรไฟล์ของคุณแล้ว — แจ้งทีมงานหากมีอะไรเปลี่ยนแปลง", ru: "Сохранено в вашем профиле — сообщите сотрудникам, если что-то изменилось.", fr: "Enregistré dans votre profil — prévenez l'équipe si quelque chose a changé." },
+  'superviseConsent.teamComing': { en: "The team is coming to help you.", zh: "工作人员马上来帮助您。", th: "ทีมงานกำลังมาช่วยคุณ", ru: "Сотрудник скоро подойдёт и поможет.", fr: "Un membre de l'équipe arrive pour vous aider." },
   'superviseConsent.playingToday': { en: 'Playing with us today', zh: '今天来玩', th: 'มาเล่นกับเราวันนี้', ru: 'Играем у нас сегодня', fr: "En train de jouer chez nous aujourd'hui" },
   'superviseConsent.titleOne': { en: "Tell us about your child", zh: '请告诉我们孩子的信息', th: 'บอกเราเกี่ยวกับลูกของคุณ', ru: 'Расскажите нам о вашем ребёнке', fr: 'Parlez-nous de votre enfant' },
   'superviseConsent.titleMany': { en: "Tell us about your children", zh: '请告诉我们孩子们的信息', th: 'บอกเราเกี่ยวกับลูก ๆ ของคุณ', ru: 'Расскажите нам о ваших детях', fr: 'Parlez-nous de vos enfants' },
