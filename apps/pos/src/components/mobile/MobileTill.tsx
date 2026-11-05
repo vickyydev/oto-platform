@@ -337,6 +337,8 @@ export default function MobileTill() {
   // ── Mobile-specific step & overlay state ──────────────────────────────────
   const [mStep, setMStep] = useState<MobileStep>('tier');
   const [handoffMode, setHandoffMode] = useState<HandoffMode>(null);
+  /** SCRUM-762 — the details hand-off opened with the number already given: it is shown, not asked. */
+  const [handoffPhoneKept, setHandoffPhoneKept] = useState(false);
   const [showCartSheet, setShowCartSheet] = useState(false);
 
   // ── Sale state (same pattern as Till.tsx) ─────────────────────────────────
@@ -1502,6 +1504,8 @@ export default function MobileTill() {
     if (member || supervisionResolved) {
       setMStep('review');
     } else {
+      // SCRUM-762 — a number the paired display already took is shown, not asked again.
+      setHandoffPhoneKept(customerPhone.trim().length > 0);
       setHandoffMode('input');
     }
   };
@@ -2507,6 +2511,7 @@ export default function MobileTill() {
             onNicknameChange={setCustomerNickname}
             onIdentify={() => {}}
             onCustomerDone={handleCustomerDone}
+            fixedPhone={handoffPhoneKept ? customerPhone : undefined}
             contactChannel={customerContactChannel}
             onContactChannelChange={handleCustomerContactChannelChange}
           />

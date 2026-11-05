@@ -3543,17 +3543,24 @@ export default function Till() {
       setReviewRevision(previous => previous + 1);
       return true;
     }
-    if (answer.type === 'identify' && step === 1 && answer.phone !== undefined) {
+    if (answer.type === 'identify' && step === 1 && answer.phone?.trim()) {
       setCustomerPhone(answer.phone);
       if (answer.nickname !== undefined) setCustomerNickname(answer.nickname);
       if (answer.contactChannel !== undefined) handleCustomerContactChannelChange(answer.contactChannel);
       identifyPhone(answer.phone);
-    } else if (answer.type === 'contact_done' && step === 4 && answer.phone !== undefined
+    } else if (answer.type === 'contact_done' && step === 4 && answer.phone?.trim()
       && answer.nickname !== undefined && answer.contactChannel !== undefined) {
       setCustomerPhone(answer.phone);
       setCustomerNickname(answer.nickname);
       handleCustomerContactChannelChange(answer.contactChannel);
       finishCustomerContact(answer.phone, answer.nickname, answer.contactChannel);
+    } else {
+      // SCRUM-762 — nothing here moves the sale on: a Skip from a customer
+      // screen that still shows one (the counter box's own display changes
+      // with the box release), or details sent with no number. The number is
+      // required, so the screen asks again — a new request clears the answer
+      // the station keeps, instead of leaving the family on "please wait".
+      setDisplayAnswerRevision(previous => previous + 1);
     }
   }, !locked);
   const inlineDisplay = showCustomerDisplay && (!linkedDisplay.connected.length || !linkedDisplay.supported || !!linkedDisplay.error);

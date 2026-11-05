@@ -103,6 +103,14 @@ describe('the details screen before payment', () => {
     expect(html).not.toContain('data-testid="input-kept-phone"');
     expect(html).toContain('aria-label="Select country code"');
   });
+
+  it('keeps Done off until there is a number: the details screen is no way past it', () => {
+    const done = (html: string) => html.match(/<button\b[^>]*data-testid="input-done"[^>]*>/)?.[0] ?? '';
+    expect(done(display('en', 'input'))).toContain(' disabled=""');
+    expect(done(display('en', 'input', { phone: '   ', nickname: 'Mama' }))).toContain(' disabled=""');
+    expect(done(display('en', 'input', { phone: '0812345678' }))).not.toContain(' disabled=""');
+    expect(done(display('en', 'input', { phone: '+66812345678', fixedPhone: '+66812345678' }))).not.toContain(' disabled=""');
+  });
 });
 
 describe('where Pay takes the order (routeToPayment)', () => {
@@ -154,6 +162,11 @@ describe('the till', () => {
   it('has no walk-in skip at the membership check, from its own screen or from the display', () => {
     expect(till).not.toMatch(/handleSkipIdentify/);
     expect(till).not.toMatch(/skip_identify/);
+    // An answer with no number (a Skip from a display that still shows one, or
+    // details sent empty) moves nothing on: the screen is asked again.
+    expect(till).toMatch(/answer\.type === 'identify' && step === 1 && answer\.phone\?\.trim\(\)/);
+    expect(till).toMatch(/answer\.type === 'contact_done' && step === 4 && answer\.phone\?\.trim\(\)/);
+    expect(till).toMatch(/finishCustomerContact\(answer\.phone, answer\.nickname, answer\.contactChannel\);\s*\} else \{[\s\S]*?setDisplayAnswerRevision\(previous => previous \+ 1\);\s*\}\s*\}, !locked\);/);
     const html = renderToStaticMarkup(createElement(StepIdentify, { phone: '', nickname: '', member: null }));
     expect(html).not.toMatch(/Skip/);
     expect(html).toContain('data-testid="identify-phone-required"');

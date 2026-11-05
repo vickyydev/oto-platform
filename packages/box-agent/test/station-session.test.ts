@@ -1203,15 +1203,20 @@ test('typed display answers are matched, timestamped and retained until the till
   assert.deepEqual(current.prompt?.answer, { type: 'skip_identify', actionId: 'skip-action-2' });
 
   await publish('input', { kind: 'contact', requestId: 'contact-1', phone: '', nickname: '', contactChannel: 'line' });
+  // SCRUM-762 — the number is required on the details screen too: Done with none is refused.
+  const noNumber = await h.manager.applyIntent(STATION_ID, { type: 'display.contact_done', actionId: 'contact-no-number',
+    lastSeenSequence: current.sequence, payload: { requestId: 'contact-1', phone: '  ', nickname: '', contactChannel: 'line' } }, { source: 'display' });
+  assert.equal(noNumber.ok, false);
+  if (!noNumber.ok) assert.equal(noNumber.message, 'Enter a phone number to continue.');
   const contact = await h.manager.applyIntent(STATION_ID, { type: 'display.contact_done', actionId: 'contact-action-1',
-    lastSeenSequence: current.sequence, payload: { requestId: 'contact-1', phone: '', nickname: '', contactChannel: 'line' } }, { source: 'display' });
+    lastSeenSequence: current.sequence, payload: { requestId: 'contact-1', phone: ' 0812345678 ', nickname: '', contactChannel: 'line' } }, { source: 'display' });
   assert.ok(contact.ok);
   current = contact.document;
-  assert.deepEqual(current.prompt?.answer, { type: 'contact_done', actionId: 'contact-action-1', phone: '', nickname: '', contactChannel: 'line' });
+  assert.deepEqual(current.prompt?.answer, { type: 'contact_done', actionId: 'contact-action-1', phone: '0812345678', nickname: '', contactChannel: 'line' });
   assert.equal(current.prompt?.answeredAt, plus(AT, 1000));
   await publish('payment', null);
   const wrongStage = await h.manager.applyIntent(STATION_ID, { type: 'display.contact_done', actionId: 'late-contact',
-    lastSeenSequence: current.sequence, payload: { requestId: 'contact-1', phone: '', nickname: '', contactChannel: 'line' } }, { source: 'display' });
+    lastSeenSequence: current.sequence, payload: { requestId: 'contact-1', phone: '0812345678', nickname: '', contactChannel: 'line' } }, { source: 'display' });
   assert.equal(wrongStage.ok, false);
   if (!wrongStage.ok) assert.equal(wrongStage.refusal, 'wrong_stage');
   assert.equal(h.facts.length, 0, 'presentation and answers perform no money effect');
@@ -1246,9 +1251,11 @@ test('typed prompts refuse generic bypasses, unkeyed answers and extra contact f
     lastSeenSequence: identified.document.sequence, payload: { stage: 'input', prompt: { kind: 'contact', requestId: 'strict-contact' } } }, { source: 'till' });
   assert.ok(contact.ok);
   for (const payload of [
-    { requestId: 'strict-contact', phone: '', nickname: '', contactChannel: 'email' },
-    { requestId: 'strict-contact', phone: '', nickname: 'x'.repeat(101), contactChannel: 'line' },
-    { requestId: 'strict-contact', phone: '', nickname: '', contactChannel: 'line', memberNotes: 'private' },
+    // A number on each, so each is refused for the field it gets wrong.
+    { requestId: 'strict-contact', phone: '0811111111', nickname: '', contactChannel: 'email' },
+    { requestId: 'strict-contact', phone: '0811111111', nickname: 'x'.repeat(101), contactChannel: 'line' },
+    { requestId: 'strict-contact', phone: '0811111111', nickname: '', contactChannel: 'line', memberNotes: 'private' },
+    { requestId: 'strict-contact', phone: '', nickname: 'Nok', contactChannel: 'line' },
   ]) {
     const result = await h.manager.applyIntent(STATION_ID, { type: 'display.contact_done', actionId: 'bad-contact',
       lastSeenSequence: contact.document.sequence, payload }, { source: 'display' });

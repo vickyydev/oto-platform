@@ -705,7 +705,10 @@ export function CustomerDisplay({
           <Button
             size="lg"
             className="w-full h-20 text-2xl font-bold rounded-2xl"
+            // SCRUM-762 — the number is required here too: Done is no way past it.
+            disabled={!keptPhone && phone.trim().length === 0}
             onClick={onCustomerDone}
+            data-testid="input-done"
           >
             {t('common.done')}
           </Button>

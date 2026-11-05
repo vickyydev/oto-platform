@@ -1021,7 +1021,10 @@ function displayAnswer(ctx: IntentContext, type: 'identify' | 'skip_identify' | 
       || !['whatsapp', 'telegram', 'line'].includes(intent.payload.contactChannel))))) {
     return notPermitted('That identification answer is not valid.');
   }
-  if (type === 'contact_done' && (!boundedText(intent.payload.phone, 32, true)
+  // SCRUM-762 — the number is required on the details screen as on the first
+  // one: Done with no number is not a way past it.
+  if (type === 'contact_done' && !boundedText(intent.payload.phone, 32)) return notPermitted('Enter a phone number to continue.');
+  if (type === 'contact_done' && (!boundedText(intent.payload.phone, 32)
     || !boundedText(intent.payload.nickname, 100, true)
     || typeof intent.payload.contactChannel !== 'string'
     || !['whatsapp', 'telegram', 'line'].includes(intent.payload.contactChannel))) {
