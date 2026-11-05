@@ -91,8 +91,12 @@ export function resolveLineFreebies(
   line: { kids: number; socks: number; addOns: readonly { id: string; quantity: number }[] },
   /** The adults the adult rule charges on this line. */
   adultsCharged: number,
-  /** The add-on id the line's `socks` count is sold under. */
-  socksAddOnId: string,
+  /**
+   * The ids the line's `socks` count answers to: the id it is sold under and,
+   * where that is the prototype's `a-socks`, the branch's socks product
+   * (`socksIdsOf`), which is the id Admin saves a free Regular Socks under.
+   */
+  socksAddOnId: string | readonly string[],
 ): LineFreebies {
   const rules = freebiesForTier(pkg, tier);
   const kids = Math.max(0, line.kids);
@@ -124,7 +128,10 @@ export function resolveLineFreebies(
     if (taken > 0) allowance.set(id, left - taken);
     return taken;
   };
-  const freeSocks = take(socksAddOnId, line.socks);
+  let freeSocks = 0;
+  for (const id of new Set(typeof socksAddOnId === 'string' ? [socksAddOnId] : socksAddOnId)) {
+    freeSocks += take(id, line.socks - freeSocks);
+  }
   const freeAddOns = line.addOns.map((addOn) => take(addOn.id, addOn.quantity));
   return { paidKids, freeKids: kids - paidKids, freeAdults, freeSocks, freeAddOns };
 }
@@ -279,7 +286,21 @@ export interface PricingContext {
     price: Satang;
     /** The prototype's visible row label, "Regular Socks". */
     label: string;
+    /**
+     * SCRUM-768 — the branch's socks product (catalogue code `AO-SOCKS`) when
+     * the socks count is sold under another id: the till names its counter's
+     * socks by the prototype's `a-socks`, while Admin saves a free Regular
+     * Socks on a ticket under the product. Naming it here makes that free item
+     * a free sock on the counter. Absent when the socks are named by the
+     * product itself, or the branch sells none.
+     */
+    productId?: string | null;
   };
+}
+
+/** SCRUM-768 — every id a line's socks count answers to, for `resolveLineFreebies`. */
+export function socksIdsOf(socks: PricingContext['socks']): string[] {
+  return socks.productId && socks.productId !== socks.addOnId ? [socks.addOnId, socks.productId] : [socks.addOnId];
 }
 
 /** The price-bearing parts of a cart line. */
@@ -331,7 +352,7 @@ export function computeLineTotal(input: LinePricingInput, ctx: PricingContext): 
   const kidPrice = priceForTier(input.package, input.tier, ctx.mode);
   const adultLine = resolveAdultLine(input.package, input.tier, input.adults, ctx.mode);
   // SCRUM-768 — the ticket's free items take their units off what is charged.
-  const free = resolveLineFreebies(input.package, input.tier, input, adultLine.paidCount, ctx.socks.addOnId);
+  const free = resolveLineFreebies(input.package, input.tier, input, adultLine.paidCount, socksIdsOf(ctx.socks));
 
   let total = free.paidKids * kidPrice + (adultLine.paidCount - free.freeAdults) * adultLine.paidUnit;
   total += ctx.socks.price * (input.socks - free.freeSocks);
@@ -427,7 +448,7 @@ export function computeLineBreakdown(
   const kidPrice = priceForTier(line.package, line.tier, ctx.mode);
   const items: LineBreakdownItem[] = [];
   const adultLine = resolveAdultLine(line.package, line.tier, line.adults, ctx.mode);
-  const free = resolveLineFreebies(line.package, line.tier, line, adultLine.paidCount, ctx.socks.addOnId);
+  const free = resolveLineFreebies(line.package, line.tier, line, adultLine.paidCount, socksIdsOf(ctx.socks));
 
   if (line.kids > 0) {
     items.push({

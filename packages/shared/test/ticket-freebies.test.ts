@@ -7,6 +7,7 @@ import {
   priceCartLine,
   readTicketFreebies,
   resolveLineFreebies,
+  socksIdsOf,
   ticketCartTaxInputs,
 } from '../src/index';
 import type { CartAddOn, PackagePricingShape, PricingContext, TicketCartLine, TicketFreebieRule } from '../src/index';
@@ -222,5 +223,91 @@ describe('reading the stored free items', () => {
     expect(
       resolveLineFreebies(pkg(), 'expat', { kids: 2, socks: 0, addOns: [{ id: GRIP, quantity: 2 }] }, 2, SOCKS),
     ).toEqual({ paidKids: 2, freeKids: 0, freeAdults: 0, freeSocks: 0, freeAddOns: [0] });
+  });
+});
+
+/**
+ * SCRUM-768 follow-up — THE SOCKS COUNTER AND A FREE REGULAR SOCKS.
+ *
+ * The till names its counter's socks by the prototype's `a-socks`, while Admin
+ * saves a free Regular Socks under the branch's socks product (`AO-SOCKS`).
+ * Each engine names that product beside the counter's id, so the free item
+ * comes off the counter's socks; a sale with no socks prices as before.
+ */
+describe('a free Regular Socks saved under the socks product, on the socks counter', () => {
+  const PRODUCT = '0190a0a0-0000-7000-8000-0000000005c5';
+  const counter = (mode: 'weekday' | 'weekend', productId?: string | null): PricingContext => ({
+    mode,
+    socks: { addOnId: 'a-socks', price: 5_000, label: 'Regular Socks', ...(productId !== undefined ? { productId } : {}) },
+  });
+  const freeSocks = pkg([{ kind: 'addon', addOnId: PRODUCT, quantity: 1, tiers: ['tourist'] }]);
+  const family = (over: Partial<TicketCartLine> = {}): TicketCartLine => ({
+    id: 'line-socks',
+    packageId: 'pkg-1',
+    package: freeSocks,
+    tier: 'tourist',
+    kids: 2,
+    adults: 0,
+    socks: 2,
+    addOns: [],
+    lineTotal: 0,
+    ...over,
+  });
+  const socksRows = (l: TicketCartLine, c: PricingContext) =>
+    computeLineBreakdown(l, c)
+      .filter((r) => r.kind === 'socks')
+      .map((r) => [r.key, r.label, r.quantity, r.unitPrice, r.subtotal]);
+
+  it('frees the counter socks the bundle names, at the weekday and the weekend price alike', () => {
+    for (const mode of ['weekday', 'weekend'] as const) {
+      const c = counter(mode, PRODUCT);
+      const kid = mode === 'weekday' ? 50_000 : 60_000;
+      // One free sock per paid child: both socks on the counter are free.
+      expect(priceCartLine(family(), c)).toBe(2 * kid);
+      expect(socksRows(family(), c)).toEqual([['socks-free', 'Regular Socks (free)', 2, 0, 0]]);
+      // One child brings one free sock; the second is charged at the socks price.
+      expect(priceCartLine(family({ kids: 1 }), c)).toBe(kid + 5_000);
+      expect(socksRows(family({ kids: 1 }), c)).toEqual([
+        ['socks', 'Regular Socks', 1, 5_000, 5_000],
+        ['socks-free', 'Regular Socks (free)', 1, 0, 0],
+      ]);
+    }
+  });
+
+  it('spends the allowance on the counter first, then on the same socks from the add-on grid', () => {
+    const c = counter('weekday', PRODUCT);
+    const both = family({ kids: 1, socks: 1, addOns: [{ id: PRODUCT, name: 'Regular Socks', price: 5_000, quantity: 1 }] });
+    expect(priceCartLine(both, c)).toBe(50_000 + 5_000);
+    expect(computeLineBreakdown(both, c).map((r) => [r.key, r.quantity, r.subtotal])).toEqual([
+      ['kids', 1, 50_000],
+      ['socks-free', 1, 0],
+      [PRODUCT, 1, 5_000],
+    ]);
+  });
+
+  it('charges every sock where the product is not named, or at a tier the bundle leaves out', () => {
+    // A till or box on the earlier release names no socks product.
+    expect(socksRows(family({ kids: 1 }), counter('weekday'))).toEqual([['socks', 'Regular Socks', 2, 5_000, 10_000]]);
+    expect(socksRows(family({ kids: 1 }), counter('weekday', null))).toEqual([['socks', 'Regular Socks', 2, 5_000, 10_000]]);
+    expect(socksRows(family({ tier: 'expat' }), counter('weekday', PRODUCT))).toEqual([
+      ['socks', 'Regular Socks', 2, 5_000, 10_000],
+    ]);
+  });
+
+  it('prices a sale with no socks exactly as it did before the product was named', () => {
+    const noSocks = family({ socks: 0, adults: 1, addOns: [grip(2)] });
+    expect(priceCartLine(noSocks, counter('weekday', PRODUCT))).toBe(priceCartLine(noSocks, counter('weekday')));
+    expect(computeLineBreakdown(noSocks, counter('weekend', PRODUCT))).toEqual(
+      computeLineBreakdown(noSocks, counter('weekend')),
+    );
+  });
+
+  it('names each id once', () => {
+    expect(socksIdsOf({ addOnId: 'a-socks', price: 0, label: 'Regular Socks', productId: PRODUCT })).toEqual(['a-socks', PRODUCT]);
+    expect(socksIdsOf({ addOnId: PRODUCT, price: 0, label: 'Regular Socks', productId: PRODUCT })).toEqual([PRODUCT]);
+    expect(socksIdsOf({ addOnId: 'a-socks', price: 0, label: 'Regular Socks' })).toEqual(['a-socks']);
+    expect(
+      resolveLineFreebies(freeSocks, 'tourist', { kids: 3, socks: 5, addOns: [] }, 0, ['a-socks', PRODUCT, PRODUCT]).freeSocks,
+    ).toBe(3);
   });
 });
