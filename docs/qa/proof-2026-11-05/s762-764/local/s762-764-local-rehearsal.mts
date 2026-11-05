@@ -30,6 +30,12 @@ const imp = (p: string) => import(pathToFileURL(`${lane}/${p}`).href);
 const H = await imp('apps/api/test/helpers.ts');
 const BOX = await imp('apps/api/src/services/box.ts');
 const ENV = await imp('apps/api/src/env.ts');
+const DB = await imp('packages/db/src/index.ts');
+const PRINTING = await imp('apps/api/src/services/sale-printing.ts');
+const SHARED = await imp('packages/shared/src/index.ts');
+const PRINT = await imp('packages/print/src/index.ts');
+const apiRequire = createRequire(`${lane}/apps/api/package.json`);
+const { eq } = apiRequire('drizzle-orm');
 const posRequire = createRequire(`${lane}/apps/pos/package.json`);
 const { chromium, expect } = posRequire('@playwright/test');
 
@@ -184,6 +190,28 @@ try {
   assert.equal(detail.sale.status, 'finalised');
   assert.equal(fresh.filter((s: any) => s.status === 'tendering').length, 0, 'a sale was left unpaid');
   await shot('s779-02-paid-one-sale', till);
+  // SCRUM-762 — the number given at the start is on the sale, and an adult
+  // stays with this child, so it is on the kids band the platform prints.
+  const [row] = await ctx.db.select().from(DB.sale).where(eq(DB.sale.id, saleId));
+  assert.equal(row.customerPhone, `+66${walkInPhone}`);
+  const printed = await PRINTING.salePrintSnapshotOf(ctx.db, row);
+  const kidBand = printed.bands.find((b: any) => b.kind === 'kid');
+  const adultBand = printed.bands.find((b: any) => b.kind === 'adult');
+  assert.ok(kidBand && adultBand, 'the sale issued a kids band and an adult band');
+  const kidPaper = SHARED.salePrintDocumentOf(printed, { kind: 'kids_wristband', subjectType: 'band', subjectId: kidBand.id });
+  const adultPaper = SHARED.salePrintDocumentOf(printed, { kind: 'adult_wristband', subjectType: 'band', subjectId: adultBand.id });
+  assert.equal(kidPaper.data.guardianPhone, '+66 81 207 6290');
+  assert.equal(adultPaper.data.guardianPhone, undefined);
+  // The park's band stock: 25 mm wide, the white window 80 mm long, 50 mm in.
+  const parkBand = PRINT.tsplProfile({ id: 'zz-test-band', label: 'ZZ TEST kids band', model: '4B-2082A', widthDots: 200,
+    media: { widthMm: 25, lengthMm: 246, gapMm: 4, sensing: 'bline', printOffsetMm: 50, printLengthMm: 80 } });
+  const rendered = PRINT.renderJob(kidPaper, { device: parkBand, templates: PRINT.seedPrintTemplates });
+  assert.deepEqual(rendered.overflow, []);
+  writeFileSync(`${out}/s762-04-kids-band-prints-the-number.png`, PRINT.renderPreviewPng(kidPaper, { device: parkBand, templates: PRINT.seedPrintTemplates }));
+  r.screens.push('s762-04-kids-band-prints-the-number.png');
+  r.cases.push({ name: 'SCRUM-762 the number on the sale and on the kids band when an adult stays', saleId,
+    customerPhone: row.customerPhone, kidsBand: kidPaper.data.guardianPhone, adultBand: adultPaper.data.guardianPhone ?? null, passed: true });
+  save();
   r.cases.push({ name: 'SCRUM-779 walk-in with Thai claim names themselves after Pay', saleId, salesRungUp: fresh.length,
     memberId: detail.sale.memberId, customerTier: detail.sale.customerTier, status: detail.sale.status, passed: true });
   r.cases.push({ name: 'SCRUM-762 phone once, required, kept on the details screen', passed: true }); save();
@@ -228,6 +256,20 @@ try {
   await shot('s764-03-display-care-step', display);
   await form.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(form.getByTestId('consent-kept-phone')).toBeVisible();
+  // A step that changes nothing on the till: the consent ticked before the
+  // name (a tick the till cannot take yet), Back, then Continue again. The
+  // screen moves on rather than waiting for ever for the team.
+  await form.getByTestId('public-consent-ack').click();
+  await form.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(form.getByTestId('consent-care')).toBeVisible();
+  await form.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(form.getByTestId('consent-kept-phone')).toBeVisible();
+  // Without the till's new request the form stays disabled under "Please wait
+  // for the team to confirm this change." for good; here it comes back.
+  await expect(form.getByLabel('Parent / guardian name', { exact: true })).toBeEditable({ timeout: 15_000 });
+  await expect(display.getByText('Please wait for the team to confirm this change.', { exact: true })).toHaveCount(0);
+  await shot('s764-04b-display-no-change-step-not-waiting', display);
+  r.cases.push({ name: 'SCRUM-764 a step that changes nothing leaves the family’s form usable', passed: true }); save();
   await form.getByLabel('Parent / guardian name', { exact: true }).fill('ZZ TEST Khun Ying');
   await form.getByTestId('consent-kept-phone').scrollIntoViewIfNeeded();
   await shot('s764-04a-display-agreements-number-from-the-start', display);

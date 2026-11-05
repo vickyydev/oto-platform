@@ -1,20 +1,32 @@
 {
   "mode": "local",
   "browser": "msedge",
-  "source": "e6cbcdef78de14dab17d1e72cf3dfc065ad164c9",
-  "startedAt": "2026-11-05T10:06:20.026Z",
+  "source": "7b5280b2d3349a9f5c1b7b570ba6f48549da9217",
+  "startedAt": "2026-11-05T11:06:58.377Z",
   "cases": [
     {
+      "name": "SCRUM-762 the number on the sale and on the kids band when an adult stays",
+      "saleId": "01a1ab64-5c4f-71aa-809b-6a89bea76509",
+      "customerPhone": "+66812076290",
+      "kidsBand": "+66 81 207 6290",
+      "adultBand": null,
+      "passed": true
+    },
+    {
       "name": "SCRUM-779 walk-in with Thai claim names themselves after Pay",
-      "saleId": "01a1ab2c-d105-78e5-bea4-54925d0dc46d",
+      "saleId": "01a1ab64-5c4f-71aa-809b-6a89bea76509",
       "salesRungUp": 1,
-      "memberId": "01a1ab2c-d119-7f02-8bd3-eca51744083e",
+      "memberId": "01a1ab64-5c65-7159-be54-b1ea7fd35e18",
       "customerTier": "thai",
       "status": "finalised",
       "passed": true
     },
     {
       "name": "SCRUM-762 phone once, required, kept on the details screen",
+      "passed": true
+    },
+    {
+      "name": "SCRUM-764 a step that changes nothing leaves the family’s form usable",
       "passed": true
     },
     {
@@ -29,10 +41,12 @@
     "s762-03-display-details-kept-phone-name-only.png",
     "s779-01-payment-screen-one-sale-member-attached.png",
     "s779-02-paid-one-sale.png",
+    "s762-04-kids-band-prints-the-number.png",
     "s779-03-till-after-reload-nothing-left-unpaid.png",
     "s764-01-display-form-opens-on-children-step.png",
     "s764-02-till-gate-mirrors-the-child.png",
     "s764-03-display-care-step.png",
+    "s764-04b-display-no-change-step-not-waiting.png",
     "s764-04a-display-agreements-number-from-the-start.png",
     "s764-04-display-agreements-kept-phone.png",
     "s764-05-till-shows-the-family-ticks.png",
@@ -43,9 +57,9 @@
   "outcome": "passed",
   "phase": "764",
   "fixture": {
-    "boxId": "01a1ab2c-94da-7e4d-9dd4-cd4fd5a2f19e",
-    "stationId": "01a1ab2c-95ef-75b4-b16a-1baa79dcdb6b"
+    "boxId": "01a1ab64-1ca7-73a8-894f-03990638f0ad",
+    "stationId": "01a1ab64-1dc6-7176-899b-e9626edf22e0"
   },
   "browserVersion": "156.0.4314.58",
-  "finishedAt": "2026-11-05T10:06:57.834Z"
+  "finishedAt": "2026-11-05T11:07:38.710Z"
 }
