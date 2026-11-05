@@ -1,0 +1,13 @@
+export default async function (S) {
+  const out = {};
+  const ctx2 = await S.browser.newContext({ permissions: ['camera'] });
+  const p2 = await ctx2.newPage();
+  await p2.goto(S.POS + '/manifest.webmanifest').catch(() => {});
+  out.freshCtx = await p2.evaluate(async () => { try { const s = await navigator.mediaDevices.getUserMedia({ video: true }); s.getTracks().forEach((t) => t.stop()); return 'ok'; } catch (e) { return e.name + ': ' + e.message; } });
+  await ctx2.close();
+  const p3 = await S.pages.T740.ctx.newPage();
+  await p3.goto(S.POS + '/manifest.webmanifest').catch(() => {});
+  out.sameCtxNewPage = await p3.evaluate(async () => { try { const s = await navigator.mediaDevices.getUserMedia({ video: true }); s.getTracks().forEach((t) => t.stop()); return 'ok'; } catch (e) { return e.name + ': ' + e.message; } });
+  await p3.close();
+  return out;
+}

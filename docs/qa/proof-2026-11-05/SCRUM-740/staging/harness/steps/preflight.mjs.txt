@@ -1,0 +1,15 @@
+export default async function (S) {
+  const { adminApi, st, save } = S;
+  const br = (await adminApi('GET', '/branches')).body.branches.map((b) => ({ id: b.id, name: b.name, code: b.code, archived: !!b.archivedAt }));
+  const cf = br.find((b) => /Floresta/i.test(b.name) && !b.archived);
+  st.fixture.branchId = cf.id; st.fixture.branchCode = cf.code; save();
+  const boxes = (await adminApi('GET', `/branches/${cf.id}/boxes`)).body.boxes.map((b) => ({ id: b.id, name: b.name, role: b.role, slot: b.slot, status: b.status, archived: b.archived }));
+  const stations = (await adminApi('GET', `/branches/${cf.id}/stations?includeArchived=true`)).body.stations.map((s) => ({ id: s.id, name: s.name, prefix: s.codePrefix, archived: !!s.archivedAt, box: s.boxId }));
+  const pk = await adminApi('GET', `/branches/${cf.id}/ticket-packages?includeArchived=true`);
+  const rows = Array.isArray(pk.body) ? pk.body : (pk.body.packages ?? []);
+  const packages = rows.map((p) => ({ id: p.id, name: p.name, active: p.active, archived: !!p.archivedAt, freebies: p.freebies }));
+  const cat = await adminApi('GET', `/public/branches/${cf.code}/catalog`);
+  const pol = cat.body.supervision?.policy;
+  const awaiting = await adminApi('GET', `/checkin/registrations?branchId=${cf.id}`);
+  return { branches: br, cf, boxes, stations: stations.filter((s) => /ZZ|Z7/.test(s.name + s.prefix) || !s.archived), packages, catalogKeys: Object.keys(cat.body), addOns: (cat.body.addOns ?? cat.body.addons ?? []).map((a) => ({ id: a.id, name: a.name })), policy: pol ? { bands: pol.bands ?? pol.ageBands ?? null, keys: Object.keys(pol), confirmations: (pol.confirmations ?? []).map((c) => ({ id: c.id, required: c.required, label: (c.label ?? c.text ?? '').slice(0, 80) })) } : null, awaitingStatus: awaiting.status, awaiting: (awaiting.body?.registrations ?? []).map((r) => ({ id: r.id, guardian: r.guardianName, children: r.children.map((c) => ({ name: c.childName ?? c.name, status: c.status, service: c.service, paidOnline: c.paidOnline ?? null, paidAtTill: c.paidAtTill ?? null })) })) };
+}

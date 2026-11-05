@@ -1,0 +1,1078 @@
+{
+  "unit": "SCRUM-740/768",
+  "liveCommit": "fe6181bdb1edefd0f100b9c19be177446991ad0d",
+  "startedAt": "2026-11-05T12:15:33.632Z",
+  "fixture": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "branchCode": "hkt-central",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "boxName": "Virtual box 1",
+    "tills": {
+      "740": {
+        "id": "01a1aba3-7abe-7e05-9f45-942dcad62737",
+        "name": "ZZ TEST SCRUM-740 till",
+        "prefix": "Z740",
+        "ready": true
+      },
+      "768": {
+        "id": "01a1aba3-7b26-7915-acd4-cfc7f1c68f7c",
+        "name": "ZZ TEST SCRUM-768 till",
+        "prefix": "Z768",
+        "ready": true
+      }
+    },
+    "reg1": "01a1aba7-f911-7a62-9afc-41b38bf3088d",
+    "sale1": {
+      "id": "01a1aba8-0162-70f4-896e-71669a3d6932",
+      "receipt": "Z740-000001"
+    },
+    "sale2": {
+      "id": "01a1aba8-f480-764d-868f-0c2a622dbf13",
+      "receipt": "Z740-000002"
+    },
+    "reg2": "01a1aba8-eec1-75e0-8ff2-de64e7eb2dcf",
+    "stays": {
+      "ZZ TEST 740 Nok": "01a1aba8-eec1-75e0-8ff2-de6513cad139",
+      "ZZ TEST 740 Ploy": "01a1aba7-f911-7a62-9afc-41b4138e9fb5",
+      "ZZ TEST 740 Tam": "01a1aba7-f911-7a62-9afc-41b5b70f1f4a"
+    },
+    "ticket768": {
+      "id": "01a1abae-d820-732b-8fb5-ec41620cfe1d",
+      "name": "ZZ TEST 768 Ticket"
+    },
+    "sale768": {
+      "id": "01a1abb3-93aa-7b73-a9f8-56f97209cb74",
+      "receipt": "Z768-000001"
+    }
+  },
+  "steps": {
+    "parent740": "ZZ TEST 740 Family",
+    "pay1": {
+      "at": "2026-11-05T12:21:28.044Z",
+      "net": [
+        {
+          "at": "2026-11-05T12:19:53.961Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200,
+          "receipt": null,
+          "saleId": null
+        },
+        {
+          "at": "2026-11-05T12:19:54.230Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200,
+          "receipt": null,
+          "saleId": null
+        },
+        {
+          "at": "2026-11-05T12:21:14.794Z",
+          "method": "POST",
+          "path": "/api/checkin/registrations",
+          "status": 200,
+          "receipt": null,
+          "saleId": null
+        },
+        {
+          "at": "2026-11-05T12:21:16.086Z",
+          "method": "POST",
+          "path": "/api/checkin/registrations/01a1aba7-f911-7a62-9afc-41b38bf3088d/photo",
+          "status": 200,
+          "receipt": null,
+          "saleId": null
+        },
+        {
+          "at": "2026-11-05T12:21:16.771Z",
+          "method": "POST",
+          "path": "/api/checkin/registrations/01a1aba7-f911-7a62-9afc-41b38bf3088d/photo",
+          "status": 200,
+          "receipt": null,
+          "saleId": null
+        },
+        {
+          "at": "2026-11-05T12:21:16.885Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200,
+          "receipt": null,
+          "saleId": "01a1aba8-0162-70f4-896e-71669a3d6932"
+        },
+        {
+          "at": "2026-11-05T12:21:17.051Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200,
+          "receipt": null,
+          "saleId": null
+        },
+        {
+          "at": "2026-11-05T12:21:26.477Z",
+          "method": "POST",
+          "path": "/api/sales/01a1aba8-0162-70f4-896e-71669a3d6932/finalise",
+          "status": 200,
+          "receipt": "Z740-000001",
+          "saleId": "01a1aba8-0162-70f4-896e-71669a3d6932"
+        }
+      ]
+    },
+    "leave1": {
+      "at": "2026-11-05T12:21:39.996Z",
+      "net": [
+        {
+          "at": "2026-11-05T12:21:37.024Z",
+          "status": 200,
+          "request": {
+            "saleId": "01a1aba8-0162-70f4-896e-71669a3d6932",
+            "scheduledFor": "2026-11-05T12:21:26.461Z",
+            "entries": [
+              {
+                "checkinId": "01a1aba7-f911-7a62-9afc-41b4138e9fb5"
+              },
+              {
+                "checkinId": "01a1aba7-f911-7a62-9afc-41b5b70f1f4a"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "pay2": {
+      "at": "2026-11-05T12:22:22.674Z",
+      "net": [
+        {
+          "at": "2026-11-05T12:22:17.636Z",
+          "method": "POST",
+          "path": "/api/checkin/registrations",
+          "status": 200,
+          "receipt": null,
+          "saleId": null,
+          "regId": "01a1aba8-eec1-75e0-8ff2-de64e7eb2dcf"
+        },
+        {
+          "at": "2026-11-05T12:22:19.009Z",
+          "method": "POST",
+          "path": "/api/checkin/registrations/01a1aba8-eec1-75e0-8ff2-de64e7eb2dcf/photo",
+          "status": 200,
+          "receipt": null,
+          "saleId": null,
+          "regId": null
+        },
+        {
+          "at": "2026-11-05T12:22:19.119Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200,
+          "receipt": null,
+          "saleId": "01a1aba8-f480-764d-868f-0c2a622dbf13",
+          "regId": null
+        },
+        {
+          "at": "2026-11-05T12:22:19.296Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200,
+          "receipt": null,
+          "saleId": null,
+          "regId": null
+        },
+        {
+          "at": "2026-11-05T12:22:21.141Z",
+          "method": "POST",
+          "path": "/api/sales/01a1aba8-f480-764d-868f-0c2a622dbf13/finalise",
+          "status": 200,
+          "receipt": "Z740-000002",
+          "saleId": "01a1aba8-f480-764d-868f-0c2a622dbf13",
+          "regId": null
+        }
+      ]
+    },
+    "reload2": {
+      "at": "2026-11-05T12:22:23.242Z",
+      "unlocked": false,
+      "leaveAsBookedCalls": 0
+    },
+    "picker": {
+      "at": "2026-11-05T12:22:45.728Z",
+      "leftBehind": [],
+      "cards": [
+        {
+          "fam": "ZZ TEST 740 Family",
+          "found": true,
+          "text": "ZZ TEST 740 Family's booking Paid at till ZZ TEST 740 Ploy · 6y Paid at till · Z740-000001 ZZ TEST 740 Tam · 7y Paid at till · Z740-000001 Add sibling",
+          "buttons": [
+            "Paid at till",
+            "Add sibling"
+          ],
+          "addToSale": 0
+        },
+        {
+          "fam": "ZZ TEST 740 Second Family",
+          "found": true,
+          "text": "ZZ TEST 740 Second Family's booking Paid at till ZZ TEST 740 Nok · 5y Paid at till · Z740-000002 Add sibling",
+          "buttons": [
+            "Paid at till",
+            "Add sibling"
+          ],
+          "addToSale": 0
+        },
+        {
+          "fam": "ZZ TEST Family 496 waiting",
+          "found": true,
+          "text": "ZZ TEST Family 496 waiting's booking +66999049603 Add to sale ZZ TEST Child 496 C · 6y ZZ TEST none Paid online ZZ TEST Sibling 496 age3 · 3y ZZ TEST Sibling 496 age3 · 3y ZZ TEST Sibling 496 age6 nanny · 6y Add sibling",
+          "buttons": [
+            "Add to sale",
+            "Add sibling"
+          ],
+          "addToSale": 1
+        },
+        {
+          "fam": "ZZ TEST SCRUM-730 Ying",
+          "found": true,
+          "text": "ZZ TEST SCRUM-730 Ying's booking +66897301003 Add to sale ZZ TEST SCRUM-730 Nok · 5y Add sibling",
+          "buttons": [
+            "Add to sale",
+            "Add sibling"
+          ],
+          "addToSale": 1
+        }
+      ]
+    },
+    "activity": {
+      "at": "2026-11-05T12:25:17.630Z",
+      "opened": " admin:audit:read_sensitive, so these rows carry the personal data in full — and each read of them is recorded as audit.read_sensitive against your account.\n\nThe log\nnewest first\n5 Nov, 19:23\ncheckin.second_charge_refused\ncheckin\nSom (Reception)\nCentral Floresta\n5 Nov, 19:23\ncheckin.second_charge_refused\ncheckin\nSom (Reception)\nCentral Floresta\nOpen a row for the full before-and-after\ncheckin.second_charge_refused\nSom (Reception) · 5 Nov 2026, 19:23:48 GMT+7\nACTOR\nSom (Reception)\nBRANCH\nOto Play Park, Central Floresta\nENTITY\ncheckin\n01a1aba8-eec1-75e0-8ff2-de6513cad139\nWHEN\n5 Nov 2026, 19:23:48 GMT+7\nREQUEST ID\n5cd55b1c-a182-431b-a343-0cb3006631f1\nYou are reading these rows unmasked. That read is recorded as audit.read_sensitive against your account.\nChanges\nRaw record\nRelated\n\nCODE\n\nnow CHECKIN_PAID_AT_TILL\n\nPAID ON SALE ID\n\nnow 01a1aba8-f480-764d-868f-0c2a622dbf13\n\nRECEIPT NUMBER\n\nnow Z740-000002\n\nREFUSED SALE ID\n\nnow 01a1abaa-2e52-7d16-8ef1-7b30acbd81a5\n\nSTATION ID\n\nnow 01a1aba3-7b26-7915-acd4-cfc7f1c68f7c"
+    },
+    "board": {
+      "at": "2026-11-05T12:26:22.501Z",
+      "amountDue": 0,
+      "netAfterPress": []
+    },
+    "boardCheckIn": {
+      "at": "2026-11-05T12:26:38.413Z",
+      "net": [
+        {
+          "at": "2026-11-05T12:26:34.522Z",
+          "method": "POST",
+          "path": "/api/checkin/check-in-booked",
+          "status": 200,
+          "code": null
+        }
+      ],
+      "amountDue": 0
+    },
+    "readback740": {
+      "at": "2026-11-05T12:27:28.900Z",
+      "sales": [
+        {
+          "id": "01a1aba8-f480-764d-868f-0c2a622dbf13",
+          "receipt": "Z740-000002",
+          "status": "finalised",
+          "gross": 111500
+        },
+        {
+          "id": "01a1aba8-0162-70f4-896e-71669a3d6932",
+          "receipt": "Z740-000001",
+          "status": "finalised",
+          "gross": 223000
+        }
+      ],
+      "regs": [
+        {
+          "guardian": "ZZ TEST 740 Family",
+          "children": [
+            {
+              "name": "ZZ TEST 740 Ploy",
+              "status": "registered",
+              "saleId": "01a1aba8-0162-70f4-896e-71669a3d6932",
+              "paidAtTill": {
+                "saleId": "01a1aba8-0162-70f4-896e-71669a3d6932",
+                "receiptNumber": "Z740-000001"
+              }
+            },
+            {
+              "name": "ZZ TEST 740 Tam",
+              "status": "registered",
+              "saleId": "01a1aba8-0162-70f4-896e-71669a3d6932",
+              "paidAtTill": {
+                "saleId": "01a1aba8-0162-70f4-896e-71669a3d6932",
+                "receiptNumber": "Z740-000001"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "ticket768Saved": {
+      "at": "2026-11-05T12:28:54.773Z",
+      "name": "ZZ TEST 768 Ticket",
+      "active": true,
+      "freebies": [
+        {
+          "id": "fb-qwxxolz",
+          "kind": "child",
+          "tiers": [
+            "tourist"
+          ],
+          "quantity": 1
+        },
+        {
+          "id": "fb-447axnu",
+          "kind": "adult",
+          "tiers": [
+            "tourist"
+          ],
+          "quantity": 1
+        },
+        {
+          "id": "fb-4j6fmkf",
+          "kind": "addon",
+          "tiers": [
+            "tourist"
+          ],
+          "addOnId": "01a0cb02-13a9-790f-85a1-73e6ccf9f9da",
+          "quantity": 1
+        }
+      ],
+      "kid": null,
+      "keys": [
+        "id",
+        "operatorId",
+        "branchId",
+        "name",
+        "description",
+        "durationLabel",
+        "hours",
+        "prices",
+        "tierPricing",
+        "adultRules",
+        "freebies",
+        "creditRule",
+        "gateAccess",
+        "translations",
+        "active",
+        "createdAt",
+        "updatedAt",
+        "archivedAt"
+      ]
+    },
+    "order768": {
+      "at": "2026-11-05T12:32:10.108Z",
+      "panel": "Current Order TOURIST ZZ TEST 768 Ticket EDITING ฿1500 Kids ฿500 each · 1 free 2 Adults ฿500 each · 1 free 3 Regular Socks ฿0 each 2 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1500 VAT included ฿98.13 Total ฿1500 Cancel Pay ฿1500",
+      "quote": {
+        "at": "2026-11-05T12:30:49.211Z",
+        "status": 200,
+        "response": "{\"quote\":{\"branchId\":\"01a0bbdc-8c42-7753-b7e3-5ae19fb66d33\",\"businessDate\":\"2026-11-05\",\"pricingMode\":\"weekday\",\"pricingModeReason\":\"Weekday pricing\",\"holidayName\":null,\"tier\":\"tourist\",\"tierSource\":\"default\",\"tierClaimRefusal\":null,\"customerTier\":\"tourist\",\"engineVersion\":\"2026.10.06-1\",\"totals\":{\"subtotalSatang\":150000,\"manualDiscountSatang\":0,\"promoDiscountSatang\":0,\"discountSatang\":0,\"netSatang\":140187,\"serviceChargeSatang\":0,\"taxInclusiveSatang\":9813,\"taxExclusiveSatang\":0,\"grossSatang\":150000,\"unappliedDiscountSatang\":0},\"lineTotals\":{\"01a1abb0-1686-7467-8cc7-4637937819d6\":150000},\"itemPresentation\":{},\"manualAmounts\":{},\"appliedPromos\":[],\"rejectedPromoCodes\":[],\"voucher\":null,\"benefit\":null,\"taxBreakdown\":{\"netSubtotal\":150000,\"discountTotal\":0,\"serviceChargeTotal\":0,\"exclusiveTaxTotal\":0,\"inclusiveTaxTotal\":9813,\"taxTotal\":9813,\"categories\":[{\"category\":\"tickets\",\"base\":150000,\"taxMode\":\"inclusive\",\"taxRateId\":\"vat\",\"taxName\":\"VAT\",\"taxPercent\":7,\"serviceCharge\":0,\"tax\":9813,\"secondaryTaxMode\":\"none\",\"secondaryTaxPercent\":0,\"secondaryTax\":0,\"gross\":150000},{\"category\":\"addons\",\"base\":0,\"taxMode\":\"inclusive\",\"taxRateId\":\"vat\",\"taxName\":\"VAT\",\"taxPercent\":7,\"serviceCharge\":0,\"tax\":0,\"secondaryTaxMode\":\"none\",\"secondaryTaxPercent\":0,\"secondaryTax\":0,\"gross\":0}],\"grandTotal\":150000,\"unappliedDiscount\":0},\"lines\":[{\"lineNo\":1,\"cartLineId\":\"01a1abb0-1686-7467-8cc7-4637937819d6\",\"kind\":\"kids\",\"componentKey\":\"kids\",\"ticketPackageId\":\"01a1abae-d820-732b-8fb5-ec41620cfe1d\",\"productId\":null,\"label\":\"Kids\",\"revenueCategory\":\"tickets\",\"taxableCategory\":\"tickets\",\"quantity\":1,\"unitSatang\":50000,\"baseSatang\":50000,\"discountSatang\":0,\"netSatang\":46729,\"serviceChargeSatang\":0,\"taxSatang\":3271,\"taxMode\":\"inclusive\",\"taxRateBp\":700,\"taxRateId\":\"vat\",\"taxName\":\"VAT\",\"grossSatang\":50000,\"customerTier\":\"tourist\",\"kidCount\":2,\"adultCount\":3,\"freeAdultCount\":0,\"stayHours\":2,\"stayDurationLabel\":\"2 Hours\",\"payload\":null},{\"lineNo\":2,\"cartLineId\":\"01a1abb0-1686-7467-8cc7-4637937819d6\",\"kind\":\"kids\",\"componentKey\":\"kids-free\",\"ticketPackageId\":\"01a1abae-d820-732b-8fb5-ec41620cfe1d\",\"productId\":null,\"label\":\"Kids (free)\",\"revenueCategory\":\"tickets\",\"taxableCategory\":\"tickets\",\"quantity\":1,\"unitSatang\":0,\"baseSatang\":0,\"discountSatang\":0,\"netSatang\":0,\"serviceChargeSatang\":0,\"taxSatang\":0,\"taxMode\":\"inclusive\",\"taxRateBp\":700,\"taxRateId\":\"vat\",\"taxName\":\"VAT\",\"grossSatang\":0,\"customerTier\":\"tourist\",\"kidCount\":2,\"adultCount\":3,\"freeAdultCount\":0,\"stayHours\":2,\"stayDurationLabe"
+      }
+    },
+    "receiptPrinter768": {
+      "at": "2026-11-05T12:35:28.069Z",
+      "status": 200,
+      "devices": [
+        {
+          "role": "receipt",
+          "deviceId": "01a0be8c-89a4-756b-aca1-3be1082c669d",
+          "label": "Receipt Printer 1",
+          "kind": "receipt_printer",
+          "transport": "simulated",
+          "address": "192.168.88.202:9100"
+        }
+      ],
+      "before": []
+    },
+    "reprint768": {
+      "at": "2026-11-05T12:36:30.969Z",
+      "net": [
+        {
+          "at": "2026-11-05T12:36:27.061Z",
+          "method": "POST",
+          "path": "/api/sales/01a1abb3-93aa-7b73-a9f8-56f97209cb74/reprints",
+          "status": 200,
+          "resp": "{\"jobs\":[{\"id\":\"01a1abb5-e6f5-7aad-8623-a282a261f2df\",\"kind\":\"receipt\",\"role\":\"receipt\",\"status\":\"queued\",\"stationId\":\"01a1aba3-7b26-7915-acd4-cfc7f1c68f7c\",\"deviceId\":\"01a0be8c-89a4-756b-aca1-3be1082c669d\",\"deviceLabel\":null,\"subjectType\":\"sale\",\"subjectId\":\"01a1abb3-93aa-7b73-a9f8-56f97209cb74\",\"reprintOf\":\"01a1abb3-aa35-732f-b4ce-8b42df91ea36\",\"reprintReason\":\"Reprint from History\",\"requestedByName\":null,\"errorCode\":null,\"errorMessage\":null,\"queuedAt\":\"2026-11-05T12:36:27.504Z\",\"finishedAt\":null}],\"bands\":[{\"id\":\"01a1abb3-aa1e-7e61-94f5-2ade952aa60d\",\"kind\":\"kid\",\"status\":\"active\",\"shortCod"
+        }
+      ]
+    },
+    "expat768": {
+      "at": "2026-11-05T12:38:59.426Z",
+      "btns": [
+        "Passport",
+        "Driving licence",
+        "School card",
+        "Other",
+        "Verify Expat — Passport",
+        "Close"
+      ],
+      "order": "Current Order\nEXPAT\nZZ TEST 768 Ticket\nEDITING\n฿2500\nKids\n฿500 each\n2\nAdults\n฿500 each\n3\nRegular Socks\n฿0 each\n0\nApply\nRedeem\nIssue a voucher…\nAdd manual discount\nSubtotal\n฿2500\nVAT included\n฿163.55\nTotal\n฿2500\nCancel\nPay ฿2500\nO\nOto Play Park\nYour Order\nEnglish\nZZ TEST 768 Ticket\n฿2500\nKids2 × ฿500\n฿1000\nAdults3 × ฿500\n฿1500\nVAT included\n฿163.55\nTotal\n฿2500"
+    },
+    "ticket768Fourth": {
+      "at": "2026-11-05T12:39:36.539Z",
+      "net": [
+        {
+          "method": "PATCH",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/ticket-packages/01a1abae-d820-732b-8fb5-ec41620cfe1d",
+          "status": 200
+        }
+      ],
+      "freebies": [
+        {
+          "id": "fb-qwxxolz",
+          "kind": "child",
+          "tiers": [
+            "tourist"
+          ],
+          "quantity": 1
+        },
+        {
+          "id": "fb-447axnu",
+          "kind": "adult",
+          "tiers": [
+            "tourist"
+          ],
+          "quantity": 1
+        },
+        {
+          "id": "fb-4j6fmkf",
+          "kind": "addon",
+          "tiers": [
+            "tourist"
+          ],
+          "addOnId": "01a0cb02-13a9-790f-85a1-73e6ccf9f9da",
+          "quantity": 1
+        },
+        {
+          "id": "fb-spx7hke",
+          "kind": "addon",
+          "tiers": [
+            "tourist"
+          ],
+          "addOnId": "01a0d4ed-9353-7325-9684-72605ecc7f09",
+          "quantity": 1
+        }
+      ]
+    },
+    "addonGrid768": {
+      "at": "2026-11-05T12:39:57.410Z",
+      "order": "Current Order\nTOURIST\nZZ TEST 768 Ticket\nEDITING\n฿650\nKids\n฿500 each\n1\nAdults\n฿500 each · 1 free\n1\nRegular Socks\n฿0 each\n0\nBracelet Workshop × 2 · 1 free\n฿150\nApply\nRedeem\nIssue a voucher…\nAdd manual discount\nSubtotal\n฿650\nVAT included\n฿42.52\nTotal\n฿650\nCancel\nPay ฿650\nO\nOto Play Park\nYour Order\nEnglish\nZZ TEST 768 Ticket\n฿650\nKids1 × ฿500\n฿500\nAdults (free)1 × ฿0\n฿0\nBracelet Workshop1 × ฿150\n฿150\nBracelet Workshop (free)1 × ฿0\n฿0\nVAT included\n฿42.52\nTotal\n฿650",
+      "quoteLines": [
+        [
+          "Kids",
+          1,
+          50000
+        ],
+        [
+          "Adults (free)",
+          1,
+          0
+        ],
+        [
+          "Bracelet Workshop",
+          1,
+          15000
+        ],
+        [
+          "Bracelet Workshop (free)",
+          1,
+          0
+        ]
+      ]
+    },
+    "archive768": {
+      "at": "2026-11-05T12:40:23.583Z",
+      "net": [
+        {
+          "at": "2026-11-05T12:40:21.290Z",
+          "method": "DELETE",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/ticket-packages/01a1abae-d820-732b-8fb5-ec41620cfe1d",
+          "status": 200
+        }
+      ],
+      "mine": {
+        "name": "ZZ TEST 768 Ticket",
+        "active": false,
+        "archivedAt": "2026-11-05T12:40:21.583Z"
+      },
+      "liveTickets": [
+        {
+          "name": "1 Hour Play",
+          "active": true,
+          "freebies": []
+        },
+        {
+          "name": "2 Hours Play",
+          "active": true,
+          "freebies": null
+        },
+        {
+          "name": "Full Day Pass",
+          "active": true,
+          "freebies": null
+        },
+        {
+          "name": "Eat & Play Kids Pass",
+          "active": true,
+          "freebies": null
+        }
+      ]
+    }
+  },
+  "images": [
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-740/staging/st-01a-two-children-registered-for-drop-off.png",
+      "at": "2026-11-05T12:21:14.626Z",
+      "page": "T740",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-740/staging/st-01b-paid-in-cash-receipt-and-door-choice.png",
+      "at": "2026-11-05T12:21:36.910Z",
+      "page": "T740",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-740/staging/st-01c-left-as-booked-receipt-z740-000001.png",
+      "at": "2026-11-05T12:21:39.995Z",
+      "page": "T740",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-740/staging/st-02a-third-child-paid-door-choice-not-made.png",
+      "at": "2026-11-05T12:22:23.241Z",
+      "page": "T740",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-740/staging/st-02b-till-reloaded-before-any-choice.png",
+      "at": "2026-11-05T12:22:31.983Z",
+      "page": "T740",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-740/staging/st-03-picker-three-children-paid-at-till-no-add-to-sale.png",
+      "at": "2026-11-05T12:22:55.031Z",
+      "page": "T740",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-740/staging/st-06-regression-paid-online-child-still-reads-paid-online.png",
+      "at": "2026-11-05T12:22:56.407Z",
+      "page": "T740",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-740/staging/st-04-second-sale-refused-409-nothing-saved.png",
+      "at": "2026-11-05T12:24:11.459Z",
+      "page": "FILE",
+      "url": "file:///C:/oto-lanes/till740-20261105/docs/qa/proof-2026-11-05/SCRUM-740/staging/st-04-second-sale-refused.txt",
+      "viewport": {
+        "width": 1100,
+        "height": 1400
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-740/staging/st-04b-console-activity-second-charge-refused-rows.png",
+      "at": "2026-11-05T12:25:15.026Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/watch/activity",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-740/staging/st-04c-console-activity-row-opened-paid-sale-receipt-refused-sale.png",
+      "at": "2026-11-05T12:25:17.629Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/watch/activity",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-740/staging/st-05a-board-booked-and-paid-no-payment-needed.png",
+      "at": "2026-11-05T12:26:20.966Z",
+      "page": "T740",
+      "url": "https://oto-pos-web-staging.onrender.com/drop-off",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-740/staging/st-05b-check-in-pressed-no-payment-screen.png",
+      "at": "2026-11-05T12:26:23.096Z",
+      "page": "T740",
+      "url": "https://oto-pos-web-staging.onrender.com/drop-off",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-740/staging/st-05c-checked-in-no-payment-taken.png",
+      "at": "2026-11-05T12:26:48.198Z",
+      "page": "T740",
+      "url": "https://oto-pos-web-staging.onrender.com/drop-off",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-740/staging/st-05d-in-park-tab-nok.png",
+      "at": "2026-11-05T12:27:28.727Z",
+      "page": "T740",
+      "url": "https://oto-pos-web-staging.onrender.com/drop-off",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging/st-01a-console-tickets-list-zz-test-768-ticket.png",
+      "at": "2026-11-05T12:28:56.162Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/tickets",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging/st-01b-saved-ticket-prices.png",
+      "at": "2026-11-05T12:29:47.182Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/tickets",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging/st-01c-saved-ticket-free-items-tourist-only.png",
+      "at": "2026-11-05T12:29:49.112Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/tickets",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging/st-02a-order-panel-and-display-free-kid-and-adult.png",
+      "at": "2026-11-05T12:32:10.107Z",
+      "page": "T768",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging/st-02b-amount-due-only-the-paid-units.png",
+      "at": "2026-11-05T12:32:25.947Z",
+      "page": "T768",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging/st-02c-socks-out-of-stock-order-cannot-be-saved.png",
+      "at": "2026-11-05T12:33:34.111Z",
+      "page": "T768",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging/st-02b-amount-due-only-the-paid-units.png",
+      "at": "2026-11-05T12:33:59.426Z",
+      "page": "T768",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging/st-03a-paid-in-cash.png",
+      "at": "2026-11-05T12:34:03.076Z",
+      "page": "T768",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging/st-03b-history-sale-free-lines-at-0.png",
+      "at": "2026-11-05T12:34:43.044Z",
+      "page": "T768",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging/st-03c-receipt-printed-free-lines-at-0.png",
+      "at": "2026-11-05T12:37:43.156Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/devices",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging/st-03c-receipt-printed-free-lines-at-0.png",
+      "at": "2026-11-05T12:37:54.097Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/devices",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging/st-03b-history-sale-free-lines-at-0.png",
+      "at": "2026-11-05T12:38:06.799Z",
+      "page": "T768",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging/st-03b-history-sale-free-lines-at-0.png",
+      "at": "2026-11-05T12:38:15.415Z",
+      "page": "T768",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging/st-03b-history-sale-free-lines-at-0.png",
+      "at": "2026-11-05T12:38:22.094Z",
+      "page": "T768",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging/st-04-expat-not-ticked-every-unit-charged.png",
+      "at": "2026-11-05T12:38:59.423Z",
+      "page": "T768",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging/st-05-free-add-on-from-the-add-on-grid-bracelet-workshop.png",
+      "at": "2026-11-05T12:39:57.408Z",
+      "page": "T768",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-05/SCRUM-768/staging/st-06-zz-test-768-ticket-archived.png",
+      "at": "2026-11-05T12:40:24.139Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/tickets",
+      "viewport": {
+        "width": 1500,
+        "height": 1000
+      }
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1aba3-7abe-7e05-9f45-942dcad62737",
+      "name": "ZZ TEST SCRUM-740 till",
+      "at": "2026-11-05T12:16:19.730Z"
+    },
+    {
+      "kind": "station",
+      "id": "01a1aba3-7b26-7915-acd4-cfc7f1c68f7c",
+      "name": "ZZ TEST SCRUM-768 till",
+      "at": "2026-11-05T12:16:19.830Z"
+    },
+    {
+      "kind": "registration",
+      "id": "01a1aba7-f911-7a62-9afc-41b38bf3088d",
+      "guardian": "ZZ TEST 740 Family"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1aba8-0162-70f4-896e-71669a3d6932",
+      "receipt": "Z740-000001"
+    },
+    {
+      "kind": "registration",
+      "id": "01a1aba8-eec1-75e0-8ff2-de64e7eb2dcf",
+      "guardian": "ZZ TEST 740 Second Family"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1aba8-f480-764d-868f-0c2a622dbf13",
+      "receipt": "Z740-000002"
+    },
+    {
+      "kind": "ticket-package",
+      "id": "01a1abae-d820-732b-8fb5-ec41620cfe1d",
+      "name": "ZZ TEST 768 Ticket",
+      "at": "2026-11-05T12:28:46.868Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1abb3-93aa-7b73-a9f8-56f97209cb74",
+      "receipt": "Z768-000001"
+    }
+  ],
+  "browser": "156.0.4314.58",
+  "cleanup": {
+    "actions": [
+      {
+        "what": "board check-in ZZ TEST 740 Family (left as booked)",
+        "net": [
+          {
+            "at": "2026-11-05T12:41:37.380Z",
+            "method": "POST",
+            "path": "/api/checkin/check-in-booked",
+            "status": 200
+          }
+        ],
+        "amountDue": 0
+      },
+      {
+        "what": "check out round 0",
+        "round": 0,
+        "btns": [
+          "",
+          "Retake",
+          "Confirm pickup & check out",
+          "Close"
+        ],
+        "label": "Confirm pickup & check out",
+        "net": [
+          {
+            "method": "POST",
+            "path": "/api/checkin/pickups/stays/01a1aba8-eec1-75e0-8ff2-de6513cad139/release",
+            "status": 200,
+            "code": null
+          }
+        ]
+      },
+      {
+        "what": "check out round 1",
+        "round": 1,
+        "btns": [
+          "",
+          "Retake",
+          "Confirm pickup & check out",
+          "Close"
+        ],
+        "label": "Confirm pickup & check out",
+        "net": [
+          {
+            "method": "POST",
+            "path": "/api/checkin/pickups/stays/01a1aba7-f911-7a62-9afc-41b4138e9fb5/release",
+            "status": 200,
+            "code": null
+          }
+        ]
+      },
+      {
+        "what": "check out round 2",
+        "round": 2,
+        "btns": [
+          "",
+          "Retake",
+          "Confirm pickup & check out",
+          "Close"
+        ],
+        "label": "Confirm pickup & check out",
+        "net": [
+          {
+            "method": "POST",
+            "path": "/api/checkin/pickups/stays/01a1aba7-f911-7a62-9afc-41b5b70f1f4a/release",
+            "status": 200,
+            "code": null
+          }
+        ]
+      },
+      {
+        "what": "T740 sign-out",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "T768 sign-out",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "CON sign-out",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive station ZZ TEST SCRUM-740 till",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "archive station ZZ TEST SCRUM-768 till",
+        "status": 200,
+        "code": null
+      },
+      {
+        "what": "clear the receipt printer assignment on the archived ZZ TEST SCRUM-768 till",
+        "status": 200,
+        "code": null,
+        "devicesAfter": 0,
+        "archived": true
+      }
+    ],
+    "startedAt": "2026-11-05T12:42:52.396Z",
+    "salesBefore": {
+      "740": [
+        {
+          "id": "01a1aba8-f480-764d-868f-0c2a622dbf13",
+          "receipt": "Z740-000002",
+          "status": "finalised",
+          "gross": 111500
+        },
+        {
+          "id": "01a1aba8-0162-70f4-896e-71669a3d6932",
+          "receipt": "Z740-000001",
+          "status": "finalised",
+          "gross": 223000
+        }
+      ],
+      "768": [
+        {
+          "id": "01a1abb3-93aa-7b73-a9f8-56f97209cb74",
+          "receipt": "Z768-000001",
+          "status": "finalised",
+          "gross": 150000
+        }
+      ]
+    },
+    "meT740AfterSignOut": 401,
+    "meT768AfterSignOut": 401,
+    "meCONAfterSignOut": 401,
+    "readBack": {
+      "at": "2026-11-05T12:42:54.169Z",
+      "stations": [
+        {
+          "name": "ZZ TEST SCRUM-740 till",
+          "archived": true,
+          "devices": 0
+        },
+        {
+          "name": "ZZ TEST SCRUM-768 till",
+          "archived": true,
+          "devices": 1
+        }
+      ],
+      "salesAfter": {
+        "740": [
+          {
+            "receipt": "Z740-000002",
+            "status": "finalised",
+            "gross": 111500
+          },
+          {
+            "receipt": "Z740-000001",
+            "status": "finalised",
+            "gross": 223000
+          }
+        ],
+        "768": [
+          {
+            "receipt": "Z768-000001",
+            "status": "finalised",
+            "gross": 150000
+          }
+        ]
+      },
+      "receptionTill1Devices": [
+        "Band Printer (adults)",
+        "EDC 1",
+        "Band Printer (kids)",
+        "Kitchen Printer",
+        "EDC 3",
+        "Receipt Printer 1",
+        "Scanner 1"
+      ],
+      "myRegistrationsStillWaiting": [],
+      "zzTest768Ticket": {
+        "active": false,
+        "archivedAt": "2026-11-05T12:40:21.583Z"
+      },
+      "liveTicketsWithFreeItems": [],
+      "untouched": [
+        {
+          "name": "FWBooth1",
+          "archived": false
+        },
+        {
+          "name": "Reception Till 1",
+          "archived": false
+        },
+        {
+          "name": "Till 1 (Pi)",
+          "archived": false
+        },
+        {
+          "name": "Till 2 (test)",
+          "archived": false
+        }
+      ]
+    },
+    "finishedAt": "2026-11-05T12:42:54.170Z"
+  }
+}

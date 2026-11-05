@@ -1,0 +1,16 @@
+export default async function (S) {
+  const { sleep, text } = S.lib;
+  const page = S.pages.T740.page;
+  const search = page.getByPlaceholder('Search child, parent or phone…');
+  await search.fill('ZZ TEST 740');
+  await sleep(1500);
+  await page.getByRole('tab', { name: /In Park/ }).or(page.getByRole('button', { name: /^In Park/ })).first().click();
+  await sleep(2000);
+  const outs = page.getByRole('button', { name: 'Check Out', exact: true });
+  const n = await outs.count();
+  await outs.first().click();
+  await sleep(1500);
+  const dlg = page.getByRole('dialog').first();
+  await S.look('T740');
+  return { n, dialog: (await dlg.innerText().catch(() => '')).slice(0, 1200), buttons: await dlg.getByRole('button').allInnerTexts().catch(() => []) };
+}

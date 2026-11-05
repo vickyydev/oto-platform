@@ -1,0 +1,23 @@
+async function setAge(S, page, idx, age, mon, day) {
+  const { sleep } = S.lib;
+  if (idx !== null) await page.getByRole('button', { name: /Tap to set age/ }).nth(idx).click();
+  const picker = page.getByRole('dialog');
+  await picker.getByRole('button', { name: String(age), exact: true }).click();
+  await sleep(300);
+  await picker.getByRole('button', { name: mon, exact: true }).click();
+  await sleep(300);
+  await picker.getByRole('button', { name: String(day), exact: true }).click();
+  await sleep(300);
+  const confirm = picker.getByRole('button', { name: 'Confirm', exact: true });
+  if (await confirm.isVisible().catch(() => false)) await confirm.click();
+  await sleep(600);
+}
+export default async function (S) {
+  const { text, sleep } = S.lib;
+  const page = S.pages.T740.page;
+  await setAge(S, page, null, 6, 'Mar', 12);
+  await setAge(S, page, 0, 7, 'Jun', 3);
+  await sleep(1000);
+  await S.look('T740');
+  return { text: await text(page, 3500) };
+}

@@ -1,0 +1,11 @@
+export default async function (S) {
+  const { sleep, text } = S.lib;
+  const page = S.pages.CON.page;
+  await page.getByRole('button', { name: 'Add ticket type' }).click();
+  await sleep(1500);
+  const dlg = page.getByRole('dialog');
+  const t = await dlg.innerText();
+  const inputs = await dlg.locator('input, button[role=combobox]').evaluateAll((els) => els.map((e) => ({ tag: e.tagName, type: e.type, id: e.id, ph: e.placeholder, aria: e.getAttribute('aria-label'), value: e.value ?? e.innerText })));
+  await S.look('CON');
+  return { t: t.slice(0, 3000), inputs };
+}

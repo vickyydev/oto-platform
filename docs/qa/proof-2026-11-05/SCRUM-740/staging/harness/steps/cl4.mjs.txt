@@ -1,0 +1,37 @@
+export default async function (S) {
+  const { sleep, text } = S.lib;
+  const page = S.pages.T740.page;
+  const out = [];
+  for (let round = 0; round < 3; round += 1) {
+    const dlg = page.getByRole('dialog').first();
+    if (!(await dlg.count())) {
+      const outs = page.getByRole('button', { name: 'Check Out', exact: true });
+      if (!(await outs.count())) break;
+      await outs.first().click();
+      await sleep(1500);
+      await page.getByRole('dialog').first().getByRole('button', { name: /Parent \/ dropper-off/ }).first().click();
+      await sleep(1500);
+    }
+    const d = page.getByRole('dialog').first();
+    await d.getByRole('button', { name: 'Start camera', exact: true }).click();
+    const take = d.getByRole('button', { name: /Take photo/ });
+    await take.waitFor({ timeout: 15000 });
+    await sleep(1000);
+    await take.click();
+    await sleep(2000);
+    const btns = await d.getByRole('button').allInnerTexts();
+    const mark = S.pages.T740.net.length;
+    const confirm = d.getByRole('button', { name: /Check out|Confirm|Release|Hand over/i }).last();
+    const label = await confirm.innerText().catch(() => null);
+    await confirm.click();
+    await sleep(3500);
+    out.push({ round, btns, label, net: S.pages.T740.net.slice(mark).map((n) => ({ method: n.method, path: n.path, status: n.status, code: n.response?.error?.code ?? null })) });
+    const extra = page.getByRole('dialog').first();
+    if (await extra.count()) out.push({ after: (await extra.innerText()).slice(0, 500) });
+    S.st.cleanup.actions.push({ what: 'check out round ' + round, ...out[out.length - 1] });
+    S.save();
+    if (await extra.count()) break;
+  }
+  await S.look('T740');
+  return { out, t: (await text(page, 3000)).slice(-600) };
+}

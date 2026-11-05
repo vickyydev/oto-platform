@@ -1,0 +1,17 @@
+export default async function (S) {
+  const { sleep, text } = S.lib;
+  const page = S.pages.T740.page;
+  await S.lib.unlockIfLocked(S, page, 'RECEPTION');
+  await page.getByRole('button', { name: 'Check-in', exact: true }).click();
+  await sleep(2000);
+  await page.getByPlaceholder('Search child, parent or phone…').fill('ZZ TEST 740');
+  await sleep(2500);
+  const card = page.locator('[class*="bg-card"]').filter({ hasText: 'ZZ TEST 740 Second Family' }).filter({ has: page.getByRole('button', { name: 'Check in', exact: true }) }).last();
+  await card.waitFor({ timeout: 20000 });
+  const all = page.locator('[class*="bg-card"]').filter({ hasText: 'ZZ TEST 740' }).filter({ has: page.getByRole('button', { name: 'Check in', exact: true }) });
+  const n = await all.count();
+  const cards = [];
+  for (let i = 0; i < n; i += 1) cards.push((await all.nth(i).innerText()).replace(/\s+/g, ' ').slice(0, 300));
+  await S.look('T740');
+  return { n, cards, nok: (await card.innerText()).replace(/\s+/g, ' ') };
+}

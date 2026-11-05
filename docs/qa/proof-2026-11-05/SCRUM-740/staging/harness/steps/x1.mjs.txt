@@ -1,0 +1,23 @@
+export default async function (S) {
+  const { sleep, text, stepTo, unlockIfLocked } = S.lib;
+  const page = S.pages.T768.page;
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await sleep(6000);
+  await unlockIfLocked(S, page, 'RECEPTION');
+  await page.getByRole('button', { name: /Skip.*walk-in/ }).click();
+  await page.getByRole('heading', { name: 'Tourist', exact: true }).click();
+  await page.getByRole('heading', { name: 'ZZ TEST 768 Ticket', exact: true }).click();
+  await page.getByRole('heading', { name: /^Configure:/ }).waitFor({ timeout: 15000 });
+  await stepTo(page, 'Kids', 1);
+  await stepTo(page, 'Adults', 1);
+  const add = page.getByRole('button', { name: 'Add one Bracelet Workshop' }).first();
+  await add.click(); await sleep(400); await add.click(); await sleep(2500);
+  await S.shot('T768', 'SCRUM-768/staging/st-05-free-add-on-from-the-add-on-grid-bracelet-workshop');
+  const t = await text(page, 5000);
+  const j = t.indexOf('Current Order');
+  S.st.steps.addonGrid768 = { at: new Date().toISOString(), order: t.slice(j, j + 1200) };
+  const q = S.pages.T768.net.filter((n) => n.path === '/api/sales/quote').slice(-1)[0];
+  S.st.steps.addonGrid768.quoteLines = (q?.response?.quote?.lines ?? []).map((l) => [l.label, l.quantity, l.grossSatang]);
+  S.save();
+  return S.st.steps.addonGrid768;
+}

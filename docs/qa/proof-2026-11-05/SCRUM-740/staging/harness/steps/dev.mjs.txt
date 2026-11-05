@@ -1,0 +1,8 @@
+export default async function (S) {
+  const f = S.st.fixture;
+  const st = (await S.adminApi('GET', `/branches/${f.branchId}/stations`)).body.stations;
+  const rt1 = st.find((s) => s.name === 'Reception Till 1');
+  const mine = st.find((s) => s.id === f.tills['768'].id);
+  const pr = await S.adminApi('GET', `/stations/${rt1.id}/printers`);
+  return { rt1: { devices: rt1.devices, capabilities: rt1.capabilities, keys: Object.keys(rt1) }, mine: { devices: mine.devices, capabilities: mine.capabilities }, printers: pr.status, pbody: JSON.stringify(pr.body).slice(0, 1500) };
+}

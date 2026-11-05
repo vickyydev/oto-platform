@@ -1,0 +1,11 @@
+export default async function (S) {
+  const { sleep } = S.lib;
+  const page = S.pages.T740.page;
+  const dialog = page.getByRole('dialog');
+  await S.shot('T740', 'SCRUM-740/staging/st-03-picker-three-children-paid-at-till-no-add-to-sale');
+  const card = dialog.locator('div').filter({ hasText: "ZZ TEST Family 496 waiting's booking" }).filter({ has: page.getByRole('button', { name: 'Add sibling' }) }).last();
+  await card.scrollIntoViewIfNeeded();
+  await sleep(800);
+  await S.shot('T740', 'SCRUM-740/staging/st-06-regression-paid-online-child-still-reads-paid-online');
+  return { ok: true };
+}

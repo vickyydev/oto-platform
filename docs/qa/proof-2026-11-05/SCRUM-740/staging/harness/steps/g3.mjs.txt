@@ -1,0 +1,12 @@
+export default async function (S) {
+  const { text, sleep } = S.lib;
+  const page = S.pages.T740.page;
+  const names = page.getByPlaceholder("Child's name");
+  await names.nth(0).fill('ZZ TEST 740 Ploy');
+  await names.nth(1).fill('ZZ TEST 740 Tam');
+  await page.getByRole('button', { name: /Tap to set age/ }).first().click();
+  await sleep(1000);
+  await S.look('T740');
+  const dlg = page.getByRole('dialog');
+  return { dialogs: await dlg.count(), text: (await dlg.first().innerText().catch(() => '')).slice(0, 1500) };
+}

@@ -1,0 +1,1 @@
+export default async function (S) { await S.look('T740'); return (await S.lib.text(S.pages.T740.page, 1200)); }

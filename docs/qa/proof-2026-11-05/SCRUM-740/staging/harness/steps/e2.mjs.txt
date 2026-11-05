@@ -1,0 +1,24 @@
+export default async function (S) {
+  const { sleep, text, stepTo } = S.lib;
+  const page = S.pages.T768.page;
+  const dlg = page.getByRole('dialog');
+  await dlg.getByRole('button', { name: 'Passport', exact: true }).click();
+  await sleep(400);
+  await dlg.locator('input[type=date]').fill('2030-01-31');
+  await sleep(400);
+  const btns = await dlg.getByRole('button').allInnerTexts();
+  const go = dlg.getByRole('button', { name: /Verify|Apply|Confirm/ }).last();
+  await go.click();
+  await sleep(2500);
+  await page.getByRole('heading', { name: 'ZZ TEST 768 Ticket', exact: true }).click();
+  await page.getByRole('heading', { name: /^Configure:/ }).waitFor({ timeout: 15000 });
+  await stepTo(page, 'Kids', 2);
+  await stepTo(page, 'Adults', 3);
+  await sleep(2500);
+  await S.shot('T768', 'SCRUM-768/staging/st-04-expat-not-ticked-every-unit-charged');
+  const t = await text(page, 5000);
+  const j = t.indexOf('Current Order');
+  S.st.steps.expat768 = { at: new Date().toISOString(), btns, order: t.slice(j, j + 1200) };
+  S.save();
+  return S.st.steps.expat768;
+}

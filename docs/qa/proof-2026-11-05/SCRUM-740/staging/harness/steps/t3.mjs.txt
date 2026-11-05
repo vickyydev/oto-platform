@@ -1,0 +1,11 @@
+export default async function (S) {
+  const { text, sleep } = S.lib;
+  const page = S.pages.T768.page;
+  const btn = page.getByRole('button', { name: 'Add one Regular Socks' }).nth(1);
+  await btn.click(); await sleep(400);
+  await btn.click(); await sleep(2000);
+  await S.look('T768');
+  const t = await text(page, 5000);
+  const j = t.indexOf('Current Order');
+  return { order: t.slice(j, j + 1500) };
+}

@@ -1,0 +1,16 @@
+// Writes the request bodies for the curl refusal check. Never prints a phone or a password.
+import { need } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs';
+import { writeFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
+const dir = process.argv[2];
+const v7 = () => { const b = randomBytes(16); const ms = BigInt(Date.now()); for (let i = 0; i < 6; i++) b[i] = Number((ms >> BigInt(8 * (5 - i))) & 0xffn); b[6] = (b[6] & 0x0f) | 0x70; b[8] = (b[8] & 0x3f) | 0x80; const h = b.toString('hex'); return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`; };
+writeFileSync(dir + '/signin.json', JSON.stringify({ phone: need('STAGING_RECEPTION_PHONE'), password: need('STAGING_RECEPTION_PASSWORD') }));
+const station = '01a1aba3-7b26-7915-acd4-cfc7f1c68f7c';
+writeFileSync(dir + '/station.json', JSON.stringify({ stationId: station }));
+const pkg = '01a0bbdc-8cc5-71ac-9da6-2eaee9608e13';
+for (const [name, stay] of [['nok', '01a1aba8-eec1-75e0-8ff2-de6513cad139'], ['ploy', '01a1aba7-f911-7a62-9afc-41b4138e9fb5']]) {
+  const id = v7();
+  writeFileSync(dir + `/sale-${name}.json`, JSON.stringify({ id, stationId: station, lines: [{ id: stay, packageId: pkg, kids: 1, adults: 0, serviceFee: { label: 'Drop-off service', amountSatang: 22500 } }] }));
+  writeFileSync(dir + `/sale-${name}.id`, id);
+}
+console.log('bodies written');

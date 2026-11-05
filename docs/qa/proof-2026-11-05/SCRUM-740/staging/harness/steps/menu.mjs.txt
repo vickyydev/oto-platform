@@ -1,0 +1,6 @@
+export default async function (S) {
+  const f = S.st.fixture;
+  const m = await S.adminApi('GET', `/branches/${f.branchId}/menu`);
+  const prods = (m.body.products ?? []).filter((p) => /sock/i.test(p.name) || /SOCK/.test(p.code ?? ''));
+  return prods.map((p) => ({ id: p.id, name: p.name, code: p.code, price: p.price ?? p.prices ?? null, kind: p.kind ?? p.type ?? null, stock: p.stock ?? null }));
+}

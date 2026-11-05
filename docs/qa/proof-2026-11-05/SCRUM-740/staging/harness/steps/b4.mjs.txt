@@ -1,0 +1,15 @@
+export default async function (S) {
+  const { sleep, text, codeMasks } = S.lib;
+  const page = S.pages.T740.page;
+  
+  const tab = page.getByRole('tab', { name: /In Park/ }).or(page.getByRole('button', { name: /^In Park/ })).first(); await tab.click();
+  await sleep(2000);
+  await S.shot('T740', 'SCRUM-740/staging/st-05d-in-park-tab-nok', { mask: codeMasks(page) });
+  // Read back: one sale per family, the stay in the park on the sale it was paid on.
+  const f = S.st.fixture;
+  const sales = ((await S.adminApi('GET', `/sales?branchId=${f.branchId}&stationId=${f.tills['740'].id}&limit=50`)).body.sales ?? []).map((s) => ({ id: s.id, receipt: s.receiptNumber, status: s.status, gross: s.totals?.grossSatang }));
+  const regs = (await S.adminApi('GET', `/checkin/registrations?branchId=${f.branchId}`)).body.registrations.filter((r) => r.id === f.reg1 || r.id === f.reg2).map((r) => ({ guardian: r.guardianName, children: r.children.map((c) => ({ name: c.childName, status: c.status, saleId: c.saleId ?? null, paidAtTill: c.paidAtTill })) }));
+  S.st.steps.readback740 = { at: new Date().toISOString(), sales, regs };
+  S.save();
+  return { sales, regs, text: (await text(page, 3000)).slice(400, 1600) };
+}

@@ -1,0 +1,17 @@
+export default async function (S) {
+  const { text, sleep } = S.lib;
+  const page = S.pages.T740.page;
+  const parent = (S.st.steps.parent740 = S.st.steps.parent740 ?? 'ZZ TEST 740 Family');
+  await page.getByPlaceholder('Your full name').fill(parent);
+  await sleep(400);
+  await page.getByRole('button', { name: /I authorize Oto Play Park staff/ }).click();
+  for (const c of ['I will remain within 15 minutes of the venue', 'I understand early pickup does not qualify for refund', 'I acknowledge the emergency evacuation point']) {
+    await page.getByRole('button', { name: c }).click();
+    await sleep(300);
+  }
+  await sleep(1500);
+  await S.look('T740');
+  const t = await text(page, 4000);
+  const i = t.indexOf('Children playing alone');
+  return { checked: await page.getByRole('checkbox', { checked: true }).count(), gate: t.slice(i, i + 700) };
+}

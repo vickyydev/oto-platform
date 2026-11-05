@@ -1,0 +1,10 @@
+export default async function (S) {
+  const { sleep, text } = S.lib;
+  const page = S.pages.T740.page;
+  const dlg = page.getByRole('dialog').first();
+  await dlg.getByRole('button', { name: /Parent \/ dropper-off/ }).first().click();
+  await sleep(1500);
+  const d2 = page.getByRole('dialog').first();
+  await S.look('T740');
+  return { dialog: (await d2.innerText().catch(() => '')).slice(0, 1200), buttons: await d2.getByRole('button').allInnerTexts().catch(() => []) };
+}

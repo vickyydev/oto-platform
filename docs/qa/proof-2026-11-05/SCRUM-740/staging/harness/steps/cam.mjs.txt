@@ -1,0 +1,9 @@
+export default async function (S) {
+  const page = S.pages.T740.page;
+  return await page.evaluate(async () => {
+    const devs = await navigator.mediaDevices.enumerateDevices().catch((e) => String(e));
+    let err = null;
+    try { const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false }); s.getTracks().forEach((t) => t.stop()); } catch (e) { err = e.name + ': ' + e.message; }
+    return { devs: Array.isArray(devs) ? devs.map((d) => d.kind + ':' + d.label) : devs, err, ua: navigator.userAgent };
+  });
+}

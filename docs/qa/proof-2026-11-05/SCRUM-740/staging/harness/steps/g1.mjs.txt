@@ -1,0 +1,13 @@
+export default async function (S) {
+  const { text, stepTo, sleep } = S.lib;
+  const page = S.pages.T740.page;
+  await page.getByRole('button', { name: /Skip.*walk-in/ }).click();
+  await page.getByRole('heading', { name: 'Tourist', exact: true }).click();
+  await page.getByRole('heading', { name: '2 Hours Play', exact: true }).click();
+  await page.getByRole('heading', { name: /^Configure:/ }).waitFor({ timeout: 15000 });
+  const k = await stepTo(page, 'Kids', 2);
+  const a = await stepTo(page, 'Adults', 0);
+  await sleep(800);
+  await S.look('T740');
+  return { k, a, text: await text(page, 2500) };
+}

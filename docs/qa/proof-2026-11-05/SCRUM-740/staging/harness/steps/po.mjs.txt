@@ -1,0 +1,6 @@
+export default async function (S) {
+  await S.lib.sleep(3000);
+  const r = await S.adminApi('GET', `/devices/01a0be8c-89a4-756b-aca1-3be1082c669d/printouts?limit=3`);
+  const list = r.body?.printouts ?? r.body;
+  return { status: r.status, keys: Object.keys(r.body ?? {}), first: JSON.stringify(Array.isArray(list) ? list[0] : list).slice(0, 2500) };
+}

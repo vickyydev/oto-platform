@@ -1,0 +1,22 @@
+export default async function (S) {
+  const { text, sleep, readLeftBehind } = S.lib;
+  const page = S.pages.T740.page;
+  const left = await readLeftBehind(page);
+  await page.getByRole('button', { name: /Skip.*walk-in/ }).click();
+  await page.getByRole('heading', { name: 'Tourist', exact: true }).click();
+  await page.getByRole('button', { name: 'Add drop-off child' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByText("ZZ TEST 740 Family's booking").waitFor({ timeout: 20000 });
+  await sleep(1500);
+  const cards = [];
+  for (const fam of ['ZZ TEST 740 Family', 'ZZ TEST 740 Second Family', 'ZZ TEST Family 496 waiting', 'ZZ TEST SCRUM-730 Ying']) {
+    const card = dialog.locator('div').filter({ hasText: `${fam}'s booking` }).filter({ has: page.getByRole('button', { name: 'Add sibling' }) }).last();
+    if (!(await card.count())) { cards.push({ fam, found: false }); continue; }
+    const btns = await card.getByRole('button').allInnerTexts();
+    cards.push({ fam, found: true, text: (await card.innerText()).replace(/\s+/g, ' ').slice(0, 400), buttons: btns, addToSale: await card.getByRole('button', { name: 'Add to sale' }).count() });
+  }
+  S.st.steps.picker = { at: new Date().toISOString(), leftBehind: left, cards };
+  S.save();
+  await S.look('T740');
+  return S.st.steps.picker;
+}

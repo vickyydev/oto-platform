@@ -1,0 +1,23 @@
+export default async function (S) {
+  const { sleep, text, unlockIfLocked } = S.lib;
+  const page = S.pages.T740.page;
+  await unlockIfLocked(S, page, 'RECEPTION');
+  const up = page.getByRole('tab', { name: /Upcoming/ }).or(page.getByRole('button', { name: /^Upcoming/ })).first();
+  await up.click();
+  await sleep(2000);
+  const card = page.locator('[class*="bg-card"]').filter({ hasText: 'ZZ TEST 740 Family' }).filter({ has: page.getByRole('button', { name: 'Check in', exact: true }) }).last();
+  await card.waitFor({ timeout: 20000 });
+  const mark = S.pages.T740.net.length;
+  await card.getByRole('button', { name: 'Check in', exact: true }).click();
+  await page.getByRole('button', { name: /Check in & issue band/ }).waitFor({ timeout: 20000 });
+  await sleep(1000);
+  const dlg = (await page.getByRole('dialog').first().innerText()).slice(0, 600);
+  const amountDue = await page.getByRole('heading', { name: 'Amount Due', includeHidden: true }).count();
+  await page.getByRole('button', { name: /Check in & issue band/ }).click();
+  await sleep(4000);
+  const net = S.pages.T740.net.slice(mark).map((n) => ({ at: n.at, method: n.method, path: n.path, status: n.status }));
+  S.st.cleanup = S.st.cleanup ?? { actions: [] };
+  S.st.cleanup.actions.push({ what: 'board check-in ZZ TEST 740 Family (left as booked)', net, amountDue });
+  S.save();
+  return { dlg, amountDue, net, t: (await text(page, 3000)).slice(-500) };
+}

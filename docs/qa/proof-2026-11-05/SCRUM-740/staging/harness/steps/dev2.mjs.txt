@@ -1,0 +1,10 @@
+export default async function (S) {
+  const f = S.st.fixture;
+  const id = f.tills['768'].id;
+  const before = (await S.adminApi('GET', `/stations/${id}`)).body.station;
+  if (!before.name.startsWith('ZZ TEST SCRUM-768')) throw new Error('refusing ' + before.name);
+  const r = await S.adminApi('PATCH', `/stations/${id}`, { devices: [{ role: 'receipt', deviceId: '01a0be8c-89a4-756b-aca1-3be1082c669d' }] });
+  S.st.steps.receiptPrinter768 = { at: new Date().toISOString(), status: r.status, devices: r.body?.station?.devices ?? r.body, before: before.devices };
+  S.save();
+  return S.st.steps.receiptPrinter768;
+}

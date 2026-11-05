@@ -1,0 +1,16 @@
+export default async function (S) {
+  const { text, sleep, codeMasks } = S.lib;
+  const page = S.pages.T740.page;
+  S.st.fixture.reg1 = '01a1aba7-f911-7a62-9afc-41b38bf3088d';
+  S.st.fixture.sale1 = { id: '01a1aba8-0162-70f4-896e-71669a3d6932', receipt: 'Z740-000001' };
+  S.st.created.push({ kind: 'registration', id: S.st.fixture.reg1, guardian: 'ZZ TEST 740 Family' }, { kind: 'sale', id: S.st.fixture.sale1.id, receipt: 'Z740-000001' });
+  S.save();
+  await S.shot('T740', 'SCRUM-740/staging/st-01b-paid-in-cash-receipt-and-door-choice', { mask: codeMasks(page) });
+  await page.getByRole('button', { name: 'Leave as booked' }).click();
+  await sleep(2500);
+  await S.shot('T740', 'SCRUM-740/staging/st-01c-left-as-booked-receipt-z740-000001', { mask: codeMasks(page) });
+  const net = S.pages.T740.net.filter((n) => /leave-as-booked/.test(n.path)).map((n) => ({ at: n.at, status: n.status, request: n.request }));
+  S.st.steps.leave1 = { at: new Date().toISOString(), net };
+  S.save();
+  return { net, text: (await text(page, 3000)).slice(300, 1800) };
+}

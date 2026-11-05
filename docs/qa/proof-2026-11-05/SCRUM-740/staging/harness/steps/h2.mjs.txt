@@ -1,0 +1,34 @@
+export default async function (S) {
+  const { text, sleep, codeMasks, unlockIfLocked } = S.lib;
+  const page = S.pages.T740.page;
+  const mark = S.pages.T740.net.length;
+  await page.getByRole('button', { name: 'Continue to payment' }).click();
+  await page.getByRole('heading', { name: 'Amount Due' }).waitFor({ timeout: 30000 });
+  await sleep(1000);
+  await page.getByRole('heading', { name: 'Cash', exact: true }).click();
+  await sleep(600);
+  await page.getByRole('button', { name: 'Confirm Payment Received' }).click();
+  const choice = page.getByRole('dialog').filter({ hasText: 'Check in the drop-off' });
+  await choice.waitFor({ timeout: 30000 });
+  await sleep(1500);
+  const net = S.pages.T740.net.slice(mark).filter((n) => /\/sales|checkin/.test(n.path)).map((n) => ({ at: n.at, method: n.method, path: n.path, status: n.status, receipt: n.response?.sale?.receiptNumber ?? null, saleId: n.response?.sale?.id ?? null, regId: n.path.endsWith('/registrations') ? n.response?.registration?.id ?? n.response?.id ?? null : null }));
+  const fin = net.find((n) => /finalise$/.test(n.path));
+  const reg = net.find((n) => n.path === '/api/checkin/registrations');
+  S.st.fixture.sale2 = { id: fin?.saleId, receipt: fin?.receipt };
+  S.st.fixture.reg2 = reg?.regId ?? null;
+  S.st.created.push({ kind: 'registration', id: S.st.fixture.reg2, guardian: 'ZZ TEST 740 Second Family' }, { kind: 'sale', id: fin?.saleId, receipt: fin?.receipt });
+  S.st.steps.pay2 = { at: new Date().toISOString(), net };
+  S.save();
+  await S.shot('T740', 'SCRUM-740/staging/st-02a-third-child-paid-door-choice-not-made', { mask: codeMasks(page) });
+  // Reload before anything is chosen after the payment.
+  S.st.steps.reload2 = { at: new Date().toISOString() };
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await sleep(6000);
+  const unlocked = await unlockIfLocked(S, page, 'RECEPTION');
+  await sleep(2000);
+  S.st.steps.reload2.unlocked = unlocked;
+  S.st.steps.reload2.leaveAsBookedCalls = S.pages.T740.net.filter((n) => /leave-as-booked|check-in-now/.test(n.path) && n.at >= S.st.steps.pay2.at).length;
+  S.save();
+  await S.shot('T740', 'SCRUM-740/staging/st-02b-till-reloaded-before-any-choice', { mask: codeMasks(page) });
+  return { net, reload: S.st.steps.reload2, after: (await text(page, 2000)).slice(300, 1500) };
+}

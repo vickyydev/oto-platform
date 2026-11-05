@@ -1,0 +1,11 @@
+export default async function (S) {
+  const { sleep, unlockIfLocked } = S.lib;
+  const page = S.pages.T768.page;
+  await unlockIfLocked(S, page, 'RECEPTION');
+  await page.keyboard.press('Escape');
+  await sleep(800);
+  const codes = page.getByText(/^Z768-(?![0-9]{6}$)[A-Z0-9]{6}$/);
+  const n = await codes.count();
+  await S.shot('T768', 'SCRUM-768/staging/st-03b-history-sale-free-lines-at-0', { mask: [codes] });
+  return { n, receiptShown: await page.getByText('Z768-000001').count() };
+}

@@ -1,0 +1,9 @@
+export default async function (S) {
+  const f = S.st.fixture;
+  const id = f.tills['768'].id;
+  const r = await S.adminApi('PATCH', `/stations/${id}`, { devices: [] });
+  const s = (await S.adminApi('GET', `/branches/${f.branchId}/stations?includeArchived=true`)).body.stations.find((x) => x.id === id);
+  S.st.cleanup.actions.push({ what: 'clear the receipt printer assignment on the archived ZZ TEST SCRUM-768 till', status: r.status, code: r.body?.error?.code ?? null, devicesAfter: (s?.devices ?? []).length, archived: s?.archived });
+  S.save();
+  return S.st.cleanup.actions.slice(-1)[0];
+}

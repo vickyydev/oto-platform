@@ -1,0 +1,68 @@
+SCRUM-740 staging: a second sale for a child already paid at the till
+Sent with curl at 2026-11-05T12:23:47Z (UTC) to https://oto-pos-web-staging.onrender.com, signed in as the staging reception account (Som), on the ZZ TEST SCRUM-768 till. Live commit fe6181bdb1edefd0f100b9c19be177446991ad0d.
+
+== ZZ TEST 740 Nok (paid on Z740-000002, the till reloaded before any choice) ==
+POST /api/sales
+{
+  "id": "01a1abaa-2e52-7d16-8ef1-7b30acbd81a5",
+  "stationId": "01a1aba3-7b26-7915-acd4-cfc7f1c68f7c",
+  "lines": [
+    {
+      "id": "01a1aba8-eec1-75e0-8ff2-de6513cad139",
+      "packageId": "01a0bbdc-8cc5-71ac-9da6-2eaee9608e13",
+      "kids": 1,
+      "adults": 0,
+      "serviceFee": {
+        "label": "Drop-off service",
+        "amountSatang": 22500
+      }
+    }
+  ]
+}
+Answer: HTTP 409
+{
+  "error": {
+    "code": "CHECKIN_PAID_AT_TILL",
+    "message": "ZZ TEST 740 Nok is already paid for at the till on receipt Z740-000002, so there is nothing to charge. Check them in from the Drop-Off board. Nothing was saved.",
+    "details": {
+      "checkinId": "01a1aba8-eec1-75e0-8ff2-de6513cad139",
+      "saleId": "01a1aba8-f480-764d-868f-0c2a622dbf13",
+      "receiptNumber": "Z740-000002"
+    }
+  }
+}
+GET /api/sales/01a1abaa-2e52-7d16-8ef1-7b30acbd81a5 afterwards: HTTP 404 {"error":{"code":"NOT_FOUND","message":"Sale not found"}} (nothing was saved)
+
+== ZZ TEST 740 Ploy (paid on Z740-000001, left as booked) ==
+POST /api/sales
+{
+  "id": "01a1abaa-2e54-70a4-8666-1b6755f469ce",
+  "stationId": "01a1aba3-7b26-7915-acd4-cfc7f1c68f7c",
+  "lines": [
+    {
+      "id": "01a1aba7-f911-7a62-9afc-41b4138e9fb5",
+      "packageId": "01a0bbdc-8cc5-71ac-9da6-2eaee9608e13",
+      "kids": 1,
+      "adults": 0,
+      "serviceFee": {
+        "label": "Drop-off service",
+        "amountSatang": 22500
+      }
+    }
+  ]
+}
+Answer: HTTP 409
+{
+  "error": {
+    "code": "CHECKIN_PAID_AT_TILL",
+    "message": "ZZ TEST 740 Ploy is already paid for at the till on receipt Z740-000001, so there is nothing to charge. Check them in from the Drop-Off board. Nothing was saved.",
+    "details": {
+      "checkinId": "01a1aba7-f911-7a62-9afc-41b4138e9fb5",
+      "saleId": "01a1aba8-0162-70f4-896e-71669a3d6932",
+      "receiptNumber": "Z740-000001"
+    }
+  }
+}
+GET /api/sales/01a1abaa-2e54-70a4-8666-1b6755f469ce afterwards: HTTP 404 {"error":{"code":"NOT_FOUND","message":"Sale not found"}} (nothing was saved)
+
+The curl session was signed out afterwards (GET /api/me then answered 401).

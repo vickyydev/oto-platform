@@ -1,0 +1,10 @@
+export default async function (S) {
+  const { sleep, text } = S.lib;
+  const page = S.pages.CON.page;
+  await page.keyboard.press('Escape');
+  await page.getByRole('link', { name: 'Tickets', exact: true }).first().click();
+  await sleep(3000);
+  await S.look('CON');
+  const t = await text(page, 8000);
+  return { url: page.url(), text: t.slice(t.indexOf('Admin ·'), t.indexOf('Admin ·') + 2500) };
+}

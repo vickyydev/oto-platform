@@ -1,0 +1,14 @@
+export default async function (S) {
+  const { sleep, text } = S.lib;
+  const page = S.pages.CON.page;
+  await S.shot('CON', 'SCRUM-740/staging/st-04b-console-activity-second-charge-refused-rows');
+  const rows = page.getByText('checkin.second_charge_refused');
+  await rows.nth(1).click();
+  await sleep(2000);
+  const t = await text(page, 12000);
+  await S.shot('CON', 'SCRUM-740/staging/st-04c-console-activity-row-opened-paid-sale-receipt-refused-sale');
+  const i = t.indexOf('second_charge_refused');
+  S.st.steps.activity = { at: new Date().toISOString(), opened: t.slice(Math.max(0, i - 200), i + 2500) };
+  S.save();
+  return S.st.steps.activity;
+}

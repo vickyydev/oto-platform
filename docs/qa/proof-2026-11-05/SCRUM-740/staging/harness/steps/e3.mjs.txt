@@ -1,0 +1,12 @@
+export default async function (S) {
+  const { sleep, text } = S.lib;
+  const page = S.pages.T768.page;
+  const writes = S.pages.T768.net.filter((n) => n.at >= '2026-11-05T12:37:30Z' && !/quote|intents|session\/station/.test(n.path)).map((n) => ({ at: n.at, method: n.method, path: n.path, status: n.status }));
+  await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+  await sleep(1200);
+  const confirm = page.getByRole('alertdialog').or(page.getByRole('dialog'));
+  let dialog = null;
+  if (await confirm.count()) { dialog = (await confirm.first().innerText()).slice(0, 400); }
+  await S.look('T768');
+  return { writes, dialog, t: (await text(page, 2000)).slice(300, 900) };
+}

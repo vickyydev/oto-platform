@@ -1,0 +1,13 @@
+export default async function (S) {
+  const { text, sleep } = S.lib;
+  const page = S.pages.T768.page;
+  await S.shot('T768', 'SCRUM-768/staging/st-02a-order-panel-and-display-free-kid-and-adult');
+  const order = page.getByRole('heading', { name: 'Current Order' }).locator('../..');
+  S.st.steps.order768 = { at: new Date().toISOString(), panel: (await order.innerText()).replace(/\s+/g, ' ').slice(0, 600) };
+  S.save();
+  // The platform's own quote for this cart, as the till asked for it.
+  const q = S.pages.T768.net.filter((n) => n.path === '/api/sales/quote').slice(-1)[0];
+  S.st.steps.order768.quote = q ? { at: q.at, status: q.status, response: JSON.stringify(q.response).slice(0, 2500) } : null;
+  S.save();
+  return S.st.steps.order768;
+}

@@ -1,0 +1,23 @@
+export default async function (S) {
+  const { tillSignIn, text, sleep, stepTo, readLeftBehind } = S.lib;
+  const f = S.st.fixture;
+  const con = S.pages.CON.page;
+  const cancel = con.getByRole('dialog').getByRole('button', { name: 'Cancel' });
+  if (await cancel.isVisible().catch(() => false)) await cancel.click();
+  if (!S.pages.T768) await tillSignIn(S, 'T768', f.tills['768'].name, 'RECEPTION', { width: 1600, height: 1000 });
+  const page = S.pages.T768.page;
+  await page.getByText('Membership Check', { exact: true }).first().waitFor({ timeout: 30000 });
+  const left = await readLeftBehind(page);
+  await page.getByRole('button', { name: /Skip.*walk-in/ }).click();
+  await page.getByRole('heading', { name: 'Tourist', exact: true }).click();
+  await page.getByRole('heading', { name: 'ZZ TEST 768 Ticket', exact: true }).click();
+  await page.getByRole('heading', { name: /^Configure:/ }).waitFor({ timeout: 15000 });
+  const k = await stepTo(page, 'Kids', 2);
+  const a = await stepTo(page, 'Adults', 3);
+  const s = await stepTo(page, 'Regular Socks', 2);
+  await sleep(2000);
+  await S.look('T768');
+  const t = await text(page, 5000);
+  const i = t.indexOf('Current Order');
+  return { left, k, a, s, order: t.slice(i, i + 1500) };
+}

@@ -1,0 +1,29 @@
+export default async function (S) {
+  const { text, sleep, codeMasks, fixScroll } = S.lib;
+  const page = S.pages.T768.page;
+  const mark = S.pages.T768.net.length;
+  const amountDue = page.getByRole('heading', { name: 'Amount Due' });
+  for (let i = 0; i < 6 && !(await amountDue.isVisible().catch(() => false)); i += 1) {
+    const pay = page.getByRole('button', { name: /^Pay ฿/ });
+    const done = page.getByRole('button', { name: 'Done', exact: true });
+    if (await done.last().isVisible().catch(() => false) && await done.last().isEnabled().catch(() => false)) await done.last().click();
+    else if (await pay.isVisible().catch(() => false)) await pay.click();
+    await sleep(1200);
+  }
+  await amountDue.waitFor({ timeout: 20000 });
+  await sleep(2500);
+  await S.shot('T768', 'SCRUM-768/staging/st-02b-amount-due-only-the-paid-units');
+  await page.getByRole('heading', { name: 'Cash', exact: true }).click();
+  await sleep(800);
+  await page.getByRole('button', { name: 'Confirm Payment Received' }).click();
+  await page.getByRole('heading', { name: 'Payment Successful' }).waitFor({ timeout: 30000 });
+  await sleep(2000);
+  const net = S.pages.T768.net.slice(mark).filter((n) => /\/sales/.test(n.path) && !/quote/.test(n.path)).map((n) => ({ at: n.at, method: n.method, path: n.path, status: n.status, receipt: n.response?.sale?.receiptNumber ?? null, saleId: n.response?.sale?.id ?? null }));
+  const fin = net.find((n) => /finalise$/.test(n.path));
+  S.st.fixture.sale768 = { id: fin?.saleId, receipt: fin?.receipt };
+  S.st.created.push({ kind: 'sale', id: fin?.saleId, receipt: fin?.receipt });
+  S.save();
+  await fixScroll(page);
+  await S.shot('T768', 'SCRUM-768/staging/st-03a-paid-in-cash', { mask: codeMasks(page) });
+  return { net, text: (await text(page, 3000)).slice(300, 1500) };
+}

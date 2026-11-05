@@ -1,0 +1,18 @@
+export default async function (S) {
+  const { sleep, text } = S.lib;
+  const page = S.pages.CON.page;
+  const dlg = page.getByRole('dialog');
+  const mark = S.pages.CON.net.length;
+  await dlg.getByRole('button', { name: 'Add ticket type', exact: true }).click();
+  await sleep(3000);
+  const net = S.pages.CON.net.slice(mark).map((n) => ({ at: n.at, method: n.method, path: n.path, status: n.status, id: n.response?.package?.id ?? n.response?.id ?? null, err: n.response?.error ?? null }));
+  const created = net.find((n) => /ticket-packages$/.test(n.path) && n.method === 'POST');
+  if (created?.status < 300) {
+    const f = S.st.fixture; f.ticket768 = { id: created.id, name: 'ZZ TEST 768 Ticket' };
+    S.st.created.push({ kind: 'ticket-package', id: created.id, name: 'ZZ TEST 768 Ticket', at: new Date().toISOString() });
+    S.save();
+  }
+  await S.look('CON');
+  const t = await text(page, 6000);
+  return { net, dialogOpen: await dlg.count(), list: t.slice(t.indexOf('ticket types'), t.indexOf('ticket types') + 600) };
+}

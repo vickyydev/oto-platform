@@ -1,0 +1,1 @@
+export default async function (S) { await S.look('T768'); const net = S.pages.T768.net.slice(-6).map((n) => ({ at: n.at, method: n.method, path: n.path, status: n.status, err: n.response?.error ?? null })); return { net, t: (await S.lib.text(S.pages.T768.page, 3000)).slice(300, 2000) }; }

@@ -1,0 +1,37 @@
+export default async function (S) {
+  const { sleep } = S.lib;
+  const page = S.pages.CON.page;
+  await page.goto(S.CONSOLE + '/catalogue/tickets', { waitUntil: 'domcontentloaded' });
+  await sleep(3500);
+  await page.getByRole('button', { name: 'Edit ZZ TEST 768 Ticket' }).click();
+  const dlg = page.getByRole('dialog');
+  await dlg.waitFor();
+  await sleep(1200);
+  await dlg.getByRole('button', { name: 'Add', exact: true }).click();
+  await sleep(600);
+  const rows = dlg.locator('div.rounded-xl').filter({ has: page.getByLabel('Quantity') });
+  const row = rows.nth((await rows.count()) - 1);
+  // kind defaults to add-on; choose the add-on and Tourist only.
+  await row.getByRole('combobox').nth(1).click();
+  await sleep(300);
+  await page.getByRole('option', { name: 'Bracelet Workshop', exact: true }).click();
+  await sleep(400);
+  for (const tier of ['Expat', 'Thai']) {
+    const b = row.getByRole('radio', { name: tier }).or(row.getByRole('button', { name: tier, exact: true })).first();
+    const st = (await b.getAttribute('aria-pressed')) ?? (await b.getAttribute('aria-checked')) ?? (await b.getAttribute('data-state'));
+    if (st === 'true' || st === 'on') await b.click();
+    await sleep(200);
+  }
+  const rowText = (await row.innerText()).replace(/\s+/g, ' ');
+  const mark = S.pages.CON.net.length;
+  await dlg.getByRole('button', { name: 'Save changes' }).click();
+  await sleep(3000);
+  const net = S.pages.CON.net.slice(mark).map((n) => ({ method: n.method, path: n.path, status: n.status }));
+  const f = S.st.fixture;
+  const pk = await S.adminApi('GET', `/branches/${f.branchId}/ticket-packages?includeArchived=true`);
+  const list = Array.isArray(pk.body) ? pk.body : (pk.body.packages ?? []);
+  const mine = list.find((p) => p.id === f.ticket768.id);
+  S.st.steps.ticket768Fourth = { at: new Date().toISOString(), net, freebies: mine?.freebies };
+  S.save();
+  return { rowText, net, freebies: mine?.freebies };
+}

@@ -1,0 +1,6 @@
+export default async function (S) {
+  const { sleep, text } = S.lib;
+  const page = S.pages.CON.page;
+  const inputs = await page.locator('input, select').evaluateAll((els) => els.map((e) => ({ tag: e.tagName, type: e.type, name: e.name, id: e.id, ph: e.placeholder, aria: e.getAttribute('aria-label'), label: e.labels?.[0]?.innerText ?? null })));
+  return inputs.slice(0, 30);
+}

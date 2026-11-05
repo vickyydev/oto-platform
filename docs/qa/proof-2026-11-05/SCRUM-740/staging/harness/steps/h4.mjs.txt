@@ -1,0 +1,11 @@
+export default async function (S) {
+  const { text, sleep, codeMasks } = S.lib;
+  const page = S.pages.T768.page;
+  const masks = [...codeMasks(page), page.getByText(/^Z768-[A-Z0-9]{6}$/)];
+  await S.shot('T768', 'SCRUM-768/staging/st-03b-history-sale-free-lines-at-0', { mask: masks });
+  await page.getByRole('button', { name: 'Reprint' }).click();
+  await sleep(1500);
+  await S.look('T768');
+  const dlg = page.getByRole('dialog');
+  return { dialog: (await dlg.first().innerText().catch(() => '')).slice(0, 1500) };
+}

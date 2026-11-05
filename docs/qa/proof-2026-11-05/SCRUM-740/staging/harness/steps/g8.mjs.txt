@@ -1,0 +1,14 @@
+export default async function (S) {
+  const { text, sleep } = S.lib;
+  const page = S.pages.T740.page;
+  await page.getByRole('heading', { name: 'Cash', exact: true }).click();
+  await sleep(600);
+  await page.getByRole('button', { name: 'Confirm Payment Received' }).click();
+  const choice = page.getByRole('dialog').filter({ hasText: 'Check in the drop-off' });
+  await choice.waitFor({ timeout: 30000 });
+  await sleep(1500);
+  S.st.steps.pay1 = { at: new Date().toISOString(), net: S.pages.T740.net.filter((n) => /\/sales|checkin/.test(n.path)).map((n) => ({ at: n.at, method: n.method, path: n.path, status: n.status, receipt: n.response?.sale?.receiptNumber ?? null, saleId: n.response?.sale?.id ?? null })) };
+  S.save();
+  await S.look('T740');
+  return { dialog: await choice.innerText(), behind: (await text(page, 4000)).slice(300, 2500), net: S.st.steps.pay1.net };
+}

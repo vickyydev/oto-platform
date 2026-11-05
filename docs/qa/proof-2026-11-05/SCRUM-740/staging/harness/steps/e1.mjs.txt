@@ -1,0 +1,15 @@
+export default async function (S) {
+  const { sleep, text, unlockIfLocked } = S.lib;
+  const page = S.pages.T768.page;
+  await unlockIfLocked(S, page, 'RECEPTION');
+  await page.getByRole('button', { name: 'Tickets', exact: true }).click();
+  await sleep(2000);
+  const next = page.getByRole('button', { name: 'Start New Sale' });
+  if (await next.isVisible().catch(() => false)) { await next.click(); await sleep(1500); }
+  await page.getByRole('button', { name: /Skip.*walk-in/ }).click();
+  await sleep(1000);
+  await page.getByRole('heading', { name: 'Expat', exact: true }).click();
+  await sleep(2000);
+  await S.look('T768');
+  return (await text(page, 4000)).slice(300, 2500);
+}

@@ -1,0 +1,13 @@
+export default async function (S) {
+  const { sleep, text } = S.lib;
+  const page = S.pages.CON.page;
+  await page.getByPlaceholder('member.update').fill('checkin.second_charge_refused');
+  await page.keyboard.press('Enter');
+  await sleep(2500);
+  const ref = page.getByRole('button', { name: 'Refresh' });
+  if (await ref.isVisible().catch(() => false)) { await ref.click(); await sleep(2500); }
+  const t = await text(page, 9000);
+  const i = t.indexOf('The log');
+  await S.look('CON');
+  return { log: t.slice(i, i + 1200), rows: await page.getByText('checkin.second_charge_refused').count() };
+}

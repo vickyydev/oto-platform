@@ -1,0 +1,16 @@
+export default async function (S) {
+  const { sleep } = S.lib;
+  const page = S.pages.CON.page;
+  const scope = (await page.getByRole('dialog').count()) ? page.getByRole('dialog').first() : page;
+  await scope.getByRole('button', { name: 'Receipt Printer 1', exact: true }).click();
+  await sleep(3000);
+  const img = scope.locator('img[alt^="Printout"]').first();
+  await img.waitFor({ timeout: 20000 });
+  await img.scrollIntoViewIfNeeded();
+  await sleep(2000);
+  const alt = await img.getAttribute('alt');
+  const box = await img.boundingBox();
+  const near = await img.evaluate((el) => (el.parentElement?.parentElement?.textContent ?? '').slice(0, 200));
+  await S.look('CON');
+  return { alt, box, near, count: await scope.locator('img[alt^="Printout"]').count() };
+}

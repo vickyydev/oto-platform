@@ -1,0 +1,8 @@
+export default async function (S) {
+  const { text, sleep } = S.lib;
+  const page = S.pages.T740.page;
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  await sleep(2000);
+  await S.look('T740');
+  return { text: await text(page, 3000) };
+}

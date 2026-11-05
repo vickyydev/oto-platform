@@ -1,0 +1,24 @@
+export default async function (S) {
+  const { text, sleep, unlockIfLocked } = S.lib;
+  const page = S.pages.T768.page;
+  await unlockIfLocked(S, page, 'RECEPTION');
+  const hist = page.getByRole('button', { name: 'History', exact: true });
+  if (await hist.isVisible().catch(() => false)) { await hist.click(); await sleep(3000); }
+  await page.getByText('Z768-000001').first().click();
+  await sleep(2000);
+  await page.getByRole('button', { name: 'Reprint' }).click();
+  await sleep(1200);
+  const dlg = page.getByRole('dialog');
+  await dlg.getByText('Full receipt', { exact: true }).click();
+  await sleep(600);
+  const mark = S.pages.T768.net.length;
+  const btns = await dlg.getByRole('button').allInnerTexts();
+  const go = dlg.getByRole('button', { name: /^Reprint/ }).last();
+  await go.click();
+  await sleep(4000);
+  const net = S.pages.T768.net.slice(mark).map((n) => ({ at: n.at, method: n.method, path: n.path, status: n.status, resp: JSON.stringify(n.response).slice(0, 600) }));
+  S.st.steps.reprint768 = { at: new Date().toISOString(), net };
+  S.save();
+  await S.look('T768');
+  return { btns, net, text: (await text(page, 4000)).slice(-800) };
+}

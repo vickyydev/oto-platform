@@ -1,0 +1,17 @@
+export default async function (S) {
+  const { text, sleep, fixScroll } = S.lib;
+  const page = S.pages.T768.page;
+  await fixScroll(page);
+  await S.shot('T768', 'SCRUM-768/staging/st-02c-socks-out-of-stock-order-cannot-be-saved');
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await sleep(1500);
+  const rm = page.getByRole('button', { name: 'Remove one Regular Socks' });
+  const n = await rm.count();
+  let idx = -1;
+  for (let i = 0; i < n; i += 1) if (await rm.nth(i).isEnabled()) { idx = i; break; }
+  if (idx >= 0) { await rm.nth(idx).click(); await sleep(400); await rm.nth(idx).click(); await sleep(1500); }
+  await S.look('T768');
+  const t = await text(page, 5000);
+  const j = t.indexOf('Current Order');
+  return { idx, n, order: t.slice(j, j + 900), toasts: t.slice(-600) };
+}

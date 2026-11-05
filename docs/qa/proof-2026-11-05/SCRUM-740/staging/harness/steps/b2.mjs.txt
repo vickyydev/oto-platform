@@ -1,0 +1,16 @@
+export default async function (S) {
+  const { sleep, text } = S.lib;
+  const page = S.pages.T740.page;
+  await S.shot('T740', 'SCRUM-740/staging/st-05a-board-booked-and-paid-no-payment-needed');
+  const card = page.locator('[class*="bg-card"]').filter({ hasText: 'ZZ TEST 740 Second Family' }).filter({ has: page.getByRole('button', { name: 'Check in', exact: true }) }).last();
+  const mark = S.pages.T740.net.length;
+  await card.getByRole('button', { name: 'Check in', exact: true }).click();
+  await page.getByRole('button', { name: 'Check in & issue band' }).waitFor({ timeout: 20000 });
+  await sleep(1500);
+  const amountDue = await page.getByRole('heading', { name: 'Amount Due', includeHidden: true }).count();
+  S.st.steps.board = { at: new Date().toISOString(), amountDue, netAfterPress: S.pages.T740.net.slice(mark).map((n) => ({ method: n.method, path: n.path, status: n.status })) };
+  S.save();
+  await S.shot('T740', 'SCRUM-740/staging/st-05b-check-in-pressed-no-payment-screen');
+  const dlg = page.getByRole('dialog');
+  return { board: S.st.steps.board, dialog: (await dlg.first().innerText().catch(() => '')).slice(0, 1500) };
+}

@@ -1,0 +1,13 @@
+export default async function (S) {
+  const { sleep, text, codeMasks } = S.lib;
+  const page = S.pages.T740.page;
+  const mark = S.pages.T740.net.length;
+  await page.getByRole('button', { name: 'Check in & issue band' }).click();
+  await sleep(4000);
+  const net = S.pages.T740.net.slice(mark).map((n) => ({ at: n.at, method: n.method, path: n.path, status: n.status, code: n.response?.error?.code ?? null }));
+  const amountDue = await page.getByRole('heading', { name: 'Amount Due', includeHidden: true }).count();
+  S.st.steps.boardCheckIn = { at: new Date().toISOString(), net, amountDue };
+  S.save();
+  await S.look('T740');
+  return { net, amountDue, text: (await text(page, 3000)).slice(0, 2000) };
+}

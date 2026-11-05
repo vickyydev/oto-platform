@@ -1,0 +1,13 @@
+export default async function (S) {
+  const { sleep } = S.lib;
+  const page = S.pages.T740.page;
+  await page.keyboard.press('Escape');
+  await sleep(800);
+  const f = S.st.fixture;
+  const regs = (await S.adminApi('GET', `/checkin/registrations?branchId=${f.branchId}`)).body.registrations;
+  const mine = regs.filter((r) => r.id === f.reg1 || r.id === f.reg2).map((r) => ({ id: r.id, guardian: r.guardianName, children: r.children.map((c) => ({ id: c.id, name: c.childName ?? c.name, status: c.status, saleId: c.saleId ?? null, paidAtTill: c.paidAtTill ?? null })) }));
+  f.stays = Object.fromEntries(mine.flatMap((r) => r.children.map((c) => [c.name, c.id])));
+  S.save();
+  const net = S.pages.T740.net.filter((n) => /station|session|lease/.test(n.path)).map((n) => ({ method: n.method, path: n.path, status: n.status, req: n.request }));
+  return { mine, net };
+}

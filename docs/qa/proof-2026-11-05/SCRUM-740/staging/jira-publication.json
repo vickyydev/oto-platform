@@ -1,0 +1,53 @@
+{
+  "before": {
+    "status": "Testing",
+    "summary": "A child already paid for at the till is still offered Add to sale, so a second sale can take the money again"
+  },
+  "attach": {
+    "status": 200,
+    "files": [
+      {
+        "id": "12697",
+        "name": "st-01c-left-as-booked-receipt-z740-000001.png"
+      },
+      {
+        "id": "12698",
+        "name": "st-02a-third-child-paid-door-choice-not-made.png"
+      },
+      {
+        "id": "12699",
+        "name": "st-03-picker-three-children-paid-at-till-no-add-to-sale.png"
+      },
+      {
+        "id": "12700",
+        "name": "st-04-second-sale-refused-409-nothing-saved.png"
+      },
+      {
+        "id": "12701",
+        "name": "st-04c-console-activity-row-opened-paid-sale-receipt-refused-sale.png"
+      },
+      {
+        "id": "12702",
+        "name": "st-05a-board-booked-and-paid-no-payment-needed.png"
+      },
+      {
+        "id": "12703",
+        "name": "st-05b-check-in-pressed-no-payment-screen.png"
+      },
+      {
+        "id": "12704",
+        "name": "st-06-regression-paid-online-child-still-reads-paid-online.png"
+      }
+    ]
+  },
+  "comment": {
+    "status": 201,
+    "id": "13509",
+    "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-740?focusedCommentId=13509"
+  },
+  "after": {
+    "status": "Deployed",
+    "commitLinks": "5 of 5",
+    "readAt": "2026-11-05T12:45:43.339Z"
+  }
+}

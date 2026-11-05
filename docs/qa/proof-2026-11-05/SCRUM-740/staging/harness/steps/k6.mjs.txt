@@ -1,0 +1,18 @@
+export default async function (S) {
+  const { sleep } = S.lib;
+  const page = S.pages.CON.page;
+  await page.getByRole('button', { name: 'Edit ZZ TEST 768 Ticket' }).click();
+  const dlg = page.getByRole('dialog');
+  await dlg.waitFor();
+  await sleep(1500);
+  await S.shot('CON', 'SCRUM-768/staging/st-01b-saved-ticket-prices');
+  await dlg.getByText('Free items in the rate').scrollIntoViewIfNeeded();
+  await sleep(500);
+  const last = dlg.getByRole('button', { name: 'Save changes' });
+  await last.scrollIntoViewIfNeeded();
+  await sleep(800);
+  await S.shot('CON', 'SCRUM-768/staging/st-01c-saved-ticket-free-items-tourist-only');
+  const t = await dlg.innerText();
+  const i = t.indexOf('Free items in the rate');
+  return t.slice(i, i + 800);
+}

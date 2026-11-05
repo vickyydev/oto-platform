@@ -1,0 +1,44 @@
+export default async function (S) {
+  const { sleep } = S.lib;
+  const page = S.pages.CON.page;
+  const dlg = page.getByRole('dialog');
+  await dlg.locator('#tt-name').fill('ZZ TEST 768 Ticket');
+  await dlg.locator('#tt-duration').fill('2 Hours');
+  await dlg.locator('#tt-hours').fill('2');
+  const nums = dlg.locator('input[type=number]:not(#tt-hours)');
+  const vals = ['500', '600', '500', '600', '500', '600'];
+  for (let i = 0; i < 6; i += 1) { await nums.nth(i).fill(vals[i]); }
+  // Three free items, each for Tourist only.
+  const wanted = [['Free child', null], ['Free adult', null], ['Free add-on', 'Regular Socks']];
+  for (let i = 0; i < 3; i += 1) {
+    await dlg.getByRole('button', { name: 'Add', exact: true }).click();
+    await sleep(500);
+  }
+  const rows = dlg.locator('div.rounded-xl').filter({ has: page.getByLabel('Quantity') });
+  const n = await rows.count();
+  const out = [];
+  for (let i = 0; i < n; i += 1) {
+    const row = rows.nth(i);
+    const [kind, addOn] = wanted[i];
+    await row.getByRole('combobox').first().click();
+    await sleep(300);
+    await page.getByRole('option', { name: kind, exact: true }).click();
+    await sleep(400);
+    if (addOn) {
+      await row.getByRole('combobox').nth(1).click();
+      await sleep(300);
+      await page.getByRole('option', { name: addOn, exact: true }).click();
+      await sleep(400);
+    }
+    for (const tier of ['Expat', 'Thai']) {
+      const b = row.getByRole('radio', { name: tier }).or(row.getByRole('button', { name: tier, exact: true })).first();
+      const pressed = (await b.getAttribute('aria-pressed')) ?? (await b.getAttribute('aria-checked')) ?? (await b.getAttribute('data-state'));
+      if (pressed === 'true' || pressed === 'on') await b.click();
+      await sleep(200);
+    }
+    const toggles = await row.locator('[data-state]').evaluateAll((els) => els.filter((e) => /Tourist|Expat|Thai/.test(e.textContent ?? '')).map((e) => (e.textContent ?? '').trim() + ':' + e.getAttribute('data-state')));
+    out.push({ i, text: (await row.innerText()).replace(/\s+/g, ' '), toggles });
+  }
+  await S.look('CON');
+  return { n, out };
+}

@@ -1,0 +1,18 @@
+export default async function (S) {
+  const { text, sleep } = S.lib;
+  const page = S.pages.T740.page;
+  const out = [];
+  for (let i = 0; i < 2; i += 1) {
+    const start = page.getByRole('button', { name: 'Start camera', exact: true }).first();
+    await start.click();
+    const take = page.getByRole('button', { name: /Take photo/ }).first();
+    await take.waitFor({ timeout: 15000 }).catch(() => {});
+    out.push({ i, takeVisible: await take.isVisible().catch(() => false) });
+    if (!(await take.isVisible().catch(() => false))) { out.push({ body: (await text(page, 5000)).slice(1800, 2600) }); break; }
+    await sleep(1200);
+    await take.click();
+    await sleep(2500);
+  }
+  await S.look('T740');
+  return { out, text: (await text(page, 7000)).slice(1500, 6000) };
+}

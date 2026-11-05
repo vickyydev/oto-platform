@@ -1,0 +1,12 @@
+export default async function (S) {
+  const { text, sleep } = S.lib;
+  const page = S.pages.T768.page;
+  const btns = page.getByRole('button', { name: 'Add one Regular Socks' });
+  const n = await btns.count();
+  const st = [];
+  for (let i = 0; i < n; i += 1) st.push({ i, enabled: await btns.nth(i).isEnabled(), box: await btns.nth(i).boundingBox() });
+  await S.look('T768');
+  const t = await text(page, 5000);
+  const j = t.indexOf('Current Order');
+  return { st, order: t.slice(j, j + 1200) };
+}

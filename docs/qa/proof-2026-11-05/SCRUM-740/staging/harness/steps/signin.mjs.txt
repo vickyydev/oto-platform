@@ -1,0 +1,10 @@
+export default async function (S) {
+  const { tillSignIn, text, readLeftBehind } = S.lib;
+  const f = S.st.fixture;
+  const label = 'T740';
+  if (!S.pages[label]) await tillSignIn(S, label, f.tills['740'].name, 'RECEPTION', { width: 1600, height: 1000 });
+  const page = S.pages[label].page;
+  await page.getByText('Membership Check', { exact: true }).first().waitFor({ timeout: 30000 });
+  await S.look(label);
+  return { url: page.url(), leftBehind: await readLeftBehind(page), text: await text(page, 1500) };
+}

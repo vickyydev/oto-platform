@@ -1,0 +1,7 @@
+export default async function (S) {
+  const { page } = await S.newPage('CAM', { width: 800, height: 600 });
+  await page.goto(S.POS + '/manifest.webmanifest').catch(() => {});
+  const r = await page.evaluate(async () => { try { const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } }); s.getTracks().forEach((t) => t.stop()); return 'ok'; } catch (e) { return e.name + ': ' + e.message; } });
+  await S.closePage('CAM');
+  return r;
+}

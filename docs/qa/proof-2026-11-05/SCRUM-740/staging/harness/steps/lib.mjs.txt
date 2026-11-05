@@ -1,0 +1,127 @@
+export const LOOK = 'C:/Users/waqar/AppData/Local/Temp/claude/9d4c56906b777e8e/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/h740/look.png';
+/** Never press any button on a till notice this run did not create. Read them only. */
+export async function readLeftBehind(page) {
+  return (await page.getByTestId('left-behind-sale').allInnerTexts()).map((t) => t.replace(/\s+/g, ' ').slice(0, 160));
+}
+export const text = async (page, n = 3000) => (await page.locator('body').innerText()).slice(0, n);
+export const sleep = (ms) => new Promise((d) => setTimeout(d, ms));
+const localPhone = async (field, phone) => {
+  const prefix = await field.evaluate((el) => /\+(\d{1,4})/.exec(el.parentElement?.textContent ?? '')?.[1] ?? null).catch(() => null);
+  if (prefix && phone.startsWith(`+${prefix}`)) return prefix === '66' ? `0${phone.slice(3)}` : phone.slice(prefix.length + 1);
+  return phone.replace(/^\+66/, '0');
+};
+/** Sign in on the POS lock screen as `who` (RECEPTION / MANAGER) and pick a station by exact name. */
+export async function tillSignIn(S, label, stationName, who = 'RECEPTION', viewport = { width: 1600, height: 1000 }) {
+  const { page } = await S.newPage(label, viewport);
+  await page.goto(S.POS + '/', { waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { name: 'Oto POS is locked' }).waitFor({ timeout: 60000 });
+  const field = page.locator('input[inputmode="tel"], input[type="tel"]').first();
+  await field.fill(await localPhone(field, S.need(`STAGING_${who}_PHONE`)));
+  await page.locator('input[type="password"]').first().fill(S.need(`STAGING_${who}_PASSWORD`));
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  const picker = page.getByRole('heading', { name: 'Which station are you on?' });
+  await picker.waitFor({ timeout: 30000 });
+  await page.getByRole('button', { name: stationName }).first().click();
+  await picker.waitFor({ state: 'hidden', timeout: 30000 });
+  return page;
+}
+export const heldRow = (page, label) => page.getByTestId('held-sale').filter({ hasText: label });
+export async function refreshHeld(page) {
+  const next = page.getByRole('button', { name: 'Start New Sale' });
+  if (await next.isVisible().catch(() => false)) await next.click();
+  await page.getByRole('button', { name: 'Read Held sales again' }).first().click();
+  await sleep(1200);
+}
+export async function payCash(page, bahtAmount) {
+  await page.getByRole('heading', { name: 'Cash', exact: true }).click();
+  if (bahtAmount) {
+    await page.locator('#payment-part-amount').fill(bahtAmount);
+    await page.locator('#payment-cash-received').fill(bahtAmount);
+  }
+  await page.getByRole('button', { name: 'Confirm Payment Received' }).click();
+}
+export async function readSale(S, id) {
+  const r = await S.adminApi('GET', `/sales/${id}`);
+  if (r.status !== 200) throw new Error('sale read ' + r.status + ' ' + JSON.stringify(r.body).slice(0, 300));
+  return r.body;
+}
+/** Credit QR grids and band codes: whoever holds one can spend it, so they are hidden in pictures. */
+export const codeMasks = (page) => [page.locator('div.grid.gap-px'), page.locator('span.font-mono.font-semibold')];
+export async function bandsOf(d) { return (d.bands ?? []).map((b) => ({ kind: b.kind ?? b.type ?? null, createdAt: b.createdAt ?? b.issuedAt ?? null })); }
+/** A walk-in 2 Hours Play rung up to the payment step, the guest's name given on the display. Answers the new sale id. */
+export async function ringUp(S, label, guest) {
+  const f = S.st.fixture;
+  const page = S.pages[label].page;
+  const tillId = f.tills[label === 'PHONE' ? 'C' : label].id;
+  const before = new Set((await S.adminApi('GET', `/sales?branchId=${f.branchId}&stationId=${tillId}&limit=50`)).body.sales.map((s) => s.id));
+  await page.goto(S.POS + '/', { waitUntil: 'domcontentloaded' });
+  await sleep(2500);
+  await unlockIfLocked(S, page, S.st.who?.[label] ?? 'RECEPTION');
+  await page.getByRole('button', { name: /Skip.*walk-in/ }).click();
+  await page.getByRole('heading', { name: 'Tourist', exact: true }).click();
+  await page.getByRole('heading', { name: '2 Hours Play', exact: true }).click();
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  const amountDue = page.getByRole('heading', { name: 'Amount Due' });
+  for (let i = 0; i < 4 && !(await amountDue.isVisible().catch(() => false)); i += 1) {
+    const nick = page.getByPlaceholder('e.g. Mama, John');
+    const pay = page.getByRole('button', { name: /^Pay ฿/ });
+    await S.expect(nick.or(pay).or(amountDue).first()).toBeVisible();
+    if (await nick.isVisible().catch(() => false)) {
+      await nick.fill(guest);
+      await page.getByRole('button', { name: 'Done', exact: true }).last().click();
+    } else if (await pay.isVisible().catch(() => false)) {
+      await pay.click();
+    }
+    await sleep(500);
+  }
+  await S.expect(amountDue).toBeVisible();
+  for (let i = 0; i < 40; i += 1) {
+    const l = (await S.adminApi('GET', `/sales?branchId=${f.branchId}&stationId=${tillId}&status=tendering&limit=20`)).body.sales;
+    const fresh = l.find((s) => !before.has(s.id));
+    if (fresh) { S.st.created.push({ kind: 'sale', id: fresh.id, guest, till: label, at: new Date().toISOString() }); S.save(); return fresh.id; }
+    await sleep(500);
+  }
+  throw new Error('the payment screen did not record the sale');
+}
+export async function unlockIfLocked(S, page, who = 'RECEPTION') {
+  if (await page.getByRole('button', { name: 'Unlock', exact: true }).isVisible().catch(() => false)) {
+    await page.locator('input[type="password"]').first().fill(S.need(`STAGING_${who}_PASSWORD`));
+    await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+    await page.getByRole('button', { name: 'Unlock', exact: true }).waitFor({ state: 'hidden', timeout: 30000 });
+    await sleep(1500);
+    return true;
+  }
+  return false;
+}
+/** Filling a field can leave a column scrolled sideways; the picture is of the screen as staff see it. */
+export async function fixScroll(page) {
+  await page.evaluate(() => { for (const el of Array.from(document.querySelectorAll('*'))) if (el.scrollLeft) el.scrollLeft = 0; });
+}
+/** Step one of the order panel's steppers to `target`. */
+export async function stepTo(page, label, target) {
+  const add = page.getByRole('button', { name: `Add one ${label}` }).first();
+  const remove = page.getByRole('button', { name: `Remove one ${label}` }).first();
+  const value = add.locator('xpath=preceding-sibling::span[1]');
+  for (let i = 0; i < 8; i += 1) {
+    const now = Number(await value.textContent());
+    if (now === target) return now;
+    await (now < target ? add : remove).click();
+    await sleep(250);
+  }
+  return Number(await value.textContent());
+}
+export async function consoleSignIn(S, label = 'CON', viewport = { width: 1500, height: 1000 }) {
+  if (S.pages[label]) return S.pages[label].page;
+  const { page } = await S.newPage(label, viewport);
+  await page.goto(S.CONSOLE, { waitUntil: 'domcontentloaded' });
+  await sleep(4000);
+  if (await page.locator('input[type="password"]').count()) {
+    const field = page.locator('input[type="tel"], input[inputmode="tel"]').last();
+    await field.fill(await localPhone(field, S.need('STAGING_ADMIN_PHONE')));
+    await page.locator('input[type="password"]').last().fill(S.need('STAGING_ADMIN_PASSWORD'));
+    await page.getByRole('button', { name: /sign in/i }).first().click();
+    await sleep(6000);
+  }
+  if (await page.locator('input[type="password"]').count()) throw new Error('Console still on the sign-in screen');
+  return page;
+}

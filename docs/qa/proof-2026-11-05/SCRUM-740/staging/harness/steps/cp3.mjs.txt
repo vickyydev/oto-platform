@@ -1,0 +1,25 @@
+export default async function (S) {
+  const { sleep } = S.lib;
+  const page = S.pages.CON.page;
+  const scope = (await page.getByRole('dialog').count()) ? page.getByRole('dialog').first() : page;
+  const img = scope.locator('img[alt^="Printout"]').first();
+  await img.evaluate((el) => { el.style.width = '500px'; el.style.maxWidth = 'none'; el.style.height = 'auto'; });
+  await sleep(800);
+  await img.scrollIntoViewIfNeeded();
+  await sleep(800);
+  // Band codes printed on the receipt are hidden in the picture (whoever holds one can use it).
+  await img.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const m = document.createElement('div');
+    m.id = 'zz-mask';
+    m.style.cssText = `position:fixed;left:${r.left + r.width * 0.02}px;top:${r.top + r.height * 0.772}px;width:${r.width * 0.5}px;height:${r.height * 0.178}px;background:#ff00ff;z-index:99999`;
+    document.body.appendChild(m);
+  });
+  await sleep(500);
+  const box = await img.boundingBox();
+  const vp = page.viewportSize();
+  const clip = { x: Math.max(0, box.x - 10), y: Math.max(0, box.y - 10), width: Math.min(box.width + 20, vp.width - Math.max(0, box.x - 10)), height: Math.min(box.height + 20, vp.height - Math.max(0, box.y - 10)) };
+  await S.shot('CON', 'SCRUM-768/staging/st-03c-receipt-printed-free-lines-at-0', { clip });
+  await page.evaluate(() => document.getElementById('zz-mask')?.remove());
+  return { box, clip };
+}

@@ -1,0 +1,16 @@
+export default async function (S) {
+  const { sleep, text } = S.lib;
+  const page = S.pages.CON.page;
+  const f = S.st.fixture;
+  const pk = await S.adminApi('GET', `/branches/${f.branchId}/ticket-packages?includeArchived=true`);
+  const rows = Array.isArray(pk.body) ? pk.body : (pk.body.packages ?? []);
+  const mine = rows.find((p) => p.id === f.ticket768.id);
+  S.st.steps.ticket768Saved = { at: new Date().toISOString(), name: mine?.name, active: mine?.active, freebies: mine?.freebies, kid: mine?.kidPriceWeekday ?? mine?.kidPrice ?? null, keys: Object.keys(mine ?? {}) };
+  S.save();
+  const row = page.locator('tr').filter({ hasText: 'ZZ TEST 768 Ticket' }).first();
+  await row.scrollIntoViewIfNeeded();
+  await sleep(800);
+  await S.shot('CON', 'SCRUM-768/staging/st-01a-console-tickets-list-zz-test-768-ticket');
+  const btns = await row.getByRole('button').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') ?? e.innerText));
+  return { saved: S.st.steps.ticket768Saved, rowText: (await row.innerText()).replace(/\s+/g, ' '), btns };
+}

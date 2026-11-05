@@ -1,0 +1,18 @@
+export default async function (S) {
+  const { sleep, text } = S.lib;
+  const con = S.pages.CON.page;
+  const dlg = con.getByRole('alertdialog').or(con.getByRole('dialog')).first();
+  const mark = S.pages.CON.net.length;
+  await dlg.getByRole('button', { name: 'Delete', exact: true }).click();
+  await sleep(3000);
+  const net = S.pages.CON.net.slice(mark).map((n) => ({ at: n.at, method: n.method, path: n.path, status: n.status }));
+  const f = S.st.fixture;
+  const pk = await S.adminApi('GET', `/branches/${f.branchId}/ticket-packages?includeArchived=true`);
+  const list = Array.isArray(pk.body) ? pk.body : (pk.body.packages ?? []);
+  const mine = list.find((p) => p.id === f.ticket768.id);
+  const live = list.filter((p) => !p.archivedAt).map((p) => ({ name: p.name, active: p.active, freebies: p.freebies }));
+  S.st.steps.archive768 = { at: new Date().toISOString(), net, mine: { name: mine?.name, active: mine?.active, archivedAt: mine?.archivedAt }, liveTickets: live };
+  S.save();
+  await S.shot('CON', 'SCRUM-768/staging/st-06-zz-test-768-ticket-archived');
+  return S.st.steps.archive768;
+}

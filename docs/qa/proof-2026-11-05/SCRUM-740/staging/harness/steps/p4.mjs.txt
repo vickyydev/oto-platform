@@ -1,0 +1,8 @@
+export default async function (S) {
+  const { page } = await S.newPage('FILE', { width: 1100, height: 1400 });
+  await page.goto('file:///' + S.OUT + '/SCRUM-740/staging/st-04-second-sale-refused.txt');
+  await page.waitForTimeout(800);
+  await S.shot('FILE', 'SCRUM-740/staging/st-04-second-sale-refused-409-nothing-saved', { fullPage: true });
+  await S.closePage('FILE');
+  return 'ok';
+}

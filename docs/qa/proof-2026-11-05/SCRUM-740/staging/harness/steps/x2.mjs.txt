@@ -1,0 +1,13 @@
+export default async function (S) {
+  const { sleep, text } = S.lib;
+  const page = S.pages.T768.page;
+  await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+  await sleep(1500);
+  const con = S.pages.CON.page;
+  await con.getByRole('button', { name: 'Delete ZZ TEST 768 Ticket' }).click();
+  await sleep(1200);
+  const dlg = con.getByRole('alertdialog').or(con.getByRole('dialog')).first();
+  const dt = await dlg.innerText().catch(() => '');
+  await S.look('CON');
+  return { tillAfter: (await text(page, 800)).slice(300, 600), confirm: dt.slice(0, 800), buttons: await dlg.getByRole('button').allInnerTexts().catch(() => []) };
+}
