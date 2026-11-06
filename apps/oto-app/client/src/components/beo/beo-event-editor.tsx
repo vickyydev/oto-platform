@@ -92,7 +92,60 @@ interface BeoEventEditorProps {
   onClose: () => void;
   onSave?: () => void;
   readOnly?: boolean;
+  /**
+   * SCRUM-660: "inbox" when the inbox's Create BEO opened this form: AI Fill
+   * runs once on the conversation's confirmation message as it opens, into
+   * the same preview a pasted message gets. Nothing is saved until Save.
+   */
+  autoFill?: "inbox" | null;
+  /** Told once the form has taken the auto fill, so it never runs twice. */
+  onAutoFillTaken?: () => void;
 }
+
+/** What AI Fill proposes for a BEO field that assigns somebody (server/lib/beoTeamProposals.ts). */
+type AiTeamMatch = { kind: "employee" | "department"; id: string; label: string };
+type AiTeamProposal = {
+  asked: string;
+  match: AiTeamMatch | null;
+  why: "no_match" | "several" | "same_as_party_host" | "host_list_not_employees" | null;
+};
+type AiTeamField = "partyHost" | "entertainmentHost" | "setupResponsible";
+type AiTeamProposals = Record<AiTeamField, AiTeamProposal | null>;
+
+const AI_TEAM_FIELDS: Array<{ field: AiTeamField; label: string }> = [
+  { field: "partyHost", label: "Party Host" },
+  { field: "entertainmentHost", label: "Entertainment Host" },
+  { field: "setupResponsible", label: "Setup Who" },
+];
+
+/** Why a name the message gave is not proposed, in the preview's words. */
+function aiTeamUnmatchedText(field: AiTeamField, why: AiTeamProposal["why"]): string {
+  const typed = field === "setupResponsible";
+  switch (why) {
+    case "several":
+      return typed
+        ? "matches more than one person at this park: it goes in as typed text; pick the person in the form to link them."
+        : "matches more than one person at this park: choose the host in the form.";
+    case "same_as_party_host":
+      return "is the same person as the party host: choose another in the form.";
+    case "host_list_not_employees":
+      return "this park group's host list is not its employees: choose the host in the form.";
+    default:
+      return typed
+        ? "matches nobody at this park: it goes in as typed text."
+        : "matches nobody at this park: choose the host in the form.";
+  }
+}
+
+/** The inbox message an AI Fill read (Create BEO), shown above its preview so a person can check it. */
+type AiFillInboxSource = {
+  conversationId: string;
+  messageId: string;
+  body: string;
+  authorName: string | null;
+  sentAt: string | null;
+  createdAt: string;
+};
 
 type SetupTask = {
   id: string;
@@ -528,7 +581,7 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab }: {
   );
 }
 
-export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false }: BeoEventEditorProps) {
+export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, autoFill = null, onAutoFillTaken }: BeoEventEditorProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const [expandedSections, setExpandedSections] = useState<string[]>(["event-info"]);
@@ -590,6 +643,14 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false }: B
   const [aiFillParsed, setAiFillParsed] = useState<any>(null);
   const [aiFillLoading, setAiFillLoading] = useState(false);
   const [aiFillError, setAiFillError] = useState<string | null>(null);
+  // SCRUM-660: the team AI Fill proposes is only assigned where a person ticks it.
+  const [aiFillAccepted, setAiFillAccepted] = useState<Set<AiTeamField>>(new Set());
+  // SCRUM-660: Create BEO's AI Fill — the inbox message it read, and why it did not run.
+  const [aiFillSource, setAiFillSource] = useState<AiFillInboxSource | null>(null);
+  const [aiFillNotice, setAiFillNotice] = useState<string | null>(null);
+  const [aiFillInboxRunning, setAiFillInboxRunning] = useState(false);
+  const [autoFillReady, setAutoFillReady] = useState(false);
+  const autoFillTaken = useRef(false);
   const packagePriceRef = useRef<EditableTextHandle>(null);
   const responsibleSearchRef = useRef<HTMLInputElement>(null);
 
@@ -1173,6 +1234,94 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false }: B
     </Label>
   );
 
+  /** What the form holds now: AI Fill's baseline, so the model changes only what the message says. */
+  const buildAiFillExistingData = () => ({
+    event: {
+      title: eventData.title,
+      childName: eventData.childName,
+      bookingName: eventData.bookingName,
+      numChildren: eventData.numChildren,
+      numAdults: eventData.numAdults,
+      startTime: eventData.startTime,
+      endTime: eventData.endTime,
+      specialRequests: eventData.specialRequests,
+      internalStaffNotes: eventData.internalStaffNotes,
+      activities: eventData.activities,
+      decoration: eventData.decoration,
+      locationText,
+    },
+    setupPlan: {
+      readyBy: setupReadyBy,
+      responsible: setupResponsible,
+      simplifiedTasks: setupTasks.map(t => ({ itemLabel: t.itemLabel, notes: t.notes })),
+    },
+    kitchenPlan: {
+      kidsMenu: kidsMenu.map(m => ({ itemName: m.itemName, quantity: m.quantity, notes: m.notes, included: m.included, price: m.price })),
+      adultsMenu: adultsMenu.map(m => ({ itemName: m.itemName, quantity: m.quantity, notes: m.notes, included: m.included, price: m.price })),
+      cakeMode,
+      cakeNotes,
+      cakeTime,
+      cakeIncluded,
+      cakePrice,
+      cakeQuantity,
+    },
+    partyDetails: {
+      packageName,
+      packageBasePrice,
+      prepaymentReceived,
+      depositDate,
+      notes: packageNotes,
+      items: packageItems.map(i => ({ description: i.description, type: i.type, price: i.price, notes: i.notes })),
+    },
+  });
+
+  /** AI Fill's review step on an answer the server validated: from a pasted message, or (with `source`) the inbox. */
+  const openAiFillPreview = (fill: any, source: AiFillInboxSource | null) => {
+    setAiFillParsed(fill);
+    setAiFillAccepted(new Set());
+    setAiFillSource(source);
+    if (source) setAiFillText(source.body);
+    setAiFillError(null);
+    setAiFillStep("preview");
+    setShowAiFill(true);
+  };
+
+  /**
+   * SCRUM-660: Create BEO's AI Fill. The server reads the inbox conversation's
+   * confirmation message as this person and answers the same preview a pasted
+   * message gets; if it cannot, the form stays as it opened, with one line why.
+   */
+  const runInboxAiFill = async () => {
+    setAiFillInboxRunning(true);
+    setAiFillNotice(null);
+    try {
+      const res = await apiRequest("POST", `/api/events/${eventId}/beo/ai-fill/inbox`, { existingData: buildAiFillExistingData() });
+      const body = await res.json();
+      if (!body?.fill) throw new Error("AI Fill did not run: the answer could not be read.");
+      openAiFillPreview(body.fill, body.source ?? null);
+    } catch (err: any) {
+      setAiFillNotice(err?.message || "AI Fill did not run: the server could not be reached just now.");
+    } finally {
+      setAiFillInboxRunning(false);
+    }
+  };
+
+  // SCRUM-660: once the form holds the event (the effect above filled it), Create BEO's AI Fill runs once.
+  useEffect(() => {
+    if (autoFill !== "inbox" || readOnly || autoFillTaken.current || !beoData) return;
+    autoFillTaken.current = true;
+    onAutoFillTaken?.();
+    setAutoFillReady(true);
+  }, [autoFill, readOnly, beoData, onAutoFillTaken]);
+
+  useEffect(() => {
+    if (!autoFillReady) return;
+    setAutoFillReady(false);
+    void runInboxAiFill();
+    // Runs on the render after the form state was filled from the event, with that state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFillReady]);
+
   if (isLoading) {
     return <LoadingScreen message="Loading event details..." />;
   }
@@ -1195,53 +1344,19 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false }: B
     setAiFillLoading(true);
     setAiFillError(null);
     try {
-      const existingData = {
-        event: {
-          title: eventData.title,
-          childName: eventData.childName,
-          bookingName: eventData.bookingName,
-          numChildren: eventData.numChildren,
-          numAdults: eventData.numAdults,
-          startTime: eventData.startTime,
-          endTime: eventData.endTime,
-          specialRequests: eventData.specialRequests,
-          internalStaffNotes: eventData.internalStaffNotes,
-          activities: eventData.activities,
-          decoration: eventData.decoration,
-          locationText,
-        },
-        setupPlan: {
-          readyBy: setupReadyBy,
-          responsible: setupResponsible,
-          simplifiedTasks: setupTasks.map(t => ({ itemLabel: t.itemLabel, notes: t.notes })),
-        },
-        kitchenPlan: {
-          kidsMenu: kidsMenu.map(m => ({ itemName: m.itemName, quantity: m.quantity, notes: m.notes, included: m.included, price: m.price })),
-          adultsMenu: adultsMenu.map(m => ({ itemName: m.itemName, quantity: m.quantity, notes: m.notes, included: m.included, price: m.price })),
-          cakeMode,
-          cakeNotes,
-          cakeTime,
-          cakeIncluded,
-          cakePrice,
-          cakeQuantity,
-        },
-        partyDetails: {
-          packageName,
-          packageBasePrice,
-          prepaymentReceived,
-          depositDate,
-          notes: packageNotes,
-          items: packageItems.map(i => ({ description: i.description, type: i.type, price: i.price, notes: i.notes })),
-        },
-      };
-      const res = await apiRequest("POST", "/api/ai/parse-beo", { text: aiFillText, existingData });
+      // SCRUM-660: the open event names the park whose team a fill may propose, and its activity row.
+      const res = await apiRequest("POST", "/api/ai/parse-beo", {
+        text: aiFillText,
+        existingData: buildAiFillExistingData(),
+        eventId,
+      });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.message || "Failed to parse BEO text");
       }
       const parsed = await res.json();
-      setAiFillParsed(parsed);
-      setAiFillStep("preview");
+      // A pasted message: whatever the inbox gave before, this is what was read now.
+      openAiFillPreview(parsed, null);
     } catch (err: any) {
       setAiFillError(err.message || "Failed to parse BEO text");
     } finally {
@@ -1287,6 +1402,30 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false }: B
           notes: t.notes || "",
         })));
       }
+    }
+
+    // SCRUM-660: a person the message named, matched to one real person (or
+    // department) of this park, is assigned only where the reviewer ticked it.
+    const proposals: AiTeamProposals | undefined = p.proposals;
+    const accepted = (field: AiTeamField): AiTeamMatch | null => {
+      const proposal = proposals?.[field];
+      return proposal?.match && aiFillAccepted.has(field) ? proposal.match : null;
+    };
+    const host = accepted("partyHost");
+    if (host && host.kind === "employee") {
+      setPartyHost(prev => partyHostSource === "user"
+        ? prev
+        : { ...prev, assignedEmployeeId: host.id, assignedUserId: undefined, assignedRoleId: undefined, assignmentMode: "INDIVIDUAL" });
+    }
+    const entertainer = accepted("entertainmentHost");
+    if (entertainer && entertainer.kind === "employee" && partyHostSource !== "user") {
+      setPartyHost(prev => ({ ...prev, backupEmployeeId: entertainer.id, backupUserId: undefined }));
+    }
+    const who = accepted("setupResponsible");
+    if (who) {
+      setSetupResponsible(who.label);
+      setSetupResponsibleId(who.id);
+      setSetupResponsibleType(who.kind);
     }
 
     if (p.kitchenPlan) {
@@ -1368,6 +1507,9 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false }: B
     setAiFillStep("paste");
     setAiFillText("");
     setAiFillParsed(null);
+    setAiFillAccepted(new Set());
+    setAiFillSource(null);
+    setAiFillNotice(null);
     toast({ title: "BEO data loaded", description: "AI-parsed data has been filled in. Review and save when ready." });
   };
 
@@ -1456,7 +1598,10 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false }: B
                   setAiFillText("");
                   setAiFillParsed(null);
                   setAiFillError(null);
+                  setAiFillAccepted(new Set());
+                  setAiFillSource(null);
                 }}
+                disabled={aiFillInboxRunning}
                 data-testid="button-ai-fill-beo"
               >
                 <Sparkles className="h-4 w-4 mr-1" />
@@ -1499,6 +1644,29 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false }: B
             )}
           </div>
         </div>
+
+        {/* SCRUM-660: Create BEO's AI Fill — reading the inbox, or the one line why it did not run. */}
+        {aiFillInboxRunning && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground -mt-2 mb-2" data-testid="text-ai-fill-inbox-running">
+            <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+            AI Fill is reading the team's confirmation message from the inbox…
+          </div>
+        )}
+        {aiFillNotice && !aiFillInboxRunning && (
+          <div className="flex items-start gap-2 text-sm text-muted-foreground -mt-2 mb-2" data-testid="text-ai-fill-notice">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+            <span className="flex-1">{aiFillNotice}</span>
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => setAiFillNotice(null)}
+              aria-label="Dismiss"
+              data-testid="button-dismiss-ai-fill-notice"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
 
         <div className="flex gap-2 flex-wrap mb-4">
           {[
@@ -3278,6 +3446,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false }: B
           setAiFillText("");
           setAiFillParsed(null);
           setAiFillError(null);
+          setAiFillAccepted(new Set());
+          setAiFillSource(null);
         }
       }}>
         <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
@@ -3332,6 +3502,24 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false }: B
                 </div>
               )}
               <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                {/* SCRUM-660: the inbox message Create BEO's AI Fill read, to check before loading it. */}
+                {aiFillSource && (
+                  <div className="border rounded-lg p-3 space-y-1.5" data-testid="ai-fill-inbox-source">
+                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                      <MessageSquare className="h-4 w-4" />
+                      Read from the inbox
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {`The team's confirmation message${aiFillSource.authorName ? ` from ${aiFillSource.authorName}` : ""}, ${format(parseISO(aiFillSource.sentAt ?? aiFillSource.createdAt), "d MMM yyyy, HH:mm")}. Check it is the right message before loading it.`}
+                    </p>
+                    <div
+                      className="max-h-40 overflow-y-auto whitespace-pre-wrap rounded-md border bg-muted/30 p-2 text-sm"
+                      data-testid="text-ai-fill-inbox-message"
+                    >
+                      {aiFillSource.body}
+                    </div>
+                  </div>
+                )}
                 {aiFillParsed?.event && (
                   <AiFillSection title="Event Info" icon={<CalendarDays className="h-4 w-4" />}>
                     <AiFillRow label="Title" value={aiFillParsed.event.title} />
@@ -3386,7 +3574,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false }: B
                         </ul>
                       </div>
                     )}
-                    <AiFillRow label="Cake" value={aiFillParsed.kitchenPlan.cakeMode !== "NONE" ? `${aiFillParsed.kitchenPlan.cakeMode} — ${aiFillParsed.kitchenPlan.cakeNotes || ""}` : null} />
+                    <AiFillRow label="Cake" value={aiFillParsed.kitchenPlan.cakeMode && aiFillParsed.kitchenPlan.cakeMode !== "NONE" ? `${aiFillParsed.kitchenPlan.cakeMode} — ${aiFillParsed.kitchenPlan.cakeNotes || ""}` : null} />
                     <AiFillRow label="Cake Time" value={aiFillParsed.kitchenPlan.cakeTime} />
                   </AiFillSection>
                 )}
@@ -3409,6 +3597,52 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false }: B
                     )}
                     <AiFillRow label="Prepayment" value={aiFillParsed.partyDetails.prepaymentReceived ? `${aiFillParsed.partyDetails.prepaymentReceived.toLocaleString()}฿` : null} />
                     <AiFillRow label="Notes" value={aiFillParsed.partyDetails.notes} />
+                  </AiFillSection>
+                )}
+
+                {/* SCRUM-660: whom the message names, matched to this park's people; assigned only when ticked. */}
+                {AI_TEAM_FIELDS.some(({ field }) => aiFillParsed?.proposals?.[field]) && (
+                  <AiFillSection title="Team" icon={<Users className="h-4 w-4" />}>
+                    {AI_TEAM_FIELDS.map(({ field, label }) => {
+                      const proposal: AiTeamProposal | null | undefined = aiFillParsed?.proposals?.[field];
+                      if (!proposal) return null;
+                      if (proposal.match) {
+                        return (
+                          <label key={field} className="flex items-start gap-2 text-sm cursor-pointer" data-testid={`ai-fill-team-${field}`}>
+                            <span className="text-muted-foreground w-28 shrink-0">{label}:</span>
+                            <input
+                              type="checkbox"
+                              className="mt-1 shrink-0"
+                              checked={aiFillAccepted.has(field)}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                setAiFillAccepted(prev => {
+                                  const next = new Set(prev);
+                                  if (checked) next.add(field);
+                                  else next.delete(field);
+                                  return next;
+                                });
+                              }}
+                              data-testid={`checkbox-ai-fill-team-${field}`}
+                            />
+                            <span>
+                              <span className="font-medium">{proposal.match.label}</span>
+                              <span className="text-xs text-muted-foreground">{` — the message says "${proposal.asked}". Tick to assign.`}</span>
+                            </span>
+                          </label>
+                        );
+                      }
+                      return (
+                        <div key={field} className="flex items-start gap-2 text-sm" data-testid={`ai-fill-team-${field}`}>
+                          <span className="text-muted-foreground w-28 shrink-0">{label}:</span>
+                          <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-amber-500" />
+                          <span>
+                            <span className="font-medium">{`"${proposal.asked}"`}</span>
+                            <span className="text-xs text-amber-700 dark:text-amber-300">{` ${aiTeamUnmatchedText(field, proposal.why)}`}</span>
+                          </span>
+                        </div>
+                      );
+                    })}
                   </AiFillSection>
                 )}
 

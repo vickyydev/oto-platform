@@ -788,6 +788,14 @@ jobs:
       - name: The app's inbox birthday booking checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/directory-inbox-event.check.ts
+      # SCRUM-660: Create BEO's AI Fill on the inbox confirmation — Thai,
+      # English and Russian into the same preview with the message beside it;
+      # the platform read as the person (their session's cookie) and each of
+      # its refusals a plain line; the event's own fence; the park's people
+      # only; one activity row per run and no text in it or in the log.
+      - name: The app's inbox AI fill checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/beo-inbox-fill.check.ts
       # SCRUM-567: the company payroll's R2 (migrations 0021-0022) — two park
       # groups' separate paying config, rule sets and profiles; every route
       # refused to manager and staff, writes to anyone below admin, HR-data
