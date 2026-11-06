@@ -339,6 +339,33 @@ export const BeoFillSchema = z.object({
 });
 export type BeoFill = z.infer<typeof BeoFillSchema>;
 
+/**
+ * SCRUM-660 — Create BEO's AI Fill on the inbox confirmation, and the form's
+ * "Final Message to Parent" (`event.internalStaffNotes`, "Paste the final
+ * message sent to the parent..."). While the form holds none, it is the
+ * message that was read, word for word, whatever the model wrote for it.
+ * Once a person has put one there it stays theirs: the model's text for that
+ * field is dropped, because the review step does not show it and Load into
+ * Editor would replace the field with it.
+ */
+export function inboxFillAnswer(
+  fill: BeoFill,
+  messageBody: string,
+  existingData: unknown,
+): { fill: BeoFill; fillsFinalMessage: boolean } {
+  const formEvent =
+    existingData && typeof existingData === "object" ? (existingData as Record<string, unknown>).event : undefined;
+  const existingFinal =
+    formEvent && typeof formEvent === "object" ? (formEvent as Record<string, unknown>).internalStaffNotes : undefined;
+  const fillsFinalMessage = typeof existingFinal !== "string" || existingFinal.trim() === "";
+  const event = { ...(fill.event ?? {}) };
+  delete event.internalStaffNotes;
+  if (fillsFinalMessage) return { fill: { ...fill, event: { ...event, internalStaffNotes: messageBody } }, fillsFinalMessage };
+  const kept: BeoFill = { ...fill, event };
+  if (Object.keys(event).length === 0) delete kept.event;
+  return { fill: kept, fillsFinalMessage };
+}
+
 const EVENT_TYPES = ["birthday", "private_event", "school_group", "other"] as const;
 
 /** The AI Event Assistant: the Events form's keys (`client/src/components/ai-event-assistant.tsx`). */

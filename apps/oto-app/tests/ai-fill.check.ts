@@ -16,7 +16,9 @@
 //   - a stubbed model reads a Thai, an English and a Russian confirmation;
 //   - nothing a run reports for the log carries the message or the answer;
 //   - the team a fill may propose: one real person (or department) of the
-//     park by the name the message wrote, else flagged, never a guess.
+//     park by the name the message wrote, else flagged, never a guess;
+//   - Create BEO's Final Message to Parent: the message read, while the
+//     form's is empty; a person's own is kept and the model's text dropped.
 import assert from "node:assert/strict";
 import {
   AI_FILL_MESSAGES,
@@ -27,6 +29,7 @@ import {
   BUILT_IN_EVENT_EXTRACTION_OUTPUT_FORMAT,
   BeoFillSchema,
   EventExtractionSchema,
+  inboxFillAnswer,
   readModelAnswer,
   resolveAiPrompt,
   runAiHelper,
@@ -234,6 +237,34 @@ try {
     assert.equal(fills.ru!.team?.partyHost, "Нок");
   });
 
+  await check("finalMessageToParent", () => {
+    // The model wrote staff notes for the field the review step does not show.
+    const answer: BeoFill = {
+      summary: "Emma's 6th birthday",
+      event: { childName: "Emma", internalStaffNotes: "ZZ TEST the model's own staff notes" },
+      timeline: [{ time: "14:00", label: "Arrival" }],
+    };
+    // An empty Final Message to Parent: the message that was read, word for word, never the model's text.
+    for (const form of [undefined, {}, { event: {} }, { event: { internalStaffNotes: "  " } }, { event: { internalStaffNotes: null } }]) {
+      const out = inboxFillAnswer(answer, ENGLISH, form);
+      assert.equal(out.fillsFinalMessage, true, JSON.stringify(form));
+      assert.equal(out.fill.event?.internalStaffNotes, ENGLISH);
+      assert.equal(out.fill.event?.childName, "Emma");
+    }
+    // A person's own Final Message to Parent: kept, and the model's text for it is dropped.
+    const kept = inboxFillAnswer(answer, ENGLISH, { event: { internalStaffNotes: "A person's own note" } });
+    assert.equal(kept.fillsFinalMessage, false);
+    assert.equal(kept.fill.event?.internalStaffNotes, undefined, "Load into Editor finds nothing to replace it with");
+    assert.ok(!("internalStaffNotes" in (kept.fill.event ?? {})));
+    assert.equal(kept.fill.event?.childName, "Emma", "the rest of the event section stands");
+    assert.deepEqual(kept.fill.timeline, answer.timeline, "the other sections stand");
+    // A section that held only that field is no section.
+    const only = inboxFillAnswer({ event: { internalStaffNotes: "notes" } }, ENGLISH, { event: { internalStaffNotes: "mine" } });
+    assert.equal(only.fill.event, undefined);
+    // The model's answer itself is not changed.
+    assert.equal(answer.event?.internalStaffNotes, "ZZ TEST the model's own staff notes");
+  });
+
   await check("malformedAnswerIsAPlainMessage", async () => {
     const bad: Array<[string, string]> = [
       ["prose", "Sorry, I could not find a birthday in that message."],
@@ -362,4 +393,4 @@ try {
 }
 
 console.log(JSON.stringify({ results, failures }, null, 2));
-if (Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 9) process.exit(1);
+if (Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 10) process.exit(1);
