@@ -1,0 +1,148 @@
+{
+  "source": "f33d7af46ceac37c950d1de708f82b6b9ae1e4e1",
+  "steps": [
+    {
+      "step": "Clean-up: archived the ZZ TEST event (en) with the BEO editor's archive button",
+      "eventId": "01a1af24-ed51-73c5-aa09-4eaa7e335a41",
+      "at": "2026-11-06T04:49:13.587Z",
+      "status": 200
+    },
+    {
+      "step": "Clean-up: archived the ZZ TEST event (th) with the BEO editor's archive button",
+      "eventId": "01a1af25-3915-78cb-9319-6cb5d7ed50d3",
+      "at": "2026-11-06T04:49:18.405Z",
+      "status": 200
+    },
+    {
+      "step": "Clean-up: archived the ZZ TEST event (ru) with the BEO editor's archive button",
+      "eventId": "01a1af25-6357-7bc7-842b-770cc097a7f2",
+      "at": "2026-11-06T04:49:23.257Z",
+      "status": 200
+    },
+    {
+      "step": "Clean-up: archived the ZZ TEST event (none) with the BEO editor's archive button",
+      "eventId": "01a1af25-8c44-72d7-9d46-19b12f5a794b",
+      "at": "2026-11-06T04:49:28.102Z",
+      "status": 200
+    },
+    {
+      "step": "Clean-up: marked the ZZ TEST conversation handled (en)",
+      "conversationId": "01a1af23-9dcb-727c-84f6-a2aae61411a4",
+      "chipBefore": "Event: 21 Mar 2027 at Central Floresta · Archived",
+      "at": "2026-11-06T04:49:37.383Z",
+      "status": 200
+    },
+    {
+      "step": "Clean-up: marked the ZZ TEST conversation handled (th)",
+      "conversationId": "01a1af23-a9ab-7aff-8fad-29a8064d6eb4",
+      "chipBefore": "Event: 20 Mar 2027 at Central Floresta · Archived",
+      "at": "2026-11-06T04:49:46.433Z",
+      "status": 200
+    },
+    {
+      "step": "Clean-up: marked the ZZ TEST conversation handled (ru)",
+      "conversationId": "01a1af23-b570-75c9-9db6-72a943e2a051",
+      "chipBefore": "Event: 13 Mar 2027 at Central Floresta · Archived",
+      "at": "2026-11-06T04:49:55.464Z",
+      "status": 200
+    },
+    {
+      "step": "Clean-up: marked the ZZ TEST conversation handled (none)",
+      "conversationId": "01a1af23-c12b-7c3c-b1b4-7af77b74200f",
+      "chipBefore": "Event: 10 Apr 2027 at Central Floresta · Archived",
+      "at": "2026-11-06T04:50:04.840Z",
+      "status": 200
+    },
+    {
+      "step": "Clean-up: the ZZ TEST S660 login is inactive, with no grants, and unlinked from the OTO App",
+      "at": "2026-11-06T04:50:15.722Z",
+      "grantsRemoved": 2,
+      "unlink": 200
+    }
+  ],
+  "readBack": {
+    "jobId": "job-dbmlp97f3r2c73b1cku0",
+    "event": "s660_cleanup",
+    "at": "2026-11-06T04:51:30.763Z",
+    "readOnly": true,
+    "ev": [
+      {
+        "id": "01a1af24-ed51-73c5-aa09-4eaa7e335a41",
+        "title": "ZZ TEST Child EN's 6th Birthday",
+        "status": "tentative",
+        "is_archived": true,
+        "updated_at": "2026-11-06T04:49:11.687Z"
+      },
+      {
+        "id": "01a1af25-8c44-72d7-9d46-19b12f5a794b",
+        "title": "ZZ TEST Child NONE's 6th Birthday",
+        "status": "tentative",
+        "is_archived": true,
+        "updated_at": "2026-11-06T04:49:26.205Z"
+      },
+      {
+        "id": "01a1af25-6357-7bc7-842b-770cc097a7f2",
+        "title": "ZZ TEST Child RU's 7th Birthday",
+        "status": "tentative",
+        "is_archived": true,
+        "updated_at": "2026-11-06T04:49:21.362Z"
+      },
+      {
+        "id": "01a1af25-3915-78cb-9319-6cb5d7ed50d3",
+        "title": "ZZ TEST Child TH's 5th Birthday",
+        "status": "tentative",
+        "is_archived": true,
+        "updated_at": "2026-11-06T04:49:16.519Z"
+      }
+    ],
+    "conv": [
+      {
+        "id": "01a1af23-9dcb-727c-84f6-a2aae61411a4",
+        "status": "handled",
+        "handled": true,
+        "handled_by_login": true,
+        "event_order_ref": "01a1af24-ed51-73c5-aa09-4eaa7e335a41"
+      },
+      {
+        "id": "01a1af23-a9ab-7aff-8fad-29a8064d6eb4",
+        "status": "handled",
+        "handled": true,
+        "handled_by_login": true,
+        "event_order_ref": "01a1af25-3915-78cb-9319-6cb5d7ed50d3"
+      },
+      {
+        "id": "01a1af23-b570-75c9-9db6-72a943e2a051",
+        "status": "handled",
+        "handled": true,
+        "handled_by_login": true,
+        "event_order_ref": "01a1af25-6357-7bc7-842b-770cc097a7f2"
+      },
+      {
+        "id": "01a1af23-c12b-7c3c-b1b4-7af77b74200f",
+        "status": "handled",
+        "handled": true,
+        "handled_by_login": true,
+        "event_order_ref": "01a1af25-8c44-72d7-9d46-19b12f5a794b"
+      }
+    ],
+    "account": [
+      {
+        "status": "inactive",
+        "grants": 0,
+        "sessions": 0,
+        "links": 0
+      }
+    ],
+    "appUser": [
+      {
+        "is_active": false
+      }
+    ],
+    "assistantEvents": [
+      {
+        "n": 0
+      }
+    ]
+  },
+  "whatStays": "the four handled ZZ TEST conversations and their ZZ TEST contacts; the four archived ZZ TEST events (the English one keeps the three timeline lines Load into Editor wrote); the inactive ZZ TEST S660 login and its employee row; the audit and activity rows; the assistant's simulator replies"
+}

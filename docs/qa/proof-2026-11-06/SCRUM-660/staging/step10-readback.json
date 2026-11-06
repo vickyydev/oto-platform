@@ -1,0 +1,331 @@
+{
+  "source": "f33d7af46ceac37c950d1de708f82b6b9ae1e4e1",
+  "jobId": "job-dbmlnmajnfac73arm5bg",
+  "conversations": {
+    "en": "01a1af23-9dcb-727c-84f6-a2aae61411a4",
+    "th": "01a1af23-a9ab-7aff-8fad-29a8064d6eb4",
+    "ru": "01a1af23-b570-75c9-9db6-72a943e2a051",
+    "none": "01a1af23-c12b-7c3c-b1b4-7af77b74200f"
+  },
+  "events": [
+    {
+      "id": "01a1af25-6357-7bc7-842b-770cc097a7f2",
+      "title": "ZZ TEST Child RU's 7th Birthday",
+      "status": "tentative",
+      "is_archived": false,
+      "child_name": "ZZ TEST Child RU",
+      "num_children": 10,
+      "num_adults": null,
+      "decoration": null,
+      "has_final_message": false,
+      "created_at": "2026-11-06T04:37:06.599Z",
+      "updated_at": "2026-11-06T04:37:06.599Z"
+    },
+    {
+      "id": "01a1af25-3915-78cb-9319-6cb5d7ed50d3",
+      "title": "ZZ TEST Child TH's 5th Birthday",
+      "status": "tentative",
+      "is_archived": false,
+      "child_name": "ZZ TEST Child TH",
+      "num_children": 12,
+      "num_adults": null,
+      "decoration": null,
+      "has_final_message": false,
+      "created_at": "2026-11-06T04:36:55.794Z",
+      "updated_at": "2026-11-06T04:36:55.794Z"
+    },
+    {
+      "id": "01a1af24-ed51-73c5-aa09-4eaa7e335a41",
+      "title": "ZZ TEST Child EN's 6th Birthday",
+      "status": "tentative",
+      "is_archived": false,
+      "child_name": "ZZ TEST Child EN",
+      "num_children": 12,
+      "num_adults": null,
+      "decoration": null,
+      "has_final_message": false,
+      "created_at": "2026-11-06T04:36:37.263Z",
+      "updated_at": "2026-11-06T04:36:37.263Z"
+    },
+    {
+      "id": "01a1af25-8c44-72d7-9d46-19b12f5a794b",
+      "title": "ZZ TEST Child NONE's 6th Birthday",
+      "status": "tentative",
+      "is_archived": false,
+      "child_name": "ZZ TEST Child NONE",
+      "num_children": 12,
+      "num_adults": null,
+      "decoration": null,
+      "has_final_message": false,
+      "created_at": "2026-11-06T04:37:17.059Z",
+      "updated_at": "2026-11-06T04:37:17.059Z"
+    }
+  ],
+  "event": "s660_step10",
+  "at": "2026-11-06T04:48:07.163Z",
+  "readOnly": true,
+  "activityCarriesText": false,
+  "activity": [
+    {
+      "summary": "AI Fill read the inbox confirmation message for the BEO of \"ZZ TEST Child EN's 6th Birthday\"",
+      "metadata": {
+        "eventId": "01a1af24-ed51-73c5-aa09-4eaa7e335a41",
+        "source": "inbox",
+        "inboxConversationId": "01a1af23-9dcb-727c-84f6-a2aae61411a4",
+        "inboxMessageId": "01a1af25-0c62-76f0-b092-18896284ddc5",
+        "outcome": "filled",
+        "model": "claude-opus-5",
+        "promptFrom": {
+          "advice": "built_in",
+          "outputFormat": "built_in",
+          "model": "built_in"
+        },
+        "inputChars": 279,
+        "sections": [
+          "event",
+          "setupPlan",
+          "kitchenPlan",
+          "partyDetails",
+          "timeline",
+          "team"
+        ],
+        "team": {
+          "named": 3,
+          "matched": 1
+        }
+      },
+      "createdAt": "2026-11-06T04:39:13.656Z"
+    },
+    {
+      "summary": "AI Fill read the inbox confirmation message for the BEO of \"ZZ TEST Child TH's 5th Birthday\"",
+      "metadata": {
+        "eventId": "01a1af25-3915-78cb-9319-6cb5d7ed50d3",
+        "source": "inbox",
+        "inboxConversationId": "01a1af23-a9ab-7aff-8fad-29a8064d6eb4",
+        "inboxMessageId": "01a1af25-48c3-740a-8b10-0335b070885b",
+        "outcome": "filled",
+        "model": "claude-opus-5",
+        "promptFrom": {
+          "advice": "built_in",
+          "outputFormat": "built_in",
+          "model": "built_in"
+        },
+        "inputChars": 157,
+        "sections": [
+          "event",
+          "setupPlan",
+          "kitchenPlan",
+          "partyDetails",
+          "timeline",
+          "team"
+        ],
+        "team": {
+          "named": 1,
+          "matched": 0
+        }
+      },
+      "createdAt": "2026-11-06T04:40:42.028Z"
+    },
+    {
+      "summary": "AI Fill read the inbox confirmation message for the BEO of \"ZZ TEST Child RU's 7th Birthday\"",
+      "metadata": {
+        "eventId": "01a1af25-6357-7bc7-842b-770cc097a7f2",
+        "source": "inbox",
+        "inboxConversationId": "01a1af23-b570-75c9-9db6-72a943e2a051",
+        "inboxMessageId": "01a1af25-72ff-7e3a-b445-d2e9900b4c97",
+        "outcome": "filled",
+        "model": "claude-opus-5",
+        "promptFrom": {
+          "advice": "built_in",
+          "outputFormat": "built_in",
+          "model": "built_in"
+        },
+        "inputChars": 177,
+        "sections": [
+          "event",
+          "setupPlan",
+          "kitchenPlan",
+          "partyDetails",
+          "timeline",
+          "team"
+        ],
+        "team": {
+          "named": 1,
+          "matched": 1
+        }
+      },
+      "createdAt": "2026-11-06T04:42:10.366Z"
+    },
+    {
+      "summary": "AI Fill read the inbox confirmation message for the BEO of \"ZZ TEST Child TH's 5th Birthday\"",
+      "metadata": {
+        "eventId": "01a1af25-3915-78cb-9319-6cb5d7ed50d3",
+        "source": "inbox",
+        "inboxConversationId": "01a1af23-a9ab-7aff-8fad-29a8064d6eb4",
+        "inboxMessageId": "01a1af25-48c3-740a-8b10-0335b070885b",
+        "outcome": "filled",
+        "model": "claude-opus-5",
+        "promptFrom": {
+          "advice": "built_in",
+          "outputFormat": "built_in",
+          "model": "built_in"
+        },
+        "inputChars": 157,
+        "sections": [
+          "event",
+          "setupPlan",
+          "kitchenPlan",
+          "partyDetails",
+          "timeline",
+          "team"
+        ],
+        "team": {
+          "named": 1,
+          "matched": 0
+        }
+      },
+      "createdAt": "2026-11-06T04:43:00.235Z"
+    },
+    {
+      "summary": "AI Fill read a pasted message for the BEO of \"ZZ TEST Child NONE's 6th Birthday\"",
+      "metadata": {
+        "eventId": "01a1af25-8c44-72d7-9d46-19b12f5a794b",
+        "source": "pasted",
+        "outcome": "filled",
+        "model": "claude-opus-5",
+        "promptFrom": {
+          "advice": "built_in",
+          "outputFormat": "built_in",
+          "model": "built_in"
+        },
+        "inputChars": 151,
+        "sections": [
+          "event",
+          "setupPlan",
+          "kitchenPlan",
+          "partyDetails",
+          "timeline"
+        ],
+        "team": {
+          "named": 0,
+          "matched": 0
+        }
+      },
+      "createdAt": "2026-11-06T04:45:11.716Z"
+    }
+  ],
+  "handoffs": [
+    {
+      "purpose": "inbox.create_beo",
+      "fill": "inbox",
+      "conversation_id": "01a1af23-9dcb-727c-84f6-a2aae61411a4",
+      "event_id": "01a1af24-ed51-73c5-aa09-4eaa7e335a41",
+      "actor_account_id": "71925263-8ebf-41c5-917e-58d95a8c8a25",
+      "mentions_token": false,
+      "created_at": "2026-11-06T04:38:53.975Z"
+    },
+    {
+      "purpose": "inbox.create_beo",
+      "fill": "inbox",
+      "conversation_id": "01a1af23-a9ab-7aff-8fad-29a8064d6eb4",
+      "event_id": "01a1af25-3915-78cb-9319-6cb5d7ed50d3",
+      "actor_account_id": "71925263-8ebf-41c5-917e-58d95a8c8a25",
+      "mentions_token": false,
+      "created_at": "2026-11-06T04:40:23.439Z"
+    },
+    {
+      "purpose": "inbox.create_beo",
+      "fill": "inbox",
+      "conversation_id": "01a1af23-b570-75c9-9db6-72a943e2a051",
+      "event_id": "01a1af25-6357-7bc7-842b-770cc097a7f2",
+      "actor_account_id": "71925263-8ebf-41c5-917e-58d95a8c8a25",
+      "mentions_token": false,
+      "created_at": "2026-11-06T04:41:54.700Z"
+    },
+    {
+      "purpose": "inbox.create_beo",
+      "fill": "inbox",
+      "conversation_id": "01a1af23-a9ab-7aff-8fad-29a8064d6eb4",
+      "event_id": "01a1af25-3915-78cb-9319-6cb5d7ed50d3",
+      "actor_account_id": "71925263-8ebf-41c5-917e-58d95a8c8a25",
+      "mentions_token": false,
+      "created_at": "2026-11-06T04:42:39.944Z"
+    },
+    {
+      "purpose": "inbox.create_beo",
+      "fill": "inbox",
+      "conversation_id": "01a1af23-c12b-7c3c-b1b4-7af77b74200f",
+      "event_id": "01a1af25-8c44-72d7-9d46-19b12f5a794b",
+      "actor_account_id": "71925263-8ebf-41c5-917e-58d95a8c8a25",
+      "mentions_token": false,
+      "created_at": "2026-11-06T04:43:19.210Z"
+    },
+    {
+      "purpose": "inbox.create_beo",
+      "fill": null,
+      "conversation_id": "01a1af23-9dcb-727c-84f6-a2aae61411a4",
+      "event_id": "01a1af24-ed51-73c5-aa09-4eaa7e335a41",
+      "actor_account_id": "71925263-8ebf-41c5-917e-58d95a8c8a25",
+      "mentions_token": false,
+      "created_at": "2026-11-06T04:43:39.006Z"
+    }
+  ],
+  "timeline": [
+    {
+      "event_id": "01a1af24-ed51-73c5-aa09-4eaa7e335a41",
+      "label": "Start",
+      "offset_from_start_minutes": 0,
+      "created_at": "2026-11-06T04:39:18.899Z"
+    },
+    {
+      "event_id": "01a1af24-ed51-73c5-aa09-4eaa7e335a41",
+      "label": "Cake",
+      "offset_from_start_minutes": 90,
+      "created_at": "2026-11-06T04:39:18.984Z"
+    },
+    {
+      "event_id": "01a1af24-ed51-73c5-aa09-4eaa7e335a41",
+      "label": "End",
+      "offset_from_start_minutes": 120,
+      "created_at": "2026-11-06T04:39:19.069Z"
+    }
+  ],
+  "hosts": [],
+  "setups": [],
+  "kitchens": [],
+  "assistantEvents": [
+    {
+      "n": 0
+    }
+  ],
+  "aiTurns": [
+    {
+      "conversation_id": "01a1af23-9dcb-727c-84f6-a2aae61411a4",
+      "state": "handed_over",
+      "action": "handover",
+      "has_model": true,
+      "used_model": true
+    },
+    {
+      "conversation_id": "01a1af23-a9ab-7aff-8fad-29a8064d6eb4",
+      "state": "answered",
+      "action": "answer",
+      "has_model": true,
+      "used_model": true
+    },
+    {
+      "conversation_id": "01a1af23-b570-75c9-9db6-72a943e2a051",
+      "state": "handed_over",
+      "action": "handover",
+      "has_model": true,
+      "used_model": true
+    },
+    {
+      "conversation_id": "01a1af23-c12b-7c3c-b1b4-7af77b74200f",
+      "state": "handed_over",
+      "action": "answer",
+      "has_model": true,
+      "used_model": true
+    }
+  ]
+}

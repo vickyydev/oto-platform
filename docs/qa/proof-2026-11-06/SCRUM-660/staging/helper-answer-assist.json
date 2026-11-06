@@ -1,0 +1,26 @@
+{
+  "route": "/api/ai/extract-event",
+  "status": 200,
+  "seconds": 11.3,
+  "text": "ZZ TEST birthday for ZZ TEST Child Assist turning 5 on 24 April 2027 at 15:00, 10 kids and 6 adults, ZZ TEST pizza and juice.",
+  "answer": {
+    "extracted": {
+      "title": "ZZ TEST birthday for ZZ TEST Child Assist",
+      "event_type": "birthday",
+      "event_date": "2027-04-24",
+      "start_time": "15:00",
+      "child_name": "ZZ TEST Child Assist",
+      "num_children": 10,
+      "num_adults": 6,
+      "program_details": "ZZ TEST pizza and juice",
+      "internal_staff_notes": "turning 5"
+    },
+    "missing_required": [],
+    "assumptions": [
+      "Baseline form values carried forward; eventDate updated from 2026-11-06 to 2027-04-24, startTime from 14:00 to 15:00, and numAdults from 5 to 6 as stated in the notes",
+      "'ZZ TEST pizza and juice' recorded as program_details (food mentioned without a named package)",
+      "'turning 5' recorded in internal_staff_notes as there is no age field",
+      "No branch mentioned in the notes, so no branch suggestion is made"
+    ]
+  }
+}

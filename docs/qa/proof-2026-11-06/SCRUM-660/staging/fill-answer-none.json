@@ -1,0 +1,10 @@
+{
+  "conversationId": "01a1af23-c12b-7c3c-b1b4-7af77b74200f",
+  "eventId": "01a1af25-8c44-72d7-9d46-19b12f5a794b",
+  "status": 409,
+  "seconds": 0.1,
+  "answer": {
+    "reason": "no_confirmation",
+    "message": "AI Fill did not run: no message from the team in this conversation names the date, the time and the party details yet."
+  }
+}

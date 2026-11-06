@@ -1,0 +1,87 @@
+{
+  "conversationId": "01a1af23-b570-75c9-9db6-72a943e2a051",
+  "eventId": "01a1af25-6357-7bc7-842b-770cc097a7f2",
+  "status": 200,
+  "seconds": 13.7,
+  "answer": {
+    "source": {
+      "conversationId": "01a1af23-b570-75c9-9db6-72a943e2a051",
+      "messageId": "01a1af25-72ff-7e3a-b445-d2e9900b4c97",
+      "body": "ZZ TEST подтверждение: суббота 13 марта 2027 с 14:00 до 16:00, 10 детей и 6 взрослых, программа ZZ TEST шоу мыльных пузырей, еда ZZ TEST пицца и сок, торт в 15:30, ведущий ZZ GM",
+      "authorName": "ZZ TEST S660 mw4h6iqe birthdays team",
+      "sentAt": "2026-11-06T04:37:09.923Z",
+      "createdAt": "2026-11-06T04:37:09.898Z",
+      "fillsFinalMessage": true
+    },
+    "fill": {
+      "summary": "ZZ TEST подтверждение дня рождения в субботу 13 марта 2027 с 14:00 до 16:00 на 10 детей и 6 взрослых с шоу мыльных пузырей, пиццей и соком, тортом в 15:30 и ведущим ZZ GM.",
+      "event": {
+        "title": "ZZ TEST Child RU's 7th Birthday",
+        "childName": "ZZ TEST Child RU",
+        "bookingName": "ZZ TEST S660 Birthday RU",
+        "numChildren": 10,
+        "numAdults": 6,
+        "startTime": "14:00",
+        "endTime": "16:00",
+        "activities": "ZZ TEST шоу мыльных пузырей",
+        "internalStaffNotes": "ZZ TEST подтверждение: суббота 13 марта 2027 с 14:00 до 16:00, 10 детей и 6 взрослых, программа ZZ TEST шоу мыльных пузырей, еда ZZ TEST пицца и сок, торт в 15:30, ведущий ZZ GM"
+      },
+      "setupPlan": {
+        "simplifiedTasks": []
+      },
+      "kitchenPlan": {
+        "kidsMenu": [
+          {
+            "itemName": "ZZ TEST пицца",
+            "quantity": 1
+          },
+          {
+            "itemName": "сок",
+            "quantity": 1
+          }
+        ],
+        "adultsMenu": [],
+        "cakeMode": "INTERNAL",
+        "cakeTime": "15:30",
+        "cakeIncluded": true,
+        "cakePrice": 0,
+        "cakeQuantity": 1
+      },
+      "partyDetails": {
+        "packageBasePrice": 0,
+        "prepaymentReceived": 0,
+        "items": []
+      },
+      "timeline": [
+        {
+          "time": "14:00",
+          "label": "Начало"
+        },
+        {
+          "time": "15:30",
+          "label": "Торт"
+        },
+        {
+          "time": "16:00",
+          "label": "Окончание"
+        }
+      ],
+      "team": {
+        "partyHost": "ZZ GM"
+      },
+      "proposals": {
+        "partyHost": {
+          "asked": "ZZ GM",
+          "match": {
+            "kind": "employee",
+            "id": "b4f99639-bdaa-49b0-a83c-d6dcb679eddf",
+            "label": "ZZ GM (ZZ TEST Payroll GM)"
+          },
+          "why": null
+        },
+        "entertainmentHost": null,
+        "setupResponsible": null
+      }
+    }
+  }
+}

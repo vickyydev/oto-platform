@@ -1,0 +1,198 @@
+{
+  "login": {
+    "name": "ZZ TEST S660 mw4h6iqe birthdays team",
+    "assign": false,
+    "writes": true,
+    "teams": [
+      {
+        "name": "Birthdays & Events",
+        "member": true
+      },
+      {
+        "name": "Reception · Central Floresta",
+        "member": false
+      },
+      {
+        "name": "Reception · Robinson Chalong",
+        "member": false
+      },
+      {
+        "name": "Reception · Demo Branch 2",
+        "member": false
+      },
+      {
+        "name": "Reception · ZZ TEST Print Bare",
+        "member": false
+      },
+      {
+        "name": "Marketing",
+        "member": false
+      },
+      {
+        "name": "GM",
+        "member": false
+      }
+    ]
+  },
+  "conversations": {
+    "en": {
+      "conversationId": "01a1af23-9dcb-727c-84f6-a2aae61411a4",
+      "booked": {
+        "at": "2026-11-06T04:36:40.174Z",
+        "prefilled": {
+          "date": "2027-03-21",
+          "startTime": "14:00",
+          "park": "Central Floresta",
+          "kids": "12",
+          "bookingName": "ZZ TEST S660 Birthday EN"
+        },
+        "set": {
+          "date": "2027-03-21",
+          "startTime": "14:00",
+          "kids": "12",
+          "childName": "ZZ TEST Child EN",
+          "age": "6"
+        },
+        "chip": "Event: 21 Mar 2027 at Central Floresta"
+      },
+      "replies": [
+        {
+          "at": "2026-11-06T04:36:40.714Z",
+          "status": 200,
+          "messageId": "01a1af25-0079-7ef9-996b-f1a6e2ee1b35",
+          "providerStatus": "sent",
+          "chars": 49
+        },
+        {
+          "at": "2026-11-06T04:36:43.749Z",
+          "status": 200,
+          "messageId": "01a1af25-0c62-76f0-b092-18896284ddc5",
+          "providerStatus": "sent",
+          "chars": 279
+        }
+      ],
+      "platformPick": {
+        "scanned": 2,
+        "eventId": "01a1af24-ed51-73c5-aa09-4eaa7e335a41",
+        "picked": "the final confirmation",
+        "messageId": "01a1af25-0c62-76f0-b092-18896284ddc5",
+        "authorName": "ZZ TEST S660 mw4h6iqe birthdays team",
+        "bodyLanguage": null
+      }
+    },
+    "th": {
+      "conversationId": "01a1af23-a9ab-7aff-8fad-29a8064d6eb4",
+      "booked": {
+        "at": "2026-11-06T04:36:58.679Z",
+        "prefilled": {
+          "date": "2027-03-20",
+          "startTime": "14:00",
+          "park": "Central Floresta",
+          "kids": "12",
+          "bookingName": "ZZ TEST S660 Birthday TH"
+        },
+        "set": {
+          "date": "2027-03-20",
+          "startTime": "14:00",
+          "kids": "12",
+          "childName": "ZZ TEST Child TH",
+          "age": "5"
+        },
+        "chip": "Event: 20 Mar 2027 at Central Floresta"
+      },
+      "replies": [
+        {
+          "at": "2026-11-06T04:36:59.208Z",
+          "status": 200,
+          "messageId": "01a1af25-48c3-740a-8b10-0335b070885b",
+          "providerStatus": "sent",
+          "chars": 157
+        }
+      ],
+      "platformPick": {
+        "scanned": 1,
+        "eventId": "01a1af25-3915-78cb-9319-6cb5d7ed50d3",
+        "picked": "the final confirmation",
+        "messageId": "01a1af25-48c3-740a-8b10-0335b070885b",
+        "authorName": "ZZ TEST S660 mw4h6iqe birthdays team",
+        "bodyLanguage": null
+      }
+    },
+    "ru": {
+      "conversationId": "01a1af23-b570-75c9-9db6-72a943e2a051",
+      "booked": {
+        "at": "2026-11-06T04:37:09.492Z",
+        "prefilled": {
+          "date": "2027-03-13",
+          "startTime": "14:00",
+          "park": "Central Floresta",
+          "kids": "10",
+          "bookingName": "ZZ TEST S660 Birthday RU"
+        },
+        "set": {
+          "date": "2027-03-13",
+          "startTime": "14:00",
+          "kids": "10",
+          "childName": "ZZ TEST Child RU",
+          "age": "7"
+        },
+        "chip": "Event: 13 Mar 2027 at Central Floresta"
+      },
+      "replies": [
+        {
+          "at": "2026-11-06T04:37:10.003Z",
+          "status": 200,
+          "messageId": "01a1af25-72ff-7e3a-b445-d2e9900b4c97",
+          "providerStatus": "sent",
+          "chars": 177
+        }
+      ],
+      "platformPick": {
+        "scanned": 1,
+        "eventId": "01a1af25-6357-7bc7-842b-770cc097a7f2",
+        "picked": "the final confirmation",
+        "messageId": "01a1af25-72ff-7e3a-b445-d2e9900b4c97",
+        "authorName": "ZZ TEST S660 mw4h6iqe birthdays team",
+        "bodyLanguage": null
+      }
+    },
+    "none": {
+      "conversationId": "01a1af23-c12b-7c3c-b1b4-7af77b74200f",
+      "booked": {
+        "at": "2026-11-06T04:37:19.997Z",
+        "prefilled": {
+          "date": "",
+          "startTime": "14:00",
+          "park": "Central Floresta",
+          "kids": "12",
+          "bookingName": "ZZ TEST S660 Birthday NONE"
+        },
+        "set": {
+          "date": "2027-04-10",
+          "startTime": "14:00",
+          "kids": "12",
+          "childName": "ZZ TEST Child NONE",
+          "age": "6"
+        },
+        "chip": "Event: 10 Apr 2027 at Central Floresta"
+      },
+      "replies": [
+        {
+          "at": "2026-11-06T04:37:20.498Z",
+          "status": 200,
+          "messageId": "01a1af25-9c07-72af-b462-73d2bccb61a1",
+          "providerStatus": "sent",
+          "chars": 98
+        }
+      ],
+      "platformPick": {
+        "scanned": 1,
+        "eventId": "01a1af25-8c44-72d7-9d46-19b12f5a794b",
+        "picked": null,
+        "messageId": null,
+        "authorName": null,
+        "bodyLanguage": null
+      }
+    }
+  }
+}

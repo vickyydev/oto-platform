@@ -1,0 +1,34 @@
+// Clean-up read back, read-only, and the services still on the SHA.
+import { readJob, loadState, saveState, writeReceipt, SHA, SERVICES, liveDeploy, assert } from './lib.mjs';
+const state = loadState();
+const C = Object.values(state.convs).map((v) => v.id);
+const E = Object.values(state.team).map((v) => v.pick.eventId);
+const A = state.agent;
+const r = await readJob('s660_cleanup', `
+const C=${JSON.stringify(C)},E=${JSON.stringify(E)},A=${JSON.stringify(A.accountId)},U=${JSON.stringify(A.appUserId)};
+const ev=await q("SELECT id,title,status,is_archived,updated_at FROM otoapp.core_events WHERE id=ANY($1) ORDER BY title",[E]);
+const conv=await q("SELECT id,status,(handled_at IS NOT NULL) handled,handled_by_account_id=$2 handled_by_login,event_order_ref FROM inbox.conversation WHERE id=ANY($1)",[C,A]);
+const account=await q("SELECT a.status,(SELECT count(*)::int FROM core.role_assignment ra WHERE ra.account_id=a.id AND ra.archived_at IS NULL) grants,(SELECT count(*)::int FROM core.session s WHERE s.account_id=a.id AND s.revoked_at IS NULL AND s.expires_at>now()) sessions,(SELECT count(*)::int FROM core.app_identity i WHERE i.account_id=a.id) links FROM core.account a WHERE a.id=$1",[A]);
+const appUser=await q("SELECT is_active FROM otoapp.users WHERE id=$1",[U]);
+const assistantEvents=await q("SELECT count(*)::int n FROM otoapp.core_events WHERE title ILIKE '%ZZ TEST Child Assist%' OR child_name ILIKE '%ZZ TEST Child Assist%'");
+return {ev,conv,account,appUser,assistantEvents};`, SHA);
+const x = r.result;
+console.log(JSON.stringify(x, null, 1));
+assert.equal(x.ev.length, 4);
+for (const e of x.ev) assert.equal(e.is_archived, true, e.title + ' not archived');
+assert.equal(x.conv.length, 4);
+for (const c of x.conv) { assert.equal(c.status, 'handled'); assert.ok(E.includes(c.event_order_ref)); }
+assert.equal(x.account[0].status, 'inactive');
+assert.equal(x.account[0].grants, 0);
+assert.equal(x.account[0].sessions, 0);
+assert.equal(x.account[0].links, 0);
+assert.equal(x.assistantEvents[0].n, 0);
+state.cleanup.readBack = { jobId: r.jobId, ...x };
+const live = [];
+for (const n of SERVICES) live.push(await liveDeploy(n));
+state.liveAfter = { at: new Date().toISOString(), live };
+saveState(state);
+for (const d of live) assert.equal(d.sha, SHA, d.name + ' moved');
+writeReceipt('cleanup.json', { source: SHA, steps: state.log.filter((l) => /Clean-up/i.test(l.step)), readBack: state.cleanup.readBack, whatStays: 'the four handled ZZ TEST conversations and their ZZ TEST contacts; the four archived ZZ TEST events (the English one keeps the three timeline lines Load into Editor wrote); the inactive ZZ TEST S660 login and its employee row; the audit and activity rows; the assistant\'s simulator replies' });
+writeReceipt('live-after.json', state.liveAfter);
+console.log('deploys unchanged', live.every((d, i) => d.deployId === state.preflight.live[i].deployId));

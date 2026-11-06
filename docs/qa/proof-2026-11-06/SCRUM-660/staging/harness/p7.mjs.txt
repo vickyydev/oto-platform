@@ -1,0 +1,88 @@
+// Step 11: clean up through the screens: archive the four ZZ TEST events with the OTO App's own archive
+// button, mark the four ZZ TEST conversations handled in the inbox; then retire the ZZ TEST S660 login.
+import { api, raw, assert, adminConsole, persona, hand, INBOX, APP, CONSOLE, loadState, saveState, writeReceipt, chromium, shot, signOut, SCRATCH } from './lib.mjs';
+const state = loadState();
+const note = (name, detail = {}) => { state.log.push({ step: name, ...detail, at: new Date().toISOString() }); saveState(state); console.log('OK', name, JSON.stringify(detail).slice(0, 900)); };
+state.cleanup ??= { archived: {}, handled: {} };
+const KEYS = ['en', 'th', 'ru', 'none'];
+const browser = await chromium.launch({ channel: 'msedge' });
+const admin = await adminConsole(browser);
+let ag;
+try {
+  ag = await persona(browser, admin, state.agent);
+  const a = await hand(ag.ctx, 'oto_app');
+  await a.setViewportSize({ width: 1920, height: 1000 });
+  for (const key of KEYS) {
+    if (state.cleanup.archived[key]) continue;
+    const EV = state.team[key].pick.eventId;
+    await a.goto(APP + '/studio/events/kanban');
+    const card = a.locator(`[data-testid="card-event-${EV}"]`);
+    await card.waitFor({ timeout: 60000 });
+    await card.scrollIntoViewIfNeeded();
+    await card.click();
+    await a.getByTestId('button-archive-beo').waitFor({ timeout: 60000 });
+    await a.waitForTimeout(1500);
+    if (key === 'en') await shot(a, 's660-st-17-cleanup-beo-editor-archive-button.png');
+    const [resp] = await Promise.all([
+      a.waitForResponse((r) => new URL(r.url()).pathname === `/api/admin/events/${EV}/archive` && r.request().method() === 'POST', { timeout: 60000 }),
+      a.getByTestId('button-archive-beo').click(),
+    ]);
+    assert.equal(resp.status(), 200, 'archive ' + resp.status());
+    await a.waitForTimeout(2000);
+    state.cleanup.archived[key] = { eventId: EV, at: new Date().toISOString(), status: resp.status() };
+    saveState(state);
+    note('Clean-up: archived the ZZ TEST event (' + key + ') with the BEO editor\'s archive button', state.cleanup.archived[key]);
+  }
+  await shot(a, 's660-st-18-cleanup-board-after-archive.png');
+  const p = ag.page;
+  for (const key of KEYS) {
+    if (state.cleanup.handled[key]) continue;
+    const C = state.convs[key].id;
+    await p.goto(INBOX + '/?c=' + C);
+    await p.locator('[data-testid="event-chip"]').waitFor({ timeout: 60000 });
+    await p.waitForTimeout(1500);
+    const chip = (await p.locator('[data-testid="event-chip"]').textContent())?.trim();
+    await p.getByRole('button', { name: /^Mark as Handled$/ }).first().click();
+    const d = p.getByRole('dialog');
+    await d.getByRole('button', { name: 'Yes, mark as handled' }).waitFor({ timeout: 30000 });
+    const [resp] = await Promise.all([
+      p.waitForResponse((r) => /\/api\/inbox\/conversations\/[^/]+\/handle$/.test(new URL(r.url()).pathname) && r.request().method() === 'POST', { timeout: 60000 }),
+      d.getByRole('button', { name: 'Yes, mark as handled' }).click(),
+    ]);
+    assert.equal(resp.status(), 200, 'handle ' + resp.status());
+    await p.waitForTimeout(1500);
+    state.cleanup.handled[key] = { conversationId: C, chipBefore: chip, at: new Date().toISOString(), status: resp.status() };
+    saveState(state);
+    note('Clean-up: marked the ZZ TEST conversation handled (' + key + ')', state.cleanup.handled[key]);
+  }
+  await p.goto(INBOX + '/?tab=handled&c=' + state.convs.en.id);
+  await p.locator('[data-testid="event-chip"]').waitFor({ timeout: 60000 });
+  await p.waitForTimeout(1500);
+  await shot(p, 's660-st-19-cleanup-handled-conversation-event-archived.png');
+} catch (e) {
+  console.error('FAIL', e.message.split('\n')[0]);
+  if (ag) for (const pg of ag.ctx.pages()) await pg.screenshot({ path: SCRATCH + '/fail-p7-' + ag.ctx.pages().indexOf(pg) + '.png' }).catch(() => {});
+  process.exitCode = 1;
+} finally {
+  await signOut(ag);
+}
+try {
+  if (process.exitCode) throw new Error('screens clean-up incomplete; the login stays for a retry');
+  const A = state.agent;
+  if (!state.cleanup.login) {
+    await api(admin.ctx, CONSOLE, 'PATCH', '/accounts/' + A.accountId, { status: 'inactive' });
+    const perms = await api(admin.ctx, CONSOLE, 'GET', '/accounts/' + A.accountId + '/permissions');
+    for (const g of perms.assignments ?? []) await api(admin.ctx, CONSOLE, 'DELETE', '/accounts/' + A.accountId + '/role-assignments/' + g.id);
+    const un = await raw(admin.ctx, CONSOLE, 'DELETE', '/admin/apps/oto_app/users/' + A.accountId);
+    assert.ok([200, 404].includes(un.status), 'unlink ' + un.status);
+    state.cleanup.login = { at: new Date().toISOString(), grantsRemoved: (perms.assignments ?? []).length, unlink: un.status };
+    saveState(state);
+    note('Clean-up: the ZZ TEST S660 login is inactive, with no grants, and unlinked from the OTO App', state.cleanup.login);
+  }
+} catch (e) {
+  console.error('FAIL', e.message.split('\n')[0]);
+  process.exitCode = 1;
+} finally {
+  await signOut(admin);
+  await browser.close();
+}

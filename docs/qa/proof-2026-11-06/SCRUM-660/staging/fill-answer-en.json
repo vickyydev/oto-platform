@@ -1,0 +1,98 @@
+{
+  "conversationId": "01a1af23-9dcb-727c-84f6-a2aae61411a4",
+  "eventId": "01a1af24-ed51-73c5-aa09-4eaa7e335a41",
+  "status": 200,
+  "seconds": 17.2,
+  "answer": {
+    "source": {
+      "conversationId": "01a1af23-9dcb-727c-84f6-a2aae61411a4",
+      "messageId": "01a1af25-0c62-76f0-b092-18896284ddc5",
+      "body": "ZZ TEST final confirmation: Sunday 21 March 2027 from 14:00 to 16:00, 12 kids and 8 adults, programme ZZ TEST magic show with entertainment host ZZ TEST Mint, food ZZ TEST pizza set and fruit platter, cake at 15:30, Party Host ZZ GM, setup by the Event Department ready by 13:30.",
+      "authorName": "ZZ TEST S660 mw4h6iqe birthdays team",
+      "sentAt": "2026-11-06T04:36:43.659Z",
+      "createdAt": "2026-11-06T04:36:43.630Z",
+      "fillsFinalMessage": true
+    },
+    "fill": {
+      "summary": "ZZ TEST Child EN's 6th birthday party on 2027-03-21 from 14:00 to 16:00 for 12 kids and 8 adults, with a ZZ TEST magic show, pizza set and fruit platter, and cake at 15:30.",
+      "event": {
+        "title": "ZZ TEST Child EN's 6th Birthday",
+        "childName": "ZZ TEST Child EN",
+        "bookingName": "ZZ TEST S660 Birthday EN",
+        "numChildren": 12,
+        "numAdults": 8,
+        "startTime": "14:00",
+        "endTime": "16:00",
+        "activities": "ZZ TEST magic show",
+        "internalStaffNotes": "ZZ TEST final confirmation: Sunday 21 March 2027 from 14:00 to 16:00, 12 kids and 8 adults, programme ZZ TEST magic show with entertainment host ZZ TEST Mint, food ZZ TEST pizza set and fruit platter, cake at 15:30, Party Host ZZ GM, setup by the Event Department ready by 13:30."
+      },
+      "setupPlan": {
+        "readyBy": "13:30",
+        "responsible": "the Event Department",
+        "simplifiedTasks": []
+      },
+      "kitchenPlan": {
+        "kidsMenu": [
+          {
+            "itemName": "ZZ TEST pizza set",
+            "quantity": 1
+          },
+          {
+            "itemName": "fruit platter",
+            "quantity": 1
+          }
+        ],
+        "adultsMenu": [],
+        "cakeMode": "NONE",
+        "cakeTime": "15:30",
+        "cakeIncluded": true,
+        "cakePrice": 0,
+        "cakeQuantity": 1
+      },
+      "partyDetails": {
+        "packageBasePrice": 0,
+        "prepaymentReceived": 0,
+        "items": []
+      },
+      "timeline": [
+        {
+          "time": "14:00",
+          "label": "Start"
+        },
+        {
+          "time": "15:30",
+          "label": "Cake"
+        },
+        {
+          "time": "16:00",
+          "label": "End"
+        }
+      ],
+      "team": {
+        "partyHost": "ZZ GM",
+        "entertainmentHost": "ZZ TEST Mint"
+      },
+      "proposals": {
+        "partyHost": {
+          "asked": "ZZ GM",
+          "match": {
+            "kind": "employee",
+            "id": "b4f99639-bdaa-49b0-a83c-d6dcb679eddf",
+            "label": "ZZ GM (ZZ TEST Payroll GM)"
+          },
+          "why": null
+        },
+        "entertainmentHost": {
+          "asked": "ZZ TEST Mint",
+          "match": null,
+          "why": "no_match"
+        },
+        "setupResponsible": {
+          "asked": "the Event Department",
+          "match": null,
+          "why": "no_match"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,71 @@
+// Attach the proof, post ONE plain comment that shows it, walk to Deployed, read back. Never Done.
+import { attach, commentWithImages, walkTo, statusOf, images } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/jira.mjs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+const DIR = 'C:/oto-lanes/beo660-20261106/docs/qa/proof-2026-11-06/SCRUM-660/staging/';
+const STATE = 'C:/Users/waqar/AppData/Local/Temp/claude/9d4c56906b777e8e/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/s660p/jira-state.json';
+const st = existsSync(STATE) ? JSON.parse(readFileSync(STATE, 'utf8')) : {};
+const save = () => writeFileSync(STATE, JSON.stringify(st, null, 2));
+const key = 'SCRUM-660';
+const files = [
+  's660-st-03b-inbox-chat-final-confirmation-and-create-beo.png',
+  's660-st-04-create-beo-ai-fill-preview-english.png',
+  's660-st-05-team-proposals-ticked.png',
+  's660-st-06-loaded-into-the-form-not-saved.png',
+  's660-st-08-timeline-lines-written-at-load-into-editor.png',
+  's660-st-09-create-beo-ai-fill-preview-thai.png',
+  's660-st-09b-ai-fill-preview-thai-team-and-timeline-run2.png',
+  's660-st-10-create-beo-ai-fill-preview-russian.png',
+  's660-st-11-no-confirmation-form-opens-with-one-line.png',
+  's660-st-15-ai-event-assistant-answers.png',
+];
+const text = `Checked on the staging site on 6 November 2026, between 11:35 and 11:50 Bangkok time, on the live version f33d7af4, with test records only (all named ZZ TEST). No real customer chat was opened, and nothing was sent by WhatsApp or SMS.
+
+Why the AI helper showed an error before: the AI needed five settings for each park group (its instructions and which model to use). Staging no longer had them, so the AI helpers stopped with "missing setting". The AI now has built-in instructions and works with no settings saved; a park group's own saved settings still come first.
+
+What a person on the birthdays team can do now:
+- In the inbox, on a birthday chat with a booked date, press Create BEO (picture 1). The OTO App opens the event's BEO form and reads the team's final confirmation message from the chat, in Thai, English or Russian.
+- It shows the message it read, word for word, and who sent it, so you can check it is the right one (picture 2).
+- It fills the form: kids and adults, start and end time, programme, menu, cake time and timeline, and puts the message in Final Message to Parent. Thai and Russian wording is kept as written (pictures 6 to 8).
+- A team member named in the message is offered when the name matches one person at the park. Tick to assign; nobody is assigned without a tick (picture 3).
+- Press Load into Editor to fill the form, check it, then press Save (picture 4). The form is saved only by Save, with one exception: the timeline lines are added straight away when you press Load into Editor, as AI Fill always did (picture 5).
+- If the team has not sent a confirmation yet, the form opens as before, with one line saying why (picture 9).
+- The AI Event Assistant on the Events page and the AI Fill button in the BEO form now answer instead of showing the error (picture 10).
+- Reading a message took about 14 to 17 seconds.
+
+Two things to check by hand for now:
+- The cake: when the message gives a cake time but not who brings the cake, the AI chooses the cake type itself. Check the cake type in the Kitchen Plan before saving.
+- Team names: a name written after a word such as "พิธีกร" or "the" is not offered (in our test "พิธีกร ZZ GM" and "the Event Department", pictures 7 and 3). Choose that person in the form.
+
+How to retest:
+1. In the inbox, open a test birthday conversation, press Book Date, check the window and press Book date.
+2. In the same chat, send the final confirmation: the date, the time, the number of kids, and the food or the programme.
+3. Press Create BEO. The OTO App opens with "AI Fill — Review & Confirm".
+4. Check the message and the fields, tick the team members to assign, and press Load into Editor.
+5. Check the form and press Save.
+
+Not included yet, on purpose: a redesign of the BEO form itself, POS orders made from a BEO, and a standing rule of who is responsible for what.
+
+Cleaned up afterwards: the test events are archived, the test chats are marked handled, and the test login is switched off. Evidence: docs/qa/proof-2026-11-06/SCRUM-660/staging/ in the repository.`;
+st.before = (await statusOf(key)).status;
+save();
+if (!st.attached) {
+  const r = await attach(key, files.map((f) => DIR + f));
+  if (r.status !== 200) throw new Error(key + ' attach ' + r.status + ' ' + (r.body ?? ''));
+  st.attached = r.files;
+  save();
+}
+const have = (await images(key)).map((a) => a.filename);
+for (const f of files) if (!have.includes(f)) throw new Error(key + ' missing image ' + f);
+if (!st.commented) {
+  const r = await commentWithImages(key, text, files);
+  if (r.status !== 201) throw new Error(key + ' comment ' + r.status + ' ' + r.body);
+  st.commented = (String(r.body).match(/"id":"([0-9]+)"/) ?? [])[1] ?? true;
+  save();
+}
+if (!st.walked) {
+  st.walked = await walkTo(key, 'Deployed');
+  save();
+}
+st.after = (await statusOf(key)).status;
+save();
+console.log(key, st.before, '->', st.after, 'comment', st.commented, 'images', st.attached.length);

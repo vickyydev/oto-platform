@@ -1,0 +1,30 @@
+// Step 10 read back, read-only: the beo_ai_fill rows (no text), the Create BEO hand-off rows,
+// what Load into Editor wrote before Save, and nothing made by the AI Event Assistant.
+import { readJob, loadState, saveState, writeReceipt, SHA, assert } from './lib.mjs';
+const state = loadState();
+const C = Object.fromEntries(Object.entries(state.convs).map(([k, v]) => [k, v.id]));
+const E = Object.fromEntries(Object.entries(state.team).map(([k, v]) => [k, v.pick.eventId]));
+const since = state.preflight.at;
+const r = await readJob('s660_step10', `
+const C=${JSON.stringify(C)},E=${JSON.stringify(E)},since=${JSON.stringify(since)};
+const evIds=Object.values(E),convIds=Object.values(C);
+const acts=await q("SELECT activity_type,summary_text,metadata_json,created_at FROM otoapp.activity_log WHERE activity_type='beo_ai_fill' AND created_at>=$1 ORDER BY created_at",[since]);
+const phrases=['pizza','fruit platter','magic show','ZZ GM','พิซซ่า','น้ำผลไม้','пицца','мыльных','nuggets','balloons in blue','Mint'];
+const activityCarriesText=acts.some(a=>phrases.some(p=>(a.summary_text+String(a.metadata_json)).includes(p)));
+const activity=acts.map(a=>({summary:a.summary_text,metadata:JSON.parse(a.metadata_json||'{}'),createdAt:a.created_at}));
+const handoffs=await q("SELECT (after->>'purpose') purpose,(after->>'fill') fill,(after->>'conversationId') conversation_id,(after->>'eventId') event_id,actor_account_id,(after::text ILIKE '%token%') mentions_token,created_at FROM core.audit_log WHERE action='auth.handoff_issue' AND after->>'purpose'='inbox.create_beo' AND after->>'conversationId'=ANY($1) ORDER BY created_at",[convIds]);
+const timeline=await q("SELECT event_id,label,offset_from_start_minutes,created_at FROM otoapp.beo_timeline_items WHERE event_id=ANY($1) ORDER BY event_id,sort_order",[evIds]);
+const hosts=await q("SELECT event_id,count(*)::int n FROM otoapp.beo_party_host_assignments WHERE event_id=ANY($1) GROUP BY event_id",[evIds]);
+const setups=await q("SELECT event_id,count(*)::int n FROM otoapp.beo_setup_plans WHERE event_id=ANY($1) GROUP BY event_id",[evIds]);
+const kitchens=await q("SELECT event_id,count(*)::int n FROM otoapp.beo_kitchen_plans WHERE event_id=ANY($1) GROUP BY event_id",[evIds]);
+const events=await q("SELECT id,title,status,is_archived,child_name,num_children,num_adults,decoration,(internal_staff_notes IS NOT NULL AND internal_staff_notes<>'') has_final_message,created_at,updated_at FROM otoapp.core_events WHERE id=ANY($1) ORDER BY event_date",[evIds]);
+const assistantEvents=await q("SELECT count(*)::int n FROM otoapp.core_events WHERE title ILIKE '%ZZ TEST Child Assist%' OR child_name ILIKE '%ZZ TEST Child Assist%'");
+const aiTurns=await q("SELECT conversation_id,state,action,model IS NOT NULL has_model,input_tokens IS NOT NULL used_model FROM inbox.ai_turn WHERE conversation_id=ANY($1) ORDER BY first_seen_at",[convIds]);
+return {activityCarriesText,activity,handoffs,timeline,hosts,setups,kitchens,events,assistantEvents,aiTurns};
+`, SHA);
+const x = r.result;
+console.log(JSON.stringify(x, null, 1).slice(0, 9000));
+assert.equal(x.activityCarriesText, false, 'no message text in the activity rows');
+state.step10 = { jobId: r.jobId, ...x };
+saveState(state);
+writeReceipt('step10-readback.json', { source: SHA, jobId: r.jobId, conversations: C, events: E, ...x });

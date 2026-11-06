@@ -1,0 +1,84 @@
+{
+  "conversationId": "01a1af23-a9ab-7aff-8fad-29a8064d6eb4",
+  "eventId": "01a1af25-3915-78cb-9319-6cb5d7ed50d3",
+  "status": 200,
+  "seconds": 14.9,
+  "answer": {
+    "source": {
+      "conversationId": "01a1af23-a9ab-7aff-8fad-29a8064d6eb4",
+      "messageId": "01a1af25-48c3-740a-8b10-0335b070885b",
+      "body": "ยืนยัน ZZ TEST วันเสาร์ 20 มีนาคม 2027 เวลา 14.00 น. ถึง 16.00 น. เด็ก 12 คน ผู้ใหญ่ 6 คน อาหาร ZZ TEST พิซซ่า และน้ำผลไม้ เป่าเค้กเวลา 15.30 น. พิธีกร ZZ GM",
+      "authorName": "ZZ TEST S660 mw4h6iqe birthdays team",
+      "sentAt": "2026-11-06T04:36:59.122Z",
+      "createdAt": "2026-11-06T04:36:59.089Z",
+      "fillsFinalMessage": true
+    },
+    "fill": {
+      "summary": "ยืนยันงานวันเกิด ZZ TEST วันเสาร์ที่ 20 มีนาคม 2027 เวลา 14:00-16:00 น. เด็ก 12 คน ผู้ใหญ่ 6 คน อาหารพิซซ่าและน้ำผลไม้ เป่าเค้ก 15:30 น. พิธีกร ZZ GM",
+      "event": {
+        "title": "ZZ TEST Child TH's 5th Birthday",
+        "childName": "ZZ TEST Child TH",
+        "bookingName": "ZZ TEST S660 Birthday TH",
+        "numChildren": 12,
+        "numAdults": 6,
+        "startTime": "14:00",
+        "endTime": "16:00",
+        "internalStaffNotes": "ยืนยัน ZZ TEST วันเสาร์ 20 มีนาคม 2027 เวลา 14.00 น. ถึง 16.00 น. เด็ก 12 คน ผู้ใหญ่ 6 คน อาหาร ZZ TEST พิซซ่า และน้ำผลไม้ เป่าเค้กเวลา 15.30 น. พิธีกร ZZ GM"
+      },
+      "setupPlan": {
+        "simplifiedTasks": []
+      },
+      "kitchenPlan": {
+        "kidsMenu": [
+          {
+            "itemName": "พิซซ่า",
+            "quantity": 1,
+            "included": true
+          },
+          {
+            "itemName": "น้ำผลไม้",
+            "quantity": 1,
+            "included": true
+          }
+        ],
+        "adultsMenu": [],
+        "cakeMode": "NONE",
+        "cakeTime": "15:30",
+        "cakeIncluded": true,
+        "cakePrice": 0,
+        "cakeQuantity": 1
+      },
+      "partyDetails": {
+        "packageBasePrice": 0,
+        "prepaymentReceived": 0,
+        "items": []
+      },
+      "timeline": [
+        {
+          "time": "14:00",
+          "label": "เริ่มงาน"
+        },
+        {
+          "time": "15:30",
+          "label": "เป่าเค้ก"
+        },
+        {
+          "time": "16:00",
+          "label": "จบงาน"
+        }
+      ],
+      "team": {
+        "partyHost": "พิธีกร ZZ GM"
+      },
+      "proposals": {
+        "partyHost": {
+          "asked": "พิธีกร ZZ GM",
+          "match": null,
+          "why": "no_match"
+        },
+        "entertainmentHost": null,
+        "setupResponsible": null
+      }
+    }
+  }
+}

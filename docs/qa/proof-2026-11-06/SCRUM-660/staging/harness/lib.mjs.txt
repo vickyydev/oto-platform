@@ -1,0 +1,120 @@
+// SCRUM-660 staging proof helpers. Never prints a password, token, setting value or phone.
+import assert from 'node:assert/strict';
+import { randomUUID, randomBytes } from 'node:crypto';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { need } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs';
+import { render, service } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/render.mjs';
+export { job, readJob } from './job.mjs';
+
+export const LANE = 'C:/oto-lanes/beo660-20261106';
+export const OUT = LANE + '/docs/qa/proof-2026-11-06/SCRUM-660/staging';
+mkdirSync(OUT, { recursive: true });
+export const SHA = 'f33d7af46ceac37c950d1de708f82b6b9ae1e4e1';
+export const LAUNCHER = 'https://oto-launcher-staging.onrender.com';
+export const CONSOLE = 'https://oto-console-staging.onrender.com';
+export const APP = 'https://oto-app-staging.onrender.com';
+export const INBOX = 'https://oto-inbox-staging.onrender.com';
+export const OP = '01a0bbdc-8c41-7204-bd58-2b92bd7dda75';
+export const CENTRAL = '01a0bbdc-8c42-7753-b7e3-5ae19fb66d33';
+export const APP_CENTRAL = '540f6e5e-e94b-4ce9-a79a-5947e841e1fb';
+export const APP_TENANT = '681b18d1-4c75-415d-9271-5fe3afc30993';
+export const BIRTHDAYS_DEPT = '01a1562e-64e5-7988-ab65-02f337aa53de';
+export const BIRTHDAYS_TEAM = '01a1562e-64eb-77d2-9a87-cc57f6806498';
+export const SIM_ACCOUNT = '01a156bb-6778-72b0-8237-6028f8874503';
+export const SCRATCH = 'C:/Users/waqar/AppData/Local/Temp/claude/9d4c56906b777e8e/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/s660p';
+export const { chromium } = createRequire(LANE + '/apps/oto-app/package.json')('playwright-core');
+export { need, render, service, randomUUID, randomBytes, assert };
+
+const STATE = SCRATCH + '/state.json';
+export const loadState = () => (existsSync(STATE) ? JSON.parse(readFileSync(STATE, 'utf8')) : {});
+export const saveState = (s) => writeFileSync(STATE, JSON.stringify(s, null, 2) + '\n');
+export const writeReceipt = (name, data) => writeFileSync(OUT + '/' + name, JSON.stringify(data, null, 2) + '\n');
+
+/** One request through a browser context's cookie jar. Refuses an unexpected status. */
+export const api = async (ctx, origin, method, path, body, status = 200) => {
+  const headers = method === 'GET' ? {} : { 'Idempotency-Key': randomUUID() };
+  const r = await ctx.request.fetch(origin + '/api' + path, { method, data: body, headers });
+  const text = await r.text();
+  let b = null;
+  try { b = JSON.parse(text); } catch { b = text.slice(0, 200); }
+  const want = Array.isArray(status) ? status : [status];
+  assert.ok(want.includes(r.status()), 'HTTP ' + r.status() + ' ' + method + ' ' + path + ' ' + (b?.error?.code ?? b?.reason ?? b?.message ?? b?.error?.message ?? ''));
+  return b;
+};
+/** The same, answering status, headers and body without refusing. */
+export const raw = async (ctx, origin, method, path, body, headers = {}) => {
+  const h = method === 'GET' ? headers : { 'Idempotency-Key': randomUUID(), ...headers };
+  const r = await ctx.request.fetch(origin + '/api' + path, { method, data: body, headers: h });
+  let b = null;
+  try { b = await r.json(); } catch { b = null; }
+  return { status: r.status(), headers: r.headers(), body: b };
+};
+
+export const newContext = (browser, extra = {}) =>
+  browser.newContext({ viewport: { width: 1440, height: 1000 }, timezoneId: 'Asia/Bangkok', locale: 'en-GB', ...extra });
+
+const arrive = async (ctx, url, oto) => {
+  const p = await ctx.newPage();
+  const exchange = p.waitForResponse((r) => new URL(r.url()).pathname === (oto ? '/api/auth/handoff' : '/api/auth/handoff/exchange') && r.request().method() === 'POST', { timeout: 90000 });
+  await p.goto(url);
+  const response = await exchange;
+  assert.equal(response.status(), 200, 'Native handoff refused');
+  await response.finished();
+  await p.waitForURL((u) => !u.hash.includes('handoff'), { timeout: 60000 });
+  return p;
+};
+export const hand = async (ctx, app) => {
+  const h = await api(ctx, LAUNCHER, 'POST', '/auth/handoff', { app });
+  return arrive(ctx, h.launchUrl, app === 'oto_app');
+};
+
+/** The staging administrator, signed in to the Console (Console writes and the simulator panel). */
+export const adminConsole = async (browser) => {
+  const ctx = await newContext(browser);
+  await api(ctx, LAUNCHER, 'POST', '/auth/sign-in', { phone: need('STAGING_ADMIN_PHONE'), password: need('STAGING_ADMIN_PASSWORD') });
+  const page = await hand(ctx, 'console');
+  await page.waitForURL('**/overview', { timeout: 60000 });
+  const me = await api(ctx, CONSOLE, 'GET', '/me');
+  return { ctx, page, me, actorId: me.account?.id ?? me.accountId, operatorId: me.operatorContext.effectiveOperatorId };
+};
+
+export const findAccount = async (admin, accountId, name) =>
+  (await api(admin.ctx, CONSOLE, 'GET', '/accounts?q=' + encodeURIComponent(name))).accounts.find((x) => x.id === accountId);
+
+/**
+ * A ZZ TEST persona in its own browser: a fresh temporary password from the
+ * Console, the forced change to a random password nobody keeps, then the
+ * launcher's hand-off into the inbox. No SMS is involved.
+ */
+export const persona = async (browser, admin, { accountId, name }, extra = {}) => {
+  const acct = await findAccount(admin, accountId, name);
+  const phone = acct?.phone;
+  assert.ok(phone, 'no phone on the account read');
+  const ctx = await newContext(browser, extra);
+  const temp = await api(admin.ctx, CONSOLE, 'POST', '/accounts/' + accountId + '/temp-password', {});
+  await api(ctx, LAUNCHER, 'POST', '/auth/sign-in', { phone, password: temp.temporaryPassword });
+  await api(ctx, LAUNCHER, 'POST', '/auth/change-password', { currentPassword: temp.temporaryPassword, password: randomBytes(30).toString('base64url') });
+  delete temp.temporaryPassword;
+  const page = await hand(ctx, 'inbox');
+  const me = await api(ctx, INBOX, 'GET', '/inbox/me');
+  return { ctx, page, me };
+};
+
+export const shot = async (page, file, opts = {}) => {
+  await page.waitForTimeout(opts.settle ?? 800);
+  await page.screenshot({ path: OUT + '/' + file, fullPage: !!opts.fullPage });
+  return file;
+};
+
+export const liveDeploy = async (name) => {
+  const s = await service(name);
+  const d = (await render('GET', `/services/${s.id}/deploys?limit=1`))[0].deploy;
+  return { name, id: s.id, deployId: d.id, status: d.status, sha: d.commit?.id, finishedAt: d.finishedAt };
+};
+
+export const signOut = async (x) => {
+  if (x) await x.ctx.request.post(LAUNCHER + '/api/auth/sign-out', { data: {} }).catch(() => {});
+};
+
+export const SERVICES = ['oto-api-staging', 'oto-inbox-staging', 'oto-app-staging', 'oto-launcher-staging', 'oto-console-staging'];

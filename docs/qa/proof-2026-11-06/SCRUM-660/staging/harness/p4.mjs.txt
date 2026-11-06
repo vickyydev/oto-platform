@@ -1,0 +1,166 @@
+// Step 4-8: Create BEO opens the BEO form with AI Fill run on the team's confirmation (real model).
+// English: the review step, the team proposals ticked, Load into Editor, the form and its timeline (never saved).
+// Thai and Russian: the review step. No confirmation: the one line. The event chip: the form as before.
+// Usage: node p4.mjs <en|th|ru|none|chip>
+import { adminConsole, persona, INBOX, loadState, saveState, writeReceipt, chromium, shot, signOut, SCRATCH, OUT } from './lib.mjs';
+import { writeFileSync } from 'node:fs';
+const which = process.argv[2];
+const RUN = process.argv[3] === 'again' ? '-run2' : '';
+const state = loadState();
+const note = (name, detail = {}) => { state.log.push({ step: name, ...detail, at: new Date().toISOString() }); saveState(state); console.log('OK', name, JSON.stringify(detail).slice(0, 1500)); };
+state.fills ??= {};
+state.modelCalls ??= [];
+const conv = state.convs[which === 'chip' ? 'en' : which];
+const browser = await chromium.launch({ channel: 'msedge' });
+const admin = await adminConsole(browser);
+let ag;
+try {
+  if (state.fills[which]?.done) {
+    if (process.argv[3] !== 'again') throw new Error('already done: ' + which);
+    state.fills[which + '_first'] = state.fills[which];
+    delete state.fills[which];
+  }
+  ag = await persona(browser, admin, state.agent, { viewport: { width: 1440, height: 1000 } });
+  const p = ag.page;
+  await p.goto(INBOX + '/?c=' + conv.id);
+  await p.getByRole('button', { name: /^Create BEO$/ }).first().waitFor({ timeout: 60000 });
+  await p.locator('[data-testid="event-chip"]').waitFor({ timeout: 60000 });
+  await p.waitForTimeout(2000);
+  if (which === 'en') {
+    // The chat with the team's final confirmation in view.
+    const msg = p.locator('text=ZZ TEST final confirmation').last();
+    await msg.scrollIntoViewIfNeeded();
+    await p.waitForTimeout(800);
+    await shot(p, 's660-st-03b-inbox-chat-final-confirmation-and-create-beo.png');
+  }
+  const t = { clickAt: Date.now() };
+  const fillReqs = [];
+  const watch = (tab) => {
+    tab.on('request', (r) => { if (r.method() === 'POST' && /\/beo\/ai-fill\/inbox$/.test(new URL(r.url()).pathname)) { fillReqs.push({ startAt: Date.now() }); } });
+    tab.on('response', async (r) => {
+      if (r.request().method() === 'POST' && /\/beo\/ai-fill\/inbox$/.test(new URL(r.url()).pathname)) {
+        const row = fillReqs[fillReqs.length - 1] ?? {};
+        row.status = r.status(); row.endAt = Date.now();
+        try { row.body = await r.json(); } catch { row.body = null; }
+      }
+    });
+  };
+  const button = which === 'chip' ? p.locator('[data-testid="event-chip"]') : p.getByRole('button', { name: /^Create BEO$/ }).first();
+  const handoffs = [];
+  p.on('response', async (r) => { if (r.request().method() === 'POST' && /\/open-beo$/.test(new URL(r.url()).pathname)) handoffs.push({ status: r.status(), body: r.request().postData() }); });
+  const [tab] = await Promise.all([ag.ctx.waitForEvent('page', { timeout: 60000 }), button.click()]);
+  watch(tab);
+  await tab.waitForLoadState('domcontentloaded');
+  await tab.setViewportSize({ width: 1440, height: 1000 });
+  const F = (state.fills[which] = { conversationId: conv.id, eventId: state.team[which === 'chip' ? 'en' : which].pick.eventId, startedAt: new Date(t.clickAt).toISOString() });
+  saveState(state);
+  if (which === 'chip') {
+    await tab.locator('[data-testid="badge-from-inbox"]').waitFor({ timeout: 120000 });
+    await tab.waitForTimeout(8000);
+    F.aiFillDialogShown = await tab.locator('[data-testid="ai-fill-inbox-source"]').isVisible().catch(() => false);
+    F.noticeShown = await tab.locator('[data-testid="text-ai-fill-notice"]').isVisible().catch(() => false);
+    F.fillRequests = fillReqs.length;
+    F.openBeo = handoffs;
+    await shot(tab, 's660-st-12-event-chip-opens-the-form-as-before.png');
+    F.done = true; saveState(state);
+    note('Step 8: the event chip opened the BEO form as before', F);
+  } else {
+    const outcome = await Promise.race([
+      tab.locator('[data-testid="ai-fill-inbox-source"]').waitFor({ timeout: 240000 }).then(() => 'preview'),
+      tab.locator('[data-testid="text-ai-fill-notice"]').waitFor({ timeout: 240000 }).then(() => 'notice'),
+    ]);
+    t.shownAt = Date.now();
+    await tab.waitForTimeout(1200);
+    const req = fillReqs[0] ?? {};
+    F.outcome = outcome;
+    F.timing = { clickToShownSeconds: +((t.shownAt - t.clickAt) / 1000).toFixed(1), fillRequestSeconds: req.endAt && req.startAt ? +((req.endAt - req.startAt) / 1000).toFixed(1) : null };
+    F.fillRequests = fillReqs.length;
+    F.fillStatus = req.status ?? null;
+    F.openBeo = handoffs;
+    if (req.body) writeFileSync(OUT + '/fill-answer-' + which + '.json', JSON.stringify({ conversationId: conv.id, eventId: F.eventId, status: req.status, seconds: F.timing.fillRequestSeconds, answer: req.body }, null, 2) + '\n');
+    if (req.startAt) state.modelCalls.push({ which: which + RUN, kind: 'inbox fill', at: new Date(req.startAt).toISOString(), status: req.status ?? null, seconds: F.timing.fillRequestSeconds });
+    saveState(state);
+    if (outcome === 'notice') {
+      F.notice = (await tab.textContent('[data-testid="text-ai-fill-notice"]'))?.trim();
+      await shot(tab, which === 'none' ? 's660-st-11-no-confirmation-form-opens-with-one-line.png' : 's660-st-fail-' + which + '-notice.png');
+      F.done = true; saveState(state);
+      note('Create BEO (' + which + '): the form opened with one line', F);
+    } else {
+      F.sourceText = (await tab.textContent('[data-testid="ai-fill-inbox-source"]'))?.replace(/\s+/g, ' ').trim();
+      F.finalMessageLine = await tab.locator('[data-testid="text-ai-fill-final-message"]').isVisible().catch(() => false);
+      const names = { en: 'english', th: 'thai', ru: 'russian' };
+      const n = { en: '04', th: '09', ru: '10' }[which];
+      await shot(tab, `s660-st-${n}-create-beo-ai-fill-preview-${names[which]}${RUN}.png`);
+      // The rest of the review step, section by section (the dialog scrolls).
+      const parts = [];
+      if (which !== 'en') {
+        // The Team row and the Timeline, brought into view inside the dialog.
+        const teamRow = tab.locator('[role="dialog"] [data-testid^="ai-fill-team-"]').first();
+        const timeline = tab.locator('[role="dialog"]').getByText('Timeline', { exact: true }).first();
+        const target = (await teamRow.count()) ? teamRow : timeline;
+        if (await target.count()) {
+          await target.evaluate((el) => el.scrollIntoView({ block: 'start' }));
+          await tab.waitForTimeout(600);
+          const f = `s660-st-${n}b-ai-fill-preview-${names[which]}-team-and-timeline${RUN}.png`;
+          await shot(tab, f);
+          parts.push(f);
+        }
+      }
+      F.moreShots = parts;
+      const team = {};
+      for (const field of ['partyHost', 'entertainmentHost', 'setupResponsible']) {
+        const row = tab.locator(`[data-testid="ai-fill-team-${field}"]`);
+        if (await row.count()) team[field] = { text: (await row.textContent())?.replace(/\s+/g, ' ').trim(), tickable: (await tab.locator(`[data-testid="checkbox-ai-fill-team-${field}"]`).count()) > 0, tickedAtStart: (await tab.locator(`[data-testid="checkbox-ai-fill-team-${field}"]`).count()) ? await tab.locator(`[data-testid="checkbox-ai-fill-team-${field}"]`).isChecked() : null };
+      }
+      F.team = team;
+      saveState(state);
+      note('Create BEO (' + which + '): the AI Fill review step', { timing: F.timing, status: F.fillStatus, team, finalMessageLine: F.finalMessageLine });
+      if (which === 'en') {
+        const ticked = [];
+        for (const field of ['partyHost', 'setupResponsible']) {
+          const box = tab.locator(`[data-testid="checkbox-ai-fill-team-${field}"]`);
+          if (await box.count()) { await box.scrollIntoViewIfNeeded(); await box.check(); ticked.push(field); }
+        }
+        F.ticked = ticked;
+        const teamRow = tab.locator('[data-testid="ai-fill-team-partyHost"]');
+        if (await teamRow.count()) { await teamRow.scrollIntoViewIfNeeded(); }
+        await tab.waitForTimeout(400);
+        await shot(tab, 's660-st-05-team-proposals-ticked.png');
+        F.loadAt = new Date().toISOString();
+        saveState(state);
+        await tab.click('[data-testid="button-ai-fill-confirm"]');
+        await tab.waitForSelector('text=BEO data loaded', { timeout: 60000 });
+        await tab.waitForTimeout(1200);
+        await shot(tab, 's660-st-06-loaded-into-the-form-not-saved.png');
+        // The Final Message to Parent field.
+        const fm = tab.locator('[data-testid="textarea-internal-notes"]');
+        if (await fm.count()) { await fm.scrollIntoViewIfNeeded(); await tab.waitForTimeout(500); await shot(tab, 's660-st-06b-final-message-to-parent-filled.png'); }
+        await tab.click('[data-testid="accordion-party-host"]');
+        await tab.waitForTimeout(800);
+        await tab.locator('[data-testid="accordion-party-host"]').scrollIntoViewIfNeeded();
+        await shot(tab, 's660-st-07-party-host-assigned-in-the-form.png');
+        await tab.click('[data-testid="accordion-timeline"]');
+        await tab.waitForTimeout(1500);
+        await tab.locator('[data-testid="accordion-timeline"]').evaluate((el) => el.scrollIntoView({ block: 'center' }));
+        await tab.waitForTimeout(800);
+        await shot(tab, 's660-st-08-timeline-lines-written-at-load-into-editor.png');
+        F.timelineItemsShown = await tab.locator('[data-testid^="timeline-item-"]').count();
+        // Leave without saving.
+        await tab.getByTestId('button-cancel').click();
+        await tab.waitForTimeout(1500);
+        F.leftWithoutSaveAt = new Date().toISOString();
+      }
+      F.done = true; saveState(state);
+      note('Create BEO (' + which + ') done', { ticked: F.ticked ?? null, timelineItemsShown: F.timelineItemsShown ?? null });
+    }
+  }
+} catch (e) {
+  console.error('FAIL', e.message.split('\n')[0]);
+  if (ag) for (const pg of ag.ctx.pages()) await pg.screenshot({ path: SCRATCH + '/fail-p4-' + which + '-' + ag.ctx.pages().indexOf(pg) + '.png' }).catch(() => {});
+  saveState(state);
+  process.exitCode = 1;
+} finally {
+  await signOut(ag);
+  await signOut(admin);
+  await browser.close();
+}

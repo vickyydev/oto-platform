@@ -1,0 +1,38 @@
+// Preflight: the services live on the SHA, and a read-only look at what the run needs.
+import { readJob, assert, SHA, OP, CENTRAL, APP_CENTRAL, APP_TENANT, BIRTHDAYS_DEPT, BIRTHDAYS_TEAM, SIM_ACCOUNT, SERVICES, liveDeploy, loadState, saveState, writeReceipt } from './lib.mjs';
+const state = loadState();
+state.unit = 'SCRUM-660';
+state.stamp ??= Date.now().toString(36);
+state.log ??= [];
+const live = [];
+for (const n of SERVICES) {
+  const d = await liveDeploy(n);
+  assert.equal(d.status, 'live', n + ' not live');
+  assert.equal(d.sha, SHA, n + ' not on the SHA');
+  live.push(d);
+}
+state.preflight = { at: new Date().toISOString(), live };
+saveState(state);
+writeReceipt('live-before.json', state.preflight);
+console.log('live', live.map((d) => d.name + ' ' + d.sha.slice(0, 8) + ' ' + d.finishedAt).join(' | '));
+const r = await readJob('s660_pre', `
+const sim=await q("SELECT id,display_name,provider,status,can_reply,branch_id=$2 central FROM inbox.channel_account WHERE id=$1",[${JSON.stringify(SIM_ACCOUNT)},${JSON.stringify(CENTRAL)}]);
+const dept=await q("SELECT id,name FROM core.department WHERE id=$1",[${JSON.stringify(BIRTHDAYS_DEPT)}]);
+const team=await q("SELECT id,name,key,department_id FROM inbox.team WHERE id=$1",[${JSON.stringify(BIRTHDAYS_TEAM)}]);
+const zzEmp=await q("SELECT id,full_name,nickname,thai_name,employment_state FROM otoapp.employees WHERE tenant_id=$1 AND branch_id=$2 AND full_name ILIKE 'ZZ TEST%' ORDER BY full_name",[${JSON.stringify(APP_TENANT)},${JSON.stringify(APP_CENTRAL)}]);
+const empCount=await q("SELECT count(*)::int n FROM otoapp.employees WHERE tenant_id=$1 AND branch_id=$2 AND employment_state='ACTIVE'",[${JSON.stringify(APP_TENANT)},${JSON.stringify(APP_CENTRAL)}]);
+const anyActive=await q("SELECT count(*)::int n FROM otoapp.employees WHERE tenant_id=$1 AND employment_state='ACTIVE'",[${JSON.stringify(APP_TENANT)}]);
+const depts=await q("SELECT DISTINCT d.name,d.is_active FROM otoapp.departments d JOIN otoapp.department_branch_assignments a ON a.department_id=d.id WHERE d.tenant_id=$1 AND a.branch_id=$2 ORDER BY d.name",[${JSON.stringify(APP_TENANT)},${JSON.stringify(APP_CENTRAL)}]);
+const aiKeys=await q("SELECT key,(tenant_id=$1) own_group,length(value)>0 has_value FROM otoapp.settings WHERE key LIKE 'ai\\\\_%' ORDER BY key",[${JSON.stringify(APP_TENANT)}]);
+const fills=await q("SELECT count(*)::int n FROM otoapp.activity_log WHERE activity_type='beo_ai_fill'");
+const fillHandoffs=await q("SELECT count(*)::int n FROM core.audit_log WHERE action='auth.handoff_issue' AND after->>'purpose'='inbox.create_beo' AND after ? 'fill'");
+const allBeoHandoffs=await q("SELECT count(*)::int n FROM core.audit_log WHERE action='auth.handoff_issue' AND after->>'purpose'='inbox.create_beo'");
+const linked=await q("SELECT count(*)::int n FROM otoapp.core_events WHERE inbox_conversation_id IS NOT NULL");
+const zzConvs=await q("SELECT count(*)::int n FROM inbox.conversation c JOIN inbox.contact k ON k.id=c.contact_id WHERE k.display_name ILIKE 'ZZ TEST S660%'");
+const sims=await q("SELECT id,display_name,status FROM inbox.channel_account WHERE provider='simulator' ORDER BY display_name");
+return {sim,dept,team,zzEmp,empCount,anyActive,depts,aiKeys,fills,fillHandoffs,allBeoHandoffs,linked,zzConvs,sims};
+`, SHA);
+const x = r.result;
+console.log(JSON.stringify(x, null, 1));
+state.pre = { jobId: r.jobId, ...x };
+saveState(state);

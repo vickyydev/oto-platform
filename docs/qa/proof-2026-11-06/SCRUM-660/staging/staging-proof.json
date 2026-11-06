@@ -1,0 +1,286 @@
+{
+  "source": "f33d7af46ceac37c950d1de708f82b6b9ae1e4e1",
+  "ranAt": {
+    "from": "2026-11-06T04:34:00.101Z",
+    "to": "2026-11-06T04:51:54.484Z"
+  },
+  "browser": "Microsoft Edge (playwright-core, channel msedge), 1440 and 1920 wide, Asia/Bangkok",
+  "login": {
+    "name": "ZZ TEST S660 mw4h6iqe birthdays team",
+    "grants": [
+      {
+        "role": "app_access_oto_app",
+        "scopeType": "operator",
+        "scopeId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+      },
+      {
+        "role": "inbox_agent",
+        "scopeType": "department",
+        "scopeId": "01a1562e-64e5-7988-ab65-02f337aa53de"
+      }
+    ],
+    "assign": false
+  },
+  "otoAppModelCalls": [
+    {
+      "which": "en",
+      "kind": "inbox fill",
+      "at": "2026-11-06T04:38:56.357Z",
+      "seconds": 17.2
+    },
+    {
+      "which": "th",
+      "kind": "inbox fill",
+      "at": "2026-11-06T04:40:25.404Z",
+      "seconds": 16.5
+    },
+    {
+      "which": "ru",
+      "kind": "inbox fill",
+      "at": "2026-11-06T04:41:56.578Z",
+      "seconds": 13.7
+    },
+    {
+      "which": "th-run2",
+      "kind": "inbox fill",
+      "at": "2026-11-06T04:42:45.254Z",
+      "seconds": 14.9
+    },
+    {
+      "which": "paste",
+      "kind": "paste AI Fill",
+      "at": "2026-11-06T04:44:56.631Z",
+      "seconds": 15
+    },
+    {
+      "which": "assist",
+      "kind": "AI Event Assistant",
+      "at": "2026-11-06T04:45:43.222Z",
+      "seconds": 11.3
+    }
+  ],
+  "notModelCalls": [
+    {
+      "which": "none",
+      "kind": "inbox fill",
+      "status": 409,
+      "note": "refused before the model: no confirmation"
+    }
+  ],
+  "inboxAssistantTurns": 4,
+  "fills": {
+    "en": {
+      "conversationId": "01a1af23-9dcb-727c-84f6-a2aae61411a4",
+      "eventId": "01a1af24-ed51-73c5-aa09-4eaa7e335a41",
+      "outcome": "preview",
+      "timing": {
+        "clickToShownSeconds": 20.3,
+        "fillRequestSeconds": 17.2
+      },
+      "status": 200,
+      "fillRequests": 1,
+      "openBeoBody": [
+        "{\"aiFill\":true}"
+      ],
+      "team": {
+        "partyHost": {
+          "text": "Party Host:ZZ GM (ZZ TEST Payroll GM) — the message says \"ZZ GM\". Tick to assign.",
+          "tickable": true,
+          "tickedAtStart": false
+        },
+        "entertainmentHost": {
+          "text": "Entertainment Host:\"ZZ TEST Mint\" matches nobody at this park: choose the host in the form.",
+          "tickable": false,
+          "tickedAtStart": null
+        },
+        "setupResponsible": {
+          "text": "Setup Who:\"the Event Department\" matches nobody at this park: it goes in as typed text.",
+          "tickable": false,
+          "tickedAtStart": null
+        }
+      },
+      "ticked": [
+        "partyHost"
+      ],
+      "finalMessageLine": true,
+      "timelineItemsShown": 3,
+      "notice": null
+    },
+    "ru": {
+      "conversationId": "01a1af23-b570-75c9-9db6-72a943e2a051",
+      "eventId": "01a1af25-6357-7bc7-842b-770cc097a7f2",
+      "outcome": "preview",
+      "timing": {
+        "clickToShownSeconds": 16.2,
+        "fillRequestSeconds": 13.7
+      },
+      "status": 200,
+      "fillRequests": 1,
+      "openBeoBody": [
+        "{\"aiFill\":true}"
+      ],
+      "team": {
+        "partyHost": {
+          "text": "Party Host:ZZ GM (ZZ TEST Payroll GM) — the message says \"ZZ GM\". Tick to assign.",
+          "tickable": true,
+          "tickedAtStart": false
+        }
+      },
+      "ticked": null,
+      "finalMessageLine": true,
+      "timelineItemsShown": null,
+      "notice": null
+    },
+    "th_first": {
+      "conversationId": "01a1af23-a9ab-7aff-8fad-29a8064d6eb4",
+      "eventId": "01a1af25-3915-78cb-9319-6cb5d7ed50d3",
+      "outcome": "preview",
+      "timing": {
+        "clickToShownSeconds": 19.3,
+        "fillRequestSeconds": 16.5
+      },
+      "status": 200,
+      "fillRequests": 1,
+      "openBeoBody": [
+        "{\"aiFill\":true}"
+      ],
+      "team": {
+        "partyHost": {
+          "text": "Party Host:\"พิธีกร ZZ GM\" matches nobody at this park: choose the host in the form.",
+          "tickable": false,
+          "tickedAtStart": null
+        }
+      },
+      "ticked": null,
+      "finalMessageLine": true,
+      "timelineItemsShown": null,
+      "notice": null
+    },
+    "th": {
+      "conversationId": "01a1af23-a9ab-7aff-8fad-29a8064d6eb4",
+      "eventId": "01a1af25-3915-78cb-9319-6cb5d7ed50d3",
+      "outcome": "preview",
+      "timing": {
+        "clickToShownSeconds": 20.8,
+        "fillRequestSeconds": 14.9
+      },
+      "status": 200,
+      "fillRequests": 1,
+      "openBeoBody": [
+        "{\"aiFill\":true}"
+      ],
+      "team": {
+        "partyHost": {
+          "text": "Party Host:\"พิธีกร ZZ GM\" matches nobody at this park: choose the host in the form.",
+          "tickable": false,
+          "tickedAtStart": null
+        }
+      },
+      "ticked": null,
+      "finalMessageLine": true,
+      "timelineItemsShown": null,
+      "notice": null
+    },
+    "none": {
+      "conversationId": "01a1af23-c12b-7c3c-b1b4-7af77b74200f",
+      "eventId": "01a1af25-8c44-72d7-9d46-19b12f5a794b",
+      "outcome": "notice",
+      "timing": {
+        "clickToShownSeconds": 2.9,
+        "fillRequestSeconds": 0.1
+      },
+      "status": 409,
+      "fillRequests": 1,
+      "openBeoBody": [
+        "{\"aiFill\":true}"
+      ],
+      "team": null,
+      "ticked": null,
+      "finalMessageLine": null,
+      "timelineItemsShown": null,
+      "notice": "AI Fill did not run: no message from the team in this conversation names the date, the time and the party details yet."
+    },
+    "chip": {
+      "conversationId": "01a1af23-9dcb-727c-84f6-a2aae61411a4",
+      "eventId": "01a1af24-ed51-73c5-aa09-4eaa7e335a41",
+      "outcome": null,
+      "timing": null,
+      "status": null,
+      "fillRequests": 0,
+      "openBeoBody": [
+        null
+      ],
+      "team": null,
+      "ticked": null,
+      "finalMessageLine": null,
+      "timelineItemsShown": null,
+      "notice": null,
+      "aiFillDialogShown": false,
+      "noticeShown": false
+    }
+  },
+  "helpers": {
+    "paste": {
+      "outcome": "review",
+      "status": 200,
+      "seconds": 15,
+      "eventId": "01a1af25-8c44-72d7-9d46-19b12f5a794b"
+    },
+    "assist": {
+      "outcome": "draft",
+      "status": 200,
+      "seconds": 11.3,
+      "eventId": null
+    }
+  },
+  "logbook": {
+    "shown": [
+      {
+        "type": "beo_ai_fill",
+        "summary": "AI Fill read a pasted message for the BEO of \"ZZ TEST Child NONE's 6th Birthday\"",
+        "createdAt": "2026-11-06T04:45:11.716Z"
+      },
+      {
+        "type": "beo_ai_fill",
+        "summary": "AI Fill read the inbox confirmation message for the BEO of \"ZZ TEST Child TH's 5th Birthday\"",
+        "createdAt": "2026-11-06T04:43:00.235Z"
+      },
+      {
+        "type": "beo_ai_fill",
+        "summary": "AI Fill read the inbox confirmation message for the BEO of \"ZZ TEST Child RU's 7th Birthday\"",
+        "createdAt": "2026-11-06T04:42:10.366Z"
+      },
+      {
+        "type": "beo_ai_fill",
+        "summary": "AI Fill read the inbox confirmation message for the BEO of \"ZZ TEST Child TH's 5th Birthday\"",
+        "createdAt": "2026-11-06T04:40:42.028Z"
+      },
+      {
+        "type": "beo_ai_fill",
+        "summary": "AI Fill read the inbox confirmation message for the BEO of \"ZZ TEST Child EN's 6th Birthday\"",
+        "createdAt": "2026-11-06T04:39:13.656Z"
+      }
+    ],
+    "totalCount": 5
+  },
+  "aiSettingsRowsBefore": 0,
+  "jira": {
+    "key": "SCRUM-660",
+    "before": "Testing",
+    "after": "Deployed",
+    "commentId": "13522",
+    "images": [
+      "s660-st-03b-inbox-chat-final-confirmation-and-create-beo.png",
+      "s660-st-04-create-beo-ai-fill-preview-english.png",
+      "s660-st-05-team-proposals-ticked.png",
+      "s660-st-06-loaded-into-the-form-not-saved.png",
+      "s660-st-08-timeline-lines-written-at-load-into-editor.png",
+      "s660-st-09-create-beo-ai-fill-preview-thai.png",
+      "s660-st-09b-ai-fill-preview-thai-team-and-timeline-run2.png",
+      "s660-st-10-create-beo-ai-fill-preview-russian.png",
+      "s660-st-11-no-confirmation-form-opens-with-one-line.png",
+      "s660-st-15-ai-event-assistant-answers.png"
+    ],
+    "walkerCommitLinkComment": "13523 (posted by the walk when it reached Deployed)"
+  }
+}

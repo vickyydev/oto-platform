@@ -1,0 +1,64 @@
+{
+  "route": "/api/ai/parse-beo",
+  "status": 200,
+  "seconds": 15,
+  "text": "ZZ TEST pasted note: Saturday 10 April 2027 from 14:00 to 16:00, 12 kids and 5 adults, food ZZ TEST nuggets and fries, cake at 15:30, balloons in blue.",
+  "answer": {
+    "summary": "ZZ TEST birthday party on Saturday 10 April 2027 from 14:00 to 16:00 for 12 kids and 5 adults, with nuggets and fries, cake at 15:30 and blue balloons.",
+    "event": {
+      "title": "ZZ TEST Child NONE's 6th Birthday",
+      "childName": "ZZ TEST Child NONE",
+      "bookingName": "ZZ TEST S660 Birthday NONE",
+      "numChildren": 12,
+      "numAdults": 5,
+      "startTime": "14:00",
+      "endTime": "16:00",
+      "decoration": "balloons in blue"
+    },
+    "setupPlan": {
+      "simplifiedTasks": []
+    },
+    "kitchenPlan": {
+      "kidsMenu": [
+        {
+          "itemName": "ZZ TEST nuggets",
+          "quantity": 1
+        },
+        {
+          "itemName": "fries",
+          "quantity": 1
+        }
+      ],
+      "adultsMenu": [],
+      "cakeMode": "NONE",
+      "cakeTime": "15:30",
+      "cakeIncluded": true,
+      "cakePrice": 0,
+      "cakeQuantity": 1
+    },
+    "partyDetails": {
+      "packageBasePrice": 0,
+      "prepaymentReceived": 0,
+      "items": []
+    },
+    "timeline": [
+      {
+        "time": "14:00",
+        "label": "Start"
+      },
+      {
+        "time": "15:30",
+        "label": "Cake"
+      },
+      {
+        "time": "16:00",
+        "label": "End"
+      }
+    ],
+    "proposals": {
+      "partyHost": null,
+      "entertainmentHost": null,
+      "setupResponsible": null
+    }
+  }
+}

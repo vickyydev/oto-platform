@@ -1,0 +1,58 @@
+// Step 1: the staging admin plays four ZZ TEST birthday messages through the inbox's Simulator panel.
+import { api, assert, adminConsole, hand, INBOX, SIM_ACCOUNT, loadState, saveState, writeReceipt, chromium, shot, signOut } from './lib.mjs';
+const state = loadState();
+const note = (name, detail = {}) => { state.log.push({ step: name, ...detail, at: new Date().toISOString() }); saveState(state); console.log('OK', name, JSON.stringify(detail).slice(0, 600)); };
+export const CONVS = [
+  { key: 'en', from: '66810066601', name: 'ZZ TEST S660 Birthday EN', language: 'en', text: 'ZZ TEST birthday for 12 kids on 21/mar, turning 6 years' },
+  { key: 'th', from: '66810066602', name: 'ZZ TEST S660 Birthday TH', language: 'th', text: 'ZZ TEST สวัสดีค่ะ อยากจัดงานวันเกิดให้ลูก เด็ก 12 คน วันที่ 20/mar' },
+  { key: 'ru', from: '66810066603', name: 'ZZ TEST S660 Birthday RU', language: 'ru', text: 'ZZ TEST Здравствуйте! Хотим день рождения, 10 детей, 13/mar' },
+  { key: 'none', from: '66810066604', name: 'ZZ TEST S660 Birthday NONE', language: 'en', text: 'ZZ TEST hello, what birthday packages do you have for 12 kids?' },
+];
+state.convs ??= {};
+const browser = await chromium.launch({ channel: 'msedge' });
+const admin = await adminConsole(browser);
+try {
+  const p = await hand(admin.ctx, 'inbox');
+  await p.getByRole('button', { name: 'Settings' }).waitFor({ timeout: 60000 });
+  await p.getByRole('button', { name: 'Settings' }).click();
+  await p.getByRole('menuitem', { name: /Simulator/ }).click();
+  const d = p.getByRole('dialog');
+  await d.getByLabel('Channel account').waitFor({ timeout: 30000 });
+  for (const c of CONVS) {
+    if (state.convs[c.key]?.id) continue;
+    await d.getByLabel('Channel account').selectOption(SIM_ACCOUNT);
+    await d.getByLabel('From (digits, country code first)').fill(c.from);
+    await d.getByLabel('Name (optional)').fill(c.name);
+    await d.getByLabel('Category (instead of the AI)').selectOption('birthdays');
+    await d.getByLabel('Language (instead of the AI)').selectOption(c.language);
+    await d.getByLabel('Message').fill(c.text);
+    if (c.key === 'en') await shot(p, 's660-st-01-simulator-zz-test-birthday-message.png');
+    const [resp] = await Promise.all([
+      p.waitForResponse((r) => new URL(r.url()).pathname === '/api/inbox/simulator/inbound' && r.request().method() === 'POST', { timeout: 90000 }),
+      d.getByRole('button', { name: 'Send as the customer' }).click(),
+    ]);
+    const body = await resp.json();
+    assert.equal(resp.status(), 200, 'inbound ' + resp.status());
+    assert.equal(body.outcome, 'processed');
+    assert.equal(body.conversationsCreated, 1, 'a new conversation for ' + c.key);
+    state.convs[c.key] = { id: body.conversationIds[0], name: c.name, language: c.language, text: c.text, playedAt: new Date().toISOString(), inbound: { outcome: body.outcome, conversationsCreated: body.conversationsCreated, messages: body.messages } };
+    saveState(state);
+    note('Step 1: played a ZZ TEST birthday message (' + c.key + ')', state.convs[c.key]);
+    await p.waitForTimeout(2500);
+  }
+  await new Promise((r) => setTimeout(r, 8000));
+  for (const c of CONVS) {
+    const r = await api(admin.ctx, INBOX, 'GET', '/inbox/conversations/' + state.convs[c.key].id);
+    const conv = r.conversation ?? r;
+    state.convs[c.key].read = { category: conv.category, team: conv.team?.name ?? conv.teamName ?? null, branchId: conv.branchId, status: conv.status, language: conv.language ?? null };
+  }
+  saveState(state);
+  note('The conversations as the api reads them', Object.fromEntries(CONVS.map((c) => [c.key, state.convs[c.key].read])));
+  writeReceipt('step1-simulated-conversations.json', { channelAccount: 'Demo WhatsApp · Central Floresta (simulator)', conversations: CONVS.map((c) => ({ key: c.key, conversationId: state.convs[c.key].id, contactName: c.name, message: c.text, ...state.convs[c.key].inbound, read: state.convs[c.key].read, playedAt: state.convs[c.key].playedAt })) });
+} catch (e) {
+  console.error('FAIL', e.message.split('\n')[0]);
+  process.exitCode = 1;
+} finally {
+  await signOut(admin);
+  await browser.close();
+}

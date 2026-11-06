@@ -1,0 +1,73 @@
+{
+  "channelAccount": "Demo WhatsApp · Central Floresta (simulator)",
+  "conversations": [
+    {
+      "key": "en",
+      "conversationId": "01a1af23-9dcb-727c-84f6-a2aae61411a4",
+      "contactName": "ZZ TEST S660 Birthday EN",
+      "message": "ZZ TEST birthday for 12 kids on 21/mar, turning 6 years",
+      "outcome": "processed",
+      "conversationsCreated": 1,
+      "messages": 1,
+      "read": {
+        "category": "birthdays",
+        "team": "Birthdays & Events",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "status": "active",
+        "language": "en"
+      },
+      "playedAt": "2026-11-06T04:35:09.490Z"
+    },
+    {
+      "key": "th",
+      "conversationId": "01a1af23-a9ab-7aff-8fad-29a8064d6eb4",
+      "contactName": "ZZ TEST S660 Birthday TH",
+      "message": "ZZ TEST สวัสดีค่ะ อยากจัดงานวันเกิดให้ลูก เด็ก 12 คน วันที่ 20/mar",
+      "outcome": "processed",
+      "conversationsCreated": 1,
+      "messages": 1,
+      "read": {
+        "category": "birthdays",
+        "team": "Birthdays & Events",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "status": "active",
+        "language": "th"
+      },
+      "playedAt": "2026-11-06T04:35:12.516Z"
+    },
+    {
+      "key": "ru",
+      "conversationId": "01a1af23-b570-75c9-9db6-72a943e2a051",
+      "contactName": "ZZ TEST S660 Birthday RU",
+      "message": "ZZ TEST Здравствуйте! Хотим день рождения, 10 детей, 13/mar",
+      "outcome": "processed",
+      "conversationsCreated": 1,
+      "messages": 1,
+      "read": {
+        "category": "birthdays",
+        "team": "Birthdays & Events",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "status": "active",
+        "language": "ru"
+      },
+      "playedAt": "2026-11-06T04:35:15.532Z"
+    },
+    {
+      "key": "none",
+      "conversationId": "01a1af23-c12b-7c3c-b1b4-7af77b74200f",
+      "contactName": "ZZ TEST S660 Birthday NONE",
+      "message": "ZZ TEST hello, what birthday packages do you have for 12 kids?",
+      "outcome": "processed",
+      "conversationsCreated": 1,
+      "messages": 1,
+      "read": {
+        "category": "birthdays",
+        "team": "Birthdays & Events",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "status": "active",
+        "language": "en"
+      },
+      "playedAt": "2026-11-06T04:35:18.531Z"
+    }
+  ]
+}
