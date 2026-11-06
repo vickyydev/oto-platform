@@ -454,21 +454,25 @@ try {
     process.env.PLATFORM_API_URL = platformUrl;
     process.env.OTOAPP_PUBLIC_ORIGIN = "http://127.0.0.1";
     const sealed = sealPlatformToken(process.env.SESSION_SECRET!, sessionId, token);
+    // A platform session the platform has since ended: its token no longer opens anything there.
+    const ended = sealPlatformToken(process.env.SESSION_SECRET!, sessionId, `${token}-ended`);
     const real = express();
     real.use(express.json());
     real.use((req, _res, next) => {
-      if (req.get("x-test-platform") === "yes") {
-        (req as any).session = { platform: { accountId: randomUUID(), sealedToken: sealed } };
+      const which = req.get("x-test-platform");
+      if (which === "yes" || which === "ended") {
+        (req as any).session = { platform: { accountId: randomUUID(), sealedToken: which === "yes" ? sealed : ended } };
         (req as any).sessionID = sessionId;
       }
       next();
     });
     registerAIRoutes(real, fakeAuth, { ai });
     const realUrl = await listen(real);
-    const call = async (eventId: string, platformSession: boolean) => {
+    const call = async (eventId: string, platformSession: boolean | "ended") => {
+      const header = platformSession === "ended" ? "ended" : platformSession ? "yes" : null;
       const response = await fetch(`${realUrl}/api/events/${eventId}/beo/ai-fill/inbox`, {
         method: "POST",
-        headers: { "content-type": "application/json", "x-test-as": "a", ...(platformSession ? { "x-test-platform": "yes" } : {}) },
+        headers: { "content-type": "application/json", "x-test-as": "a", ...(header ? { "x-test-platform": header } : {}) },
         body: "{}",
       });
       return { status: response.status, body: (await response.json().catch(() => null)) as any };
@@ -481,6 +485,9 @@ try {
     assert.equal((await call(ev.none, true)).body.reason, "not_a_birthday");
     assert.equal((await call(ev.bad, true)).body.reason, "inbox_unreachable", "a malformed answer is not read");
     assert.equal((await call(ev.th, true)).body.reason, "inbox_unreachable", "a 500 is no answer");
+    const signedOut = await call(ev.en, "ended");
+    assert.equal(signedOut.status, 401);
+    assert.deepEqual(signedOut.body, { reason: "signed_out", message: INBOX_FILL_MESSAGES.signed_out });
     // A session not opened from the launcher has no platform session to read with.
     const before = seen.length;
     const legacy = await call(ev.en, false);
