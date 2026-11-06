@@ -1,4 +1,5 @@
 import { Express, Request, Response, NextFunction } from "express";
+import { z } from "zod";
 import { db } from "./db";
 import { branches, coreEvents } from "../shared/schema";
 import { and, eq } from "drizzle-orm";
@@ -34,12 +35,18 @@ interface ExtractEventRequest {
   timezone?: string;
 }
 
-interface ParseBeoRequest {
-  text: string;
-  existingData?: Record<string, unknown>;
+/** What the form holds now: the baseline the model changes only where the message says so. */
+const ExistingDataSchema = z.record(z.unknown()).nullish();
+
+const ParseBeoBodySchema = z.object({
+  text: z.unknown(),
+  existingData: ExistingDataSchema,
   /** The event whose BEO is open: its park's team is what a fill may propose, and the activity row names it. */
-  eventId?: string;
-}
+  eventId: z.string().max(64).nullish(),
+});
+
+/** Create BEO's AI Fill: only the form's state; the message is read on the platform, never sent here. */
+const InboxFillBodySchema = z.object({ existingData: ExistingDataSchema });
 
 /** The event a BEO fill is for, as the BEO editor's own read fences it. */
 export interface BeoFillEvent {
@@ -301,7 +308,9 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
 
   app.post("/api/ai/parse-beo", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { text, existingData, eventId } = (req.body ?? {}) as ParseBeoRequest;
+      const body = ParseBeoBodySchema.safeParse(req.body ?? {});
+      if (!body.success) return res.status(400).json({ message: "Send the text to read, the form's data as an object, and the event's id." });
+      const { text, existingData, eventId } = body.data;
 
       if (typeof text !== "string" || !text.trim()) {
         return res.status(400).json({ message: "text is required" });
@@ -310,8 +319,8 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
         return res.status(400).json({ message: `The text is too long to read at once (${AI_TEXT_MAX} characters at most).` });
       }
       let event: BeoFillEvent | null = null;
-      if (eventId !== undefined && eventId !== null) {
-        event = typeof eventId === "string" ? await deps.loadEvent(req, eventId) : null;
+      if (eventId) {
+        event = await deps.loadEvent(req, eventId);
         if (!event) return res.status(404).json({ message: "Event not found" });
       }
 
@@ -339,6 +348,9 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
       return res.status(INBOX_FILL_STATUS[reason]).json({ reason, message: INBOX_FILL_MESSAGES[reason] });
     };
     try {
+      const body = InboxFillBodySchema.safeParse(req.body ?? {});
+      if (!body.success) return res.status(400).json({ message: "Send the form's data as an object." });
+      const existingData = body.data.existingData ?? undefined;
       const event = await deps.loadEvent(req, req.params.eventId!);
       if (!event) return res.status(404).json({ message: "Event not found" });
       if (!event.inboxConversationId) return refuse("not_from_inbox", event.id);
@@ -353,7 +365,7 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
 
       const { run, proposals } = await runBeoFill(deps, req, {
         text: message.body,
-        existingData: (req.body ?? {}).existingData,
+        existingData,
         event,
         source: { kind: "inbox", conversationId: confirmation.conversationId, messageId: message.id },
       });
@@ -361,7 +373,9 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
       // The form's "Final Message to Parent" (internalStaffNotes, "Paste the final
       // message sent to the parent...") is this very message: it goes in as read,
       // word for word, unless the form already holds one a person put there.
-      const existingFinal = (req.body ?? {}).existingData?.event?.internalStaffNotes;
+      const existingEvent = existingData?.event;
+      const existingFinal =
+        existingEvent && typeof existingEvent === "object" ? (existingEvent as Record<string, unknown>).internalStaffNotes : undefined;
       const fillsFinalMessage = typeof existingFinal !== "string" || existingFinal.trim() === "";
       const fill = fillsFinalMessage
         ? { ...run.value, event: { ...(run.value.event ?? {}), internalStaffNotes: message.body } }
