@@ -133,9 +133,14 @@ export const inboxApi = {
    * Create BEO (SCRUM-775): a one-use hand-off into the OTO App landing on the
    * conversation's event's BEO form, recorded naming the conversation and the
    * event. The answer is a credential, so no key is sent: the api keeps none.
+   * `aiFill` (SCRUM-660, the Create BEO button) lands with the form's AI Fill
+   * run on the conversation's confirmation; the event chip sends no body.
    */
-  openBeo: (id: string) =>
-    api.post<ApiResponse<'/inbox/conversations/{id}/open-beo', 'post'>>(`${at(id)}/open-beo`, undefined),
+  openBeo: (id: string, opts: { aiFill?: boolean } = {}) =>
+    api.post<ApiResponse<'/inbox/conversations/{id}/open-beo', 'post'>>(
+      `${at(id)}/open-beo`,
+      opts.aiFill ? { aiFill: true } : undefined,
+    ),
 
   handle: (id: string) =>
     api.post<ApiResponse<'/inbox/conversations/{id}/handle', 'post'>>(`${at(id)}/handle`, undefined, {

@@ -40,11 +40,17 @@ export function openBlankTab(): Window | null {
 /**
  * Create BEO: send the tab (or, with none, this one) to the conversation's
  * event's BEO form in the OTO App. A refusal closes the tab and is thrown.
+ * With `aiFill` (SCRUM-660) the form opens with its AI Fill run on the
+ * conversation's confirmation message, which the OTO App reads itself.
  */
-export async function openConversationBeo(conversationId: string, tab: Window | null): Promise<void> {
+export async function openConversationBeo(
+  conversationId: string,
+  tab: Window | null,
+  opts: { aiFill?: boolean } = {},
+): Promise<void> {
   let address: string;
   try {
-    const opened = await inboxApi.openBeo(conversationId);
+    const opened = await inboxApi.openBeo(conversationId, opts);
     address = checkedLaunchUrl(opened?.launchUrl);
   } catch (err) {
     tab?.close();

@@ -304,11 +304,13 @@ export function ChatPanel({
   // Book Date and Create BEO say why they are off: writes not switched on here
   // yet (as every other control), or not this person's to press.
   const bookOffReason = live ? BOOK_DATE_NOT_YOURS_REASON : WRITES_PENDING_REASON;
-  const openBeo = async (conversationId: string, tab: Window | null = openBlankTab()) => {
+  // SCRUM-660: Create BEO opens the form with its AI Fill run on the
+  // conversation's confirmation (`aiFill`); the event chip opens it as it is.
+  const openBeo = async (conversationId: string, tab: Window | null = openBlankTab(), aiFill = false) => {
     setBusy('beo');
     setError(null);
     try {
-      await openConversationBeo(conversationId, tab);
+      await openConversationBeo(conversationId, tab, { aiFill });
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : 'The BEO could not be opened here.');
     } finally {
@@ -326,7 +328,7 @@ export function ChatPanel({
       setBooking(null);
       setNote(`${eventChipLabel(eventChipOf(r.event))} · tentative in the Events calendar`);
       await onChanged();
-      if (booking.thenBeo) await openBeo(r.conversationId, tab);
+      if (booking.thenBeo) await openBeo(r.conversationId, tab, true);
     } catch (err) {
       tab?.close();
       if (err instanceof ApiError && err.code === 'EVENT_ALREADY_BOOKED') {
@@ -761,7 +763,7 @@ export function ChatPanel({
                 {event || mayBook ? (
                   <button
                     type="button"
-                    onClick={() => (event ? void openBeo(conv.id) : askBookDate(true))}
+                    onClick={() => (event ? void openBeo(conv.id, undefined, true) : askBookDate(true))}
                     disabled={busy !== null}
                     title={event ? "Open this event's BEO in the OTO App" : 'Book the date, then open its BEO in the OTO App'}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-2.5 py-1 text-[12px] font-medium text-white ring-1 ring-violet-600 hover:bg-violet-700 disabled:opacity-60"
