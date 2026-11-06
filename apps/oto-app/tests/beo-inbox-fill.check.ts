@@ -9,6 +9,8 @@
 //   - a Thai, an English and a Russian confirmation each come back as the
 //     same preview a pasted message gets, in the message's own words, with
 //     the message that was read beside it;
+//   - Final Message to Parent is that message while the form's is empty; a
+//     person's own is kept, and the model's text for it never comes back;
 //   - the message is read from the platform as the same person, with their
 //     platform session's cookie, and the platform's refusals (cannot see it,
 //     not a birthday, signed out, no answer, a malformed answer) and "no
@@ -300,11 +302,34 @@ try {
     const ru = (await fillFromInbox(ev.ru)).body.fill;
     assert.equal(ru.event.childName, "Маша");
     assert.equal(ru.kitchenPlan.kidsMenu[0].itemName, "наггетсы");
-    // A final message a person already put in the form is never replaced.
-    const kept = await post(`/api/events/${ev.en}/beo/ai-fill/inbox`, { existingData: { event: { internalStaffNotes: "A person's own note" } } });
-    assert.equal(kept.status, 200);
-    assert.equal(kept.body.source.fillsFinalMessage, false);
-    assert.notEqual(kept.body.fill.event.internalStaffNotes, MESSAGES.en);
+  });
+
+  await check("personsFinalMessageIsKept", async () => {
+    // The model answers the built-in output format's "internalStaffNotes" key with staff notes of its own.
+    const MODEL_NOTES = "ZZ TEST MODEL-STAFF-NOTES-660";
+    const was = modelReply;
+    modelReply = () => {
+      const answer = ANSWERS.en as { event: Record<string, unknown> };
+      return JSON.stringify({ ...answer, event: { ...answer.event, internalStaffNotes: MODEL_NOTES } });
+    };
+    try {
+      // A person already put the parent's final message in the form: it is kept, and the
+      // model's text for that field is not in the answer, so Load into Editor cannot apply it.
+      const kept = await post(`/api/events/${ev.en}/beo/ai-fill/inbox`, { existingData: { event: { internalStaffNotes: "A person's own note" } } });
+      assert.equal(kept.status, 200, JSON.stringify(kept.body));
+      assert.equal(kept.body.source.fillsFinalMessage, false);
+      assert.ok(!("internalStaffNotes" in kept.body.fill.event), JSON.stringify(kept.body.fill.event));
+      assert.ok(!JSON.stringify(kept.body.fill).includes(MODEL_NOTES), "the model's notes never reach the screen");
+      assert.equal(kept.body.fill.event.childName, "Emma", "the rest of the event section stands");
+      // The form's final message is empty: the message that was read, word for word, wins over the model's text.
+      const filled = await fillFromInbox(ev.en);
+      assert.equal(filled.status, 200);
+      assert.equal(filled.body.source.fillsFinalMessage, true);
+      assert.equal(filled.body.fill.event.internalStaffNotes, MESSAGES.en);
+      assert.ok(!JSON.stringify(filled.body.fill).includes(MODEL_NOTES));
+    } finally {
+      modelReply = was;
+    }
   });
 
   await check("teamProposedFromTheParksPeopleOnly", async () => {
@@ -532,4 +557,4 @@ try {
 
 console.log(JSON.stringify({ results, failures }, null, 2));
 // The app's modules loaded here keep handles of their own open; the verdict is final.
-process.exit(Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 11 ? 1 : 0);
+process.exit(Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 12 ? 1 : 0);

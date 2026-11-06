@@ -95,7 +95,8 @@ interface BeoEventEditorProps {
   /**
    * SCRUM-660: "inbox" when the inbox's Create BEO opened this form: AI Fill
    * runs once on the conversation's confirmation message as it opens, into
-   * the same preview a pasted message gets. Nothing is saved until Save.
+   * the same preview a pasted message gets. Load into Editor writes only the
+   * answer's timeline lines at once, as AI Fill always has; the rest waits for Save.
    */
   autoFill?: "inbox" | null;
   /** Told once the form has taken the auto fill, so it never runs twice. */

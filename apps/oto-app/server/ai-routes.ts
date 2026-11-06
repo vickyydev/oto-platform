@@ -12,6 +12,7 @@ import {
   BeoFillSchema,
   EventExtractionSchema,
   beoParseUserMessage,
+  inboxFillAnswer,
   runAiHelper,
   runLogFields,
   type AiDeps,
@@ -340,7 +341,9 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
    * booked from the inbox; the message is the platform's choice, read as this
    * person; the answer is the SAME preview AI Fill shows for a pasted message,
    * with the message it read beside it. Nothing is saved here: the person
-   * reviews it, presses Load into Editor, then the form's own Save.
+   * reviews it and presses Load into Editor, which fills the form and, as AI
+   * Fill always has, writes the answer's timeline lines at once; every other
+   * field waits for the form's own Save.
    */
   app.post("/api/events/:eventId/beo/ai-fill/inbox", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     const refuse = (reason: InboxFillRefusal, eventId: string | null) => {
@@ -370,16 +373,9 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
         source: { kind: "inbox", conversationId: confirmation.conversationId, messageId: message.id },
       });
       if (!run.ok) return res.status(run.status).json({ message: run.message, reason: run.reason });
-      // The form's "Final Message to Parent" (internalStaffNotes, "Paste the final
-      // message sent to the parent...") is this very message: it goes in as read,
-      // word for word, unless the form already holds one a person put there.
-      const existingEvent = existingData?.event;
-      const existingFinal =
-        existingEvent && typeof existingEvent === "object" ? (existingEvent as Record<string, unknown>).internalStaffNotes : undefined;
-      const fillsFinalMessage = typeof existingFinal !== "string" || existingFinal.trim() === "";
-      const fill = fillsFinalMessage
-        ? { ...run.value, event: { ...(run.value.event ?? {}), internalStaffNotes: message.body } }
-        : run.value;
+      // Final Message to Parent: this very message while the form's is empty;
+      // a person's own one is kept, and the model's text for it never reaches the screen.
+      const { fill, fillsFinalMessage } = inboxFillAnswer(run.value, message.body, existingData);
       res.setHeader("Cache-Control", "no-store");
       res.json({
         source: {
