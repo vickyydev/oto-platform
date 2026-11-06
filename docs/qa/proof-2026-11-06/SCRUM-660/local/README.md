@@ -87,6 +87,7 @@ was read before anything is applied.
 | OTO App `tests/ai-fill.check.ts` (no database) | 9 / 9 |
 | OTO App `tests/beo-inbox-fill.check.ts` (fresh database, both migrators) | 11 / 11 |
 | OTO App `tests/directory-inbox-event.check.ts` (SCRUM-775, fresh database) | 9 / 9 |
+| `test/s660-beo-confirmation-review.test.ts` (house review) | 8 / 8: six pins, two FINDINGs standing as owner questions (Load into Editor writes the timeline before Save; a read-back of the request is not told from the final confirmation) |
 | eslint on every changed `.ts` / `.tsx` outside `apps/oto-app` | clean |
 
 ## Staging proof plan (for the landing; ZZ TEST only)
