@@ -1,0 +1,431 @@
+// SCRUM-660 local proof: the real platform api, the inbox (vite preview) and the
+// OTO App (its own server, dev build) on one disposable database, driven in
+// Microsoft Edge. Three ZZ TEST birthday conversations — English, Thai and
+// Russian — each with the team's final confirmation sent through the inbox's
+// own reply route; Create BEO opens each BEO form with AI Fill already run on
+// that message, in the review step, with the message beside it. A fourth
+// conversation has no confirmation yet: the form opens as before, with one
+// line saying why. The model is a STUB behind the Anthropic SDK's own
+// ANTHROPIC_BASE_URL (no key reaches the OTO App's local run through the
+// repo's env loading), answering canned JSON per language. Nothing here
+// reaches staging; nothing is saved to the BEO.
+import assert from 'node:assert/strict';
+import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
+import { randomBytes, randomUUID, createHash } from 'node:crypto';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:net';
+import { createServer as createHttpServer } from 'node:http';
+import { createRequire } from 'node:module';
+
+const ROOT = 'C:/oto-lanes/beo660-20261106';
+const OUT = `${ROOT}/docs/qa/proof-2026-11-06/SCRUM-660/local`;
+mkdirSync(OUT, { recursive: true });
+const helpers = await import(`file:///${ROOT}/apps/api/test/helpers.ts`);
+const appRequire = createRequire(`${ROOT}/apps/oto-app/package.json`);
+const apiRequire = createRequire(`${ROOT}/apps/api/package.json`);
+const { chromium } = appRequire('playwright-core');
+const pg = apiRequire('pg');
+
+const free = () =>
+  new Promise<number>((resolve, reject) => {
+    const s = createServer();
+    s.on('error', reject);
+    s.listen(0, '127.0.0.1', () => {
+      const a = s.address();
+      assert.ok(a && typeof a !== 'string');
+      s.close(() => resolve(a.port));
+    });
+  });
+const [apiPort, inboxPort, appPort, modelPort] = await Promise.all([free(), free(), free(), free()]);
+const origin = (p: number) => `http://127.0.0.1:${p}`;
+const INBOX = origin(inboxPort);
+const OTOAPP = origin(appPort);
+const SIM_SECRET = randomBytes(16).toString('hex');
+const DIRECTORY_KEY = 'odk_' + randomBytes(24).toString('base64url');
+const run = Date.now().toString(36);
+const children: ChildProcess[] = [];
+const log: Record<string, unknown> = { at: new Date().toISOString(), run, browser: 'Microsoft Edge (playwright-core channel msedge, headless)', model: 'stub' };
+const shots: string[] = [];
+
+// --- The stub model: the Messages API's shape, a canned answer per language. ----------
+const CONFIRM = {
+  en:
+    "Hello! Here is the final confirmation for ZZ TEST Emma's 6th birthday:\n" +
+    'Date: Saturday 21 March 2027, 14:00 to 16:00, Jungle Room\n' +
+    '15 kids, 10 adults\nKids menu: 15 x chicken nuggets, 15 x fries\nAdults: fruit platter\n' +
+    'Cake: you bring your own, cake at 15:30\nHost: Nok, disco with Ploy. Setup by the Entertainment team, ready by 13:30.\n' +
+    'Balloons in blue and gold, please. See you then!',
+  th:
+    'ยืนยันงานวันเกิด ZZ TEST น้องมะลิ วันเสาร์ที่ 20 มีนาคม 2570 เวลา 14.00-16.00 น. ห้อง Jungle Room\n' +
+    'เด็ก 12 คน ผู้ใหญ่ 8 คน\nเมนูเด็ก: นักเก็ตไก่ 12 ที่, เฟรนช์ฟรายส์ 12 ที่\nเค้กนำมาเอง เป่าเค้กเวลา 15.30 น.\nพิธีกร: น้องนก',
+  ru:
+    'Подтверждаем день рождения ZZ TEST Маши в субботу 13 марта 2027 в 14:00 до 16:00, Jungle Room.\n' +
+    '10 детей, 6 взрослых.\nДетское меню: наггетсы 10 шт., картофель фри 10 шт.\nСвой торт, торт в 15:30.\nАниматор: Нок.',
+};
+const ANSWER: Record<'en' | 'th' | 'ru', unknown> = {
+  en: {
+    summary: "ZZ TEST Emma's 6th birthday, 15 kids and 10 adults, 14:00 to 16:00",
+    event: { childName: 'ZZ TEST Emma', numChildren: 15, numAdults: 10, startTime: '14:00', endTime: '16:00', locationText: 'Jungle Room', decoration: 'Balloons in blue and gold' },
+    setupPlan: { readyBy: '13:30', responsible: 'Entertainment team' },
+    kitchenPlan: {
+      kidsMenu: [{ itemName: 'chicken nuggets', quantity: 15, included: true }, { itemName: 'fries', quantity: 15, included: true }],
+      adultsMenu: [{ itemName: 'fruit platter', quantity: 1, included: true }],
+      cakeMode: 'EXTERNAL', cakeNotes: 'Family brings their own cake', cakeTime: '15:30',
+    },
+    team: { partyHost: 'Nok', entertainmentHost: 'Ploy' },
+  },
+  th: {
+    summary: 'งานวันเกิด ZZ TEST น้องมะลิ เด็ก 12 คน',
+    event: { childName: 'ZZ TEST น้องมะลิ', numChildren: 12, numAdults: 8, startTime: '14.00', endTime: '16.00', locationText: 'Jungle Room' },
+    kitchenPlan: { kidsMenu: [{ itemName: 'นักเก็ตไก่', quantity: 12 }, { itemName: 'เฟรนช์ฟรายส์', quantity: 12 }], cakeMode: 'EXTERNAL', cakeNotes: 'เค้กนำมาเอง', cakeTime: '15.30' },
+    team: { partyHost: 'น้องนก' },
+  },
+  ru: {
+    summary: 'День рождения ZZ TEST Маши, 10 детей',
+    event: { childName: 'ZZ TEST Маша', numChildren: 10, numAdults: 6, startTime: '14:00', endTime: '16:00', locationText: 'Jungle Room' },
+    kitchenPlan: { kidsMenu: [{ itemName: 'наггетсы', quantity: 10 }, { itemName: 'картофель фри', quantity: 10 }], cakeMode: 'EXTERNAL', cakeNotes: 'Свой торт', cakeTime: '15:30' },
+    team: { partyHost: 'Нок' },
+  },
+};
+const modelCalls: Array<{ model: string; builtInAdvice: boolean; temperature: unknown; maxTokens: unknown; language: string }> = [];
+const modelServer = createHttpServer((req, res) => {
+  let raw = '';
+  req.on('data', (c) => (raw += c));
+  req.on('end', () => {
+    const body = JSON.parse(raw || '{}') as { model: string; system?: string; temperature?: unknown; max_tokens?: unknown; messages: Array<{ content: string }> };
+    const text = String(body.messages?.[0]?.content ?? '').split('New text to parse:').pop() ?? '';
+    const language = /[\u0E00-\u0E7F]/.test(text) ? 'th' : /[\u0400-\u04FF]/.test(text) ? 'ru' : 'en';
+    modelCalls.push({
+      model: body.model,
+      builtInAdvice: String(body.system ?? '').startsWith("You read the final confirmation message of a birthday party"),
+      temperature: body.temperature ?? null,
+      maxTokens: body.max_tokens ?? null,
+      language,
+    });
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({
+      id: `msg_zz_${modelCalls.length}`, type: 'message', role: 'assistant', model: body.model,
+      content: [{ type: 'text', text: JSON.stringify(ANSWER[language as 'en' | 'th' | 'ru']) }],
+      stop_reason: 'end_turn', stop_sequence: null, usage: { input_tokens: 1, output_tokens: 1 },
+    }));
+  });
+});
+await new Promise<void>((r) => modelServer.listen(modelPort, '127.0.0.1', () => r()));
+
+const ctx = await helpers.createTestContext({
+  otoapp: true,
+  env: {
+    DEPLOY_ENV: 'local',
+    COOKIE_SECURE: 'false',
+    INBOX_SIMULATOR: 'on',
+    INBOX_SIMULATOR_SECRET: SIM_SECRET,
+    HANDOFF_SIGNING_KEY: `zz660:${randomBytes(32).toString('hex')}`,
+    HANDOFF_APP_ORIGINS: `inbox=${INBOX},oto_app=${OTOAPP}`,
+    ALLOWED_ORIGINS: `${INBOX},${OTOAPP}`,
+    OTOAPP_DIRECTORY_URL: OTOAPP,
+    OTOAPP_DIRECTORY_KEY: DIRECTORY_KEY,
+  },
+});
+const url = (ctx.db as unknown as { $client: { options: { connectionString: string } } }).$client.options.connectionString;
+const appPool = new pg.Pool({ connectionString: url, options: '-c search_path=otoapp', max: 3 });
+const platPool = new pg.Pool({ connectionString: url, max: 3 });
+const q = async (text: string, args: unknown[] = []) => (await appPool.query(text, args)).rows;
+const pq = async (text: string, args: unknown[] = []) => (await platPool.query(text, args)).rows;
+
+let code = 1;
+let browser: { close(): Promise<void> } | undefined;
+let appOut = '';
+try {
+  const central = await helpers.branchIdByCode(ctx.db, helpers.CENTRAL_BRANCH_CODE);
+  const oto = await helpers.operatorIdByName(ctx.db, helpers.OTO_OPERATOR_NAME);
+  const [adminAccount] = (await pq(`select id from core.account where phone = $1 limit 1`, [helpers.ADMIN.phone])) as Array<{ id: string }>;
+  assert.ok(adminAccount, 'the seeded admin');
+
+  // --- The OTO App's side: a park group, Central mapped, the directory key, the admin, and the park's team.
+  const tenant = randomUUID();
+  const appBranch = randomUUID();
+  const appUser = randomUUID();
+  await q(`insert into tenants (id, name, slug) values ($1, $2, $3)`, [tenant, `ZZ TEST 660 ${run}`, `zz-660-${run}`]);
+  await q(`insert into branches (id, tenant_id, name, address, core_branch_id) values ($1, $2, 'Central Floresta', 'ZZ TEST local', $3)`, [appBranch, tenant, central]);
+  await q(`insert into directory_clients (tenant_id, name, key_hash, scopes, is_active) values ($1, 'ZZ TEST 660 platform', $2, $3, true)`, [
+    tenant, createHash('sha256').update(DIRECTORY_KEY).digest('hex'), ['events:write'],
+  ]);
+  await q(
+    `insert into users (id, email, password, full_name, role, is_active, must_change_password, platform_user_id)
+     values ($1, $2, 'x', 'ZZ TEST 660 Admin', 'admin', true, false, $3)`,
+    [appUser, `zz-660-${run}@example.com`, adminAccount.id],
+  );
+  await q(`insert into user_branch_access (tenant_id, user_id, branch_id, access_scope) values ($1, $2, null, 'all_branches')`, [tenant, appUser]);
+  const staffIds = { nok: randomUUID(), ploy: randomUUID() };
+  for (const [id, full, nick, thai] of [[staffIds.nok, 'ZZ TEST Siriporn', 'Nok', 'น้องนก'], [staffIds.ploy, 'ZZ TEST Ploypailin', 'Ploy', null]] as const) {
+    await q(
+      `insert into employees (id, tenant_id, full_name, nickname, thai_name, email, branch_id, employment_state) values ($1, $2, $3, $4, $5, $6, $7, 'ACTIVE')`,
+      [id, tenant, full, nick, thai, `zz-660-${id.slice(0, 8)}@example.com`, appBranch],
+    );
+  }
+  const entDept = randomUUID();
+  await q(`insert into departments (id, tenant_id, name) values ($1, $2, 'Entertainment')`, [entDept, tenant]);
+  await q(`insert into department_branch_assignments (department_id, branch_id) values ($1, $2)`, [entDept, appBranch]);
+  log.otoAppSeed = { tenant: 'ZZ TEST 660', park: 'Central Floresta', employees: ['Nok (ZZ TEST Siriporn)', 'Ploy (ZZ TEST Ploypailin)'], departments: ['Entertainment'], aiSettingsRows: 0 };
+
+  // --- The platform api.
+  await ctx.app.listen({ port: apiPort, host: '::' });
+  const base = Object.fromEntries(
+    ['PATH', 'Path', 'SystemRoot', 'TEMP', 'TMP', 'LOCALAPPDATA', 'USERPROFILE', 'APPDATA', 'ProgramFiles', 'ComSpec']
+      .filter((k) => process.env[k])
+      .map((k) => [k, process.env[k]]),
+  );
+
+  // --- The OTO App, its own server and client; its model is the stub (a dummy key, never a real one).
+  const app = spawn(process.execPath, [`${ROOT}/apps/oto-app/node_modules/tsx/dist/cli.mjs`, 'server/index.ts'], {
+    cwd: `${ROOT}/apps/oto-app`,
+    env: {
+      ...base,
+      NODE_ENV: 'development',
+      PORT: String(appPort),
+      DATABASE_URL: url,
+      APP_ENV: 'dev',
+      DEPLOY_ENV: 'local',
+      OBJECT_STORAGE: 'local',
+      STORAGE_ENV_PREFIX: 'zz-test-660',
+      SESSION_SECRET: randomBytes(24).toString('hex'),
+      OTOAPP_JOBS: 'platform',
+      PLATFORM_API_URL: origin(apiPort),
+      OTOAPP_PUBLIC_ORIGIN: OTOAPP,
+      ANTHROPIC_BASE_URL: origin(modelPort),
+      ANTHROPIC_API_KEY: 'zz-test-stub-not-a-key',
+      LOG_LEVEL: 'info',
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true,
+  });
+  children.push(app);
+  app.stdout!.on('data', (c: Buffer) => (appOut += c.toString()));
+  app.stderr!.on('data', (c: Buffer) => (appOut += c.toString()));
+
+  const inbox = spawn(process.execPath, [`${ROOT}/apps/inbox/node_modules/vite/bin/vite.js`, 'preview', '--config', 'vite.config.ts'], {
+    cwd: `${ROOT}/apps/inbox`,
+    env: { ...base, INBOX_PORT: String(inboxPort), API_PORT: String(apiPort) },
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true,
+  });
+  children.push(inbox);
+
+  const up = async (u: string, what: string, tries = 240) => {
+    for (let i = 0; i < tries; i++) {
+      if (await fetch(u).then((r) => r.status < 500).catch(() => false)) return;
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    throw new Error(`${what} did not start: ${what === 'OTO App' ? appOut.slice(-2000) : ''}`);
+  };
+  await up(INBOX, 'inbox');
+  await up(`${OTOAPP}/api/user`, 'OTO App');
+
+  // --- Four ZZ TEST birthday conversations, played through the simulator's signed webhook.
+  const ca = randomUUID();
+  await pq(
+    `insert into inbox.channel_account (id, operator_id, branch_id, channel, provider, external_id, display_name, default_category, can_reply, status)
+     values ($1, $2, $3, 'whatsapp', 'simulator', $4, 'ZZ TEST 660 WhatsApp', 'general', true, 'active')`,
+    [ca, oto, central, `zz-660-${run}`],
+  );
+  const { schema } = await import(`file:///${ROOT}/packages/db/src/index.ts`);
+  const { eq } = apiRequire('drizzle-orm');
+  const [row] = await ctx.db.select().from(schema.channelAccount).where(eq(schema.channelAccount.id, ca)).limit(1);
+  const sim = ctx.app.inboxChannels.simulatorFor({ ...row });
+  assert.ok(sim, 'the simulator');
+  const cookie = await helpers.signInAs(ctx.app, helpers.ADMIN.phone, helpers.ADMIN.password);
+
+  const people = {
+    en: { name: 'ZZ TEST Emma Parent', from: '66810066011', language: 'en', first: 'Hi! A birthday party for my daughter at Central please, 15 kids on 21/mar' },
+    th: { name: 'ZZ TEST Mali Parent', from: '66810066012', language: 'th', first: 'สวัสดีค่ะ อยากจัดงานวันเกิดให้ลูกสาว เด็ก 12 คน วันที่ 20 มี.ค' },
+    ru: { name: 'ZZ TEST Masha Parent', from: '66810066013', language: 'ru', first: 'Здравствуйте! Хотим день рождения для дочки, 10 детей, 13 марта' },
+    none: { name: 'ZZ TEST No Confirmation', from: '66810066014', language: 'en', first: 'Hello, what birthday packages do you have for 12 kids?' },
+  } as const;
+  const convs: Record<string, string> = {};
+  const events: Record<string, string> = {};
+  for (const [key, who] of Object.entries(people)) {
+    const played = sim.inbound({ from: who.from, name: who.name, text: who.first, hint: { category: 'birthdays', language: who.language } });
+    const res = await ctx.app.inject({ method: 'POST', url: `/webhooks/inbox/${ca}`, headers: played.webhook.headers as Record<string, string>, payload: played.webhook.rawBody as string });
+    assert.equal(res.json().outcome, 'processed');
+    const [c] = (await pq(`select conversation_id from inbox.message where channel_account_id = $1 and external_message_id = $2`, [ca, played.externalMessageId])) as Array<{ conversation_id: string }>;
+    convs[key] = c!.conversation_id;
+    // The team's replies, through the inbox's own reply route as the signed-in admin.
+    const reply = async (text: string) => {
+      const r = await ctx.app.inject({ method: 'POST', url: `/inbox/conversations/${convs[key]}/messages`, headers: { cookie, 'idempotency-key': randomUUID() }, payload: { text } });
+      assert.ok(r.statusCode === 200 || r.statusCode === 201, `reply ${key}: ${r.statusCode} ${r.body.slice(0, 300)}`);
+    };
+    await reply(key === 'none' ? 'Hello! Our packages start from the Jungle package. Which date would you like?' : 'Thank you! Let me check the date for you.');
+    if (key in CONFIRM) await reply(CONFIRM[key as keyof typeof CONFIRM]);
+    // Book Date through the api (SCRUM-775's route), so Create BEO has its event.
+    const eventId = randomUUID();
+    const date = { en: '2027-03-21', th: '2027-03-20', ru: '2027-03-13', none: '2027-04-10' }[key as 'en']!;
+    const booked = await ctx.app.inject({
+      method: 'POST', url: `/inbox/conversations/${convs[key]}/book-date`, headers: { cookie, 'idempotency-key': randomUUID() },
+      payload: { id: eventId, branchId: central, date, startTime: '14:00', kids: 12, adults: null, contactName: who.name, phone: null, childName: null, childAge: null },
+    });
+    assert.equal(booked.statusCode, 200, booked.body);
+    events[key] = eventId;
+  }
+  log.conversations = convs;
+  log.events = events;
+  // What the platform picks as each conversation's confirmation (the read the OTO App makes).
+  const picks: Record<string, unknown> = {};
+  for (const key of Object.keys(people)) {
+    const r = await ctx.app.inject({ method: 'GET', url: `/inbox/conversations/${convs[key]}/beo-confirmation`, headers: { cookie } });
+    const b = r.json() as { message: { id: string; body: string } | null; scanned: number; eventId: string | null };
+    picks[key] = { status: r.statusCode, scanned: b.scanned, eventIdMatches: b.eventId === events[key], picked: b.message ? (b.message.body === CONFIRM[key as keyof typeof CONFIRM] ? 'the final confirmation' : 'another message') : null };
+  }
+  log.platformPicks = picks;
+
+  // --- Edge: the admin signed into the inbox through a hand-off, as the launcher does.
+  const mint = await ctx.app.inject({ method: 'POST', url: '/auth/handoff', headers: { cookie, 'idempotency-key': randomUUID() }, payload: { app: 'inbox' } });
+  assert.equal(mint.statusCode, 200, mint.body);
+  const launch = (mint.json() as { launchUrl: string }).launchUrl;
+  const b = await chromium.launch({ channel: 'msedge', headless: true });
+  browser = b;
+  const context = await b.newContext({ viewport: { width: 1440, height: 1100 }, timezoneId: 'Asia/Bangkok' });
+  const page = await context.newPage();
+  const shot = async (p: { screenshot(o: { path: string; fullPage?: boolean }): Promise<unknown> }, name: string) => {
+    await p.screenshot({ path: `${OUT}/${name}.png` });
+    shots.push(`${name}.png`);
+  };
+  await page.goto(launch);
+
+  const openCreateBeo = async (key: keyof typeof people) => {
+    await page.waitForSelector(`text=${people[key].name}`, { timeout: 60_000 });
+    await page.click(`text=${people[key].name}`);
+    await page.waitForSelector('button:has-text("Create BEO")', { timeout: 30_000 });
+    await page.waitForTimeout(600);
+    const [tab] = await Promise.all([
+      context.waitForEvent('page', { timeout: 30_000 }),
+      page.locator('button', { hasText: /^Create BEO$/ }).first().click(),
+    ]);
+    await tab.waitForLoadState('domcontentloaded');
+    await tab.setViewportSize({ width: 1440, height: 1100 });
+    return tab;
+  };
+
+  // English: the full flow — the chat, the preview with the message beside it, ticking the team, loading it.
+  {
+    await page.waitForSelector(`text=${people.en.name}`, { timeout: 60_000 });
+    await page.click(`text=${people.en.name}`);
+    await page.waitForSelector('button:has-text("Create BEO")', { timeout: 30_000 });
+    await page.waitForTimeout(800);
+    await shot(page, 's660-01-inbox-birthday-chat-with-confirmation');
+    const tab = await openCreateBeo('en');
+    await tab.waitForSelector('[data-testid="ai-fill-inbox-source"]', { timeout: 120_000 });
+    await tab.waitForTimeout(800);
+    log.enTabUrlAfterLanding = tab.url();
+    log.enFinalMessageLine = await tab.textContent('[data-testid="text-ai-fill-final-message"]').catch(() => null);
+    await shot(tab, 's660-02-create-beo-ai-fill-preview-english');
+    await tab.locator('[data-testid="ai-fill-team-partyHost"]').scrollIntoViewIfNeeded();
+    await tab.check('[data-testid="checkbox-ai-fill-team-partyHost"]');
+    await tab.check('[data-testid="checkbox-ai-fill-team-setupResponsible"]');
+    await tab.waitForTimeout(300);
+    await shot(tab, 's660-03-team-proposals-ticked');
+    const beforeLoad = {
+      partyHostRows: (await q(`select count(*)::int as n from beo_party_host_assignments where event_id = $1`, [events.en]))[0].n,
+      setupPlanRows: (await q(`select count(*)::int as n from beo_setup_plans where event_id = $1`, [events.en]))[0].n,
+      kitchenPlanRows: (await q(`select count(*)::int as n from beo_kitchen_plans where event_id = $1`, [events.en]))[0].n,
+    };
+    await tab.click('[data-testid="button-ai-fill-confirm"]');
+    await tab.waitForSelector('text=BEO data loaded', { timeout: 30_000 });
+    await tab.waitForTimeout(800);
+    await shot(tab, 's660-04-loaded-into-the-form-not-saved');
+    await tab.click('[data-testid="accordion-party-host"]');
+    await tab.waitForTimeout(600);
+    await tab.locator('[data-testid="accordion-party-host"]').scrollIntoViewIfNeeded();
+    await shot(tab, 's660-05-party-host-assigned-in-the-form');
+    const afterLoad = {
+      partyHostRows: (await q(`select count(*)::int as n from beo_party_host_assignments where event_id = $1`, [events.en]))[0].n,
+      setupPlanRows: (await q(`select count(*)::int as n from beo_setup_plans where event_id = $1`, [events.en]))[0].n,
+      kitchenPlanRows: (await q(`select count(*)::int as n from beo_kitchen_plans where event_id = $1`, [events.en]))[0].n,
+      event: (await q(`select child_name, num_children, num_adults, decoration, internal_staff_notes from core_events where id = $1`, [events.en]))[0],
+    };
+    log.englishNothingSavedBeforeSave = { beforeLoad, afterLoad };
+    await tab.close();
+  }
+
+  // Thai and Russian: the preview, in the message's own words.
+  for (const key of ['th', 'ru'] as const) {
+    await page.bringToFront();
+    const tab = await openCreateBeo(key);
+    await tab.waitForSelector('[data-testid="ai-fill-inbox-source"]', { timeout: 120_000 });
+    await tab.waitForTimeout(800);
+    await shot(tab, `s660-0${key === 'th' ? 6 : 7}-create-beo-ai-fill-preview-${key === 'th' ? 'thai' : 'russian'}`);
+    log[`${key}PreviewTeamRow`] = await tab.locator('[data-testid="ai-fill-team-partyHost"]').textContent().catch(() => null);
+    // The Team rows: the Thai name matched, the Cyrillic one flagged (no such name at this park).
+    await tab.locator('[data-testid="ai-fill-team-partyHost"]').scrollIntoViewIfNeeded();
+    await tab.waitForTimeout(300);
+    await shot(tab, `s660-0${key === 'th' ? 6 : 7}b-${key === 'th' ? 'thai-team-name-matched' : 'russian-team-name-flagged'}`);
+    await tab.close();
+  }
+
+  // No confirmation yet: the form opens as before, with one line saying why.
+  {
+    await page.bringToFront();
+    const tab = await openCreateBeo('none');
+    await tab.waitForSelector('[data-testid="text-ai-fill-notice"]', { timeout: 120_000 });
+    await tab.waitForTimeout(600);
+    log.noConfirmationLine = await tab.textContent('[data-testid="text-ai-fill-notice"]');
+    await shot(tab, 's660-08-no-confirmation-form-opens-with-one-line');
+    await tab.close();
+  }
+
+  // The event chip opens the form as it always did: no AI Fill.
+  {
+    await page.bringToFront();
+    await page.click(`text=${people.en.name}`);
+    await page.waitForSelector('[data-testid="event-chip"]', { timeout: 30_000 });
+    const before = modelCalls.length;
+    const [tab] = await Promise.all([context.waitForEvent('page', { timeout: 30_000 }), page.click('[data-testid="event-chip"]')]);
+    await tab.waitForLoadState('domcontentloaded');
+    await tab.waitForSelector('[data-testid="badge-from-inbox"]', { timeout: 120_000 });
+    await tab.waitForTimeout(2500);
+    log.eventChip = { aiFillDialogShown: await tab.isVisible('[data-testid="ai-fill-inbox-source"]'), modelCallsMade: modelCalls.length - before };
+    await shot(tab, 's660-09-event-chip-opens-the-form-as-before');
+    await tab.close();
+  }
+
+  // --- Readbacks: the stub's calls, the activity rows, the hand-off rows, the log.
+  log.modelCalls = modelCalls;
+  const activity = await q(
+    `select activity_type, summary_text, metadata_json from activity_log where activity_type = 'beo_ai_fill' and tenant_id = $1 order by created_at`,
+    [tenant],
+  );
+  log.activityRows = activity.map((r: { activity_type: string; summary_text: string; metadata_json: string }) => ({ type: r.activity_type, summary: r.summary_text, metadata: JSON.parse(r.metadata_json) }));
+  const phrases = ['chicken nuggets', 'fruit platter', 'Balloons in blue', 'นักเก็ตไก่', 'наггетсы', 'Host: Nok', 'Аниматор'];
+  log.activityCarriesText = activity.some((r: { summary_text: string; metadata_json: string }) => phrases.some((p) => (r.summary_text + r.metadata_json).includes(p)));
+  log.otoAppLogCarriesText = phrases.filter((p) => appOut.includes(p));
+  log.otoAppLogAiLines = appOut.split('\n').filter((l) => /ai fill/.test(l)).map((l) => { try { const j = JSON.parse(l); return { msg: j.msg, outcome: j.outcome ?? null, reason: j.reason ?? null, inputChars: j.inputChars ?? null, adviceFrom: j.adviceFrom ?? null, modelFrom: j.modelFrom ?? null }; } catch { return l.slice(0, 160); } });
+  log.handoffRows = await pq(
+    `select (after->>'purpose') as purpose, (after->>'fill') as fill, (after->>'conversationId') as conversation from core.audit_log
+      where action = 'auth.handoff_issue' and after->>'purpose' = 'inbox.create_beo' order by created_at`,
+  );
+  assert.equal(log.activityCarriesText, false, 'no text in the activity rows');
+  assert.deepEqual(log.otoAppLogCarriesText, [], 'no text in the OTO App log');
+  code = 0;
+} catch (error) {
+  console.error('LOCAL PROOF FAILED', (error as Error).message);
+  try {
+    for (const c of (browser as unknown as { contexts(): Array<{ pages(): Array<{ screenshot(o: { path: string }): Promise<unknown> }> }> } | undefined)?.contexts() ?? []) {
+      let i = 0;
+      for (const p of c.pages()) await p.screenshot({ path: `${OUT}/debug-${i++}.png` }).catch(() => undefined);
+    }
+  } catch {
+    // nothing more to show
+  }
+  log.failure = (error as Error).message;
+  log.appLogTail = appOut.slice(-3000);
+} finally {
+  log.screenshots = shots;
+  writeFileSync(`${OUT}/local-proof.json`, JSON.stringify(log, null, 2) + '\n');
+  await browser?.close().catch(() => undefined);
+  for (const c of children) if (c.pid && c.exitCode === null) spawnSync('taskkill', ['/pid', String(c.pid), '/t', '/f'], { windowsHide: true, stdio: 'ignore' });
+  modelServer.close();
+  await appPool.end().catch(() => undefined);
+  await platPool.end().catch(() => undefined);
+  await ctx.close().catch(() => undefined);
+  await helpers.teardownAll().catch(() => undefined);
+}
+process.exit(code);

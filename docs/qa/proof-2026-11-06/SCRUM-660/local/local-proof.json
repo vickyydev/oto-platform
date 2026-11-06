@@ -1,0 +1,267 @@
+{
+  "at": "2026-11-06T02:29:38.393Z",
+  "run": "mw4cwfrt",
+  "browser": "Microsoft Edge (playwright-core channel msedge, headless)",
+  "model": "stub",
+  "otoAppSeed": {
+    "tenant": "ZZ TEST 660",
+    "park": "Central Floresta",
+    "employees": [
+      "Nok (ZZ TEST Siriporn)",
+      "Ploy (ZZ TEST Ploypailin)"
+    ],
+    "departments": [
+      "Entertainment"
+    ],
+    "aiSettingsRows": 0
+  },
+  "conversations": {
+    "en": "01a1aeb0-f389-7dfb-89ee-21269f4ca20c",
+    "th": "01a1aeb0-f41d-715a-b3d5-7e3bab0d2601",
+    "ru": "01a1aeb0-f45b-7a93-bb60-6ea028aa55c1",
+    "none": "01a1aeb0-f4a4-7b61-ac32-01c2aebc4c45"
+  },
+  "events": {
+    "en": "34392744-c5a0-4f37-891d-27b06be16814",
+    "th": "3c5e32e8-a05c-4634-9756-16aff3867d81",
+    "ru": "521eaf26-c5fd-4f56-b101-d4349c4547b2",
+    "none": "87732791-6ee3-47e6-8b47-83ff0902c730"
+  },
+  "platformPicks": {
+    "en": {
+      "status": 200,
+      "scanned": 2,
+      "eventIdMatches": true,
+      "picked": "the final confirmation"
+    },
+    "th": {
+      "status": 200,
+      "scanned": 2,
+      "eventIdMatches": true,
+      "picked": "the final confirmation"
+    },
+    "ru": {
+      "status": 200,
+      "scanned": 2,
+      "eventIdMatches": true,
+      "picked": "the final confirmation"
+    },
+    "none": {
+      "status": 200,
+      "scanned": 1,
+      "eventIdMatches": true,
+      "picked": null
+    }
+  },
+  "enTabUrlAfterLanding": "http://127.0.0.1:61853/studio/events/kanban",
+  "enFinalMessageLine": "Load into Editor also puts this message, word for word, in Final Message to Parent.",
+  "englishNothingSavedBeforeSave": {
+    "beforeLoad": {
+      "partyHostRows": 0,
+      "setupPlanRows": 0,
+      "kitchenPlanRows": 0
+    },
+    "afterLoad": {
+      "partyHostRows": 0,
+      "setupPlanRows": 0,
+      "kitchenPlanRows": 0,
+      "event": {
+        "child_name": null,
+        "num_children": 12,
+        "num_adults": null,
+        "decoration": null,
+        "internal_staff_notes": null
+      }
+    }
+  },
+  "thPreviewTeamRow": "Party Host:Nok (ZZ TEST Siriporn) — the message says \"น้องนก\". Tick to assign.",
+  "ruPreviewTeamRow": "Party Host:\"Нок\" matches nobody at this park: choose the host in the form.",
+  "noConfirmationLine": "AI Fill did not run: no message from the team in this conversation names the date, the time and the party details yet.",
+  "eventChip": {
+    "aiFillDialogShown": false,
+    "modelCallsMade": 0
+  },
+  "modelCalls": [
+    {
+      "model": "claude-opus-5",
+      "builtInAdvice": true,
+      "temperature": null,
+      "maxTokens": 16000,
+      "language": "en"
+    },
+    {
+      "model": "claude-opus-5",
+      "builtInAdvice": true,
+      "temperature": null,
+      "maxTokens": 16000,
+      "language": "th"
+    },
+    {
+      "model": "claude-opus-5",
+      "builtInAdvice": true,
+      "temperature": null,
+      "maxTokens": 16000,
+      "language": "ru"
+    }
+  ],
+  "activityRows": [
+    {
+      "type": "beo_ai_fill",
+      "summary": "AI Fill read the inbox confirmation message for the BEO of \"Birthday · ZZ TEST Emma Parent\"",
+      "metadata": {
+        "eventId": "34392744-c5a0-4f37-891d-27b06be16814",
+        "source": "inbox",
+        "inboxConversationId": "01a1aeb0-f389-7dfb-89ee-21269f4ca20c",
+        "inboxMessageId": "01a1aeb0-f3d2-7be6-a08d-61764d62cdcd",
+        "outcome": "filled",
+        "model": "claude-opus-5",
+        "promptFrom": {
+          "advice": "built_in",
+          "outputFormat": "built_in",
+          "model": "built_in"
+        },
+        "inputChars": 379,
+        "sections": [
+          "event",
+          "setupPlan",
+          "kitchenPlan",
+          "team"
+        ],
+        "team": {
+          "named": 3,
+          "matched": 3
+        }
+      }
+    },
+    {
+      "type": "beo_ai_fill",
+      "summary": "AI Fill read the inbox confirmation message for the BEO of \"Birthday · ZZ TEST Mali Parent\"",
+      "metadata": {
+        "eventId": "3c5e32e8-a05c-4634-9756-16aff3867d81",
+        "source": "inbox",
+        "inboxConversationId": "01a1aeb0-f41d-715a-b3d5-7e3bab0d2601",
+        "inboxMessageId": "01a1aeb0-f43b-7415-8f62-5dffb00f53f2",
+        "outcome": "filled",
+        "model": "claude-opus-5",
+        "promptFrom": {
+          "advice": "built_in",
+          "outputFormat": "built_in",
+          "model": "built_in"
+        },
+        "inputChars": 219,
+        "sections": [
+          "event",
+          "kitchenPlan",
+          "team"
+        ],
+        "team": {
+          "named": 1,
+          "matched": 1
+        }
+      }
+    },
+    {
+      "type": "beo_ai_fill",
+      "summary": "AI Fill read the inbox confirmation message for the BEO of \"Birthday · ZZ TEST Masha Parent\"",
+      "metadata": {
+        "eventId": "521eaf26-c5fd-4f56-b101-d4349c4547b2",
+        "source": "inbox",
+        "inboxConversationId": "01a1aeb0-f45b-7a93-bb60-6ea028aa55c1",
+        "inboxMessageId": "01a1aeb0-f484-7d2b-9a75-6bc9d77b4150",
+        "outcome": "filled",
+        "model": "claude-opus-5",
+        "promptFrom": {
+          "advice": "built_in",
+          "outputFormat": "built_in",
+          "model": "built_in"
+        },
+        "inputChars": 208,
+        "sections": [
+          "event",
+          "kitchenPlan",
+          "team"
+        ],
+        "team": {
+          "named": 1,
+          "matched": 0
+        }
+      }
+    }
+  ],
+  "activityCarriesText": false,
+  "otoAppLogCarriesText": [],
+  "otoAppLogAiLines": [
+    {
+      "msg": "ai fill run",
+      "outcome": "filled",
+      "reason": null,
+      "inputChars": 379,
+      "adviceFrom": "built_in",
+      "modelFrom": "built_in"
+    },
+    {
+      "msg": "ai fill run",
+      "outcome": "filled",
+      "reason": null,
+      "inputChars": 219,
+      "adviceFrom": "built_in",
+      "modelFrom": "built_in"
+    },
+    {
+      "msg": "ai fill run",
+      "outcome": "filled",
+      "reason": null,
+      "inputChars": 208,
+      "adviceFrom": "built_in",
+      "modelFrom": "built_in"
+    },
+    {
+      "msg": "ai fill from the inbox did not run",
+      "outcome": null,
+      "reason": "no_confirmation",
+      "inputChars": null,
+      "adviceFrom": null,
+      "modelFrom": null
+    }
+  ],
+  "handoffRows": [
+    {
+      "purpose": "inbox.create_beo",
+      "fill": "inbox",
+      "conversation": "01a1aeb0-f389-7dfb-89ee-21269f4ca20c"
+    },
+    {
+      "purpose": "inbox.create_beo",
+      "fill": "inbox",
+      "conversation": "01a1aeb0-f41d-715a-b3d5-7e3bab0d2601"
+    },
+    {
+      "purpose": "inbox.create_beo",
+      "fill": "inbox",
+      "conversation": "01a1aeb0-f45b-7a93-bb60-6ea028aa55c1"
+    },
+    {
+      "purpose": "inbox.create_beo",
+      "fill": "inbox",
+      "conversation": "01a1aeb0-f4a4-7b61-ac32-01c2aebc4c45"
+    },
+    {
+      "purpose": "inbox.create_beo",
+      "fill": null,
+      "conversation": "01a1aeb0-f389-7dfb-89ee-21269f4ca20c"
+    }
+  ],
+  "screenshots": [
+    "s660-01-inbox-birthday-chat-with-confirmation.png",
+    "s660-02-create-beo-ai-fill-preview-english.png",
+    "s660-03-team-proposals-ticked.png",
+    "s660-04-loaded-into-the-form-not-saved.png",
+    "s660-05-party-host-assigned-in-the-form.png",
+    "s660-06-create-beo-ai-fill-preview-thai.png",
+    "s660-06b-thai-team-name-matched.png",
+    "s660-07-create-beo-ai-fill-preview-russian.png",
+    "s660-07b-russian-team-name-flagged.png",
+    "s660-08-no-confirmation-form-opens-with-one-line.png",
+    "s660-09-event-chip-opens-the-form-as-before.png"
+  ]
+}
