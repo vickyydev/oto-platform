@@ -348,6 +348,23 @@ sign-on.
   recorded as `auth.handoff_issue` naming the conversation and the event). An
   event archived in the app shows as archived on the conversation, which
   keeps it. The dashboard's BEO card counts the week's booked birthdays.
+- **Create BEO's AI Fill (SCRUM-660):** the Create BEO button sends
+  `{ aiFill: true }`, so the form opens with its AI Fill already run on the
+  conversation's final confirmation: the newest message a person on the team
+  sent (not erased, not refused by the channel) that names a date, a time and
+  a guest count, food or the programme, in Thai, English or Russian. The OTO
+  App reads it server to server as the same person
+  (`GET /inbox/conversations/{id}/beo-confirmation`, the inbox's own read
+  permission), never from a URL, and shows it beside the same review step a
+  pasted message gets, with a Team section (a Party Host, Entertainment Host
+  or setup Who matched to one real person or department of the event's park,
+  assigned only when ticked; any other name flagged). The message also goes,
+  word for word, into the form's empty "Final Message to Parent". Nothing is
+  saved until Load into Editor and the form's own Save. No confirmation yet,
+  or AI unavailable: the form opens as before with one line why. The event
+  chip opens the form as before. Each run is a `beo_ai_fill` activity row
+  in the app, never the text; the app logs sizes and outcomes only. Both AI
+  helpers run on built-in prompts when a park group has no saved AI settings.
 - **AI:** one provider behind an interface with a simulator: language
   detection, intent classification, FAQ answers from a knowledge base the
   marketing role maintains, BEO extraction, transcription, translation.
