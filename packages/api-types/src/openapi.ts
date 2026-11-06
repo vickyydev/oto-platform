@@ -34382,6 +34382,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inbox/conversations/{id}/beo-confirmation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The message a birthday's BEO is filled from (SCRUM-660): the newest message a person on the team sent in the conversation (outbound, on the channel, not erased, not refused by the channel) that names a date, a time and at least one more party detail — a guest count, food or the programme — in Thai, English or Russian; `message: null` when there is none. `eventId` is the event Book Date made. The OTO App's BEO form asks for it, server to server as the signed-in person, when Create BEO opens it with its AI Fill. A read: nothing is written. 409 NOT_A_BIRTHDAY outside Birthdays & Events; 404 when the caller cannot see the conversation. Needs inbox:conversation:read. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            conversationId: string;
+                            /** Format: uuid */
+                            eventId: string | null;
+                            message: {
+                                /** Format: uuid */
+                                id: string;
+                                body: string;
+                                bodyLanguage: string | null;
+                                authorName: string | null;
+                                sentAt: string | null;
+                                createdAt: string;
+                            } | null;
+                            scanned: number;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                };
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inbox/conversations/{id}/read": {
         parameters: {
             query?: never;
@@ -35309,7 +35379,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Create BEO (SCRUM-775): open the event Book Date made, at its BEO form in the OTO App's Events module, as the signed-in person. Answers a one-use suite hand-off (`launchUrl`, about a minute, its target the BEO form at `beoPath`), minted as `POST /auth/handoff` mints one and recorded as `auth.handoff_issue` naming the conversation and the event (`purpose: inbox.create_beo`). A second call mints a second hand-off; nothing is written to the conversation. Refusals: 409 NOT_A_BIRTHDAY; 409 NO_EVENT_YET before Book Date; 403 without app:oto_app:access; 503 HANDOFF_NOT_CONFIGURED where the suite hand-off is not set up. Whoever can see the conversation may open its BEO; the OTO App decides what they may do there. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
+        /** @description Create BEO (SCRUM-775): open the event Book Date made, at its BEO form in the OTO App's Events module, as the signed-in person. Answers a one-use suite hand-off (`launchUrl`, about a minute, its target the BEO form at `beoPath`), minted as `POST /auth/handoff` mints one and recorded as `auth.handoff_issue` naming the conversation and the event (`purpose: inbox.create_beo`). A second call mints a second hand-off; nothing is written to the conversation. With `aiFill: true` (the Create BEO button; SCRUM-660) the BEO form runs its AI Fill on the conversation's confirmation message as it opens (`beoPath` ends `&fill=inbox`; the app reads the message itself from GET …/beo-confirmation, never from the hand-off), and the audit row says so; without it (the event chip) the form opens as before. Refusals: 409 NOT_A_BIRTHDAY; 409 NO_EVENT_YET before Book Date; 403 without app:oto_app:access; 503 HANDOFF_NOT_CONFIGURED where the suite hand-off is not set up. Whoever can see the conversation may open its BEO; the OTO App decides what they may do there. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
         post: {
             parameters: {
                 query?: never;
@@ -35319,7 +35389,13 @@ export interface paths {
                 };
                 cookie?: never;
             };
-            requestBody?: never;
+            requestBody: {
+                content: {
+                    "application/json": unknown | ({
+                        aiFill?: boolean;
+                    } | null);
+                };
+            };
             responses: {
                 /** @description Default Response */
                 200: {

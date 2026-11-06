@@ -361,6 +361,16 @@ describe('operator-wide settings are changed at operator scope (SCRUM-606)', () 
     expect(reachesText(route!.handlerText, (text) => /\bappAccessPermission\s*\(\s*'oto_app'\s*\)/.test(text), functions, 2)).toBe(true);
   });
 
+  it("the BEO confirmation read loads the conversation inside the caller's operator and checks it there (SCRUM-660)", () => {
+    const key = 'GET /inbox/conversations/:id/beo-confirmation';
+    const route = routes.find((r) => `${r.method} ${r.path}` === key);
+    expect(route).toBeDefined();
+    expect(configs.get(key)?.dynamicPermission).toBe(true);
+    expect(configs.get(key)?.target).toBeUndefined();
+    expect(route!.handlerText).toContain("inboxCaller(req, 'inbox:conversation:read')");
+    expect(reachesText(route!.handlerText, (text) => /\bloadVisibleConversation\s*\(/.test(text), functions, 2)).toBe(true);
+  });
+
   it('every operator-wide write declares the operator target, and nothing else', () => {
     const wrong = OPERATOR_WIDE_WRITES.filter((key) => {
       const config = configs.get(key);

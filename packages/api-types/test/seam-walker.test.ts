@@ -116,6 +116,12 @@ const MACHINE_CALLERS: Array<{ prefix: string; exact?: boolean; except?: string;
     caller:
       'a platform administrator or a deploy step recording a release fact the feed cannot see (SCRUM-643); finished Render deployments arrive through job:release.feed (SCRUM-672), not this route',
   },
+  {
+    prefix: '/inbox/conversations/{id}/beo-confirmation',
+    exact: true,
+    caller:
+      "the OTO App's server (server/ai-routes.ts, SCRUM-660), as the signed-in person through their platform session, when Create BEO opens the BEO form with its AI Fill",
+  },
 ];
 
 /**

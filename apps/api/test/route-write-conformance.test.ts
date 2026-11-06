@@ -188,6 +188,27 @@ describe('Create BEO registration (SCRUM-775)', () => {
     expect(config?.credential).toBeUndefined();
     expect(config?.public).not.toBe(true);
   });
+
+  it("validates Create BEO's AI Fill flag, and nothing else rides the body (SCRUM-660)", () => {
+    const key = 'POST /inbox/conversations/:id/open-beo';
+    const route = routes.find((r) => `${r.method} ${r.path}` === key);
+    expect(route!.optionsText).toContain('body: InboxOpenBeoBodySchema');
+    expect(route!.handlerText).toContain('aiFill: req.body?.aiFill === true');
+  });
+});
+
+describe("The BEO confirmation read (SCRUM-660)", () => {
+  it('is a read with its schema, loading the conversation inside the caller’s operator, and writes nothing', () => {
+    const key = 'GET /inbox/conversations/:id/beo-confirmation';
+    const route = routes.find((r) => `${r.method} ${r.path}` === key);
+    expect(route).toBeDefined();
+    expect(MUTATING.has(route!.method)).toBe(false);
+    expect(route!.optionsText).toContain('200: InboxBeoConfirmationSchema');
+    expect(reachesText(route!.handlerText, (text) => /\bbeoConfirmationOf\s*\(/.test(text), functions)).toBe(true);
+    expect(reachesText(route!.handlerText, (text) => /\bloadVisibleConversation\s*\(/.test(text), functions, 2)).toBe(true);
+    expect(reachesText(route!.handlerText, (text) => /\bwithTx\s*\(/.test(text), functions, 2)).toBe(false);
+    expect(configs.get(key)?.dynamicPermission).toBe(true);
+  });
 });
 
 describe('Platform read registration (SCRUM-639)', () => {
