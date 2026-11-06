@@ -282,8 +282,10 @@ try {
       // The message that was read rides beside the preview, whole.
       assert.deepEqual(res.body.source, {
         conversationId: conv[lang], messageId: msgIds[lang], body: MESSAGES[lang], authorName: "ZZ TEST Manager",
-        sentAt: "2026-11-05T07:30:00.000Z", createdAt: "2026-11-05T07:30:00.000Z",
+        sentAt: "2026-11-05T07:30:00.000Z", createdAt: "2026-11-05T07:30:00.000Z", fillsFinalMessage: true,
       });
+      // The form's Final Message to Parent was empty: the message goes there as read.
+      assert.equal(res.body.fill.event.internalStaffNotes, MESSAGES[lang], `${lang}: the final message, word for word`);
       assert.equal(modelCalls.length, before + 1, `${lang}: one model call`);
       const call = modelCalls.at(-1)!;
       assert.ok(call.user.includes(MESSAGES[lang]), `${lang}: the model reads the message`);
@@ -298,6 +300,11 @@ try {
     const ru = (await fillFromInbox(ev.ru)).body.fill;
     assert.equal(ru.event.childName, "Маша");
     assert.equal(ru.kitchenPlan.kidsMenu[0].itemName, "наггетсы");
+    // A final message a person already put in the form is never replaced.
+    const kept = await post(`/api/events/${ev.en}/beo/ai-fill/inbox`, { existingData: { event: { internalStaffNotes: "A person's own note" } } });
+    assert.equal(kept.status, 200);
+    assert.equal(kept.body.source.fillsFinalMessage, false);
+    assert.notEqual(kept.body.fill.event.internalStaffNotes, MESSAGES.en);
   });
 
   await check("teamProposedFromTheParksPeopleOnly", async () => {

@@ -358,6 +358,14 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
         source: { kind: "inbox", conversationId: confirmation.conversationId, messageId: message.id },
       });
       if (!run.ok) return res.status(run.status).json({ message: run.message, reason: run.reason });
+      // The form's "Final Message to Parent" (internalStaffNotes, "Paste the final
+      // message sent to the parent...") is this very message: it goes in as read,
+      // word for word, unless the form already holds one a person put there.
+      const existingFinal = (req.body ?? {}).existingData?.event?.internalStaffNotes;
+      const fillsFinalMessage = typeof existingFinal !== "string" || existingFinal.trim() === "";
+      const fill = fillsFinalMessage
+        ? { ...run.value, event: { ...(run.value.event ?? {}), internalStaffNotes: message.body } }
+        : run.value;
       res.setHeader("Cache-Control", "no-store");
       res.json({
         source: {
@@ -367,8 +375,9 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
           authorName: message.authorName,
           sentAt: message.sentAt,
           createdAt: message.createdAt,
+          fillsFinalMessage,
         },
-        fill: { ...run.value, proposals },
+        fill: { ...fill, proposals },
       });
     } catch (error: any) {
       log().warn({ err: error?.message ?? String(error) }, "the AI fill from the inbox failed");

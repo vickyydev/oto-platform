@@ -145,6 +145,8 @@ type AiFillInboxSource = {
   authorName: string | null;
   sentAt: string | null;
   createdAt: string;
+  /** Load into Editor also puts this message, as read, in Final Message to Parent (it was empty). */
+  fillsFinalMessage?: boolean;
 };
 
 type SetupTask = {
@@ -3518,6 +3520,11 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                     >
                       {aiFillSource.body}
                     </div>
+                    {aiFillSource.fillsFinalMessage && (
+                      <p className="text-xs text-muted-foreground" data-testid="text-ai-fill-final-message">
+                        Load into Editor also puts this message, word for word, in Final Message to Parent.
+                      </p>
+                    )}
                   </div>
                 )}
                 {aiFillParsed?.event && (
