@@ -4,9 +4,9 @@
 // reads and the dialog's checks as the pure functions the components call.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ConversationDetail, ConversationEvent, ConversationRow, Dashboard as DashboardData, InboxMe, Message } from '@/api/inbox';
-import { OTO_APP_UNREACHABLE, checkedLaunchUrl } from '@/api/otoApp';
+import { OTO_APP_UNREACHABLE, checkedLaunchUrl, openConversationBeo } from '@/api/otoApp';
 import { BookDateDialog, readDraft } from '@/components/BookDateDialog';
 import { ChatPanel, type Thread } from '@/components/ChatPanel';
 import { Dashboard } from '@/components/Dashboard';
@@ -411,5 +411,47 @@ describe("the dashboard's BEO card", () => {
     expect(html).toContain('BEOs created · week');
     expect(html).toContain('Since Monday 2026-11-02');
     expect(html).toMatch(/BEOs created · week<\/div><\/div><div[^>]*><div[^>]*>3<\/div>/);
+  });
+});
+
+describe('Create BEO asks the BEO form for its AI Fill; the event chip does not (SCRUM-660)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const launch = `https://otoapp.example/#handoff=eyJ.abc.def&to=${encodeURIComponent(`/studio/events/kanban?beo=${EVENT}&fill=inbox`)}`;
+
+  /** Records what the inbox sends to open-beo, and answers a hand-off. */
+  function recordOpenBeo() {
+    const sent: Array<{ url: string; body: unknown; contentType: string | undefined }> = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init: RequestInit) => {
+        const headers = (init.headers ?? {}) as Record<string, string>;
+        sent.push({ url, body: init.body === undefined ? undefined : JSON.parse(String(init.body)), contentType: headers['content-type'] });
+        return new Response(
+          JSON.stringify({ conversationId: CONV, eventId: EVENT, beoPath: '/x', launchUrl: launch, expiresAt: new Date().toISOString() }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }),
+    );
+    return sent;
+  }
+
+  it('Create BEO sends aiFill, and the tab goes to the hand-off the api answered', async () => {
+    const sent = recordOpenBeo();
+    const tab = { location: { href: '' }, close: vi.fn() } as unknown as Window;
+    await openConversationBeo(CONV, tab, { aiFill: true });
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.url).toMatch(new RegExp(`/inbox/conversations/${CONV}/open-beo$`));
+    expect(sent[0]!.body).toEqual({ aiFill: true });
+    expect(sent[0]!.contentType).toBe('application/json');
+    expect(tab.location.href).toBe(launch);
+  });
+
+  it('the event chip sends no body: the form opens as it is', async () => {
+    const sent = recordOpenBeo();
+    const tab = { location: { href: '' }, close: vi.fn() } as unknown as Window;
+    await openConversationBeo(CONV, tab);
+    expect(sent[0]!.body).toBeUndefined();
+    expect(sent[0]!.contentType).toBeUndefined();
   });
 });
