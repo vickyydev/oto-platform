@@ -215,3 +215,40 @@ export const InboxOpenBeoResultSchema = z.object({
   expiresAt: z.string().datetime(),
 });
 export type InboxOpenBeoResult = z.infer<typeof InboxOpenBeoResultSchema>;
+
+/**
+ * Create BEO's optional body (SCRUM-660). `aiFill: true` — what the Create BEO
+ * button sends — lands on the BEO form with its AI Fill run on the
+ * conversation's confirmation message (`beoPathOf(id, { aiFill: true })`);
+ * without it (the event chip) the form opens as before. The message itself
+ * never rides the hand-off: the OTO App asks for it server-side
+ * (`GET /inbox/conversations/{id}/beo-confirmation`).
+ */
+export const InboxOpenBeoBodySchema = z.object({ aiFill: z.boolean().optional() }).strict();
+export type InboxOpenBeoBody = z.infer<typeof InboxOpenBeoBodySchema>;
+
+/**
+ * `GET /inbox/conversations/{id}/beo-confirmation` (SCRUM-660) — the message
+ * a birthday's BEO is filled from: the newest message a person on the team
+ * sent in the conversation that names a date, a time and at least one more
+ * party detail (guests, food or the programme). `message` is null when there
+ * is none. `eventId` is the event Book Date made, so the reader can check the
+ * conversation is still the one its event names.
+ */
+export const InboxBeoConfirmationSchema = z.object({
+  conversationId: Uuid,
+  eventId: Uuid.nullable(),
+  message: z
+    .object({
+      id: Uuid,
+      body: z.string(),
+      bodyLanguage: z.string().nullable(),
+      authorName: z.string().nullable(),
+      sentAt: Iso.nullable(),
+      createdAt: Iso,
+    })
+    .nullable(),
+  /** How many of the team's newest messages were looked at to choose it. */
+  scanned: z.number().int().min(0),
+});
+export type InboxBeoConfirmation = z.infer<typeof InboxBeoConfirmationSchema>;

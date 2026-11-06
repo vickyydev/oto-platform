@@ -216,3 +216,18 @@ describe('the playbook contract (SCRUM-220): the GM queue, the closing lines, th
     expect(Object.keys(shape).sort()).toEqual([...INBOX_CATEGORY_KEYS].sort());
   });
 });
+
+describe("the BEO form's address (SCRUM-775, SCRUM-660)", () => {
+  it("opens the event's BEO, and with aiFill asks the form to run its AI Fill on the inbox confirmation", async () => {
+    const { beoPathOf, InboxOpenBeoBodySchema, safeTargetPath } = await import('../src');
+    const id = '01964600-0000-7000-8000-000000000001';
+    expect(beoPathOf(id)).toBe(`/studio/events/kanban?beo=${id}`);
+    expect(beoPathOf(id, { aiFill: false })).toBe(`/studio/events/kanban?beo=${id}`);
+    expect(beoPathOf(id, { aiFill: true })).toBe(`/studio/events/kanban?beo=${id}&fill=inbox`);
+    // Both are targets the hand-off carries as they are.
+    expect(safeTargetPath(beoPathOf(id, { aiFill: true }))).toBe(beoPathOf(id, { aiFill: true }));
+    // The body carries the flag and nothing else: never a message.
+    expect(InboxOpenBeoBodySchema.safeParse({ aiFill: true }).success).toBe(true);
+    expect(InboxOpenBeoBodySchema.safeParse({ aiFill: true, text: 'Emma, 21 March' }).success).toBe(false);
+  });
+});

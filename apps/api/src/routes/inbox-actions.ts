@@ -8,6 +8,7 @@ import {
   InboxBranchBodySchema,
   InboxBranchResultSchema,
   InboxMoveBodySchema,
+  InboxOpenBeoBodySchema,
   InboxOpenBeoResultSchema,
   InboxPrimaryBodySchema,
   InboxSupportBodySchema,
@@ -261,11 +262,17 @@ export async function inboxActionRoutes(app: App): Promise<void> {
           'the signed-in person. Answers a one-use suite hand-off (`launchUrl`, about a minute, its target the BEO ' +
           'form at `beoPath`), minted as `POST /auth/handoff` mints one and recorded as `auth.handoff_issue` naming ' +
           'the conversation and the event (`purpose: inbox.create_beo`). A second call mints a second hand-off; ' +
-          'nothing is written to the conversation. Refusals: 409 NOT_A_BIRTHDAY; 409 NO_EVENT_YET before Book Date; ' +
+          'nothing is written to the conversation. With `aiFill: true` (the Create BEO button; SCRUM-660) the BEO ' +
+          "form runs its AI Fill on the conversation's confirmation message as it opens (`beoPath` ends " +
+          '`&fill=inbox`; the app reads the message itself from GET …/beo-confirmation, never from the hand-off), and ' +
+          'the audit row says so; without it (the event chip) the form opens as before. ' +
+          'Refusals: 409 NOT_A_BIRTHDAY; 409 NO_EVENT_YET before Book Date; ' +
           '403 without app:oto_app:access; 503 HANDOFF_NOT_CONFIGURED where the suite hand-off is not set up. ' +
           'Whoever can see the conversation may open its BEO; the OTO App decides what they may do there. ' +
           REFUSALS,
         params: ConversationParams,
+        // No body at all is the event chip's press: as before.
+        body: InboxOpenBeoBodySchema.nullish(),
         response: { 200: InboxOpenBeoResultSchema, 409: InboxActionRefusalSchema },
       },
     },
@@ -289,6 +296,7 @@ export async function inboxActionRoutes(app: App): Promise<void> {
         opCtx(req),
         {
           conversationId: req.params.id,
+          aiFill: req.body?.aiFill === true,
           session: {
             sessionId: auth.sessionId,
             accountId: auth.accountId,

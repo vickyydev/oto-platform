@@ -437,7 +437,7 @@ export async function openConversationBeo(
   deps: { db: Db; handoff: () => HandoffConfig },
   ctx: ActionCtx,
   op: OpContext,
-  input: { conversationId: string; session: OpenBeoSession; requestId: string },
+  input: { conversationId: string; aiFill?: boolean; session: OpenBeoSession; requestId: string },
 ): Promise<InboxOpenBeoResult> {
   const { db } = deps;
   const { operatorId } = ctx.viewer;
@@ -455,7 +455,9 @@ export async function openConversationBeo(
     throw new PermissionDeniedError(permission);
   }
 
-  const beoPath = beoPathOf(eventId);
+  // SCRUM-660: Create BEO lands with the form's AI Fill run on the conversation's confirmation.
+  const aiFill = input.aiFill === true;
+  const beoPath = beoPathOf(eventId, { aiFill });
   const issued = await issueHandoffAudited(db, op, deps.handoff(), {
     sessionId: input.session.sessionId,
     accountId: input.session.accountId,
@@ -464,7 +466,7 @@ export async function openConversationBeo(
     sessionToken: input.session.sessionToken,
     audience: 'oto_app',
     requestId: input.requestId,
-    after: { purpose: OPEN_BEO_PURPOSE, conversationId: conv.id, eventId },
+    after: { purpose: OPEN_BEO_PURPOSE, conversationId: conv.id, eventId, ...(aiFill ? { fill: 'inbox' } : {}) },
   });
   return {
     conversationId: conv.id,

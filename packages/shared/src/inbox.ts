@@ -415,8 +415,14 @@ export const InboxConversationEventSchema = z.object({
 });
 export type InboxConversationEvent = z.infer<typeof InboxConversationEventSchema>;
 
-/** The OTO App path that opens an event's BEO form (its Events page reads `?beo=`). */
-export const beoPathOf = (eventId: string): string => `/studio/events/kanban?beo=${eventId}`;
+/**
+ * The OTO App path that opens an event's BEO form (its Events page reads
+ * `?beo=`). With `aiFill` (SCRUM-660, the inbox's Create BEO) it also asks the
+ * form to run its AI Fill on the conversation's confirmation message
+ * (`&fill=inbox`); the message is fetched by the app, never carried here.
+ */
+export const beoPathOf = (eventId: string, opts: { aiFill?: boolean } = {}): string =>
+  `/studio/events/kanban?beo=${eventId}${opts.aiFill ? '&fill=inbox' : ''}`;
 
 export const InboxConversationDetailSchema = InboxConversationRowSchema.extend({
   teamName: z.string().nullable(),

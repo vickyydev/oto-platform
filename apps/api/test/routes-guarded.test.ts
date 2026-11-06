@@ -233,6 +233,29 @@ describe('route guards (S2-01b)', () => {
       url: '/inbox/conversations/01964600-0000-7000-8000-000000000001/open-beo',
     });
     expect(res.statusCode).toBe(401);
+    // SCRUM-660: Create BEO's AI Fill flag rides the same guard.
+    const filled = await ctx.app.inject({
+      method: 'POST',
+      url: '/inbox/conversations/01964600-0000-7000-8000-000000000001/open-beo',
+      payload: { aiFill: true },
+    });
+    expect(filled.statusCode).toBe(401);
+  });
+
+  it("the BEO's confirmation message is a session read, guarded at the conversation by its handler (SCRUM-660)", async () => {
+    const route = ctx.app.routeRegistry.find(
+      (r) => r.method === 'GET' && r.url === '/inbox/conversations/:id/beo-confirmation',
+    );
+    expect(route).toBeDefined();
+    expect(route?.config.dynamicPermission).toBe(true);
+    expect(route?.config.permission).toBeUndefined();
+    expect(route?.config.public).not.toBe(true);
+    expect(route?.config.credential).toBeUndefined();
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/inbox/conversations/01964600-0000-7000-8000-000000000001/beo-confirmation',
+    });
+    expect(res.statusCode).toBe(401);
   });
 
   it('keeps access review behind the existing role-read gate (SCRUM-616)', () => {
