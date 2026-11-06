@@ -185,6 +185,23 @@ const NOT_PROVISIONED =
  */
 const SEALING_SECRET = process.env.SESSION_SECRET ?? randomBytes(32).toString("hex");
 
+/**
+ * SCRUM-660 — the platform api, and the platform session behind this
+ * request's person, for a read made server-side AS them (the BEO form's AI
+ * Fill reads the inbox's confirmation message this way), as the theme
+ * write-back below does. Null for a session not opened from the launcher, on a
+ * deployment with no hand-off, or when the token no longer opens. The token
+ * goes in a cookie header to `apiUrl` and nowhere else: never logged, never
+ * returned.
+ */
+export function platformCallerOf(req: Request): { apiUrl: string; token: string } | null {
+  const config = platformSignOnConfig();
+  const platform = req.session?.platform;
+  if (!config || !platform) return null;
+  const token = openPlatformToken(SEALING_SECRET, req.sessionID, platform.sealedToken);
+  return token ? { apiUrl: config.apiUrl, token } : null;
+}
+
 // --- The exchange -----------------------------------------------------------
 
 type Exchange =

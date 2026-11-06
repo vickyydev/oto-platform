@@ -25,6 +25,7 @@ import {
   type TeamCandidates,
   type TeamProposals,
 } from "./lib/beoTeamProposals";
+import { readInboxConfirmation, type InboxRead } from "./lib/inboxConfirmation";
 
 interface ExtractEventRequest {
   notes_text: string;
@@ -58,7 +59,40 @@ export interface AiRouteDeps {
   loadEvent: (req: Request, eventId: string) => Promise<BeoFillEvent | null>;
   teamCandidates: (event: BeoFillEvent) => Promise<TeamCandidates>;
   recordActivity: (entry: ActivityLogInput) => Promise<unknown>;
+  /** The inbox conversation's confirmation message, read on the platform as this person. */
+  inboxConfirmation: (req: Request, conversationId: string) => Promise<InboxRead>;
 }
+
+/**
+ * Why Create BEO's AI Fill did not run, in the one line the form shows. The
+ * form still opens as it always did; nothing is filled.
+ */
+export const INBOX_FILL_MESSAGES = {
+  not_from_inbox: "AI Fill did not run: this birthday was not booked from the inbox, so there is no confirmation message to read.",
+  no_platform_session:
+    "AI Fill did not run: this session was not opened from the OTO launcher, so the inbox could not be read. Use AI Fill to paste the message.",
+  signed_out: "AI Fill did not run: your launcher session has ended. Open the OTO App from the launcher again.",
+  inbox_not_visible: "AI Fill did not run: this birthday's conversation is not one you can see in the inbox.",
+  not_a_birthday: "AI Fill did not run: the conversation is no longer in Birthdays & Events.",
+  inbox_unreachable: "AI Fill did not run: the inbox did not answer. Use AI Fill to paste the message, or press Create BEO again.",
+  event_mismatch: "AI Fill did not run: the inbox conversation now names another event.",
+  no_confirmation:
+    "AI Fill did not run: no message from the team in this conversation names the date, the time and the party details yet.",
+  too_long: "AI Fill did not run: the confirmation message is too long to read at once. Use AI Fill to paste the part that matters.",
+} as const;
+export type InboxFillRefusal = keyof typeof INBOX_FILL_MESSAGES;
+
+const INBOX_FILL_STATUS: Record<InboxFillRefusal, number> = {
+  not_from_inbox: 409,
+  no_platform_session: 409,
+  signed_out: 401,
+  inbox_not_visible: 404,
+  not_a_birthday: 409,
+  inbox_unreachable: 503,
+  event_mismatch: 409,
+  no_confirmation: 409,
+  too_long: 409,
+};
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -84,6 +118,7 @@ export const defaultAiRouteDeps: AiRouteDeps = {
   },
   teamCandidates: (event) => loadTeamCandidates(db, event),
   recordActivity: (entry) => storage.createActivityLog(entry),
+  inboxConfirmation: readInboxConfirmation,
 };
 
 /** The sections a fill gave, for the activity row: names of sections, never their contents. */
@@ -285,6 +320,58 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
       res.json({ ...run.value, proposals });
     } catch (error: any) {
       log().warn({ err: error?.message ?? String(error) }, "the AI BEO parse failed");
+      next(error);
+    }
+  });
+
+  /**
+   * SCRUM-660 — Create BEO's AI Fill: the inbox's Create BEO lands on this
+   * event's BEO form (`?beo=<id>&fill=inbox`) and the form asks here. The
+   * event must be the caller's to open, as the form's own read decides, and
+   * booked from the inbox; the message is the platform's choice, read as this
+   * person; the answer is the SAME preview AI Fill shows for a pasted message,
+   * with the message it read beside it. Nothing is saved here: the person
+   * reviews it, presses Load into Editor, then the form's own Save.
+   */
+  app.post("/api/events/:eventId/beo/ai-fill/inbox", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    const refuse = (reason: InboxFillRefusal, eventId: string | null) => {
+      log().info({ reason, eventId }, "ai fill from the inbox did not run");
+      return res.status(INBOX_FILL_STATUS[reason]).json({ reason, message: INBOX_FILL_MESSAGES[reason] });
+    };
+    try {
+      const event = await deps.loadEvent(req, req.params.eventId!);
+      if (!event) return res.status(404).json({ message: "Event not found" });
+      if (!event.inboxConversationId) return refuse("not_from_inbox", event.id);
+
+      const read = await deps.inboxConfirmation(req, event.inboxConversationId);
+      if (!read.ok) return refuse(read.reason, event.id);
+      const { confirmation } = read;
+      if (confirmation.eventId !== event.id) return refuse("event_mismatch", event.id);
+      const message = confirmation.message;
+      if (!message) return refuse("no_confirmation", event.id);
+      if (message.body.length > AI_TEXT_MAX) return refuse("too_long", event.id);
+
+      const { run, proposals } = await runBeoFill(deps, req, {
+        text: message.body,
+        existingData: (req.body ?? {}).existingData,
+        event,
+        source: { kind: "inbox", conversationId: confirmation.conversationId, messageId: message.id },
+      });
+      if (!run.ok) return res.status(run.status).json({ message: run.message, reason: run.reason });
+      res.setHeader("Cache-Control", "no-store");
+      res.json({
+        source: {
+          conversationId: confirmation.conversationId,
+          messageId: message.id,
+          body: message.body,
+          authorName: message.authorName,
+          sentAt: message.sentAt,
+          createdAt: message.createdAt,
+        },
+        fill: { ...run.value, proposals },
+      });
+    } catch (error: any) {
+      log().warn({ err: error?.message ?? String(error) }, "the AI fill from the inbox failed");
       next(error);
     }
   });

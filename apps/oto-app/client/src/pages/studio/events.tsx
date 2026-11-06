@@ -78,7 +78,7 @@ import { AIEventAssistant } from "@/components/ai-event-assistant";
 import { BeoEventEditor, BeoTimelineEditor, BeoDayOfView } from "@/components/beo";
 import { getCountries, getCountryCallingCode } from "libphonenumber-js";
 import { fetchPersonBirthdays, type PersonBirthday } from "@/lib/person-birthdays";
-import { beoEventIdFrom, withoutBeoParam } from "@/lib/beo-deep-link";
+import { beoEventIdFrom, beoFillFrom, withoutBeoParam } from "@/lib/beo-deep-link";
 
 // Color options for status columns
 const STATUS_COLORS = [
@@ -405,6 +405,8 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
   // BEO Editor state
   const [showBeoEditor, setShowBeoEditor] = useState(false);
   const [showBeoDayOf, setShowBeoDayOf] = useState(false);
+  // SCRUM-660: the editor opened by the inbox's Create BEO runs its AI Fill on the confirmation.
+  const [beoAutoFill, setBeoAutoFill] = useState<"inbox" | null>(null);
   
   // Calendar event preview state
   const [previewEvent, setPreviewEvent] = useState<Event | null>(null);
@@ -856,6 +858,8 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
   useEffect(() => {
     const eventId = beoEventIdFrom(window.location.search);
     if (!eventId) return;
+    // SCRUM-660: `&fill=inbox` (Create BEO) asks the editor to run its AI Fill as it opens.
+    const fill = beoFillFrom(window.location.search);
     window.history.replaceState(null, "", withoutBeoParam(window.location.pathname, window.location.search));
     let cancelled = false;
     void (async () => {
@@ -866,7 +870,10 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
         return;
       }
       const event = (await res.json()) as Event;
-      if (!cancelled) openBeoEditor(event);
+      if (!cancelled) {
+        setBeoAutoFill(fill);
+        openBeoEditor(event);
+      }
     })();
     return () => {
       cancelled = true;
@@ -3788,12 +3795,14 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
       </Dialog>
 
       {/* BEO Editor Sheet - used for Birthday / Private Event only */}
-      <Sheet open={showBeoEditor} onOpenChange={(open) => { if (!open) { setShowBeoEditor(false); setViewingStudioEvent(null); setStudioEventDetails(null); setStudioEventTasks([]); setStudioEventBookings([]); } else { setShowBeoEditor(true); } }}>
+      <Sheet open={showBeoEditor} onOpenChange={(open) => { if (!open) { setShowBeoEditor(false); setBeoAutoFill(null); setViewingStudioEvent(null); setStudioEventDetails(null); setStudioEventTasks([]); setStudioEventBookings([]); } else { setShowBeoEditor(true); } }}>
         <SheetContent side="right" className="w-full sm:max-w-2xl p-0 overflow-hidden">
           {viewingStudioEvent && (
             <BeoEventEditor
               eventId={viewingStudioEvent.id}
-              onClose={() => { setShowBeoEditor(false); setViewingStudioEvent(null); setStudioEventDetails(null); setStudioEventTasks([]); setStudioEventBookings([]); }}
+              autoFill={beoAutoFill}
+              onAutoFillTaken={() => setBeoAutoFill(null)}
+              onClose={() => { setShowBeoEditor(false); setBeoAutoFill(null); setViewingStudioEvent(null); setStudioEventDetails(null); setStudioEventTasks([]); setStudioEventBookings([]); }}
               onSave={() => {
                 queryClient.invalidateQueries({ queryKey: ["/api/admin/events"] });
               }}
