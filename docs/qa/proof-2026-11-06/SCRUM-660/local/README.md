@@ -23,8 +23,9 @@ confirmation is for the staging proof.
 | A ZZ TEST birthday chat: the customer's request, the team's final confirmation sent through the inbox's own reply, the date booked, Create BEO | `s660-01-inbox-birthday-chat-with-confirmation.png` |
 | Create BEO opens the BEO form in a new tab with AI Fill already run: the review step, "Read from the inbox" with who sent the message and when, the message itself, and the fields it read | `s660-02-create-beo-ai-fill-preview-english.png` |
 | The Team section: Nok as Party Host, Ploy as Entertainment Host, the Entertainment department as setup Who, each matched to this park's people and assigned only when ticked (two ticked here) | `s660-03-team-proposals-ticked.png` |
-| Load into Editor: the form holds the fields, and Final Message to Parent holds the message word for word; nothing saved yet | `s660-04-loaded-into-the-form-not-saved.png` |
+| Load into Editor: the form holds the fields, and Final Message to Parent holds the message word for word; the form is not saved (only the timeline lines are written, next rows) | `s660-04-loaded-into-the-form-not-saved.png` |
 | The Party Host field now names Nok; the Entertainment Host was not ticked and stays empty | `s660-05-party-host-assigned-in-the-form.png` |
+| The Timeline section: the answer's two lines (14:00 "Guests arrive, free play", 15:30 "Cake"), which Load into Editor created on the server at once, as AI Fill always has. The "0 steps" badge counts the form's loaded copy, which Load into Editor does not refresh (unchanged behaviour) | `s660-05b-timeline-lines-written-at-load-into-editor.png` |
 | Thai: the same review step, in the message's own words, times as 14:00 and 15:30 | `s660-06-create-beo-ai-fill-preview-thai.png` |
 | Thai team row: "น้องนก" is Nok's Thai name, so Nok is proposed | `s660-06b-thai-team-name-matched.png` |
 | Russian: the same, in Russian | `s660-07-create-beo-ai-fill-preview-russian.png` |
@@ -43,9 +44,21 @@ confirmation is for the staging proof.
   advice (the park group has no AI settings), the default model
   `claude-opus-5`, no temperature, 16000 max tokens. None for the
   no-confirmation conversation, none for the event chip.
-- Nothing saved before Save: after Load into Editor, the event's party host,
-  setup plan and kitchen plan rows are still 0 and its child name, adults,
-  decoration and Final Message to Parent are still empty in the database.
+- What Load into Editor writes before Save (`englishWhatLoadIntoEditorWrites`):
+  the English answer carries two timeline lines, and Load into Editor creates
+  both on the server at once (`POST /api/events/{id}/beo/timeline`, offsets 0
+  and 90 minutes from 14:00): 0 timeline rows before, 2 after. That is the AI
+  Fill's own Load into Editor, unchanged by this lane, for a pasted message as
+  for the inbox one; the house review keeps it as an owner question. Nothing
+  else is written: the event's party host, setup plan and kitchen plan rows
+  are still 0, and its child name, adults, decoration and Final Message to
+  Parent are still empty in the database until the form's Save, which the run
+  never presses.
+- Final Message to Parent: filled with the message read only while the form's
+  is empty. When a person already wrote one there, the inbox fill keeps it and
+  drops the model's own text for that field, which the review step does not
+  show (`tests/beo-inbox-fill.check.ts` `personsFinalMessageIsKept`, with a
+  stub answer that carries it; `tests/ai-fill.check.ts` `finalMessageToParent`).
 - Four `auth.handoff_issue` rows with `purpose: inbox.create_beo` and
   `fill: inbox` (the Create BEO presses), and one without `fill` (the chip).
 - Three `beo_ai_fill` activity rows, one per run: the event, `source: inbox`,
@@ -84,10 +97,11 @@ was read before anything is applied.
 | `@oto/shared` `test/inbox.test.ts` | 42 / 42 |
 | `@oto/inbox` test (all 12 files) and build | 240 / 240; built |
 | OTO App `npm run check:ratchet`; `npm run build` | 418 / 418, no new diagnostic; built |
-| OTO App `tests/ai-fill.check.ts` (no database) | 9 / 9 |
-| OTO App `tests/beo-inbox-fill.check.ts` (fresh database, both migrators) | 11 / 11 |
+| OTO App `tests/ai-fill.check.ts` (no database) | 10 / 10 |
+| OTO App `tests/beo-inbox-fill.check.ts` (fresh database, both migrators) | 12 / 12 (`personsFinalMessageIsKept` fails on the route as it was before the fix) |
 | OTO App `tests/directory-inbox-event.check.ts` (SCRUM-775, fresh database) | 9 / 9 |
 | `test/s660-beo-confirmation-review.test.ts` (house review) | 8 / 8: six pins, two FINDINGs standing as owner questions (Load into Editor writes the timeline before Save; a read-back of the request is not told from the final confirmation) |
+| This browser run (`s660-local-proof.mts.txt`), re-run after the review round | green: 12 screens, the timeline rows asserted |
 | eslint on every changed `.ts` / `.tsx` outside `apps/oto-app` | clean |
 
 ## Staging proof plan (for the landing; ZZ TEST only)
@@ -104,10 +118,14 @@ the app's default `claude-opus-5`. No migration.
    kids, menu, cake, "Host: <a ZZ TEST employee's nickname at that park>").
    No real customer conversation is opened or pressed.
 2. Book Date, then press Create BEO. Screenshot the review step (the message
-   beside it, the fields, the Team section). Tick the host, Load into Editor,
-   screenshot the form. Do not save. A real model call is made here.
+   beside it, the fields, the Team section, any Timeline lines). Tick the
+   host, Load into Editor, screenshot the form. Do not save. A real model call
+   is made here. If the answer has timeline lines, Load into Editor writes
+   them to the ZZ TEST event at once; they go with the event's archive in
+   step 5.
 3. Read back, read-only: one `beo_ai_fill` row naming the event with no text;
-   one `auth.handoff_issue` row with `fill: inbox`; the BEO's rows unchanged.
+   one `auth.handoff_issue` row with `fill: inbox`; the BEO's rows unchanged
+   apart from the timeline lines Load into Editor wrote.
 4. A second ZZ TEST conversation with only a holding reply: Book Date, Create
    BEO, screenshot the one line. Repeat step 1 once in Thai and once in
    Russian if the owner wants the real model's reading of each shown.
