@@ -416,6 +416,10 @@ try {
     const calls = modelCalls.length;
     assert.equal((await post("/api/ai/parse-beo", { text: MESSAGES.en, eventId: ev.otherPark })).status, 404);
     assert.equal(modelCalls.length, calls);
+    // A body off its shape is refused before anything is read.
+    assert.equal((await post("/api/ai/parse-beo", { text: MESSAGES.en, existingData: "the form" })).status, 400);
+    assert.equal((await post(`/api/events/${ev.en}/beo/ai-fill/inbox`, { existingData: [1, 2] })).status, 400);
+    assert.equal(modelCalls.length, calls, "no model call for a refused body");
     // Without an event: the fill, and no team to propose.
     const bare = await post("/api/ai/parse-beo", { text: MESSAGES.en });
     assert.equal(bare.status, 200);
