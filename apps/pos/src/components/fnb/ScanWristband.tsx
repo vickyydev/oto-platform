@@ -7,11 +7,35 @@ import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import { getActiveBranch } from '@/store/catalogStore';
 import { currentLane, isBoxLaneTrigger, laneStation, noteLaneFailure, useLane } from '@/lib/lane';
 import { screenHidden } from '@/lib/scanChannel';
+import { SCANNER_BURST_MIN_LENGTH } from '@/lib/scannerBurst';
 import { useDemoControls } from '@/lib/demoControls';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScanLine, UserRound, Wallet, AlertCircle, ArrowRight, Gift } from 'lucide-react';
+
+/**
+ * THE FIELD OPENS THE TAB ITSELF (SCRUM-790).
+ *
+ * A scanner plugged into the tablet types the code into this field as a
+ * keyboard would. The tab used to open only on the Enter the scanner sends
+ * after the code, or on a press of Load Tab; a scanner set up without that
+ * Enter, and a code pasted in, left the code sitting in the field. The field
+ * now tells a scan or a paste from a person typing and loads the tab itself:
+ *
+ *  - PASTE. Text that lands in one go is a whole code, whatever its length.
+ *  - SCAN. At least `SCANNER_BURST_MIN_LENGTH` characters in a row, each within
+ *    `FIELD_SCAN_GAP_MS` of the one before. A person does not type a band code
+ *    at that pace. The gap is wider than the page listener's 50 ms on purpose:
+ *    a tablet's keyboard channel delivers keys less evenly than a laptop's, and
+ *    a wrong guess here costs one early lookup, never a swallowed key.
+ *  - QUIET. `FIELD_SCAN_QUIET_MS` with nothing more arriving ends the code. An
+ *    Enter inside that time loads the tab at once, as it always did.
+ *
+ * A person typing by hand is left alone and still presses Enter or Load Tab.
+ */
+export const FIELD_SCAN_GAP_MS = 80;
+export const FIELD_SCAN_QUIET_MS = 150;
 
 interface ScanWristbandProps {
   onLoadTab: (wristband: Wristband) => void;
@@ -60,6 +84,15 @@ export function ScanWristband({
     };
   }, []);
   const inFlight = useRef(false);
+  const field = useRef<HTMLInputElement>(null);
+  // The run of characters that arrived at a scanner's pace, and when the last one did.
+  const run = useRef({ length: 0, at: 0, pasted: false });
+  const quiet = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stopWaiting = () => {
+    if (quiet.current) clearTimeout(quiet.current);
+    quiet.current = null;
+  };
+  useEffect(() => stopWaiting, []);
 
   const submit = async (value: string, fromScanner = false) => {
     if (inFlight.current) {
@@ -72,8 +105,14 @@ export function ScanWristband({
     inFlight.current = false;
     setLooking(false);
     if (!onScreen.current || (fromScanner && screenHidden())) return;
+    // A code that opened nothing stays in the field, selected: the next scan
+    // or paste replaces it instead of being added to its end.
+    const keepForReplacing = () => {
+      if (document.activeElement === field.current) field.current?.select();
+    };
     if (found.error) {
       setError(found.error);
+      keepForReplacing();
       return;
     }
     const wb = found.wristband;
@@ -84,6 +123,7 @@ export function ScanWristband({
         return;
       }
       setError(`No tab found for "${value}". Try a code below or continue as guest.`);
+      keepForReplacing();
       return;
     }
     setError(null);
@@ -92,8 +132,30 @@ export function ScanWristband({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    stopWaiting();
     if (!code.trim()) return;
     void submit(code);
+  };
+
+  /** One change to the field: count it into the run, and wait for the quiet that ends a code. */
+  const noteChange = (value: string, added: number, at: number, pasted: boolean) => {
+    const last = run.current;
+    const inRun = added > 0 && last.length > 0 && at - last.at <= FIELD_SCAN_GAP_MS;
+    run.current = {
+      length: added > 0 ? (inRun ? last.length : 0) + added : 0,
+      at,
+      pasted: pasted || (inRun && last.pasted),
+    };
+    stopWaiting();
+    const now = run.current;
+    const whole = now.pasted || added >= SCANNER_BURST_MIN_LENGTH;
+    if (!value.trim() || (!whole && now.length < SCANNER_BURST_MIN_LENGTH)) return;
+    quiet.current = setTimeout(() => {
+      quiet.current = null;
+      run.current = { length: 0, at: 0, pasted: false };
+      const typed = field.current?.value ?? '';
+      if (typed.trim()) void submit(typed);
+    }, FIELD_SCAN_QUIET_MS);
   };
 
   useEffect(() => {
@@ -123,6 +185,7 @@ export function ScanWristband({
 
         <form onSubmit={handleSubmit} className="flex gap-3 mb-3">
           <Input
+            ref={field}
             autoFocus
             // Band codes carry letters (`T1-7KMQ4X`), so no numbers-first keyboard.
             inputMode="text"
@@ -132,8 +195,20 @@ export function ScanWristband({
             spellCheck={false}
             value={code}
             onChange={(e) => {
-              setCode(e.target.value);
+              const next = e.target.value;
+              const native = e.nativeEvent as InputEvent;
+              noteChange(next, next.length - code.length, native.timeStamp, native.inputType === 'insertFromPaste');
+              setCode(next);
               if (error) setError(null);
+            }}
+            onKeyDown={(e) => {
+              // The scanner's Enter, or a person's: loaded here, so it never
+              // waits on the Load Tab button having been drawn as enabled.
+              if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
+              e.preventDefault();
+              stopWaiting();
+              const typed = e.currentTarget.value;
+              if (typed.trim()) void submit(typed);
             }}
             placeholder="Wristband code e.g. 1001"
             className="h-16 text-2xl px-5"
