@@ -183,6 +183,9 @@ jobs:
           # SCRUM-744: a till locked by the inactivity timeout and reloaded
           # unlocks onto its own station, at desktop and at phone width.
           pnpm --filter @oto/pos e2e e2e/locked-reload.spec.ts
+          # SCRUM-790: the wristband box loads the tab on a paste and on a scan
+          # that ends with no Enter, and leaves a code typed by hand alone.
+          pnpm --filter @oto/pos e2e e2e/band-field-scan.spec.ts
       # The Pi release (SCRUM-422; the closing audit's M4 and L52). The box
       # installs `oto-box-<version>-<YYYYMMDD>-<commit>.tgz` (the build id:
       # `packages/box-agent/src/build.ts`), and the guide says the file
