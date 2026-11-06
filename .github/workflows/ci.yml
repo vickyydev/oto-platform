@@ -496,6 +496,14 @@ jobs:
       - name: The suite theme checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/platform-theme.check.ts
+      # SCRUM-660: the two AI helpers on built-in defaults (a saved setting
+      # still wins, a model the provider does not serve falls back), the
+      # model's answer validated before a screen sees it, a stubbed Thai,
+      # English and Russian confirmation, no text in the log fields, and the
+      # team a fill may propose matched only to real people of the park.
+      - name: The AI fill checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/ai-fill.check.ts
       # The rehearsal uses disposable databases on this job's scratch server.
       # It dumps the baseline sample from public, restores and renames it,
       # imports after every platform migration, then runs the app migrator
