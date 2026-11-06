@@ -359,8 +359,10 @@ sign-on.
   pasted message gets, with a Team section (a Party Host, Entertainment Host
   or setup Who matched to one real person or department of the event's park,
   assigned only when ticked; any other name flagged). The message also goes,
-  word for word, into the form's empty "Final Message to Parent". Nothing is
-  saved until Load into Editor and the form's own Save. No confirmation yet,
+  word for word, into the form's empty "Final Message to Parent"; one a person
+  already wrote there is kept. Load into Editor fills the form and, as AI Fill
+  always has, writes the answer's timeline lines at once; everything else
+  waits for the form's own Save. No confirmation yet,
   or AI unavailable: the form opens as before with one line why. The event
   chip opens the form as before. Each run is a `beo_ai_fill` activity row
   in the app, never the text; the app logs sizes and outcomes only. Both AI

@@ -8,7 +8,10 @@
 // line saying why. The model is a STUB behind the Anthropic SDK's own
 // ANTHROPIC_BASE_URL (no key reaches the OTO App's local run through the
 // repo's env loading), answering canned JSON per language. Nothing here
-// reaches staging; nothing is saved to the BEO.
+// reaches staging. The English answer carries two timeline lines, so the run
+// shows the one write Load into Editor makes (it creates the timeline lines at
+// once, as AI Fill always has); every other BEO row waits for the form's Save,
+// which the run never presses.
 import assert from 'node:assert/strict';
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
@@ -72,6 +75,7 @@ const ANSWER: Record<'en' | 'th' | 'ru', unknown> = {
       adultsMenu: [{ itemName: 'fruit platter', quantity: 1, included: true }],
       cakeMode: 'EXTERNAL', cakeNotes: 'Family brings their own cake', cakeTime: '15:30',
     },
+    timeline: [{ time: '14:00', label: 'Guests arrive, free play' }, { time: '15:30', label: 'Cake' }],
     team: { partyHost: 'Nok', entertainmentHost: 'Ploy' },
   },
   th: {
@@ -323,11 +327,15 @@ try {
     await tab.check('[data-testid="checkbox-ai-fill-team-setupResponsible"]');
     await tab.waitForTimeout(300);
     await shot(tab, 's660-03-team-proposals-ticked');
-    const beforeLoad = {
+    const rowsNow = async () => ({
       partyHostRows: (await q(`select count(*)::int as n from beo_party_host_assignments where event_id = $1`, [events.en]))[0].n,
       setupPlanRows: (await q(`select count(*)::int as n from beo_setup_plans where event_id = $1`, [events.en]))[0].n,
       kitchenPlanRows: (await q(`select count(*)::int as n from beo_kitchen_plans where event_id = $1`, [events.en]))[0].n,
-    };
+      timelineLines: (
+        await q(`select label, offset_from_start_minutes as "offsetMinutes" from beo_timeline_items where event_id = $1 order by sort_order`, [events.en])
+      ) as Array<{ label: string; offsetMinutes: number }>,
+    });
+    const beforeLoad = await rowsNow();
     await tab.click('[data-testid="button-ai-fill-confirm"]');
     await tab.waitForSelector('text=BEO data loaded', { timeout: 30_000 });
     await tab.waitForTimeout(800);
@@ -336,13 +344,26 @@ try {
     await tab.waitForTimeout(600);
     await tab.locator('[data-testid="accordion-party-host"]').scrollIntoViewIfNeeded();
     await shot(tab, 's660-05-party-host-assigned-in-the-form');
+    // The timeline lines Load into Editor created on the server, in the form's Timeline section.
+    await tab.click('[data-testid="accordion-timeline"]');
+    await tab.waitForSelector('[data-testid="timeline-item-1"]', { timeout: 30_000 });
+    await tab.waitForTimeout(600);
+    // Centred, so the "BEO data loaded" toast in the corner does not cover the lines.
+    await tab.$eval('[data-testid="accordion-timeline"]', (el: { scrollIntoView(o: { block: string }): void }) => el.scrollIntoView({ block: 'center' }));
+    await tab.waitForTimeout(400);
+    await shot(tab, 's660-05b-timeline-lines-written-at-load-into-editor');
     const afterLoad = {
-      partyHostRows: (await q(`select count(*)::int as n from beo_party_host_assignments where event_id = $1`, [events.en]))[0].n,
-      setupPlanRows: (await q(`select count(*)::int as n from beo_setup_plans where event_id = $1`, [events.en]))[0].n,
-      kitchenPlanRows: (await q(`select count(*)::int as n from beo_kitchen_plans where event_id = $1`, [events.en]))[0].n,
+      ...(await rowsNow()),
       event: (await q(`select child_name, num_children, num_adults, decoration, internal_staff_notes from core_events where id = $1`, [events.en]))[0],
     };
-    log.englishNothingSavedBeforeSave = { beforeLoad, afterLoad };
+    // Before Save: the timeline lines are the only BEO rows Load into Editor writes.
+    assert.deepEqual(beforeLoad.timelineLines, []);
+    assert.deepEqual(afterLoad.timelineLines, [{ label: 'Guests arrive, free play', offsetMinutes: 0 }, { label: 'Cake', offsetMinutes: 90 }]);
+    assert.deepEqual(
+      [afterLoad.partyHostRows, afterLoad.setupPlanRows, afterLoad.kitchenPlanRows],
+      [beforeLoad.partyHostRows, beforeLoad.setupPlanRows, beforeLoad.kitchenPlanRows],
+    );
+    log.englishWhatLoadIntoEditorWrites = { beforeLoad, afterLoad };
     await tab.close();
   }
 

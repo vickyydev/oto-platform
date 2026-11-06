@@ -1,6 +1,6 @@
 {
-  "at": "2026-11-06T02:29:38.393Z",
-  "run": "mw4cwfrt",
+  "at": "2026-11-06T03:10:42.299Z",
+  "run": "mw4ed8xn",
   "browser": "Microsoft Edge (playwright-core channel msedge, headless)",
   "model": "stub",
   "otoAppSeed": {
@@ -16,16 +16,16 @@
     "aiSettingsRows": 0
   },
   "conversations": {
-    "en": "01a1aeb0-f389-7dfb-89ee-21269f4ca20c",
-    "th": "01a1aeb0-f41d-715a-b3d5-7e3bab0d2601",
-    "ru": "01a1aeb0-f45b-7a93-bb60-6ea028aa55c1",
-    "none": "01a1aeb0-f4a4-7b61-ac32-01c2aebc4c45"
+    "en": "01a1aed6-87b8-7b62-8ef9-b83ec27b7dcb",
+    "th": "01a1aed6-8836-77ac-987b-201b02939bcd",
+    "ru": "01a1aed6-8872-7945-87c1-29049c950caa",
+    "none": "01a1aed6-88a7-7357-a83c-6f8004b4f04f"
   },
   "events": {
-    "en": "34392744-c5a0-4f37-891d-27b06be16814",
-    "th": "3c5e32e8-a05c-4634-9756-16aff3867d81",
-    "ru": "521eaf26-c5fd-4f56-b101-d4349c4547b2",
-    "none": "87732791-6ee3-47e6-8b47-83ff0902c730"
+    "en": "ecd77152-069d-458b-8503-027803da0ae3",
+    "th": "5ef1cd1c-f2ad-4504-ba98-ed821712e7ba",
+    "ru": "3079c711-6395-40bc-bdab-b830014cce18",
+    "none": "6f99642a-2877-48b3-beaa-6fe4d13be3fd"
   },
   "platformPicks": {
     "en": {
@@ -53,18 +53,29 @@
       "picked": null
     }
   },
-  "enTabUrlAfterLanding": "http://127.0.0.1:61853/studio/events/kanban",
+  "enTabUrlAfterLanding": "http://127.0.0.1:57372/studio/events/kanban",
   "enFinalMessageLine": "Load into Editor also puts this message, word for word, in Final Message to Parent.",
-  "englishNothingSavedBeforeSave": {
+  "englishWhatLoadIntoEditorWrites": {
     "beforeLoad": {
       "partyHostRows": 0,
       "setupPlanRows": 0,
-      "kitchenPlanRows": 0
+      "kitchenPlanRows": 0,
+      "timelineLines": []
     },
     "afterLoad": {
       "partyHostRows": 0,
       "setupPlanRows": 0,
       "kitchenPlanRows": 0,
+      "timelineLines": [
+        {
+          "label": "Guests arrive, free play",
+          "offsetMinutes": 0
+        },
+        {
+          "label": "Cake",
+          "offsetMinutes": 90
+        }
+      ],
       "event": {
         "child_name": null,
         "num_children": 12,
@@ -109,10 +120,10 @@
       "type": "beo_ai_fill",
       "summary": "AI Fill read the inbox confirmation message for the BEO of \"Birthday · ZZ TEST Emma Parent\"",
       "metadata": {
-        "eventId": "34392744-c5a0-4f37-891d-27b06be16814",
+        "eventId": "ecd77152-069d-458b-8503-027803da0ae3",
         "source": "inbox",
-        "inboxConversationId": "01a1aeb0-f389-7dfb-89ee-21269f4ca20c",
-        "inboxMessageId": "01a1aeb0-f3d2-7be6-a08d-61764d62cdcd",
+        "inboxConversationId": "01a1aed6-87b8-7b62-8ef9-b83ec27b7dcb",
+        "inboxMessageId": "01a1aed6-87f6-799c-bb64-71bcfb411788",
         "outcome": "filled",
         "model": "claude-opus-5",
         "promptFrom": {
@@ -125,6 +136,7 @@
           "event",
           "setupPlan",
           "kitchenPlan",
+          "timeline",
           "team"
         ],
         "team": {
@@ -137,10 +149,10 @@
       "type": "beo_ai_fill",
       "summary": "AI Fill read the inbox confirmation message for the BEO of \"Birthday · ZZ TEST Mali Parent\"",
       "metadata": {
-        "eventId": "3c5e32e8-a05c-4634-9756-16aff3867d81",
+        "eventId": "5ef1cd1c-f2ad-4504-ba98-ed821712e7ba",
         "source": "inbox",
-        "inboxConversationId": "01a1aeb0-f41d-715a-b3d5-7e3bab0d2601",
-        "inboxMessageId": "01a1aeb0-f43b-7415-8f62-5dffb00f53f2",
+        "inboxConversationId": "01a1aed6-8836-77ac-987b-201b02939bcd",
+        "inboxMessageId": "01a1aed6-8852-7665-a646-a7cfd090df0c",
         "outcome": "filled",
         "model": "claude-opus-5",
         "promptFrom": {
@@ -164,10 +176,10 @@
       "type": "beo_ai_fill",
       "summary": "AI Fill read the inbox confirmation message for the BEO of \"Birthday · ZZ TEST Masha Parent\"",
       "metadata": {
-        "eventId": "521eaf26-c5fd-4f56-b101-d4349c4547b2",
+        "eventId": "3079c711-6395-40bc-bdab-b830014cce18",
         "source": "inbox",
-        "inboxConversationId": "01a1aeb0-f45b-7a93-bb60-6ea028aa55c1",
-        "inboxMessageId": "01a1aeb0-f484-7d2b-9a75-6bc9d77b4150",
+        "inboxConversationId": "01a1aed6-8872-7945-87c1-29049c950caa",
+        "inboxMessageId": "01a1aed6-888c-78f3-b2d3-1c2cea1f004a",
         "outcome": "filled",
         "model": "claude-opus-5",
         "promptFrom": {
@@ -228,27 +240,27 @@
     {
       "purpose": "inbox.create_beo",
       "fill": "inbox",
-      "conversation": "01a1aeb0-f389-7dfb-89ee-21269f4ca20c"
+      "conversation": "01a1aed6-87b8-7b62-8ef9-b83ec27b7dcb"
     },
     {
       "purpose": "inbox.create_beo",
       "fill": "inbox",
-      "conversation": "01a1aeb0-f41d-715a-b3d5-7e3bab0d2601"
+      "conversation": "01a1aed6-8836-77ac-987b-201b02939bcd"
     },
     {
       "purpose": "inbox.create_beo",
       "fill": "inbox",
-      "conversation": "01a1aeb0-f45b-7a93-bb60-6ea028aa55c1"
+      "conversation": "01a1aed6-8872-7945-87c1-29049c950caa"
     },
     {
       "purpose": "inbox.create_beo",
       "fill": "inbox",
-      "conversation": "01a1aeb0-f4a4-7b61-ac32-01c2aebc4c45"
+      "conversation": "01a1aed6-88a7-7357-a83c-6f8004b4f04f"
     },
     {
       "purpose": "inbox.create_beo",
       "fill": null,
-      "conversation": "01a1aeb0-f389-7dfb-89ee-21269f4ca20c"
+      "conversation": "01a1aed6-87b8-7b62-8ef9-b83ec27b7dcb"
     }
   ],
   "screenshots": [
@@ -257,6 +269,7 @@
     "s660-03-team-proposals-ticked.png",
     "s660-04-loaded-into-the-form-not-saved.png",
     "s660-05-party-host-assigned-in-the-form.png",
+    "s660-05b-timeline-lines-written-at-load-into-editor.png",
     "s660-06-create-beo-ai-fill-preview-thai.png",
     "s660-06b-thai-team-name-matched.png",
     "s660-07-create-beo-ai-fill-preview-russian.png",
