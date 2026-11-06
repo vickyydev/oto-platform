@@ -3566,7 +3566,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                         <span className="text-xs text-muted-foreground font-medium">Kids Menu:</span>
                         <ul className="list-disc list-inside text-sm ml-2">
                           {aiFillParsed.kitchenPlan.kidsMenu.map((m: any, i: number) => (
-                            <li key={i}>{m.quantity}x {m.itemName}{!m.included ? ` (+${m.price}฿)` : ""}{m.notes ? ` — ${m.notes}` : ""}</li>
+                            <li key={i}>{m.quantity}x {m.itemName}{m.included === false ? ` (+${m.price ?? 0}฿)` : ""}{m.notes ? ` — ${m.notes}` : ""}</li>
                           ))}
                         </ul>
                       </div>
@@ -3576,7 +3576,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                         <span className="text-xs text-muted-foreground font-medium">Adults Menu:</span>
                         <ul className="list-disc list-inside text-sm ml-2">
                           {aiFillParsed.kitchenPlan.adultsMenu.map((m: any, i: number) => (
-                            <li key={i}>{m.quantity}x {m.itemName}{!m.included ? ` (+${m.price}฿)` : ""}{m.notes ? ` — ${m.notes}` : ""}</li>
+                            <li key={i}>{m.quantity}x {m.itemName}{m.included === false ? ` (+${m.price ?? 0}฿)` : ""}{m.notes ? ` — ${m.notes}` : ""}</li>
                           ))}
                         </ul>
                       </div>
@@ -3596,7 +3596,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                         <ul className="list-disc list-inside text-sm ml-2">
                           {aiFillParsed.partyDetails.items.map((item: any, i: number) => (
                             <li key={i} className={item.type === "extra" ? "text-orange-600 dark:text-orange-400" : ""}>
-                              {item.description}{item.type === "extra" ? ` (+${item.price}฿)` : " (incl.)"}
+                              {item.description}{item.type === "extra" ? ` (+${item.price ?? 0}฿)` : " (incl.)"}
                             </li>
                           ))}
                         </ul>
