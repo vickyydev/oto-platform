@@ -1,0 +1,65 @@
+{
+  "unit": "SCRUM-790",
+  "pos": "https://oto-pos-web-staging.onrender.com",
+  "band": "Z762-SGEP2S",
+  "startedAt": "2026-11-06T08:56:36.772Z",
+  "steps": {
+    "pasted": {
+      "screen": "Test harness — staff station (left) + customer display (right) share one live order. In production the customer display runs on a separate device. Hide customer display 2 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 13 out of stock · 1 low Glow Band, Locker Rental, Mascot Keyring, Oto Mascot Plush +10 more F&B Food Drinks Bar Snacks Ice Cream Cone ฿60 Walk-in guest ฿350 credit • #Z762-SGEP2S Order Tap menu items to add them to the order. Apply Redeem Add manual discount Scan staff benefitCharge ฿0 English Wel",
+      "lookups": [
+        {
+          "at": "2026-11-06T08:56:43.790Z",
+          "path": "/api/wallets/scan",
+          "status": 200
+        }
+      ]
+    },
+    "scannedNoEnter": {
+      "screen": "Test harness — staff station (left) + customer display (right) share one live order. In production the customer display runs on a separate device. Hide customer display 2 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 13 out of stock · 1 low Glow Band, Locker Rental, Mascot Keyring, Oto Mascot Plush +10 more F&B Food Drinks Bar Snacks Ice Cream Cone ฿60 Walk-in guest ฿350 credit • #Z762-SGEP2S Order Tap menu items to add them to the order. Apply Redeem Add manual discount Scan staff benefitCharge ฿0 English Wel",
+      "lookups": [
+        {
+          "at": "2026-11-06T08:56:47.108Z",
+          "path": "/api/wallets/scan",
+          "status": 200
+        }
+      ]
+    },
+    "scannedWithEnter": {
+      "screen": "Test harness — staff station (left) + customer display (right) share one live order. In production the customer display runs on a separate device. Hide customer display 2 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 13 out of stock · 1 low Glow Band, Locker Rental, Mascot Keyring, Oto Mascot Plush +10 more F&B Food Drinks Bar Snacks Ice Cream Cone ฿60 Walk-in guest ฿350 credit • #Z762-SGEP2S Order Tap menu items to add them to the order. Apply Redeem Add manual discount Scan staff benefitCharge ฿0 English Wel",
+      "lookups": [
+        {
+          "at": "2026-11-06T08:56:49.882Z",
+          "path": "/api/wallets/scan",
+          "status": 200
+        }
+      ]
+    },
+    "byHand": {
+      "scanScreenStillShown": true,
+      "boxHolds": "Z762-SGEP2S",
+      "lookupsBeforeEnter": 0,
+      "afterEnter": "Test harness — staff station (left) + customer display (right) share one live order. In production the customer display runs on a separate device. Hide customer display 2 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 13 out of stock · 1 low Glow Band, Locker Rental, Mascot Keyring, Oto Mascot Plush +10 more F&B Food Drinks Bar Snacks Ice Cream Cone ฿60 Walk-in guest ฿350 credit • #Z762-SGEP2S Order Tap menu items to add them to the order. Apply Redeem Add manual discount Scan staff benefitCharge ฿0 English Wel"
+    }
+  },
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1b013-008f-74c8-b097-be9d9cb04ed3",
+      "name": "ZZ TEST SCRUM-790 till 2",
+      "box": "Virtual box 1",
+      "at": "2026-11-06T08:56:37.488Z"
+    }
+  ],
+  "cleanup": [
+    {
+      "what": "archive station ZZ TEST SCRUM-790 till 2",
+      "status": 200
+    },
+    {
+      "what": "read back",
+      "archived": true
+    }
+  ],
+  "browser": "156.0.4314.58",
+  "finishedAt": "2026-11-06T08:56:57.932Z"
+}

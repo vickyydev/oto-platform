@@ -1,0 +1,135 @@
+// SCRUM-790 staging proof: a ZZ TEST till on Virtual box 1, the ZZ TEST band Z762-SGEP2S entered
+// into the F&B wristband box three ways. Read-only lookups; the till is archived at the end.
+// Never prints a phone, a password or a setting's value.
+import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+import { randomUUID } from 'node:crypto';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { need } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs';
+
+const LANE = 'C:/oto-lanes/scanfield-20261106';
+const OUT = LANE + '/docs/qa/proof-2026-11-06/SCRUM-790/staging';
+const POS = 'https://oto-pos-web-staging.onrender.com';
+const BAND = 'Z762-SGEP2S';
+const TILL = 'ZZ TEST SCRUM-790 till 2';
+const { chromium, request } = createRequire(LANE + '/apps/pos/package.json')('@playwright/test');
+mkdirSync(OUT, { recursive: true });
+const receipt = { unit: 'SCRUM-790', pos: POS, band: BAND, startedAt: new Date().toISOString(), steps: {}, created: [], cleanup: [] };
+const save = () => writeFileSync(OUT + '/receipt.json', JSON.stringify(receipt, null, 2) + '\n');
+
+const admin = await request.newContext({ baseURL: POS });
+const call = async (method, path, data) => {
+  const action = randomUUID();
+  const res = await admin.fetch(POS + '/api' + path, { method, ...(data !== undefined ? { data } : {}), headers: method === 'GET' ? {} : { 'idempotency-key': action } });
+  let body = null; try { body = await res.json(); } catch {}
+  return { status: res.status(), body };
+};
+const signedIn = await admin.post('/api/auth/sign-in', { data: { phone: need('STAGING_ADMIN_PHONE'), password: need('STAGING_ADMIN_PASSWORD') } });
+assert.equal(signedIn.status(), 200, 'admin sign-in');
+
+let station = null;
+let browser = null;
+try {
+  const branches = (await call('GET', '/branches')).body;
+  const branch = (branches.branches ?? branches).find((b) => /Central Floresta/.test(b.name));
+  assert.ok(branch, 'Central Floresta');
+  const boxes = (await call('GET', `/branches/${branch.id}/boxes`)).body.boxes;
+  const vb = boxes.find((b) => b.role === 'virtual' && b.slot === 'virtual-1' && b.status === 'online' && !b.archived);
+  assert.ok(vb, 'Virtual box 1 online');
+  const stations = (await call('GET', `/branches/${branch.id}/stations?includeArchived=true`)).body.stations;
+  assert.ok(!stations.some((s) => s.codePrefix === 'Z791' || s.name === TILL), 'prefix and name free');
+  const made = await call('POST', `/branches/${branch.id}/stations`, { name: TILL, kind: 'till', boxId: vb.id, codePrefix: 'Z791', accessScope: 'all_staff', paymentRouting: { card: 'manual', qr: 'none' }, capabilities: [], devices: [] });
+  assert.ok(made.status === 200 || made.status === 201, 'station ' + made.status + ' ' + JSON.stringify(made.body).slice(0, 300));
+  station = made.body.station;
+  receipt.created.push({ kind: 'station', id: station.id, name: TILL, box: vb.name, at: new Date().toISOString() }); save();
+
+  try { browser = await chromium.launch({ channel: 'msedge' }); } catch { browser = await chromium.launch(); }
+  receipt.browser = browser.version();
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 860 }, timezoneId: 'Asia/Bangkok', locale: 'en-GB', permissions: ['clipboard-read', 'clipboard-write'] });
+  ctx.setDefaultTimeout(30000);
+  const page = await ctx.newPage();
+  const lookups = [];
+  page.on('response', (res) => { const u = new URL(res.url()); if (/\/api\/wallets\/(scan|lookup)/.test(u.pathname)) lookups.push({ at: new Date().toISOString(), path: u.pathname, status: res.status() }); });
+  const shot = async (name) => {
+    await page.waitForTimeout(900);
+    await page.screenshot({ path: `${OUT}/${name}.png`, animations: 'disabled', mask: [page.locator('input[type=password]')] });
+  };
+
+  await page.goto(POS + '/', { waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { name: 'Oto POS is locked' }).waitFor({ timeout: 60000 });
+  const phoneField = page.locator('input[inputmode="tel"], input[type="tel"]').first();
+  const phone = need('STAGING_RECEPTION_PHONE');
+  const prefix = await phoneField.evaluate((el) => /\+(\d{1,4})/.exec(el.parentElement?.textContent ?? '')?.[1] ?? null).catch(() => null);
+  await phoneField.fill(prefix && phone.startsWith(`+${prefix}`) ? (prefix === '66' ? `0${phone.slice(3)}` : phone.slice(prefix.length + 1)) : phone.replace(/^\+66/, '0'));
+  await page.locator('input[type="password"]').first().fill(need('STAGING_RECEPTION_PASSWORD'));
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  const picker = page.getByRole('heading', { name: 'Which station are you on?' });
+  try { await picker.waitFor({ timeout: 45000 }); } catch (e) { await page.screenshot({ path: 'C:/Users/waqar/AppData/Local/Temp/claude/9d4c56906b777e8e/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/s790/stuck.png', mask: [page.locator('input')] }); throw e; }
+  await page.getByRole('button', { name: TILL }).first().click();
+  await picker.waitFor({ state: 'hidden', timeout: 30000 });
+
+  const scanScreen = async () => {
+    await page.goto(POS + '/order-station', { waitUntil: 'domcontentloaded' });
+    await page.getByRole('heading', { name: 'Scan Wristband' }).waitFor({ timeout: 45000 });
+    const box = page.getByPlaceholder(/Wristband code/);
+    await box.click();
+    return box;
+  };
+  const tabOpened = async () => {
+    await page.getByRole('heading', { name: 'Scan Wristband' }).waitFor({ state: 'hidden', timeout: 20000 });
+    return (await page.locator('body').innerText()).replace(/\s+/g, ' ').slice(0, 600);
+  };
+
+  // 1. Pasted.
+  await scanScreen();
+  await shot('s790-st-01-wristband-box-before');
+  await page.evaluate((text) => navigator.clipboard.writeText(text), BAND);
+  let n = lookups.length;
+  await page.keyboard.press('ControlOrMeta+V');
+  receipt.steps.pasted = { screen: await tabOpened(), lookups: lookups.slice(n) }; save();
+  await shot('s790-st-02-pasted-code-opened-the-tab');
+
+  // 2. At a scanner's pace, no Enter.
+  await scanScreen();
+  n = lookups.length;
+  await page.keyboard.type(BAND, { delay: 15 });
+  receipt.steps.scannedNoEnter = { screen: await tabOpened(), lookups: lookups.slice(n) }; save();
+  await shot('s790-st-03-scanned-with-no-enter-opened-the-tab');
+
+  // 3. At a scanner's pace with its Enter: one lookup only.
+  await scanScreen();
+  n = lookups.length;
+  await page.keyboard.type(BAND, { delay: 15 });
+  await page.keyboard.press('Enter');
+  const screen3 = await tabOpened();
+  await page.waitForTimeout(1500);
+  receipt.steps.scannedWithEnter = { screen: screen3, lookups: lookups.slice(n) }; save();
+
+  // 4. By hand: stays until Enter.
+  const box = await scanScreen();
+  n = lookups.length;
+  await page.keyboard.type(BAND, { delay: 140 });
+  await page.waitForTimeout(1500);
+  const still = await page.getByRole('heading', { name: 'Scan Wristband' }).isVisible();
+  receipt.steps.byHand = { scanScreenStillShown: still, boxHolds: await box.inputValue(), lookupsBeforeEnter: lookups.slice(n).length }; save();
+  await shot('s790-st-04-typed-by-hand-waits');
+  assert.equal(still, true, 'hand typing must not load');
+  await page.keyboard.press('Enter');
+  receipt.steps.byHand.afterEnter = await tabOpened(); save();
+
+  // Sign the till out through its own route.
+  await page.request.post(POS + '/api/auth/sign-out', { headers: { 'idempotency-key': randomUUID() } }).catch(() => {});
+  await ctx.close();
+} finally {
+  if (browser) await browser.close().catch(() => {});
+  if (station) {
+    const gone = await call('DELETE', `/stations/${station.id}`);
+    receipt.cleanup.push({ what: 'archive station ' + TILL, status: gone.status });
+    const after = (await call('GET', `/stations/${station.id}`)).body;
+    receipt.cleanup.push({ what: 'read back', archived: !!(after?.station?.archivedAt ?? after?.archivedAt ?? after?.station?.archived) });
+  }
+  await call('POST', '/auth/sign-out', {}).catch(() => {});
+  await admin.dispose();
+  receipt.finishedAt = new Date().toISOString(); save();
+}
+console.log(JSON.stringify({ steps: Object.fromEntries(Object.entries(receipt.steps).map(([k, v]) => [k, { ...v, screen: v.screen ? v.screen.slice(0, 160) : undefined, afterEnter: v.afterEnter ? v.afterEnter.slice(0, 120) : undefined }])), cleanup: receipt.cleanup }, null, 1));
