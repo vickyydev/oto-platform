@@ -7,6 +7,11 @@ owner's own words; the "Details" section of every topic is empty on purpose
 and is filled only from what the owner says. No ticket is filed until a topic
 has its details._
 
+Epics these topics belong under once ticketed: SCRUM-181 (POS, booth and the
+money path) for sections A, B, C, E and F; SCRUM-182 (apps on the platform)
+for section D. The commit that first added this file carried a footer naming
+a ticket key that does not exist; this note and its commit put that right.
+
 How to read each topic:
 
 - **Owner's note.** The request as given, lightly tidied.
