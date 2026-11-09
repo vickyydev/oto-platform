@@ -34,7 +34,8 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   {
     // Repo tooling scripts run on Node 22 (global fetch/FormData/Blob included).
-    files: ['scripts/**/*.mjs'],
+    // `tools/data` holds the data restore (S2-22), run by hand against a database.
+    files: ['scripts/**/*.mjs', 'tools/**/*.mjs'],
     languageOptions: {
       globals: {
         console: 'readonly',

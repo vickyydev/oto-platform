@@ -199,8 +199,13 @@ How to read each topic:
 - **Owner's note.** Feed the real data to the system.
 - **Our reading.** Load the park's real records. Which records, from which
   source, and into which environment are the owner's to say.
-- **Details from the owner.** _(to be given)_
-- **How it works today.** _(to be checked)_
+- **Details from the owner (2026-11-09).** First, before any other topic: a
+  Navicat dump of the OTO App production database restored into staging's
+  `otoapp` schema, so the HR app is tested on real data and made ready for
+  production. Then the menus and prices from the owner's PDFs seeded for
+  the POS. Plan and dry run: `plans/data-restore/PLAN.md`.
+- **How it works today.** The restore procedure exists and passed a dry run
+  on the 19 September dump (2026-11-09). Staging still holds demo rows.
 - **Ticket.** none yet
 
 ---
