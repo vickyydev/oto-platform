@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
-import { CustomerTier, CartLine, CheckIn, ContactChannel, Discount, ManualDiscount, Sale, SaleQuotedPricing, TicketType, Member, TierVerification, DropOffServiceType, SelectedAddOn, INVENTORY_DEFAULT_VARIANT_ID } from '@/types';
+import { CustomerTier, CartLine, CheckIn, ContactChannel, Discount, ManualDiscount, Sale, SaleQuotedPricing, TicketType, Member, TierVerification, DropOffServiceType, SelectedAddOn } from '@/types';
 import type { DiscountComponentOption } from '@/components/shared/ManualDiscountModal';
 import { useStation } from '@/station/StationContext';
 import { announceSalePrinting, dispatchPlatformPrinting, dispatchPrintJobs, promptSetupStation, ticketPrintJobs } from '@/lib/printRouting';
@@ -10,7 +10,7 @@ import { takeBookingRedeemHandoff, takeDropOffHandoff } from '@/lib/dropoffHando
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { childReviewPatch, useChildReviewSave, useTicketDisplay } from '@/lib/displaySession';
 import { ChildReviewPromptSchema, childReviewAge, ConsentActionSchema, ConsentPromptSchema, consentSlotsComplete, consentActionAllowed,
-  newId, stockSizeName, type ChildReviewPrompt, type ConsentPrompt } from '@oto/shared';
+  newId, type ChildReviewPrompt, type ConsentPrompt } from '@oto/shared';
 import { useCustomerTheme } from '@/lib/themePref';
 import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines } from '@/lib/pricing';
 import { resolveRateToday } from '@/lib/pricingMode';
@@ -26,8 +26,8 @@ import { routeToPayment } from '@/lib/customerContact';
 import { staffTicksAgreements, takeConsentAction } from '@/lib/consentForm';
 import { setSaleOpen } from '@/pwa/openSale';
 import { getAddOns } from '@/store/catalogStore';
-import { inventoryFor, refreshSellableStock } from '@/api/stock';
-import { isSocksAddOnId } from '@/api/menu';
+import { refreshSellableStock } from '@/api/stock';
+import { cartStockShortfalls } from '@/lib/stockPrecheck';
 import { getDiscountReasons, recordSale, getTicketTypes, getDropOffPricing, getDefaultTier, getSupervisionPolicy, getDiscountByCode, incrementPromoUsage, ensureSaleGrantWallet, issueWalkInBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
 import { useBranch } from '@/branch/BranchContext';
 import { apiCheckinToCheckIn, checkinApi, foodProvisionToWire, TILL_NOT_LINKED, waitingStaysOf, type ApiNanny } from '@/api/checkin';
@@ -2736,52 +2736,11 @@ export default function Till() {
     // compare against what the platform says the branch holds (S2-14b,
     // `api/stock.ts`) so an edge-case UI race can't oversell. It is the
     // platform's own rule, read early: the commit refuses the same cart in the
-    // same words, and a race this cannot see is recorded at finalise.
+    // same words, and a race this cannot see is recorded at finalise. The
+    // socks counter, Regular Socks and an add-on taking stock from its shelf
+    // (Free Socks, SCRUM-799) add up on one shelf (`lib/stockPrecheck.ts`).
     {
-      const stockViolations: string[] = [];
-      const allAddOnsForCheck = getAddOns();
-      // Inventory-linked add-ons — aggregate by inventoryItemId + size. An
-      // add-on split across sizes counts each size against its own shelf (the
-      // prototype's guard ignored the split and counted only the default).
-      const needed = new Map<string, { name: string; label: string | null; qty: number }>();
-      // Socks are tracked as a plain integer per line (CartLine.socks), and are
-      // the branch's Regular Socks product on the platform whichever id this
-      // till holds them under (`isSocksAddOnId`, S2-14b) — counted on the same
-      // shelf as socks sold from the add-on grid, as the platform counts them.
-      const socksAddOn = allAddOnsForCheck.find((a) => isSocksAddOnId(a.id));
-      const totalSocks = lines.reduce((sum, l) => sum + l.socks, 0);
-      if (socksAddOn?.inventoryItemId && totalSocks > 0) {
-        const vid = inventoryFor(socksAddOn.inventoryItemId)?.variants[0]?.id ?? INVENTORY_DEFAULT_VARIANT_ID;
-        needed.set(`${socksAddOn.inventoryItemId}:${vid}`, { name: socksAddOn.name, label: null, qty: totalSocks });
-      }
-      for (const line of lines) {
-        for (const sa of line.addOns) {
-          const ao = allAddOnsForCheck.find((a) => a.id === sa.id);
-          if (!ao?.inventoryItemId) continue;
-          const parts =
-            sa.variantBreakdown && sa.variantBreakdown.length > 0
-              ? sa.variantBreakdown.map((b) => ({ vid: b.variantId, label: b.variantLabel, qty: b.quantity }))
-              : [{ vid: sa.variantId ?? INVENTORY_DEFAULT_VARIANT_ID, label: null, qty: sa.quantity }];
-          for (const part of parts) {
-            const key = `${ao.inventoryItemId}:${part.vid}`;
-            const prev = needed.get(key);
-            if (prev) {
-              prev.qty += part.qty;
-            } else {
-              needed.set(key, { name: ao.name, label: part.label, qty: part.qty });
-            }
-          }
-        }
-      }
-      for (const [key, { name, label, qty }] of needed) {
-        const [itemId, variantId] = key.split(':');
-        const invItem = inventoryFor(itemId);
-        const variant = invItem?.variants.find((v) => v.id === variantId);
-        const available = variant?.stock ?? Infinity;
-        if (qty > available) {
-          stockViolations.push(`${stockSizeName(name, label ?? null)} (need ${qty}, have ${available})`);
-        }
-      }
+      const stockViolations = cartStockShortfalls(lines, getAddOns());
       if (stockViolations.length > 0) {
         toast({
           title: 'Insufficient stock',

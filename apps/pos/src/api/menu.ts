@@ -29,7 +29,8 @@ export type ApiProduct = Pick<MenuRead['products'][number],
   'id' | 'kind' | 'code' | 'categoryId' | 'name' | 'description' | 'priceSatang' | 'priceWeekendSatang' | 'costSatang' |
   'prepStationOverride' | 'taxCategoryOverride' | 'translations' | 'sku' | 'stockItemId' | 'sortOrder' | 'active' |
   'archivedAt' | 'linkedModifierGroupIds'> & Partial<Pick<MenuRead['products'][number],
-  'branchId' | 'effectiveWeekendSatang' | 'effectivePrepStation' | 'effectiveTaxCategory' | 'variants' | 'stockLinks'>>;
+  'branchId' | 'effectiveWeekendSatang' | 'effectivePrepStation' | 'effectiveTaxCategory' | 'variants' | 'stockLinks' |
+  'stockShareItemId'>>;
 
 export type ApiProductStockLink = MenuRead['products'][number]['stockLinks'][number];
 
@@ -115,9 +116,23 @@ const modifierFields = new Map<string, ApiModifierGroup>();
 
 const nameKey = (name: string): string => name.trim().toLowerCase();
 
+/**
+ * SCRUM-799 — the item that owns each one-size shelf on the last menu read:
+ * stock item id → the product whose stock links are exactly that one item.
+ * An item that takes stock from another item's shelf (`stockShareItemId`,
+ * Free Socks from Regular Socks) is that shelf on the till, keyed by its owner.
+ */
+const stockShareOwnerByItem = new Map<string, string>();
+
 function stockKeyOf(p: ApiProduct): { inventoryItemId?: string } {
   const tracked = (p.stockLinks?.length ?? 0) > 0 || (p.stockLinks === undefined && !!p.stockItemId);
-  return tracked ? { inventoryItemId: p.id } : {};
+  if (tracked) return { inventoryItemId: p.id };
+  // The till's counts are keyed by product id (`api/stock.ts`), so a share
+  // reads, caps and guards on the owner's figures — as the platform's guard
+  // and its decrement take it from the owner's shelf. An owner this read does
+  // not name leaves the item uncounted here; the commit still holds the line.
+  const owner = p.stockShareItemId ? stockShareOwnerByItem.get(p.stockShareItemId) : undefined;
+  return owner && owner !== p.id ? { inventoryItemId: owner } : {};
 }
 
 let loaded = false;
@@ -268,6 +283,11 @@ export function mapMenu(menu: ApiMenu): MappedMenu {
   categoryNameById.clear();
   categoryNamesByArea.clear();
   categoryIdByTaxArea.clear();
+  stockShareOwnerByItem.clear();
+  for (const p of menu.products) {
+    const links = p.stockLinks ?? [];
+    if (links.length === 1 && links[0]!.variantId === null) stockShareOwnerByItem.set(links[0]!.stockItemId, p.id);
+  }
   const categoryById = new Map(menu.categories.map((c) => [c.id, c]));
   /**
    * A sub-category leaves `taxableCategory` null and inherits its parent's —
