@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { EMPLOYMENT_ENDED } from "@shared/payOnly";
 
 export class ApiError extends Error {
   status: number;
@@ -96,6 +97,12 @@ queryClient.getQueryCache().subscribe((event) => {
     if (err instanceof ApiError && err.status === 401) {
       console.log(`[auth-diag] 401 from key=${JSON.stringify(queryKey)}, clearing /api/user cache`);
       queryClient.setQueryData(["/api/user"], null);
+    }
+    // SCRUM-769: the employment ended while this page was open (the 03:00
+    // batch moved the login to pay only). Read the user again, so the app
+    // switches to My pay rather than showing refusals.
+    if (err instanceof ApiError && err.status === 403 && err.reasonCode === EMPLOYMENT_ENDED) {
+      void queryClient.invalidateQueries({ queryKey: ["/api/user"] });
     }
   }
 });

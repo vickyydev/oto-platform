@@ -137,8 +137,9 @@ export function registerPresenceNotificationDelivery(app: Express, database: Dat
           if (!locked) throw new PresenceAccessError(404, "Delivery request not found");
           if (locked.status === "Delivered") return locked;
           // Re-read the current login for a retry after staff access is connected.
-          const [recipient] = current.userId ? await tx.select({ id: users.id, isActive: users.isActive }).from(users).where(eq(users.id, current.userId)).for("share") : [];
-          if (!recipient?.isActive || recipient.id !== employee.userId || recipientTenant !== tenantId) {
+          const [recipient] = current.userId ? await tx.select({ id: users.id, isActive: users.isActive, accessMode: users.accessMode }).from(users).where(eq(users.id, current.userId)).for("share") : [];
+          // SCRUM-769: a login in pay only (the employment has ended) reads no staff inbox.
+          if (!recipient?.isActive || recipient.accessMode !== "full" || recipient.id !== employee.userId || recipientTenant !== tenantId) {
             const [failed] = await tx.update(deliveries).set({ status: "Failed", failureMessage: "Staff inbox is unavailable. Connect an active staff login in this park, then retry.", updatedAt: new Date() }).where(eq(deliveries.id, locked.id)).returning();
             return failed;
           }

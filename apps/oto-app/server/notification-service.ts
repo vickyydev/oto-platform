@@ -3,6 +3,7 @@ import { notifications } from "./db/coreSchema";
 import { users, employees } from "../shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import type { InsertNotification } from "./db/coreSchema";
+import { inPayOnly } from "./lib/payOnlyAccess";
 
 async function getActorName(userId: string, tenantId: string): Promise<string> {
   try {
@@ -26,6 +27,8 @@ async function getActorName(userId: string, tenantId: string): Promise<string> {
 export async function createNotification(data: InsertNotification): Promise<void> {
   try {
     if (data.recipientUserId === data.actorUserId) return;
+    // SCRUM-769: a login whose employment has ended reads no inbox; nothing is addressed to it.
+    if (await inPayOnly(data.recipientUserId)) return;
 
     await db.insert(notifications).values(data);
   } catch (err) {

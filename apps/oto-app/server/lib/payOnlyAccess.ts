@@ -1,7 +1,10 @@
+import type { NextFunction, Request, Response } from "express";
 import { and, eq, inArray, isNotNull, lt, sql } from "drizzle-orm";
 import { employees, users, type UserAccessMode } from "@shared/schema";
+import { EMPLOYMENT_ENDED, PAY_ONLY_MESSAGE } from "@shared/payOnly";
 import { db } from "../db";
 import type { DbExecutor } from "../storage";
+import { payOnlyRefuses } from "./payOnlyRoutes";
 
 /**
  * "Pay only" (SCRUM-769): what a login reaches once its employment has ended.
@@ -17,8 +20,8 @@ import type { DbExecutor } from "../storage";
  *    still let the person in, and `is_active` — the switch the platform's
  *    lifecycle trigger (0031) reports — does not change: no switch-off is
  *    queued for the platform while the person is in pay only;
- *  - the app then answers My pay alone, and addresses no notification to
- *    the login;
+ *  - the app then answers My pay alone (the fence below and the client's
+ *    pay-only shell), and addresses no notification to the login;
  *  - a login an administrator switches off is a different switch: it is off,
  *    and pay only changes nothing about that;
  *  - Offboard itself never sets it; Onboard Again's start lifts it
@@ -81,4 +84,31 @@ export async function liftPayOnlyWithin(tx: DbExecutor, userId: string, now: Dat
     .where(and(eq(users.id, userId), eq(users.accessMode, PAY_ONLY)))
     .returning({ id: users.id });
   return lifted.length > 0;
+}
+
+// ─── What a login in pay only reaches ────────────────────────────────────────
+
+/**
+ * The fence, registered after the session is read (`server/routes.ts`, after
+ * `loadUserWithAccess`): a signed-in login in pay only is answered 403
+ * EMPLOYMENT_ENDED, in words, everywhere but the routes `./payOnlyRoutes.ts`
+ * names. Read from the session's user, which is read from the database on
+ * every request, so a login the night batch moves is fenced from its next
+ * request on. Anybody else passes untouched.
+ */
+export function payOnlyFence(req: Request, res: Response, next: NextFunction): void {
+  const user = req.user as { accessMode?: string } | undefined;
+  if (!req.isAuthenticated?.() || user?.accessMode !== PAY_ONLY || !payOnlyRefuses(req.method, req.path)) return next();
+  res.setHeader("Cache-Control", "private, no-store");
+  res.status(403).json({ reason: EMPLOYMENT_ENDED, reasonCode: EMPLOYMENT_ENDED, message: PAY_ONLY_MESSAGE });
+}
+
+/**
+ * Whether a notification addressed to this login should be dropped: a login in
+ * pay only reads no inbox (the fence refuses it), so nothing is addressed to it.
+ */
+export async function inPayOnly(userId: string | null | undefined, exec: DbExecutor = db): Promise<boolean> {
+  if (!userId) return false;
+  const [row] = await exec.select({ accessMode: users.accessMode }).from(users).where(eq(users.id, userId)).limit(1);
+  return row?.accessMode === PAY_ONLY;
 }

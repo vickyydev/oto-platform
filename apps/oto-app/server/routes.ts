@@ -179,6 +179,7 @@ import { FACE_CLOCK_OFF_REFUSAL, FACE_ENROLMENT_OFF_REFUSAL, FACE_OFF_NO_MATCH, 
 import { SHIFT_GROUP_DELETE_NEEDS_TARGET, SHIFT_GROUP_REQUIRED, noShiftGroup, shiftStillOnRota } from "./lib/shiftGroupRequired";
 import { archivedBranchIds } from "./lib/platformBranches";
 import { branchAddedAt, branchesAddedByEdit, checklistRunStartDate } from "./lib/checklistBranchStart";
+import { payOnlyFence } from "./lib/payOnlyAccess";
 import {
   BRANCH_NOT_FOUND,
   CATALOG_ITEM_NOT_FOUND,
@@ -865,6 +866,8 @@ export async function registerRoutes(
 
   // Load user with branch access for all authenticated requests
   app.use(loadUserWithAccess);
+  // SCRUM-769: a login whose employment has ended reaches My pay alone (lib/payOnlyAccess.ts).
+  app.use(payOnlyFence);
   registerQaRoutes(app, requireAuth);
 
   // Advisors have no employee record, so employee-only features (contracts,

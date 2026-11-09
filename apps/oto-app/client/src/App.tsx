@@ -10,6 +10,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { QaReportLauncher } from "@/components/qa-report-launcher";
 import { ViewAsBanner } from "@/components/view-as-banner";
+import { PayOnlyGate } from "@/components/pay-only-app";
 import { ThemeProvider } from "@/components/theme-provider";
 import { BranchProvider } from "@/hooks/use-branch-context";
 import { ModeProvider, useMode } from "@/hooks/use-mode";
@@ -747,18 +748,21 @@ function App() {
       <ThemeProvider>
         <I18nProvider>
           <AuthProvider>
-            <BranchProvider>
-              <ModeProvider>
-                <TooltipProvider>
-                  <Toaster />
-                  <GlobalUploadProgress />
-                  {/* SCRUM-648: a support administrator's view-as window, named over every page; never dismissible. */}
-                  <ViewAsBanner />
-                  <Router />
-                  <QaReportLauncher />
-                </TooltipProvider>
-              </ModeProvider>
-            </BranchProvider>
+            {/* SCRUM-769: a login whose employment has ended gets My pay alone, in place of everything below. */}
+            <PayOnlyGate>
+              <BranchProvider>
+                <ModeProvider>
+                  <TooltipProvider>
+                    <Toaster />
+                    <GlobalUploadProgress />
+                    {/* SCRUM-648: a support administrator's view-as window, named over every page; never dismissible. */}
+                    <ViewAsBanner />
+                    <Router />
+                    <QaReportLauncher />
+                  </TooltipProvider>
+                </ModeProvider>
+              </BranchProvider>
+            </PayOnlyGate>
           </AuthProvider>
         </I18nProvider>
       </ThemeProvider>

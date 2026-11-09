@@ -8,8 +8,11 @@ import { login, createStaffWithLogin, loginAsStaff } from "./helpers";
 /**
  * Bug #16: User accounts not deactivated on departure.
  *
- * When an employee's lastWorkingDay passes, their user account should be
- * deactivated so they can no longer log in.
+ * When an employee's lastWorkingDay passes, their login should reach nothing
+ * of the app but their own pay. SCRUM-769: the scheduled step no longer
+ * switches the login off; it puts it in pay only, so /api/user still answers
+ * and every other route answers 403 EMPLOYMENT_ENDED. A departure date set in
+ * the past at Offboard still switches the login off at once, as before.
  */
 
 async function goToEmployeeProfile(page: Page, fullName: string) {
@@ -77,7 +80,7 @@ async function offboardEmployee(page: Page, lastWorkingDay: Date) {
 }
 
 test.describe.serial("departed employee deactivation", () => {
-  test("scheduled task deactivates departed employee account", async ({ browser }) => {
+  test("scheduled task limits a departed employee's account to their pay", async ({ browser }) => {
     test.setTimeout(90000);
     const adminContext = await browser.newContext();
     const staffContext = await browser.newContext();
@@ -109,20 +112,21 @@ test.describe.serial("departed employee deactivation", () => {
       yesterday.setDate(yesterday.getDate() - 1);
       await db.update(employees).set({ lastWorkingDay: yesterday }).where(eq(employees.email, email));
 
-      // Trigger the deactivation job
+      // Trigger the departed step
       const body = await adminPage.evaluate(async () => {
         const res = await fetch("/api/admin/run-departed-deactivation", { method: "POST" });
-        if (!res.ok) throw new Error(`Deactivation job failed: ${res.status}`);
+        if (!res.ok) throw new Error(`Departed step failed: ${res.status}`);
         return res.json();
       });
-      expect(body.deactivated).toBeGreaterThanOrEqual(1);
+      expect(body.payOnly).toBeGreaterThanOrEqual(1);
 
-      // Staff should now be blocked
-      const afterStatus = await staffPage.evaluate(async () => {
-        const res = await fetch("/api/user", { cache: "no-store" });
-        return res.status;
+      // Staff still sign in, to their pay alone: everything else is refused
+      const after = await staffPage.evaluate(async () => {
+        const me = await fetch("/api/user", { cache: "no-store" });
+        const other = await fetch("/api/employees", { cache: "no-store" });
+        return { me: me.status, accessMode: (await me.json()).accessMode, other: other.status, reason: (await other.json()).reasonCode };
       });
-      expect(afterStatus).toBe(401);
+      expect(after).toEqual({ me: 200, accessMode: "pay_only", other: 403, reason: "EMPLOYMENT_ENDED" });
     } finally {
       await adminContext.close();
       await staffContext.close();
