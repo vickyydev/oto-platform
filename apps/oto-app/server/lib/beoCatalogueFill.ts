@@ -3,7 +3,6 @@ import { z } from "zod";
 import {
   beoSetMenuTemplates,
   birthdayPackageTemplates,
-  branches,
   entertainmentPackageTemplates,
   packageLineItemTemplates,
 } from "@shared/schema";
@@ -18,6 +17,7 @@ import {
   type BeoAiSetMenuItem,
   type BeoAiSource,
 } from "@shared/beoAiFill";
+import { parkClockAt } from "./aiFill";
 import type { InboxTranscriptLine } from "./inboxConfirmation";
 import type { DbExecutor } from "./packageSnapshot";
 
@@ -27,29 +27,28 @@ import type { DbExecutor } from "./packageSnapshot";
  *
  * Create BEO's AI Fill used to read one message (the team's final
  * confirmation) and answer free text: a package's name, menu lines by name,
- * activities as a sentence. Now it reads the conversation (the platform's
- * `transcript`, the ruling message named in it) and the park's catalogue
- * (`loadBeoCatalogue`), and the model also answers a `catalogue` section:
- * the package, set menu and choices, add-ons, entertainment and extra menu
- * lines BY ID, the counts, times, cake and deposit, each with the line it
- * came from. `resolveCatalogueAnswer` checks every id against the catalogue
- * the model was handed (an id it does not hold is a free line in the
- * message's own words), and the source of every value is the transcript's —
- * the line's author — never the model's say-so where the line is known.
+ * activities as a sentence. That read stays as it was (the form's own fields,
+ * from the ruling message alone). Beside it, with the park's catalogue
+ * (`loadBeoCatalogue`), the model reads the conversation (the platform's
+ * `transcript`, the ruling message marked in it) and answers only a
+ * `catalogue` section: the package, set menu and choices, add-ons,
+ * entertainment and extra menu lines BY ID, the counts, times, cake and
+ * deposit, each with the line it came from. `resolveCatalogueAnswer` checks
+ * every id against the catalogue the model was handed (an id it does not hold
+ * is a free line in the message's own words), and the source of every value
+ * is the transcript's — the line's author — never the model's say-so.
  *
  * The till's F&B catalogue is not readable from this app: the food the fill
  * matches to is what the park's set menus name with a till product code
  * (SCRUM-803), and anything else is a free line marked `notInMenu`.
  */
 
-/** The park's catalogue for one party: what the review shows and the model is handed. */
-export interface BeoCatalogue extends BeoAiCatalogueView {
-  /** The party's park: the transcript's times are its local times. */
-  place: { name: string | null; timeZone: string };
-}
-
-/** The parks' zone when a park names none: every branch is in Bangkok today. */
-const PARKS_ZONE = "Asia/Bangkok";
+/**
+ * The park's catalogue for one party: what the review shows and the model is
+ * handed. The park's clock is SCRUM-814's (`AiRouteDeps.parkPlace`), read once
+ * per fill, not here.
+ */
+export type BeoCatalogue = BeoAiCatalogueView;
 
 const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 const int = (v: unknown): number | null => (typeof v === "number" && Number.isInteger(v) && v > 0 ? v : null);
@@ -151,17 +150,8 @@ export async function loadBeoCatalogue(db: DbExecutor, input: { tenantId: string
     .from(entertainmentPackageTemplates)
     .where(and(eq(entertainmentPackageTemplates.tenantId, input.tenantId), eq(entertainmentPackageTemplates.isActive, true)))
     .orderBy(asc(entertainmentPackageTemplates.sortOrder), asc(entertainmentPackageTemplates.name));
-  let place: BeoCatalogue["place"] = { name: null, timeZone: PARKS_ZONE };
-  if (input.branchId) {
-    const [branch] = await db
-      .select({ name: branches.name, timeZone: branches.timezone })
-      .from(branches)
-      .where(and(eq(branches.id, input.branchId), eq(branches.tenantId, input.tenantId)));
-    if (branch) place = { name: branch.name, timeZone: branch.timeZone || PARKS_ZONE };
-  }
   const setMenus = menus.map((m) => ({ id: m.id, name: m.name, items: setMenuItemsOf(m.items) }));
   return {
-    place,
     packages: packages.map((p) => ({
       id: p.id,
       name: p.name,
@@ -201,7 +191,6 @@ export async function loadBeoCatalogue(db: DbExecutor, input: { tenantId: string
 
 /** No catalogue: the fill reads as SCRUM-660's did (a catalogue that could not be read is this). */
 export const emptyCatalogue = (): BeoCatalogue => ({
-  place: { name: null, timeZone: PARKS_ZONE },
   packages: [],
   setMenus: [],
   entertainment: [],
@@ -226,30 +215,12 @@ export interface TranscriptRef {
 /** The longest conversation handed to the model at once; older lines go first (the ruling never). */
 export const TRANSCRIPT_TEXT_MAX = 40_000;
 
-/** "2026-11-05 14:30", the park's own clock, read field by field. */
+/** "2026-11-05 14:30", the park's own clock (SCRUM-814's `parkClockAt`). */
 function localTimeOf(iso: string, timeZone: string): string {
   const at = new Date(iso);
   if (Number.isNaN(at.getTime())) return iso;
-  const read = (zone: string) => {
-    const parts = new Intl.DateTimeFormat("en-US", {
-      timeZone: zone,
-      calendar: "gregory",
-      numberingSystem: "latn",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hourCycle: "h23",
-    }).formatToParts(at);
-    const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? "";
-    return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}`;
-  };
-  try {
-    return read(timeZone);
-  } catch {
-    return read(PARKS_ZONE);
-  }
+  const clock = parkClockAt(at, timeZone);
+  return `${clock.date} ${clock.time}`;
 }
 
 /**
@@ -348,15 +319,20 @@ export function catalogueForModel(c: BeoAiCatalogueView): unknown {
   };
 }
 
-/** The rules for reading a whole conversation: who wins, and what the family's values are. */
+/**
+ * The rules for reading a whole conversation: who wins, what the family's
+ * values are, and that the conversation is read only into the `catalogue`
+ * key (every entry names its line, so its source is known). The form's own
+ * fields are read apart, from the ruling message alone, as before.
+ */
 export const BEO_CONVERSATION_RULES = `
 
 THE CONVERSATION
 The new text is not one message: it is the whole conversation between the family and the park's team, oldest line first. Each line starts with its number, who wrote it ([family] is the customer, [team] is a person on the park's team) and its local time at the park. The line marked RULING is the team's final confirmation.
 - The team's confirmation wins: where the RULING line (or another team line confirming or changing what the family asked) and a family line speak about the same thing, use the team's value
-- The family's values are the defaults: what the family asked for that no team line confirms or changes is still filled, as the family's
+- The family's values are the defaults: what the family asked for that no team line confirms or changes is still given, as the family's
 - A later line correcting an earlier one wins
-- Fill the form's own fields from the whole conversation by the same rules`;
+- Answer ONLY the "catalogue" key described below and leave every other key of the structure above out: the form's other fields are read apart, from the RULING line alone`;
 
 /** The format of the `catalogue` key the model adds to its answer. */
 export const BEO_CATALOGUE_OUTPUT_FORMAT = `"catalogue": {
@@ -481,12 +457,25 @@ function readMany<T>(schema: z.ZodType<T, z.ZodTypeDef, unknown>, raw: unknown, 
 const fold = (s: string) => s.normalize("NFC").trim().toLowerCase().replace(/\s+/g, " ");
 
 /**
+ * Whether `next` replaces `was` for the same item: the team's confirmation
+ * wins over the family's whatever the order; between two of the team's (or
+ * two of the family's), the later line wins.
+ */
+export function laterOrTeamWins(next: BeoAiFrom, was: BeoAiFrom): boolean {
+  if (next.source !== was.source) return next.source === "team";
+  return (next.line ?? 0) >= (was.line ?? 0);
+}
+
+/**
  * The model's `catalogue` section, checked against the catalogue it was
  * handed: ids it does not hold, options a group does not list and codes the
- * food list lacks become free lines in the conversation's own words; every
- * value's source is the author of the line it names (the ruling message's,
- * when it was read alone; the model's own `source` only where it named no
- * line we hold; neither, the family's — a default for staff to check).
+ * food list lacks become free lines in the conversation's own words. Every
+ * value's source is the author of the line it names, never the model's own
+ * `source`: the ruling message's when it was read alone (`fallback`); in a
+ * conversation, a line we do not hold (or none) is the family's — a default
+ * for staff to check — unless every line read is the team's. The same item
+ * named twice (an add-on, a set-menu choice, a dish, an entertainment) is one
+ * entry: the team's over the family's, else the later line's.
  */
 export function resolveCatalogueAnswer(
   raw: unknown,
@@ -496,11 +485,20 @@ export function resolveCatalogueAnswer(
   fallback?: BeoAiFrom,
 ): BeoAiProposal {
   const answer = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+  const allTeam = refs.length > 0 && refs.every((r) => r.source === "team");
   const fromOf = (entry: { line?: number; source?: BeoAiSource }): BeoAiFrom => {
     const known = entry.line ? refs.find((r) => r.line === entry.line) : undefined;
     if (known) return { source: known.source, at: known.at, line: known.line };
     if (fallback) return fallback;
-    return { source: entry.source ?? "family", at: null, line: null };
+    // A conversation holding only the team's lines (the ruling alone): the team's.
+    if (allTeam) return refs.length === 1 ? { source: "team", at: refs[0]!.at, line: refs[0]!.line } : { source: "team", at: null, line: null };
+    return { source: "family", at: null, line: null };
+  };
+  /** Puts `entry` in `list`, or in place of the same item there when it wins. */
+  const merge = <T extends { from: BeoAiFrom }>(list: T[], entry: T, same: (x: T) => boolean) => {
+    const at = list.findIndex(same);
+    if (at < 0) list.push(entry);
+    else if (laterOrTeamWins(entry.from, list[at]!.from)) list[at] = entry;
   };
   const proposal: BeoAiProposal = {
     package: null,
@@ -531,9 +529,8 @@ export function resolveCatalogueAnswer(
     const line = pkg?.lines.find((l) => l.id === a.lineId && !l.included);
     if (line) {
       const quantity = a.quantity && a.quantity > 0 ? a.quantity : 1;
-      const twice = proposal.addOns.find((x) => x.lineId === line.id);
-      if (twice) twice.quantity = Math.max(twice.quantity, quantity);
-      else proposal.addOns.push({ lineId: line.id, quantity, said: a.said ?? null, chatPrice: a.chatPrice ?? null, from: fromOf(a) });
+      const entry = { lineId: line.id, quantity, said: a.said ?? null, chatPrice: a.chatPrice ?? null, from: fromOf(a) };
+      merge(proposal.addOns, entry, (x) => x.lineId === line.id);
     } else {
       other(a.said, a.chatPrice, fromOf(a));
     }
@@ -564,17 +561,10 @@ export function resolveCatalogueAnswer(
         }
         continue;
       }
-      const same = chosen.findIndex((x) => x.itemId === group.id);
+      // A group of one choice holds one option (the team's, else the later line's);
+      // a group of several holds each option once, its source the same way.
       const entry = { itemId: group.id, option, said: c.said ?? null, from: cFrom };
-      if (same < 0 || group.allowMultiple) {
-        if (!chosen.some((x) => x.itemId === group.id && x.option === option)) chosen.push(entry);
-      } else {
-        // One choice in the group: the team's wins over the family's, else the later line.
-        const was = chosen[same]!;
-        const teamWins = cFrom.source === "team" && was.from.source === "family";
-        const familyLoses = cFrom.source === "family" && was.from.source === "team";
-        if (teamWins || (!familyLoses && (cFrom.line ?? 0) >= (was.from.line ?? 0))) chosen[same] = entry;
-      }
+      merge(chosen, entry, (x) => x.itemId === group.id && (!group.allowMultiple || x.option === option));
     }
     proposal.setMenu = { templateId: menu.id, from, choices: chosen };
   }
@@ -585,8 +575,9 @@ export function resolveCatalogueAnswer(
     const food = m.productCode ? codes.get(m.productCode.trim().toUpperCase()) : undefined;
     const itemName = m.itemName ?? food?.names[0];
     if (!itemName) continue;
-    proposal.menuLines.push({
-      menu: (m.menu ?? "kids") as BeoAiMenu,
+    const menu = (m.menu ?? "kids") as BeoAiMenu;
+    const line = {
+      menu,
       itemName,
       quantity: m.quantity ?? 1,
       productCode: food?.code ?? null,
@@ -594,15 +585,18 @@ export function resolveCatalogueAnswer(
       notInMenu: !food,
       chatPrice: m.chatPrice ?? null,
       from: fromOf(m),
-    });
+    };
+    // A dish the menu codes is one line per list; one it lacks stays as the conversation said it.
+    if (food) merge(proposal.menuLines, line, (x) => x.productCode === food.code && x.menu === menu);
+    else proposal.menuLines.push(line);
   }
 
-  // Entertainment.
+  // Entertainment: one line per entertainment the menu has; a free line as said.
   for (const e of readMany(EntertainmentAnswer, answer.entertainment, 30)) {
     const t = e.templateId ? catalogue.entertainment.find((x) => x.id === e.templateId) : undefined;
     const name = t?.name ?? e.said;
     if (!name) continue;
-    proposal.entertainment.push({
+    const entry = {
       templateId: t?.id ?? null,
       name,
       said: e.said ?? null,
@@ -610,7 +604,9 @@ export function resolveCatalogueAnswer(
       chatPrice: e.chatPrice ?? null,
       notInCatalogue: !t,
       from: fromOf(e),
-    });
+    };
+    if (t) merge(proposal.entertainment, entry, (x) => x.templateId === t.id);
+    else proposal.entertainment.push(entry);
   }
 
   // The event's own fields.

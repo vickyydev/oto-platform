@@ -32,7 +32,6 @@ import {
 } from "./lib/beoTeamProposals";
 import { readInboxConfirmation, type InboxRead } from "./lib/inboxConfirmation";
 import {
-  BEO_CONVERSATION_RULES,
   beoCatalogueSystemBlock,
   catalogueIsEmpty,
   emptyCatalogue,
@@ -42,7 +41,7 @@ import {
   type BeoCatalogue,
   type TranscriptRef,
 } from "./lib/beoCatalogueFill";
-import { approveBeoAiFill, sectionsHeld } from "./lib/beoAiApprove";
+import { approveBeoAiFill, parentSelectionOf, sectionsHeld } from "./lib/beoAiApprove";
 import type { DbExecutor } from "./lib/packageSnapshot";
 import { BeoAiApproveBodySchema, type BeoAiFrom, type BeoAiProposal, type BeoAiReview } from "@shared/beoAiFill";
 
@@ -191,7 +190,7 @@ export const defaultAiRouteDeps: AiRouteDeps = {
   inboxConfirmation: readInboxConfirmation,
   parkPlace: defaultParkPlace,
   now: () => new Date(),
-  catalogue:(event) => loadBeoCatalogue(db, { tenantId: event.tenantId, branchId: event.branchId }),
+  catalogue: (event) => loadBeoCatalogue(db, { tenantId: event.tenantId, branchId: event.branchId }),
   afterApprove: async (eventId) => {
     const { generateTimelineFromBeo } = await import("./beo-routes");
     await generateTimelineFromBeo(eventId);
@@ -201,6 +200,13 @@ export const defaultAiRouteDeps: AiRouteDeps = {
 /** The run's schema with the catalogue section the model adds when it is handed the catalogue (read apart, leniently). */
 const BeoFillWithCatalogueSchema = BeoFillSchema.extend({ catalogue: z.unknown().optional() }) as unknown as z.ZodType<
   BeoFill & { catalogue?: unknown },
+  z.ZodTypeDef,
+  unknown
+>;
+
+/** The conversation's read: only its `catalogue` key is taken (anything else it answers is left). */
+const CatalogueOnlySchema = z.object({ catalogue: z.unknown().optional() }).passthrough() as unknown as z.ZodType<
+  { catalogue?: unknown },
   z.ZodTypeDef,
   unknown
 >;
@@ -233,45 +239,64 @@ export async function runBeoFill(
   deps: AiRouteDeps,
   req: Request,
   input: {
+    /** The message the form's own fields are read from: the pasted text, or the inbox's ruling message. */
     text: string;
     existingData?: unknown;
     event: BeoFillEvent | null;
     source: { kind: "pasted" } | { kind: "inbox"; conversationId: string; messageId: string };
     /**
-     * SCRUM-815: `text` is the whole conversation, numbered (`renderTranscript`):
-     * what each line number stands for, and whether older lines were left out.
+     * SCRUM-815: the whole conversation, numbered (`renderTranscript`): what
+     * each line number stands for, and whether older lines were left out. Read
+     * (with a catalogue) only for the catalogue section, beside the form's read
+     * of `text`, so every value it gives names its line.
      */
-    conversation?: { refs: TranscriptRef[]; cut: boolean } | null;
+    conversation?: { text: string; refs: TranscriptRef[]; cut: boolean } | null;
     /** SCRUM-815: the park's catalogue to match to; the answer then carries a checked proposal. */
     catalogue?: BeoCatalogue | null;
     /** Where a catalogue value is from when the model names no line (the ruling message, read alone). */
     fallbackFrom?: BeoAiFrom;
+    /** SCRUM-814: the park, when the caller has already read it. */
+    place?: ParkPlace;
   },
 ): Promise<{ run: AiRun<BeoFill>; proposals: TeamProposals; proposal: BeoAiProposal | null }> {
   // SCRUM-814: the park's today ends the prompt, so a year-less or relative date reads against it.
-  const place = await deps.parkPlace(req, input.event);
-  // SCRUM-815: the conversation's rules, and the catalogue with how to match it; today stays last.
+  const place = input.place ?? (await deps.parkPlace(req, input.event));
+  const today = beoTodayLine(place, deps.now());
+  const ai = { ...deps.ai, readSetting: (key: string) => deps.readSetting(req, key) };
+  // SCRUM-815: the catalogue, with how to match it; today stays last.
   const catalogue = input.catalogue && !catalogueIsEmpty(input.catalogue) ? input.catalogue : null;
-  const catalogueExtra = catalogue
-    ? beoCatalogueSystemBlock(catalogue, { conversation: !!input.conversation })
-    : input.conversation
-      ? BEO_CONVERSATION_RULES
-      : "";
-  const run = await runAiHelper(
-    { ...deps.ai, readSetting: (key) => deps.readSetting(req, key) },
-    {
-      helper: "beo_parsing",
-      schema: (catalogue ? BeoFillWithCatalogueSchema : BeoFillSchema) as typeof BeoFillWithCatalogueSchema,
-      systemExtra: catalogueExtra + beoTodayLine(place, deps.now()),
-      user: beoParseUserMessage(input.text, input.existingData),
-      inputChars: input.text.length,
-    },
-  );
+  const conversation = catalogue ? (input.conversation ?? null) : null;
+  // The form's own fields: `text` alone, as SCRUM-660 read it. With a catalogue and no
+  // conversation, the same read also answers the catalogue section, from `text`.
+  const formRead = runAiHelper(ai, {
+    helper: "beo_parsing",
+    schema: (catalogue && !conversation ? BeoFillWithCatalogueSchema : BeoFillSchema) as typeof BeoFillWithCatalogueSchema,
+    systemExtra: (catalogue && !conversation ? beoCatalogueSystemBlock(catalogue, { conversation: false }) : "") + today,
+    user: beoParseUserMessage(input.text, input.existingData),
+    inputChars: input.text.length,
+  });
+  // With a conversation, its read answers only the catalogue section, each entry naming its line.
+  const conversationRead =
+    catalogue && conversation
+      ? runAiHelper(ai, {
+          helper: "beo_parsing",
+          schema: CatalogueOnlySchema,
+          systemExtra: beoCatalogueSystemBlock(catalogue, { conversation: true }) + today,
+          user: beoParseUserMessage(conversation.text, undefined),
+          inputChars: conversation.text.length,
+        })
+      : null;
+  const [run, catalogueRun] = await Promise.all([formRead, conversationRead]);
   let proposal: BeoAiProposal | null = null;
   if (run.ok && catalogue) {
-    const { catalogue: answered, ...fill } = run.value as BeoFill & { catalogue?: unknown };
+    const { catalogue: fromForm, ...fill } = run.value as BeoFill & { catalogue?: unknown };
     run.value = fill;
-    proposal = resolveCatalogueAnswer(answered, catalogue, input.conversation?.refs ?? [], input.fallbackFrom);
+    if (!conversation) proposal = resolveCatalogueAnswer(fromForm, catalogue, [], input.fallbackFrom);
+    else if (catalogueRun?.ok) proposal = resolveCatalogueAnswer(catalogueRun.value.catalogue, catalogue, conversation.refs);
+  }
+  if (catalogueRun && !catalogueRun.ok) {
+    // The form's read stands: the review is the free-text preview of before.
+    log().warn({ ...runLogFields(catalogueRun.facts), eventId: input.event?.id ?? null }, "the conversation's catalogue read did not fill");
   }
   const proposals =
     run.ok && input.event ? proposeTeam(run.value, await deps.teamCandidates(input.event)) : NO_TEAM_PROPOSALS;
@@ -282,7 +307,7 @@ export async function runBeoFill(
   try {
     const from =
       input.source.kind === "inbox"
-        ? input.conversation
+        ? conversation
           ? "the inbox conversation"
           : "the inbox confirmation message"
         : "a pasted message";
@@ -307,7 +332,10 @@ export async function runBeoFill(
         inputChars: run.facts.inputChars,
         sections: run.ok ? filledSections(run.value) : [],
         team: proposalCounts(proposals),
-        ...(input.conversation ? { transcriptLines: input.conversation.refs.length, transcriptCut: input.conversation.cut } : {}),
+        ...(conversation ? { transcriptLines: conversation.refs.length, transcriptCut: conversation.cut } : {}),
+        ...(catalogueRun
+          ? { catalogueRead: { outcome: catalogueRun.facts.outcome, inputChars: catalogueRun.facts.inputChars, model: catalogueRun.facts.model } }
+          : {}),
         ...(proposal ? { catalogue: catalogueCounts(proposal) } : {}),
       }),
     });
@@ -486,40 +514,52 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
       if (!message) return refuse("no_confirmation", event.id);
       if (message.body.length > AI_TEXT_MAX) return refuse("too_long", event.id);
 
-      // SCRUM-815: the whole conversation (the platform's transcript, the ruling
-      // message marked in it), matched to the park's catalogue. A platform that
-      // sends no transcript, or a park with no catalogue, is read as before.
+      // SCRUM-815: the form's own fields are read from the ruling message alone,
+      // as SCRUM-660 read them. With the park's catalogue, the whole conversation
+      // (the platform's transcript, the ruling message marked in it) is read
+      // beside it into the catalogue section, every value naming its line. A
+      // park with no catalogue, or a platform that sends no transcript, never
+      // has the conversation read: the ruling message alone, as before.
       const ruling = { id: message.id, body: message.body, at: message.sentAt ?? message.createdAt };
       const catalogue = await deps.catalogue(event).catch((error: unknown) => {
         // The fill still runs, as before the catalogue: the review is the free-text preview.
         log().warn({ err: (error as Error)?.message ?? String(error), eventId: event.id }, "the park's catalogue was not read for the AI fill");
         return emptyCatalogue();
       });
+      // SCRUM-814's park, read once: the prompt's today and the transcript's clock.
+      const place = await deps.parkPlace(req, event);
       const transcript = confirmation.transcript ?? [];
       const transcriptCut = confirmation.transcriptCut ?? false;
-      const conversation = transcript.length > 0 ? renderTranscript(transcript, ruling, catalogue.place.timeZone) : null;
+      const rendered =
+        transcript.length > 0 && !catalogueIsEmpty(catalogue) ? renderTranscript(transcript, ruling, place.timeZone) : null;
+      const conversation = rendered ? { text: rendered.text, refs: rendered.refs, cut: rendered.cut || transcriptCut } : null;
+      const rulingFrom: BeoAiFrom = conversation
+        ? { source: "team", at: ruling.at, line: conversation.refs.find((r) => r.ruling)?.line ?? null }
+        : { source: "team", at: ruling.at, line: null };
       const { run, proposals, proposal } = await runBeoFill(deps, req, {
-        text: conversation ? conversation.text : message.body,
+        text: message.body,
         existingData,
         event,
         source: { kind: "inbox", conversationId: confirmation.conversationId, messageId: message.id },
-        conversation: conversation ? { refs: conversation.refs, cut: conversation.cut || transcriptCut } : null,
+        conversation,
         catalogue,
-        fallbackFrom: conversation ? undefined : { source: "team", at: ruling.at, line: null },
+        fallbackFrom: rulingFrom,
+        place,
       });
       if (!run.ok) return res.status(run.status).json({ message: run.message, reason: run.reason });
       // Final Message to Parent: this very message while the form's is empty;
       // a person's own one is kept, and the model's text for it never reaches the screen.
       const { fill, fillsFinalMessage } = inboxFillAnswer(run.value, message.body, existingData);
       // SCRUM-815: the proposed BEO for the review in edit mode; nothing is written until it is approved.
-      const { place: _place, ...catalogueView } = catalogue;
       const review: BeoAiReview | null = proposal
         ? {
             proposal,
-            catalogue: catalogueView,
+            catalogue,
             finalMessage: fillsFinalMessage ? message.body : null,
-            transcript: { lines: conversation?.refs.length ?? 1, cut: conversation ? conversation.cut || transcriptCut : false },
+            ruling: rulingFrom,
+            transcript: { lines: conversation?.refs.length ?? 1, cut: conversation?.cut ?? false },
             replaces: await sectionsHeld(db, event.id),
+            parentSelection: await parentSelectionOf(db, event.id),
           }
         : null;
       res.setHeader("Cache-Control", "no-store");

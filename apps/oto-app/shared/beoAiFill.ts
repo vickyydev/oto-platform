@@ -166,16 +166,33 @@ export interface BeoAiProposal {
   deposit: { amount: number; paid: boolean; date: string | null; from: BeoAiFrom } | null;
 }
 
+/** A set menu's choices as the parent link records them: each group's chosen options. */
+export interface BeoAiSetMenuChoices {
+  templateId: string;
+  choices: Array<{ itemId: string; options: string[] }>;
+}
+
 /** What the inbox fill answers beside the free-text fill when the park has a catalogue. */
 export interface BeoAiReview {
   proposal: BeoAiProposal;
   catalogue: BeoAiCatalogueView;
   /** The ruling message, which Approve and create puts in Final Message to Parent while the form's is empty. */
   finalMessage: string | null;
+  /**
+   * The ruling message's place in what was read: the team's. The form's own
+   * fields (the free-text fill, its date among them) are read from it alone.
+   */
+  ruling: BeoAiFrom;
   /** How many conversation lines were read, and whether older ones were left out. */
   transcript: { lines: number; cut: boolean };
   /** Sections the BEO already holds that approving replaces. */
   replaces: string[];
+  /**
+   * The set-menu choices already recorded as received (the family through the
+   * parent link, or an earlier approval): a group the review leaves unchosen
+   * on that same set menu keeps its choice when approved.
+   */
+  parentSelection: BeoAiSetMenuChoices | null;
 }
 
 // --- Approve and create -----------------------------------------------------------------
@@ -183,6 +200,15 @@ export interface BeoAiReview {
 const uuid = z.string().uuid();
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
+/** A real calendar day, YYYY-MM-DD. */
+const calendarDay = z
+  .string()
+  .regex(DAY)
+  .refine((v) => {
+    const [y, m, d] = v.split("-").map(Number) as [number, number, number];
+    const t = new Date(Date.UTC(y, m - 1, d));
+    return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
+  });
 const text = (max: number) => z.string().trim().min(1).max(max);
 const qty = z.number().int().min(1).max(1000);
 
@@ -241,6 +267,11 @@ export const BeoAiApproveBodySchema = z
         numAdults: z.number().int().min(0).max(100_000).optional(),
         startTime: z.string().regex(TIME).optional(),
         endTime: z.string().regex(TIME).optional(),
+        /**
+         * SCRUM-814: the party's date the confirmation names, sent only when it
+         * differs from the booked one and the reviewer ticked it.
+         */
+        eventDate: calendarDay.optional(),
         /** Final Message to Parent: the ruling message, only while the BEO's is empty. */
         internalStaffNotes: z.string().max(20_000).optional(),
       })

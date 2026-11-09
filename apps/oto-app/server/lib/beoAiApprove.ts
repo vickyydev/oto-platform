@@ -11,12 +11,12 @@ import {
   coreEvents,
   entertainmentPackageTemplates,
 } from "@shared/schema";
-import type { BeoAiApproveBody, BeoAiSetMenuItem } from "@shared/beoAiFill";
+import type { BeoAiApproveBody, BeoAiSetMenuChoices, BeoAiSetMenuItem } from "@shared/beoAiFill";
 import type { db as appDb } from "../db";
 import type { ActivityLogInput } from "../storage";
 import { loadBeoCatalogue, type BeoCatalogue } from "./beoCatalogueFill";
 import { applyPackageSnapshot, type DbExecutor } from "./packageSnapshot";
-import { resolveSetMenuLines } from "./setMenuResolve";
+import { resolveSetMenuLines, type SetMenuChoice } from "./setMenuResolve";
 
 /**
  * "APPROVE AND CREATE" (SCRUM-815): the BEO the AI Fill proposed from the
@@ -26,17 +26,24 @@ import { resolveSetMenuLines } from "./setMenuResolve";
  * transaction under the kitchen plan's own lock (the lock every BEO writer
  * takes), every section the reviewed BEO speaks to is written the way the
  * BEO's own routes write it:
- *   - the event's counts, times and child's name; Final Message to Parent
- *     (the ruling message) only while the BEO's is empty; lines the
- *     catalogue lacks that the reviewer kept, added to Special Requests;
+ *   - the event's counts, times and child's name, and its date only where
+ *     the reviewer ticked the one the confirmation names (SCRUM-814); Final
+ *     Message to Parent (the ruling message) only while the BEO's is empty;
+ *     lines the catalogue lacks that the reviewer kept, added to Special
+ *     Requests;
  *   - the package, applied as the package module applies it
  *     (`applyPackageSnapshot`), with the add-on quantities bought;
  *   - the kitchen plan: the set menu and its choices (the lines the parent
  *     link would write, and the selection recorded as received), the extra
- *     dishes, the cake;
+ *     dishes, the cake. On a set menu whose choices are already recorded as
+ *     received (the family's parent link, or an earlier approval), a group the
+ *     review leaves unchosen keeps its choice and the family's link keeps
+ *     working; a new set menu resets the link, as Reset Selections does;
  *   - the bar plan's lines; the entertainment selections, from the
  *     entertainment menu at its prices;
- *   - billing's deposit, where the chat names one;
+ *   - the deposit, where the chat names one: in billing, and where the BEO
+ *     itself reads it (Party Details' prepayment and its date: the editor,
+ *     the day-of view, the view-only page and the PDF);
  *   - one `beo_ai_fill` activity row naming the sources and the catalogue
  *     items matched (never the chat's words).
  * A section the reviewed BEO says nothing about is left as it is; one it
@@ -119,10 +126,32 @@ export async function sectionsHeld(db: DbExecutor, eventId: string): Promise<str
   if (asLines(bar?.items).length > 0) held.push("bar plan");
   const [ent] = await db.select({ id: beoEntertainmentSelections.id }).from(beoEntertainmentSelections).where(eq(beoEntertainmentSelections.eventId, eventId)).limit(1);
   if (ent) held.push("entertainment");
-  const [billing] = await db.select({ paid: beoEventBilling.depositPaidAmount, required: beoEventBilling.depositAmount })
+  const [billing] = await db
+    .select({ paid: beoEventBilling.depositPaidAmount, required: beoEventBilling.depositAmount, addOns: beoEventBilling.addOns })
     .from(beoEventBilling).where(eq(beoEventBilling.eventId, eventId));
-  if ((billing?.paid ?? 0) > 0 || (billing?.required ?? 0) > 0) held.push("deposit");
+  const prepayment = Number(asCollection(asCollection(billing?.addOns).partyDetails).prepaymentReceived) || 0;
+  if ((billing?.paid ?? 0) > 0 || (billing?.required ?? 0) > 0 || prepayment > 0) held.push("deposit");
   return held;
+}
+
+/** The set-menu choices recorded as received (the parent link, or an earlier approval); null while none are. */
+export async function parentSelectionOf(db: DbExecutor, eventId: string): Promise<BeoAiSetMenuChoices | null> {
+  const [sel] = await db
+    .select({ templateId: beoSetMenuSelections.templateId, isSubmitted: beoSetMenuSelections.isSubmitted, selections: beoSetMenuSelections.selections })
+    .from(beoSetMenuSelections)
+    .where(eq(beoSetMenuSelections.eventId, eventId));
+  if (!sel?.isSubmitted) return null;
+  return { templateId: sel.templateId, choices: storedChoices(sel.selections).map((s) => ({ itemId: s.groupId, options: s.chosenOptions })) };
+}
+
+/** A selection row's choices, as the parent link stores them; an entry off its shape is left out. */
+function storedChoices(raw: unknown): SetMenuChoice[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((s) => {
+    const entry = asCollection(s);
+    const options = Array.isArray(entry.chosenOptions) ? entry.chosenOptions.filter((o): o is string => typeof o === "string") : [];
+    return typeof entry.groupId === "string" && options.length > 0 ? [{ groupId: entry.groupId, chosenOptions: options }] : [];
+  });
 }
 
 export async function approveBeoAiFill(
@@ -154,7 +183,7 @@ export async function approveBeoAiFill(
 
     // The event's own fields.
     const eventUpdates: Partial<typeof coreEvents.$inferInsert> = {};
-    for (const key of ["childName", "numChildren", "numAdults", "startTime", "endTime"] as const) {
+    for (const key of ["childName", "numChildren", "numAdults", "startTime", "endTime", "eventDate"] as const) {
       const v = body.event[key];
       if (v !== undefined) (eventUpdates as Record<string, unknown>)[key] = v;
     }
@@ -172,6 +201,7 @@ export async function approveBeoAiFill(
         .set({ ...eventUpdates, updatedAt: input.now, updatedByUserId: input.userId })
         .where(and(eq(coreEvents.id, event.id), eq(coreEvents.tenantId, event.tenantId)));
       written.event = true;
+      if (eventUpdates.eventDate) written.eventDate = true;
     }
 
     // The package, with the add-ons bought.
@@ -201,12 +231,23 @@ export async function approveBeoAiFill(
       const setMenuTemplateId = body.setMenu ? body.setMenu.templateId : (plan?.setMenuTemplateId ?? null);
       if (body.setMenu) {
         const menu = catalogue.setMenus.find((m) => m.id === body.setMenu!.templateId)!;
-        const selections = body.setMenu.choices.map((c) => ({ groupId: c.itemId, chosenOptions: c.options }));
-        const resolved = selections.length > 0 ? resolveSetMenuLines(menu.items, selections) : [];
+        const approved = body.setMenu.choices.map((c) => ({ groupId: c.itemId, chosenOptions: c.options }));
+        const [had] = await tx
+          .select({ id: beoSetMenuSelections.id, templateId: beoSetMenuSelections.templateId, isSubmitted: beoSetMenuSelections.isSubmitted, selections: beoSetMenuSelections.selections })
+          .from(beoSetMenuSelections)
+          .where(eq(beoSetMenuSelections.eventId, event.id));
+        const sameMenu = had?.templateId === menu.id;
+        // On a set menu whose choices are already recorded as received, a group
+        // the review leaves unchosen keeps its recorded choice.
+        const kept = sameMenu && had?.isSubmitted ? storedChoices(had.selections).filter((s) => !approved.some((a) => a.groupId === s.groupId)) : [];
+        const selections = [...kept, ...approved];
+        // The set menu's lines: what it always includes, and every group's choice.
+        const resolved = resolveSetMenuLines(menu.items, selections);
         kids = [...resolved, ...kids.filter((l) => l.source !== "set_menu")];
         adults = adults.filter((l) => l.source !== "set_menu");
         written.setMenu = true;
-        written.choices = selections.length;
+        written.choices = approved.length;
+        if (kept.length > 0) written.parentChoicesKept = kept.length;
         matches.push({ kind: "setMenu", id: menu.id, name: menu.name });
         for (const c of body.setMenu.choices) {
           const group = menu.items.find((i) => i.id === c.itemId) as Extract<BeoAiSetMenuItem, { type: "choice_group" }>;
@@ -214,14 +255,21 @@ export async function approveBeoAiFill(
             matches.push({ kind: "choice", itemId: c.itemId, option, code: group.optionProductCodes[option] ?? group.productCode ?? null });
           }
         }
-        // The choices are recorded as received, as the parent link records them;
-        // Reset Selections opens the link again for the family.
-        if (selections.length > 0) {
-          const token = randomBytes(24).toString("hex");
-          const [had] = await tx.select({ id: beoSetMenuSelections.id }).from(beoSetMenuSelections).where(eq(beoSetMenuSelections.eventId, event.id));
-          const values = { templateId: menu.id, token, isSubmitted: true, submittedAt: input.now, selections, updatedAt: input.now };
-          if (had) await tx.update(beoSetMenuSelections).set(values).where(eq(beoSetMenuSelections.id, had.id));
-          else await tx.insert(beoSetMenuSelections).values({ eventId: event.id, ...values });
+        if (approved.length > 0) {
+          // The choices are recorded as received, as the parent link records them
+          // (the link the family holds keeps working on the same set menu);
+          // Reset Selections opens the link again for the family.
+          const values = { templateId: menu.id, isSubmitted: true, submittedAt: input.now, selections, updatedAt: input.now };
+          if (had && sameMenu) await tx.update(beoSetMenuSelections).set(values).where(eq(beoSetMenuSelections.id, had.id));
+          else if (had) await tx.update(beoSetMenuSelections).set({ ...values, token: randomBytes(24).toString("hex") }).where(eq(beoSetMenuSelections.id, had.id));
+          else await tx.insert(beoSetMenuSelections).values({ eventId: event.id, token: randomBytes(24).toString("hex"), ...values });
+        } else if (had && !sameMenu) {
+          // Another set menu and no choices yet: the link starts again for it, as Reset Selections does.
+          await tx
+            .update(beoSetMenuSelections)
+            .set({ templateId: menu.id, isSubmitted: false, submittedAt: null, selections: null, token: randomBytes(24).toString("hex"), updatedAt: input.now })
+            .where(eq(beoSetMenuSelections.id, had.id));
+          written.selectionReset = true;
         }
       }
       const lineOf = (l: BeoAiApproveBody["menuLines"][number]): KitchenLine => {
@@ -316,13 +364,24 @@ export async function approveBeoAiFill(
       written.entertainment = body.entertainment.length;
     }
 
-    // Billing's deposit, where the chat names one.
+    // The deposit, where the chat names one: billing's columns, and Party Details'
+    // prepayment and its date, which the BEO's editor, badge, outstanding balance,
+    // day-of view, view-only page and PDF read. Party Details' other keys are kept.
     if (body.deposit) {
       const d = body.deposit;
-      const values = d.paid
-        ? { depositPaid: true, depositPaidAmount: d.amount, depositPaidAt: d.date ? new Date(`${d.date}T00:00:00.000Z`) : null, updatedAt: input.now }
-        : { depositRequired: true, depositAmount: d.amount, updatedAt: input.now };
-      const [billing] = await tx.select({ id: beoEventBilling.id }).from(beoEventBilling).where(eq(beoEventBilling.eventId, event.id));
+      const [billing] = await tx.select({ id: beoEventBilling.id, addOns: beoEventBilling.addOns }).from(beoEventBilling).where(eq(beoEventBilling.eventId, event.id));
+      const addOns = asCollection(billing?.addOns);
+      const partyDetails = asCollection(addOns.partyDetails);
+      const nextAddOns = d.paid
+        ? { ...addOns, partyDetails: { ...partyDetails, prepaymentReceived: d.amount, ...(d.date ? { depositDate: d.date } : {}) } }
+        : null;
+      const values = {
+        ...(d.paid
+          ? { depositPaid: true, depositPaidAmount: d.amount, depositPaidAt: d.date ? new Date(`${d.date}T00:00:00.000Z`) : null }
+          : { depositRequired: true, depositAmount: d.amount }),
+        ...(nextAddOns ? { addOns: nextAddOns } : {}),
+        updatedAt: input.now,
+      };
       if (billing) await tx.update(beoEventBilling).set(values).where(eq(beoEventBilling.id, billing.id));
       else await tx.insert(beoEventBilling).values({ eventId: event.id, ...values });
       written.deposit = true;
