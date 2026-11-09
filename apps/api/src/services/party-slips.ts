@@ -64,8 +64,10 @@ import { withTx, type Exec, type OpContext, type Tx } from './tx';
  *     printer");
  *   - `nothing_to_print` — the plan has nothing for that station.
  *
- * The job prints a party once a day: any run recorded for the party's day —
- * its own or a press — and it leaves the party alone. A press always prints.
+ * The job prints a party once a day: once its own scheduled run is recorded
+ * for the party's day, it leaves the party alone. A press of "Print party
+ * slips now" is a reprint and never stands in for that run: the plan prints at
+ * the slip time and keeps the button for a reprint (§5). A press always prints.
  */
 
 /** Named once: the runner, the tests, the Health page. */
@@ -239,7 +241,7 @@ export interface PrintPartySlipsInput {
 
 export type PrintPartySlipsResult =
   | { outcome: 'printed'; run: number; partyDate: string; plan: PartyPlan; slips: SlipRow[]; replayed: boolean }
-  /** The job found a run already recorded for the party's day. */
+  /** The job found its own scheduled run already recorded for the party's day. */
   | { outcome: 'already' }
   /** The job leaves a cancelled or archived party alone. */
   | { outcome: 'skipped' };
@@ -278,7 +280,8 @@ export async function printPartySlips(tx: Tx, input: PrintPartySlipsInput): Prom
     const run = pressed[0]!.run;
     return { outcome: 'printed', run, partyDate, plan, slips: earlier.filter((r) => r.run === run), replayed: true };
   }
-  if (input.trigger === 'schedule' && earlier.length > 0) return { outcome: 'already' };
+  // The job's own run for the day, never a press, is what it does once.
+  if (input.trigger === 'schedule' && earlier.some((r) => r.trigger === 'schedule')) return { outcome: 'already' };
 
   const party = await partyShown(tx, input.branchId, eventId);
   if (!party) throw errors.notFound('Party not found');
@@ -430,8 +433,9 @@ export interface PartySlipsJobSummary extends Record<string, unknown> {
 /**
  * `job:parties.slips` — every live branch's parties of its trading day
  * (`businessDate` in the branch's zone, the day the till's party list shows)
- * whose slip time has passed on the park's clock and which have no run
- * recorded for the day yet: one run each, the slips queued or recorded as not.
+ * whose slip time has passed on the park's clock and which have no scheduled
+ * run recorded for the day yet (a press before it does not count): one run
+ * each, the slips queued or recorded as not.
  * A party that cannot be printed is counted and the job fails naming how many,
  * after every other party has had its turn. Counts only in the detail.
  */
@@ -471,11 +475,17 @@ export async function runPartySlipsJob(db: Db, now: Date): Promise<PartySlipsJob
         summary.notDue += 1;
         continue;
       }
-      // A cheap look before the lock; the run itself decides under it.
+      // A cheap look for the job's own run before the lock; the run itself decides under it.
       const [done] = await db
         .select({ id: partySlipPrint.id })
         .from(partySlipPrint)
-        .where(and(eq(partySlipPrint.eventId, plan.eventId.toLowerCase()), eq(partySlipPrint.partyDate, plan.partyDate)))
+        .where(
+          and(
+            eq(partySlipPrint.eventId, plan.eventId.toLowerCase()),
+            eq(partySlipPrint.partyDate, plan.partyDate),
+            eq(partySlipPrint.trigger, 'schedule'),
+          ),
+        )
         .limit(1);
       if (done) {
         summary.alreadyPrinted += 1;

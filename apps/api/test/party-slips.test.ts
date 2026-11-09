@@ -560,14 +560,30 @@ describe('POST /parties/:id/slips/print — Print party slips now', () => {
     expect((await slipsOf(id)).map((r) => r.run)).toEqual([1, 1]);
   });
 
-  it('prints before the slip time when pressed, and the job then leaves the day alone', async () => {
+  it('prints before the slip time when pressed, and the job still prints at the slip time', async () => {
+    // Pressed before the park names a station: recorded "no printer". The
+    // station is named afterwards, and at the slip time the job's own run
+    // reaches the kitchen and the bar — a press never stands in for it.
+    await nameStation(null);
     const id = await appParty({ id: newId(), title: 'Early', date: T, slipsTime: '15:00' });
-    expect((await printNow(id)).status).toBe(200);
+    try {
+      const early = await printNow(id);
+      expect(early.status).toBe(200);
+      expect(early.body.printed.map((r) => r.status)).toEqual(['no_printer', 'no_printer']);
+    } finally {
+      await nameStation(t1.id);
+    }
     await runPartySlipsJob(ctx.db, atBangkok(T, '15:01'));
-    expect((await slipsOf(id)).map((r) => [r.run, r.trigger])).toEqual([
-      [1, 'reprint'],
-      [1, 'reprint'],
+    expect((await slipsOf(id)).map((r) => [r.run, r.trigger, r.status])).toEqual([
+      [1, 'reprint', 'no_printer'],
+      [1, 'reprint', 'no_printer'],
+      [2, 'schedule', 'printed'],
+      [2, 'schedule', 'printed'],
     ]);
+    // And once is once: the next tick leaves the day alone.
+    const again = await runPartySlipsJob(ctx.db, atBangkok(T, '15:02'));
+    expect(again.runs).toBe(0);
+    expect(await slipsOf(id)).toHaveLength(4);
   });
 
   it('with no station named, records no printer and queues nothing', async () => {
