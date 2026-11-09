@@ -4,7 +4,7 @@ import { createTestDatabase, stopTestServer } from '../src/testing';
 
 /**
  * SCRUM-772 — the Thai rate confirmed at the till, with no document: who,
- * where and when is the record. Migration 0106 adds the station beside the
+ * where and when is the record. Migration 0107 adds the station beside the
  * account and the branch on the member's verification and on the sale's tier
  * claim. Expand only: two nullable columns, each with its foreign key and an
  * index (every foreign key carries one).
