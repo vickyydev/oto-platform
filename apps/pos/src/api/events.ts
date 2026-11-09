@@ -20,7 +20,7 @@ import type { ApiResponse } from '@oto/api-types';
 // puts the party tab on the platform (`api/parties.ts`).
 
 import { useEffect, useRef, useState } from 'react';
-import { BRIDGE_EVENT_INTENTS, EVENT_CHECKIN_REFUSALS, eventRosterStats, newId, type BridgeEventsDayAnswer, type EventAttendeeCreateBody, type EventAttendeeInput, type EventAttendeeView, type EventAttendeeWriteAnswer, type EventCheckinAnswer, type EventCheckinBody, type EventCheckinView, type EventCheckoutBody, type EventDayAnswer, type EventDropInPricing, type EventPartyWalkUpCharge, type EventPassOpenBody, type EventPassSellBody, type EventPassesAnswer, type EventReprintBody, type EventView, type EventsCacheItem, type PartyChargeView, type PartyPaymentView } from '@oto/shared';
+import { BRIDGE_EVENT_INTENTS, EVENT_CHECKIN_REFUSALS, eventRosterStats, newId, type BridgeEventsDayAnswer, type EventAttendeeCreateBody, type EventAttendeeInput, type EventAttendeeView, type EventAttendeeWriteAnswer, type EventCheckinAnswer, type EventCheckinBody, type EventCheckinView, type EventCheckoutBody, type EventDayAnswer, type EventDropInPricing, type EventPartyWalkUpCharge, type EventPassOpenBody, type EventPassSellBody, type EventPassesAnswer, type EventReprintBody, type EventView, type EventsCacheItem, type PartyChargeView, type PartyPaymentView, partySettlementLive } from '@oto/shared';
 import type { NewEventAttendeeInput } from '@/mockApi';
 import type { EventAttendee, EventAttendeeCheckin, OtoEvent, PartyBooking, PartyExtraCharge, PartyPayment } from '@/types';
 import { branchTradingDate, resolveRateToday, serverTradingDate } from '@/lib/pricingMode';
@@ -178,6 +178,9 @@ export function toOtoEvent(v: EventView, branchSlug: string): OtoEvent {
     ...(v.attendees ? { attendees: v.attendees.map((a) => toEventAttendee(a, v.type)) } : {}),
   };
   if (!v.party) return event;
+  // SCRUM-804 — a party settled as one sale: its package and deposit are that
+  // sale's, so the tab's bill is its own charges and payments (`billOfParty`).
+  const settled = partySettlementLive(v.party.settlement);
   const party: Partial<PartyBooking> = {
     childName: v.party.childName ?? '',
     ...(v.party.kidTurningAge !== null ? { kidAge: v.party.kidTurningAge } : {}),
@@ -185,9 +188,9 @@ export function toOtoEvent(v: EventView, branchSlug: string): OtoEvent {
     ...(v.party.parentPhone ? { whatsapp: v.party.parentPhone } : {}),
     ...(v.party.decoration ? { decoration: v.party.decoration } : {}),
     ...(v.party.activities ? { activities: v.party.activities } : {}),
-    basePrice: baht(v.party.totalValueSatang),
+    basePrice: settled ? 0 : baht(v.party.totalValueSatang),
     lineItems: [],
-    deposit: baht(v.party.depositSatang),
+    deposit: settled ? 0 : baht(v.party.depositSatang),
     ...(v.party.depositDate ? { depositDate: v.party.depositDate } : {}),
     kitchen: { needed: false, kidsMenu: [], adultsMenu: [], foodItems: [], cake: { type: 'none' } },
     timeline: [],
@@ -206,6 +209,7 @@ export function toOtoEvent(v: EventView, branchSlug: string): OtoEvent {
         }
       : {}),
     ...(v.party.editSync ? { editSync: { state: v.party.editSync.state, error: v.party.editSync.error } } : {}),
+    ...(v.party.settlement ? { settlement: v.party.settlement } : {}),
   };
   return { ...event, ...party };
 }

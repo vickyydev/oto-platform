@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
-import { newId } from '@oto/shared';
+import { newId, partySettlementLive } from '@oto/shared';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -25,10 +25,12 @@ import {
   partyPaymentPress,
   partyWriteBlocker,
   payPartyOnPlatform,
+  readPartyPlanOnPlatform,
   updatePartyOnPlatform,
   type PartyChargeConfirmation,
   type PartyChargeLine,
   type PartyPaymentConfirmation,
+  type PartyPlanRead,
   type PartyTenderPress,
   type PartyWriteIds,
   type PartyWriteOutcome,
@@ -38,6 +40,7 @@ import { PartyBalanceModal } from './PartyBalanceModal';
 import { useTenderDisplay } from '@/lib/tenderDisplay';
 import { PartyFnbModal } from './PartyFnbModal';
 import { PartyTicketModal } from './PartyTicketModal';
+import { PartySettleModal } from './PartySettleModal';
 import { PartyEditForm, type PartyEditPatch } from './PartyEditForm';
 import { MessagingPanel, type MessagingContext } from '@/components/shared/MessagingPanel';
 import {
@@ -58,6 +61,7 @@ import {
   Mic2,
   ReceiptText,
   MessageCircle,
+  CheckCircle2,
 } from 'lucide-react';
 import { paymentMethodLabel, paymentMethodIcon, paymentMethodKind } from '@/lib/payments';
 
@@ -144,6 +148,10 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
   const [showTickets, setShowTickets] = useState(false);
   const [showMessage, setShowMessage] = useState(false);
   const [editing, setEditing] = useState(false);
+  // SCRUM-804 — the plan the OTO App published for this party, and the Settle form.
+  const [planRead, setPlanRead] = useState<PartyPlanRead | null>(null);
+  const [planNonce, setPlanNonce] = useState(0);
+  const [showSettle, setShowSettle] = useState(false);
 
   // Message the parent in-app with party context so the party templates
   // ({parentName}, {time}=party start time) resolve correctly.
@@ -157,6 +165,19 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
         channel: 'whatsapp',
       }
     : null;
+
+  useEffect(() => {
+    let live = true;
+    void readPartyPlanOnPlatform({ id: party.id, branchId: party.branchId }).then((read) => {
+      if (live) setPlanRead(read);
+    });
+    return () => {
+      live = false;
+    };
+  }, [party.id, party.branchId, planNonce]);
+  const plan = planRead?.plan ?? null;
+  const settlement = party.settlement ?? null;
+  const settledByPlan = partySettlementLive(settlement);
 
   const total = computePartyTotal(party);
   const outstanding = computePartyOutstanding(party);
@@ -336,7 +357,19 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
   const billSection = (
     <SectionCard icon={ReceiptText} title="Party bill">
       <div className="text-sm">
-        <InfoRow label={party.packageName ?? 'Base package'} value={`฿${party.basePrice}`} />
+        {settledByPlan && settlement ? (
+          <InfoRow
+            icon={CheckCircle2}
+            label={settlement.state === 'settled' ? 'Party settled' : 'Settlement open'}
+            value={
+              settlement.state === 'settled'
+                ? `Receipt ${settlement.receiptNumber ?? '—'}`
+                : `฿${settlement.outstandingSatang / 100} to take`
+            }
+          />
+        ) : (
+          <InfoRow label={plan?.package.name ?? party.packageName ?? 'Base package'} value={`฿${party.basePrice}`} />
+        )}
         {party.lineItems.map((li) => (
           <InfoRow
             key={li.id}
@@ -429,7 +462,38 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
     </SectionCard>
   );
 
-  const kitchenSection = (
+  const planSection = plan && (
+    <SectionCard icon={UtensilsCrossed} title="Kitchen plan">
+      <div className="text-sm space-y-1">
+        <InfoRow icon={Cake} label="Package" value={plan.package.name} />
+        {plan.kitchen?.kidsFoodTime && <InfoRow icon={Clock} label="Kids' food" value={plan.kitchen.kidsFoodTime} />}
+        {plan.kitchen?.adultsFoodTime && <InfoRow icon={Clock} label="Adults' food" value={plan.kitchen.adultsFoodTime} />}
+        {plan.kitchen?.readyOffsetMinutes != null && (
+          <InfoRow label="Ready" value={`${plan.kitchen.readyOffsetMinutes} min before`} />
+        )}
+        {plan.kitchen?.slipsTime && <InfoRow label="Slips print" value={plan.kitchen.slipsTime} />}
+        {plan.setMenu.length > 0 && (
+          <div className="border-t mt-2 pt-2 space-y-1">
+            {plan.setMenu.map((m, i) => (
+              <InfoRow
+                key={`${m.productCode ?? m.name}-${i}`}
+                label={`${m.name}${m.chosenOption ? ` · ${m.chosenOption}` : ''}`}
+                value={`×${m.qty}`}
+              />
+            ))}
+          </div>
+        )}
+        {plan.package.includedLines.length > 0 && (
+          <div className="mt-3 rounded-lg bg-primary/10 p-3 text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground">Included: </span>
+            {plan.package.includedLines.map((l) => l.label).join(' · ')}
+          </div>
+        )}
+      </div>
+    </SectionCard>
+  );
+
+  const kitchenSection = planSection || (
     <SectionCard icon={UtensilsCrossed} title="Kitchen plan">
       {party.kitchen.needed ? (
         <div className="text-sm space-y-1">
@@ -469,7 +533,15 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
     </SectionCard>
   );
 
-  const barSection = party.bar && (
+  const barSection = plan && plan.barItems.length > 0 ? (
+    <SectionCard icon={GlassWater} title="Bar plan">
+      <div className="text-sm">
+        {plan.barItems.map((b, i) => (
+          <InfoRow key={`${b.productCode ?? b.name}-${i}`} label={b.name} value={`×${b.qty}`} />
+        ))}
+      </div>
+    </SectionCard>
+  ) : party.bar && (
     <SectionCard icon={GlassWater} title="Bar plan">
       <div className="text-sm">
         {party.bar.serviceTime && (
@@ -637,15 +709,32 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
               <Pencil className="w-5 h-5" />
               Edit party
             </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="gap-2 h-12"
-              onClick={() => openUnlessBlocked(() => setShowTickets(true))}
-            >
-              <Ticket className="w-5 h-5" />
-              Add tickets
-            </Button>
+            {plan ? (
+              <Button
+                variant="outline"
+                size="lg"
+                className="gap-2 h-12"
+                disabled={settlement?.state === 'settled'}
+                onClick={() => openUnlessBlocked(() => setShowSettle(true), true)}
+              >
+                <Sparkles className="w-5 h-5" />
+                {settlement?.state === 'settled'
+                  ? `Settled, receipt ${settlement.receiptNumber ?? '—'}`
+                  : settlement?.state === 'open'
+                    ? `Resume settlement ฿${settlement.outstandingSatang / 100}`
+                    : 'Settle party'}
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="lg"
+                className="gap-2 h-12"
+                onClick={() => openUnlessBlocked(() => setShowTickets(true))}
+              >
+                <Ticket className="w-5 h-5" />
+                Add tickets
+              </Button>
+            )}
             <Button
               variant="outline"
               size="lg"
@@ -702,6 +791,21 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
         operatorName={operator?.name ?? ''}
         onCharge={handleChargeExtra('fnb')}
       />
+      {plan && (
+        <PartySettleModal
+          open={showSettle}
+          onOpenChange={setShowSettle}
+          party={party}
+          plan={plan}
+          stationId={station?.stationId ?? null}
+          resumeSaleId={settlement?.state === 'open' ? settlement.saleId : null}
+          displayHandoff={linkedDisplay.handover}
+          onSettled={() => {
+            setPlanNonce((n) => n + 1);
+            onChanged();
+          }}
+        />
+      )}
       <PartyTicketModal
         open={showTickets}
         onOpenChange={setShowTickets}

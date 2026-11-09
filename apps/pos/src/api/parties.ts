@@ -19,7 +19,20 @@
 // twice is one charge, one payment or one edit.
 
 import type { ApiResponse } from '@oto/api-types';
-import type { EventDetailAnswer, PartyEditFields, PartyTenderBody, PartyWriteAnswer } from '@oto/shared';
+import type {
+  EventDetailAnswer,
+  PartyDetailAnswer,
+  PartyEditFields,
+  PartyPlan,
+  PartyPlanStatus,
+  PartySettleAnswer,
+  PartySettleBody,
+  PartySettlePreviewAnswer,
+  PartySettlePreviewBody,
+  PartySettleQuote,
+  PartyTenderBody,
+  PartyWriteAnswer,
+} from '@oto/shared';
 import type { PartyEditPatch } from '@/components/parties/PartyEditForm';
 import type { PartyBooking, PartyPaymentMethod } from '@/types';
 import { paymentMethodKind } from '@/lib/payments';
@@ -48,6 +61,18 @@ export const partiesApi = {
   pay: (partyId: string, body: Record<string, unknown> & { paymentId: string; actionId: string }) =>
     api.post<PartyWriteAnswer>(`/parties/${encodeURIComponent(partyId)}/payments`, body, {
       idempotencyKey: `party-payment:${body.paymentId}`,
+      headers: { 'x-oto-action-id': body.actionId },
+    }),
+  /** SCRUM-804 — the party with the plan the OTO App published for it. */
+  detail: (branchId: string, partyId: string) =>
+    api.get<PartyDetailAnswer>(`/parties/${encodeURIComponent(partyId)}?branchId=${branchId}`),
+  /** SCRUM-804 — what settling it would come to, priced by the platform; writes nothing. */
+  settlePreview: (partyId: string, body: PartySettlePreviewBody) =>
+    api.post<PartySettlePreviewAnswer>(`/parties/${encodeURIComponent(partyId)}/settle/preview`, body),
+  /** SCRUM-804 — settle it as one sale, under the ids of one press of Confirm. */
+  settle: (partyId: string, body: PartySettleBody & { actionId: string }) =>
+    api.post<PartySettleAnswer>(`/parties/${encodeURIComponent(partyId)}/settle`, body, {
+      idempotencyKey: `party-settle:${body.settlementId}`,
       headers: { 'x-oto-action-id': body.actionId },
     }),
   /** SCRUM-732 — a QR or a card against the balance, routed by the station. */
@@ -436,5 +461,104 @@ export async function updatePartyOnPlatform(args: {
     return { ok: true, party: partyOf(answer, args.party.branchId), answer };
   } catch (err) {
     return failureOf(err);
+  }
+}
+
+// --- SCRUM-804: the party's plan, and settling it as one sale --------------------
+
+/** The plan the OTO App published for a party, and why there is none. */
+export interface PartyPlanRead {
+  plan: PartyPlan | null;
+  status: PartyPlanStatus;
+}
+
+/**
+ * `GET /parties/:id`'s plan: the package with its limits and prices, the
+ * counts, the add-ons, the entertainment, the set menu and the food times — or
+ * none, and why. Null when it could not be read at all (offline, not linked):
+ * the party page then shows what it showed before.
+ */
+export async function readPartyPlanOnPlatform(party: Pick<PartyBooking, 'id' | 'branchId'>): Promise<PartyPlanRead | null> {
+  const branchId = apiBranchIdForSlug(party.branchId);
+  if (!branchId) return null;
+  try {
+    const answer = (await partiesApi.detail(branchId, party.id)) as Partial<PartyDetailAnswer> | undefined;
+    if (!answer || typeof answer !== 'object' || !('planStatus' in answer) || !answer.planStatus) return null;
+    return { plan: answer.plan ?? null, status: answer.planStatus };
+  } catch {
+    return null;
+  }
+}
+
+/** What staff confirmed on the Settle form. */
+export interface PartySettleForm {
+  kids: number;
+  adults: number;
+  socksGiven: number;
+  addOnIds: string[];
+  entertainmentIds: string[];
+}
+
+export type PartySettlePreviewOutcome = { ok: true; quote: PartySettleQuote } | { ok: false; message: string; code?: string };
+
+/** The settlement's figures as the platform prices them — never the till's own arithmetic. */
+export async function previewSettlementOnPlatform(args: {
+  party: Pick<PartyBooking, 'id' | 'branchId'>;
+  form: PartySettleForm;
+  stationId?: string | null;
+}): Promise<PartySettlePreviewOutcome> {
+  const branchId = apiBranchIdForSlug(args.party.branchId);
+  if (!branchId) return { ok: false, message: EVENTS_NOT_LINKED };
+  try {
+    const answer = await partiesApi.settlePreview(args.party.id, {
+      branchId,
+      ...(args.stationId && UUID.test(args.stationId) ? { stationId: args.stationId } : {}),
+      ...args.form,
+    });
+    return { ok: true, quote: answer.quote };
+  } catch (err) {
+    return {
+      ok: false,
+      message: err instanceof Error ? err.message : String(err),
+      ...(err instanceof ApiError ? { code: err.code } : {}),
+    };
+  }
+}
+
+/** The ids one press of Confirm is made under: kept for its retries, new for another press. */
+export interface PartySettleIds {
+  settlementId: string;
+  saleId: string;
+  actionId: string;
+}
+
+export type PartySettleOutcome =
+  | { ok: true; answer: PartySettleAnswer }
+  | { ok: false; message: string; retryable: boolean; code?: string; details?: unknown };
+
+/** `POST /parties/:id/settle`: the party rung up as one sale, the deposit on it, the balance to take. */
+export async function settlePartyOnPlatform(args: {
+  party: Pick<PartyBooking, 'id' | 'branchId'>;
+  form: PartySettleForm;
+  stationId: string;
+  expectedTotalSatang: number;
+  ids: PartySettleIds;
+}): Promise<PartySettleOutcome> {
+  const branchId = apiBranchIdForSlug(args.party.branchId);
+  if (!branchId) return { ok: false, message: EVENTS_NOT_LINKED, retryable: false };
+  try {
+    const answer = await partiesApi.settle(args.party.id, {
+      branchId,
+      stationId: args.stationId,
+      settlementId: args.ids.settlementId,
+      saleId: args.ids.saleId,
+      actionId: args.ids.actionId,
+      expectedTotalSatang: args.expectedTotalSatang,
+      ...args.form,
+    });
+    return { ok: true, answer };
+  } catch (err) {
+    const failure = failureOf(err);
+    return err instanceof ApiError ? { ...failure, code: err.code, details: err.details } : failure;
   }
 }

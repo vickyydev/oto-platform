@@ -1,4 +1,5 @@
 import type { SupportedLang } from '@/i18n/types';
+import type { PartySettlementView } from '@oto/shared';
 
 export interface Operator {
   id: string;
@@ -1530,6 +1531,11 @@ export interface PartyBooking {
   // `pending` (shown, not yet confirmed) or `failed` (refused, not shown).
   // Absent when every edit is in the OTO App.
   editSync?: { state: 'pending' | 'failed'; error: string | null };
+  // SCRUM-804 — the party's settlement sale, when the till settled it as one
+  // sale from the OTO App's plan. While it is open or settled the package and
+  // its deposit are that sale's, so `basePrice` and `deposit` read 0 here and
+  // the bill is the tab's own charges and payments. Absent when none.
+  settlement?: PartySettlementView;
 }
 
 // --- Events (unified: party | camp | event) ---------------------------------
