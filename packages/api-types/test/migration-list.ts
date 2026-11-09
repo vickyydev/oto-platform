@@ -52,7 +52,7 @@ export const HAND_TYPED: Record<string, number> = {
   'apps/console/src/components/devices/simulatorApi.ts': 3,
   'apps/console/src/components/health/KioskSummary.tsx': 1,
   'apps/console/src/components/integrations/GatewaySimulatorPanel.tsx': 2,
-  'apps/launcher/src/api/platform.ts': 14,
+  'apps/launcher/src/api/platform.ts': 13,
   'apps/pos/src/api/analytics.ts': 1,
   'apps/pos/src/api/bookings.ts': 5,
   'apps/pos/src/api/bridge.ts': 11,

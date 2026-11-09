@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'wouter';
 import {
   ArrowLeft,
@@ -12,21 +12,18 @@ import {
 import { Backdrop } from '@/components/Backdrop';
 import { SuiteHeader } from '@/components/SuiteHeader';
 import { Button } from '@/components/ui/button';
-import { accountApi, type AuditEntry, type ImpersonationHistoryEntry } from '@/api/platform';
+import {
+  accountApi,
+  type AccountSessionsPage,
+  type AuditEntry,
+  type ImpersonationHistoryEntry,
+} from '@/api/platform';
+import { AccountSessionsList, SESSIONS_PAGE_SIZE } from '@/components/AccountSessions';
 import { ImpersonationHistoryList } from '@/components/ImpersonationHistory';
 import { findApp } from '@/suite/apps';
 import { clearOpened, openedApps } from '@/suite/handoff';
 import { useSession, displayName } from '@/auth/SessionContext';
 import { formatWhen } from '@/lib/time';
-
-interface SessionRow {
-  id: string;
-  branchId: string | null;
-  lockedAt: string | null;
-  lastSeenAt: string;
-  expiresAt: string;
-  createdAt: string;
-}
 
 /** Why a hand-off was turned away, in words rather than a code. */
 const REJECTION_REASONS: Record<string, string> = {
@@ -69,7 +66,10 @@ export function Account() {
   const canRevokeSessions = has('admin:account:update');
   const canSeeAudit = has('admin:audit:read');
 
-  const [sessions, setSessions] = useState<SessionRow[] | null>(null);
+  // SCRUM-793 — the page on screen, and the page asked for (they differ while one loads).
+  const [sessions, setSessions] = useState<AccountSessionsPage | null>(null);
+  const [sessionsOffset, setSessionsOffset] = useState(0);
+  const shownSessionsOffset = useRef<number | null>(null);
   const [rejections, setRejections] = useState<AuditEntry[] | null>(null);
   const [revoking, setRevoking] = useState(false);
   const [viewedAs, setViewedAs] = useState<ImpersonationHistoryEntry[] | null>(null);
@@ -85,20 +85,26 @@ export function Account() {
     return () => { cancelled = true; };
   }, [accountId]);
 
-  const loadSessions = useCallback(async () => {
-    if (!accountId || !canSeeSessions) return;
-    try {
-      const { sessions: rows } = await accountApi.sessions(accountId);
-      setSessions(rows);
-    } catch {
-      // The panel simply does not appear; nothing here is worth an error page.
-      setSessions(null);
-    }
-  }, [accountId, canSeeSessions]);
-
   useEffect(() => {
-    void loadSessions();
-  }, [loadSessions]);
+    if (!accountId || !canSeeSessions) return;
+    let cancelled = false;
+    void accountApi
+      .sessions(accountId, { limit: SESSIONS_PAGE_SIZE, offset: sessionsOffset })
+      .then((page) => {
+        if (cancelled) return;
+        shownSessionsOffset.current = page.offset;
+        setSessions(page);
+      })
+      .catch(() => {
+        // Before the first page the panel simply does not appear; nothing here
+        // is worth an error page. A later page that fails leaves the one on
+        // screen in place, and the controls ask again from there.
+        if (!cancelled && shownSessionsOffset.current !== null) setSessionsOffset(shownSessionsOffset.current);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [accountId, canSeeSessions, sessionsOffset]);
 
   useEffect(() => {
     if (!accountId || !canSeeAudit) return;
@@ -227,26 +233,17 @@ export function Account() {
             )}
           </Panel>
 
-          {canSeeSessions && sessions && sessions.length > 0 && (
+          {canSeeSessions && sessions && sessions.total > 0 && (
             <Panel
               title="Sessions on this account"
               description="Every device where this account is signed in right now."
             >
-              <ul className="flex flex-col divide-y">
-                {sessions.map((row) => (
-                  <li key={row.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5 first:pt-0 last:pb-0">
-                    <span className="text-sm font-semibold">
-                      {row.lockedAt ? 'Locked' : 'Active'}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      last used {formatWhen(row.lastSeenAt, timezone)}
-                    </span>
-                    <span className="text-sm text-muted-foreground ml-auto">
-                      ends {formatWhen(row.expiresAt, timezone)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <AccountSessionsList
+                page={sessions}
+                timezone={timezone}
+                loading={sessionsOffset !== sessions.offset}
+                onPage={setSessionsOffset}
+              />
             </Panel>
           )}
 

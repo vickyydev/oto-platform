@@ -112,6 +112,10 @@ export const suiteApi = {
   apps: () => api.get<ApiResponse<'/suite/apps', 'get'>>('/suite/apps'),
 };
 
+/** SCRUM-793 — a page of an account's sessions, each with its status now and whether it is this device. */
+export type AccountSessionsPage = ApiResponse<'/accounts/{id}/sessions', 'get'>;
+export type AccountSessionRow = AccountSessionsPage['sessions'][number];
+
 export interface AuditEntry {
   id: string;
   action: string;
@@ -126,18 +130,11 @@ export interface AuditEntry {
 export const accountApi = {
   /** SCRUM-648 — every view-as window opened as this account, newest first. Needs only the session. */
   impersonations: () => api.get<ApiResponse<'/me/impersonations', 'get'>>('/me/impersonations'),
-  sessions: (accountId: string) =>
-    api.get<{
-      sessions: Array<{
-        id: string;
-        branchId: string | null;
-        stationId: string | null;
-        lockedAt: string | null;
-        lastSeenAt: string;
-        expiresAt: string;
-        createdAt: string;
-      }>;
-    }>(`/accounts/${accountId}/sessions`),
+  /** SCRUM-793 — one page of the account's sessions, newest sign-in first, with the total. */
+  sessions: (accountId: string, page: { limit: number; offset: number }) =>
+    api.get<ApiResponse<'/accounts/{id}/sessions', 'get'>>(
+      `/accounts/${accountId}/sessions?limit=${page.limit}&offset=${page.offset}`,
+    ),
   /** Ends every session this account holds, on every app origin at once. */
   revokeSessions: (accountId: string) =>
     api.post<{ sessionsEnded: number }>(`/accounts/${accountId}/sessions/revoke`),
