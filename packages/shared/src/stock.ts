@@ -378,6 +378,28 @@ export const StockReceiveResultSchema = z.object({
 export type StockReceiveResult = z.infer<typeof StockReceiveResultSchema>;
 
 /**
+ * SCRUM-799 — what a complimentary pair, or one handed to staff or the owners
+ * with no sale, is recorded as on the Adjust movement. The words are the record:
+ * the movement keeps the reason as written, like every other reason.
+ */
+export const STOCK_ADJUST_REASON_COMPLIMENTARY = 'Complimentary / staff use';
+
+/**
+ * The reasons the Inventory Adjust dialog offers as one tap (the prototype's
+ * `QUICK_REASONS`, `StockAdjustModal.tsx`), in its order, with SCRUM-799's
+ * "Complimentary / staff use" after them. Any other reason can still be typed:
+ * the api records whatever reason is given (`StockAdjustBodySchema`).
+ */
+export const STOCK_ADJUST_QUICK_REASONS = [
+  { code: 'received', label: 'Received shipment' },
+  { code: 'recount', label: 'Inventory recount' },
+  { code: 'damaged', label: 'Damaged / shrinkage' },
+  { code: 'staff_use', label: 'Staff use' },
+  { code: 'complimentary', label: STOCK_ADJUST_REASON_COMPLIMENTARY },
+] as const;
+export type StockAdjustQuickReason = (typeof STOCK_ADJUST_QUICK_REASONS)[number];
+
+/**
  * A manager's correction — shrinkage, a damaged unit, staff use. Signed; a
  * place is optional: an increase lands at the sell point, a decrease takes from
  * the sell point first and then the cascade (the prototype's

@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { STOCK_ADJUST_QUICK_REASONS } from "@oto/shared";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "../../ui/dialog";
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
@@ -15,12 +16,10 @@ interface StockAdjustModalProps {
   onAdjust: (delta: number, reason: string) => void;
 }
 
-const QUICK_REASONS = [
-  'Received shipment',
-  'Inventory recount',
-  'Damaged / shrinkage',
-  'Staff use',
-];
+// The prototype's four quick reasons, then SCRUM-799's "Complimentary / staff
+// use" (a free pair with no sale, or one handed to staff or the owners). The
+// words tapped are the reason the movement records, as before.
+export const QUICK_REASONS: readonly string[] = STOCK_ADJUST_QUICK_REASONS.map((r) => r.label);
 
 /**
  * Stamped stock adjustment modal for the Inventory admin panel. Supports both
