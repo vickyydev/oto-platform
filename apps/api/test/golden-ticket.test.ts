@@ -274,6 +274,29 @@ describe('selling the item issues one single-use voucher per unit, tied to the s
     expect(await ctx.db.select().from(voucher).where(eq(voucher.issuedSaleId, saleId))).toHaveLength(2);
   });
 
+  it('is issued by its sale only: not on the Issue picker, refused there and as a campaign', async () => {
+    const [def] = await ctx.db
+      .select({ id: voucherDefinition.id })
+      .from(voucherDefinition)
+      .where(and(eq(voucherDefinition.operatorId, operatorId), eq(voucherDefinition.code, GOLDEN_TICKET_DEFINITION_CODE)));
+    const picker = await ctx.app.inject({ method: 'GET', url: '/vouchers/issuable', headers: { cookie: till } });
+    expect(picker.statusCode, picker.body).toBe(200);
+    const listed = (picker.json() as { definitions: { id: string; code: string }[] }).definitions;
+    expect(listed.length).toBeGreaterThan(0);
+    expect(listed.map((d) => d.code)).not.toContain(GOLDEN_TICKET_DEFINITION_CODE);
+    const issued = await ctx.app.inject({
+      method: 'POST',
+      url: '/vouchers/issue',
+      headers: { cookie: till, 'idempotency-key': newId() },
+      payload: { definitionId: def!.id },
+    });
+    expect(issued.statusCode).toBe(409);
+    expect(issued.json().error).toMatchObject({
+      code: 'VOUCHER_SOLD_AS_ITEM',
+      message: 'Golden Ticket is sold as a shop item — selling it issues the voucher',
+    });
+  });
+
   it('a sale with no Golden Ticket on it issues nothing', async () => {
     const saleId = newId();
     expect((await commit({ id: saleId, stationId: t1.id, lines: [parentStays(0)] })).statusCode).toBe(200);

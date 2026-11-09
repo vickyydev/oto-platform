@@ -15,6 +15,7 @@ import {
   voucher,
   voucherCampaign,
   voucherDefinition,
+  voucherSaleItem,
   type Db,
 } from '@oto/db';
 import {
@@ -439,6 +440,21 @@ async function issuableDefinition(
   // One that has not started yet may be: the paper is good from its first day.
   const window = await promoWindowRefusal(db, def, branchId, now);
   if (window && window.code === 'VOUCHER_PROMOTION_ENDED') throw window;
+  // SCRUM-798 — a voucher the park SELLS (the Golden Ticket) is issued by its
+  // sale and nowhere else: a free one from the Issue picker or a campaign
+  // would be the 1,500 THB item given away with nothing rung up.
+  const [sold] = await db
+    .select({ id: voucherSaleItem.id })
+    .from(voucherSaleItem)
+    .where(eq(voucherSaleItem.voucherDefinitionId, def.id))
+    .limit(1);
+  if (sold) {
+    throw new AppError(
+      409,
+      'VOUCHER_SOLD_AS_ITEM',
+      `${def.nameEn} is sold as a shop item — selling it issues the voucher`,
+    );
+  }
   return def;
 }
 
@@ -647,6 +663,8 @@ export async function issuableDefinitionsAt(
         eq(voucherDefinition.active, true),
         isNull(voucherDefinition.archivedAt),
         sql`(${voucherDefinition.validUntil} is null or ${voucherDefinition.validUntil} >= ${day}::date)`,
+        // SCRUM-798 — a voucher the park sells is issued by its sale, never picked here.
+        sql`not exists (select 1 from ${voucherSaleItem} where ${voucherSaleItem.voucherDefinitionId} = ${voucherDefinition.id})`,
       ),
     )
     .orderBy(asc(voucherDefinition.nameEn));

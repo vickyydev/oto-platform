@@ -370,7 +370,8 @@ export async function voucherRoutes(app: App): Promise<void> {
         description:
           'What the till this session stands at may issue today: the operator’s switched-on, unarchived voucher ' +
           'definitions whose promotion has not ended on the branch’s trading day, with their window, global limit ' +
-          'and how many are used. Needs pos:print:voucher at the till’s branch.',
+          'and how many are used — never one the park sells as a shop item, which its sale issues. Needs ' +
+          'pos:print:voucher at the till’s branch.',
       },
     },
     async (req) => {
@@ -395,7 +396,8 @@ export async function voucherRoutes(app: App): Promise<void> {
           'printer as a voucher slip. The code is minted on the platform on the till’s prefix (the booth scheme, with ' +
           'its check character), recorded as issued by the person at the till, and audited. `print.status` is queued, ' +
           'skipped (no receipt printer at this till) or none (no box). Refused for a switched-off or archived ' +
-          'definition, and for a promotion that has ended. Needs pos:print:voucher at the till’s branch.',
+          'definition, for a promotion that has ended, and for a voucher type the park sells as a shop item ' +
+          '(VOUCHER_SOLD_AS_ITEM: its sale issues it). Needs pos:print:voucher at the till’s branch.',
         body: VoucherIssueBodySchema,
       },
     },
