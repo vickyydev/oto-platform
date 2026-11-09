@@ -20,6 +20,10 @@
  *     left otherwise as it was. The merged package's "Extra child" and
  *     "Additional adult" add-on lines are removed: their prices are now the
  *     package's own extra child and extra adult prices, by day;
+ *   - an add-on line starts at quantity 0 (billable), so a party the package
+ *     is applied to has bought none until staff set a quantity in the BEO;
+ *   - the Floresta package's branch is the park group's one branch named
+ *     "Central Floresta" or ending with it ("Oto Play Park, Central Floresta");
  *   - nothing else is deleted, and no other row is touched. A second run
  *     changes nothing.
  *
@@ -77,8 +81,13 @@ const included = (category, label, qty = 1, unitLabel = null, description = null
   included: true, default_unit_price: 0, billable_by_default: false,
   fnb_credit: null, prints_voucher: false, price_is_from: false,
 });
+// An add-on is the customer's choice: applying the package copies it onto the
+// party at quantity 0, billable, so nothing is charged until staff set how many
+// were bought (the app's own seed, script/minimal/main.ts, starts its optional
+// add-ons at 0 the same way). otoapp_v.event_packages lists an add-on only once
+// it is billable with a quantity above 0.
 const addon = (category, label, priceThb, unitLabel = null, description = null, extra = {}) => ({
-  category, label, description, qty_default: 1, qty_editable: true, unit_label: unitLabel,
+  category, label, description, qty_default: 0, qty_editable: true, unit_label: unitLabel,
   included: false, default_unit_price: baht(priceThb), billable_by_default: true,
   fnb_credit: null, prints_voucher: false, price_is_from: false,
   ...extra,
@@ -182,9 +191,11 @@ const afterSchool = (kids) => {
         } Set menu template: "After School food set (${kids} kids)".`),
       included("cake", "Ice Cream Cake"),
       included("other", "Unlimited complimentary drinking water"),
+      // The plan (section 4, approved in 6.1): a table reservation or private
+      // zone grants its F&B credit and prints the credit voucher.
       addon("setup", "Private Zone (guaranteed)", 3000, null,
         "Not included: if available on the day it may be used. Guaranteed for an additional 3,000 THB; the full amount goes towards food and beverages.",
-        { fnb_credit: baht(3000) }),
+        { fnb_credit: baht(3000), prints_voucher: true }),
       addon("other", "Socks (per pair)", 60, "pair", "Socks not included; non-slip socks are required for children."),
       addon("entertainment", "Bracelet Making", 100, "child", "100 THB per child."),
     ],
@@ -312,7 +323,6 @@ const QUESTIONS = [
   'After School food sets: "Belgian Waffles" and "Fruit Skewers" are not on the printed menu; which products are they?',
   'After School 20 kids: the owner\'s text gives "Fish & Chips can be replaced with 2 portions of Chicken Schnitzel" under 10 kids only; does it hold for 20 kids?',
   'After School packages: "Central" is printed; are they sold at Central Floresta only (the package\'s branch is left unset), and for how many hours?',
-  "Private Zone (After School) grants 3,000 THB of F&B credit; does it print the credit voucher like the reserved table (the plan says both do; the brief set it only for the table)?",
   "Floresta's additional adult (350 / 500) is printed as \"full amount used for food & drinks\": is that a credit the till should grant like the reserved table's?",
   "Entertainment menu: \"For groups larger than 10, an additional fee applies per extra child\" (Other page) names no amount; what is the extra-child price of Face painting, Pinata and Neon party (none is set)?",
 ];
@@ -415,11 +425,28 @@ async function seedEntertainment(tenant) {
   }
 }
 
+/**
+ * The park the package is sold at: the one branch of the park group whose
+ * name, trimmed, is the printed park or ends with it as its last words
+ * (staging names it "Oto Play Park, Central Floresta ", with the trailing
+ * space), ignoring case. None or several: the package's branch is left as it
+ * is, and the plan says so.
+ */
 async function findBranch(tenant, name) {
   if (!name) return null;
-  const rows = await q("select id from branches where tenant_id = $1 and lower(btrim(name)) = lower($2)", [tenant, name]);
-  if (rows.length === 1) return rows[0].id;
-  plan.push(`note      ${rows.length === 0 ? "no branch" : `${rows.length} branches`} named "${name}" in this park group; the package's branch is left as it is`);
+  const rows = await q(
+    `select id, name from branches
+      where tenant_id = $1
+        and (lower(btrim(name)) = lower($2) or right(lower(btrim(name)), char_length($2) + 1) = ' ' || lower($2))
+      order by created_at, id`,
+    [tenant, name],
+  );
+  if (rows.length === 1) {
+    plan.push(`branch    "${rows[0].name}" (${rows[0].id}) is the "${name}" park`);
+    return rows[0].id;
+  }
+  const found = rows.length === 0 ? "no branch" : `${rows.length} branches (${rows.map((r) => `"${r.name}"`).join(", ")})`;
+  plan.push(`note      ${found} named "${name}" in this park group; the package's branch is left as it is`);
   return undefined;
 }
 

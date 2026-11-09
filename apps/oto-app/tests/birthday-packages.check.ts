@@ -28,11 +28,14 @@
 //      add-on switched off or at quantity 0 bills nothing, and one at 2 bills
 //      two, as the view reads the party's add-ons;
 //   5. script/seed-birthday-packages.mjs on rows shaped as staging holds them
-//      (the two Floresta templates, facts in descriptions): the dry run writes
-//      nothing, the run updates those rows in place (the weekday template
-//      renamed and given both days, the weekend one archived, no duplicate)
+//      (the two Floresta templates, facts in descriptions, the park named
+//      "Oto Play Park, Central Floresta "): the dry run writes nothing, the
+//      run updates those rows in place (the weekday template renamed and
+//      given both days and its park, the weekend one archived, every add-on
+//      at quantity 0, the private zone printing its voucher, no duplicate)
 //      and does exactly what the dry run printed, and a second run changes
-//      nothing.
+//      nothing; a party given a seeded package has no add-on until staff set
+//      a quantity; two parks of that name leave the package's branch alone.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
@@ -816,9 +819,16 @@ try {
 
   // A park group as staging was left on 9 November: the printed catalogue
   // entered through the app's routes before the fields existed — Floresta as
-  // two templates, facts in descriptions, portions in set-menu labels.
+  // two templates, facts in descriptions, portions in set-menu labels, every
+  // add-on at quantity 1.
   const C = await parkGroup("seed");
-  await q("update branches set name = 'Central Floresta' where id = $1", [C.branch]);
+  // The parks as staging names them: Floresta with its trailing space, and a
+  // second park the match must not take.
+  await q("update branches set name = 'Oto Play Park, Central Floresta ' where id = $1", [C.branch]);
+  await q(
+    "insert into branches (id, tenant_id, operator_id, name, address, timezone) values ($1, $2, $3, 'Oto Play Park, Robinson Chalong', 'ZZ TEST', 'Asia/Bangkok')",
+    [randomUUID(), C.tenant, C.operator],
+  );
   const cookieC = await signIn(C.admin.email);
   const asStaged = async (path: string, body: Record<string, unknown>) => {
     const res = await call("POST", path, { cookie: cookieC, body });
@@ -909,7 +919,12 @@ try {
     assert.deepEqual([dry.renamed, dry.archived, dry.removed], [1, 1, 2], run1.out);
     assert.ok(dry.created > 0 && dry.updated > 0, run1.out);
     assert.match(run1.out, /renamed\s+package "Birthday package, Central Floresta \(weekday\)"/);
+    assert.ok(
+      run1.out.includes(`branch    "Oto Play Park, Central Floresta " (${C.branch}) is the "Central Floresta" park`),
+      `the staging park is found by its full name:\n${run1.out}`,
+    );
     assert.match(run1.out, /questions for the owner/);
+    assert.doesNotMatch(run1.out, /Private Zone[^\n]*print the credit voucher/, "the plan answers the private zone's voucher");
     assert.equal(await fingerprint(), before);
   });
 
@@ -941,6 +956,15 @@ try {
     assert.deepEqual([table.fnbCredit, table.printsVoucher], [500_000, true]);
     const upgrade = floresta.body.lineItems.find((l: { label: string }) => l.label.startsWith("Upgrade"));
     assert.equal(upgrade.priceIsFrom, true);
+    type Line = { label: string; included: boolean; qtyDefault: number; billableByDefault: boolean };
+    const addOnLines = (lines: Line[]) => lines.filter((l) => !l.included).map((l) => [l.label, l.qtyDefault, l.billableByDefault]);
+    assert.deepEqual(addOnLines(floresta.body.lineItems), [
+      ["Reserved table for adults, up to 10 adults", 0, true],
+      ["Classic balloon decoration", 0, true],
+      ["PRO photo zone with decorations", 0, true],
+      ["Upgrade or customize your activity program", 0, true],
+      ["Bracelet Making", 0, true],
+    ], "an add-on starts at 0, billable: the staged quantity 1 is changed in place");
 
     const weekend = await call("GET", `/api/beo/birthday-packages/${staged["Birthday package, Central Floresta (weekend)"]}`, { cookie: cookieC });
     assert.equal(weekend.body.isActive, false, "archived, the way Event Settings archives a package");
@@ -953,8 +977,13 @@ try {
     );
     assert.equal(as10.body.setMenuTemplateId, staged.menu10);
     const zone = as10.body.lineItems.find((l: { label: string }) => l.label === "Private Zone (guaranteed)");
-    assert.equal(zone.fnbCredit, 300_000);
+    assert.deepEqual([zone.fnbCredit, zone.printsVoucher], [300_000, true], "the private zone grants its credit and prints the voucher (plan section 4)");
     assert.equal(as10.body.lineItems.filter((l: { label: string }) => l.label === "Private Zone (guaranteed)").length, 1);
+    assert.deepEqual(addOnLines(as10.body.lineItems), [
+      ["Private Zone (guaranteed)", 0, true],
+      ["Socks (per pair)", 0, true],
+      ["Bracelet Making", 0, true],
+    ]);
 
     const zombie = (await call("GET", "/api/beo/entertainment-templates", { cookie: cookieC })).body.filter((t: { name: string }) => t.name === "Zombie game");
     assert.equal(zombie.length, 1);
@@ -987,6 +1016,55 @@ try {
     );
     assert.ok(result.unchanged > 50);
     assert.equal(await fingerprint(), before);
+  });
+
+  await check("a party given the seeded Floresta or After School package has bought no add-on until staff set a quantity", async () => {
+    const addOnsOf = async (eventId: string) =>
+      (await q<{ add_ons: Array<Record<string, unknown>> }>("select add_ons from otoapp_v.event_packages where event_id = $1", [eventId]))[0]
+        .add_ons;
+    const applyTo = async (templateId: string) => {
+      const party = await birthday(C);
+      const res = await call("POST", `/api/beo/events/${party}/package-snapshot`, { cookie: cookieC, body: { templateId } });
+      assert.equal(res.status, 201, show(res));
+      return { party, items: res.body.items as Array<{ id: string; label: string; qty: number; billable: boolean; included: boolean }> };
+    };
+
+    const floresta = await applyTo(staged["Birthday package, Central Floresta (weekday)"]!);
+    assert.deepEqual(await addOnsOf(floresta.party), [], "nothing chosen, nothing bought");
+    assert.ok(floresta.items.filter((i) => !i.included).every((i) => i.qty === 0 && i.billable), "copied at 0, billable");
+    const table = floresta.items.find((i) => i.label.startsWith("Reserved table"))!;
+    const set = await call("PATCH", `/api/beo/events/${floresta.party}/package-snapshot/items/${table.id}`, { cookie: cookieC, body: { qty: 1 } });
+    assert.equal(set.status, 200, show(set));
+    assert.deepEqual((await addOnsOf(floresta.party)).map((a) => [a.name, a.qty, a.unit_price_satang, a.fnb_credit_satang, a.prints_voucher]), [
+      ["Reserved table for adults, up to 10 adults", 1, 500_000, 500_000, true],
+    ]);
+
+    const afterSchool = await applyTo(staged.as10!);
+    assert.deepEqual(await addOnsOf(afterSchool.party), []);
+    const zone = afterSchool.items.find((i) => i.label === "Private Zone (guaranteed)")!;
+    const chosen = await call("PATCH", `/api/beo/events/${afterSchool.party}/package-snapshot/items/${zone.id}`, { cookie: cookieC, body: { qty: 1 } });
+    assert.equal(chosen.status, 200, show(chosen));
+    assert.deepEqual((await addOnsOf(afterSchool.party)).map((a) => [a.name, a.qty, a.unit_price_satang, a.fnb_credit_satang, a.prints_voucher]), [
+      ["Private Zone (guaranteed)", 1, 300_000, 300_000, true],
+    ]);
+  });
+
+  await check("two parks named Central Floresta: the seed picks neither and leaves the package's branch", async () => {
+    const twin = randomUUID();
+    await q(
+      "insert into branches (id, tenant_id, operator_id, name, address, timezone) values ($1, $2, $3, 'ZZ TEST Central Floresta', 'ZZ TEST', 'Asia/Bangkok')",
+      [twin, C.tenant, C.operator],
+    );
+    const before = await fingerprint();
+    const { out, result } = await seed();
+    assert.deepEqual([result.created, result.updated, result.renamed, result.archived, result.removed], [0, 0, 0, 0, 0], out);
+    assert.match(out, /note\s+2 branches \(.*\) named "Central Floresta" in this park group; the package's branch is left as it is/);
+    assert.equal(await fingerprint(), before);
+    const branch = (await q<{ branch_id: string }>(
+      "select branch_id from birthday_package_templates where id = $1",
+      [staged["Birthday package, Central Floresta (weekday)"]],
+    ))[0].branch_id;
+    assert.equal(branch, C.branch);
   });
 
   console.log(`birthday-packages.check: ${checks} checks passed`);
