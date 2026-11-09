@@ -62,3 +62,18 @@ Cancel was pressed three times, in three different situations. Each time the nex
 - The sale Z763-000001 stays on record as paid, as in earlier proofs.
 
 Every step's read-back is in `receipt.json`: the screen text, the cards, the language button, the keypad, the till's sales before and after each cancel, every request the pages sent, and the clean-up.
+
+## Re-check after the api deploy
+
+**Result: passed.** The case left open above now works. Cancel on the till brings the language choice back on a separately paired display.
+
+- **Version:** oto-api-staging was live on 39c45636 before and after the re-check. That commit includes the box change 36f19edee. oto-pos-web-staging was live on dd557711, which comes after 183ed206. Read at 20:48 and 20:51 Bangkok time.
+- **When:** 9 November 2026, 20:50–20:51 Bangkok time. No page errors were recorded.
+- **Set-up:** a new test till, "ZZ TEST SCRUM-763b till" on Virtual box 1, with receipt prefix Z763B and Virtual box 1's simulated kids band, adult band and receipt printers. The till was signed in as the staging reception account. A display page in its own browser (1024 × 768, touch) was paired to that till with the page's own pairing code. It was named "ZZ TEST SCRUM-763b display".
+- `763-st-06a2-paired-display-first-screen-language-choice.png`: the paired display's first screen is the language choice.
+- **What the display now receives:** the message for the first screen carries `saleKey`, alongside kind, phone, nickname, requestId and contactChannel. In the earlier run it had no saleKey. The till sent a new sale name when Cancel was pressed, and the display received it.
+- `763-st-06d2-paired-display-russian-phone-step-before-cancel.png`: after a tap on Русский, the display shows the phone step in Russian, "Ваш номер телефона?". Nothing is typed.
+- `763-st-06e-paired-display-after-till-cancel-choice-returns.png`: Cancel was pressed on the till. About 0.8 seconds later the paired display showed the language choice again. It is headed in Russian, "Выберите язык", and has all five cards, with no keypad.
+- No sale was written. The test till's sales were empty before and after.
+- **Clean-up (20:51, read back):** the display pairing was revoked and the till lists no display. The display page's next pairing code was expired. The till signed out, and its session was refused afterwards (401). Its printers were unassigned and it was archived with no devices. The admin session signed out too (401). Reception Till 1 keeps its seven devices. Till 1 (Pi), Till 2 (test) and FWBooth1 are unchanged. No till notice was pressed, no setting was changed, and no text message was sent.
+- The full read-back is under `recheck` in `receipt.json`.

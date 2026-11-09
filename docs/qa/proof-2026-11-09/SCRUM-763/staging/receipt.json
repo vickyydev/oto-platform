@@ -1249,5 +1249,666 @@
       "at": "2026-11-09T13:23:21.919Z"
     }
   },
-  "notTouched": "No real till or display was used: Till 1 (Pi), Till 2 (test), Reception Till 1 and FWBooth1 read back unchanged (Reception Till 1 keeps its 7 devices); the park Pi was not used. No till notice was pressed (the \"7 overdue\" and \"4 out of stock\" banners were left alone). No setting was read or changed, no SMS, cash only, nothing refunded. Z763-000001 stays recorded as paid; its two bands stay active until they lapse."
+  "notTouched": "No real till or display was used: Till 1 (Pi), Till 2 (test), Reception Till 1 and FWBooth1 read back unchanged (Reception Till 1 keeps its 7 devices); the park Pi was not used. No till notice was pressed (the \"7 overdue\" and \"4 out of stock\" banners were left alone). No setting was read or changed, no SMS, cash only, nothing refunded. Z763-000001 stays recorded as paid; its two bands stay active until they lapse.",
+  "recheck": {
+    "what": "Re-check of the one open case after oto-api-staging was deployed: Cancel on the till while a separately paired display (served by Virtual box 1, the box agent inside oto-api-staging) sits on the phone step after a language was chosen, nothing typed.",
+    "result": "passed: after Cancel on the till the paired display showed the language choice again (within about 0.8 s), headed in Russian, \"Выберите язык\", with the five cards. The first screen's prompt now reaches the display with saleKey.",
+    "startedAt": "2026-11-09T13:48:38.653Z",
+    "finishedAt": "2026-11-09T13:51:05.468Z",
+    "deploys": {
+      "before": {
+        "services": {
+          "oto-api-staging": [
+            {
+              "id": "dep-dboslrfig07c73afath0",
+              "status": "live",
+              "commit": "39c45636",
+              "at": "2026-11-09T13:37:52.279406Z"
+            },
+            {
+              "id": "dep-dboslboae00c73a44tr0",
+              "status": "deactivated",
+              "commit": "748ed62f",
+              "at": "2026-11-09T13:33:20.343455Z"
+            }
+          ],
+          "oto-pos-web-staging": [
+            {
+              "id": "dep-dbospke8bjmc73bk99c0",
+              "status": "live",
+              "commit": "dd557711",
+              "at": "2026-11-09T13:41:20.095707Z"
+            },
+            {
+              "id": "dep-dboscom417fc7398v1kg",
+              "status": "deactivated",
+              "commit": "183ed206",
+              "at": "2026-11-09T13:13:47.816629Z"
+            }
+          ],
+          "oto-pos-staging": [
+            {
+              "id": "dep-dbospkm8bjmc73bk99g0",
+              "status": "live",
+              "commit": "dd557711",
+              "at": "2026-11-09T13:39:34.557393Z"
+            },
+            {
+              "id": "dep-dboscou417fc7398v4jg",
+              "status": "deactivated",
+              "commit": "183ed206",
+              "at": "2026-11-09T13:11:56.579238Z"
+            }
+          ]
+        },
+        "readAt": "2026-11-09T13:48:29Z"
+      },
+      "after": {
+        "services": {
+          "oto-api-staging": [
+            {
+              "id": "dep-dboslrfig07c73afath0",
+              "status": "live",
+              "commit": "39c45636",
+              "at": "2026-11-09T13:37:52.279406Z"
+            }
+          ],
+          "oto-pos-web-staging": [
+            {
+              "id": "dep-dbospke8bjmc73bk99c0",
+              "status": "live",
+              "commit": "dd557711",
+              "at": "2026-11-09T13:41:20.095707Z"
+            }
+          ],
+          "oto-pos-staging": [
+            {
+              "id": "dep-dbospkm8bjmc73bk99g0",
+              "status": "live",
+              "commit": "dd557711",
+              "at": "2026-11-09T13:39:34.557393Z"
+            }
+          ]
+        },
+        "readAt": "2026-11-09T13:51:10Z"
+      },
+      "how": "node scripts/agent/render.mjs deploys <service>",
+      "note": "oto-api-staging live on 39c45636 (contains 36f19edee, the box keeping the till's sale name on the first screen, and 183ed206); oto-pos-web-staging live on dd557711 (a descendant of 183ed206). Unchanged before and after the re-check."
+    },
+    "bundle": {
+      "read": "GET https://oto-pos-web-staging.onrender.com/ and its script, before the re-check",
+      "scripts": {
+        "/assets/index-CxWQzB93.js": {
+          "bytes": 2462651,
+          "languageChoiceTestId": true,
+          "saleKey": true
+        }
+      }
+    },
+    "browser": "Chromium 153.0.8010.12 (headless), till 1440x900, display 1024x768, hasTouch: true, timezone Asia/Bangkok",
+    "accounts": {
+      "fixture": "staging admin (api) made the test till, claimed and revoked the display, and archived the till",
+      "till": "staging reception account in the browser",
+      "credentials": "from scripts/agent/env.mjs, never printed or stored"
+    },
+    "fixture": {
+      "branch": "Oto Play Park, Central Floresta",
+      "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "box": "Virtual box 1",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "boxAtStart": {
+        "id": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+        "name": "Virtual box 1",
+        "status": "online",
+        "archived": false,
+        "version": "0.1.0"
+      },
+      "till": {
+        "id": "01a1c092-ef41-74e8-9ad6-e06bcbc962d2",
+        "name": "ZZ TEST SCRUM-763b till",
+        "prefix": "Z763B",
+        "ready": true,
+        "routing": {
+          "qr": "none",
+          "card": "manual"
+        },
+        "devices": [
+          "adult_band:Band Printer (adults)",
+          "kids_band:Band Printer (kids)",
+          "receipt:Receipt Printer 1"
+        ]
+      },
+      "display": {
+        "credentialId": "01a1c093-2701-778f-bb9f-0aec11978be7",
+        "name": "ZZ TEST SCRUM-763b display",
+        "pairedAt": "2026-11-09T13:50:31.028Z"
+      }
+    },
+    "howRead": "A read-only watcher in the display page logged every document it received (its session read and its live channel): stage, prompt kind, prompt keys, whether saleKey was there, and the sale name as an ordinal (1st, 2nd), never its value. The till page's own display publishes were read the same way.",
+    "steps": {
+      "tillSignedIn": {
+        "at": "2026-11-09T13:50:25.423Z",
+        "tillCustomerHalf": {
+          "choiceShown": true,
+          "cards": [
+            "language-choice-en",
+            "language-choice-zh",
+            "language-choice-th",
+            "language-choice-ru",
+            "language-choice-fr"
+          ],
+          "headings": [
+            "Choose your language"
+          ]
+        },
+        "staffHalf": "Membership Check The customer is entering their phone on their display to apply any verified rate. Waiting for the customer… Enter phone to look up membership A phone number is required for every visit — it is how the team reaches the family about their child’s safety. Phone — Nickname — EVENT PASSE",
+        "tillPublishes": []
+      },
+      "a_pairedDisplayFirstScreen": {
+        "at": "2026-11-09T13:50:31.028Z",
+        "claim": 200,
+        "displaysOnTheTillBefore": [],
+        "firstScreen": {
+          "customerHalves": 0,
+          "choiceShown": true,
+          "cards": [
+            {
+              "testid": "language-choice-en",
+              "lang": "en",
+              "text": "English Continue in English"
+            },
+            {
+              "testid": "language-choice-zh",
+              "lang": "zh",
+              "text": "中文 使用中文继续"
+            },
+            {
+              "testid": "language-choice-th",
+              "lang": "th",
+              "text": "ไทย ดำเนินการต่อเป็นภาษาไทย"
+            },
+            {
+              "testid": "language-choice-ru",
+              "lang": "ru",
+              "text": "Русский Продолжить на русском"
+            },
+            {
+              "testid": "language-choice-fr",
+              "lang": "fr",
+              "text": "Français Continuer en français"
+            }
+          ],
+          "headings": [
+            "Choose your language"
+          ],
+          "languageButton": null,
+          "keypadDigitButtons": 0,
+          "clearKey": null,
+          "safety": null,
+          "htmlLang": "en",
+          "text": "ZZ TEST SCRUM-763b till · ZZ TEST SCRUM-763b display LANGUAGE Choose your language 请选择您的语言 · เลือกภาษาของคุณ · Выберите язык · Choisissez votre langue English Continue in English 中文 使用中文继续 ไทย ดำเนินการต่อเป็นภาษาไทย Русский Продолжить на русском Français Continuer en français"
+        },
+        "till": {
+          "banner": "Display connected: ZZ TEST SCRUM-763b display",
+          "inlineCustomerHalves": 0
+        }
+      },
+      "firstScreenPromptAsTheDisplayReceivedIt": {
+        "prompt": {
+          "at": "2026-11-09T13:50:33.718Z",
+          "via": "channel",
+          "stage": "identify",
+          "sequence": 2,
+          "promptKind": "identify",
+          "promptKeys": [
+            "kind",
+            "phone",
+            "saleKey",
+            "nickname",
+            "requestId",
+            "contactChannel"
+          ],
+          "saleKeyPresent": true,
+          "saleNo": 1,
+          "language": "en"
+        },
+        "saleKeyPresent": true,
+        "earlierRun": "kind, phone, nickname, requestId, contactChannel (no saleKey)",
+        "allReads": [
+          {
+            "at": "2026-11-09T13:50:33.140Z",
+            "via": "session read",
+            "stage": "identify",
+            "sequence": 0,
+            "promptKind": null,
+            "promptKeys": null,
+            "saleKeyPresent": false,
+            "saleNo": null,
+            "language": "en"
+          },
+          {
+            "at": "2026-11-09T13:50:33.237Z",
+            "via": "channel",
+            "stage": "identify",
+            "sequence": 0,
+            "promptKind": null,
+            "promptKeys": null,
+            "saleKeyPresent": false,
+            "saleNo": null,
+            "language": "en"
+          },
+          {
+            "at": "2026-11-09T13:50:33.601Z",
+            "via": "channel",
+            "stage": "identify",
+            "sequence": 1,
+            "promptKind": null,
+            "promptKeys": null,
+            "saleKeyPresent": false,
+            "saleNo": null,
+            "language": "en"
+          },
+          {
+            "at": "2026-11-09T13:50:33.718Z",
+            "via": "channel",
+            "stage": "identify",
+            "sequence": 2,
+            "promptKind": "identify",
+            "promptKeys": [
+              "kind",
+              "phone",
+              "saleKey",
+              "nickname",
+              "requestId",
+              "contactChannel"
+            ],
+            "saleKeyPresent": true,
+            "saleNo": 1,
+            "language": "en"
+          }
+        ],
+        "tillPublishes": [
+          {
+            "at": "2026-11-09T13:50:33.600Z",
+            "stage": "identify",
+            "promptKind": "identify",
+            "promptKeys": [
+              "kind",
+              "requestId",
+              "phone",
+              "nickname",
+              "contactChannel",
+              "saleKey"
+            ],
+            "saleKeyPresent": true,
+            "saleNo": 1
+          }
+        ]
+      },
+      "b_russianPhoneStepNothingTyped": {
+        "at": "2026-11-09T13:50:41.515Z",
+        "how": "touch tap on the Русский card of the paired display",
+        "display": {
+          "customerHalves": 0,
+          "choiceShown": false,
+          "cards": [],
+          "headings": [
+            "Ваш номер телефона?"
+          ],
+          "languageButton": "Русский",
+          "keypadDigitButtons": 10,
+          "clearKey": "Очистить",
+          "safety": "Номер телефона нужен при каждом визите, чтобы мы могли связаться с вами по поводу безопасности ребёнка.",
+          "htmlLang": "en",
+          "text": "ZZ TEST SCRUM-763b till · ZZ TEST SCRUM-763b display Русский УЧАСТНИКИ ЭКОНОМЯТ Ваш номер телефона? Участников мы узнаём автоматически и применяем цену для участников. Номер телефона нужен при каждом визите, чтобы мы могли связаться с вами по поводу безопасности ребёнка. Номер телефона 🇹🇭 +66 8X XXX XXXX [number withheld] Очистить 0 WhatsApp Telegram LINE Имя (необязательно) Продолжить"
+        },
+        "inputsOnTheDisplay": [
+          {
+            "type": "text",
+            "inputmode": null,
+            "valueLength": 0
+          }
+        ],
+        "till": {
+          "banner": "Display connected: ZZ TEST SCRUM-763b display",
+          "inlineCustomerHalves": 0
+        }
+      },
+      "c_d_cancelOnTheTill": {
+        "at": "2026-11-09T13:50:48.281Z",
+        "what": "Cancel on the till, the paired display on the Russian phone step with nothing typed",
+        "tillWasLockedAndUnlocked": false,
+        "cancelEnabled": true,
+        "dialog": null,
+        "displayBeforeCancel": {
+          "choiceShown": false,
+          "headings": [
+            "Ваш номер телефона?"
+          ],
+          "languageButton": "Русский"
+        },
+        "choiceBackAfterMs": 810,
+        "display": {
+          "choiceShown": true,
+          "cards": [
+            "language-choice-en",
+            "language-choice-zh",
+            "language-choice-th",
+            "language-choice-ru",
+            "language-choice-fr"
+          ],
+          "headings": [
+            "Выберите язык"
+          ],
+          "languageButton": null,
+          "keypadDigitButtons": 0
+        },
+        "salesBefore": [],
+        "salesAfter": [],
+        "displayReadsAfterCancel": [
+          {
+            "at": "2026-11-09T13:50:48.437Z",
+            "via": "channel",
+            "stage": "identify",
+            "sequence": 3,
+            "promptKind": "identify",
+            "promptKeys": [
+              "kind",
+              "phone",
+              "saleKey",
+              "nickname",
+              "requestId",
+              "contactChannel"
+            ],
+            "saleKeyPresent": true,
+            "saleNo": 2,
+            "language": "ru"
+          }
+        ],
+        "tillPublishesAfterCancel": [
+          {
+            "at": "2026-11-09T13:50:48.342Z",
+            "stage": "identify",
+            "promptKind": "identify",
+            "promptKeys": [
+              "kind",
+              "requestId",
+              "phone",
+              "nickname",
+              "contactChannel",
+              "saleKey"
+            ],
+            "saleKeyPresent": true,
+            "saleNo": 2
+          }
+        ],
+        "pageWritesInStep": [
+          {
+            "at": "2026-11-09T13:50:48.436Z",
+            "page": "T",
+            "method": "POST",
+            "path": "/api/box/v1/station/01a1c092-ef41-74e8-9ad6-e06bcbc962d2/intents",
+            "status": 200
+          },
+          {
+            "at": "2026-11-09T13:50:50.176Z",
+            "page": "T",
+            "method": "POST",
+            "path": "/api/box/v1/station/01a1c092-ef41-74e8-9ad6-e06bcbc962d2/lease/renew",
+            "status": 200
+          }
+        ]
+      }
+    },
+    "pictures": [
+      {
+        "file": "docs/qa/proof-2026-11-09/SCRUM-763/staging/763-st-06a2-paired-display-first-screen-language-choice.png",
+        "at": "2026-11-09T13:50:37.826Z",
+        "page": "D",
+        "url": "https://oto-pos-web-staging.onrender.com/display",
+        "viewport": {
+          "width": 1024,
+          "height": 768
+        },
+        "shows": "Re-check after the api deploy: a separate customer display paired to the ZZ TEST SCRUM-763b till (its own browser context, 1024 x 768, paired with the display page's own code). Its first screen is the language choice, \"Choose your language\" and the five cards; no keypad, no small language button."
+      },
+      {
+        "file": "docs/qa/proof-2026-11-09/SCRUM-763/staging/763-st-06d2-paired-display-russian-phone-step-before-cancel.png",
+        "at": "2026-11-09T13:50:43.810Z",
+        "page": "D",
+        "url": "https://oto-pos-web-staging.onrender.com/display",
+        "viewport": {
+          "width": 1024,
+          "height": 768
+        },
+        "shows": "Re-check, before the cancel: after a tap on Русский the paired display shows the phone step in Russian, \"Ваш номер телефона?\", with the Russian safety line and the small language button reading Русский. Nothing has been typed."
+      },
+      {
+        "file": "docs/qa/proof-2026-11-09/SCRUM-763/staging/763-st-06e-paired-display-after-till-cancel-choice-returns.png",
+        "at": "2026-11-09T13:50:51.144Z",
+        "page": "D",
+        "url": "https://oto-pos-web-staging.onrender.com/display",
+        "viewport": {
+          "width": 1024,
+          "height": 768
+        },
+        "shows": "Re-check, after Cancel on the till: the paired display shows the language choice again for the next guest."
+      }
+    ],
+    "pageWrites": [
+      {
+        "at": "2026-11-09T13:50:23.775Z",
+        "page": "T",
+        "method": "PUT",
+        "path": "/api/me/session/station",
+        "status": 200
+      },
+      {
+        "at": "2026-11-09T13:50:30.941Z",
+        "page": "D",
+        "method": "POST",
+        "path": "/api/display/pairing",
+        "status": 200
+      },
+      {
+        "at": "2026-11-09T13:50:33.600Z",
+        "page": "T",
+        "method": "POST",
+        "path": "/api/box/v1/station/01a1c092-ef41-74e8-9ad6-e06bcbc962d2/lease",
+        "status": 200
+      },
+      {
+        "at": "2026-11-09T13:50:33.716Z",
+        "page": "T",
+        "method": "POST",
+        "path": "/api/box/v1/station/01a1c092-ef41-74e8-9ad6-e06bcbc962d2/intents",
+        "status": 200
+      },
+      {
+        "at": "2026-11-09T13:50:41.604Z",
+        "page": "D",
+        "method": "POST",
+        "path": "/api/box/v1/station/01a1c092-ef41-74e8-9ad6-e06bcbc962d2/display/intents",
+        "status": 200
+      },
+      {
+        "at": "2026-11-09T13:50:48.436Z",
+        "page": "T",
+        "method": "POST",
+        "path": "/api/box/v1/station/01a1c092-ef41-74e8-9ad6-e06bcbc962d2/intents",
+        "status": 200
+      },
+      {
+        "at": "2026-11-09T13:50:50.176Z",
+        "page": "T",
+        "method": "POST",
+        "path": "/api/box/v1/station/01a1c092-ef41-74e8-9ad6-e06bcbc962d2/lease/renew",
+        "status": 200
+      },
+      {
+        "at": "2026-11-09T13:51:00.303Z",
+        "page": "D",
+        "method": "POST",
+        "path": "/api/display/pairing",
+        "status": 200
+      },
+      {
+        "at": "2026-11-09T13:51:02.264Z",
+        "page": "D",
+        "method": "POST",
+        "path": "/api/display/pairing/expire",
+        "status": 200
+      },
+      {
+        "at": "2026-11-09T13:51:06.144Z",
+        "page": "T",
+        "method": "POST",
+        "path": "/api/box/v1/station/01a1c092-ef41-74e8-9ad6-e06bcbc962d2/lease/release",
+        "status": 401
+      }
+    ],
+    "pageWritesNote": "every non-GET request the till page (T) and the display page (D) made. The last, lease/release 401, is the till page releasing its display lease after it had signed out; the station was archived straight after.",
+    "pageErrors": [],
+    "created": [
+      {
+        "kind": "station",
+        "id": "01a1c092-ef41-74e8-9ad6-e06bcbc962d2",
+        "name": "ZZ TEST SCRUM-763b till",
+        "box": "Virtual box 1",
+        "prefix": "Z763B",
+        "at": "2026-11-09T13:50:16.719Z"
+      },
+      {
+        "kind": "display-credential",
+        "id": "01a1c093-2701-778f-bb9f-0aec11978be7",
+        "name": "ZZ TEST SCRUM-763b display",
+        "station": "ZZ TEST SCRUM-763b till",
+        "at": "2026-11-09T13:50:31.028Z"
+      }
+    ],
+    "writes": [
+      {
+        "at": "2026-11-09T13:50:16.719Z",
+        "by": "admin api",
+        "what": "POST /branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+        "status": 200,
+        "result": {
+          "stationId": "01a1c092-ef41-74e8-9ad6-e06bcbc962d2",
+          "name": "ZZ TEST SCRUM-763b till",
+          "prefix": "Z763B",
+          "box": "Virtual box 1",
+          "devices": [
+            "adult_band:Band Printer (adults)",
+            "kids_band:Band Printer (kids)",
+            "receipt:Receipt Printer 1"
+          ]
+        }
+      },
+      {
+        "at": "2026-11-09T13:50:23.881Z",
+        "by": "till (reception)",
+        "what": "POST /auth/sign-in + station pick",
+        "station": "ZZ TEST SCRUM-763b till"
+      },
+      {
+        "at": "2026-11-09T13:50:31.028Z",
+        "by": "admin api",
+        "what": "POST /stations/01a1c092-ef41-74e8-9ad6-e06bcbc962d2/displays/claim (the display page's own pairing code)",
+        "status": 200,
+        "result": {
+          "credentialId": "01a1c093-2701-778f-bb9f-0aec11978be7",
+          "name": "ZZ TEST SCRUM-763b display"
+        }
+      }
+    ],
+    "cleanup": {
+      "actions": [
+        {
+          "at": "2026-11-09T13:50:59.962Z",
+          "what": "revoke the ZZ TEST SCRUM-763b display",
+          "status": 200,
+          "code": null
+        },
+        {
+          "at": "2026-11-09T13:51:04.692Z",
+          "what": "the display page after the revoke, then its new pairing code expired",
+          "shown": "Set up this display In the Console, open Devices, choose Pair a display, and enter this code for the station. •••••• This code expires at 21:01. Expire code now",
+          "after": "Set up this display In the Console, open Devices, choose Pair a display, and enter this code for the station. This code has expired. Create a new code when you are ready to pair this display. New code"
+        },
+        {
+          "at": "2026-11-09T13:51:04.857Z",
+          "what": "till sign-out (reception, its own session route)",
+          "status": 200,
+          "code": null
+        },
+        {
+          "at": "2026-11-09T13:51:05.081Z",
+          "what": "unassign printers on ZZ TEST SCRUM-763b till",
+          "status": 200,
+          "code": null
+        },
+        {
+          "at": "2026-11-09T13:51:05.170Z",
+          "what": "archive station ZZ TEST SCRUM-763b till",
+          "status": 200,
+          "code": null
+        }
+      ],
+      "startedAt": "2026-11-09T13:50:59.713Z",
+      "salesBefore": [],
+      "revoked": true,
+      "displays": {
+        "before": [
+          {
+            "name": "ZZ TEST SCRUM-763b display",
+            "connected": true,
+            "revokedAt": null
+          }
+        ],
+        "after": []
+      },
+      "tillMeAfterSignOut": 401,
+      "readBack": {
+        "at": "2026-11-09T13:51:05.392Z",
+        "till": {
+          "id": "01a1c092-ef41-74e8-9ad6-e06bcbc962d2",
+          "name": "ZZ TEST SCRUM-763b till",
+          "archived": true,
+          "devices": 0
+        },
+        "displaysOnTheTill": [],
+        "salesAfter": [],
+        "receptionTill1Devices": 7,
+        "untouched": [
+          {
+            "name": "FWBooth1",
+            "archived": false,
+            "devices": 1
+          },
+          {
+            "name": "Reception Till 1",
+            "archived": false,
+            "devices": 7
+          },
+          {
+            "name": "Till 1 (Pi)",
+            "archived": false,
+            "devices": 4
+          },
+          {
+            "name": "Till 2 (test)",
+            "archived": false,
+            "devices": 4
+          }
+        ]
+      },
+      "finishedAt": "2026-11-09T13:51:05.468Z",
+      "adminSignOut": {
+        "status": 200,
+        "meAfter": 401,
+        "at": "2026-11-09T13:51:10.810Z"
+      }
+    },
+    "notTouched": "No sale was written (the test till's sales read back empty before and after). No real till or display was used: Till 1 (Pi), Till 2 (test), Reception Till 1 and FWBooth1 read back unchanged (Reception Till 1 keeps its 7 devices); the park Pi was not used. No till notice was pressed, no setting was read or changed, no text message was sent, nothing was deployed or restarted."
+  }
 }
