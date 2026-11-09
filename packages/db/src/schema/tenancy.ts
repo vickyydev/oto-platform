@@ -9,8 +9,12 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { archivedAt, core, idPk, timestamps } from './helpers';
+// A station stands in a branch and a branch names the station its party slips
+// print at: the two modules import each other, and every use is lazy.
+import { station } from './fleet';
 import type { ThemePreference, UiLanguage } from '@oto/shared';
 
 // --- Tenancy (schema `core`) -----------------------------------------------
@@ -59,12 +63,23 @@ export const branch = core.table(
      * boundary in the only hour nothing happens in.
      */
     businessDayStart: time('business_day_start').notNull().default('05:00'),
+    /**
+     * SCRUM-805 — the station whose kitchen and bar printers receive the
+     * party slips, printed at each party's slip time (birthday plan §5, the
+     * owner's decision 3). Null until the park tags one: the slips are then
+     * recorded "no printer" and the party page says so. Cleared, never left
+     * dangling, if the station row is ever deleted.
+     */
+    partySlipsStationId: uuid('party_slips_station_id').references((): AnyPgColumn => station.id, {
+      onDelete: 'set null',
+    }),
     ...timestamps,
     ...archivedAt,
   },
   (t) => [
     index('branch_operator_idx').on(t.operatorId),
     uniqueIndex('branch_code_unique').on(t.operatorId, t.code),
+    index('branch_party_slips_station_idx').on(t.partySlipsStationId),
   ],
 );
 

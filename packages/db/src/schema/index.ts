@@ -61,3 +61,6 @@ export * from './inbox';
 // The internal assistant's ask-log (SCRUM-591): its own schema, keyed on the
 // tenancy and nothing else of ours.
 export * from './assistant';
+// A party's kitchen and bar slips (SCRUM-805): keyed on the tenancy and the
+// OTO App's party, printed through the print record above.
+export * from './party-slips';
