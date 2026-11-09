@@ -1011,6 +1011,7 @@ export const employeeChangeTypes = [
   "branch_transfer",
   "resigned",
   "terminated",
+  "rehired", // SCRUM-794: a Left profile made active again (POST /api/employees/:id/rehire)
   "other",
 ] as const;
 export type EmployeeChangeType = typeof employeeChangeTypes[number];

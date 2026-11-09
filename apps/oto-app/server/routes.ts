@@ -6,6 +6,7 @@ import { persistAttendanceEvidence, canReadAttendanceEvidence, ATTENDANCE_EVIDEN
 import { registerTimekeepingReviewRoutes } from "./timekeeping-review-routes";
 import { registerPayrollRoutes } from "./payroll/routes";
 import { registerEmployeeActionRoutes } from "./employee-action-routes";
+import { registerEmployeeRehireRoutes } from "./employee-rehire-routes";
 import { registerQaRoutes } from "./qa/routes";
 import { registerSuiteSignInRoutes, unusablePassword } from "./suite-sign-in-routes";
 import { readPhone } from "./lib/suiteSignIn";
@@ -4811,6 +4812,15 @@ export async function registerRoutes(
     } catch (error) {
       next(error);
     }
+  });
+
+  // SCRUM-794: rehire a Left profile.
+  registerEmployeeRehireRoutes(app, {
+    employeeOfParkGroup,
+    managedUserTenant,
+    committed: (employeeId) => {
+      evaluateForEmployee(employeeId).catch(err => console.error("[AttentionEngine] Rehire trigger failed:", err));
+    },
   });
 
   // Bulk delete employees (admin only)
