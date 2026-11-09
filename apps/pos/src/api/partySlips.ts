@@ -10,7 +10,8 @@
 //   GET  /parties/:id               the party, with `slips`
 //   POST /parties/:id/slips/print   a new run of the party's slips
 
-import type { PartyDetailWithSlipsAnswer, PartySlipRecordView, PartySlipsPrintAnswer, PartySlipsView } from '@oto/shared';
+import type { ApiResponse } from '@oto/api-types';
+import type { PartySlipRecordView, PartySlipsPrintAnswer, PartySlipsView } from '@oto/shared';
 import type { PartyBooking } from '@/types';
 import { apiBranchIdForSlug } from './catalogBridge';
 import { api, ApiError, NetworkError } from './client';
@@ -27,7 +28,8 @@ export async function readPartySlipsOnPlatform(
   const branchId = apiBranchIdForSlug(party.branchId);
   if (!branchId) return null;
   try {
-    const answer = await api.get<Partial<PartyDetailWithSlipsAnswer>>(
+    // An api from before the slips answers without them: read as none.
+    const answer: { slips?: PartySlipsView | null } | null = await api.get<ApiResponse<'/parties/{id}', 'get'>>(
       `/parties/${encodeURIComponent(party.id)}?branchId=${branchId}`,
     );
     return answer && typeof answer === 'object' && answer.slips ? answer.slips : null;
@@ -51,7 +53,7 @@ export async function printPartySlipsOnPlatform(args: {
   const branchId = apiBranchIdForSlug(args.party.branchId);
   if (!branchId) return { ok: false, message: EVENTS_NOT_LINKED, retryable: false };
   try {
-    const answer = await api.post<PartySlipsPrintAnswer>(
+    const answer: PartySlipsPrintAnswer = await api.post<ApiResponse<'/parties/{id}/slips/print', 'post'>>(
       `/parties/${encodeURIComponent(args.party.id)}/slips/print`,
       { branchId, actionId: args.actionId },
       { idempotencyKey: `party-slips:${args.actionId}`, headers: { 'x-oto-action-id': args.actionId } },
