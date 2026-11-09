@@ -9,7 +9,7 @@ import { currentLane, isBoxLaneTrigger, laneStation, noteLaneFailure, useLane } 
 import { screenHidden } from '@/lib/scanChannel';
 import { SCANNER_BURST_MIN_LENGTH } from '@/lib/scannerBurst';
 import { SCAN_PACE_GAP_MS, SCAN_PACE_QUIET_MS } from '@/lib/pageScan';
-import { noteScannerUse } from '@/lib/scannerUse';
+import { NO_PACED_RUN, nextPacedRun, noteScannerUse, pacedLikeScanner, type PacedRun } from '@/lib/scannerUse';
 import { useDemoControls } from '@/lib/demoControls';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -96,6 +96,10 @@ export function ScanWristband({
   const field = useRef<HTMLInputElement>(null);
   // The run of characters that arrived at a scanner's pace, and when the last one did.
   const run = useRef({ length: 0, at: 0, pasted: false });
+  // SCRUM-771 — the same changes read against the shared scanner rule, for the
+  // scanner's presence only: a paste, a bulk insertion or a slower run still
+  // opens the tab above, but none of them is a scanner.
+  const paced = useRef<PacedRun>(NO_PACED_RUN);
   const quiet = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stopWaiting = () => {
     if (quiet.current) clearTimeout(quiet.current);
@@ -148,6 +152,7 @@ export function ScanWristband({
 
   /** One change to the field: count it into the run, and wait for the quiet that ends a code. */
   const noteChange = (value: string, added: number, at: number, pasted: boolean) => {
+    paced.current = nextPacedRun(paced.current, { added, at, pasted });
     const last = run.current;
     const inRun = added > 0 && last.length > 0 && at - last.at <= FIELD_SCAN_GAP_MS;
     run.current = {
@@ -162,16 +167,21 @@ export function ScanWristband({
     quiet.current = setTimeout(() => {
       quiet.current = null;
       run.current = { length: 0, at: 0, pasted: false };
+      const byScanner = takePacedRun();
       const typed = field.current?.value ?? '';
       if (!typed.trim()) return;
-      // SCRUM-771 — the field took this as a scan or a paste: the scanner's
-      // only sign of life, reported on the station heartbeat.
-      noteScannerUse();
+      // SCRUM-771 — keys at a scanner's pace: the scanner's only sign of life,
+      // reported on the station heartbeat.
+      if (byScanner) noteScannerUse();
       void submit(typed);
     }, FIELD_SCAN_QUIET_MS);
   };
-  /** Whether what is in the field arrived as a scan or a paste, not typed by hand. */
-  const arrivedWhole = () => run.current.pasted || run.current.length >= SCANNER_BURST_MIN_LENGTH;
+  /** Whether the run that ends here came at a scanner's pace; the next one starts afresh. */
+  const takePacedRun = (): boolean => {
+    const byScanner = pacedLikeScanner(paced.current);
+    paced.current = NO_PACED_RUN;
+    return byScanner;
+  };
 
   useEffect(() => {
     if (!scanned) return;
@@ -180,6 +190,7 @@ export function ScanWristband({
     // nothing stays in it under the same words as a typed one.
     stopWaiting();
     run.current = { length: 0, at: 0, pasted: false };
+    paced.current = NO_PACED_RUN;
     setCode(scanned);
     void submit(scanned, true);
     // Asked once per key: `submit` and the callback are fresh on every render.
@@ -229,8 +240,9 @@ export function ScanWristband({
               e.preventDefault();
               stopWaiting();
               const typed = e.currentTarget.value;
+              const byScanner = takePacedRun();
               if (!typed.trim()) return;
-              if (arrivedWhole()) noteScannerUse();
+              if (byScanner) noteScannerUse();
               void submit(typed);
             }}
             placeholder="Wristband code e.g. 1001"

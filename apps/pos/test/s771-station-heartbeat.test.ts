@@ -2,11 +2,23 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { SCREEN_HEARTBEAT_INTERVAL_S, SCREEN_SCAN_AGE_MAX_S } from '@oto/shared';
+import { SCANNER_BURST_GAP_MS, SCANNER_BURST_MIN_LENGTH, SCREEN_HEARTBEAT_INTERVAL_S, SCREEN_SCAN_AGE_MAX_S } from '@oto/shared';
 import { renderHook, type RenderedHook } from './support/hooks';
 import { useStationHeartbeat } from '@/station/heartbeat';
 import { useScannerBurst } from '@/lib/scannerBurst';
-import { forgetScannerUse, lastScanSecondsAgo, noteScannerUse, scanAgeMs, type ScanClock } from '@/lib/scannerUse';
+// The wristband field's own gap (`FIELD_SCAN_GAP_MS` is this).
+import { SCAN_PACE_GAP_MS as FIELD_SCAN_GAP_MS } from '@/lib/pageScan';
+import {
+  NO_PACED_RUN,
+  forgetScannerUse,
+  lastScanSecondsAgo,
+  nextPacedRun,
+  noteScannerUse,
+  pacedLikeScanner,
+  scanAgeMs,
+  type PacedRun,
+  type ScanClock,
+} from '@/lib/scannerUse';
 
 /**
  * SCRUM-771 — the till's screen tells the platform it is still there, every
@@ -222,10 +234,40 @@ describe('the till is wired to it', () => {
     expect(source('station/StationContext.tsx')).toContain('useStationHeartbeat(laneStationId)');
   });
 
-  it('the wristband field notes a code that arrived as a scan or a paste, never one typed by hand', () => {
+  it('the wristband field notes only a run at a scanner’s pace, on its quiet and on its Enter', () => {
     const text = source('components/fnb/ScanWristband.tsx');
+    expect(text).toContain('paced.current = nextPacedRun(paced.current, { added, at, pasted });');
     expect(text.match(/noteScannerUse\(\)/g)).toHaveLength(2);
-    expect(text).toContain('if (arrivedWhole()) noteScannerUse();');
-    expect(text).toContain('run.current.pasted || run.current.length >= SCANNER_BURST_MIN_LENGTH');
+    expect(text.match(/if \(byScanner\) noteScannerUse\(\);/g)).toHaveLength(2);
+    expect(text.match(/const byScanner = takePacedRun\(\);/g)).toHaveLength(2);
+    // What opens the tab is not what notes the scanner: a paste still opens it.
+    expect(text).not.toContain('arrivedWhole');
+  });
+});
+
+describe('a run the wristband field reads as a scanner', () => {
+  /** Each change to the field in turn, from an empty run. */
+  const runOf = (changes: Array<{ added: number; at: number; pasted?: boolean }>): PacedRun =>
+    changes.reduce<PacedRun>((run, change) => nextPacedRun(run, { pasted: false, ...change }), NO_PACED_RUN);
+  /** `length` single characters, `gap` ms apart. */
+  const keys = (length: number, gap: number) => Array.from({ length }, (_, i) => ({ added: 1, at: 1_000 + i * gap }));
+
+  it('is a run of single characters at the shared scanner pace, as long as a scan', () => {
+    expect(pacedLikeScanner(runOf(keys(SCANNER_BURST_MIN_LENGTH, SCANNER_BURST_GAP_MS)))).toBe(true);
+    expect(pacedLikeScanner(runOf(keys(13, 20)))).toBe(true);
+    expect(pacedLikeScanner(runOf(keys(SCANNER_BURST_MIN_LENGTH - 1, 20)))).toBe(false);
+  });
+
+  it('is not a paste, nor a single bulk insertion (QuickType, dictation), whatever its length', () => {
+    expect(pacedLikeScanner(runOf([{ added: 13, at: 1_000, pasted: true }]))).toBe(false);
+    expect(pacedLikeScanner(runOf([{ added: 13, at: 1_000 }]))).toBe(false);
+    // A paste inside a paced run ends it.
+    expect(pacedLikeScanner(runOf([...keys(4, 20), { added: 4, at: 1_080, pasted: true }, { added: 1, at: 1_090 }]))).toBe(false);
+  });
+
+  it('is not a run paced by the field’s own wider gap, nor a person typing', () => {
+    expect(FIELD_SCAN_GAP_MS).toBeGreaterThan(SCANNER_BURST_GAP_MS);
+    expect(pacedLikeScanner(runOf(keys(13, FIELD_SCAN_GAP_MS)))).toBe(false);
+    expect(pacedLikeScanner(runOf(keys(13, 400)))).toBe(false);
   });
 });
