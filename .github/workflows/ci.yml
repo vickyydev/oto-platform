@@ -638,7 +638,11 @@ jobs:
       # Refused with a payroll record; a face moves to an original with none;
       # a later start is planned. Onboard Again's draft deletes (contracts
       # route, Cancel plan) and no longer keeps a profile from being deleted;
-      # the profile is offboarded again.
+      # the profile is offboarded again. A day clocked on both profiles is
+      # counted and its stray approval left pending; a part-time duplicate on
+      # probation keeps its letters, documents, property, leave, payroll
+      # profile and history on the original, which takes its terms; refused
+      # with records held on both, or a later start on different terms.
       - name: The app's profile fold checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/employee-fold.check.ts
