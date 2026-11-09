@@ -1,6 +1,7 @@
 import { randomInt } from 'node:crypto';
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import {
+  sale,
   saleDiscount,
   saleLine,
   station,
@@ -8,9 +9,9 @@ import {
   voucherDefinition,
   voucherRedemption,
   voucherSaleItem,
-  type sale,
 } from '@oto/db';
 import { BOOTH_CODE_MINT_ATTEMPTS, isBoothCodePrefix, mintBoothCode, newId } from '@oto/shared';
+import { errors } from '../lib/errors';
 import { audit } from './audit';
 import type { Exec, Tx } from './tx';
 
@@ -42,6 +43,9 @@ import type { Exec, Tx } from './tx';
  *     item's line) and on the till's confirmation (`issuedVouchers` on the
  *     close's answer and on `GET /sales/:id`), the whole code: it is the thing
  *     the family bought. A wallet's voucher QR is answered the same way.
+ *   - A REFUND THAT PAYS IT BACK TAKES IT BACK (`voidSoldVouchersForRefund`):
+ *     the code goes void in the refund's transaction, or the refund is refused
+ *     once the code has been used or is on a sale.
  */
 
 type SaleRow = typeof sale.$inferSelect;
@@ -195,6 +199,154 @@ export async function issuedVouchersOfSale(db: Exec, saleId: string): Promise<Is
     issuedAt: v.issuedAt.toISOString(),
     expiresAt: v.expiresAt?.toISOString() ?? null,
   }));
+}
+
+/** A gift voucher a refund took back, as the refund's audit row names it. */
+export interface VoidedSaleVoucher {
+  id: string;
+  codeLast4: string;
+}
+
+/**
+ * SCRUM-798 — A REFUND THAT PAYS A GOLDEN TICKET BACK TAKES ITS CODE BACK, in
+ * the refund's own transaction (`refundSale`), as a refunded prepaid-food line
+ * takes its credit back (`takeBackPrepaidForRefund`, SCRUM-481): the family
+ * cannot have both the money and a working gift day.
+ *
+ *   - `lines` are the sale lines whose money the refund carries (the whole
+ *     sale, the lines an items refund names, or every line still unrefunded
+ *     when the refund empties the sale). Each unit of an item linked to a
+ *     voucher type takes one of the codes this sale issued of that type: an
+ *     unused one goes `void`, audited `voucher.void` with its last four.
+ *   - Once a code the refund would take back has been USED, or is ON A SALE
+ *     at a till right now, the refund is REFUSED by name, having written
+ *     nothing (the throw rolls the refund back). A unit whose code has expired
+ *     unused is taken back with nothing to write.
+ *   - A sale closed before its item issued codes (the Golden Ticket sold
+ *     before SCRUM-798) has none to take back and refunds as before.
+ *
+ * The codes are locked first, so a till scanning one waits for the refund and
+ * then finds it void (`VOUCHER_VOID`).
+ */
+export async function voidSoldVouchersForRefund(
+  tx: Tx,
+  actor: { accountId: string | null; requestId?: string | null },
+  input: {
+    saleRow: SaleRow;
+    refundId: string;
+    reason: string;
+    lines: readonly { id: string; productId: string | null; quantity: number }[];
+    now: Date;
+  },
+): Promise<VoidedSaleVoucher[]> {
+  const { saleRow, now } = input;
+  const productIds = [...new Set(input.lines.map((l) => l.productId).filter((id): id is string => !!id))];
+  if (productIds.length === 0) return [];
+  const links = await tx
+    .select({ productId: voucherSaleItem.productId, definitionId: voucherSaleItem.voucherDefinitionId })
+    .from(voucherSaleItem)
+    .where(and(eq(voucherSaleItem.operatorId, saleRow.operatorId), inArray(voucherSaleItem.productId, productIds)));
+  if (links.length === 0) return [];
+  const definitionOf = new Map(links.map((l) => [l.productId, l.definitionId]));
+  /** Units the refund pays back, per voucher type. */
+  const units = new Map<string, number>();
+  for (const line of input.lines) {
+    const definitionId = line.productId ? definitionOf.get(line.productId) : undefined;
+    if (definitionId) units.set(definitionId, (units.get(definitionId) ?? 0) + Math.max(0, line.quantity));
+  }
+
+  const sold = await tx
+    .select()
+    .from(voucher)
+    .where(and(eq(voucher.issuedSaleId, saleRow.id), eq(voucher.operatorId, saleRow.operatorId)))
+    .orderBy(asc(voucher.issuedAt), asc(voucher.id))
+    .for('update');
+  if (sold.length === 0) return [];
+  const names = new Map(
+    (
+      await tx
+        .select({ id: voucherDefinition.id, nameEn: voucherDefinition.nameEn })
+        .from(voucherDefinition)
+        .where(inArray(voucherDefinition.id, [...units.keys()]))
+    ).map((d) => [d.id, d.nameEn]),
+  );
+
+  const toVoid: (typeof voucher.$inferSelect)[] = [];
+  for (const [definitionId, needed] of units) {
+    const ofType = sold.filter((v) => v.voucherDefinitionId === definitionId);
+    if (ofType.length === 0 || needed <= 0) continue;
+    const unused = ofType.filter((v) => v.status === 'issued' && !v.heldSaleId);
+    const lapsed = ofType.filter((v) => v.status === 'expired');
+    const pool = [...unused, ...lapsed];
+    if (pool.length < needed) {
+      const blocking = ofType.find((v) => v.status === 'redeemed' || (v.status === 'issued' && v.heldSaleId));
+      if (blocking) {
+        throw await soldVoucherRefusal(tx, blocking, names.get(definitionId) ?? 'voucher');
+      }
+    }
+    toVoid.push(...pool.slice(0, needed).filter((v) => v.status === 'issued'));
+  }
+  if (toVoid.length === 0) return [];
+
+  await tx
+    .update(voucher)
+    .set({ status: 'void', updatedAt: now })
+    .where(
+      and(
+        inArray(
+          voucher.id,
+          toVoid.map((v) => v.id),
+        ),
+        eq(voucher.status, 'issued'),
+        isNull(voucher.heldSaleId),
+      ),
+    );
+  for (const v of toVoid) {
+    await audit.record(tx, {
+      actorAccountId: actor.accountId,
+      operatorId: saleRow.operatorId,
+      branchId: saleRow.branchId,
+      action: 'voucher.void',
+      entityType: 'voucher',
+      entityId: v.id,
+      requestId: actor.requestId ?? null,
+      // The code is a bearer credential: its last four only.
+      before: { status: v.status, codeLast4: v.code.slice(-4) },
+      after: {
+        status: 'void',
+        codeLast4: v.code.slice(-4),
+        definitionId: v.voucherDefinitionId,
+        issuedSaleId: saleRow.id,
+        refundId: input.refundId,
+        reason: input.reason,
+      },
+    });
+  }
+  return toVoid.map((v) => ({ id: v.id, codeLast4: v.code.slice(-4) }));
+}
+
+/** Why a refund cannot take a sold code back: it was used, or a till has it on a sale. */
+async function soldVoucherRefusal(db: Exec, v: typeof voucher.$inferSelect, name: string) {
+  const last4 = v.code.slice(-4);
+  if (v.status === 'redeemed') {
+    const [usedOn] = v.saleId
+      ? await db.select({ receiptNumber: sale.receiptNumber }).from(sale).where(eq(sale.id, v.saleId)).limit(1)
+      : [];
+    const receipt = usedOn?.receiptNumber ? ` (receipt ${usedOn.receiptNumber})` : '';
+    return errors.conflict(
+      'SOLD_VOUCHER_USED',
+      `The ${name} sold on this sale (code ending ${last4}) has already been used${receipt}, so it cannot be refunded.`,
+      { voucherId: v.id, codeLast4: last4, usedOnSaleId: v.saleId, receiptNumber: usedOn?.receiptNumber ?? null },
+    );
+  }
+  const [till] = v.heldStationId
+    ? await db.select({ name: station.name }).from(station).where(eq(station.id, v.heldStationId)).limit(1)
+    : [];
+  return errors.conflict(
+    'SOLD_VOUCHER_HELD',
+    `The ${name} sold on this sale (code ending ${last4}) is on a sale at ${till?.name ?? 'another till'} right now, so it cannot be refunded — finish or cancel that sale first.`,
+    { voucherId: v.id, codeLast4: last4, heldSaleId: v.heldSaleId, heldStationId: v.heldStationId },
+  );
 }
 
 /**

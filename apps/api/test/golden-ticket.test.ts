@@ -5,8 +5,10 @@ import {
   branch,
   product,
   redemptionThrottle,
+  refund,
   sale,
   saleDiscount,
+  saleLine,
   station,
   ticketPackage,
   voucher,
@@ -24,7 +26,15 @@ import {
   newId,
   saleReceiptDocument,
 } from '@oto/shared';
-import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import {
+  ADMIN,
+  BRANCH_MANAGER,
+  RECEPTION,
+  createTestContext,
+  signInAs,
+  teardownAll,
+  type TestContext,
+} from './helpers';
 import { salePrintSnapshotOf } from '../src/services/sale-printing';
 
 /**
@@ -49,12 +59,14 @@ import { salePrintSnapshotOf } from '../src/services/sale-printing';
 
 let ctx: TestContext;
 let till: string;
+let manager: string;
 let operatorId: string;
 let hktId: string;
 let t1: typeof station.$inferSelect;
 let fullDayHkt: string;
 let twoHoursHkt: string;
 let goldenHkt: string;
+let plushHkt: string;
 
 const b = (baht: number): number => Math.round(baht * 100);
 const SOCKS = { addOnId: 'a-socks', unitSatang: b(60), label: 'Regular Socks' };
@@ -157,6 +169,7 @@ beforeAll(async () => {
     .select()
     .from(product)
     .where(and(eq(product.operatorId, operatorId), eq(product.code, 'MR-PLUSH'), eq(product.branchId, hktId)));
+  plushHkt = plush!.id;
   goldenHkt = newId();
   await ctx.db.insert(product).values({
     id: goldenHkt,
@@ -171,6 +184,8 @@ beforeAll(async () => {
 
   till = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
   await pick(till, t1.id);
+  manager = await signInAs(ctx.app, BRANCH_MANAGER.phone, BRANCH_MANAGER.password);
+  await pick(manager, t1.id);
 }, 180_000);
 
 afterEach(async () => {
@@ -538,5 +553,100 @@ describe('redeeming it at the till', () => {
     const res = await lookup('ZZ99');
     expect(res.statusCode).toBe(422);
     expect(res.json().error).toMatchObject({ code: 'INVALID_CODE', message: 'Invalid code' });
+  });
+});
+
+describe('refunding the sale that sold it takes the code back', () => {
+  const refundOf = (saleId: string, payload: Record<string, unknown>) =>
+    ctx.app.inject({
+      method: 'POST',
+      url: `/sales/${saleId}/refunds`,
+      headers: { cookie: manager, 'idempotency-key': newId() },
+      payload: { actionId: newId(), reason: 'ZZ TEST Changed their mind', ...payload },
+    });
+  const voucherRow = async (id: string) => (await ctx.db.select().from(voucher).where(eq(voucher.id, id)))[0]!;
+
+  it('a whole refund voids the code: the till refuses it, and the void is audited with its last four', async () => {
+    const { saleId, answer } = await sellGolden(1);
+    const v = answer.issuedVouchers[0]!;
+    const res = await refundOf(saleId, { mode: 'whole' });
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.json().refundStatus).toBe('refunded');
+    expect(await voucherRow(v.id)).toMatchObject({ status: 'void', issuedSaleId: saleId, heldSaleId: null });
+
+    const looked = await lookup(v.code);
+    expect(looked.statusCode).toBe(409);
+    expect(looked.json().error.code).toBe('VOUCHER_VOID');
+    const held = await hold(newId(), v.code);
+    expect(held.statusCode).toBe(409);
+    expect(held.json().error.code).toBe('VOUCHER_VOID');
+
+    const trail = await ctx.db.select().from(auditLog).where(and(eq(auditLog.entityId, v.id), eq(auditLog.action, 'voucher.void')));
+    expect(trail).toHaveLength(1);
+    expect(trail[0]!.after).toMatchObject({ status: 'void', issuedSaleId: saleId, codeLast4: v.code.slice(-4) });
+    expect(JSON.stringify(trail[0])).not.toContain(v.code);
+    const [refundAudit] = await ctx.db.select().from(auditLog).where(and(eq(auditLog.entityId, saleId), eq(auditLog.action, 'sale.refund')));
+    expect(refundAudit!.after).toMatchObject({ soldVouchersVoided: [{ id: v.id, codeLast4: v.code.slice(-4) }] });
+  });
+
+  it('an items refund voids the code only when it names the Golden Ticket’s line', async () => {
+    const saleId = newId();
+    const rung = await commit({
+      id: saleId,
+      stationId: t1.id,
+      items: [
+        { id: newId(), productId: goldenHkt, quantity: 1 },
+        { id: newId(), productId: plushHkt, quantity: 1 },
+      ],
+    });
+    expect(rung.statusCode, rung.body).toBe(200);
+    const closed = await finalise(saleId);
+    expect(closed.statusCode, closed.body).toBe(200);
+    const v = (closed.json() as { issuedVouchers: { id: string; code: string }[] }).issuedVouchers[0]!;
+    const lines = await ctx.db.select().from(saleLine).where(eq(saleLine.saleId, saleId));
+    const goldenLine = lines.find((l) => l.productId === goldenHkt)!;
+    const plushLine = lines.find((l) => l.productId === plushHkt)!;
+
+    const plushBack = await refundOf(saleId, { mode: 'items', lineIds: [plushLine.id] });
+    expect(plushBack.statusCode, plushBack.body).toBe(200);
+    expect(await voucherRow(v.id)).toMatchObject({ status: 'issued' });
+    expect((await lookup(v.code)).statusCode).toBe(200);
+
+    const goldenBack = await refundOf(saleId, { mode: 'items', lineIds: [goldenLine.id] });
+    expect(goldenBack.statusCode, goldenBack.body).toBe(200);
+    expect(await voucherRow(v.id)).toMatchObject({ status: 'void' });
+    expect((await lookup(v.code)).json().error.code).toBe('VOUCHER_VOID');
+  });
+
+  it('once the code has been used, the refund is refused by name and writes nothing', async () => {
+    const { saleId, answer } = await sellGolden(1);
+    const v = answer.issuedVouchers[0]!;
+    const usedOn = newId();
+    expect((await hold(usedOn, v.code)).statusCode).toBe(200);
+    expect((await commit({ id: usedOn, stationId: t1.id, lines: [parentStays(0)], promoCodes: [v.code] })).statusCode).toBe(200);
+    expect((await finalise(usedOn)).statusCode).toBe(200);
+
+    const res = await refundOf(saleId, { mode: 'whole' });
+    expect(res.statusCode, res.body).toBe(409);
+    expect(res.json().error.code).toBe('SOLD_VOUCHER_USED');
+    expect(res.json().error.message).toMatch(
+      new RegExp(`^The Golden Ticket sold on this sale \\(code ending ${v.code.slice(-4)}\\) has already been used .*so it cannot be refunded\\.$`),
+    );
+    expect(await ctx.db.select().from(refund).where(eq(refund.saleId, saleId))).toEqual([]);
+    expect((await ctx.db.select().from(sale).where(eq(sale.id, saleId)))[0]).toMatchObject({ status: 'finalised', refundedSatang: 0 });
+    expect(await voucherRow(v.id)).toMatchObject({ status: 'redeemed', saleId: usedOn });
+  });
+
+  it('while the code is on a sale at a till, the refund is refused and the hold stands', async () => {
+    const { saleId, answer } = await sellGolden(1);
+    const v = answer.issuedVouchers[0]!;
+    const cart = newId();
+    expect((await hold(cart, v.code)).statusCode).toBe(200);
+
+    const res = await refundOf(saleId, { mode: 'whole' });
+    expect(res.statusCode, res.body).toBe(409);
+    expect(res.json().error.code).toBe('SOLD_VOUCHER_HELD');
+    expect(await ctx.db.select().from(refund).where(eq(refund.saleId, saleId))).toEqual([]);
+    expect(await voucherRow(v.id)).toMatchObject({ status: 'issued', heldSaleId: cart });
   });
 });

@@ -37,6 +37,7 @@ import { restoreForRefund, takeBackPrepaidForRefund, walletTenderOf } from './wa
 import { restockForRefund } from './stock';
 import { releaseOpenHold } from './sale-hold-release';
 import { withTx, type Exec, type OpContext, type Tx } from './tx';
+import { voidSoldVouchersForRefund } from './voucher-sale-issue';
 
 /**
  * S2-11 — REFUND A FINALISED SALE, online, with a manager's approval.
@@ -515,6 +516,30 @@ export async function refundSale(
     { refundId, saleId, lines: covered, branchId: row.branchId, stationId: actor.stationId, now },
   );
 
+  const refundedSatang = row.refundedSatang + amount.amountSatang;
+  const full = refundedSatang >= row.grossSatang;
+
+  /**
+   * SCRUM-798 — a refund that pays back a Golden Ticket takes its code back
+   * here (void, audited), or refuses the whole refund once that code has been
+   * used or is on a sale. The lines it pays back are the ones it covers, and
+   * every line still unrefunded when it empties the sale (a custom amount
+   * carries no line). A part-paid sale never closed, so it issued no code.
+   */
+  const soldVouchersVoided = partPaid
+    ? []
+    : await voidSoldVouchersForRefund(
+        tx,
+        { accountId: actor.accountId, requestId: actor.requestId ?? null },
+        {
+          saleRow: row,
+          refundId,
+          reason,
+          lines: full ? lines.filter((l) => l.quantity > 0 && !earlierLines.has(l.id)) : covered,
+          now,
+        },
+      );
+
   /**
    * S2-14b — THE STOCK GOES BACK, in this transaction: each line the restock
    * decision returns, to the place its units left from (the sale's own
@@ -536,8 +561,6 @@ export async function refundSale(
     now,
   });
 
-  const refundedSatang = row.refundedSatang + amount.amountSatang;
-  const full = refundedSatang >= row.grossSatang;
   const [after] = await tx
     .update(sale)
     .set({
@@ -625,6 +648,7 @@ export async function refundSale(
       slices: slices.map((s) => ({ attemptId: s.attemptId, route: s.route, amountSatang: s.amountSatang, status: s.status })),
       revokedBandIds,
       ...(prepaidTakenBack.length ? { prepaidCreditTakenBack: prepaidTakenBack } : {}),
+      ...(soldVouchersVoided.length ? { soldVouchersVoided } : {}),
       ...(partPaidClose ? { partPaid: true, ...partPaidClose } : {}),
       restocked: restockedMovements.map((m) => ({
         stockItemId: m.stockItemId,
