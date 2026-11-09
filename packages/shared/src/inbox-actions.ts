@@ -228,12 +228,33 @@ export const InboxOpenBeoBodySchema = z.object({ aiFill: z.boolean().optional() 
 export type InboxOpenBeoBody = z.infer<typeof InboxOpenBeoBodySchema>;
 
 /**
+ * One line of the conversation a BEO is filled from (SCRUM-815): who wrote it
+ * (`customer` — the family; `staff` — a person on the team), when, and its
+ * text as written. The assistant's lines, system notices, erased lines and
+ * lines the channel refused are never in it.
+ */
+export const InboxBeoTranscriptLineSchema = z.object({
+  id: Uuid,
+  author: z.enum(['customer', 'staff']),
+  /** When it was sent (or, before that is known, written). */
+  at: Iso,
+  text: z.string(),
+});
+export type InboxBeoTranscriptLine = z.infer<typeof InboxBeoTranscriptLineSchema>;
+
+/**
  * `GET /inbox/conversations/{id}/beo-confirmation` (SCRUM-660) — the message
  * a birthday's BEO is filled from: the newest message a person on the team
  * sent in the conversation that names a date, a time and at least one more
  * party detail (guests, food or the programme). `message` is null when there
  * is none. `eventId` is the event Book Date made, so the reader can check the
  * conversation is still the one its event names.
+ *
+ * SCRUM-815: `transcript` is the conversation itself, oldest first — the
+ * family's lines and the team's — so the fill reads the whole agreement, the
+ * ruling message (`message`) named among them. Bounded: the newest 200 lines
+ * within the 60 days before the newest one; `transcriptCut` says older lines
+ * were left out.
  */
 export const InboxBeoConfirmationSchema = z.object({
   conversationId: Uuid,
@@ -250,5 +271,9 @@ export const InboxBeoConfirmationSchema = z.object({
     .nullable(),
   /** How many of the team's newest messages were looked at to choose it. */
   scanned: z.number().int().min(0),
+  /** The conversation, oldest first (SCRUM-815). */
+  transcript: z.array(InboxBeoTranscriptLineSchema),
+  /** Older lines were left out by the bounds. */
+  transcriptCut: z.boolean(),
 });
 export type InboxBeoConfirmation = z.infer<typeof InboxBeoConfirmationSchema>;

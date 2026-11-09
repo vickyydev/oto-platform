@@ -15,6 +15,8 @@ import { SESSION_COOKIE, hashToken, newSessionToken } from '../src/plugins/sessi
 import {
   BEO_CONFIRMATION_MESSAGES,
   BEO_CONFIRMATION_SCAN,
+  BEO_TRANSCRIPT_DAYS,
+  BEO_TRANSCRIPT_LIMIT,
   carriesBirthdayDetails,
 } from '../src/services/inbox/beo-confirmation';
 import { OPEN_BEO_PURPOSE } from '../src/services/inbox/book-date';
@@ -339,6 +341,113 @@ describe('GET /inbox/conversations/{id}/beo-confirmation', () => {
     const before = await auditCount();
     expect((await read('gm', conv)).status).toBe(200);
     expect(await auditCount()).toBe(before);
+  });
+});
+
+describe('SCRUM-815: the conversation the fill reads (transcript)', () => {
+  /**
+   * A birthday thread whose first line (the simulator's, written at the real
+   * time) comes before every line said on it afterwards.
+   */
+  const freshBday = async (text?: string) => {
+    const id = await bday(text);
+    clock = Math.max(clock, Date.now() + 1_000);
+    return id;
+  };
+
+  it("is the family's lines and the team's, oldest first, each in its own words and time", async () => {
+    const conv = await freshBday('Здравствуйте! Хотим день рождения 21 марта, пакет Флореста, пиццу Маргарита');
+    const team = await say(conv, 'Здравствуйте! Да, 21 марта свободно.');
+    const family = await say(conv, 'И ещё бабл-шоу, если можно', {
+      direction: 'inbound', authorKind: 'customer', authorAccountId: null, providerStatus: null, sentAt: null,
+    });
+    const ruling = await say(conv, RUSSIAN);
+    const res = await read('gm', conv);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(InboxBeoConfirmationSchema.safeParse(res.body).success).toBe(true);
+    expect(res.body.message?.id).toBe(ruling);
+    const lines = res.body.transcript;
+    // The first line is the family's first message, which the simulator wrote.
+    expect(lines.map((l) => l.author)).toEqual(['customer', 'staff', 'customer', 'staff']);
+    expect(lines[0]!.text).toBe('Здравствуйте! Хотим день рождения 21 марта, пакет Флореста, пиццу Маргарита');
+    expect(lines.slice(1).map((l) => l.id)).toEqual([team, family, ruling]);
+    expect(lines[2]).toMatchObject({ author: 'customer', text: 'И ещё бабл-шоу, если можно' });
+    expect(lines[3]).toMatchObject({ author: 'staff', text: RUSSIAN });
+    // Oldest first, each with its time.
+    const times = lines.map((l) => Date.parse(l.at));
+    expect([...times].sort((a, b) => a - b)).toEqual(times);
+    expect(res.body.transcriptCut).toBe(false);
+  });
+
+  it("leaves out the assistant's, system notices, erased lines and lines the channel refused", async () => {
+    const conv = await freshBday('Hi, a birthday on 21 March please');
+    const kept = await say(conv, 'Kept: the team');
+    await say(conv, 'AI-LINE-815', { authorKind: 'ai', authorAccountId: null });
+    await say(conv, 'SYSTEM-LINE-815', { authorKind: 'system', authorAccountId: null });
+    await say(conv, 'FAILED-LINE-815', { providerStatus: 'failed' });
+    await say(conv, 'WITHDRAWN-LINE-815', { providerStatus: 'withdrawn' });
+    await say(conv, 'ERASED-TEAM-815', { redactedAt: new Date(), body: null });
+    await say(conv, 'ERASED-CUSTOMER-815', {
+      direction: 'inbound', authorKind: 'customer', authorAccountId: null, providerStatus: null, redactedAt: new Date(),
+    });
+    // A voice note: no body, its transcript is what the family said.
+    const voice = await say(conv, 'unused', {
+      direction: 'inbound', authorKind: 'customer', authorAccountId: null, providerStatus: null, body: null,
+      transcript: 'VOICE-TRANSCRIPT-815 pizza please',
+    });
+    const res = await read('gm', conv);
+    expect(res.status).toBe(200);
+    const all = JSON.stringify(res.body.transcript);
+    for (const gone of ['AI-LINE-815', 'SYSTEM-LINE-815', 'FAILED-LINE-815', 'WITHDRAWN-LINE-815', 'ERASED-CUSTOMER-815']) {
+      expect(all).not.toContain(gone);
+    }
+    expect(res.body.transcript.map((l) => l.id).slice(1)).toEqual([kept, voice]);
+    expect(res.body.transcript.at(-1)).toMatchObject({ author: 'customer', text: 'VOICE-TRANSCRIPT-815 pizza please' });
+  });
+
+  it(`is bounded: the newest ${BEO_TRANSCRIPT_LIMIT} lines, none older than ${BEO_TRANSCRIPT_DAYS} days before the newest`, async () => {
+    const many = await freshBday('OLDEST-LINE-815');
+    for (let i = 0; i < BEO_TRANSCRIPT_LIMIT; i += 1) await say(many, `line ${i}`);
+    const cut = await read('gm', many);
+    expect(cut.body.transcript).toHaveLength(BEO_TRANSCRIPT_LIMIT);
+    expect(cut.body.transcriptCut).toBe(true);
+    expect(JSON.stringify(cut.body.transcript)).not.toContain('OLDEST-LINE-815');
+    expect(cut.body.transcript.at(-1)!.text).toBe(`line ${BEO_TRANSCRIPT_LIMIT - 1}`);
+
+    const old = await freshBday('Hi');
+    // A line from long before the conversation's newest: out of the window.
+    const longAgo = new Date(clock - (BEO_TRANSCRIPT_DAYS + 1) * 86_400_000);
+    await say(old, 'OLD-LINE-815', { createdAt: longAgo, sentAt: longAgo });
+    const recent = await say(old, 'Recent line');
+    const res = await read('gm', old);
+    expect(JSON.stringify(res.body.transcript)).not.toContain('OLD-LINE-815');
+    expect(res.body.transcript.at(-1)!.id).toBe(recent);
+    expect(res.body.transcriptCut).toBe(true);
+  });
+
+  it('is read under the same visibility: out of sight 404, outside Birthdays & Events 409, and nothing leaks', async () => {
+    const conv = await freshBday('SECRET-FAMILY-LINE-815');
+    await say(conv, ENGLISH);
+    const unseen = await read<Refusal>('recCentral', conv);
+    expect(unseen.status).toBe(404);
+    expect(JSON.stringify(unseen.body)).not.toContain('SECRET-FAMILY-LINE-815');
+    expect((await read('nobody', conv)).status).toBe(403);
+    const general = await thread({ category: 'general', language: 'en' }, 'GENERAL-LINE-815');
+    const refused = await read<Refusal>('gm', general);
+    expect(refused.status).toBe(409);
+    expect(JSON.stringify(refused.body)).not.toContain('GENERAL-LINE-815');
+    // The birthdays team sees it, whole.
+    const seen = await read('bdayA', conv);
+    expect(seen.status).toBe(200);
+    expect(seen.body.transcript[0]!.text).toBe('SECRET-FAMILY-LINE-815');
+  });
+
+  it('a conversation with no confirmation yet still carries its lines', async () => {
+    const conv = await freshBday('Can we book 21 March at 14:00 for 15 kids?');
+    await say(conv, 'Hello! Which park would you like?');
+    const res = await read('gm', conv);
+    expect(res.body.message).toBeNull();
+    expect(res.body.transcript.map((l) => l.author)).toEqual(['customer', 'staff']);
   });
 });
 

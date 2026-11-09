@@ -1,6 +1,11 @@
-import { and, desc, eq, inArray, isNotNull, isNull, not, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, isNull, not, or, sql } from 'drizzle-orm';
 import { schema as s, type Db } from '@oto/db';
-import { mentionsPartyDate, mentionsPartyTime, type InboxBeoConfirmation } from '@oto/shared';
+import {
+  mentionsPartyDate,
+  mentionsPartyTime,
+  type InboxBeoConfirmation,
+  type InboxBeoTranscriptLine,
+} from '@oto/shared';
 import { errors } from '../../lib/errors';
 import { loadVisibleConversation, type InboxViewer } from './read-visibility';
 
@@ -29,6 +34,21 @@ import { loadVisibleConversation, type InboxViewer } from './read-visibility';
  * none at all answers `message: null`, and the form opens without the fill.
  * The person sees the message that was read before anything is applied.
  *
+ * THE CONVERSATION (SCRUM-815). The answer also carries `transcript`: the
+ * conversation's lines oldest first, so the fill reads the whole agreement —
+ * what the family asked for and what the team confirmed — and not one
+ * message alone. A line is in it when it is
+ *   - the family's (author `customer`, inbound), or a person on the team's on
+ *     the channel, by the same rule as the confirmation above (outbound,
+ *     `source` channel, a delivery state, not refused by the channel);
+ *   - not erased (`redacted_at` null) and has text (its body, or a voice
+ *     note's transcript when it has no body).
+ * The assistant's lines, system notices and mirrored notices never are.
+ * Bounded: the newest `BEO_TRANSCRIPT_LIMIT` such lines, and none older than
+ * `BEO_TRANSCRIPT_DAYS` days before the newest of them (the conversation's
+ * own last 60 days, so the bound does not move with the clock); when a bound
+ * left lines out, `transcriptCut` is true.
+ *
  * WHO: whoever can see the conversation in the inbox — `inbox:conversation:
  * read` in their operator, then the conversation's own visibility, exactly as
  * `GET …/messages` reads it (404 when they cannot see it). Only a Birthdays &
@@ -37,6 +57,11 @@ import { loadVisibleConversation, type InboxViewer } from './read-visibility';
 
 /** How many of the team's newest messages are looked at. */
 export const BEO_CONFIRMATION_SCAN = 100;
+
+/** The most lines the transcript carries (SCRUM-815). */
+export const BEO_TRANSCRIPT_LIMIT = 200;
+/** The transcript reaches back this many days before its newest line. */
+export const BEO_TRANSCRIPT_DAYS = 60;
 
 export const BEO_CONFIRMATION_MESSAGES = {
   notABirthday: 'The BEO is filled only from conversations in Birthdays & Events.',
@@ -69,6 +94,67 @@ const DETAIL: RegExp[] = [
 export function carriesBirthdayDetails(body: string): boolean {
   const text = body.normalize('NFC');
   return mentionsPartyDate(text) && mentionsPartyTime(text) && DETAIL.some((r) => r.test(text));
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * The conversation's lines for the fill, oldest first, as the header says:
+ * the family's and the team's received ones, never erased, bounded. The
+ * caller has already checked the conversation is the viewer's to see.
+ */
+export async function beoTranscriptOf(
+  db: Db,
+  operatorId: string,
+  conversationId: string,
+): Promise<{ transcript: InboxBeoTranscriptLine[]; transcriptCut: boolean }> {
+  const familys = and(eq(s.message.authorKind, 'customer'), eq(s.message.direction, 'inbound'));
+  const teams = and(
+    eq(s.message.authorKind, 'staff'),
+    eq(s.message.direction, 'outbound'),
+    eq(s.message.source, 'channel'),
+    isNotNull(s.message.providerStatus),
+    not(neverReceived()),
+  );
+  const rows = await db
+    .select({
+      id: s.message.id,
+      authorKind: s.message.authorKind,
+      body: s.message.body,
+      transcript: s.message.transcript,
+      sentAt: s.message.sentAt,
+      createdAt: s.message.createdAt,
+    })
+    .from(s.message)
+    .where(
+      and(
+        eq(s.message.operatorId, operatorId),
+        eq(s.message.conversationId, conversationId),
+        isNull(s.message.redactedAt),
+        or(familys, teams),
+        or(
+          and(isNotNull(s.message.body), sql`btrim(${s.message.body}) <> ''`),
+          and(isNotNull(s.message.transcript), sql`btrim(${s.message.transcript}) <> ''`),
+        ),
+      ),
+    )
+    .orderBy(desc(s.message.createdAt), desc(s.message.id))
+    .limit(BEO_TRANSCRIPT_LIMIT + 1);
+
+  const newest = rows[0]?.createdAt;
+  if (!newest) return { transcript: [], transcriptCut: false };
+  const since = newest.getTime() - BEO_TRANSCRIPT_DAYS * DAY_MS;
+  const inBounds = rows.slice(0, BEO_TRANSCRIPT_LIMIT).filter((m) => m.createdAt.getTime() >= since);
+  const transcript = inBounds.reverse().map((m) => {
+    const body = typeof m.body === 'string' && m.body.trim() ? m.body : null;
+    return {
+      id: m.id,
+      author: m.authorKind === 'customer' ? ('customer' as const) : ('staff' as const),
+      at: (m.sentAt ?? m.createdAt).toISOString(),
+      text: body ?? (m.transcript as string),
+    };
+  });
+  return { transcript, transcriptCut: rows.length > transcript.length };
 }
 
 /** The conversation's confirmation message, chosen as the header says; a read. */
@@ -118,9 +204,12 @@ export async function beoConfirmationOf(
       .limit(1);
     authorName = author?.name ?? null;
   }
+  const { transcript, transcriptCut } = await beoTranscriptOf(db, viewer.operatorId, conv.id);
   return {
     conversationId: conv.id,
     eventId: conv.eventOrderRef ?? null,
+    transcript,
+    transcriptCut,
     message: chosen
       ? {
           id: chosen.id,

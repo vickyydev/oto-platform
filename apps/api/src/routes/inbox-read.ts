@@ -164,7 +164,10 @@ export async function inboxReadRoutes(app: App): Promise<void> {
           "The message a birthday's BEO is filled from (SCRUM-660): the newest message a person on the team sent in " +
           'the conversation (outbound, on the channel, not erased, not refused by the channel) that names a date, a ' +
           'time and at least one more party detail — a guest count, food or the programme — in Thai, English or ' +
-          "Russian; `message: null` when there is none. `eventId` is the event Book Date made. The OTO App's BEO form " +
+          "Russian; `message: null` when there is none. `eventId` is the event Book Date made. `transcript` " +
+          "(SCRUM-815) is the conversation itself, oldest first: the family's lines and the team's received ones " +
+          "(never the assistant's, a system notice, an erased line or one the channel refused), the newest 200 within " +
+          "the 60 days before the newest; `transcriptCut` says older lines were left out. The OTO App's BEO form " +
           'asks for it, server to server as the signed-in person, when Create BEO opens it with its AI Fill. A read: ' +
           'nothing is written. 409 NOT_A_BIRTHDAY outside Birthdays & Events; 404 when the caller cannot see the ' +
           'conversation. Needs inbox:conversation:read.',
