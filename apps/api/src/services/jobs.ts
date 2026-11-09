@@ -1121,7 +1121,7 @@ export function buildOtoAppNightJobs(
     {
       name: OTOAPP_RECONCILE_JOB,
       description:
-        "Runs the OTO App's 03:00 batch for each park group — presence repaired, leavers moved to Left and their OTO App logins switched off, old availability records cleared — once per Bangkok date, and lists on Failures each leaver whose platform account is still active",
+        "Runs the OTO App's 03:00 batch for each park group — presence repaired, leavers moved to Left and their OTO App logins limited to My pay (their other suite roles withdrawn), old availability records cleared — once per Bangkok date, and lists on Failures each leaver whose platform account may still reach more than My pay",
       intervalSeconds: 300,
       exclusive: true,
       run: async ({ db, now }) => ({ detail: await runOtoAppNightJob({ db, client }, 'reconcile', at(now)) }),

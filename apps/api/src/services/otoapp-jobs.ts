@@ -182,7 +182,7 @@ export interface NightGroupSummary {
   code?: string;
   /** Why the park group failed, in words: a refusal's code and message, or the failed steps. */
   error?: string;
-  /** The reconcile batch only: the leavers whose platform account is still active (Q4). */
+  /** The reconcile batch only: the leavers whose platform account may still reach more than My pay (Q4, SCRUM-769). */
   departedAccounts?: DepartedAccounts;
 }
 

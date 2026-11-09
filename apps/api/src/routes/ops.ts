@@ -813,7 +813,7 @@ export async function opsRoutes(app: App): Promise<void> {
       key: 'otoapp.reconcile',
       label: "Run the OTO App's 03:00 batch now",
       description:
-        "Runs the 03:00 batch — presence repaired, leavers moved to Left and their OTO App logins switched off, old availability records cleared — for each park group whose night is not done yet, and lists leavers whose platform account is still active on Failures.",
+        "Runs the 03:00 batch — presence repaired, leavers moved to Left and their OTO App logins limited to My pay (their other suite roles withdrawn), old availability records cleared — for each park group whose night is not done yet, and lists on Failures the leavers whose platform account may still reach more than My pay.",
       sticky: false,
     },
     {
