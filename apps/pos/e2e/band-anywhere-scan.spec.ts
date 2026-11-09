@@ -146,7 +146,8 @@ async function childInPark(page: Page): Promise<string> {
 
 /** The scanner: the code at its pace, then its Enter. Typed into whatever has focus. */
 async function scan(page: Page, code: string, { enter = true } = {}) {
-  await page.keyboard.type(code, { delay: 15 });
+  // A scanner types a code in a burst (each key within 80 ms of the one before). 5 ms leaves CI's slower keystrokes well inside that pace; 15 ms once stretched past it under load.
+  await page.keyboard.type(code, { delay: 5 });
   if (enter) await page.keyboard.press('Enter');
 }
 

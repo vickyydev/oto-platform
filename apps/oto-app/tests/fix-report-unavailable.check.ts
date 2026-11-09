@@ -298,7 +298,8 @@ try {
 
   const unmountBoard = await mount(memberCookie, FixBoardPage);
   await waitFor("the six cards", () => boardCard(neverOpened) && boardCard(openedBefore) && boardCard(openWhenDeleted) && boardCard(statusWhenDeleted) && boardCard(completedWhenDeleted) && boardCard(onAPoorConnection));
-  assert.equal(pendingCount(), 6);
+  // The count badge fills on its own fetch, a moment after the cards; read it the way the later steps do.
+  await waitFor("the count of six", () => pendingCount() === 6);
 
   await check("a report still there opens as it always did", async () => {
     await click(boardCard(openedBefore)!);
