@@ -180,7 +180,7 @@ import { SHIFT_GROUP_DELETE_NEEDS_TARGET, SHIFT_GROUP_REQUIRED, noShiftGroup, sh
 import { archivedBranchIds } from "./lib/platformBranches";
 import { branchAddedAt, branchesAddedByEdit, checklistRunStartDate } from "./lib/checklistBranchStart";
 import { liftPayOnlyIfWorkingWithin, payOnlyFence, restrictLoginWithin } from "./lib/payOnlyAccess";
-import { kioskEmploymentEnded, refuseEndedEmployment } from "./lib/kioskEmploymentEnded";
+import { kioskEmploymentEnded, kioskProfileByPhone, refuseEndedEmployment, workingProfileBesides } from "./lib/kioskEmploymentEnded";
 import {
   BRANCH_NOT_FOUND,
   CATALOG_ITEM_NOT_FOUND,
@@ -10559,8 +10559,12 @@ OTO Company Limited`,
           message: "Matched employee not found in system"
         });
       }
-      // SCRUM-769: an ended employment is refused before any clock door is reached.
+      // SCRUM-769: an ended employment is refused before any clock door is reached;
+      // one of a person still employed under another profile is sent to the phone road.
       if (await kioskEmploymentEnded(employee)) {
+        if (await workingProfileBesides(employee)) {
+          return res.json({ success: true, matched: false, confidence: 0, livenessScore, message: "No matching face found. Please clock in with your phone number." });
+        }
         return refuseEndedEmployment(res, { employeeId: employee.id, branchId, kioskDeviceId, method: "FACE" });
       }
 
@@ -11443,7 +11447,8 @@ OTO Company Limited`,
       // Confined to the park the kiosk belongs to: a number that belongs to
       // another park's staff reads here exactly like a number that belongs to
       // nobody, and cannot be clocked in at this branch.
-      const employee = await storage.getEmployeeByPhoneE164InTenant(normalized, device.tenantId);
+      // SCRUM-769: of the profiles carrying the number, the one still employed.
+      const employee = await kioskProfileByPhone(normalized, device.tenantId);
 
       if (!employee) {
         await storage.createKioskAuthAttempt({

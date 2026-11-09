@@ -1,6 +1,6 @@
 import type { Response } from "express";
-import { and, eq, lte } from "drizzle-orm";
-import { employeeEngagements, type AuthMethod, type Employee } from "@shared/schema";
+import { and, asc, eq, lte, ne, or } from "drizzle-orm";
+import { employeeEngagements, employees, type AuthMethod, type Employee } from "@shared/schema";
 import { EMPLOYMENT_ENDED, KIOSK_EMPLOYMENT_ENDED_MESSAGE } from "@shared/payOnly";
 import { db } from "../db";
 import { storage } from "../storage";
@@ -47,6 +47,51 @@ export async function kioskEmploymentEnded(
     lte(employeeEngagements.startDate, today),
   )).limit(1);
   return employmentEndedOn(profile, today, !!due);
+}
+
+/**
+ * The profile a phone number names at the kiosk's park group: of every profile
+ * there carrying the number (`employees.phone_e164` is not unique), the first
+ * whose employment has not ended, and only when every one of them has ended,
+ * the first of those — which the kiosk then refuses. A person whose old
+ * profile has ended and who works under a second one (the duplicate shape
+ * SCRUM-794's fold resolves) clocks in on the one they work under, as they
+ * did before the kiosk refused ended profiles. In a fixed order, so one number
+ * names the same profile every time.
+ */
+export async function kioskProfileByPhone(phoneE164: string, tenantId: string, now: Date = new Date()): Promise<Employee | undefined> {
+  const profiles = await db.select().from(employees)
+    .where(and(eq(employees.phoneE164, phoneE164), eq(employees.tenantId, tenantId)))
+    .orderBy(asc(employees.createdAt), asc(employees.id));
+  for (const profile of profiles) {
+    if (!(await kioskEmploymentEnded(profile, now))) return profile;
+  }
+  return profiles[0];
+}
+
+/**
+ * Whether a face matched an ended profile of somebody who still works here
+ * under another one: a profile in the same park group sharing its phone number
+ * or its login whose employment has not ended. The face road then answers as
+ * for no match, so the tablet falls to the phone road, which clocks the profile
+ * the person works under (`kioskProfileByPhone`); the ended profile is refused
+ * only when it is the person's last.
+ */
+export async function workingProfileBesides(
+  profile: Pick<Employee, "id" | "tenantId" | "phoneE164" | "userId">,
+  now: Date = new Date(),
+): Promise<boolean> {
+  const same = [
+    profile.phoneE164 ? eq(employees.phoneE164, profile.phoneE164) : undefined,
+    profile.userId ? eq(employees.userId, profile.userId) : undefined,
+  ].filter((c) => c !== undefined);
+  if (same.length === 0) return false;
+  const others = await db.select().from(employees)
+    .where(and(eq(employees.tenantId, profile.tenantId), ne(employees.id, profile.id), or(...same)));
+  for (const other of others) {
+    if (!(await kioskEmploymentEnded(other, now))) return true;
+  }
+  return false;
 }
 
 /**
