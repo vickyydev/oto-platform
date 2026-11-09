@@ -365,12 +365,19 @@ export function PlannedEmploymentCard({ employee }: { employee: Employee }) {
 
   const cancel = useMutation({
     mutationFn: async () => {
-      await apiRequest("DELETE", `/api/employees/${employee.id}/onboard-again/${engagement!.id}`);
+      const res = await apiRequest("DELETE", `/api/employees/${employee.id}/onboard-again/${engagement!.id}`);
+      return res.json() as Promise<{ cancelled: boolean; contractId: string | null; contractDeleted: boolean }>;
     },
-    onSuccess: () => {
+    onSuccess: (answer) => {
       queryClient.invalidateQueries({ queryKey: plannedKey(employee.id) });
       queryClient.invalidateQueries({ queryKey: ["/api/employees", employee.id, "onboarding-status"] });
-      toast({ title: "Onboard Again cancelled", description: "The planned employment will not start. The draft contract stays on the profile." });
+      queryClient.invalidateQueries({ queryKey: ["/api/employees", employee.id] });
+      toast({
+        title: "Onboard Again cancelled",
+        description: answer.contractDeleted
+          ? "The planned employment will not start, and its draft contract is deleted."
+          : "The planned employment will not start. Its contract was already finalized or sent, so it stays in the contract history.",
+      });
     },
     onError: (error: Error) => {
       toast({ title: "Could not cancel", description: error.message, variant: "destructive" });
@@ -449,7 +456,7 @@ export function PlannedEmploymentCard({ employee }: { employee: Employee }) {
               size="sm"
               variant="ghost"
               className="text-destructive"
-              onClick={() => { if (window.confirm("Cancel the planned employment? Nothing else changes.")) cancel.mutate(); }}
+              onClick={() => { if (window.confirm("Cancel the planned employment? Its draft contract is deleted; nothing else changes.")) cancel.mutate(); }}
               disabled={cancel.isPending}
               data-testid="button-cancel-onboard-again"
             >

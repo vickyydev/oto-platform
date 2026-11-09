@@ -91,8 +91,10 @@ export function listBlockers(blockers: Blocker[]): string {
   return `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
 }
 
-async function countOf(client: Pick<PoolClient, "query">, tables: string[], column: string, id: string): Promise<number> {
-  const union = tables.map((t) => `select count(*)::int as n from ${t} where ${column} = $1`).join(" union all ");
+async function countOf(client: Pick<PoolClient, "query">, tables: string[], column: string, id: string, except?: string): Promise<number> {
+  const union = tables
+    .map((t) => `select count(*)::int as n from ${t} where ${column} = $1${except ? ` and not (${except})` : ""}`)
+    .join(" union all ");
   const { rows } = await client.query<{ n: number }>(`select coalesce(sum(n), 0)::int as n from (${union}) c`, [id]);
   return Number(rows[0]?.n ?? 0);
 }
@@ -100,11 +102,11 @@ async function countOf(client: Pick<PoolClient, "query">, tables: string[], colu
 export async function blockersOf(
   client: Pick<PoolClient, "query">,
   id: string,
-  checks: { singular: string; plural: string; tables: string[]; column: string }[],
+  checks: { singular: string; plural: string; tables: string[]; column: string; except?: string }[],
 ): Promise<Blocker[]> {
   const found: Blocker[] = [];
   for (const check of checks) {
-    const count = await countOf(client, check.tables, check.column, id);
+    const count = await countOf(client, check.tables, check.column, id, check.except);
     if (count > 0) found.push({ singular: check.singular, plural: check.plural, count });
   }
   return found;
@@ -162,8 +164,25 @@ async function inOneTransaction(
 
 // ─── Employees ───────────────────────────────────────────────────────────────
 
-/** An employee's contracts, kept for the record. */
-export const CONTRACTS_KEPT = { singular: "contract", plural: "contracts", tables: ["contract_instances"], column: "employee_id" };
+/**
+ * A draft that never left the app and is no longer anyone's (SCRUM-794): an
+ * unsent draft that was archived (a plan's draft replaced by a newer one), or
+ * the draft of an Onboard Again plan that was cancelled. Not kept for the
+ * record: it goes with the employee.
+ */
+const DISCARDED_DRAFT =
+  "status = 'draft' and signing_status = 'not_sent' and signing_token is null and sent_at is null " +
+  "and (archived_at is not null or id in (select contract_instance_id from employee_engagements " +
+  "where status = 'cancelled' and contract_instance_id is not null))";
+
+/** An employee's contracts, kept for the record: every one but a discarded draft. */
+export const CONTRACTS_KEPT = {
+  singular: "contract",
+  plural: "contracts",
+  tables: ["contract_instances"],
+  column: "employee_id",
+  except: DISCARDED_DRAFT,
+};
 
 /** An employee's time records: clock-ins, time entries, adjustments and attendance review items. */
 export const TIME_RECORDS_KEPT = {
@@ -270,6 +289,11 @@ export async function deleteEmployeeWithin(
   await client.query("update activity_log set employee_id = null where employee_id = $1", [id]);
   await client.query("update attention_items set employee_id = null where employee_id = $1", [id]);
   await client.query("update shifts set employee_id = null where employee_id = $1", [id]);
+  // The discarded drafts (the only contracts left: the count above refused
+  // any other) leave the rows that name them without the link.
+  const discarded = `select id from contract_instances where employee_id = $1 and ${DISCARDED_DRAFT}`;
+  await client.query(`update activity_log set contract_instance_id = null where contract_instance_id in (${discarded})`, [id]);
+  await client.query(`update attention_items set contract_instance_id = null where contract_instance_id in (${discarded})`, [id]);
   // What belongs to the employee goes with them.
   await client.query(
     "delete from offboarding_checklist where employee_id = $1 or offboarding_id in (select id from employee_offboarding where employee_id = $1)",
@@ -289,6 +313,8 @@ export async function deleteEmployeeWithin(
   ]) {
     await client.query(`delete from ${table} where employee_id = $1`, [id]);
   }
+  // After the movement entries that named them (employee_changes, above).
+  await client.query(`delete from contract_instances where employee_id = $1 and ${DISCARDED_DRAFT}`, [id]);
   await client.query("delete from employees where id = $1", [id]);
 
   // The person record (freeing its email for reuse) — unless another

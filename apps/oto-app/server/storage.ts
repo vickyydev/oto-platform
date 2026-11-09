@@ -584,7 +584,7 @@ export interface IStorage {
                 id: string,
                 contract: Partial<ContractInstance>,
         ): Promise<ContractInstance>;
-        deleteContract(id: string): Promise<void>;
+        deleteContract(id: string, executor?: DbExecutor): Promise<void>;
         archiveContract(id: string): Promise<ContractInstance>;
         supersedeActiveContract(
                 employeeId: string,
@@ -3454,19 +3454,38 @@ export class DatabaseStorage implements IStorage {
                 return updatedContract;
         }
 
-        async deleteContract(id: string): Promise<void> {
-                // Nullify contractInstanceId in activity log for this contract
-                await db
-                        .update(activityLog)
-                        .set({ contractInstanceId: null })
-                        .where(eq(activityLog.contractInstanceId, id));
-                // Nullify contractInstanceId in attention items for this contract
-                await db
-                        .update(attentionItems)
-                        .set({ contractInstanceId: null })
-                        .where(eq(attentionItems.contractInstanceId, id));
-                // Delete the contract
-                await db.delete(contractInstances).where(eq(contractInstances.id, id));
+        /**
+         * One transaction (SCRUM-794): the rows that name the contract keep
+         * their place without the link, then the contract goes, or nothing
+         * does. On the caller's transaction when one is given.
+         */
+        async deleteContract(id: string, executor?: DbExecutor): Promise<void> {
+                const work = async (tx: DbExecutor) => {
+                        // Nullify contractInstanceId in activity log for this contract
+                        await tx
+                                .update(activityLog)
+                                .set({ contractInstanceId: null })
+                                .where(eq(activityLog.contractInstanceId, id));
+                        // Nullify contractInstanceId in attention items for this contract
+                        await tx
+                                .update(attentionItems)
+                                .set({ contractInstanceId: null })
+                                .where(eq(attentionItems.contractInstanceId, id));
+                        // The staff movement that made it (Onboard Again's) stays, without the link.
+                        await tx
+                                .update(employeeChanges)
+                                .set({ contractInstanceId: null })
+                                .where(eq(employeeChanges.contractInstanceId, id));
+                        // A planned employment's contract (the foreign key sets it null too).
+                        await tx
+                                .update(employeeEngagements)
+                                .set({ contractInstanceId: null })
+                                .where(eq(employeeEngagements.contractInstanceId, id));
+                        // Delete the contract
+                        await tx.delete(contractInstances).where(eq(contractInstances.id, id));
+                };
+                if (executor) return work(executor);
+                await db.transaction((tx) => work(tx));
         }
 
         async archiveContract(id: string): Promise<ContractInstance> {

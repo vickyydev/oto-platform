@@ -36,7 +36,8 @@
 //   4. Shifts in advance: before the switch the new department takes the
 //      profile from its start date (and not a day before), the current one up
 //      to the last day (and not after); both show in the person's own rota.
-//      A plan cancelled before its start date does nothing else.
+//      A plan cancelled before its start date deletes its unsent draft and
+//      does nothing else.
 //   5. The 03:00 batch on a clock past the last day but before the start date:
 //      a leaver with nothing planned is ended (resigned, Left, login off, the
 //      platform told); the profile with Onboard Again planned keeps its login,
@@ -828,16 +829,17 @@ try {
     const row = (list.body as { id: string; schedulingEngagement?: unknown }[]).find((e) => e.id === original);
     assert.deepEqual(row?.schedulingEngagement, { startDate: START, departmentId: RECEPTION, branchId: BRANCH_A });
   });
-  await check("a planned employment can be cancelled before its start date, and that does nothing else", async () => {
+  await check("a planned employment can be cancelled before its start date: its unsent draft is deleted, and nothing else changes", async () => {
     const plan = await call("POST", `/api/employees/${cancelled}/onboard-again`, as.admin, { ...onboardBody, startDate: plus(6) });
     assert.equal(plan.status, 201, show(plan));
     const before = await profile(cancelled);
     const res = await call("DELETE", `/api/employees/${cancelled}/onboard-again/${plan.body.engagementId}`, as.admin);
-    assert.deepEqual([res.status, res.body], [200, { cancelled: true, contractId: plan.body.contract.id }], show(res));
+    assert.deepEqual([res.status, res.body], [200, { cancelled: true, contractId: plan.body.contract.id, contractDeleted: true }], show(res));
     assert.deepEqual((await engagementOf(cancelled)).map((g) => g.status), ["cancelled"]);
     assert.deepEqual(await profile(cancelled), before);
     assert.equal(await loginOn(cancelLogin.id), true);
-    assert.equal(await countOf("select count(*) as n from contract_instances where id = $1 and status = 'draft'", [plan.body.contract.id]), 1);
+    // The profile reads as before the plan: the draft made for it is gone (the app deletes drafts, SCRUM-794).
+    assert.equal(await countOf("select count(*) as n from contract_instances where id = $1", [plan.body.contract.id]), 0);
     const again = await call("DELETE", `/api/employees/${cancelled}/onboard-again/${plan.body.engagementId}`, as.admin);
     assert.equal(again.status, 404, show(again));
   });

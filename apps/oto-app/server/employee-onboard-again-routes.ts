@@ -337,7 +337,7 @@ export function registerEmployeeOnboardAgainRoutes(app: Express, deps: EmployeeO
       if (!actor || !employee) return res.status(404).json({ message: "Employee not found" });
       if (!canUserAccessBranch(actor, employee.branchId)) return res.status(403).json({ message: "Access denied to this employee" });
       const today = bangkokToday();
-      const done = await db.transaction(async (tx): Promise<{ status: number; message: string } | { contractId: string | null }> => {
+      const done = await db.transaction(async (tx): Promise<{ status: number; message: string } | { contractId: string | null; contractDeleted: boolean }> => {
         await tx.execute(sql`select pg_advisory_xact_lock(hashtext('employee_offboarding'), hashtext(${employee.id}))`);
         const [engagement] = await tx.select().from(employeeEngagements).where(and(
           eq(employeeEngagements.id, req.params.engagementId),
@@ -348,21 +348,40 @@ export function registerEmployeeOnboardAgainRoutes(app: Express, deps: EmployeeO
         if (engagement.startDate <= today) {
           return { status: 409, message: "This employment has reached its start date, so it can no longer be cancelled" };
         }
-        // Nothing else: the offboarding, the login, the shifts and the draft contract stay as they are.
         await tx.update(employeeEngagements).set({ status: "cancelled", cancelledAt: new Date() })
           .where(eq(employeeEngagements.id, engagement.id));
+        // The plan's draft goes with it, as the app deletes a draft rather
+        // than archiving it, so the profile reads as before the plan. A
+        // contract that was finalized, sent or signed stays in its history.
+        // The offboarding, the login and the shifts stay as they are.
+        let contractDeleted = false;
+        if (engagement.contractInstanceId) {
+          const [draft] = await tx.select({ id: contractInstances.id }).from(contractInstances).where(and(
+            eq(contractInstances.id, engagement.contractInstanceId),
+            eq(contractInstances.employeeId, employee.id),
+            eq(contractInstances.status, "draft"),
+            eq(contractInstances.signingStatus, "not_sent"),
+            isNull(contractInstances.signingToken),
+            isNull(contractInstances.sentAt),
+          )).for("update");
+          if (draft) {
+            await storage.deleteContract(draft.id, tx);
+            contractDeleted = true;
+          }
+        }
         await storage.logActivity({
           branchId: employee.branchId || undefined,
           employeeId: employee.id,
           activityType: "employee_updated",
-          summaryText: `Onboard again cancelled: the employment planned from ${engagement.startDate} will not start`,
+          summaryText: `Onboard again cancelled: the employment planned from ${engagement.startDate} will not start`
+            + (contractDeleted ? "; its draft contract is deleted" : ""),
           createdBy: actor.id,
         }, tx);
-        return { contractId: engagement.contractInstanceId };
+        return { contractId: engagement.contractInstanceId, contractDeleted };
       });
       if ("message" in done) return res.status(done.status).json({ message: done.message });
       deps.committed(employee.id);
-      res.json({ cancelled: true, contractId: done.contractId });
+      res.json({ cancelled: true, contractId: done.contractId, contractDeleted: done.contractDeleted });
     } catch (error) {
       next(error);
     }
