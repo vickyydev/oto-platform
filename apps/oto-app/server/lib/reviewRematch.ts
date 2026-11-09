@@ -7,8 +7,8 @@ import type { Pool } from "pg";
  * A face clock-in with no shift that day becomes an UNSCHEDULED_WORK item on
  * the attendance review: an OPEN `timekeeping_issues` row whose linked time
  * entry waits as PENDING_APPROVAL. When the shifts were on a duplicate profile,
- * every clock-in landed on the original with no shift. After a rehire or a
- * fold has put the shifts on the profile that clocked in, each pending item
+ * every clock-in landed on the original with no shift. After a fold or an
+ * Onboard Again start has put the shifts on the profile that clocked in, each pending item
  * whose day (the item's `issue_date`, the day the kiosk recorded the clock-in
  * under) now has a shift for that employee at that item's branch is settled
  * exactly as a manager's approval settles it (timekeeping-review-routes.ts):
@@ -21,7 +21,7 @@ import type { Pool } from "pg";
  * longer pending here) or waits.
  */
 
-export const REMATCH_NOTE = "matched to a shift after rehire/fold";
+export const REMATCH_NOTE = "matched to a shift after Onboard Again or a fold";
 
 export interface RematchScope {
   tenantId: string;

@@ -20,6 +20,17 @@ interface OnboardingStatus {
   employeeId: string;
   employeeName: string;
   isOnboardingComplete: boolean;
+  /**
+   * SCRUM-794: an Onboard Again employment planned on the profile. The
+   * contract steps are its new contract's; basic info, login and face are the
+   * ones the profile already has.
+   */
+  onboardAgain?: {
+    engagementId: string;
+    startDate: string;
+    contractId: string | null;
+    alreadySetUp: { essentialInfo: boolean; login: boolean; face: boolean };
+  } | null;
   steps: {
     step1_essentialInfo: OnboardingStep & { missingFields: string[] };
     step2_contractGenerated: OnboardingStep & { contractId: string | null; contractStatus: string | null };
@@ -213,7 +224,7 @@ export function EmployeeOnboardingStepper({
           <CardHeader className="pb-3 cursor-pointer hover-elevate">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <CardTitle className="text-lg">Onboarding Progress</CardTitle>
+                <CardTitle className="text-lg">{status.onboardAgain ? "Onboard Again Progress" : "Onboarding Progress"}</CardTitle>
                 <ChevronDown className={cn(
                   "h-4 w-4 text-muted-foreground transition-transform duration-200",
                   isOpen && "rotate-180"
@@ -248,6 +259,10 @@ export function EmployeeOnboardingStepper({
                 const isCurrent = status.currentStep === idx + 1;
 
                 const color = stepColors[idx];
+                // SCRUM-794: the steps Onboard Again skips, already done on this profile.
+                const setUp = status.onboardAgain?.alreadySetUp;
+                const alreadySetUp = !!setUp && step.complete &&
+                  ((idx === 0 && setUp.essentialInfo) || (idx === 4 && setUp.login) || (idx === 5 && setUp.face));
 
                 return (
                   <div
@@ -288,6 +303,11 @@ export function EmployeeOnboardingStepper({
                       {isCurrent && !step.complete && step.description && (
                         <p className="text-xs text-muted-foreground truncate">
                           {step.description}
+                        </p>
+                      )}
+                      {alreadySetUp && (
+                        <p className="text-xs text-muted-foreground truncate" data-testid={`step-${idx + 1}-already-set-up`}>
+                          Already set up on this profile
                         </p>
                       )}
                     </div>

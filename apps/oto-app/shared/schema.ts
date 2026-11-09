@@ -1011,7 +1011,7 @@ export const employeeChangeTypes = [
   "branch_transfer",
   "resigned",
   "terminated",
-  "rehired", // SCRUM-794: a Left profile made active again (POST /api/employees/:id/rehire)
+  "onboard_again", // SCRUM-794: a new employment planned on the same profile (POST /api/employees/:id/onboard-again)
   "other",
 ] as const;
 export type EmployeeChangeType = typeof employeeChangeTypes[number];
@@ -1663,6 +1663,9 @@ export const employeeOffboarding = pgTable("employee_offboarding", {
   createdBy: varchar("created_by").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  // SCRUM-794: set when an Onboard Again employment on the same profile
+  // starts, so the offboarding stays as the record of the contract it ended.
+  reonboardedAt: timestamp("reonboarded_at"),
 });
 
 export const employeeOffboardingRelations = relations(employeeOffboarding, ({ one }) => ({
@@ -1688,6 +1691,40 @@ export const insertEmployeeOffboardingSchema = createInsertSchema(employeeOffboa
 
 export type InsertEmployeeOffboarding = z.infer<typeof insertEmployeeOffboardingSchema>;
 export type EmployeeOffboarding = typeof employeeOffboarding.$inferSelect;
+
+// SCRUM-794: Onboard Again. One contract ends (the offboarding's last working
+// day) and a new one starts on the same profile, which keeps its login, face
+// enrolment and history. A planned employment is made before its start date,
+// so the new department can schedule the person from that date while the
+// current one still does up to the last day; the night batch starts it on its
+// start date. One planned at a time per profile (the partial unique index).
+export const employeeEngagementStatuses = ["planned", "active", "ended", "cancelled"] as const;
+export type EmployeeEngagementStatus = typeof employeeEngagementStatuses[number];
+
+export const employeeEngagements = pgTable("employee_engagements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  employeeId: varchar("employee_id").references(() => employees.id, { onDelete: "cascade" }).notNull(),
+  startDate: date("start_date").notNull(),
+  departmentId: varchar("department_id").references(() => departments.id).notNull(),
+  branchId: varchar("branch_id").references(() => branches.id).notNull(),
+  positionTitle: text("position_title"),
+  employmentBasis: text("employment_basis", { enum: employmentBasisTypes }),
+  contractInstanceId: varchar("contract_instance_id").references(() => contractInstances.id, { onDelete: "set null" }),
+  offboardingId: varchar("offboarding_id").references(() => employeeOffboarding.id, { onDelete: "set null" }),
+  status: text("status", { enum: employeeEngagementStatuses }).notNull().default("planned"),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  activatedAt: timestamp("activated_at"),
+  cancelledAt: timestamp("cancelled_at"),
+}, (table) => [
+  index("idx_employee_engagements_employee").on(table.employeeId),
+  index("idx_employee_engagements_due").on(table.status, table.startDate),
+  uniqueIndex("employee_engagements_one_planned").on(table.employeeId).where(sql`${table.status} = 'planned'`),
+  check("employee_engagements_status_check", sql`${table.status} IN ('planned', 'active', 'ended', 'cancelled')`),
+]);
+
+export type EmployeeEngagement = typeof employeeEngagements.$inferSelect;
 
 // Letter types for employee letters (offboarding + disciplinary)
 export const letterTypes = ["resignation", "termination", "warning"] as const;

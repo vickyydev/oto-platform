@@ -16,6 +16,7 @@ import {
   type OnStepFailure,
 } from "./lib/nightJobs";
 import { holdNightBatch } from "./lib/nightBatchLock";
+import { startPlannedEngagements } from "./lib/onboardAgain";
 
 /**
  * Who a night job runs for, and who hears about an error it swallows (S2-17b
@@ -122,6 +123,23 @@ export async function runStatusTransitions(opts: NightJobOptions = {}): Promise<
 }
 
 /**
+ * Start the Onboard Again employments whose start date has come (SCRUM-794,
+ * `lib/onboardAgain.ts`). An error is logged and swallowed, as the batch's
+ * other steps do, and told to `onError`.
+ */
+export async function runPlannedEngagementStarts(opts: NightJobOptions = {}): Promise<{ onboarded: number; rematched: number }> {
+  try {
+    const summary = await startPlannedEngagements({ tenantId: opts.tenantId, onError: opts.onError });
+    if (summary.onboarded > 0) console.log(`[ONBOARD_AGAIN] Started ${summary.onboarded} planned employment(s)`);
+    return summary;
+  } catch (error) {
+    console.error("[ONBOARD_AGAIN] Error:", error);
+    opts.onError?.(error);
+    return { onboarded: 0, rematched: 0 };
+  }
+}
+
+/**
  * Switch off the app login of everyone whose last working day has passed.
  *
  * The 03:00 batch calls it with no tenant, across every park group, as it
@@ -152,6 +170,10 @@ export async function runDepartedAccountDeactivation(opts: NightJobOptions = {})
           isNotNull(employees.userId),
           eq(users.isActive, true),
           opts.tenantId ? eq(employees.tenantId, opts.tenantId) : undefined,
+          // SCRUM-794: an Onboard Again employment planned on the profile
+          // keeps its login on between the two employments.
+          sql`not exists (select 1 from employee_engagements g
+                           where g.employee_id = ${employees.id} and g.status = 'planned')`,
         ),
       );
 
@@ -620,7 +642,13 @@ export const NIGHT_BATCHES: Record<NightJobName, readonly NightStep[]> = {
     {
       step: "statusTransitions",
       onFailure: "continue",
-      run: async (opts) => ({ transitioned: await runStatusTransitions(opts) }),
+      // SCRUM-794: the Onboard Again employments due today start first, so a
+      // profile moving straight from its last day into the new employment is
+      // never treated as a leaver.
+      run: async (opts) => {
+        const starts = await runPlannedEngagementStarts(opts);
+        return { onboarded: starts.onboarded, rematched: starts.rematched, transitioned: await runStatusTransitions(opts) };
+      },
     },
     {
       step: "departedLogins",

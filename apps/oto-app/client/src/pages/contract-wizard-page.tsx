@@ -186,6 +186,13 @@ export default function ContractWizardPage() {
   // Parse URL query params for pre-selected employee
   const urlParams = new URLSearchParams(searchString);
   const urlEmployeeId = urlParams.get("employeeId");
+  // SCRUM-794: the wizard opened from an Onboard Again employment's card.
+  const urlEngagementId = urlParams.get("engagementId");
+  const { data: plannedData } = useQuery<{ engagement: { id: string; startDate: string; positionTitle: string | null } | null }>({
+    queryKey: ["/api/employees", urlEmployeeId ?? "", "onboard-again"],
+    enabled: !!urlEmployeeId && !!urlEngagementId,
+  });
+  const plannedEngagement = plannedData?.engagement && plannedData.engagement.id === urlEngagementId ? plannedData.engagement : null;
 
   interface TemplateWithAssignments extends Template {
     assignments: TemplateAssignment[];
@@ -249,6 +256,13 @@ export default function ContractWizardPage() {
       }
     }
   }, [urlEmployeeId, employees, preselectedEmployeeId]);
+
+  // The planned employment's start date and position, over the profile's own.
+  useEffect(() => {
+    if (!plannedEngagement || preselectedEmployeeId !== urlEmployeeId) return;
+    form.setValue("startDate", plannedEngagement.startDate);
+    if (plannedEngagement.positionTitle) form.setValue("positionTitle", plannedEngagement.positionTitle);
+  }, [plannedEngagement, preselectedEmployeeId, urlEmployeeId]);
 
   const filteredTemplates = templatesWithAssignments?.filter((template) => {
     if (template.status !== "active") return false;
@@ -355,6 +369,7 @@ export default function ContractWizardPage() {
         mergeDataJson: mergeData,
         createdBy: user?.id,
         status: "draft",
+        ...(plannedEngagement && data.employeeId === urlEmployeeId ? { engagementId: plannedEngagement.id } : {}),
       });
       return await res.json();
     },
@@ -403,6 +418,7 @@ export default function ContractWizardPage() {
         expectedVersion: employeeVersion,
         createdBy: user?.id,
         generateSigningLink,
+        ...(plannedEngagement && data.employeeId === urlEmployeeId ? { engagementId: plannedEngagement.id } : {}),
       });
       
       if (!res.ok) {
@@ -521,7 +537,9 @@ export default function ContractWizardPage() {
         <div className="flex-1">
           <h1 className="text-3xl font-medium" data-testid="text-wizard-title">Generate Contract</h1>
           <p className="text-muted-foreground">
-            Create a new contract for an employee
+            {plannedEngagement
+              ? `The contract for the Onboard Again employment starting ${plannedEngagement.startDate}; it replaces the draft made for it`
+              : "Create a new contract for an employee"}
           </p>
         </div>
       </div>

@@ -14,3 +14,10 @@ export function bangkokToday(now: Date = new Date()): string {
 export function leaverStatusOf(offboardingType: string | null | undefined): "resigned" | "terminated" {
   return String(offboardingType ?? "").toLowerCase().startsWith("termin") ? "terminated" : "resigned";
 }
+
+const DAY_MS = 86_400_000;
+
+/** The calendar day before a `YYYY-MM-DD` day. */
+export function dayBefore(day: string): string {
+  return new Date(Date.parse(`${day}T00:00:00Z`) - DAY_MS).toISOString().slice(0, 10);
+}

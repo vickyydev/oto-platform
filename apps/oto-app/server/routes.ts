@@ -6,8 +6,9 @@ import { persistAttendanceEvidence, canReadAttendanceEvidence, ATTENDANCE_EVIDEN
 import { registerTimekeepingReviewRoutes } from "./timekeeping-review-routes";
 import { registerPayrollRoutes } from "./payroll/routes";
 import { registerEmployeeActionRoutes } from "./employee-action-routes";
-import { registerEmployeeRehireRoutes } from "./employee-rehire-routes";
-import { leaverStatusOf } from "./lib/engagementDates";
+import { registerEmployeeOnboardAgainRoutes } from "./employee-onboard-again-routes";
+import { bangkokToday, dayBefore, leaverStatusOf } from "./lib/engagementDates";
+import { linkContractToEngagement, plannedEngagementForContract } from "./lib/onboardAgain";
 import { registerQaRoutes } from "./qa/routes";
 import { registerSuiteSignInRoutes, unusablePassword } from "./suite-sign-in-routes";
 import { readPhone } from "./lib/suiteSignIn";
@@ -169,7 +170,7 @@ import {
 } from "./leave-types";
 import { directoryEventRouter } from "./directory/eventRoutes";
 import { directoryJobRouter } from "./directory/jobRoutes";
-import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, timekeepingIssues, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, dutyBlocks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, sickLeavePolicies, type LeaveType, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, employeePayrollProfiles, payslips, accessPolicies, accessItems, userPreferences, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
+import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeOffboarding, employeeEngagements, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, timekeepingIssues, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, dutyBlocks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, sickLeavePolicies, type LeaveType, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, employeePayrollProfiles, payslips, accessPolicies, accessItems, userPreferences, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, requireKioskPermission, requireKioskPermissionIfKiosk, requireKioskSession, validateKioskSession } from "./kiosk-auth";
 import { hashPin, verifyEmployeePin } from "./pin-utils";
 import { DEACTIVATE_INSTEAD, deleteManagedUser } from "./lib/userDeletion";
@@ -3741,7 +3742,13 @@ export async function registerRoutes(
 
       // Filter to only employment contracts (not archived, not offboarding letters)
       const employmentContracts = contracts.filter((c: ContractInstance) => !c.archivedAt);
-      const latestContract = employmentContracts.length > 0 ? employmentContracts[0] : null;
+      // SCRUM-794: with an Onboard Again employment planned, the contract
+      // steps are that employment's contract.
+      const planned = (await storage.getPlannedEngagements([employee.id])).get(employee.id);
+      const plannedContract = planned?.contractInstanceId
+        ? employmentContracts.find((c: ContractInstance) => c.id === planned.contractInstanceId) ?? null
+        : null;
+      const latestContract = plannedContract ?? (employmentContracts.length > 0 ? employmentContracts[0] : null);
 
       // Step 1: Essential info completed
       const step1Complete = Boolean(
@@ -3786,10 +3793,22 @@ export async function registerRoutes(
       // Step 7: Company property assigned (or marked as not required)
       const step7Complete = assets.length > 0;
 
+      // SCRUM-794: the planned employment's own steps are its contract's; the
+      // profile's basic info, login and face are the ones it already has.
+      const onboardAgain = planned ? {
+        engagementId: planned.id,
+        startDate: planned.startDate,
+        departmentId: planned.departmentId,
+        branchId: planned.branchId,
+        contractId: planned.contractInstanceId,
+        alreadySetUp: { essentialInfo: step1Complete, login: step5Complete, face: step6Complete },
+      } : null;
+
       // Build response
       const onboardingStatus = {
         employeeId: employee.id,
         employeeName: employee.fullName,
+        onboardAgain,
         isOnboardingComplete: step1Complete && step2Complete && step3Complete && step4Complete && step5Complete && step6Complete && step7Complete,
         steps: {
           step1_essentialInfo: {
@@ -4815,17 +4834,21 @@ export async function registerRoutes(
     }
   });
 
-  // SCRUM-794: rehire a Left profile, fold a duplicate profile into the
-  // original, and match the stray "Unscheduled work" approvals after either.
-  registerEmployeeRehireRoutes(app, {
+  // SCRUM-794: Onboard Again on the same profile, fold a duplicate profile
+  // into the original, and match the stray "Unscheduled work" approvals after
+  // either.
+  registerEmployeeOnboardAgainRoutes(app, {
     pool,
     employeeOfParkGroup,
     userManagementTenant,
     managedUserTenant,
     employeeDeletionInput,
     employeeDeleteOutsideParkGroup,
+    // Declared with the contract routes below; called only once a request comes.
+    compileContractDraft: (employee, template, mergeDataJson, language) =>
+      compileContractDraft(employee, template, mergeDataJson, language),
     committed: (employeeId) => {
-      evaluateForEmployee(employeeId).catch(err => console.error("[AttentionEngine] Rehire trigger failed:", err));
+      evaluateForEmployee(employeeId).catch(err => console.error("[AttentionEngine] Onboard Again trigger failed:", err));
     },
   });
 
@@ -5966,6 +5989,96 @@ export async function registerRoutes(
     }
   });
 
+  /**
+   * A contract's snapshot and merge data as POST /api/contracts compiles them:
+   * the employee's department and branch name the department and the work
+   * location. Onboard Again (SCRUM-794) compiles its draft here too, with the
+   * planned employment's department and branch in their place.
+   */
+  const compileContractDraft = async (
+    employee: NonNullable<Awaited<ReturnType<typeof employeeOfParkGroup>>>,
+    template: NonNullable<Awaited<ReturnType<typeof storage.getTemplateInParkGroup>>>,
+    mergeDataJson: any, // eslint-disable-line @typescript-eslint/no-explicit-any -- the wizard's merge data, as the route has always taken it
+    language: string | undefined,
+  ) => {
+    // Get branch for template data and work location derivation
+    let branch = null;
+    if (employee.branchId) {
+      branch = await storage.getBranch(employee.branchId);
+    }
+
+    // Derive work location from branch (for backward compatibility)
+    const workLocation = branch?.name || mergeDataJson.workLocation || "";
+
+    // Format today's date for the {{today}} and {{document.todays_date}} variables (dd-mm-yyyy)
+    const today = new Date();
+    const todayFormatted = formatDateDDMMYYYY(today.toISOString());
+
+    let departmentName = "";
+    if (employee.primaryDepartmentId) {
+      const dept = await storage.getDepartment(employee.primaryDepartmentId);
+      if (dept) departmentName = dept.name;
+    }
+
+    // Format and bold all variable values for contract display
+    const data = {
+      employee: {
+        full_name: boldValue(employee.fullName),
+        email: boldValue(employee.email),
+        phone: boldValue(employee.phone || ""),
+        address: boldValue(employee.address || ""),
+        id_number: boldValue(employee.taxIdNumber || ""),
+        department: boldValue(departmentName),
+        start_date_employment: boldValue(employee.startDate ? formatDateDDMMYYYY(employee.startDate.toString()) : ""),
+        years_of_service: boldValue(employee.startDate ? calculateYearsOfService(employee.startDate) : ""),
+      },
+      contract: {
+        position_title: boldValue(mergeDataJson.positionTitle),
+        salary_thb: boldValue(formatCurrency(mergeDataJson.salaryThb)),
+        start_date: boldValue(formatDateDDMMYYYY(mergeDataJson.startDate)),
+        work_location: boldValue(workLocation),
+        food_allowance_per_day: boldValue(employee.foodAllowancePerDay ? formatCurrency(employee.foodAllowancePerDay) : ""),
+      },
+      branch: branch ? {
+        name: boldValue(branch.name),
+        address: boldValue(branch.address || ""),
+      } : {
+        name: "",
+        address: "",
+      },
+      document: {
+        todays_date: boldValue(todayFormatted),
+      },
+      today: boldValue(todayFormatted),
+      termination: buildTerminationData(mergeDataJson),
+      warning: buildWarningData(mergeDataJson),
+      incentive_clause_block: renderIncentiveClauseBlock(mergeDataJson.incentiveClause || employee.incentiveClauseText, employee.foodAllowancePerDay),
+      special_terms_block: renderSpecialTermsBlock(mergeDataJson.customClauses),
+      visa_sponsorship_block: renderVisaSponsorshipBlock({
+        companyHandles: employee.visaWpCompanyHandles || false,
+        companyPays: employee.visaWpCompanyPays || false,
+        costThb: employee.visaWpCostThb,
+        repaymentIfFailProbation: employee.visaWpRepaymentIfFailProbation || false,
+        repaymentIfLeaveBefore1y: employee.visaWpRepaymentIfLeaveBefore1y || false,
+        repaymentTermsText: employee.visaWpRepaymentTermsText,
+        notes: employee.visaWpNotes,
+      }),
+    };
+
+    const templateBody = (language === "th" && template.htmlBodyTh) ? template.htmlBodyTh : template.htmlBody;
+    const templateSnapshotHtml = compileTemplate(templateBody, data);
+
+    // Store the derived work location and today's date in merge data for historical record
+    const enhancedMergeData = {
+      ...mergeDataJson,
+      workLocation,
+      todayDate: todayFormatted,
+      language: language || "en",
+    };
+
+    return { templateSnapshotHtml, enhancedMergeData };
+  };
+
   app.post("/api/contracts", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { employeeId, templateId, mergeDataJson, createdBy, status, language } = req.body;
@@ -5989,80 +6102,16 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Template not found" });
       }
 
-      // Get branch for template data and work location derivation
-      let branch = null;
-      if (employee.branchId) {
-        branch = await storage.getBranch(employee.branchId);
-      }
-
-      // Derive work location from branch (for backward compatibility)
-      const workLocation = branch?.name || mergeDataJson.workLocation || "";
-
-      // Format today's date for the {{today}} and {{document.todays_date}} variables (dd-mm-yyyy)
-      const today = new Date();
-      const todayFormatted = formatDateDDMMYYYY(today.toISOString());
-
-      let departmentName = "";
-      if (employee.primaryDepartmentId) {
-        const dept = await storage.getDepartment(employee.primaryDepartmentId);
-        if (dept) departmentName = dept.name;
-      }
-
-      // Format and bold all variable values for contract display
-      const data = {
-        employee: {
-          full_name: boldValue(employee.fullName),
-          email: boldValue(employee.email),
-          phone: boldValue(employee.phone || ""),
-          address: boldValue(employee.address || ""),
-          id_number: boldValue(employee.taxIdNumber || ""),
-          department: boldValue(departmentName),
-          start_date_employment: boldValue(employee.startDate ? formatDateDDMMYYYY(employee.startDate.toString()) : ""),
-          years_of_service: boldValue(employee.startDate ? calculateYearsOfService(employee.startDate) : ""),
-        },
-        contract: {
-          position_title: boldValue(mergeDataJson.positionTitle),
-          salary_thb: boldValue(formatCurrency(mergeDataJson.salaryThb)),
-          start_date: boldValue(formatDateDDMMYYYY(mergeDataJson.startDate)),
-          work_location: boldValue(workLocation),
-          food_allowance_per_day: boldValue(employee.foodAllowancePerDay ? formatCurrency(employee.foodAllowancePerDay) : ""),
-        },
-        branch: branch ? {
-          name: boldValue(branch.name),
-          address: boldValue(branch.address || ""),
-        } : {
-          name: "",
-          address: "",
-        },
-        document: {
-          todays_date: boldValue(todayFormatted),
-        },
-        today: boldValue(todayFormatted),
-        termination: buildTerminationData(mergeDataJson),
-        warning: buildWarningData(mergeDataJson),
-        incentive_clause_block: renderIncentiveClauseBlock(mergeDataJson.incentiveClause || employee.incentiveClauseText, employee.foodAllowancePerDay),
-        special_terms_block: renderSpecialTermsBlock(mergeDataJson.customClauses),
-        visa_sponsorship_block: renderVisaSponsorshipBlock({
-          companyHandles: employee.visaWpCompanyHandles || false,
-          companyPays: employee.visaWpCompanyPays || false,
-          costThb: employee.visaWpCostThb,
-          repaymentIfFailProbation: employee.visaWpRepaymentIfFailProbation || false,
-          repaymentIfLeaveBefore1y: employee.visaWpRepaymentIfLeaveBefore1y || false,
-          repaymentTermsText: employee.visaWpRepaymentTermsText,
-          notes: employee.visaWpNotes,
-        }),
-      };
-
-      const templateBody = (language === "th" && template.htmlBodyTh) ? template.htmlBodyTh : template.htmlBody;
-      const templateSnapshotHtml = compileTemplate(templateBody, data);
-
-      // Store the derived work location and today's date in merge data for historical record
-      const enhancedMergeData = {
-        ...mergeDataJson,
-        workLocation,
-        todayDate: todayFormatted,
-        language: language || "en",
-      };
+      // SCRUM-794: a contract made in the wizard for an Onboard Again
+      // employment is that employment's, compiled with its department and
+      // branch; it replaces the draft Onboard Again started, if still unsent.
+      const engagement = await plannedEngagementForContract(employee.id, req.body.engagementId);
+      if (engagement === false) return res.status(404).json({ message: "Planned employment not found" });
+      const compiled = await compileContractDraft(
+        engagement ? { ...employee, primaryDepartmentId: engagement.departmentId, branchId: engagement.branchId } : employee,
+        template, mergeDataJson, language,
+      );
+      const { templateSnapshotHtml, enhancedMergeData } = compiled;
 
       const contract = await storage.createContract({
         employeeId,
@@ -6075,6 +6124,8 @@ export async function registerRoutes(
         pdfPath: null,
         sentToEmail: null,
       });
+
+      if (engagement) await linkContractToEngagement(db, engagement, contract.id);
 
       res.status(201).json(contract);
     } catch (error) {
@@ -6133,9 +6184,15 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Template not found" });
       }
 
+      // SCRUM-794: a contract finalized in the wizard for an Onboard Again
+      // employment is that employment's: its branch and department.
+      const engagement = await plannedEngagementForContract(employee.id, req.body.engagementId);
+      if (engagement === false) return res.status(404).json({ message: "Planned employment not found" });
+
       let branch = null;
-      if (employee.branchId) {
-        branch = await storage.getBranch(employee.branchId);
+      const contractBranchId = engagement ? engagement.branchId : employee.branchId;
+      if (contractBranchId) {
+        branch = await storage.getBranch(contractBranchId);
       }
 
       // Perform atomic transaction: update employee + create contract
@@ -6200,8 +6257,9 @@ export async function registerRoutes(
         const todayFormatted = formatDateDDMMYYYY(today.toISOString());
 
         let departmentName = "";
-        if (updatedEmployee.primaryDepartmentId) {
-          const dept = await storage.getDepartment(updatedEmployee.primaryDepartmentId);
+        const contractDepartmentId = engagement ? engagement.departmentId : updatedEmployee.primaryDepartmentId;
+        if (contractDepartmentId) {
+          const dept = await storage.getDepartment(contractDepartmentId);
           if (dept) departmentName = dept.name;
         }
 
@@ -6276,6 +6334,8 @@ export async function registerRoutes(
           signingToken: generateSigningLink ? crypto.randomBytes(32).toString("hex") : null,
           signingLinkExpiresAt: generateSigningLink ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null,
         }).returning();
+
+        if (engagement) await linkContractToEngagement(tx, engagement, contract.id);
 
         return { contract, templateSnapshotHtml, employeeSnapshot, changedFields, updatedEmployee };
       });
@@ -7102,13 +7162,21 @@ OTO Company Limited`,
       
       const signedPdfPath = await uploadSignedPdf(contract.id, signedPdfBuffer);
 
+      // SCRUM-794: the contract of an Onboard Again employment that starts
+      // later is signed now and becomes the active contract on its start date
+      // (the night batch), so the current contract stays active until then.
+      const [plannedFor] = await db.select({ startDate: employeeEngagements.startDate }).from(employeeEngagements)
+        .where(and(eq(employeeEngagements.contractInstanceId, contract.id), eq(employeeEngagements.status, "planned")))
+        .limit(1);
+      const activatesLater = !!plannedFor && plannedFor.startDate > bangkokToday();
+
       // Supersede any existing active contracts for this employee before making new one active
-      await storage.supersedeActiveContract(contract.employeeId, contract.id);
+      if (!activatesLater) await storage.supersedeActiveContract(contract.employeeId, contract.id);
 
       // Update contract with signing info and signature snapshots, set to active
       const signedContract = await storage.updateContract(contract.id, {
         signingStatus: "signed",
-        status: "active", // Mark as active upon signing
+        ...(activatesLater ? {} : { status: "active" as const }), // Mark as active upon signing
         signedAt,
         signatureName: signerName,
         signatureIp: clientIp.toString(),
@@ -7129,7 +7197,7 @@ OTO Company Limited`,
       });
 
       // Log contract activated activity
-      try {
+      if (!activatesLater) try {
         await storage.createActivityLog({
           branchId: contract.branchId || null,
           employeeId: contract.employeeId,
@@ -7158,7 +7226,9 @@ OTO Company Limited`,
 
       // Update employee status and employmentState to active after signing contract
       // This ensures they appear in scheduling (employmentState: ACTIVE is required for scheduling)
-      if (employee && (employee.status === "pending" || employee.employmentState !== "ACTIVE")) {
+      // SCRUM-794: an Onboard Again contract signed ahead leaves the
+      // employment to start on its own start date.
+      if (employee && !activatesLater && (employee.status === "pending" || employee.employmentState !== "ACTIVE")) {
         try {
           await storage.updateEmployee(employee.id, { 
             status: "active",
@@ -8210,8 +8280,9 @@ OTO Company Limited`,
       // SCRUM-794: a last working day still to come leaves the profile working
       // under its current contract until then — its status, login, shifts and
       // tasks as they are; the 03:00 batch ends the employment the day after
-      // (sets the status and switches the login off). A last day of today or
-      // earlier ends it here, as the app always did.
+      // (sets the status and switches the login off), unless an Onboard Again
+      // employment is planned. A last day of today or earlier ends it here, as
+      // the app always did.
       const endsLater = lastWorkingDayStr > todayBangkok;
       // The backstop (round 6's review, F2): the login switched off here is
       // only one the app's strict placement puts in the employee's park group.
@@ -8423,6 +8494,16 @@ OTO Company Limited`,
       }
       if (validated.notes !== undefined) updates.notes = validated.notes;
 
+      // SCRUM-794: an Onboard Again employment planned on this profile starts
+      // after the last working day, so the day cannot move onto or past it,
+      // and the shifts already added from its start date are its own.
+      const [planned] = await storage.getPlannedEngagements([employeeId]).then((m) => [...m.values()]);
+      if (validated.lastWorkingDay && planned && validated.lastWorkingDay.split('T')[0] >= planned.startDate) {
+        return res.status(409).json({
+          message: `The last working day must be before the Onboard Again start date (${planned.startDate}). Cancel or move the planned employment first.`,
+        });
+      }
+
       // One transaction, as the create (S2-17b round 6, H16): the app's steps,
       // in its order, so a failure part way changes nothing.
       const updatedOffboarding = await db.transaction(async (tx) => {
@@ -8451,10 +8532,12 @@ OTO Company Limited`,
 
           const dayAfterLastDay = new Date(newLastDay);
           dayAfterLastDay.setDate(dayAfterLastDay.getDate() + 1);
-          const farFuture = '2099-12-31';
+          // With an Onboard Again employment planned, only the days between
+          // the two employments are cleared.
+          const farFuture = planned ? dayBefore(planned.startDate) : '2099-12-31';
           const startDateStr = dayAfterLastDay.toISOString().split('T')[0];
 
-          const removedAssignments = await storage.deleteAssignmentsByEmployeeAndDateRange(
+          const removedAssignments = startDateStr > farFuture ? [] : await storage.deleteAssignmentsByEmployeeAndDateRange(
             employeeId, startDateStr, farFuture, tx
           );
 
@@ -9230,8 +9313,11 @@ OTO Company Limited`,
 
       const leavingEmployees = (await storage.getEmployeesInLeavingState()).filter(e => e.tenantId === tenantId);
       const transitioned: string[] = [];
+      // SCRUM-794: a profile with an Onboard Again employment planned is not a leaver.
+      const onboardingAgain = await storage.getPlannedEngagements(leavingEmployees.map(e => e.id));
 
       for (const employee of leavingEmployees) {
+        if (onboardingAgain.has(employee.id)) continue;
         if (employee.lastWorkingDay) {
           const lastDay = new Date(employee.lastWorkingDay);
           lastDay.setHours(0, 0, 0, 0);

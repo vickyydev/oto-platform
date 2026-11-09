@@ -55,7 +55,7 @@ import { Switch } from "@/components/ui/switch";
 import { EmployeeDocument } from "@shared/schema";
 import { UpdateTermsModal } from "@/components/update-terms-modal";
 import { OffboardingModal } from "@/components/offboarding-modal";
-import { FoldIntoAction, RehireAction } from "@/components/employee-rehire-actions";
+import { FoldIntoAction, OnboardAgainAction, PlannedEmploymentCard } from "@/components/employee-onboard-again-actions";
 import { IssueWarningModal } from "@/components/issue-warning-modal";
 import { EmployeeOnboardingStepper } from "@/components/employee-onboarding-stepper";
 import {
@@ -2714,6 +2714,8 @@ export default function EmployeeEditorPage() {
   });
 
   const activeContract = contracts?.find(c => c.status === "active");
+  // SCRUM-794: Onboard Again's draft starts from the template the latest contract used.
+  const latestTemplateId = contracts?.find(c => !c.archivedAt)?.templateId ?? null;
   const contractHistory = contracts?.filter(c => c.status !== "active") || [];
 
   const form = useForm<EmployeeFormData>({
@@ -3269,8 +3271,7 @@ export default function EmployeeEditorPage() {
                   </Badge>
                 );
               })()}
-              {/* SCRUM-794: each renders only for a caller holding its right. */}
-              {!isNew && employee && <RehireAction employee={employee} branches={branches} departments={departments} />}
+              {/* SCRUM-794: renders only for a caller holding its right. */}
               {!isNew && employee && <FoldIntoAction employee={employee} />}
             </div>
             <p className="text-muted-foreground">
@@ -3296,6 +3297,8 @@ export default function EmployeeEditorPage() {
                 <DollarSign className="mr-2 h-4 w-4" />
                 Update Terms
               </Button>
+              {/* SCRUM-794: as soon as the current contract has a last working day. */}
+              {employee && <OnboardAgainAction employee={employee} branches={branches} departments={departments} defaultTemplateId={latestTemplateId} />}
               <Button 
                 variant="outline"
                 className="border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950"
@@ -3317,6 +3320,10 @@ export default function EmployeeEditorPage() {
                 </Button>
               )}
             </>
+          )}
+          {/* SCRUM-794: a Left profile is onboarded again on the same profile. */}
+          {!isNew && employee && employee.status !== "active" && canEdit && (
+            <OnboardAgainAction employee={employee} branches={branches} departments={departments} defaultTemplateId={latestTemplateId} />
           )}
         </div>
       </div>
@@ -3341,6 +3348,9 @@ export default function EmployeeEditorPage() {
           )}
         </div>
       )}
+
+      {/* SCRUM-794: the Onboard Again employment planned on this profile. */}
+      {!isNew && employee && <PlannedEmploymentCard employee={employee} />}
 
       {/* Onboarding Progress Tracker */}
       {!isNew && employee && (

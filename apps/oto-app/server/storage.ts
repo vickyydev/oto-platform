@@ -316,6 +316,8 @@ import {
          */
         tenants,
         DEFAULT_TENANT_SLUG,
+        employeeEngagements,
+        type EmployeeEngagement,
 } from "@shared/schema";
 import { db } from "./db";
 import { employeeDynamicLeaveBalances, listTenantLeaveTypes } from "./leave-types";
@@ -1180,6 +1182,8 @@ export interface IStorage {
                 anomalies: number;
         }>;
         transitionLeavingToLeft(today: Date, tenantId?: string): Promise<number>;
+        // SCRUM-794: each named profile's planned Onboard Again employment.
+        getPlannedEngagements(employeeIds: string[], executor?: DbExecutor, tenantId?: string): Promise<Map<string, EmployeeEngagement>>;
 
         // ============================================
         // WEEK-BASED SCHEDULING (Planday-style)
@@ -7121,6 +7125,13 @@ export class DatabaseStorage implements IStorage {
         async transitionLeavingToLeft(today: Date, tenantId?: string): Promise<number> {
                 // One park group's leavers when a tenant is given; every park group's otherwise.
                 const inParkGroup = tenantId ? eq(employees.tenantId, tenantId) : undefined;
+                // SCRUM-794: a profile with an Onboard Again employment planned
+                // is not leaving the company: its login, status and the shifts
+                // already added from the planned start date stay, and the night
+                // batch starts the new employment on its start date instead.
+                const notOnboardingAgain = sql`not exists (
+                        select 1 from employee_engagements g
+                         where g.employee_id = "employees"."id" and g.status = 'planned')`;
 
                 // Delete future schedule assignments for employees transitioning to LEFT
                 await db.delete(scheduleAssignments).where(
@@ -7135,6 +7146,7 @@ export class DatabaseStorage implements IStorage {
                                                                 eq(employees.employmentState, "LEAVING"),
                                                                 lt(employees.lastWorkingDay, today),
                                                                 inParkGroup,
+                                                                notOnboardingAgain,
                                                         ),
                                                 ),
                                 ),
@@ -7157,6 +7169,7 @@ export class DatabaseStorage implements IStorage {
                                                                 eq(employees.employmentState, "LEAVING"),
                                                                 lt(employees.lastWorkingDay, today),
                                                                 inParkGroup,
+                                                                notOnboardingAgain,
                                                         ),
                                                 ),
                                 ),
@@ -7172,6 +7185,7 @@ export class DatabaseStorage implements IStorage {
                                         eq(employees.employmentState, "LEAVING"),
                                         lt(employees.lastWorkingDay, today),
                                         inParkGroup,
+                                        notOnboardingAgain,
                                 ),
                         )
                         .returning();
@@ -7187,14 +7201,38 @@ export class DatabaseStorage implements IStorage {
                                updated_at = now()
                           from (select distinct on (employee_id) employee_id, offboarding_type
                                   from employee_offboarding
+                                 where reonboarded_at is null
                                  order by employee_id, created_at desc) o
                          where o.employee_id = e.id
                            and e.status = 'active'
                            and e.employment_state = 'LEFT'
                            and e.last_working_day < (${today.toISOString()}::timestamptz at time zone 'UTC')
-                           ${tenantId ? sql`and e.tenant_id = ${tenantId}` : sql``}`);
+                           ${tenantId ? sql`and e.tenant_id = ${tenantId}` : sql``}
+                           and not exists (select 1 from employee_engagements g
+                                            where g.employee_id = e.id and g.status = 'planned')`);
 
                 return result.length;
+        }
+
+        async getPlannedEngagements(
+                employeeIds: string[],
+                executor: DbExecutor = db,
+                tenantId?: string,
+        ): Promise<Map<string, EmployeeEngagement>> {
+                const found = new Map<string, EmployeeEngagement>();
+                if (employeeIds.length === 0) return found;
+                const rows = await executor
+                        .select()
+                        .from(employeeEngagements)
+                        .where(
+                                and(
+                                        inArray(employeeEngagements.employeeId, employeeIds),
+                                        eq(employeeEngagements.status, "planned"),
+                                        tenantId ? eq(employeeEngagements.tenantId, tenantId) : undefined,
+                                ),
+                        );
+                for (const row of rows) found.set(row.employeeId, row);
+                return found;
         }
 
         // ============================================
