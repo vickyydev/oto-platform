@@ -9,33 +9,18 @@ import {
   beoPackageSnapshots,
   beoPackageSnapshotItems,
   beoEntertainmentSelections,
-  beoKitchenPlans,
   beoSetMenuTemplates,
   branches,
   coreEvents,
   updateBeoPackageSnapshotSchema,
 } from "@shared/schema";
-import { eq, and, asc, sql } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
 import { ZodError } from "zod";
+import { applyPackageSnapshot } from "./lib/packageSnapshot";
 
 /** A template field out of range is the caller's mistake, said as such rather than as a server fault. */
 const invalidTemplate = (res: Response, error: ZodError) =>
   res.status(400).json({ error: "Validation error", details: error.flatten() });
-
-/** The fields a package template copies onto a party's snapshot when it is applied (SCRUM-803). */
-const SNAPSHOT_COPIED_FIELDS = [
-  "kidsIncluded",
-  "adultsIncluded",
-  "socksIncluded",
-  "hours",
-  "priceWeekday",
-  "priceWeekend",
-  "extraChildWeekday",
-  "extraChildWeekend",
-  "extraAdultWeekday",
-  "extraAdultWeekend",
-  "slipsTime",
-] as const;
 
 export function registerBirthdayPackageRoutes(app: Express) {
   /**
@@ -393,73 +378,13 @@ export function registerBirthdayPackageRoutes(app: Express) {
         .where(and(eq(birthdayPackageTemplates.id, templateId), eq(birthdayPackageTemplates.tenantId, user.tenantId!)));
       if (!template) return res.status(404).json({ error: "Package template not found" });
 
-      const templateItems = await db.select().from(packageLineItemTemplates)
-        .where(eq(packageLineItemTemplates.packageTemplateId, templateId))
-        .orderBy(asc(packageLineItemTemplates.sortOrder));
+      // The copy, its lines and the kitchen plan's set menu as one write, as
+      // the BEO AI Fill's approval applies a package (server/lib/packageSnapshot.ts).
+      const { snapshot, items, setMenuTemplateId } = await db.transaction((tx) =>
+        applyPackageSnapshot(tx, { eventId, template }),
+      );
 
-      const [existingSnapshot] = await db.select().from(beoPackageSnapshots)
-        .where(eq(beoPackageSnapshots.eventId, eventId));
-      if (existingSnapshot) {
-        await db.delete(beoPackageSnapshotItems)
-          .where(eq(beoPackageSnapshotItems.snapshotId, existingSnapshot.id));
-        await db.delete(beoPackageSnapshots)
-          .where(eq(beoPackageSnapshots.id, existingSnapshot.id));
-      }
-
-      const [snapshot] = await db.insert(beoPackageSnapshots).values({
-        eventId,
-        templateId: template.id,
-        templateNameAtApply: template.name,
-        templateUpdatedAtAtApply: template.updatedAt,
-        packageName: template.name,
-        basePrice: template.basePrice,
-        includedSummary: template.includedSummary,
-        excludedSummary: template.excludedSummary,
-        ...(Object.fromEntries(SNAPSHOT_COPIED_FIELDS.map((field) => [field, template[field]])) as Pick<
-          typeof template,
-          (typeof SNAPSHOT_COPIED_FIELDS)[number]
-        >),
-      }).returning();
-
-      // The package's own set menu becomes the party's, unless the BEO's
-      // kitchen plan already names one (the set menu is chosen there; this only
-      // starts it). Under the kitchen plan's own lock, as every other writer.
-      if (template.setMenuTemplateId) {
-        const setMenuTemplateId = template.setMenuTemplateId;
-        await db.transaction(async (tx) => {
-          await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${eventId}))`);
-          const [kitchenPlan] = await tx.select({ id: beoKitchenPlans.id, setMenuTemplateId: beoKitchenPlans.setMenuTemplateId })
-            .from(beoKitchenPlans).where(eq(beoKitchenPlans.eventId, eventId));
-          if (!kitchenPlan) {
-            await tx.insert(beoKitchenPlans).values({ eventId, setMenuEnabled: true, setMenuTemplateId });
-          } else if (!kitchenPlan.setMenuTemplateId) {
-            await tx.update(beoKitchenPlans)
-              .set({ setMenuEnabled: true, setMenuTemplateId, updatedAt: new Date() })
-              .where(eq(beoKitchenPlans.id, kitchenPlan.id));
-          }
-        });
-      }
-
-      let items: any[] = [];
-      if (templateItems.length > 0) {
-        items = await db.insert(beoPackageSnapshotItems).values(
-          templateItems.map((item) => ({
-            snapshotId: snapshot.id,
-            sourceTemplateLineItemId: item.id,
-            category: item.category,
-            label: item.label,
-            description: item.description,
-            qty: item.qtyDefault,
-            unitLabel: item.unitLabel,
-            included: item.included,
-            unitPrice: item.defaultUnitPrice,
-            billable: item.billableByDefault,
-            sortOrder: item.sortOrder,
-          }))
-        ).returning();
-      }
-
-      res.status(201).json({ ...snapshot, items, setMenuTemplateId: template.setMenuTemplateId });
+      res.status(201).json({ ...snapshot, items, setMenuTemplateId });
     } catch (error) {
       next(error);
     }

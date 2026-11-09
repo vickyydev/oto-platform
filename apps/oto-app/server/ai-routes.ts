@@ -4,7 +4,7 @@ import { db } from "./db";
 import { branches, coreEvents } from "../shared/schema";
 import { and, eq } from "drizzle-orm";
 import { storage, type ActivityLogInput } from "./storage";
-import { canUserAccessBranch } from "./auth-middleware";
+import { canUserAccessBranch, requireManager } from "./auth-middleware";
 import { log } from "./lib/logger";
 import { aiComplete, aiConfigured, getAnthropic } from "./lib/anthropic";
 import {
@@ -31,6 +31,20 @@ import {
   type TeamProposals,
 } from "./lib/beoTeamProposals";
 import { readInboxConfirmation, type InboxRead } from "./lib/inboxConfirmation";
+import {
+  BEO_CONVERSATION_RULES,
+  beoCatalogueSystemBlock,
+  catalogueIsEmpty,
+  emptyCatalogue,
+  loadBeoCatalogue,
+  renderTranscript,
+  resolveCatalogueAnswer,
+  type BeoCatalogue,
+  type TranscriptRef,
+} from "./lib/beoCatalogueFill";
+import { approveBeoAiFill, sectionsHeld } from "./lib/beoAiApprove";
+import type { DbExecutor } from "./lib/packageSnapshot";
+import { BeoAiApproveBodySchema, type BeoAiFrom, type BeoAiProposal, type BeoAiReview } from "@shared/beoAiFill";
 
 interface ExtractEventRequest {
   notes_text: string;
@@ -69,7 +83,8 @@ export interface AiRouteDeps {
   /** The event, when it is the caller's park group's and at a park they may open; else null. */
   loadEvent: (req: Request, eventId: string) => Promise<BeoFillEvent | null>;
   teamCandidates: (event: BeoFillEvent) => Promise<TeamCandidates>;
-  recordActivity: (entry: ActivityLogInput) => Promise<unknown>;
+  /** An activity row; inside a transaction when one is given (SCRUM-815's approval). */
+  recordActivity: (entry: ActivityLogInput, executor?: DbExecutor) => Promise<unknown>;
   /** The inbox conversation's confirmation message, read on the platform as this person. */
   inboxConfirmation: (req: Request, conversationId: string) => Promise<InboxRead>;
   /**
@@ -79,6 +94,10 @@ export interface AiRouteDeps {
   parkPlace: (req: Request, event: BeoFillEvent | null) => Promise<ParkPlace>;
   /** The clock (a check fixes it). */
   now: () => Date;
+  /** SCRUM-815: the park's catalogue for the event's park, which the fill matches the conversation to. */
+  catalogue: (event: BeoFillEvent) => Promise<BeoCatalogue>;
+  /** SCRUM-815: after an approval is written, the BEO's timeline is generated again, as the BEO's own Save does. */
+  afterApprove: (eventId: string) => Promise<void>;
 }
 
 const PARKS_ZONE: ParkPlace = { name: null, timeZone: DEFAULT_PARK_TIME_ZONE };
@@ -168,11 +187,35 @@ export const defaultAiRouteDeps: AiRouteDeps = {
     return event;
   },
   teamCandidates: (event) => loadTeamCandidates(db, event),
-  recordActivity: (entry) => storage.createActivityLog(entry),
+  recordActivity: (entry, executor) => storage.createActivityLog(entry, executor),
   inboxConfirmation: readInboxConfirmation,
   parkPlace: defaultParkPlace,
   now: () => new Date(),
+  catalogue:(event) => loadBeoCatalogue(db, { tenantId: event.tenantId, branchId: event.branchId }),
+  afterApprove: async (eventId) => {
+    const { generateTimelineFromBeo } = await import("./beo-routes");
+    await generateTimelineFromBeo(eventId);
+  },
 };
+
+/** The run's schema with the catalogue section the model adds when it is handed the catalogue (read apart, leniently). */
+const BeoFillWithCatalogueSchema = BeoFillSchema.extend({ catalogue: z.unknown().optional() }) as unknown as z.ZodType<
+  BeoFill & { catalogue?: unknown },
+  z.ZodTypeDef,
+  unknown
+>;
+
+/** What the activity row says of a catalogue proposal: counts and sources, never the chat's words. */
+const catalogueCounts = (p: BeoAiProposal) => ({
+  package: p.package !== null,
+  addOns: p.addOns.length,
+  setMenu: p.setMenu !== null,
+  choices: p.setMenu?.choices.length ?? 0,
+  menuLines: p.menuLines.filter((l) => !l.notInMenu).length,
+  notInMenu: p.menuLines.filter((l) => l.notInMenu).length,
+  entertainment: p.entertainment.filter((e) => !e.notInCatalogue).length,
+  notInCatalogue: p.entertainment.filter((e) => e.notInCatalogue).length + p.otherLines.length,
+});
 
 /** The sections a fill gave, for the activity row: names of sections, never their contents. */
 const filledSections = (fill: BeoFill): string[] =>
@@ -194,20 +237,42 @@ export async function runBeoFill(
     existingData?: unknown;
     event: BeoFillEvent | null;
     source: { kind: "pasted" } | { kind: "inbox"; conversationId: string; messageId: string };
+    /**
+     * SCRUM-815: `text` is the whole conversation, numbered (`renderTranscript`):
+     * what each line number stands for, and whether older lines were left out.
+     */
+    conversation?: { refs: TranscriptRef[]; cut: boolean } | null;
+    /** SCRUM-815: the park's catalogue to match to; the answer then carries a checked proposal. */
+    catalogue?: BeoCatalogue | null;
+    /** Where a catalogue value is from when the model names no line (the ruling message, read alone). */
+    fallbackFrom?: BeoAiFrom;
   },
-): Promise<{ run: AiRun<BeoFill>; proposals: TeamProposals }> {
+): Promise<{ run: AiRun<BeoFill>; proposals: TeamProposals; proposal: BeoAiProposal | null }> {
   // SCRUM-814: the park's today ends the prompt, so a year-less or relative date reads against it.
   const place = await deps.parkPlace(req, input.event);
+  // SCRUM-815: the conversation's rules, and the catalogue with how to match it; today stays last.
+  const catalogue = input.catalogue && !catalogueIsEmpty(input.catalogue) ? input.catalogue : null;
+  const catalogueExtra = catalogue
+    ? beoCatalogueSystemBlock(catalogue, { conversation: !!input.conversation })
+    : input.conversation
+      ? BEO_CONVERSATION_RULES
+      : "";
   const run = await runAiHelper(
     { ...deps.ai, readSetting: (key) => deps.readSetting(req, key) },
     {
       helper: "beo_parsing",
-      schema: BeoFillSchema,
-      systemExtra: beoTodayLine(place, deps.now()),
+      schema: (catalogue ? BeoFillWithCatalogueSchema : BeoFillSchema) as typeof BeoFillWithCatalogueSchema,
+      systemExtra: catalogueExtra + beoTodayLine(place, deps.now()),
       user: beoParseUserMessage(input.text, input.existingData),
       inputChars: input.text.length,
     },
   );
+  let proposal: BeoAiProposal | null = null;
+  if (run.ok && catalogue) {
+    const { catalogue: answered, ...fill } = run.value as BeoFill & { catalogue?: unknown };
+    run.value = fill;
+    proposal = resolveCatalogueAnswer(answered, catalogue, input.conversation?.refs ?? [], input.fallbackFrom);
+  }
   const proposals =
     run.ok && input.event ? proposeTeam(run.value, await deps.teamCandidates(input.event)) : NO_TEAM_PROPOSALS;
   log().info(
@@ -215,7 +280,12 @@ export async function runBeoFill(
     "ai fill run",
   );
   try {
-    const from = input.source.kind === "inbox" ? "the inbox confirmation message" : "a pasted message";
+    const from =
+      input.source.kind === "inbox"
+        ? input.conversation
+          ? "the inbox conversation"
+          : "the inbox confirmation message"
+        : "a pasted message";
     const on = input.event ? ` for the BEO of "${input.event.title}"` : "";
     await deps.recordActivity({
       tenantId: input.event?.tenantId ?? req.userWithAccess?.tenantId ?? null,
@@ -237,13 +307,15 @@ export async function runBeoFill(
         inputChars: run.facts.inputChars,
         sections: run.ok ? filledSections(run.value) : [],
         team: proposalCounts(proposals),
+        ...(input.conversation ? { transcriptLines: input.conversation.refs.length, transcriptCut: input.conversation.cut } : {}),
+        ...(proposal ? { catalogue: catalogueCounts(proposal) } : {}),
       }),
     });
   } catch (error) {
     // The fill stands; a lost row is said in the log, without the text.
     log().warn({ err: (error as Error)?.message ?? String(error) }, "the AI fill's activity row was not written");
   }
-  return { run, proposals };
+  return { run, proposals, proposal };
 }
 
 export function registerAIRoutes(app: Express, requireAuth: any, overrides: Partial<AiRouteDeps> = {}) {
@@ -414,16 +486,42 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
       if (!message) return refuse("no_confirmation", event.id);
       if (message.body.length > AI_TEXT_MAX) return refuse("too_long", event.id);
 
-      const { run, proposals } = await runBeoFill(deps, req, {
-        text: message.body,
+      // SCRUM-815: the whole conversation (the platform's transcript, the ruling
+      // message marked in it), matched to the park's catalogue. A platform that
+      // sends no transcript, or a park with no catalogue, is read as before.
+      const ruling = { id: message.id, body: message.body, at: message.sentAt ?? message.createdAt };
+      const catalogue = await deps.catalogue(event).catch((error: unknown) => {
+        // The fill still runs, as before the catalogue: the review is the free-text preview.
+        log().warn({ err: (error as Error)?.message ?? String(error), eventId: event.id }, "the park's catalogue was not read for the AI fill");
+        return emptyCatalogue();
+      });
+      const transcript = confirmation.transcript ?? [];
+      const transcriptCut = confirmation.transcriptCut ?? false;
+      const conversation = transcript.length > 0 ? renderTranscript(transcript, ruling, catalogue.place.timeZone) : null;
+      const { run, proposals, proposal } = await runBeoFill(deps, req, {
+        text: conversation ? conversation.text : message.body,
         existingData,
         event,
         source: { kind: "inbox", conversationId: confirmation.conversationId, messageId: message.id },
+        conversation: conversation ? { refs: conversation.refs, cut: conversation.cut || transcriptCut } : null,
+        catalogue,
+        fallbackFrom: conversation ? undefined : { source: "team", at: ruling.at, line: null },
       });
       if (!run.ok) return res.status(run.status).json({ message: run.message, reason: run.reason });
       // Final Message to Parent: this very message while the form's is empty;
       // a person's own one is kept, and the model's text for it never reaches the screen.
       const { fill, fillsFinalMessage } = inboxFillAnswer(run.value, message.body, existingData);
+      // SCRUM-815: the proposed BEO for the review in edit mode; nothing is written until it is approved.
+      const { place: _place, ...catalogueView } = catalogue;
+      const review: BeoAiReview | null = proposal
+        ? {
+            proposal,
+            catalogue: catalogueView,
+            finalMessage: fillsFinalMessage ? message.body : null,
+            transcript: { lines: conversation?.refs.length ?? 1, cut: conversation ? conversation.cut || transcriptCut : false },
+            replaces: await sectionsHeld(db, event.id),
+          }
+        : null;
       res.setHeader("Cache-Control", "no-store");
       res.json({
         source: {
@@ -436,9 +534,48 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
           fillsFinalMessage,
         },
         fill: { ...fill, proposals },
+        ...(review ? { review } : {}),
       });
     } catch (error: any) {
       log().warn({ err: error?.message ?? String(error) }, "the AI fill from the inbox failed");
+      next(error);
+    }
+  });
+
+  /**
+   * SCRUM-815 — "Approve and create": the BEO the AI Fill proposed from the
+   * conversation, as the reviewer left it in the review's edit mode, written
+   * at once in one transaction (server/lib/beoAiApprove.ts): the package with
+   * its add-ons, the kitchen plan's set menu, choices and extra dishes, the
+   * bar plan's lines, the entertainment, the event's counts and times, the
+   * deposit, and one activity row with the sources and the catalogue items
+   * matched. A manager's write, on an event the caller may open, as the BEO's
+   * own Save is; every id is checked again against the park's catalogue.
+   */
+  app.post("/api/events/:eventId/beo/ai-fill/approve", requireAuth, requireManager, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const body = BeoAiApproveBodySchema.safeParse(req.body ?? {});
+      if (!body.success) return res.status(400).json({ message: "The reviewed BEO is not in the shape the approval takes. Open the review again." });
+      const event = await deps.loadEvent(req, req.params.eventId!);
+      if (!event) return res.status(404).json({ message: "Event not found" });
+      const outcome = await approveBeoAiFill(db, {
+        event,
+        userId: req.user?.id ?? null,
+        body: body.data,
+        now: new Date(),
+        recordActivity: (entry, executor) => deps.recordActivity(entry, executor),
+      });
+      if (!outcome.ok) return res.status(outcome.status).json({ message: outcome.message });
+      try {
+        await deps.afterApprove(event.id);
+      } catch (error) {
+        // The BEO stands; the timeline catches up at the next Save.
+        log().warn({ err: (error as Error)?.message ?? String(error), eventId: event.id }, "the BEO timeline was not generated after an AI fill approval");
+      }
+      log().info({ eventId: event.id, written: outcome.written }, "ai fill approved");
+      res.json({ written: outcome.written });
+    } catch (error: any) {
+      log().warn({ err: error?.message ?? String(error) }, "the AI fill approval failed");
       next(error);
     }
   });

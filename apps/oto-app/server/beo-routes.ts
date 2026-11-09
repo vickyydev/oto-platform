@@ -40,6 +40,7 @@ import { OBJECT_STORAGE } from "./config/env";
 import { uploadToObjectStorage } from "./file-storage";
 import { s3PresignedGet } from "./storage/s3Storage";
 import { onStaff } from "./lib/payOnlyAccess";
+import { resolveSetMenuLines } from "./lib/setMenuResolve";
 
 type KitchenMenuBucket = "kids" | "adults";
 type KitchenMenuLine = { source?: string; [key: string]: unknown };
@@ -132,7 +133,7 @@ async function lockKitchenPlanMutation(tx: any, eventId: string): Promise<void> 
   await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${eventId}))`);
 }
 
-async function generateTimelineFromBeo(eventId: string): Promise<void> {
+export async function generateTimelineFromBeo(eventId: string): Promise<void> {
   const [event] = await db.select().from(coreEvents)
     .where(eq(coreEvents.id, eventId));
 
@@ -2880,43 +2881,9 @@ export function registerBeoRoutes(app: Express) {
         }
       }
 
-      // Build resolved menu items from template + validated selections. A set
-      // menu that names its portions (SCRUM-803: "French Fries x3") gives the
-      // kitchen plan that quantity; one that names none stays at 1.
-      const portionsOf = (item: any): number =>
-        Number.isInteger(item.qty) && item.qty > 0 ? item.qty : 1;
-      const resolvedItems: any[] = [];
-      for (const item of templateItems) {
-        if (item.type === "always_included") {
-          resolvedItems.push({
-            id: `set_${item.id}`,
-            itemName: item.label,
-            quantity: portionsOf(item),
-            notes: "",
-            included: true,
-            price: 0,
-            source: "set_menu",
-            groupId: item.id,
-          });
-        } else if (item.type === "choice_group") {
-          const groupSel = selections.find((s: any) => s.groupId === item.id);
-          const chosen: string[] = groupSel?.chosenOptions || [];
-          for (const opt of chosen) {
-            resolvedItems.push({
-              id: `set_${item.id}_${opt.replace(/\s+/g, "_")}`,
-              itemName: opt,
-              // The group's portions go to its one choice; several choices split
-              // them in a way the menu does not say, so each stays at 1.
-              quantity: chosen.length === 1 ? portionsOf(item) : 1,
-              notes: `(${item.label})`,
-              included: true,
-              price: 0,
-              source: "set_menu",
-              groupId: item.id,
-            });
-          }
-        }
-      }
+      // Build resolved menu items from template + validated selections, as the
+      // BEO AI Fill's approval does (server/lib/setMenuResolve.ts).
+      const resolvedItems: KitchenMenuLine[] = resolveSetMenuLines(templateItems, selections);
 
       const submission = await db.transaction(async (tx) => {
         await lockKitchenPlanMutation(tx, sel.eventId);

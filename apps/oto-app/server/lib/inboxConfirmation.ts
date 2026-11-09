@@ -31,8 +31,26 @@ const ConfirmationSchema = z.object({
     })
     .nullable(),
   scanned: z.number().int().min(0),
+  /**
+   * SCRUM-815: the conversation itself, oldest first — the family's lines
+   * (`customer`) and the team's (`staff`). A platform answering without it
+   * (older than SCRUM-815) is read as no transcript: the fill reads the ruling
+   * message alone, as before.
+   */
+  transcript: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        author: z.enum(["customer", "staff"]),
+        at: z.string(),
+        text: z.string(),
+      }),
+    )
+    .default([]),
+  transcriptCut: z.boolean().default(false),
 });
 export type InboxConfirmation = z.infer<typeof ConfirmationSchema>;
+export type InboxTranscriptLine = InboxConfirmation["transcript"][number];
 
 export type InboxReadRefusal =
   | "no_platform_session"
