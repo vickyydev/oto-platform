@@ -1,0 +1,857 @@
+{
+  "proof": "Staging proof for SCRUM-751, SCRUM-752 and SCRUM-777 (OTO App)",
+  "environment": {
+    "app": "https://oto-app-staging.onrender.com",
+    "launcher": "https://oto-launcher-staging.onrender.com",
+    "expectedCommit": "6fe36b12bf286214844299009e0e013e89742b87",
+    "liveCommitReadFromApp": "6fe36b12bf286214844299009e0e013e89742b87",
+    "liveCommitAtFinalReadBack": "6fe36b12bf286214844299009e0e013e89742b87",
+    "commitSource": "GET /api/qa-reports/config (the app reports RENDER_GIT_COMMIT)",
+    "deployLive": "2026-11-09 13:51 Bangkok (as briefed)",
+    "browser": "headless Chromium (@playwright/test from apps/pos), 1440x900, timezone Asia/Bangkok, locale en-GB",
+    "account": {
+      "how": "launcher sign-in with STAGING_ADMIN_PHONE / STAGING_ADMIN_PASSWORD, then POST /api/auth/handoff {app:\"oto_app\"}",
+      "otoAppUserId": "01a1bea3-1105-7bfd-92b8-301d34f03f18",
+      "otoAppRole": "global_admin",
+      "nameRecorded": false
+    },
+    "branch": {
+      "id": "f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+      "name": "Oto Play Park, Robinson Chalong",
+      "chosenThrough": "the header branch switch (branch-selector-trigger, then the branch option)"
+    }
+  },
+  "window": {
+    "scrum752CheckedAt": "2026-11-09T07:03:29.395Z",
+    "firstWrite": "2026-11-09T07:05:24.033Z",
+    "lastWrite": "2026-11-09T07:09:07.132Z",
+    "finalReadBack": "2026-11-09T07:09:41.062Z"
+  },
+  "results": {
+    "SCRUM-752": {
+      "pass": true,
+      "checkedAt": "2026-11-09T07:03:29.395Z",
+      "writes": "none",
+      "layouts": [
+        {
+          "layout": "ops",
+          "path": "/ops",
+          "accountMenuItems": [
+            "Notifications",
+            "My Schedule",
+            "My Account",
+            "Vault",
+            "Dark Mode",
+            "Logout"
+          ],
+          "startRecordingItem": false,
+          "stopRecordingItem": false,
+          "sessionReplayMenuElementInPage": false,
+          "reportIssueVisible": true,
+          "reportIssueText": "Report issue",
+          "reportIssueBox": {
+            "x": 1279,
+            "y": 782,
+            "w": 137,
+            "h": 38
+          },
+          "reportIssueBottomRight": true,
+          "pictures": [
+            "752-ops-account-menu.png",
+            "752-ops-report-issue-button.png"
+          ],
+          "pass": true
+        },
+        {
+          "layout": "core",
+          "path": "/core/today",
+          "accountMenuItems": [
+            "Notifications",
+            "My Schedule",
+            "My Account",
+            "Vault",
+            "Dark Mode",
+            "Logout"
+          ],
+          "startRecordingItem": false,
+          "stopRecordingItem": false,
+          "sessionReplayMenuElementInPage": false,
+          "reportIssueVisible": true,
+          "reportIssueText": "Report issue",
+          "reportIssueBox": {
+            "x": 1279,
+            "y": 782,
+            "w": 137,
+            "h": 38
+          },
+          "reportIssueBottomRight": true,
+          "pictures": [
+            "752-core-account-menu.png",
+            "752-core-report-issue-button.png"
+          ],
+          "pass": true
+        },
+        {
+          "layout": "events",
+          "path": "/events",
+          "accountMenuItems": [
+            "Notifications",
+            "My Schedule",
+            "My Account",
+            "Vault",
+            "Dark Mode",
+            "Logout"
+          ],
+          "startRecordingItem": false,
+          "stopRecordingItem": false,
+          "sessionReplayMenuElementInPage": false,
+          "reportIssueVisible": true,
+          "reportIssueText": "Report issue",
+          "reportIssueBox": {
+            "x": 1279,
+            "y": 782,
+            "w": 137,
+            "h": 38
+          },
+          "reportIssueBottomRight": true,
+          "pictures": [
+            "752-events-account-menu.png",
+            "752-events-report-issue-button.png"
+          ],
+          "pass": true
+        }
+      ]
+    },
+    "SCRUM-751": {
+      "pass": true,
+      "checklist": {
+        "id": "f4736996-c3c5-4465-b6da-1aedb035f687",
+        "name": "ZZ TEST 751 Overdue 20261109-1405",
+        "recurrence": "daily",
+        "dueTime": "00:30",
+        "branchId": "f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+        "assignedTo": "Everyone (no person, role or department named)",
+        "items": [
+          {
+            "id": "028e1030-6f5e-4dc9-9207-b92e8aa26d80",
+            "title": "ZZ TEST item 1"
+          },
+          {
+            "id": "3fcd8ae8-2280-46aa-ab3d-4135581563b7",
+            "title": "ZZ TEST item 2"
+          },
+          {
+            "id": "97af4a39-cfbd-4599-886e-5c3dd1978fd2",
+            "title": "ZZ TEST item 3"
+          }
+        ]
+      },
+      "run": {
+        "id": "57040331-5590-4cea-8a4c-11357065ed6a",
+        "writtenBy": "the Ops board (GET /api/checklist-runs/ops materialises today's run)",
+        "opsColumnWhenOpened": "checklist-column-pending",
+        "statusWhenOpened": "pending",
+        "runItems": [
+          {
+            "id": "2ddc7393-9d3c-4d96-bf01-3a973ca4c594",
+            "title": "ZZ TEST item 1"
+          },
+          {
+            "id": "bd7ba120-bf33-4629-953e-78bacee88bb5",
+            "title": "ZZ TEST item 2"
+          },
+          {
+            "id": "e21926f6-ddc9-4634-a920-83124c0b0ca4",
+            "title": "ZZ TEST item 3"
+          }
+        ]
+      },
+      "inOps": {
+        "ticked": 2,
+        "after": {
+          "status": "in_progress",
+          "done": 2,
+          "total": 3,
+          "dueAt": "2026-11-08T17:30:00.000Z",
+          "startedAt": "2026-11-09T07:05:27.348Z"
+        }
+      },
+      "onToday": {
+        "apiRowBefore": {
+          "computedStatus": "in_progress",
+          "todayRun": {
+            "id": "57040331-5590-4cea-8a4c-11357065ed6a",
+            "status": "in_progress",
+            "dueAt": "2026-11-08T17:30:00.000Z"
+          },
+          "scheduledTime": "00:30"
+        },
+        "overdue": {
+          "now": "2026-11-09T07:05:30.403Z",
+          "dueAt": "2026-11-08T17:30:00.000Z",
+          "overdue": true
+        },
+        "buttons": {
+          "continue": true,
+          "view": false,
+          "start": false,
+          "continueLink": "/core/checklist/57040331-5590-4cea-8a4c-11357065ed6a",
+          "overdueRedBorder": true
+        },
+        "cardText": "ZZ TEST 751 Overdue 20261109-1405 In Progress 00:30 Everyone ZZ TEST staging proof for SCRUM-751; deleted after the proof. Continue",
+        "continueOpened": "/core/checklist/57040331-5590-4cea-8a4c-11357065ed6a"
+      },
+      "completedFromToday": {
+        "thirdItemTicked": true,
+        "runPatch": 200,
+        "toast": "Checklist completed! Great job completing this checklist.",
+        "cardLeftToday": true,
+        "apiRowAfter": {
+          "computedStatus": "completed",
+          "todayRun": {
+            "id": "57040331-5590-4cea-8a4c-11357065ed6a",
+            "status": "completed",
+            "dueAt": "2026-11-08T17:30:00.000Z"
+          },
+          "scheduledTime": "00:30"
+        },
+        "run": {
+          "status": "completed",
+          "done": 3,
+          "total": 3,
+          "completedAt": "2026-11-09T07:05:34.115Z"
+        }
+      },
+      "cleanup": {
+        "delete": "DELETE /api/checklists/templates/f4736996-c3c5-4465-b6da-1aedb035f687 -> 200 {success:true} (its run and run items go with it)",
+        "readBack": {
+          "template": 404,
+          "run": 404,
+          "onToday": false,
+          "zzOnToday": 0
+        },
+        "finalReadBack": {
+          "templateRead": 404,
+          "runRead": 404,
+          "zz751InTemplateList": 0,
+          "zz751OnTodayRC": 0
+        }
+      }
+    },
+    "SCRUM-777": {
+      "pass": true,
+      "week": {
+        "start": "2027-03-01",
+        "end": "2027-03-07",
+        "pageLabel": "1 Mar - 7 Mar 2027"
+      },
+      "step1_weekEmptyBefore": {
+        "planId": null,
+        "assignments": 0,
+        "timeOff": 0,
+        "dutyBlocks": 0,
+        "breaks": 0
+      },
+      "step2_applyTemplate": {
+        "how": "scheduling page on 1 Mar - 7 Mar 2027 -> Templates menu -> Apply Dept Template -> the branch's only template -> Preview -> Apply Template",
+        "templateId": "49846cf7-2868-404e-b914-e86c04dc7ff9",
+        "templateNameRecorded": false,
+        "templateNameNote": "the template is named after a staff member, so its name is not recorded here or pictured",
+        "preview": {
+          "status": 200,
+          "rowsToAdd": 0,
+          "rowsAlreadyExist": 1,
+          "assignmentsToApply": 5,
+          "timeOffToApply": 4
+        },
+        "answer": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "rowsAdded": 0,
+            "rowsSkipped": 1,
+            "assignmentsApplied": 5,
+            "timeOffApplied": 4
+          }
+        },
+        "toast": "Template applied 1 already existed, 5 assignments applied, 4 days off applied.",
+        "historyEntry": {
+          "id": "5268ea09-3cfe-4f5f-87b9-e4ae0090fef5",
+          "action": "apply_template_additive",
+          "createdAt": "2026-11-09T07:08:07.817Z",
+          "hasChangeSet": true,
+          "hasSnapshot": true,
+          "description": "Applied template (additive) to week 2027-03-01. Rows added: 0, Rows skipped: 1, Assignments: 5, Time-off: 4",
+          "weekPlanId": "cca2aa0b-d10a-4666-9216-d3613a00af21"
+        },
+        "weekAfter": {
+          "planId": "cca2aa0b-d10a-4666-9216-d3613a00af21",
+          "shifts": [
+            {
+              "id": "65b28dea-3ae4-4bbc-8b7b-91d236beed69",
+              "shiftRowId": "de8637d1-c54c-4bf8-90d4-8187de47a64f",
+              "shiftDate": "2027-03-02",
+              "employeeId": "4cbad2a5-991e-4626-8e13-d34d2f05eb0d",
+              "weekPlanId": "cca2aa0b-d10a-4666-9216-d3613a00af21"
+            },
+            {
+              "id": "34f29df4-b553-4487-88d3-995e39308141",
+              "shiftRowId": "de8637d1-c54c-4bf8-90d4-8187de47a64f",
+              "shiftDate": "2027-03-03",
+              "employeeId": "4cbad2a5-991e-4626-8e13-d34d2f05eb0d",
+              "weekPlanId": "cca2aa0b-d10a-4666-9216-d3613a00af21"
+            },
+            {
+              "id": "5ee26430-c86f-45fd-a3cb-01767976303e",
+              "shiftRowId": "de8637d1-c54c-4bf8-90d4-8187de47a64f",
+              "shiftDate": "2027-03-04",
+              "employeeId": "4cbad2a5-991e-4626-8e13-d34d2f05eb0d",
+              "weekPlanId": "cca2aa0b-d10a-4666-9216-d3613a00af21"
+            },
+            {
+              "id": "afa9f64e-03c3-4608-ba20-fc2cc36d8586",
+              "shiftRowId": "de8637d1-c54c-4bf8-90d4-8187de47a64f",
+              "shiftDate": "2027-03-05",
+              "employeeId": "4cbad2a5-991e-4626-8e13-d34d2f05eb0d",
+              "weekPlanId": "cca2aa0b-d10a-4666-9216-d3613a00af21"
+            },
+            {
+              "id": "1c229237-e39c-4a50-845d-a966f8424bb6",
+              "shiftRowId": "de8637d1-c54c-4bf8-90d4-8187de47a64f",
+              "shiftDate": "2027-03-06",
+              "employeeId": "4cbad2a5-991e-4626-8e13-d34d2f05eb0d",
+              "weekPlanId": "cca2aa0b-d10a-4666-9216-d3613a00af21"
+            }
+          ],
+          "daysOff": [
+            {
+              "id": "5b534327-5f24-4fb3-821b-9fb0b3ecf56f",
+              "type": "CHANGE_DAY_OFF",
+              "employeeId": "4cbad2a5-991e-4626-8e13-d34d2f05eb0d",
+              "start": "2027-03-07"
+            },
+            {
+              "id": "7e589178-6971-4cf6-a9fa-483f0926f4bc",
+              "type": "CHANGE_DAY_OFF",
+              "employeeId": "77c277ba-ba91-4771-8d0c-80b0518bf51e",
+              "start": "2027-03-02"
+            },
+            {
+              "id": "2e18583f-499a-48f8-9272-3e74196e9a02",
+              "type": "CHANGE_DAY_OFF",
+              "employeeId": "4cbad2a5-991e-4626-8e13-d34d2f05eb0d",
+              "start": "2027-03-01"
+            },
+            {
+              "id": "03d45cde-7b74-4086-90dc-52db64fc042f",
+              "type": "CHANGE_DAY_OFF",
+              "employeeId": "77c277ba-ba91-4771-8d0c-80b0518bf51e",
+              "start": "2027-03-01"
+            }
+          ],
+          "dutyBlocks": 0
+        }
+      },
+      "step3_shiftByHand": {
+        "id": "0224fdde-8ee1-41d1-bd2b-a9492bdb5fc9",
+        "shiftRowId": "de8637d1-c54c-4bf8-90d4-8187de47a64f",
+        "shiftDate": "2027-03-03",
+        "employeeId": "77c277ba-ba91-4771-8d0c-80b0518bf51e",
+        "employeeIsZzTest": false,
+        "onTemplateRow": true,
+        "how": "POST /api/schedule/assignments (the route the schedule grid uses), from the signed-in browser session"
+      },
+      "step4_templateShiftChanged": {
+        "id": "5ee26430-c86f-45fd-a3cb-01767976303e",
+        "shiftRowId": "de8637d1-c54c-4bf8-90d4-8187de47a64f",
+        "shiftDate": "2027-03-04",
+        "fromEmployeeId": "4cbad2a5-991e-4626-8e13-d34d2f05eb0d",
+        "toEmployeeId": "77c277ba-ba91-4771-8d0c-80b0518bf51e",
+        "toIsZzTest": false,
+        "toHandAddedPerson": true,
+        "how": "PATCH /api/schedule/assignments/:id/reassign (the route the grid uses), from the signed-in browser session",
+        "note": "Reassigned to the hand-added person: no third person is eligible on that row."
+      },
+      "weekBeforeUndo": {
+        "shifts": [
+          {
+            "id": "65b28dea-3ae4-4bbc-8b7b-91d236beed69",
+            "shiftRowId": "de8637d1-c54c-4bf8-90d4-8187de47a64f",
+            "shiftDate": "2027-03-02",
+            "employeeId": "4cbad2a5-991e-4626-8e13-d34d2f05eb0d",
+            "weekPlanId": "cca2aa0b-d10a-4666-9216-d3613a00af21"
+          },
+          {
+            "id": "34f29df4-b553-4487-88d3-995e39308141",
+            "shiftRowId": "de8637d1-c54c-4bf8-90d4-8187de47a64f",
+            "shiftDate": "2027-03-03",
+            "employeeId": "4cbad2a5-991e-4626-8e13-d34d2f05eb0d",
+            "weekPlanId": "cca2aa0b-d10a-4666-9216-d3613a00af21"
+          },
+          {
+            "id": "afa9f64e-03c3-4608-ba20-fc2cc36d8586",
+            "shiftRowId": "de8637d1-c54c-4bf8-90d4-8187de47a64f",
+            "shiftDate": "2027-03-05",
+            "employeeId": "4cbad2a5-991e-4626-8e13-d34d2f05eb0d",
+            "weekPlanId": "cca2aa0b-d10a-4666-9216-d3613a00af21"
+          },
+          {
+            "id": "1c229237-e39c-4a50-845d-a966f8424bb6",
+            "shiftRowId": "de8637d1-c54c-4bf8-90d4-8187de47a64f",
+            "shiftDate": "2027-03-06",
+            "employeeId": "4cbad2a5-991e-4626-8e13-d34d2f05eb0d",
+            "weekPlanId": "cca2aa0b-d10a-4666-9216-d3613a00af21"
+          },
+          {
+            "id": "0224fdde-8ee1-41d1-bd2b-a9492bdb5fc9",
+            "shiftRowId": "de8637d1-c54c-4bf8-90d4-8187de47a64f",
+            "shiftDate": "2027-03-03",
+            "employeeId": "77c277ba-ba91-4771-8d0c-80b0518bf51e",
+            "weekPlanId": "cca2aa0b-d10a-4666-9216-d3613a00af21"
+          },
+          {
+            "id": "5ee26430-c86f-45fd-a3cb-01767976303e",
+            "shiftRowId": "de8637d1-c54c-4bf8-90d4-8187de47a64f",
+            "shiftDate": "2027-03-04",
+            "employeeId": "77c277ba-ba91-4771-8d0c-80b0518bf51e",
+            "weekPlanId": "cca2aa0b-d10a-4666-9216-d3613a00af21"
+          }
+        ],
+        "daysOff": 4,
+        "breaks": 3
+      },
+      "step5_history": {
+        "templateEntry": {
+          "id": "5268ea09-3cfe-4f5f-87b9-e4ae0090fef5",
+          "undoButton": true,
+          "restoreButton": true
+        },
+        "olderEntryWithoutChangeSet": {
+          "id": "74e83735-7985-483e-b01a-b76c492b598a",
+          "undo": false,
+          "restore": true,
+          "createdAt": "2026-06-23T09:07:13.989Z"
+        },
+        "confirmationText": "Undo this action? \"Template Applied (Added Only)\" on 9 Nov 2026 at 2:08 PM by [the signed-in admin]. Undo reverses only what this action did. Shifts added or changed by anyone since are kept. Restore puts the whole schedule back to how it was before this action. Cancel Undo this action Close",
+        "undoAnswer": {
+          "status": 200,
+          "body": {
+            "undoneCreated": 8,
+            "restoredDeleted": 0,
+            "changedBack": 0,
+            "skippedCount": 1,
+            "skipped": [
+              {
+                "kind": "assignments",
+                "id": "5ee26430-c86f-45fd-a3cb-01767976303e",
+                "reason": "changed since"
+              }
+            ],
+            "nothingUndone": false,
+            "message": "Undone: 8 removed, 0 put back, 0 changed back, 1 left as they are."
+          }
+        },
+        "toast": "Action undone 8 removed, 0 put back, 1 left as they are (1 changed since).",
+        "newEntry": {
+          "id": "2c10ad90-a0c2-497c-b159-369612079efa",
+          "action": "undo_action",
+          "createdAt": "2026-11-09T07:09:03.853Z",
+          "hasChangeSet": true,
+          "hasSnapshot": false,
+          "description": "Undid the action of 2026-11-09 07:08 UTC (Applied template (additive) to week 2027-03-01. Rows added: 0, Rows skipped: 1, Assignments: 5, Time-off: 4): 8 removed, 0 put back, 0 changed back, 1 left as they are."
+        },
+        "historyTopAfterUndo": [
+          {
+            "id": "2c10ad90-a0c2-497c-b159-369612079efa",
+            "action": "undo_action",
+            "createdAt": "2026-11-09T07:09:03.853Z",
+            "hasChangeSet": true
+          },
+          {
+            "id": "5268ea09-3cfe-4f5f-87b9-e4ae0090fef5",
+            "action": "apply_template_additive",
+            "createdAt": "2026-11-09T07:08:07.817Z",
+            "hasChangeSet": true
+          },
+          {
+            "id": "74e83735-7985-483e-b01a-b76c492b598a",
+            "action": "apply_template_additive",
+            "createdAt": "2026-06-23T09:07:13.989Z",
+            "hasChangeSet": false
+          }
+        ]
+      },
+      "step6_weekAfterUndo": {
+        "shifts": [
+          {
+            "id": "0224fdde-8ee1-41d1-bd2b-a9492bdb5fc9",
+            "shiftRowId": "de8637d1-c54c-4bf8-90d4-8187de47a64f",
+            "shiftDate": "2027-03-03",
+            "employeeId": "77c277ba-ba91-4771-8d0c-80b0518bf51e",
+            "weekPlanId": "cca2aa0b-d10a-4666-9216-d3613a00af21"
+          },
+          {
+            "id": "5ee26430-c86f-45fd-a3cb-01767976303e",
+            "shiftRowId": "de8637d1-c54c-4bf8-90d4-8187de47a64f",
+            "shiftDate": "2027-03-04",
+            "employeeId": "77c277ba-ba91-4771-8d0c-80b0518bf51e",
+            "weekPlanId": "cca2aa0b-d10a-4666-9216-d3613a00af21"
+          }
+        ],
+        "daysOff": 0,
+        "breaks": 2,
+        "checks": {
+          "left": [
+            "0224fdde-8ee1-41d1-bd2b-a9492bdb5fc9",
+            "5ee26430-c86f-45fd-a3cb-01767976303e"
+          ],
+          "expected": [
+            "0224fdde-8ee1-41d1-bd2b-a9492bdb5fc9",
+            "5ee26430-c86f-45fd-a3cb-01767976303e"
+          ],
+          "handShiftStays": true,
+          "changedShiftStays": true,
+          "untouchedTemplateShiftsGone": true,
+          "changedShiftStillReassigned": true,
+          "templateDaysOffGone": true
+        }
+      },
+      "step7_cleanup": {
+        "shiftsDeleted": {
+          "removals": [
+            {
+              "id": "0224fdde-8ee1-41d1-bd2b-a9492bdb5fc9",
+              "status": 204
+            },
+            {
+              "id": "5ee26430-c86f-45fd-a3cb-01767976303e",
+              "status": 204
+            }
+          ],
+          "weekAfter": {
+            "planId": "cca2aa0b-d10a-4666-9216-d3613a00af21",
+            "assignments": 0,
+            "breaks": 0,
+            "timeOff": 0,
+            "dutyBlocks": 0
+          }
+        },
+        "weekPlanDeleted": {
+          "planId": "cca2aa0b-d10a-4666-9216-d3613a00af21",
+          "status": 204
+        },
+        "weekFinal": {
+          "planId": null,
+          "assignments": 0,
+          "timeOff": 0,
+          "dutyBlocks": 0,
+          "breaks": 0
+        },
+        "finalReadBack": {
+          "status": 200,
+          "planId": null,
+          "assignments": 0,
+          "breaks": 0,
+          "timeOff": 0,
+          "dutyBlocks": 0,
+          "shiftRowsAtBranch": 20
+        }
+      }
+    }
+  },
+  "writes": [
+    {
+      "at": "2026-11-09T07:05:24.033Z",
+      "step": "751 create checklist",
+      "request": "POST /api/checklists/templates",
+      "status": 201,
+      "id": "f4736996-c3c5-4465-b6da-1aedb035f687"
+    },
+    {
+      "at": "2026-11-09T07:05:27.143Z",
+      "step": "751 tick item in Ops",
+      "request": "PATCH /api/checklist-run-items/2ddc7393-9d3c-4d96-bf01-3a973ca4c594",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T07:05:27.950Z",
+      "step": "751 tick item in Ops",
+      "request": "PATCH /api/checklist-run-items/bd7ba120-bf33-4629-953e-78bacee88bb5",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T07:05:33.828Z",
+      "step": "751 tick third item from Today",
+      "request": "PATCH /api/checklist-run-items/e21926f6-ddc9-4634-a920-83124c0b0ca4",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T07:05:33.926Z",
+      "step": "751 run completed (auto, by the run page)",
+      "request": "PATCH /api/checklist-runs/57040331-5590-4cea-8a4c-11357065ed6a",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T07:05:38.539Z",
+      "step": "751 delete checklist",
+      "request": "DELETE /api/checklists/templates/f4736996-c3c5-4465-b6da-1aedb035f687",
+      "status": 200,
+      "answer": {
+        "success": true
+      }
+    },
+    {
+      "at": "2026-11-09T07:08:07.633Z",
+      "step": "777 apply template (Apply Template dialog)",
+      "request": "POST /api/schedule/templates/49846cf7-2868-404e-b914-e86c04dc7ff9/apply-safe",
+      "status": 200,
+      "answer": {
+        "success": true,
+        "rowsAdded": 0,
+        "rowsSkipped": 1,
+        "assignmentsApplied": 5,
+        "timeOffApplied": 4
+      }
+    },
+    {
+      "at": "2026-11-09T07:08:09.528Z",
+      "step": "777 add a shift by hand",
+      "request": "POST /api/schedule/assignments",
+      "status": 201,
+      "id": "0224fdde-8ee1-41d1-bd2b-a9492bdb5fc9"
+    },
+    {
+      "at": "2026-11-09T07:08:59.743Z",
+      "step": "777 reassign a template shift",
+      "request": "PATCH /api/schedule/assignments/5ee26430-c86f-45fd-a3cb-01767976303e/reassign",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T07:09:03.802Z",
+      "step": "777 undo the template entry (Undo this action)",
+      "request": "POST /api/schedule/audit-log/5268ea09-3cfe-4f5f-87b9-e4ae0090fef5/undo",
+      "status": 200,
+      "answer": {
+        "undoneCreated": 8,
+        "restoredDeleted": 0,
+        "changedBack": 0,
+        "skippedCount": 1,
+        "skipped": [
+          {
+            "kind": "assignments",
+            "id": "5ee26430-c86f-45fd-a3cb-01767976303e",
+            "reason": "changed since"
+          }
+        ],
+        "nothingUndone": false,
+        "message": "Undone: 8 removed, 0 put back, 0 changed back, 1 left as they are."
+      }
+    },
+    {
+      "at": "2026-11-09T07:09:06.232Z",
+      "step": "777 clean-up: delete shift",
+      "request": "DELETE /api/schedule/assignments/0224fdde-8ee1-41d1-bd2b-a9492bdb5fc9",
+      "status": 204
+    },
+    {
+      "at": "2026-11-09T07:09:06.360Z",
+      "step": "777 clean-up: delete shift",
+      "request": "DELETE /api/schedule/assignments/5ee26430-c86f-45fd-a3cb-01767976303e",
+      "status": 204
+    },
+    {
+      "at": "2026-11-09T07:09:07.132Z",
+      "step": "777 clean-up: delete the week plan the apply created",
+      "request": "DELETE /api/schedule/week/cca2aa0b-d10a-4666-9216-d3613a00af21",
+      "status": 204
+    }
+  ],
+  "createdAndCleanedUp": [
+    {
+      "what": "checklist template f4736996-c3c5-4465-b6da-1aedb035f687 \"ZZ TEST 751 Overdue 20261109-1405\" with 3 items",
+      "created": "2026-11-09T07:05:24.033Z",
+      "removed": "2026-11-09T07:05:38.539Z",
+      "by": "DELETE /api/checklists/templates/:id",
+      "readBack": "404"
+    },
+    {
+      "what": "checklist run 57040331-5590-4cea-8a4c-11357065ed6a and its 3 run items (written by the Ops board, ticked in Ops and Today)",
+      "removed": "with the template (same DELETE)",
+      "readBack": "GET /api/checklist-runs/57040331-5590-4cea-8a4c-11357065ed6a -> 404"
+    },
+    {
+      "what": "week plan cca2aa0b-d10a-4666-9216-d3613a00af21 (1-7 Mar 2027, created by the template apply)",
+      "removed": "2026-11-09T07:09:07.132Z",
+      "by": "DELETE /api/schedule/week/:id",
+      "readBack": "week reads with no plan"
+    },
+    {
+      "what": "5 template shifts 65b28dea-3ae4-4bbc-8b7b-91d236beed69, 34f29df4-b553-4487-88d3-995e39308141, 5ee26430-c86f-45fd-a3cb-01767976303e, afa9f64e-03c3-4608-ba20-fc2cc36d8586, 1c229237-e39c-4a50-845d-a966f8424bb6",
+      "removed": "4 by the undo; the reassigned one (5ee26430-c86f-45fd-a3cb-01767976303e) by DELETE /api/schedule/assignments/:id"
+    },
+    {
+      "what": "4 template days off 5b534327-5f24-4fb3-821b-9fb0b3ecf56f, 7e589178-6971-4cf6-a9fa-483f0926f4bc, 2e18583f-499a-48f8-9272-3e74196e9a02, 03d45cde-7b74-4086-90dc-52db64fc042f",
+      "removed": "by the undo",
+      "readBack": "GET /api/time-off for the week -> []"
+    },
+    {
+      "what": "hand-added shift 0224fdde-8ee1-41d1-bd2b-a9492bdb5fc9",
+      "removed": "DELETE /api/schedule/assignments/:id -> 204"
+    },
+    {
+      "what": "automatic breaks on the shifts",
+      "removed": "regenerated by the app after each shift write; the week reads 0 breaks"
+    }
+  ],
+  "leftOnStaging": {
+    "scheduleHistoryEntries": [
+      {
+        "id": "3c4f68b3-aa1b-42da-81ca-76cb5ec020ea",
+        "action": "clear_week",
+        "createdAt": "2026-11-09T07:09:07.341Z",
+        "hasChangeSet": true,
+        "hasSnapshot": true,
+        "description": "Cleared entire week plan (20 shift rows, 0 assignments)"
+      },
+      {
+        "id": "2c10ad90-a0c2-497c-b159-369612079efa",
+        "action": "undo_action",
+        "createdAt": "2026-11-09T07:09:03.853Z",
+        "hasChangeSet": true,
+        "hasSnapshot": false,
+        "description": "Undid the action of 2026-11-09 07:08 UTC (Applied template (additive) to week 2027-03-01. Rows added: 0, Rows skipped: 1, Assignments: 5, Time-off: 4): 8 removed, 0 put back, 0 changed back, 1 left as they are."
+      },
+      {
+        "id": "5268ea09-3cfe-4f5f-87b9-e4ae0090fef5",
+        "action": "apply_template_additive",
+        "createdAt": "2026-11-09T07:08:07.817Z",
+        "hasChangeSet": true,
+        "hasSnapshot": true,
+        "description": "Applied template (additive) to week 2027-03-01. Rows added: 0, Rows skipped: 1, Assignments: 5, Time-off: 4"
+      }
+    ],
+    "why": "Schedule History is the app's own audit trail; its entries cannot be removed through the app. They describe the 1-7 Mar 2027 week only and nothing in that week remains.",
+    "otherReadSideEffects": "Opening the Ops board makes the app write today's pending run for each recurring checklist of the branches shown, as every Ops visit does (GET /api/checklist-runs/ops). The proof opened Ops at All Branches (SCRUM-752) and at Robinson Chalong (SCRUM-751)."
+  },
+  "finalReadBack": {
+    "at": "2026-11-09T07:09:41.062Z",
+    "liveVersion": "6fe36b12bf286214844299009e0e013e89742b87",
+    "checklist": {
+      "templateRead": 404,
+      "runRead": 404,
+      "zz751InTemplateList": 0,
+      "zz751OnTodayRC": 0
+    },
+    "week": {
+      "status": 200,
+      "planId": null,
+      "assignments": 0,
+      "breaks": 0,
+      "timeOff": 0,
+      "dutyBlocks": 0,
+      "shiftRowsAtBranch": 20
+    },
+    "historyNow": [
+      {
+        "id": "3c4f68b3-aa1b-42da-81ca-76cb5ec020ea",
+        "action": "clear_week",
+        "createdAt": "2026-11-09T07:09:07.341Z",
+        "hasChangeSet": true,
+        "hasSnapshot": true,
+        "description": "Cleared entire week plan (20 shift rows, 0 assignments)"
+      },
+      {
+        "id": "2c10ad90-a0c2-497c-b159-369612079efa",
+        "action": "undo_action",
+        "createdAt": "2026-11-09T07:09:03.853Z",
+        "hasChangeSet": true,
+        "hasSnapshot": false,
+        "description": "Undid the action of 2026-11-09 07:08 UTC (Applied template (additive) to week 2027-03-01. Rows added: 0, Rows skipped: 1, Assignments: 5, Time-off: 4): 8 removed, 0 put back, 0 changed back, 1 left as they are."
+      },
+      {
+        "id": "5268ea09-3cfe-4f5f-87b9-e4ae0090fef5",
+        "action": "apply_template_additive",
+        "createdAt": "2026-11-09T07:08:07.817Z",
+        "hasChangeSet": true,
+        "hasSnapshot": true,
+        "description": "Applied template (additive) to week 2027-03-01. Rows added: 0, Rows skipped: 1, Assignments: 5, Time-off: 4"
+      },
+      {
+        "id": "74e83735-7985-483e-b01a-b76c492b598a",
+        "action": "apply_template_additive",
+        "createdAt": "2026-06-23T09:07:13.989Z",
+        "hasChangeSet": false,
+        "hasSnapshot": true,
+        "description": "Applied template (additive) to week 2026-07-06. Rows added: 1, Rows skipped: 0, Assignments: 5, Time-off: 4"
+      }
+    ],
+    "signOut": 200,
+    "launcherMeAfterSignOut": 404
+  },
+  "signOut": {
+    "launcher": "POST /api/auth/sign-out -> 200",
+    "note": "every script signed out at the launcher at its end (all answered 200); the browser contexts were then closed"
+  },
+  "privacy": {
+    "pictures": "cropped to the element proved; inside a page every text in the main area is made transparent for the picture, and the account name, the avatar, the person on History entries and the \"Completed by\" lines are painted over (#444) with Playwright masks",
+    "receipt": "no person's name, phone, email or password; people appear only as employee ids"
+  },
+  "pictures": [
+    {
+      "file": "752-ops-account-menu.png",
+      "shows": "Ops: the account menu open: Notifications, My Schedule, My Account, Vault, Dark Mode, Logout; no Start/Stop Recording (account name and email masked)"
+    },
+    {
+      "file": "752-ops-report-issue-button.png",
+      "shows": "Ops: the floating \"Report issue\" button bottom right (page text hidden)"
+    },
+    {
+      "file": "752-core-account-menu.png",
+      "shows": "Today (Core layout): the same menu, no recording item"
+    },
+    {
+      "file": "752-core-report-issue-button.png",
+      "shows": "Today (Core layout): \"Report issue\" bottom right (the page was still loading its cards; text hidden)"
+    },
+    {
+      "file": "752-events-account-menu.png",
+      "shows": "Events layout: the same menu, no recording item"
+    },
+    {
+      "file": "752-events-report-issue-button.png",
+      "shows": "Events layout: \"Report issue\" bottom right (text hidden; branch labels left)"
+    },
+    {
+      "file": "751-1-ops-run-2-of-3.png",
+      "shows": "Ops: the ZZ TEST run opened from the board, In Progress, 2/3 items ticked (\"Completed by\" lines masked)"
+    },
+    {
+      "file": "751-2-today-continue-on-overdue.png",
+      "shows": "Today at Robinson Chalong: the ZZ TEST card, due 00:30 (red, overdue), In Progress, with Continue (not View)"
+    },
+    {
+      "file": "751-3-today-toast-checklist-completed.png",
+      "shows": "Today: \"Checklist completed!\" after the third item was ticked from Today"
+    },
+    {
+      "file": "751-4-run-completed.png",
+      "shows": "The run reopened: 3/3 items, Completed (\"Completed by\" lines masked)"
+    },
+    {
+      "file": "777-1-history-undo-beside-restore.png",
+      "shows": "Schedule History: the 9 Nov template entry (week 2027-03-01) with \"Undo this action\" beside Restore; the June entry with Restore only (person masked)"
+    },
+    {
+      "file": "777-2-older-entry-restore-only.png",
+      "shows": "The 23 Jun 2026 entry, written before change sets: Restore only, no Undo (person masked)"
+    },
+    {
+      "file": "777-3-undo-toast-counts.png",
+      "shows": "Toast: \"Action undone - 8 removed, 0 put back, 1 left as they are (1 changed since).\""
+    },
+    {
+      "file": "777-4-history-after-undid-an-action.png",
+      "shows": "Schedule History after: the new \"Undid an action\" entry on top (person masked)"
+    }
+  ]
+}
