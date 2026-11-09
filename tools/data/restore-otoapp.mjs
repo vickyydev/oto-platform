@@ -388,14 +388,27 @@ async function verifyAgainst(targetUrl, manifest, j) {
       row.created_at === String(j.entries[i].when) &&
       row.hash === createHash('sha256').update(readFileSync(join(APP_MIGRATIONS, `${j.entries[i].tag}.sql`), 'utf8')).digest('hex'));
     const views = Number((await c.query('SELECT count(*)::int AS n FROM pg_views WHERE schemaname = $1', [VIEWS_SCHEMA])).rows[0].n);
-    const expectedSessionOnly = differences.length === 1 && differences[0].table === 'session' && differences[0].after === '0';
+    // Two differences are the restore's own doing: `session` is truncated,
+    // and the platform's branch reconciliation creates an app branch for a
+    // park the dump did not know (rows made after the dump was prepared).
+    const platformCreated = (await c.query(
+      `SELECT name FROM ${SCHEMA}.branches WHERE created_at > $1::timestamptz ORDER BY name`,
+      [manifest.preparedAt],
+    )).rows.map((r) => r.name.trim());
+    const unexplained = differences.filter((d) => {
+      if (d.table === 'session' && d.after === '0') return false;
+      if (d.table === 'branches' && Number(d.after) - Number(d.before) === platformCreated.length && platformCreated.length > 0) return false;
+      return true;
+    });
     // Sequences are asserted absent in the dump (prepare); the app's own
     // migrations add serial columns, so none is demanded here.
-    const ok = (differences.length === 0 || expectedSessionOnly) && ledgerOk && views > 0;
+    const ok = unexplained.length === 0 && ledgerOk && views > 0;
     return {
       ok,
       sourceTablesMatching: manifest.tables - differences.length,
       differences: differences.slice(0, 20),
+      unexplained: unexplained.slice(0, 20),
+      platformCreatedBranches: platformCreated,
       tablesNow: Object.keys(counts).length,
       newTablesFromMigrations: Object.keys(counts).filter((t) => manifest.counts[t] === undefined).length,
       ledger: ledger.length,

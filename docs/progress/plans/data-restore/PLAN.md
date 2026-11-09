@@ -23,6 +23,28 @@ full ticket describes are not part of this step._
   visible through the views. A second apply on the same target gives the same
   result.
 
+## The staging run, 2026-11-09
+
+Done at 11:40-11:43 Bangkok on the owner's go, from the Navicat dump taken at
+11:34 (Structure and Data of `public`; a first attempt was dropped by the
+server mid-table, the second completed). prepare: 184 tables, 63,641 rows,
+structure equal to the baseline, 107 s to load, 9.4 MB archive. apply against
+`oto-db-staging`: backup 21 s, restore 89 s, 35 migrations, 40 sessions
+cleared, 14 stale identities removed, both parks joined, Head Office app-only.
+Verification: 182 of 184 counts equal; `session` cleared on purpose and
+`branches` up by the one row the platform's reconciliation created for the
+demo park "Demo Branch 2" (verify names both). `oto-app-staging` redeployed by
+name on its current commit afterwards. The pre-restore backup stays in
+`C:\oto-data\work\restore-20261109T043620\` until the owner says the restored
+data stands.
+
+Two scratch scripts drove it, both outside the repository: one adds or removes
+this laptop's address on the database's allow list (read first, one entry,
+removed when done); one reads the staging connection string from Render's
+connection info and hands it to `restore-otoapp.mjs` in the environment, so
+it is never typed or printed. When the restore is repeated at cutover the
+same two steps apply; the Twilio and photo notes below still hold.
+
 ## How it works
 
 1. **prepare** (local Docker Postgres, container `oto-restore-pg`, data folder
