@@ -814,6 +814,51 @@ describe('a settlement left unpaid is voided, and the party may be settled again
 });
 
 // =============================================================================
+// Walk-ups the board already put on the tab
+// =============================================================================
+
+describe('a party with walk-up guests already on its tab', () => {
+  const party = newId();
+
+  beforeAll(async () => {
+    await appParty(party, 'Party with a walk-up', WEEKDAY, 16_900, 3_000);
+    await appPlan(party, WEEKDAY, FLORESTA, { depositSatang: 300_000 });
+    const walkUp = await call<{ attendee: { billing: string; priceSatang: number } }>('POST', reception, `/events/${party}/attendees`, {
+      branchId: central,
+      stationId: till,
+      attendeeId: newId(),
+      actionId: newId(),
+      registerProperly: false,
+      attendee: { name: 'ZZ TEST Walk-up', parentName: 'May' },
+    });
+    expect(walkUp.status, JSON.stringify(walkUp.body)).toBe(200);
+    expect(walkUp.body.attendee.billing).toBe('party_tab');
+  });
+
+  it('the preview names them and what they came to on the tab, and prices the package without them', async () => {
+    const [link] = (await detail(party)).body.event.party!.walkUpCharges;
+    const res = await preview(party, { kids: 11, adults: 4, socksGiven: 11 });
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.quote).toMatchObject({ walkUps: 1, walkUpsSatang: link!.amountSatang, extraChildren: 1 });
+    expect(link!.amountSatang).toBeGreaterThan(0);
+  });
+
+  it('the settlement is refused by name with nothing written, so no guest is charged or banded twice', async () => {
+    const sales = (await ctx.db.select({ id: sale.id }).from(sale)).length;
+    const body = settleBody({ kids: 11, adults: 4, socksGiven: 11 });
+    const res = await call<{ error: { code: string; details: Record<string, unknown> } }>('POST', reception, `/parties/${party}/settle`, body);
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatchObject({ code: 'PARTY_WALK_UPS_ON_TAB', details: { walkUps: 1 } });
+    expect((await ctx.db.select({ id: sale.id }).from(sale)).length).toBe(sales);
+    expect(await ctx.db.select().from(partySettlement).where(eq(partySettlement.id, body.settlementId as string))).toHaveLength(0);
+    // The party's balance stays on its tab, as before: the package, the walk-up, less the deposit.
+    const bill = (await detail(party)).body.event.party!.bill!;
+    expect(bill).toMatchObject({ baseSatang: 1_690_000, depositSatang: 300_000 });
+    expect(bill.chargesSatang).toBeGreaterThan(0);
+  });
+});
+
+// =============================================================================
 // The balance paid by QR, with the till gone
 // =============================================================================
 

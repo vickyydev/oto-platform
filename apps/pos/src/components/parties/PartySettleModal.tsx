@@ -275,8 +275,11 @@ export function PartySettleModal({ open, onOpenChange, party, plan, stationId, r
   });
   useTenderPresentation(displayHandoff, 'party_balance', stage.state.method, stage.display, open && phase === 'payment');
 
+  // Walk-ups the board already put on the tab: the platform refuses the
+  // settlement (PARTY_WALK_UPS_ON_TAB), so the form says so before the press.
+  const walkUpsOnTab = quote ? quote.walkUps : 0;
   const confirm = async () => {
-    if (!quote || confirming || !stationId) return;
+    if (!quote || confirming || !stationId || walkUpsOnTab > 0) return;
     const press = JSON.stringify([form, quote.totalSatang]);
     if (!idsRef.current || idsRef.current.press !== press) {
       idsRef.current = { ids: { settlementId: newId(), saleId: newId(), actionId: newId() }, press };
@@ -400,6 +403,12 @@ export function PartySettleModal({ open, onOpenChange, party, plan, stationId, r
               <p className="text-sm text-muted-foreground">{previewError ?? 'Pricing the party…'}</p>
             )}
           </div>
+          {quote && walkUpsOnTab > 0 && (
+            <div className="rounded-xl bg-amber-500/15 text-amber-300 p-3 text-sm">
+              {walkUpsOnTab} walk-up guest{walkUpsOnTab === 1 ? ' is' : 's are'} already on this party's tab (
+              {money(quote.walkUpsSatang)}), so it cannot be settled as one sale. Take the balance on the tab instead.
+            </div>
+          )}
           {confirmError && <div className="rounded-xl bg-destructive/15 text-destructive p-3 text-sm">{confirmError}</div>}
         </div>
       </ScrollArea>
@@ -407,7 +416,7 @@ export function PartySettleModal({ open, onOpenChange, party, plan, stationId, r
         <Button variant="outline" onClick={close}>
           Cancel
         </Button>
-        <Button disabled={!quote || confirming || !stationId} onClick={() => void confirm()}>
+        <Button disabled={!quote || confirming || !stationId || walkUpsOnTab > 0} onClick={() => void confirm()}>
           {confirming ? 'Settling…' : quote ? `Confirm · ${money(quote.balanceSatang)} to pay` : 'Confirm'}
         </Button>
       </div>

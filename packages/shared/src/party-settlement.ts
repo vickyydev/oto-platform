@@ -305,6 +305,14 @@ export const PartySettleQuoteSchema = z.object({
   depositSatang: z.number().int(),
   /** What is left to take at the till. */
   balanceSatang: z.number().int(),
+  /**
+   * Walk-up guests the check-in board already put on the party's tab, at the
+   * board's walk-up price, and what they came to there. Not on this sale: a
+   * party with any is not settled as one sale (`PARTY_WALK_UPS_ON_TAB`) until
+   * the owner rules how the two meet, so its balance is taken on the tab.
+   */
+  walkUps: z.number().int(),
+  walkUpsSatang: z.number().int(),
 });
 export type PartySettleQuote = z.infer<typeof PartySettleQuoteSchema>;
 
@@ -351,6 +359,11 @@ export const PARTY_SETTLE_REFUSALS = {
     code: 'PARTY_PAID_ON_TAB',
     message:
       "Money for this party's package was already taken on its tab, so settling it would charge it twice — nothing was saved",
+  },
+  WALK_UPS: {
+    code: 'PARTY_WALK_UPS_ON_TAB',
+    message:
+      "Walk-up guests are already on this party's tab, so it cannot be settled as one sale — take the balance on the tab. Nothing was saved",
   },
 } as const;
 

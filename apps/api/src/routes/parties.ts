@@ -111,7 +111,8 @@ export async function partyRoutes(app: App): Promise<void> {
           "for the party's date, the children and adults beyond its included counts at its own extra prices, the " +
           "socks beyond its free pairs, and the plan's add-ons and entertainment kept, priced by the sale engine " +
           'exactly as the settlement will be, with the F&B credit the add-ons grant, the deposit recorded as paid ' +
-          'in advance and the balance. Writes nothing. 409 PARTY_NO_PACKAGE for a party the OTO App has no package ' +
+          'in advance and the balance, and the walk-up guests the check-in board already put on the tab (which ' +
+          'the settlement refuses). Writes nothing. 409 PARTY_NO_PACKAGE for a party the OTO App has no package ' +
           'for, and the refusals a settlement makes for counts it cannot price.',
         params: PartyParams,
         body: PartySettlePreviewBodySchema,
@@ -144,7 +145,9 @@ export async function partyRoutes(app: App): Promise<void> {
           '/sales/:id/finalise and the tender routes, as any sale); a deposit that covers it all closes it here. ' +
           'When it closes, the sale id is written back to the OTO App through the party edit path. Refused 409 ' +
           'PARTY_ALREADY_SETTLED while an earlier settlement sale is open or paid (void or refund it first), 409 ' +
-          'PARTY_PAID_ON_TAB when the tab already took money for the package, and as the preview refuses. The same ' +
+          'PARTY_WALK_UPS_ON_TAB while walk-up guests the check-in board added are on the tab (its balance is then ' +
+          'taken on the tab), 409 PARTY_PAID_ON_TAB when the tab already took money for the package, and as the ' +
+          'preview refuses. The same ' +
           'settlement id again answers what it made, under x-oto-replay. Needs pos:party:charge and pos:sale:create at ' +
           'the branch.',
         params: PartyParams,

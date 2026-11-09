@@ -25364,7 +25364,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description SCRUM-804 — what settling a party as one sale comes to with these counts: the package at its own price for the party's date, the children and adults beyond its included counts at its own extra prices, the socks beyond its free pairs, and the plan's add-ons and entertainment kept, priced by the sale engine exactly as the settlement will be, with the F&B credit the add-ons grant, the deposit recorded as paid in advance and the balance. Writes nothing. 409 PARTY_NO_PACKAGE for a party the OTO App has no package for, and the refusals a settlement makes for counts it cannot price. */
+        /** @description SCRUM-804 — what settling a party as one sale comes to with these counts: the package at its own price for the party's date, the children and adults beyond its included counts at its own extra prices, the socks beyond its free pairs, and the plan's add-ons and entertainment kept, priced by the sale engine exactly as the settlement will be, with the F&B credit the add-ons grant, the deposit recorded as paid in advance and the balance, and the walk-up guests the check-in board already put on the tab (which the settlement refuses). Writes nothing. 409 PARTY_NO_PACKAGE for a party the OTO App has no package for, and the refusals a settlement makes for counts it cannot price. */
         post: {
             parameters: {
                 query?: never;
@@ -25427,6 +25427,8 @@ export interface paths {
                                 creditSatang: number;
                                 depositSatang: number;
                                 balanceSatang: number;
+                                walkUps: number;
+                                walkUpsSatang: number;
                             };
                         };
                     };
@@ -25448,7 +25450,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description SCRUM-804 — settle a party as ONE sale from the OTO App's plan: the package fee, the included items as 0-baht lines, the children and adults on admission lines (a band prints for each at the close), the free and sold socks (taken off the Regular Socks shelf), the add-ons and entertainment kept (an F&B credit add-on grants its credit and prints its voucher at the close), and the deposit recorded on the sale as "Deposit (paid in advance)". The sale is left at the payment stage for the balance (POST /sales/:id/finalise and the tender routes, as any sale); a deposit that covers it all closes it here. When it closes, the sale id is written back to the OTO App through the party edit path. Refused 409 PARTY_ALREADY_SETTLED while an earlier settlement sale is open or paid (void or refund it first), 409 PARTY_PAID_ON_TAB when the tab already took money for the package, and as the preview refuses. The same settlement id again answers what it made, under x-oto-replay. Needs pos:party:charge and pos:sale:create at the branch. */
+        /** @description SCRUM-804 — settle a party as ONE sale from the OTO App's plan: the package fee, the included items as 0-baht lines, the children and adults on admission lines (a band prints for each at the close), the free and sold socks (taken off the Regular Socks shelf), the add-ons and entertainment kept (an F&B credit add-on grants its credit and prints its voucher at the close), and the deposit recorded on the sale as "Deposit (paid in advance)". The sale is left at the payment stage for the balance (POST /sales/:id/finalise and the tender routes, as any sale); a deposit that covers it all closes it here. When it closes, the sale id is written back to the OTO App through the party edit path. Refused 409 PARTY_ALREADY_SETTLED while an earlier settlement sale is open or paid (void or refund it first), 409 PARTY_WALK_UPS_ON_TAB while walk-up guests the check-in board added are on the tab (its balance is then taken on the tab), 409 PARTY_PAID_ON_TAB when the tab already took money for the package, and as the preview refuses. The same settlement id again answers what it made, under x-oto-replay. Needs pos:party:charge and pos:sale:create at the branch. */
         post: {
             parameters: {
                 query?: never;
@@ -25518,6 +25520,8 @@ export interface paths {
                                 creditSatang: number;
                                 depositSatang: number;
                                 balanceSatang: number;
+                                walkUps: number;
+                                walkUpsSatang: number;
                             };
                             settlement: {
                                 id: string;

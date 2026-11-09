@@ -132,6 +132,8 @@ function quoteFor(form: { kids: number; adults: number; socksGiven: number; addO
     creditSatang: form.addOnIds.includes('table') ? 500_000 : 0,
     depositSatang: 300_000,
     balanceSatang: total - 300_000,
+    walkUps: 0,
+    walkUpsSatang: 0,
   };
 }
 
@@ -426,5 +428,25 @@ describe('the Settle form: the actual counts, the plan\'s add-ons, the platform\
     const payment = elementOf(host.result.current, StepPayment);
     expect(payment).not.toBeNull();
     expect(payment!.props.paymentStage).toBeDefined();
+  });
+
+  it('walk-ups the board already put on the tab are named, and Confirm is off: the balance is taken on the tab', async () => {
+    const answered = postMock.getMockImplementation()!;
+    postMock.mockImplementation((async (path: string, body: unknown, opts?: unknown) => {
+      if (path === `/parties/${PARTY}/settle/preview`) {
+        return { quote: { ...quoteFor(body as Parameters<typeof quoteFor>[0]), walkUps: 2, walkUpsSatang: 90_000 } };
+      }
+      return (answered as (p: string, b: unknown, o?: unknown) => Promise<unknown>)(path, body, opts);
+    }) as unknown as typeof api.post);
+    const { host } = modal();
+    await settle(300);
+    const tree = host.result.current;
+    expect(flat(tree)).toContain("2 walk-up guests are already on this party's tab (฿900), so it cannot be settled as one sale");
+    const confirm = buttonIn(tree, 'Confirm · ฿26,900 to pay');
+    expect(confirm).not.toBeNull();
+    expect(confirm!.props.disabled).toBe(true);
+    await press(confirm);
+    await settle();
+    expect(postMock.mock.calls.some((c) => c[0] === `/parties/${PARTY}/settle`)).toBe(false);
   });
 });

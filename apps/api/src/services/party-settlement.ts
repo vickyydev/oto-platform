@@ -284,11 +284,34 @@ function cartInputOf(
 
 const partyRoleOf = (line: Pick<PricedLine, 'payload'>): PartyLineRole | null => line.payload?.party?.role ?? null;
 
+/** Walk-up guests the check-in board billed to the party's tab, and what they came to there. */
+interface WalkUpsOnTab {
+  count: number;
+  satang: number;
+}
+
+/**
+ * The party's walk-ups on its tab (`billing = 'party_tab'`), counted as the
+ * tab's bill counts them (`liveBill` in `parties.ts`).
+ *
+ * Not settled on the sale. Whether a guest the board added pays the board's
+ * walk-up price or the package's extra-child price, and whether the board's
+ * band and the settlement's band are the same guest's, is the owner's to rule;
+ * until then a party with any walk-up is refused (`PARTY_WALK_UPS_ON_TAB`) and
+ * its balance is taken on the tab, as before this ticket, so no guest is
+ * charged or banded twice. The preview says how many, so the form says why.
+ */
+async function walkUpsOnTab(db: Exec, branchId: string, eventId: string): Promise<WalkUpsOnTab> {
+  const walkUps = (await linksOfEvents(db, { branchId, eventIds: [eventId] })).filter((l) => l.billing === 'party_tab');
+  return { count: walkUps.length, satang: walkUps.reduce((sum, l) => sum + l.priceSnapshotSatang, 0) };
+}
+
 /** The settlement's figures, read off the engine's priced lines and nothing else. */
 function quoteOf(
   built: BuiltSettlement,
   lines: readonly Pick<PricedLine, 'label' | 'quantity' | 'unitSatang' | 'grossSatang' | 'payload'>[],
   grossSatang: number,
+  walkUps: WalkUpsOnTab,
 ): PartySettleQuote {
   const shown: PartySettleLine[] = lines.flatMap((line) => {
     const role = partyRoleOf(line);
@@ -318,6 +341,8 @@ function quoteOf(
     creditSatang: c.addOns.reduce((total, a) => total + a.qty * a.fnbCreditSatang, 0),
     depositSatang,
     balanceSatang: grossSatang - depositSatang,
+    walkUps: walkUps.count,
+    walkUpsSatang: walkUps.satang,
   };
 }
 
@@ -362,7 +387,9 @@ export async function previewPartySettlement(
     mode: 'quote',
     stationId: body.stationId ?? null,
   });
-  return { quote: quoteOf(built, priced.lines, priced.money.grossSatang) };
+  // Answered, not refused: the form shows the walk-ups and why Confirm is off.
+  const walkUps = await walkUpsOnTab(db, branchId, event.id);
+  return { quote: quoteOf(built, priced.lines, priced.money.grossSatang, walkUps) };
 }
 
 // --- The settlement --------------------------------------------------------------------------
@@ -429,10 +456,12 @@ const depositActionId = (settlementId: string) => `party-settlement:${settlement
  * Refused, with nothing written: a party with no package in the OTO App; one
  * already settled by a sale that is open or paid (a voided or refunded one
  * releases it); counts the package cannot price (an extra child or adult it
- * names no price for); a tab that already took money for the package (the
- * tab's payments beyond its own charges), which settling would take again; and
- * every refusal the sale engine itself makes (stock, a station that cannot
- * number a receipt, a total that moved since the preview).
+ * names no price for); a party with walk-up guests the board already billed to
+ * its tab (`walkUpsOnTab`), taken on the tab until the owner rules; a tab that
+ * already took money for the package (the tab's payments beyond its own
+ * charges), which settling would take again; and every refusal the sale engine
+ * itself makes (stock, a station that cannot number a receipt, a total that
+ * moved since the preview).
  *
  * In one transaction under the party's lock: the sale (`commitSale`), the
  * deposit on it as paid in advance (a `pos.payment_attempt` of the deposit
@@ -502,12 +531,18 @@ export async function settleParty(
         .set({ releasedAt: now, updatedAt: now })
         .where(eq(partySettlement.id, held.id));
     }
+    // Walk-ups the board already billed to the tab: not settled here until the
+    // owner rules how they meet the package (`walkUpsOnTab`).
+    const walkUps = await walkUpsOnTab(tx, branchId, event.id);
+    if (walkUps.count > 0) {
+      throw errors.conflict(PARTY_SETTLE_REFUSALS.WALK_UPS.code, PARTY_SETTLE_REFUSALS.WALK_UPS.message, {
+        walkUps: walkUps.count,
+        walkUpsSatang: walkUps.satang,
+      });
+    }
     // Money for the package already taken on the tab — its payments beyond
-    // its own charges and walk-ups — would be taken again by the sale.
-    const walkUps = (await linksOfEvents(tx, { branchId, eventIds: [event.id] }))
-      .filter((l) => l.billing === 'party_tab')
-      .reduce((sum, l) => sum + l.priceSnapshotSatang, 0);
-    const tabCharges = walkUps + ledgers.charges.reduce((sum, c) => sum + c.totalSatang, 0);
+    // its own charges — would be taken again by the sale.
+    const tabCharges = walkUps.satang + ledgers.charges.reduce((sum, c) => sum + c.totalSatang, 0);
     const tabPaid = ledgers.payments.reduce((sum, p) => sum + p.amountSatang, 0);
     if (tabPaid > tabCharges) {
       throw errors.conflict(PARTY_SETTLE_REFUSALS.PAID_ON_TAB.code, PARTY_SETTLE_REFUSALS.PAID_ON_TAB.message, {
@@ -534,7 +569,7 @@ export async function settleParty(
       throw errors.conflict('SALE_ID_IN_USE', 'That sale id already belongs to another sale — nothing was saved');
     }
     const gross = committed.sale.totals.grossSatang;
-    const quote = quoteOf(built, committed.lines, gross);
+    const quote = quoteOf(built, committed.lines, gross, walkUps);
 
     let depositAttemptId: string | null = null;
     if (quote.depositSatang > 0) {
