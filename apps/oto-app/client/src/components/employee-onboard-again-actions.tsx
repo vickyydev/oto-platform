@@ -59,7 +59,17 @@ type Counts = {
   tasks: number;
   contracts: number;
   timeRecords: number;
+  documents: number;
+  letters: number;
+  assets: number;
+  timeOff: number;
+  availability: number;
+  leaveSettings: number;
+  payrollProfile: number;
+  costAllocations: number;
+  history: number;
 };
+type Replaced = { payrollProfile: number; costAllocations: number; leaveSettings: number };
 type RematchAnswer = { matched: number; stillPending: number } | { failed: true };
 
 /** What the fold answers, preview and fold alike (server/lib/employeeFold.ts). */
@@ -68,12 +78,16 @@ interface FoldAnswer {
   skipped: Counts;
   face: "none" | "taken" | "original_kept";
   supersededContracts: number;
+  replaced: Replaced;
+  clockedOnBoth: number;
   reonboard: {
     startDate: string;
     started: boolean;
     department: { id: string; name: string | null };
     branch: { id: string; name: string | null };
     positionTitle: string | null;
+    employmentBasis: string;
+    probationEndDate: string | null;
     contractId: string | null;
     login: "reactivated" | "already_on" | "none" | "outside_park_group" | null;
     platformDeactivationDelivered: boolean;
@@ -109,14 +123,46 @@ const rematchWords = (rematch: RematchAnswer | undefined) => {
   return ` ${rematch.matched} pending approval(s) matched to a shift, ${rematch.stillPending} still pending.`;
 };
 
+/** The records a working profile carries, named when there are any. */
+const recordWords = (c: Counts, keys: (keyof Counts)[]) => {
+  const words: Partial<Record<keyof Counts, string>> = {
+    documents: "document(s)",
+    letters: "letter(s)",
+    assets: "company property item(s)",
+    timeOff: "leave record(s)",
+    availability: "availability day(s)",
+    leaveSettings: "leave setting(s)",
+    payrollProfile: "payroll profile",
+    costAllocations: "cost allocation(s)",
+    history: "history entr(ies)",
+  };
+  return keys.filter((k) => c[k] > 0).map((k) => `, ${c[k]} ${words[k]}`).join("");
+};
+
 const countWords = (c: Counts) =>
   `${c.contracts} contract(s), ${c.timeRecords} time record(s), ` +
   `${c.shifts} shift(s) with ${c.duties} duty block(s) and ${c.breaks} break(s), ${c.templateShifts} weekly template shift(s), ` +
-  `${c.roles} role(s), ${c.checklists} checklist(s), ${c.tasks} task(s)`;
+  `${c.roles} role(s), ${c.checklists} checklist(s), ${c.tasks} task(s)` +
+  recordWords(c, ["documents", "letters", "assets", "timeOff", "availability", "leaveSettings", "payrollProfile", "costAllocations", "history"]);
 
 const skipWords = (c: Counts) =>
   `${c.shifts} shift(s) with ${c.duties} duty block(s) and ${c.breaks} break(s), ${c.templateShifts} weekly template shift(s), ` +
-  `${c.roles} role(s), ${c.checklists} checklist(s), ${c.tasks} task(s)`;
+  `${c.roles} role(s), ${c.checklists} checklist(s), ${c.tasks} task(s)` + recordWords(c, ["timeOff", "availability"]);
+
+/** The original's own payroll profile, cost allocations and leave settings the duplicate's replace (a re-onboarding). */
+function replacedWords(replaced: Replaced, kept: string): string | null {
+  const parts = [
+    replaced.payrollProfile > 0 ? "payroll profile" : null,
+    replaced.costAllocations > 0 ? `${replaced.costAllocations} cost allocation(s)` : null,
+    replaced.leaveSettings > 0 ? `${replaced.leaveSettings} leave setting(s)` : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? `${kept}'s own ${parts.join(", ")} are replaced by this profile's, with the employment.` : null;
+}
+
+const clockedWords = (days: number) =>
+  days > 0
+    ? `${days} day(s) have time records on both profiles: check those days in the attendance review, the same hours may be recorded twice.`
+    : null;
 
 function faceWords(face: FoldAnswer["face"], kept: string): string | null {
   if (face === "taken") return `${kept} takes this profile's face enrolment.`;
@@ -128,7 +174,9 @@ function reonboardWords(answer: FoldAnswer, kept: string): string | null {
   const plan = answer.reonboard;
   if (!plan) return null;
   const where = [plan.department.name, plan.branch.name].filter(Boolean).join(", ");
-  const as = plan.positionTitle ? ` as ${plan.positionTitle}` : "";
+  const basis = plan.employmentBasis === "PART_TIME" ? "part-time" : "full-time";
+  const probation = plan.probationEndDate ? `, on probation until ${dayWords(plan.probationEndDate)}` : "";
+  const as = `${plan.positionTitle ? ` as ${plan.positionTitle}` : ""} (${basis}${probation})`;
   const contract = plan.contractId ? " with this profile's active contract" : "";
   const superseded = answer.supersededContracts > 0 ? `; ${kept}'s previous active contract is superseded` : "";
   const login = plan.login === "reactivated" ? "; its login is switched back on" : "";
@@ -511,7 +559,12 @@ export function FoldIntoAction({ employee }: { employee: Employee }) {
       queryClient.removeQueries({ queryKey: ["/api/employees", employee.id] });
       refreshEmployee(into);
       queryClient.invalidateQueries({ queryKey: plannedKey(into) });
-      const extra = [reonboardWords(answer, kept), faceWords(answer.face, kept)].filter(Boolean).join(" ");
+      const extra = [
+        reonboardWords(answer, kept),
+        replacedWords(answer.replaced, kept),
+        faceWords(answer.face, kept),
+        clockedWords(answer.clockedOnBoth),
+      ].filter(Boolean).join(" ");
       toast({
         title: "Profile folded",
         description: `Moved ${countWords(answer.moved)}; skipped ${skipWords(answer.skipped)} already on the other profile. This profile is deleted.` +
@@ -548,8 +601,8 @@ export function FoldIntoAction({ employee }: { employee: Employee }) {
           <DialogHeader>
             <DialogTitle>Fold into another profile</DialogTitle>
             <DialogDescription>
-              For a duplicate profile of the same person: its contracts, time records, shifts (with their duties and breaks), weekly template shifts, roles, checklists, tasks and face enrolment move to the profile you choose, and this profile is deleted.
-              Keep the profile the person signs in and scans their face with. If that profile has left or is leaving and this one is working, it is onboarded again into this profile's employment.
+              For a duplicate profile of the same person: its contracts, time records, shifts (with their duties and breaks), weekly template shifts, roles, checklists, tasks, face enrolment, documents, letters, company property, leave, payroll profile and history move to the profile you choose, and this profile is deleted.
+              Keep the profile the person signs in and scans their face with. If that profile has left or is leaving and this one is working, it is onboarded again into this profile's employment, on this profile's terms.
             </DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-4">
@@ -589,6 +642,12 @@ export function FoldIntoAction({ employee }: { employee: Employee }) {
                     )}
                     {reonboardWords(preview.data, target.fullName) && (
                       <p className="font-medium" data-testid="fold-preview-reonboard">{reonboardWords(preview.data, target.fullName)}</p>
+                    )}
+                    {replacedWords(preview.data.replaced, target.fullName) && (
+                      <p data-testid="fold-preview-replaced">{replacedWords(preview.data.replaced, target.fullName)}</p>
+                    )}
+                    {clockedWords(preview.data.clockedOnBoth) && (
+                      <p className="text-amber-700 dark:text-amber-400" data-testid="fold-preview-clocked-on-both">{clockedWords(preview.data.clockedOnBoth)}</p>
                     )}
                     <p className="text-muted-foreground">
                       Deletes this profile{preview.data.deleted.login ? " and the login that belongs to it" : ""}.

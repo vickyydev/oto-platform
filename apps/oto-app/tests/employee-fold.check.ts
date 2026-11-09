@@ -6,19 +6,21 @@
 // shape of the case found on staging (ids only, ZZ TEST rows here): the
 // original has left (resigned, Left, its last working day past), holds the
 // login and an enrolled face, an old active contract in Promotion and pending
-// "Unscheduled work" items; the duplicate is active in Reception with a signed
-// active contract, a finalized unsent copy, 7 time records, a face enrolment
-// of its own, shifts, a checklist and a task. Over HTTP against the routes as
-// registered:
+// "Unscheduled work" items (one on a day the duplicate clocked as well); the
+// duplicate is active and on probation in Reception with a signed active
+// contract, a finalized unsent copy, 7 time records, a face enrolment of its
+// own, its history, shifts, a checklist and a task. Over HTTP against the
+// routes as registered:
 //
-//   1. The preview counts the contracts, time records, face, shifts,
-//      checklist and task, says the original is onboarded again, and writes
-//      nothing.
-//   2. The fold moves all of it; the original reads active in Reception with
-//      the duplicate's contract active and its own superseded, its offboarding
-//      re-onboarded, its login on again (the same login), its own face kept
-//      and the duplicate's removed from the face collection; the pending items
-//      on the duplicate's shift days matched; the duplicate gone (404).
+//   1. The preview counts the contracts, time records, history, face, shifts,
+//      checklist and task and the day clocked on both, says the original is
+//      onboarded again on the duplicate's terms, and writes nothing.
+//   2. The fold moves all of it; the original reads active and on probation in
+//      Reception with the duplicate's contract active and its own superseded,
+//      its offboarding re-onboarded, its login on again (the same login), its
+//      own face kept and the duplicate's removed from the face collection; the
+//      pending items on the duplicate's shift days matched, the one on the day
+//      clocked on both left pending; the duplicate gone (404).
 //   3. Refused: a duplicate with a payroll record; two active contracts while
 //      the original's has no last working day.
 //   4. A face moves to an original with none; a start date still to come is
@@ -29,6 +31,16 @@
 //      deleted.
 //   6. A profile onboarded again is offboarded again (migration 0039), one
 //      open offboarding at a time.
+//   7. A part-time duplicate on probation with a signed letter, a document,
+//      company property, leave, leave settings, a payroll profile, a cost
+//      allocation, availability, a live clock-in and history: the preview
+//      counts them, the fold keeps every one on the original (a day off the
+//      original already has skipped; the original's own payroll profile and
+//      leave setting replaced), and the original reads as the duplicate's
+//      employment.
+//   8. Refused: a payroll profile and leave settings on both profiles when
+//      nobody is onboarded again; a re-onboarding still to come on other
+//      terms.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
@@ -108,20 +120,34 @@ interface ProfileOpts {
   state?: string;
   faceId?: string | null;
   startDate?: string | null;
+  /** The employment's terms: basis, daily rate, probation, salary (15000 unless named). */
+  basis?: "FULL_TIME" | "PART_TIME";
+  dailyRate?: number | null;
+  probationDays?: number | null;
+  probationEnd?: string | null;
+  salary?: number;
 }
 async function profile(label: string, opts: ProfileOpts): Promise<string> {
   const id = randomUUID();
   await q(
     `insert into employees (id, tenant_id, branch_id, user_id, full_name, nickname, email, status, employment_state, default_merge_data,
-                            primary_department_id, face_enrollment_status, face_id, face_enrolled_at, start_date)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+                            primary_department_id, face_enrollment_status, face_id, face_enrolled_at, start_date,
+                            employment_basis, daily_rate, probation_days, probation_end_date)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`,
     [
       id, TENANT, BRANCH, opts.userId ?? null, `ZZ TEST fold ${label} ${run}`, label, `zz-fold-emp-${label}-${run}@example.com`,
-      opts.status ?? "active", opts.state ?? "ACTIVE", JSON.stringify({ positionTitle: opts.position, salaryThb: 15000 }), opts.department,
+      opts.status ?? "active", opts.state ?? "ACTIVE", JSON.stringify({ positionTitle: opts.position, salaryThb: opts.salary ?? 15000 }), opts.department,
       opts.faceId ? "ENROLLED" : "NOT_ENROLLED", opts.faceId ?? null, opts.faceId ? new Date() : null, opts.startDate ?? null,
+      opts.basis ?? "FULL_TIME", opts.dailyRate ?? null, opts.probationDays ?? null, opts.probationEnd ?? null,
     ],
   );
   return id;
+}
+/** An activity entry naming a profile, as the app's own writes record one. */
+async function activity(employeeId: string, summary: string) {
+  await q("insert into activity_log (tenant_id, branch_id, employee_id, activity_type, summary_text, created_by) values ($1, $2, $3, 'employee_updated', $4, $5)", [
+    TENANT, BRANCH, employeeId, summary, admin.id,
+  ]);
 }
 
 async function contract(employeeId: string, opts: { status: string; signing: string; start: string; position: string; createdAt?: string }) {
@@ -174,13 +200,13 @@ async function task(employeeId: string): Promise<string> {
   return id;
 }
 /** A face clock-in with no shift that day: what the kiosk's unscheduled route writes. */
-async function unscheduled(employeeId: string, date: string) {
+async function unscheduled(employeeId: string, date: string, at = "02:00") {
   const entry = randomUUID();
   const issue = randomUUID();
   await q(
     `insert into time_entries (id, tenant_id, employee_id, branch_id, shift_date, clock_in_at, status, source_in)
      values ($1, $2, $3, $4, $5, $6, 'PENDING_APPROVAL', 'FACE_KIOSK')`,
-    [entry, TENANT, employeeId, BRANCH, date, `${date} 02:00`],
+    [entry, TENANT, employeeId, BRANCH, date, `${date} ${at}`],
   );
   await q(
     `insert into timekeeping_issues (id, tenant_id, employee_id, branch_id, issue_date, issue_type, status, linked_time_entry_id, reason_code, created_by)
@@ -297,6 +323,11 @@ const row = async (id: string) => (await q(
   `select status, employment_state, primary_department_id, branch_id, user_id, last_working_day::date::text as last_working_day,
           default_merge_data->>'positionTitle' as position, face_enrollment_status, face_id
      from employees where id = $1`, [id]))[0]!;
+/** The employment's terms on a profile. */
+const termsOf = async (id: string) => (await q(
+  `select employment_basis, daily_rate, probation_days, probation_end_date::date::text as probation_end, probation_review_completed_at,
+          (default_merge_data->>'salaryThb')::int as salary
+     from employees where id = $1`, [id]))[0]!;
 const loginOn = async (userId: string) => (await q<{ is_active: boolean }>("select is_active from users where id = $1", [userId]))[0]!.is_active;
 const contractOf = async (id: string) => (await q("select employee_id, status, signing_status from contract_instances where id = $1", [id]))[0];
 const review = async (issue: string) =>
@@ -308,7 +339,11 @@ const timeRecordsOf = async (employeeId: string) => {
   for (const t of TIME_TABLES) n += await countOf(`select count(*) as n from ${t} where employee_id = $1`, [employeeId]);
   return n;
 };
-const NONE = { shifts: 0, duties: 0, breaks: 0, templateShifts: 0, roles: 0, checklists: 0, tasks: 0, contracts: 0, timeRecords: 0 };
+const NONE = {
+  shifts: 0, duties: 0, breaks: 0, templateShifts: 0, roles: 0, checklists: 0, tasks: 0, contracts: 0, timeRecords: 0,
+  documents: 0, letters: 0, assets: 0, timeOff: 0, availability: 0, leaveSettings: 0, payrollProfile: 0, costAllocations: 0, history: 0,
+};
+const NOTHING_REPLACED = { payrollProfile: 0, costAllocations: 0, leaveSettings: 0 };
 
 try {
   ORIGIN = await serve();
@@ -326,11 +361,17 @@ try {
   assert.equal(off.status, 201, `the original's offboarding: ${show(off)}`);
   const [{ id: originalOffboarding }] = await q<{ id: string }>("select id from employee_offboarding where employee_id = $1", [original]);
 
+  // On probation in Reception, as the staging duplicate reads ("Probation").
+  const PROBATION_END = plus(84);
   const duplicate = await profile("duplicate", {
     department: RECEPTION, position: "ZZ Receptionist", faceId: `zz-face-duplicate-${run}`, startDate: START,
+    probationDays: 90, probationEnd: PROBATION_END,
   });
   const signed = await contract(duplicate, { status: "active", signing: "signed", start: START, position: "ZZ Receptionist", createdAt: `${plus(-9)} 08:00` });
   const copy = await contract(duplicate, { status: "finalized", signing: "not_sent", start: START, position: "ZZ Receptionist" });
+  // Its Reception history: the contract made and signed, the face enrolled.
+  await activity(duplicate, "ZZ TEST fold contract made and signed");
+  await activity(duplicate, "ZZ TEST fold face enrolled");
   // The duplicate's 11 shifts: 4 days, a gap, then 7.
   const shiftDays = [-5, -4, -3, -2, 0, 1, 2, 3, 4, 5, 6].map(plus);
   for (const date of shiftDays) await shift(duplicate, date);
@@ -357,13 +398,17 @@ try {
      values ($1, $2, $3, $4, 'MISSING_CLOCK_OUT', 'OPEN', $5, 'OTHER', 'KIOSK_SYSTEM') returning id`,
     [TENANT, duplicate, BRANCH, shiftDays[6], dupEntries[2]],
   );
-  // The original's pending "Unscheduled work": two on the duplicate's shift days, one on a day nobody worked.
+  // The original's 4 pending "Unscheduled work" items: two on the duplicate's
+  // shift days, one on a day nobody worked, and one on a day the duplicate
+  // clocked too (a scan that landed on the original a minute after the
+  // duplicate's own clock-in for the shift).
   const onShiftDays = [await unscheduled(original, shiftDays[0]!), await unscheduled(original, shiftDays[1]!)];
   const offShiftDay = await unscheduled(original, plus(-1));
+  const clockedTwice = await unscheduled(original, shiftDays[4]!, "02:01");
 
   console.log("1. the preview:");
-  const CASE_MOVES = { ...NONE, contracts: 2, timeRecords: 7, shifts: 11, checklists: 1, tasks: 1 };
-  await check("the preview counts 2 contracts, 7 time records, 11 shifts, 1 checklist and 1 task, the face, and the re-onboarding, and writes nothing", async () => {
+  const CASE_MOVES = { ...NONE, contracts: 2, timeRecords: 7, shifts: 11, checklists: 1, tasks: 1, history: 2 };
+  await check("the preview counts 2 contracts, 7 time records, 11 shifts, 1 checklist, 1 task and 2 history entries, the face, the day clocked on both, and the re-onboarding on the duplicate's terms, and writes nothing", async () => {
     assert.deepEqual([(await row(original)).status, (await row(original)).employment_state, await loginOn(login.id)], ["resigned", "LEFT", false]);
     const res = await call("GET", `/api/employees/${duplicate}/fold-into/${original}/preview`, as.admin);
     assert.equal(res.status, 200, show(res));
@@ -371,6 +416,8 @@ try {
     assert.deepEqual(res.body.skipped, NONE);
     assert.equal(res.body.face, "original_kept");
     assert.equal(res.body.supersededContracts, 1);
+    assert.deepEqual(res.body.replaced, NOTHING_REPLACED);
+    assert.equal(res.body.clockedOnBoth, 1);
     assert.deepEqual(res.body.deleted, { profile: 1, login: 0 });
     const { engagementId, ...plan } = res.body.reonboard;
     assert.ok(engagementId);
@@ -380,6 +427,8 @@ try {
       department: { id: RECEPTION, name: RECEPTION_NAME },
       branch: { id: BRANCH, name: `ZZ TEST fold ${run}` },
       positionTitle: "ZZ Receptionist",
+      employmentBasis: "FULL_TIME",
+      probationEndDate: PROBATION_END,
       contractId: signed,
       login: "reactivated",
       platformDeactivationDelivered: false,
@@ -403,15 +452,19 @@ try {
     assert.equal(res.body.face, "original_kept");
     assert.equal(res.body.faceRemovedFromCollection, true);
     assert.equal(res.body.reonboard.started, true);
-    assert.deepEqual(res.body.rematch, { matched: 2, stillPending: 1 });
+    assert.equal(res.body.clockedOnBoth, 1);
+    // The day clocked on both is left for a manager: 2 matched, 2 pending.
+    assert.deepEqual(res.body.rematch, { matched: 2, stillPending: 2 });
     assert.equal(await exists(duplicate), 0);
   });
-  await check("the original reads active in Reception, its last working day cleared, the same login switched on, its own face kept", async () => {
+  await check("the original reads active in Reception, on probation as the duplicate was, its last working day cleared, the same login switched on, its own face kept", async () => {
     const kept = await row(original);
     assert.deepEqual(
       [kept.status, kept.employment_state, kept.primary_department_id, kept.branch_id, kept.last_working_day, kept.position, kept.user_id],
       ["active", "ACTIVE", RECEPTION, BRANCH, null, "ZZ Receptionist", login.id],
     );
+    const terms = await termsOf(original);
+    assert.deepEqual([terms.employment_basis, terms.probation_days, terms.probation_end, terms.probation_review_completed_at], ["FULL_TIME", 90, PROBATION_END, null]);
     assert.deepEqual([kept.face_enrollment_status, kept.face_id], ["ENROLLED", `zz-face-original-${run}`]);
     assert.equal(await loginOn(login.id), true);
     assert.equal(await countOf("select count(*) as n from employees where face_id = $1", [`zz-face-duplicate-${run}`]), 0);
@@ -436,7 +489,7 @@ try {
     assert.deepEqual([movement!.old_department_id, movement!.new_department_id, movement!.contract_instance_id, movement!.effective], [PROMOTION, RECEPTION, signed, START]);
   });
   await check("the time records, shifts, checklist and task are the original's; the pending items on the duplicate's shift days matched, the other pending", async () => {
-    assert.equal(await timeRecordsOf(original), 7 + 2 * 3);
+    assert.equal(await timeRecordsOf(original), 7 + 2 * 4);
     assert.deepEqual(await q("select employee_id, status from timekeeping_issues where id = $1", [dupIssue]), [{ employee_id: original, status: "OPEN" }]);
     assert.equal(await countOf("select count(*) as n from schedule_assignments where employee_id = $1", [original]), 11);
     assert.deepEqual(await q("select employee_id from checklist_template_assignees where template_id = $1", [dupChecklist]), [{ employee_id: original }]);
@@ -445,6 +498,17 @@ try {
       assert.deepEqual(await review(item.issue), { issue_status: "RESOLVED", resolution_note: REMATCH_NOTE, entry_status: "APPROVED" });
     }
     assert.deepEqual(await review(offShiftDay.issue), { issue_status: "OPEN", resolution_note: null, entry_status: "PENDING_APPROVAL" });
+  });
+  await check("the day clocked on both profiles: the stray entry is left pending beside the duplicate's approved one, so the hours are counted once", async () => {
+    assert.deepEqual(await review(clockedTwice.issue), { issue_status: "OPEN", resolution_note: null, entry_status: "PENDING_APPROVAL" });
+    assert.deepEqual(
+      await q("select status from time_entries where employee_id = $1 and shift_date = $2 order by clock_in_at", [original, shiftDays[4]]),
+      [{ status: "APPROVED" }, { status: "PENDING_APPROVAL" }],
+    );
+  });
+  await check("the duplicate's Reception history is the original's", async () => {
+    assert.equal(await countOf("select count(*) as n from activity_log where employee_id = $1 and summary_text like 'ZZ TEST fold %'", [original]), 2);
+    assert.equal(await countOf("select count(*) as n from activity_log where tenant_id = $1 and employee_id is null and summary_text like 'ZZ TEST fold %'", [TENANT]), 0);
   });
   await check("the duplicate is gone (404), and the original's record says what came onto it", async () => {
     const gone = await call("GET", `/api/employees/${duplicate}`, as.admin);
@@ -572,6 +636,153 @@ try {
     assert.deepEqual([kept.status, kept.employment_state, kept.last_working_day], ["active", "LEAVING", plus(20)]);
     const twice = await offboard(original, plus(21));
     assert.deepEqual([twice.status, twice.body.message], [409, "Offboarding already exists for this employee"], show(twice));
+  });
+
+  // ── A working duplicate's own records ──────────────────────────────────────
+  console.log("7. a working duplicate's own records, part-time on probation:");
+  const LEAVE = randomUUID();
+  await q("insert into leave_types (id, tenant_id, code, name) values ($1, $2, $3, $4)", [LEAVE, TENANT, `ZZF${run}`, `ZZ TEST fold leave ${run}`]);
+  const [{ id: OPERATOR }] = await q<{ id: string }>("insert into operators (tenant_id, name) values ($1, $2) returning id", [TENANT, `ZZ TEST fold operator ${run}`]);
+  const [{ id: SCHEDULE_TEMPLATE }] = await q<{ id: string }>(
+    "insert into schedule_templates (tenant_id, branch_id, name) values ($1, $2, $3) returning id", [TENANT, BRANCH, `ZZ TEST fold ${run}`]);
+  const payrollProfileOf = (employeeId: string, account: string) => q(
+    `insert into employee_payroll_profiles (tenant_id, operator_id, employee_id, employment_type, base_salary_monthly, bank_account_number)
+     values ($1, $2, $3, 'monthly', 15000, $4)`, [TENANT, OPERATOR, employeeId, account]);
+  const timeOffOn = async (employeeId: string, date: string) => (await q<{ id: string }>(
+    `insert into employee_time_off (tenant_id, employee_id, branch_id, type, start_date, end_date, created_by)
+     values ($1, $2, $3, 'annual', $4, $4, $5) returning id`, [TENANT, employeeId, BRANCH, date, admin.id]))[0]!.id;
+  const overrideOf = (employeeId: string, days: number) => q(
+    "insert into employee_leave_overrides (tenant_id, employee_id, leave_type_id, annual_days) values ($1, $2, $3, $4)", [TENANT, employeeId, LEAVE, days]);
+
+  // The original: left Promotion; its own payroll profile, opening leave balance and a day off.
+  const left = await profile("records-original", { department: PROMOTION, position: "ZZ Promoter", probationDays: 119, probationEnd: "2025-06-01" });
+  assert.equal((await offboard(left, plus(-3))).status, 201);
+  await payrollProfileOf(left, "ZZ-KEPT");
+  await q("insert into employee_leave_balance_openings (tenant_id, employee_id, leave_type_id, snapshot_at, opening_balance) values ($1, $2, $3, now(), 3)", [TENANT, left, LEAVE]);
+  const leftDayOff = await timeOffOn(left, plus(2));
+
+  // The duplicate: working part-time in Reception at 500 a day, on probation, 12000 salary default.
+  const RECORDS_PROBATION_END = plus(110);
+  const working = await profile("records-duplicate", {
+    department: RECEPTION, position: "ZZ Receptionist", startDate: plus(-2),
+    basis: "PART_TIME", dailyRate: 500, probationDays: 119, probationEnd: RECORDS_PROBATION_END, salary: 12000,
+  });
+  const workingContract = await contract(working, { status: "active", signing: "signed", start: plus(-2), position: "ZZ Receptionist" });
+  const [{ id: letter }] = await q<{ id: string }>(
+    `insert into employee_letters (employee_id, branch_id, letter_type, status, signed_at, employee_signed_name, created_by)
+     values ($1, $2, 'warning', 'signed', now(), 'ZZ TEST', $3) returning id`, [working, BRANCH, admin.id]);
+  const [{ id: document }] = await q<{ id: string }>(
+    `insert into employee_documents (employee_id, branch_id, document_type, file_name, file_path, mime_type)
+     values ($1, $2, 'id_card', 'zz-test.jpg', 'zz-test/zz-test.jpg', 'image/jpeg') returning id`, [working, BRANCH]);
+  const [{ id: asset }] = await q<{ id: string }>(
+    "insert into employee_assets (employee_id, branch_id, asset_name_snapshot, assigned_by) values ($1, $2, 'ZZ TEST locker key', $3) returning id",
+    [working, BRANCH, admin.id]);
+  const sameDayOff = await timeOffOn(working, plus(2)); // the original has that day off already: skipped
+  const ownDayOff = await timeOffOn(working, plus(9));
+  await q("insert into employee_leave_balance_openings (tenant_id, employee_id, leave_type_id, snapshot_at, opening_balance) values ($1, $2, $3, now(), 1.5)", [TENANT, working, LEAVE]);
+  await overrideOf(working, 6);
+  await payrollProfileOf(working, "ZZ-DUP");
+  await q("insert into staff_cost_allocations (tenant_id, employee_id, branch_id, allocation_percent) values ($1, $2, $3, 100)", [TENANT, working, BRANCH]);
+  await q("insert into employee_role_availability (tenant_id, employee_id, role_id, role_name, unavailable_date) values ($1, $2, $3, 'ZZ TEST', $4)", [
+    TENANT, working, randomUUID(), plus(4),
+  ]);
+  await q("insert into schedule_template_time_off (tenant_id, template_id, day_of_week, employee_id, type) values ($1, $2, 2, $3, 'OFF')", [TENANT, SCHEDULE_TEMPLATE, working]);
+  await q("insert into employee_presence (employee_id, tenant_id, is_clocked_in, last_event_at) values ($1, $2, true, now())", [working, TENANT]);
+  // Its history: an activity entry, the attention engine's own item for it, a staff movement entry and a kiosk sign-in.
+  await activity(working, "ZZ TEST fold records history");
+  const [{ id: attention }] = await q<{ id: string }>(
+    `insert into attention_items (tenant_id, branch_id, employee_id, type, title, status, rule_key, entity_key)
+     values ($1, $2, $3, 'PROBATION_REVIEW_DUE_SOON', 'ZZ TEST', 'open', 'PROBATION_REVIEW_DUE_SOON', $4) returning id`,
+    [TENANT, BRANCH, working, `employee:${working}:probation-soon`]);
+  const [{ id: movement, created_at: movementAt }] = await q<{ id: string; created_at: string }>(
+    `insert into employee_changes (employee_id, change_type, effective_date, note, created_by)
+     values ($1, 'title_change', now(), 'ZZ TEST', $2) returning id, created_at::text as created_at`, [working, admin.id]);
+  await q("insert into kiosk_auth_attempts (id, employee_id, branch_id, method, outcome) values ($1, $2, $3, 'FACE', 'SUCCESS')", [randomUUID(), working, BRANCH]);
+
+  const RECORDS_MOVES = {
+    ...NONE, contracts: 1, documents: 1, letters: 1, assets: 1, timeOff: 1, availability: 2, leaveSettings: 2, payrollProfile: 1, costAllocations: 1, history: 4,
+  };
+  await check("the preview counts the letter, document, property, leave, availability, leave settings, payroll profile, cost allocation and history, the day off skipped and the original's own replaced, and the part-time probation terms", async () => {
+    const res = await call("GET", `/api/employees/${working}/fold-into/${left}/preview`, as.admin);
+    assert.equal(res.status, 200, show(res));
+    assert.deepEqual(res.body.moved, RECORDS_MOVES);
+    assert.deepEqual(res.body.skipped, { ...NONE, timeOff: 1 });
+    assert.deepEqual(res.body.replaced, { payrollProfile: 1, costAllocations: 0, leaveSettings: 1 });
+    assert.deepEqual([res.body.reonboard.started, res.body.reonboard.employmentBasis, res.body.reonboard.probationEndDate], [true, "PART_TIME", RECORDS_PROBATION_END]);
+    assert.equal(await countOf("select count(*) as n from employee_letters where employee_id = $1", [working]), 1);
+    assert.deepEqual(await termsOf(left), {
+      employment_basis: "FULL_TIME", daily_rate: null, probation_days: 119, probation_end: "2025-06-01", probation_review_completed_at: null, salary: 15000,
+    });
+  });
+  await check("the fold keeps every one of them on the original, and the original reads as the duplicate's employment: part-time, 500 a day, on probation, its salary", async () => {
+    const res = await call("POST", `/api/employees/${working}/fold-into/${left}`, as.admin);
+    assert.equal(res.status, 200, show(res));
+    assert.deepEqual(res.body.moved, RECORDS_MOVES);
+    assert.equal(await exists(working), 0);
+    assert.deepEqual(await termsOf(left), {
+      employment_basis: "PART_TIME", daily_rate: 500, probation_days: 119, probation_end: RECORDS_PROBATION_END, probation_review_completed_at: null, salary: 12000,
+    });
+    const kept = await row(left);
+    assert.deepEqual([kept.status, kept.employment_state, kept.primary_department_id, kept.position], ["active", "ACTIVE", RECEPTION, "ZZ Receptionist"]);
+    assert.deepEqual(await q("select status, employment_basis, contract_instance_id from employee_engagements where employee_id = $1", [left]), [
+      { status: "active", employment_basis: "PART_TIME", contract_instance_id: workingContract },
+    ]);
+    assert.deepEqual(await q("select employee_id, status from employee_letters where id = $1", [letter]), [{ employee_id: left, status: "signed" }]);
+    assert.deepEqual(await q("select employee_id from employee_documents where id = $1", [document]), [{ employee_id: left }]);
+    assert.deepEqual(await q("select employee_id from employee_assets where id = $1", [asset]), [{ employee_id: left }]);
+    assert.deepEqual(
+      (await q<{ id: string }>("select id from employee_time_off where employee_id = $1", [left])).map((r) => r.id).sort(),
+      [leftDayOff, ownDayOff].sort(),
+    );
+    assert.equal(await countOf("select count(*) as n from employee_time_off where id = $1", [sameDayOff]), 0);
+    assert.deepEqual(await q("select bank_account_number from employee_payroll_profiles where employee_id = $1", [left]), [{ bank_account_number: "ZZ-DUP" }]);
+    assert.deepEqual(await q("select opening_balance from employee_leave_balance_openings where employee_id = $1", [left]), [{ opening_balance: 1.5 }]);
+    assert.deepEqual(await q("select annual_days from employee_leave_overrides where employee_id = $1", [left]), [{ annual_days: 6 }]);
+    assert.equal(await countOf("select count(*) as n from staff_cost_allocations where employee_id = $1", [left]), 1);
+    assert.equal(await countOf("select count(*) as n from employee_role_availability where employee_id = $1", [left]), 1);
+    assert.equal(await countOf("select count(*) as n from schedule_template_time_off where employee_id = $1", [left]), 1);
+    assert.deepEqual(await q("select is_clocked_in from employee_presence where employee_id = $1", [left]), [{ is_clocked_in: true }]);
+    assert.deepEqual(await q("select employee_id, status from attention_items where id = $1", [attention]), [{ employee_id: left, status: "resolved" }]);
+    assert.equal(await countOf("select count(*) as n from activity_log where employee_id = $1 and summary_text = 'ZZ TEST fold records history'", [left]), 1);
+    // The movement entry moved whole: its own id, words, author and time.
+    assert.deepEqual(
+      await q("select employee_id, change_type, note, created_by, created_at::text as created_at from employee_changes where id = $1", [movement]),
+      [{ employee_id: left, change_type: "title_change", note: "ZZ TEST", created_by: admin.id, created_at: movementAt }],
+    );
+    assert.equal(await countOf("select count(*) as n from kiosk_auth_attempts where employee_id = $1", [left]), 1);
+  });
+
+  console.log("8. refused:");
+  await check("a payroll profile and leave settings on both profiles, nobody onboarded again: refused naming them, and nothing moves", async () => {
+    const kept = await profile("both-records-original", { department: PROMOTION, position: "ZZ Promoter" });
+    const other = await profile("both-records", { department: PROMOTION, position: "ZZ Promoter" });
+    await payrollProfileOf(kept, "ZZ-KEPT-2");
+    await payrollProfileOf(other, "ZZ-OTHER-2");
+    await overrideOf(kept, 6);
+    await overrideOf(other, 8);
+    const otherDayOff = await timeOffOn(other, plus(12));
+    for (const [method, path] of [["GET", `/api/employees/${other}/fold-into/${kept}/preview`], ["POST", `/api/employees/${other}/fold-into/${kept}`]] as const) {
+      const res = await call(method, path, as.admin);
+      assert.equal(res.status, 409, `${method}: ${show(res)}`);
+      assert.deepEqual([res.body.reason, res.body.blocking], ["has_records", [{ label: "payroll profiles", count: 1 }, { label: "leave settings", count: 1 }]]);
+    }
+    assert.equal(await exists(other), 1);
+    assert.deepEqual(await q("select employee_id from employee_time_off where id = $1", [otherDayOff]), [{ employee_id: other }]);
+    assert.deepEqual(await q("select bank_account_number from employee_payroll_profiles where employee_id = $1", [kept]), [{ bank_account_number: "ZZ-KEPT-2" }]);
+  });
+  await check("a re-onboarding still to come on other terms (part-time) is refused until its start date, and nothing moves", async () => {
+    const later = plus(8);
+    const kept = await profile("terms-leaving", { department: PROMOTION, position: "ZZ Promoter" });
+    await contract(kept, { status: "active", signing: "signed", start: plus(-100), position: "ZZ Promoter" });
+    assert.equal((await offboard(kept, plus(5))).status, 201);
+    const other = await profile("terms-starting", { department: RECEPTION, position: "ZZ Receptionist", startDate: later, basis: "PART_TIME", dailyRate: 450 });
+    const next = await contract(other, { status: "active", signing: "signed", start: later, position: "ZZ Receptionist" });
+    const res = await call("POST", `/api/employees/${other}/fold-into/${kept}`, as.admin);
+    assert.deepEqual([res.status, res.body.reason], [409, "terms_differ"], show(res));
+    assert.match(res.body.message, new RegExp(`Fold on or after ${later}`));
+    assert.equal(await exists(other), 1);
+    assert.deepEqual(await contractOf(next), { employee_id: other, status: "active", signing_status: "signed" });
+    assert.equal(await countOf("select count(*) as n from employee_engagements where employee_id = $1", [kept]), 0);
   });
 
   console.log(`employee-fold.check: ${checks} checks passed`);

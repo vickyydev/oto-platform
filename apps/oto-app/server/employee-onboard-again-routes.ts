@@ -45,10 +45,11 @@ import { bangkokToday } from "./lib/engagementDates";
  *    when the start date is today or already past.
  *  - POST /api/employees/:id/fold-into/:targetId (and GET .../preview) — a
  *    duplicate profile made for the same person folded into the one that
- *    holds the login: its shifts, checklists, tasks, contracts, time records
- *    and face moved, the duplicate deleted, and — when the original has left
+ *    holds the login: its shifts, checklists, tasks, contracts, time records,
+ *    face, documents, letters, company property, leave, payroll profile and
+ *    history moved, the duplicate deleted, and — when the original has left
  *    or is leaving and the duplicate is the one working — the original
- *    onboarded again into the duplicate's employment.
+ *    onboarded again into the duplicate's employment, on its terms.
  *  - POST /api/employees/:id/review/rematch — the profile's pending
  *    "Unscheduled work" approvals matched to the shifts it now has; run after a
  *    fold and after an Onboard Again start as well.
@@ -459,6 +460,8 @@ export function registerEmployeeOnboardAgainRoutes(app: Express, deps: EmployeeO
         skipped: outcome.skipped,
         face: outcome.face,
         supersededContracts: outcome.supersededContracts,
+        replaced: outcome.replaced,
+        clockedOnBoth: outcome.clockedOnBoth,
         reonboard: outcome.reonboard,
         deleted: outcome.deleted,
       };

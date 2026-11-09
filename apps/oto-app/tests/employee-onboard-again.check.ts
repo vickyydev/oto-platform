@@ -479,14 +479,18 @@ try {
     assert.equal(await countOf("select count(*) as n from employees where id = $1", [duplicate]), 1);
     assert.equal((await engagementOf(original)).length, 0);
   });
-  const NONE = { shifts: 0, duties: 0, breaks: 0, templateShifts: 0, roles: 0, checklists: 0, tasks: 0, contracts: 0, timeRecords: 0 };
+  const NONE = {
+    shifts: 0, duties: 0, breaks: 0, templateShifts: 0, roles: 0, checklists: 0, tasks: 0, contracts: 0, timeRecords: 0,
+    documents: 0, letters: 0, assets: 0, timeOff: 0, availability: 0, leaveSettings: 0, payrollProfile: 0, costAllocations: 0, history: 0,
+  };
   const DUPLICATE_HOLDS = { ...NONE, shifts: 3, duties: 1, breaks: 1, templateShifts: 1, roles: 1, checklists: 1, tasks: 1 };
   await check("the preview counts 3 shifts (1 duty, 1 break), 1 template shift, 1 role, 1 checklist, 1 task and writes nothing", async () => {
     const res = await call("GET", `/api/employees/${duplicate}/fold-into/${original}/preview`, as.admin);
     assert.equal(res.status, 200, show(res));
-    // The original works on (active, no last working day): nobody is onboarded again, and no face moves.
+    // The original works on (active, no last working day): nobody is onboarded again, nothing replaced, and no face moves.
     assert.deepEqual(res.body, {
-      moved: DUPLICATE_HOLDS, skipped: NONE, face: "none", supersededContracts: 0, reonboard: null, deleted: { profile: 1, login: 0 },
+      moved: DUPLICATE_HOLDS, skipped: NONE, face: "none", supersededContracts: 0,
+      replaced: { payrollProfile: 0, costAllocations: 0, leaveSettings: 0 }, clockedOnBoth: 0, reonboard: null, deleted: { profile: 1, login: 0 },
     });
     assert.equal(await shiftsOf(duplicate), 3);
     assert.deepEqual(await q("select employee_id from duty_blocks where id = $1", [dupDuty]), [{ employee_id: duplicate }]);

@@ -15,6 +15,10 @@ import type { Pool } from "pg";
  * the entry APPROVED with the approver and time, the item RESOLVED with the
  * resolver, the time and the note below. Items on a day with no shift stay
  * pending for a manager, and so do items at a branch the caller cannot reach.
+ * So does an item whose employee already has another time entry (any but a
+ * rejected one) on that day, or one running over its clock-in: after a fold
+ * the duplicate's own entry for the shift is that employee's now, and
+ * approving the stray one as well would count the same hours twice.
  *
  * One transaction, every row it settles locked first, so a manager's own
  * approve or reject at the same moment either goes first (and the row is no
@@ -40,7 +44,7 @@ export async function rematchUnscheduledWork(pool: Pool, scope: RematchScope): P
   const client = await pool.connect();
   try {
     await client.query("begin");
-    const { rows } = await client.query<{ issue_id: string; entry_id: string; has_shift: boolean }>(
+    const { rows } = await client.query<{ issue_id: string; entry_id: string; has_shift: boolean; has_other_entry: boolean }>(
       `select i.id as issue_id, e.id as entry_id,
               exists (
                 select 1 from schedule_assignments sa
@@ -50,7 +54,16 @@ export async function rematchUnscheduledWork(pool: Pool, scope: RematchScope): P
                    and sr.branch_id = i.branch_id
                    -- the CASE keeps a malformed day from failing the cast: it matches nothing
                    and sa.shift_date = case when i.issue_date ~ '^\\d{4}-\\d{2}-\\d{2}$' then i.issue_date::date end
-              ) as has_shift
+              ) as has_shift,
+              exists (
+                select 1 from time_entries o
+                 where o.employee_id = e.employee_id
+                   and o.tenant_id = e.tenant_id
+                   and o.id <> e.id
+                   and o.status <> 'REJECTED'
+                   and (o.shift_date = e.shift_date or o.shift_date = i.issue_date
+                        or (o.clock_in_at <= e.clock_in_at and o.clock_out_at > e.clock_in_at))
+              ) as has_other_entry
          from timekeeping_issues i
          join time_entries e
            on e.id = i.linked_time_entry_id and e.tenant_id = i.tenant_id
@@ -63,7 +76,7 @@ export async function rematchUnscheduledWork(pool: Pool, scope: RematchScope): P
           for update of i, e`,
       [scope.tenantId, scope.employeeId, scope.branchIds],
     );
-    const matched = rows.filter((r) => r.has_shift);
+    const matched = rows.filter((r) => r.has_shift && !r.has_other_entry);
     if (matched.length > 0) {
       // UTC, as the review route's Drizzle writes store these timestamp columns.
       const now = "(now() at time zone 'utc')";
