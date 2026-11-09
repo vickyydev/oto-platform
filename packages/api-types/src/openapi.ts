@@ -6928,6 +6928,8 @@ export interface paths {
                                 } & {
                                     [key: string]: unknown;
                                 })[];
+                                /** Format: uuid */
+                                stockShareItemId: string | null;
                             } & {
                                 [key: string]: unknown;
                             })[];
@@ -7155,6 +7157,8 @@ export interface paths {
                             /** Format: uuid */
                             stockItemId: string;
                         }[];
+                        /** Format: uuid */
+                        stockShareItemId?: string | null;
                     };
                 };
             };
@@ -7272,6 +7276,8 @@ export interface paths {
                             /** Format: uuid */
                             stockItemId: string;
                         }[];
+                        /** Format: uuid */
+                        stockShareItemId?: string | null;
                     };
                 };
             };

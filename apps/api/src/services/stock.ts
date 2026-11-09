@@ -454,15 +454,218 @@ export async function loadStockCatalogue(
     list.push(item);
     itemsByProduct.set(item.productId!, list);
   }
+  // SCRUM-799 — an item that counts no stock of its own here but takes stock
+  // from another item's one-size shelf (Free Socks from Regular Socks) resolves
+  // to that shelf, so the guard and the decrement treat it as the other item.
+  const borrowed = await sharedStockOf(db, branchId, {
+    productIds: ids.filter((id) => !itemsByProduct.has(id)),
+    liveOnly: true,
+  });
+  for (const [productId, item] of borrowed) {
+    itemsById.set(item.id, item);
+    itemsByProduct.set(productId, [item]);
+  }
+  // The owners' names too: a shortage of a shared shelf is named for the item
+  // that owns it ("Regular Socks is out of stock").
+  const owners = [...borrowed.values()].flatMap((item) => (item.productId ? [item.productId] : []));
   const products = await db
     .select({ id: product.id, name: product.name, variants: product.variants })
     .from(product)
-    .where(inArray(product.id, ids));
+    .where(inArray(product.id, [...new Set([...ids, ...owners])]));
   for (const p of products) {
     productNames.set(p.id, p.name);
     sizeOrder.set(p.id, (p.variants ?? []).map((v) => v.id));
   }
   return { itemsByProduct, itemsById, productNames, sizeOrder };
+}
+
+/**
+ * SCRUM-799 — ITEMS THAT TAKE STOCK FROM ANOTHER ITEM'S SHELF, at one branch:
+ * borrower product id → the stock item it sells from.
+ *
+ * The pointer is the product's own `stock_item_id` (the prototype's
+ * `inventoryItemId`) aimed at a one-size stock item of this branch that
+ * stocks a DIFFERENT product — the 0-baht Free Socks at the Regular Socks
+ * item. It is a share only while it still reads as one: the item is live,
+ * sold in one size and linked to another product, and the borrower counts no
+ * stock of its own here (an own link always wins). `liveOnly` also leaves out a
+ * retired item, as the selling paths leave out a retired item of their own.
+ *
+ * Name the borrowers (`productIds`) or the shelves (`itemIds`); omit both for
+ * the whole branch.
+ */
+export async function sharedStockOf(
+  db: Exec,
+  branchId: string,
+  filter: { productIds?: readonly string[]; itemIds?: readonly string[]; liveOnly?: boolean },
+): Promise<Map<string, ItemRow>> {
+  const out = new Map<string, ItemRow>();
+  if ((filter.productIds && filter.productIds.length === 0) || (filter.itemIds && filter.itemIds.length === 0)) return out;
+  const rows = await db
+    .select({ productId: product.id, item: stockItem })
+    .from(product)
+    .innerJoin(stockItem, eq(stockItem.id, product.stockItemId))
+    .where(
+      and(
+        filter.productIds ? inArray(product.id, [...new Set(filter.productIds)]) : undefined,
+        filter.itemIds ? inArray(stockItem.id, [...new Set(filter.itemIds)]) : undefined,
+        eq(stockItem.branchId, branchId),
+        isNull(stockItem.archivedAt),
+        isNull(stockItem.variantId),
+        sql`${stockItem.productId} is not null`,
+        ne(stockItem.productId, product.id),
+        filter.liveOnly ? eq(stockItem.active, true) : undefined,
+      ),
+    );
+  if (rows.length === 0) return out;
+  const own = await db
+    .select({ productId: stockItem.productId })
+    .from(stockItem)
+    .where(
+      and(
+        eq(stockItem.branchId, branchId),
+        inArray(stockItem.productId, rows.map((r) => r.productId)),
+        isNull(stockItem.archivedAt),
+      ),
+    );
+  const counted = new Set(own.map((r) => r.productId));
+  for (const r of rows) if (!counted.has(r.productId)) out.set(r.productId, r.item);
+  return out;
+}
+
+/**
+ * SCRUM-799 — SET OR STOP "TAKES STOCK FROM" for one product at one branch
+ * (`stockShareItemId` on the menu item write). The product must be this
+ * branch's own (an item on every park's menu has one pointer for all of them),
+ * sold in one size, and count no stock of its own here; the stock item must be
+ * a live one-size item of this branch already stocking another product. Null
+ * stops a share and leaves an item's own tracking alone.
+ */
+export async function setProductStockShare(
+  tx: Tx,
+  scope: { operatorId: string; branchId: string; accountId: string; requestId?: string | null },
+  productRow: typeof product.$inferSelect,
+  stockItemId: string | null,
+): Promise<void> {
+  const current = (await sharedStockOf(tx, scope.branchId, { productIds: [productRow.id] })).get(productRow.id) ?? null;
+  if (stockItemId === null) {
+    if (!current) return;
+    await tx.update(product).set({ stockItemId: null, updatedAt: new Date() }).where(eq(product.id, productRow.id));
+    await audit.record(tx, {
+      actorAccountId: scope.accountId,
+      operatorId: scope.operatorId,
+      branchId: scope.branchId,
+      action: 'product.stock_share',
+      entityType: 'product',
+      entityId: productRow.id,
+      requestId: scope.requestId ?? null,
+      before: { stockItemId: current.id },
+      after: { stockItemId: null },
+    });
+    return;
+  }
+  if (current?.id === stockItemId) return;
+  if (productRow.branchId === null) {
+    throw errors.badRequest(
+      `"${productRow.name}" is on every park's menu — only an item of this park can take stock from this park's shelf`,
+      { productId: productRow.id },
+    );
+  }
+  if ((productRow.variants ?? []).length > 0) {
+    throw errors.badRequest(
+      `"${productRow.name}" is sold in sizes — only an item sold in one size can take stock from another item's shelf`,
+      { productId: productRow.id },
+    );
+  }
+  const own = (await productStockLinks(tx, scope.branchId, [productRow.id])).get(productRow.id) ?? [];
+  if (own.length > 0) {
+    throw errors.conflict(
+      'STOCK_SHARE_OWN_STOCK',
+      `"${productRow.name}" counts its own stock — stop tracking it in Inventory before it takes stock from another item`,
+      { productId: productRow.id },
+    );
+  }
+  const [item] = await tx
+    .select()
+    .from(stockItem)
+    .where(and(eq(stockItem.id, stockItemId), eq(stockItem.operatorId, scope.operatorId)))
+    .limit(1)
+    // The item's link must not move under the share being written.
+    .for('no key update');
+  if (!item || item.archivedAt || item.branchId !== scope.branchId) {
+    throw errors.badRequest('That stock item is not one of this branch’s', { stockItemId });
+  }
+  if (item.variantId !== null) {
+    throw errors.badRequest(
+      `"${stockSizeName(item.name, item.variantLabel)}" is one size of an item sold in sizes — choose an item sold in one size`,
+      { stockItemId },
+    );
+  }
+  if (!item.productId || item.productId === productRow.id) {
+    throw errors.badRequest(
+      `"${item.name}" stocks no other item on the menu — link it to the item it stocks in Inventory first`,
+      { stockItemId },
+    );
+  }
+  await tx.update(product).set({ stockItemId: item.id, updatedAt: new Date() }).where(eq(product.id, productRow.id));
+  await audit.record(tx, {
+    actorAccountId: scope.accountId,
+    operatorId: scope.operatorId,
+    branchId: scope.branchId,
+    action: 'product.stock_share',
+    entityType: 'product',
+    entityId: productRow.id,
+    requestId: scope.requestId ?? null,
+    before: { stockItemId: current?.id ?? null },
+    after: { stockItemId: item.id, sharesWithProductId: item.productId },
+  });
+}
+
+/**
+ * SCRUM-799 — A SHARE WHOSE SHELF HAS GONE, released. When a stock item a
+ * product takes stock from is removed, split into sizes or unlinked from the
+ * item it stocked, the pointer would quietly stop counting: it is cleared
+ * instead, with an audit row saying why, so the Console shows the item as
+ * taking from nothing and an admin can point it somewhere real. Run at the end
+ * of a write that can change a stock item's link, never half-way through one
+ * (`saveStockItem` unlinks and relinks within itself).
+ */
+export async function releaseStaleStockShares(
+  tx: Tx,
+  scope: { operatorId: string; branchId: string; accountId: string; requestId?: string | null },
+): Promise<void> {
+  const rows = await tx
+    .select({ productId: product.id, item: stockItem })
+    .from(product)
+    .innerJoin(stockItem, eq(stockItem.id, product.stockItemId))
+    .where(
+      and(
+        eq(product.operatorId, scope.operatorId),
+        eq(stockItem.branchId, scope.branchId),
+        // Not the product's own item: an own marker is `setProductStockLinks`'s.
+        sql`${stockItem.productId} is distinct from ${product.id}`,
+        sql`(${stockItem.archivedAt} is not null or ${stockItem.variantId} is not null or ${stockItem.productId} is null)`,
+      ),
+    );
+  for (const r of rows) {
+    await tx.update(product).set({ stockItemId: null, updatedAt: new Date() }).where(eq(product.id, r.productId));
+    const why = r.item.archivedAt
+      ? 'the stock item was removed'
+      : r.item.variantId !== null
+        ? 'the stock item is now one size of an item sold in sizes'
+        : 'the stock item no longer stocks an item on the menu';
+    await audit.record(tx, {
+      actorAccountId: scope.accountId,
+      operatorId: scope.operatorId,
+      branchId: scope.branchId,
+      action: 'product.stock_share',
+      entityType: 'product',
+      entityId: r.productId,
+      requestId: scope.requestId ?? null,
+      before: { stockItemId: r.item.id },
+      after: { stockItemId: null, released: why },
+    });
+  }
 }
 
 /**
@@ -475,6 +678,8 @@ export async function loadStockCatalogue(
  *
  * A product with no stock item at this branch is not stock-tracked and the
  * line takes nothing — the prototype's "no `inventoryItemId`" (`types.ts:216`).
+ * A product that takes stock from another item's shelf (SCRUM-799,
+ * `sharedStockOf`) has that one-size item as its own here, whatever its price.
  */
 export function lineStock(line: StockLineInput, catalogue: StockCatalogue): LineStock {
   const empty: LineStock = {
@@ -2836,6 +3041,9 @@ export async function saveStockItem(
     if (productRow) links.push({ variantId: productRow.variants.length > 0 ? size.variantId : null, stockItemId: id });
   }
   if (productRow) await setProductStockLinks(tx, scope, productRow, links);
+  // SCRUM-799 — a size removed, split or unlinked here may be a shelf another
+  // item takes stock from: that share is released, never left counting nothing.
+  await releaseStaleStockShares(tx, scope);
   if (openingDrafts.length) await applyMovements(tx, await movementContext(tx, actor, now), openingDrafts);
 
   // Packs: the item's, on every size (the prototype shares them across variants).

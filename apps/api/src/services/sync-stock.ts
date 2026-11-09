@@ -26,7 +26,7 @@ import type { BoxAuth } from './box';
 import { raiseAlert } from './ops';
 // Read-only use of the landed stock service: the branch's places in the order
 // a sale takes from them. `applyMovements` stays the only writer of a level.
-import { branchLocations } from './stock';
+import { branchLocations, sharedStockOf } from './stock';
 import type { ApplyResult, BatchScope, PreparedEvent } from './sync';
 import type { Exec, Tx } from './tx';
 
@@ -144,6 +144,29 @@ async function stockCacheItemIn(
         total: Object.values(byPlace).reduce((sum, q) => sum + q, 0),
       });
     }
+  }
+  // SCRUM-799 — an item that takes stock from another item's shelf (Free Socks
+  // from Regular Socks) is that shelf on the box too: one more entry under its
+  // own product with the SAME stock item, so the box's guard and its own count
+  // add both items' units against one shelf. After every owner's entry, so the
+  // first entry for a shelf — the one a box shortage is named from — is the
+  // item that owns it.
+  const borrowed = await sharedStockOf(db, auth.branchId, { itemIds, liveOnly: true });
+  const ownerEntry = new Map(entries.map((e) => [e.stockItemId, e]));
+  const borrowerNames = borrowed.size
+    ? new Map(
+        (
+          await db
+            .select({ id: product.id, name: product.name })
+            .from(product)
+            .where(inArray(product.id, [...borrowed.keys()]))
+        ).map((p) => [p.id, p.name]),
+      )
+    : new Map<string, string>();
+  for (const [productId, item] of [...borrowed].sort(([a], [b]) => a.localeCompare(b))) {
+    const owner = ownerEntry.get(item.id);
+    if (!owner) continue;
+    entries.push({ ...owner, levels: { ...owner.levels }, productId, itemName: borrowerNames.get(productId) ?? owner.itemName });
   }
   const body = {
     branchId: auth.branchId,

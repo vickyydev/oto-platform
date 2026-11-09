@@ -151,6 +151,15 @@ export const MenuItemBodySchema = z.object({
    * the links alone. The prototype's `inventoryItemId`, made real.
    */
   stockLinks: z.array(ProductStockLinkSchema).max(24).optional(),
+  /**
+   * SCRUM-799 — "takes stock from": a one-size stock item at the route's
+   * branch that already stocks ANOTHER item, whose shelf this item sells from
+   * too — the 0-baht Free Socks taking from the Regular Socks pool. Each one
+   * sold leaves that shelf exactly as the other item would. Null stops it;
+   * absent leaves it as it is. An item that counts its own stock (`stockLinks`)
+   * cannot also take another's.
+   */
+  stockShareItemId: z.string().uuid().nullable().optional(),
 });
 export type MenuItemBody = z.infer<typeof MenuItemBodySchema>;
 

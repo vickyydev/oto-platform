@@ -13930,6 +13930,11 @@
                               ],
                               "additionalProperties": true
                             }
+                          },
+                          "stockShareItemId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
                           }
                         },
                         "required": [
@@ -13956,7 +13961,8 @@
                           "translations",
                           "archivedAt",
                           "linkedModifierGroupIds",
-                          "stockLinks"
+                          "stockLinks",
+                          "stockShareItemId"
                         ],
                         "additionalProperties": true
                       }
@@ -14408,6 +14414,11 @@
                       "additionalProperties": false
                     },
                     "maxItems": 24
+                  },
+                  "stockShareItemId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
                   }
                 },
                 "required": [
@@ -14631,6 +14642,11 @@
                       "additionalProperties": false
                     },
                     "maxItems": 24
+                  },
+                  "stockShareItemId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
                   }
                 },
                 "additionalProperties": false

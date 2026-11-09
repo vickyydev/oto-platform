@@ -53,7 +53,13 @@ import {
   assertVariantsWellFormed,
   normaliseVariants,
 } from '../services/product-variants';
-import { productStockLinks, setProductStockLinks } from '../services/stock';
+import {
+  productStockLinks,
+  releaseStaleStockShares,
+  setProductStockLinks,
+  setProductStockShare,
+  sharedStockOf,
+} from '../services/stock';
 import { opCtx, withTx } from '../services/tx';
 
 /**
@@ -117,6 +123,8 @@ const MenuResponseSchema = z.object({
     translations: MenuReadTranslationsSchema.nullable(), archivedAt: MenuTimestampSchema.nullable(),
     linkedModifierGroupIds: z.array(z.string().uuid()),
     stockLinks: z.array(z.object({ variantId: z.string().nullable(), stockItemId: z.string().uuid() }).passthrough()),
+    /** SCRUM-799 — the one-size stock item at this branch this item takes stock from; null when none. */
+    stockShareItemId: z.string().uuid().nullable(),
   }).passthrough()),
 }).passthrough();
 const MenuOkResponseSchema = z.object({ ok: z.literal(true) });
@@ -206,6 +214,20 @@ function requireItemCategory(categoryId: string | null | undefined): string {
   return categoryId;
 }
 
+/**
+ * SCRUM-799 — an item counts its own stock (`stockLinks`) or takes stock from
+ * another item's shelf (`stockShareItemId`), never both in one write: which
+ * shelf a sale takes from would depend on the order they were applied in.
+ */
+function assertOneStockSource(body: { stockLinks?: readonly unknown[]; stockShareItemId?: string | null }): void {
+  if ((body.stockLinks?.length ?? 0) > 0 && body.stockShareItemId) {
+    throw errors.badRequest(
+      'An item counts its own stock or takes stock from another item — not both. Send one of them.',
+      { fields: ['stockLinks', 'stockShareItemId'] },
+    );
+  }
+}
+
 function decodeWorkbook(contentBase64: string): Buffer {
   const file = Buffer.from(contentBase64, 'base64');
   if (file.length === 0) throw errors.badRequest('That file is empty');
@@ -250,9 +272,18 @@ export async function menuRoutes(app: App): Promise<void> {
         req.params.branchId,
         menu.products.map((p) => p.id),
       );
+      // SCRUM-799 — and the shelf an item takes stock from, when it shares
+      // another item's (a retired shelf included: the setting is still there).
+      const shares = await sharedStockOf(app.db, req.params.branchId, {
+        productIds: menu.products.filter((p) => p.stockItemId !== null).map((p) => p.id),
+      });
       return MenuResponseSchema.parse({
         ...menu,
-        products: menu.products.map((p) => ({ ...p, stockLinks: links.get(p.id) ?? [] })),
+        products: menu.products.map((p) => ({
+          ...p,
+          stockLinks: links.get(p.id) ?? [],
+          stockShareItemId: shares.get(p.id)?.id ?? null,
+        })),
       });
     },
   );
@@ -426,6 +457,7 @@ export async function menuRoutes(app: App): Promise<void> {
       // already on another live item.
       const variants = normaliseVariants(body.variants ?? []);
       assertVariantsWellFormed(body.name, variants, body.sku ?? null);
+      assertOneStockSource(body);
       const id = newId();
       return withTx(app.db, opCtx(req), 'menu_item.create', async (tx) => {
         await assertBarcodesFree(tx, auth.operatorId, { id: null, sku: body.sku ?? null, variants });
@@ -452,14 +484,16 @@ export async function menuRoutes(app: App): Promise<void> {
         if (body.modifierGroupIds) {
           await setItemModifierGroups(tx, auth.operatorId, id, body.modifierGroupIds);
         }
+        const stockScope = { operatorId: auth.operatorId, branchId: req.params.branchId, accountId: auth.accountId, requestId: req.id };
         if (body.stockLinks) {
           const [created] = await tx.select().from(product).where(eq(product.id, id)).limit(1);
-          await setProductStockLinks(
-            tx,
-            { operatorId: auth.operatorId, branchId: req.params.branchId, accountId: auth.accountId, requestId: req.id },
-            created!,
-            body.stockLinks,
-          );
+          await setProductStockLinks(tx, stockScope, created!, body.stockLinks);
+          await releaseStaleStockShares(tx, stockScope);
+        }
+        // SCRUM-799 — "takes stock from", after its own links (which win).
+        if (body.stockShareItemId !== undefined) {
+          const [created] = await tx.select().from(product).where(eq(product.id, id)).limit(1);
+          await setProductStockShare(tx, stockScope, created!, body.stockShareItemId);
         }
         await audit.record(tx, {
           actorAccountId: auth.accountId,
@@ -517,6 +551,7 @@ export async function menuRoutes(app: App): Promise<void> {
       if (barcodesMove) {
         assertVariantsWellFormed(body.name ?? before.name, variantsAfter, skuAfter);
       }
+      assertOneStockSource(body);
       return withTx(app.db, opCtx(req), 'menu_item.update', async (tx) => {
         if (barcodesMove) {
           await assertBarcodesFree(tx, auth.operatorId, {
@@ -561,13 +596,17 @@ export async function menuRoutes(app: App): Promise<void> {
         }
         // S2-14b — the stock links at this branch, when the body carries them;
         // checked against the sizes the row holds now.
+        const stockScope = { operatorId: auth.operatorId, branchId: req.params.branchId, accountId: auth.accountId, requestId: req.id };
         if (body.stockLinks && after) {
-          await setProductStockLinks(
-            tx,
-            { operatorId: auth.operatorId, branchId: req.params.branchId, accountId: auth.accountId, requestId: req.id },
-            after,
-            body.stockLinks,
-          );
+          await setProductStockLinks(tx, stockScope, after, body.stockLinks);
+          // SCRUM-799 — a shelf this item stopped stocking may be another's source.
+          await releaseStaleStockShares(tx, stockScope);
+        }
+        // SCRUM-799 — "takes stock from", read as the row is now (sizes and
+        // links included), after its own links, which win.
+        if (body.stockShareItemId !== undefined && after) {
+          const [now] = await tx.select().from(product).where(eq(product.id, after.id)).limit(1);
+          await setProductStockShare(tx, stockScope, now!, body.stockShareItemId);
         }
         await audit.record(tx, {
           actorAccountId: auth.accountId,
