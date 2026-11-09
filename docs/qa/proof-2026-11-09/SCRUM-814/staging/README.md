@@ -88,3 +88,25 @@ date fields reach a saved format too (not checked on production here).
   and one `beo_ai_fill` activity row (no message text in it).
 
 The scripts are kept in the scratchpad folder `s814p` (a driver and its steps).
+
+## Re-check after SCRUM-816
+
+Run on 10 November 2026, 04:45-04:49 Bangkok, on oto-app-staging live at
+`8b3e36741279a52e87a1fb8723077f02eba0a096`, with the park group's saved BEO
+settings unchanged (the saved output format still names no `eventDate`).
+SCRUM-816 now adds the fields the app reads to any saved format. A new ZZ TEST
+event "ZZ TEST 816 date" booked for Sunday 15 November 2026, the Russian text
+pasted (with the package, pizza and animator added; details in
+`../../SCRUM-816/staging/README.md`).
+
+| Check | Result | Picture |
+|---|---|---|
+| The review shows the Date line "Sat 21 Nov 2026 — the message says "21 ноября"", amber "The event is booked for Sun 15 Nov 2026: not the same day.", unticked | Pass | `814-st-15-app-ai-fill-review-date-line-after-816.png` |
+| Load without the tick: the date stays 15 Nov | Pass: form and server (after Save) 2026-11-15 | `../../SCRUM-816/staging/816-st-02-…` |
+| Tick, Load, Save: the date becomes 21 Nov | Pass: form November 21st, 2026; the event and the BEO read 2026-11-21 after Save | `../../SCRUM-816/staging/816-st-06-app-saved-date-21-nov.png` |
+| The deposit date | Pass: 2026-11-09 | `../../SCRUM-816/staging/816-st-03-…` |
+
+The activity row now says `requiredFields: appended` beside
+`outputFormat: setting`. The ZZ TEST 816 event was deleted (404 read back) and
+the session signed out (401). `receipt.json` holds this re-check under
+`recheckAfter816`.

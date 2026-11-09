@@ -948,5 +948,40 @@
       "namesMasked": 0,
       "masks": 0
     }
-  ]
+  ],
+  "recheckAfter816": {
+    "liveCommit": "8b3e36741279a52e87a1fb8723077f02eba0a096",
+    "at": "2026-11-09T21:45:24.373Z",
+    "event": "ZZ TEST 816 date (booked 2026-11-15), deleted after",
+    "dateLine": "Date: Sat 21 Nov 2026 — the message says \"21 ноября\" The event is booked for Sun 15 Nov 2026: not the same day. Tick to make Sat 21 Nov 2026 the event's date.",
+    "differsText": "The event is booked for Sun 15 Nov 2026: not the same day.",
+    "tickedOnOpen": false,
+    "noTick": {
+      "formDate": "November 15th, 2026",
+      "savedEventDate": "2026-11-15"
+    },
+    "tick": {
+      "formDate": "November 21st, 2026",
+      "savedEventDate": "2026-11-21",
+      "beoEventDate": "2026-11-21"
+    },
+    "depositDate": "2026-11-09",
+    "promptFrom": {
+      "advice": "setting",
+      "outputFormat": "setting",
+      "model": "built_in",
+      "requiredFields": "appended"
+    },
+    "results": {
+      "dateLineShown": "pass",
+      "tickLoadSaveMakes21Nov": "pass",
+      "loadWithoutTickKeeps15Nov": "pass"
+    },
+    "pictures": [
+      {
+        "file": "814-st-15-app-ai-fill-review-date-line-after-816.png",
+        "shows": "AI Fill review (r1-814)"
+      }
+    ]
+  }
 }

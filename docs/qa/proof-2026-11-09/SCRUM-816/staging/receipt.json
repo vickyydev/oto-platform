@@ -1,0 +1,283 @@
+{
+  "unit": "SCRUM-816",
+  "what": "The fields the app code reads ride on the BEO prompt under the park group's saved output format: the Date line of SCRUM-814 now shows",
+  "liveCommit": "8b3e36741279a52e87a1fb8723077f02eba0a096",
+  "liveDeploy": "oto-app-staging dep-dbp3r4om7kps739o4b1g live at 8b3e3674, read before the run (scripts/agent/render.mjs deploys)",
+  "appVersion": "8b3e36741279a52e87a1fb8723077f02eba0a096",
+  "run": {
+    "startedAt": "2026-11-09T21:45:24.373Z",
+    "browser": "Chromium 153.0.8010.12 headless, 1440 wide, Asia/Bangkok"
+  },
+  "actor": {
+    "who": "the staging administrator (name masked)",
+    "role": "global_admin"
+  },
+  "event": {
+    "title": "ZZ TEST 816 date",
+    "park": "Oto Play Park, Central Floresta",
+    "id": "89f98182-9928-4566-9ab6-fe3444d9781d",
+    "created": {
+      "route": "POST /api/admin/events",
+      "bookedFor": "2026-11-15",
+      "startTime": "14:00"
+    },
+    "zzTest816Before": []
+  },
+  "pastedText": "Подтверждаем день рождения Миши 21 ноября в 14:00, 12 детей, 4 взрослых. Пакет Birthday package Central Floresta, пицца Маргарита, аниматор Zombie game. Депозит получен 9 ноября",
+  "modelCalls": 2,
+  "cleanup": {
+    "event": {
+      "id": "89f98182-9928-4566-9ab6-fe3444d9781d",
+      "delete": {
+        "path": "DELETE /api/admin/events/89f98182-9928-4566-9ab6-fe3444d9781d",
+        "status": 204
+      },
+      "readBack": {
+        "event": 404,
+        "beo": 404
+      },
+      "zzTest816LeftAtCentralFloresta": 0,
+      "listStatus": 200
+    }
+  },
+  "signOut": {
+    "appLogout": 200,
+    "launcherSignOut": 200,
+    "appUserAfter": 401,
+    "launcherMeAfter": 401
+  },
+  "savedBeoSettings": {
+    "at": "2026-11-09T21:45:46.803Z",
+    "rows": [
+      {
+        "key": "ai_beo_parsing_advice",
+        "hasValue": true,
+        "updatedAt": "2026-05-01T11:55:32.987Z",
+        "ownParkGroup": true,
+        "namesEventDate": false,
+        "namesEventDateText": false,
+        "namesDepositDate": false
+      },
+      {
+        "key": "ai_beo_parsing_output_format",
+        "hasValue": true,
+        "updatedAt": "2026-05-01T11:55:43.467Z",
+        "ownParkGroup": true,
+        "namesEventDate": false,
+        "namesEventDateText": false,
+        "namesDepositDate": true
+      }
+    ]
+  },
+  "runs": {
+    "first_noTick": {
+      "parse": {
+        "route": "POST /api/ai/parse-beo",
+        "status": 200,
+        "seconds": 11.2
+      },
+      "answerEvent": {
+        "eventDate": "2026-11-21",
+        "eventDateText": "21 ноября",
+        "startTime": "14:00",
+        "numChildren": 12,
+        "numAdults": 4
+      },
+      "answerDepositDate": "2026-11-09",
+      "answerKeys": [
+        "summary",
+        "event",
+        "kitchenPlan",
+        "partyDetails",
+        "proposals"
+      ],
+      "answerHasReview": false,
+      "review": {
+        "dateLine": "Date: Sat 21 Nov 2026 — the message says \"21 ноября\" The event is booked for Sun 15 Nov 2026: not the same day. Tick to make Sat 21 Nov 2026 the event's date.",
+        "differsText": "The event is booked for Sun 15 Nov 2026: not the same day.",
+        "tickedOnOpen": false,
+        "rowBackground": "rgb(255, 251, 235)",
+        "differsColour": "rgb(180, 83, 9)",
+        "catalogueSection": {
+          "reviewDialogOpen": false,
+          "packageSelect": 0,
+          "setMenuSelect": 0,
+          "entertainment": 0,
+          "sourceMarks": 0,
+          "approveButton": 0,
+          "loadButton": 1
+        }
+      },
+      "load": {
+        "mode": "notick",
+        "tickedAtLoad": false,
+        "formDate": "November 15th, 2026",
+        "depositDateInForm": "November 9th, 2026",
+        "serverBeforeSave": {
+          "eventDate": "2026-11-15",
+          "beoEventDate": "2026-11-15"
+        }
+      },
+      "save": {
+        "route": "PUT /api/events/89f98182-9928-4566-9ab6-fe3444d9781d/beo",
+        "status": 200,
+        "formDateAtSave": "November 15th, 2026",
+        "headerAfter": "15 November '26 at 14:00",
+        "serverAfterSave": {
+          "event": "2026-11-15",
+          "beo": "2026-11-15",
+          "depositDate": "2026-11-09"
+        }
+      }
+    },
+    "second_tick": {
+      "parse": {
+        "route": "POST /api/ai/parse-beo",
+        "status": 200,
+        "seconds": 7.8
+      },
+      "answerEvent": {
+        "eventDate": "2026-11-21",
+        "eventDateText": "21 ноября",
+        "startTime": "14:00",
+        "numChildren": 12,
+        "numAdults": 4
+      },
+      "answerDepositDate": "2026-11-09",
+      "answerKeys": [
+        "summary",
+        "event",
+        "setupPlan",
+        "kitchenPlan",
+        "partyDetails",
+        "proposals"
+      ],
+      "answerHasReview": false,
+      "review": {
+        "dateLine": "Date: Sat 21 Nov 2026 — the message says \"21 ноября\" The event is booked for Sun 15 Nov 2026: not the same day. Tick to make Sat 21 Nov 2026 the event's date.",
+        "differsText": "The event is booked for Sun 15 Nov 2026: not the same day.",
+        "tickedOnOpen": false,
+        "rowBackground": "rgb(255, 251, 235)",
+        "differsColour": "rgb(180, 83, 9)",
+        "catalogueSection": {
+          "reviewDialogOpen": false,
+          "packageSelect": 0,
+          "setMenuSelect": 0,
+          "entertainment": 0,
+          "sourceMarks": 0,
+          "approveButton": 0,
+          "loadButton": 1
+        }
+      },
+      "load": {
+        "mode": "tick",
+        "tickedAtLoad": true,
+        "formDate": "November 21st, 2026",
+        "depositDateInForm": "November 9th, 2026",
+        "serverBeforeSave": {
+          "eventDate": "2026-11-15",
+          "beoEventDate": "2026-11-15"
+        }
+      },
+      "save": {
+        "route": "PUT /api/events/89f98182-9928-4566-9ab6-fe3444d9781d/beo",
+        "status": 200,
+        "formDateAtSave": "November 21st, 2026",
+        "headerAfter": "21 November '26 at 14:00",
+        "serverAfterSave": {
+          "event": "2026-11-21",
+          "beo": "2026-11-21",
+          "depositDate": "2026-11-09"
+        }
+      }
+    }
+  },
+  "activityRows": {
+    "route": "GET /api/activity-logs?types=beo_ai_fill",
+    "thisRun": [
+      {
+        "at": "2026-11-09T21:47:24.204Z",
+        "summary": "AI Fill read a pasted message for the BEO of \"ZZ TEST 816 date\"",
+        "outcome": "filled",
+        "model": "claude-opus-5",
+        "promptFrom": {
+          "advice": "setting",
+          "outputFormat": "setting",
+          "model": "built_in",
+          "requiredFields": "appended"
+        },
+        "source": "pasted",
+        "sections": [
+          "event",
+          "setupPlan",
+          "kitchenPlan",
+          "partyDetails"
+        ],
+        "inputChars": 177
+      },
+      {
+        "at": "2026-11-09T21:46:08.703Z",
+        "summary": "AI Fill read a pasted message for the BEO of \"ZZ TEST 816 date\"",
+        "outcome": "filled",
+        "model": "claude-opus-5",
+        "promptFrom": {
+          "advice": "setting",
+          "outputFormat": "setting",
+          "model": "built_in",
+          "requiredFields": "appended"
+        },
+        "source": "pasted",
+        "sections": [
+          "event",
+          "kitchenPlan",
+          "partyDetails"
+        ],
+        "inputChars": 177
+      }
+    ],
+    "yesterdays814RowForComparison": {
+      "at": "2026-11-09T20:50:01.473Z",
+      "promptFrom": {
+        "advice": "setting",
+        "outputFormat": "setting",
+        "model": "built_in"
+      }
+    }
+  },
+  "results": {
+    "dateLineShown": "pass",
+    "amberNotSameDay": "pass",
+    "untickedOnOpen": "pass",
+    "loadWithoutTickKeeps15Nov": "pass",
+    "tickLoadSaveMakes21Nov": "pass",
+    "depositDate20261109": "pass",
+    "promptFromRequiredFieldsAppended": "pass",
+    "outputFormatSetting": "pass"
+  },
+  "pictures": [
+    {
+      "file": "816-st-01-app-ai-fill-review-date-line-21-nov-differs-unticked.png",
+      "shows": "AI Fill review (r1): the Date line beside the booked date"
+    },
+    {
+      "file": "816-st-02-app-loaded-without-tick-date-stays-15-nov.png",
+      "shows": "After Load into Editor (r1, notick): the form's date, not saved"
+    },
+    {
+      "file": "816-st-03-app-party-details-deposit-date-2026-11-09.png",
+      "shows": "Party Details after Load into Editor (r1): the deposit date the fill read"
+    },
+    {
+      "file": "816-st-04-app-ai-fill-review-date-ticked.png",
+      "shows": "AI Fill review (r2) with the date ticked, before Load into Editor"
+    },
+    {
+      "file": "816-st-05-app-loaded-with-tick-form-date-21-nov.png",
+      "shows": "After Load into Editor (r2, tick): the form's date, not saved"
+    },
+    {
+      "file": "816-st-06-app-saved-date-21-nov.png",
+      "shows": "After Save (r2): the event's date read back"
+    }
+  ]
+}

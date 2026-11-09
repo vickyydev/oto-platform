@@ -1,0 +1,125 @@
+{
+  "unit": "SCRUM-815",
+  "what": "The AI Fill review's catalogue section (package, set menu, entertainment matched by id, sources, Approve and create), checked on a pasted text",
+  "liveCommit": "8b3e36741279a52e87a1fb8723077f02eba0a096",
+  "liveDeploy": "oto-app-staging dep-dbp3r4om7kps739o4b1g live at 8b3e3674, read before the run (scripts/agent/render.mjs deploys)",
+  "appVersion": "8b3e36741279a52e87a1fb8723077f02eba0a096",
+  "run": {
+    "startedAt": "2026-11-09T21:45:24.373Z",
+    "browser": "Chromium 153.0.8010.12 headless, 1440 wide, Asia/Bangkok"
+  },
+  "actor": {
+    "who": "the staging administrator (name masked)",
+    "role": "global_admin"
+  },
+  "event": {
+    "title": "ZZ TEST 816 date",
+    "park": "Oto Play Park, Central Floresta",
+    "id": "89f98182-9928-4566-9ab6-fe3444d9781d",
+    "created": {
+      "route": "POST /api/admin/events",
+      "bookedFor": "2026-11-15",
+      "startTime": "14:00"
+    },
+    "zzTest816Before": []
+  },
+  "pastedText": "Подтверждаем день рождения Миши 21 ноября в 14:00, 12 детей, 4 взрослых. Пакет Birthday package Central Floresta, пицца Маргарита, аниматор Zombie game. Депозит получен 9 ноября",
+  "modelCalls": 2,
+  "cleanup": {
+    "event": {
+      "id": "89f98182-9928-4566-9ab6-fe3444d9781d",
+      "delete": {
+        "path": "DELETE /api/admin/events/89f98182-9928-4566-9ab6-fe3444d9781d",
+        "status": 204
+      },
+      "readBack": {
+        "event": 404,
+        "beo": 404
+      },
+      "zzTest816LeftAtCentralFloresta": 0,
+      "listStatus": 200
+    }
+  },
+  "signOut": {
+    "appLogout": 200,
+    "launcherSignOut": 200,
+    "appUserAfter": 401,
+    "launcherMeAfter": 401
+  },
+  "pastedRuns": [
+    {
+      "run": 1,
+      "route": "POST /api/ai/parse-beo",
+      "status": 200,
+      "answerHasReview": false,
+      "answerKeys": [
+        "summary",
+        "event",
+        "kitchenPlan",
+        "partyDetails",
+        "proposals"
+      ],
+      "catalogueSection": {
+        "reviewDialogOpen": false,
+        "packageSelect": 0,
+        "setMenuSelect": 0,
+        "entertainment": 0,
+        "sourceMarks": 0,
+        "approveButton": 0,
+        "loadButton": 1
+      },
+      "reviewTitle": "AI Fill — Review & Confirm"
+    },
+    {
+      "run": 2,
+      "route": "POST /api/ai/parse-beo",
+      "status": 200,
+      "answerHasReview": false,
+      "answerKeys": [
+        "summary",
+        "event",
+        "setupPlan",
+        "kitchenPlan",
+        "partyDetails",
+        "proposals"
+      ],
+      "catalogueSection": {
+        "reviewDialogOpen": false,
+        "packageSelect": 0,
+        "setMenuSelect": 0,
+        "entertainment": 0,
+        "sourceMarks": 0,
+        "approveButton": 0,
+        "loadButton": 1
+      },
+      "reviewTitle": "AI Fill — Review & Confirm"
+    }
+  ],
+  "freeTextFillAsSaved": {
+    "route": "GET /api/events/:id/beo",
+    "at": "2026-11-09T21:48:23.340Z",
+    "packageName": "Birthday package Central Floresta",
+    "packageSnapshot": null,
+    "setMenuEnabled": false,
+    "setMenuTemplateId": null,
+    "kidsMenuFreeLines": [
+      {
+        "itemName": "Margherita pizza",
+        "quantity": 1
+      }
+    ],
+    "entertainmentSelections": [],
+    "activities": "Animator - Zombie game"
+  },
+  "results": {
+    "catalogueSectionOnPastedText": "not shown: by design of the deployed code, POST /api/ai/parse-beo runs the fill with no catalogue and answers no review; the catalogue review opens only from POST /api/events/:id/beo/ai-fill/inbox (an event booked from the inbox, with its confirmation)",
+    "approveAndCreate": "not run: not offered on a pasted text",
+    "packageModuleAndKitchenPlanAfterApprove": "not run"
+  },
+  "pictures": [
+    {
+      "file": "815-st-01-app-ai-fill-pasted-review-no-catalogue-section.png",
+      "shows": "AI Fill review (r1-815)"
+    }
+  ]
+}
