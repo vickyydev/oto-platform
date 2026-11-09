@@ -49,7 +49,15 @@ import {
  */
 
 const KEEP = "__keep__";
-type Counts = { shifts: number; checklists: number; tasks: number };
+type Counts = {
+  shifts: number;
+  duties: number;
+  breaks: number;
+  templateShifts: number;
+  roles: number;
+  checklists: number;
+  tasks: number;
+};
 type RematchAnswer = { matched: number; stillPending: number } | { failed: true };
 
 interface PlannedEmployment {
@@ -72,7 +80,9 @@ const rematchWords = (rematch: RematchAnswer | undefined) => {
   return ` ${rematch.matched} pending approval(s) matched to a shift, ${rematch.stillPending} still pending.`;
 };
 
-const countWords = (c: Counts) => `${c.shifts} shift(s), ${c.checklists} checklist(s), ${c.tasks} task(s)`;
+const countWords = (c: Counts) =>
+  `${c.shifts} shift(s) with ${c.duties} duty block(s) and ${c.breaks} break(s), ${c.templateShifts} weekly template shift(s), ` +
+  `${c.roles} role(s), ${c.checklists} checklist(s), ${c.tasks} task(s)`;
 
 const dayWords = (day: string) =>
   new Date(`${day}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
@@ -454,7 +464,7 @@ export function FoldIntoAction({ employee }: { employee: Employee }) {
           <DialogHeader>
             <DialogTitle>Fold into another profile</DialogTitle>
             <DialogDescription>
-              For a duplicate profile of the same person: its shifts, checklists and tasks move to the profile you choose, and this profile is deleted.
+              For a duplicate profile of the same person: its shifts (with their duties and breaks), weekly template shifts, roles, checklists and tasks move to the profile you choose, and this profile is deleted.
               Keep the profile the person signs in and scans their face with.
             </DialogDescription>
           </DialogHeader>

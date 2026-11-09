@@ -22,13 +22,20 @@ import {
  * duplicate, rolls every move back.
  *
  * What it moves:
- *  - schedule assignments (`schedule_assignments.employee_id`);
+ *  - schedule assignments (`schedule_assignments.employee_id`), with the
+ *    duties and breaks planned on them (`duty_blocks`,
+ *    `schedule_shift_breaks`: both name the employee as well as the shift,
+ *    and go with the employee's delete otherwise);
+ *  - the weekly template's shifts (`schedule_template_assignments`);
+ *  - the roles the duplicate holds (`employee_roles`), which shift rows that
+ *    need a role check;
  *  - checklist template assignments (`checklist_template_assignees` and the
  *    template's first-named `assigned_employee_id`, SCRUM-658);
  *  - task assignments (`task_assignments` of type employee and the task's
  *    `assigned_employee_id`).
  * A move that would give the original an assignment it already has is
- * skipped and counted: the duplicate's copy goes with the duplicate.
+ * skipped and counted: the duplicate's copy goes with the duplicate (a
+ * skipped shift's duties and breaks with it, the original keeping its own).
  *
  * It refuses, before anything is written, a duplicate with contracts, time
  * records or payroll records (the delete's own counting, EMPLOYEE_KEEPS).
@@ -44,6 +51,13 @@ import {
 
 export interface FoldCounts {
   shifts: number;
+  /** Duty blocks planned on those shifts. */
+  duties: number;
+  /** Breaks planned on those shifts. */
+  breaks: number;
+  /** The weekly template's shifts (a template row on a day of the week). */
+  templateShifts: number;
+  roles: number;
   checklists: number;
   tasks: number;
 }
@@ -83,16 +97,65 @@ async function count(client: Exec, text: string, values: unknown[]): Promise<num
   return Number(rows[0]?.n ?? 0);
 }
 
-/** Moves the duplicate's shifts; a shift the target already works (same row, same day) is skipped. */
-async function moveShifts(client: Exec, from: string, to: string) {
-  const skipped = await client.query(
-    `delete from schedule_assignments d
-      using schedule_assignments t
-      where d.employee_id = $1 and t.employee_id = $2
-        and t.shift_row_id = d.shift_row_id and t.shift_date = d.shift_date`,
+type Moved = { moved: number; skipped: number };
+
+/**
+ * Moves the duplicate's shifts, and the duties and breaks planned on them; a
+ * shift the target already works (same row, same day) is skipped, and its
+ * duties and breaks go with it (they cascade with the shift).
+ */
+async function moveShifts(client: Exec, from: string, to: string): Promise<{ shifts: Moved; duties: Moved; breaks: Moved }> {
+  const { rows } = await client.query<{ id: string }>(
+    `select d.id from schedule_assignments d
+       join schedule_assignments t on t.shift_row_id = d.shift_row_id and t.shift_date = d.shift_date
+      where d.employee_id = $1 and t.employee_id = $2`,
     [from, to],
   );
+  const skippedIds = [...new Set(rows.map((r) => r.id))];
+  const skippedDuties = await count(client, "select count(*)::int as n from duty_blocks where assignment_id = any($1::varchar[])", [skippedIds]);
+  const skippedBreaks = await count(client, "select count(*)::int as n from schedule_shift_breaks where assignment_id = any($1::varchar[])", [skippedIds]);
+  const skipped = await client.query("delete from schedule_assignments where id = any($1::varchar[])", [skippedIds]);
   const moved = await client.query("update schedule_assignments set employee_id = $2 where employee_id = $1", [from, to]);
+  const duties = await client.query("update duty_blocks set employee_id = $2 where employee_id = $1", [from, to]);
+  const breaks = await client.query("update schedule_shift_breaks set employee_id = $2 where employee_id = $1", [from, to]);
+  return {
+    shifts: { moved: moved.rowCount ?? 0, skipped: skipped.rowCount ?? 0 },
+    duties: { moved: duties.rowCount ?? 0, skipped: skippedDuties },
+    breaks: { moved: breaks.rowCount ?? 0, skipped: skippedBreaks },
+  };
+}
+
+/** The weekly template's shifts; one the target already has (same template row, same day of the week) is skipped. */
+async function moveTemplateShifts(client: Exec, from: string, to: string): Promise<Moved> {
+  const skipped = await client.query(
+    `delete from schedule_template_assignments d
+      using schedule_template_assignments t
+      where d.employee_id = $1 and t.employee_id = $2
+        and t.template_row_id = d.template_row_id and t.day_of_week = d.day_of_week`,
+    [from, to],
+  );
+  const moved = await client.query("update schedule_template_assignments set employee_id = $2 where employee_id = $1", [from, to]);
+  return { moved: moved.rowCount ?? 0, skipped: skipped.rowCount ?? 0 };
+}
+
+/**
+ * The roles the duplicate holds; one the target already holds is skipped. A
+ * primary role stays primary only when the target has none of its own.
+ */
+async function moveRoles(client: Exec, from: string, to: string): Promise<Moved> {
+  const skipped = await client.query(
+    `delete from employee_roles d
+      using employee_roles t
+      where d.employee_id = $1 and t.employee_id = $2 and t.role_id = d.role_id`,
+    [from, to],
+  );
+  const moved = await client.query(
+    `update employee_roles
+        set employee_id = $2::varchar,
+            is_primary = is_primary and not exists (select 1 from employee_roles p where p.employee_id = $2::varchar and p.is_primary)
+      where employee_id = $1`,
+    [from, to],
+  );
   return { moved: moved.rowCount ?? 0, skipped: skipped.rowCount ?? 0 };
 }
 
@@ -194,11 +257,22 @@ async function foldWithin(client: Exec, input: FoldInput): Promise<FoldOutcome> 
     };
   }
 
-  const shifts = await moveShifts(client, from, to);
+  const { shifts, duties, breaks } = await moveShifts(client, from, to);
+  const templateShifts = await moveTemplateShifts(client, from, to);
+  const roles = await moveRoles(client, from, to);
   const checklists = await moveChecklists(client, from, to);
   const tasks = await moveTasks(client, from, to);
-  const moved: FoldCounts = { shifts: shifts.moved, checklists: checklists.moved, tasks: tasks.moved };
-  const skipped: FoldCounts = { shifts: shifts.skipped, checklists: checklists.skipped, tasks: tasks.skipped };
+  const counted = (side: keyof Moved): FoldCounts => ({
+    shifts: shifts[side],
+    duties: duties[side],
+    breaks: breaks[side],
+    templateShifts: templateShifts[side],
+    roles: roles[side],
+    checklists: checklists[side],
+    tasks: tasks[side],
+  });
+  const moved = counted("moved");
+  const skipped = counted("skipped");
 
   const deletion = await deleteEmployeeWithin(client, {
     employeeId: from,
@@ -216,7 +290,8 @@ async function foldWithin(client: Exec, input: FoldInput): Promise<FoldOutcome> 
       tenantId,
       target.branch_id,
       to,
-      `A duplicate profile was folded into this one: ${moved.shifts} shift(s), ${moved.checklists} checklist(s) and ${moved.tasks} task(s) moved`,
+      `A duplicate profile was folded into this one: ${moved.shifts} shift(s) with ${moved.duties} duty block(s) and ${moved.breaks} break(s), ` +
+        `${moved.templateShifts} weekly template shift(s), ${moved.roles} role(s), ${moved.checklists} checklist(s) and ${moved.tasks} task(s) moved`,
       JSON.stringify({ foldedProfileId: from, moved, skipped }),
       input.actorId,
     ],

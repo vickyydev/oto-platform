@@ -7,8 +7,11 @@
 //
 //   1. Fold: a duplicate profile made to put the person on the rota in a new
 //      department folds into the original, the one that holds the login and
-//      the face: 3 shifts, 1 checklist assignment and 1 task assignment moved,
-//      the duplicate deleted, the original's history kept; the other way round
+//      the face: 3 shifts with the duty and the break planned on one, the
+//      weekly template shift, the role (a row needing it refuses the original
+//      before and takes it after), 1 checklist assignment and 1 task
+//      assignment moved, the duplicate deleted, the original's history kept;
+//      the other way round
 //      is refused; a duplicate with a contract, a fold across branches, a move
 //      the original already has and a duplicate made with the original's email
 //      are handled as before; the stray "Unscheduled work" approval on a day
@@ -227,6 +230,37 @@ async function task(employeeId: string): Promise<string> {
   ]);
   return id;
 }
+async function duty(employeeId: string, assignmentId: string, date: string): Promise<string> {
+  const id = randomUUID();
+  await q(
+    `insert into duty_blocks (id, tenant_id, branch_id, date, employee_id, assignment_id, duty_name, start_time, end_time)
+     values ($1, $2, $3, $4, $5, $6, 'ZZ TEST duty', '10:00', '11:00')`,
+    [id, TENANT, BRANCH_A, date, employeeId, assignmentId],
+  );
+  return id;
+}
+async function shiftBreak(employeeId: string, assignmentId: string, date: string): Promise<string> {
+  const id = randomUUID();
+  await q(
+    `insert into schedule_shift_breaks (id, tenant_id, branch_id, shift_row_id, shift_date, employee_id, assignment_id, break_start_time, break_end_time)
+     values ($1, $2, $3, $4, $5, $6, $7, '12:00', '13:00')`,
+    [id, TENANT, BRANCH_A, ROW, date, employeeId, assignmentId],
+  );
+  return id;
+}
+/** A row of a weekly schedule template in branch A. */
+async function templateRow(department: string): Promise<string> {
+  const template = randomUUID();
+  await q("insert into schedule_templates (id, tenant_id, branch_id, department_id, name) values ($1, $2, $3, $4, $5)", [
+    template, TENANT, BRANCH_A, department, `ZZ TEST s794 template ${run}`,
+  ]);
+  const id = randomUUID();
+  await q(
+    "insert into schedule_template_rows (id, tenant_id, template_id, department_id, start_time, end_time) values ($1, $2, $3, $4, '09:00', '17:00')",
+    [id, TENANT, template, department],
+  );
+  return id;
+}
 /** A face clock-in with no shift that day: what the kiosk's unscheduled route writes. */
 async function unscheduled(employeeId: string, date: string) {
   const entry = randomUUID();
@@ -388,6 +422,21 @@ try {
   const dupShifts = [await shift(duplicate, day(0)), await shift(duplicate, day(1)), await shift(duplicate, day(2))];
   const dupChecklist = await checklist(duplicate);
   const dupTask = await task(duplicate);
+  // The duty and the break planned on one of the duplicate's shifts, its
+  // weekly template shift and the role a row of the original's department needs.
+  const dupDuty = await duty(duplicate, dupShifts[0]!, day(0));
+  const dupBreak = await shiftBreak(duplicate, dupShifts[0]!, day(0));
+  const TEMPLATE_ROW = await templateRow(RECEPTION);
+  const dupTemplateShift = randomUUID();
+  await q("insert into schedule_template_assignments (id, template_row_id, day_of_week, employee_id) values ($1, $2, 0, $3)", [
+    dupTemplateShift, TEMPLATE_ROW, duplicate,
+  ]);
+  const ROLE = randomUUID();
+  await q("insert into roles (id, tenant_id, name) values ($1, $2, $3)", [ROLE, TENANT, `ZZ TEST s794 role ${run}`]);
+  const dupRole = randomUUID();
+  await q("insert into employee_roles (id, employee_id, role_id, is_primary) values ($1, $2, $3, true)", [dupRole, duplicate, ROLE]);
+  const ROLE_ROW = await shiftRow(PROMOTION, "11:00", "19:00");
+  await q("insert into schedule_shift_row_roles (tenant_id, shift_row_id, role_id) values ($1, $2, $3)", [TENANT, ROLE_ROW, ROLE]);
   const onShiftDay = await unscheduled(original, day(0));
   const offShiftDay = await unscheduled(original, day(5));
   const historyBefore = await historyOf(original);
@@ -407,13 +456,14 @@ try {
     assert.equal(await countOf("select count(*) as n from employees where id = $1", [duplicate]), 1);
     assert.equal((await engagementOf(original)).length, 0);
   });
-  await check("the preview counts 3/1/1 and writes nothing", async () => {
+  const NONE = { shifts: 0, duties: 0, breaks: 0, templateShifts: 0, roles: 0, checklists: 0, tasks: 0 };
+  const DUPLICATE_HOLDS = { shifts: 3, duties: 1, breaks: 1, templateShifts: 1, roles: 1, checklists: 1, tasks: 1 };
+  await check("the preview counts 3 shifts (1 duty, 1 break), 1 template shift, 1 role, 1 checklist, 1 task and writes nothing", async () => {
     const res = await call("GET", `/api/employees/${duplicate}/fold-into/${original}/preview`, as.admin);
     assert.equal(res.status, 200, show(res));
-    assert.deepEqual(res.body, {
-      moved: { shifts: 3, checklists: 1, tasks: 1 }, skipped: { shifts: 0, checklists: 0, tasks: 0 }, deleted: { profile: 1, login: 0 },
-    });
+    assert.deepEqual(res.body, { moved: DUPLICATE_HOLDS, skipped: NONE, deleted: { profile: 1, login: 0 } });
     assert.equal(await shiftsOf(duplicate), 3);
+    assert.deepEqual(await q("select employee_id from duty_blocks where id = $1", [dupDuty]), [{ employee_id: duplicate }]);
     assert.equal(await countOf("select count(*) as n from employees where id = $1", [duplicate]), 1);
     assert.equal((await review(onShiftDay.issue)).issue_status, "OPEN");
   });
@@ -447,11 +497,15 @@ try {
     assert.equal(await shiftsOf(contracted), 1);
     assert.equal(await countOf("select count(*) as n from employees where id = $1", [contracted]), 1);
   });
-  await check("the fold moves 3/1/1 onto the original, deletes the duplicate and keeps the original's history", async () => {
+  await check("before the fold, the row needing the duplicate's role refuses the original", async () => {
+    const res = await call("POST", "/api/schedule/assignments", as.manager, { shiftRowId: ROLE_ROW, shiftDate: plus(1), employeeId: original, assigneeType: "employee" });
+    assert.deepEqual([res.status, res.body.reasonCode], [400, "ROLE_MISMATCH"], show(res));
+  });
+  await check("the fold moves all of it onto the original, deletes the duplicate and keeps the original's history", async () => {
     const res = await call("POST", `/api/employees/${duplicate}/fold-into/${original}`, as.admin);
     assert.equal(res.status, 200, show(res));
-    assert.deepEqual(res.body.moved, { shifts: 3, checklists: 1, tasks: 1 });
-    assert.deepEqual(res.body.skipped, { shifts: 0, checklists: 0, tasks: 0 });
+    assert.deepEqual(res.body.moved, DUPLICATE_HOLDS);
+    assert.deepEqual(res.body.skipped, NONE);
     assert.deepEqual(res.body.deleted, { profile: 1, login: 0 });
     assert.deepEqual(res.body.rematch, { matched: 1, stillPending: 1 });
     assert.equal(await countOf("select count(*) as n from employees where id = $1", [duplicate]), 0);
@@ -462,9 +516,20 @@ try {
     assert.deepEqual(await q("select employee_id from checklist_template_assignees where template_id = $1", [dupChecklist]), [{ employee_id: original }]);
     assert.deepEqual(await q("select assigned_employee_id from checklist_templates where id = $1", [dupChecklist]), [{ assigned_employee_id: original }]);
     assert.deepEqual(await q("select assignment_id from task_assignments where task_id = $1", [dupTask]), [{ assignment_id: original }]);
+    // The duty and the break stay on the shift they were planned on, now the original's.
+    assert.deepEqual(await q("select employee_id, assignment_id from duty_blocks where id = $1", [dupDuty]), [{ employee_id: original, assignment_id: dupShifts[0] }]);
+    assert.deepEqual(await q("select employee_id, assignment_id from schedule_shift_breaks where id = $1", [dupBreak]), [{ employee_id: original, assignment_id: dupShifts[0] }]);
+    assert.deepEqual(await q("select employee_id from schedule_template_assignments where id = $1", [dupTemplateShift]), [{ employee_id: original }]);
+    assert.deepEqual(await q("select employee_id, is_primary from employee_roles where id = $1", [dupRole]), [{ employee_id: original, is_primary: true }]);
     assert.deepEqual(await historyOf(original), historyBefore);
     assert.equal(await loginOn(subject.id), true);
     assert.deepEqual([(await profile(original)).status, (await profile(original)).face_enrollment_status], ["active", "ENROLLED"]);
+  });
+  await check("after the fold the row needing that role takes the original", async () => {
+    const res = await call("POST", "/api/schedule/assignments", as.manager, { shiftRowId: ROLE_ROW, shiftDate: plus(1), employeeId: original, assigneeType: "employee" });
+    assert.equal(res.status, 201, show(res));
+    // Only to prove the role came across: the shift is not one the later checks count.
+    await q("delete from schedule_assignments where id = $1", [res.body.id]);
   });
   await check("the fold matched the approval on a day that now has a shift, and left the other pending", async () => {
     assert.deepEqual(await review(onShiftDay.issue), {
@@ -475,16 +540,21 @@ try {
     });
   });
   await check("a move the original already has is skipped and counted", async () => {
-    await shift(overlapping, day(3)); // the original already works this shift
+    const overlapShift = await shift(overlapping, day(3)); // the original already works this shift
+    await duty(overlapping, overlapShift, day(3)); // planned on the skipped shift: it goes with it
     const sharedChecklist = await checklist(overlapping);
     await q("insert into checklist_template_assignees (tenant_id, template_id, employee_id) values ($1, $2, $3)", [TENANT, sharedChecklist, original]);
+    await q("insert into schedule_template_assignments (template_row_id, day_of_week, employee_id) values ($1, 0, $2)", [TEMPLATE_ROW, overlapping]);
+    await q("insert into employee_roles (employee_id, role_id) values ($1, $2)", [overlapping, ROLE]); // the original holds it now
     const res = await call("POST", `/api/employees/${overlapping}/fold-into/${original}`, as.admin);
     assert.equal(res.status, 200, show(res));
     assert.deepEqual([res.body.moved, res.body.skipped], [
-      { shifts: 0, checklists: 0, tasks: 0 }, { shifts: 1, checklists: 1, tasks: 0 },
+      NONE, { ...NONE, shifts: 1, duties: 1, templateShifts: 1, roles: 1, checklists: 1 },
     ]);
     assert.equal(await countOf("select count(*) as n from schedule_assignments where employee_id = $1 and shift_date = $2", [original, day(3)]), 1);
     assert.deepEqual(await q("select employee_id from checklist_template_assignees where template_id = $1", [sharedChecklist]), [{ employee_id: original }]);
+    assert.equal(await countOf("select count(*) as n from schedule_template_assignments where template_row_id = $1 and employee_id = $2", [TEMPLATE_ROW, original]), 1);
+    assert.equal(await countOf("select count(*) as n from employee_roles where role_id = $1 and employee_id = $2", [ROLE, original]), 1);
   });
   await check("a duplicate made with the original's email takes neither the original's person record nor its login", async () => {
     // The employee delete finds a profile's person and login by email when it
