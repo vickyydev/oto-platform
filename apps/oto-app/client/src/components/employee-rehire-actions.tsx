@@ -37,6 +37,15 @@ import {
 
 const KEEP = "__keep__";
 type Counts = { shifts: number; checklists: number; tasks: number };
+type RematchAnswer = { matched: number; stillPending: number } | { failed: true };
+
+const rematchWords = (rematch: RematchAnswer | undefined) => {
+  if (!rematch) return "";
+  if ("failed" in rematch) return " Pending approvals could not be matched just now; they stay pending.";
+  if (rematch.matched === 0 && rematch.stillPending === 0) return "";
+  return ` ${rematch.matched} pending approval(s) matched to a shift, ${rematch.stillPending} still pending.`;
+};
+
 const countWords = (c: Counts) => `${c.shifts} shift(s), ${c.checklists} checklist(s), ${c.tasks} task(s)`;
 
 function refreshEmployee(employeeId: string) {
@@ -65,7 +74,7 @@ export function RehireAction({ employee, branches, departments }: {
         departmentId: departmentId === KEEP ? null : departmentId,
         branchId: branchId === KEEP ? null : branchId,
       });
-      return res.json() as Promise<{ login: string; platformDeactivationDelivered: boolean }>;
+      return res.json() as Promise<{ login: string; platformDeactivationDelivered: boolean; rematch?: RematchAnswer }>;
     },
     onSuccess: (answer) => {
       setOpen(false);
@@ -75,7 +84,7 @@ export function RehireAction({ employee, branches, departments }: {
       const platform = answer.platformDeactivationDelivered
         ? " Their suite sign-in was switched off on the platform; if it is still off, a platform administrator reactivates it there."
         : "";
-      toast({ title: "Rehired", description: `The profile is active again.${login}${platform}` });
+      toast({ title: "Rehired", description: `The profile is active again.${login}${platform}${rematchWords(answer.rematch)}` });
     },
     onError: (error: Error) => {
       toast({ title: "Could not rehire", description: error.message, variant: "destructive" });
@@ -186,7 +195,7 @@ export function FoldIntoAction({ employee }: { employee: Employee }) {
   const fold = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", `/api/employees/${employee.id}/fold-into/${targetId}`);
-      return res.json() as Promise<{ moved: Counts; skipped: Counts }>;
+      return res.json() as Promise<{ moved: Counts; skipped: Counts; rematch?: RematchAnswer }>;
     },
     onSuccess: (answer) => {
       setOpen(false);
@@ -195,7 +204,7 @@ export function FoldIntoAction({ employee }: { employee: Employee }) {
       refreshEmployee(into);
       toast({
         title: "Profile folded",
-        description: `Moved ${countWords(answer.moved)}; skipped ${countWords(answer.skipped)} already on the other profile. This profile is deleted.`,
+        description: `Moved ${countWords(answer.moved)}; skipped ${countWords(answer.skipped)} already on the other profile. This profile is deleted.${rematchWords(answer.rematch)}`,
       });
       setLocation(`/employees/${into}`);
     },

@@ -4814,8 +4814,8 @@ export async function registerRoutes(
     }
   });
 
-  // SCRUM-794: rehire a Left profile, and fold a duplicate profile into the
-  // original.
+  // SCRUM-794: rehire a Left profile, fold a duplicate profile into the
+  // original, and match the stray "Unscheduled work" approvals after either.
   registerEmployeeRehireRoutes(app, {
     pool,
     employeeOfParkGroup,

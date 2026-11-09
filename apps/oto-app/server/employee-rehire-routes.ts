@@ -19,6 +19,7 @@ import { storage } from "./storage";
 import { requireAuth } from "./auth";
 import { canUserAccessBranch, requireAction, requireAdmin, requireManager } from "./auth-middleware";
 import { foldEmployeeInto, type FoldInput } from "./lib/employeeFold";
+import { rematchUnscheduledWork, type RematchCounts } from "./lib/reviewRematch";
 
 /**
  * SCRUM-794: one person, two profiles. A staff member was offboarded, so her
@@ -26,12 +27,15 @@ import { foldEmployeeInto, type FoldInput } from "./lib/employeeFold";
  * signs in and clocks in with it (the login was switched on again by hand, and
  * her face enrolment is on it); a second profile was made only to put her on
  * the rota in a new position, and carries her shifts, checklists and tasks.
- * Two doors put her back together:
+ * Three doors put her back together:
  *
  *  - POST /api/employees/:id/rehire — the Left profile active again in its
  *    new position, its login back on;
  *  - POST /api/employees/:id/fold-into/:targetId (and GET .../preview) — the
- *    duplicate's assignments moved onto the original and the duplicate deleted.
+ *    duplicate's assignments moved onto the original and the duplicate deleted;
+ *  - POST /api/employees/:id/review/rematch — her pending "Unscheduled work"
+ *    approvals matched to the shifts she now has; run at the end of the other
+ *    two as well.
  */
 
 export interface EmployeeRehireDependencies {
@@ -59,8 +63,32 @@ const rehireBody = z.object({
   employmentBasis: z.enum(employmentBasisTypes).nullish(),
 }).strict();
 
+type RematchAnswer = RematchCounts | { failed: true };
+
 export function registerEmployeeRehireRoutes(app: Express, deps: EmployeeRehireDependencies) {
   const { pool } = deps;
+
+  /** The branches a caller settles review items in: the attendance review's own rule. */
+  const reviewReach = async (userId: string): Promise<string[] | null> => {
+    const access = await storage.getUserBranchAccess(userId);
+    if (access.some((row) => row.accessScope === "all_branches")) return null;
+    return access.flatMap((row) => (row.branchId ? [row.branchId] : []));
+  };
+
+  /** Run after a committed rehire or fold; its failure leaves the items pending, never the commit undone. */
+  const rematchAfter = async (req: Request, employee: { id: string; tenantId: string }): Promise<RematchAnswer> => {
+    try {
+      return await rematchUnscheduledWork(pool, {
+        tenantId: employee.tenantId,
+        employeeId: employee.id,
+        actorId: req.user!.id,
+        branchIds: await reviewReach(req.user!.id),
+      });
+    } catch {
+      console.warn("[REVIEW_REMATCH] Matching pending approvals did not finish; they stay pending");
+      return { failed: true };
+    }
+  };
 
   // ── Rehire ────────────────────────────────────────────────────────────────
 
@@ -183,12 +211,14 @@ export function registerEmployeeRehireRoutes(app: Express, deps: EmployeeRehireD
       });
       if (!done) return res.status(409).json({ message: "Only a profile that has left (resigned or terminated) can be rehired" });
       deps.committed(employee.id);
+      const rematch = await rematchAfter(req, done.updated);
       res.json({
         employee: hrPayResponse(done.updated, req.userWithAccess ?? req.user),
         login: done.login,
         platformDeactivationDelivered: done.platformDeactivationDelivered,
         offboarding: done.offboardingId ? { id: done.offboardingId, reversal: "movement_log" } : null,
         movementId: done.movementId,
+        rematch,
       });
     } catch (error) {
       next(error);
@@ -254,7 +284,8 @@ export function registerEmployeeRehireRoutes(app: Express, deps: EmployeeRehireD
       const answer = { moved: outcome.moved, skipped: outcome.skipped, deleted: outcome.deleted };
       if (!write) return res.json(answer);
       deps.committed(input.targetId);
-      res.json(answer);
+      const rematch = await rematchAfter(req, { id: input.targetId, tenantId: input.tenantId });
+      res.json({ ...answer, rematch });
     } catch (error) {
       next(error);
     }
@@ -263,4 +294,22 @@ export function registerEmployeeRehireRoutes(app: Express, deps: EmployeeRehireD
   const foldGate = [requireAuth, requireAdmin, requireAction("settings.delete_data", "settings")];
   app.get("/api/employees/:id/fold-into/:targetId/preview", ...foldGate, foldDoor(false));
   app.post("/api/employees/:id/fold-into/:targetId", ...foldGate, foldDoor(true));
+
+  // ── Match stray approvals ────────────────────────────────────────────────
+
+  app.post("/api/employees/:id/review/rematch", requireAuth, requireManager, async (req, res, next) => {
+    try {
+      const employee = await deps.employeeOfParkGroup(req, req.params.id);
+      if (!employee) return res.status(404).json({ message: "Employee not found" });
+      const counts = await rematchUnscheduledWork(pool, {
+        tenantId: employee.tenantId,
+        employeeId: employee.id,
+        actorId: req.user!.id,
+        branchIds: await reviewReach(req.user!.id),
+      });
+      res.json(counts);
+    } catch (error) {
+      next(error);
+    }
+  });
 }
