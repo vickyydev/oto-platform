@@ -1,11 +1,55 @@
-import { and, eq, isNull } from 'drizzle-orm';
-import { band, sale, saleExtension, saleExtensionBand } from '@oto/db';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { band, checkin, sale, saleExtension, saleExtensionBand, saleLine } from '@oto/db';
+import { isExtraHourLine } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import type { Tx } from './tx';
 
 // SCRUM-774: a null account is the platform itself (the midnight void of a held sale).
 type Actor = { accountId: string | null; requestId?: string | null };
+
+/**
+ * SCRUM-797 — THE ADDED HOURS REACH THE CHILD'S CLOCK. The one play clock the
+ * platform keeps is a supervised (drop-off or nanny) stay's booked minutes:
+ * the Drop-Off board counts it down to "overdue", and the box's desk reads it
+ * through the `checkin` scope it pulls on its own tick. Every child on the
+ * order's 1- and 2-hour tickets paid for the hours, so each of their stays on
+ * this admission that is still booked or in the park moves by them: forward
+ * when the charge is paid, back when a paid charge is voided or refunded. A
+ * collected child's record, and a stay with no booked length, are left as
+ * they were. Each move is a `checkin.update` audit row, so it shows in the
+ * stay's change history as any edit of its booked play time does.
+ */
+async function moveExtraHourClocks(
+  tx: Tx,
+  extension: typeof saleExtension.$inferSelect,
+  direction: 1 | -1,
+  actor: Actor,
+  now: Date,
+) {
+  const lines = await tx.select({ kind: saleLine.kind, cartLineId: saleLine.cartLineId,
+    ticketPackageId: saleLine.ticketPackageId, stayHours: saleLine.stayHours })
+    .from(saleLine).where(eq(saleLine.saleId, extension.sourceSaleId));
+  // A stay's id is its drop-off cart line's (`loadChoice` in checkin.ts reads it the same way).
+  const paidFor = [...new Set(lines.filter((line) => line.kind === 'kids' && line.cartLineId !== null
+    && isExtraHourLine({ ticket: line.ticketPackageId !== null, stayHours: line.stayHours }))
+    .map((line) => line.cartLineId!))];
+  if (paidFor.length === 0) return;
+  const stays = await tx.select().from(checkin).where(and(eq(checkin.operatorId, extension.operatorId),
+    eq(checkin.saleId, extension.sourceSaleId), inArray(checkin.id, paidFor),
+    inArray(checkin.status, ['registered', 'in_park']))).for('update');
+  for (const stay of stays) {
+    if (stay.bookedMinutes === null) continue;
+    const bookedMinutes = stay.bookedMinutes + direction * extension.minutesAdded;
+    if (bookedMinutes <= 0) continue;
+    await tx.update(checkin).set({ bookedMinutes, updatedAt: now }).where(eq(checkin.id, stay.id));
+    await audit.record(tx, { actorAccountId: actor.accountId, operatorId: stay.operatorId, branchId: stay.branchId,
+      requestId: actor.requestId ?? null, action: 'checkin.update', entityType: 'checkin', entityId: stay.id,
+      before: { bookedMinutes: stay.bookedMinutes },
+      after: { bookedMinutes, event: direction > 0 ? 'extra_hour' : 'extra_hour_cancelled', extensionId: extension.id,
+        chargeSaleId: extension.chargeSaleId, minutesAdded: extension.minutesAdded } });
+  }
+}
 
 /** The source row is already locked by the refund writer. */
 export async function assertNoPendingExtensions(tx: Tx, sourceSaleId: string) {
@@ -38,6 +82,7 @@ export async function applySaleExtension(
   await audit.record(tx, { actorAccountId: actor.accountId, operatorId: extension.operatorId,
     branchId: extension.branchId, requestId: actor.requestId, action: 'sale.extension.apply', entityType: 'sale_extension', entityId: extension.id,
     after: { sourceSaleId: source.id, chargeSaleId: charge.id, minutesAdded: extension.minutesAdded, braceletCount: extension.braceletCount, selection: extension.selection } });
+  await moveExtraHourClocks(tx, extension, 1, actor, now);
 }
 
 /** Voids/refunds preserve the extension and its band rows as financial history. */
@@ -49,6 +94,8 @@ export async function cancelSaleExtension(tx: Tx, charge: typeof sale.$inferSele
   await audit.record(tx, { actorAccountId: actor.accountId, operatorId: extension.operatorId,
     branchId: extension.branchId, requestId: actor.requestId, action: 'sale.extension.cancel', entityType: 'sale_extension', entityId: extension.id,
     before: { status: extension.status }, after: { status: 'voided', sourceSaleId: extension.sourceSaleId, chargeSaleId: charge.id, reason: charge.status } });
+  // Only a paid charge moved the clocks; a pending one never did.
+  if (extension.status === 'applied') await moveExtraHourClocks(tx, extension, -1, actor, now);
 }
 
 /** Called before a fresh collection and again at finalisation. Recorded money

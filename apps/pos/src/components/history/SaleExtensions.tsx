@@ -658,7 +658,7 @@ export function ExtensionPayment({
           </>
         )}
         <p className="text-xs text-muted-foreground">
-          Play time only. Supervised check-in timers are unchanged.
+          A supervised child&apos;s check-in timer gets the added time once it is paid.
         </p>
       </DialogContent>
     </Dialog>

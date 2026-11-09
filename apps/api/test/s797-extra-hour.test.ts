@@ -1,8 +1,9 @@
 import { and, asc, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { band, branch, printJob, sale, saleExtension, saleExtensionBand, saleLine, station, ticketPackage } from '@oto/db';
+import { auditLog, band, branch, checkin, printJob, sale, saleExtension, saleExtensionBand, saleLine, station, ticketPackage } from '@oto/db';
 import { bandShortCode, newId } from '@oto/shared';
-import { RECEPTION, createTestContext, signInAs, takeStation, teardownAll, type TestContext } from './helpers';
+import { checkinCacheItem } from '../src/services/sync-checkin';
+import { ADMIN, RECEPTION, createTestContext, signInAs, takeStation, teardownAll, type TestContext } from './helpers';
 
 /**
  * SCRUM-797 — EXTRA HOUR, the owner's rule (9 November 2026): in History, scan
@@ -17,6 +18,7 @@ let ctx: TestContext;
 let cookie: string;
 let stationId: string;
 let branchId: string;
+let operatorId: string;
 let oneHourId: string;
 let twoHoursId: string;
 let fullDayId: string;
@@ -26,6 +28,7 @@ beforeAll(async () => {
   cookie = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
   const [hkt] = await ctx.db.select().from(branch).where(eq(branch.code, 'hkt-central'));
   branchId = hkt!.id;
+  operatorId = hkt!.operatorId;
   const tills = await ctx.db.select().from(station).where(and(eq(station.branchId, branchId), eq(station.kind, 'till')));
   stationId = (tills.find((s) => s.codePrefix === 'T1') ?? tills[0]!).id;
   const packages = await ctx.db.select().from(ticketPackage).where(eq(ticketPackage.branchId, branchId));
@@ -220,5 +223,113 @@ describe('the same wristbands keep working', () => {
     const rows = await ctx.db.select().from(saleExtensionBand).where(eq(saleExtensionBand.bandId, kid.id));
     expect(rows.map((row) => row.minutesAdded)).toEqual([60, 60]);
     expect(answer.json().options).toHaveLength(3);
+  });
+});
+
+describe('the added hours reach a supervised child’s clock', () => {
+  /** A drop-off child on 1 Hour Play with an adult, paid at the till and checked in: the Drop-Off board's timer. */
+  async function dropOffInPark() {
+    await takeStation(ctx.app, cookie, stationId);
+    const checkinId = newId();
+    const registered = await ctx.app.inject({ method: 'POST', url: '/checkin/registrations', headers: { cookie }, payload: {
+      id: newId(), branchId, stationId, guardianName: 'Ploy', guardianPhone: '0812345678', contactChannel: 'whatsapp',
+      consentAcknowledged: true, acknowledgedConfirmationIds: ['confirm-15min', 'confirm-no-refund', 'confirm-evac'],
+      children: [{ checkinId, name: 'Mint', ageYears: 6, service: 'drop_off', allergies: null, foodRestrictions: null,
+        foodProvision: { mode: 'none', paidSatang: 0 } }] } });
+    expect(registered.statusCode, registered.body).toBe(200);
+    const id = newId();
+    const made = await ctx.app.inject({ method: 'POST', url: '/sales', headers: { cookie }, payload: { id, stationId, lines: [
+      { id: checkinId, packageId: oneHourId, kids: 1, adults: 0, serviceFee: { label: 'Drop-off service', amountSatang: 22_500 } },
+      { id: newId(), packageId: oneHourId, kids: 0, adults: 1, serviceFee: null },
+    ] } });
+    expect(made.statusCode, made.body).toBe(200);
+    const closed = await ctx.app.inject({ method: 'POST', url: `/sales/${id}/finalise`, headers: { cookie }, payload: {} });
+    expect(closed.statusCode, closed.body).toBe(200);
+    const inPark = await ctx.app.inject({ method: 'POST', url: '/checkin/check-in-now', headers: { cookie },
+      payload: { saleId: id, entries: [{ checkinId }] } });
+    expect(inPark.statusCode, inPark.body).toBe(200);
+    expect(inPark.json().children[0]).toMatchObject({ status: 'in_park', bookedMinutes: 60 });
+    const bands = await ctx.db.select().from(band).where(eq(band.saleId, id));
+    return { id, checkinId, bands };
+  }
+
+  async function bookedMinutes(checkinId: string) {
+    const [row] = await ctx.db.select({ bookedMinutes: checkin.bookedMinutes }).from(checkin).where(eq(checkin.id, checkinId));
+    return row!.bookedMinutes;
+  }
+
+  async function clockMoves(checkinId: string) {
+    const rows = await ctx.db.select().from(auditLog).where(and(eq(auditLog.entityType, 'checkin'),
+      eq(auditLog.entityId, checkinId), eq(auditLog.action, 'checkin.update'))).orderBy(asc(auditLog.createdAt), asc(auditLog.id));
+    return rows.filter((row) => String((row.after as { event?: string } | null)?.event ?? '').startsWith('extra_hour'));
+  }
+
+  it('2 more hours on a 1-hour drop-off ticket book the child for 3 once paid, on the board and on the box’s copy', async () => {
+    const source = await dropOffInPark();
+    const kid = source.bands.find((b) => b.kind === 'kid')!;
+    const adult = source.bands.find((b) => b.kind === 'adult')!;
+    const answer = await read(source.id);
+    expect(answer.json().eligibleBands).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: kid.id, charged: true }), expect.objectContaining({ id: adult.id, charged: false })]));
+
+    const made = await extend(source.id, 'ext-120', [kid.id, adult.id]);
+    expect(made.statusCode, made.body).toBe(200);
+    expect(made.json().extension.amountSatang).toBe(60000);
+    // Not paid yet: the clock has not moved.
+    expect(await bookedMinutes(source.checkinId)).toBe(60);
+
+    const chargeId = made.json().sale.id as string;
+    expect((await finalise(chargeId)).json().finalised).toBe(true);
+    expect(await bookedMinutes(source.checkinId)).toBe(180);
+    const moves = await clockMoves(source.checkinId);
+    expect(moves).toHaveLength(1);
+    expect(moves[0]!.before).toEqual({ bookedMinutes: 60 });
+    expect(moves[0]!.after).toMatchObject({ bookedMinutes: 180, event: 'extra_hour', extensionId: made.json().extension.id,
+      chargeSaleId: chargeId, minutesAdded: 120 });
+
+    // The box's desk reads the board through its `checkin` scope.
+    const copy = await checkinCacheItem(ctx.db, operatorId, branchId);
+    const child = copy.families.flatMap((f) => f.children).find((c) => c.id === source.checkinId);
+    expect(child).toMatchObject({ status: 'in_park', bookedMinutes: 180 });
+
+    // A replayed finalise moves nothing again.
+    expect((await finalise(chargeId)).statusCode).toBe(200);
+    expect(await bookedMinutes(source.checkinId)).toBe(180);
+  });
+
+  it('a refund of the paid extra hour takes the hours back off the clock', async () => {
+    const admin = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+    const source = await dropOffInPark();
+    const made = await extend(source.id, 'ext-60', source.bands.map((b) => b.id));
+    expect(made.statusCode, made.body).toBe(200);
+    const chargeId = made.json().sale.id as string;
+    expect((await finalise(chargeId)).json().finalised).toBe(true);
+    expect(await bookedMinutes(source.checkinId)).toBe(120);
+    const refunded = await ctx.app.inject({ method: 'POST', url: `/sales/${chargeId}/refunds`, headers: { cookie: admin },
+      payload: { actionId: newId(), mode: 'whole', reason: 'Extra hour not used' } });
+    expect(refunded.statusCode, refunded.body).toBe(200);
+    expect(await bookedMinutes(source.checkinId)).toBe(60);
+    expect((await clockMoves(source.checkinId)).map((row) => (row.after as { event: string }).event)).toEqual(['extra_hour', 'extra_hour_cancelled']);
+  });
+
+  it('a pending charge voided before payment never moved the clock', async () => {
+    const source = await dropOffInPark();
+    const made = await extend(source.id, 'ext-60', source.bands.map((b) => b.id));
+    expect(made.statusCode, made.body).toBe(200);
+    const voided = await ctx.app.inject({ method: 'POST', url: `/sales/${made.json().sale.id as string}/void`, headers: { cookie },
+      payload: { reason: 'Changed their mind' } });
+    expect(voided.statusCode, voided.body).toBe(200);
+    expect(await bookedMinutes(source.checkinId)).toBe(60);
+    expect(await clockMoves(source.checkinId)).toEqual([]);
+  });
+
+  it('a collected child’s record is left as it was', async () => {
+    const source = await dropOffInPark();
+    await ctx.db.update(checkin).set({ status: 'out', checkedOutAt: new Date() }).where(eq(checkin.id, source.checkinId));
+    const made = await extend(source.id, 'ext-60', source.bands.map((b) => b.id));
+    expect(made.statusCode, made.body).toBe(200);
+    expect((await finalise(made.json().sale.id as string)).json().finalised).toBe(true);
+    expect(await bookedMinutes(source.checkinId)).toBe(60);
+    expect(await clockMoves(source.checkinId)).toEqual([]);
   });
 });
