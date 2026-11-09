@@ -63,9 +63,11 @@ import {
   OfflineChildUpdatedSchema,
   OfflineMemberCreatedSchema,
   OfflineMemberTierChangedSchema,
+  TIER_APPROVAL_EVIDENCE,
   TIER_PROOF_CHOICES,
   TIER_PROOF_OTHER,
   TIER_PROOF_TYPES,
+  tierConfirmationProblem,
   tierProofNoteProblem,
   OfflineMemberUpdatedSchema,
   OfflineVisitCreatedSchema,
@@ -2078,19 +2080,26 @@ export class StationBridge {
         : memberRecord(found.member);
       let toTier: string;
       if (body.direction === 'upgrade') {
-        // Today's four choices only: the replay schema still parses a retired
-        // kind (SCRUM-773) so an older check files, but none is made here.
-        if (!TIER_PROOF_CHOICES.some((type) => type === body.evidenceType)) {
-          throw new BridgeError(
-            400,
-            'VALIDATION',
-            `Select ${TIER_PROOF_TYPES.join(', ')} or ${TIER_PROOF_OTHER}.`,
-          );
+        if (body.evidenceType === TIER_APPROVAL_EVIDENCE) {
+          // SCRUM-772: the Thai rate confirmed at the till, with no document —
+          // the Thai rate only, no expiry and no note: the platform's own rule.
+          const problem = tierConfirmationProblem(body);
+          if (problem) throw new BridgeError(400, 'VALIDATION', problem);
+        } else {
+          // Today's four choices only: the replay schema still parses a retired
+          // kind (SCRUM-773) so an older check files, but none is made here.
+          if (!TIER_PROOF_CHOICES.some((type) => type === body.evidenceType)) {
+            throw new BridgeError(
+              400,
+              'VALIDATION',
+              `Select ${TIER_PROOF_TYPES.join(', ')} or ${TIER_PROOF_OTHER}.`,
+            );
+          }
+          // SCRUM-697: Other is recorded only with what staff checked, and no
+          // kind carries a document number — the platform's own rule.
+          const noteProblem = tierProofNoteProblem(body.note, body.evidenceType);
+          if (noteProblem) throw new BridgeError(400, 'VALIDATION', noteProblem);
         }
-        // SCRUM-697: Other is recorded only with what staff checked, and no
-        // kind carries a document number — the platform's own rule.
-        const noteProblem = tierProofNoteProblem(body.note, body.evidenceType);
-        if (noteProblem) throw new BridgeError(400, 'VALIDATION', noteProblem);
         if (!(await this.tierCodes()).includes(body.toTier)) {
           throw new BridgeError(400, 'VALIDATION', `Unknown tier "${body.toTier}"`);
         }

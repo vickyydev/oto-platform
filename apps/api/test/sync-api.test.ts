@@ -2368,3 +2368,47 @@ describe('SCRUM-773 — a tier check a box recorded before the document list cha
     expect(filed!.evidenceExpiresAt?.toISOString().slice(0, 10)).toBe(expiry);
   });
 });
+
+describe('SCRUM-772 — the Thai rate confirmed at the till, saved on a box', () => {
+  it('files the Thai rate with no document, and refuses it for any other rate', async () => {
+    const b = await freshBox();
+    await registerKey(b);
+    const created = memberPayload(uniquePhone(), 'Thai at the till');
+    const thaiId = newId();
+    const expatId = newId();
+    const expat = mint(b, 'member.tier_changed', {
+      direction: 'upgrade',
+      memberId: created.memberId,
+      verificationId: expatId,
+      toTier: 'expat',
+      evidenceType: 'Approved by hand',
+    });
+    const { body } = await push(b, [
+      mint(b, 'member.created', created),
+      mint(b, 'member.tier_changed', {
+        direction: 'upgrade',
+        memberId: created.memberId,
+        verificationId: thaiId,
+        toTier: 'thai',
+        evidenceType: 'Approved by hand',
+      }),
+      expat,
+    ]);
+    expect(body).toMatchObject({ applied: 2, quarantined: 1 });
+    const [filed] = await ctx.db
+      .select()
+      .from(memberTierVerification)
+      .where(eq(memberTierVerification.id, thaiId));
+    expect(filed).toMatchObject({ toTier: 'thai', evidenceType: 'Approved by hand', evidenceExpiresAt: null, note: null });
+    expect(
+      await ctx.db.select().from(memberTierVerification).where(eq(memberTierVerification.id, expatId)),
+    ).toEqual([]);
+    const [after] = await ctx.db.select().from(member).where(eq(member.id, created.memberId));
+    expect(after?.tierCode).toBe('thai');
+    const [refused] = await ctx.db
+      .select()
+      .from(syncQuarantine)
+      .where(eq(syncQuarantine.eventId, expat.eventId));
+    expect(refused).toMatchObject({ reason: 'poison', errorCode: 'SYNC_TIER_EVIDENCE' });
+  });
+});

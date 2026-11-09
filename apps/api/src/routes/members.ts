@@ -1,11 +1,22 @@
 import { z } from 'zod';
 import { and, desc, eq, isNull } from 'drizzle-orm';
-import { account, branch, child, employee, member, memberTierVerification, tier } from '@oto/db';
 import {
+  account,
+  branch,
+  child,
+  employee,
+  member,
+  memberTierVerification,
+  station,
+  tier,
+} from '@oto/db';
+import {
+  TIER_APPROVAL_EVIDENCE,
   TIER_PROOF_CHOICES,
   TIER_PROOF_NOTE_MAX,
   newId,
   normalizePhone,
+  tierConfirmationProblem,
   tierProofNoteProblem,
 } from '@oto/shared';
 import type { App } from '../app';
@@ -533,8 +544,14 @@ export async function memberRoutes(app: App): Promise<void> {
              *
              * `note` below is where an "Other" document gets described, and
              * for Other it is required (`tierProofNoteProblem`).
+             *
+             * SCRUM-772 — or `Approved by hand` (`TIER_APPROVAL_EVIDENCE`):
+             * the Thai rate confirmed at the till with no document, the
+             * owner's rule of 6 November. The Thai rate only, with no expiry
+             * and no note (`tierConfirmationProblem`); every other rate still
+             * needs one of the four.
              */
-            evidenceType: z.enum(TIER_PROOF_CHOICES),
+            evidenceType: z.enum([...TIER_PROOF_CHOICES, TIER_APPROVAL_EVIDENCE]),
             /**
              * Optional, as the approved design's verification step asks for
              * the proof type only. When recorded, its passing flags the member
@@ -572,8 +589,14 @@ export async function memberRoutes(app: App): Promise<void> {
         .limit(1);
       if (!m) throw errors.notFound('Member not found');
       if (await tierVerificationReplay(tx, req.body.verificationId, m.id, 'upgrade')) return;
-      const noteProblem = tierProofNoteProblem(req.body.note, req.body.evidenceType);
-      if (noteProblem) throw new AppError(400, 'TIER_PROOF_NOTE', noteProblem);
+      if (req.body.evidenceType === TIER_APPROVAL_EVIDENCE) {
+        // SCRUM-772: confirmed at the till — nothing to fill in, Thai only.
+        const problem = tierConfirmationProblem(req.body);
+        if (problem) throw new AppError(400, 'TIER_APPROVAL', problem);
+      } else {
+        const noteProblem = tierProofNoteProblem(req.body.note, req.body.evidenceType);
+        if (noteProblem) throw new AppError(400, 'TIER_PROOF_NOTE', noteProblem);
+      }
       const note = req.body.note?.trim() || null;
 
       // Tiers are data (D2) — the target tier must exist for this operator.
@@ -604,6 +627,8 @@ export async function memberRoutes(app: App): Promise<void> {
           evidenceExpiresAt: expires,
           verifiedByAccountId: auth.accountId,
           branchId: auth.branchId,
+          // SCRUM-772: where, from the session as who and the branch are.
+          stationId: auth.stationId,
           note,
         });
         await tx.update(member).set({ tierCode: req.body.toTier }).where(eq(member.id, m.id));
@@ -620,6 +645,7 @@ export async function memberRoutes(app: App): Promise<void> {
             toTier: req.body.toTier,
             evidenceType: req.body.evidenceType,
             evidenceExpiresAt: expiresOn,
+            stationId: auth.stationId,
           },
           requestId: req.id,
         });
@@ -702,7 +728,10 @@ export async function memberRoutes(app: App): Promise<void> {
 
   /**
    * Admin record-checking: every tier upgrade with document, expiry, the staff
-   * member who checked it, branch and timestamp (newest first).
+   * member who checked it, branch, station and timestamp (newest first). A
+   * Thai rate confirmed at the till (SCRUM-772) is a row whose `evidenceType`
+   * is `Approved by hand`, which the Console reads as "Confirmed at the till
+   * by <name>".
    *
    * On `pos:member:list` with the register, and no longer on the counter's
    * `pos:member:read` (SCRUM-246). Two hundred rows of member nickname and
@@ -726,12 +755,14 @@ export async function memberRoutes(app: App): Promise<void> {
           staffPhone: account.phone,
           staffName: employee.name,
           branchName: branch.name,
+          stationName: station.name,
         })
         .from(memberTierVerification)
         .innerJoin(member, eq(memberTierVerification.memberId, member.id))
         .leftJoin(account, eq(memberTierVerification.verifiedByAccountId, account.id))
         .leftJoin(employee, eq(account.employeeId, employee.id))
         .leftJoin(branch, eq(memberTierVerification.branchId, branch.id))
+        .leftJoin(station, eq(memberTierVerification.stationId, station.id))
         .where(eq(member.operatorId, auth.operatorId))
         .orderBy(desc(memberTierVerification.createdAt))
         .limit(200);
@@ -746,6 +777,8 @@ export async function memberRoutes(app: App): Promise<void> {
           expired: isEvidenceExpired(r.v.evidenceExpiresAt),
           verifiedBy: r.staffName ?? r.staffPhone ?? null,
           branch: r.branchName ?? null,
+          /** SCRUM-772 — the till it was recorded at; null before 9 November or with none. */
+          station: r.stationName ?? null,
           note: r.v.note,
           verifiedAt: r.v.createdAt.toISOString(),
         })),

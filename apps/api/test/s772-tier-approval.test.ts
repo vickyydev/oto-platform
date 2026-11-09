@@ -34,8 +34,14 @@ import {
  * no PIN — with a reason from a short list and an optional note. What makes it
  * answerable is the record: the approver from the session, the reason, the
  * note, the time, the sale it priced, its own audit action, and the Console's
- * count per staff member. It applies to that sale only: the member is never
- * marked as a verified tier, so the next visit asks again.
+ * count per staff member. The claim applies to that sale only: this route
+ * never marks the member as a verified tier.
+ *
+ * Since the owner's rule of 6 November the till offers no reason chooser and
+ * no document for the Thai rate: it sends the one reason `confirmed_at_till`
+ * and then saves the rate to the member through the member verification, as
+ * a document check is saved (`s772-thai-confirmed-at-till.test.ts`). The
+ * reasons below, offered from 5 November, stay accepted.
  */
 
 let ctx: TestContext;

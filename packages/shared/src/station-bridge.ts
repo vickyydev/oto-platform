@@ -6,6 +6,7 @@ import { CartBenefitSchema } from './benefit-checkout';
 import { PAYMENT_METHOD_KINDS, type PaymentAttemptView } from './payments';
 import { SALE_REPRINT_KINDS } from './print';
 import { TIER_PROOF_RECORDED } from './tier-proof';
+import { TIER_APPROVAL_EVIDENCE } from './tier-approval';
 import { STAFF_OFFLINE_SIGN_IN_DAYS, STAFF_TOKEN_TTL_S } from './staff-token';
 import type { StockLocationType } from './stock';
 import { wholeSatangWhenMoney } from './whole-satang';
@@ -227,7 +228,10 @@ export const OfflineMemberTierChangedSchema = z.discriminatedUnion('direction', 
     // description in `note`, which the counter's box requires. A retired kind
     // (SCRUM-773) still parses, so a check its box recorded before the list
     // changed files on replay; the box's intent refuses it for anything new.
-    evidenceType: z.enum(TIER_PROOF_RECORDED),
+    // SCRUM-772: the Thai rate confirmed at the till carries
+    // `TIER_APPROVAL_EVIDENCE` in place of a document; the box's intent takes
+    // it for the Thai rate only, with no expiry and no note.
+    evidenceType: z.enum([...TIER_PROOF_RECORDED, TIER_APPROVAL_EVIDENCE]),
     // Optional, as at the online verify step, Other included (SCRUM-773): a
     // document with no expiry date never expires.
     evidenceExpiresAt: IsoDate.nullish(),

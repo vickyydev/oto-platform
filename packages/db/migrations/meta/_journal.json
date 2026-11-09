@@ -750,6 +750,13 @@
       "when": 1794227813789,
       "tag": "0106_station_screen_presence",
       "breakpoints": true
+    },
+    {
+      "idx": 107,
+      "version": "7",
+      "when": 1794232701755,
+      "tag": "0107_tier_confirmation_station",
+      "breakpoints": true
     }
   ]
 }

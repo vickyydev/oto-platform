@@ -603,6 +603,13 @@ export const saleTierClaim = pos.table(
       .notNull()
       .references(() => account.id, { onDelete: 'restrict' }),
     /**
+     * SCRUM-772 — the till the session was signed in at, from the SESSION as
+     * the account and the branch are: with the Thai rate confirmed at the till
+     * and no document behind it, who, where and when is the record. Null on
+     * claims before this column and on a session with no station.
+     */
+    stationId: uuid('station_id').references(() => station.id, { onDelete: 'restrict' }),
+    /**
      * `x-oto-action-id` of the tap that confirmed the document — the key the
      * cart names, and the claim's identity. Unique per operator, so one tap is
      * one claim however many times the request is retried.
@@ -653,6 +660,7 @@ export const saleTierClaim = pos.table(
     /** The resolver's own predicate: this account, this branch, inside the window. */
     index('sale_tier_claim_session_idx').on(t.accountId, t.branchId, t.createdAt),
     index('sale_tier_claim_branch_idx').on(t.branchId),
+    index('sale_tier_claim_station_idx').on(t.stationId),
     index('sale_tier_claim_sale_idx').on(t.spentBySaleId),
     /** The Console's count of hand approvals per staff member (SCRUM-772). */
     index('sale_tier_claim_approval_idx')

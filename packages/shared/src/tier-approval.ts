@@ -1,23 +1,43 @@
 import { TIER_PROOF_NOTE_MAX, TIER_PROOF_NOTE_PROBLEMS, TIER_PROOF_OTHER, tierProofNoteProblem } from './tier-proof';
 
 /**
- * SCRUM-772 — the Thai rate approved by hand, for the cases a document check
- * does not fit.
+ * SCRUM-772 — the Thai rate confirmed at the till, with no document.
  *
- * The document check stays the normal path. Beside it the till offers
- * "Special case, approve by hand": the staff member on the till picks a reason
- * from this short list, may add a note, and the rate applies to THAT SALE
- * ONLY. Nobody else confirms it, so the customer does not wait; what makes it
- * answerable is the record — who approved it (the signed-in account), the
- * reason, the note, the time and the sale — and the Console's count of
- * approvals per staff member.
+ * THE OWNER'S RULE (6 November 2026): "For the Thai rate, we don't need to
+ * show document options or expiry date. Just a verification modal with 2
+ * buttons and record staff logs." Not every Thai customer needs a passport
+ * check; staff confirm the rate and the record says who did, where and when.
  *
- * It never marks the member: the member's profile holds a verified tier only
- * when a document was checked, so the next visit asks again.
+ * So the Thai rate has no document step at all: the till shows one
+ * confirmation, "Confirm Thai rate" or "Cancel". Confirm records a tier claim
+ * for the sale with the evidence `TIER_APPROVAL_EVIDENCE` and the one reason
+ * `TIER_APPROVAL_TILL_REASON`, and saves the rate to the member the same way
+ * a document check did — now, for a member, or once a walk-in gives their
+ * details (SCRUM-227, SCRUM-779) — as a verification whose evidence is
+ * `TIER_APPROVAL_EVIDENCE`, so the next visit does not ask again. The Expat
+ * rate keeps its document check and expiry (SCRUM-773).
+ *
+ * Nobody else confirms it, so the customer does not wait; what makes it
+ * answerable is the record — the signed-in account, the station, the time
+ * and the sale — and the Console's count of confirmations per staff member.
+ *
+ * Before this rule (5 November) the till offered "Special case, approve by
+ * hand" beside the document list, with a reason from a short list. Those
+ * reasons stay recorded and accepted (`TIER_APPROVAL_REASONS`); the till no
+ * longer offers a choice.
  */
 
-/** The reasons, in the order the till offers them. Stored as these codes. */
+/** The one reason the till records since 6 November: no chooser is shown. */
+export const TIER_APPROVAL_TILL_REASON = 'confirmed_at_till' as const;
+
+/**
+ * Every reason a claim may record, stored as these codes. The till sends
+ * `TIER_APPROVAL_TILL_REASON` only; the three after it were offered from
+ * 5 November and stay accepted, so a claim filed under one still reads and a
+ * till still on that build is not refused.
+ */
 export const TIER_APPROVAL_REASONS = [
+  TIER_APPROVAL_TILL_REASON,
   'thai_child_foreign_parent',
   'thai_id_seen_not_to_hand',
   'other',
@@ -26,21 +46,22 @@ export type TierApprovalReason = (typeof TIER_APPROVAL_REASONS)[number];
 
 /** How each reason reads on the till, on the sale and in the Console. */
 export const TIER_APPROVAL_REASON_LABELS: Record<TierApprovalReason, string> = {
+  confirmed_at_till: 'Confirmed at the till',
   thai_child_foreign_parent: 'Thai child with a foreign parent',
   thai_id_seen_not_to_hand: 'Thai ID seen earlier, not to hand',
   other: 'Other',
 };
 
 /**
- * The tiers a hand approval may apply. The reasons are about Thai nationality,
- * so only the Thai rate is offered; every other discounted rate still needs
- * its document.
+ * The tiers confirmed at the till without a document: the Thai rate only.
+ * Every other discounted rate still needs its document.
  */
 export const TIER_APPROVAL_TIERS = ['thai'] as const;
 
 /**
- * `evidence_type` on the sale's tier claim when the rate was approved by hand:
- * the claim's kind, so a reader of the row never takes it for a document.
+ * `evidence_type` on the sale's tier claim, and on the member's verification,
+ * when the Thai rate was confirmed at the till: the record's kind, so a reader
+ * of the row never takes it for a document.
  */
 export const TIER_APPROVAL_EVIDENCE = 'Approved by hand' as const;
 
@@ -56,6 +77,10 @@ export const TIER_APPROVAL_PROBLEMS = {
   reasonTooLong: `Keep the reason to ${TIER_APPROVAL_TEXT_MAX} characters.`,
   noteTooLong: `Keep the note to ${TIER_APPROVAL_TEXT_MAX} characters.`,
   number: 'Never type a document number here.',
+  /** A member verification confirmed at the till names no document date. */
+  expiry: 'The Thai rate confirmed at the till carries no expiry date.',
+  /** …and no description: there is no document to describe. */
+  confirmationNote: 'The Thai rate confirmed at the till carries no note.',
 } as const;
 
 export function isTierApprovalReason(value: unknown): value is TierApprovalReason {
@@ -101,6 +126,28 @@ export function tierApprovalProblem(input: TierApprovalInput): string | null {
   return null;
 }
 
+/**
+ * Why a MEMBER verification whose evidence is `TIER_APPROVAL_EVIDENCE` cannot
+ * be recorded, or null when it can: the Thai rate only, with no expiry date
+ * and no note — the owner's rule leaves nothing to fill in. The verifier,
+ * branch, station and time are the session's, never the caller's.
+ */
+export function tierConfirmationProblem(input: {
+  toTier: string;
+  evidenceExpiresAt?: string | null;
+  note?: string | null;
+}): string | null {
+  if (!isTierApprovalTier(input.toTier)) return TIER_APPROVAL_PROBLEMS.tier;
+  if (input.evidenceExpiresAt) return TIER_APPROVAL_PROBLEMS.expiry;
+  if ((input.note ?? '').trim() !== '') return TIER_APPROVAL_PROBLEMS.confirmationNote;
+  return null;
+}
+
+/** "Confirmed at the till by Som": how a till confirmation reads in the Console. */
+export function tierConfirmedAtTillLine(confirmedBy: string | null | undefined): string {
+  return `Confirmed at the till by ${confirmedBy?.trim() || 'an unnamed account'}`;
+}
+
 /** The reason as it reads: the list's words, or for Other what staff typed. */
 export function tierApprovalReasonLabel(reason: string, reasonText?: string | null): string {
   const text = reasonText?.trim();
@@ -110,12 +157,17 @@ export function tierApprovalReasonLabel(reason: string, reasonText?: string | nu
 
 /**
  * The sale's document check when the rate was approved by hand:
- * "Thai rate approved by hand by Som: Thai child with a foreign parent".
+ * "Thai rate approved by hand by Som: Thai child with a foreign parent", and
+ * for the till's one reason since 6 November, "Thai rate confirmed at the till
+ * by Som".
  */
 export function tierApprovedByHandLine(
   tierName: string,
   approvedBy: string | null | undefined,
   reasonLabel: string,
+  reason?: string,
 ): string {
-  return `${tierName} rate approved by hand by ${approvedBy?.trim() || 'an unnamed account'}: ${reasonLabel}`;
+  const who = approvedBy?.trim() || 'an unnamed account';
+  if (reason === TIER_APPROVAL_TILL_REASON) return `${tierName} rate confirmed at the till by ${who}`;
+  return `${tierName} rate approved by hand by ${who}: ${reasonLabel}`;
 }

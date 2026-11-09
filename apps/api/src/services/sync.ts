@@ -73,6 +73,8 @@ import {
   OfflineVisitCreatedSchema,
   OfflineVisitChildrenAddedSchema,
   SYNC_EVENT_SCHEMA_VERSION,
+  TIER_APPROVAL_EVIDENCE,
+  tierConfirmationProblem,
   SyncEventEnvelopeSchema,
   businessDate,
   canonicalSyncBytes,
@@ -1635,6 +1637,12 @@ const HANDLERS: Record<string, EventHandler> = {
           .limit(1);
         if (!target) {
           throw new RefuseEvent('poison', 'SYNC_TIER_UNKNOWN', `Unknown tier "${payload.toTier}"`);
+        }
+        // SCRUM-772: a rate confirmed at the till with no document is the Thai
+        // rate only, with no expiry and no note — the route's rule, here too.
+        if (payload.evidenceType === TIER_APPROVAL_EVIDENCE) {
+          const problem = tierConfirmationProblem(payload);
+          if (problem) throw new RefuseEvent('poison', 'SYNC_TIER_EVIDENCE', problem);
         }
         toTier = target.code;
         evidence = {

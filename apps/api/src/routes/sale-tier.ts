@@ -79,14 +79,15 @@ const ClaimBody = z
   .strict();
 
 /**
- * SCRUM-772 — the Thai rate approved by hand, for the special cases a
- * document check does not fit.
+ * SCRUM-772 — the Thai rate confirmed at the till, with no document (the
+ * owner's rule of 6 November). The till sends the one reason
+ * `confirmed_at_till`; the reasons offered from 5 November stay accepted.
  *
  * WHAT THE CALLER MAY NOT SEND, as on the document check: who approved it,
- * which branch, or a price. The approver and the branch come from the
- * session; the tier names a rate in the catalogue. There is no field for a
- * document number, and the two free-text fields refuse a run of five or more
- * digits (`tierApprovalProblem`).
+ * which branch or station, or a price. The approver, the branch and the
+ * station come from the session; the tier names a rate in the catalogue.
+ * There is no field for a document number, and the two free-text fields
+ * refuse a run of five or more digits (`tierApprovalProblem`).
  */
 const ApprovalBody = z
   .object({
@@ -120,6 +121,8 @@ const ApprovalClaim = z.object({
     })
     .nullable(),
   verifiedByAccountId: z.string().uuid(),
+  /** SCRUM-772 — the session's till when it was confirmed; null with none. */
+  stationId: z.string().uuid().nullable(),
   createdAt: z.string(),
   expiresAt: z.string(),
   spentBySaleId: z.string().uuid().nullable(),
@@ -153,9 +156,10 @@ export async function saleTierRoutes(app: App): Promise<void> {
       config: { permission: 'pos:member:update', target: { branchId: 'body.branchId' }, stationTrading: true },
       schema: {
         description:
-          'Approve the Thai rate by hand for this sale only, with a reason from the till\'s ' +
-          'short list and an optional note. The approver and the branch are stamped from the ' +
-          'session; the member is not marked as a verified tier.',
+          'Confirm the Thai rate at the till for this sale, with no document: the till sends ' +
+          'the reason confirmed_at_till (the reasons offered from 5 November stay accepted). ' +
+          'The approver, the branch and the station are stamped from the session; this route ' +
+          'does not mark the member, which the till does through the member tier verification.',
         body: ApprovalBody,
         response: { 200: z.object({ claim: ApprovalClaim }) },
       },
@@ -177,6 +181,7 @@ export async function saleTierRoutes(app: App): Promise<void> {
             accountId: auth.accountId,
             operatorId: auth.operatorId,
             branchId,
+            stationId: auth.stationId,
             requestId: req.id,
           },
           {
@@ -256,6 +261,7 @@ export async function saleTierRoutes(app: App): Promise<void> {
             accountId: auth.accountId,
             operatorId: auth.operatorId,
             branchId,
+            stationId: auth.stationId,
             requestId: req.id,
           },
           {

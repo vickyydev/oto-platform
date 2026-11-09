@@ -87,6 +87,12 @@ export interface TierClaimActor {
   operatorId: string;
   /** The branch the claim belongs to — the session's, resolved by the route. */
   branchId: string;
+  /**
+   * SCRUM-772 — the till the session is signed in at, when it is at one.
+   * Stamped on the claim beside the account and the branch: who, where and
+   * when is the record of a rate confirmed with no document behind it.
+   */
+  stationId?: string | null;
   requestId?: string;
 }
 
@@ -142,6 +148,8 @@ export interface TierClaimView {
   approval: TierApprovalView | null;
   /** The account the session authenticated — never a name the caller sent. */
   verifiedByAccountId: string;
+  /** SCRUM-772 — the session's till when the claim was made; null with none. */
+  stationId: string | null;
   createdAt: string;
   /** When this claim stops pricing anything, if nothing spends it first. */
   expiresAt: string;
@@ -228,6 +236,7 @@ function viewOf(row: typeof saleTierClaim.$inferSelect): TierClaimView {
             note: row.approvalNote,
           },
     verifiedByAccountId: row.accountId,
+    stationId: row.stationId,
     createdAt: row.createdAt.toISOString(),
     expiresAt: new Date(row.createdAt.getTime() + TIER_CLAIM_WINDOW_MS).toISOString(),
     spentBySaleId: row.spentBySaleId,
@@ -300,6 +309,7 @@ export async function recordTierClaim(
       operatorId: actor.operatorId,
       branchId: actor.branchId,
       accountId: actor.accountId,
+      stationId: actor.stationId ?? null,
       actionId: input.actionId,
       toTier: input.toTier,
       evidenceType: input.evidenceType,
@@ -412,23 +422,30 @@ export interface TierApprovalInput {
 }
 
 /**
- * SCRUM-772 — THE THAI RATE APPROVED BY HAND, for the special cases a
- * document check does not fit: a Thai child with a foreign parent, a Thai ID
- * seen earlier and not to hand, or another reason staff type.
+ * SCRUM-772 — THE THAI RATE CONFIRMED AT THE TILL, with no document.
+ *
+ * The owner's rule of 6 November: the Thai rate shows no document options and
+ * no expiry, just a confirmation with two buttons, and the staff log is the
+ * record. The till sends the one reason `TIER_APPROVAL_TILL_REASON`; the
+ * reasons offered from 5 November (a Thai child with a foreign parent, a Thai
+ * ID seen earlier, Other) stay accepted.
  *
  * It is a tier claim like a document check — the same table, the same window,
  * spent by one sale — with the reason in place of a document. Nobody else
- * confirms it: the staff member on the till approves alone, so the customer
+ * confirms it: the staff member on the till confirms alone, so the customer
  * does not wait, and the record is what makes it answerable. The approver is
- * the session's account, the branch is the session's, the time is the row's;
- * the claim names the sale once one spends it, and the audit row is its own
- * action (`sale_tier_claim.approve_by_hand`) carrying the reason and the
- * note, which the rule has already kept free of document numbers.
+ * the session's account, the branch and the station are the session's, the
+ * time is the row's; the claim names the sale once one spends it, and the
+ * audit row is its own action (`sale_tier_claim.approve_by_hand`) carrying
+ * the reason and the note, which the rule has already kept free of document
+ * numbers.
  *
- * IT NEVER TOUCHES THE MEMBER. No `member_tier_verification` is written, so
- * the member's profile is not marked as a verified tier and the next visit
- * asks again. It prices a member's cart through the claim instead
- * (`resolveTierClaim`).
+ * THIS ROUTE NEVER TOUCHES THE MEMBER. No `member_tier_verification` is
+ * written here; it prices a member's cart through the claim
+ * (`resolveTierClaim`). Saving the rate to the member is the till's second,
+ * separate act — `POST /members/:id/tier-verification` with the evidence
+ * `TIER_APPROVAL_EVIDENCE`, for a member at once and for a walk-in once they
+ * give their details — as a document check is saved.
  */
 export async function recordTierApproval(
   tx: Tx,
@@ -477,6 +494,7 @@ export async function recordTierApproval(
       operatorId: actor.operatorId,
       branchId: actor.branchId,
       accountId: actor.accountId,
+      stationId: actor.stationId ?? null,
       actionId: input.actionId,
       toTier: input.toTier,
       evidenceType: TIER_APPROVAL_EVIDENCE,
@@ -668,12 +686,12 @@ export async function resolveTierClaim(
   const claim = await findClaim(db, actor, branchId, cart.tierClaimActionId, now);
   if (!claim) return nothing;
   /**
-   * SCRUM-772 — EXCEPT A RATE APPROVED BY HAND. That approval is for THIS
-   * SALE, and it deliberately writes nothing to the member: the profile holds
-   * a verified tier only when a document was checked, so the next visit asks
-   * again. A member on the cart therefore has no record of what staff just
-   * decided, and the approval is what prices it. A document check keeps the
-   * rule above: the member's own record wins.
+   * SCRUM-772 — EXCEPT A RATE CONFIRMED AT THE TILL. The claim is for THIS
+   * SALE and writes nothing to the member itself; the till saves the rate to
+   * the member separately, and that save may not have landed (or, for a claim
+   * made before 9 November, was never made). The claim is what staff just
+   * decided, so it prices the cart. A document check keeps the rule above: the
+   * member's own record wins.
    */
   if (cart.memberId && claim.approval === null) return nothing;
   /**

@@ -13,6 +13,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { archivedAt, crm, idPk, timestamps } from './helpers';
 import { account, branch, operator } from './tenancy';
+import { station } from './fleet';
 
 // --- The customer (schema `crm`) -------------------------------------------
 
@@ -160,6 +161,13 @@ export const memberTierVerification = crm.table(
     evidenceExpiresAt: timestamp('evidence_expires_at', { withTimezone: true, mode: 'date' }),
     verifiedByAccountId: uuid('verified_by_account_id').references(() => account.id),
     branchId: uuid('branch_id').references(() => branch.id),
+    /**
+     * SCRUM-772 — the till the session that recorded it was signed in at,
+     * from the SESSION like the verifier. With the Thai rate confirmed at the
+     * till and no document behind it, who, where and when is the record.
+     * Null on rows before this column and on rows a box replays.
+     */
+    stationId: uuid('station_id').references(() => station.id),
     note: text('note'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
@@ -167,6 +175,7 @@ export const memberTierVerification = crm.table(
     index('mtv_member_idx').on(t.memberId),
     index('mtv_branch_idx').on(t.branchId),
     index('mtv_verified_by_idx').on(t.verifiedByAccountId),
+    index('mtv_station_idx').on(t.stationId),
   ],
 );
 

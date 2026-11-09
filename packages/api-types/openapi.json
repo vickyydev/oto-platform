@@ -6003,7 +6003,8 @@
                       "Passport",
                       "Driving licence",
                       "School card",
-                      "Other"
+                      "Other",
+                      "Approved by hand"
                     ]
                   },
                   "evidenceExpiresAt": {
@@ -11094,7 +11095,7 @@
     },
     "/sales/tier-approvals": {
       "post": {
-        "description": "Approve the Thai rate by hand for this sale only, with a reason from the till's short list and an optional note. The approver and the branch are stamped from the session; the member is not marked as a verified tier.",
+        "description": "Confirm the Thai rate at the till for this sale, with no document: the till sends the reason confirmed_at_till (the reasons offered from 5 November stay accepted). The approver, the branch and the station are stamped from the session; this route does not mark the member, which the till does through the member tier verification.",
         "requestBody": {
           "required": true,
           "content": {
@@ -11119,6 +11120,7 @@
                   "reason": {
                     "type": "string",
                     "enum": [
+                      "confirmed_at_till",
                       "thai_child_foreign_parent",
                       "thai_id_seen_not_to_hand",
                       "other"
@@ -11206,6 +11208,11 @@
                           "type": "string",
                           "format": "uuid"
                         },
+                        "stationId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
                         "createdAt": {
                           "type": "string"
                         },
@@ -11228,6 +11235,7 @@
                         "note",
                         "approval",
                         "verifiedByAccountId",
+                        "stationId",
                         "createdAt",
                         "expiresAt",
                         "spentBySaleId"

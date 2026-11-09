@@ -3231,7 +3231,7 @@ export interface paths {
                         verificationId?: string;
                         toTier: string;
                         /** @enum {string} */
-                        evidenceType: "Passport" | "Driving licence" | "School card" | "Other";
+                        evidenceType: "Passport" | "Driving licence" | "School card" | "Other" | "Approved by hand";
                         evidenceExpiresAt?: string | null;
                         note?: string;
                     };
@@ -5404,7 +5404,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Approve the Thai rate by hand for this sale only, with a reason from the till's short list and an optional note. The approver and the branch are stamped from the session; the member is not marked as a verified tier. */
+        /** @description Confirm the Thai rate at the till for this sale, with no document: the till sends the reason confirmed_at_till (the reasons offered from 5 November stay accepted). The approver, the branch and the station are stamped from the session; this route does not mark the member, which the till does through the member tier verification. */
         post: {
             parameters: {
                 query?: never;
@@ -5420,7 +5420,7 @@ export interface paths {
                         branchId?: string;
                         toTier: string;
                         /** @enum {string} */
-                        reason: "thai_child_foreign_parent" | "thai_id_seen_not_to_hand" | "other";
+                        reason: "confirmed_at_till" | "thai_child_foreign_parent" | "thai_id_seen_not_to_hand" | "other";
                         reasonText?: string;
                         note?: string;
                     };
@@ -5451,6 +5451,8 @@ export interface paths {
                                 } | null;
                                 /** Format: uuid */
                                 verifiedByAccountId: string;
+                                /** Format: uuid */
+                                stationId: string | null;
                                 createdAt: string;
                                 expiresAt: string;
                                 /** Format: uuid */

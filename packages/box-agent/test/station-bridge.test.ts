@@ -874,6 +874,52 @@ test('SCRUM-697: an Other document verifies a tier offline only with what staff 
   r.t.close();
 });
 
+test('SCRUM-772: the box saves the Thai rate confirmed at the till, with no document, and only the Thai rate', async () => {
+  const r = await rig();
+  const { caller } = await r.bridge.unlock(STATION_ID, {
+    token: token(r.now.at),
+    password: 'open-sesame',
+  });
+  const memberId = '018f0000-0000-7000-8000-00000000d772';
+  await r.bridge.intent(
+    STATION_ID,
+    caller,
+    intent('member.create', { memberId, phone: '+66817720772', nickname: 'Thai at the till' }),
+  );
+  const upgrade = (verificationId: string, over: Record<string, unknown>) =>
+    r.bridge.intent(
+      STATION_ID,
+      caller,
+      intent('member.tier_change', {
+        direction: 'upgrade',
+        memberId,
+        verificationId,
+        toTier: 'thai',
+        evidenceType: 'Approved by hand',
+        ...over,
+      }),
+    );
+  for (const [verificationId, over, message] of [
+    ['018f0000-0000-7000-8000-0000000007b1', { toTier: 'expat' }, 'Only the Thai rate can be approved by hand. Other rates need their document.'],
+    ['018f0000-0000-7000-8000-0000000007b2', { evidenceExpiresAt: '2030-01-01' }, 'The Thai rate confirmed at the till carries no expiry date.'],
+    ['018f0000-0000-7000-8000-0000000007b3', { note: 'Mother is Thai' }, 'The Thai rate confirmed at the till carries no note.'],
+  ] as const) {
+    await assert.rejects(
+      upgrade(verificationId, over),
+      (err: unknown) => err instanceof BridgeError && err.status === 400 && err.message === message,
+      message,
+    );
+  }
+  const upgraded = await upgrade('018f0000-0000-7000-8000-0000000007b4', {});
+  assert.equal((upgraded.result?.member as { tierCode: string }).tierCode, 'thai');
+  const [, factTier] = (await r.t.store.takeBatch(BOX_ID)).events;
+  assert.equal(factTier!.type, 'member.tier_changed');
+  assert.equal(factTier!.payload.evidenceType, 'Approved by hand');
+  assert.equal(factTier!.payload.evidenceExpiresAt, undefined, 'no expiry travels');
+  assert.equal(OfflineMemberTierChangedSchema.safeParse(factTier!.payload).success, true);
+  r.t.close();
+});
+
 test('SCRUM-773: the box offers Driving licence, not Residence certificate, and Other carries its expiry', async () => {
   const r = await rig();
   const { caller } = await r.bridge.unlock(STATION_ID, {
