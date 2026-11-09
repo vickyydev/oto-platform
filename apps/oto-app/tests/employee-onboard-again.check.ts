@@ -22,7 +22,12 @@
 //      refused; a later one makes the planned employment and a draft contract
 //      in the new department, prefilled from the profile, with the movement
 //      logged; a second one is refused; the onboarding steps show basic info,
-//      login and face already set up.
+//      login and face already set up. Create Contract on the profile makes
+//      the new employment's contract with no plan named; a contract made
+//      before the plan and signed in the notice leaves the profile Leaving;
+//      one made in the notice and left unlinked is the plan's when signed,
+//      the current contract running to the last day (signing renders a PDF,
+//      so Chromium is needed, as for tests/documents.check.ts).
 //   4. Shifts in advance: before the switch the new department takes the
 //      profile from its start date (and not a day before), the current one up
 //      to the last day (and not after); both show in the person's own rota.
@@ -52,6 +57,7 @@
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
 import { createHash, randomBytes, randomUUID, scryptSync } from "node:crypto";
+import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
@@ -61,6 +67,21 @@ const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
   console.error("employee-onboard-again.check: DATABASE_URL is not set");
+  process.exit(2);
+}
+
+// Signing a contract renders its PDF with Chromium, as in the app's image:
+// PUPPETEER_EXECUTABLE_PATH names it, or a usual install path is found (as
+// tests/documents.check.ts finds it).
+const CHROMIUM = [
+  process.env.PUPPETEER_EXECUTABLE_PATH,
+  "/usr/bin/google-chrome",
+  "/usr/bin/chromium",
+  "/usr/bin/chromium-browser",
+  "C:/Program Files/Google/Chrome/Application/chrome.exe",
+].find((p): p is string => !!p && existsSync(p));
+if (!CHROMIUM) {
+  console.error("employee-onboard-again.check: no Chromium to render signed contracts with — set PUPPETEER_EXECUTABLE_PATH");
   process.exit(2);
 }
 
@@ -247,6 +268,7 @@ const HARNESS_ENV = {
   DEPLOY_ENV: "local",
   OTOAPP_JOBS: "platform",
   USE_AWS_REKOGNITION: "false",
+  PUPPETEER_EXECUTABLE_PATH: CHROMIUM,
 };
 
 /** The app's routes on the harness; with `fakeNow`, on a clock that starts at that instant. */
@@ -599,6 +621,70 @@ try {
     );
   });
 
+  // The contract steps while the current contract still runs: Create Contract
+  // on the profile, then signing. The current (Promotion) contract is active.
+  const contractsOf = async (employeeId: string) => q<{ id: string; status: string; signing_status: string; archived: boolean }>(
+    `select id, status, signing_status, archived_at is not null as archived from contract_instances where employee_id = $1`, [employeeId]);
+  const statusOf = async (contractId: string) => (await contractsOf(original)).find((c) => c.id === contractId);
+  const signable = async (createdAt: string) => {
+    const id = randomUUID();
+    const token = randomBytes(32).toString("hex");
+    await q(
+      `insert into contract_instances (id, employee_id, template_id, template_snapshot_html, template_snapshot_version, merge_data_json,
+                                       created_by, status, signing_status, signing_token, signing_token_expires_at, created_at)
+       values ($1, $2, $3, '<p>ZZ TEST</p>', 1, '{}'::jsonb, $4, 'finalized', 'awaiting_signature', $5, now() + interval '7 days', ${createdAt})`,
+      [id, original, TEMPLATE, admin.id, token],
+    );
+    return { id, token };
+  };
+  const SIGNATURE = `data:image/png;base64,${randomBytes(120).toString("base64")}`;
+  const sign = (token: string) => call("POST", `/api/signing/${token}/sign`, "", { signatureImage: SIGNATURE, agreedToTerms: true });
+  const promotionContract = randomUUID();
+  await q(
+    `insert into contract_instances (id, employee_id, template_id, template_snapshot_html, template_snapshot_version, merge_data_json,
+                                     created_by, status, signing_status, created_at)
+     values ($1, $2, $3, '<p>ZZ TEST</p>', 1, '{}'::jsonb, $4, 'active', 'signed', now() - interval '90 days')`,
+    [promotionContract, original, TEMPLATE, admin.id],
+  );
+  let plannedContract = draftContract;
+  await check("Create Contract on the profile while Onboard Again is planned makes the new employment's contract, even with no plan named", async () => {
+    const res = await call("POST", "/api/contracts", as.admin, {
+      employeeId: original, templateId: TEMPLATE, status: "draft",
+      mergeDataJson: { positionTitle: "ZZ Receptionist", salaryThb: 15000, startDate: START },
+    });
+    assert.equal(res.status, 201, show(res));
+    plannedContract = res.body.id;
+    const [engagement] = await engagementOf(original);
+    assert.equal(engagement!.contract_instance_id, plannedContract, "the plan's contract is the new one");
+    assert.equal((await statusOf(draftContract))!.archived, true, "the unsent draft it replaces is archived");
+    const [{ html }] = await q<{ html: string }>("select template_snapshot_html as html from contract_instances where id = $1", [plannedContract]);
+    assert.ok(html.includes(RECEPTION_NAME), "compiled with the new department");
+  });
+  await check("a contract made before the plan, signed during the notice, is signed as before but leaves the profile Leaving", async () => {
+    const earlier = await signable("now() - interval '30 days'");
+    const res = await sign(earlier.token);
+    assert.equal(res.status, 200, show(res));
+    assert.deepEqual(await statusOf(earlier.id), { id: earlier.id, status: "active", signing_status: "signed", archived: false });
+    assert.equal((await statusOf(promotionContract))!.status, "superseded");
+    const row = await profile(original);
+    assert.deepEqual([row.status, row.employment_state, row.primary_department_id], ["active", "LEAVING", PROMOTION]);
+    assert.equal((await engagementOf(original))[0]!.contract_instance_id, plannedContract, "the plan keeps its own contract");
+  });
+  await check("a contract made during the notice and left unlinked is the plan's when signed: the current contract stays active, the profile Leaving", async () => {
+    const [{ id: currentContract }] = await q<{ id: string }>(
+      "select id from contract_instances where employee_id = $1 and status = 'active'", [original]);
+    const unlinked = await signable("now()");
+    const res = await sign(unlinked.token);
+    assert.equal(res.status, 200, show(res));
+    assert.deepEqual(await statusOf(unlinked.id), { id: unlinked.id, status: "finalized", signing_status: "signed", archived: false });
+    assert.equal((await statusOf(currentContract!))!.status, "active", "the current contract runs to the last working day");
+    const row = await profile(original);
+    assert.deepEqual([row.status, row.employment_state, row.primary_department_id], ["active", "LEAVING", PROMOTION]);
+    assert.equal((await engagementOf(original))[0]!.contract_instance_id, unlinked.id);
+    assert.equal((await statusOf(plannedContract))!.archived, true, "the unsent draft it replaces is archived");
+    plannedContract = unlinked.id;
+  });
+
   // ── 4. Shifts in advance ──────────────────────────────────────────────────
   console.log("4. shifts in the new department before the start date:");
   const assign = (shiftRowId: string, shiftDate: string) =>
@@ -699,6 +785,13 @@ try {
     assert.equal(await loginOn(subject.id), true);
     assert.deepEqual(await lifecycle(subject.id), []);
     assert.equal(await countOf("select count(*) as n from schedule_assignments where id = any($1::varchar[])", [[receptionShift, promotionShift]]), 2);
+  });
+  await check("the new contract signed during the notice is the active contract from the start date; the one before it is superseded", async () => {
+    assert.deepEqual(
+      (await contractsOf(original)).filter((c) => c.status === "active").map((c) => [c.id, c.signing_status]),
+      [[plannedContract, "signed"]],
+    );
+    assert.equal((await statusOf(promotionContract))!.status, "superseded");
   });
   await check("the Left profile's login is switched back on, and the platform's pending switch-off withdrawn", async () => {
     const row = await profile(leaver);

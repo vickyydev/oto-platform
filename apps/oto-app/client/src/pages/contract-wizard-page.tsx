@@ -186,13 +186,8 @@ export default function ContractWizardPage() {
   // Parse URL query params for pre-selected employee
   const urlParams = new URLSearchParams(searchString);
   const urlEmployeeId = urlParams.get("employeeId");
-  // SCRUM-794: the wizard opened from an Onboard Again employment's card.
+  // SCRUM-794: the wizard opened from an Onboard Again employment's card or the profile names it.
   const urlEngagementId = urlParams.get("engagementId");
-  const { data: plannedData } = useQuery<{ engagement: { id: string; startDate: string; positionTitle: string | null } | null }>({
-    queryKey: ["/api/employees", urlEmployeeId ?? "", "onboard-again"],
-    enabled: !!urlEmployeeId && !!urlEngagementId,
-  });
-  const plannedEngagement = plannedData?.engagement && plannedData.engagement.id === urlEngagementId ? plannedData.engagement : null;
 
   interface TemplateWithAssignments extends Template {
     assignments: TemplateAssignment[];
@@ -246,6 +241,19 @@ export default function ContractWizardPage() {
   const selectedEmployeeId = form.watch("employeeId");
   const selectedEmployee = filteredEmployees.find((e) => e.id === selectedEmployeeId);
 
+  // SCRUM-794: an Onboard Again employment planned on the chosen profile. A
+  // contract made here for that profile is the new employment's (the server
+  // links it to the plan either way): it takes the plan's start date and
+  // position, and replaces the draft made for the plan while that is unsent.
+  const plannedForId = selectedEmployeeId || urlEmployeeId || "";
+  const { data: plannedData } = useQuery<{ engagement: { id: string; startDate: string; positionTitle: string | null } | null }>({
+    queryKey: ["/api/employees", plannedForId, "onboard-again"],
+    enabled: !!plannedForId,
+  });
+  const plannedEngagement = plannedData?.engagement && (!urlEngagementId || plannedData.engagement.id === urlEngagementId)
+    ? plannedData.engagement
+    : null;
+
   // Pre-select employee from URL when data is loaded
   useEffect(() => {
     if (urlEmployeeId && employees && !preselectedEmployeeId) {
@@ -257,12 +265,13 @@ export default function ContractWizardPage() {
     }
   }, [urlEmployeeId, employees, preselectedEmployeeId]);
 
-  // The planned employment's start date and position, over the profile's own.
+  // The planned employment's start date and position, over the profile's own,
+  // once the profile is chosen (handleEmployeeChange fills its own first).
   useEffect(() => {
-    if (!plannedEngagement || preselectedEmployeeId !== urlEmployeeId) return;
+    if (!plannedEngagement || !selectedEmployeeId) return;
     form.setValue("startDate", plannedEngagement.startDate);
     if (plannedEngagement.positionTitle) form.setValue("positionTitle", plannedEngagement.positionTitle);
-  }, [plannedEngagement, preselectedEmployeeId, urlEmployeeId]);
+  }, [plannedEngagement?.id, selectedEmployeeId]);
 
   const filteredTemplates = templatesWithAssignments?.filter((template) => {
     if (template.status !== "active") return false;
@@ -369,7 +378,7 @@ export default function ContractWizardPage() {
         mergeDataJson: mergeData,
         createdBy: user?.id,
         status: "draft",
-        ...(plannedEngagement && data.employeeId === urlEmployeeId ? { engagementId: plannedEngagement.id } : {}),
+        ...(plannedEngagement && data.employeeId === plannedForId ? { engagementId: plannedEngagement.id } : {}),
       });
       return await res.json();
     },
@@ -418,7 +427,7 @@ export default function ContractWizardPage() {
         expectedVersion: employeeVersion,
         createdBy: user?.id,
         generateSigningLink,
-        ...(plannedEngagement && data.employeeId === urlEmployeeId ? { engagementId: plannedEngagement.id } : {}),
+        ...(plannedEngagement && data.employeeId === plannedForId ? { engagementId: plannedEngagement.id } : {}),
       });
       
       if (!res.ok) {

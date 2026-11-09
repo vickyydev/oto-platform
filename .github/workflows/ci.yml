@@ -619,8 +619,13 @@ jobs:
       # day; the 03:00 batch on a clock between the two ends only a profile
       # with nothing planned, and on the start date starts the employment; the
       # stray "Unscheduled work" approvals matched to the shifts it now has.
+      # A contract made or signed during the notice is the new employment's
+      # (signing renders a PDF with the runner's Chrome), and the new contract
+      # can be offboarded again once migration 0008's index is retired.
       - name: The app's Onboard Again and profile fold checks
         if: steps.changes.outputs.app == 'true'
+        env:
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
         run: npx tsx tests/employee-onboard-again.check.ts
       # S2-17b round 6: the document modules as the app does them — templates,
       # policies, the asset catalogue and leave policies per park group

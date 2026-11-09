@@ -8,7 +8,7 @@ import { registerPayrollRoutes } from "./payroll/routes";
 import { registerEmployeeActionRoutes } from "./employee-action-routes";
 import { registerEmployeeOnboardAgainRoutes } from "./employee-onboard-again-routes";
 import { bangkokToday, dayBefore, leaverStatusOf } from "./lib/engagementDates";
-import { linkContractToEngagement, plannedEngagementForContract } from "./lib/onboardAgain";
+import { linkContractToEngagement, planOfSignedContract, plannedEngagementForContract } from "./lib/onboardAgain";
 import { registerQaRoutes } from "./qa/routes";
 import { registerSuiteSignInRoutes, unusablePassword } from "./suite-sign-in-routes";
 import { readPhone } from "./lib/suiteSignIn";
@@ -7187,10 +7187,13 @@ OTO Company Limited`,
       // SCRUM-794: the contract of an Onboard Again employment that starts
       // later is signed now and becomes the active contract on its start date
       // (the night batch), so the current contract stays active until then.
-      const [plannedFor] = await db.select({ startDate: employeeEngagements.startDate }).from(employeeEngagements)
-        .where(and(eq(employeeEngagements.contractInstanceId, contract.id), eq(employeeEngagements.status, "planned")))
-        .limit(1);
-      const activatesLater = !!plannedFor && plannedFor.startDate > bangkokToday();
+      // A contract made while the employment was planned is that
+      // employment's, linked or not (planOfSignedContract links it). One made
+      // before the plan is the current employment's and is signed as before,
+      // but the profile working out its notice is not made ACTIVE by it.
+      const plan = await planOfSignedContract(contract);
+      const activatesLater = !!plan?.ownContract && plan.engagement.startDate > bangkokToday();
+      const stateIsThePlans = !!plan && !plan.ownContract;
 
       // Supersede any existing active contracts for this employee before making new one active
       if (!activatesLater) await storage.supersedeActiveContract(contract.employeeId, contract.id);
@@ -7250,7 +7253,7 @@ OTO Company Limited`,
       // This ensures they appear in scheduling (employmentState: ACTIVE is required for scheduling)
       // SCRUM-794: an Onboard Again contract signed ahead leaves the
       // employment to start on its own start date.
-      if (employee && !activatesLater && (employee.status === "pending" || employee.employmentState !== "ACTIVE")) {
+      if (employee && !activatesLater && !stateIsThePlans && (employee.status === "pending" || employee.employmentState !== "ACTIVE")) {
         try {
           await storage.updateEmployee(employee.id, { 
             status: "active",

@@ -55,7 +55,7 @@ import { Switch } from "@/components/ui/switch";
 import { EmployeeDocument } from "@shared/schema";
 import { UpdateTermsModal } from "@/components/update-terms-modal";
 import { OffboardingModal } from "@/components/offboarding-modal";
-import { FoldIntoAction, OnboardAgainAction, PlannedEmploymentCard } from "@/components/employee-onboard-again-actions";
+import { FoldIntoAction, OnboardAgainAction, PlannedEmploymentCard, usePlannedEmployment } from "@/components/employee-onboard-again-actions";
 import { IssueWarningModal } from "@/components/issue-warning-modal";
 import { EmployeeOnboardingStepper } from "@/components/employee-onboarding-stepper";
 import {
@@ -2717,6 +2717,13 @@ export default function EmployeeEditorPage() {
   // SCRUM-794: Onboard Again's draft starts from the template the latest contract used.
   const latestTemplateId = contracts?.find(c => !c.archivedAt)?.templateId ?? null;
   const contractHistory = contracts?.filter(c => c.status !== "active") || [];
+  // SCRUM-794: with Onboard Again planned, a contract made from this profile
+  // (Create Contract, the banner, the onboarding steps) is the new
+  // employment's: the wizard opens on the plan, as the plan's card does.
+  const plannedEmployment = usePlannedEmployment(employee, !isNew && canEdit).data?.engagement ?? null;
+  const contractWizardHref = plannedEmployment
+    ? `/contracts/new?employeeId=${id}&engagementId=${plannedEmployment.id}`
+    : `/contracts/new?employeeId=${id}`;
 
   const form = useForm<EmployeeFormData>({
     resolver: zodResolver(canEditSalary ? employeeFormSchema : employeeFormBaseSchema),
@@ -3283,7 +3290,7 @@ export default function EmployeeEditorPage() {
           
           {!isNew && employee?.status === "active" && canEdit && (
             <>
-              <Link href={`/contracts/new?employeeId=${id}`}>
+              <Link href={contractWizardHref}>
                 <Button variant="outline" data-testid="button-create-contract">
                   <FileSignature className="mr-2 h-4 w-4" />
                   Create Contract
@@ -3339,7 +3346,7 @@ export default function EmployeeEditorPage() {
             </p>
           </div>
           {canEdit && (
-            <Link href={`/contracts/new?employeeId=${id}`}>
+            <Link href={contractWizardHref}>
               <Button size="sm" variant="outline" className="border-amber-500 text-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900" data-testid="button-create-contract-banner">
                 <FileSignature className="mr-2 h-4 w-4" />
                 Create Contract
@@ -3358,7 +3365,7 @@ export default function EmployeeEditorPage() {
           employeeId={employee.id}
           variant="inline"
           showActions={canEdit}
-          onGenerateContract={() => setLocation(`/contracts/new?employeeId=${id}`)}
+          onGenerateContract={() => setLocation(contractWizardHref)}
           onCreateLogin={() => {
             setTab("access");
             setForceOpenAccessSection(true);
@@ -4653,7 +4660,7 @@ export default function EmployeeEditorPage() {
                       <div className="text-center py-6 border rounded-md">
                         <FileText className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
                         <p className="text-muted-foreground mb-3">No active contract</p>
-                        <Link href={`/contracts/new?employeeId=${employee.id}`}>
+                        <Link href={contractWizardHref}>
                           <Button variant="outline" size="sm" data-testid="button-create-contract">
                             <Plus className="mr-2 h-4 w-4" />
                             Create Contract

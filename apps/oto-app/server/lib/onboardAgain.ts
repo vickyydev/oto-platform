@@ -181,15 +181,20 @@ export async function activateEngagementWithin(
 }
 
 /**
- * The planned employment a contract from the wizard is made for: undefined
- * when the request names none (the wizard as it always was), false when the
- * id is not this profile's planned employment.
+ * The planned employment a contract from the wizard is made for: the one the
+ * request names, or — when it names none — the profile's planned employment,
+ * since a contract made while the profile has one is the new employment's
+ * (Create Contract, Contract Sent, Contract Signed is how the new contract is
+ * made); undefined when the profile has none (the wizard as it always was);
+ * false when the id named is not this profile's planned employment.
  */
 export async function plannedEngagementForContract(
   employeeId: string,
   engagementId: unknown,
 ): Promise<EmployeeEngagement | undefined | false> {
-  if (engagementId === undefined || engagementId === null || engagementId === "") return undefined;
+  if (engagementId === undefined || engagementId === null || engagementId === "") {
+    return (await storage.getPlannedEngagements([employeeId])).get(employeeId);
+  }
   if (typeof engagementId !== "string") return false;
   const [engagement] = await db.select().from(employeeEngagements).where(and(
     eq(employeeEngagements.id, engagementId),
@@ -216,6 +221,34 @@ export async function linkContractToEngagement(exec: DbExecutor, engagement: Emp
       isNull(contractInstances.archivedAt),
     ));
   }
+}
+
+/**
+ * At signing: the planned employment a contract belongs to, if the profile
+ * has one. The contract linked to it is its own. A contract linked to none
+ * that was made while the employment was planned (a door that did not link
+ * it) is the new employment's as well, and is linked to it here, as the
+ * contract routes link one. A contract made before the plan is the current
+ * employment's (`ownContract: false`): it is signed as it always was, and the
+ * profile's employment state is left for the plan's start date.
+ */
+export async function planOfSignedContract(contract: {
+  id: string;
+  employeeId: string;
+  createdAt: Date | string;
+}): Promise<{ engagement: EmployeeEngagement; ownContract: boolean } | null> {
+  const [linked] = await db.select().from(employeeEngagements).where(and(
+    eq(employeeEngagements.contractInstanceId, contract.id),
+    eq(employeeEngagements.status, "planned"),
+  )).limit(1);
+  if (linked) return { engagement: linked, ownContract: true };
+  const planned = (await storage.getPlannedEngagements([contract.employeeId])).get(contract.employeeId);
+  if (!planned) return null;
+  if (new Date(contract.createdAt).getTime() < new Date(planned.createdAt).getTime()) {
+    return { engagement: planned, ownContract: false };
+  }
+  await linkContractToEngagement(db, planned, contract.id);
+  return { engagement: { ...planned, contractInstanceId: contract.id }, ownContract: true };
 }
 
 /** The branches a user settles attendance review items in: the attendance review's own rule. */
