@@ -1,5 +1,5 @@
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
-import { boolean, pgSchema, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { boolean, date, jsonb, pgSchema, text, time, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { newId } from '@oto/shared';
 import type { Db } from '../index';
 import { branch } from './tenancy';
@@ -1273,3 +1273,118 @@ export async function otoAppScheduleInstalled(exec: OtoAppExec): Promise<boolean
   );
   return Boolean(res.rows[0]?.a && res.rows[0]?.d);
 }
+
+// --- The birthday package seam (SCRUM-803) -----------------------------------
+
+/**
+ * The app's read-only seam schema. Its views are made by the app's own
+ * migrator (`apps/oto-app/migrations`), so a declaration here is `.existing()`:
+ * Drizzle reads it and never creates, alters or drops it.
+ */
+export const otoappV = pgSchema('otoapp_v');
+
+/** `package`: the party's package as the BEO applied it. Money is satang. */
+export interface OtoAppEventPackageTerms {
+  template_id: string | null;
+  name: string;
+  hours: number | null;
+  kids_included: number | null;
+  adults_included: number | null;
+  /** A number of pairs, or -1 for "all children"; null when socks are not included. */
+  socks_included: number | null;
+  /** The package's weekday price; its base price when it sets none. */
+  price_weekday_satang: number;
+  /** The package's weekend price; its weekday price when it sets none. */
+  price_weekend_satang: number;
+  extra_child_weekday_satang: number | null;
+  extra_child_weekend_satang: number | null;
+  extra_adult_weekday_satang: number | null;
+  extra_adult_weekend_satang: number | null;
+  /** What the price covers, for the receipt's 0-baht lines. */
+  included_lines: { label: string }[];
+}
+
+export interface OtoAppEventPackageCounts {
+  kids_expected: number | null;
+  adults_expected: number | null;
+}
+
+/** An add-on the BEO keeps billable on the party. The F&B credit is per unit. */
+export interface OtoAppEventPackageAddOn {
+  template_id: string | null;
+  name: string;
+  qty: number;
+  unit_price_satang: number;
+  fnb_credit_satang: number | null;
+  prints_voucher: boolean;
+}
+
+/** One entertainment selection; one included in the package is priced 0. */
+export interface OtoAppEventPackageEntertainment {
+  template_id: string | null;
+  name: string;
+  category: string | null;
+  duration_minutes: number | null;
+  age_range: string | null;
+  max_kids: number | null;
+  price_satang: number;
+  /** Expected kids beyond max_kids; 0 when the line names no maximum. */
+  extra_children: number;
+  extra_child_price_satang: number | null;
+}
+
+/** One set-menu line; a choice group gives one per chosen option, or one with none while the choice is open. */
+export interface OtoAppEventPackageSetMenuLine {
+  /** The till catalogue's code (CF-24); null when the catalogue has no such product. */
+  product_code: string | null;
+  name: string;
+  qty: number | null;
+  choice_group: string | null;
+  chosen_option: string | null;
+  note: string | null;
+}
+
+export interface OtoAppEventPackageBarItem {
+  product_code: string | null;
+  name: string;
+  qty: number;
+}
+
+/** Times are HH:MM on the park's clock; slips_time is 11:00 unless the party says otherwise. */
+export interface OtoAppEventPackageKitchen {
+  kids_food_time: string | null;
+  adults_food_time: string | null;
+  ready_offset_minutes: number;
+  slips_time: string;
+}
+
+export interface OtoAppEventPackageSettlement {
+  deposit_satang: number | null;
+  /** The till's settlement sale, written back through the directory API's party edit. */
+  pos_sale_id: string | null;
+}
+
+/**
+ * `otoapp_v.event_packages` (app migration 0042): one row per party with a
+ * package, for the POS to settle the party as one sale and print its slips.
+ * Fence every read by `coreBranchId`, as the events repository fences its own.
+ */
+export const otoappVEventPackages = otoappV
+  .view('event_packages', {
+    /** `otoapp_v.events.id` as text. */
+    eventId: varchar('event_id').notNull(),
+    /** The platform branch; the view has a row only for a mapped branch. */
+    coreBranchId: uuid('core_branch_id').notNull(),
+    partyDate: date('party_date', { mode: 'string' }),
+    startTime: time('start_time'),
+    endTime: time('end_time'),
+    package: jsonb('package').$type<OtoAppEventPackageTerms>().notNull(),
+    counts: jsonb('counts').$type<OtoAppEventPackageCounts>().notNull(),
+    addOns: jsonb('add_ons').$type<OtoAppEventPackageAddOn[]>().notNull(),
+    entertainment: jsonb('entertainment').$type<OtoAppEventPackageEntertainment[]>().notNull(),
+    setMenu: jsonb('set_menu').$type<OtoAppEventPackageSetMenuLine[]>().notNull(),
+    barItems: jsonb('bar_items').$type<OtoAppEventPackageBarItem[]>().notNull(),
+    kitchen: jsonb('kitchen').$type<OtoAppEventPackageKitchen>().notNull(),
+    settlement: jsonb('settlement').$type<OtoAppEventPackageSettlement>().notNull(),
+  })
+  .existing();

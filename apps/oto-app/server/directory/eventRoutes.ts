@@ -17,7 +17,7 @@ import {
  *
  *   POST /api/directory/events/:id/attendees
  *   POST /api/directory/events/:id/attendees/:attendeeId/checkins
- *   POST /api/directory/events/:id/edits     (a party's own fields, S2-20 E4)
+ *   POST /api/directory/events/:id/edits     (a party's own fields, S2-20 E4; the settlement sale, SCRUM-803)
  *   POST /api/directory/events               (a tentative birthday booked from the inbox, SCRUM-775)
  *
  * All four authenticate a tenant-bound directory key with the `events:write` scope
@@ -102,6 +102,8 @@ export const editBodySchema = z
         totalValueThb: wholeBaht,
         prepaymentAmountThb: wholeBaht,
         prepaymentDate: isoDate.nullable(),
+        /** The till's sale that settled the party (SCRUM-803), kept in `beo_event_billing.pos_order_ref`. */
+        posSaleId: z.string().trim().min(1).max(200).nullable(),
       })
       .partial()
       .strict()

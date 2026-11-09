@@ -650,6 +650,12 @@ export interface EventEditFields {
   totalValueThb?: number | null;
   prepaymentAmountThb?: number | null;
   prepaymentDate?: string | null;
+  /**
+   * The till's sale that settled the party (SCRUM-803). Not a field of the
+   * event: it is kept in `beo_event_billing.pos_order_ref` and read back by the
+   * platform as `otoapp_v.event_packages.settlement.pos_sale_id`.
+   */
+  posSaleId?: string | null;
 }
 
 export interface EventEditInput {
@@ -668,8 +674,8 @@ export interface EventEditResult {
   replayed: boolean;
 }
 
-/** Each field's column; the WhatsApp number fills the app's four phone columns. */
-const EDIT_COLUMNS: Record<Exclude<keyof EventEditFields, "whatsappPhone">, string> = {
+/** Each field's column; the WhatsApp number fills the app's four phone columns; the settlement sale is the billing's. */
+const EDIT_COLUMNS: Record<Exclude<keyof EventEditFields, "whatsappPhone" | "posSaleId">, string> = {
   title: "title",
   status: "status",
   eventDate: "event_date",
@@ -698,7 +704,21 @@ const EDIT_TEXT_FIELDS = new Set<keyof EventEditFields>([
   "decoration",
   "activities",
   "prepaymentDate",
+  "posSaleId",
 ]);
+
+/** The party's settlement sale as the billing holds it, with the event's row read back. */
+const POS_SALE_ID_SELECT = `(select nullif(btrim(b.pos_order_ref), '') from beo_event_billing b where b.event_id = core_events.id) as "posSaleId"`;
+
+async function recordPosSaleId(tx: PoolClient, eventId: string, posSaleId: string | null) {
+  await tx.query(
+    `insert into beo_event_billing (event_id, pos_order_ref, created_at, updated_at)
+     values ($1, $2, now() at time zone 'UTC', now() at time zone 'UTC')
+     on conflict (event_id) do update
+       set pos_order_ref = excluded.pos_order_ref, updated_at = now() at time zone 'UTC'`,
+    [eventId, posSaleId],
+  );
+}
 
 /**
  * Change a party's own fields, as a till edited them (`updateParty`).
@@ -719,6 +739,13 @@ const EDIT_TEXT_FIELDS = new Set<keyof EventEditFields>([
  *
  * Only a party is edited this way, only its listed fields, and only this
  * tenant's event (the key's): another tenant's is "not found".
+ *
+ * THE SETTLEMENT SALE (SCRUM-803) is a fact the till reports, not a change to
+ * the party: an edit that names only `posSaleId` is written to the billing
+ * whatever the app changed since, and leaves the event and its `updated_at`
+ * alone, so it can neither be refused by a later BEO save nor move the order
+ * the other edits are judged by. Sent again with the same sale it is a
+ * replay. Named beside the party's own fields, it follows their rule.
  */
 export async function editPartyEvent(
   pool: Pool,
@@ -730,8 +757,24 @@ export async function editPartyEvent(
     (key) => input.fields[key] !== undefined,
   );
   if (keys.length === 0) return refuse(400, "nothing_to_change", "The edit names no field to change");
+  const settlementOnly = keys.length === 1 && keys[0] === "posSaleId";
+  const posSaleId = keys.includes("posSaleId") ? blank(input.fields.posSaleId) : undefined;
 
   return inTransaction(pool, async (tx) => {
+    if (settlementOnly) {
+      const { rows: found } = await tx.query<{ held: string | null }>(
+        `select (select nullif(btrim(b.pos_order_ref), '') from beo_event_billing b where b.event_id = core_events.id) as held
+           from core_events
+          where id = $1 and tenant_id = $2 and not is_archived
+          for update`,
+        [event.id, event.tenantId],
+      );
+      if (!found[0]) return refuse(404, "event_not_found", "Event not found");
+      const replayed = found[0].held === posSaleId;
+      if (!replayed) await recordPosSaleId(tx, event.id, posSaleId ?? null);
+      return { ok: true, status: 200, body: await editAnswer(tx, event, input, keys, replayed) };
+    }
+
     const { rows } = await tx.query<{ newer: boolean; same: boolean }>(
       `select (updated_at at time zone 'UTC') > $3::timestamptz as newer,
               (updated_at at time zone 'UTC') = $3::timestamptz as same
@@ -757,6 +800,7 @@ export async function editPartyEvent(
       sets.push(`${column} = $${params.length}`);
     };
     for (const key of keys) {
+      if (key === "posSaleId") continue;
       const raw = input.fields[key];
       const value = EDIT_TEXT_FIELDS.has(key) ? blank(raw as string | null | undefined) : raw;
       if (key === "whatsappPhone") {
@@ -771,28 +815,37 @@ export async function editPartyEvent(
     params.push(input.editedAt);
     sets.push(`updated_at = ($${params.length}::timestamptz at time zone 'UTC')`);
     await tx.query(`update core_events set ${sets.join(", ")} where id = $1 and tenant_id = $2`, params);
+    if (posSaleId !== undefined) await recordPosSaleId(tx, event.id, posSaleId);
 
-    const { rows: after } = await tx.query<Record<string, unknown>>(
-      `select id, title, status, event_date as "eventDate", start_time as "startTime", end_time as "endTime",
-              location_text as location, num_children as "numChildren", num_adults as "numAdults",
-              child_name as "childName", kid_turning_age as "kidTurningAge", parent_name as "parentName",
-              whatsapp_phone_e164 as "whatsappPhone", decoration, activities,
-              total_value as "totalValueThb", prepayment_amount as "prepaymentAmountThb",
-              prepayment_date as "prepaymentDate", updated_at at time zone 'UTC' as "updatedAt"
-         from core_events where id = $1`,
-      [event.id],
-    );
-    const row = after[0]!;
-    return {
-      ok: true,
-      status: 200,
-      body: {
-        edit: { id: input.id, eventId: event.id, editedAt: new Date(input.editedAt).toISOString(), fields: keys },
-        event: { ...row, id: event.id, updatedAt: new Date(row.updatedAt as string | Date).toISOString() },
-        replayed: current.same,
-      },
-    };
+    return { ok: true, status: 200, body: await editAnswer(tx, event, input, keys, current.same) };
   });
+}
+
+/** The edit as applied, and the party's edited fields as the event (and its billing) now hold them. */
+async function editAnswer(
+  tx: PoolClient,
+  event: DirectoryEvent,
+  input: EventEditInput,
+  keys: Array<keyof EventEditFields>,
+  replayed: boolean,
+): Promise<EventEditResult> {
+  const { rows: after } = await tx.query<Record<string, unknown>>(
+    `select id, title, status, event_date as "eventDate", start_time as "startTime", end_time as "endTime",
+            location_text as location, num_children as "numChildren", num_adults as "numAdults",
+            child_name as "childName", kid_turning_age as "kidTurningAge", parent_name as "parentName",
+            whatsapp_phone_e164 as "whatsappPhone", decoration, activities,
+            total_value as "totalValueThb", prepayment_amount as "prepaymentAmountThb",
+            prepayment_date as "prepaymentDate", ${POS_SALE_ID_SELECT},
+            updated_at at time zone 'UTC' as "updatedAt"
+       from core_events where id = $1`,
+    [event.id],
+  );
+  const row = after[0]!;
+  return {
+    edit: { id: input.id, eventId: event.id, editedAt: new Date(input.editedAt).toISOString(), fields: keys },
+    event: { ...row, id: event.id, updatedAt: new Date(row.updatedAt as string | Date).toISOString() },
+    replayed,
+  };
 }
 
 // --- Booking a birthday from the inbox (SCRUM-775) ------------------------------

@@ -271,6 +271,13 @@
     {
 
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1794226640235,
+      "tag": "0042_otoapp_v_event_packages",
+      "breakpoints": true
     }
   ]
 }

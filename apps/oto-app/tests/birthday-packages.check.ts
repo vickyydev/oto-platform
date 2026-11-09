@@ -17,7 +17,12 @@
 //      party's snapshot (so the party keeps them), starts the BEO's kitchen
 //      plan on the package's set menu without overriding one already chosen,
 //      and the slip time can be changed for that party alone; a parent's
-//      choices give the kitchen plan the set menu's portions.
+//      choices give the kitchen plan the set menu's portions;
+//   3. `otoapp_v.event_packages` (migration 0042) gives the platform one row
+//      per party with a package, in the contract's shape, its satang the
+//      stored satang; the till's settlement sale (`posSaleId` on the directory
+//      party edit) lands in `beo_event_billing.pos_order_ref` and reads back
+//      from the view.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
@@ -28,6 +33,7 @@ import { randomBytes, randomUUID, scryptSync } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { generateDirectoryKey, hashDirectoryKey } from "../server/directory/clientAuth";
 
 const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -508,6 +514,223 @@ try {
     ))[0].menus;
     const qty = Object.fromEntries(menus.kids.map((i) => [i.itemName, i.quantity]));
     assert.deepEqual(qty, { Hawaiian: 2, "French Fries": 3, "Fish & Chips": 1, "Fruit Skewers": 2 });
+  });
+
+  // ── 3. the view the platform reads, and the settlement written back ──────
+
+  const ent = async (body: Record<string, unknown>) => {
+    const res = await call("POST", "/api/beo/entertainment-templates", { cookie, body });
+    assert.equal(res.status, 201, show(res));
+    return res.body.id as string;
+  };
+  const crio = await ent({
+    name: `ZZ TEST Crio show ${run}`, category: "Shows", durationMinutes: 30, defaultPrice: 650_000,
+    ageRange: "4+", maxKids: 10, extraChildPrice: 65_000, unit: "session",
+  });
+  const program = await ent({
+    name: `ZZ TEST Birthday entertainment program ${run}`, category: "Games", durationMinutes: 30,
+    defaultPrice: 300_000, included: true, billableByDefault: false, unit: "session",
+  });
+
+  await check("otoapp_v.event_packages gives the party's package, counts, add-ons, entertainment, set menu, bar, kitchen and settlement", async () => {
+    for (const templateId of [crio, program]) {
+      const sel = await call("POST", `/api/beo/events/${party}/entertainment-selections`, { cookie, body: { templateId } });
+      assert.equal(sel.status, 201, show(sel));
+    }
+    // The upgrade is switched off in the BEO: it is not one of the party's add-ons.
+    const snapshot = await call("GET", `/api/beo/events/${party}/package-snapshot`, { cookie });
+    const upgrade = snapshot.body.items.find((i: { label: string }) => i.label.startsWith("Upgrade"));
+    const off = await call("PATCH", `/api/beo/events/${party}/package-snapshot/items/${upgrade.id}`, { cookie, body: { billable: false } });
+    assert.equal(off.status, 200, show(off));
+    await q(
+      `update beo_kitchen_plans set menus = menus || '{"kidsFoodTime": "15:00", "adultsFoodTime": "15:30"}'::jsonb,
+              kitchen_ready_offset_minutes = 25
+        where event_id = $1`,
+      [party],
+    );
+    await q(
+      `insert into beo_bar_plans (event_id, service_time, items) values ($1, '15:00', $2::jsonb)`,
+      [party, JSON.stringify([{ id: "bar_1", itemName: "Juice pitcher", quantity: 2 }, { id: "bar_2", itemName: "  " }])],
+    );
+
+    const rows = await q("select * from otoapp_v.event_packages where event_id = $1", [party]);
+    assert.equal(rows.length, 1);
+    const row = rows[0] as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any -- a view row read field by field below
+    assert.deepEqual(Object.keys(row), [
+      "event_id", "core_branch_id", "party_date", "start_time", "end_time", "package", "counts",
+      "add_ons", "entertainment", "set_menu", "bar_items", "kitchen", "settlement",
+    ]);
+    assert.equal(row.event_id, party);
+    assert.equal(row.core_branch_id, A.coreBranch);
+    assert.equal(row.start_time, "14:00:00");
+    assert.equal(row.end_time, "17:00:00");
+    const partyDate = (await q<{ d: string }>("select party_date::text as d from otoapp_v.event_packages where event_id = $1", [party]))[0].d;
+    assert.equal(partyDate, "2099-03-14");
+    assert.deepEqual(row.package, {
+      template_id: packageId,
+      name: `ZZ TEST Floresta ${run}`,
+      hours: 3,
+      kids_included: 10,
+      adults_included: 4,
+      socks_included: -1,
+      price_weekday_satang: 1_690_000,
+      price_weekend_satang: 2_090_000,
+      extra_child_weekday_satang: 130_000,
+      extra_child_weekend_satang: 150_000,
+      extra_adult_weekday_satang: 35_000,
+      extra_adult_weekend_satang: 50_000,
+      included_lines: [{ label: "Ice-cream cake with candles and birthday song" }],
+    });
+    assert.deepEqual(row.counts, { kids_expected: 12, adults_expected: 5 });
+    assert.deepEqual(row.add_ons, [{
+      template_id: tableItemId,
+      name: "Reserved table for adults, up to 10 adults",
+      qty: 1,
+      unit_price_satang: 500_000,
+      fnb_credit_satang: 500_000,
+      prints_voucher: true,
+    }]);
+    assert.deepEqual(row.entertainment, [
+      {
+        template_id: crio, name: `ZZ TEST Crio show ${run}`, category: "Shows", duration_minutes: 30, age_range: "4+",
+        max_kids: 10, price_satang: 650_000, extra_children: 2, extra_child_price_satang: 65_000,
+      },
+      {
+        template_id: program, name: `ZZ TEST Birthday entertainment program ${run}`, category: "Games", duration_minutes: 30,
+        age_range: null, max_kids: null, price_satang: 0, extra_children: 0, extra_child_price_satang: null,
+      },
+    ]);
+    assert.deepEqual(row.set_menu, [
+      { product_code: "CF-27", name: "Pizza", qty: 2, choice_group: "Pizza", chosen_option: "Hawaiian", note: null },
+      { product_code: "CF-11", name: "French Fries", qty: 3, choice_group: null, chosen_option: null, note: null },
+      {
+        product_code: "CF-36", name: "Fish & Chips", qty: 1, choice_group: null, chosen_option: null,
+        note: "Can be replaced with 2 portions of Chicken Schnitzel",
+      },
+      { product_code: null, name: "Fruit Skewers", qty: 2, choice_group: null, chosen_option: null, note: null },
+    ]);
+    assert.deepEqual(row.bar_items, [{ product_code: null, name: "Juice pitcher", qty: 2 }]);
+    assert.deepEqual(row.kitchen, { kids_food_time: "15:00", adults_food_time: "15:30", ready_offset_minutes: 25, slips_time: "10:30" });
+    assert.deepEqual(row.settlement, { deposit_satang: 500_000, pos_sale_id: null });
+
+    // Satang passed through: the view's money is the stored money, never multiplied.
+    const stored = (await q<{ price_weekday: number; extra_child_weekday: number }>(
+      "select price_weekday, extra_child_weekday from beo_package_snapshots where event_id = $1",
+      [party],
+    ))[0];
+    assert.equal(row.package.price_weekday_satang, stored.price_weekday);
+    assert.equal(row.package.extra_child_weekday_satang, stored.extra_child_weekday);
+  });
+
+  await check("an open choice is one line with no option; a package with one price charges it every day", async () => {
+    const plain = await call("POST", "/api/beo/birthday-packages", {
+      cookie,
+      body: { name: `ZZ TEST one price ${run}`, basePrice: 1_090_000, kidsIncluded: 10, adultsIncluded: 10, setMenuTemplateId: setMenuId },
+    });
+    assert.equal(plain.status, 201, show(plain));
+    const open = await birthday(A, { prepayment_amount: null });
+    const applied = await call("POST", `/api/beo/events/${open}/package-snapshot`, { cookie, body: { templateId: plain.body.id } });
+    assert.equal(applied.status, 201, show(applied));
+    const row = (await q<Record<string, any>>("select * from otoapp_v.event_packages where event_id = $1", [open]))[0]; // eslint-disable-line @typescript-eslint/no-explicit-any -- read field by field
+    assert.equal(row.package.price_weekday_satang, 1_090_000);
+    assert.equal(row.package.price_weekend_satang, 1_090_000);
+    assert.equal(row.package.socks_included, null);
+    assert.deepEqual(row.set_menu[0], { product_code: null, name: "Pizza", qty: 2, choice_group: "Pizza", chosen_option: null, note: null });
+    assert.deepEqual(row.add_ons, []);
+    assert.deepEqual(row.entertainment, []);
+    assert.deepEqual(row.bar_items, []);
+    assert.deepEqual(row.kitchen, { kids_food_time: null, adults_food_time: null, ready_offset_minutes: 20, slips_time: "11:00" });
+    assert.deepEqual(row.settlement, { deposit_satang: null, pos_sale_id: null });
+  });
+
+  await check("a party without a package, an event that is not a party, and an unmapped branch have no row", async () => {
+    const bare = await birthday(A);
+    const camp = randomUUID();
+    await q(
+      `insert into core_events (id, tenant_id, branch_id, event_type, title, event_date, start_time, status)
+       values ($1, $2, $3, 'workshop', 'ZZ TEST workshop', '2099-03-14', '10:00', 'upcoming')`,
+      [camp, A.tenant, A.branch],
+    );
+    await q("insert into beo_package_snapshots (event_id, template_id, package_name, base_price) values ($1, $2, 'ZZ TEST', 1)", [camp, packageId]);
+    const unmapped = randomUUID();
+    await q(
+      "insert into branches (id, tenant_id, operator_id, name, address, timezone) values ($1, $2, $3, $4, 'ZZ TEST', 'Asia/Bangkok')",
+      [unmapped, A.tenant, A.operator, `ZZ TEST unmapped ${run}`],
+    );
+    const away = randomUUID();
+    await q(
+      `insert into core_events (id, tenant_id, branch_id, event_type, title, event_date, start_time, status)
+       values ($1, $2, $3, 'birthday', 'ZZ TEST away', '2099-03-14', '10:00', 'upcoming')`,
+      [away, A.tenant, unmapped],
+    );
+    await q("insert into beo_package_snapshots (event_id, template_id, package_name, base_price) values ($1, $2, 'ZZ TEST', 1)", [away, packageId]);
+    const found = await q("select event_id from otoapp_v.event_packages where event_id = any($1::varchar[])", [[bare, camp, away]]);
+    assert.deepEqual(found, []);
+  });
+
+  const key = generateDirectoryKey();
+  const keyB = generateDirectoryKey();
+  await q("insert into directory_clients (tenant_id, name, key_hash, scopes, is_active) values ($1, $2, $3, $4, true)", [
+    A.tenant, `ZZ TEST bday till ${run}`, hashDirectoryKey(key), ["events:write"],
+  ]);
+  await q("insert into directory_clients (tenant_id, name, key_hash, scopes, is_active) values ($1, $2, $3, $4, true)", [
+    B.tenant, `ZZ TEST bday till B ${run}`, hashDirectoryKey(keyB), ["events:write"],
+  ]);
+  const edit = (eventId: string, fields: Record<string, unknown>, editedAt: string, bearer = key) =>
+    call("POST", `/api/directory/events/${eventId}/edits`, {
+      headers: { authorization: `Bearer ${bearer}` },
+      body: { id: randomUUID(), editedAt, fields },
+    });
+  const saleOf = async (eventId: string) =>
+    ((await q<{ settlement: { pos_sale_id: string | null } }>("select settlement from otoapp_v.event_packages where event_id = $1", [eventId]))[0])
+      .settlement.pos_sale_id;
+  const updatedAtOf = async (eventId: string) =>
+    (await q<{ t: string }>("select updated_at::text as t from core_events where id = $1", [eventId]))[0].t;
+
+  await check("the till's settlement sale is written back into the billing and read back from the view", async () => {
+    const sale = `ZZ-${run}-000001`;
+    const before = await updatedAtOf(party);
+    // Made before the app's last change: the sale is a fact, not a competing edit.
+    const res = await edit(party, { posSaleId: sale }, "2000-01-01T00:00:00Z");
+    assert.equal(res.status, 200, show(res));
+    assert.equal(res.body.replayed, false);
+    assert.deepEqual(res.body.edit.fields, ["posSaleId"]);
+    assert.equal(res.body.event.posSaleId, sale);
+    const billing = (await q<{ pos_order_ref: string }>("select pos_order_ref from beo_event_billing where event_id = $1", [party]))[0];
+    assert.equal(billing.pos_order_ref, sale);
+    assert.equal(await saleOf(party), sale);
+    assert.equal(await updatedAtOf(party), before, "the event and its edit order are untouched");
+
+    const again = await edit(party, { posSaleId: sale }, new Date().toISOString());
+    assert.equal(again.status, 200, show(again));
+    assert.equal(again.body.replayed, true);
+    assert.equal((await q("select 1 from beo_event_billing where event_id = $1", [party])).length, 1);
+  });
+
+  await check("named beside the party's own fields, the sale follows their order rule", async () => {
+    const old = await edit(party, { posSaleId: `ZZ-${run}-000002`, decoration: "ZZ TEST balloons" }, "2000-01-01T00:00:00Z");
+    assert.equal(old.status, 409, show(old));
+    assert.equal(old.body.error, "edit_superseded");
+    assert.equal(await saleOf(party), `ZZ-${run}-000001`, "nothing written");
+    const now = await edit(party, { posSaleId: `ZZ-${run}-000002`, decoration: "ZZ TEST balloons" }, new Date(Date.now() + 1000).toISOString());
+    assert.equal(now.status, 200, show(now));
+    assert.equal(await saleOf(party), `ZZ-${run}-000002`);
+    const cleared = await edit(party, { posSaleId: null }, new Date().toISOString());
+    assert.equal(cleared.status, 200, show(cleared));
+    assert.equal(await saleOf(party), null);
+  });
+
+  await check("a sale id is refused when blank, on another park group's key, and on a party with no billing yet it makes one", async () => {
+    const blank = await edit(party, { posSaleId: "  " }, new Date().toISOString());
+    assert.equal(blank.status, 400, show(blank));
+    const foreign = await edit(party, { posSaleId: `ZZ-${run}-B` }, new Date().toISOString(), keyB);
+    assert.equal(foreign.status, 404, show(foreign));
+    assert.equal(await saleOf(party), null);
+    const fresh = await birthday(A);
+    await call("POST", `/api/beo/events/${fresh}/package-snapshot`, { cookie, body: { templateId: packageId } });
+    const res = await edit(fresh, { posSaleId: `ZZ-${run}-000003` }, new Date().toISOString());
+    assert.equal(res.status, 200, show(res));
+    assert.equal(await saleOf(fresh), `ZZ-${run}-000003`);
   });
 
   console.log(`birthday-packages.check: ${checks} checks passed`);
