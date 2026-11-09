@@ -33,7 +33,8 @@ const events = async (client: pg.PoolClient, userId: string) =>
 await check('durable queue is installed with private immutable identity snapshots and bounded state fields', async () => {
   const { rows } = await pool.query(`SELECT column_name,data_type,is_nullable FROM information_schema.columns
     WHERE table_schema='otoapp' AND table_name='login_lifecycle_events' ORDER BY ordinal_position`);
-  assert.deepEqual(rows.map(row => row.column_name), ['id','user_id','platform_account_id','created_at','state','settled_at','attempt_count','last_error_code']);
+  // SCRUM-769 (migration 0041): the kind of request, a switch-off or a restriction to pay only.
+  assert.deepEqual(rows.map(row => row.column_name), ['id','user_id','platform_account_id','created_at','state','settled_at','attempt_count','last_error_code','kind']);
   assert.equal(rows[0].data_type, 'uuid'); assert.equal(rows[2].data_type, 'uuid');
   assert.equal(rows[3].data_type, 'timestamp with time zone'); assert.equal(rows[5].data_type, 'timestamp with time zone');
 });
@@ -68,6 +69,22 @@ await check('reactivation supersedes the old pending ID and a later disable crea
   const pending = all.find(row=>row.state==='pending'); assert.ok(pending); assert.notEqual(pending.id,first.id);
   assert.equal(pending.user_id,userId); assert.equal(pending.platform_account_id,accountId);
 }));
+await check('a switch-off is a deactivate event; a pay-only move queues one restrict event, a return to full supersedes it, and a switch back on supersedes only switch-offs', () => fixture(async (client,userId,accountId) => {
+  await client.query("UPDATE users SET access_mode='pay_only' WHERE id=$1",[userId]);
+  const [restrict] = await events(client,userId);
+  assert.equal(restrict.kind,'restrict'); assert.equal(restrict.state,'pending'); assert.equal(restrict.platform_account_id,accountId);
+  await client.query("UPDATE users SET access_mode='pay_only' WHERE id=$1",[userId]);
+  assert.equal((await events(client,userId)).length,1,'a second pay-only write queues nothing more');
+  await client.query('UPDATE users SET is_active=false WHERE id=$1',[userId]);
+  await client.query('UPDATE users SET is_active=true WHERE id=$1',[userId]);
+  const afterSwitch = await events(client,userId);
+  assert.deepEqual(afterSwitch.map(row => `${row.kind}:${row.state}`), ['restrict:pending','deactivate:superseded']);
+  await client.query("UPDATE users SET access_mode='full' WHERE id=$1",[userId]);
+  assert.deepEqual((await events(client,userId)).map(row => `${row.kind}:${row.state}`), ['restrict:superseded','deactivate:superseded']);
+}));
+await check('an unlinked pay-only move queues nothing', () => fixture(async (client,userId) => {
+  await client.query("UPDATE users SET access_mode='pay_only' WHERE id=$1",[userId]); assert.equal((await events(client,userId)).length,0);
+}, {linked:false}));
 await check('unlink followed by an otherwise allowed user delete retains the pending identity snapshot without an FK side effect', () => fixture(async (client,userId,accountId) => {
   await client.query('UPDATE users SET is_active=false WHERE id=$1',[userId]); const [before] = await events(client,userId);
   await client.query('UPDATE users SET platform_user_id=null WHERE id=$1',[userId]);
@@ -79,8 +96,8 @@ await check('unlink followed by an otherwise allowed user delete retains the pen
 const modulePath = new URL('../server/lib/platformLifecycle.ts', import.meta.url);
 const lifecycle = existsSync(modulePath) ? await import(modulePath.href) : null;
 type Summary = { selected: number; delivered: number; superseded: number; failed: number };
-function transport(respond: (id: string, attempt: number) => Promise<Response>) {
-  const event = {id:randomUUID(),user_id:randomUUID(),platform_account_id:randomUUID(),state:'pending'};
+function transport(respond: (id: string, attempt: number) => Promise<Response>, kind?: 'deactivate' | 'restrict') {
+  const event = {id:randomUUID(),user_id:randomUUID(),platform_account_id:randomUUID(),state:'pending',...(kind ? {kind} : {})};
   const calls: {url:string;init:RequestInit}[] = [], queries: {sql:string;values:unknown[]}[] = [];
   const key = 'ZZ TEST local-only unused lifecycle key';
   const dependencies = {
@@ -105,6 +122,15 @@ await check('transport posts only eventId with a timeout and no redirect, uses b
   assert.ok(h.queries.some(row=>/^\s*SELECT/i.test(row.sql)&&row.values.includes(3)));
   for(const row of h.queries){ assert.doesNotMatch(row.sql,/\b(BEGIN|FOR UPDATE|LOCK TABLE|COMMIT)\b/i);
     assert.doesNotMatch(row.sql,/SET\s+state\s*=/i); }
+});
+await check('a restriction is posted to its own door, a switch-off to the switch-off door (SCRUM-769)', async () => {
+  const restrict=transport(async id=>response(id),'restrict');
+  assert.equal((await drain(restrict.dependencies)).delivered,1);
+  assert.equal(restrict.calls[0].url,'https://platform.invalid/admin/apps/oto_app/lifecycle-restrictions');
+  assert.ok(restrict.queries.some(row=>/^\s*SELECT[^]*\bkind\b/i.test(row.sql)),'the kind is read with the event');
+  const deactivate=transport(async id=>response(id),'deactivate');
+  assert.equal((await drain(deactivate.dependencies)).delivered,1);
+  assert.equal(deactivate.calls[0].url,'https://platform.invalid/admin/apps/oto_app/lifecycle-deactivations');
 });
 await check('timeout or lost response retains the event and a later drain retries exactly the same ID', async () => {
   const h=transport(async (id,n)=>{if(n===1)throw new Error('PRIVATE_TRANSPORT_DETAIL');return response(id)});

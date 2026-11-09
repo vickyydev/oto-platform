@@ -377,6 +377,10 @@ const termsOf = async (id: string) => (await q(
           (default_merge_data->>'salaryThb')::int as salary
      from employees where id = $1`, [id]))[0]!;
 const loginOn = async (userId: string) => (await q<{ is_active: boolean }>("select is_active from users where id = $1", [userId]))[0]!.is_active;
+/** SCRUM-769: the login's switch and how much of the app it reaches (a leaver's is limited to My pay, never switched off at Offboard). */
+const access = async (userId: string) =>
+  (await q<{ is_active: boolean; access_mode: string }>("select is_active, access_mode from users where id = $1", [userId]))[0]!;
+const PAY_ONLY = { is_active: true, access_mode: "pay_only" };
 const contractOf = async (id: string) => (await q("select employee_id, status, signing_status from contract_instances where id = $1", [id]))[0];
 const review = async (issue: string) =>
   (await q(`select i.status as issue_status, i.resolution_note, e.status as entry_status
@@ -469,7 +473,7 @@ try {
   console.log("1. the preview:");
   const CASE_MOVES = { ...NONE, contracts: 2, timeRecords: 7, shifts: 11, checklists: 1, tasks: 1, history: 2 };
   await check("the preview counts 2 contracts, 7 time records, 11 shifts, 1 checklist, 1 task and 2 history entries, the face, the day clocked on both, and the re-onboarding on the duplicate's terms, and writes nothing", async () => {
-    assert.deepEqual([(await row(original)).status, (await row(original)).employment_state, await loginOn(login.id)], ["resigned", "LEFT", false]);
+    assert.deepEqual([(await row(original)).status, (await row(original)).employment_state, await access(login.id)], ["resigned", "LEFT", PAY_ONLY]);
     const res = await call("GET", `/api/employees/${duplicate}/fold-into/${original}/preview`, as.admin);
     assert.equal(res.status, 200, show(res));
     assert.deepEqual(res.body.moved, CASE_MOVES);
@@ -490,7 +494,8 @@ try {
       employmentBasis: "FULL_TIME",
       probationEndDate: PROBATION_END,
       contractId: signed,
-      login: "reactivated",
+      // SCRUM-769: the original's login was kept on, limited to My pay; the start gives it the whole app back.
+      login: "already_on",
       platformDeactivationDelivered: false,
     });
     assert.equal("faceToRemove" in res.body, false, "the face id stays on the server");
@@ -498,7 +503,7 @@ try {
     assert.equal(await exists(duplicate), 1);
     const kept = await row(original);
     assert.deepEqual([kept.status, kept.employment_state, kept.primary_department_id], ["resigned", "LEFT", PROMOTION]);
-    assert.equal(await loginOn(login.id), false);
+    assert.deepEqual(await access(login.id), PAY_ONLY);
     assert.deepEqual(await contractOf(oldContract), { employee_id: original, status: "active", signing_status: "signed" });
     assert.equal(await countOf("select count(*) as n from employee_engagements where employee_id = $1", [original]), 0);
     assert.equal((await review(onShiftDays[0]!.issue))!.issue_status, "OPEN");
@@ -528,7 +533,7 @@ try {
     assert.deepEqual(res.body.rematch, { matched: 2, stillPending: 2 });
     assert.equal(await exists(duplicate), 0);
   });
-  await check("the original reads active in Reception, on probation as the duplicate was, its last working day cleared, the same login switched on, its own face kept", async () => {
+  await check("the original reads active in Reception, on probation as the duplicate was, its last working day cleared, the same login reaching the whole app, its own face kept", async () => {
     const kept = await row(original);
     assert.deepEqual(
       [kept.status, kept.employment_state, kept.primary_department_id, kept.branch_id, kept.last_working_day, kept.position, kept.user_id],
@@ -538,6 +543,7 @@ try {
     assert.deepEqual([terms.employment_basis, terms.probation_days, terms.probation_end, terms.probation_review_completed_at], ["FULL_TIME", 90, PROBATION_END, null]);
     assert.deepEqual([kept.face_enrollment_status, kept.face_id], ["ENROLLED", `zz-face-original-${run}`]);
     assert.equal(await loginOn(login.id), true);
+    assert.deepEqual(await access(login.id), { is_active: true, access_mode: "full" });
     assert.equal(await countOf("select count(*) as n from employees where face_id = $1", [`zz-face-duplicate-${run}`]), 0);
   });
   await check("the duplicate's signed contract is the original's active contract, its copy moved as it was, the old one superseded", async () => {

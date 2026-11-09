@@ -650,13 +650,16 @@ jobs:
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/employee-fold.check.ts
       # SCRUM-769: an ended employment, the day after the last working day —
-      # the 03:00 batch keeps the login on in pay only (nothing told to the
-      # platform), the leaver signs in to their own payslips and is refused
-      # every other route in words, the kiosk refuses their clock-in while a
-      # colleague in their notice clocks in, Onboard Again lifts it, and a
-      # login an administrator switched off stays off; then the pay-only screen
-      # under jsdom: My pay alone, whatever address, asking for nothing the
-      # server would refuse.
+      # the 03:00 batch (or Offboard, for a last day already past) keeps the
+      # login on in pay only and asks the platform to restrict the account,
+      # never to switch it off; the leaver signs in to their own payslips and
+      # is refused every other route in words, and drops off the staff lists;
+      # the kiosk refuses their clock-in while a colleague in their notice
+      # clocks in, and a person working under a second profile with the same
+      # number clocks in on it; Onboard Again, or a last day moved later, lifts
+      # it; a login an administrator switched off stays off; then the pay-only
+      # screen under jsdom: My pay alone, whatever address, asking for nothing
+      # the server would refuse.
       - name: The app's ended-employment access checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/employee-left-access.check.ts

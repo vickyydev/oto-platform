@@ -12,7 +12,8 @@ import { login, createStaffWithLogin, loginAsStaff } from "./helpers";
  * of the app but their own pay. SCRUM-769: the scheduled step no longer
  * switches the login off; it puts it in pay only, so /api/user still answers
  * and every other route answers 403 EMPLOYMENT_ENDED. A departure date set in
- * the past at Offboard still switches the login off at once, as before.
+ * the past at Offboard puts the login in pay only at once; it is never switched
+ * off at Offboard.
  */
 
 async function goToEmployeeProfile(page: Page, fullName: string) {

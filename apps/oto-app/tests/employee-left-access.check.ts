@@ -9,22 +9,35 @@
 //
 //   1. Offboard (a last day still to come) keeps the login on with full access
 //      and the status active: Offboard sets neither the switch nor pay only.
+//      Offboard with a last day already past puts the login in pay only at
+//      once — never switched off — the platform's restriction queued, and the
+//      kiosk refuses the clock-in.
 //   2. The 03:00 batch on the night after the last day: the leaver is ended
-//      (resigned, Left), the login stays ON in pay only, nothing is queued for
-//      the platform; a profile still in its notice is untouched; a login an
+//      (resigned, Left), the login stays ON in pay only, and the platform is
+//      asked to restrict the account (a 'restrict' event, migration 0041), never
+//      to switch it off; a profile still in its notice is untouched; a login an
 //      administrator switched off stays off (marked pay only, so switching it
 //      back on would reach My pay alone).
 //   3. The leaver signs in: who they are and their own payslips answer 200;
 //      a schedule route, a checklist route, their profile, the notifications
 //      and the stored files answer 403 EMPLOYMENT_ENDED in words — where the
 //      colleague still in their notice gets 200 from the same routes. No
-//      notification is addressed to the login. Signing out works.
+//      notification is addressed to the login, and the lists of staff to
+//      assign or schedule leave it out. Signing out works.
 //   4. The kiosk: the leaver's phone fallback and the face road (face on, a
-//      second server) are refused with "Employment ended; see reception" and
-//      write no time record; the colleague in their notice clocks in and out.
+//      second server with the matcher stood in) are refused with "Employment
+//      ended; see reception" and write no time record; the colleague in their
+//      notice clocks in and out. A person whose old profile has ended and who
+//      works under a second one sharing the phone number (SCRUM-794's
+//      duplicate shape) clocks in on the one they work under by phone, and the
+//      face road sends a match on the old one to the phone road.
 //   5. Onboard Again with a start date of today starts the employment at once:
-//      the login reaches the whole app again and the kiosk takes the clock-in.
-//   6. The administrator's switch-off still wins: that login cannot sign in.
+//      the login reaches the whole app again, the pending restriction is
+//      withdrawn, and the kiosk takes the clock-in.
+//   6. A last working day moved later after the batch: the edit gives the
+//      login the whole app back at once and the next batch leaves it; a last
+//      day moved later outside the edit is given back by the batch itself.
+//   7. The administrator's switch-off still wins: that login cannot sign in.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
@@ -101,9 +114,13 @@ const leaverLogin = await user("staff", "leaver", "selected_branches");
 const noticeLogin = await user("staff", "notice", "selected_branches");
 const returnerLogin = await user("staff", "returner", "selected_branches");
 const disabledLogin = await user("staff", "disabled", "selected_branches");
+const managerLeaverLogin = await user("manager", "managerleaver", "selected_branches");
+const backdatedLogin = await user("staff", "backdated", "selected_branches");
+const extendedLogin = await user("staff", "extended", "selected_branches");
+const clearedLogin = await user("staff", "cleared", "selected_branches");
 
 const phoneOf = () => `08${String(Math.floor(Math.random() * 1e8)).padStart(8, "0")}`;
-async function employee(label: string, userId: string, phoneLocal: string): Promise<string> {
+async function employee(label: string, userId: string | null, phoneLocal: string): Promise<string> {
   const id = randomUUID();
   await q(
     `insert into employees (id, tenant_id, branch_id, user_id, full_name, nickname, email, status, employment_state, primary_department_id, phone_e164)
@@ -112,11 +129,31 @@ async function employee(label: string, userId: string, phoneLocal: string): Prom
   );
   return id;
 }
-const PHONE = { leaver: phoneOf(), notice: phoneOf(), returner: phoneOf(), disabled: phoneOf() };
+const PHONE = {
+  leaver: phoneOf(), notice: phoneOf(), returner: phoneOf(), disabled: phoneOf(), managerLeaver: phoneOf(),
+  backdated: phoneOf(), extended: phoneOf(), cleared: phoneOf(), twin: phoneOf(),
+};
 const leaver = await employee("leaver", leaverLogin.id, PHONE.leaver);
 const notice = await employee("notice", noticeLogin.id, PHONE.notice);
 const returner = await employee("returner", returnerLogin.id, PHONE.returner);
 const disabled = await employee("disabled", disabledLogin.id, PHONE.disabled);
+const managerLeaver = await employee("managerleaver", managerLeaverLogin.id, PHONE.managerLeaver);
+const backdated = await employee("backdated", backdatedLogin.id, PHONE.backdated);
+const extended = await employee("extended", extendedLogin.id, PHONE.extended);
+const cleared = await employee("cleared", clearedLogin.id, PHONE.cleared);
+
+// SCRUM-794's duplicate shape, before a fold: the person's first profile ended
+// days ago (resigned, Left), and a second profile made for them is the one
+// they work under now. Both carry the phone number; the older one comes first.
+const original = randomUUID();
+await q(
+  `insert into employees (id, tenant_id, branch_id, full_name, nickname, email, status, employment_state, primary_department_id,
+                          phone_e164, last_working_day, created_at)
+   values ($1, $2, $3, $4, 'original', $5, 'resigned', 'LEFT', $6, $7, $8, now() - interval '30 days')`,
+  [original, TENANT, BRANCH, `ZZ TEST s769 original ${run}`, `zz-s769-emp-original-${run}@example.com`, DEPARTMENT,
+    `+66${PHONE.twin.slice(1)}`, `${plus(-3)}T00:00:00Z`],
+);
+const duplicate = await employee("duplicate", null, PHONE.twin);
 
 // The face tablet the phone fallback runs on, as tests/attendance.check.ts pairs one.
 const DEVICE_SECRET = randomBytes(32).toString("hex");
@@ -150,9 +187,9 @@ const HARNESS_ENV = {
 };
 
 /** The app's routes on the harness; with `fakeNow`, on a clock that starts at that instant. */
-async function serve(fakeNow?: string, env: Record<string, string> = {}): Promise<string> {
+async function serve(fakeNow?: string, env: Record<string, string> = {}, script = "tests/harness/serve-routes.ts"): Promise<string> {
   const tsx = join(APP_DIR, "node_modules", "tsx", "dist", "cli.mjs");
-  const child = spawn(process.execPath, [tsx, "tests/harness/serve-routes.ts"], {
+  const child = spawn(process.execPath, [tsx, script], {
     cwd: APP_DIR,
     env: { ...process.env, ...HARNESS_ENV, ...env, ...(fakeNow ? { HARNESS_FAKE_NOW: fakeNow } : {}) },
     stdio: ["ignore", "pipe", "pipe"],
@@ -236,8 +273,10 @@ const login = async (userId: string) =>
   (await q<{ is_active: boolean; access_mode: string }>("select is_active, access_mode from users where id = $1", [userId]))[0]!;
 const profile = async (id: string) =>
   (await q<{ status: string; employment_state: string }>("select status, employment_state from employees where id = $1", [id]))[0]!;
+/** What the platform has been asked about the login (SCRUM-769: a restriction, never a switch-off, for a leaver), as kind:state. */
 const lifecycle = async (userId: string) =>
-  (await q<{ state: string }>("select state from login_lifecycle_events where user_id = $1 order by created_at", [userId])).map((r) => r.state);
+  (await q<{ kind: string; state: string }>("select kind, state from login_lifecycle_events where user_id = $1 order by created_at, id", [userId]))
+    .map((r) => `${r.kind}:${r.state}`);
 const written = async (employeeId: string) => ({
   timeEvents: Number((await q<{ n: string }>("select count(*) as n from time_events where employee_id = $1", [employeeId]))[0]!.n),
   timeEntries: Number((await q<{ n: string }>("select count(*) as n from time_entries where employee_id = $1", [employeeId]))[0]!.n),
@@ -295,33 +334,57 @@ try {
     offboardingType: "resignation", reasonCode: "personal_reasons", lastWorkingDay,
   });
   await check("Offboard keeps the login on with full access and the profile active (SCRUM-794): it sets neither switch", async () => {
-    for (const [id, last] of [[leaver, LAST_DAY], [returner, LAST_DAY], [disabled, LAST_DAY], [notice, plus(10)]] as const) {
+    for (const [id, last] of [
+      [leaver, LAST_DAY], [returner, LAST_DAY], [disabled, LAST_DAY], [managerLeaver, LAST_DAY], [extended, LAST_DAY], [cleared, LAST_DAY],
+      [notice, plus(10)],
+    ] as const) {
       const res = await offboard(id, last);
       assert.equal(res.status, 201, show(res));
       assert.deepEqual(await profile(id), { status: "active", employment_state: "LEAVING" });
     }
-    for (const u of [leaverLogin, returnerLogin, disabledLogin, noticeLogin]) {
+    for (const u of [leaverLogin, returnerLogin, disabledLogin, managerLeaverLogin, extendedLogin, clearedLogin, noticeLogin]) {
       assert.deepEqual(await login(u.id), { is_active: true, access_mode: "full" });
       assert.deepEqual(await lifecycle(u.id), []);
     }
   });
-  await check("an administrator switches one leaver's login off by hand, in the notice", async () => {
+  await check("Offboard with a last day already past ends the employment at once: the login stays on, in pay only, the platform asked to restrict it, never to switch it off", async () => {
+    const res = await offboard(backdated, plus(-1));
+    assert.equal(res.status, 201, show(res));
+    assert.deepEqual(await profile(backdated), { status: "resigned", employment_state: "LEFT" });
+    assert.deepEqual(await login(backdatedLogin.id), { is_active: true, access_mode: "pay_only" });
+    assert.deepEqual(await lifecycle(backdatedLogin.id), ["restrict:pending"]);
+    const signedIn = await signIn(day0, backdatedLogin.email);
+    assert.deepEqual([signedIn.status, signedIn.body?.accessMode], [200, "pay_only"], JSON.stringify(signedIn.body));
+  });
+  await check("the backdated leaver's clock-in is refused at the kiosk the same day, with nothing written", async () => {
+    const res = await call(day0, "POST", "/api/kiosk/clock-phone", "", { phone: PHONE.backdated, photoEvidenceUrl: "", deviceSecret: DEVICE_SECRET });
+    assert.deepEqual([res.status, res.body.reasonCode, res.body.message], [403, EMPLOYMENT_ENDED, KIOSK_EMPLOYMENT_ENDED_MESSAGE], show(res));
+    assert.deepEqual(await written(backdated), NOTHING);
+  });
+  await check("an administrator switches one leaver's login off by hand, in the notice: that is a switch-off for the platform", async () => {
     const res = await call(day0, "POST", `/api/employees/${disabled}/toggle-login`, adminNow);
     assert.equal(res.status, 200, show(res));
     assert.deepEqual(await login(disabledLogin.id), { is_active: false, access_mode: "full" });
+    assert.deepEqual(await lifecycle(disabledLogin.id), ["deactivate:pending"]);
   });
 
   // ── 2. The night after the last working day ───────────────────────────────
   console.log("2. the 03:00 batch on the night after the last working day:");
   const night = await serve(threeAmBangkok(NIGHT_AFTER));
-  await check("the leaver is ended — resigned, Left — and the login stays on, in pay only; nothing is queued for the platform", async () => {
+  await check("the leaver is ended — resigned, Left — and the login stays on, in pay only; the platform is asked to restrict it, never to switch it off", async () => {
     const steps = await reconcileAt(night);
-    assert.equal(steps.find((s) => s.step === "departedLogins")!.counts.payOnly, 3);
-    for (const [id, u] of [[leaver, leaverLogin], [returner, returnerLogin]] as const) {
+    const departed = steps.find((s) => s.step === "departedLogins")!.counts;
+    assert.deepEqual([departed.payOnly, departed.fullAgain], [6, 0], JSON.stringify(departed));
+    for (const [id, u] of [
+      [leaver, leaverLogin], [returner, returnerLogin], [managerLeaver, managerLeaverLogin], [extended, extendedLogin], [cleared, clearedLogin],
+    ] as const) {
       assert.deepEqual(await profile(id), { status: "resigned", employment_state: "LEFT" });
       assert.deepEqual(await login(u.id), { is_active: true, access_mode: "pay_only" });
-      assert.deepEqual(await lifecycle(u.id), []);
+      assert.deepEqual(await lifecycle(u.id), ["restrict:pending"]);
     }
+    // Offboard put the backdated leaver there already: nothing moves, nothing more is queued.
+    assert.deepEqual(await login(backdatedLogin.id), { is_active: true, access_mode: "pay_only" });
+    assert.deepEqual(await lifecycle(backdatedLogin.id), ["restrict:pending"]);
   });
   await check("the colleague still in their notice is untouched: active, Leaving, full access", async () => {
     assert.deepEqual(await profile(notice), { status: "active", employment_state: "LEAVING" });
@@ -330,10 +393,12 @@ try {
   await check("the login switched off by hand stays off (marked pay only, should it ever be switched back on)", async () => {
     assert.deepEqual(await login(disabledLogin.id), { is_active: false, access_mode: "pay_only" });
     assert.deepEqual(await profile(disabled), { status: "resigned", employment_state: "LEFT" });
+    assert.deepEqual(await lifecycle(disabledLogin.id), ["deactivate:pending", "restrict:pending"]);
   });
-  await check("a second run moves nobody again", async () => {
+  await check("a second run moves nobody again, either way", async () => {
     const steps = await reconcileAt(night);
-    assert.equal(steps.find((s) => s.step === "departedLogins")!.counts.payOnly, 0);
+    const departed = steps.find((s) => s.step === "departedLogins")!.counts;
+    assert.deepEqual([departed.payOnly, departed.fullAgain], [0, 0], JSON.stringify(departed));
   });
 
   // ── 3. The leaver signs in ─────────────────────────────────────────────────
@@ -386,6 +451,21 @@ try {
       assert.equal(await notificationsTo(to) - before, expected, to === leaverLogin.id ? "nothing for the leaver" : "the colleague's arrives");
     }
   });
+  await check("the lists of staff leave the leavers out: the task assignee list, the event staff list", async () => {
+    const adminAtNight = (await signIn(night, admin.email)).cookie;
+    const assignable = await call(night, "GET", "/api/core/tasks/assignable-users", adminAtNight);
+    assert.equal(assignable.status, 200, show(assignable));
+    const assignableIds = (assignable.body as { id: string }[]).map((u) => u.id);
+    assert.ok(assignableIds.includes(admin.id), "the administrator is listed");
+    assert.ok(!assignableIds.includes(managerLeaverLogin.id), "the manager who left is not");
+    const staff = await call(night, "GET", "/api/beo/staff", adminAtNight);
+    assert.equal(staff.status, 200, show(staff));
+    const staffIds = (staff.body as { id: string }[]).map((u) => u.id);
+    assert.ok(staffIds.includes(noticeLogin.id), "the colleague in their notice is listed");
+    for (const gone of [leaverLogin, managerLeaverLogin, backdatedLogin, disabledLogin]) {
+      assert.ok(!staffIds.includes(gone.id), `${gone.email} is not listed`);
+    }
+  });
   await check("signing out works", async () => {
     const out = await call(night, "POST", "/api/logout", asLeaver.cookie);
     assert.equal(out.status, 200, show(out));
@@ -410,7 +490,28 @@ try {
     assert.deepEqual([res.status, res.body.eventType], [200, "IN"], show(res));
     assert.equal((await written(notice)).timeEvents, 1);
   });
-  const faceOn = await serve(threeAmBangkok(NIGHT_AFTER), { USE_AWS_REKOGNITION: "true" });
+  await check("one number, two profiles: the person clocks in on the profile they work under, the ended one untouched", async () => {
+    const res = await phoneClock(PHONE.twin);
+    assert.deepEqual([res.status, res.body.eventType], [200, "IN"], show(res));
+    assert.equal((await written(duplicate)).timeEvents, 1);
+    assert.deepEqual(await written(original), NOTHING);
+  });
+  const faceOn = await serve(threeAmBangkok(NIGHT_AFTER), { USE_AWS_REKOGNITION: "true" }, "tests/harness/serve-routes-face.ts");
+  const identify = (matched: string) => call(faceOn, "POST", "/api/kiosk/identify-face", "", {
+    faceImageBase64: matched, faceFramesBase64: ["zz-1", "zz-2", "zz-3"], deviceSecret: DEVICE_SECRET,
+  });
+  await check("the face road: a face matched to the leaver is refused in the kiosk's words; to the colleague, matched", async () => {
+    const refused = await identify(leaver);
+    assert.deepEqual([refused.status, refused.body], [403, REFUSED], show(refused));
+    const matched = await identify(notice);
+    assert.deepEqual([matched.status, matched.body.matched, matched.body.employee?.id], [200, true, notice], show(matched));
+  });
+  await check("the face road: a face matched to the ended profile of somebody working under another is sent to the phone road, not refused", async () => {
+    const res = await identify(original);
+    assert.equal(res.status, 200, show(res));
+    assert.deepEqual([res.body.success, res.body.matched, res.body.message], [true, false, "No matching face found. Please clock in with your phone number."], show(res));
+    assert.deepEqual(await written(original), NOTHING);
+  });
   const faceClock = (employeeId: string) =>
     call(faceOn, "POST", "/api/kiosk/clock", "", { employeeId, confidenceScore: 99, livenessScore: 97, deviceSecret: DEVICE_SECRET });
   await check("with face clock-in on, the face road refuses the leaver in the same words and writes nothing", async () => {
@@ -445,7 +546,8 @@ try {
     assert.equal(res.body.started, true, show(res));
     assert.deepEqual(await profile(returner), { status: "active", employment_state: "ACTIVE" });
     assert.deepEqual(await login(returnerLogin.id), { is_active: true, access_mode: "full" });
-    assert.deepEqual(await lifecycle(returnerLogin.id), []);
+    // The restriction still waiting for the platform is withdrawn: the till is the person's again.
+    assert.deepEqual(await lifecycle(returnerLogin.id), ["restrict:superseded"]);
     const back = await signIn(night, returnerLogin.email);
     assert.equal(back.status, 200, JSON.stringify(back.body));
     const rota = await call(night, "GET", INTERNAL[0][1], back.cookie);
@@ -457,8 +559,36 @@ try {
     assert.equal((await written(returner)).timeEvents, 1);
   });
 
-  // ── 6. The administrator's switch-off ──────────────────────────────────────
-  console.log("6. the administrator's switch-off still wins:");
+  // ── 6. A last working day moved later ─────────────────────────────────────
+  console.log("6. a last working day moved later, after the batch:");
+  await check("the offboarding's edit gives the whole app back at once, and withdraws the restriction still waiting", async () => {
+    const res = await call(night, "PATCH", `/api/employees/${extended}/offboarding`, adminNight, { lastWorkingDay: plus(5) });
+    assert.equal(res.status, 200, show(res));
+    assert.deepEqual(await login(extendedLogin.id), { is_active: true, access_mode: "full" });
+    assert.deepEqual(await lifecycle(extendedLogin.id), ["restrict:superseded"]);
+    const back = await signIn(night, extendedLogin.email);
+    const rota = await call(night, "GET", INTERNAL[0][1], back.cookie);
+    assert.equal(rota.status, 200, show(rota));
+  });
+  await check("the person back in their notice clocks in at the kiosk", async () => {
+    const res = await phoneClock(PHONE.extended);
+    assert.deepEqual([res.status, res.body.eventType], [200, "IN"], show(res));
+  });
+  await check("a last day moved later outside the edit: the batch gives the whole app back itself, and leaves the edited one as it is", async () => {
+    await q("update employees set last_working_day = $2 where id = $1", [cleared, `${plus(6)}T00:00:00Z`]);
+    const steps = await reconcileAt(night);
+    const departed = steps.find((s) => s.step === "departedLogins")!.counts;
+    assert.deepEqual([departed.payOnly, departed.fullAgain], [0, 1], JSON.stringify(departed));
+    assert.deepEqual(await login(clearedLogin.id), { is_active: true, access_mode: "full" });
+    assert.deepEqual(await lifecycle(clearedLogin.id), ["restrict:superseded"]);
+    assert.deepEqual(await login(extendedLogin.id), { is_active: true, access_mode: "full" });
+    // The leavers whose day has passed stay in pay only.
+    assert.deepEqual(await login(leaverLogin.id), { is_active: true, access_mode: "pay_only" });
+    assert.deepEqual(await login(backdatedLogin.id), { is_active: true, access_mode: "pay_only" });
+  });
+
+  // ── 7. The administrator's switch-off ──────────────────────────────────────
+  console.log("7. the administrator's switch-off still wins:");
   await check("the login switched off by hand cannot sign in, and the batch never switched it on", async () => {
     const res = await signIn(night, disabledLogin.email);
     assert.equal(res.status, 403, JSON.stringify(res.body));

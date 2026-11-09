@@ -836,6 +836,8 @@ try {
     attention: await count("select count(*) as n from attention_items where employee_id = $1", [p.id]),
     employee: (await q("select status, employment_state, end_reason, last_working_day from employees where id = $1", [p.id]))[0],
     loginActive: (await q<{ is_active: boolean }>("select is_active from users where id = $1", [p.login]))[0]!.is_active,
+    // SCRUM-769: how much of the app the login reaches (a leaver's is limited to My pay, never switched off).
+    loginAccess: (await q<{ access_mode: string }>("select access_mode from users where id = $1", [p.login]))[0]!.access_mode,
     assetDue: (await q<{ expected_return_by: Date | null }>("select expected_return_by from employee_assets where id = $1", [p.asset]))[0]!.expected_return_by,
   });
   const offboard = (id: string, lastWorkingDay: string) =>
@@ -867,7 +869,7 @@ try {
         await removeInjection(table);
       }
       assert.deepEqual(await footprint(p), before, "not one of the app's steps survived the failure");
-      assert.equal(before.loginActive, true);
+      assert.deepEqual([before.loginActive, before.loginAccess], [true, "full"]);
       // And the same request, nothing failing, does all of it.
       const done = await offboard(p.id, day(-2));
       assert.equal(done.status, 201, show(done));
@@ -879,7 +881,8 @@ try {
       assert.equal(after.attention, 1, "one coverage alert for the shift after the leaving date");
       assert.equal((after.employee as { status: string }).status, "terminated");
       assert.equal((after.employee as { employment_state: string }).employment_state, "LEFT");
-      assert.equal(after.loginActive, false, "a last working day already passed switches the linked login off, as the app does");
+      // SCRUM-769: a last working day already passed limits the linked login to My pay; Offboard never switches it off.
+      assert.deepEqual([after.loginActive, after.loginAccess], [true, "pay_only"], "a last working day already passed limits the linked login to My pay");
       assert.ok(after.assetDue, "the asset's return date is set");
     });
   }
@@ -907,13 +910,13 @@ try {
     assert.equal(done.status, 201, show(done));
     const after = await footprint(p);
     assert.equal((after.employee as { employment_state: string }).employment_state, "LEAVING");
-    assert.equal(after.loginActive, true);
+    assert.deepEqual([after.loginActive, after.loginAccess], [true, "full"]);
     const again = await offboard(p.id, day(11));
     assert.equal(again.status, 409, show(again));
     assert.equal((await footprint(p)).offboardings, 1);
   });
 
-  await check("round 6's review, F2's backstop: the offboarding switches off only a login the strict placement puts in the employee's park group", async () => {
+  await check("round 6's review, F2's backstop: the offboarding limits only a login the strict placement puts in the employee's park group", async () => {
     // A link standing from before the fix (written here in the database): B's employee, A's person's login.
     const aLogin = await user(A.tenant, "staff", `zz-r6-backstop-a-${run}@example.com`, A.x);
     const crossed = await employee(B.tenant, B.x, "b-backstop", { user_id: aLogin });
@@ -923,11 +926,16 @@ try {
     });
     assert.equal(offB.status, 201, show(offB));
     assert.equal((await q<{ employment_state: string }>("select employment_state from employees where id = $1", [crossed]))[0]!.employment_state, "LEFT");
-    assert.equal((await q<{ is_active: boolean }>("select is_active from users where id = $1", [aLogin]))[0]!.is_active, true, "A's person's login stays on");
-    // The park group's own login is switched off, as the app does (the H16 checks above too).
+    assert.deepEqual(
+      (await q<{ is_active: boolean; access_mode: string }>("select is_active, access_mode from users where id = $1", [aLogin]))[0]!,
+      { is_active: true, access_mode: "full" },
+      "A's person's login stays on, with the whole app",
+    );
+    // The park group's own login is limited to My pay (SCRUM-769; the H16 checks above too), never switched off.
     const own = await leaver("backstop-own");
     assert.equal((await offboard(own.id, day(-2))).status, 201);
-    assert.equal((await footprint(own)).loginActive, false);
+    const ownAfter = await footprint(own);
+    assert.deepEqual([ownAfter.loginActive, ownAfter.loginAccess], [true, "pay_only"]);
   });
 
   await check("the database's backstop (0038, the census clean): a second OPEN offboarding row for one employee is refused", async () => {
