@@ -106,6 +106,8 @@ async function childInPark(
   page: Page,
   at: Awaited<ReturnType<typeof theCounter>>,
   child: { name: string; allergies: string; foodRestrictions: string | null },
+  /** An adult on the same order, on a ticket of their own. */
+  family: { adults?: number } = {},
 ): Promise<string> {
   const checkinId = randomUUID();
   await post(page, '/checkin/registrations', {
@@ -132,6 +134,7 @@ async function childInPark(
         serviceFee: { label: 'Drop-off service', amountSatang: 22_500 },
         foodProvision: null,
       },
+      ...(family.adults ? [{ id: randomUUID(), packageId: at.packageId, kids: 0, adults: family.adults }] : []),
     ],
   });
   await post(page, `/sales/${saleId}/finalise`, {});
@@ -140,6 +143,17 @@ async function childInPark(
     const { rows } = await pool.query(
       `select b.code from pos.checkin c join pos.band b on b.id = c.band_id where c.id = $1`,
       [checkinId],
+    );
+    return rows[0]!.code!;
+  });
+}
+
+/** The adult's band on the same order as a child's band: its signed code. */
+async function adultOnTheOrder(childBand: string): Promise<string> {
+  return fromDatabase(async (pool) => {
+    const { rows } = await pool.query(
+      `select a.code from pos.band k join pos.band a on a.sale_id = k.sale_id and a.kind = 'adult' where k.code = $1 limit 1`,
+      [childBand],
     );
     return rows[0]!.code!;
   });
@@ -295,9 +309,18 @@ test('a band read while Add time is open is ticked, as the typed code ticks it',
 
   await signIn(page);
   const at = await theCounter();
-  const bandCode = await childInPark(page, at, { name: 'ZZ TEST Fourth Child', allergies: 'ZZ TEST sesame allergy', foodRestrictions: null });
+  // SCRUM-797 — the child is charged for the extra hour, so the child's bracelet
+  // stays ticked; the adult on the order brings the bracelet a read can tick.
+  const bandCode = await childInPark(
+    page,
+    at,
+    { name: 'ZZ TEST Fourth Child', allergies: 'ZZ TEST sesame allergy', foodRestrictions: null },
+    { adults: 1 },
+  );
   const otherBand = await childInPark(page, at, { name: 'ZZ TEST Fifth Child', allergies: 'ZZ TEST soy allergy', foodRestrictions: null });
   const short = bandShortCode(bandCode)!;
+  const adultBand = await adultOnTheOrder(bandCode);
+  const adultShort = bandShortCode(adultBand)!;
 
   await page.goto('/history');
   await expect(page.getByLabel('Search transactions')).toBeVisible({ timeout: 20_000 });
@@ -317,18 +340,25 @@ test('a band read while Add time is open is ticked, as the typed code ticks it',
   await addTime.click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('heading', { name: 'Add time' })).toBeVisible({ timeout: 10_000 });
-  const bracelet = dialog.getByRole('checkbox', { name: short });
+  // Every child on the order is charged, so the child's bracelet carries the time and stays ticked.
+  const childBracelet = dialog.getByRole('checkbox', { name: short });
+  await expect(childBracelet).toBeChecked();
+  await expect(childBracelet).toBeDisabled();
+  const bracelet = dialog.getByRole('checkbox', { name: adultShort });
   await bracelet.uncheck();
   await expect(bracelet).not.toBeChecked();
 
   // The band read by the box ticks it, and the dialog stays where it was.
-  await scanAtTheBox(page, at.stationId, bandCode);
-  await expect(page.getByText(`Bracelet ${short} added`).first()).toBeVisible({ timeout: 10_000 });
+  await scanAtTheBox(page, at.stationId, adultBand);
+  await expect(page.getByText(`Bracelet ${adultShort} added`).first()).toBeVisible({ timeout: 10_000 });
   await expect(bracelet).toBeChecked();
   await page.waitForTimeout(800);
   await page.screenshot({ path: resolve(PROOF, '8-add-time-takes-the-band.png') });
 
   // Again: nothing would move on screen, so it says so.
+  await scanAtTheBox(page, at.stationId, adultBand);
+  await expect(page.getByText(`Bracelet ${adultShort} is already ticked`).first()).toBeVisible({ timeout: 10_000 });
+  // The child's own band is ticked already, so it says the same.
   await scanAtTheBox(page, at.stationId, bandCode);
   await expect(page.getByText(`Bracelet ${short} is already ticked`).first()).toBeVisible({ timeout: 10_000 });
 
@@ -344,7 +374,8 @@ test('a band read while Add time is open is ticked, as the typed code ticks it',
   await dialog.getByRole('button', { name: 'Select or scan bracelets' }).click();
 
   // Once the charge has the bracelets, a scan never reaches what it pays for.
-  await dialog.getByRole('button', { name: /\+30 minutes/ }).click();
+  await dialog.getByRole('button', { name: /\+1 hour/ }).click();
+  await expect(dialog.getByText('1 child x 1 hour x ฿300 = ฿300')).toBeVisible();
   await dialog.getByRole('button', { name: 'Continue to payment' }).click();
   await expect(dialog.getByRole('button', { name: 'Continue to payment' })).toBeHidden({ timeout: 15_000 });
   await scanAtTheBox(page, at.stationId, bandCode);
