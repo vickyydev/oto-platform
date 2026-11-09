@@ -22,7 +22,8 @@ beforeEach(() => { language.current = 'en'; });
 afterEach(() => vi.unstubAllGlobals());
 
 describe('SCRUM-738 read-only tender presentation', () => {
-  it.each(['event_pass', 'party_balance'] as const)('HIGH: %s forwards only the controller state and releases it once paid', subject => {
+  // SCRUM-797 — History's Add time charge (the extra hour) is a third separate tender.
+  it.each(['event_pass', 'party_balance', 'extra_hour'] as const)('HIGH: %s forwards only the controller state and releases it once paid', subject => {
     const cleanups: ReturnType<typeof vi.fn>[] = [];
     const handover = vi.fn((_state: StationDisplayState) => { const cleanup = vi.fn(); cleanups.push(cleanup); return cleanup; });
     const hook = renderHook((shown: DisplayPayment) => useTenderPresentation(handover, subject, 'promptpay', shown, true), payment);
@@ -74,6 +75,18 @@ describe('SCRUM-738 read-only tender presentation', () => {
     for (const changes of [{ status: 'idle' }, { status: 'paid' }, { status: 'blocked' }, { status: 'failed' }, { offline: true }, { online: false }] as Partial<DisplayPayment>[]) {
       expect(props({ ...payment, ...changes })).toMatchObject({ qrPayload: null, qrImageUrl: null, expiresAt: null });
     }
+  });
+
+  it.each([
+    ['en', 'Extra hour'], ['th', 'ชั่วโมงเพิ่มเติม'], ['zh', '加时'], ['ru', 'Дополнительный час'], ['fr', 'Heure supplémentaire'],
+  ] as const)('MEDIUM: SCRUM-797 an extra hour tender names itself in the display language (%s)', (lang, title) => {
+    language.current = lang;
+    vi.stubGlobal('React', React);
+    const qr = TenderCustomerDisplay({ cart: { ...cart, subject: 'extra_hour' }, payment });
+    expect((qr.props.children as React.ReactElement<{ children: string }>[])[0]!.props.children).toBe(title);
+    const card = JSON.stringify(TenderCustomerDisplay({ cart: { ...cart, subject: 'extra_hour', method: 'card' }, payment }));
+    expect(card).toContain(title);
+    expect(card).not.toContain(payment.qrPayload);
   });
 
   it('MEDIUM: a card tender has no QR and no family information', () => {

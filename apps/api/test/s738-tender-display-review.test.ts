@@ -43,7 +43,7 @@ describe('SCRUM-738 separate tender display adversarial review', () => {
     const counts = async () => ({ sales: (await ctx.db.select({ count: sql<number>`count(*)::int` }).from(sale))[0]!.count,
       payments: (await ctx.db.select({ count: sql<number>`count(*)::int` }).from(paymentAttempt))[0]!.count });
     const before = await counts();
-    for (const subject of ['event_pass', 'party_balance']) {
+    for (const subject of ['event_pass', 'party_balance', 'extra_hour']) {
       const shown = frame(subject);
       const sent = await publish({ ...shown, cart: { ...shown.cart, family: { name: 'PRIVATE' } }, payment: { ...payment, providerCredential: 'PRIVATE' } });
       expect(sent.statusCode).toBe(200);

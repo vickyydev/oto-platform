@@ -51,8 +51,11 @@ const SECOND = 'T1-9ABCDE';
 const NOT_ON_THIS_RECEIPT = 'T1-1ZZZZZ';
 const NOT_ELIGIBLE = 'This bracelet is not eligible on this receipt.';
 
+// SCRUM-797 — the owner's extra hour: two children on the order, ฿300 each an hour.
 const data: SaleExtensionsRead = {
-  options: [{ id: 'ext-30', label: '+30 minutes', minutes: 30, unitSatang: 6000 }],
+  options: [{ id: 'ext-60', label: '+1 hour', hours: 1, minutes: 60, unitSatang: 30000 }],
+  children: 2,
+  perChildHourSatang: 30000,
   eligibleBands: [
     { id: 'band-1', shortCode: FIRST, kind: 'kids' },
     { id: 'band-2', shortCode: SECOND, kind: 'kids' },
@@ -158,11 +161,11 @@ describe('where the dialog cannot take a band, it says so and changes nothing', 
   });
 
   it('once the charge has the bracelets, a scan never reaches what it pays for', async () => {
-    const post = vi.spyOn(api, 'post').mockResolvedValue({ sale: { id: 'charge-1', status: 'tendering', totals: { grossSatang: 6_420 } }, extension: {}, replay: false });
-    const get = vi.spyOn(api, 'get').mockResolvedValue({ sale: { id: 'charge-1', status: 'tendering', totals: { grossSatang: 6_420 } }, attempts: [] });
+    const post = vi.spyOn(api, 'post').mockResolvedValue({ sale: { id: 'charge-1', status: 'tendering', totals: { grossSatang: 60_000 } }, extension: {}, replay: false });
+    const get = vi.spyOn(api, 'get').mockResolvedValue({ sale: { id: 'charge-1', status: 'tendering', totals: { grossSatang: 60_000 } }, attempts: [] });
     const { hook, ticked, untick, scan } = openDialog();
     untick(1);
-    const duration = elements(hook.result.current).find((node) => typeof node.props.onClick === 'function' && words(node.props.children).startsWith('+30 minutes'))!;
+    const duration = elements(hook.result.current).find((node) => typeof node.props.onClick === 'function' && words(node.props.children).startsWith('+1 hour'))!;
     (duration.props.onClick as () => void)();
     press(hook.result.current, 'Continue to payment');
     await settle();
@@ -184,11 +187,11 @@ describe('replacing bracelets on a paid charge has no scan field', () => {
   const entry = {
     id: 'extension-1',
     chargeSaleId: 'charge-1',
-    optionId: 'ext-30',
-    label: '+30 minutes',
-    minutesAdded: 30,
+    optionId: 'ext-60',
+    label: '+1 hour',
+    minutesAdded: 60,
     braceletCount: 1,
-    amountSatang: 6000,
+    amountSatang: 60000,
     selection: { mode: 'bands', bandIds: ['band-9'] },
     status: 'applied',
     createdAt: '2026-11-03T05:00:00.000Z',

@@ -4,7 +4,8 @@ import { PromptPayCustomerScreen } from './PromptPayCustomerScreen';
 
 export function TenderCustomerDisplay({ cart, payment }: { cart: DisplayTenderCart; payment: DisplayPayment }) {
   const { t } = useLanguage();
-  const subject = t(cart.subject === 'event_pass' ? 'book.eventPasses.eventPass' : 'display.tender.partyBalance');
+  const subject = t(cart.subject === 'event_pass' ? 'book.eventPasses.eventPass'
+    : cart.subject === 'extra_hour' ? 'display.tender.extraHour' : 'display.tender.partyBalance');
   const waiting = payment.online && !payment.offline && payment.status === 'pending';
   const note = payment.status === 'paid' ? t('display.tender.confirmed')
     : payment.status === 'blocked' || payment.status === 'failed' || !payment.online || payment.offline

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Check, Clock, Timer } from 'lucide-react';
+import { extraHourFactors, extraHourSum, formatTHB } from '@oto/shared';
 import {
   baht,
   createSaleExtension,
@@ -26,6 +27,8 @@ import {
 } from '@/lib/tabScan';
 import { toast } from '@/hooks/use-toast';
 import { getEnabledPaymentMethods, paymentMethodIcon, paymentMethodLabel } from '@/lib/payments';
+import type { StationDisplayHandoff } from '@/lib/displaySession';
+import { useTenderPresentation } from '@/lib/tenderDisplay';
 import { LEDGER_ONLY_NOTICE } from '@/components/history/ledgerNotice';
 import { Card } from '@/components/ui/card';
 import type { SaleWriteOutcome } from '@/lib/saleWriter';
@@ -82,6 +85,7 @@ export function useSaleExtensions({
   fmt,
   compact = false,
   bandScans,
+  displayHandoff,
 }: {
   saleId: string;
   /** A ticket admission with bracelets; a time charge itself has no Add time. */
@@ -93,6 +97,8 @@ export function useSaleExtensions({
   compact?: boolean;
   /** Where the screen's station channel hands a band while a dialog is open. */
   bandScans?: BandScanSlot | undefined;
+  /** SCRUM-797 — the station's customer display, shown a QR or card tender as any sale's. */
+  displayHandoff?: StationDisplayHandoff | undefined;
 }): { card: ReactNode; button: ReactNode; dialogs: ReactNode } {
   const { can, operator } = useOperator();
   const { active: station } = useStation();
@@ -248,6 +254,7 @@ export function useSaleExtensions({
           operatorName={operator?.name ?? 'this account'}
           onClose={close}
           bandScans={bandScans}
+          displayHandoff={displayHandoff}
           onPaid={({ label, braceletCount }) => {
             const total = data.eligibleBands.length;
             setFlash(`Added ${label} to ${braceletCount} of ${plural(total)}`);
@@ -268,6 +275,7 @@ export function ExtensionPayment({
   onClose,
   onPaid,
   bandScans,
+  displayHandoff,
 }: {
   saleId: string;
   stationId: string;
@@ -279,6 +287,8 @@ export function ExtensionPayment({
   onPaid?: (paid: { label: string; braceletCount: number }) => void;
   /** Where the screen's station channel hands a band while this is open. */
   bandScans?: BandScanSlot | undefined;
+  /** The station's customer display: a QR or card tender shows there (SCRUM-738 pattern). */
+  displayHandoff?: StationDisplayHandoff | undefined;
 }) {
   const { offlineUnlock, locked: operatorLocked } = useOperator();
   const [optionId, setOptionId] = useState(resume?.optionId ?? '');
@@ -306,10 +316,13 @@ export function ExtensionPayment({
   }, []);
   const option = data.options.find((item) => item.id === optionId);
   const quantity = mode === 'bands' ? bandIds.length : count;
+  // SCRUM-797 — the money follows the order: each option's unit is one
+  // child's price for its hours, times the children on the order's 1- and
+  // 2-hour tickets. The bracelets below carry the time and never change it.
   const totalSatang =
     charge?.totals.grossSatang ??
     resume?.amountSatang ??
-    (option ? option.unitSatang * quantity : 0);
+    (option ? option.unitSatang * data.children : 0);
   const selection: ExtensionSelection =
     mode === 'bands' ? { mode, bandIds } : { mode, braceletCount: count };
   const outcome = (sale: ApiSale): SaleWriteOutcome => ({
@@ -397,6 +410,9 @@ export function ExtensionPayment({
   useEffect(() => {
     if (stage.state.error?.includes('Choose the replacement bracelets')) onClose();
   }, [stage.state.error, onClose]);
+  // SCRUM-797 — the amount reaches the customer display as any separate
+  // tender's does: a QR to scan or a card to present, once the charge exists.
+  useTenderPresentation(displayHandoff, 'extra_hour', stage.state.method, stage.display, Boolean(charge || resume));
   const locked =
     frozen || preparing || operatorLocked || Boolean(offlineUnlock) || stage.busy || stage.locked;
   const addBracelet = (raw: string): ExtensionBand | null => {
@@ -437,12 +453,15 @@ export function ExtensionPayment({
             Add time
           </DialogTitle>
           <DialogDescription>
-            By {operatorName} · extend some or all of the {plural(data.eligibleBands.length)} on
-            this booking.
+            By {operatorName} · {formatTHB(data.perChildHourSatang)} per child per hour, on the
+            same bracelets.
           </DialogDescription>
         </DialogHeader>
         <fieldset disabled={locked} className="space-y-5 py-2">
           <p className="text-sm font-medium text-muted-foreground">How many bracelets?</p>
+          <p className="text-xs text-muted-foreground">
+            Charged per child on this order. The ticked bracelets carry the added time.
+          </p>
           <div className="grid grid-cols-2 gap-2">
             <Button
               variant={mode === 'bands' ? 'default' : 'outline'}
@@ -460,7 +479,8 @@ export function ExtensionPayment({
           {mode === 'count' ? (
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                Records payment for this quantity. No individual bracelet is selected or changed.
+                Records the time on this many bracelets. No individual bracelet is selected or
+                changed.
               </p>
               <div className="flex items-center justify-between rounded-lg border p-3">
                 <div className="flex items-center gap-3">
@@ -534,6 +554,11 @@ export function ExtensionPayment({
           )}
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">How much time?</p>
+            {data.refusal && (
+              <p role="alert" className="text-sm text-destructive">
+                {data.refusal.message}
+              </p>
+            )}
             <div className="space-y-2">
               {data.options.map((item) => (
                 <button
@@ -549,11 +574,11 @@ export function ExtensionPayment({
                   <span className="min-w-0">
                     <span className="block font-semibold">{item.label}</span>
                     <span className="block text-xs text-muted-foreground tabular-nums">
-                      ฿{baht(item.unitSatang)} × {plural(quantity)}
+                      {extraHourFactors(data.children, item.hours, data.perChildHourSatang)}
                     </span>
                   </span>
                   <span className="font-bold tabular-nums shrink-0">
-                    ฿{baht(item.unitSatang * quantity)}
+                    ฿{baht(item.unitSatang * data.children)}
                   </span>
                 </button>
               ))}
@@ -564,6 +589,11 @@ export function ExtensionPayment({
           <span className="text-muted-foreground">Amount to charge</span>
           <span className="text-2xl font-black tabular-nums">฿{baht(totalSatang)}</span>
         </div>
+        {option && !resume && (
+          <p className="text-sm font-medium tabular-nums" aria-label="Extra hour sum">
+            {extraHourSum(data.children, option.hours, data.perChildHourSatang)}
+          </p>
+        )}
         {prepareError && (
           <p role="alert" className="text-sm text-destructive">
             {prepareError}

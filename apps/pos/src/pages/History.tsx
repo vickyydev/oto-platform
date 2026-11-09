@@ -26,6 +26,7 @@ import { toast } from '@/hooks/use-toast';
 import { explainLookup, useSearchLookup } from '@/lib/historyLookup';
 import { readTabScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
 import { decideHistoryTabScan, type BandScanSlot } from '@/lib/tabScan';
+import { useTenderDisplay } from '@/lib/tenderDisplay';
 import { readRefundRequests, type RefundRequestNote } from '@/lib/refundRequests';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -121,6 +122,12 @@ export default function History() {
   const search = useSearch();
   const [query, setQuery] = useState(() => new URLSearchParams(search).get('phone')?.trim() ?? '');
   const [selected, setSelected] = useState<HistoryTxn | null>(null);
+  /**
+   * SCRUM-797 — while a sale is open, the station's customer display is
+   * History's to hand a separate tender to: an Add time QR or card shows there
+   * as a party balance's does (`useTenderPresentation`, SCRUM-738).
+   */
+  const linkedDisplay = useTenderDisplay(station?.stationId ?? null, !locked && selected !== null);
 
   /** The trading day on screen. Empty until the branch's own day is known. */
   const [date, setDate] = useState('');
@@ -452,6 +459,7 @@ export default function History() {
               onVoided={onVoided}
               onRefunded={onRefunded}
               bandScans={addTimeScan}
+              displayHandoff={linkedDisplay.handover}
             />
           ) : view === 'scan' ? (
             <div className="flex-1 min-h-0 flex flex-col">

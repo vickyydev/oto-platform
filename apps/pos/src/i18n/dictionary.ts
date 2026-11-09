@@ -508,6 +508,7 @@ export const DICTIONARY: Record<string, Record<SupportedLang, string>> = {
   'display.idle.title': { en: 'Welcome to OTO Park', zh: '欢迎来到 OTO Park', th: 'ยินดีต้อนรับสู่ OTO Park', ru: 'Добро пожаловать в OTO Park', fr: 'Bienvenue à OTO Park' },
   'display.idle.followStaff': { en: 'Please follow the staff screen.', zh: '请按照工作人员屏幕的提示操作。', th: 'กรุณาทำตามหน้าจอของพนักงาน', ru: 'Пожалуйста, следуйте указаниям на экране сотрудника.', fr: "Veuillez suivre l'écran du personnel." },
   'display.tender.partyBalance': { en: 'Party balance', zh: '派对尾款', th: 'ยอดคงเหลือของงานปาร์ตี้', ru: 'Остаток за праздник', fr: 'Solde de la fête' },
+  'display.tender.extraHour': { en: 'Extra hour', zh: '加时', th: 'ชั่วโมงเพิ่มเติม', ru: 'Дополнительный час', fr: 'Heure supplémentaire' },
   'display.tender.payByCard': { en: 'Pay by card', zh: '银行卡付款', th: 'ชำระด้วยบัตร', ru: 'Оплатите картой', fr: 'Payer par carte' },
   'display.tender.confirmed': { en: 'Payment confirmed. Please wait for the team.', zh: '付款已确认。请等待工作人员。', th: 'ยืนยันการชำระเงินแล้ว กรุณารอพนักงาน', ru: 'Оплата подтверждена. Пожалуйста, подождите сотрудника.', fr: "Paiement confirmé. Veuillez attendre le personnel." },
   'display.retry': { en: 'Retry', zh: '重试', th: 'ลองอีกครั้ง', ru: 'Повторить', fr: 'Réessayer' },

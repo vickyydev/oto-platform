@@ -955,7 +955,8 @@ export function bandLabel(band: Pick<ApiSaleBand, 'shortCode' | 'childName'>): s
 export type ExtensionSelection =
   | { mode: 'bands'; bandIds: string[] }
   | { mode: 'count'; braceletCount: number };
-export interface SaleExtensionOption { id: string; label: string; minutes: number; unitSatang: number }
+/** SCRUM-797 — `unitSatang` is ONE child's price for the option's hours (hours × ฿300). */
+export interface SaleExtensionOption { id: string; label: string; hours: number; minutes: number; unitSatang: number }
 export interface ExtensionBand { id: string; shortCode: string; kind: string }
 export interface SaleExtension {
   id: string;
@@ -977,6 +978,12 @@ export interface SaleExtension {
 }
 export interface SaleExtensionsRead {
   options: SaleExtensionOption[];
+  /** SCRUM-797 — the children the extra hour is charged for: those on the order's 1- and 2-hour tickets. */
+  children: number;
+  /** ฿300 for one child for one hour, as the platform charges it. */
+  perChildHourSatang: number;
+  /** Why this order takes no extra hour (a Full Day pass, no child), in the platform's words. */
+  refusal?: { code: string; message: string } | null;
   eligibleBands: ExtensionBand[];
   extensions: SaleExtension[];
 }

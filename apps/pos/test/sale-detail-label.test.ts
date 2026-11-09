@@ -762,7 +762,7 @@ describe('shared History controller used on desktop and phone', () => {
     takeCorrectedOrder();
     const txn = row('extension-charge', '2026-10-01T06:00:00Z');
     const detail: ApiSaleDetail = { sale: txn.ledger, lines: [], discounts: [], taxBreakdown: null,
-      timeExtension: { id: 'extension-1', sourceSaleId: 'original-sale', status: 'applied', minutesAdded: 30, braceletCount: 2 } };
+      timeExtension: { id: 'extension-1', sourceSaleId: 'original-sale', status: 'applied', minutesAdded: 60, braceletCount: 2 } };
     const get = vi.spyOn(api, 'get').mockResolvedValue(detail);
     const link = vi.spyOn(stationLinkApi, 'read').mockResolvedValue({ stationId: 'station-1', boxId: null, offline: false });
     const hook = renderHook(() => useSaleDetail({ txn, onBack: vi.fn() }));
@@ -820,14 +820,15 @@ describe('shared History controller used on desktop and phone', () => {
 
 
 describe('paid Add time selection and charge confirmation', () => {
+  // SCRUM-797 — two children on the order at ฿300 each an hour.
   const data: SaleExtensionsRead = {
-    options: [{ id: 'ext-30', label: '+30 minutes', minutes: 30, unitSatang: 6000 }],
+    options: [{ id: 'ext-60', label: '+1 hour', hours: 1, minutes: 60, unitSatang: 30000 }], children: 2, perChildHourSatang: 30000,
     eligibleBands: [{ id: 'band-1', shortCode: 'T1-7KMQ4X', kind: 'kids' }, { id: 'band-2', shortCode: 'T1-9ABCDE', kind: 'kids' }], extensions: [],
   };
   it('matches only eligible short codes and preserves a supplied extension action on retry', async () => {
     expect(extensionBandFromScan('t1 7kmq4x', data.eligibleBands)?.id).toBe('band-1');
     expect(extensionBandFromScan('T1-1ZZZZZ', data.eligibleBands)).toBeNull();
-    const body = { actionId: 'action-1', stationId: 'station-1', optionId: 'ext-30', selection: { mode: 'count' as const, braceletCount: 2 } };
+    const body = { actionId: 'action-1', stationId: 'station-1', optionId: 'ext-60', selection: { mode: 'count' as const, braceletCount: 2 } };
     const post = vi.spyOn(api, 'post').mockResolvedValue({});
     await createSaleExtension('original-sale', body);
     await createSaleExtension('original-sale', body);
@@ -838,33 +839,34 @@ describe('paid Add time selection and charge confirmation', () => {
   });
   it('keeps count-only explicit, retries an uncertain create with the same selection, and shows the server total before payment', async () => {
     const post = vi.spyOn(api, 'post').mockRejectedValueOnce(new ApiError(409, 'IDEMPOTENCY_IN_FLIGHT', 'Still preparing'));
-    const get = vi.spyOn(api, 'get').mockResolvedValue({ sale: { id: 'charge-1', status: 'tendering', totals: { grossSatang: 12_840 } }, attempts: [] });
+    const get = vi.spyOn(api, 'get').mockResolvedValue({ sale: { id: 'charge-1', status: 'tendering', totals: { grossSatang: 64_200 } }, attempts: [] });
     const hook = renderHook(() => ExtensionPayment({ saleId: 'source-1', stationId: 'station-1', data, resume: null, operatorName: 'Som', onClose: vi.fn() }));
     press(hook.result.current, 'Count only');
     expect(words(hook.result.current)).toContain('No individual bracelet is selected or changed.');
-    const duration = elements(hook.result.current).find((node) => typeof node.props.onClick === 'function' && words(node.props.children).startsWith('+30 minutes'))!;
+    const duration = elements(hook.result.current).find((node) => typeof node.props.onClick === 'function' && words(node.props.children).startsWith('+1 hour'))!;
     (duration.props.onClick as () => void)();
     press(hook.result.current, 'Continue to payment');
     await settle();
     expect(elements(hook.result.current).find((node) => node.type === 'fieldset')?.props.disabled).toBe(true);
-    post.mockResolvedValueOnce({ sale: { id: 'charge-1', status: 'tendering', totals: { grossSatang: 12_840 } }, extension: {}, replay: true });
+    // 2 children × 1 hour × ฿300 = ฿600, with 7 % VAT added on top by the platform.
+    post.mockResolvedValueOnce({ sale: { id: 'charge-1', status: 'tendering', totals: { grossSatang: 64_200 } }, extension: {}, replay: true });
     press(hook.result.current, 'Check original charge');
     await settle();
     expect(post.mock.calls[0]).toEqual(post.mock.calls[1]);
     expect(post.mock.calls[0]?.[1]).toMatchObject({ selection: { mode: 'count', braceletCount: 2 } });
-    expect(words(hook.result.current)).toContain('128.4');
+    expect(words(hook.result.current)).toContain('642');
     const panel = elements(hook.result.current).find((node) => node.type === PaymentTenderPanel);
-    expect(panel?.props.stage).toMatchObject({ state: { outstandingSatang: 12_840 }, canSubmit: false });
+    expect(panel?.props.stage).toMatchObject({ state: { outstandingSatang: 64_200 }, canSubmit: false });
     hook.unmount(); post.mockRestore(); get.mockRestore();
   });
 });
 
 describe('the approved History Add time placement', () => {
   const read: SaleExtensionsRead = {
-    options: [{ id: 'ext-30', label: '+30 minutes', minutes: 30, unitSatang: 6000 }],
+    options: [{ id: 'ext-60', label: '+1 hour', hours: 1, minutes: 60, unitSatang: 30000 }], children: 1, perChildHourSatang: 30000,
     eligibleBands: [{ id: 'band-1', shortCode: 'T1-7KMQ4X', kind: 'kid' }, { id: 'band-2', shortCode: 'T1-9ABCDE', kind: 'adult' }],
-    extensions: [{ id: 'extension-1', chargeSaleId: 'charge-1', optionId: 'ext-30', label: '+30 minutes', minutesAdded: 30,
-      braceletCount: 1, amountSatang: 6000, selection: { mode: 'count', braceletCount: 1 }, status: 'applied',
+    extensions: [{ id: 'extension-1', chargeSaleId: 'charge-1', optionId: 'ext-60', label: '+1 hour', minutesAdded: 60,
+      braceletCount: 1, amountSatang: 30000, selection: { mode: 'count', braceletCount: 1 }, status: 'applied',
       createdAt: '2026-10-06T05:00:00.000Z', createdByName: 'Som', appliedAt: '2026-10-06T05:01:00.000Z', paymentMethods: ['cash'] }],
   };
   it('lists time added with its bracelets, tender, time and staff, and offers Add time beside Reprint', async () => {
@@ -895,8 +897,8 @@ describe('replacement bracelet recovery', () => {
   it('keeps active selections fixed and retries the same repair without collecting', async () => {
     const post = vi.spyOn(api, 'post').mockRejectedValueOnce(new ApiError(409, 'IDEMPOTENCY_IN_FLIGHT', 'Still recording'));
     const onClose = vi.fn();
-    const entry: SaleExtension = { id: 'extension-1', chargeSaleId: 'charge-1', optionId: 'ext-30', label: '+30 minutes',
-      minutesAdded: 30, braceletCount: 2, amountSatang: 12000, selection: { mode: 'bands', bandIds: ['old-1', 'band-2'] },
+    const entry: SaleExtension = { id: 'extension-1', chargeSaleId: 'charge-1', optionId: 'ext-60', label: '+1 hour',
+      minutesAdded: 60, braceletCount: 2, amountSatang: 60000, selection: { mode: 'bands', bandIds: ['old-1', 'band-2'] },
       currentBandIds: ['old-1', 'band-2'], needsReselection: true, status: 'applied', createdAt: '', createdByName: 'Som', appliedAt: '' };
     const hook = renderHook(() => ExtensionBandRecovery({ saleId: 'source-1', stationId: 'station-1', entry,
       bands: [{ id: 'new-1', shortCode: 'T1-7KMQ4X', kind: 'kids' }, { id: 'band-2', shortCode: 'T1-9ABCDE', kind: 'kids' }], onClose }));

@@ -26798,7 +26798,8 @@
                                       "type": "string",
                                       "enum": [
                                         "event_pass",
-                                        "party_balance"
+                                        "party_balance",
+                                        "extra_hour"
                                       ]
                                     },
                                     "method": {

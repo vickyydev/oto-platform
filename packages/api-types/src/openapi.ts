@@ -12421,7 +12421,7 @@ export interface paths {
                                         /** @enum {boolean} */
                                         supported: true;
                                         /** @enum {string} */
-                                        subject: "event_pass" | "party_balance";
+                                        subject: "event_pass" | "party_balance" | "extra_hour";
                                         /** @enum {string} */
                                         method: "qr" | "card";
                                     } | {
