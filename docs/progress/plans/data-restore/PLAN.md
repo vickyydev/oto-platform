@@ -114,15 +114,17 @@ once, keeps an argon2 copy, and from then on the account is like any other.
 - **The sign-in**: `signIn` in `apps/api/src/services/auth.ts`. A wrong
   password on a new account is refused and counted exactly as anywhere else;
   an account that already has a platform password never looks at the app's.
-- **Each person gets**: an active account in the operator (their phone, counted
-  as verified; no password yet; no forced change), their employee record when
-  the app links exactly one employee to them, the identity link and the stamp
-  on their app user, the OTO App tile for the whole operator (as a Console link
-  without a branch choice gives it), and a platform role:
+- **Each person gets**: an active account in the operator (their phone; no
+  password yet; the forced password change the app still owes them, if it owes
+  one; the phone counted as verified only where the app proves it — questions
+  1 and 2 below), their employee record when the app links exactly one
+  employee to them, the identity link and the stamp on their app user, the OTO
+  App tile for the whole operator (as a Console link without a branch choice
+  gives it), and a platform role where the table gives one (question 3):
 
   | App role | Platform role | Where |
   | --- | --- | --- |
-  | staff, advisor | `staff` | each park in their app branch access |
+  | staff, advisor | none: the OTO App tile alone | — |
   | manager | `branch_manager` | each park in their app branch access |
   | admin, operator_admin | `operator_admin` | the whole operator |
   | global_admin | none: skipped, listed by id | linked by hand in the Console |
@@ -130,6 +132,48 @@ once, keeps an argon2 copy, and from then on the account is like any other.
 - **The phone** comes from the app user (`phone_e164`, then `phone_number`),
   then from their employee record, normalised to `+66…`. Nobody is given a
   number another account already holds, or one two of them share.
+
+### Questions for the owner
+
+The script runs with the safer answer to each of these until the owner rules;
+each is one place in `packages/db/src/otoapp-staff-accounts.ts` to change.
+
+1. **A temporary app password.** The OTO App gives every new user, and every
+   user an administrator resets, a temporary password the administrator sees,
+   and asks for a change at the next sign-in. The first launcher sign-in keeps
+   whatever app password the person has, so the script carries the app's
+   "must change" onto the suite account: such a person signs in with the
+   temporary password once and must choose a new one before anything else,
+   the OTO App included. The dry run counts them ("forced password change
+   carried"). The app's own "must change" is left on, because the app's own
+   password is still the temporary one and the app's old sign-in form (kept
+   for the cutover rehearsal) must not take it as permanent. Confirm both.
+2. **Which phones count as verified.** A verified phone lets "Forgot password"
+   send a reset code to that number, which opens the account without the app
+   password, administrators' accounts included. The script counts a phone as
+   verified only when it is the user's own `phone_e164` and the app itself
+   marks it verified (the rule the app's own SMS sign-in and reset use);
+   everybody else signs in with their app password and gets no SMS reset until
+   their phone is verified (an administrator's temporary password from Login
+   Users does it). The dry run counts verified and unverified. Confirm, or say
+   which numbers the park stands behind.
+3. **What each app role may do in the suite beyond the OTO App.** The table
+   gives a platform role only where the OTO App needs one to keep the person's
+   app role (where the app reads roles from the suite): none for staff and
+   advisors, `branch_manager` for managers, `operator_admin` for admins.
+   - Staff and advisors (about 56): the platform `staff` role would add the
+     till, the booth, the counter's reads, staff benefits and the assistant.
+     Give them that, or keep the tile alone?
+   - Managers: `branch_manager` at their parks also carries the Login Users
+     screen there (temporary passwords included, so the accounts at that park),
+     role assignment, refund and cash approval and device pairing. A manager
+     whose app branches join no park gets the tile alone, and the app would
+     then read them as staff.
+   - Admins: `operator_admin` is every permission across the whole operator,
+     where an app admin's reach is one park group.
+   - App `operator_admin`: the suite reads `operator_admin` back as the app's
+     `admin`, so where the app takes roles from the suite, the next opening of
+     the app rewrites them to `admin`, which loses the owner-only payroll lock.
 
 ### Running it on staging
 
@@ -152,10 +196,12 @@ Counts and ids only, never a name or a phone number: the operator; app users
 read; one count per outcome (`provision`, `inactive`, `already_linked`,
 `global_admin`, `unknown_role`, `other_park_group`, `no_phone`, `phone_taken`,
 `phone_shared`, `employee_held`, and `failed` on apply); the outcomes per app
-role; where the phones come from; how many employee records are linked; the
-role assignments per platform role and how many people get the tile alone (no
-app branch joined to a park); the `global_admin` user ids; and the account ids
-that may be named with `--actor`. Exit 1 when refused or a person failed.
+role; where the phones come from; how many phones count as verified and how
+many do not; how many people carry a forced password change from the app; how
+many employee records are linked; the role assignments per platform role; how
+many people get the tile alone, by the table (staff, advisors) and because
+their mapped role joins no park; the `global_admin` user ids; and the account
+ids that may be named with `--actor`. Exit 1 when refused or a person failed.
 
 Everybody counted under anything but `provision` is left as they were and is
 done by hand in the Console (Login Users, Apps) once their data is right.
@@ -163,7 +209,9 @@ done by hand in the Console (Login Users, Apps) once their data is right.
 ### For staff
 
 > Sign in on the launcher with your phone number and your usual app password;
-> the first sign-in keeps it for the suite.
+> the first sign-in keeps it for the suite. If you are still on a temporary
+> password an administrator gave you, the launcher asks you to choose a new one
+> first.
 
 ## What the restore does not do
 
