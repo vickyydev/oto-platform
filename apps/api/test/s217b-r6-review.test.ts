@@ -496,7 +496,8 @@ describe('A. fences and seams', () => {
       'file-storage.ts': 'faa0c5c7e17f949aeb1f74e91391e019220f29cfd97bf6eefae47c46fbdd850e',
       'storage/s3Client.ts': '9d51fea745ad10e3944543ec6b9e17a36d5af128c923703b010e4be7c1c8ddcb',
       'pdf.ts': 'e56ab0b8d875508edf5829c8ab8519f356360deff91182dafcbf161679105997',
-      'beo-routes.ts': '4174a50d53dd91077acb8cbcae291982c1ab60136c0cbac66151ab2034175c14',
+      // SCRUM-803 / SCRUM-806: Generate from BEO bills the package in baht and only the add-ons a party bought; where the BEO's documents live is unchanged.
+      'beo-routes.ts': '845dae0b815cac6869ad1a207fd5b030bc0c40262728bdb8273df1e6ec29b5b5',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);
