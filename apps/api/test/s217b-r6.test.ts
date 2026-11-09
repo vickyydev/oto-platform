@@ -676,7 +676,10 @@ describe('D. read off the code', () => {
 
   it('H16: the offboarding create is one transaction, with every write of the app’s steps on it', () => {
     const post = route(routesText(), 'post', '/api/employees/:employeeId/offboarding');
-    const start = post.indexOf('const offboarding = await db.transaction(async (tx) => {');
+    // SCRUM-794 wrapped the same transaction in a function the route calls once
+    // (createOffboarding), so a second offboarding after Onboard Again can be
+    // refused in words; the writes inside it are the app's, unchanged.
+    const start = post.indexOf('const createOffboarding = () => db.transaction(async (tx) => {');
     const end = post.indexOf('return created;\n      });', start);
     expect(start).toBeGreaterThan(-1);
     expect(end).toBeGreaterThan(start);
