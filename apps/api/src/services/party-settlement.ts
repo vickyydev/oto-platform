@@ -55,7 +55,8 @@ import { withTx, type Exec, type OpContext } from './tx';
  * SCRUM-804 — A PARTY SETTLED AS ONE REAL SALE (birthday plan §4, Lane 2).
  *
  * Plan in the OTO App, execute in the POS. The app publishes each party's plan
- * in `otoapp_v.event_packages` (SCRUM-803); the till confirms who actually came
+ * through the events seam (its event packages view, read in `otoapp-events.ts`;
+ * SCRUM-803); the till confirms who actually came
  * and settles the party as ONE sale through the sale engine every other sale
  * goes through (`commitSale` → `finaliseSale`, the close that prints):
  *

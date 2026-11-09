@@ -8,9 +8,10 @@ import type { Exec } from './tx';
  *
  * Plan in the OTO App, execute in the POS: staff plan every party in the BEO
  * (the package, the counts, the menu, the food times, the entertainment, the
- * add-ons) and the app publishes that plan in `otoapp_v.event_packages`. This
- * reads it through the seam repository (`otoapp-events.ts`, the one file that
- * names `otoapp_v`) and puts it in the platform's words: the party page shows
+ * add-ons) and the app publishes that plan through the events seam (its event
+ * packages view). This reads it through the seam repository (`otoapp-events.ts`,
+ * the one events file that names the app's views) and puts it in the platform's
+ * words: the party page shows
  * it read-only, and the settlement (`party-settlement.ts`) prices from it.
  * Money passes through in satang, as the view gives it.
  */
@@ -45,7 +46,7 @@ function idsOf(rows: Json[], prefix: string): string[] {
 }
 
 /**
- * A row of `otoapp_v.event_packages` in the platform's words, or null when it
+ * A row of the app's event packages view (read in `otoapp-events.ts`) in the platform's words, or null when it
  * names no package at all. Read defensively, as every seam read is: the view
  * passes the app's jsonb through, and one bad field must not lose the party.
  * Money passes through as the view gives it, in satang.
