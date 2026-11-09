@@ -150,6 +150,8 @@ describe('SCRUM-621 catalogue response contracts', () => {
         sku: null, variants, stockItemId: null, sortOrder: 0, active: stored!.active,
         translations: futureTranslations, archivedAt: stored!.archivedAt?.toISOString() ?? null,
         linkedModifierGroupIds: [groupId], stockLinks: [],
+        // SCRUM-799 — the shelf an item takes stock from; this add-on takes from none.
+        stockShareItemId: null,
       });
     };
     await assertMenu();
