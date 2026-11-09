@@ -23,7 +23,11 @@
 //     log carries no text either;
 //   - the saved park-group settings win over the built-in defaults on the
 //     routes as registered, and a malformed answer is a plain message;
-//   - the Events page's address: `&fill=inbox` asks, once, and is taken off.
+//   - the Events page's address: `&fill=inbox` asks, once, and is taken off;
+//   - SCRUM-814: the prompt ends with today at the event's park (or, for a
+//     pasted message on no event, the person's own park), and an answer whose
+//     party date differs from the booked one comes back as read, shown beside
+//     it and marked, with nothing written.
 //
 // Run from apps/oto-app: DATABASE_URL=<migrated scratch> npx tsx tests/beo-inbox-fill.check.ts
 import assert from "node:assert/strict";
@@ -54,6 +58,7 @@ const { sealPlatformToken } = await import("../server/lib/platformSession");
 const { db, pool: appDbPool } = await import("../server/db");
 const { logger } = await import("../server/lib/logger");
 const { beoEventIdFrom, beoFillFrom, withoutBeoParam } = await import("../client/src/lib/beo-deep-link");
+const { aiFillDateLine } = await import("../client/src/lib/beo-ai-date");
 type InboxRead = Awaited<ReturnType<typeof import("../server/lib/inboxConfirmation").readInboxConfirmation>>;
 type AiCompleteOptions = import("../server/lib/anthropic").AiCompleteOptions;
 
@@ -168,10 +173,14 @@ async function listen(app: express.Express): Promise<string> {
   return `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 }
 
+/** SCRUM-814: the stubbed routes' clock — 10:05 on Tuesday 10 November at the parks (03:05 UTC). */
+const FIXED_NOW = new Date("2026-11-10T03:05:00Z");
+
 const stubbed = express();
 stubbed.use(express.json({ limit: "1mb" }));
 registerAIRoutes(stubbed, fakeAuth, {
   ai,
+  now: () => FIXED_NOW,
   inboxConfirmation: async (_req, conversationId) => {
     inboxCalls.push(conversationId);
     return inboxAnswers.get(conversationId) ?? { ok: false, reason: "inbox_unreachable" };
@@ -529,6 +538,55 @@ try {
     delete process.env.OTOAPP_PUBLIC_ORIGIN;
   });
 
+  await check("todayAtTheParkAndTheReadDateBesideTheBooked", async () => {
+    // The event is booked for 2099-03-21; the confirmation names the 22nd, and its deposit a year-less 9 November.
+    const was = modelReply;
+    modelReply = () => {
+      const answer = ANSWERS.ru as { event: Record<string, unknown> };
+      return JSON.stringify({
+        ...answer,
+        event: { ...answer.event, eventDate: "2099-03-22", eventDateText: "22 марта" },
+        partyDetails: { prepaymentReceived: 3000, depositDate: "2026-11-09" },
+      });
+    };
+    try {
+      const res = await fillFromInbox(ev.ru);
+      assert.equal(res.status, 200, JSON.stringify(res.body));
+      const system = modelCalls.at(-1)!.system;
+      assert.ok(system.startsWith(BUILT_IN_BEO_PARSING_ADVICE), "the advice first, as before");
+      assert.ok(
+        system.includes("Today at ZZ TEST Park A1 is 2026-11-10 (Tuesday), 10:05 local time (Asia/Bangkok)."),
+        `the event's park's today ends the prompt: ${system.slice(-420)}`,
+      );
+      // The read date and its words come back as read, beside the booked one, and differ.
+      assert.equal(res.body.fill.event.eventDate, "2099-03-22");
+      assert.equal(res.body.fill.event.eventDateText, "22 марта");
+      assert.equal(res.body.fill.partyDetails.depositDate, "2026-11-09");
+      const booked = (await pool.query<{ event_date: string }>(`select event_date from core_events where id = $1`, [ev.ru])).rows[0]!;
+      assert.deepEqual(aiFillDateLine(res.body.fill, booked.event_date), {
+        read: "2099-03-22",
+        readText: "22 марта",
+        booked: "2099-03-21",
+        differs: true,
+      });
+      // Nothing was written: the booked date stands until a person ticks the line and saves.
+      assert.equal(booked.event_date, "2099-03-21");
+      // The same date as booked: no difference to mark.
+      modelReply = () => JSON.stringify({ event: { childName: "Маша", eventDate: "2099-03-21", eventDateText: "21 марта" } });
+      const same = await fillFromInbox(ev.ru);
+      assert.equal(aiFillDateLine(same.body.fill, booked.event_date)?.differs, false);
+      // A pasted message on no event: the person's own park.
+      modelReply = was;
+      assert.equal((await post("/api/ai/parse-beo", { text: MESSAGES.ru }, "a")).status, 200);
+      assert.ok(modelCalls.at(-1)!.system.includes("Today at ZZ TEST Park A1 is 2026-11-10"));
+      assert.equal((await post("/api/ai/parse-beo", { text: MESSAGES.ru }, "b")).status, 200);
+      const b = modelCalls.at(-1)!.system;
+      assert.ok(b.startsWith("ZZ TEST PARK B ADVICE") && b.includes("Today at ZZ TEST Park B1 is 2026-11-10"), "a saved advice still gets today");
+    } finally {
+      modelReply = was;
+    }
+  });
+
   await check("deepLinkFill", () => {
     const id = randomUUID();
     assert.equal(beoFillFrom(`?beo=${id}&fill=inbox`), "inbox");
@@ -557,4 +615,4 @@ try {
 
 console.log(JSON.stringify({ results, failures }, null, 2));
 // The app's modules loaded here keep handles of their own open; the verdict is final.
-process.exit(Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 12 ? 1 : 0);
+process.exit(Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 13 ? 1 : 0);

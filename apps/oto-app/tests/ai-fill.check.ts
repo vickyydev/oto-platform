@@ -19,6 +19,11 @@
 //     park by the name the message wrote, else flagged, never a guess;
 //   - Create BEO's Final Message to Parent: the message read, while the
 //     form's is empty; a person's own is kept and the model's text dropped.
+//   - SCRUM-814: the BEO prompt ends with the park's today (date, weekday,
+//     clock, zone) so a year-less or relative date reads against it; the
+//     answer names the party's date and the message's words for it, a date
+//     that is not a real day is dropped (never fatal), and the review line
+//     shows it beside the booked date, marked when they differ.
 import assert from "node:assert/strict";
 import {
   AI_FILL_MESSAGES,
@@ -29,7 +34,9 @@ import {
   BUILT_IN_EVENT_EXTRACTION_OUTPUT_FORMAT,
   BeoFillSchema,
   EventExtractionSchema,
+  beoTodayLine,
   inboxFillAnswer,
+  parkClockAt,
   readModelAnswer,
   resolveAiPrompt,
   runAiHelper,
@@ -39,6 +46,7 @@ import {
 } from "../server/lib/aiFill";
 import { DEFAULT_AI_MODEL, type AiCompleteOptions } from "../server/lib/anthropic";
 import { normaliseName, proposeTeam, type TeamCandidates } from "../server/lib/beoTeamProposals";
+import { aiFillDateLine, dayLabel } from "../client/src/lib/beo-ai-date";
 
 const results: Record<string, boolean> = {};
 const failures: Record<string, string> = {};
@@ -388,9 +396,94 @@ try {
     assert.equal(normaliseName('  "Nok"  '), "nok");
     assert.equal(normaliseName("Kitchen Department"), "kitchen");
   });
+
+  await check("beoPromptKnowsTheParksToday", async () => {
+    // 03:05 UTC is 10:05 on Tuesday 10 November at the park.
+    const now = new Date("2026-11-10T03:05:00Z");
+    assert.deepEqual(parkClockAt(now, "Asia/Bangkok"), { date: "2026-11-10", time: "10:05", weekday: "Tuesday", timeZone: "Asia/Bangkok" });
+    const line = beoTodayLine({ name: "ZZ TEST Park", timeZone: "Asia/Bangkok" }, now);
+    assert.ok(line.startsWith("\n\nToday at ZZ TEST Park is 2026-11-10 (Tuesday), 10:05 local time (Asia/Bangkok). "), line);
+    assert.match(line, /Resolve every relative or year-less date in the message against it/);
+    assert.match(line, /next occurrence on or after today/);
+    assert.match(line, /deposit or payment already received is on or before today/);
+    // Late evening in UTC is already the next day at the park; no park name, "the park".
+    assert.match(beoTodayLine({ name: null, timeZone: "Asia/Bangkok" }, new Date("2026-11-10T20:00:00Z")), /Today at the park is 2026-11-11 \(Wednesday\), 03:00/);
+    // A zone this runtime does not know is the parks' own, never a crash.
+    assert.match(beoTodayLine({ name: "ZZ TEST Park", timeZone: "Not/A_Zone" }, now), /2026-11-10 \(Tuesday\), 10:05 local time \(Asia\/Bangkok\)/);
+    // The run's system prompt ends with it, after the advice and the output format.
+    const model = stubModel((call) => JSON.stringify(ANSWERS[languageOf(call.user)]));
+    const run = await runAiHelper(deps(model.complete), {
+      helper: "beo_parsing",
+      schema: BeoFillSchema,
+      systemExtra: line,
+      user: RUSSIAN,
+      inputChars: RUSSIAN.length,
+    });
+    assert.equal(run.ok, true);
+    const system = model.calls[0]!.system;
+    assert.ok(system.startsWith(BUILT_IN_BEO_PARSING_ADVICE));
+    assert.ok(system.indexOf(BUILT_IN_BEO_PARSING_OUTPUT_FORMAT) < system.indexOf("Today at ZZ TEST Park is 2026-11-10"));
+    assert.match(BUILT_IN_BEO_PARSING_ADVICE, /Resolve every relative or year-less date against today's date/);
+    // A park group's own saved advice still gets today: it rides after the advice and the format.
+    const saved = stubModel(() => JSON.stringify(ANSWERS.ru));
+    await runAiHelper(deps(saved.complete, { [AI_SETTING_KEYS.beoAdvice]: "PARK ADVICE" }), {
+      helper: "beo_parsing",
+      schema: BeoFillSchema,
+      systemExtra: line,
+      user: RUSSIAN,
+      inputChars: RUSSIAN.length,
+    });
+    assert.ok(saved.calls[0]!.system.startsWith("PARK ADVICE") && saved.calls[0]!.system.includes("Today at ZZ TEST Park is 2026-11-10"));
+  });
+
+  await check("eventDateReadBesideTheBookedDate", () => {
+    assert.match(BUILT_IN_BEO_PARSING_OUTPUT_FORMAT, /"eventDate": "YYYY-MM-DD/);
+    assert.match(BUILT_IN_BEO_PARSING_OUTPUT_FORMAT, /"eventDateText"/);
+    assert.match(BUILT_IN_BEO_PARSING_ADVICE, /never from the existing event data/);
+    // A real day and the message's own words are kept.
+    const read = readModelAnswer(
+      JSON.stringify({ event: { childName: "Маша", eventDate: "2026-11-21", eventDateText: "21 ноября" }, partyDetails: { depositDate: "2026-11-09" } }),
+      BeoFillSchema,
+    );
+    assert.equal(read.ok, true);
+    if (read.ok) {
+      assert.equal(read.value.event?.eventDate, "2026-11-21");
+      assert.equal(read.value.event?.eventDateText, "21 ноября");
+      assert.equal(read.value.partyDetails?.depositDate, "2026-11-09");
+    }
+    // Anything else is dropped, and the rest of the fill stands.
+    for (const bad of ["21 Nov", "2026-02-31", 20261121, null, ""]) {
+      const r = readModelAnswer(JSON.stringify({ event: { childName: "Маша", eventDate: bad } }), BeoFillSchema);
+      assert.equal(r.ok, true, String(bad));
+      if (r.ok) {
+        assert.equal(r.value.event?.eventDate, undefined, String(bad));
+        assert.equal(r.value.event?.childName, "Маша");
+      }
+    }
+    // The review line: the read date beside the booked one, marked when they differ.
+    assert.deepEqual(aiFillDateLine({ event: { eventDate: "2026-11-22", eventDateText: "22 ноября" } }, "2026-11-21"), {
+      read: "2026-11-22",
+      readText: "22 ноября",
+      booked: "2026-11-21",
+      differs: true,
+    });
+    assert.equal(aiFillDateLine({ event: { eventDate: "2026-11-21" } }, "2026-11-21")?.differs, false);
+    assert.deepEqual(aiFillDateLine({ event: { eventDate: "2026-11-21", eventDateText: "  " } }, undefined), {
+      read: "2026-11-21",
+      readText: null,
+      booked: null,
+      differs: true,
+    });
+    assert.equal(aiFillDateLine({ event: { childName: "Маша" } }, "2026-11-21"), null, "no date read, no line");
+    assert.equal(aiFillDateLine(null, "2026-11-21"), null);
+    assert.equal(dayLabel("2026-11-21"), "Sat 21 Nov 2026");
+    // Create BEO's answer keeps the read date: only Final Message to Parent is the platform's own.
+    const kept = inboxFillAnswer({ event: { eventDate: "2026-11-22", internalStaffNotes: "x" } }, ENGLISH, { event: { internalStaffNotes: "mine" } });
+    assert.equal(kept.fill.event?.eventDate, "2026-11-22");
+  });
 } finally {
   // Nothing to clean: no database, no network.
 }
 
 console.log(JSON.stringify({ results, failures }, null, 2));
-if (Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 10) process.exit(1);
+if (Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 12) process.exit(1);

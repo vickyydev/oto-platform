@@ -10,14 +10,17 @@ import { aiComplete, aiConfigured, getAnthropic } from "./lib/anthropic";
 import {
   AI_TEXT_MAX,
   BeoFillSchema,
+  DEFAULT_PARK_TIME_ZONE,
   EventExtractionSchema,
   beoParseUserMessage,
+  beoTodayLine,
   inboxFillAnswer,
   runAiHelper,
   runLogFields,
   type AiDeps,
   type AiRun,
   type BeoFill,
+  type ParkPlace,
 } from "./lib/aiFill";
 import {
   NO_TEAM_PROPOSALS,
@@ -69,6 +72,46 @@ export interface AiRouteDeps {
   recordActivity: (entry: ActivityLogInput) => Promise<unknown>;
   /** The inbox conversation's confirmation message, read on the platform as this person. */
   inboxConfirmation: (req: Request, conversationId: string) => Promise<InboxRead>;
+  /**
+   * SCRUM-814: the park a BEO fill reads its dates at — the event's, else the
+   * signed-in person's — for the prompt's "today".
+   */
+  parkPlace: (req: Request, event: BeoFillEvent | null) => Promise<ParkPlace>;
+  /** The clock (a check fixes it). */
+  now: () => Date;
+}
+
+const PARKS_ZONE: ParkPlace = { name: null, timeZone: DEFAULT_PARK_TIME_ZONE };
+
+/**
+ * The park a BEO fill is for: the event's park; with no event, the person's
+ * one park, else their park group's parks when they share one zone; else the
+ * parks' zone with no name. Never refuses a fill: a read that fails is the
+ * parks' zone.
+ */
+async function defaultParkPlace(req: Request, event: BeoFillEvent | null): Promise<ParkPlace> {
+  const tenantId = event?.tenantId ?? req.userWithAccess?.tenantId ?? (req.user as { tenantId?: string } | undefined)?.tenantId;
+  if (!tenantId) return PARKS_ZONE;
+  try {
+    const one = async (branchId: string) => {
+      const [row] = await db
+        .select({ name: branches.name, timeZone: branches.timezone })
+        .from(branches)
+        .where(and(eq(branches.id, branchId), eq(branches.tenantId, tenantId)));
+      return row ? { name: row.name, timeZone: row.timeZone || DEFAULT_PARK_TIME_ZONE } : null;
+    };
+    if (event?.branchId) return (await one(event.branchId)) ?? PARKS_ZONE;
+    const access = req.userWithAccess;
+    if (access && !access.hasAllBranchesAccess && access.allowedBranchIds?.length === 1) {
+      return (await one(access.allowedBranchIds[0]!)) ?? PARKS_ZONE;
+    }
+    const rows = await db.select({ timeZone: branches.timezone }).from(branches).where(eq(branches.tenantId, tenantId));
+    const zones = new Set(rows.map((r) => r.timeZone || DEFAULT_PARK_TIME_ZONE));
+    return zones.size === 1 ? { name: null, timeZone: [...zones][0]! } : PARKS_ZONE;
+  } catch (error) {
+    log().warn({ err: (error as Error)?.message ?? String(error) }, "the park's zone was not read; the parks' own is used");
+    return PARKS_ZONE;
+  }
 }
 
 /**
@@ -127,6 +170,8 @@ export const defaultAiRouteDeps: AiRouteDeps = {
   teamCandidates: (event) => loadTeamCandidates(db, event),
   recordActivity: (entry) => storage.createActivityLog(entry),
   inboxConfirmation: readInboxConfirmation,
+  parkPlace: defaultParkPlace,
+  now: () => new Date(),
 };
 
 /** The sections a fill gave, for the activity row: names of sections, never their contents. */
@@ -151,11 +196,14 @@ export async function runBeoFill(
     source: { kind: "pasted" } | { kind: "inbox"; conversationId: string; messageId: string };
   },
 ): Promise<{ run: AiRun<BeoFill>; proposals: TeamProposals }> {
+  // SCRUM-814: the park's today ends the prompt, so a year-less or relative date reads against it.
+  const place = await deps.parkPlace(req, input.event);
   const run = await runAiHelper(
     { ...deps.ai, readSetting: (key) => deps.readSetting(req, key) },
     {
       helper: "beo_parsing",
       schema: BeoFillSchema,
+      systemExtra: beoTodayLine(place, deps.now()),
       user: beoParseUserMessage(input.text, input.existingData),
       inputChars: input.text.length,
     },

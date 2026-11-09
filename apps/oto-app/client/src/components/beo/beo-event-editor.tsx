@@ -77,6 +77,7 @@ import { BeoTimelineEditor } from "./beo-timeline-editor";
 import { BeoPackageModule } from "./beo-package-module";
 import { BeoParentExperienceModule } from "./beo-parent-experience-module";
 import { ONE_OFF_EVENT_COLOR_OPTIONS } from "@/lib/event-types";
+import { aiFillDateLine, dayLabel } from "@/lib/beo-ai-date";
 import AssignmentSearchBar, { type AssignmentValue } from "@/components/core/AssignmentSearchBar";
 import type { 
   Event, 
@@ -652,6 +653,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const [aiFillError, setAiFillError] = useState<string | null>(null);
   // SCRUM-660: the team AI Fill proposes is only assigned where a person ticks it.
   const [aiFillAccepted, setAiFillAccepted] = useState<Set<AiTeamField>>(new Set());
+  // SCRUM-814: the date the message names replaces the booked one only where a person ticks it.
+  const [aiFillUseDate, setAiFillUseDate] = useState(false);
   // SCRUM-660: Create BEO's AI Fill — the inbox message it read, and why it did not run.
   const [aiFillSource, setAiFillSource] = useState<AiFillInboxSource | null>(null);
   const [aiFillNotice, setAiFillNotice] = useState<string | null>(null);
@@ -1286,6 +1289,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const openAiFillPreview = (fill: any, source: AiFillInboxSource | null) => {
     setAiFillParsed(fill);
     setAiFillAccepted(new Set());
+    setAiFillUseDate(false);
     setAiFillSource(source);
     if (source) setAiFillText(source.body);
     setAiFillError(null);
@@ -1392,6 +1396,13 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
         ...(e.decoration && { decoration: e.decoration }),
       }));
       if (e.locationText) setLocationText(e.locationText);
+    }
+
+    // SCRUM-814: the message's date is never applied silently: only when it differs from the
+    // booked date and the reviewer ticked it.
+    const dateLine = aiFillDateLine(p, eventData.eventDate);
+    if (dateLine?.differs && aiFillUseDate) {
+      setEventData((prev) => ({ ...prev, eventDate: dateLine.read }));
     }
 
     if (p.setupPlan) {
@@ -1515,10 +1526,14 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     setAiFillText("");
     setAiFillParsed(null);
     setAiFillAccepted(new Set());
+    setAiFillUseDate(false);
     setAiFillSource(null);
     setAiFillNotice(null);
     toast({ title: "BEO data loaded", description: "AI-parsed data has been filled in. Review and save when ready." });
   };
+
+  // SCRUM-814: the date the AI Fill read, beside the date the form holds.
+  const aiFillDate = aiFillDateLine(aiFillParsed, eventData.eventDate);
 
   return (
     <div className="flex flex-col h-full">
@@ -3466,6 +3481,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
           setAiFillParsed(null);
           setAiFillError(null);
           setAiFillAccepted(new Set());
+          setAiFillUseDate(false);
           setAiFillSource(null);
         }
       }}>
@@ -3549,6 +3565,49 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                     <AiFillRow label="Title" value={aiFillParsed.event.title} />
                     <AiFillRow label="Child" value={aiFillParsed.event.childName} />
                     <AiFillRow label="Booking Name" value={aiFillParsed.event.bookingName} />
+                    {/* SCRUM-814: the message's date beside the booked one; marked when they differ, applied only when ticked. */}
+                    {aiFillDate && (
+                      <div
+                        className={cn(
+                          "flex gap-2 text-sm rounded-md",
+                          aiFillDate.differs && "bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-1.5 -mx-1.5",
+                        )}
+                        data-testid="ai-fill-event-date"
+                      >
+                        <span className="text-muted-foreground w-28 shrink-0">Date:</span>
+                        <div className="space-y-1 min-w-0">
+                          <div>
+                            <span className="font-medium">{dayLabel(aiFillDate.read)}</span>
+                            {aiFillDate.readText && (
+                              <span className="text-xs text-muted-foreground">{` — the message says "${aiFillDate.readText}"`}</span>
+                            )}
+                          </div>
+                          {aiFillDate.differs ? (
+                            <>
+                              <div className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-300" data-testid="text-ai-fill-date-differs">
+                                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                                {aiFillDate.booked
+                                  ? `The event is booked for ${dayLabel(aiFillDate.booked)}: not the same day.`
+                                  : "The event has no date yet."}
+                              </div>
+                              <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={aiFillUseDate}
+                                  onChange={(e) => setAiFillUseDate(e.target.checked)}
+                                  data-testid="checkbox-ai-fill-event-date"
+                                />
+                                {`Tick to make ${dayLabel(aiFillDate.read)} the event's date.`}
+                              </label>
+                            </>
+                          ) : (
+                            <div className="text-xs text-muted-foreground" data-testid="text-ai-fill-date-same">
+                              The same day the event is booked for.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                     <AiFillRow label="Children" value={aiFillParsed.event.numChildren} />
                     <AiFillRow label="Adults" value={aiFillParsed.event.numAdults} />
                     <AiFillRow label="Time" value={aiFillParsed.event.startTime && aiFillParsed.event.endTime ? `${aiFillParsed.event.startTime} – ${aiFillParsed.event.endTime}` : aiFillParsed.event.startTime} />

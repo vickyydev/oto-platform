@@ -89,6 +89,8 @@ Parsing rules:
 - Keep the message's own wording and language in every free-text field (names, menu items, activities, decoration, tasks, notes, requests). Do not translate
 - Keep exact times, numbers, and names as stated. Write every time as HH:MM on the 24-hour clock (2 pm is 14:00; "14.00 น." is 14:00)
 - Write a date as YYYY-MM-DD, and a Buddhist-era year (2569) as its Common Era year (2026)
+- Resolve every relative or year-less date against today's date, given at the end of this prompt: the party's date without a year is its next occurrence on or after today; a deposit or payment already received is on or before today
+- The party's date (event.eventDate) comes only from the new text, never from the existing event data: give it with event.eventDateText, the message's own words for that date; when the message names no date, give null for both
 - If the same information appears more than once, use the latest confirmed version
 - Cake mode must be one of: INTERNAL (venue provides the cake), EXTERNAL (guest brings their own cake), NONE (no cake)
 - Menu items included in the package have included: true; extras have included: false, with their price when the message gives one
@@ -103,6 +105,8 @@ export const BUILT_IN_BEO_PARSING_OUTPUT_FORMAT = `Parse the message and return 
     "title": "Event title",
     "childName": "Name of the birthday child or main guest",
     "bookingName": "Name used for the booking",
+    "eventDate": "YYYY-MM-DD: the party's date as this message names it; null when it names none",
+    "eventDateText": "The message's own words for that date, exactly as written",
     "numChildren": 0,
     "numAdults": 0,
     "startTime": "HH:MM (24-hour)",
@@ -253,6 +257,20 @@ const optDate = z.preprocess(
 
 const optBool = z.preprocess((v) => (v === null || v === undefined ? undefined : v), z.boolean().optional());
 
+/**
+ * SCRUM-814: the party's date the model read. It changes nothing by itself
+ * (the review step shows it beside the booked date and a person ticks it), so
+ * one that is not a real YYYY-MM-DD day is dropped, never fatal to the fill.
+ */
+const readPartyDay = z.preprocess((v) => {
+  if (typeof v !== "string") return undefined;
+  const m = /^\s*(\d{4})-(\d{2})-(\d{2})\s*$/.exec(v);
+  if (!m) return undefined;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const t = new Date(Date.UTC(y, mo - 1, d));
+  return t.getUTCFullYear() === y && t.getUTCMonth() === mo - 1 && t.getUTCDate() === d ? `${m[1]}-${m[2]}-${m[3]}` : undefined;
+}, z.string().optional());
+
 /** A list: null is none; blank entries (null, or with every value empty) are dropped, as a person would. */
 const list = <T extends z.ZodTypeAny>(item: T, max = 100) =>
   z.preprocess((v) => {
@@ -295,6 +313,8 @@ export const BeoFillSchema = z.object({
     title: optText(300),
     childName: optText(200),
     bookingName: optText(200),
+    eventDate: readPartyDay,
+    eventDateText: optText(300),
     numChildren: optCount,
     numAdults: optCount,
     startTime: optTime,
@@ -591,3 +611,61 @@ ${text}`
 
 /** The longest text a person may paste, or the inbox may hand over, for one run. */
 export const AI_TEXT_MAX = 20_000;
+
+// --- Today, for the BEO fill (SCRUM-814) ----------------------------------------------
+
+/** The parks' zone, when a park names none (or an unknown one): every branch is in Bangkok today. */
+export const DEFAULT_PARK_TIME_ZONE = "Asia/Bangkok";
+
+/** The park a fill is for: its name and its zone. */
+export interface ParkPlace {
+  name: string | null;
+  timeZone: string;
+}
+
+/** The park's own calendar day, clock and weekday at `now`, read field by field (no locale's pattern). */
+export function parkClockAt(now: Date, timeZone: string): { date: string; time: string; weekday: string; timeZone: string } {
+  const read = (zone: string) => {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: zone,
+      calendar: "gregory",
+      numberingSystem: "latn",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+      weekday: "long",
+    }).formatToParts(now);
+    const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? "";
+    return {
+      date: `${get("year").padStart(4, "0")}-${get("month").padStart(2, "0")}-${get("day").padStart(2, "0")}`,
+      time: `${get("hour").padStart(2, "0")}:${get("minute").padStart(2, "0")}`,
+      weekday: get("weekday"),
+      timeZone: zone,
+    };
+  };
+  try {
+    return read(timeZone);
+  } catch {
+    // A zone this runtime does not know: the parks' own.
+    return read(DEFAULT_PARK_TIME_ZONE);
+  }
+}
+
+/**
+ * The line the BEO fill's system prompt ends with: the park's today, so a
+ * year-less or relative date ("9 ноября", "next Saturday") is read against the
+ * park's day, as the event extraction prompt reads it against each branch's.
+ * Without it the model guessed the year (a deposit of "9 ноября" read as 2025).
+ */
+export function beoTodayLine(place: ParkPlace, now: Date): string {
+  const clock = parkClockAt(now, place.timeZone);
+  const where = place.name?.trim() ? place.name.trim() : "the park";
+  return (
+    `\n\nToday at ${where} is ${clock.date} (${clock.weekday}), ${clock.time} local time (${clock.timeZone}). ` +
+    "Resolve every relative or year-less date in the message against it: the party's date without a year is its next " +
+    "occurrence on or after today; a deposit or payment already received is on or before today."
+  );
+}
