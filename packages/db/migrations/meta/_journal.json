@@ -757,6 +757,13 @@
       "when": 1794232701755,
       "tag": "0107_tier_confirmation_station",
       "breakpoints": true
+    },
+    {
+      "idx": 108,
+      "version": "7",
+      "when": 1794234333075,
+      "tag": "0108_party_settlement",
+      "breakpoints": true
     }
   ]
 }
