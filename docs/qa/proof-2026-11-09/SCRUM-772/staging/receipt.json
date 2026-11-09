@@ -1,0 +1,664 @@
+{
+  "unit": "SCRUM-772 — the Thai rate is one confirmation with two buttons, no document, the staff member recorded",
+  "environment": "staging",
+  "liveCommit": "31db95a09640c25834d43f8d55f6fab917b33d75",
+  "deploysBefore": {
+    "oto-api-staging": {
+      "deploy": "dep-dbotbsugekts73f5cacg",
+      "status": "live",
+      "commit": "31db95a0",
+      "at": "2026-11-09T14:21:28.188864Z"
+    },
+    "oto-pos-web-staging": {
+      "deploy": "dep-dbotbt6gekts73f5cceg",
+      "status": "live",
+      "commit": "31db95a0",
+      "at": "2026-11-09T14:20:14.936265Z"
+    },
+    "oto-pos-staging": {
+      "deploy": "dep-dbotbthsrm7s73d23gv0",
+      "status": "live",
+      "commit": "31db95a0",
+      "at": "2026-11-09T14:18:23.607268Z"
+    },
+    "oto-console-staging": {
+      "deploy": "dep-dbotbts9v7es738b8so0",
+      "status": "live",
+      "commit": "31db95a0",
+      "at": "2026-11-09T14:18:38.095249Z"
+    }
+  },
+  "deploysAfter": {
+    "oto-api-staging": {
+      "deploy": "dep-dbotbsugekts73f5cacg",
+      "status": "live",
+      "commit": "31db95a0",
+      "at": "2026-11-09T14:21:28.188864Z"
+    },
+    "oto-pos-web-staging": {
+      "deploy": "dep-dbotbt6gekts73f5cceg",
+      "status": "live",
+      "commit": "31db95a0",
+      "at": "2026-11-09T14:20:14.936265Z"
+    },
+    "oto-pos-staging": {
+      "deploy": "dep-dbotbthsrm7s73d23gv0",
+      "status": "live",
+      "commit": "31db95a0",
+      "at": "2026-11-09T14:18:23.607268Z"
+    },
+    "oto-console-staging": {
+      "deploy": "dep-dbotbts9v7es738b8so0",
+      "status": "live",
+      "commit": "31db95a0",
+      "at": "2026-11-09T14:18:38.095249Z"
+    }
+  },
+  "apps": {
+    "till": "https://oto-pos-web-staging.onrender.com",
+    "console": "https://oto-console-staging.onrender.com"
+  },
+  "browser": "Chromium 153.0.8010.12, headless, 1440 x 900, Asia/Bangkok",
+  "startedAt": "2026-11-09T14:25:44.950Z",
+  "finishedAt": "2026-11-09T14:42:23.072Z",
+  "who": {
+    "till": "the staging reception account (name covered in every picture)",
+    "console": "the staging administrator (name covered)",
+    "api": "the staging administrator, read-only GETs plus the fixture and clean-up writes listed below"
+  },
+  "fixture": {
+    "branch": {
+      "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "name": "Oto Play Park, Central Floresta"
+    },
+    "box": {
+      "id": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "name": "Virtual box 1"
+    },
+    "till": {
+      "id": "01a1c0b3-bac6-7457-ae70-144954aaab91",
+      "name": "ZZ TEST SCRUM-772 till",
+      "prefixAtCreation": "Z772",
+      "prefixAfterRepair": "Z772T",
+      "devices": [
+        "adult_band:Band Printer (adults)",
+        "kids_band:Band Printer (kids)",
+        "receipt:Receipt Printer 1"
+      ]
+    },
+    "prefixNote": "Z772 was free among live tills, but an archived ZZ TEST till of 4 November (\"ZZ TEST SCRUM-772 mw2hnfyc till\", id 01a1a7f5-300b-7421-b7de-16a8fbfa079d) had already printed Z772-000001; receipt numbers are unique per branch, so the new till's first Confirm was refused 409 \"That value is already taken\" (step 4a). The ZZ TEST till's prefix was changed to Z772T and Confirm pressed again.",
+    "numbers": {
+      "ZZ TEST number 1": "Thai walk-in (steps 1-4); not a member before the run",
+      "ZZ TEST number 2": "Expat walk-in (step 5); not a member before or after"
+    },
+    "ticket": {
+      "id": "01a0bbdc-8cc2-7d1c-a8bf-09c2552eb6bc",
+      "name": "1 Hour Play",
+      "priceSatang": {
+        "thaiKidWeekday": 42000,
+        "touristKidWeekday": 69000,
+        "adultWeekday": 35000,
+        "includedAdults": 1
+      }
+    }
+  },
+  "checks": {
+    "1_thai_confirmation_step": {
+      "result": "PASS",
+      "title": "Verify Thai rate",
+      "description": "No document needed. Saved to their profile once they enter their details.",
+      "confirmedByLine": "Confirmed by [name] (Reception) — recorded automatically with date & time.",
+      "buttons": [
+        "Cancel",
+        "Confirm Thai rate",
+        "Close"
+      ],
+      "documentChoices": 0,
+      "expiryField": 0,
+      "reasonChooser": 0,
+      "memberCard": "none (a walk-in has no member card)",
+      "picture": "772-st-01-thai-confirmation-two-buttons.png"
+    },
+    "2_cancel": {
+      "result": "PASS",
+      "dialogOpen": 0,
+      "stillOnCustomerType": 1,
+      "orderPanel": "Current Order No items added yet Apply Redeem Issue a voucher… Add manual discount Subtotal ฿0 Total ฿0 Cancel Pay ฿0",
+      "writesSent": [],
+      "picture": "772-st-02-cancel-closes-the-step.png"
+    },
+    "3_confirm_prices_at_thai": {
+      "result": "PASS",
+      "tierApproval": {
+        "request": "POST /api/sales/tier-approvals",
+        "status": 200,
+        "body": {
+          "toTier": "thai",
+          "reason": "confirmed_at_till"
+        },
+        "claimId": "01a1c0b6-5952-7e52-9104-88e7cde2dbeb",
+        "evidenceType": "Approved by hand",
+        "evidenceExpiresAt": null,
+        "stationIdIsTheZzTestTill": true
+      },
+      "cart": {
+        "ticket": "1 Hour Play",
+        "kids": 1,
+        "adults": 1,
+        "orderPanel": "Current Order THAI 1 Hour Play EDITING ฿420 Kids ฿420 each 1 Adults ฿350 each · 1 free 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿420 VAT included ฿27.48 Total ฿420 Cancel Pay ฿420",
+        "thaiTotal": "฿420",
+        "touristTotalSameCart": "฿690 (Tourist weekday kid price ฿690, the adult included free)"
+      },
+      "picture": "772-st-03-order-priced-at-thai-rate.png"
+    },
+    "4_paid_cash": {
+      "result": "PASS (after the fixture prefix repair)",
+      "detailsStep": {
+        "nicknameTyped": "ZZ TEST 772 Thai",
+        "writes": [
+          {
+            "method": "POST",
+            "path": "/api/sales",
+            "status": 200
+          },
+          {
+            "method": "POST",
+            "path": "/api/members",
+            "status": 200
+          },
+          {
+            "method": "POST",
+            "path": "/api/members/:id/tier-verification",
+            "status": 200
+          },
+          {
+            "method": "POST",
+            "path": "/api/sales/:id/member",
+            "status": 200
+          }
+        ],
+        "memberId": "01a1c0b7-92ec-7e1a-baff-4f3f2bfacc0a",
+        "memberRateSaved": {
+          "tier": "thai",
+          "proofType": "Approved by hand",
+          "expiresAt": null
+        }
+      },
+      "firstConfirm": {
+        "request": "POST /api/sales/01a1c0b7-92a5-7d48-85fd-1074c3768fb6/finalise",
+        "status": 409,
+        "message": "That value is already taken",
+        "cause": "receipt Z772-000001 already on the branch (archived 4 November till)",
+        "picture": "772-st-04a-first-confirm-refused-receipt-number-taken.png"
+      },
+      "prefixRepair": {
+        "request": "PATCH /api/stations/01a1c0b3-bac6-7457-ae70-144954aaab91",
+        "body": {
+          "codePrefix": "Z772T"
+        },
+        "status": 200
+      },
+      "secondConfirm": {
+        "tenderBefore": {
+          "cashReceived": "420.00",
+          "change": "Change ฿0.00",
+          "amountField": 0,
+          "partialButton": 1
+        },
+        "request": "POST /api/sales/01a1c0b7-92a5-7d48-85fd-1074c3768fb6/finalise",
+        "status": 200,
+        "saleAfter": {
+          "id": "01a1c0b7-92a5-7d48-85fd-1074c3768fb6",
+          "status": "finalised",
+          "receipt": "Z772T-000001",
+          "grossSatang": 42000,
+          "customerTier": "thai",
+          "memberIsTheZzTestMember": true
+        }
+      },
+      "picture": "772-st-04b-paid-cash.png"
+    },
+    "5_expat_unchanged": {
+      "result": "PASS",
+      "title": "Verify Expat rate",
+      "proofChecked": 1,
+      "documentButtons": [
+        "Passport",
+        "Driving licence",
+        "School card",
+        "Other"
+      ],
+      "expiryField": 1,
+      "confirmThaiButton": 0,
+      "verifyButton": "Choose proof to verify",
+      "closedWith": "the dialog's Close (X), then the order panel's Cancel",
+      "writesSinceSaleStart": [],
+      "zzTestNumber2IsMember": {
+        "status": 200,
+        "found": false
+      },
+      "picture": "772-st-05-expat-keeps-document-and-expiry.png"
+    },
+    "6_console": {
+      "result": "PASS",
+      "tierVerifications": {
+        "url": "/catalogue/tier-verifications",
+        "headers": [
+          "Staff member",
+          "Last 30 days",
+          "Total",
+          "Last approved",
+          "Member",
+          "Upgrade",
+          "Document",
+          "Expires",
+          "Checked by",
+          "Time"
+        ],
+        "zzRow": {
+          "position": 1,
+          "member": "ZZ TEST 772 Thai · [ZZ TEST number 1]",
+          "upgrade": "Tourist Thai",
+          "document": "Confirmed at the till by [name] (Reception) / ZZ TEST SCRUM-772 till",
+          "expires": "—",
+          "checkedBy": "[name] (Reception) · Oto Play Park, Central Floresta",
+          "time": "09 Nov 2026, 21:30"
+        },
+        "picture": "772-st-06a-console-tier-verifications-confirmed-at-the-till.png"
+      },
+      "memberForm": {
+        "url": "/catalogue/members → Edit ZZ TEST 772 Thai",
+        "holdsLine": "Holds Thai, confirmed at the till by [name] (Reception).",
+        "noDocumentLine": "No document needed for the Thai rate.",
+        "expiryFields": 0,
+        "documentSelectors": 0,
+        "saved": false,
+        "writesWhileOpen": [],
+        "closedWith": "Cancel",
+        "picture": "772-st-06b-console-member-form-thai-no-document.png"
+      }
+    },
+    "7_api_read_back": {
+      "result": "PASS",
+      "member": {
+        "request": "GET /members/01a1c0b7-92ec-7e1a-baff-4f3f2bfacc0a",
+        "status": 200,
+        "id": "01a1c0b7-92ec-7e1a-baff-4f3f2bfacc0a",
+        "tierCode": "thai",
+        "tierVerification": {
+          "tier": "thai",
+          "proofType": "Approved by hand",
+          "expiresAt": null,
+          "verifiedByIsTheReceptionAccount": true,
+          "verifiedAt": "2026-11-09T14:30:19.373Z"
+        }
+      },
+      "tierVerifications": {
+        "request": "GET /members/tier-verifications",
+        "status": 200,
+        "filter": "none on the route; the row picked out by member id",
+        "rows": [
+          {
+            "id": "01a1c0b7-934a-78c0-95e5-f0bfa24abdaa",
+            "fromTier": "tourist",
+            "toTier": "thai",
+            "evidenceType": "Approved by hand",
+            "evidenceExpiresAt": null,
+            "station": "ZZ TEST SCRUM-772 till",
+            "branch": "Oto Play Park, Central Floresta",
+            "verifiedByIsTheReceptionAccount": true,
+            "note": null,
+            "verifiedAt": "2026-11-09T14:30:19.373Z"
+          }
+        ]
+      },
+      "sale": {
+        "request": "GET /sales/01a1c0b7-92a5-7d48-85fd-1074c3768fb6",
+        "status": 200,
+        "id": "01a1c0b7-92a5-7d48-85fd-1074c3768fb6",
+        "receipt": "Z772T-000001",
+        "saleStatus": "finalised",
+        "customerTier": "thai",
+        "grossSatang": 42000,
+        "memberIsTheZzTestMember": true,
+        "stationIsTheZzTestTill": true,
+        "payments": [
+          {
+            "method": "cash",
+            "status": "approved",
+            "amountSatang": 42000
+          }
+        ],
+        "tierClaim": {
+          "id": "01a1c0b6-5952-7e52-9104-88e7cde2dbeb",
+          "documentKind": "Approved by hand",
+          "toTier": "thai",
+          "evidenceExpiresOn": null,
+          "verifiedAt": "2026-11-09T14:28:58.319Z",
+          "approval": {
+            "reason": "confirmed_at_till",
+            "reasonLabel": "Confirmed at the till",
+            "note": null,
+            "approvedByAccountIsTheReceptionAccount": true,
+            "approvedByNameForm": "the reception account's nickname (the verification row carries its full name)"
+          }
+        }
+      },
+      "approvalCounts": {
+        "request": "GET /sales/tier-approvals/by-staff",
+        "status": 200,
+        "days": 30,
+        "receptionAccount": [
+          {
+            "recent": 3,
+            "total": 3,
+            "lastApprovedAt": "2026-11-09T14:28:58.319Z"
+          }
+        ]
+      }
+    },
+    "8_history": {
+      "result": "PASS",
+      "line": "ZZ TEST SCRUM-772 till · trading day 2026-11-09 · Thai · Weekday pricing · Thai rate confirmed at the till by [name], 09 Nov, 21:28",
+      "picture": "772-st-08-history-thai-rate-confirmed-at-the-till.png"
+    }
+  },
+  "writes": [
+    {
+      "what": "ZZ TEST till created on Virtual box 1 (shared simulated band and receipt printers)",
+      "request": "POST /api/branches/:branch/stations",
+      "status": 201
+    },
+    {
+      "what": "till sign-in as reception and station pick",
+      "request": "POST /api/auth/sign-in, PUT /api/me/session/station",
+      "status": 200
+    },
+    {
+      "what": "Confirm Thai rate (walk-in)",
+      "request": "POST /api/sales/tier-approvals",
+      "status": 200
+    },
+    {
+      "what": "payment screen opened: sale rung up, member made, Thai rate saved, member joined to the sale",
+      "requests": [
+        "POST /api/sales 200",
+        "POST /api/members 200",
+        "POST /api/members/:id/tier-verification 200",
+        "POST /api/sales/:id/member 200"
+      ]
+    },
+    {
+      "what": "first cash Confirm",
+      "request": "POST /api/sales/:id/finalise",
+      "status": 409
+    },
+    {
+      "what": "ZZ TEST till prefix Z772 -> Z772T",
+      "request": "PATCH /api/stations/:id",
+      "status": 200
+    },
+    {
+      "what": "second cash Confirm",
+      "request": "POST /api/sales/:id/finalise",
+      "status": 200,
+      "receipt": "Z772T-000001"
+    },
+    {
+      "what": "Console sign-in and sign-out (administrator)",
+      "status": 200
+    }
+  ],
+  "cleanup": {
+    "actions": [
+      {
+        "at": "2026-11-09T14:42:22.160Z",
+        "what": "archive the ZZ TEST member (ZZ TEST number 1)",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-09T14:42:22.252Z",
+        "what": "till sign-out (reception, its own session route)",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-09T14:42:22.419Z",
+        "what": "unassign printers on ZZ TEST SCRUM-772 till",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-09T14:42:22.517Z",
+        "what": "archive station ZZ TEST SCRUM-772 till",
+        "status": 200,
+        "code": null
+      }
+    ],
+    "console": {
+      "memberFormCancelled": true,
+      "formWrites": [],
+      "signOut": [
+        {
+          "host": "oto-console-staging.onrender.com",
+          "method": "POST",
+          "path": "/api/auth/sign-out",
+          "status": 200
+        }
+      ],
+      "meAfterSignOut": 401,
+      "reloadShowsSignIn": true
+    },
+    "adminApiSession": {
+      "status": 200,
+      "meAfter": 401,
+      "at": "2026-11-09T14:42:30.388Z"
+    },
+    "readBack": {
+      "at": "2026-11-09T14:42:23.072Z",
+      "member": {
+        "request": "GET /members/01a1c0b7-92ec-7e1a-baff-4f3f2bfacc0a",
+        "status": 404,
+        "code": "NOT_FOUND",
+        "archived": true,
+        "note": "archived by DELETE /api/members/:id (200); an archived member is not served, so GET answers 404 NOT_FOUND (it answered 200 before the archive), the number no longer finds a member and the register search for \"ZZ TEST 772\" is empty"
+      },
+      "zzTestNumber1Lookup": {
+        "status": 200,
+        "found": false
+      },
+      "zzTestNumber2Lookup": {
+        "status": 200,
+        "found": false
+      },
+      "registerSearchZzTest772": {
+        "status": 200,
+        "rows": 0
+      },
+      "till": {
+        "id": "01a1c0b3-bac6-7457-ae70-144954aaab91",
+        "name": "ZZ TEST SCRUM-772 till",
+        "prefix": "Z772T",
+        "archived": true,
+        "archivedAt": null,
+        "devices": 0
+      },
+      "tillMeAfterSignOut": 401,
+      "salesAfter": [
+        {
+          "id": "01a1c0b7-92a5-7d48-85fd-1074c3768fb6",
+          "receipt": "Z772T-000001",
+          "status": "finalised",
+          "gross": 42000
+        }
+      ],
+      "untouched": [
+        {
+          "name": "FWBooth1",
+          "archived": false,
+          "devices": 1
+        },
+        {
+          "name": "Reception Till 1",
+          "archived": false,
+          "devices": 7
+        },
+        {
+          "name": "Till 1 (Pi)",
+          "archived": false,
+          "devices": 4
+        },
+        {
+          "name": "Till 2 (test)",
+          "archived": false,
+          "devices": 4
+        }
+      ]
+    },
+    "paidSaleKept": {
+      "id": "01a1c0b7-92a5-7d48-85fd-1074c3768fb6",
+      "receipt": "Z772T-000001",
+      "status": "finalised",
+      "note": "cash sale left on record; nothing voided"
+    }
+  },
+  "pictures": [
+    {
+      "file": "772-st-01-thai-confirmation-two-buttons.png",
+      "at": "2026-11-09T14:28:00.756Z",
+      "app": "till",
+      "path": "/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Walk-in (ZZ TEST number 1), Thai chosen: \"Verify Thai rate\", \"No document needed.\", the line \"Confirmed by [name covered] — recorded automatically with date & time\", and only Cancel and Confirm Thai rate; no document list, no expiry, no reason",
+      "covered": {
+        "occurrences": 2,
+        "boxes": 2
+      }
+    },
+    {
+      "file": "772-st-02-cancel-closes-the-step.png",
+      "at": "2026-11-09T14:28:44.923Z",
+      "app": "till",
+      "path": "/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "After Cancel: the confirmation is gone, the till is still on Select Customer Type, the order is empty (฿0), nothing was sent",
+      "covered": {
+        "occurrences": 1,
+        "boxes": 1
+      }
+    },
+    {
+      "file": "772-st-03-order-priced-at-thai-rate.png",
+      "at": "2026-11-09T14:29:47.056Z",
+      "app": "till",
+      "path": "/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "After Confirm Thai rate: the order panel carries the THAI chip; 1 Hour Play, Kids ฿420 each × 1, Adults ฿350 each · 1 free × 1, Total ฿420 (the Tourist weekday price for the same is ฿690 a kid, adult free: ฿690); the customer half shows the same ฿420",
+      "covered": {
+        "occurrences": 1,
+        "boxes": 1
+      }
+    },
+    {
+      "file": "772-st-04a-first-confirm-refused-receipt-number-taken.png",
+      "at": "2026-11-09T14:36:50.407Z",
+      "app": "till",
+      "path": "/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The first Confirm Payment Received was refused: \"That value is already taken\" (409 on finalise). Not SCRUM-772: the ZZ TEST till's prefix Z772 would number Z772-000001, already printed on 4 November by an archived earlier ZZ TEST till; the prefix was changed to Z772T and Confirm pressed again",
+      "covered": {
+        "occurrences": 1,
+        "boxes": 1
+      }
+    },
+    {
+      "file": "772-st-04b-paid-cash.png",
+      "at": "2026-11-09T14:36:56.214Z",
+      "app": "till",
+      "path": "/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Payment Successful: cash ฿420 taken in full on one tap of Cash, then Confirm Payment Received; band codes masked",
+      "covered": {
+        "occurrences": 1,
+        "boxes": 1
+      }
+    },
+    {
+      "file": "772-st-05-expat-keeps-document-and-expiry.png",
+      "at": "2026-11-09T14:37:35.033Z",
+      "app": "till",
+      "path": "/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Second walk-in (ZZ TEST number 2), Expat chosen: \"Verify Expat rate\" with \"Proof checked *\" and the document list, \"Document expiry date\", \"Checked by [name covered]\", and \"Choose proof to verify\" — the Expat document step, unchanged",
+      "covered": {
+        "occurrences": 2,
+        "boxes": 2
+      }
+    },
+    {
+      "file": "772-st-08-history-thai-rate-confirmed-at-the-till.png",
+      "at": "2026-11-09T14:38:39.470Z",
+      "app": "till",
+      "path": "/history",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "History on the till, sale Z772T-000001 (Paid, ฿420): \"ZZ TEST SCRUM-772 till · trading day 2026-11-09 · Thai · Weekday pricing · Thai rate confirmed at the till by [name covered], 09 Nov, 21:28\"; 1 Hour Play · Thai, Kids 1 × ฿420, Adults (free); Cash ฿420. Names, the ZZ TEST number and band codes covered",
+      "covered": {
+        "occurrences": 6,
+        "boxes": 6
+      }
+    },
+    {
+      "file": "772-st-06a-console-tier-verifications-confirmed-at-the-till.png",
+      "at": "2026-11-09T14:40:18.394Z",
+      "app": "console",
+      "path": "/catalogue/tier-verifications",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Console > Catalogue & money > Tier verifications, newest first: the ZZ TEST 772 Thai row reads Upgrade Tourist → Thai, Document \"Confirmed at the till by [name covered]\" with \"ZZ TEST SCRUM-772 till\" under it, Expires \"—\", Checked by [name covered] · Oto Play Park, Central Floresta, 09 Nov 2026 21:30. Every name and phone number on the page is covered",
+      "covered": {
+        "occurrences": 195,
+        "boxes": 99
+      }
+    },
+    {
+      "file": "772-st-06b-console-member-form-thai-no-document.png",
+      "at": "2026-11-09T14:41:27.708Z",
+      "app": "console",
+      "path": "/catalogue/members",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Console > Members > Edit ZZ TEST 772 Thai (opened, not saved): \"Holds Thai, confirmed at the till by [name covered].\" and, with Thai selected, \"No document needed for the Thai rate.\" — no document type and no expiry field. The ZZ TEST number is covered",
+      "covered": {
+        "occurrences": 2,
+        "boxes": 2
+      }
+    }
+  ],
+  "scripts": "scratchpad s772p (driver.mjs, steps/*.mjs, write-receipt.mjs)"
+}
