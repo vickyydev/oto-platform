@@ -113,6 +113,34 @@ describe('buildPersonGrants — one person at a time, adults (paid, then free) t
     expect(earningPersonsOf([line({ paidAdults: 2, adultListSatang: 35_000 })])).toEqual([]);
     expect(earningPersonsOf([line({ paidAdults: 2, adultListSatang: 35_000, creditRule: { appliesTo: 'none', basis: 'full_price' } })])).toEqual([]);
   });
+
+  it('SCRUM-798 — a Golden Ticket’s line: its child and the parent who stays earn nothing, anyone else who pays earns', () => {
+    const both = { appliesTo: 'both', basis: 'full_price' } as const;
+    // Two kids and two paid adults: the gift's child is the first kid, its
+    // parent the first paid adult; the second of each paid and earns.
+    const persons = personGrantsOf([
+      line({ gift: true, kids: 2, kidListSatang: 109_000, paidAdults: 2, adultListSatang: 35_000, creditRule: both }),
+    ]);
+    expect(persons.map((p) => [p.role, p.ordinal, p.creditSatang])).toEqual([
+      ['adult', 0, 0],
+      ['adult', 1, 35_000],
+      ['kid', 0, 0],
+      ['kid', 1, 109_000],
+    ]);
+    // The rate's own free adult is the parent the gift lets in; the paid adult earns.
+    const fixed = { appliesTo: 'adults', basis: 'fixed', value: 100 } as const;
+    expect(
+      personGrantsOf([line({ gift: true, kids: 1, kidListSatang: 109_000, paidAdults: 1, adultListSatang: 35_000, freeAdults: 1, creditRule: fixed })]).map(
+        (p) => [p.role, p.ordinal, p.listSatang, p.creditSatang],
+      ),
+    ).toEqual([
+      ['adult', 0, 35_000, 10_000],
+      ['adult', 1, 0, 0],
+      ['kid', 0, 109_000, 0],
+    ]);
+    // One child and the parent alone: nobody earns.
+    expect(earningPersonsOf([line({ gift: true, kids: 1, kidListSatang: 109_000, paidAdults: 1, adultListSatang: 35_000, creditRule: both })])).toEqual([]);
+  });
 });
 
 describe('grantLinesOfLedger — the frozen sale ledger read back into cart lines', () => {
@@ -167,6 +195,27 @@ describe('grantLinesOfLedger — the frozen sale ledger read back into cart line
     );
     expect(lines.every((l) => l.skip)).toBe(true);
     expect(earningPersonsOf(lines)).toEqual([]);
+  });
+
+  it('SCRUM-798 — a Golden Ticket’s line is marked, not skipped: only its own people go without', () => {
+    const lines = grantLinesOfLedger(
+      [
+        row('GIFT', 1, 'kids', 1, 109_000, 'P2H'),
+        row('GIFT', 2, 'adults_paid', 2, 35_000, 'P2H'),
+        row('OTHER', 3, 'adults_paid', 1, 35_000, 'P2H'),
+      ],
+      pkgs,
+      new Set(),
+      new Set(['GIFT']),
+    );
+    expect(lines.map((l) => [l.cartLineId, l.skip, l.gift ?? false])).toEqual([
+      ['GIFT', false, true],
+      ['OTHER', false, false],
+    ]);
+    expect(earningPersonsOf(lines).map((p) => [p.cartLineId, p.role, p.ordinal, p.creditSatang])).toEqual([
+      ['GIFT', 'adult', 1, 35_000],
+      ['OTHER', 'adult', 0, 35_000],
+    ]);
   });
 
   it('a stored rule that is not a rule earns nothing', () => {

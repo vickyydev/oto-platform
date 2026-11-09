@@ -886,14 +886,16 @@ export async function grantSaleCredit(
     .select({ id: checkin.id })
     .from(checkin)
     .where(and(eq(checkin.operatorId, saleRow.operatorId), inArray(checkin.id, cartLineIds)));
-  // SCRUM-798 — a Golden Ticket's line earns nothing: "free entry with no food
-  // voucher", for the child and for the parent who stays.
+  // SCRUM-798 — "free entry with no food voucher": on a Golden Ticket's line
+  // the gift's child and the parent who stays earn nothing; a second adult who
+  // pays on that line earns as on any other (`giftTicketAdultOrdinal`).
   const gifted = await giftTicketLinesOfSale(tx, saleRow.operatorId, saleRow.id);
   const persons = earningPersonsOf(
     grantLinesOfLedger(
       lines,
       new Map(packages.map((p) => [p.id, { creditRule: p.creditRule, gateAccess: p.gateAccess }])),
-      new Set([...supervised.map((s) => s.id), ...gifted]),
+      new Set(supervised.map((s) => s.id)),
+      gifted,
     ),
   );
   if (persons.length === 0) return [];

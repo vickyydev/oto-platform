@@ -16,7 +16,7 @@ import {
   isGiftTicket,
   placeGiftTicketLine,
 } from '@/lib/giftTicket';
-import { computeLineTotal } from '@/lib/pricing';
+import { computeLineTotal, resolveAdultLine } from '@/lib/pricing';
 import { buildCreditGrants, buildPersonGrants } from '@/lib/sale';
 import type { HeldVoucher } from '@/lib/tillVoucher';
 import type { CartLine, TicketType } from '@/types';
@@ -202,6 +202,20 @@ describe('what it rings up', () => {
     expect(buildCreditGrants([gift]).filter((g) => g.type === 'fnb_credit')).toEqual([]);
     const plain = { ...gift, voucherGift: undefined };
     expect(buildCreditGrants([plain]).filter((g) => g.type === 'fnb_credit')).toHaveLength(1);
+  });
+
+  it('a second adult who pays on the gift’s line earns their ticket back; the gift’s child and parent still earn nothing', () => {
+    const gift = buildGiftTicketLine(fullDay, 'tourist', { childAgeYears: 6, choice: 'parent_stays', socks: false }, 'gift-6');
+    const two = { ...gift, adults: 2 };
+    // ฿350 on a weekday, ฿500 at the weekend: what the till charges that adult today.
+    const adultPrice = resolveAdultLine(fullDay, 'tourist', 1).paidUnit;
+    expect([350, 500]).toContain(adultPrice);
+    expect(buildPersonGrants([two])).toEqual([
+      { role: 'adult', gateAccess: true, creditTHB: 0 },
+      { role: 'adult', gateAccess: true, creditTHB: adultPrice },
+      { role: 'kid', gateAccess: false, creditTHB: 0 },
+    ]);
+    expect(buildCreditGrants([two]).filter((g) => g.type === 'fnb_credit').map((g) => g.valueTHB)).toEqual([adultPrice]);
   });
 
   it('the wire names the gift’s line, with the voucher’s code beside it', () => {

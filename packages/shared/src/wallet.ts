@@ -143,6 +143,26 @@ export interface GrantLine {
   freeAdults: number;
   creditRule: WalletCreditRule | null;
   gateAccess: boolean;
+  /**
+   * SCRUM-798 — a Golden Ticket admitted this line. "Free entry with no food
+   * voucher" covers the gift's own people only: its child (the line's first
+   * kid) and the parent who stays (the line's first free adult, else its first
+   * paid adult — `giftTicketAdultOrdinal`). Anyone else on the line pays and
+   * earns as on any other line.
+   */
+  gift?: boolean;
+}
+
+/**
+ * SCRUM-798 — which adult on a Golden Ticket's line is the parent the gift
+ * lets in: the rate's own free adult when it has one (the gift then takes no
+ * adult off, `giftTicketValue` in the api), else the first paid adult. Null
+ * when the line has no adult — a drop-off.
+ */
+export function giftTicketAdultOrdinal(line: Pick<GrantLine, 'paidAdults' | 'freeAdults'>): number | null {
+  const paid = Math.max(0, line.paidAdults);
+  if (Math.max(0, line.freeAdults) > 0) return paid;
+  return paid > 0 ? 0 : null;
 }
 
 /** One person on a sale's regular play lines (prototype `PersonGrant`, plus where they sit). */
@@ -172,6 +192,9 @@ export function personGrantsOf(lines: readonly GrantLine[]): PersonGrant[] {
       ...Array<number>(Math.max(0, line.paidAdults)).fill(line.adultListSatang),
       ...Array<number>(Math.max(0, line.freeAdults)).fill(0),
     ];
+    // SCRUM-798 — the Golden Ticket's child and parent keep their place (and
+    // their band) and earn nothing; everyone else on the line earns as usual.
+    const giftAdult = line.gift ? giftTicketAdultOrdinal(line) : null;
     adultPrices.forEach((listSatang, ordinal) => {
       out.push({
         cartLineId: line.cartLineId,
@@ -179,7 +202,8 @@ export function personGrantsOf(lines: readonly GrantLine[]): PersonGrant[] {
         ordinal,
         listSatang,
         gateAccess: line.gateAccess,
-        creditSatang: creditApplies(rule, 'adult') ? unitCreditSatang(listSatang, rule!) : 0,
+        creditSatang:
+          ordinal !== giftAdult && creditApplies(rule, 'adult') ? unitCreditSatang(listSatang, rule!) : 0,
       });
     });
     for (let ordinal = 0; ordinal < line.kids; ordinal += 1) {
@@ -189,7 +213,10 @@ export function personGrantsOf(lines: readonly GrantLine[]): PersonGrant[] {
         ordinal,
         listSatang: line.kidListSatang,
         gateAccess: false,
-        creditSatang: creditApplies(rule, 'kid') ? unitCreditSatang(line.kidListSatang, rule!) : 0,
+        creditSatang:
+          !(line.gift && ordinal === 0) && creditApplies(rule, 'kid')
+            ? unitCreditSatang(line.kidListSatang, rule!)
+            : 0,
       });
     }
   }
@@ -219,12 +246,15 @@ export interface GrantLedgerRow {
  * skipped when one of its units is a free-item promo (`promo_item`) or a
  * drop-off fee or prepaid food (`service_fee`, `food_provision`), or when the
  * caller knows it is a supervised child's line (`supervisedCartLineIds`).
- * Lines come back in receipt order.
+ * A line a Golden Ticket admitted (`giftCartLineIds`, SCRUM-798) is not
+ * skipped: it is marked `gift`, so only the gift's child and parent earn
+ * nothing on it. Lines come back in receipt order.
  */
 export function grantLinesOfLedger(
   rows: readonly GrantLedgerRow[],
   packages: ReadonlyMap<string, { creditRule: unknown; gateAccess: boolean }>,
   supervisedCartLineIds: ReadonlySet<string> = new Set(),
+  giftCartLineIds: ReadonlySet<string> = new Set(),
 ): GrantLine[] {
   const order: string[] = [];
   const byCart = new Map<string, GrantLedgerRow[]>();
@@ -257,6 +287,7 @@ export function grantLinesOfLedger(
       freeAdults: freeRow?.quantity ?? 0,
       creditRule: walletCreditRuleOf(pkg?.creditRule),
       gateAccess: pkg?.gateAccess ?? false,
+      ...(giftCartLineIds.has(cartLineId) ? { gift: true } : {}),
     });
   }
   return out;

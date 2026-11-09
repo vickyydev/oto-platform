@@ -8,6 +8,7 @@ import {
   TicketCreditRule,
   CreditGrant,
 } from '@/types';
+import { giftTicketAdultOrdinal } from '@oto/shared';
 import { priceForTier, resolveAdultLine } from '@/lib/pricing';
 import { resolveFreeItem } from '@/lib/promoVoucher';
 import { ticketTotals } from '@/lib/cartWire';
@@ -66,9 +67,7 @@ export function buildPersonGrants(lines: CartLine[]): PersonGrant[] {
   const out: PersonGrant[] = [];
   for (const line of lines) {
     if (line.promoItem || line.dropOff) continue;
-    // SCRUM-798 — a Golden Ticket's people get their bands and no food credit:
-    // "free entry with no food voucher" (the platform's `grantSaleCredit` too).
-    const rule = line.voucherGift ? undefined : line.ticketType.creditRule;
+    const rule = line.ticketType.creditRule;
     const gate = line.ticketType.gateAccess ?? false;
     const kidPrice = priceForTier(line.ticketType, line.tier);
     const adultLine = resolveAdultLine(line.ticketType, line.tier, line.adults);
@@ -76,18 +75,26 @@ export function buildPersonGrants(lines: CartLine[]): PersonGrant[] {
       ...Array(adultLine.paidCount).fill(adultLine.paidUnit),
       ...Array(adultLine.freeCount).fill(0),
     ];
-    for (const paid of adultPrices) {
+    // SCRUM-798 — "free entry with no food voucher": a Golden Ticket's child
+    // (the line's first kid) and the parent who stays (its first free adult,
+    // else its first paid adult) get their bands and earn nothing; anyone else
+    // on the line pays and earns as usual (the platform's `grantSaleCredit` too).
+    const giftAdult = line.voucherGift
+      ? giftTicketAdultOrdinal({ paidAdults: adultLine.paidCount, freeAdults: adultLine.freeCount })
+      : null;
+    adultPrices.forEach((paid, ordinal) => {
       out.push({
         role: 'adult',
         gateAccess: gate,
-        creditTHB: creditApplies(rule, 'adult') ? unitCredit(paid, rule!) : 0,
+        creditTHB: ordinal !== giftAdult && creditApplies(rule, 'adult') ? unitCredit(paid, rule!) : 0,
       });
-    }
+    });
     for (let i = 0; i < line.kids; i++) {
       out.push({
         role: 'kid',
         gateAccess: false,
-        creditTHB: creditApplies(rule, 'kid') ? unitCredit(kidPrice, rule!) : 0,
+        creditTHB:
+          !(line.voucherGift && i === 0) && creditApplies(rule, 'kid') ? unitCredit(kidPrice, rule!) : 0,
       });
     }
   }

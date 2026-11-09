@@ -412,6 +412,34 @@ describe('redeeming it at the till', () => {
     expect(totals.grossSatang).toBeGreaterThan(0);
   });
 
+  it('a second adult who pays on the gift’s line earns their food credit; the gift’s child and parent earn none', async () => {
+    // What one paying adult on a Full Day line earns, without any voucher.
+    const plainId = newId();
+    expect((await commit({ id: plainId, stationId: t1.id, lines: [parentStays(0)] })).statusCode).toBe(200);
+    const plainGrants = (await finalise(plainId)).json().grants as { role: string; creditSatang: number }[];
+    expect(plainGrants).toHaveLength(1);
+    const oneAdult = plainGrants[0]!.creditSatang;
+    expect(oneAdult).toBeGreaterThan(0);
+
+    const { answer } = await sellGolden(1);
+    const v = answer.issuedVouchers[0]!;
+    const saleId = newId();
+    expect((await hold(saleId, v.code)).statusCode).toBe(200);
+    const line = { ...parentStays(0), adults: 2 };
+    expect((await commit({ id: saleId, stationId: t1.id, lines: [line], promoCodes: [v.code] })).statusCode).toBe(200);
+    const closed = await finalise(saleId);
+    expect(closed.statusCode, closed.body).toBe(200);
+    expect(closed.json()).toMatchObject({ finalised: true, redeemedVoucherIds: [v.id] });
+    // One wallet: the second adult's, who paid; the parent the gift let in
+    // (the first adult) and the child earn nothing.
+    const grants = closed.json().grants as { role: string; creditSatang: number }[];
+    expect(grants.map((g) => [g.role, g.creditSatang])).toEqual([['adult', oneAdult]]);
+    const entries = await ctx.db.select().from(walletEntry).where(eq(walletEntry.saleId, saleId));
+    expect(entries.map((e) => (e.payload as { cartLineId?: string; role?: string; ordinal?: number }))).toEqual([
+      expect.objectContaining({ cartLineId: line.id, role: 'adult', ordinal: 1 }),
+    ]);
+  });
+
   it('drop-off for a child of 6: the child and the drop-off fee at ฿0', async () => {
     const { answer } = await sellGolden(1);
     const v = answer.issuedVouchers[0]!;

@@ -200,9 +200,10 @@ export async function issuedVouchersOfSale(db: Exec, saleId: string): Promise<Is
 /**
  * SCRUM-798 — THE CART LINES A GIFT TICKET ADMITTED on this sale: the line each
  * applied Golden Ticket's discount row was aimed at. The owner's "no food
- * voucher" is read here: the credit a sale grants (`grantSaleCredit`) skips
- * these lines, so the parent who stayed with the child earns none, whatever
- * the package's credit rule pays an adult.
+ * voucher" is read here: on these lines the credit a sale grants
+ * (`grantSaleCredit`) passes over the gift's child and the parent who stayed
+ * with them, whatever the package's credit rule pays an adult. Anyone else on
+ * the line paid for their ticket and earns as usual.
  */
 export async function giftTicketLinesOfSale(
   db: Exec,
