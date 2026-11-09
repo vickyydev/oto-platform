@@ -42,6 +42,7 @@ import { PartyFnbModal } from './PartyFnbModal';
 import { PartyTicketModal } from './PartyTicketModal';
 import { PartySettleModal } from './PartySettleModal';
 import { PartyEditForm, type PartyEditPatch } from './PartyEditForm';
+import { PartySlipsCard } from './PartySlipsCard';
 import { MessagingPanel, type MessagingContext } from '@/components/shared/MessagingPanel';
 import {
   ArrowLeft,
@@ -619,15 +620,18 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
     </SectionCard>
   );
 
+  // SCRUM-805 — the party's kitchen and bar slips, beside its bar plan.
+  const slipsSection = <PartySlipsCard party={party} />;
+
   // F&B surface leads with kitchen/bar/timeline; reception leads with bill/contact.
   const leftColumn =
     surface === 'fnb'
-      ? [kitchenSection, barSection, timelineSection]
+      ? [kitchenSection, barSection, slipsSection, timelineSection]
       : [billSection, eventSection, contactSection];
   const rightColumn =
     surface === 'fnb'
       ? [eventSection, billSection, contactSection, activitySection]
-      : [kitchenSection, timelineSection, barSection, activitySection];
+      : [kitchenSection, timelineSection, barSection, slipsSection, activitySection];
 
   if (editing) {
     return <PartyEditForm party={party} onSave={handleSaveEdit} onCancel={() => setEditing(false)} />;
