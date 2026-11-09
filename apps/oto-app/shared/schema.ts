@@ -1646,6 +1646,14 @@ export function offboardingReasonLabel(reason: string | null | undefined): strin
 // a later `generate` would take it for granted on a database that skipped it.
 // The app has no "closed" state for an offboarding, so every row is open and
 // the index covers them all (plan Q47).
+//
+// SCRUM-794: Onboard Again closes one — `reonboarded_at` marks the record of
+// a contract a new employment on the same profile has followed. The route now
+// refuses a second offboarding only while one is still open, and migration
+// 0038 adds `employee_offboarding_one_open` (employee_id where reonboarded_at
+// is null), census-gated and undeclared here as 0008's is. While 0008's index
+// stands the database still refuses a second row and the route answers 409 in
+// words; retiring it is the contract step.
 export const employeeOffboarding = pgTable("employee_offboarding", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   employeeId: varchar("employee_id").references(() => employees.id).notNull(),

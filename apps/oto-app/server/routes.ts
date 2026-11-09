@@ -8212,6 +8212,17 @@ OTO Company Limited`,
   // OFFBOARDING ROUTES
   // =====================
 
+  /** A unique violation of the named index or constraint, as pg reports it (drizzle may wrap it in `cause`). */
+  const uniqueViolationOn = (error: unknown, name: string): boolean => {
+    const e = error as { code?: string; constraint?: string; cause?: { code?: string; constraint?: string } } | null;
+    return (e?.code === "23505" && e.constraint === name) || (e?.cause?.code === "23505" && e.cause.constraint === name);
+  };
+  // SCRUM-794: the words for a second offboarding on a database whose
+  // one-offboarding-per-profile index still stands.
+  const SECOND_OFFBOARDING_WAITS =
+    "This profile was offboarded once already, from its earlier contract, and that offboarding is kept as its record. " +
+    "This system does not record a second offboarding on the same profile yet, so nothing was saved. Ask a platform administrator.";
+
   const authorizedOffboardingEmployee = async (req: Request, employeeId: string) => {
     const user = req.userWithAccess;
     if (!user?.tenantId) return null;
@@ -8320,10 +8331,15 @@ OTO Company Limited`,
       // Every step below is the app's, in the app's order, on one transaction:
       // a failure anywhere leaves nothing behind. The per-employee lock and the
       // 409 for an employee already offboarded are the lift's, as before.
-      const offboarding = await db.transaction(async (tx) => {
+      // SCRUM-794: "already offboarded" is an offboarding still open. One an
+      // Onboard Again employment has followed (re-onboarded) is the record of
+      // the contract it ended, so the profile's new contract can be ended too.
+      const createOffboarding = () => db.transaction(async (tx) => {
         await tx.execute(sql`select pg_advisory_xact_lock(hashtext('employee_offboarding'), hashtext(${employeeId}))`);
         const [existing] = await tx.select({ id: employeeOffboarding.id })
-          .from(employeeOffboarding).where(eq(employeeOffboarding.employeeId, employeeId)).limit(1);
+          .from(employeeOffboarding)
+          .where(and(eq(employeeOffboarding.employeeId, employeeId), isNull(employeeOffboarding.reonboardedAt)))
+          .limit(1);
         if (existing) return null;
         const [created] = await tx.insert(employeeOffboarding).values({
           employeeId,
@@ -8471,6 +8487,19 @@ OTO Company Limited`,
 
         return created;
       });
+      let offboarding: Awaited<ReturnType<typeof createOffboarding>>;
+      try {
+        offboarding = await createOffboarding();
+      } catch (error) {
+        // SCRUM-794: a database still holding one offboarding per profile
+        // ever (migration 0008's census-gated index) refuses the second
+        // one; nothing of it was written. Migration 0038 holds one OPEN
+        // offboarding per profile instead, once that index is retired.
+        if (uniqueViolationOn(error, "employee_offboarding_employee_unique")) {
+          return res.status(409).json({ message: SECOND_OFFBOARDING_WAITS });
+        }
+        throw error;
+      }
       if (!offboarding) return res.status(409).json({ message: "Offboarding already exists for this employee" });
 
       res.status(201).json(offboarding);

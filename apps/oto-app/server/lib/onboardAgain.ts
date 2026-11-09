@@ -123,6 +123,12 @@ export async function activateEngagementWithin(
     }
   }
 
+  // An employment an earlier Onboard Again started has ended with the offboarding this one follows.
+  await tx.update(employeeEngagements).set({ status: "ended" }).where(and(
+    eq(employeeEngagements.employeeId, current.id),
+    eq(employeeEngagements.status, "active"),
+    ne(employeeEngagements.id, engagement.id),
+  ));
   await tx.update(employeeEngagements).set({ status: "active", activatedAt: now })
     .where(eq(employeeEngagements.id, engagement.id));
 

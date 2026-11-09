@@ -38,6 +38,13 @@
 //      ends. A start date already past starts at once.
 //   7. Rematch: staff are refused; a manager's rematch resolves exactly the
 //      pending item whose day now has a shift.
+//   8. The new contract ends too: the earlier offboarding is kept as the
+//      record and is no longer the profile's; while migration 0008's
+//      one-offboarding-per-profile index stands a second offboarding is
+//      refused in words and writes nothing; with it retired (for this check
+//      alone, put back after) the second offboarding is made, 0038 holds one
+//      open offboarding per profile, Onboard Again plans the next contract
+//      and the batch starts it, ending the employment before.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
@@ -733,6 +740,87 @@ try {
       issue_status: "RESOLVED", resolved_by: manager.id, resolution_note: REMATCH_NOTE, entry_status: "APPROVED", approved_by: manager.id,
     });
     assert.equal((await review(second.issue)).issue_status, "OPEN");
+  });
+
+  // ── 8. The new contract ends too, on the same profile ─────────────────────
+  console.log("8. the new contract ends, and the next one is planned, on the same profile:");
+  const [{ id: firstOffboarding }] = await q<{ id: string }>("select id from employee_offboarding where employee_id = $1", [original]);
+  await check("the offboarding of the contract that ended is kept as its record, and is no longer the profile's offboarding", async () => {
+    const read = await call("GET", `/api/employees/${original}/offboarding`, as.admin);
+    assert.deepEqual([read.status, read.body], [200, null], show(read));
+    const edit = await call("PATCH", `/api/employees/${original}/offboarding`, as.admin, { notes: "ZZ TEST" });
+    assert.equal(edit.status, 404, show(edit));
+    assert.equal(await countOf("select count(*) as n from employee_offboarding where id = $1 and reonboarded_at is not null", [firstOffboarding]), 1);
+  });
+  const NEXT_LAST_DAY = plus(20);
+  const NEXT_START = plus(22);
+  const indexStands = async () => (await countOf(
+    "select count(*) as n from pg_indexes where schemaname = 'otoapp' and indexname = 'employee_offboarding_employee_unique'", [])) === 1;
+  await check("while migration 0008's one-offboarding-per-profile index stands, offboarding the new contract is refused in words and writes nothing", async () => {
+    assert.equal(await indexStands(), true, "0008's index stands on a database migrated from empty");
+    const res = await offboard(original, NEXT_LAST_DAY);
+    assert.equal(res.status, 409, show(res));
+    assert.match(res.body.message, /offboarded once already/);
+    assert.equal(await countOf("select count(*) as n from employee_offboarding where employee_id = $1", [original]), 1);
+    const row = await profile(original);
+    assert.deepEqual([row.status, row.employment_state, row.last_working_day], ["active", "ACTIVE", null]);
+  });
+  // Retiring 0008's index is the contract step, a release of its own. It is
+  // made here for this check alone and put back in `finally`, so what the app
+  // already does once it is retired is pinned end to end.
+  let secondOffboarding = "";
+  try {
+    await q("drop index employee_offboarding_employee_unique");
+    await check("with that index retired, the new contract is offboarded (201), and the earlier offboarding keeps its re-onboarded mark", async () => {
+      const res = await offboard(original, NEXT_LAST_DAY);
+      assert.equal(res.status, 201, show(res));
+      secondOffboarding = res.body.id;
+      const read = await call("GET", `/api/employees/${original}/offboarding`, as.admin);
+      assert.equal(read.body?.id, secondOffboarding, show(read));
+      const row = await profile(original);
+      assert.deepEqual([row.status, row.employment_state, row.last_working_day], ["active", "LEAVING", NEXT_LAST_DAY]);
+      assert.equal(await loginOn(subject.id), true);
+      assert.equal(await countOf("select count(*) as n from employee_offboarding where id = $1 and reonboarded_at is not null", [firstOffboarding]), 1);
+      const twice = await offboard(original, plus(21));
+      assert.deepEqual([twice.status, twice.body.message], [409, "Offboarding already exists for this employee"], show(twice));
+    });
+    await check("the database itself holds one open offboarding per profile (0038)", async () => {
+      await assert.rejects(
+        q(`insert into employee_offboarding (employee_id, offboarding_type, reason_code, last_working_day, created_by)
+           values ($1, 'resignation', 'personal_reasons', now(), $2)`, [original, admin.id]),
+        (err: { code?: string; constraint?: string }) => err.code === "23505" && err.constraint === "employee_offboarding_one_open",
+      );
+    });
+    await check("and Onboard Again plans the next contract on the same profile (201), following the new offboarding", async () => {
+      const res = await call("POST", `/api/employees/${original}/onboard-again`, as.admin, {
+        ...onboardBody, startDate: NEXT_START, departmentId: PROMOTION, positionTitle: "ZZ Promoter",
+      });
+      assert.equal(res.status, 201, show(res));
+      assert.equal(res.body.started, false);
+      const plans = await q<{ status: string; offboarding_id: string | null }>(
+        "select status, offboarding_id from employee_engagements where employee_id = $1 order by created_at", [original]);
+      assert.deepEqual(plans.map((g) => g.status), ["active", "planned"]);
+      assert.equal(plans[1]!.offboarding_id, secondOffboarding);
+    });
+    await check("the batch on its start date starts it: the earlier employment ended, the new offboarding re-onboarded, the login kept on", async () => {
+      const steps = await reconcileAt(await serve(threeAmBangkok(NEXT_START)));
+      assert.equal(steps.find((s) => s.step === "statusTransitions")!.counts.onboarded, 1);
+      assert.deepEqual((await engagementOf(original)).map((g) => g.status), ["ended", "active"]);
+      const row = await profile(original);
+      assert.deepEqual([row.status, row.employment_state, row.primary_department_id, row.last_working_day], ["active", "ACTIVE", PROMOTION, null]);
+      assert.equal(await countOf("select count(*) as n from employee_offboarding where employee_id = $1 and reonboarded_at is not null", [original]), 2);
+      assert.equal(await loginOn(subject.id), true);
+    });
+  } finally {
+    // This check's second offboarding goes, so 0008's index can stand again as it was.
+    if (secondOffboarding) {
+      await q("delete from offboarding_checklist where offboarding_id = $1", [secondOffboarding]);
+      await q("delete from employee_offboarding where id = $1", [secondOffboarding]);
+    }
+    await q("create unique index if not exists employee_offboarding_employee_unique on employee_offboarding using btree (employee_id)");
+  }
+  await check("0008's index stands again after the check", async () => {
+    assert.equal(await indexStands(), true);
   });
 
   console.log(`employee-onboard-again.check: ${checks} checks passed`);

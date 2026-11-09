@@ -260,6 +260,13 @@
       "when": 1794208288272,
       "tag": "0037_onboard_again",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1794213271460,
+      "tag": "0038_offboarding_one_open",
+      "breakpoints": true
     }
   ]
 }

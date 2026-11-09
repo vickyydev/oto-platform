@@ -4428,13 +4428,17 @@ export class DatabaseStorage implements IStorage {
         }
 
         // Employee offboarding methods
+        // SCRUM-794: the profile's current offboarding. One an Onboard Again
+        // employment has since followed (re-onboarded) is the record of the
+        // contract it ended, kept as history, and is not the profile's
+        // offboarding any more.
         async getEmployeeOffboarding(
                 employeeId: string,
         ): Promise<EmployeeOffboarding | undefined> {
                 const [offboarding] = await db
                         .select()
                         .from(employeeOffboarding)
-                        .where(eq(employeeOffboarding.employeeId, employeeId))
+                        .where(and(eq(employeeOffboarding.employeeId, employeeId), isNull(employeeOffboarding.reonboardedAt)))
                         .orderBy(desc(employeeOffboarding.createdAt))
                         .limit(1);
                 return offboarding;
