@@ -1,0 +1,2147 @@
+{
+  "unit": "SCRUM-799",
+  "liveCommit": "a04e555feb18c2f455c73066b[number withheld]f5",
+  "liveBefore": [
+    "oto-api-staging dep-dboqe93rjlhs73c0c8h0 live           a04e555f 2026-11-09T11:01:49.009188Z",
+    "oto-console-staging dep-dboqe9m417fc7393d0t0 live           a04e555f 2026-11-09T10:58:35.204483Z",
+    "oto-pos-web-staging dep-dboqea1srm7s73cpvbqg live           a04e555f 2026-11-09T11:00:40.344539Z"
+  ],
+  "liveAfter": [
+    "oto-api-staging dep-dboqe93rjlhs73c0c8h0 live           a04e555f 2026-11-09T11:01:49.009188Z",
+    "oto-console-staging dep-dboqe9m417fc7393d0t0 live           a04e555f 2026-11-09T10:58:35.204483Z",
+    "oto-pos-web-staging dep-dboqea1srm7s73cpvbqg live           a04e555f 2026-11-09T11:00:40.344539Z"
+  ],
+  "startedAt": "[number withheld]T11:03:30.423Z",
+  "finishedAt": "2026-11-09T11:26:36.730Z",
+  "browser": "Chromium 153.0.8010.12",
+  "console": "https://oto-console-staging.onrender.com",
+  "pos": "https://oto-pos-web-staging.onrender.com",
+  "summary": {
+    "N": 0,
+    "socksAtEnd": 0,
+    "sale": {
+      "receipt": "Z799-000001",
+      "id": "01a1c000-f82f-7874-bc79-dc429b6bc302",
+      "status": "finalised",
+      "grossSatang": 104000
+    },
+    "refusedSaleId": "01a1c004-b34a-79c9-ad3c-9e84f4e94548",
+    "refusedSaleReadAfter": 404,
+    "shareKept": true
+  },
+  "fixture": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "branchName": "Oto Play Park, Central Floresta",
+    "branchCode": "hkt-central",
+    "walkInPhone": "+66897990011",
+    "socksItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+    "regularSocksId": "01a0cb02-13a9-790f-85a1-73e6ccf9f9da",
+    "freeSocksId": "01a1bf0a-20af-7367-ad7f-f3ac8dd4e2e3",
+    "consoleSignedInAt": "[number withheld]T11:24:33.322Z",
+    "N": 0,
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "boxName": "Virtual box 1",
+    "till": {
+      "id": "01a1bfff-b2c8-79d4-af7c-ecdf1ad1cfe9",
+      "name": "ZZ TEST SCRUM-799 till",
+      "prefix": "Z799",
+      "ready": true,
+      "routing": {
+        "qr": "none",
+        "card": "manual"
+      },
+      "devices": [
+        "adult_band:Band Printer (adults)",
+        "kids_band:Band Printer (kids)",
+        "receipt:Receipt Printer 1"
+      ]
+    },
+    "tillSignedInAt": "[number withheld]T11:09:40.475Z",
+    "ring": {
+      "purpose": "oos",
+      "ticket": "1 Hour Play",
+      "kids": 1,
+      "adults": 1,
+      "picture": null
+    },
+    "sales": {
+      "free": {
+        "id": "01a1c000-f82f-7874-bc79-dc429b6bc302",
+        "status": "finalised",
+        "gross": 104000,
+        "ticket": "1 Hour Play",
+        "kids": 1,
+        "adults": 1,
+        "receipt": "Z[number withheld]",
+        "lines": [
+          {
+            "id": "01a1c000-f82f-72e6-b4bf-b0889903530e",
+            "kind": "kids",
+            "label": "Kids",
+            "productId": null,
+            "quantity": 1,
+            "unitSatang": 69000,
+            "grossSatang": 69000,
+            "stock": null
+          },
+          {
+            "id": "01a1c000-f82f-7a8d-a205-00dd5c184fbf",
+            "kind": "adults_paid",
+            "label": "Adults",
+            "productId": null,
+            "quantity": 1,
+            "unitSatang": 35000,
+            "grossSatang": 35000,
+            "stock": null
+          },
+          {
+            "id": "01a1c000-f82f-74e1-9169-08f4af63da1b",
+            "kind": "addon",
+            "label": "Free Socks",
+            "productId": "01a1bf0a-20af-7367-ad7f-f3ac8dd4e2e3",
+            "quantity": 1,
+            "unitSatang": 0,
+            "grossSatang": 0,
+            "stock": null
+          }
+        ],
+        "payments": [
+          {
+            "method": "cash",
+            "status": "approved",
+            "amount": 104000
+          }
+        ],
+        "bands": [
+          {
+            "kind": "kid",
+            "status": "active"
+          },
+          {
+            "kind": "adult",
+            "status": "active"
+          }
+        ],
+        "movements": [
+          {
+            "id": "01a1c001-50a3-7a2d-b219-689e5a27c8ab",
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "stockLocationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+            "kind": "sale",
+            "quantity": -1,
+            "levelAfter": 4,
+            "saleLineId": "01a1c000-f82f-74e1-9169-08f4af63da1b",
+            "reason": null,
+            "occurredAt": "[number withheld]T11:11:14.041Z"
+          }
+        ],
+        "socksAfter": {
+          "at": "[number withheld]T11:11:18.609Z",
+          "total": 4,
+          "status": "low",
+          "places": [
+            {
+              "locationId": "01a0fa0b-8a47-78fe-9834-fe6333770607",
+              "name": "Store",
+              "quantity": 0
+            },
+            {
+              "locationId": "01a0fa0b-8a48-7dc8-812a-1b4e39997316",
+              "name": "BOH",
+              "quantity": 0
+            },
+            {
+              "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+              "name": "FOH (sell point)",
+              "quantity": 4
+            }
+          ],
+          "sellable": {
+            "variantId": null,
+            "label": null,
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "available": 4,
+            "atSellPoint": 4,
+            "lowStockThreshold": 20,
+            "status": "low"
+          }
+        }
+      }
+    }
+  },
+  "steps": {
+    "s1": {
+      "before": {
+        "at": "[number withheld]T11:04:39.180Z",
+        "total": 0,
+        "status": "out",
+        "places": [
+          {
+            "locationId": "01a0fa0b-8a47-78fe-9834-fe6333770607",
+            "name": "Store",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4e39997316",
+            "name": "BOH",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+            "name": "FOH (sell point)",
+            "quantity": 0
+          }
+        ],
+        "sellable": {
+          "variantId": null,
+          "label": null,
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "available": 0,
+          "atSellPoint": 0,
+          "lowStockThreshold": 20,
+          "status": "out"
+        }
+      },
+      "cardBefore": "Regular Socks Add-on 01a0cb02-13a9-790f-85a1-73e6ccf9f9da Default Out Adjust",
+      "dialog": "Adjust stock — Regular Socks Variant: Default · Current: 0 Adjustment (+/−) * New stock after adjustment: 5 Reason * Received shipment Inventory recount Damaged / shrinkage Staff use Complimentary / staff use Cancel Apply adjustment Close",
+      "chips": [
+        "Received shipment",
+        "Inventory recount",
+        "Damaged / shrinkage",
+        "Staff use",
+        "Complimentary / staff use"
+      ],
+      "net": [
+        {
+          "at": "[number withheld]T11:04:43.540Z",
+          "method": "POST",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/adjustments",
+          "status": 200,
+          "request": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": 5,
+            "reason": "ZZ TEST SCRUM-799: stock for the free socks proof"
+          },
+          "response": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": 5,
+            "movements": [
+              {
+                "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+                "quantity": 5,
+                "levelAfter": 5
+              }
+            ]
+          }
+        }
+      ],
+      "after": {
+        "at": "[number withheld]T11:04:49.075Z",
+        "total": 5,
+        "status": "low",
+        "places": [
+          {
+            "locationId": "01a0fa0b-8a47-78fe-9834-fe6333770607",
+            "name": "Store",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4e39997316",
+            "name": "BOH",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+            "name": "FOH (sell point)",
+            "quantity": 5
+          }
+        ],
+        "sellable": {
+          "variantId": null,
+          "label": null,
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "available": 5,
+          "atSellPoint": 5,
+          "lowStockThreshold": 20,
+          "status": "low"
+        }
+      },
+      "cardAfter": "Regular Socks Add-on 01a0cb02-13a9-790f-85a1-73e6ccf9f9da Default Low · 5 Adjust"
+    },
+    "s2": {
+      "menuBefore": [
+        {
+          "id": "01a1bf0a-20af-7367-ad7f-f3ac8dd4e2e3",
+          "code": "CF-AO-FREE-SOCKS",
+          "name": "Free Socks",
+          "priceSatang": 0,
+          "priceWeekendSatang": null,
+          "stockItemId": null,
+          "stockLinks": [],
+          "stockShareItemId": null
+        },
+        {
+          "id": "01a0cb02-13a9-790f-85a1-73e6ccf9f9da",
+          "code": "AO-SOCKS",
+          "name": "Regular Socks",
+          "priceSatang": 6000,
+          "priceWeekendSatang": null,
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "stockLinks": [
+            {
+              "variantId": null,
+              "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff"
+            }
+          ],
+          "stockShareItemId": null
+        }
+      ],
+      "formBefore": "Edit add-on Update the name or price for this extra. Name Price Weekday (฿) Weekend / holiday (฿) Tax category Use category default (Add-ons) Use category default (Add-ons) Override → Tickets Override → F&B Override → Bar (alcohol) Override → Drop-off / nanny Override → Parties / events Override → Retail / merch Inherits the Add-ons tax rule unless overridden here. Track stock for this add-on Leave off for unlimited extras like lockers or digital items. Takes stock from Nothing — not counted Nothing — not counted Glow Band Locker Rental Refillable Drink Cup Regular Socks For a free or complimentary version of a stocked item, like Free Socks: each one sold takes one from that item's stock. Cancel Save changes Close",
+      "triggerBefore": "Nothing — not counted",
+      "options": [
+        "Nothing — not counted",
+        "Glow Band",
+        "Locker Rental",
+        "Refillable Drink Cup",
+        "Regular Socks"
+      ],
+      "triggerChosen": "Regular Socks",
+      "formChosen": "Edit add-on Update the name or price for this extra. Name Price Weekday (฿) Weekend / holiday (฿) Tax category Use category default (Add-ons) Use category default (Add-ons) Override → Tickets Override → F&B Override → Bar (alcohol) Override → Drop-off / nanny Override → Parties / events Override → Retail / merch Inherits the Add-ons tax rule unless overridden here. Track stock for this add-on Leave off for unlimited extras like lockers or digital items. Takes stock from Regular Socks Nothing — not counted Glow Band Locker Rental Refillable Drink Cup Regular Socks Each one sold takes one from Regular Socks's stock, whatever its price. Pairs given out with no sale go through Inventory → Adjust. Cancel Save changes Close",
+      "saveLabel": "Save changes",
+      "net": [
+        {
+          "at": "[number withheld]T11:07:49.068Z",
+          "method": "PATCH",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/menu/products/01a1bf0a-20af-7367-ad7f-f3ac8dd4e2e3",
+          "status": 200,
+          "request": {
+            "kind": "addon",
+            "name": "Free Socks",
+            "code": "CF-AO-FREE-SOCKS",
+            "description": null,
+            "categoryId": "01a0cb[number withheld]bc32eba72",
+            "priceSatang": 0,
+            "priceWeekendSatang": null,
+            "taxCategoryOverride": null,
+            "translations": null,
+            "stockShareItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "sortOrder": 0,
+            "active": true
+          },
+          "response": {}
+        }
+      ],
+      "triggerReopened": "Regular Socks",
+      "formReopened": "Edit add-on Update the name or price for this extra. Name Price Weekday (฿) Weekend / holiday (฿) Tax category Use category default (Add-ons) Use category default (Add-ons) Override → Tickets Override → F&B Override → Bar (alcohol) Override → Drop-off / nanny Override → Parties / events Override → Retail / merch Inherits the Add-ons tax rule unless overridden here. Track stock for this add-on Leave off for unlimited extras like lockers or digital items. Takes stock from Regular Socks Nothing — not counted Glow Band Locker Rental Refillable Drink Cup Regular Socks Each one sold takes one from Regular Socks's stock, whatever its price. Pairs given out with no sale go through Inventory → Adjust. Cancel Save changes Close",
+      "menuAfter": [
+        {
+          "id": "01a1bf0a-20af-7367-ad7f-f3ac8dd4e2e3",
+          "code": "CF-AO-FREE-SOCKS",
+          "name": "Free Socks",
+          "priceSatang": 0,
+          "priceWeekendSatang": null,
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "stockLinks": [],
+          "stockShareItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff"
+        },
+        {
+          "id": "01a0cb02-13a9-790f-85a1-73e6ccf9f9da",
+          "code": "AO-SOCKS",
+          "name": "Regular Socks",
+          "priceSatang": 6000,
+          "priceWeekendSatang": null,
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "stockLinks": [
+            {
+              "variantId": null,
+              "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff"
+            }
+          ],
+          "stockShareItemId": null
+        }
+      ],
+      "audit": {
+        "status": 200,
+        "entries": [
+          {
+            "id": "01a1bffe-30b9-79a2-9000-804d18c5816a",
+            "createdAt": "[number withheld]T11:07:49.299Z",
+            "action": "product.stock_share",
+            "entityType": "product",
+            "entityId": "01a1bf0a-20af-7367-ad7f-f3ac8dd4e2e3",
+            "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+            "before": {
+              "stockItemId": null
+            },
+            "after": {
+              "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+              "sharesWithProductId": "01a0cb02-13a9-790f-85a1-73e6ccf9f9da"
+            }
+          }
+        ]
+      }
+    },
+    "ring_free": {
+      "sawNewMember": true,
+      "k": 1,
+      "a": 1,
+      "freeCardBefore": "Free Socks +฿0 0",
+      "regularSocksSteppers": 2,
+      "freeCardAfter": "Free Socks +฿0 1",
+      "grid": "Free Socks +฿0 1 Regular Socks +฿60 0 Grip Socks +฿80 Sizes Locker Rental +฿100 Out of stock 0 Refillable Drink Cup +฿150 Out of stock 0 Glow Band +฿60 Out of stock 0",
+      "orderPanel": "Current Order TOURIST 1 Hour Play EDITING ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Free Socks ฿0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040",
+      "body": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 3 out of stock · 1 low Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Configure: 1 Hour Play Back to tickets Participants Kids Requires adult supervision 1 Adults Receives F&B credit 1 Extras & Add-ons Free Socks +฿0 1 Regular Socks +฿60 0 Grip Socks +฿80 Sizes Locker Rental +฿100 Out of stock 0 Refillable Drink Cup +฿150 Out of stock 0 Glow Band +฿60 Out of stock 0 Add Another Ticket Continue Current Order TOURIST 1 Hour Play EDITING ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Free Socks ฿0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040 O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 Free Socks1 × ฿0 ฿0 VAT included ฿68.04 Total ฿1040",
+      "socksCounter": 0,
+      "quotes": [
+        {
+          "at": "[number withheld]T11:10:10.931Z",
+          "status": 200,
+          "lines": [
+            [
+              "kids",
+              "Kids",
+              1,
+              69000,
+              69000
+            ],
+            [
+              "adults_paid",
+              "Adults",
+              1,
+              35000,
+              35000
+            ],
+            [
+              "addon",
+              "Free Socks",
+              1,
+              0,
+              0
+            ]
+          ],
+          "total": 104000
+        }
+      ]
+    },
+    "s3a": {
+      "at": "[number withheld]T11:10:33.721Z",
+      "grid": "Extras & Add-ons Free Socks +฿0 1 Regular Socks +฿60 0 Grip Socks +฿80 Sizes Locker Rental +฿100 Out of stock 0 Refillable Drink Cup +฿150 Out of stock 0 Glow Band +฿60 Out of stock 0 Add Another Ticket Continue Current Order TOURIST 1 Hour Play EDITING ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Free Socks ฿0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68"
+    },
+    "commit_free": {
+      "seen": [
+        "pay Pay ฿1040"
+      ],
+      "amountDue": true,
+      "net": [
+        {
+          "at": "[number withheld]T11:10:51.555Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200,
+          "error": null
+        }
+      ],
+      "body": "Test harness — staff till and customer display share one live sale. Show customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 3 out of stock · 1 low Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Amount Due ฿1040 Select Payment Method Cash Card PromptPay Hold sale Back Confirm Payment Received Current Order TOURIST 1 Hour Play EDITING ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Free Socks ฿0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040",
+      "fresh": {
+        "id": "01a1c000-f82f-7874-bc79-dc429b6bc302",
+        "status": "tendering",
+        "gross": 104000
+      }
+    },
+    "pay_free": {
+      "at": "[number withheld]T11:11:13.483Z",
+      "net": [
+        {
+          "at": "[number withheld]T11:11:13.766Z",
+          "method": "POST",
+          "path": "/api/sales/01a1c000-f82f-7874-bc79-dc429b6bc302/finalise",
+          "status": 200
+        },
+        {
+          "at": "[number withheld]T11:11:13.872Z",
+          "method": "POST",
+          "path": "/api/box/v1/station/01a1bfff-b2c8-79d4-af7c-ecdf1ad1cfe9/intents",
+          "status": 200
+        }
+      ],
+      "successText": "Test harness — staff till and customer display share one live sale. Show customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 3 out of stock · 1 low Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Oto Play Park Payment Successful Receipt Z[n] • ฿1040 • Cash VAT included ฿68.04 Thank you for visiting! · Tax ID [n] Bracelets to Print 2 TOTAL 1× Child bracelet 1 Hour • 1 Hour Play [code withheld] 1 HOUR 1× Adult bracelet 1 Hour • 1 Hour Play [code withheld] 1 HOUR Credit Grants to Print 2 TOTAL Credit ฿350 credit #1 Free Socks ×1 to collect #2 Start New Sale Sending to printers Item voucher → Receipt Printer 1 Adult bracelet → Band Printer (adults) Kids bracelet → Band Printer (kids) Receipt → Receipt Printer 1"
+    },
+    "inv_s799-st-03d-inventory-regular-socks-4-after-free-pair": {
+      "at": "[number withheld]T11:12:21.025Z",
+      "cardText": "Regular Socks Add-on 01a0cb02-13a9-790f-85a1-73e6ccf9f9da Default Low · 4 Adjust",
+      "restock": "",
+      "api": {
+        "at": "[number withheld]T11:12:17.942Z",
+        "total": 4,
+        "status": "low",
+        "places": [
+          {
+            "locationId": "01a0fa0b-8a47-78fe-9834-fe6333770607",
+            "name": "Store",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4e39997316",
+            "name": "BOH",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+            "name": "FOH (sell point)",
+            "quantity": 4
+          }
+        ],
+        "sellable": {
+          "variantId": null,
+          "label": null,
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "available": 4,
+          "atSellPoint": 4,
+          "lowStockThreshold": 20,
+          "status": "low"
+        }
+      }
+    },
+    "adj_empty": {
+      "requested": {
+        "delta": -4,
+        "reason": "ZZ TEST SCRUM-799: out of stock check",
+        "chip": false
+      },
+      "before": {
+        "at": "[number withheld]T11:13:20.441Z",
+        "total": 4,
+        "status": "low",
+        "places": [
+          {
+            "locationId": "01a0fa0b-8a47-78fe-9834-fe6333770607",
+            "name": "Store",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4e39997316",
+            "name": "BOH",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+            "name": "FOH (sell point)",
+            "quantity": 4
+          }
+        ],
+        "sellable": {
+          "variantId": null,
+          "label": null,
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "available": 4,
+          "atSellPoint": 4,
+          "lowStockThreshold": 20,
+          "status": "low"
+        }
+      },
+      "dialog": "Adjust stock — Regular Socks Variant: Default · Current: 4 Adjustment (+/−) * New stock after adjustment: 0 Reason * Received shipment Inventory recount Damaged / shrinkage Staff use Complimentary / staff use Cancel Apply adjustment Close",
+      "reasonField": "ZZ TEST SCRUM-799: out of stock check",
+      "chipPressed": null,
+      "net": [
+        {
+          "at": "[number withheld]T11:13:29.339Z",
+          "method": "POST",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/adjustments",
+          "status": 200,
+          "request": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": -4,
+            "reason": "ZZ TEST SCRUM-799: out of stock check"
+          },
+          "response": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": -4,
+            "movements": [
+              {
+                "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+                "quantity": -4,
+                "levelAfter": 0
+              }
+            ]
+          }
+        }
+      ],
+      "after": {
+        "at": "[number withheld]T11:13:34.400Z",
+        "total": 0,
+        "status": "out",
+        "places": [
+          {
+            "locationId": "01a0fa0b-8a47-78fe-9834-fe6333770607",
+            "name": "Store",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4e39997316",
+            "name": "BOH",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+            "name": "FOH (sell point)",
+            "quantity": 0
+          }
+        ],
+        "sellable": {
+          "variantId": null,
+          "label": null,
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "available": 0,
+          "atSellPoint": 0,
+          "lowStockThreshold": 20,
+          "status": "out"
+        }
+      },
+      "cardAfter": "Regular Socks Add-on 01a0cb02-13a9-790f-85a1-73e6ccf9f9da Default Out Adjust"
+    },
+    "ring_oos": {
+      "startedNew": true,
+      "sawNewMember": true,
+      "k": 1,
+      "a": 1,
+      "freeCardBefore": "Free Socks +฿0 0",
+      "regularSocksSteppers": 2,
+      "freeCardAfter": "Free Socks +฿0 1",
+      "grid": "Free Socks +฿0 1 Regular Socks +฿60 0 Grip Socks +฿80 Sizes Locker Rental +฿100 Out of stock 0 Refillable Drink Cup +฿150 Out of stock 0 Glow Band +฿60 Out of stock 0",
+      "orderPanel": "Current Order TOURIST 1 Hour Play EDITING ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Free Socks ฿0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040",
+      "body": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 3 out of stock · 1 low Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Configure: 1 Hour Play Back to tickets Participants Kids Requires adult supervision 1 Adults Receives F&B credit 1 Extras & Add-ons Free Socks +฿0 1 Regular Socks +฿60 0 Grip Socks +฿80 Sizes Locker Rental +฿100 Out of stock 0 Refillable Drink Cup +฿150 Out of stock 0 Glow Band +฿60 Out of stock 0 Add Another Ticket Continue Current Order TOURIST 1 Hour Play EDITING ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Free Socks ฿0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040 O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 Free Socks1 × ฿0 ฿0 VAT included ฿68.04 Total ฿1040",
+      "socksCounter": 0,
+      "quotes": [
+        {
+          "at": "[number withheld]T11:14:47.845Z",
+          "status": 200,
+          "lines": [
+            [
+              "kids",
+              "Kids",
+              1,
+              69000,
+              69000
+            ],
+            [
+              "adults_paid",
+              "Adults",
+              1,
+              35000,
+              35000
+            ],
+            [
+              "addon",
+              "Free Socks",
+              1,
+              0,
+              0
+            ]
+          ],
+          "total": 104000
+        }
+      ]
+    },
+    "commit_oos": {
+      "seen": [
+        "pay Pay ฿1040"
+      ],
+      "amountDue": true,
+      "net": [
+        {
+          "at": "[number withheld]T11:14:56.046Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 409,
+          "error": {
+            "code": "STOCK_SHORT",
+            "message": "Regular Socks is out of stock. Nothing was saved.",
+            "details": {
+              "shortages": [
+                {
+                  "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+                  "name": "Regular Socks",
+                  "requested": 1,
+                  "available": 0
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "body": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 3 out of stock · 1 low Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Amount Due ฿1040 Select Payment Method Cash Card PromptPay This sale has not been saved. Regular Socks is out of stock. Nothing was saved. Change the order — fewer, or another size — and press Pay again. Nothing was charged. Sale 01a1c004-b34a-79c9-ad3c-9e84f4e94548 Back to the order Hold sale The sale is still being saved — wait a moment. Back Confirm Payment Received Current Order TOURIST 1 Hour Play EDITING ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Free Socks ฿0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040 English Please pay ฿1040.00 to our staff",
+      "fresh": null
+    },
+    "s4b": {
+      "refusal": {
+        "at": "[number withheld]T11:14:56.046Z",
+        "method": "POST",
+        "path": "/api/sales",
+        "status": 409,
+        "error": {
+          "code": "STOCK_SHORT",
+          "message": "Regular Socks is out of stock. Nothing was saved.",
+          "details": {
+            "shortages": [
+              {
+                "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+                "name": "Regular Socks",
+                "requested": 1,
+                "available": 0
+              }
+            ]
+          }
+        }
+      },
+      "refusedSaleId": "01a1c004-b34a-79c9-ad3c-9e84f4e94548",
+      "saleReadAfter": 404,
+      "tillSales": [
+        {
+          "id": "01a1c000-f82f-7874-bc79-dc429b6bc302",
+          "receipt": "Z[number withheld]",
+          "status": "finalised",
+          "gross": 104000
+        }
+      ],
+      "socks": {
+        "at": "[number withheld]T11:15:26.118Z",
+        "total": 0,
+        "status": "out",
+        "places": [
+          {
+            "locationId": "01a0fa0b-8a47-78fe-9834-fe6333770607",
+            "name": "Store",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4e39997316",
+            "name": "BOH",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+            "name": "FOH (sell point)",
+            "quantity": 0
+          }
+        ],
+        "sellable": {
+          "variantId": null,
+          "label": null,
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "available": 0,
+          "atSellPoint": 0,
+          "lowStockThreshold": 20,
+          "status": "out"
+        }
+      },
+      "afterBack": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 3 out of stock · 1 low Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Customer Details Ask the customer to enter their details on their display. Waiting for the customer… The customer display is now their turn to enter a phone & nickname. Phone [number withheld] Nickname — Back Current Order TOURIST 1 Hour Play EDITING ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Free Socks ฿0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040 English YOUR TURN Enter your details For membership & so we can reach you Phone number [number withheld] We will use the number you gave at the start. Nickname Done",
+      "afterCancel": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 3 out of stock · 1 low Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Membership Check The customer is entering their phone on their display to apply any verified rate. Waiting for the customer… Enter phone to look up membership A phone number is required for every visit — it is how the team reaches the family about their child’s safety. Phone — Nickname — EVENT PASSES Flat day entry — no membership needed No active events Today's camp sessions and upcoming events appear here. Redeem Booking Current Order No items added yet Apply Redeem Issue a voucher… Add manual discount Subtotal ฿0 Total ฿0 Cancel Pay ฿0 English MEMBERS SAVE What's your phone number? Members are recognised automatically and get their member rate. We need a phone number for every visit, so we can reach you about your child's safety. Phone Number 🇹🇭 +66 8X XXX XXXX [n] Clear 0 WhatsApp Telegram LINE Nickname (Optional) Continue",
+      "tillSalesAfterCancel": [
+        {
+          "id": "01a1c000-f82f-7874-bc79-dc429b6bc302",
+          "receipt": "Z[number withheld]",
+          "status": "finalised"
+        }
+      ]
+    },
+    "adj_restore-after-empty": {
+      "requested": {
+        "delta": 4,
+        "reason": "ZZ TEST SCRUM-799: reverse the out of stock check",
+        "chip": false
+      },
+      "before": {
+        "at": "[number withheld]T11:15:52.978Z",
+        "total": 0,
+        "status": "out",
+        "places": [
+          {
+            "locationId": "01a0fa0b-8a47-78fe-9834-fe6333770607",
+            "name": "Store",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4e39997316",
+            "name": "BOH",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+            "name": "FOH (sell point)",
+            "quantity": 0
+          }
+        ],
+        "sellable": {
+          "variantId": null,
+          "label": null,
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "available": 0,
+          "atSellPoint": 0,
+          "lowStockThreshold": 20,
+          "status": "out"
+        }
+      },
+      "dialog": "Adjust stock — Regular Socks Variant: Default · Current: 0 Adjustment (+/−) * New stock after adjustment: 4 Reason * Received shipment Inventory recount Damaged / shrinkage Staff use Complimentary / staff use Cancel Apply adjustment Close",
+      "reasonField": "ZZ TEST SCRUM-799: reverse the out of stock check",
+      "chipPressed": null,
+      "net": [
+        {
+          "at": "[number withheld]T11:16:01.589Z",
+          "method": "POST",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/adjustments",
+          "status": 200,
+          "request": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": 4,
+            "reason": "ZZ TEST SCRUM-799: reverse the out of stock check"
+          },
+          "response": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": 4,
+            "movements": [
+              {
+                "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+                "quantity": 4,
+                "levelAfter": 4
+              }
+            ]
+          }
+        }
+      ],
+      "after": {
+        "at": "[number withheld]T11:16:06.699Z",
+        "total": 4,
+        "status": "low",
+        "places": [
+          {
+            "locationId": "01a0fa0b-8a47-78fe-9834-fe6333770607",
+            "name": "Store",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4e39997316",
+            "name": "BOH",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+            "name": "FOH (sell point)",
+            "quantity": 4
+          }
+        ],
+        "sellable": {
+          "variantId": null,
+          "label": null,
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "available": 4,
+          "atSellPoint": 4,
+          "lowStockThreshold": 20,
+          "status": "low"
+        }
+      },
+      "cardAfter": "Regular Socks Add-on 01a0cb02-13a9-790f-85a1-73e6ccf9f9da Default Low · 4 Adjust"
+    },
+    "adj_complimentary": {
+      "requested": {
+        "delta": -1,
+        "reason": "Complimentary / staff use",
+        "chip": true
+      },
+      "before": {
+        "at": "[number withheld]T11:16:16.993Z",
+        "total": 4,
+        "status": "low",
+        "places": [
+          {
+            "locationId": "01a0fa0b-8a47-78fe-9834-fe6333770607",
+            "name": "Store",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4e39997316",
+            "name": "BOH",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+            "name": "FOH (sell point)",
+            "quantity": 4
+          }
+        ],
+        "sellable": {
+          "variantId": null,
+          "label": null,
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "available": 4,
+          "atSellPoint": 4,
+          "lowStockThreshold": 20,
+          "status": "low"
+        }
+      },
+      "dialog": "Adjust stock — Regular Socks Variant: Default · Current: 4 Adjustment (+/−) * New stock after adjustment: 3 Reason * Received shipment Inventory recount Damaged / shrinkage Staff use Complimentary / staff use Cancel Apply adjustment Close",
+      "reasonField": "Complimentary / staff use",
+      "chipPressed": "rounded-full border px-3 py-1 text-xs transition-all border-primary bg-primary/10 text-primary",
+      "net": [
+        {
+          "at": "[number withheld]T11:16:26.252Z",
+          "method": "POST",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/adjustments",
+          "status": 200,
+          "request": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": -1,
+            "reason": "Complimentary / staff use"
+          },
+          "response": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": -1,
+            "movements": [
+              {
+                "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+                "quantity": -1,
+                "levelAfter": 3
+              }
+            ]
+          }
+        }
+      ],
+      "after": {
+        "at": "[number withheld]T11:16:31.329Z",
+        "total": 3,
+        "status": "low",
+        "places": [
+          {
+            "locationId": "01a0fa0b-8a47-78fe-9834-fe6333770607",
+            "name": "Store",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4e39997316",
+            "name": "BOH",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+            "name": "FOH (sell point)",
+            "quantity": 3
+          }
+        ],
+        "sellable": {
+          "variantId": null,
+          "label": null,
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "available": 3,
+          "atSellPoint": 3,
+          "lowStockThreshold": 20,
+          "status": "low"
+        }
+      },
+      "cardAfter": "Regular Socks Add-on 01a0cb02-13a9-790f-85a1-73e6ccf9f9da Default Low · 3 Adjust"
+    },
+    "movements_after-complimentary": {
+      "at": "[number withheld]T11:16:44.046Z",
+      "status": 200,
+      "rows": [
+        {
+          "id": "01a1c006-1500-7ec0-8f57-0c6e93bc95ff",
+          "occurredAt": "[number withheld]T11:16:26.487Z",
+          "kind": "adjust",
+          "quantity": -1,
+          "levelAfter": 3,
+          "reason": "Complimentary / staff use",
+          "saleId": null,
+          "saleLineId": null,
+          "stockLocationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed"
+        },
+        {
+          "id": "01a1c005-b4a8-7f33-b2d3-34cc8cf1bb92",
+          "occurredAt": "[number withheld]T11:16:01.828Z",
+          "kind": "adjust",
+          "quantity": 4,
+          "levelAfter": 4,
+          "reason": "ZZ TEST SCRUM-799: reverse the out of stock check",
+          "saleId": null,
+          "saleLineId": null,
+          "stockLocationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed"
+        },
+        {
+          "id": "01a1c003-61ee-7fba-8f2b-ac8ece6b52b1",
+          "occurredAt": "[number withheld]T11:13:29.575Z",
+          "kind": "adjust",
+          "quantity": -4,
+          "levelAfter": 0,
+          "reason": "ZZ TEST SCRUM-799: out of stock check",
+          "saleId": null,
+          "saleLineId": null,
+          "stockLocationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed"
+        },
+        {
+          "id": "01a1c001-50a3-7a2d-b219-689e5a27c8ab",
+          "occurredAt": "[number withheld]T11:11:14.041Z",
+          "kind": "sale",
+          "quantity": -1,
+          "levelAfter": 4,
+          "reason": null,
+          "saleId": "01a1c000-f82f-7874-bc79-dc429b6bc302",
+          "saleLineId": "01a1c000-f82f-74e1-9169-08f4af63da1b",
+          "stockLocationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed"
+        },
+        {
+          "id": "01a1bffb-5bec-70ff-96cc-f7bfde1a6c3c",
+          "occurredAt": "[number withheld]T11:04:43.750Z",
+          "kind": "adjust",
+          "quantity": 5,
+          "levelAfter": 5,
+          "reason": "ZZ TEST SCRUM-799: stock for the free socks proof",
+          "saleId": null,
+          "saleLineId": null,
+          "stockLocationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed"
+        },
+        {
+          "id": "01a1ac39-b6f5-7969-a212-01de9d91e7ec",
+          "occurredAt": "[number withheld]T15:00:25.967Z",
+          "kind": "adjust",
+          "quantity": -3,
+          "levelAfter": 0,
+          "reason": "ZZ TEST SCRUM-768 staging proof: take back the 3 unused test socks",
+          "saleId": null,
+          "saleLineId": null,
+          "stockLocationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed"
+        },
+        {
+          "id": "01a1ac37-46cc-7d25-ae6c-7ed40c1577bc",
+          "occurredAt": "[number withheld]T14:57:46.101Z",
+          "kind": "sale",
+          "quantity": -1,
+          "levelAfter": 3,
+          "reason": null,
+          "saleId": "01a1ac36-eea2-7d12-a5ea-e4fe25ad2a1b",
+          "saleLineId": "01a1ac36-eea2-7165-adb3-1706368874f9",
+          "stockLocationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed"
+        },
+        {
+          "id": "01a1ac37-46c8-706d-8f10-8cd69408435a",
+          "occurredAt": "[number withheld]T14:57:46.101Z",
+          "kind": "sale",
+          "quantity": -1,
+          "levelAfter": 4,
+          "reason": null,
+          "saleId": "01a1ac36-eea2-7d12-a5ea-e4fe25ad2a1b",
+          "saleLineId": "01a1ac36-eea2-76ce-a4cc-8d47efa699fe",
+          "stockLocationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed"
+        },
+        {
+          "id": "01a1ac34-d2a1-7ccc-8b0c-fbc458465515",
+          "occurredAt": "[number withheld]T14:55:05.370Z",
+          "kind": "adjust",
+          "quantity": 5,
+          "levelAfter": 5,
+          "reason": "ZZ TEST SCRUM-768 staging proof: 5 Regular Socks for the socks counter test",
+          "saleId": null,
+          "saleLineId": null,
+          "stockLocationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed"
+        }
+      ]
+    },
+    "s5c": {
+      "at": "[number withheld]T11:25:06.618Z",
+      "panel": "Open a row for the full before-and-after stock.adjust Khun Anan (Owner) · 9 Nov 2026, 18:16:26 GMT+7 ACTOR Khun Anan (Owner) BRANCH Oto Play Park, Central Floresta ENTITY stock_item 01a0fa0b-8a6f-7a87-97f4-c118e0be28ff WHEN 9 Nov 2026, 18:16:26 GMT+7 REQUEST ID 14d7c2ab-b161-436f-bc65-56059db0f782 You are reading these rows unmasked. That read is recorded as audit.read_sensitive against your account. Changes Raw record Related DELTA now -1 MOVEMENTS now [{\"quantity\":-1,\"locationId\":\"01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed\"}] REASON now Complimentary / staff use REQUESTED DELTA now -1"
+    },
+    "adj_restore-after-complimentary": {
+      "requested": {
+        "delta": 1,
+        "reason": "ZZ TEST SCRUM-799: reverse the complimentary check",
+        "chip": false
+      },
+      "before": {
+        "at": "[number withheld]T11:25:25.103Z",
+        "total": 3,
+        "status": "low",
+        "places": [
+          {
+            "locationId": "01a0fa0b-8a47-78fe-9834-fe6333770607",
+            "name": "Store",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4e39997316",
+            "name": "BOH",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+            "name": "FOH (sell point)",
+            "quantity": 3
+          }
+        ],
+        "sellable": {
+          "variantId": null,
+          "label": null,
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "available": 3,
+          "atSellPoint": 3,
+          "lowStockThreshold": 20,
+          "status": "low"
+        }
+      },
+      "dialog": "Adjust stock — Regular Socks Variant: Default · Current: 3 Adjustment (+/−) * New stock after adjustment: 4 Reason * Received shipment Inventory recount Damaged / shrinkage Staff use Complimentary / staff use Cancel Apply adjustment Close",
+      "reasonField": "ZZ TEST SCRUM-799: reverse the complimentary check",
+      "chipPressed": null,
+      "net": [
+        {
+          "at": "[number withheld]T11:25:33.877Z",
+          "method": "POST",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/adjustments",
+          "status": 200,
+          "request": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": 1,
+            "reason": "ZZ TEST SCRUM-799: reverse the complimentary check"
+          },
+          "response": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": 1,
+            "movements": [
+              {
+                "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+                "quantity": 1,
+                "levelAfter": 4
+              }
+            ]
+          }
+        }
+      ],
+      "after": {
+        "at": "[number withheld]T11:25:38.591Z",
+        "total": 4,
+        "status": "low",
+        "places": [
+          {
+            "locationId": "01a0fa0b-8a47-78fe-9834-fe6333770607",
+            "name": "Store",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4e39997316",
+            "name": "BOH",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+            "name": "FOH (sell point)",
+            "quantity": 4
+          }
+        ],
+        "sellable": {
+          "variantId": null,
+          "label": null,
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "available": 4,
+          "atSellPoint": 4,
+          "lowStockThreshold": 20,
+          "status": "low"
+        }
+      },
+      "cardAfter": "Regular Socks Add-on 01a0cb02-13a9-790f-85a1-73e6ccf9f9da Default Low · 4 Adjust"
+    },
+    "adj_take-back-unused": {
+      "requested": {
+        "delta": -4,
+        "reason": "ZZ TEST SCRUM-799: take back the 4 unused test pairs",
+        "chip": false
+      },
+      "before": {
+        "at": "[number withheld]T11:25:46.738Z",
+        "total": 4,
+        "status": "low",
+        "places": [
+          {
+            "locationId": "01a0fa0b-8a47-78fe-9834-fe6333770607",
+            "name": "Store",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4e39997316",
+            "name": "BOH",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+            "name": "FOH (sell point)",
+            "quantity": 4
+          }
+        ],
+        "sellable": {
+          "variantId": null,
+          "label": null,
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "available": 4,
+          "atSellPoint": 4,
+          "lowStockThreshold": 20,
+          "status": "low"
+        }
+      },
+      "dialog": "Adjust stock — Regular Socks Variant: Default · Current: 4 Adjustment (+/−) * New stock after adjustment: 0 Reason * Received shipment Inventory recount Damaged / shrinkage Staff use Complimentary / staff use Cancel Apply adjustment Close",
+      "reasonField": "ZZ TEST SCRUM-799: take back the 4 unused test pairs",
+      "chipPressed": null,
+      "net": [
+        {
+          "at": "[number withheld]T11:25:56.549Z",
+          "method": "POST",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/adjustments",
+          "status": 200,
+          "request": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": -4,
+            "reason": "ZZ TEST SCRUM-799: take back the 4 unused test pairs"
+          },
+          "response": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": -4,
+            "movements": [
+              {
+                "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+                "quantity": -4,
+                "levelAfter": 0
+              }
+            ]
+          }
+        }
+      ],
+      "after": {
+        "at": "[number withheld]T11:26:01.718Z",
+        "total": 0,
+        "status": "out",
+        "places": [
+          {
+            "locationId": "01a0fa0b-8a47-78fe-9834-fe6333770607",
+            "name": "Store",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4e39997316",
+            "name": "BOH",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+            "name": "FOH (sell point)",
+            "quantity": 0
+          }
+        ],
+        "sellable": {
+          "variantId": null,
+          "label": null,
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "available": 0,
+          "atSellPoint": 0,
+          "lowStockThreshold": 20,
+          "status": "out"
+        }
+      },
+      "cardAfter": "Regular Socks Add-on 01a0cb02-13a9-790f-85a1-73e6ccf9f9da Default Out Adjust"
+    },
+    "movementsFinal": {
+      "at": "[number withheld]T11:26:21.731Z",
+      "status": 200,
+      "rows": [
+        {
+          "id": "01a1c00e-c8b1-7464-8023-246fc01d6112",
+          "occurredAt": "[number withheld]T11:25:56.779Z",
+          "kind": "adjust",
+          "quantity": -4,
+          "levelAfter": 0,
+          "reason": "ZZ TEST SCRUM-799: take back the 4 unused test pairs",
+          "saleId": null,
+          "saleLineId": null,
+          "stockLocationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed"
+        },
+        {
+          "id": "01a1c00e-7031-7209-81a5-bd715f8dd7f4",
+          "occurredAt": "[number withheld]T11:25:34.124Z",
+          "kind": "adjust",
+          "quantity": 1,
+          "levelAfter": 4,
+          "reason": "ZZ TEST SCRUM-799: reverse the complimentary check",
+          "saleId": null,
+          "saleLineId": null,
+          "stockLocationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed"
+        },
+        {
+          "id": "01a1c006-1500-7ec0-8f57-0c6e93bc95ff",
+          "occurredAt": "[number withheld]T11:16:26.487Z",
+          "kind": "adjust",
+          "quantity": -1,
+          "levelAfter": 3,
+          "reason": "Complimentary / staff use",
+          "saleId": null,
+          "saleLineId": null,
+          "stockLocationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed"
+        },
+        {
+          "id": "01a1c005-b4a8-7f33-b2d3-34cc8cf1bb92",
+          "occurredAt": "[number withheld]T11:16:01.828Z",
+          "kind": "adjust",
+          "quantity": 4,
+          "levelAfter": 4,
+          "reason": "ZZ TEST SCRUM-799: reverse the out of stock check",
+          "saleId": null,
+          "saleLineId": null,
+          "stockLocationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed"
+        },
+        {
+          "id": "01a1c003-61ee-7fba-8f2b-ac8ece6b52b1",
+          "occurredAt": "[number withheld]T11:13:29.575Z",
+          "kind": "adjust",
+          "quantity": -4,
+          "levelAfter": 0,
+          "reason": "ZZ TEST SCRUM-799: out of stock check",
+          "saleId": null,
+          "saleLineId": null,
+          "stockLocationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed"
+        },
+        {
+          "id": "01a1c001-50a3-7a2d-b219-689e5a27c8ab",
+          "occurredAt": "[number withheld]T11:11:14.041Z",
+          "kind": "sale",
+          "quantity": -1,
+          "levelAfter": 4,
+          "reason": null,
+          "saleId": "01a1c000-f82f-7874-bc79-dc429b6bc302",
+          "saleLineId": "01a1c000-f82f-74e1-9169-08f4af63da1b",
+          "stockLocationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed"
+        },
+        {
+          "id": "01a1bffb-5bec-70ff-96cc-f7bfde1a6c3c",
+          "occurredAt": "[number withheld]T11:04:43.750Z",
+          "kind": "adjust",
+          "quantity": 5,
+          "levelAfter": 5,
+          "reason": "ZZ TEST SCRUM-799: stock for the free socks proof",
+          "saleId": null,
+          "saleLineId": null,
+          "stockLocationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed"
+        }
+      ],
+      "lastBeforeRun": {
+        "occurredAt": "[number withheld]T15:00:25.967Z",
+        "kind": "adjust",
+        "quantity": -3,
+        "levelAfter": 0,
+        "reason": "ZZ TEST SCRUM-768 staging proof: take back the 3 unused test socks"
+      }
+    }
+  },
+  "images": [
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-01a-inventory-regular-socks-before.png",
+      "at": "[number withheld]T11:04:40.814Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/inventory",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Console > Inventory, Park = Central Floresta: the Regular Socks add-on card before the run reads \"Regular Socks Add-on  Default Out Adjust\" (N = 0)"
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-01b-adjust-plus-5-zz-test.png",
+      "at": "[number withheld]T11:04:43.016Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/inventory",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Inventory > Regular Socks > Adjust: +5 with the reason \"ZZ TEST SCRUM-799: stock for the free socks proof\" (New stock after adjustment 5); the reason chips read Received shipment, Inventory recount, Damaged / shrinkage, Staff use, Complimentary / staff use"
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-01c-inventory-regular-socks-5.png",
+      "at": "[number withheld]T11:04:50.757Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/inventory",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Inventory after the ZZ TEST +5: the Regular Socks card reads \"Regular Socks Add-on  Default Low · 5 Adjust\""
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-02a-add-ons-list.png",
+      "at": "[number withheld]T11:07:42.654Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/add-ons",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Console > Catalogue > Add-ons, Park = Central Floresta: Free Socks ฿0 and Regular Socks ฿60 among the six add-ons"
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-02b-free-socks-form-before.png",
+      "at": "[number withheld]T11:07:45.025Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/add-ons",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Edit Free Socks before the change: price ฿0, \"Takes stock from\" reads \"Nothing — not counted\""
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-02c-takes-stock-from-options.png",
+      "at": "[number withheld]T11:07:46.770Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/add-ons",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The \"Takes stock from\" list open: Nothing — not counted | Glow Band | Locker Rental | Refillable Drink Cup | Regular Socks"
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-02d-takes-stock-from-regular-socks-chosen.png",
+      "at": "[number withheld]T11:07:48.466Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/add-ons",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Edit Free Socks with \"Takes stock from\" = Regular Socks chosen, before Save"
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-02e-free-socks-form-reopened-share-set.png",
+      "at": "[number withheld]T11:07:55.832Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/add-ons",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Free Socks reopened after Save: \"Takes stock from\" reads \"Regular Socks\", price still ฿0"
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-02f-activity-product-stock-share.png",
+      "at": "[number withheld]T11:08:58.277Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/watch/activity",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Console > Activity, action product.stock_share, branch Central Floresta: one row at 18:07:49 by Khun Anan (Owner) on product 01a1bf0a (Free Socks); Changes: shares with product id was - now 01a0cb02 (Regular Socks), stock item id was - now 01a0fa0b (the Regular Socks shelf)"
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-03a-order-panel-free-socks-0.png",
+      "at": "[number withheld]T11:10:30.129Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Till (ZZ TEST SCRUM-799 till), walk-in Tourist, 1 Hour Play, 1 kid + 1 adult: the order panel lists \"Free Socks ฿0\" with the Regular Socks counter at 0; the customer display lists Kids 1 × ฿690, Adults 1 × ฿350 and \"Free Socks 1 × ฿0 ฿0\", total ฿1,040"
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-03b-add-on-grid-free-socks-1.png",
+      "at": "[number withheld]T11:10:33.720Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The same order with the customer half hidden: the Extras & Add-ons grid has Free Socks +฿0 at 1 and Regular Socks +฿60 at 0; the order panel lists Free Socks ฿0; total ฿1,040"
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-03c-payment-successful.png",
+      "at": "[number withheld]T11:11:18.254Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Payment Successful on the ZZ TEST till, cash, ฿1,040 (band codes and QR grids hidden)"
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-03d-inventory-regular-socks-4-after-free-pair-top.png",
+      "at": "[number withheld]T11:12:19.381Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/inventory",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Console > Inventory, Park = Central Floresta, after the free-socks sale Z[number withheld]: the Needs restocking strip reads Regular Socks Low · 4"
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-03d-inventory-regular-socks-4-after-free-pair.png",
+      "at": "[number withheld]T11:12:21.024Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/inventory",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Inventory after the sale Z[number withheld]: Regular Socks is down by the one free pair, 5 to 4 (N + 5 ZZ TEST - 1) (card reads \"Regular Socks Add-on  Default Low · 4 Adjust\")"
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-03e-activity-stock-sale.png",
+      "at": "[number withheld]T11:12:53.070Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/watch/activity",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Console > Activity, action stock.sale, Central Floresta: the newest row, 9 Nov 18:11:14 by Som (Reception) on sale 01a1c000-f82f (Z[number withheld]): movements now quantity -1, levelAfter 4, stockItemId 01a0fa0b-8a6f (the Regular Socks shelf) at the FOH sell point; no shortfall"
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-04a-adjust-minus-4-to-0.png",
+      "at": "[number withheld]T11:13:28.846Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/inventory",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Inventory > Regular Socks > Adjust: -4 with the reason \"ZZ TEST SCRUM-799: out of stock check\" (New stock after adjustment 0)"
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-04b-inventory-regular-socks-out.png",
+      "at": "[number withheld]T11:13:36.032Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/inventory",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Inventory after the ZZ TEST -4: Regular Socks is out (card reads \"Regular Socks Add-on  Default Out Adjust\")"
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-04c-till-refuses-regular-socks-out-of-stock.png",
+      "at": "[number withheld]T11:15:25.797Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Till, a new walk-in 1 Hour Play with Free Socks x1 while Regular Socks reads 0: at Pay the platform refuses (409 STOCK_SHORT) and the payment panel reads \"This sale has not been saved. Regular Socks is out of stock. Nothing was saved. ... Nothing was charged.\""
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-04d-inventory-regular-socks-4-restored.png",
+      "at": "[number withheld]T11:16:08.357Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/inventory",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Inventory after the ZZ TEST +4 that reverses the out of stock check: Regular Socks back to 4 (card reads \"Regular Socks Add-on  Default Low · 4 Adjust\")"
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-05a-adjust-minus-1-complimentary-chip.png",
+      "at": "[number withheld]T11:16:25.756Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/inventory",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Inventory > Regular Socks > Adjust: -1 with the \"Complimentary / staff use\" chip tapped (highlighted; the reason field reads the same words); New stock after adjustment 3. ZZ TEST: reversed at the end"
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-05b-inventory-regular-socks-3.png",
+      "at": "[number withheld]T11:16:32.995Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/inventory",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Inventory after the complimentary -1: Regular Socks 3 (card reads \"Regular Socks Add-on  Default Low · 3 Adjust\")"
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-05c-activity-stock-adjust-complimentary.png",
+      "at": "[number withheld]T11:25:06.616Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/watch/activity",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Console > Activity, action stock.adjust, Central Floresta: the newest row, 9 Nov 18:16:26 by Khun Anan (Owner) on stock item 01a0fa0b-8a6f (Regular Socks): delta -1, reason \"Complimentary / staff use\", requested delta -1, one movement of -1 at the FOH sell point"
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-06a-adjust-minus-4-take-back.png",
+      "at": "[number withheld]T11:25:55.640Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/inventory",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Clean-up: Inventory > Regular Socks > Adjust -4, reason \"ZZ TEST SCRUM-799: take back the 4 unused test pairs\" (New stock after adjustment 0)"
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-06b-inventory-regular-socks-back-to-0.png",
+      "at": "[number withheld]T11:26:03.393Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/inventory",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "After clean-up: Regular Socks reads Out, 0, as before the run (N = 0) (card reads \"Regular Socks Add-on  Default Out Adjust\")"
+    },
+    {
+      "file": "docs/qa/proof-[number withheld]/SCRUM-799/staging/s799-st-06c-movements-list-api-read.png",
+      "at": "[number withheld]T11:26:22.644Z",
+      "page": "MV",
+      "url": "about:blank",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The Regular Socks movements list (API read, drawn as a table): +5 ZZ TEST stock, -1 sale on the Free Socks line of Z[number withheld], -4 / +4 out of stock check and its reversal, -1 \"Complimentary / staff use\" and its +1 reversal, -4 take back; level 0 at the end, as before the run"
+    }
+  ],
+  "created": [
+    {
+      "kind": "stock-adjustment",
+      "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+      "delta": 5,
+      "reason": "ZZ TEST SCRUM-799: stock for the free socks proof",
+      "at": "[number withheld]T11:04:49.091Z",
+      "reverse": true
+    },
+    {
+      "kind": "durable-setting",
+      "what": "Free Socks (CF-AO-FREE-SOCKS) takes stock from Regular Socks at Central Floresta",
+      "productId": "01a1bf0a-20af-7367-ad7f-f3ac8dd4e2e3",
+      "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+      "at": "[number withheld]T11:07:53.391Z",
+      "reverse": false
+    },
+    {
+      "kind": "station",
+      "id": "01a1bfff-b2c8-79d4-af7c-ecdf1ad1cfe9",
+      "name": "ZZ TEST SCRUM-799 till",
+      "box": "Virtual box 1",
+      "prefix": "Z799",
+      "at": "[number withheld]T11:09:27.630Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1c000-f82f-7874-bc79-dc429b6bc302",
+      "purpose": "free",
+      "what": "ZZ TEST walk-in, Tourist, 1 Hour Play, 1 kid + 1 adult, Free Socks x1, cash only",
+      "at": "[number withheld]T11:10:55.045Z"
+    },
+    {
+      "kind": "stock-adjustment",
+      "purpose": "empty",
+      "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+      "delta": -4,
+      "reason": "ZZ TEST SCRUM-799: out of stock check",
+      "at": "[number withheld]T11:13:34.419Z",
+      "reverse": true
+    },
+    {
+      "kind": "stock-adjustment",
+      "purpose": "restore-after-empty",
+      "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+      "delta": 4,
+      "reason": "ZZ TEST SCRUM-799: reverse the out of stock check",
+      "at": "[number withheld]T11:16:06.715Z",
+      "reverse": "reverses empty"
+    },
+    {
+      "kind": "stock-adjustment",
+      "purpose": "complimentary",
+      "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+      "delta": -1,
+      "reason": "Complimentary / staff use",
+      "at": "[number withheld]T11:16:31.350Z",
+      "reverse": true
+    },
+    {
+      "kind": "stock-adjustment",
+      "purpose": "restore-after-complimentary",
+      "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+      "delta": 1,
+      "reason": "ZZ TEST SCRUM-799: reverse the complimentary check",
+      "at": "[number withheld]T11:25:38.618Z",
+      "reverse": "reverses complimentary"
+    },
+    {
+      "kind": "stock-adjustment",
+      "purpose": "take-back-unused",
+      "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+      "delta": -4,
+      "reason": "ZZ TEST SCRUM-799: take back the 4 unused test pairs",
+      "at": "[number withheld]T11:26:01.733Z",
+      "reverse": "reverses stock (the +5; the fifth pair went out with sale Z[number withheld])"
+    }
+  ],
+  "writes": [
+    {
+      "at": "[number withheld]T11:04:49.091Z",
+      "by": "Console (admin)",
+      "what": "Regular Socks Adjust +5",
+      "reason": "ZZ TEST SCRUM-799: stock for the free socks proof",
+      "net": [
+        {
+          "at": "[number withheld]T11:04:43.540Z",
+          "method": "POST",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/adjustments",
+          "status": 200,
+          "request": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": 5,
+            "reason": "ZZ TEST SCRUM-799: stock for the free socks proof"
+          },
+          "response": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": 5,
+            "movements": [
+              {
+                "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+                "quantity": 5,
+                "levelAfter": 5
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "at": "[number withheld]T11:07:53.391Z",
+      "by": "Console (admin)",
+      "what": "Free Socks: Takes stock from = Regular Socks (the intended durable change)",
+      "net": [
+        {
+          "at": "[number withheld]T11:07:49.068Z",
+          "method": "PATCH",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/menu/products/01a1bf0a-20af-7367-ad7f-f3ac8dd4e2e3",
+          "status": 200,
+          "request": {
+            "kind": "addon",
+            "name": "Free Socks",
+            "code": "CF-AO-FREE-SOCKS",
+            "description": null,
+            "categoryId": "01a0cb[number withheld]bc32eba72",
+            "priceSatang": 0,
+            "priceWeekendSatang": null,
+            "taxCategoryOverride": null,
+            "translations": null,
+            "stockShareItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "sortOrder": 0,
+            "active": true
+          },
+          "response": {}
+        }
+      ]
+    },
+    {
+      "at": "[number withheld]T11:09:27.630Z",
+      "by": "admin api",
+      "what": "POST /branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200,
+      "result": {
+        "stationId": "01a1bfff-b2c8-79d4-af7c-ecdf1ad1cfe9",
+        "name": "ZZ TEST SCRUM-799 till",
+        "prefix": "Z799",
+        "box": "Virtual box 1",
+        "devices": [
+          "adult_band:Band Printer (adults)",
+          "kids_band:Band Printer (kids)",
+          "receipt:Receipt Printer 1"
+        ]
+      }
+    },
+    {
+      "at": "[number withheld]T11:10:55.045Z",
+      "by": "till (reception)",
+      "what": "commit at Pay",
+      "purpose": "free",
+      "net": [
+        {
+          "at": "[number withheld]T11:10:51.555Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200,
+          "error": null
+        }
+      ],
+      "saleId": "01a1c000-f82f-7874-bc79-dc429b6bc302"
+    },
+    {
+      "at": "[number withheld]T11:11:13.483Z",
+      "by": "till (reception)",
+      "what": "cash payment, full amount",
+      "purpose": "free",
+      "saleId": "01a1c000-f82f-7874-bc79-dc429b6bc302",
+      "receipt": "Z[number withheld]",
+      "status": "finalised",
+      "net": [
+        {
+          "at": "[number withheld]T11:11:13.766Z",
+          "method": "POST",
+          "path": "/api/sales/01a1c000-f82f-7874-bc79-dc429b6bc302/finalise",
+          "status": 200
+        },
+        {
+          "at": "[number withheld]T11:11:13.872Z",
+          "method": "POST",
+          "path": "/api/box/v1/station/01a1bfff-b2c8-79d4-af7c-ecdf1ad1cfe9/intents",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "at": "[number withheld]T11:13:34.419Z",
+      "by": "Console (admin)",
+      "what": "Regular Socks Adjust -4",
+      "purpose": "empty",
+      "reason": "ZZ TEST SCRUM-799: out of stock check",
+      "net": [
+        {
+          "at": "[number withheld]T11:13:29.339Z",
+          "method": "POST",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/adjustments",
+          "status": 200,
+          "request": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": -4,
+            "reason": "ZZ TEST SCRUM-799: out of stock check"
+          },
+          "response": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": -4,
+            "movements": [
+              {
+                "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+                "quantity": -4,
+                "levelAfter": 0
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "at": "[number withheld]T11:15:05.410Z",
+      "by": "till (reception)",
+      "what": "commit at Pay",
+      "purpose": "oos",
+      "net": [
+        {
+          "at": "[number withheld]T11:14:56.046Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 409,
+          "error": {
+            "code": "STOCK_SHORT",
+            "message": "Regular Socks is out of stock. Nothing was saved.",
+            "details": {
+              "shortages": [
+                {
+                  "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+                  "name": "Regular Socks",
+                  "requested": 1,
+                  "available": 0
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "saleId": null
+    },
+    {
+      "at": "[number withheld]T11:16:06.715Z",
+      "by": "Console (admin)",
+      "what": "Regular Socks Adjust +4",
+      "purpose": "restore-after-empty",
+      "reason": "ZZ TEST SCRUM-799: reverse the out of stock check",
+      "net": [
+        {
+          "at": "[number withheld]T11:16:01.589Z",
+          "method": "POST",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/adjustments",
+          "status": 200,
+          "request": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": 4,
+            "reason": "ZZ TEST SCRUM-799: reverse the out of stock check"
+          },
+          "response": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": 4,
+            "movements": [
+              {
+                "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+                "quantity": 4,
+                "levelAfter": 4
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "at": "[number withheld]T11:16:31.350Z",
+      "by": "Console (admin)",
+      "what": "Regular Socks Adjust -1",
+      "purpose": "complimentary",
+      "reason": "Complimentary / staff use",
+      "net": [
+        {
+          "at": "[number withheld]T11:16:26.252Z",
+          "method": "POST",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/adjustments",
+          "status": 200,
+          "request": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": -1,
+            "reason": "Complimentary / staff use"
+          },
+          "response": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": -1,
+            "movements": [
+              {
+                "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+                "quantity": -1,
+                "levelAfter": 3
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "at": "[number withheld]T11:25:38.618Z",
+      "by": "Console (admin)",
+      "what": "Regular Socks Adjust +1",
+      "purpose": "restore-after-complimentary",
+      "reason": "ZZ TEST SCRUM-799: reverse the complimentary check",
+      "net": [
+        {
+          "at": "[number withheld]T11:25:33.877Z",
+          "method": "POST",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/adjustments",
+          "status": 200,
+          "request": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": 1,
+            "reason": "ZZ TEST SCRUM-799: reverse the complimentary check"
+          },
+          "response": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": 1,
+            "movements": [
+              {
+                "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+                "quantity": 1,
+                "levelAfter": 4
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "at": "[number withheld]T11:26:01.733Z",
+      "by": "Console (admin)",
+      "what": "Regular Socks Adjust -4",
+      "purpose": "take-back-unused",
+      "reason": "ZZ TEST SCRUM-799: take back the 4 unused test pairs",
+      "net": [
+        {
+          "at": "[number withheld]T11:25:56.549Z",
+          "method": "POST",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/adjustments",
+          "status": 200,
+          "request": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": -4,
+            "reason": "ZZ TEST SCRUM-799: take back the 4 unused test pairs"
+          },
+          "response": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": -4,
+            "movements": [
+              {
+                "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+                "quantity": -4,
+                "levelAfter": 0
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "consoleSessions": [
+    {
+      "at": "[number withheld]T11:24:18.563Z",
+      "why": "Console tab stopped answering (page script frozen) after filtering Activity by stock.adjust; session signed out with its own cookie and the tab closed",
+      "signOut": 200,
+      "meAfter": 401
+    }
+  ],
+  "cleanup": {
+    "actions": [
+      {
+        "at": "[number withheld]T11:26:36.164Z",
+        "what": "till sign-out (its own session route)",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "[number withheld]T11:26:36.332Z",
+        "what": "unassign printers on ZZ TEST SCRUM-799 till",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "[number withheld]T11:26:36.420Z",
+        "what": "archive station ZZ TEST SCRUM-799 till",
+        "status": 200,
+        "code": null
+      }
+    ],
+    "startedAt": "[number withheld]T11:26:35.905Z",
+    "salesBefore": [
+      {
+        "id": "01a1c000-f82f-7874-bc79-dc429b6bc302",
+        "receipt": "Z[number withheld]",
+        "status": "finalised",
+        "gross": 104000
+      }
+    ],
+    "tillMeAfterSignOut": 401,
+    "readBack": {
+      "at": "[number withheld]T11:26:36.680Z",
+      "till": {
+        "id": "01a1bfff-b2c8-79d4-af7c-ecdf1ad1cfe9",
+        "name": "ZZ TEST SCRUM-799 till",
+        "archived": true,
+        "archivedAt": null,
+        "devices": 0
+      },
+      "salesAfter": [
+        {
+          "id": "01a1c000-f82f-7874-bc79-dc429b6bc302",
+          "receipt": "Z[number withheld]",
+          "status": "finalised",
+          "gross": 104000
+        }
+      ],
+      "walkInNumberIsNotAMember": {
+        "status": 200,
+        "found": false
+      },
+      "untouched": [
+        {
+          "name": "FWBooth1",
+          "archived": false,
+          "devices": 1
+        },
+        {
+          "name": "Reception Till 1",
+          "archived": false,
+          "devices": 7
+        },
+        {
+          "name": "Till 1 (Pi)",
+          "archived": false,
+          "devices": 4
+        },
+        {
+          "name": "Till 2 (test)",
+          "archived": false,
+          "devices": 4
+        }
+      ]
+    },
+    "finishedAt": "[number withheld]T11:26:36.680Z"
+  },
+  "final": {
+    "at": "[number withheld]T11:26:36.730Z",
+    "menu": [
+      {
+        "code": "CF-AO-FREE-SOCKS",
+        "name": "Free Socks",
+        "priceSatang": 0,
+        "stockLinks": [],
+        "stockShareItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff"
+      },
+      {
+        "code": "AO-SOCKS",
+        "name": "Regular Socks",
+        "priceSatang": 6000,
+        "stockLinks": [
+          {
+            "variantId": null,
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff"
+          }
+        ],
+        "stockShareItemId": null
+      }
+    ],
+    "socks": {
+      "at": "[number withheld]T11:26:37.000Z",
+      "total": 0,
+      "status": "out",
+      "places": [
+        {
+          "locationId": "01a0fa0b-8a47-78fe-9834-fe6333770607",
+          "name": "Store",
+          "quantity": 0
+        },
+        {
+          "locationId": "01a0fa0b-8a48-7dc8-812a-1b4e39997316",
+          "name": "BOH",
+          "quantity": 0
+        },
+        {
+          "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+          "name": "FOH (sell point)",
+          "quantity": 0
+        }
+      ],
+      "sellable": {
+        "variantId": null,
+        "label": null,
+        "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+        "available": 0,
+        "atSellPoint": 0,
+        "lowStockThreshold": 20,
+        "status": "out"
+      }
+    },
+    "shareAudit": [
+      {
+        "createdAt": "[number withheld]T11:07:49.299Z",
+        "before": {
+          "stockItemId": null
+        },
+        "after": {
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "sharesWithProductId": "01a0cb02-13a9-790f-85a1-73e6ccf9f9da"
+        }
+      }
+    ],
+    "consoleSignOut": {
+      "at": "[number withheld]T11:26:37.732Z",
+      "signInFormShownAgain": true,
+      "meAfter": 401
+    }
+  }
+}
