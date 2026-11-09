@@ -1,21 +1,25 @@
 // SCRUM-777 — undo one Schedule History action without touching later changes.
 //
 // Each logged action (a template applied, a week cleared) records its own
-// change set as it runs: the schedule rows it created and the rows it changed
-// as they stood right after it, and the rows it deleted in full. It is taken
-// by reading the branch's schedule for the action's dates just before and just
-// after the action and comparing the two (the actions themselves are not one
-// transaction, so a write somebody else makes in that same instant would be
-// counted in; the window is the action's own run time).
+// change set as it runs, from its own writes (server/lib/scheduleWriteLog.ts):
+// the rows its inserts returned, the rows its updates changed (as it read them
+// before and as the update returned them), and the rows its deletes returned
+// in full or, where the database removes them by cascade, as read just before.
+// A write somebody else makes to the same branch and week while the action
+// runs is never part of it, so an undo never reverses it.
 //
 // "Undo this action" then reverses only that, in one transaction:
 //   - a row it created is removed if it is still exactly as the action left
 //     it; a row somebody changed since is left alone and reported, and so is
 //     a shift row that has shifts on it now, or a shift that has a duty block
 //     or a hand-set break on it now;
-//   - a row it deleted is put back if its slot is still free (a shift: the
-//     same person, date and shift row has no shift now; a day off: the same
-//     person has none that day); otherwise it is left out and reported;
+//   - a row it deleted is put back if its place is still free and the app's
+//     own rules allow it now: a shift if the same person has no shift on that
+//     shift row and date and could be given that shift today (the check every
+//     new shift passes: not on leave or a day off, no overlapping shift, still
+//     employed, and the rest); a day off if the person has no shift and no
+//     other time off on any of its days (the check new time off passes);
+//     otherwise it is left out and reported;
 //   - a row it changed is changed back if nobody has changed it since.
 // Automatic breaks (source auto_rule) are derived from the shifts on a row and
 // date: they go with their shift and are worked out again afterwards for
@@ -31,7 +35,9 @@ import {
   scheduleWeekPlans,
 } from "@shared/schema";
 import { db } from "../db";
-import { scheduleParkPredicate } from "../schedule-scope";
+import { ScheduleScopeError, scheduleParkPredicate } from "../schedule-scope";
+import { storage } from "../storage";
+import { newScheduleWriteLog, noteScheduleUpdate, noteScheduleWrites, type ScheduleWriteLog } from "./scheduleWriteLog";
 
 type Executor = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -70,8 +76,6 @@ const tableOf = (group: ChangeSetGroup): AnyTable => TABLES[group];
 
 /** The branch and dates an action works on. */
 export type ScheduleScope = { branchId: string; from: string; to: string };
-
-export type ScheduleState = Record<ChangeSetGroup, ScheduleRow[]>;
 
 export interface ScheduleChangeSet {
   version: 1;
@@ -115,91 +119,77 @@ export const weekScope = (branchId: string, weekStartDate: string): ScheduleScop
   to: addDays(weekStartDate.slice(0, 10), 6),
 });
 
-/**
- * Everything an action on this branch and these dates can create, change or
- * delete: the branch's shift rows and their roles (a template adds rows that
- * start today, whatever week it is applied to), the shifts on those rows in
- * the dates with their breaks and duty blocks, the time off that starts in the
- * dates, and the week plans of those weeks.
- */
-export async function captureScheduleState(scope: ScheduleScope, tenantId: string, executor: Executor = db): Promise<ScheduleState> {
-  const park = (table: string) => scheduleParkPredicate(table, tenantId);
-  const byId = (a: { id: string }, b: { id: string }) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
-  const weekPlans = await executor.select().from(scheduleWeekPlans).where(and(
-    eq(scheduleWeekPlans.branchId, scope.branchId),
-    sql`${scheduleWeekPlans.weekStartDate} >= ${addDays(scope.from, -6)}::date`,
-    sql`${scheduleWeekPlans.weekStartDate} <= ${scope.to}::date`,
-    park("schedule_week_plans"),
-  ));
-  const shiftRows = await executor.select().from(scheduleShiftRows)
-    .where(and(eq(scheduleShiftRows.branchId, scope.branchId), park("schedule_shift_rows")));
-  const rowIds = shiftRows.map((row) => row.id);
-  const rowRoles = rowIds.length
-    ? await executor.select().from(scheduleShiftRowRoles)
-      .where(and(inArray(scheduleShiftRowRoles.shiftRowId, rowIds), park("schedule_shift_row_roles")))
-    : [];
-  const assignments = rowIds.length
-    ? await executor.select().from(scheduleAssignments).where(and(
-      inArray(scheduleAssignments.shiftRowId, rowIds),
-      sql`${scheduleAssignments.shiftDate} >= ${scope.from}::date`,
-      sql`${scheduleAssignments.shiftDate} <= ${scope.to}::date`,
-      park("schedule_assignments"),
-    ))
-    : [];
-  const assignmentIds = assignments.map((assignment) => assignment.id);
-  const breaks = assignmentIds.length
-    ? await executor.select().from(scheduleShiftBreaks)
-      .where(and(inArray(scheduleShiftBreaks.assignmentId, assignmentIds), park("schedule_shift_breaks")))
-    : [];
-  const blocks = assignmentIds.length
-    ? await executor.select().from(dutyBlocks)
-      .where(and(inArray(dutyBlocks.assignmentId, assignmentIds), park("duty_blocks")))
-    : [];
-  const timeOff = await executor.select().from(employeeTimeOff).where(and(
-    eq(employeeTimeOff.branchId, scope.branchId),
-    sql`${employeeTimeOff.startDate}::date >= ${scope.from}::date`,
-    sql`${employeeTimeOff.startDate}::date <= ${scope.to}::date`,
-    park("employee_time_off"),
-  ));
-  return plain({
-    weekPlans: [...weekPlans].sort(byId),
-    shiftRows: [...shiftRows].sort(byId),
-    rowRoles: [...rowRoles].sort(byId),
-    assignments: [...assignments].sort(byId),
-    breaks: [...breaks].sort(byId),
-    dutyBlocks: [...blocks].sort(byId),
-    timeOff: [...timeOff].sort(byId),
-  }) as ScheduleState;
-}
+const byId = (a: { id: string }, b: { id: string }) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 
-/** What changed between two readings of the same scope. */
-export function diffScheduleStates(scope: ScheduleScope, before: ScheduleState, after: ScheduleState): ScheduleChangeSet {
+/**
+ * The change set of one action: exactly the rows its own writes noted, as JSON
+ * keeps them; a row it updated to what it already was is not a change.
+ */
+export function scheduleChangeSetOf(scope: ScheduleScope, writes: ScheduleWriteLog): ScheduleChangeSet {
   const changeSet: ScheduleChangeSet = { version: 1, scope, created: {}, updated: {}, deleted: {} };
   for (const group of CHANGE_SET_GROUPS) {
-    const was = new Map(before[group].map((row) => [row.id, row]));
-    const is = new Map(after[group].map((row) => [row.id, row]));
-    const created = after[group].filter((row) => !was.has(row.id));
-    const deleted = before[group].filter((row) => !is.has(row.id));
-    const updated = after[group]
-      .filter((row) => was.has(row.id) && !sameScheduleRow(was.get(row.id), row))
-      .map((row) => ({ before: was.get(row.id)!, after: row }));
-    if (created.length) changeSet.created[group] = created;
-    if (updated.length) changeSet.updated[group] = updated;
-    if (deleted.length) changeSet.deleted[group] = deleted;
+    const created = plain(writes.created[group] ?? []) as ScheduleRow[];
+    const updated = (plain(writes.updated[group] ?? []) as Array<{ before: ScheduleRow; after: ScheduleRow }>)
+      .filter((entry) => !sameScheduleRow(entry.before, entry.after));
+    const deleted = plain(writes.deleted[group] ?? []) as ScheduleRow[];
+    if (created.length) changeSet.created[group] = created.sort(byId);
+    if (updated.length) changeSet.updated[group] = updated.sort((a, b) => byId(a.after, b.after));
+    if (deleted.length) changeSet.deleted[group] = deleted.sort(byId);
   }
   return changeSet;
 }
 
-/** Runs one action and returns what it changed in the scope. */
+/** Runs one action with a log for its writes, and returns what it changed. */
 export async function recordScheduleChange<T>(
   scope: ScheduleScope,
-  tenantId: string,
-  action: () => Promise<T>,
+  action: (writes: ScheduleWriteLog) => Promise<T>,
 ): Promise<{ result: T; changeSet: ScheduleChangeSet }> {
-  const before = await captureScheduleState(scope, tenantId);
-  const result = await action();
-  const after = await captureScheduleState(scope, tenantId);
-  return { result, changeSet: diffScheduleStates(scope, before, after) };
+  const writes = newScheduleWriteLog();
+  const result = await action(writes);
+  return { result, changeSet: scheduleChangeSetOf(scope, writes) };
+}
+
+/**
+ * Deletes a week plan and notes what that removes. The database takes the
+ * plan's own shifts with it, and their breaks and duty blocks, by cascade, and
+ * unlinks the shift rows that name it; those are read just before the delete,
+ * by the plan, not by the branch and dates, and the unlinked rows just after.
+ */
+export async function deleteWeekPlanNoting(
+  weekPlan: { id: string },
+  tenantId: string,
+  writes: ScheduleWriteLog,
+  remove: () => Promise<void>,
+): Promise<void> {
+  const park = (table: string) => scheduleParkPredicate(table, tenantId);
+  const shifts = await db.select().from(scheduleAssignments)
+    .where(and(eq(scheduleAssignments.weekPlanId, weekPlan.id), park("schedule_assignments")));
+  const shiftIds = shifts.map((shift) => shift.id);
+  const breaks = shiftIds.length
+    ? await db.select().from(scheduleShiftBreaks)
+      .where(and(inArray(scheduleShiftBreaks.assignmentId, shiftIds), park("schedule_shift_breaks")))
+    : [];
+  const blocks = shiftIds.length
+    ? await db.select().from(dutyBlocks)
+      .where(and(inArray(dutyBlocks.assignmentId, shiftIds), park("duty_blocks")))
+    : [];
+  const linkedRows = await db.select().from(scheduleShiftRows)
+    .where(and(eq(scheduleShiftRows.weekPlanId, weekPlan.id), park("schedule_shift_rows")));
+
+  await remove();
+
+  noteScheduleWrites(writes, "deleted", "weekPlans", [weekPlan]);
+  noteScheduleWrites(writes, "deleted", "assignments", shifts);
+  noteScheduleWrites(writes, "deleted", "breaks", breaks);
+  noteScheduleWrites(writes, "deleted", "dutyBlocks", blocks);
+  if (linkedRows.length) {
+    const unlinked = await db.select().from(scheduleShiftRows)
+      .where(and(inArray(scheduleShiftRows.id, linkedRows.map((row) => row.id)), park("schedule_shift_rows")));
+    for (const row of unlinked) {
+      const before = linkedRows.find((linked) => linked.id === row.id);
+      if (before) noteScheduleUpdate(writes, "shiftRows", before, row);
+    }
+  }
 }
 
 /** A stored change set this code can read, or null. */
@@ -251,6 +241,8 @@ export const UNDO_SKIP_REASONS = {
   rolesChanged: "its roles changed since",
   heldByLaterRows: "has a duty block or a hand-set break added or changed since",
   slotTaken: "that slot is taken now",
+  personUnavailable: "that person cannot take that shift now",
+  dayWorked: "that person has a shift that day now",
   dayTaken: "that day already has time off",
   parentGone: "what it belonged to no longer exists",
 } as const;
@@ -278,6 +270,34 @@ function rowValues(group: ChangeSetGroup, row: ScheduleRow, tenantId: string): R
   }
   values.tenantId = tenantId;
   return values;
+}
+
+/**
+ * Whether the person on a shift could be given it now, by the check every new
+ * shift passes (POST /api/schedule/assignments): storage.canAssignEmployeeToShift
+ * for an employee, storage.canAssignCasualWorkerToShift for a casual worker.
+ * "gone" when the shift row or the person no longer exists.
+ */
+async function canTakeShiftNow(tx: Executor, record: ScheduleRow, tenantId: string): Promise<"ok" | "refused" | "gone"> {
+  const shiftRowId = String(record.shiftRowId);
+  const shiftDate = String(record.shiftDate);
+  if (typeof record.employeeId === "string") {
+    const check = await storage.canAssignEmployeeToShift(
+      record.employeeId, shiftRowId, shiftDate, { isBorrowed: record.isBorrowed === true }, tenantId, tx,
+    );
+    return check.ok ? "ok" : check.reasonCode === "NOT_FOUND" ? "gone" : "refused";
+  }
+  if (typeof record.casualWorkerId === "string") {
+    try {
+      const check = await storage.canAssignCasualWorkerToShift(record.casualWorkerId, shiftRowId, shiftDate, tenantId, tx);
+      return check.ok ? "ok" : check.reasonCode === "SHIFT_NOT_FOUND" ? "gone" : "refused";
+    } catch (error) {
+      // The casual worker is gone (the scope check finds no row to place).
+      if (error instanceof ScheduleScopeError) return "gone";
+      throw error;
+    }
+  }
+  return "ok";
 }
 
 /**
@@ -517,11 +537,34 @@ export async function undoScheduleChangeSet(
             skip(group, record.id, UNDO_SKIP_REASONS.slotTaken);
             continue;
           }
+          // The check every new shift passes, as things stand now (inside this
+          // transaction, so what the undo removed or put back already counts).
+          const eligibility = await canTakeShiftNow(tx, record, tenantId);
+          if (eligibility !== "ok") {
+            skip(group, record.id, eligibility === "gone" ? UNDO_SKIP_REASONS.parentGone : UNDO_SKIP_REASONS.personUnavailable);
+            continue;
+          }
         }
         if (group === "timeOff") {
+          // The check new time off passes: no shift and no other time off on
+          // any of its days.
+          const employeeId = String(record.employeeId);
+          const from = String(record.startDate);
+          const until = String(record.endDate ?? record.startDate);
+          const [working] = await tx.select({ id: scheduleAssignments.id }).from(scheduleAssignments).where(and(
+            eq(scheduleAssignments.employeeId, employeeId),
+            sql`${scheduleAssignments.shiftDate} >= ${from}::timestamp::date`,
+            sql`${scheduleAssignments.shiftDate} <= ${until}::timestamp::date`,
+            park("assignments"),
+          )).limit(1);
+          if (working) {
+            skip(group, record.id, UNDO_SKIP_REASONS.dayWorked);
+            continue;
+          }
           const [taken] = await tx.select({ id: employeeTimeOff.id }).from(employeeTimeOff).where(and(
-            eq(employeeTimeOff.employeeId, String(record.employeeId)),
-            sql`${employeeTimeOff.startDate}::date = ${String(record.startDate)}::timestamp::date`,
+            eq(employeeTimeOff.employeeId, employeeId),
+            sql`${employeeTimeOff.startDate}::date <= ${until}::timestamp::date`,
+            sql`${employeeTimeOff.endDate}::date >= ${from}::timestamp::date`,
             park("timeOff"),
           )).limit(1);
           if (taken) {

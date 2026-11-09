@@ -1,5 +1,6 @@
 import { requireSchedulePark, ScheduleScopeError, scheduleParkPredicate, assertScheduleChangeSetScope } from "./schedule-scope";
-import { captureScheduleState, diffScheduleStates, readScheduleChangeSet, recordScheduleChange, undoScheduleChangeSet, weekScope } from "./lib/scheduleChangeSet";
+import { deleteWeekPlanNoting, readScheduleChangeSet, recordScheduleChange, scheduleChangeSetOf, undoScheduleChangeSet, weekScope } from "./lib/scheduleChangeSet";
+import { newScheduleWriteLog, noteScheduleWrites } from "./lib/scheduleWriteLog";
 import { attendanceEvidenceUpload, attendanceConfirmationBody } from "./attendance-evidence-upload";
 import { persistAttendanceEvidence, canReadAttendanceEvidence, ATTENDANCE_EVIDENCE_FOLDER } from "./attendance-evidence";
 import { registerTimekeepingReviewRoutes } from "./timekeeping-review-routes";
@@ -166,7 +167,7 @@ import {
 } from "./leave-types";
 import { directoryEventRouter } from "./directory/eventRoutes";
 import { directoryJobRouter } from "./directory/jobRoutes";
-import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, timekeepingIssues, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, sickLeavePolicies, type LeaveType, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, employeePayrollProfiles, payslips, accessPolicies, accessItems, userPreferences, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
+import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, timekeepingIssues, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, dutyBlocks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, sickLeavePolicies, type LeaveType, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, employeePayrollProfiles, payslips, accessPolicies, accessItems, userPreferences, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, requireKioskPermission, requireKioskPermissionIfKiosk, requireKioskSession, validateKioskSession } from "./kiosk-auth";
 import { hashPin, verifyEmployeePin } from "./pin-utils";
 import { DEACTIVATE_INSTEAD, deleteManagedUser } from "./lib/userDeletion";
@@ -16000,9 +16001,10 @@ OTO Company Limited`,
 
       // Take scoped snapshot before deletion for restore history (scoped by shift row departmentId)
       const snapshot = await storage.snapshotByDepartmentAndWeek(branchId, departmentId, startDate, endDate, req.userWithAccess!.tenantId!);
-      // And what the clear itself removes, for "Undo this action" (SCRUM-777).
+      // And what the clear itself removes, for "Undo this action" (SCRUM-777):
+      // the rows its own deletes return, nothing anyone else writes meanwhile.
       const changeScope = { branchId, from: startDate, to: endDate };
-      const beforeClear = await captureScheduleState(changeScope, tenantId);
+      const clearWrites = newScheduleWriteLog();
 
       // Get shift rows that belong to this branch+department, active during this date range
       const deptShiftRows = await db.select({ id: scheduleShiftRows.id }).from(scheduleShiftRows)
@@ -16041,6 +16043,13 @@ OTO Company Limited`,
             .where(and(inArray(scheduleShiftBreaks.assignmentId, assignmentIdsToDelete), scheduleParkPredicate("schedule_shift_breaks", req.userWithAccess!.tenantId!)))
             .returning();
           totalBreaksRemoved = deletedBreaks.length;
+          noteScheduleWrites(clearWrites, "deleted", "breaks", deletedBreaks);
+          // The shifts' duty blocks go with them (the database would take them
+          // by cascade); deleted here so the undo can put them back too.
+          const deletedBlocks = await db.delete(dutyBlocks)
+            .where(and(inArray(dutyBlocks.assignmentId, assignmentIdsToDelete), scheduleParkPredicate("duty_blocks", req.userWithAccess!.tenantId!)))
+            .returning();
+          noteScheduleWrites(clearWrites, "deleted", "dutyBlocks", deletedBlocks);
         }
 
         const deleted = await db.delete(scheduleAssignments)
@@ -16050,20 +16059,23 @@ OTO Company Limited`,
             lte(scheduleAssignments.shiftDate, endDate)
           ), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!))).returning();
         totalAssignmentsRemoved = deleted.length;
+        noteScheduleWrites(clearWrites, "deleted", "assignments", deleted);
 
         // Clear CHANGE_DAY_OFF for the employees who were assigned on these department rows
         const affectedEmployeeIds = [...new Set(
           assignmentsToDelete.map(a => a.employeeId).filter(Boolean) as string[]
         )];
         if (affectedEmployeeIds.length > 0) {
-          await db.delete(employeeTimeOff)
+          const deletedDaysOff = await db.delete(employeeTimeOff)
             .where(and(and(
               eq(employeeTimeOff.branchId, branchId),
               inArray(employeeTimeOff.employeeId, affectedEmployeeIds),
               sql`${employeeTimeOff.startDate}::date >= ${startDate}::date`,
               sql`${employeeTimeOff.endDate}::date <= ${endDate}::date`,
               eq(employeeTimeOff.type, "CHANGE_DAY_OFF")
-            ), scheduleParkPredicate("employee_time_off", req.userWithAccess!.tenantId!)));
+            ), scheduleParkPredicate("employee_time_off", req.userWithAccess!.tenantId!)))
+            .returning();
+          noteScheduleWrites(clearWrites, "deleted", "timeOff", deletedDaysOff);
         }
       }
 
@@ -16087,7 +16099,7 @@ OTO Company Limited`,
         performedBy: user.id,
         snapshotData: snapshot,
         summaryData,
-        changeSet: diffScheduleStates(changeScope, beforeClear, await captureScheduleState(changeScope, tenantId)),
+        changeSet: scheduleChangeSetOf(changeScope, clearWrites),
       });
 
       res.json({
@@ -16957,8 +16969,8 @@ OTO Company Limited`,
       const weekPlan = await storage.getOrCreateWeekPlan(branchId, weekStartDate, user.id, req.userWithAccess!.tenantId!);
 
       const snapshot = await storage.snapshotWeekPlan(weekPlan.id, req.userWithAccess!.tenantId!);
-      const { changeSet } = await recordScheduleChange(weekScope(branchId, weekStartDate), tenantId,
-        () => storage.applyTemplate(id, weekPlan.id, user.id, req.userWithAccess!.tenantId!));
+      const { changeSet } = await recordScheduleChange(weekScope(branchId, weekStartDate),
+        (writes) => storage.applyTemplate(id, weekPlan.id, user.id, req.userWithAccess!.tenantId!, writes));
       await storage.logScheduleAudit(tenantId, 'apply_template', {
         weekPlanId: weekPlan.id,
         branchId,
@@ -16989,12 +17001,13 @@ OTO Company Limited`,
       const weekPlan = await storage.getOrCreateWeekPlan(branchId, weekStartDate, user.id, req.userWithAccess!.tenantId!);
       const snapshot = await storage.snapshotWeekPlan(weekPlan.id, req.userWithAccess!.tenantId!);
 
-      const { result, changeSet } = await recordScheduleChange(weekScope(branchId, weekStartDate), tenantId,
-        () => storage.applyTemplateAdditive(
+      const { result, changeSet } = await recordScheduleChange(weekScope(branchId, weekStartDate),
+        (writes) => storage.applyTemplateAdditive(
           id,
           branchId,
           weekStartDate,
           user.id, req.userWithAccess!.tenantId!,
+          writes,
         ));
 
       await storage.logScheduleAudit(tenantId, 'apply_template_additive', {
@@ -17043,18 +17056,22 @@ OTO Company Limited`,
           : weekPlan.weekStartDate.toISOString().split('T')[0];
         // What the clear itself removes, for "Undo this action" (SCRUM-777):
         // the history entry is written once the week is gone, with it.
-        const { changeSet } = await recordScheduleChange(weekScope(weekPlan.branchId, weekStartStr), tenantId, async () => {
+        const { changeSet } = await recordScheduleChange(weekScope(weekPlan.branchId, weekStartStr), async (writes) => {
           const weekStart = new Date(weekStartStr + 'T00:00:00Z');
           const weekEnd = new Date(weekStart);
           weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
 
-          await storage.deleteTimeOffByBranchAndDateRange(
+          const removedDaysOff = await storage.deleteTimeOffByBranchAndDateRange(
             weekPlan.branchId,
             weekStart,
             weekEnd,
             "CHANGE_DAY_OFF", req.userWithAccess!.tenantId!
           );
-          await storage.deleteWeekPlan(id, req.userWithAccess!.tenantId!);
+          noteScheduleWrites(writes, "deleted", "timeOff", removedDaysOff);
+          // The plan's own shifts, their breaks and duty blocks, read by the
+          // plan just before it goes (the database removes them with it).
+          await deleteWeekPlanNoting(weekPlan, tenantId, writes,
+            () => storage.deleteWeekPlan(id, req.userWithAccess!.tenantId!));
         });
         await storage.logScheduleAudit(tenantId, 'clear_week', {
           weekPlanId: id,

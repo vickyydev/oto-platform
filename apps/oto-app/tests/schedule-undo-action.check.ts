@@ -28,6 +28,13 @@
 //   8. An undo can itself be undone: what it removed comes back.
 //   9. Another park group's manager cannot undo the entry (404), as with
 //      Restore.
+//  10. A shift another manager adds by hand while a template is being applied
+//      (the apply held part-way, after it has written its shifts) is not
+//      recorded as the template's, and undoing the template leaves it.
+//  11. Undoing a clear puts back nothing the app's own rules refuse now: not
+//      a shift on a day the person is on leave now (a new shift there is
+//      refused too, ON_LEAVE), not a day off on a day they work now, not a
+//      day off inside a leave that starts on an earlier day.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
@@ -152,6 +159,8 @@ await q("insert into schedule_template_time_off (tenant_id, template_id, day_of_
 const WEEK = monday(10);
 const CLEAR_WEEK = monday(11);
 const DELETED_WEEK = monday(12);
+const RACE_WEEK = monday(13);
+const LEAVE_WEEK = monday(14);
 
 // ─── Another park group's manager ────────────────────────────────────────────
 
@@ -262,6 +271,20 @@ const historyOf = (action: string) =>
   );
 const breaksOn = async (assignmentId: string) =>
   Number((await q<{ n: string }>("select count(*) as n from schedule_shift_breaks where assignment_id = $1", [assignmentId]))[0]!.n);
+/** A row of time off written straight into the table, as a template or the leave screens leave it. */
+const timeOffRow = (employeeId: string, type: string, from: string, until: string) =>
+  q(
+    `insert into employee_time_off (tenant_id, employee_id, branch_id, type, start_date, end_date, created_by)
+     values ($1, $2, $3, $4, $5::timestamp, $6::timestamp, $7)`,
+    [TENANT, employeeId, BRANCH, type, from, until, manager.id],
+  );
+async function waitFor(test: () => Promise<boolean>, what: string): Promise<void> {
+  const until = Date.now() + 30_000;
+  while (!(await test())) {
+    if (Date.now() > until) throw new Error(what);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+}
 
 try {
   ORIGIN = await serve();
@@ -449,6 +472,95 @@ try {
     const res = await call("POST", `/api/schedule/audit-log/${applyEntry}/undo`, strangerCookie);
     assert.equal(res.status, 404, show(res));
     assert.equal((await shiftsIn(WEEK)).length, 7, "the stranger's undo changed the schedule");
+  });
+
+  console.log("10. a shift added by hand while a template is being applied:");
+  await check("is not recorded as the template's, and undoing the template leaves it", async () => {
+    // Hold the apply part-way: once it has written its rows and shifts it
+    // reads the template's days off, and that table stays locked until the
+    // hand-added shift is in.
+    const lock = await pool.connect();
+    let hand: Answer = { status: 0, body: null };
+    let applied: Answer = { status: 0, body: null };
+    try {
+      await lock.query("begin");
+      await lock.query("lock table schedule_template_time_off in access exclusive mode");
+      const applying = call("POST", `/api/schedule/templates/${TEMPLATE}/apply-safe`, cookie, { branchId: BRANCH, weekStartDate: RACE_WEEK });
+      await waitFor(
+        async () => Number((await q<{ n: string }>(
+          `select count(*) as n from pg_stat_activity
+            where datname = current_database() and wait_event_type = 'Lock' and query ilike '%schedule_template_time_off%'`,
+        ))[0]!.n) > 0,
+        "the apply never reached the template's days off",
+      );
+      assert.equal((await shiftsIn(RACE_WEEK)).length, 5, "the apply is held before it wrote its shifts");
+      hand = await call("POST", "/api/schedule/assignments", cookie, { shiftRowId: HK_ROW, shiftDate: RACE_WEEK, employeeId: CHAI });
+      await lock.query("commit");
+      applied = await applying;
+    } finally {
+      await lock.query("rollback").catch(() => undefined);
+      lock.release();
+    }
+    assert.equal(hand.status, 201, show(hand));
+    assert.equal(applied.status, 200, show(applied));
+    assert.deepEqual([applied.body.rowsAdded, applied.body.assignmentsApplied, applied.body.timeOffApplied], [0, 5, 1], show(applied));
+    const entry = (await historyOf("apply_template_additive")).at(-1)!;
+    const recorded = (entry.change_set.created.assignments as { id: string }[]).map((r) => r.id);
+    assert.equal(recorded.length, 5, `the template's change set holds ${recorded.length} shifts`);
+    assert.ok(!recorded.includes(hand.body.id), "the hand-added shift was recorded as the template's");
+    const undo = await call("POST", `/api/schedule/audit-log/${entry.id}/undo`, cookie);
+    assert.equal(undo.status, 200, show(undo));
+    assert.deepEqual([undo.body.undoneCreated, undo.body.restoredDeleted, undo.body.skippedCount], [6, 0, 0], show(undo));
+    assert.deepEqual((await shiftsIn(RACE_WEEK)).map((s) => s.id), [hand.body.id], "the hand-added shift did not survive the undo");
+  });
+
+  console.log("11. undoing a clear puts back nothing the app's rules refuse now:");
+  await check("a shift on a leave day now, a day off on a working day now, a day off inside a leave that starts earlier: all left out", async () => {
+    const mon = LEAVE_WEEK;
+    const tue = plus(LEAVE_WEEK, 1);
+    const thu = plus(LEAVE_WEEK, 3);
+    const shift = await call("POST", "/api/schedule/assignments", cookie, { shiftRowId: HK_ROW, shiftDate: mon, employeeId: CHAI });
+    assert.equal(shift.status, 201, show(shift));
+    await timeOffRow(CHAI, "CHANGE_DAY_OFF", tue, tue);
+    await timeOffRow(CHAI, "CHANGE_DAY_OFF", thu, thu);
+    const clear = await call("POST", "/api/schedule/clear", cookie, {
+      branchId: BRANCH, departmentId: HOUSEKEEPING, startDate: mon, endDate: plus(mon, 6),
+    });
+    assert.equal(clear.status, 200, show(clear));
+    const entry = (await historyOf("clear_week")).at(-1)!;
+    assert.deepEqual((entry.change_set.deleted.assignments as { id: string }[]).map((r) => r.id), [shift.body.id]);
+    const daysOff = entry.change_set.deleted.timeOff as { id: string; startDate: string }[];
+    assert.equal(daysOff.length, 2, "the clear removes the person's two days off that week");
+    const tuesdayOff = daysOff.find((r) => r.startDate.startsWith(tue))!.id;
+    const thursdayOff = daysOff.find((r) => r.startDate.startsWith(thu))!.id;
+
+    // Since then: leave from the Sunday before to Monday, leave from
+    // Wednesday to Friday, and a shift on Tuesday.
+    await timeOffRow(CHAI, "ANNUAL_LEAVE", plus(mon, -1), mon);
+    await timeOffRow(CHAI, "ANNUAL_LEAVE", plus(mon, 2), plus(mon, 4));
+    const refused = await call("POST", "/api/schedule/assignments", cookie, { shiftRowId: HK_ROW, shiftDate: mon, employeeId: CHAI });
+    assert.equal(refused.status, 400, show(refused));
+    assert.equal(refused.body.reasonCode, "ON_LEAVE", show(refused));
+    const tuesday = await call("POST", "/api/schedule/assignments", cookie, { shiftRowId: HK_ROW, shiftDate: tue, employeeId: CHAI });
+    assert.equal(tuesday.status, 201, show(tuesday));
+
+    const undos = (await historyOf("undo_action")).length;
+    const undo = await call("POST", `/api/schedule/audit-log/${entry.id}/undo`, cookie);
+    assert.equal(undo.status, 200, show(undo));
+    assert.deepEqual([undo.body.undoneCreated, undo.body.restoredDeleted, undo.body.nothingUndone], [0, 0, true], show(undo));
+    const reasons = (undo.body.skipped as { kind: string; id: string; reason: string }[]).map((s) => `${s.kind}:${s.id}:${s.reason}`).sort();
+    assert.deepEqual(reasons, [
+      `assignments:${shift.body.id}:that person cannot take that shift now`,
+      `timeOff:${thursdayOff}:that day already has time off`,
+      `timeOff:${tuesdayOff}:that person has a shift that day now`,
+    ].sort());
+    assert.equal((await historyOf("undo_action")).length, undos, "an undo that put nothing back was logged");
+    assert.deepEqual((await shiftsIn(LEAVE_WEEK)).map((s) => s.id), [tuesday.body.id]);
+    const changeDaysOff = await q(
+      "select id from employee_time_off where employee_id = $1 and type = 'CHANGE_DAY_OFF' and start_date::date between $2::date and $3::date",
+      [CHAI, mon, plus(mon, 6)],
+    );
+    assert.equal(changeDaysOff.length, 0, "a day off was put back");
   });
 
   console.log(`schedule-undo-action.check: ${checks} checks passed`);

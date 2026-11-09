@@ -666,7 +666,10 @@ jobs:
       # changed since and rows with shifts on them now; the undo logs its own
       # entry; a second undo does nothing and says so; an older entry is
       # Restore only (409); a cleared week's shifts come back where the slot is
-      # free; an undo can be undone; another park group gets 404.
+      # free; an undo can be undone; another park group gets 404; a shift added
+      # by hand while a template is applied is not the template's and stays;
+      # nothing is put back that the app's own rules refuse now (leave, a shift
+      # that day, other time off).
       - name: The app's schedule history undo checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/schedule-undo-action.check.ts

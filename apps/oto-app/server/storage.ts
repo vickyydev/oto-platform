@@ -349,6 +349,7 @@ import {
         settingsWritableBy,
 } from "./lib/parkGroupSettings";
 import { retiredShiftEndDate } from "./lib/shiftGroupRequired";
+import { noteScheduleUpdate, noteScheduleWrites, type ScheduleWriteLog } from "./lib/scheduleWriteLog";
 import { setChecklistAssignees, withChecklistAssignees } from "./core/checklistAssignees";
 import { currentViewAs } from "./lib/logger";
 import { scheduleAuditViewAs, viewAsMetadata } from "./lib/platformSession";
@@ -1201,7 +1202,7 @@ export interface IStorage {
                 startDate: Date,
                 endDate: Date,
                 type?: string, requestedTenantId?: string,
-        ): Promise<void>;
+        ): Promise<EmployeeTimeOff[]>;
 
         // Shift rows
         getShiftRow(id: string, requestedTenantId?: string): Promise<ScheduleShiftRowWithDetails | undefined>;
@@ -1312,6 +1313,7 @@ export interface IStorage {
                 shiftRowId: string,
                 date: string,
                 options?: { isBorrowed?: boolean }, requestedTenantId?: string,
+                executor?: DbExecutor,
         ): Promise<{
                 ok: boolean;
                 reasonCode?: string;
@@ -1326,6 +1328,7 @@ export interface IStorage {
                 casualWorkerId: string,
                 shiftRowId: string,
                 date: string, requestedTenantId?: string,
+                executor?: DbExecutor,
         ): Promise<{
                 ok: boolean;
                 reasonCode?: string;
@@ -1387,6 +1390,7 @@ export interface IStorage {
                 templateId: string,
                 weekPlanId: string,
                 userId?: string, requestedTenantId?: string,
+                writes?: ScheduleWriteLog,
         ): Promise<void>;
         deleteScheduleTemplate(id: string, requestedTenantId?: string): Promise<void>;
 
@@ -1420,6 +1424,7 @@ export interface IStorage {
                 branchId: string,
                 weekStartDate: string,
                 userId: string, requestedTenantId?: string,
+                writes?: ScheduleWriteLog,
         ): Promise<{
                 rowsAdded: number;
                 rowsSkipped: number;
@@ -7885,7 +7890,7 @@ export class DatabaseStorage implements IStorage {
                 startDate: Date,
                 endDate: Date,
                 type?: string, requestedTenantId?: string,
-        ): Promise<void> {
+        ): Promise<EmployeeTimeOff[]> {
                 const startStr = startDate.toISOString().split("T")[0];
                 const endStr = endDate.toISOString().split("T")[0];
 
@@ -7899,7 +7904,8 @@ export class DatabaseStorage implements IStorage {
                         conditions.push(eq(employeeTimeOff.type, type));
                 }
 
-                await db.delete(employeeTimeOff).where(and(and(...conditions), scheduleParkPredicate("employee_time_off", requestedTenantId)));
+                // The rows it removed, for the caller's change set (SCRUM-777).
+                return db.delete(employeeTimeOff).where(and(and(...conditions), scheduleParkPredicate("employee_time_off", requestedTenantId))).returning();
         }
 
         async getShiftRow(
@@ -8850,6 +8856,8 @@ export class DatabaseStorage implements IStorage {
                 shiftRowId: string,
                 date: string,
                 options?: { isBorrowed?: boolean; excludeAssignmentId?: string }, requestedTenantId?: string,
+                // SCRUM-777 — the undo asks inside its own transaction.
+                executor: DbExecutor = db,
         ): Promise<{
                 ok: boolean;
                 reasonCode?: string;
@@ -8862,7 +8870,7 @@ export class DatabaseStorage implements IStorage {
         }> {
                 const isBorrowed = options?.isBorrowed || false;
                 const excludeAssignmentId = options?.excludeAssignmentId;
-                const [shiftRow] = await db
+                const [shiftRow] = await executor
                         .select()
                         .from(scheduleShiftRows)
                         .where(and(eq(scheduleShiftRows.id, shiftRowId), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
@@ -8873,7 +8881,7 @@ export class DatabaseStorage implements IStorage {
                                 message: "Shift row not found",
                         };
 
-                const [employee] = await db
+                const [employee] = await executor
                         .select()
                         .from(employees)
                         .where(and(eq(employees.id, employeeId), scheduleParkPredicate("employees", requestedTenantId)));
@@ -8932,7 +8940,7 @@ export class DatabaseStorage implements IStorage {
                 }
 
                 // Check if already assigned to this specific shift
-                const existingThisShift = await db
+                const existingThisShift = await executor
                         .select()
                         .from(scheduleAssignments)
                         .where(
@@ -8969,14 +8977,14 @@ export class DatabaseStorage implements IStorage {
                 }
 
                 // 1. Role qualification check
-                const requiredRoles = await db
+                const requiredRoles = await executor
                         .select({ roleId: scheduleShiftRowRoles.roleId })
                         .from(scheduleShiftRowRoles)
                         .where(and(eq(scheduleShiftRowRoles.shiftRowId, shiftRowId), scheduleParkPredicate("schedule_shift_row_roles", requestedTenantId)));
 
                 if (requiredRoles.length > 0) {
                         const roleIds = requiredRoles.map((r) => r.roleId);
-                        const employeeRoleRecords = await db
+                        const employeeRoleRecords = await executor
                                 .select({ roleId: employeeRoles.roleId })
                                 .from(employeeRoles)
                                 .where(
@@ -8999,7 +9007,7 @@ export class DatabaseStorage implements IStorage {
                 // 2. Branch transfer check - prevent assigning in old branch after transfer effective date
                 // BUT allow if it's a borrowed assignment (isBorrowed = true)
                 // Get the week plan to find the branch
-                const [weekPlan] = await db
+                const [weekPlan] = await executor
                         .select()
                         .from(scheduleWeekPlans)
                         .where(and(eq(scheduleWeekPlans.id, shiftRow.weekPlanId), scheduleParkPredicate("schedule_week_plans", requestedTenantId)));
@@ -9009,7 +9017,7 @@ export class DatabaseStorage implements IStorage {
                         // If employee's current branch doesn't match the shift's branch, check for transfer
                         if (employee.branchId !== shiftBranchId) {
                                 // Check if there was a transfer from this branch
-                                const transferRecords = await db
+                                const transferRecords = await executor
                                         .select()
                                         .from(employeeChanges)
                                         .where(
@@ -9035,7 +9043,7 @@ export class DatabaseStorage implements IStorage {
                 }
 
                 // 3. Leave / time-off check (use date-only comparison to handle noon timestamps)
-                const timeOffRecords = await db
+                const timeOffRecords = await executor
                         .select()
                         .from(employeeTimeOff)
                         .where(
@@ -9117,7 +9125,7 @@ export class DatabaseStorage implements IStorage {
                                 sql`${scheduleAssignments.id} != ${excludeAssignmentId}`,
                         );
                 }
-                const existingAssignments = await db
+                const existingAssignments = await executor
                         .select({
                                 shiftRowId: scheduleAssignments.shiftRowId,
                         })
@@ -9128,7 +9136,7 @@ export class DatabaseStorage implements IStorage {
                         const assignedShiftRowIds = existingAssignments.map(
                                 (a) => a.shiftRowId,
                         );
-                        const assignedShiftRows = await db
+                        const assignedShiftRows = await executor
                                 .select({
                                         id: scheduleShiftRows.id,
                                         startTime: scheduleShiftRows.startTime,
@@ -9170,6 +9178,8 @@ export class DatabaseStorage implements IStorage {
                 casualWorkerId: string,
                 shiftRowId: string,
                 date: string, requestedTenantId?: string,
+                // SCRUM-777 — the undo asks inside its own transaction.
+                executor: DbExecutor = db,
         ): Promise<{
                 ok: boolean;
                 reasonCode?: string;
@@ -9182,7 +9192,7 @@ export class DatabaseStorage implements IStorage {
         }> {
                 if (requestedTenantId !== undefined) await assertScheduleWriteScope({ casualWorkerId }, requestedTenantId);
                 // Get the target shift row to know its time
-                const [shiftRow] = await db
+                const [shiftRow] = await executor
                         .select()
                         .from(scheduleShiftRows)
                         .where(and(eq(scheduleShiftRows.id, shiftRowId), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
@@ -9196,7 +9206,7 @@ export class DatabaseStorage implements IStorage {
                 }
 
                 // Check for existing assignments on this date for this casual worker
-                const existingAssignments = await db
+                const existingAssignments = await executor
                         .select({
                                 shiftRowId: scheduleAssignments.shiftRowId,
                         })
@@ -9212,7 +9222,7 @@ export class DatabaseStorage implements IStorage {
                         const assignedShiftRowIds = existingAssignments.map(
                                 (a) => a.shiftRowId,
                         );
-                        const assignedShiftRows = await db
+                        const assignedShiftRows = await executor
                                 .select({
                                         id: scheduleShiftRows.id,
                                         startTime: scheduleShiftRows.startTime,
@@ -9919,6 +9929,8 @@ export class DatabaseStorage implements IStorage {
                 templateId: string,
                 weekPlanId: string,
                 userId?: string, requestedTenantId?: string,
+                // SCRUM-777 — the rows this apply itself writes, for "Undo this action".
+                writes?: ScheduleWriteLog,
         ): Promise<void> {
                 const template = await this.getScheduleTemplate(templateId, requestedTenantId);
                 if (!template) throw new Error("Template not found");
@@ -9964,7 +9976,7 @@ export class DatabaseStorage implements IStorage {
                                                 existing.endTime !== templateRow.endTime),
                         );
                         if (sameNameRow) {
-                                await db
+                                const changedRows = await db
                                         .update(scheduleShiftRows)
                                         .set(scheduleOwnedValues({
                                                 startTime: templateRow.startTime,
@@ -9985,7 +9997,9 @@ export class DatabaseStorage implements IStorage {
                                                         templateRow.breakStaggerMinutes ??
                                                         sameNameRow.breakStaggerMinutes,
                                         }, requestedTenantId))
-                                        .where(and(eq(scheduleShiftRows.id, sameNameRow.id), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
+                                        .where(and(eq(scheduleShiftRows.id, sameNameRow.id), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)))
+                                        .returning();
+                                for (const changed of changedRows) noteScheduleUpdate(writes, "shiftRows", sameNameRow, changed);
                                 continue;
                         }
 
@@ -10012,9 +10026,10 @@ export class DatabaseStorage implements IStorage {
                                         createdBy: userId,
                                 }, requestedTenantId))
                                 .returning();
+                        noteScheduleWrites(writes, "created", "shiftRows", [newRow]);
 
                         if (templateRow.roles.length > 0) {
-                                await db
+                                const newRoles = await db
                                         .insert(scheduleShiftRowRoles)
                                         .values(
                                                 scheduleOwnedValues(templateRow.roles.map((r) => ({
@@ -10022,7 +10037,9 @@ export class DatabaseStorage implements IStorage {
                                                         shiftRowId: newRow.id,
                                                         roleId: r.roleId,
                                                 })), requestedTenantId),
-                                        );
+                                        )
+                                        .returning();
+                                noteScheduleWrites(writes, "created", "rowRoles", newRoles);
                         }
                 }
         }
@@ -10263,6 +10280,8 @@ export class DatabaseStorage implements IStorage {
                 branchId: string,
                 weekStartDate: string,
                 userId: string, requestedTenantId?: string,
+                // SCRUM-777 — the rows this apply itself writes, for "Undo this action".
+                writes?: ScheduleWriteLog,
         ): Promise<{ rowsAdded: number; rowsSkipped: number }> {
                 const template = await this.getScheduleTemplate(templateId, requestedTenantId);
                 if (!template) throw new Error("Template not found");
@@ -10337,11 +10356,12 @@ export class DatabaseStorage implements IStorage {
                                         createdBy: userId,
                                 }, requestedTenantId))
                                 .returning();
+                        noteScheduleWrites(writes, "created", "shiftRows", [newRow]);
 
                         templateRowIdToShiftRowId.set(templateRow.id, newRow.id);
 
                         if (templateRow.roles.length > 0) {
-                                await db
+                                const newRoles = await db
                                         .insert(scheduleShiftRowRoles)
                                         .values(
                                                 scheduleOwnedValues(templateRow.roles.map((r) => ({
@@ -10349,7 +10369,9 @@ export class DatabaseStorage implements IStorage {
                                                         shiftRowId: newRow.id,
                                                         roleId: r.roleId,
                                                 })), requestedTenantId),
-                                        );
+                                        )
+                                        .returning();
+                                noteScheduleWrites(writes, "created", "rowRoles", newRoles);
                         }
 
                         rowsAdded++;
@@ -10464,6 +10486,7 @@ export class DatabaseStorage implements IStorage {
                                         .values(scheduleOwnedValues(newAssignments, requestedTenantId))
                                         .returning();
                                 assignmentsApplied = insertedAssignments.length;
+                                noteScheduleWrites(writes, "created", "assignments", insertedAssignments);
 
                                 // Recreate duty blocks for each newly-created assignment.
                                 const allTemplateDutyBlocks =
@@ -10506,7 +10529,8 @@ export class DatabaseStorage implements IStorage {
                                                 }
                                         });
                                         if (dutyBlocksToInsert.length > 0) {
-                                                await db.insert(dutyBlocks).values(scheduleOwnedValues(dutyBlocksToInsert, requestedTenantId));
+                                                const newBlocks = await db.insert(dutyBlocks).values(scheduleOwnedValues(dutyBlocksToInsert, requestedTenantId)).returning();
+                                                noteScheduleWrites(writes, "created", "dutyBlocks", newBlocks);
                                         }
                                 }
                         }
@@ -10564,8 +10588,9 @@ export class DatabaseStorage implements IStorage {
                         }
 
                         if (newTimeOff.length > 0) {
-                                await db.insert(employeeTimeOff).values(scheduleOwnedValues(newTimeOff, requestedTenantId));
+                                const insertedTimeOff = await db.insert(employeeTimeOff).values(scheduleOwnedValues(newTimeOff, requestedTenantId)).returning();
                                 timeOffApplied = newTimeOff.length;
+                                noteScheduleWrites(writes, "created", "timeOff", insertedTimeOff);
                         }
                 }
 
