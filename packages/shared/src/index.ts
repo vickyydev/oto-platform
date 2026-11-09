@@ -63,6 +63,7 @@ export * from './benefits';
 export * from './kiosk';
 export * from './events';
 export * from './parties';
+export * from './party-settlement';
 export * from './event-checkin';
 export * from './booking-event-passes';
 export * from './benefit-credential';

@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import type { FastifyRequest } from 'fastify';
 import {
-  EventDetailAnswerSchema,
   PartyChargeBodySchema,
+  PartyDetailAnswerSchema,
   PartyPatchBodySchema,
   PartyPaymentBodySchema,
   PartyQuerySchema,
@@ -12,6 +12,7 @@ import {
 } from '@oto/shared';
 import type { App } from '../app';
 import { chargeParty, getParty, payParty, startPartyTender, updateParty } from '../services/parties';
+import { readPartyPlan } from '../services/party-plan';
 import { queueDrawerKick } from '../services/payments/drawer';
 import type { ActorContext } from '../services/sale';
 import { AttemptSchema } from './payments';
@@ -70,21 +71,27 @@ export async function partyRoutes(app: App): Promise<void> {
           "One of the branch's parties: the OTO App's booking and bill, laid under the edits a till made that the app " +
           "has not taken yet, with the tab's POS ledgers — the walk-ups, the charges and the payments — the till's " +
           'edit stamp and the bill (total = base + charges; outstanding = total − deposit − payments, never below ' +
-          'zero). 404 for anything that is not one of the branch\'s parties.',
+          'zero). 404 for anything that is not one of the branch\'s parties. SCRUM-804 — with the plan the OTO App ' +
+          'published for it (`plan`: the package with its limits and prices, the counts, the add-ons, the ' +
+          'entertainment, the set menu, the food times and the deposit, money in satang), or null and the reason ' +
+          '(`planStatus`); and its settlement sale (`event.party.settlement`): while the package and its deposit ' +
+          'are that sale\'s, the bill is the tab\'s own charges and payments.',
         params: PartyParams,
         querystring: PartyQuerySchema,
-        response: { 200: EventDetailAnswerSchema },
+        response: { 200: PartyDetailAnswerSchema },
       },
     },
     async (req) => {
       const auth = req.requireAuth();
-      return getParty(app.db, {
+      const answer = await getParty(app.db, {
         operatorId: auth.operatorId,
         branchId: req.query.branchId,
         partyId: req.params.id,
         date: req.query.date,
         now: new Date(),
       });
+      const { plan, status } = await readPartyPlan(app.db, { branchId: req.query.branchId, eventId: answer.event.id });
+      return { ...answer, plan, planStatus: status };
     },
   );
 

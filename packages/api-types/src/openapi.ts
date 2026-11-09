@@ -24044,6 +24044,23 @@ export interface paths {
                                         paidSatang: number;
                                         outstandingSatang: number;
                                     };
+                                    settlement?: {
+                                        id: string;
+                                        saleId: string;
+                                        /** @enum {string} */
+                                        state: "open" | "settled" | "voided" | "refunded";
+                                        receiptNumber: string | null;
+                                        grossSatang: number;
+                                        paidSatang: number;
+                                        outstandingSatang: number;
+                                        depositSatang: number;
+                                        kids: number;
+                                        adults: number;
+                                        createdAt: string;
+                                        settledAt: string | null;
+                                        /** @enum {string|null} */
+                                        writeBack: "synced" | "pending" | "failed" | null;
+                                    } | null;
                                 } | null;
                                 attendeeCount: number | null;
                                 attendees?: {
@@ -24223,6 +24240,23 @@ export interface paths {
                                         paidSatang: number;
                                         outstandingSatang: number;
                                     };
+                                    settlement?: {
+                                        id: string;
+                                        saleId: string;
+                                        /** @enum {string} */
+                                        state: "open" | "settled" | "voided" | "refunded";
+                                        receiptNumber: string | null;
+                                        grossSatang: number;
+                                        paidSatang: number;
+                                        outstandingSatang: number;
+                                        depositSatang: number;
+                                        kids: number;
+                                        adults: number;
+                                        createdAt: string;
+                                        settledAt: string | null;
+                                        /** @enum {string|null} */
+                                        writeBack: "synced" | "pending" | "failed" | null;
+                                    } | null;
                                 } | null;
                                 attendeeCount: number | null;
                                 attendees?: {
@@ -24404,6 +24438,23 @@ export interface paths {
                                         paidSatang: number;
                                         outstandingSatang: number;
                                     };
+                                    settlement?: {
+                                        id: string;
+                                        saleId: string;
+                                        /** @enum {string} */
+                                        state: "open" | "settled" | "voided" | "refunded";
+                                        receiptNumber: string | null;
+                                        grossSatang: number;
+                                        paidSatang: number;
+                                        outstandingSatang: number;
+                                        depositSatang: number;
+                                        kids: number;
+                                        adults: number;
+                                        createdAt: string;
+                                        settledAt: string | null;
+                                        /** @enum {string|null} */
+                                        writeBack: "synced" | "pending" | "failed" | null;
+                                    } | null;
                                 } | null;
                                 attendeeCount: number | null;
                                 attendees?: {
@@ -24585,6 +24636,23 @@ export interface paths {
                                         paidSatang: number;
                                         outstandingSatang: number;
                                     };
+                                    settlement?: {
+                                        id: string;
+                                        saleId: string;
+                                        /** @enum {string} */
+                                        state: "open" | "settled" | "voided" | "refunded";
+                                        receiptNumber: string | null;
+                                        grossSatang: number;
+                                        paidSatang: number;
+                                        outstandingSatang: number;
+                                        depositSatang: number;
+                                        kids: number;
+                                        adults: number;
+                                        createdAt: string;
+                                        settledAt: string | null;
+                                        /** @enum {string|null} */
+                                        writeBack: "synced" | "pending" | "failed" | null;
+                                    } | null;
                                 } | null;
                                 attendeeCount: number | null;
                                 attendees?: {
@@ -24781,7 +24849,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description One of the branch's parties: the OTO App's booking and bill, laid under the edits a till made that the app has not taken yet, with the tab's POS ledgers — the walk-ups, the charges and the payments — the till's edit stamp and the bill (total = base + charges; outstanding = total − deposit − payments, never below zero). 404 for anything that is not one of the branch's parties. */
+        /** @description One of the branch's parties: the OTO App's booking and bill, laid under the edits a till made that the app has not taken yet, with the tab's POS ledgers — the walk-ups, the charges and the payments — the till's edit stamp and the bill (total = base + charges; outstanding = total − deposit − payments, never below zero). 404 for anything that is not one of the branch's parties. SCRUM-804 — with the plan the OTO App published for it (`plan`: the package with its limits and prices, the counts, the add-ons, the entertainment, the set menu, the food times and the deposit, money in satang), or null and the reason (`planStatus`); and its settlement sale (`event.party.settlement`): while the package and its deposit are that sale's, the bill is the tab's own charges and payments. */
         get: {
             parameters: {
                 query: {
@@ -24892,6 +24960,23 @@ export interface paths {
                                         paidSatang: number;
                                         outstandingSatang: number;
                                     };
+                                    settlement?: {
+                                        id: string;
+                                        saleId: string;
+                                        /** @enum {string} */
+                                        state: "open" | "settled" | "voided" | "refunded";
+                                        receiptNumber: string | null;
+                                        grossSatang: number;
+                                        paidSatang: number;
+                                        outstandingSatang: number;
+                                        depositSatang: number;
+                                        kids: number;
+                                        adults: number;
+                                        createdAt: string;
+                                        settledAt: string | null;
+                                        /** @enum {string|null} */
+                                        writeBack: "synced" | "pending" | "failed" | null;
+                                    } | null;
                                 } | null;
                                 attendeeCount: number | null;
                                 attendees?: {
@@ -24942,6 +25027,79 @@ export interface paths {
                                     all: number;
                                 } | null;
                             };
+                            plan?: {
+                                eventId: string;
+                                partyDate: string;
+                                startTime: string | null;
+                                endTime: string | null;
+                                package: {
+                                    templateId: string | null;
+                                    name: string;
+                                    hours: number | null;
+                                    kidsIncluded: number;
+                                    adultsIncluded: number;
+                                    socksIncluded: number;
+                                    priceWeekdaySatang: number;
+                                    priceWeekendSatang: number;
+                                    extraChildWeekdaySatang: number | null;
+                                    extraChildWeekendSatang: number | null;
+                                    extraAdultWeekdaySatang: number | null;
+                                    extraAdultWeekendSatang: number | null;
+                                    includedLines: {
+                                        label: string;
+                                    }[];
+                                };
+                                counts: {
+                                    kidsExpected: number | null;
+                                    adultsExpected: number | null;
+                                };
+                                addOns: {
+                                    id: string;
+                                    templateId: string | null;
+                                    name: string;
+                                    qty: number;
+                                    unitPriceSatang: number;
+                                    fnbCreditSatang: number;
+                                    printsVoucher: boolean;
+                                }[];
+                                entertainment: {
+                                    id: string;
+                                    templateId: string | null;
+                                    name: string;
+                                    category: string | null;
+                                    durationMinutes: number | null;
+                                    ageRange: string | null;
+                                    maxKids: number | null;
+                                    priceSatang: number;
+                                    extraChildren: number;
+                                    extraChildPriceSatang: number | null;
+                                }[];
+                                setMenu: {
+                                    productCode: string | null;
+                                    name: string;
+                                    qty: number;
+                                    choiceGroup: string | null;
+                                    chosenOption: string | null;
+                                    note: string | null;
+                                }[];
+                                barItems: {
+                                    productCode: string | null;
+                                    name: string;
+                                    qty: number;
+                                }[];
+                                kitchen: {
+                                    kidsFoodTime: string | null;
+                                    adultsFoodTime: string | null;
+                                    readyOffsetMinutes: number | null;
+                                    slipsTime: string | null;
+                                } | null;
+                                settlement: {
+                                    depositSatang: number;
+                                    posSaleId: string | null;
+                                };
+                            } | null;
+                            /** @enum {string} */
+                            planStatus?: "ready" | "no_package" | "seam_missing" | "seam_not_granted";
                         };
                     };
                 };
@@ -25091,6 +25249,23 @@ export interface paths {
                                         paidSatang: number;
                                         outstandingSatang: number;
                                     };
+                                    settlement?: {
+                                        id: string;
+                                        saleId: string;
+                                        /** @enum {string} */
+                                        state: "open" | "settled" | "voided" | "refunded";
+                                        receiptNumber: string | null;
+                                        grossSatang: number;
+                                        paidSatang: number;
+                                        outstandingSatang: number;
+                                        depositSatang: number;
+                                        kids: number;
+                                        adults: number;
+                                        createdAt: string;
+                                        settledAt: string | null;
+                                        /** @enum {string|null} */
+                                        writeBack: "synced" | "pending" | "failed" | null;
+                                    } | null;
                                 } | null;
                                 attendeeCount: number | null;
                                 attendees?: {
@@ -25316,6 +25491,23 @@ export interface paths {
                                         paidSatang: number;
                                         outstandingSatang: number;
                                     };
+                                    settlement?: {
+                                        id: string;
+                                        saleId: string;
+                                        /** @enum {string} */
+                                        state: "open" | "settled" | "voided" | "refunded";
+                                        receiptNumber: string | null;
+                                        grossSatang: number;
+                                        paidSatang: number;
+                                        outstandingSatang: number;
+                                        depositSatang: number;
+                                        kids: number;
+                                        adults: number;
+                                        createdAt: string;
+                                        settledAt: string | null;
+                                        /** @enum {string|null} */
+                                        writeBack: "synced" | "pending" | "failed" | null;
+                                    } | null;
                                 } | null;
                                 attendeeCount: number | null;
                                 attendees?: {
@@ -25548,6 +25740,23 @@ export interface paths {
                                         paidSatang: number;
                                         outstandingSatang: number;
                                     };
+                                    settlement?: {
+                                        id: string;
+                                        saleId: string;
+                                        /** @enum {string} */
+                                        state: "open" | "settled" | "voided" | "refunded";
+                                        receiptNumber: string | null;
+                                        grossSatang: number;
+                                        paidSatang: number;
+                                        outstandingSatang: number;
+                                        depositSatang: number;
+                                        kids: number;
+                                        adults: number;
+                                        createdAt: string;
+                                        settledAt: string | null;
+                                        /** @enum {string|null} */
+                                        writeBack: "synced" | "pending" | "failed" | null;
+                                    } | null;
                                 } | null;
                                 attendeeCount: number | null;
                                 attendees?: {

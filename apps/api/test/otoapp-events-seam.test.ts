@@ -668,7 +668,8 @@ const REPOSITORY = 'services/otoapp-events.ts';
  * (`test/g17-round0-review.test.ts` section D holds it to that).
  */
 const EMPLOYEE_REPOSITORY = 'services/otoapp-employees.ts';
-const VIEWS = ['events', 'event_attendees', 'event_attendance', 'children'];
+/** SCRUM-804 — and the party plans the OTO App publishes beside them (`event_packages`, SCRUM-803). */
+const VIEWS = ['events', 'event_attendees', 'event_attendance', 'children', 'event_packages'];
 
 /**
  * Every table of the OTO App's events module, read from the app's own

@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { isIsoDate } from './dates';
+import { PARTY_PLAN_STATUSES, PartyPlanSchema } from './party-settlement';
 import {
+  EventDetailAnswerSchema,
   EventViewSchema,
   OTO_EVENT_STATUSES,
   PARTY_CHARGE_KINDS,
@@ -89,6 +91,14 @@ export type PartyEditFields = z.infer<typeof PartyEditFieldsSchema>;
 
 /** Every field a PATCH may change, in the order the edit form shows them. */
 export const PARTY_EDITABLE_FIELDS = Object.keys(PartyEditFieldsSchema.shape) as Array<keyof PartyEditFields>;
+
+/**
+ * SCRUM-804 — what a stored edit may carry beyond a till's own fields: the
+ * settlement sale's id, which the PLATFORM writes back when a party's
+ * settlement closes (`beo_event_billing.pos_order_ref` in the OTO App). Never
+ * a till's to send: a PATCH naming it has it ignored, as any protected field.
+ */
+export type PartyStoredEditFields = PartyEditFields & { posSaleId?: string };
 
 /** The keys of a PATCH body that address the request rather than the party. */
 export const PARTY_PATCH_ENVELOPE = ['branchId', 'editId', 'stationId', 'actionId'] as const;
@@ -227,3 +237,17 @@ export const PartyQuerySchema = z.object({
   branchId: z.string().uuid(),
   date: IsoDate.optional(),
 });
+
+/**
+ * SCRUM-804 — `GET /parties/:id`: the party as every events read answers it,
+ * with the plan the OTO App published for it (`otoapp_v.event_packages`) — the
+ * package with its limits and prices, the counts, the add-ons, the
+ * entertainment, the set menu, the food times and the deposit — or null and
+ * the reason there is none. Optional in the shape so an answer from before it
+ * still reads.
+ */
+export const PartyDetailAnswerSchema = EventDetailAnswerSchema.extend({
+  plan: PartyPlanSchema.nullable().optional(),
+  planStatus: z.enum(PARTY_PLAN_STATUSES).optional(),
+});
+export type PartyDetailAnswer = z.infer<typeof PartyDetailAnswerSchema>;

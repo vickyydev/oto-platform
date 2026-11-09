@@ -510,3 +510,110 @@ export async function listSeamChildren(
     guardianPhone: r.guardian_phone,
   }));
 }
+
+// --- The party plans (SCRUM-804) -------------------------------------------------
+
+/**
+ * `otoapp_v.event_packages` — the plan the OTO App publishes for a party with a
+ * package (SCRUM-803): the package's limits and prices, the counts, the
+ * add-ons, the entertainment, the set menu, the bar items, the food times and
+ * the settlement. A later view than the four above, so it is asked about on its
+ * own: a deployment whose app has not published it yet has events and no
+ * plans, and every events read goes on answering as before.
+ */
+const PACKAGES_VIEW = 'otoapp_v.event_packages';
+
+/** The refusal a plan read that is not granted makes, naming the grant, as the events reads do. */
+export function eventPackagesNotGranted(): OtoAppSeamNotGrantedError {
+  return new OtoAppSeamNotGrantedError([`SELECT on ${PACKAGES_VIEW}`]);
+}
+
+/** `ready`, or why the plans cannot be read: the view is not here, or this role may not read it. */
+export type EventPackagesSeam = 'ready' | 'missing' | 'not_granted';
+
+export async function otoAppEventPackagesSeam(exec: Exec): Promise<EventPackagesSeam> {
+  const schema = await exec.execute<{ usage: boolean | null }>(
+    sql`select has_schema_privilege(to_regnamespace('otoapp_v')::oid, 'USAGE') as usage`,
+  );
+  const usage = schema.rows[0]?.usage ?? null;
+  if (usage === null) return 'missing';
+  if (!usage) return 'not_granted';
+  const view = await exec.execute<{ readable: boolean | null }>(
+    sql`select has_table_privilege(to_regclass(${PACKAGES_VIEW})::oid, 'SELECT') as readable`,
+  );
+  const readable = view.rows[0]?.readable ?? null;
+  if (readable === null) return 'missing';
+  return readable ? 'ready' : 'not_granted';
+}
+
+/** One party's plan row as the view holds it: dates and times as text, the rest the app's jsonb. */
+export interface SeamEventPackage {
+  eventId: string;
+  branchId: string;
+  partyDate: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  package: unknown;
+  counts: unknown;
+  addOns: unknown;
+  entertainment: unknown;
+  setMenu: unknown;
+  barItems: unknown;
+  kitchen: unknown;
+  settlement: unknown;
+}
+
+/**
+ * The plan of one of the branch's parties, or null when it has none. Fenced
+ * by the platform branch as every read here is; `seam` says when the view
+ * itself could not be read.
+ */
+export async function getEventPackage(
+  exec: Exec,
+  q: { branchId: string; eventId: string },
+): Promise<{ seam: EventPackagesSeam; row: SeamEventPackage | null }> {
+  if (!UUID.test(q.branchId) || !UUID.test(q.eventId)) return { seam: 'ready', row: null };
+  const seam = await otoAppEventPackagesSeam(exec);
+  if (seam !== 'ready') return { seam, row: null };
+  const res = await exec.execute<{
+    event_id: string;
+    branch_id: string;
+    party_date: string | null;
+    start_time: string | null;
+    end_time: string | null;
+    package: unknown;
+    counts: unknown;
+    add_ons: unknown;
+    entertainment: unknown;
+    set_menu: unknown;
+    bar_items: unknown;
+    kitchen: unknown;
+    settlement: unknown;
+  }>(sql`
+    select event_id::text as event_id, core_branch_id::text as branch_id, party_date::text as party_date,
+           start_time::text as start_time, end_time::text as end_time, package, counts, add_ons,
+           entertainment, set_menu, bar_items, kitchen, settlement
+      from otoapp_v.event_packages
+     where core_branch_id = ${q.branchId}::uuid and lower(event_id::text) = ${q.eventId.toLowerCase()}
+     limit 1`);
+  const r = res.rows[0];
+  if (!r) return { seam, row: null };
+  return {
+    seam,
+    row: {
+      eventId: r.event_id,
+      branchId: r.branch_id,
+      partyDate: r.party_date,
+      startTime: r.start_time,
+      endTime: r.end_time,
+      package: r.package,
+      counts: r.counts,
+      addOns: r.add_ons,
+      entertainment: r.entertainment,
+      setMenu: r.set_menu,
+      barItems: r.bar_items,
+      kitchen: r.kitchen,
+      settlement: r.settlement,
+    },
+  };
+}

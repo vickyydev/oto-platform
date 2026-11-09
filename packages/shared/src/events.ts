@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { addDaysToIsoDate } from './business-date';
 import { isIsoDate } from './dates';
+import { PartySettlementViewSchema } from './party-settlement';
 
 /**
  * S2-20 E1 (SCRUM-217) — the events, camps and parties the POS reads from the
@@ -484,6 +485,13 @@ export const EventPartyViewSchema = z.object({
   lastEdited: PartyLastEditedSchema.nullable().optional(),
   editSync: PartyEditStateSchema.nullable().optional(),
   bill: PartyBillSchema.optional(),
+  /**
+   * SCRUM-804 — the party's settlement sale, when the till settled it: open
+   * (the balance still to take) or settled, else voided or refunded. While it
+   * is open or settled the package and its deposit are the sale's, so the bill
+   * above is the tab's own charges and payments alone.
+   */
+  settlement: PartySettlementViewSchema.nullable().optional(),
 });
 
 export const EventViewSchema = z.object({
