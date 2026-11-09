@@ -1,0 +1,15 @@
+-- SCRUM-794: a profile can be offboarded again. Offboard then Onboard Again
+-- ends one contract and starts another on the same profile, and the
+-- offboarding of the contract that ended stays as its record, marked
+-- re-onboarded (0037). This is the contract step 0038 left for a release of
+-- its own: migration 0008's `employee_offboarding_employee_unique` (one
+-- offboarding per profile, ever) is retired, so the profile's next contract
+-- can be ended too. 0038's `employee_offboarding_one_open` (one OPEN
+-- offboarding per profile, reonboarded_at null) stays as the database's
+-- backstop for the rule the app enforces under its per-employee lock.
+--
+-- Where 0038's index waits (a profile with two open offboardings, plan Q48),
+-- 0008's could not stand either (two rows for one profile), so no database
+-- loses a backstop it had. Not declared in shared/schema.ts, as neither
+-- index is.
+DROP INDEX IF EXISTS "employee_offboarding_employee_unique";

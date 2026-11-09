@@ -930,35 +930,36 @@ try {
     assert.equal((await footprint(own)).loginActive, false);
   });
 
-  await check("the database's backstop (0008, the census clean): a second offboarding row for one employee is refused", async () => {
-    const index = await count(
-      "select count(*) as n from pg_indexes where schemaname = 'otoapp' and indexname = 'employee_offboarding_employee_unique'",
-    );
-    assert.equal(index, 1);
+  await check("the database's backstop (0038, the census clean): a second OPEN offboarding row for one employee is refused", async () => {
+    // SCRUM-794, the rule since migration 0039: one OPEN offboarding per
+    // employee (`employee_offboarding_one_open`, reonboarded_at null) is the
+    // backstop, and 0008's one offboarding per employee, ever
+    // (`employee_offboarding_employee_unique`), is gone, so a profile
+    // onboarded again can be offboarded again.
+    const index = async (name: string) =>
+      count("select count(*) as n from pg_indexes where schemaname = 'otoapp' and indexname = $1", [name]);
+    assert.equal(await index("employee_offboarding_one_open"), 1);
+    assert.equal(await index("employee_offboarding_employee_unique"), 0);
     const p = await leaver("h16-backstop");
     assert.equal((await offboard(p.id, day(5))).status, 201);
-    // SCRUM-794: migration 0038 adds one OPEN offboarding per employee
-    // (`employee_offboarding_one_open`, reonboarded_at null) beside 0008's
-    // index, so a second open row breaks both and Postgres names whichever it
-    // checks first. A second row closed by Onboard Again (re-onboarded) is
-    // 0008's alone: refused by it, by name, while it stands.
-    await assert.rejects(
-      q(
-        `insert into employee_offboarding (employee_id, offboarding_type, reason_code, last_working_day, created_by, reonboarded_at)
-         values ($1, 'resignation', 'other', now(), $2, now())`,
-        [p.id, A.admin.id],
-      ),
-      /employee_offboarding_employee_unique/,
-    );
+    // A second open row is refused, by the one-open index by name.
     await assert.rejects(
       q(
         `insert into employee_offboarding (employee_id, offboarding_type, reason_code, last_working_day, created_by)
          values ($1, 'resignation', 'other', now(), $2)`,
         [p.id, A.admin.id],
       ),
-      /duplicate key value violates unique constraint "employee_offboarding_(employee_unique|one_open)"/,
+      /duplicate key value violates unique constraint "employee_offboarding_one_open"/,
     );
     assert.equal(await count("select count(*) as n from employee_offboarding where employee_id = $1", [p.id]), 1);
+    // A second row closed by Onboard Again (re-onboarded) stands beside the open one.
+    await q(
+      `insert into employee_offboarding (employee_id, offboarding_type, reason_code, last_working_day, created_by, reonboarded_at)
+       values ($1, 'resignation', 'other', now() - interval '90 days', $2, now())`,
+      [p.id, A.admin.id],
+    );
+    assert.equal(await count("select count(*) as n from employee_offboarding where employee_id = $1", [p.id]), 2);
+    assert.equal(await count("select count(*) as n from employee_offboarding where employee_id = $1 and reonboarded_at is null", [p.id]), 1);
   });
 
   await check("the readable reason: a code reads as the form's words, free text as it was written", async () => {

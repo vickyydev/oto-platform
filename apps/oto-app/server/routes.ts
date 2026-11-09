@@ -8220,12 +8220,6 @@ OTO Company Limited`,
     const e = error as { code?: string; constraint?: string; cause?: { code?: string; constraint?: string } } | null;
     return (e?.code === "23505" && e.constraint === name) || (e?.cause?.code === "23505" && e.cause.constraint === name);
   };
-  // SCRUM-794: the words for a second offboarding on a database whose
-  // one-offboarding-per-profile index still stands.
-  const SECOND_OFFBOARDING_WAITS =
-    "This profile was offboarded once already, from its earlier contract, and that offboarding is kept as its record. " +
-    "This system does not record a second offboarding on the same profile yet, so nothing was saved. Ask a platform administrator.";
-
   const authorizedOffboardingEmployee = async (req: Request, employeeId: string) => {
     const user = req.userWithAccess;
     if (!user?.tenantId) return null;
@@ -8494,12 +8488,12 @@ OTO Company Limited`,
       try {
         offboarding = await createOffboarding();
       } catch (error) {
-        // SCRUM-794: a database still holding one offboarding per profile
-        // ever (migration 0008's census-gated index) refuses the second
-        // one; nothing of it was written. Migration 0038 holds one OPEN
-        // offboarding per profile instead, once that index is retired.
-        if (uniqueViolationOn(error, "employee_offboarding_employee_unique")) {
-          return res.status(409).json({ message: SECOND_OFFBOARDING_WAITS });
+        // SCRUM-794: the database's backstop for one OPEN offboarding per
+        // profile (migration 0038; 0039 retired 0008's one per profile,
+        // ever, so a profile onboarded again is offboarded again). The lock
+        // above answers first; this is the same 409 should it ever not.
+        if (uniqueViolationOn(error, "employee_offboarding_one_open")) {
+          return res.status(409).json({ message: "Offboarding already exists for this employee" });
         }
         throw error;
       }

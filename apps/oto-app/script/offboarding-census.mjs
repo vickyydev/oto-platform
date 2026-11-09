@@ -16,9 +16,15 @@
  *     so a person can settle them;
  *   - whether the unique index stands.
  *
- * The app has no "closed" state for an offboarding — every row stays the
- * employee's offboarding and the route reads the newest — so every row counts
- * as open here (Q47).
+ * The app had no "closed" state for an offboarding — every row stayed the
+ * employee's offboarding and the route read the newest — so every row counted
+ * as open (Q47). SCRUM-794 gave it one: Onboard Again marks the offboarding
+ * of the contract that ended re-onboarded (`reonboarded_at`, migration 0037),
+ * where it stays as that contract's record, and the profile can be offboarded
+ * again. Migration 0038 makes the backstop one OPEN offboarding per employee
+ * (`employee_offboarding_one_open`) and 0039 retires 0008's index. So where
+ * that mark exists this counts open offboardings only, and reports 0038's
+ * index; a database from before it is counted and reported as above.
  *
  * READ ONLY: it runs inside a `read only` transaction and writes nothing.
  * Plain JavaScript (no tsx in the runtime image), so it runs from a
@@ -27,9 +33,10 @@
  *
  * In plain SQL, for a psql read-back:
  *   select employee_id, count(*) from otoapp.employee_offboarding
- *    group by employee_id having count(*) > 1;
+ *    where reonboarded_at is null group by employee_id having count(*) > 1;
  *
- * Exits 0 when no employee has two, 1 when one does, 2 when it could not ask.
+ * Exits 0 when no employee has two (open), 1 when one does, 2 when it could
+ * not ask.
  */
 import pg from "pg";
 
@@ -62,13 +69,25 @@ async function main() {
       return 0;
     }
 
+    // SCRUM-794: with the re-onboarded mark, only open offboardings count.
+    const marked = (await q(
+      `select count(*)::int as n from information_schema.columns
+        where table_schema = $1 and table_name = 'employee_offboarding' and column_name = 'reonboarded_at'`,
+      [SCHEMA],
+    ))[0].n === 1;
+    const open = marked ? "o.reonboarded_at is null" : "true";
+    const backstop = marked ? "employee_offboarding_one_open" : "employee_offboarding_employee_unique";
+    const migration = marked ? "0038" : "0008";
+
     const totals = (await q(
-      `select count(*)::int as rows, count(distinct employee_id)::int as employees from employee_offboarding`,
+      `select count(*)::int as rows, count(distinct employee_id)::int as employees,
+              count(*) filter (where ${open})::int as open
+         from employee_offboarding o`,
     ))[0];
     const index = (await q(
       `select count(*)::int as n from pg_indexes where schemaname = $1 and tablename = 'employee_offboarding'
-          and indexname = 'employee_offboarding_employee_unique'`,
-      [SCHEMA],
+          and indexname = $2`,
+      [SCHEMA, backstop],
     ))[0].n === 1;
     const duplicates = await q(
       `select o.employee_id, e.tenant_id, t.name as park_group, count(*)::int as n,
@@ -80,24 +99,29 @@ async function main() {
          from employee_offboarding o
          left join employees e on e.id = o.employee_id
          left join tenants t on t.id = e.tenant_id
+        where ${open}
         group by o.employee_id, e.tenant_id, t.name
        having count(*) > 1
         order by count(*) desc, o.employee_id`,
     );
 
+    const records = totals.rows - totals.open;
     console.log(
-      `Offboarding census — ${totals.rows} offboarding row${totals.rows === 1 ? "" : "s"} for ${totals.employees} employee${totals.employees === 1 ? "" : "s"}; ` +
-        `${duplicates.length} employee${duplicates.length === 1 ? " has" : "s have"} more than one.`,
+      `Offboarding census — ${totals.rows} offboarding row${totals.rows === 1 ? "" : "s"} for ${totals.employees} employee${totals.employees === 1 ? "" : "s"}` +
+        (marked
+          ? ` (${records} kept as the record${records === 1 ? "" : "s"} of a contract Onboard Again followed)` +
+            `; ${duplicates.length} employee${duplicates.length === 1 ? " has" : "s have"} more than one open.`
+          : `; ${duplicates.length} employee${duplicates.length === 1 ? " has" : "s have"} more than one.`),
     );
     for (const d of duplicates) {
-      console.log(`  employee ${d.employee_id} (${d.park_group ?? "no park group"}): ${d.n} offboardings`);
+      console.log(`  employee ${d.employee_id} (${d.park_group ?? "no park group"}): ${d.n} ${marked ? "open " : ""}offboardings`);
       for (const r of d.rows) console.log(`    ${r.id}  created ${new Date(r.created_at).toISOString()}  ${r.checklist} checklist item(s)`);
     }
     console.log(
-      `employee_offboarding_employee_unique: ${index ? "stands (the database refuses a second offboarding)" : "NOT made"}` +
+      `${backstop}: ${index ? `stands (the database refuses a second ${marked ? "open " : ""}offboarding)` : "NOT made"}` +
         (index ? "." : duplicates.length > 0
-          ? " — migration 0008 left it for these employees to be settled first (plan Q48)."
-          : " — migration 0008 has not run here, or ran while a duplicate stood; nothing stands in its way now."),
+          ? ` — migration ${migration} left it for these employees to be settled first (plan Q48).`
+          : ` — migration ${migration} has not run here, or ran while a duplicate stood; nothing stands in its way now.`),
     );
     await client.query("rollback");
     return duplicates.length > 0 ? 1 : 0;

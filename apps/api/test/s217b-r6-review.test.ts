@@ -618,7 +618,7 @@ const indexExists = (c: pg.Client, name: string) =>
     .then((r) => Number(r.rows[0].n) === 1);
 
 describe('B. the migration attacked', () => {
-  it('current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census index made, no park group made', async () => {
+  it('current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census backstop made (0038’s one-open index; 0039 retired 0008’s), no park group made', async () => {
     const { url, drop } = await createTestDatabase({ otoapp: true });
     try {
       const again = await deploy(url);
@@ -637,7 +637,10 @@ describe('B. the migration attacked', () => {
           const fk = (await c.query(`select count(*)::int as n from pg_constraint where conname = $1 and contype = 'f'`, [`${t}_tenant_id_tenants_id_fk`])).rows[0].n;
           expect(Number(fk), t).toBe(1);
         }
-        expect(await indexExists(c, 'employee_offboarding_employee_unique')).toBe(true);
+        // SCRUM-794: the current chain ends one OPEN offboarding per employee
+        // (0038) and retires 0008's one per employee, ever (0039).
+        expect(await indexExists(c, 'employee_offboarding_one_open')).toBe(true);
+        expect(await indexExists(c, 'employee_offboarding_employee_unique')).toBe(false);
         expect(Number((await c.query('select count(*)::int as n from tenants')).rows[0].n)).toBe(0);
       });
     } finally {
@@ -838,7 +841,7 @@ describe('B. the migration attacked', () => {
       expect(Object.keys(expected)).toHaveLength(8 + 5 + 4 + 3);
     });
 
-    it('counts unchanged in every table it reads or writes, no park group made, every key valid, the census index made', async () => {
+    it('counts unchanged in every table it reads or writes, no park group made, every key valid, the census backstop made (0038’s one-open index; 0039 retired 0008’s)', async () => {
       await withClient(url, async (c) => {
         for (const [t, n] of Object.entries(before)) expect(Number((await c.query(`select count(*)::int as n from ${t}`)).rows[0].n), t).toBe(n);
         expect(Number((await c.query('select count(*)::int as n from tenants')).rows[0].n)).toBe(tenantsBefore);
@@ -846,7 +849,10 @@ describe('B. the migration attacked', () => {
           const orphans = Number((await c.query(`select count(*)::int as n from ${t} x left join tenants t on t.id = x.tenant_id where t.id is null`)).rows[0].n);
           expect(orphans, t).toBe(0);
         }
-        expect(await indexExists(c, 'employee_offboarding_employee_unique')).toBe(true);
+        // SCRUM-794: the deploy runs the current chain, which ends one OPEN
+        // offboarding per employee (0038) and retires 0008's index (0039).
+        expect(await indexExists(c, 'employee_offboarding_one_open')).toBe(true);
+        expect(await indexExists(c, 'employee_offboarding_employee_unique')).toBe(false);
       });
     });
   });
@@ -903,6 +909,8 @@ describe('B. the migration attacked', () => {
         expect(out.status, out.output).toBe(0);
         return await withClient(url, async (c) => ({
           index: await indexExists(c, 'employee_offboarding_employee_unique'),
+          // SCRUM-794: the backstop the current chain ends with (0038; 0039 retires 0008's).
+          oneOpen: await indexExists(c, 'employee_offboarding_one_open'),
           rows: Number((await c.query('select count(*)::int as n from employee_offboarding where employee_id = $1', [employee])).rows[0].n),
           columns: Number(
             (
@@ -923,14 +931,17 @@ describe('B. the migration attacked', () => {
       const r = await raced('COMMIT');
       expect(r.rows).toBe(2);
       expect(r.index).toBe(false);
+      // Both rows are open, so 0038's one-open index waits too.
+      expect(r.oneOpen).toBe(false);
       expect(r.columns).toBe(4);
       if (HAS_APP_MODULES) expect(r.output).toMatch(/offboarding census \(0008\): 1 employees have more than one offboarding/);
     }, 180_000);
 
-    it('rolled back while 0008 waits: nothing stood in the way, the index is made', async () => {
+    it('rolled back while 0008 waits: nothing stood in the way, the census is clean and the backstop stands (0038’s one-open index; 0039 retired 0008’s)', async () => {
       const r = await raced('ROLLBACK');
       expect(r.rows).toBe(1);
-      expect(r.index).toBe(true);
+      expect(r.index).toBe(false);
+      expect(r.oneOpen).toBe(true);
       expect(r.columns).toBe(4);
       if (HAS_APP_MODULES) expect(r.output).not.toMatch(/offboarding census/);
     }, 180_000);

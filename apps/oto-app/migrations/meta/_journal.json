@@ -267,6 +267,13 @@
       "when": 1794213271460,
       "tag": "0038_offboarding_one_open",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1794219648266,
+      "tag": "0039_offboarding_again",
+      "breakpoints": true
     }
   ]
 }

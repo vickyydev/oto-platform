@@ -621,7 +621,7 @@ jobs:
       # stray "Unscheduled work" approvals matched to the shifts it now has.
       # A contract made or signed during the notice is the new employment's
       # (signing renders a PDF with the runner's Chrome), and the new contract
-      # can be offboarded again once migration 0008's index is retired.
+      # is offboarded again (migration 0039 retired 0008's index).
       - name: The app's Onboard Again and profile fold checks
         if: steps.changes.outputs.app == 'true'
         env:
@@ -949,7 +949,9 @@ jobs:
           pnpm --filter @oto/api exec vitest run --pool=forks test/s217b-scheduling-review.test.ts --reporter=default --reporter=json --outputFile.json=../../test-results/scheduling-runtime.json
           node -e "const r=JSON.parse(require('node:fs').readFileSync('test-results/scheduling-runtime.json','utf8'));if(r.numPendingTests!==0||r.numTotalTests===0||r.testResults.length!==1)throw new Error('The scheduling runtime suite must run without skipped tests')"
       # The offboarding duplicate census (read only): on this database, which
-      # every check above wrote into, nobody has two, so 0008's index stands.
+      # every check above wrote into, nobody has two open offboardings, so
+      # 0038's one-open index stands (0039 retired 0008's one per employee: a
+      # profile onboarded again keeps the earlier one as its record).
       - name: The offboarding census
         if: steps.changes.outputs.app == 'true'
         run: npm run offboarding:census

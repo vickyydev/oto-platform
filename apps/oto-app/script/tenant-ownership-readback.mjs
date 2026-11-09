@@ -264,19 +264,29 @@ async function main() {
       ];
       for (const [what, sql] of crossings) console.log(`  ${what}: ${n((await q(sql))[0].n)}.`);
     }
+    // SCRUM-794: an offboarding Onboard Again followed (reonboarded_at, 0037)
+    // is the record of the contract it ended, not a duplicate; where that mark
+    // exists only open ones count, against 0038's one-open index (0039
+    // retired 0008's one per employee).
+    const marked = n((await q(
+      `select count(*) as n from information_schema.columns
+        where table_schema = $1 and table_name = 'employee_offboarding' and column_name = 'reonboarded_at'`,
+      [SCHEMA],
+    ))[0].n) === 1;
+    const backstop = marked ? "employee_offboarding_one_open" : "employee_offboarding_employee_unique";
     const offboarding = (await q(
       `select count(*)::int as employees, coalesce(sum(n - 1), 0)::int as surplus
-         from (select count(*) as n from employee_offboarding group by employee_id having count(*) > 1) d`,
+         from (select count(*) as n from employee_offboarding ${marked ? "where reonboarded_at is null " : ""}group by employee_id having count(*) > 1) d`,
     ))[0];
     const oneOffboarding = n((await q(
       `select count(*) as n from pg_indexes where schemaname = $1 and tablename = 'employee_offboarding'
-          and indexname = 'employee_offboarding_employee_unique'`,
-      [SCHEMA],
+          and indexname = $2`,
+      [SCHEMA, backstop],
     ))[0].n) === 1;
     console.log(
-      `  offboarding census (H16): ${offboarding.employees} employee${offboarding.employees === 1 ? "" : "s"} with more than one offboarding ` +
+      `  offboarding census (H16): ${offboarding.employees} employee${offboarding.employees === 1 ? "" : "s"} with more than one ${marked ? "open " : ""}offboarding ` +
         `(${offboarding.surplus} surplus row${offboarding.surplus === 1 ? "" : "s"}); ` +
-        `employee_offboarding_employee_unique ${oneOffboarding ? "stands" : "NOT made"}` +
+        `${backstop} ${oneOffboarding ? "stands" : "NOT made"}` +
         (offboarding.employees > 0 ? " — npm run offboarding:census names them (Q48)." : "."),
     );
 

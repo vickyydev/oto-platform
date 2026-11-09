@@ -1069,7 +1069,9 @@ describe.skipIf(!HAS_APP_RUNTIME || !CHROMIUM)('F. the real app: the document ch
       expect(output).toMatch(/FINDING Q52: two GETs at once wrote 6 node\(s\) for 3 missing employee\(s\); 3 of them are now on the chart twice/);
       const back = script(READBACK, url);
       expect(back.status, back.output).toBe(0);
-      expect(back.output).toMatch(/employee_offboarding_employee_unique stands\./);
+      // SCRUM-794: on the current chain the backstop is 0038's one open
+      // offboarding per employee; 0039 retired 0008's one per employee.
+      expect(back.output).toMatch(/0 employees with more than one open offboarding \(0 surplus rows\); employee_offboarding_one_open stands\./);
       const census = script(CENSUS, url);
       expect(census.status, census.output).toBe(0);
     } finally {
