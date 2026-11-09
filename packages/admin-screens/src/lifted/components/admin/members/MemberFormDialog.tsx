@@ -1,7 +1,8 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MemberFormPorts } from '../../../runtime/operations';
-import { type ContactChannel, type CustomerTier, type Member } from "../../../model/types";
+import { TIER_APPROVAL_EVIDENCE, isTierApprovalTier } from "@oto/shared";
+import { type ContactChannel, type CustomerTier, type Member, type TierVerification } from "../../../model/types";
 import { TIER_PROOF_NOTE, TIER_PROOF_TYPES } from "../../../lib/tierProof";
 import { useOperator } from "../../../runtime/AdminScreenRuntime";
 import { type ApiMember as ApiMemberRecord } from "../../../api/platform";
@@ -108,10 +109,67 @@ interface MemberFormDialogProps {
 
 type TierChoice = CustomerTier;
 
-interface TierSelection {
+export interface TierSelection {
   tier: TierChoice;
   proofType: string;
   expiresAt: string;
+}
+
+/**
+ * SCRUM-772 — the owner's rule (6 November 2026): "For the Thai rate, we
+ * don't need to show document options or expiry date. Just a verification
+ * modal with 2 buttons and record staff logs." So choosing the Thai rate here
+ * asks for no document and no expiry: it is recorded as the till records it,
+ * with the evidence `TIER_APPROVAL_EVIDENCE`, and who saved it, the branch and
+ * the time come from the session. The Expat rate keeps its document and
+ * expiry (SCRUM-773).
+ */
+export const tierNeedsNoDocument = (tier: string): boolean => isTierApprovalTier(tier);
+
+/** The selection once a tier is picked in the form. */
+export function tierSelectionFor(
+  tier: TierChoice,
+  prev: TierSelection,
+  isDefaultTier: (tier: string) => boolean,
+  proofTypes: readonly string[] = TIER_PROOF_TYPES,
+): TierSelection {
+  if (isDefaultTier(tier)) return { tier, proofType: '', expiresAt: '' };
+  if (tierNeedsNoDocument(tier)) return { tier, proofType: TIER_APPROVAL_EVIDENCE, expiresAt: '' };
+  const kept = prev.proofType && prev.proofType !== TIER_APPROVAL_EVIDENCE ? prev.proofType : '';
+  return { tier, proofType: kept || proofTypes[0] || '', expiresAt: prev.expiresAt };
+}
+
+/**
+ * The tier change to send, or null when the selection is what the member
+ * already holds. Re-sending the same tier with the same document and expiry is
+ * not a change; anything else about the entitlement is, and needs the document
+ * checked again. The Thai rate has nothing to fill in, so a member already
+ * holding it — confirmed at the till or on an older document — holds the same
+ * rate, and choosing it fresh sends it with no document and no expiry.
+ */
+export function tierChangeFor(
+  selection: TierSelection,
+  current: TierVerification | undefined,
+  isDefaultTier: (tier: string) => boolean,
+): TierChangeRequest | null {
+  if (isDefaultTier(selection.tier)) return null;
+  if (tierNeedsNoDocument(selection.tier)) {
+    if (current && current.tier === selection.tier) return null;
+    return { toTier: selection.tier, evidenceType: TIER_APPROVAL_EVIDENCE };
+  }
+  if (
+    current &&
+    current.tier === selection.tier &&
+    current.proofType === selection.proofType &&
+    (current.expiresAt ?? '') === selection.expiresAt
+  ) {
+    return null;
+  }
+  return {
+    toTier: selection.tier,
+    evidenceType: selection.proofType,
+    ...(selection.expiresAt ? { evidenceExpiresAt: selection.expiresAt } : {}),
+  };
 }
 
 interface FormErrors {
@@ -194,6 +252,7 @@ function ChannelPicker({
  * The tier is not a field on the profile — it is granted by a checked document.
  * Choosing a verified tier here collects the document type and its expiry and
  * sends them to the verification route; the server decides the tier from them.
+ * The Thai rate collects neither (SCRUM-772, `tierNeedsNoDocument`).
  * Choosing the baseline rate for a member who holds a verified one ENDS that
  * entitlement (SCRUM-241) and collects the reason, which is the only record a
  * revocation has — there is no document behind it.
@@ -263,7 +322,7 @@ const toSelection = useCallback((member: Member | null, isDefaultTier: (tier: st
    * tier edit.
    */
   const [channel, setChannel] = useState<ContactChannel | null>(null);
-  const [selection, setSelection] = useState<TierSelection>(() => emptySelection());
+  const [selection, setSelection] = useState<TierSelection>(() => toSelection(member, isDefaultTier));
   const [revokeReason, setRevokeReason] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
@@ -306,25 +365,17 @@ const toSelection = useCallback((member: Member | null, isDefaultTier: (tier: st
       ? member.tierVerification
       : undefined;
 
+  /** SCRUM-772 — a Thai rate confirmed at the till names no document. */
+  const currentAtTill = current?.proofType === TIER_APPROVAL_EVIDENCE;
+  /** SCRUM-772 — the Thai rate: no document options and no expiry date. */
+  const noDocument = tierNeedsNoDocument(selection.tier);
+
   const handleTierChange = (tier: TierChoice) => {
-    setSelection((prev) => ({
-      ...prev,
-      tier,
-      proofType: isDefaultTier(tier) ? '' : prev.proofType || proofTypes[0] || '',
-      expiresAt: isDefaultTier(tier) ? '' : prev.expiresAt,
-    }));
+    setSelection((prev) => tierSelectionFor(tier, prev, isDefaultTier, proofTypes));
   };
 
-  // Re-sending the same tier with the same document and expiry is not a change;
-  // anything else about the entitlement is, and needs the document checked again.
-  const tierChanged =
-    !isDefaultTier(selection.tier) &&
-    !(
-      current &&
-      current.tier === selection.tier &&
-      current.proofType === selection.proofType &&
-      (current.expiresAt ?? '') === selection.expiresAt
-    );
+  const tierChange = tierChangeFor(selection, current, isDefaultTier);
+  const tierChanged = tierChange !== null;
   const clearingTier = !!current && isDefaultTier(selection.tier);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -354,7 +405,9 @@ const toSelection = useCallback((member: Member | null, isDefaultTier: (tier: st
       }
     }
     if (tierChanged) {
-      if (!proofTypes.some((type) => type === selection.proofType)) {
+      if (noDocument) {
+        // SCRUM-772: the Thai rate has no document and no expiry to check.
+      } else if (!proofTypes.some((type) => type === selection.proofType)) {
         nextErrors.tier = 'Select the document you checked.';
       } else if (selection.expiresAt && !/^\d{4}-\d{2}-\d{2}$/.test(selection.expiresAt)) {
         nextErrors.tier = "Enter the document's expiry date.";
@@ -421,15 +474,7 @@ const toSelection = useCallback((member: Member | null, isDefaultTier: (tier: st
       notes: asText(notes),
       patch,
       childPatches,
-      ...(tierChanged
-        ? {
-            tierChange: {
-              toTier: selection.tier,
-              evidenceType: selection.proofType,
-              ...(selection.expiresAt ? { evidenceExpiresAt: selection.expiresAt } : {}),
-            },
-          }
-        : {}),
+      ...(tierChange ? { tierChange } : {}),
       ...(current && clearingTier ? { tierRevoke: { reason: trimmedReason } } : {}),
     };
 
@@ -548,9 +593,18 @@ const toSelection = useCallback((member: Member | null, isDefaultTier: (tier: st
 
             {current && (
               <p className="rounded-lg bg-emerald-500/15 px-3 py-2 text-xs text-emerald-700">
-                Holds {tierLabel(current.tier)} on a {current.proofType}
-                {current.expiresAt ? `, valid to ${current.expiresAt}` : ''} — verified by{' '}
-                {current.verifiedBy}.
+                {currentAtTill ? (
+                  <>
+                    Holds {tierLabel(current.tier)}, confirmed at the till by{' '}
+                    {current.verifiedBy?.trim() || 'an unnamed account'}.
+                  </>
+                ) : (
+                  <>
+                    Holds {tierLabel(current.tier)} on a {current.proofType}
+                    {current.expiresAt ? `, valid to ${current.expiresAt}` : ''} — verified by{' '}
+                    {current.verifiedBy}.
+                  </>
+                )}
               </p>
             )}
 
@@ -584,7 +638,7 @@ const toSelection = useCallback((member: Member | null, isDefaultTier: (tier: st
                 </SelectContent>
               </Select>
 
-              {!isDefaultTier(selection.tier) && (
+              {!isDefaultTier(selection.tier) && !noDocument && (
                 <Select
                   value={selection.proofType}
                   onValueChange={(v) =>
@@ -607,7 +661,11 @@ const toSelection = useCallback((member: Member | null, isDefaultTier: (tier: st
                 </Select>
               )}
               {!isDefaultTier(selection.tier) && (
-                <p className="text-xs text-muted-foreground">{TIER_PROOF_NOTE}</p>
+                <p className="text-xs text-muted-foreground">
+                  {noDocument
+                    ? `No document needed for the ${tierLabel(selection.tier)} rate.`
+                    : TIER_PROOF_NOTE}
+                </p>
               )}
             </div>
 
@@ -631,7 +689,8 @@ const toSelection = useCallback((member: Member | null, isDefaultTier: (tier: st
                     />
                     <p className="text-xs text-foreground/45">
                       Saving puts {member?.nickname ?? 'this member'} back on the{' '}
-                      {tierLabel(getDefaultTier()!.id)} rate. The {current.proofType} record
+                      {tierLabel(getDefaultTier()!.id)} rate. The{' '}
+                      {currentAtTill ? 'confirmation' : current.proofType} record
                       stays — nothing is erased — and this reason is filed beside it.
                     </p>
                     {errors.reason && (
@@ -646,7 +705,7 @@ const toSelection = useCallback((member: Member | null, isDefaultTier: (tier: st
               </div>
             )}
 
-            {!isDefaultTier(selection.tier) && (
+            {!isDefaultTier(selection.tier) && !noDocument && (
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="member-tier-expiry">Document expiry date</Label>
                 <Input
