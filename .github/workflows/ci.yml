@@ -878,6 +878,20 @@ jobs:
       - name: The app's inbox AI fill checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/beo-inbox-fill.check.ts
+      # SCRUM-815: Create BEO's AI Fill reads the whole conversation and the
+      # park's catalogue — Russian, Thai and English conversations agreeing a
+      # package, a set-menu choice, an extra dish and entertainment come back
+      # matched by id, every value's source the line's author (a family-only
+      # wish marked the family's), a dish the menu lacks a notInMenu line, the
+      # chat's price beside the catalogue's; nothing written by the fill;
+      # Approve and create writes the snapshot, kitchen plan, entertainment,
+      # counts and deposit in one go and refuses an id outside the catalogue;
+      # the review renders its source marks, matches and prices.
+      - name: The app's AI fill catalogue checks
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/beo-catalogue-fill.check.ts
       # SCRUM-803: the birthday packages as the park prints them (migration
       # 0041) — every new package, line item, entertainment and set-menu field
       # round-trips through the settings routes, a value out of range or
