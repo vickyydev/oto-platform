@@ -16,17 +16,44 @@ import { SCREEN_SCAN_AGE_MAX_S } from '@oto/shared';
  * A scanner plugged into the BOX is not noted: the box reads it and reports it
  * on its own heartbeat.
  *
- * Kept as a time on the page's monotonic clock, never a time of day: the age is
- * what travels, so an iPad whose clock is wrong cannot misdate the scan.
+ * What travels is an AGE, never a time of day, so an iPad whose clock is wrong
+ * cannot misdate the scan. It is measured on both of the page's clocks:
+ *
+ *  - the WALL clock (`Date.now()`) keeps running while the iPad sleeps, so a
+ *    scan made before an hour's auto-lock is an hour old when it wakes;
+ *  - the MONOTONIC clock (`performance.now()`) does not move when the clock is
+ *    set back, but on iPadOS it stands still while the device sleeps.
+ *
+ * The age is the larger of the two differences; only when the wall clock went
+ * backwards (set back since the scan) is the monotonic one taken alone.
  */
 
-let lastAt: number | null = null;
+/** A moment on both of the page's clocks. */
+export interface ScanClock {
+  /** `Date.now()`: runs on while the iPad sleeps. */
+  wall: number;
+  /** `performance.now()`: never set back, but stands still while the iPad sleeps. */
+  mono: number;
+}
 
-const clock = (): number => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+let lastAt: ScanClock | null = null;
+
+const clock = (): ScanClock => {
+  const wall = Date.now();
+  return { wall, mono: typeof performance !== 'undefined' ? performance.now() : wall };
+};
 
 /** A scanner typed a code into this till just now. */
-export function noteScannerUse(at: number = clock()): void {
+export function noteScannerUse(at: ScanClock = clock()): void {
   lastAt = at;
+}
+
+/** How long ago `then` was, in milliseconds, read on both clocks. */
+export function scanAgeMs(then: ScanClock, now: ScanClock): number {
+  const wall = now.wall - then.wall;
+  const mono = now.mono - then.mono;
+  if (wall < 0) return Math.max(0, mono);
+  return Math.max(wall, mono);
 }
 
 /**
@@ -34,9 +61,9 @@ export function noteScannerUse(at: number = clock()): void {
  * none has since the till was loaded — or so long ago that the platform keeps
  * the time it already has.
  */
-export function lastScanSecondsAgo(now: number = clock()): number | null {
+export function lastScanSecondsAgo(now: ScanClock = clock()): number | null {
   if (lastAt === null) return null;
-  const seconds = Math.max(0, Math.round((now - lastAt) / 1000));
+  const seconds = Math.round(scanAgeMs(lastAt, now) / 1000);
   return seconds > SCREEN_SCAN_AGE_MAX_S ? null : seconds;
 }
 

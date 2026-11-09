@@ -6,7 +6,7 @@ import { SCREEN_HEARTBEAT_INTERVAL_S, SCREEN_SCAN_AGE_MAX_S } from '@oto/shared'
 import { renderHook, type RenderedHook } from './support/hooks';
 import { useStationHeartbeat } from '@/station/heartbeat';
 import { useScannerBurst } from '@/lib/scannerBurst';
-import { forgetScannerUse, lastScanSecondsAgo, noteScannerUse } from '@/lib/scannerUse';
+import { forgetScannerUse, lastScanSecondsAgo, noteScannerUse, scanAgeMs, type ScanClock } from '@/lib/scannerUse';
 
 /**
  * SCRUM-771 — the till's screen tells the platform it is still there, every
@@ -19,19 +19,38 @@ vi.mock('react', () => import('./support/hooks'));
 describe('when a scanner last typed into this till', () => {
   beforeEach(() => forgetScannerUse());
 
+  /** A moment with both clocks agreeing, as they do while the iPad is awake. */
+  const at = (ms: number): ScanClock => ({ wall: 1_794_000_000_000 + ms, mono: ms });
+  const HOUR = 3_600_000;
+
   it('is nothing until a scanner has typed, then an age in whole seconds', () => {
-    expect(lastScanSecondsAgo(1_000)).toBeNull();
-    noteScannerUse(1_000);
-    expect(lastScanSecondsAgo(1_000)).toBe(0);
-    expect(lastScanSecondsAgo(46_400)).toBe(45);
+    expect(lastScanSecondsAgo(at(1_000))).toBeNull();
+    noteScannerUse(at(1_000));
+    expect(lastScanSecondsAgo(at(1_000))).toBe(0);
+    expect(lastScanSecondsAgo(at(46_400))).toBe(45);
   });
 
   it('keeps the newest scan, and reports nothing once it is older than the platform will take', () => {
-    noteScannerUse(1_000);
-    noteScannerUse(5_000);
-    expect(lastScanSecondsAgo(15_000)).toBe(10);
-    expect(lastScanSecondsAgo(5_000 + SCREEN_SCAN_AGE_MAX_S * 1000)).toBe(SCREEN_SCAN_AGE_MAX_S);
-    expect(lastScanSecondsAgo(5_000 + (SCREEN_SCAN_AGE_MAX_S + 1) * 1000)).toBeNull();
+    noteScannerUse(at(1_000));
+    noteScannerUse(at(5_000));
+    expect(lastScanSecondsAgo(at(15_000))).toBe(10);
+    expect(lastScanSecondsAgo(at(5_000 + SCREEN_SCAN_AGE_MAX_S * 1000))).toBe(SCREEN_SCAN_AGE_MAX_S);
+    expect(lastScanSecondsAgo(at(5_000 + (SCREEN_SCAN_AGE_MAX_S + 1) * 1000))).toBeNull();
+  });
+
+  it('counts the hours the iPad slept, while its monotonic clock stood still', () => {
+    // Scanned at 09:00; awake until 09:05, asleep until 12:00. The monotonic
+    // clock moved five minutes, the wall clock three hours.
+    noteScannerUse({ wall: 0, mono: 1_000 });
+    expect(lastScanSecondsAgo({ wall: 3 * HOUR, mono: 1_000 + 300_000 })).toBe(3 * 3_600);
+    expect(scanAgeMs({ wall: 0, mono: 1_000 }, { wall: 3 * HOUR, mono: 1_000 })).toBe(3 * HOUR);
+  });
+
+  it('reads the monotonic clock alone when the wall clock was set back since the scan', () => {
+    noteScannerUse({ wall: 10 * HOUR, mono: 1_000 });
+    expect(lastScanSecondsAgo({ wall: 9 * HOUR, mono: 46_000 })).toBe(45);
+    // Set back by less than has passed: the larger difference, the true one, still wins.
+    expect(lastScanSecondsAgo({ wall: 10 * HOUR + 10_000, mono: 46_000 })).toBe(45);
   });
 });
 

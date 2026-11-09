@@ -27,10 +27,11 @@ export const SCREEN_PRESENCE_STATES = ['online', 'offline'] as const;
 export type ScreenPresenceState = (typeof SCREEN_PRESENCE_STATES)[number];
 
 /**
- * What a till's screen sends. The scan is an AGE, measured on the screen's own
- * monotonic clock, rather than a time of day: an iPad with a wrong clock would
- * otherwise stamp a scan hours away from when it happened. Null when nothing
- * has been scanned since the till was loaded.
+ * What a till's screen sends. The scan is an AGE, a difference measured on the
+ * screen's own clocks (the larger of the wall and the monotonic difference, so
+ * the hours an iPad slept are counted), rather than a time of day: an iPad with
+ * a wrong clock would otherwise stamp a scan hours away from when it happened.
+ * Null when nothing has been scanned since the till was loaded.
  */
 export const StationHeartbeatRequestSchema = z.object({
   lastScanSecondsAgo: z.number().int().min(0).max(SCREEN_SCAN_AGE_MAX_S).nullable().default(null),
