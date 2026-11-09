@@ -478,7 +478,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
               <InfoRow
                 key={`${m.productCode ?? m.name}-${i}`}
                 label={`${m.name}${m.chosenOption ? ` · ${m.chosenOption}` : ''}`}
-                value={`×${m.qty}`}
+                value={m.qty === null ? '' : `×${m.qty}`}
               />
             ))}
           </div>

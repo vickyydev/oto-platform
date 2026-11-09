@@ -151,7 +151,8 @@ export type PartyPlanEntertainment = z.infer<typeof PartyPlanEntertainmentSchema
 export const PartyPlanMenuItemSchema = z.object({
   productCode: z.string().nullable(),
   name: z.string(),
-  qty: Count,
+  /** Null when the menu prints none, or splits one group's portions over several choices. */
+  qty: Count.nullable(),
   choiceGroup: z.string().nullable(),
   chosenOption: z.string().nullable(),
   note: z.string().nullable(),

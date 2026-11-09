@@ -25077,7 +25077,7 @@ export interface paths {
                                 setMenu: {
                                     productCode: string | null;
                                     name: string;
-                                    qty: number;
+                                    qty: number | null;
                                     choiceGroup: string | null;
                                     chosenOption: string | null;
                                     note: string | null;

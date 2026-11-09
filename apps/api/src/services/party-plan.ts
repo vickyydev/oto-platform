@@ -115,7 +115,7 @@ export function partyPlanOfRow(row: SeamEventPackage): PartyPlan | null {
       .map((m) => ({
         productCode: text(m.product_code),
         name: text(m.name) ?? '',
-        qty: nonNegative(m.qty),
+        qty: maybe(m.qty),
         choiceGroup: text(m.choice_group),
         chosenOption: text(m.chosen_option),
         note: text(m.note),

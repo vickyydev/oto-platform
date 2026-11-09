@@ -60847,7 +60847,8 @@
                               "qty": {
                                 "type": "integer",
                                 "minimum": 0,
-                                "maximum": 10000
+                                "maximum": 10000,
+                                "nullable": true
                               },
                               "choiceGroup": {
                                 "type": "string",
