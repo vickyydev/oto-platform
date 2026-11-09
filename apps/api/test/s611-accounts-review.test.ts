@@ -38,8 +38,13 @@ describe('SCRUM-611 lifted Accounts adversarial review', () => {
     const sessions = await ctx.app.inject({ method: 'GET', url: `/accounts/${target}/sessions`, headers: { cookie: admin } });
     expect(sessions.statusCode).toBe(200);
     expect(sessions.json().sessions.length).toBeGreaterThan(0);
+    // SCRUM-793 widened the approved set by three derived fields (status,
+    // endedAt, current) and the page beside the array; the whitelist stays exact.
+    expect(Object.keys(sessions.json()).sort()).toEqual(['limit', 'offset', 'sessions', 'total']);
     for (const s of sessions.json().sessions) {
-      expect(Object.keys(s).sort()).toEqual(['branchId', 'createdAt', 'expiresAt', 'id', 'lastSeenAt', 'lockedAt', 'stationId']);
+      expect(Object.keys(s).sort()).toEqual([
+        'branchId', 'createdAt', 'current', 'endedAt', 'expiresAt', 'id', 'lastSeenAt', 'lockedAt', 'stationId', 'status',
+      ]);
       expect(Number.isFinite(Date.parse(s.createdAt))).toBe(true);
     }
   });

@@ -2220,8 +2220,30 @@
     },
     "/accounts/{id}/sessions": {
       "get": {
-        "description": "Sessions held by an account",
+        "description": "Sessions held by an account, newest sign-in first, a page at a time (limit default 10, max 50; offset), with the total. Each row carries its status now (active, locked, or ended once past its end or signed out), when it ended, and whether it is the caller's own session.",
         "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 10
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991,
+              "default": 0
+            },
+            "in": "query",
+            "name": "offset",
+            "required": false
+          },
           {
             "schema": {
               "type": "string",
@@ -2275,6 +2297,22 @@
                           "createdAt": {
                             "type": "string",
                             "format": "date-time"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "locked",
+                              "ended"
+                            ]
+                          },
+                          "endedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "current": {
+                            "type": "boolean"
                           }
                         },
                         "required": [
@@ -2284,14 +2322,33 @@
                           "lockedAt",
                           "lastSeenAt",
                           "expiresAt",
-                          "createdAt"
+                          "createdAt",
+                          "status",
+                          "endedAt",
+                          "current"
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "exclusiveMinimum": true,
+                      "minimum": 0
+                    },
+                    "offset": {
+                      "type": "integer",
+                      "minimum": 0
                     }
                   },
                   "required": [
-                    "sessions"
+                    "sessions",
+                    "total",
+                    "limit",
+                    "offset"
                   ],
                   "additionalProperties": false
                 }

@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { randomBytes } from 'node:crypto';
 import { hash } from '@node-rs/argon2';
-import { and, desc, eq, sql, type SQL } from 'drizzle-orm';
-import { ACCOUNT_STATUSES, account, employee, role, roleAssignment, session } from '@oto/db';
+import { and, eq, sql, type SQL } from 'drizzle-orm';
+import { ACCOUNT_STATUSES, account, employee, role, roleAssignment } from '@oto/db';
 import { newId, normalizePhone, type Permission } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
@@ -10,6 +10,12 @@ import { audit } from '../services/audit';
 import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
 import { opCtx, withTx } from '../services/tx';
 import { deliverCode, invalidateAllSessions, mintCode, type PendingCode } from '../services/auth';
+import {
+  SESSION_PAGE_DEFAULT,
+  SESSION_PAGE_MAX,
+  SESSION_STATUSES,
+  accountSessionsPage,
+} from '../services/account-sessions';
 import {
   activateOtoAppUser,
   deactivateOtoAppUser,
@@ -70,7 +76,15 @@ const AccountSessions = z.object({
     lastSeenAt: z.string().datetime(),
     expiresAt: z.string().datetime(),
     createdAt: z.string().datetime(),
+    // SCRUM-793 — what the session is now, read against the clock: a row past
+    // its end (or signed out) is 'ended' and carries when; the row stays.
+    status: z.enum(SESSION_STATUSES),
+    endedAt: z.string().datetime().nullable(),
+    current: z.boolean(),
   })),
+  total: z.number().int().nonnegative(),
+  limit: z.number().int().positive(),
+  offset: z.number().int().nonnegative(),
 });
 
 export async function accountRoutes(app: App): Promise<void> {
@@ -551,13 +565,21 @@ export async function accountRoutes(app: App): Promise<void> {
   );
 
   // S2-01a — the sessions an account currently holds, for the Login Users panel.
+  // SCRUM-793 — a page at a time, newest sign-in first, each with its status now.
   app.get(
     '/:id/sessions',
     {
       config: { permission: 'admin:account:read' },
       schema: {
-        description: 'Sessions held by an account',
+        description:
+          'Sessions held by an account, newest sign-in first, a page at a time (limit default 10, max 50; offset), ' +
+          'with the total. Each row carries its status now (active, locked, or ended once past its end or signed out), ' +
+          "when it ended, and whether it is the caller's own session.",
         params: z.object({ id: z.string().uuid() }),
+        querystring: z.object({
+          limit: z.coerce.number().int().min(1).max(SESSION_PAGE_MAX).default(SESSION_PAGE_DEFAULT),
+          offset: z.coerce.number().int().nonnegative().safe().default(0),
+        }),
         response: { 200: AccountSessions },
       },
     },
@@ -576,22 +598,12 @@ export async function accountRoutes(app: App): Promise<void> {
       const effective = await req.effectivePermissions();
       await assertAccountInScope(effective, auth.operatorId, req.params.id, 'admin:account:read');
       await assertDominatesAccount(app.db, effective, auth.operatorId, req.params.id);
-      const rows = await app.db
-        .select()
-        .from(session)
-        .where(eq(session.accountId, req.params.id))
-        .orderBy(desc(session.lastSeenAt));
-      return {
-        sessions: rows.map((s) => ({
-          id: s.id,
-          branchId: s.branchId,
-          stationId: s.stationId,
-          lockedAt: s.lockedAt?.toISOString() ?? null,
-          lastSeenAt: s.lastSeenAt.toISOString(),
-          expiresAt: s.expiresAt.toISOString(),
-          createdAt: s.createdAt.toISOString(),
-        })),
-      };
+      return accountSessionsPage(app.db, {
+        accountId: req.params.id,
+        currentSessionId: auth.sessionId,
+        limit: req.query.limit,
+        offset: req.query.offset,
+      });
     },
   );
 

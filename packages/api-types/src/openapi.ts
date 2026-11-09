@@ -1418,10 +1418,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Sessions held by an account */
+        /** @description Sessions held by an account, newest sign-in first, a page at a time (limit default 10, max 50; offset), with the total. Each row carries its status now (active, locked, or ended once past its end or signed out), when it ended, and whether it is the caller's own session. */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    limit?: number;
+                    offset?: number;
+                };
                 header?: never;
                 path: {
                     id: string;
@@ -1452,7 +1455,15 @@ export interface paths {
                                 expiresAt: string;
                                 /** Format: date-time */
                                 createdAt: string;
+                                /** @enum {string} */
+                                status: "active" | "locked" | "ended";
+                                /** Format: date-time */
+                                endedAt: string | null;
+                                current: boolean;
                             }[];
+                            total: number;
+                            limit: number;
+                            offset: number;
                         };
                     };
                 };
