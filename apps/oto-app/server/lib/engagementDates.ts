@@ -21,3 +21,28 @@ const DAY_MS = 86_400_000;
 export function dayBefore(day: string): string {
   return new Date(Date.parse(`${day}T00:00:00Z`) - DAY_MS).toISOString().slice(0, 10);
 }
+
+export interface PlannedPlacement {
+  startDate: string;
+  departmentId: string;
+  branchId: string;
+}
+
+/**
+ * Where a profile works on a day. A profile offboarded and onboarded again
+ * works under two employments: the current one up to and including the
+ * offboarding's last working day, and the planned one from its start date
+ * (always after the last day). Before the start date: the profile's current
+ * department and branch; on and after it: the planned employment's, and
+ * `planned` says so.
+ */
+export function placementOn(
+  current: { primaryDepartmentId: string | null; branchId: string | null },
+  planned: PlannedPlacement | undefined,
+  day: string,
+): { departmentId: string | null; branchId: string | null; planned: boolean } {
+  if (planned && day >= planned.startDate) {
+    return { departmentId: planned.departmentId, branchId: planned.branchId, planned: true };
+  }
+  return { departmentId: current.primaryDepartmentId, branchId: current.branchId, planned: false };
+}

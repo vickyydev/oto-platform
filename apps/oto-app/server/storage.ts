@@ -320,6 +320,7 @@ import {
         type EmployeeEngagement,
 } from "@shared/schema";
 import { db } from "./db";
+import { placementOn } from "./lib/engagementDates";
 import { employeeDynamicLeaveBalances, listTenantLeaveTypes } from "./leave-types";
 import {
         eq,
@@ -8524,12 +8525,41 @@ export class DatabaseStorage implements IStorage {
                         }
                 }
 
+                // SCRUM-794: a profile with an Onboard Again employment planned in
+                // this branch is eligible from that employment's start date, in
+                // its department, whatever its current employment's state (it may
+                // still be working out its last days elsewhere, or have left).
+                const plannedHere = await db
+                        .select({ employee: employees })
+                        .from(employeeEngagements)
+                        .innerJoin(employees, eq(employees.id, employeeEngagements.employeeId))
+                        .where(
+                                and(and(
+                                        eq(employeeEngagements.status, "planned"),
+                                        eq(employeeEngagements.branchId, shiftRow.branchId),
+                                        lte(employeeEngagements.startDate, date),
+                                ), scheduleParkPredicate("employees", requestedTenantId)),
+                        );
+                {
+                        const existingIds = new Set(eligibleEmployees.map((e) => e.id));
+                        for (const { employee: emp } of plannedHere) {
+                                if (!existingIds.has(emp.id)) eligibleEmployees.push(emp);
+                        }
+                }
+                const plannedOf = await this.getPlannedEngagements(eligibleEmployees.map((e) => e.id));
+                // On and after the start date the planned branch is the one that counts.
+                eligibleEmployees = eligibleEmployees.filter((e) => {
+                        const placement = placementOn(e, plannedOf.get(e.id), date);
+                        return !placement.planned || placement.branchId === shiftRow.branchId;
+                });
+
                 // Filter by the shift row's department — only employees whose primary department
                 // matches the shift row's department are eligible to be assigned to it.
                 // If the shift row has no department set, skip this filter (show all branch employees).
+                // SCRUM-794: the department the profile is in on the shift's date.
                 if (shiftRow.departmentId) {
                         eligibleEmployees = eligibleEmployees.filter(
-                                (e) => e.primaryDepartmentId === shiftRow.departmentId,
+                                (e) => placementOn(e, plannedOf.get(e.id), date).departmentId === shiftRow.departmentId,
                         );
                 }
 
@@ -8948,6 +8978,14 @@ export class DatabaseStorage implements IStorage {
                                 message: "Employee not found",
                         };
 
+                // SCRUM-794: an Onboard Again employment planned on this profile
+                // counts from its start date: on and after it the profile is in
+                // the planned department and branch, and the current
+                // employment's last day and Left state do not apply to it. Up to
+                // the last working day the current department is as it was.
+                const planned = (await this.getPlannedEngagements([employee.id], executor)).get(employee.id);
+                const placement = placementOn(employee, planned, date);
+
                 // Check employee start date - cannot assign shifts before employee's start date
                 if (employee.startDate) {
                         const shiftDateObj = new Date(date);
@@ -8969,7 +9007,7 @@ export class DatabaseStorage implements IStorage {
                 }
 
                 // Check last working day - cannot assign shifts after employee's last working day
-                if (employee.lastWorkingDay) {
+                if (employee.lastWorkingDay && !placement.planned) {
                         const shiftDateObj = new Date(date);
                         const lastDayObj = new Date(employee.lastWorkingDay);
                         // Normalize to date-only comparison (ignore time component)
@@ -8987,7 +9025,7 @@ export class DatabaseStorage implements IStorage {
                 }
 
                 // Check if employee has LEFT (resigned/terminated after last day)
-                if (employee.employmentState === "LEFT") {
+                if (employee.employmentState === "LEFT" && !placement.planned) {
                         return {
                                 ok: false,
                                 reasonCode: "EMPLOYMENT_ENDED",
@@ -9019,10 +9057,10 @@ export class DatabaseStorage implements IStorage {
                 // or this is a borrowed cross-branch assignment (isBorrowed).
                 if (
                         shiftRow.departmentId &&
-                        employee.primaryDepartmentId &&
+                        placement.departmentId &&
                         !isBorrowed
                 ) {
-                        if (employee.primaryDepartmentId !== shiftRow.departmentId) {
+                        if (placement.departmentId !== shiftRow.departmentId) {
                                 return {
                                         ok: false,
                                         reasonCode: "DEPT_MISMATCH",
@@ -9071,7 +9109,7 @@ export class DatabaseStorage implements IStorage {
                 if (weekPlan && !isBorrowed) {
                         const shiftBranchId = weekPlan.branchId;
                         // If employee's current branch doesn't match the shift's branch, check for transfer
-                        if (employee.branchId !== shiftBranchId) {
+                        if (placement.branchId !== shiftBranchId) {
                                 // Check if there was a transfer from this branch
                                 const transferRecords = await executor
                                         .select()

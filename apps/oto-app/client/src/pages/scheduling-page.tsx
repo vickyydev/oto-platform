@@ -81,6 +81,16 @@ type Employee = {
     effectiveDate: string;
     lastDateInOldBranch: string;
   };
+  /** SCRUM-794: an Onboard Again employment planned on the profile (the server's scheduling list). */
+  schedulingEngagement?: {
+    startDate: string;
+    departmentId: string;
+    branchId: string;
+  };
+  /** SCRUM-794: the row of the planned employment, shown from its start date in its department. */
+  isPlannedRow?: boolean;
+  /** SCRUM-794: the day the planned employment starts; the row is open from then. */
+  plannedFrom?: string;
   roles?: { roleId: string; roleName: string; isPrimary: boolean | null }[];
 };
 
@@ -2275,10 +2285,35 @@ function SchedulingPageInner() {
     
     // Add regular employees (using search-filtered list)
     for (const emp of searchFilteredEmployees) {
-      const deptId = emp.primaryDepartmentId || "unassigned";
-      const existing = map.get(deptId) || [];
-      existing.push({ ...emp, isCasualWorker: false });
-      map.set(deptId, existing);
+      // SCRUM-794: a profile onboarded again into a department here is that
+      // department's from the planned start date, and its current
+      // department's up to its last working day: two rows, each open on its
+      // own dates. The same department and branch keep one row, open on both.
+      const planned = emp.schedulingEngagement;
+      const plannedHere = !!planned && planned.branchId === selectedBranchId;
+      const currentHere = emp.branchId === selectedBranchId || !!emp.schedulingTransferInfo;
+      const oneRow = plannedHere && currentHere && (emp.primaryDepartmentId || null) === planned!.departmentId;
+      if (currentHere || !plannedHere) {
+        const deptId = emp.primaryDepartmentId || "unassigned";
+        const existing = map.get(deptId) || [];
+        existing.push({ ...emp, isCasualWorker: false, ...(oneRow ? { plannedFrom: planned!.startDate } : {}) });
+        map.set(deptId, existing);
+      }
+      if (plannedHere && !oneRow) {
+        const existing = map.get(planned!.departmentId) || [];
+        existing.push({
+          ...emp,
+          isCasualWorker: false,
+          isPlannedRow: true,
+          plannedFrom: planned!.startDate,
+          primaryDepartmentId: planned!.departmentId,
+          branchId: planned!.branchId,
+          employmentState: "ACTIVE",
+          lastWorkingDay: null,
+          schedulingTransferInfo: undefined,
+        });
+        map.set(planned!.departmentId, existing);
+      }
     }
     
     // Add casual workers (mapped to employee-like structure), also apply search filter
@@ -2321,7 +2356,7 @@ function SchedulingPageInner() {
       emps.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
     }
     return map;
-  }, [searchFilteredEmployees, casualWorkersForEmployeeViewQuery.data, searchTerm, departments]);
+  }, [searchFilteredEmployees, casualWorkersForEmployeeViewQuery.data, searchTerm, departments, selectedBranchId]);
 
   const getAssignmentsForCell = (row: ScheduleShiftRow, day: Date) => {
     const dateStr = format(day, "yyyy-MM-dd");
@@ -2442,6 +2477,13 @@ function SchedulingPageInner() {
   // Check if an employee should be shown in the current branch's schedule for a specific date
   // Transferred employees show in old branch only until their transfer effective date
   const isEmployeeVisibleForDate = (employee: Employee, day: Date): boolean => {
+    // SCRUM-794: the planned employment's row opens on its start date; a
+    // profile onboarded again into the same department reopens then.
+    if (employee.plannedFrom) {
+      const dateStr = format(day, 'yyyy-MM-dd');
+      if (employee.isPlannedRow) return dateStr >= employee.plannedFrom;
+      if (dateStr >= employee.plannedFrom) return true;
+    }
     if ((employee.employmentState === 'LEAVING' || employee.employmentState === 'LEFT') && employee.lastWorkingDay) {
       const dateStr = format(day, 'yyyy-MM-dd');
       if (dateStr > employee.lastWorkingDay) return false;
@@ -3648,21 +3690,24 @@ function SchedulingPageInner() {
                               ))}
                             </div>
                           ) : (
-                            <SortableContext items={deptEmployees.filter(e => !e.isCasualWorker).map(e => `emp-${e.id}`)} strategy={verticalListSortingStrategy}>
+                            <SortableContext items={deptEmployees.filter(e => !e.isCasualWorker && !e.isPlannedRow).map(e => `emp-${e.id}`)} strategy={verticalListSortingStrategy}>
                             {deptEmployees.map((employee) => {
                               const isCasual = employee.isCasualWorker;
+                              // SCRUM-794: the planned employment's row is not reordered, and its ids are its own.
+                              const isPlanned = !!employee.isPlannedRow;
+                              const rowKey = isPlanned ? `planned-${employee.id}` : employee.id;
                               const isVisibleForAnyDay = isCasual
                                 ? visibleDays.some(day => isCasualWorkerActiveForDate(employee, day))
                                 : visibleDays.some(day => isEmployeeVisibleForDate(employee, day));
                               if (!isVisibleForAnyDay) return null;
                               return (
-                              <SortableEmployeeRowWrapper key={employee.id} employeeId={employee.id} departmentId={dept.id} isManager={isManager && !isCasual}>
+                              <SortableEmployeeRowWrapper key={rowKey} employeeId={rowKey} departmentId={dept.id} isManager={isManager && !isCasual && !isPlanned}>
                               {({ attributes, listeners, setNodeRef: setEmpRef, dragStyle }: { attributes: any; listeners: any; setNodeRef: (el: HTMLElement | null) => void; dragStyle: React.CSSProperties | undefined }) => (
                               <div ref={setEmpRef} className={cn("grid border-t", gridCols)} style={{ ...monthGridStyle, ...dragStyle }}>
                                 <div className={cn("p-2 border-r flex items-center gap-1 bg-background sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]", firstColWidth)}>
                                   {isManager && (
-                                    isCasual ? (
-                                      <div className="p-0.5 text-muted-foreground/30" title="Casual worker">
+                                    isCasual || isPlanned ? (
+                                      <div className="p-0.5 text-muted-foreground/30" title={isPlanned ? "Onboard Again: starts in this department" : "Casual worker"}>
                                         <GripVertical className="h-3 w-3" />
                                       </div>
                                     ) : (
@@ -3707,6 +3752,11 @@ function SchedulingPageInner() {
                                         Casual
                                       </Badge>
                                     )}
+                                    {isPlanned && employee.plannedFrom && (
+                                      <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 shrink-0 text-teal-700 border-teal-500" data-testid={`badge-planned-from-${employee.id}`}>
+                                        From {format(new Date(`${employee.plannedFrom}T00:00:00`), "MMM d")}
+                                      </Badge>
+                                    )}
                                     {!isCasual && (employee.employmentState === "LEAVING" || employee.employmentState === "LEFT") && employee.lastWorkingDay && (
                                       <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 shrink-0 text-red-600 border-red-400">
                                         {employee.employmentState === "LEFT" ? "Left" : "Leaving"} {format(new Date(employee.lastWorkingDay), "MMM d")}
@@ -3733,7 +3783,7 @@ function SchedulingPageInner() {
                                   return (
                                     <DroppableCell
                                       key={day.toISOString()}
-                                      id={`cell-${employee.id}-${dateStr}`}
+                                      id={`cell-${isPlanned ? "planned-" : ""}${employee.id}-${dateStr}`}
                                       employeeId={employee.id}
                                       date={dateStr}
                                       className={cn(

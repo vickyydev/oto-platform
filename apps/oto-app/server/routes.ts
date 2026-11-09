@@ -3531,14 +3531,36 @@ export async function registerRoutes(
             }
           }
           
+          // SCRUM-794: a profile with an Onboard Again employment planned in
+          // this branch is scheduled here from its start date (and stays in
+          // its current department up to its last working day), whichever
+          // branch it works in now.
+          const plannedEngagements = parkGroup
+            ? await db.select().from(employeeEngagements)
+              .where(and(eq(employeeEngagements.status, "planned"), eq(employeeEngagements.tenantId, parkGroup)))
+            : [];
+          const plannedByEmployee = new Map(plannedEngagements.map(g => [g.employeeId, g]));
+          const plannedHere = new Set(plannedEngagements.filter(g => g.branchId === branchIdFilter).map(g => g.employeeId));
+          const reachesBranch = !userWithAccess || userWithAccess.hasAllBranchesAccess || userWithAccess.allowedBranchIds.includes(branchIdFilter);
+          const plannedArrivals = reachesBranch
+            ? employees.filter(e => e.tenantId === parkGroup && plannedHere.has(e.id) && !filteredEmployees.some(f => f.id === e.id))
+            : [];
+
           // Include employees currently in this branch OR recently transferred from this branch
-          filteredEmployees = filteredEmployees.filter(e => 
-            e.branchId === branchIdFilter || transferredMap.has(e.id)
+          filteredEmployees = [...filteredEmployees, ...plannedArrivals].filter(e => 
+            e.branchId === branchIdFilter || transferredMap.has(e.id) || plannedHere.has(e.id)
           );
           
           // Add transfer info to employees for scheduling filtering
           const employeesWithTransferInfo = filteredEmployees.map(e => {
             const transferInfo = transferredMap.get(e.id);
+            const planned = plannedByEmployee.get(e.id);
+            if (planned) {
+              e = {
+                ...e,
+                schedulingEngagement: { startDate: planned.startDate, departmentId: planned.departmentId, branchId: planned.branchId },
+              } as typeof e;
+            }
             if (transferInfo) {
               return {
                 ...e,
