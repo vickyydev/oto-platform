@@ -147,6 +147,34 @@ describe('readPartyDate: one phrase, from today', () => {
     expect(readPartyDate('21 พ.ย. 2570', TUE).date).toBe('2027-11-21');
   });
 
+  it('a day of the month without its month: the next such day, less sure than a day with its month', () => {
+    // [text, today, the date, the phrase]
+    for (const [text, today, date, phrase] of [
+      ['can we do the 21st?', TUE, '2026-11-21', 'the 21st'],
+      ['the 21st at 3pm', TUE, '2026-11-21', 'the 21st'],
+      ['party on 3rd please', TUE, '2026-12-03', '3rd'],
+      ['праздник 15-го в 14:00', TUE, '2026-11-15', '15-го'],
+      ['на 15-е число', TUE, '2026-11-15', '15-е число'],
+      ['вам удобно 9 числа?', TUE, '2026-12-09', '9 числа'],
+      ['วันที่ 15', TUE, '2026-11-15', 'วันที่ 15'],
+      ['ขอจองวันที่ ๑๕ ค่ะ', TUE, '2026-11-15', 'วันที่ ๑๕'],
+      ['the 31st', '2026-11-10', '2026-12-31', 'the 31st'],
+    ] as const) {
+      expect(readPartyDate(text, today), text).toEqual({ date, phrase, confidence: 'weekday' });
+    }
+    // With the month it is the whole day; a weekday is weaker than the day of the month.
+    expect(readPartyDate('the 21st of Nov', TUE)).toMatchObject({ date: '2026-11-21', phrase: '21st of Nov', confidence: 'exact' });
+    expect(readPartyDate('วันที่ 15 พ.ย.', TUE)).toMatchObject({ phrase: '15 พ.ย.', confidence: 'exact' });
+    expect(readPartyDate('Saturday or the 22nd?', TUE)).toMatchObject({ date: '2026-11-22', phrase: 'the 22nd' });
+    expect(mentionsPartyDate('the 21st')).toBe(true);
+    // An ordinal that counts something else is no day.
+    for (const text of ['her 5th birthday', 'the 2nd floor', 'the 3rd child', 'the 1st time', 'для 5-го класса', 'на 2-го взрослого', 'วันที่ 2 คน']) {
+      expect(readPartyDate(text, TUE), text).toEqual({ date: null, phrase: '', confidence: 'none' });
+    }
+    expect(readPartyDate('for his 6th birthday on Saturday', TUE)).toMatchObject({ date: '2026-11-14', phrase: 'Saturday' });
+    expect(readPartyDate('วันที่ 15/11', TUE)).toMatchObject({ date: '2026-11-15', phrase: '15/11', confidence: 'exact' });
+  });
+
   it('what is not a date: a count, a measure, a clock time, a phone number, a week, the verb "may"', () => {
     for (const text of [
       'party for 5-6 kids',

@@ -187,6 +187,12 @@ describe('Book Date’s first values on an English chat', () => {
     expect(draftOf('en', messages).date).toBe('2026-11-21');
   });
 
+  it('a day of the month without its month, in the three languages', () => {
+    expect(draftOf('en', [msg('can we do the 21st at 3pm?')])).toMatchObject({ date: '2026-11-21', dateFrom: 'the 21st', startTime: '15:00' });
+    expect(draftOf('ru', [msg('праздник 15-го в 14:00')])).toMatchObject({ date: '2026-11-15', dateFrom: '15-го', startTime: '14:00' });
+    expect(draftOf('th', [msg('ขอจองวันที่ 15 ค่ะ')])).toMatchObject({ date: '2026-11-15', dateFrom: 'วันที่ 15' });
+  });
+
   it('a chat that names no date opens with none, as before', () => {
     const draft = draftOf('en', [msg('Hello! How much is a party?')]);
     expect(draft).toMatchObject({ date: '', dateFrom: '', startTime: DEFAULT_START_TIME, timeFrom: '' });

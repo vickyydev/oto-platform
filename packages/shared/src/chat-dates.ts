@@ -22,11 +22,14 @@ import { isoDateInTz } from './dates';
  *     Saturday", "следующую субботу", "วันเสาร์หน้า"); a weekday and a day
  *     number ("Saturday 21st", "วันเสาร์ที่ 21") is the next 21st that is a
  *     Saturday;
+ *   - a day of the month without its month ("the 21st", "on 21st", "15-го",
+ *     "15 числа", "วันที่ 15"): the next such day on or after today;
  *   - today, tomorrow and the day after, in the three languages.
  * A date without a year is its next occurrence on or after today.
  *
- * WHEN A TEXT NAMES SEVERAL: a day the text names outright beats a weekday,
- * and a weekday beats "today / tomorrow" (those words are as often about a
+ * WHEN A TEXT NAMES SEVERAL: a day the text names outright beats a day of the
+ * month without its month, that beats a weekday, and a weekday beats "today /
+ * tomorrow" (those words are as often about a
  * transfer or a call as about the party); within one kind, the LAST one wins
  * (the latest confirmed version). A date written after a payment or a birth
  * ("депозит получен 9 ноября", "Deposit of 1,500 baht received on 9 November",
@@ -49,7 +52,7 @@ export interface PartyDateReading {
   date: string | null;
   /** The text's own words for it, as written ("15 ноября", "next Saturday"); empty when none. */
   phrase: string;
-  /** `exact`: the text names the day; `weekday`: a weekday or "tomorrow", counted from today; `none`. */
+  /** `exact`: the text names the day; `weekday`: counted from today (a weekday, a day of the month alone, "tomorrow"); `none`. */
   confidence: PartyDateConfidence;
 }
 
@@ -127,6 +130,12 @@ function nextWeekdayAndDay(today: Day, weekday: number, day: number): string | n
     }
   }
   // No such day for over two years: the day of the month alone.
+  return nextDayOfMonth(today, day);
+}
+
+/** The next date on or after today that is this day of the month ("the 21st", "15-го", "วันที่ 15"). */
+function nextDayOfMonth(today: Day, day: number): string | null {
+  const from = isoOfDay(today);
   for (let j = 0; j < 13; j++) {
     const mm = ((today.m - 1 + j) % 12) + 1;
     const yy = today.y + Math.floor((today.m - 1 + j) / 12);
@@ -256,6 +265,17 @@ const WEEKDAY_DAY = /[\s,]*(?:the\s+|ที่\s*)?(\d{1,2})(?:st|nd|rd|th|-?г�
 const MONTH_NEXT = new RegExp(`^(?:st|nd|rd|th|-?го|-?е)?(?:\\s*of)?[\\s./-]*${MONTH}`, 'iu');
 /** A year right after a day and month ("21 March 2027", "15 พ.ย. 2569", "15 พ.ย. พ.ศ. 2569"). */
 const YEAR_AFTER = /[\s,./-]*(?:(?:พ\.?\s?ศ\.?|ค\.?\s?ศ\.?)\s*)?(\d{4})(?!\d)/uy;
+/** A day of the month without its month: "the 21st" (or "on 21st"), "15-го", "15 числа", "วันที่ 15". */
+const EN_ORDINAL_DAY = /(the\s+)?(\d{1,2})(?:st|nd|rd|th)(?!\p{L})/giu;
+const RU_ORDINAL_DAY = /(\d{1,2})(?:\s*-?\s*(?:го|ого)(?:\s+числа)?(?!\p{L})|(?:\s*-?\s*е)?\s+числ[ао](?!\p{L}))/giu;
+const TH_DAY = /วันที่\s*(\d{1,2})(?!\d)/gu;
+/** "on" right before "21st". */
+const ON_BEFORE = /(?:^|[^\p{L}])on\s+$/iu;
+/** A month after the day: the day and month are read whole ("the 21st of Nov", "15-го ноября", "วันที่ 15 พ.ย."). */
+const MONTH_AFTER = new RegExp(`^(?:\\s*of)?[\\s./-]*${MONTH}`, 'iu');
+/** An ordinal that counts something else: "her 5th birthday", "the 2nd floor", "5-го класса". */
+const NOT_A_DAY_AFTER =
+  /^\s*(?:(?:birthday|b-?day|anniversary|years?|grade|class|floor|times?|place|row|table|option|package|one|menu|room|zone|day|week|month|hours?|of\s+(?:them|us|you))(?!\p{L})|класс|мест|этаж|раз|рожден|годовщ|пакет|вариант)/iu;
 /** What sits between a weekday and the day it names ("Saturday, the 21st", "วันเสาร์ที่ 21"). */
 const WEEKDAY_GAP = /^[\s,]*(?:the\s+|ที่\s*)?$/iu;
 /** Before a dotted number: a word that makes it a clock time ("в 14.10", "at 15.10"). */
@@ -278,9 +298,13 @@ function numberStartsAt(text: string, i: number): boolean {
 
 // --- Scanning a text ---------------------------------------------------------------------
 
-type Tier = 1 | 2 | 3;
-/** 3: the day itself; 2: a weekday; 1: today / tomorrow. */
-const CONFIDENCE: Record<Tier, PartyDateConfidence> = { 3: 'exact', 2: 'weekday', 1: 'weekday' };
+/** How sure a date is, the surest first: a stronger one beats a weaker one wherever it is written. */
+const EXACT = 4; // the day itself: "21 ноября", "15.11", "Saturday 21st"
+const DAY_ONLY = 3; // a day of the month without its month: "the 21st", "15-го", "วันที่ 15"
+const WEEKDAY = 2; // a weekday: "в субботу", "next Saturday", "วันเสาร์หน้า"
+const RELATIVE = 1; // today, tomorrow, the day after
+type Tier = typeof EXACT | typeof DAY_ONLY | typeof WEEKDAY | typeof RELATIVE;
+const CONFIDENCE: Record<Tier, PartyDateConfidence> = { 4: 'exact', 3: 'weekday', 2: 'weekday', 1: 'weekday' };
 
 interface Found {
   start: number;
@@ -347,7 +371,7 @@ function dayMonth(text: string, today: Day | null): Found[] {
     return {
       start: m.index,
       end,
-      tier: 3,
+      tier: EXACT,
       yearGiven: year !== null,
       resolve: (today) => (year ? (realDate(year.year, month, day) ? isoOf(year.year, month, day) : null) : nextOccurrence(today, month, day)),
     };
@@ -369,7 +393,7 @@ function monthDay(text: string, today: Day | null): Found[] {
     return {
       start: m.index,
       end,
-      tier: 3,
+      tier: EXACT,
       yearGiven: year !== null,
       resolve: (today) => (year ? (realDate(year.year, month, day) ? isoOf(year.year, month, day) : null) : nextOccurrence(today, month, day)),
     };
@@ -403,7 +427,7 @@ function numeric(text: string): Found[] {
     return {
       start: m.index,
       end,
-      tier: 3,
+      tier: EXACT,
       yearGiven: !!yearText,
       resolve: (today) => {
         if (!yearText) return nextOccurrence(today, month, day);
@@ -421,7 +445,7 @@ function isoDates(text: string): Found[] {
     const month = Number(m[3]);
     const day = Number(m[4]);
     if (year === null || !realDate(year, month, day)) return null;
-    return { start: m.index, end: m.index + m[0].length, tier: 3, yearGiven: true, resolve: () => isoOf(year, month, day) };
+    return { start: m.index, end: m.index + m[0].length, tier: EXACT, yearGiven: true, resolve: () => isoOf(year, month, day) };
   });
 }
 
@@ -437,10 +461,10 @@ function weekdayFound(text: string, start: number, end: number, weekday: number,
     // Not a clock time ("Saturday 14:00"), a count ("в субботу 15 детей"), a month's day
     // ("Saturday 21 March", read by DAY_MONTH) or a numeric date ("Saturday 21/11").
     if (day >= 1 && day <= 31 && !/^[:./-]\d/u.test(after) && !UNIT_AFTER.test(after) && !MONTH_NEXT.test(tail)) {
-      return { start, end: dayEnd, tier: 3, yearGiven: false, resolve: (today) => nextWeekdayAndDay(today, weekday, day) };
+      return { start, end: dayEnd, tier: EXACT, yearGiven: false, resolve: (today) => nextWeekdayAndDay(today, weekday, day) };
     }
   }
-  return { start, end, tier: 2, yearGiven: false, resolve: (today) => nextWeekday(today, weekday, strict) };
+  return { start, end, tier: WEEKDAY, yearGiven: false, resolve: (today) => nextWeekday(today, weekday, strict) };
 }
 
 function weekdays(text: string): Found[] {
@@ -470,6 +494,32 @@ function weekdays(text: string): Found[] {
   return [...en, ...ru, ...th];
 }
 
+/**
+ * A day of the month the text names without its month: the next such day on
+ * or after today ("can we do the 21st?", "праздник 15-го", "วันที่ 15"), less
+ * sure than a day with its month and surer than a weekday.
+ */
+function daysOfMonth(text: string): Found[] {
+  const found = (start: number, digitsAt: number, digits: string, end: number): Found | null => {
+    const day = Number(digits);
+    if (day < 1 || day > 31 || !numberStartsAt(text, digitsAt)) return null;
+    // A numeric date or a clock time goes on after the number: "วันที่ 15/11", "วันที่ 14.00".
+    if (/^[:./-]\d/u.test(text.slice(digitsAt + digits.length))) return null;
+    const after = text.slice(end);
+    if (MONTH_AFTER.test(after) || UNIT_AFTER.test(after) || NOT_A_DAY_AFTER.test(after)) return null;
+    return { start, end, tier: DAY_ONLY, yearGiven: false, resolve: (today) => nextDayOfMonth(today, day) };
+  };
+  const end = (m: RegExpExecArray) => m.index + m[0].length;
+  const en = scan(EN_ORDINAL_DAY, text, (m) => {
+    // "the 21st", or "on 21st"; not "her 5th", "my 2nd".
+    if (m[1] ? isLetter(text[m.index - 1]) : !ON_BEFORE.test(text.slice(Math.max(0, m.index - 8), m.index))) return null;
+    return found(m.index, m.index + (m[1]?.length ?? 0), m[2]!, end(m));
+  });
+  const ru = scan(RU_ORDINAL_DAY, text, (m) => found(m.index, m.index, m[1]!, end(m)));
+  const th = scan(TH_DAY, text, (m) => found(m.index, end(m) - m[1]!.length, m[1]!, end(m)));
+  return [...en, ...ru, ...th];
+}
+
 function relatives(text: string): Found[] {
   const offset = (word: string) => {
     const w = word.toLowerCase().replace(/\s+/gu, ' ');
@@ -479,7 +529,7 @@ function relatives(text: string): Found[] {
   };
   const found = (m: RegExpExecArray): Found => {
     const n = offset(m[1]!);
-    return { start: m.index, end: m.index + m[0].length, tier: 1, yearGiven: false, resolve: (today) => plusDays(today, n) };
+    return { start: m.index, end: m.index + m[0].length, tier: RELATIVE, yearGiven: false, resolve: (today) => plusDays(today, n) };
   };
   return [
     ...scan(EN_RU_RELATIVE, text, (m) => (isLetter(text[m.index - 1]) ? null : found(m))),
@@ -499,6 +549,7 @@ function datesIn(text: string, today: Day | null): Array<Found & { phraseStart: 
     ...numeric(text),
     ...dayMonth(text, today),
     ...monthDay(text, today),
+    ...daysOfMonth(text),
     ...weekdays(text),
     ...relatives(text),
   ].sort((a, b) => a.start - b.start || b.end - a.end);
@@ -511,7 +562,7 @@ function datesIn(text: string, today: Day | null): Array<Found & { phraseStart: 
   // A weekday right before the day it names is part of the phrase: "Saturday 21 March", "в субботу 21 марта".
   return kept.map((f, i) => {
     const prev = kept[i - 1];
-    const joins = f.tier === 3 && prev && prev.tier === 2 && WEEKDAY_GAP.test(text.slice(prev.end, f.start));
+    const joins = f.tier === EXACT && prev && prev.tier === WEEKDAY && WEEKDAY_GAP.test(text.slice(prev.end, f.start));
     const before = joins ? kept[i - 2] : prev;
     return { ...f, phraseStart: joins ? prev.start : f.start, clauseFrom: before ? before.end : 0 };
   });
@@ -580,7 +631,7 @@ export function readPartyDate(text: string, today: string | Date = new Date(), t
  * one that names the party's day (`carriesBirthdayDetails`, api).
  */
 export function mentionsPartyDate(text: string): boolean {
-  return datesIn(prepared(text).scan, null).some((f) => f.tier >= 2);
+  return datesIn(prepared(text).scan, null).some((f) => f.tier >= WEEKDAY);
 }
 
 // --- The time ----------------------------------------------------------------------------
