@@ -186,6 +186,9 @@ jobs:
           # SCRUM-790: the wristband box loads the tab on a paste and on a scan
           # that ends with no Enter, and leaves a code typed by hand alone.
           pnpm --filter @oto/pos e2e e2e/band-field-scan.spec.ts
+          # SCRUM-766: a wristband scanned with no box selected opens on F&B,
+          # the shop, History and the till, and is acted on once.
+          pnpm --filter @oto/pos e2e e2e/band-anywhere-scan.spec.ts
       # The Pi release (SCRUM-422; the closing audit's M4 and L52). The box
       # installs `oto-box-<version>-<YYYYMMDD>-<commit>.tgz` (the build id:
       # `packages/box-agent/src/build.ts`), and the guide says the file
