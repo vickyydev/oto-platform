@@ -22,13 +22,9 @@ import { isDefaultTier, tierLabel } from '@/lib/membership';
 import { useOperator } from '@/auth/OperatorContext';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { BadgeCheck, CalendarClock, Hand, Loader2, ShieldCheck, ShieldOff, UserCheck } from 'lucide-react';
-import {
-  EMPTY_TIER_APPROVAL,
-  TierApprovalPanel,
-  type TierApprovalDraft,
-} from '@/components/shared/TierApprovalPanel';
-import { isTierApprovalTier, tierApprovalErrorText, type TierApprovalChoice } from '@/lib/tierApproval';
+import { BadgeCheck, CalendarClock, Loader2, ShieldCheck, ShieldOff, UserCheck } from 'lucide-react';
+import { TIER_APPROVAL_EVIDENCE, isTierApprovalTier, tierApprovalErrorText } from '@/lib/tierApproval';
+import { confirmTierWithoutSale, isPlatformMemberId } from '@/lib/thaiRateConfirmation';
 
 interface VerifyTierModalProps {
   open: boolean;
@@ -41,19 +37,20 @@ interface VerifyTierModalProps {
   operatorName: string;
   onConfirm: (result: { member: Member | null; verification: TierVerification }) => void;
   /**
-   * SCRUM-772 — "Special case, approve by hand": records the Thai rate for
-   * this sale only and applies it. Resolves once the platform has recorded
-   * it; a rejection keeps the modal open with the reason. The button shows
-   * only when this is given and the tier is one a hand approval may apply.
+   * SCRUM-772 — "Confirm Thai rate" on a till that sells: records the rate
+   * for the sale and saves it to the member (`confirmTierAtTill`), then
+   * applies it. Resolves once that is done; a rejection keeps the modal open
+   * with the reason. Without it (the party tab), Confirm saves the rate to the
+   * member here and hands it to `onConfirm`, as a document check does.
    */
-  onApproveByHand?: (choice: TierApprovalChoice) => Promise<void>;
+  onConfirmAtTill?: () => Promise<void>;
 }
 
 /** Members loaded from the platform API carry UUID ids, and only those can be
  *  persisted. Every screen that opens this modal finds its member on the
- *  platform (S2-09b); a member object from anywhere else is not written. */
-const isApiMemberId = (id: string) =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+ *  platform (S2-09b); a member object from anywhere else is not written. The
+ *  test is `isPlatformMemberId`, shared with the Thai rate's confirmation. */
+const isApiMemberId = isPlatformMemberId;
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
@@ -69,7 +66,7 @@ export function VerifyTierModal({
   operatorId,
   operatorName,
   onConfirm,
-  onApproveByHand,
+  onConfirmAtTill,
 }: VerifyTierModalProps) {
   const [proofType, setProofType] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState('');
@@ -79,10 +76,8 @@ export function VerifyTierModal({
   const [revoking, setRevoking] = useState(false);
   const [revokeReason, setRevokeReason] = useState('');
   const [revokeError, setRevokeError] = useState<string | null>(null);
-  /** SCRUM-772 — the special-case step, in place of the document list. */
-  const [approving, setApproving] = useState(false);
-  const [approvalDraft, setApprovalDraft] = useState<TierApprovalDraft>(EMPTY_TIER_APPROVAL);
-  const [approvalError, setApprovalError] = useState<string | null>(null);
+  /** SCRUM-772 — why the last Confirm Thai rate press did not land. */
+  const [confirmError, setConfirmError] = useState<string | null>(null);
   const { can } = useOperator();
   // A fixed built-in list — no route serves it (see `lib/tierProof.ts`). The
   // verification it produces is written to the platform, not to the fixtures.
@@ -98,28 +93,37 @@ export function VerifyTierModal({
       setRevoking(false);
       setRevokeReason('');
       setRevokeError(null);
-      setApproving(false);
-      setApprovalDraft(EMPTY_TIER_APPROVAL);
-      setApprovalError(null);
+      setConfirmError(null);
     }
   }, [open]);
 
   /**
-   * SCRUM-772 — the Thai rate approved by hand. The staff member on the till
-   * approves alone, so the customer does not wait; the caller records it on
-   * the platform for this sale only and applies the rate. Nothing is written
-   * to the member here or there: the next visit asks again.
+   * SCRUM-772 — THE THAI RATE IS CONFIRMED, NOT DOCUMENTED. The owner's rule
+   * (6 November 2026): "For the Thai rate, we don't need to show document
+   * options or expiry date. Just a verification modal with 2 buttons and
+   * record staff logs." So for the Thai rate this step is "Confirm Thai rate"
+   * or "Cancel" and nothing else: no document list, no expiry. Who confirmed
+   * it, where and when is recorded from the session. The Expat rate keeps its
+   * document step below.
    */
-  const mayApproveByHand = !!onApproveByHand && isTierApprovalTier(tier);
-  const handleApproveByHand = async (choice: TierApprovalChoice) => {
-    if (!onApproveByHand) return;
+  const confirmOnly = isTierApprovalTier(tier);
+  const handleConfirmAtTill = async () => {
     setBusy(true);
-    setApprovalError(null);
+    setConfirmError(null);
     try {
-      await onApproveByHand(choice);
+      if (onConfirmAtTill) {
+        // A till that sells: the sale's claim and the member's rate, together.
+        await onConfirmAtTill();
+      } else {
+        // No sale to claim for (the party tab): saved to the member as a
+        // document check is, or handed back for a walk-in.
+        onConfirm(
+          await confirmTierWithoutSale({ tier, member, confirmedBy: { id: operatorId, name: operatorName } }),
+        );
+      }
       onOpenChange(false);
     } catch (err) {
-      setApprovalError(tierApprovalErrorText(err));
+      setConfirmError(tierApprovalErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -147,6 +151,8 @@ export function VerifyTierModal({
       : undefined;
   /** "Passport", or for Other what was checked: "Other (Work permit)". */
   const heldProof = held ? tierProofLabel(held.proofType, held.note) : '';
+  /** SCRUM-772 — a Thai rate confirmed at the till names no document. */
+  const heldAtTill = held?.proofType === TIER_APPROVAL_EVIDENCE;
   const mayRevoke = can('pos:member:tier_downgrade');
   const baselineLabel = tierLabel(getDefaultTier().id);
 
@@ -275,219 +281,248 @@ export function VerifyTierModal({
             Verify {tierLabel(tier)} rate
           </DialogTitle>
           <DialogDescription>
-            {approving
-              ? 'For this sale only. The member profile is not marked, so the next visit asks again.'
-              : member
-                ? 'Saved to the member profile so they won’t be asked again.'
-                : 'Saved to their profile once they enter their details.'}
+            {confirmOnly ? 'No document needed. ' : ''}
+            {member
+              ? 'Saved to the member profile so they won’t be asked again.'
+              : 'Saved to their profile once they enter their details.'}
           </DialogDescription>
         </DialogHeader>
 
-        {approving && (
-          <div className="py-2">
-            <TierApprovalPanel
-              tierName={tierLabel(tier)}
-              tier={tier}
-              approverName={operatorName}
-              draft={approvalDraft}
-              onDraftChange={setApprovalDraft}
-              busy={busy}
-              error={approvalError}
-              onBack={() => {
-                setApproving(false);
-                setApprovalError(null);
-              }}
-              onApprove={(choice) => void handleApproveByHand(choice)}
-            />
+        {/* SCRUM-772 — the Thai rate: one confirmation, two buttons. */}
+        {confirmOnly && (
+          <div className="space-y-5 py-2" data-testid="tier-confirm-step">
+            {member && (
+              <div className="flex items-center gap-3 rounded-lg bg-muted p-4">
+                <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center text-primary font-bold shrink-0">
+                  {member.nickname.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold truncate">{member.nickname}</div>
+                  <div className="text-sm text-muted-foreground truncate">{member.phone}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Recorded automatically — who confirmed it, fixed to the signed-in account. */}
+            <div className="flex items-center gap-2 rounded-lg border border-dashed border-foreground/15 bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground">
+              <UserCheck className="w-4 h-4 shrink-0 text-primary" />
+              <span>
+                Confirmed by <span className="font-semibold text-foreground">{operatorName}</span> — recorded
+                automatically with date &amp; time.
+              </span>
+            </div>
+
+            {confirmError && (
+              <p role="alert" className="text-sm text-destructive">
+                {confirmError}
+              </p>
+            )}
+
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-14 text-lg"
+                disabled={busy}
+                onClick={() => onOpenChange(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="h-14 text-lg gap-2"
+                disabled={busy}
+                onClick={() => void handleConfirmAtTill()}
+              >
+                {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <BadgeCheck className="w-5 h-5" />}
+                {busy ? 'Saving…' : `Confirm ${tierLabel(tier)} rate`}
+              </Button>
+            </div>
           </div>
         )}
 
-        <div className={approving ? 'hidden' : 'space-y-5 py-2'}>
-          {member && (
-            <div className="flex items-center gap-3 rounded-lg bg-muted p-4">
-              <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center text-primary font-bold shrink-0">
-                {member.nickname.charAt(0).toUpperCase()}
-              </div>
-              <div className="min-w-0">
-                <div className="font-bold truncate">{member.nickname}</div>
-                <div className="text-sm text-muted-foreground truncate">{member.phone}</div>
-              </div>
-            </div>
-          )}
-
-          {/* The rate this member already holds, and the way to end it
-              (SCRUM-241). Nothing is erased: the document record stays and a
-              revocation is filed after it with the reason typed here. */}
-          {held && (
-            <div className="rounded-lg border border-amber-500/30 bg-amber-500/[0.07] p-4 space-y-3">
-              <div className="flex items-start gap-2 text-sm">
-                <ShieldOff className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
-                <span>
-                  Already holds <span className="font-semibold">{tierLabel(held.tier)}</span> on{' '}
-                  {/^[aeiou]/i.test(heldProof) ? 'an' : 'a'} {heldProof}
-                  {held.expiresAt
-                    ? held.reverifyDue
-                      ? `, expired ${held.expiresAt} — re-verify`
-                      : `, valid to ${held.expiresAt}`
-                    : ' with no expiry'}{' '}
-                  — verified by{' '}
-                  {held.verifiedBy}.
-                </span>
-              </div>
-              {!mayRevoke ? (
-                <p className="text-sm text-muted-foreground">
-                  Taking that rate back off a member needs a manager.
-                </p>
-              ) : !revoking ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full h-11"
-                  onClick={() => setRevoking(true)}
-                >
-                  End the {tierLabel(held.tier)} rate — back to {baselineLabel}
-                </Button>
-              ) : (
-                <div className="space-y-2">
-                  <label
-                    htmlFor="tier-revoke-reason"
-                    className="text-sm font-medium text-muted-foreground"
-                  >
-                    Why is it ending? <span className="text-destructive">*</span>
-                  </label>
-                  <Input
-                    id="tier-revoke-reason"
-                    value={revokeReason}
-                    maxLength={REVOKE_REASON_MAX}
-                    placeholder="e.g. Residence permit expired and was not renewed"
-                    onChange={(e) => setRevokeReason(e.target.value)}
-                  />
-                  {revokeError && <p className="text-sm text-destructive">{revokeError}</p>}
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="flex-1 h-11"
-                      disabled={busy}
-                      onClick={() => {
-                        setRevoking(false);
-                        setRevokeReason('');
-                        setRevokeError(null);
-                      }}
-                    >
-                      Keep it
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      className="flex-1 h-11 gap-2"
-                      disabled={busy}
-                      onClick={handleRevoke}
-                    >
-                      {busy && <Loader2 className="w-4 h-4 animate-spin" />}
-                      Back to {baselineLabel}
-                    </Button>
-                  </div>
+        {/* Every other discounted rate (Expat): the document step. */}
+        {!confirmOnly && (
+          <div className="space-y-5 py-2">
+            {member && (
+              <div className="flex items-center gap-3 rounded-lg bg-muted p-4">
+                <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center text-primary font-bold shrink-0">
+                  {member.nickname.charAt(0).toUpperCase()}
                 </div>
-              )}
-            </div>
-          )}
+                <div className="min-w-0">
+                  <div className="font-bold truncate">{member.nickname}</div>
+                  <div className="text-sm text-muted-foreground truncate">{member.phone}</div>
+                </div>
+              </div>
+            )}
 
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">
-              Proof checked <span className="text-destructive">*</span>
-            </p>
-            <div className="grid grid-cols-1 gap-2">
-              {proofTypes.map((p) => (
-                <Button
-                  key={p}
-                  type="button"
-                  variant={proofType === p ? 'default' : 'outline'}
-                  className="h-14 justify-start text-base"
-                  onClick={() => setProofType(p)}
+            {/* The rate this member already holds, and the way to end it
+                (SCRUM-241). Nothing is erased: the document record stays and a
+                revocation is filed after it with the reason typed here. */}
+            {held && (
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/[0.07] p-4 space-y-3">
+                <div className="flex items-start gap-2 text-sm">
+                  <ShieldOff className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
+                  {heldAtTill ? (
+                    <span>
+                      Already holds <span className="font-semibold">{tierLabel(held.tier)}</span>, confirmed at
+                      the till by {held.verifiedBy}.
+                    </span>
+                  ) : (
+                    <span>
+                      Already holds <span className="font-semibold">{tierLabel(held.tier)}</span> on{' '}
+                      {/^[aeiou]/i.test(heldProof) ? 'an' : 'a'} {heldProof}
+                      {held.expiresAt
+                        ? held.reverifyDue
+                          ? `, expired ${held.expiresAt} — re-verify`
+                          : `, valid to ${held.expiresAt}`
+                        : ' with no expiry'}{' '}
+                      — verified by{' '}
+                      {held.verifiedBy}.
+                    </span>
+                  )}
+                </div>
+                {!mayRevoke ? (
+                  <p className="text-sm text-muted-foreground">
+                    Taking that rate back off a member needs a manager.
+                  </p>
+                ) : !revoking ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full h-11"
+                    onClick={() => setRevoking(true)}
+                  >
+                    End the {tierLabel(held.tier)} rate — back to {baselineLabel}
+                  </Button>
+                ) : (
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="tier-revoke-reason"
+                      className="text-sm font-medium text-muted-foreground"
+                    >
+                      Why is it ending? <span className="text-destructive">*</span>
+                    </label>
+                    <Input
+                      id="tier-revoke-reason"
+                      value={revokeReason}
+                      maxLength={REVOKE_REASON_MAX}
+                      placeholder="e.g. Residence permit expired and was not renewed"
+                      onChange={(e) => setRevokeReason(e.target.value)}
+                    />
+                    {revokeError && <p className="text-sm text-destructive">{revokeError}</p>}
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="flex-1 h-11"
+                        disabled={busy}
+                        onClick={() => {
+                          setRevoking(false);
+                          setRevokeReason('');
+                          setRevokeError(null);
+                        }}
+                      >
+                        Keep it
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        className="flex-1 h-11 gap-2"
+                        disabled={busy}
+                        onClick={handleRevoke}
+                      >
+                        {busy && <Loader2 className="w-4 h-4 animate-spin" />}
+                        Back to {baselineLabel}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-muted-foreground">
+                Proof checked <span className="text-destructive">*</span>
+              </p>
+              <div className="grid grid-cols-1 gap-2">
+                {proofTypes.map((p) => (
+                  <Button
+                    key={p}
+                    type="button"
+                    variant={proofType === p ? 'default' : 'outline'}
+                    className="h-14 justify-start text-base"
+                    onClick={() => setProofType(p)}
+                  >
+                    {p}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {isOther && (
+              <div className="space-y-2">
+                <label
+                  htmlFor="tier-evidence-note"
+                  className="text-sm font-medium text-muted-foreground"
                 >
-                  {p}
-                </Button>
-              ))}
-            </div>
-          </div>
+                  What did you check? <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  id="tier-evidence-note"
+                  value={note}
+                  maxLength={TIER_PROOF_NOTE_MAX}
+                  placeholder="e.g. Work permit"
+                  autoFocus
+                  onChange={(e) => setNote(e.target.value)}
+                />
+                {note !== '' && noteProblem && (
+                  <p className="text-sm text-destructive">{noteProblem}</p>
+                )}
+              </div>
+            )}
 
-          {isOther && (
+            {/* Every kind, Other included (SCRUM-773): optional, never past. */}
             <div className="space-y-2">
               <label
-                htmlFor="tier-evidence-note"
-                className="text-sm font-medium text-muted-foreground"
+                htmlFor="tier-evidence-expiry"
+                className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground"
               >
-                What did you check? <span className="text-destructive">*</span>
+                <CalendarClock className="w-4 h-4" />
+                Document expiry date
               </label>
-              <Input
-                id="tier-evidence-note"
-                value={note}
-                maxLength={TIER_PROOF_NOTE_MAX}
-                placeholder="e.g. Work permit"
-                autoFocus
-                onChange={(e) => setNote(e.target.value)}
+              <input
+                id="tier-evidence-expiry"
+                type="date"
+                value={expiresAt}
+                min={todayIso()}
+                onChange={(e) => setExpiresAt(e.target.value)}
+                className="w-full h-12 rounded-lg border border-input bg-background px-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
               />
-              {note !== '' && noteProblem && (
-                <p className="text-sm text-destructive">{noteProblem}</p>
+              {expiresAt && !expiryValid && (
+                <p className="text-sm text-destructive">The document has already expired.</p>
               )}
             </div>
-          )}
 
-          {/* Every kind, Other included (SCRUM-773): optional, never past. */}
-          <div className="space-y-2">
-            <label
-              htmlFor="tier-evidence-expiry"
-              className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground"
-            >
-              <CalendarClock className="w-4 h-4" />
-              Document expiry date
-            </label>
-            <input
-              id="tier-evidence-expiry"
-              type="date"
-              value={expiresAt}
-              min={todayIso()}
-              onChange={(e) => setExpiresAt(e.target.value)}
-              className="w-full h-12 rounded-lg border border-input bg-background px-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-            {expiresAt && !expiryValid && (
-              <p className="text-sm text-destructive">The document has already expired.</p>
-            )}
-          </div>
+            {/* Recorded automatically — who checked, fixed to the signed-in account. */}
+            <div className="flex items-center gap-2 rounded-lg border border-dashed border-foreground/15 bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground">
+              <UserCheck className="w-4 h-4 shrink-0 text-primary" />
+              <span>
+                Checked by <span className="font-semibold text-foreground">{operatorName}</span> — recorded
+                automatically with date &amp; time.
+              </span>
+            </div>
 
-          {/* Recorded automatically — who checked, fixed to the signed-in account. */}
-          <div className="flex items-center gap-2 rounded-lg border border-dashed border-foreground/15 bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground">
-            <UserCheck className="w-4 h-4 shrink-0 text-primary" />
-            <span>
-              Checked by <span className="font-semibold text-foreground">{operatorName}</span> — recorded
-              automatically with date &amp; time.
-            </span>
-          </div>
-
-          <Button className="w-full h-14 text-lg gap-2" disabled={!canConfirm} onClick={handleConfirm}>
-            {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <BadgeCheck className="w-5 h-5" />}
-            {busy
-              ? 'Saving…'
-              : choiceLabel
-                ? `Verify ${tierLabel(tier)} — ${choiceLabel}`
-                : 'Choose proof to verify'}
-          </Button>
-
-          {/* SCRUM-772 — beside the document check, never instead of it. */}
-          {mayApproveByHand && (
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full h-12 gap-2"
-              disabled={busy}
-              onClick={() => setApproving(true)}
-            >
-              <Hand className="w-4 h-4" />
-              Special case, approve by hand
+            <Button className="w-full h-14 text-lg gap-2" disabled={!canConfirm} onClick={handleConfirm}>
+              {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <BadgeCheck className="w-5 h-5" />}
+              {busy
+                ? 'Saving…'
+                : choiceLabel
+                  ? `Verify ${tierLabel(tier)} — ${choiceLabel}`
+                  : 'Choose proof to verify'}
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

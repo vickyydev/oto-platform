@@ -716,8 +716,9 @@ export interface SaleTierClaimBody {
 }
 
 /**
- * SCRUM-772 — what the till sends when staff approve the Thai rate by hand.
- * Who approved it and the branch are the session's; nothing here names them.
+ * SCRUM-772 — what the till sends when staff confirm the Thai rate at the
+ * till. Who confirmed it, the branch and the till are the session's; nothing
+ * here names them.
  */
 export interface SaleTierApprovalBody {
   /** One press on Approve, however many HTTP attempts it takes. */
@@ -772,9 +773,10 @@ export const salesApi = {
       headers: { 'x-oto-action-id': body.actionId },
     }),
   /**
-   * SCRUM-772 — the Thai rate approved by hand for this sale only. Online
-   * only, like the document check above: the box keeps no tier claims, and a
-   * rate the platform has not recorded is one it will not let anybody charge.
+   * SCRUM-772 — the Thai rate confirmed at the till, claimed for this sale.
+   * Online only, like the document check above: the box keeps no tier claims,
+   * and a rate the platform has not recorded is one it will not let anybody
+   * charge.
    */
   tierApproval: (body: SaleTierApprovalBody) =>
     api.post<ApiResponse<'/sales/tier-approvals', 'post'>>('/sales/tier-approvals', body, {
@@ -1576,12 +1578,13 @@ export async function claimVerifiedTier(input: {
 }
 
 /**
- * SCRUM-772 — record the Thai rate approved by hand, and get back the action
- * id the cart carries from here on, exactly as a document check does
+ * SCRUM-772 — record the Thai rate confirmed at the till, and get back the
+ * action id the cart carries from here on, exactly as a document check does
  * (`claimVerifiedTier`). Awaited for the same reason: a cart quoted before
- * the approval lands is quoted at the tourist rate. It throws on refusal.
+ * the claim lands is quoted at the tourist rate. It throws on refusal.
  *
- * Nothing is written to the member: the approval prices this sale only.
+ * This writes nothing to the member: the till saves the rate to the member
+ * separately (`confirmTierAtTill` in `lib/thaiRateConfirmation.ts`).
  */
 export async function approveTierByHand(input: {
   branchId: string;

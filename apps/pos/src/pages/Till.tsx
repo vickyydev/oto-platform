@@ -19,8 +19,8 @@ import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmation
 import { buildSale } from '@/lib/sale';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
-import { tierProofLabel } from '@/lib/tierProof';
-import { tierApprovalReasonLabel, type TierApprovalChoice } from '@/lib/tierApproval';
+import { savedRateSummary } from '@/lib/tierApproval';
+import { confirmTierAtTill } from '@/lib/thaiRateConfirmation';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { routeToPayment } from '@/lib/customerContact';
 import { staffTicksAgreements, takeConsentAction } from '@/lib/consentForm';
@@ -68,7 +68,6 @@ import {
 } from '@/api/events';
 import { boxSaleIssue } from '@/api/boxSales';
 import {
-  approveTierByHand,
   buildCartPayload,
   claimVerifiedTier,
   promoChargeSatang,
@@ -1351,38 +1350,59 @@ export default function Till() {
   };
 
   /**
-   * SCRUM-772 — THE THAI RATE APPROVED BY HAND, for this sale only.
+   * SCRUM-772 — CONFIRM THAI RATE, with no document (the owner's rule of
+   * 6 November 2026: two buttons, and the staff log is the record).
    *
-   * The special case beside the document check: the staff member on the till
-   * approves alone, with a reason, so the customer does not wait. The platform
-   * records it as a claim the cart names — approver and branch from the
-   * session — and, unlike a document check, it is never saved to the member:
-   * no pending verification is held for the details step, and a member already
-   * on the cart keeps their own record, so the next visit asks again. The
-   * claim prices a member's cart too (`resolveTierClaim`).
+   * One press records the sale's claim — who, the branch, the till and the
+   * time from the session — and saves the rate to the member as a document
+   * check did: a member now, a walk-in once they give their details
+   * (SCRUM-227), which joins the sale already rung up (SCRUM-779). A member
+   * who already holds the rate never reaches this step (`StepCustomerType`).
+   * `confirmTierAtTill` says why a member's rate is saved through the box
+   * when the platform is out of reach and a walk-in's is not.
    *
-   * There is no local fallback: a rate the platform has not recorded is one
-   * nobody can charge, so a refusal throws back to the modal, which stays open
-   * with the reason and the document check still on offer.
+   * There is no local fallback for a walk-in: a rate the platform has not
+   * recorded is one nobody can charge, so a refusal throws back to the modal,
+   * which stays open with the reason.
    */
-  const handleApprovedByHand = async (choice: TierApprovalChoice) => {
+  const handleConfirmedAtTill = async () => {
     const apiBranchId = apiBranchIdForSlug(branch.id);
-    const approvedTier = verifyTier;
-    if (!apiBranchId || !approvedTier || !operator) {
-      throw new Error('This till has no platform branch, so an approval by hand cannot be recorded here.');
+    const confirmedTier = verifyTier;
+    if (!apiBranchId || !confirmedTier || !operator) {
+      throw new Error('This till has no platform branch, so the Thai rate cannot be recorded here.');
     }
     const epoch = saleEpochRef.current;
-    const actionId = await approveTierByHand({ branchId: apiBranchId, tier: approvedTier, ...choice });
-    if (saleEpochRef.current !== epoch) return;
-    setTierClaimActionId(actionId);
-    // A fresh approval answers the last check's refusal (SCRUM-311).
-    setTierClaimRefusal(null);
-    setTier(approvedTier);
-    restateLinesToTier(approvedTier);
-    toast({
-      title: `${tierLabel(approvedTier)} rate approved by hand`,
-      description: `${tierApprovalReasonLabel(choice.reason, choice.reasonText)} · this sale only · recorded by ${operator.name}`,
+    const confirmed = await confirmTierAtTill({
+      branchId: apiBranchId,
+      tier: confirmedTier,
+      member,
+      confirmedBy: { id: operator.id, name: operator.name },
     });
+    if (saleEpochRef.current !== epoch) return;
+    setTierClaimActionId(confirmed.claimActionId);
+    // A fresh confirmation answers the last check's refusal (SCRUM-311).
+    setTierClaimRefusal(null);
+    setTier(confirmedTier);
+    restateLinesToTier(confirmedTier);
+    if (confirmed.member) setMember(confirmed.member);
+    if (confirmed.pending) setPendingVerification(confirmed.pending);
+    toast({
+      title: `${tierLabel(confirmedTier)} rate confirmed`,
+      description: `${
+        confirmed.member
+          ? `Saved to ${confirmed.member.nickname}`
+          : confirmed.pending
+            ? 'Saved to their profile once they enter their details'
+            : 'This sale'
+      } · recorded by ${operator.name}`,
+    });
+    if (confirmed.profileError) {
+      toast({
+        title: `Couldn't save the ${tierLabel(confirmedTier)} rate to the profile`,
+        description: `${confirmed.profileError} The rate stands on this sale.`,
+        variant: 'destructive',
+      });
+    }
     setStep(3);
   };
 
@@ -2706,7 +2726,7 @@ export default function Till() {
           setPendingVerification(null);
           toast({
             title: `${tierLabel(verification.tier)} rate saved to ${saved.nickname}`,
-            description: `${tierProofLabel(verification.proofType, verification.note)} · valid until ${verification.expiresAt ?? '—'}`,
+            description: savedRateSummary(verification),
           });
           // SCRUM-779 — the sale the payment screen already rang up for this order
           // takes the member; the Confirm press closes that sale rather than ringing
@@ -4108,7 +4128,7 @@ export default function Till() {
           operatorId={operator.id}
           operatorName={operator.name}
           onConfirm={handleVerified}
-          onApproveByHand={handleApprovedByHand}
+          onConfirmAtTill={handleConfirmedAtTill}
         />
       )}
 
