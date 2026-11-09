@@ -38,11 +38,27 @@ type BirthdayPackageTemplate = {
   excludedSummary: string | null;
   tags: string[] | null;
   sortOrder: number;
+  kidsIncluded: number | null;
+  adultsIncluded: number | null;
+  socksIncluded: number | null;
+  hours: number | null;
+  priceWeekday: number | null;
+  priceWeekend: number | null;
+  extraChildWeekday: number | null;
+  extraChildWeekend: number | null;
+  extraAdultWeekday: number | null;
+  extraAdultWeekend: number | null;
+  setMenuTemplateId: string | null;
+  slipsTime: string | null;
+  branchId: string | null;
   createdAt: Date;
   updatedAt: Date;
   createdByUserId: string | null;
   lineItems?: PackageLineItemTemplate[];
 };
+
+type SetMenuTemplateOption = { id: string; name: string; isActive: boolean };
+type BranchOption = { id: string; name: string; archived?: boolean };
 
 type PackageLineItemTemplate = {
   id: string;
@@ -57,8 +73,13 @@ type PackageLineItemTemplate = {
   defaultUnitPrice: number;
   billableByDefault: boolean;
   sortOrder: number;
+  fnbCredit: number | null;
+  printsVoucher: boolean;
+  priceIsFrom: boolean;
   createdAt: Date;
 };
+
+type SocksMode = "none" | "all" | "count";
 
 type PackageFormData = {
   name: string;
@@ -66,6 +87,20 @@ type PackageFormData = {
   basePrice: string;
   pricingMode: string;
   tags: string;
+  priceWeekday: string;
+  priceWeekend: string;
+  kidsIncluded: string;
+  adultsIncluded: string;
+  socksMode: SocksMode;
+  socksCount: string;
+  hours: string;
+  extraChildWeekday: string;
+  extraChildWeekend: string;
+  extraAdultWeekday: string;
+  extraAdultWeekend: string;
+  setMenuTemplateId: string;
+  slipsTime: string;
+  branchId: string;
 };
 
 type LineItemFormData = {
@@ -78,10 +113,34 @@ type LineItemFormData = {
   included: boolean;
   defaultUnitPrice: string;
   billableByDefault: boolean;
+  fnbCredit: string;
+  printsVoucher: boolean;
+  priceIsFrom: boolean;
 };
 
 const formatPrice = (satang: number) => `${(satang / 100).toFixed(2)}`;
 const parsePriceToSatang = (thb: string) => Math.round(parseFloat(thb || "0") * 100);
+/** A price the package may leave unset: blank in the form, null in the row. */
+const formatOptionalPrice = (satang: number | null | undefined) => (satang == null ? "" : formatPrice(satang));
+const parseOptionalSatang = (thb: string) => (thb.trim() === "" ? null : parsePriceToSatang(thb));
+const formatOptionalInt = (value: number | null | undefined) => (value == null ? "" : String(value));
+const parseOptionalInt = (value: string) => (value.trim() === "" ? null : parseInt(value, 10));
+/** The package's socks: -1 is "all children", null is none. */
+const SOCKS_FOR_ALL_CHILDREN = -1;
+const NONE = "__none__";
+const slipsTimeOf = (value: string | null | undefined) => (value ? value.slice(0, 5) : "11:00");
+
+/** "THB 16900.00", or "THB 16900.00 / 20900.00" when the package has day prices. */
+function packagePriceLabel(pkg: BirthdayPackageTemplate) {
+  const weekday = pkg.priceWeekday ?? pkg.basePrice;
+  if (pkg.priceWeekend == null || pkg.priceWeekend === weekday) return `THB ${formatPrice(weekday)}`;
+  return `THB ${formatPrice(weekday)} / ${formatPrice(pkg.priceWeekend)}`;
+}
+
+function socksLabel(socks: number | null) {
+  if (socks == null) return null;
+  return socks === SOCKS_FOR_ALL_CHILDREN ? "Socks for all children" : `${socks} pairs of socks`;
+}
 
 const LINE_ITEM_CATEGORIES = [
   { value: "play", label: "Play" },
@@ -104,6 +163,20 @@ const emptyPackageForm: PackageFormData = {
   basePrice: "0",
   pricingMode: "fixed",
   tags: "",
+  priceWeekday: "",
+  priceWeekend: "",
+  kidsIncluded: "",
+  adultsIncluded: "",
+  socksMode: "none",
+  socksCount: "",
+  hours: "",
+  extraChildWeekday: "",
+  extraChildWeekend: "",
+  extraAdultWeekday: "",
+  extraAdultWeekend: "",
+  setMenuTemplateId: NONE,
+  slipsTime: "11:00",
+  branchId: NONE,
 };
 
 const emptyLineItemForm: LineItemFormData = {
@@ -116,6 +189,9 @@ const emptyLineItemForm: LineItemFormData = {
   included: true,
   defaultUnitPrice: "0",
   billableByDefault: false,
+  fnbCredit: "",
+  printsVoucher: false,
+  priceIsFrom: false,
 };
 
 export function BirthdayPackagesSettings() {
@@ -134,6 +210,14 @@ export function BirthdayPackagesSettings() {
   const { data: selectedPackage, isLoading: loadingDetail } = useQuery<BirthdayPackageTemplate>({
     queryKey: ["/api/beo/birthday-packages", editingPackageId],
     enabled: !!editingPackageId,
+  });
+
+  const { data: setMenuTemplates = [] } = useQuery<SetMenuTemplateOption[]>({
+    queryKey: ["/api/beo/set-menu-templates"],
+  });
+
+  const { data: branchOptions = [] } = useQuery<BranchOption[]>({
+    queryKey: ["/api/branches"],
   });
 
   const createPackageMutation = useMutation({
@@ -230,6 +314,20 @@ export function BirthdayPackagesSettings() {
         basePrice: formatPrice(pkg.basePrice),
         pricingMode: pkg.pricingMode || "fixed",
         tags: (pkg.tags || []).join(", "),
+        priceWeekday: formatOptionalPrice(pkg.priceWeekday),
+        priceWeekend: formatOptionalPrice(pkg.priceWeekend),
+        kidsIncluded: formatOptionalInt(pkg.kidsIncluded),
+        adultsIncluded: formatOptionalInt(pkg.adultsIncluded),
+        socksMode: pkg.socksIncluded == null ? "none" : pkg.socksIncluded === SOCKS_FOR_ALL_CHILDREN ? "all" : "count",
+        socksCount: pkg.socksIncluded != null && pkg.socksIncluded >= 0 ? String(pkg.socksIncluded) : "",
+        hours: formatOptionalInt(pkg.hours),
+        extraChildWeekday: formatOptionalPrice(pkg.extraChildWeekday),
+        extraChildWeekend: formatOptionalPrice(pkg.extraChildWeekend),
+        extraAdultWeekday: formatOptionalPrice(pkg.extraAdultWeekday),
+        extraAdultWeekend: formatOptionalPrice(pkg.extraAdultWeekend),
+        setMenuTemplateId: pkg.setMenuTemplateId || NONE,
+        slipsTime: slipsTimeOf(pkg.slipsTime),
+        branchId: pkg.branchId || NONE,
       });
     } else {
       setEditingPackageId(null);
@@ -260,6 +358,24 @@ export function BirthdayPackagesSettings() {
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean),
+      priceWeekday: parseOptionalSatang(packageForm.priceWeekday),
+      priceWeekend: parseOptionalSatang(packageForm.priceWeekend),
+      kidsIncluded: parseOptionalInt(packageForm.kidsIncluded),
+      adultsIncluded: parseOptionalInt(packageForm.adultsIncluded),
+      socksIncluded:
+        packageForm.socksMode === "all"
+          ? SOCKS_FOR_ALL_CHILDREN
+          : packageForm.socksMode === "count"
+            ? parseOptionalInt(packageForm.socksCount)
+            : null,
+      hours: parseOptionalInt(packageForm.hours),
+      extraChildWeekday: parseOptionalSatang(packageForm.extraChildWeekday),
+      extraChildWeekend: parseOptionalSatang(packageForm.extraChildWeekend),
+      extraAdultWeekday: parseOptionalSatang(packageForm.extraAdultWeekday),
+      extraAdultWeekend: parseOptionalSatang(packageForm.extraAdultWeekend),
+      setMenuTemplateId: packageForm.setMenuTemplateId === NONE ? null : packageForm.setMenuTemplateId,
+      slipsTime: packageForm.slipsTime || "11:00",
+      branchId: packageForm.branchId === NONE ? null : packageForm.branchId,
     };
 
     if (editingPackageId) {
@@ -282,6 +398,9 @@ export function BirthdayPackagesSettings() {
         included: item.included,
         defaultUnitPrice: formatPrice(item.defaultUnitPrice),
         billableByDefault: item.billableByDefault,
+        fnbCredit: formatOptionalPrice(item.fnbCredit),
+        printsVoucher: item.printsVoucher,
+        priceIsFrom: item.priceIsFrom,
       });
       setShowLineItemForm(item.included ? "included" : "addon");
     } else {
@@ -314,6 +433,9 @@ export function BirthdayPackagesSettings() {
       included: lineItemForm.included,
       defaultUnitPrice: parsePriceToSatang(lineItemForm.defaultUnitPrice),
       billableByDefault: lineItemForm.billableByDefault,
+      fnbCredit: parseOptionalSatang(lineItemForm.fnbCredit),
+      printsVoucher: lineItemForm.printsVoucher,
+      priceIsFrom: lineItemForm.priceIsFrom,
     };
 
     if (editingLineItem) {
@@ -409,6 +531,38 @@ export function BirthdayPackagesSettings() {
             />
           </div>
         </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">F&amp;B Credit (THB)</Label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={lineItemForm.fnbCredit}
+              onChange={(e) => setLineItemForm((p) => ({ ...p, fnbCredit: e.target.value }))}
+              placeholder="None"
+              data-testid="input-line-item-fnb-credit"
+            />
+          </div>
+        </div>
+        <div className="flex items-center gap-6 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={lineItemForm.printsVoucher}
+              onCheckedChange={(v) => setLineItemForm((p) => ({ ...p, printsVoucher: v }))}
+              data-testid="switch-line-item-prints-voucher"
+            />
+            <Label className="text-xs">Prints Voucher</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={lineItemForm.priceIsFrom}
+              onCheckedChange={(v) => setLineItemForm((p) => ({ ...p, priceIsFrom: v }))}
+              data-testid="switch-line-item-price-is-from"
+            />
+            <Label className="text-xs">Price Is "From"</Label>
+          </div>
+        </div>
         <div className="flex items-center gap-6 flex-wrap">
           <div className="flex items-center gap-2">
             <Switch
@@ -472,9 +626,13 @@ export function BirthdayPackagesSettings() {
             {LINE_ITEM_CATEGORIES.find((c) => c.value === item.category)?.label || item.category}
           </Badge>
           {item.qtyEditable && <Badge variant="outline">Qty editable</Badge>}
+          {item.fnbCredit != null && (
+            <Badge variant="outline" data-testid={`badge-fnb-credit-${item.id}`}>F&amp;B credit THB {formatPrice(item.fnbCredit)}</Badge>
+          )}
+          {item.printsVoucher && <Badge variant="outline">Voucher</Badge>}
         </div>
         <div className="text-sm text-muted-foreground mt-1">
-          {item.qtyDefault} {item.unitLabel || "x"} @ THB {formatPrice(item.defaultUnitPrice)}
+          {item.qtyDefault} {item.unitLabel || "x"} @ {item.priceIsFrom ? "from " : ""}THB {formatPrice(item.defaultUnitPrice)}
           {" = "}
           THB {formatPrice(item.qtyDefault * item.defaultUnitPrice)}
         </div>
@@ -568,6 +726,192 @@ export function BirthdayPackagesSettings() {
                     {PRICING_MODES.map((m) => (
                       <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Weekday Price (THB)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={packageForm.priceWeekday}
+                  onChange={(e) => setPackageForm((p) => ({ ...p, priceWeekday: e.target.value }))}
+                  placeholder="Base price"
+                  data-testid="input-package-price-weekday"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Weekend Price (THB)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={packageForm.priceWeekend}
+                  onChange={(e) => setPackageForm((p) => ({ ...p, priceWeekend: e.target.value }))}
+                  placeholder="Weekday price"
+                  data-testid="input-package-price-weekend"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label>Kids Included</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={packageForm.kidsIncluded}
+                  onChange={(e) => setPackageForm((p) => ({ ...p, kidsIncluded: e.target.value }))}
+                  placeholder="—"
+                  data-testid="input-package-kids-included"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Adults Included</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={packageForm.adultsIncluded}
+                  onChange={(e) => setPackageForm((p) => ({ ...p, adultsIncluded: e.target.value }))}
+                  placeholder="—"
+                  data-testid="input-package-adults-included"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Socks Included</Label>
+                <Select
+                  value={packageForm.socksMode}
+                  onValueChange={(v) => setPackageForm((p) => ({ ...p, socksMode: v as SocksMode }))}
+                >
+                  <SelectTrigger data-testid="select-package-socks">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Not included</SelectItem>
+                    <SelectItem value="all">All children</SelectItem>
+                    <SelectItem value="count">Number of pairs</SelectItem>
+                  </SelectContent>
+                </Select>
+                {packageForm.socksMode === "count" && (
+                  <Input
+                    type="number"
+                    min="0"
+                    value={packageForm.socksCount}
+                    onChange={(e) => setPackageForm((p) => ({ ...p, socksCount: e.target.value }))}
+                    placeholder="Pairs"
+                    data-testid="input-package-socks-count"
+                  />
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Hours</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={packageForm.hours}
+                  onChange={(e) => setPackageForm((p) => ({ ...p, hours: e.target.value }))}
+                  placeholder="—"
+                  data-testid="input-package-hours"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label>Extra Child Weekday (THB)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={packageForm.extraChildWeekday}
+                  onChange={(e) => setPackageForm((p) => ({ ...p, extraChildWeekday: e.target.value }))}
+                  placeholder="—"
+                  data-testid="input-package-extra-child-weekday"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Extra Child Weekend (THB)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={packageForm.extraChildWeekend}
+                  onChange={(e) => setPackageForm((p) => ({ ...p, extraChildWeekend: e.target.value }))}
+                  placeholder="—"
+                  data-testid="input-package-extra-child-weekend"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Extra Adult Weekday (THB)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={packageForm.extraAdultWeekday}
+                  onChange={(e) => setPackageForm((p) => ({ ...p, extraAdultWeekday: e.target.value }))}
+                  placeholder="—"
+                  data-testid="input-package-extra-adult-weekday"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Extra Adult Weekend (THB)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={packageForm.extraAdultWeekend}
+                  onChange={(e) => setPackageForm((p) => ({ ...p, extraAdultWeekend: e.target.value }))}
+                  placeholder="—"
+                  data-testid="input-package-extra-adult-weekend"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Set Menu</Label>
+                <Select
+                  value={packageForm.setMenuTemplateId}
+                  onValueChange={(v) => setPackageForm((p) => ({ ...p, setMenuTemplateId: v }))}
+                >
+                  <SelectTrigger data-testid="select-package-set-menu">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE}>No set menu</SelectItem>
+                    {setMenuTemplates
+                      .filter((t) => t.isActive || t.id === packageForm.setMenuTemplateId)
+                      .map((t) => (
+                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Kitchen Slips At</Label>
+                <Input
+                  type="time"
+                  value={packageForm.slipsTime}
+                  onChange={(e) => setPackageForm((p) => ({ ...p, slipsTime: e.target.value }))}
+                  data-testid="input-package-slips-time"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Branch</Label>
+                <Select
+                  value={packageForm.branchId}
+                  onValueChange={(v) => setPackageForm((p) => ({ ...p, branchId: v }))}
+                >
+                  <SelectTrigger data-testid="select-package-branch">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE}>Any branch</SelectItem>
+                    {branchOptions
+                      .filter((b) => !b.archived || b.id === packageForm.branchId)
+                      .map((b) => (
+                        <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -733,8 +1077,12 @@ export function BirthdayPackagesSettings() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium">{pkg.name}</span>
-                    <Badge variant="secondary">THB {formatPrice(pkg.basePrice)}</Badge>
+                    <Badge variant="secondary" data-testid={`badge-package-price-${pkg.id}`}>{packagePriceLabel(pkg)}</Badge>
                     {!pkg.isActive && <Badge variant="secondary">Inactive</Badge>}
+                    {pkg.kidsIncluded != null && <Badge variant="outline">{pkg.kidsIncluded} kids</Badge>}
+                    {pkg.adultsIncluded != null && <Badge variant="outline">{pkg.adultsIncluded} adults</Badge>}
+                    {socksLabel(pkg.socksIncluded) && <Badge variant="outline">{socksLabel(pkg.socksIncluded)}</Badge>}
+                    {pkg.hours != null && <Badge variant="outline">{pkg.hours} h</Badge>}
                     {pkg.lineItems && (
                       <Badge variant="outline">{pkg.lineItems.length} items</Badge>
                     )}

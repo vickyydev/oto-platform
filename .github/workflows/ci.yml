@@ -859,6 +859,15 @@ jobs:
       - name: The app's inbox AI fill checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/beo-inbox-fill.check.ts
+      # SCRUM-803: the birthday packages as the park prints them (migration
+      # 0041) — every new package, line item, entertainment and set-menu field
+      # round-trips through the settings routes, a value out of range or
+      # another park group's branch or set menu is refused, and applying a
+      # package copies its limits, day prices and slip time onto the party and
+      # starts the kitchen plan on its set menu.
+      - name: The app's birthday package checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/birthday-packages.check.ts
       # SCRUM-567: the company payroll's R2 (migrations 0021-0022) — two park
       # groups' separate paying config, rule sets and profiles; every route
       # refused to manager and staff, writes to anyone below admin, HR-data

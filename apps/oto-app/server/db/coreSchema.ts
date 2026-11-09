@@ -15,6 +15,7 @@ import {
   unique,
   uniqueIndex,
   check,
+  time,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -3324,6 +3325,18 @@ export type HiringMediaAsset = typeof hiringMediaAssets.$inferSelect;
 // BIRTHDAY PACKAGE TEMPLATES
 // ============================================
 
+/**
+ * Every money column on the three template tables (packages, their line items,
+ * entertainment) is SATANG: the settings screens divide by 100 and the app's
+ * own seed writes 1500000 for 15,000 THB. `base_price` stays the package's one
+ * price; `price_weekday` and `price_weekend` (SCRUM-803) override it by day,
+ * and a package that has neither keeps charging its base price every day.
+ */
+export const SOCKS_FOR_ALL_CHILDREN = -1;
+
+/** A wall-clock time the app's forms send ("11:00") or Postgres returns ("11:00:00"). */
+const clockTimeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/, "Expected HH:mm");
+
 export const birthdayPackageTemplates = pgTable(
   "birthday_package_templates",
   {
@@ -3338,6 +3351,25 @@ export const birthdayPackageTemplates = pgTable(
     excludedSummary: text("excluded_summary"),
     tags: jsonb("tags").$type<string[]>(),
     sortOrder: integer("sort_order").notNull().default(0),
+    // What the printed package includes (SCRUM-803). Null means the package
+    // says nothing about it; socks are a count, or -1 for "all children".
+    kidsIncluded: integer("kids_included"),
+    adultsIncluded: integer("adults_included"),
+    socksIncluded: integer("socks_included"),
+    hours: integer("hours"),
+    // Satang. A null day price falls back to base_price.
+    priceWeekday: integer("price_weekday"),
+    priceWeekend: integer("price_weekend"),
+    extraChildWeekday: integer("extra_child_weekday"),
+    extraChildWeekend: integer("extra_child_weekend"),
+    extraAdultWeekday: integer("extra_adult_weekday"),
+    extraAdultWeekend: integer("extra_adult_weekend"),
+    /** The set menu the package comes with; the BEO's kitchen plan starts from it. */
+    setMenuTemplateId: uuid("set_menu_template_id").references(() => beoSetMenuTemplates.id, { onDelete: "set null" }),
+    /** When the party's kitchen and bar slips print, on the park's clock. */
+    slipsTime: time("slips_time").notNull().default("11:00"),
+    /** The park the package is sold at (`branches.id`); null for any park. */
+    branchId: varchar("branch_id").references(() => branches.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
     createdByUserId: varchar("created_by_user_id").references(() => users.id),
@@ -3345,10 +3377,35 @@ export const birthdayPackageTemplates = pgTable(
   (t) => [
     index("idx_birthday_package_templates_tenant").on(t.tenantId),
     index("idx_birthday_package_templates_active").on(t.isActive),
+    index("idx_birthday_package_templates_branch").on(t.branchId),
+    index("idx_birthday_package_templates_set_menu").on(t.setMenuTemplateId),
+    check(
+      "birthday_package_templates_limits_check",
+      sql`(${t.kidsIncluded} IS NULL OR ${t.kidsIncluded} >= 0) AND (${t.adultsIncluded} IS NULL OR ${t.adultsIncluded} >= 0) AND (${t.socksIncluded} IS NULL OR ${t.socksIncluded} >= -1) AND (${t.hours} IS NULL OR ${t.hours} > 0)`,
+    ),
+    check(
+      "birthday_package_templates_prices_check",
+      sql`(${t.priceWeekday} IS NULL OR ${t.priceWeekday} >= 0) AND (${t.priceWeekend} IS NULL OR ${t.priceWeekend} >= 0) AND (${t.extraChildWeekday} IS NULL OR ${t.extraChildWeekday} >= 0) AND (${t.extraChildWeekend} IS NULL OR ${t.extraChildWeekend} >= 0) AND (${t.extraAdultWeekday} IS NULL OR ${t.extraAdultWeekday} >= 0) AND (${t.extraAdultWeekend} IS NULL OR ${t.extraAdultWeekend} >= 0)`,
+    ),
   ]
 );
 
-export const insertBirthdayPackageTemplateSchema = createInsertSchema(birthdayPackageTemplates).omit({
+const satangSchema = (s: z.ZodNumber) => s.min(0);
+
+export const insertBirthdayPackageTemplateSchema = createInsertSchema(birthdayPackageTemplates, {
+  kidsIncluded: (s) => s.min(0),
+  adultsIncluded: (s) => s.min(0),
+  socksIncluded: (s) => s.min(SOCKS_FOR_ALL_CHILDREN),
+  hours: (s) => s.min(1),
+  priceWeekday: satangSchema,
+  priceWeekend: satangSchema,
+  extraChildWeekday: satangSchema,
+  extraChildWeekend: satangSchema,
+  extraAdultWeekday: satangSchema,
+  extraAdultWeekend: satangSchema,
+  slipsTime: () => clockTimeSchema,
+  setMenuTemplateId: (s) => s.uuid(),
+}).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -3375,14 +3432,23 @@ export const packageLineItemTemplates = pgTable(
     defaultUnitPrice: integer("default_unit_price").notNull().default(0),
     billableByDefault: boolean("billable_by_default").notNull().default(true),
     sortOrder: integer("sort_order").notNull().default(0),
+    /** Satang of the price that goes to food and drinks (the reserved table, the private zone). */
+    fnbCredit: integer("fnb_credit"),
+    /** The till prints the credit voucher when this add-on is sold. */
+    printsVoucher: boolean("prints_voucher").notNull().default(false),
+    /** The price is a starting price ("from 1,000"); the amount is set per party. */
+    priceIsFrom: boolean("price_is_from").notNull().default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => [
     index("idx_package_line_item_templates_package").on(t.packageTemplateId),
+    check("package_line_item_templates_fnb_credit_check", sql`${t.fnbCredit} IS NULL OR ${t.fnbCredit} >= 0`),
   ]
 );
 
-export const insertPackageLineItemTemplateSchema = createInsertSchema(packageLineItemTemplates).omit({
+export const insertPackageLineItemTemplateSchema = createInsertSchema(packageLineItemTemplates, {
+  fnbCredit: satangSchema,
+}).omit({
   id: true,
   createdAt: true,
 });
@@ -3407,6 +3473,15 @@ export const entertainmentPackageTemplates = pgTable(
     category: text("category"),
     isActive: boolean("is_active").notNull().default(true),
     sortOrder: integer("sort_order").notNull().default(0),
+    // As the Entertainment menu prints them (SCRUM-803): "6+", "5-13".
+    ageRange: text("age_range"),
+    maxKids: integer("max_kids"),
+    /** Satang per child beyond max_kids. */
+    extraChildPrice: integer("extra_child_price"),
+    /** What default_price is for: a session, a piece, or an hour. */
+    unit: text("unit"),
+    /** The price is a starting price ("from 2,000"); the amount is set per party. */
+    priceIsFrom: boolean("price_is_from").notNull().default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
     createdByUserId: varchar("created_by_user_id").references(() => users.id),
@@ -3414,10 +3489,22 @@ export const entertainmentPackageTemplates = pgTable(
   (t) => [
     index("idx_entertainment_package_templates_tenant").on(t.tenantId),
     index("idx_entertainment_package_templates_active").on(t.isActive),
+    check(
+      "entertainment_package_templates_menu_check",
+      sql`(${t.maxKids} IS NULL OR ${t.maxKids} > 0) AND (${t.extraChildPrice} IS NULL OR ${t.extraChildPrice} >= 0) AND (${t.unit} IS NULL OR ${t.unit} IN ('session', 'piece', 'hour'))`,
+    ),
   ]
 );
 
-export const insertEntertainmentPackageTemplateSchema = createInsertSchema(entertainmentPackageTemplates).omit({
+export const ENTERTAINMENT_UNITS = ["session", "piece", "hour"] as const;
+export type EntertainmentUnit = (typeof ENTERTAINMENT_UNITS)[number];
+
+export const insertEntertainmentPackageTemplateSchema = createInsertSchema(entertainmentPackageTemplates, {
+  maxKids: (s) => s.min(1),
+  extraChildPrice: satangSchema,
+  unit: () => z.enum(ENTERTAINMENT_UNITS),
+  ageRange: (s) => s.max(20),
+}).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -3442,6 +3529,20 @@ export const beoPackageSnapshots = pgTable(
     basePrice: integer("base_price").notNull().default(0),
     includedSummary: text("included_summary"),
     excludedSummary: text("excluded_summary"),
+    // The template's limits and day prices as they were when the package was
+    // applied (SCRUM-803), so a party keeps the prices it was sold at. Satang.
+    kidsIncluded: integer("kids_included"),
+    adultsIncluded: integer("adults_included"),
+    socksIncluded: integer("socks_included"),
+    hours: integer("hours"),
+    priceWeekday: integer("price_weekday"),
+    priceWeekend: integer("price_weekend"),
+    extraChildWeekday: integer("extra_child_weekday"),
+    extraChildWeekend: integer("extra_child_weekend"),
+    extraAdultWeekday: integer("extra_adult_weekday"),
+    extraAdultWeekend: integer("extra_adult_weekend"),
+    /** This party's slip time: the template's at apply, changeable in the BEO. Null on a snapshot older than the column. */
+    slipsTime: time("slips_time"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -3449,6 +3550,9 @@ export const beoPackageSnapshots = pgTable(
     index("idx_beo_package_snapshots_event").on(t.eventId),
   ]
 );
+
+/** What a party's own package snapshot may be changed to in the BEO (the rest is copied from the template). */
+export const updateBeoPackageSnapshotSchema = z.object({ slipsTime: clockTimeSchema }).strict();
 
 export const insertBeoPackageSnapshotSchema = createInsertSchema(beoPackageSnapshots).omit({
   id: true,
@@ -3638,6 +3742,63 @@ export const presenceNotificationDeliveries = pgTable("presence_notification_del
 // ============================================
 // BEO SET MENU TEMPLATES
 // ============================================
+
+/**
+ * One entry of `beo_set_menu_templates.items` (jsonb). The settings editor
+ * writes it; the parent link, the kitchen plan and `otoapp_v.event_packages`
+ * read it.
+ *
+ *   - `always_included`: one dish the party always gets.
+ *   - `choice_group`: the parent (or staff) picks from `options`.
+ *
+ * SCRUM-803 adds, all optional so an item saved before stays valid:
+ *   - `productCode`: the till catalogue's code for the dish (Central's menu
+ *     numbers, `CF-24` for Margherita). Null when the catalogue has no such
+ *     product. On a choice group it is the code for every option that has
+ *     none of its own;
+ *   - `optionProductCodes`: a choice group's per-option codes, keyed by the
+ *     option's text exactly as it is in `options`;
+ *   - `qty`: how many portions the party gets; null when the menu prints none;
+ *   - `note`: a printed rule for the kitchen ("Fish & Chips can be replaced
+ *     with 2 portions of Chicken Schnitzel").
+ */
+export type SetMenuTemplateItem =
+  | {
+      id: string;
+      type: "always_included";
+      label: string;
+      productCode?: string | null;
+      qty?: number | null;
+      note?: string | null;
+    }
+  | {
+      id: string;
+      type: "choice_group";
+      label: string;
+      options: string[];
+      allowMultiple: boolean;
+      productCode?: string | null;
+      optionProductCodes?: Record<string, string | null>;
+      qty?: number | null;
+      note?: string | null;
+    };
+
+const productCodeSchema = z.string().trim().min(1).max(64);
+
+/**
+ * The SCRUM-803 fields of each item, checked where they are given. The rest of
+ * an item passes as it always has: older items carry none of these.
+ */
+export const setMenuTemplateItemsSchema = z.array(
+  z
+    .object({
+      productCode: productCodeSchema.nullish(),
+      optionProductCodes: z.record(z.string(), productCodeSchema.nullable()).optional(),
+      qty: z.number().int().min(1).max(1000).nullish(),
+      note: z.string().max(500).nullish(),
+    })
+    .passthrough(),
+);
 
 export const beoSetMenuTemplates = pgTable(
   "beo_set_menu_templates",

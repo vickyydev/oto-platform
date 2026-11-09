@@ -17,6 +17,13 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 
 type EntertainmentPackageTemplate = {
@@ -31,10 +38,25 @@ type EntertainmentPackageTemplate = {
   category: string | null;
   isActive: boolean;
   sortOrder: number;
+  ageRange: string | null;
+  maxKids: number | null;
+  extraChildPrice: number | null;
+  unit: EntertainmentUnit | null;
+  priceIsFrom: boolean;
   createdAt: Date;
   updatedAt: Date;
   createdByUserId: string | null;
 };
+
+type EntertainmentUnit = "session" | "piece" | "hour";
+
+/** What the price is for, as the Entertainment menu prints it ("4000 / 30 min", "600 / 1 pcs", "2000 / 1 hour"). */
+const UNITS: { value: EntertainmentUnit; label: string; per: string }[] = [
+  { value: "session", label: "Per session", per: "" },
+  { value: "piece", label: "Per piece", per: " per piece" },
+  { value: "hour", label: "Per hour", per: " per hour" },
+];
+const NO_UNIT = "__none__";
 
 type FormData = {
   name: string;
@@ -44,6 +66,11 @@ type FormData = {
   defaultPrice: string;
   included: boolean;
   billableByDefault: boolean;
+  ageRange: string;
+  maxKids: string;
+  extraChildPrice: string;
+  unit: string;
+  priceIsFrom: boolean;
 };
 
 const emptyForm: FormData = {
@@ -54,6 +81,11 @@ const emptyForm: FormData = {
   defaultPrice: "0",
   included: false,
   billableByDefault: false,
+  ageRange: "",
+  maxKids: "",
+  extraChildPrice: "",
+  unit: NO_UNIT,
+  priceIsFrom: false,
 };
 
 const formatPrice = (satang: number) => `${(satang / 100).toFixed(2)}`;
@@ -118,6 +150,11 @@ export function EntertainmentTemplatesSettings() {
       defaultPrice: formatPrice(template.defaultPrice),
       included: template.included,
       billableByDefault: template.billableByDefault,
+      ageRange: template.ageRange || "",
+      maxKids: template.maxKids != null ? String(template.maxKids) : "",
+      extraChildPrice: template.extraChildPrice != null ? formatPrice(template.extraChildPrice) : "",
+      unit: template.unit || NO_UNIT,
+      priceIsFrom: template.priceIsFrom,
     });
     setShowDialog(true);
   };
@@ -136,6 +173,11 @@ export function EntertainmentTemplatesSettings() {
       defaultPrice: parsePriceToSatang(form.defaultPrice),
       included: form.included,
       billableByDefault: form.billableByDefault,
+      ageRange: form.ageRange.trim() || null,
+      maxKids: form.maxKids ? parseInt(form.maxKids, 10) : null,
+      extraChildPrice: form.extraChildPrice.trim() ? parsePriceToSatang(form.extraChildPrice) : null,
+      unit: form.unit === NO_UNIT ? null : form.unit,
+      priceIsFrom: form.priceIsFrom,
     };
 
     if (editing) {
@@ -186,7 +228,8 @@ export function EntertainmentTemplatesSettings() {
                         {template.name}
                       </span>
                       <span className="text-sm text-muted-foreground" data-testid={`text-template-price-${template.id}`}>
-                        THB {formatPrice(template.defaultPrice)}
+                        {template.priceIsFrom ? "from " : ""}THB {formatPrice(template.defaultPrice)}
+                        {UNITS.find((u) => u.value === template.unit)?.per ?? ""}
                       </span>
                     </div>
                     {template.description && (
@@ -203,6 +246,21 @@ export function EntertainmentTemplatesSettings() {
                       {template.category && (
                         <Badge variant="secondary" data-testid={`badge-category-${template.id}`}>
                           {template.category}
+                        </Badge>
+                      )}
+                      {template.ageRange && (
+                        <Badge variant="secondary" data-testid={`badge-age-${template.id}`}>
+                          Age {template.ageRange}
+                        </Badge>
+                      )}
+                      {template.maxKids != null && (
+                        <Badge variant="secondary" data-testid={`badge-max-kids-${template.id}`}>
+                          Up to {template.maxKids} kids
+                        </Badge>
+                      )}
+                      {template.extraChildPrice != null && (
+                        <Badge variant="secondary" data-testid={`badge-extra-child-${template.id}`}>
+                          Extra child THB {formatPrice(template.extraChildPrice)}
                         </Badge>
                       )}
                       {template.included && (
@@ -290,15 +348,73 @@ export function EntertainmentTemplatesSettings() {
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Default Price (THB)</Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.defaultPrice}
-                onChange={(e) => setForm((f) => ({ ...f, defaultPrice: e.target.value }))}
-                data-testid="input-template-price"
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Default Price (THB)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.defaultPrice}
+                  onChange={(e) => setForm((f) => ({ ...f, defaultPrice: e.target.value }))}
+                  data-testid="input-template-price"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Price Unit</Label>
+                <Select value={form.unit} onValueChange={(v) => setForm((f) => ({ ...f, unit: v }))}>
+                  <SelectTrigger data-testid="select-template-unit">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_UNIT}>Not set</SelectItem>
+                    {UNITS.map((u) => (
+                      <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Age Range</Label>
+                <Input
+                  value={form.ageRange}
+                  onChange={(e) => setForm((f) => ({ ...f, ageRange: e.target.value }))}
+                  placeholder="e.g., 6+"
+                  data-testid="input-template-age-range"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Max Kids</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={form.maxKids}
+                  onChange={(e) => setForm((f) => ({ ...f, maxKids: e.target.value }))}
+                  placeholder="—"
+                  data-testid="input-template-max-kids"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Extra Child (THB)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.extraChildPrice}
+                  onChange={(e) => setForm((f) => ({ ...f, extraChildPrice: e.target.value }))}
+                  placeholder="—"
+                  data-testid="input-template-extra-child"
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <Label>Price Is "From"</Label>
+              <Switch
+                checked={form.priceIsFrom}
+                onCheckedChange={(v) => setForm((f) => ({ ...f, priceIsFrom: v }))}
+                data-testid="switch-template-price-is-from"
               />
             </div>
             <div className="flex items-center justify-between">

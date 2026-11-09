@@ -27,9 +27,29 @@ import {
   ListChecks,
 } from "lucide-react";
 
+/**
+ * One item of a set menu (`beo_set_menu_templates.items`, documented beside the
+ * table in server/db/coreSchema.ts). `productCode` is the till catalogue's code
+ * (CF-24), `optionProductCodes` a choice group's code per option, `qty` the
+ * portions the party gets and `note` a printed rule for the kitchen; all four
+ * are optional, so an item saved before them reads as it always did.
+ */
+type SetMenuItemExtras = {
+  productCode?: string | null;
+  qty?: number | null;
+  note?: string | null;
+};
+
 type SetMenuTemplateItem =
-  | { id: string; type: "always_included"; label: string }
-  | { id: string; type: "choice_group"; label: string; options: string[]; allowMultiple: boolean };
+  | ({ id: string; type: "always_included"; label: string } & SetMenuItemExtras)
+  | ({
+      id: string;
+      type: "choice_group";
+      label: string;
+      options: string[];
+      allowMultiple: boolean;
+      optionProductCodes?: Record<string, string | null>;
+    } & SetMenuItemExtras);
 
 type SetMenuTemplate = {
   id: string;
@@ -42,6 +62,36 @@ type SetMenuTemplate = {
 
 function newItemId() {
   return `item_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+}
+
+const blankToNull = (value: string | null | undefined) => {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+};
+
+/**
+ * The item as it is saved: an empty code, quantity or note is left out rather
+ * than stored blank, and a choice group keeps codes only for options it still
+ * has.
+ */
+function cleanItem(item: SetMenuTemplateItem): SetMenuTemplateItem {
+  const { productCode, qty, note, ...rest } = item;
+  const cleaned: SetMenuTemplateItem = { ...rest } as SetMenuTemplateItem;
+  const code = blankToNull(productCode);
+  if (code) cleaned.productCode = code;
+  if (qty != null && Number.isInteger(qty) && qty > 0) cleaned.qty = qty;
+  const cleanNote = blankToNull(note);
+  if (cleanNote) cleaned.note = cleanNote;
+  if (cleaned.type === "choice_group") {
+    const codes = Object.fromEntries(
+      cleaned.options
+        .map((option) => [option, blankToNull(cleaned.optionProductCodes?.[option])] as const)
+        .filter(([, optionCode]) => optionCode),
+    );
+    if (Object.keys(codes).length > 0) cleaned.optionProductCodes = codes;
+    else delete cleaned.optionProductCodes;
+  }
+  return cleaned;
 }
 
 function ItemEditor({
@@ -85,6 +135,34 @@ function ItemEditor({
           <X className="h-3 w-3" />
         </Button>
       </div>
+      <div className="flex items-center gap-1 pl-2">
+        <Input
+          className="w-24 h-6 text-xs"
+          value={item.productCode ?? ""}
+          onChange={(e) => onChange({ ...item, productCode: e.target.value } as SetMenuTemplateItem)}
+          placeholder={item.type === "choice_group" ? "Code (all)" : "Code"}
+          title="Till product code, e.g. CF-24"
+          data-testid={`input-set-menu-item-code-${item.id}`}
+        />
+        <Input
+          className="w-16 h-6 text-xs"
+          type="number"
+          min="1"
+          value={item.qty ?? ""}
+          onChange={(e) =>
+            onChange({ ...item, qty: e.target.value === "" ? null : parseInt(e.target.value, 10) } as SetMenuTemplateItem)
+          }
+          placeholder="Qty"
+          data-testid={`input-set-menu-item-qty-${item.id}`}
+        />
+        <Input
+          className="flex-1 h-6 text-xs"
+          value={item.note ?? ""}
+          onChange={(e) => onChange({ ...item, note: e.target.value } as SetMenuTemplateItem)}
+          placeholder="Kitchen note (optional)"
+          data-testid={`input-set-menu-item-note-${item.id}`}
+        />
+      </div>
       {item.type === "choice_group" && (
         <div className="pl-2 space-y-1.5">
           <div className="flex items-center gap-2">
@@ -107,9 +185,27 @@ function ItemEditor({
                   onChange={(e) => {
                     const updated = [...item.options];
                     updated[i] = e.target.value;
-                    onChange({ ...item, options: updated } as SetMenuTemplateItem);
+                    const codes = { ...(item.optionProductCodes ?? {}) };
+                    if (opt in codes) {
+                      codes[e.target.value] = codes[opt];
+                      delete codes[opt];
+                    }
+                    onChange({ ...item, options: updated, optionProductCodes: codes } as SetMenuTemplateItem);
                   }}
                   placeholder="Option..."
+                />
+                <Input
+                  className="w-24 h-6 text-xs"
+                  value={item.optionProductCodes?.[opt] ?? ""}
+                  onChange={(e) =>
+                    onChange({
+                      ...item,
+                      optionProductCodes: { ...(item.optionProductCodes ?? {}), [opt]: e.target.value },
+                    } as SetMenuTemplateItem)
+                  }
+                  placeholder="Code"
+                  title="Till product code for this option"
+                  data-testid={`input-set-menu-option-code-${item.id}-${i}`}
                 />
                 <Button
                   variant="ghost"
@@ -221,7 +317,7 @@ export function SetMenuTemplatesSettings() {
       toast({ title: "Name is required", variant: "destructive" });
       return;
     }
-    const payload = { name: formName.trim(), items: formItems };
+    const payload = { name: formName.trim(), items: formItems.map(cleanItem) };
     if (editingTemplate) {
       updateMutation.mutate({ id: editingTemplate.id, data: payload });
     } else {
@@ -345,12 +441,22 @@ export function SetMenuTemplatesSettings() {
                             </Badge>
                             <div>
                               <span>{item.label}</span>
+                              {item.qty != null && <span className="ml-1 font-medium">×{item.qty}</span>}
+                              {item.productCode && (
+                                <span className="text-xs text-muted-foreground ml-1 font-mono">{item.productCode}</span>
+                              )}
                               {item.type === "choice_group" && item.options.length > 0 && (
                                 <span className="text-xs text-muted-foreground ml-1">
-                                  ({item.options.join(" / ")})
+                                  ({item.options
+                                    .map((option) => {
+                                      const code = item.optionProductCodes?.[option];
+                                      return code ? `${option} ${code}` : option;
+                                    })
+                                    .join(" / ")})
                                   {item.allowMultiple && " — multi-select"}
                                 </span>
                               )}
+                              {item.note && <p className="text-xs text-muted-foreground">{item.note}</p>}
                             </div>
                           </div>
                         ))}

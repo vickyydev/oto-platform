@@ -19,9 +19,10 @@ import {
   AlertCircle,
 } from "lucide-react";
 
+/** `qty` and `note` are the set menu's own (SCRUM-803); an older item has neither. */
 type SetMenuTemplateItem =
-  | { id: string; type: "always_included"; label: string }
-  | { id: string; type: "choice_group"; label: string; options: string[]; allowMultiple: boolean };
+  | { id: string; type: "always_included"; label: string; qty?: number | null; note?: string | null }
+  | { id: string; type: "choice_group"; label: string; options: string[]; allowMultiple: boolean; qty?: number | null; note?: string | null };
 
 type GroupSelection = {
   groupId: string;
@@ -197,6 +198,8 @@ export default function MenuSelectPage() {
                       <li key={item.id} className="flex items-center gap-2 text-sm py-0.5">
                         <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                         <span>{item.label}</span>
+                        {item.qty != null && <span className="font-medium">×{item.qty}</span>}
+                        {item.note && <span className="text-xs text-muted-foreground">{item.note}</span>}
                       </li>
                     ))}
                   </ul>

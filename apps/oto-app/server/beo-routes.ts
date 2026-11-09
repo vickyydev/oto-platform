@@ -23,6 +23,7 @@ import {
   beoEntertainmentSelections,
   beoSetMenuTemplates,
   beoSetMenuSelections,
+  setMenuTemplateItemsSchema,
   coreEvents,
   users,
   roles,
@@ -2609,6 +2610,9 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { name, items } = req.body;
       if (!name?.trim()) return res.status(400).json({ error: "Name is required" });
+      if (items !== undefined && items !== null && !setMenuTemplateItemsSchema.safeParse(items).success) {
+        return res.status(400).json({ error: "Invalid set menu items" });
+      }
       const [template] = await db.insert(beoSetMenuTemplates)
         .values({ tenantId: user.tenantId, name: name.trim(), items: items || [] })
         .returning();
@@ -2623,6 +2627,9 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { id } = req.params;
       const { name, items, isActive } = req.body;
+      if (items !== undefined && !setMenuTemplateItemsSchema.safeParse(items).success) {
+        return res.status(400).json({ error: "Invalid set menu items" });
+      }
       const updates: Record<string, any> = { updatedAt: new Date() };
       if (name !== undefined) updates.name = name;
       if (items !== undefined) updates.items = items;
@@ -2854,14 +2861,18 @@ export function registerBeoRoutes(app: Express) {
         }
       }
 
-      // Build resolved menu items from template + validated selections
+      // Build resolved menu items from template + validated selections. A set
+      // menu that names its portions (SCRUM-803: "French Fries x3") gives the
+      // kitchen plan that quantity; one that names none stays at 1.
+      const portionsOf = (item: any): number =>
+        Number.isInteger(item.qty) && item.qty > 0 ? item.qty : 1;
       const resolvedItems: any[] = [];
       for (const item of templateItems) {
         if (item.type === "always_included") {
           resolvedItems.push({
             id: `set_${item.id}`,
             itemName: item.label,
-            quantity: 1,
+            quantity: portionsOf(item),
             notes: "",
             included: true,
             price: 0,
@@ -2875,7 +2886,9 @@ export function registerBeoRoutes(app: Express) {
             resolvedItems.push({
               id: `set_${item.id}_${opt.replace(/\s+/g, "_")}`,
               itemName: opt,
-              quantity: 1,
+              // The group's portions go to its one choice; several choices split
+              // them in a way the menu does not say, so each stays at 1.
+              quantity: chosen.length === 1 ? portionsOf(item) : 1,
               notes: `(${item.label})`,
               included: true,
               price: 0,

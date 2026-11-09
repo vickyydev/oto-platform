@@ -1,4 +1,4 @@
-import { Express, Request } from "express";
+import { Express, Request, Response } from "express";
 import { requireAuth } from "./auth";
 import { canUserAccessBranch, requireManager } from "./auth-middleware";
 import { db } from "./db";
@@ -9,11 +9,56 @@ import {
   beoPackageSnapshots,
   beoPackageSnapshotItems,
   beoEntertainmentSelections,
+  beoKitchenPlans,
+  beoSetMenuTemplates,
+  branches,
   coreEvents,
+  updateBeoPackageSnapshotSchema,
 } from "@shared/schema";
-import { eq, and, asc } from "drizzle-orm";
+import { eq, and, asc, sql } from "drizzle-orm";
+import { ZodError } from "zod";
+
+/** A template field out of range is the caller's mistake, said as such rather than as a server fault. */
+const invalidTemplate = (res: Response, error: ZodError) =>
+  res.status(400).json({ error: "Validation error", details: error.flatten() });
+
+/** The fields a package template copies onto a party's snapshot when it is applied (SCRUM-803). */
+const SNAPSHOT_COPIED_FIELDS = [
+  "kidsIncluded",
+  "adultsIncluded",
+  "socksIncluded",
+  "hours",
+  "priceWeekday",
+  "priceWeekend",
+  "extraChildWeekday",
+  "extraChildWeekend",
+  "extraAdultWeekday",
+  "extraAdultWeekend",
+  "slipsTime",
+] as const;
 
 export function registerBirthdayPackageRoutes(app: Express) {
+  /**
+   * A package may name a park and a set menu only of its own park group: the
+   * foreign keys alone would accept another tenant's row.
+   */
+  async function foreignPackageLink(
+    tenantId: string,
+    links: { branchId?: string | null; setMenuTemplateId?: string | null },
+  ): Promise<string | null> {
+    if (links.branchId) {
+      const [branch] = await db.select({ id: branches.id }).from(branches)
+        .where(and(eq(branches.id, links.branchId), eq(branches.tenantId, tenantId))).limit(1);
+      if (!branch) return "Branch not found";
+    }
+    if (links.setMenuTemplateId) {
+      const [menu] = await db.select({ id: beoSetMenuTemplates.id }).from(beoSetMenuTemplates)
+        .where(and(eq(beoSetMenuTemplates.id, links.setMenuTemplateId), eq(beoSetMenuTemplates.tenantId, tenantId))).limit(1);
+      if (!menu) return "Set menu template not found";
+    }
+    return null;
+  }
+
   async function hasPackageAccess(req: Request, packageId: string): Promise<boolean> {
     const tenantId = req.userWithAccess?.tenantId;
     if (!tenantId) return false;
@@ -67,9 +112,12 @@ export function registerBirthdayPackageRoutes(app: Express) {
     try {
       const user = req.userWithAccess!;
       const parsed = insertBirthdayPackageTemplateSchema.parse({ ...req.body, tenantId: user.tenantId!, createdByUserId: user.id });
+      const foreign = await foreignPackageLink(user.tenantId!, parsed);
+      if (foreign) return res.status(400).json({ error: foreign });
       const [pkg] = await db.insert(birthdayPackageTemplates).values(parsed).returning();
       res.status(201).json(pkg);
     } catch (error) {
+      if (error instanceof ZodError) return invalidTemplate(res, error);
       next(error);
     }
   });
@@ -80,6 +128,8 @@ export function registerBirthdayPackageRoutes(app: Express) {
       const { id } = req.params;
       const updates = insertBirthdayPackageTemplateSchema
         .omit({ tenantId: true, createdByUserId: true }).partial().parse(req.body);
+      const foreign = await foreignPackageLink(user.tenantId!, updates);
+      if (foreign) return res.status(400).json({ error: foreign });
       const [updated] = await db.update(birthdayPackageTemplates)
         .set({ ...updates, updatedAt: new Date() })
         .where(and(eq(birthdayPackageTemplates.id, id), eq(birthdayPackageTemplates.tenantId, user.tenantId!)))
@@ -87,6 +137,7 @@ export function registerBirthdayPackageRoutes(app: Express) {
       if (!updated) return res.status(404).json({ error: "Package not found" });
       res.json(updated);
     } catch (error) {
+      if (error instanceof ZodError) return invalidTemplate(res, error);
       next(error);
     }
   });
@@ -123,6 +174,19 @@ export function registerBirthdayPackageRoutes(app: Express) {
         excludedSummary: original.excludedSummary,
         tags: original.tags,
         sortOrder: original.sortOrder,
+        kidsIncluded: original.kidsIncluded,
+        adultsIncluded: original.adultsIncluded,
+        socksIncluded: original.socksIncluded,
+        hours: original.hours,
+        priceWeekday: original.priceWeekday,
+        priceWeekend: original.priceWeekend,
+        extraChildWeekday: original.extraChildWeekday,
+        extraChildWeekend: original.extraChildWeekend,
+        extraAdultWeekday: original.extraAdultWeekday,
+        extraAdultWeekend: original.extraAdultWeekend,
+        setMenuTemplateId: original.setMenuTemplateId,
+        slipsTime: original.slipsTime,
+        branchId: original.branchId,
         createdByUserId: user.id,
       }).returning();
 
@@ -144,6 +208,9 @@ export function registerBirthdayPackageRoutes(app: Express) {
             defaultUnitPrice: item.defaultUnitPrice,
             billableByDefault: item.billableByDefault,
             sortOrder: item.sortOrder,
+            fnbCredit: item.fnbCredit,
+            printsVoucher: item.printsVoucher,
+            priceIsFrom: item.priceIsFrom,
           }))
         );
       }
@@ -183,6 +250,7 @@ export function registerBirthdayPackageRoutes(app: Express) {
       const [item] = await db.insert(packageLineItemTemplates).values(parsed).returning();
       res.status(201).json(item);
     } catch (error) {
+      if (error instanceof ZodError) return invalidTemplate(res, error);
       next(error);
     }
   });
@@ -203,6 +271,7 @@ export function registerBirthdayPackageRoutes(app: Express) {
       if (!updated) return res.status(404).json({ error: "Line item not found" });
       res.json(updated);
     } catch (error) {
+      if (error instanceof ZodError) return invalidTemplate(res, error);
       next(error);
     }
   });
@@ -270,6 +339,7 @@ export function registerBirthdayPackageRoutes(app: Express) {
       const [template] = await db.insert(entertainmentPackageTemplates).values(parsed).returning();
       res.status(201).json(template);
     } catch (error) {
+      if (error instanceof ZodError) return invalidTemplate(res, error);
       next(error);
     }
   });
@@ -287,6 +357,7 @@ export function registerBirthdayPackageRoutes(app: Express) {
       if (!updated) return res.status(404).json({ error: "Entertainment template not found" });
       res.json(updated);
     } catch (error) {
+      if (error instanceof ZodError) return invalidTemplate(res, error);
       next(error);
     }
   });
@@ -344,7 +415,30 @@ export function registerBirthdayPackageRoutes(app: Express) {
         basePrice: template.basePrice,
         includedSummary: template.includedSummary,
         excludedSummary: template.excludedSummary,
+        ...(Object.fromEntries(SNAPSHOT_COPIED_FIELDS.map((field) => [field, template[field]])) as Pick<
+          typeof template,
+          (typeof SNAPSHOT_COPIED_FIELDS)[number]
+        >),
       }).returning();
+
+      // The package's own set menu becomes the party's, unless the BEO's
+      // kitchen plan already names one (the set menu is chosen there; this only
+      // starts it). Under the kitchen plan's own lock, as every other writer.
+      if (template.setMenuTemplateId) {
+        const setMenuTemplateId = template.setMenuTemplateId;
+        await db.transaction(async (tx) => {
+          await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${eventId}))`);
+          const [kitchenPlan] = await tx.select({ id: beoKitchenPlans.id, setMenuTemplateId: beoKitchenPlans.setMenuTemplateId })
+            .from(beoKitchenPlans).where(eq(beoKitchenPlans.eventId, eventId));
+          if (!kitchenPlan) {
+            await tx.insert(beoKitchenPlans).values({ eventId, setMenuEnabled: true, setMenuTemplateId });
+          } else if (!kitchenPlan.setMenuTemplateId) {
+            await tx.update(beoKitchenPlans)
+              .set({ setMenuEnabled: true, setMenuTemplateId, updatedAt: new Date() })
+              .where(eq(beoKitchenPlans.id, kitchenPlan.id));
+          }
+        });
+      }
 
       let items: any[] = [];
       if (templateItems.length > 0) {
@@ -365,7 +459,30 @@ export function registerBirthdayPackageRoutes(app: Express) {
         ).returning();
       }
 
-      res.status(201).json({ ...snapshot, items });
+      res.status(201).json({ ...snapshot, items, setMenuTemplateId: template.setMenuTemplateId });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // The party's own slip time (SCRUM-803): the template's at apply, changed here.
+  app.patch("/api/beo/events/:eventId/package-snapshot", requireAuth, async (req, res, next) => {
+    try {
+      const { eventId } = req.params;
+
+      if (!await verifyEventAccess(req, eventId)) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+
+      const parsed = updateBeoPackageSnapshotSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: "Invalid package change", details: parsed.error.flatten() });
+
+      const [updated] = await db.update(beoPackageSnapshots)
+        .set({ slipsTime: parsed.data.slipsTime, updatedAt: new Date() })
+        .where(eq(beoPackageSnapshots.eventId, eventId))
+        .returning();
+      if (!updated) return res.status(404).json({ error: "No package snapshot for this event" });
+      res.json(updated);
     } catch (error) {
       next(error);
     }

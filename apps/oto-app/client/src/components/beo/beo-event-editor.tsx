@@ -167,9 +167,10 @@ type MenuLine = {
   groupId?: string;
 };
 
+/** `qty` and `note` are the set menu's own (SCRUM-803); an older item has neither. */
 type SetMenuTemplateItem =
-  | { id: string; type: "always_included"; label: string }
-  | { id: string; type: "choice_group"; label: string; options: string[]; allowMultiple: boolean };
+  | { id: string; type: "always_included"; label: string; qty?: number | null; note?: string | null }
+  | { id: string; type: "choice_group"; label: string; options: string[]; allowMultiple: boolean; qty?: number | null; note?: string | null };
 
 type SetMenuTemplate = { id: string; name: string; items: SetMenuTemplateItem[]; isActive: boolean };
 
@@ -233,6 +234,8 @@ function SetMenuChoiceGroups({
             <div key={item.id} className="flex items-center gap-2 text-sm py-0.5">
               <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
               <span>{item.label}</span>
+              {item.qty != null && <span className="font-medium" data-testid={`set-menu-item-qty-${item.id}`}>×{item.qty}</span>}
+              {item.note && <span className="text-xs text-muted-foreground">{item.note}</span>}
               {hasResolved && !matched && (
                 <span className="text-xs text-muted-foreground italic ml-1">not yet resolved</span>
               )}
@@ -251,6 +254,7 @@ function SetMenuChoiceGroups({
           )}
           <div className="flex-1">
             <span className="font-medium">{group.label}</span>
+            {group.qty != null && <span className="font-medium ml-1">×{group.qty}</span>}
             {hasResolved && chosen.length > 0 ? (
               <span className="text-emerald-600 ml-1" data-testid={`set-menu-choice-options-${group.id}`}>
                 → {chosen.map((item) => item.itemName).join(", ")}
@@ -2135,7 +2139,19 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
-                <BeoPackageModule eventId={eventId} readOnly={readOnly} section="package" />
+                <BeoPackageModule
+                  eventId={eventId}
+                  readOnly={readOnly}
+                  section="package"
+                  onPackageApplied={({ setMenuTemplateId: packageSetMenuId }) => {
+                    // The package's set menu starts the kitchen plan's, as the
+                    // server did; a set menu already chosen here stays.
+                    if (packageSetMenuId && !setMenuTemplateId) {
+                      setSetMenuEnabled(true);
+                      setSetMenuTemplateId(packageSetMenuId);
+                    }
+                  }}
+                />
               </AccordionContent>
             </AccordionItem>
           )}

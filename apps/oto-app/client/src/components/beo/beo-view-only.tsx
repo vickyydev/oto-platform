@@ -39,9 +39,10 @@ interface BeoViewOnlyProps {
   showHeader?: boolean;
 }
 
+/** `qty` and `note` are the set menu's own (SCRUM-803); an older item has neither. */
 type SetMenuTemplateItem =
-  | { id: string; type: "always_included"; label: string }
-  | { id: string; type: "choice_group"; label: string; options: string[]; allowMultiple: boolean };
+  | { id: string; type: "always_included"; label: string; qty?: number | null; note?: string | null }
+  | { id: string; type: "choice_group"; label: string; options: string[]; allowMultiple: boolean; qty?: number | null; note?: string | null };
 
 type SetMenuTemplateSummary = {
   id: string;
@@ -143,6 +144,8 @@ function ReadOnlySetMenuChoices({
             <div key={item.id} className="text-sm flex items-center gap-2">
               <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
               <span>{item.label}</span>
+              {item.qty != null && <span className="font-medium">×{item.qty}</span>}
+              {item.note && <span className="text-xs text-muted-foreground">{item.note}</span>}
               {isSubmitted && !isResolved && <span className="text-xs text-muted-foreground italic">not yet resolved</span>}
               <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-emerald-500/10 text-emerald-600 border-emerald-500/30 ml-auto">Always</Badge>
             </div>
@@ -159,6 +162,7 @@ function ReadOnlySetMenuChoices({
           )}
           <div className="flex-1">
             <span className="font-medium">{group.label}</span>
+            {group.qty != null && <span className="font-medium ml-1">×{group.qty}</span>}
             {isSubmitted && choices.length > 0 ? (
               <span className="text-emerald-600 ml-1" data-testid={`view-set-menu-choice-options-${group.id}`}>
                 → {choices.map((item) => item.itemName).join(", ")}

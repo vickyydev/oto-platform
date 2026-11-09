@@ -38,6 +38,8 @@ interface BeoPackageModuleProps {
   eventId: string;
   readOnly?: boolean;
   section?: "package" | "entertainment" | "all";
+  /** Told the package's own set menu when one is applied, so the kitchen plan can start from it. */
+  onPackageApplied?: (applied: { setMenuTemplateId: string | null }) => void;
 }
 
 interface PackageTemplate {
@@ -45,6 +47,8 @@ interface PackageTemplate {
   name: string;
   description: string | null;
   basePrice: number;
+  priceWeekday: number | null;
+  priceWeekend: number | null;
   includedSummary: string | null;
   excludedSummary: string | null;
   isActive: boolean;
@@ -75,6 +79,17 @@ interface PackageSnapshot {
   basePrice: number;
   includedSummary: string | null;
   excludedSummary: string | null;
+  kidsIncluded: number | null;
+  adultsIncluded: number | null;
+  socksIncluded: number | null;
+  hours: number | null;
+  priceWeekday: number | null;
+  priceWeekend: number | null;
+  extraChildWeekday: number | null;
+  extraChildWeekend: number | null;
+  extraAdultWeekday: number | null;
+  extraAdultWeekend: number | null;
+  slipsTime: string | null;
   items: SnapshotItem[];
 }
 
@@ -106,7 +121,35 @@ const formatPrice = (satang: number) =>
 const parsePriceToSatang = (thb: string) =>
   Math.round(parseFloat(thb || "0") * 100);
 
-export function BeoPackageModule({ eventId, readOnly, section = "all" }: BeoPackageModuleProps) {
+/** "฿16,900.00", or "฿16,900.00 / ฿20,900.00" for a package with day prices. */
+const dayPrices = (weekday: number | null, weekend: number | null) =>
+  weekend == null || weekend === weekday || weekday == null
+    ? formatPrice(weekday ?? weekend ?? 0)
+    : `${formatPrice(weekday)} / ${formatPrice(weekend)}`;
+
+const templatePrice = (t: PackageTemplate) => dayPrices(t.priceWeekday ?? t.basePrice, t.priceWeekend);
+
+/** The printed facts the applied package carries (SCRUM-803), one short line each. */
+function packageFacts(snapshot: PackageSnapshot): string[] {
+  const facts: string[] = [];
+  if (snapshot.kidsIncluded != null) facts.push(`Up to ${snapshot.kidsIncluded} children`);
+  if (snapshot.adultsIncluded != null) facts.push(`${snapshot.adultsIncluded} adults included`);
+  if (snapshot.socksIncluded === -1) facts.push("Socks for all children");
+  else if (snapshot.socksIncluded != null) facts.push(`${snapshot.socksIncluded} pairs of socks`);
+  if (snapshot.hours != null) facts.push(`${snapshot.hours} hours`);
+  if (snapshot.priceWeekday != null || snapshot.priceWeekend != null) {
+    facts.push(`Weekday / weekend ${dayPrices(snapshot.priceWeekday ?? snapshot.basePrice, snapshot.priceWeekend)}`);
+  }
+  if (snapshot.extraChildWeekday != null || snapshot.extraChildWeekend != null) {
+    facts.push(`Extra child ${dayPrices(snapshot.extraChildWeekday, snapshot.extraChildWeekend)}`);
+  }
+  if (snapshot.extraAdultWeekday != null || snapshot.extraAdultWeekend != null) {
+    facts.push(`Extra adult ${dayPrices(snapshot.extraAdultWeekday, snapshot.extraAdultWeekend)}`);
+  }
+  return facts;
+}
+
+export function BeoPackageModule({ eventId, readOnly, section = "all", onPackageApplied }: BeoPackageModuleProps) {
   const { toast } = useToast();
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [showEntertainmentDialog, setShowEntertainmentDialog] = useState(false);
@@ -137,12 +180,23 @@ export function BeoPackageModule({ eventId, readOnly, section = "all" }: BeoPack
   const applyPackageMutation = useMutation({
     mutationFn: (templateId: string) =>
       apiRequest("POST", `/api/beo/events/${eventId}/package-snapshot`, { templateId }),
-    onSuccess: () => {
+    onSuccess: async (res) => {
+      const applied = (await res.json().catch(() => null)) as { setMenuTemplateId?: string | null } | null;
       queryClient.invalidateQueries({ queryKey: ["/api/beo/events", eventId, "package-snapshot"] });
       setSelectedTemplateId("");
+      onPackageApplied?.({ setMenuTemplateId: applied?.setMenuTemplateId ?? null });
       toast({ title: "Package applied" });
     },
     onError: () => toast({ title: "Failed to apply package", variant: "destructive" }),
+  });
+
+  const updateSlipsTimeMutation = useMutation({
+    mutationFn: (slipsTime: string) =>
+      apiRequest("PATCH", `/api/beo/events/${eventId}/package-snapshot`, { slipsTime }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/beo/events", eventId, "package-snapshot"] });
+    },
+    onError: () => toast({ title: "Failed to update slip time", variant: "destructive" }),
   });
 
   const removePackageMutation = useMutation({
@@ -272,7 +326,7 @@ export function BeoPackageModule({ eventId, readOnly, section = "all" }: BeoPack
                     <SelectContent>
                       {activeTemplates.map((t) => (
                         <SelectItem key={t.id} value={t.id} data-testid={`select-package-${t.id}`}>
-                          {t.name} — {formatPrice(t.basePrice)}
+                          {t.name} — {templatePrice(t)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -322,7 +376,7 @@ export function BeoPackageModule({ eventId, readOnly, section = "all" }: BeoPack
                   <SelectContent>
                     {activeTemplates.map((t) => (
                       <SelectItem key={t.id} value={t.id} data-testid={`select-change-pkg-${t.id}`}>
-                        {t.name} — {formatPrice(t.basePrice)}
+                        {t.name} — {templatePrice(t)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -359,6 +413,29 @@ export function BeoPackageModule({ eventId, readOnly, section = "all" }: BeoPack
                 </Button>
               </div>
             )}
+          </div>
+
+          {packageFacts(snapshot).length > 0 && (
+            <p className="text-xs text-muted-foreground" data-testid="text-package-facts">
+              {packageFacts(snapshot).join(" · ")}
+            </p>
+          )}
+
+          <div className="flex items-center gap-2">
+            <Label className="text-xs text-muted-foreground">Kitchen &amp; bar slips at</Label>
+            <Input
+              key={snapshot.slipsTime ?? "default"}
+              type="time"
+              defaultValue={(snapshot.slipsTime ?? "11:00").slice(0, 5)}
+              onBlur={(e) => {
+                if (readOnly || !e.target.value) return;
+                if (e.target.value === (snapshot.slipsTime ?? "").slice(0, 5)) return;
+                updateSlipsTimeMutation.mutate(e.target.value);
+              }}
+              className="w-28 h-7 text-xs"
+              disabled={readOnly}
+              data-testid="input-package-slips-time"
+            />
           </div>
 
           {snapshot.items.length > 0 && (
