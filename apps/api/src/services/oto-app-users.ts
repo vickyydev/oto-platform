@@ -139,6 +139,46 @@ export async function linkOtoAppUser(
 }
 
 /**
+ * SCRUM-795 — the OTO App's own password hash for the user this account is
+ * linked to, read for ONE purpose: `signIn` checking the first sign-in of an
+ * account that holds no platform password yet, after which the platform's own
+ * argon2 hash is the only one ever consulted. The value goes to that check
+ * and nowhere else: it is never returned by a route, copied into `core`, or
+ * logged (`SELECTION` above stays password-free for every other caller).
+ *
+ * Only through an exact, completed link — the identity row and the stamp
+ * naming the same account, as `resolveOtoAppRoleContext` reads it — and only
+ * for a user the app has switched on: a password of a user switched off
+ * inside the app is not a way into the suite. Null otherwise, and on a
+ * database with no OTO App on it, where the core lookup answers first and
+ * `otoapp` is never read.
+ */
+export async function otoAppPasswordForAdoption(
+  exec: Exec,
+  accountId: string,
+): Promise<{ userId: string; hash: string } | null> {
+  const [identity] = await exec
+    .select({ externalUserId: appIdentity.externalUserId })
+    .from(appIdentity)
+    .where(and(eq(appIdentity.app, 'oto_app'), eq(appIdentity.accountId, accountId)))
+    .limit(1);
+  if (!identity) return null;
+  if (!(await relationInstalled(exec, 'otoapp.users'))) return null;
+  const [user] = await exec
+    .select({ id: otoappUsers.id, hash: otoappUsers.password })
+    .from(otoappUsers)
+    .where(
+      and(
+        eq(otoappUsers.id, identity.externalUserId),
+        eq(otoappUsers.platformUserId, accountId),
+        eq(otoappUsers.isActive, true),
+      ),
+    )
+    .limit(1);
+  return user ? { userId: user.id, hash: user.hash } : null;
+}
+
+/**
  * Take the stamp off again when an account is unlinked from the app.
  *
  * Needed because withdrawing the grant is not always enough: `revokeAppAccess`

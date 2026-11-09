@@ -22,8 +22,10 @@ import { withTx, type Exec } from './tx';
 import { bumpWindow } from './throttle';
 import { revokeStaffTokens } from './staff-token';
 import { endImpersonationsForSession } from './impersonation';
+import { otoAppPasswordForAdoption } from './oto-app-users';
 import type { SmsSender } from './sms';
 import { hashToken, newSessionToken } from '../plugins/session';
+import { compareOtoAppPassword, equalizeOtoAppCompareCost } from '../lib/otoapp-password';
 
 // --- Failure throttling (SCRUM-19, hardened in S2-01a) ---------------------
 // Counters live in Postgres, not memory: a Render restart used to clear every
@@ -769,6 +771,55 @@ async function equalizeVerifyCost(password: string): Promise<void> {
 }
 
 /**
+ * Keep the app password a first sign-in just proved (SCRUM-795): its argon2
+ * hash becomes the account's own, and the row that says so is written beside
+ * it — ids only, never the password or either hash.
+ *
+ * Guarded on the hash still being empty. When it is not, a password was set
+ * since this sign-in read the account: either a second first sign-in racing
+ * this one (the same password, which then verifies against what it wrote) or a
+ * reset to a different password, which the app's hash must not open — the
+ * sign-in is then refused like a wrong password, and the transaction with it.
+ */
+async function adoptOtoAppPassword(
+  tx: Exec,
+  opts: {
+    accountId: string;
+    operatorId: string;
+    password: string;
+    passwordHash: string;
+    externalUserId: string;
+    requestId?: string;
+  },
+): Promise<void> {
+  const [adopted] = await tx
+    .update(account)
+    .set({ passwordHash: opts.passwordHash })
+    .where(and(eq(account.id, opts.accountId), isNull(account.passwordHash)))
+    .returning({ id: account.id });
+  if (adopted) {
+    await audit.record(tx, {
+      actorAccountId: opts.accountId,
+      operatorId: opts.operatorId,
+      action: 'account.password_adopted',
+      entityType: 'account',
+      entityId: opts.accountId,
+      after: { app: 'oto_app', externalUserId: opts.externalUserId },
+      requestId: opts.requestId,
+    });
+    return;
+  }
+  const [now] = await tx
+    .select({ passwordHash: account.passwordHash })
+    .from(account)
+    .where(eq(account.id, opts.accountId))
+    .limit(1);
+  if (!now?.passwordHash || !(await verify(now.passwordHash, opts.password))) {
+    throw new AppError(401, 'INVALID_CREDENTIALS', 'Phone or password is incorrect');
+  }
+}
+
+/**
  * ONE ANSWER FOR EVERY REFUSED SIGN-IN (SCRUM-251).
  *
  * An `invited` account was answered 403 `SETUP_REQUIRED` and a deactivated one
@@ -869,11 +920,24 @@ export async function signIn(
    * future is equalised by default rather than by somebody remembering to.
    */
   let verifySpent = false;
+  /**
+   * The same, for the OTO App's scrypt check (SCRUM-795): spent on the one
+   * path that adopts an app password, and charged by `fail` to every other
+   * refusal. A first sign-in on an account with no platform password yet is
+   * checked against the app's hash, and scrypt costs several argon2
+   * verifications; without this, a wrong password on such an account would
+   * answer measurably later than on any other, and a stopwatch would sort
+   * phone numbers into "staff who have not signed in on the launcher yet" —
+   * the directory SCRUM-251 and SCRUM-325 closed. Every refusal therefore
+   * costs one argon2 verification and one scrypt check, whichever was real.
+   */
+  let appCompareSpent = false;
 
   const fail = async (reason: string): Promise<never> => {
     // The work this refusal skipped, paid here. Before the counters and the
     // audit rows, because those are the same on every path and this is not.
     if (!verifySpent) await equalizeVerifyCost(opts.password);
+    if (!appCompareSpent) await equalizeOtoAppCompareCost(opts.password);
     /**
      * TWO BUCKETS, AND ONLY ONE OF THEM NAMES A PERSON (SCRUM-376).
      *
@@ -956,8 +1020,31 @@ export async function signIn(
   // A row with no hash at all has nothing to verify against either, so it goes
   // out through `fail` like the refusals above and is charged there.
   verifySpent = Boolean(acc!.passwordHash);
-  if (!acc!.passwordHash || !(await verify(acc!.passwordHash, opts.password))) {
-    await fail('bad_password');
+  /**
+   * SCRUM-795 — THE FIRST SIGN-IN OF AN ACCOUNT MADE FOR AN OTO APP USER.
+   *
+   * `packages/db/src/otoapp-staff-accounts.ts` gives the app's staff an
+   * account with no platform password, so that they sign in on the launcher
+   * with the app password they already have. Here, and only for an account
+   * with no hash of its own and an exact link to an active app user, the
+   * typed password is checked against the app's hash with the app's own rule
+   * (`compareOtoAppPassword`); a match is adopted — an argon2 hash of it,
+   * written in the sign-in's own transaction below — and from then on this
+   * account is verified against that hash alone, like every other.
+   *
+   * A wrong password here is a wrong password: the same `fail`, the same 401
+   * and the same two buckets. An account that holds a platform password
+   * never reaches the app's hash, and the app's hash is never copied.
+   */
+  let adoption: { passwordHash: string; externalUserId: string } | null = null;
+  if (acc!.passwordHash) {
+    if (!(await verify(acc!.passwordHash, opts.password))) await fail('bad_password');
+  } else {
+    const app = await otoAppPasswordForAdoption(db, acc!.id);
+    if (!app) await fail('bad_password');
+    appCompareSpent = true;
+    if (!(await compareOtoAppPassword(opts.password, app!.hash))) await fail('bad_password');
+    adoption = { passwordHash: await hash(opts.password), externalUserId: app!.userId };
   }
 
   await throttleClear(db, [`phone:${phone}`, `ip:${opts.ip}`]);
@@ -990,6 +1077,15 @@ export async function signIn(
     { requestId: opts.requestId, actorAccountId: acc!.id, operatorId: acc!.operatorId },
     'auth.sign_in',
     async (tx) => {
+      if (adoption) {
+        await adoptOtoAppPassword(tx, {
+          accountId: acc!.id,
+          operatorId: acc!.operatorId,
+          password: opts.password,
+          ...adoption,
+          requestId: opts.requestId,
+        });
+      }
       await tx.insert(sessionTable).values({
         id: sessionId,
         accountId: acc!.id,
