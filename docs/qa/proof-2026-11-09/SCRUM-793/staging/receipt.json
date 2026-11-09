@@ -1,0 +1,470 @@
+{
+  "ticket": "SCRUM-793",
+  "sha": "ed6e092d848efc164190e8800489865c2794264c",
+  "startedAt": "2026-11-09T12:38:25.617Z",
+  "deploys": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dborregu01pc7387sf1g",
+      "status": "live",
+      "sha": "ed6e092d848efc164190e8800489865c2794264c",
+      "finishedAt": "2026-11-09T12:37:59.929007Z"
+    },
+    {
+      "name": "oto-launcher-staging",
+      "deployId": "dep-dborrf67bikc73a3o3t0",
+      "status": "live",
+      "sha": "ed6e092d848efc164190e8800489865c2794264c",
+      "finishedAt": "2026-11-09T12:34:50.357248Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dborrfijnfac73frk5hg",
+      "status": "live",
+      "sha": "ed6e092d848efc164190e8800489865c2794264c",
+      "finishedAt": "2026-11-09T12:34:55.933066Z"
+    }
+  ],
+  "steps": {
+    "api": {
+      "defaultAnswer": {
+        "status": 200,
+        "total": 3284,
+        "limit": 10,
+        "offset": 0,
+        "rows": 10,
+        "topLevelKeys": [
+          "limit",
+          "offset",
+          "sessions",
+          "total"
+        ],
+        "rowKeys": [
+          "branchId",
+          "createdAt",
+          "current",
+          "endedAt",
+          "expiresAt",
+          "id",
+          "lastSeenAt",
+          "lockedAt",
+          "stationId",
+          "status"
+        ],
+        "everyRowHasStatusEndedAtCurrent": true
+      },
+      "limit51": {
+        "status": 400,
+        "error": "VALIDATION"
+      },
+      "offsetMinus1": {
+        "status": 400,
+        "error": "VALIDATION"
+      },
+      "limit50": {
+        "status": 200,
+        "rows": 50
+      },
+      "walkedAllRows": 3284,
+      "total": 3284,
+      "statusCounts": {
+        "active": 9,
+        "locked": 1,
+        "ended": 3274
+      },
+      "endedBecauseExpired": 2486,
+      "endedBecauseSignedOut": 788,
+      "endedOn7NovBangkok": 4,
+      "rowsLiveButPastTheirEnd": 0,
+      "endedRowsWithoutTime": 0,
+      "liveRowsWithEndTime": 0,
+      "newestSignInFirstAcrossAllRows": true,
+      "rowsMarkedCurrent": 1,
+      "firstEndedRowPosition": 2,
+      "first7NovEndedRowPosition": 63
+    },
+    "page1": {
+      "rows": 10,
+      "countLine": "Showing 1–10 of 3284",
+      "total": 3284,
+      "previousDisabled": true,
+      "nextDisabled": false,
+      "thisDeviceRows": 1,
+      "thisDevicePillTexts": 1,
+      "thisDeviceRowPosition": 1,
+      "uiMatchesApiPage": true,
+      "apiCreatedAtNewestFirst": true,
+      "rowTexts": [
+        "Active This device last used 9 Nov, 19:38 ends 10 Nov, 07:38",
+        "Ended last used 9 Nov, 19:31 ended 9 Nov, 19:31",
+        "Ended last used 9 Nov, 19:29 ended 9 Nov, 19:29",
+        "Ended last used 9 Nov, 19:28 ended 9 Nov, 19:28",
+        "Ended last used 9 Nov, 19:27 ended 9 Nov, 19:27",
+        "Ended last used 9 Nov, 19:26 ended 9 Nov, 19:26",
+        "Ended last used 9 Nov, 19:24 ended 9 Nov, 19:24",
+        "Ended last used 9 Nov, 19:22 ended 9 Nov, 19:22",
+        "Ended last used 9 Nov, 19:07 ended 9 Nov, 19:08",
+        "Ended last used 9 Nov, 18:45 ended 9 Nov, 18:46"
+      ]
+    },
+    "page2": {
+      "countLine": "Showing 11–20 of 3284",
+      "rows": 10,
+      "previousDisabled": false,
+      "nextDisabled": false,
+      "uiMatchesApiPage": true,
+      "rowTexts": [
+        "Ended last used 9 Nov, 18:45 ended 9 Nov, 18:45",
+        "Ended last used 9 Nov, 18:44 ended 9 Nov, 18:44",
+        "Ended last used 9 Nov, 18:44 ended 9 Nov, 18:44",
+        "Ended last used 9 Nov, 18:40 ended 9 Nov, 18:40",
+        "Ended last used 9 Nov, 18:54 ended 9 Nov, 18:54",
+        "Ended last used 9 Nov, 18:54 ended 9 Nov, 18:54",
+        "Ended last used 9 Nov, 18:26 ended 9 Nov, 18:26",
+        "Ended last used 9 Nov, 18:24 ended 9 Nov, 18:24",
+        "Ended last used 9 Nov, 18:26 ended 9 Nov, 18:26",
+        "Ended last used 9 Nov, 17:54 ended 9 Nov, 17:54"
+      ]
+    },
+    "lastPage": {
+      "countLine": "Showing 3281–3284 of 3284",
+      "rows": 4,
+      "nextDisabled": true,
+      "previousDisabled": false,
+      "rowTexts": [
+        "Ended last used 20 Sept, 12:13 ended 21 Sept, 00:13",
+        "Ended last used 20 Sept, 12:12 ended 21 Sept, 00:12",
+        "Ended last used 20 Sept, 12:12 ended 21 Sept, 00:12",
+        "Ended last used 20 Sept, 11:00 ended 20 Sept, 23:00"
+      ]
+    },
+    "previousFromLast": {
+      "countLine": "Showing 3271–3280 of 3284",
+      "offset": 3270
+    },
+    "walk": {
+      "pages": 329,
+      "mismatches": [],
+      "activePastEnd": 0,
+      "uiStatusCounts": {
+        "active": 9,
+        "locked": 1,
+        "ended": 3274
+      },
+      "thisDeviceRowsSeen": 1,
+      "endedRowFound": {
+        "offset": 0,
+        "row": 2,
+        "text": "Ended last used 9 Nov, 19:31 ended 9 Nov, 19:31",
+        "endedAt": "2026-11-09T12:31:29.482Z"
+      },
+      "endedOn7Nov": {
+        "offset": 60,
+        "row": 3,
+        "position": 63,
+        "text": "Ended last used 7 Nov, 01:24 ended 7 Nov, 03:53",
+        "endedAt": "2026-11-06T20:53:33.865Z",
+        "expiresAt": "2026-11-06T20:53:33.865Z",
+        "how": "ran out of time"
+      }
+    },
+    "secondBrowserIn": {
+      "totalBefore": 3284,
+      "totalAfter": 3285,
+      "countLine": "Showing 1–10 of 3285",
+      "secondSessionRow": 1,
+      "secondSessionStatus": "active",
+      "secondSessionCurrentInA": false,
+      "secondRowText": "Active last used 9 Nov, 19:42 ends 10 Nov, 07:42",
+      "readingBrowserRow": 2,
+      "readingBrowserCurrent": true,
+      "readingRowText": "Active This device last used 9 Nov, 19:42 ends 10 Nov, 07:38",
+      "thisDeviceRows": 1,
+      "secondBrowserSeesItsOwnRowAsCurrent": true
+    },
+    "secondBrowserOut": {
+      "signOutStatus": 200,
+      "signOutAt": "2026-11-09T12:42:40.854Z",
+      "secondBrowserMeAfter": 401,
+      "totalAfter": 3285,
+      "countLine": "Showing 1–10 of 3285",
+      "secondSessionRow": 1,
+      "secondSessionStatus": "ended",
+      "endedAt": "2026-11-09T12:42:42.050Z",
+      "expiresAt": "2026-11-10T00:42:36.998Z",
+      "secondsBetweenSignOutAndEndedAt": 1,
+      "rowText": "Ended last used 9 Nov, 19:42 ended 9 Nov, 19:42",
+      "thisDeviceRows": 1
+    },
+    "console": {
+      "handoffAddedASession": 0,
+      "request": "?limit=10&offset=0",
+      "page1": {
+        "countLine": "Showing 1–10 of 3285",
+        "rows": 10,
+        "statuses": [
+          "ended",
+          "active",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended"
+        ],
+        "previousDisabled": true,
+        "nextDisabled": false,
+        "rowTexts": [
+          "Till / browser ended last seen 09/11/2026, 19:42 · ended 09/11/2026, 19:42",
+          "Till / browser last seen 09/11/2026, 19:42 · expires 10/11/2026, 07:38",
+          "Till / browser ended last seen 09/11/2026, 19:31 · ended 09/11/2026, 19:31",
+          "Till / browser ended last seen 09/11/2026, 19:29 · ended 09/11/2026, 19:29",
+          "Till / browser ended last seen 09/11/2026, 19:28 · ended 09/11/2026, 19:28",
+          "Till / browser ended last seen 09/11/2026, 19:27 · ended 09/11/2026, 19:27",
+          "Till / browser ended last seen 09/11/2026, 19:26 · ended 09/11/2026, 19:26",
+          "Till / browser ended last seen 09/11/2026, 19:24 · ended 09/11/2026, 19:24",
+          "Till / browser ended last seen 09/11/2026, 19:22 · ended 09/11/2026, 19:22",
+          "Till / browser ended last seen 09/11/2026, 19:07 · ended 09/11/2026, 19:08"
+        ]
+      },
+      "ownAccountRowInList": 1,
+      "laterPage": {
+        "countLine": "Showing 11–20 of 3285",
+        "rows": 10,
+        "statuses": [
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended"
+        ],
+        "previousDisabled": false,
+        "nextDisabled": false,
+        "rowTexts": [
+          "Till / browser ended last seen 09/11/2026, 18:45 · ended 09/11/2026, 18:46",
+          "Till / browser ended last seen 09/11/2026, 18:45 · ended 09/11/2026, 18:45",
+          "Till / browser ended last seen 09/11/2026, 18:44 · ended 09/11/2026, 18:44",
+          "Till / browser ended last seen 09/11/2026, 18:44 · ended 09/11/2026, 18:44",
+          "Till / browser ended last seen 09/11/2026, 18:40 · ended 09/11/2026, 18:40",
+          "Till / browser ended last seen 09/11/2026, 18:54 · ended 09/11/2026, 18:54",
+          "Till / browser ended last seen 09/11/2026, 18:54 · ended 09/11/2026, 18:54",
+          "Till / browser ended last seen 09/11/2026, 18:26 · ended 09/11/2026, 18:26",
+          "Till / browser ended last seen 09/11/2026, 18:24 · ended 09/11/2026, 18:24",
+          "Till / browser ended last seen 09/11/2026, 18:26 · ended 09/11/2026, 18:26"
+        ]
+      }
+    },
+    "signOut": {
+      "console": 200,
+      "launcherA": 200,
+      "launcherB": 200,
+      "aMeAfter": 401,
+      "consoleMeAfter": 401
+    }
+  },
+  "pictures": [
+    {
+      "file": "01-account-page-sessions-page-1-full.png",
+      "shows": "Your account page (name and phone masked). Sessions panel: 10 rows, Showing 1–10 of 3284, Previous greyed, Next enabled, one row with This device."
+    },
+    {
+      "file": "01b-sessions-panel-page-1.png",
+      "shows": "The Sessions panel alone, page 1: Showing 1–10 of 3284; row 1 carries This device."
+    },
+    {
+      "file": "02-sessions-panel-page-2.png",
+      "shows": "After Next: Showing 11–20 of 3284, Previous and Next both enabled."
+    },
+    {
+      "file": "03-ended-on-7-nov-page.png",
+      "shows": "The page holding the first session that ended on 7 November (row 3, overall 63 of 3284): it reads \"Ended last used 7 Nov, 01:24 ended 7 Nov, 03:53\"."
+    },
+    {
+      "file": "03b-ended-on-7-nov-row.png",
+      "shows": "That one row close up: \"Ended last used 7 Nov, 01:24 ended 7 Nov, 03:53\"."
+    },
+    {
+      "file": "02b-sessions-panel-last-page.png",
+      "shows": "The last page: Showing 3281–3284 of 3284; Next greyed, Previous enabled."
+    },
+    {
+      "file": "02c-sessions-panel-previous-from-last.png",
+      "shows": "Previous from the last page: Showing 3271–3280 of 3284."
+    },
+    {
+      "file": "04-second-browser-signed-in.png",
+      "shows": "After a second browser signed in: Showing 1–10 of 3285 (was 3284). Row 1 is the new session, Active, no pill; row 2 keeps This device."
+    },
+    {
+      "file": "04b-second-browser-signed-out.png",
+      "shows": "After the second browser signed out: Showing 1–10 of 3285 (unchanged); row 1 now reads \"Ended last used 9 Nov, 19:42 ended 9 Nov, 19:42\"."
+    }
+  ],
+  "failures": [],
+  "account": {
+    "id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "branchTimezone": "Asia/Bangkok"
+  },
+  "finishedAt": "2026-11-09T12:43:04.081Z",
+  "passed": true,
+  "secondPass": {
+    "startedAt": "2026-11-09T12:44:39.757Z",
+    "deploys": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dborregu01pc7387sf1g",
+        "status": "live",
+        "sha": "ed6e092d848efc164190e8800489865c2794264c",
+        "finishedAt": "2026-11-09T12:37:59.929007Z"
+      },
+      {
+        "name": "oto-launcher-staging",
+        "deployId": "dep-dborrf67bikc73a3o3t0",
+        "status": "live",
+        "sha": "ed6e092d848efc164190e8800489865c2794264c",
+        "finishedAt": "2026-11-09T12:34:50.357248Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dborrfijnfac73frk5hg",
+        "status": "live",
+        "sha": "ed6e092d848efc164190e8800489865c2794264c",
+        "finishedAt": "2026-11-09T12:34:55.933066Z"
+      }
+    ],
+    "pictures": [
+      {
+        "file": "03c-locked-session-row-launcher.png",
+        "shows": "The page holding the one Locked session (row 5, Showing 51–60 of 3286): \"Locked last used 9 Nov, 13:33 ends 9 Nov, 23:56\"."
+      },
+      {
+        "file": "06-console-accounts-page.png",
+        "shows": "Console, People & access > Accounts (the Login Users list), searched to the owner's own account; names, phones, the search text and the Recent denials list masked. The Sessions button is the monitor icon in the row's actions."
+      },
+      {
+        "file": "06a-console-sessions-dialog-page-1-top.png",
+        "shows": "The owner's Sessions dialog in the Console (title masked), page 1, top: the newest rows, each \"Till / browser\" with an \"ended\" chip when over; the live one says \"expires …\"."
+      },
+      {
+        "file": "06b-console-sessions-dialog-page-1-controls.png",
+        "shows": "The same dialog scrolled to its foot: Showing 1–10 of 3286, Previous greyed, Next enabled."
+      },
+      {
+        "file": "06c-console-sessions-dialog-page-2.png",
+        "shows": "After Next in the Console dialog: Showing 11–20 of 3286, Previous and Next both enabled."
+      },
+      {
+        "file": "06d-console-sessions-dialog-locked-row.png",
+        "shows": "The Console dialog on the page holding the Locked session (Showing 51–60 of 3286, row 5): \"Station locked last seen 09/11/2026, 13:33 · expires 09/11/2026, 23:56\"."
+      }
+    ],
+    "failures": [],
+    "locked": {
+      "position": 55,
+      "total": 3286,
+      "expiresAt": "2026-11-09T16:56:39.429Z",
+      "endedAt": null,
+      "lockedAt": "2026-11-09T06:33:13.413Z",
+      "endsInFuture": true,
+      "launcherRowText": "Locked last used 9 Nov, 13:33 ends 9 Nov, 23:56",
+      "launcherCountLine": "Showing 51–60 of 3286"
+    },
+    "console": {
+      "request": "?limit=10&offset=0",
+      "page1": {
+        "countLine": "Showing 1–10 of 3286",
+        "rows": 10,
+        "limit": 10,
+        "offset": 0,
+        "total": 3286,
+        "statuses": [
+          "active",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended"
+        ],
+        "apiStatuses": [
+          "active",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended"
+        ],
+        "previousDisabled": true,
+        "nextDisabled": false,
+        "rowTexts": [
+          "Till / browser last seen 09/11/2026, 19:44 · expires 10/11/2026, 07:44",
+          "Till / browser ended last seen 09/11/2026, 19:42 · ended 09/11/2026, 19:42",
+          "Till / browser ended last seen 09/11/2026, 19:42 · ended 09/11/2026, 19:43",
+          "Till / browser ended last seen 09/11/2026, 19:31 · ended 09/11/2026, 19:31",
+          "Till / browser ended last seen 09/11/2026, 19:29 · ended 09/11/2026, 19:29",
+          "Till / browser ended last seen 09/11/2026, 19:28 · ended 09/11/2026, 19:28",
+          "Till / browser ended last seen 09/11/2026, 19:27 · ended 09/11/2026, 19:27",
+          "Till / browser ended last seen 09/11/2026, 19:26 · ended 09/11/2026, 19:26",
+          "Till / browser ended last seen 09/11/2026, 19:24 · ended 09/11/2026, 19:24",
+          "Till / browser ended last seen 09/11/2026, 19:22 · ended 09/11/2026, 19:22"
+        ]
+      },
+      "page2": {
+        "countLine": "Showing 11–20 of 3286",
+        "offset": 10,
+        "rows": 10,
+        "statuses": [
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended",
+          "ended"
+        ],
+        "previousDisabled": false,
+        "nextDisabled": false,
+        "rowTexts": [
+          "Till / browser ended last seen 09/11/2026, 19:07 · ended 09/11/2026, 19:08",
+          "Till / browser ended last seen 09/11/2026, 18:45 · ended 09/11/2026, 18:46",
+          "Till / browser ended last seen 09/11/2026, 18:45 · ended 09/11/2026, 18:45",
+          "Till / browser ended last seen 09/11/2026, 18:44 · ended 09/11/2026, 18:44",
+          "Till / browser ended last seen 09/11/2026, 18:44 · ended 09/11/2026, 18:44",
+          "Till / browser ended last seen 09/11/2026, 18:40 · ended 09/11/2026, 18:40",
+          "Till / browser ended last seen 09/11/2026, 18:54 · ended 09/11/2026, 18:54",
+          "Till / browser ended last seen 09/11/2026, 18:54 · ended 09/11/2026, 18:54",
+          "Till / browser ended last seen 09/11/2026, 18:26 · ended 09/11/2026, 18:26",
+          "Till / browser ended last seen 09/11/2026, 18:24 · ended 09/11/2026, 18:24"
+        ]
+      },
+      "lockedRow": {
+        "countLine": "Showing 51–60 of 3286",
+        "row": 5,
+        "text": "Station locked last seen 09/11/2026, 13:33 · expires 09/11/2026, 23:56"
+      }
+    },
+    "signOut": {
+      "console": 200,
+      "launcher": 200,
+      "meAfter": 401
+    },
+    "finishedAt": "2026-11-09T12:45:49.685Z"
+  }
+}
