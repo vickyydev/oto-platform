@@ -43,6 +43,7 @@ import {
 } from '../src/services/otoapp-directory';
 import {
   DEPARTED_ACCOUNT_CASE,
+  DEPARTED_ACCOUNT_WORDS,
   FORCED_FAILURE_CODE,
   NIGHT_JOB_UNKEYED,
   NIGHT_STEP_FAILED,
@@ -866,7 +867,10 @@ describe("G. Q4 — the 03:00 run lists each leaver whose platform account is st
       errorCode: DEPARTED_ACCOUNT_CASE,
     });
     expect(filed[0]!.detail).toMatchObject({ accountId: people.active, externalId: people.activeEmployee, tenantId: tenantA, date });
-    expect(filed[0]!.errorMessage).toMatch(/platform account is still active/);
+    // SCRUM-769: the account stays on for My pay; the words say to remove the other roles, and what deactivating would end.
+    expect(filed[0]!.errorMessage).toBe(DEPARTED_ACCOUNT_WORDS);
+    expect(filed[0]!.errorMessage).toMatch(/limited to My pay/);
+    expect(filed[0]!.errorMessage).toMatch(/deactivating the account would end their access to My pay as well/);
     expect(JSON.stringify(filed[0]!.detail)).not.toMatch(/ZZ r3/);
     const group = detailOf((await runsFor(job.name, date))[0]!).groups[0]!;
     expect(group).toMatchObject({ outcome: 'ran', ok: true, departedAccounts: { listed: 1, accountIds: [people.active] } });

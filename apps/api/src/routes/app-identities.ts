@@ -41,6 +41,7 @@ import {
 import { opCtx, withTx } from '../services/tx';
 import { otoAppProvisionerOf } from '../plugins/credential';
 import { consumeLifecycleDeactivation, provisionExistingOtoAppUser } from '../services/otoapp-provision';
+import { consumeLifecycleRestriction } from '../services/otoapp-lifecycle-restriction';
 
 const OtoAppBranchPlacementSchema = z.object({
   branchId: z.string().nullable(),
@@ -577,6 +578,26 @@ export async function appIdentityRoutes(app: App): Promise<void> {
     async (req) => {
       const { operatorId } = otoAppProvisionerOf(req);
       return consumeLifecycleDeactivation(app.db, opCtx(req), { operatorId, eventId: req.body.eventId });
+    },
+  );
+
+  // SCRUM-769: the same seam for a login the app put in pay only. The account
+  // stays on with its road to the OTO App; its sessions end and every other
+  // role it holds is withdrawn (services/otoapp-lifecycle-restriction.ts).
+  app.post(
+    '/oto_app/lifecycle-restrictions',
+    {
+      config: { credential: 'otoapp-provision' },
+      schema: {
+        description: 'OTO App server only: consume an owned durable login-restriction event (a leaver limited to My pay); ends the account\'s sessions and withdraws its roles outside the OTO App, never activates an account.',
+        body: z.object({ eventId: z.string().uuid() }).strict(),
+        response: { 200: z.object({ ok: z.literal(true), eventId: z.string().uuid(),
+          state: z.enum(['delivered', 'superseded']), replayed: z.boolean() }).strict() },
+      },
+    },
+    async (req) => {
+      const { operatorId } = otoAppProvisionerOf(req);
+      return consumeLifecycleRestriction(app.db, opCtx(req), { operatorId, eventId: req.body.eventId });
     },
   );
 

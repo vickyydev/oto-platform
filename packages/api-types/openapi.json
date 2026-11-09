@@ -4116,6 +4116,72 @@
         }
       }
     },
+    "/admin/apps/oto_app/lifecycle-restrictions": {
+      "post": {
+        "description": "OTO App server only: consume an owned durable login-restriction event (a leaver limited to My pay); ends the account's sessions and withdraws its roles outside the OTO App, never activates an account.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "eventId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "eventId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "eventId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "delivered",
+                        "superseded"
+                      ]
+                    },
+                    "replayed": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "eventId",
+                    "state",
+                    "replayed"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/apps/oto_app/unlinked-users": {
       "get": {
         "description": "OTO App users with no suite sign-in yet: no platform account is stamped on them, so they cannot open the app from the launcher until they are linked (POST /admin/apps/oto_app/users with externalUserId).",

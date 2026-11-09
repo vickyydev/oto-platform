@@ -2178,6 +2178,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/apps/oto_app/lifecycle-restrictions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description OTO App server only: consume an owned durable login-restriction event (a leaver limited to My pay); ends the account's sessions and withdraws its roles outside the OTO App, never activates an account. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        eventId: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                            /** Format: uuid */
+                            eventId: string;
+                            /** @enum {string} */
+                            state: "delivered" | "superseded";
+                            replayed: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/apps/oto_app/unlinked-users": {
         parameters: {
             query?: never;

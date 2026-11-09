@@ -11,6 +11,7 @@ import {
   type OtoAppNightJob,
 } from './otoapp-directory';
 import { listAppEmployees, listAppParkGroups, otoAppEmployeesInstalled } from './otoapp-employees';
+import { accountsBeyondMyPay } from './otoapp-lifecycle-restriction';
 import { withTx, type Exec } from './tx';
 
 /**
@@ -93,12 +94,18 @@ export const OTOAPP_PRESENCE_JOB = 'job:otoapp.presence';
 export const OTOAPP_ATTENTION_JOB = 'job:otoapp.attention';
 export const OTOAPP_NO_SHOW_JOB = 'job:otoapp.no_show';
 
-/** The integration record a still-active leaver's platform account is filed under (Q4). */
+/** The integration record a leaver's platform account still reaching more than My pay is filed under (Q4). */
 export const OTOAPP_DEPARTED_ACCOUNT_RUN = 'otoapp:account.departed';
 export const DEPARTED_ACCOUNT_CASE = 'OTOAPP_DEPARTED_ACCOUNT_ACTIVE';
 
-const DEPARTED_ACCOUNT_WORDS =
-  "This person's last working day in the OTO App has passed. The OTO App switches off only its own login for a leaver; their platform account is still active, so the launcher and the till still let them in. If they have left, deactivate the account on the Console's Login users page.";
+/**
+ * SCRUM-769: a leaver's platform account stays on, for the launcher's road to
+ * My pay; what is wrong is the rest of its access still standing. Deactivating
+ * the account would end the pay access too, so the words say which to do.
+ * Under 500 characters: a run keeps that much of its message.
+ */
+export const DEPARTED_ACCOUNT_WORDS =
+  "This person's last working day in the OTO App has passed. Their OTO App login is limited to My pay, reached through the launcher, so the platform account stays active. Its other roles (the till, the booth, the console) have not been withdrawn yet, or one was given back since, so those apps may still let them in. Remove those roles on the Console's Login users page and keep the OTO App access; deactivating the account would end their access to My pay as well.";
 
 const BANGKOK = 'Asia/Bangkok';
 
@@ -553,13 +560,19 @@ async function answeredRunningBefore(db: Exec, job: string, tenantId: string, da
 // --- Q4: a leaver's platform account ----------------------------------------
 
 /**
- * The app's 03:00 batch switches off a leaver's OTO App login once their last
- * working day has passed (`runDepartedAccountDeactivation`, the app's rule:
- * `last_working_day` before today's Bangkok midnight). Their platform account
- * — the launcher, the till — is not the app's to switch off, and stays on by
- * design (plan Q4, the app's behaviour as the default). So, after the batch
- * has run for a park group, each of its leavers whose platform account is
- * still `active` is filed on Failures for an administrator to decide.
+ * The app's 03:00 batch limits a leaver's OTO App login to My pay once their
+ * last working day has passed (SCRUM-769, `runDepartedLoginsPayOnly`, the
+ * app's rule: `last_working_day` before today's Bangkok midnight), and asks
+ * the platform, through the app's lifecycle queue, to withdraw every role the
+ * platform account holds but the OTO App's access role
+ * (`otoapp-lifecycle-restriction.ts`). The account itself stays `active`: the
+ * launcher is the person's road to My pay. So, after the batch has run for a
+ * park group, each of its leavers whose platform account is still `active` and
+ * may still reach more than that — the restriction has not reached the
+ * platform yet, or a role beyond the OTO App was given back since — is filed on
+ * Failures for an administrator to decide. A leaver whose restriction was
+ * delivered and who holds the OTO App's road alone is where they should be,
+ * and is not filed.
  *
  * Read through the employee repository (`otoapp-employees.ts`): the leaver's
  * account is the one the app's own user-to-employee rule names
@@ -610,7 +623,8 @@ export async function raiseDepartedAccounts(db: Db, tenantId: string, date: stri
     .select({ id: account.id })
     .from(account)
     .where(and(inArray(account.id, ids), eq(account.operatorId, operatorId), eq(account.status, 'active')));
-  const stillOn = new Set(active.map((a) => a.id));
+  // SCRUM-769: on, and reaching more than the OTO App's road to My pay.
+  const stillOn = await accountsBeyondMyPay(db, operatorId, active.map((a) => a.id));
 
   const accountIds: string[] = [];
   for (const leaver of leavers) {
@@ -671,7 +685,7 @@ export async function describeLatestNightRun(db: Exec, name: OtoAppNightJob): Pr
   const departed = detail.departedAccountsRaised ?? 0;
   const alerts = detail.alerts;
   return `${parts.join(', ') || 'no park group to run'}${
-    departed ? `; ${departed} leaver account${departed === 1 ? '' : 's'} still active, listed on Failures` : ''
+    departed ? `; ${departed} leaver account${departed === 1 ? '' : 's'} still holding roles beyond the OTO App, listed on Failures` : ''
   }${
     alerts
       ? `; ${alerts.created} new alert${alerts.created === 1 ? '' : 's'} raised, ${alerts.updated} updated, ${alerts.resolved} resolved`

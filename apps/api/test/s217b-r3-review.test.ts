@@ -35,6 +35,7 @@ import {
 } from '../src/services/otoapp-directory';
 import {
   DEPARTED_ACCOUNT_CASE,
+  DEPARTED_ACCOUNT_WORDS,
   NIGHT_JOB_UNKEYED,
   NIGHT_STEP_FAILED,
   OTOAPP_DEPARTED_ACCOUNT_RUN,
@@ -1336,8 +1337,8 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app', () => {
   // J3. Q4 against the app's own rule
   // ---------------------------------------------------------------------------
 
-  describe("J3. Q4 — the platform lists exactly the active accounts of the leavers the app's 03:00 batch ends (their logins in pay only, SCRUM-769)", () => {
-    it('the same night, the same people: yesterday\'s leavers in, today\'s out, an inactive account never listed', async () => {
+  describe("J3. Q4 — the platform lists exactly the active accounts of the leavers the app's 03:00 batch ends, until their restriction is delivered (their logins in pay only, SCRUM-769)", () => {
+    it('the same night, the same people: yesterday\'s leavers in, today\'s out, an inactive account never listed; a delivered restriction no longer listed', async () => {
       const x = await appTenant('x');
       const branch = await appBranch(x, chalong);
       const k = await directoryKey(x, ['jobs:run']);
@@ -1371,11 +1372,36 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app', () => {
         goneSwitchedOff: await appLogin(goneSwitchedOff.user),
         staying: await appLogin(staying.user),
       }).toEqual({ gone: 'on/pay_only', lastDayToday: 'on/full', goneSwitchedOff: 'on/pay_only', staying: 'on/full' });
+      // SCRUM-769: and asks the platform to restrict each leaver's account (its migration 0041), never to switch it off.
+      const asked = async (id: string) =>
+        (await q<{ kind: string; state: string }>('select kind, state from login_lifecycle_events where user_id = $1 order by created_at, id', [id]))
+          .map((r) => `${r.kind}:${r.state}`);
+      expect({
+        gone: await asked(gone.user),
+        lastDayToday: await asked(lastDayToday.user),
+        goneSwitchedOff: await asked(goneSwitchedOff.user),
+        staying: await asked(staying.user),
+      }).toEqual({ gone: ['restrict:pending'], lastDayToday: [], goneSwitchedOff: ['restrict:pending'], staying: [] });
 
       const run = (await runsFor(job.name, today)).find((r) => detailOf(r).groups?.some((g) => g.tenantId === x))!;
       const group = detailOf(run).groups.find((g) => g.tenantId === x)!;
       expect(group).toMatchObject({ outcome: 'ran', ok: true });
       expect(group.departedAccounts!.accountIds).toEqual([gone.acct]);
+      // The case says the account stays on for My pay, and that deactivating it would end that too.
+      const filed = await db
+        .select({ errorMessage: opsRun.errorMessage })
+        .from(opsRun)
+        .where(and(eq(opsRun.name, OTOAPP_DEPARTED_ACCOUNT_RUN), sql`${opsRun.detail} ->> 'accountId' = ${gone.acct}`));
+      expect(filed.map((f) => f.errorMessage)).toEqual([DEPARTED_ACCOUNT_WORDS]);
+
+      // Once the platform has had the restriction (what its consumer marks), the account holding
+      // nothing beyond the OTO App is where it should be: the next night lists only the new leaver.
+      await q("update login_lifecycle_events set state = 'delivered', settled_at = now() where user_id = $1 and kind = 'restrict'", [gone.user]);
+      const tomorrow = isoDateInTz(new Date(at(today, '12:00').getTime() + 24 * 3_600_000), BANGKOK);
+      const next = nightJob('reconcile', () => at(tomorrow, '12:00'), env);
+      expect(await runnerFor(next, env).runJob(next.name, { force: true })).toBe('failed');
+      const nextGroup = (await latestFor(next.name, tomorrow, x)).group;
+      expect(nextGroup.departedAccounts!.accountIds).toEqual([lastDayToday.acct]);
       // And never switched off by the platform.
       const statuses = await db
         .select({ id: account.id, status: account.status })

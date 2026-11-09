@@ -298,6 +298,8 @@ export async function consumeLifecycleDeactivation(
       if (!user) throw missing();
       const event = await readOtoAppLifecycleEvent(tx, input.eventId, { lock: true });
       if (!event || event.userId !== snapshot.userId || event.platformAccountId !== snapshot.platformAccountId) throw missing();
+      // SCRUM-769: a restriction is consumed on its own door and never switches the account off.
+      if (event.kind !== 'deactivate') throw missing();
       if (!(await otoAppLifecycleUserIsOperators(tx, { operatorId: input.operatorId, accountId: target.id, user }))) throw missing();
 
       // Ownership is checked on every replay, but a settled event never changes

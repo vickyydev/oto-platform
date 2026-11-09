@@ -702,6 +702,8 @@ const OUTSIDE_THE_REPLAY_STORE = [
   // SCRUM-633: the app-owned event is settled with account eviction and audit
   // in one transaction. Concurrent delivery and late replay use that durable row.
   'POST /admin/apps/oto_app/lifecycle-deactivations [credential:otoapp-provision]',
+  // SCRUM-769: the same seam for a login the app limited to My pay, settled the same way.
+  'POST /admin/apps/oto_app/lifecycle-restrictions [credential:otoapp-provision]',
   /**
    * SCRUM-539 — the OTO App's SERVER giving an app-born person a suite
    * sign-in. Its answer is a one-time temporary password and its principal is
@@ -965,6 +967,15 @@ describe('the idempotency key (SCRUM-291)', () => {
     const route = routes.find(r => r.method === 'POST' && r.path === '/admin/apps/oto_app/lifecycle-deactivations');
     expect(route).toBeDefined();
     expect(configs.get('POST /admin/apps/oto_app/lifecycle-deactivations')?.credential).toBe('otoapp-provision');
+    expect(reachesText(route!.handlerText, text => /withTx\s*\(/.test(text), functions, 2)).toBe(true);
+    expect(reachesText(route!.handlerText, text => /settleOtoAppLifecycleEvent\s*\(/.test(text), functions, 2)).toBe(true);
+    expect(reachesText(route!.handlerText, text => /audit\.record\s*\(/.test(text), functions, 2)).toBe(true);
+  });
+
+  it('lifecycle restriction commits its durable event receipt, role withdrawal and audit together (SCRUM-769)', () => {
+    const route = routes.find(r => r.method === 'POST' && r.path === '/admin/apps/oto_app/lifecycle-restrictions');
+    expect(route).toBeDefined();
+    expect(configs.get('POST /admin/apps/oto_app/lifecycle-restrictions')?.credential).toBe('otoapp-provision');
     expect(reachesText(route!.handlerText, text => /withTx\s*\(/.test(text), functions, 2)).toBe(true);
     expect(reachesText(route!.handlerText, text => /settleOtoAppLifecycleEvent\s*\(/.test(text), functions, 2)).toBe(true);
     expect(reachesText(route!.handlerText, text => /audit\.record\s*\(/.test(text), functions, 2)).toBe(true);

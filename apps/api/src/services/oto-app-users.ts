@@ -278,12 +278,21 @@ export async function activateOtoAppUser(
 
 export type OtoAppLifecycleEventState = 'pending' | 'delivered' | 'superseded';
 
+/**
+ * What the event asks (SCRUM-769, the app's migration 0041): `deactivate` — the
+ * app switched the login off — or `restrict` — the app put the login in pay
+ * only. An app schema from before 0041 has no kind; every event there is a
+ * switch-off.
+ */
+export type OtoAppLifecycleEventKind = 'deactivate' | 'restrict';
+
 /** Immutable delivery targets plus the app-owned outbox's current outcome. */
 export type OtoAppLifecycleEvent = {
   id: string;
   userId: string;
   platformAccountId: string;
   state: OtoAppLifecycleEventState;
+  kind: OtoAppLifecycleEventKind;
 };
 
 export interface OtoAppLifecycleUser {
@@ -306,13 +315,16 @@ export async function readOtoAppLifecycleEvent(
       throw new AppError(503, 'OTOAPP_LIFECYCLE_UNAVAILABLE', 'The OTO App lifecycle queue is not available on this database');
     }
   }
+  // The kind through a JSON projection, so an API instance can run beside an
+  // app whose own migrator has not added the column yet (0041).
   const row = (await exec.execute<OtoAppLifecycleEvent>(sql`
-    select id::text as id, user_id as "userId", platform_account_id::text as "platformAccountId", state
-    from otoapp.login_lifecycle_events where id=${eventId}
+    select e.id::text as id, e.user_id as "userId", e.platform_account_id::text as "platformAccountId", e.state,
+      coalesce(to_jsonb(e)->>'kind', 'deactivate') as kind
+    from otoapp.login_lifecycle_events e where e.id=${eventId}
     ${opts.lock ? sql`for update` : sql``}
   `)).rows[0];
   if (!row) return null;
-  if (!['pending', 'delivered', 'superseded'].includes(row.state)) {
+  if (!['pending', 'delivered', 'superseded'].includes(row.state) || !['deactivate', 'restrict'].includes(row.kind)) {
     throw new AppError(503, 'OTOAPP_LIFECYCLE_UNAVAILABLE', 'The OTO App lifecycle queue has an unsupported outcome');
   }
   return row;
