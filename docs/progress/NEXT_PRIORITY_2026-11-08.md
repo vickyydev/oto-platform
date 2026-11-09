@@ -134,9 +134,9 @@ How to read each topic:
   not read the dates from the chat, for Russian especially.
 - **Our reading.** Dates must be picked up from the thread in every language
   the inbox handles, Russian included.
-- **Details from the owner.** _(to be given)_
-- **How it works today.** _(to be checked)_
-- **Ticket.** none yet
+- **Details from the owner (9-10 November).** Tom: the BEO loads only the "save the date" information from the messages and is not linked to the menu and packages; the agreed package or menu items in the chat should be fetched into the BEO from our menu. Owner: fetching dates and other details for the AI fill does not work well, Russian especially.
+- **How it works today (verified 10 November).** Book Date pre-fills the date with the prototype's patterns, which never match a Russian or Thai date and only "21/nov" in English (BROKEN). The BEO AI Fill reads ONE message (the team's final confirmation), returns no event date, and knows no "today", so a year-less date lands on the wrong year (BROKEN); it matches nothing to the park's packages or menu (NOT BUILT). Russian text itself is read well by the model.
+- **Tickets.** SCRUM-814 (the dates, building on lane/beodates814-20261110), SCRUM-815 (the whole conversation matched to the catalogue; two owner decisions inside).
 
 ### D2. Audio speech in the unified inbox
 
