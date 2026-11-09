@@ -97,7 +97,7 @@ async function countOf(client: Pick<PoolClient, "query">, tables: string[], colu
   return Number(rows[0]?.n ?? 0);
 }
 
-async function blockersOf(
+export async function blockersOf(
   client: Pick<PoolClient, "query">,
   id: string,
   checks: { singular: string; plural: string; tables: string[]; column: string }[],
@@ -110,7 +110,7 @@ async function blockersOf(
   return found;
 }
 
-const asBlocking = (blockers: Blocker[]) => blockers.map((b) => ({ label: b.plural, count: b.count }));
+export const asBlocking = (blockers: Blocker[]) => blockers.map((b) => ({ label: b.plural, count: b.count }));
 
 /**
  * The login leaving with the record, deleted inside the transaction once
@@ -163,7 +163,7 @@ async function inOneTransaction(
 // ─── Employees ───────────────────────────────────────────────────────────────
 
 /** What an employee delete refuses on: kept for the record, ended by offboarding. */
-const EMPLOYEE_KEEPS = [
+export const EMPLOYEE_KEEPS = [
   { singular: "contract", plural: "contracts", tables: ["contract_instances"], column: "employee_id" },
   {
     singular: "time record",
@@ -192,95 +192,111 @@ const EMPLOYEE_KEEPS = [
 
 export const EMPLOYEE_OFFBOARD_INSTEAD = "Their history is kept for the record; offboard them instead to end their employment.";
 
-export async function deleteEmployeeWhole(
-  pool: Pool,
-  input: { employeeId: string; tenantId: string; personId: string | null; leavingUserId: string | null },
-): Promise<RecordDeletionOutcome> {
+export interface EmployeeDeletionInput {
+  employeeId: string;
+  tenantId: string;
+  personId: string | null;
+  leavingUserId: string | null;
+}
+
+export async function deleteEmployeeWhole(pool: Pool, input: EmployeeDeletionInput): Promise<RecordDeletionOutcome> {
   return inOneTransaction(
     pool,
     (what) => `This employee is still linked to ${what}, so nothing was deleted. ${EMPLOYEE_OFFBOARD_INSTEAD}`,
-    async (client) => {
-      const { rows } = await client.query<{ full_name: string }>(
-        "select full_name from employees where id = $1 and tenant_id = $2 for update",
-        [input.employeeId, input.tenantId],
-      );
-      const employee = rows[0];
-      if (!employee) return { deleted: false, status: 404, message: "Employee not found" };
-
-      // What the employee keeps is named first (SCRUM-547), so an employee
-      // with a contract and a login hears about the contract.
-      const blockers = await blockersOf(client, input.employeeId, EMPLOYEE_KEEPS);
-      if (blockers.length > 0) {
-        return {
-          deleted: false,
-          status: 409,
-          reason: "has_records",
-          message: `${employee.full_name} cannot be deleted: they have ${listBlockers(blockers)}. ${EMPLOYEE_OFFBOARD_INSTEAD}`,
-          blocking: asBlocking(blockers),
-        };
-      }
-
-      const id = input.employeeId;
-      if (input.leavingUserId) {
-        // The employee's own links to the login leaving with them (SCRUM-543
-        // writes user_id and the policy's core_user_id at enable-login) must
-        // not hold that login back; a refusal below still rolls them back.
-        await client.query(
-          `update employees set
-             user_id = case when user_id = $2 then null else user_id end,
-             updated_by = case when updated_by = $2 then null else updated_by end,
-             profile_photo_updated_by = case when profile_photo_updated_by = $2 then null else profile_photo_updated_by end
-           where id = $1`,
-          [id, input.leavingUserId],
-        );
-        if (input.personId) {
-          await client.query("update access_policies set core_user_id = null where person_id = $1 and core_user_id = $2", [
-            input.personId,
-            input.leavingUserId,
-          ]);
-        }
-      }
-      const userRefusal = await leavingUserRefusal(client, input.leavingUserId);
-      if (userRefusal) return userRefusal;
-
-      // History that names the employee keeps its rows, without the name.
-      await client.query("update activity_log set employee_id = null where employee_id = $1", [id]);
-      await client.query("update attention_items set employee_id = null where employee_id = $1", [id]);
-      await client.query("update shifts set employee_id = null where employee_id = $1", [id]);
-      // What belongs to the employee goes with them.
-      await client.query(
-        "delete from offboarding_checklist where employee_id = $1 or offboarding_id in (select id from employee_offboarding where employee_id = $1)",
-        [id],
-      );
-      for (const table of [
-        "employee_offboarding",
-        "employee_changes",
-        "employee_documents",
-        "employee_letters",
-        "employee_assets",
-        "employee_time_off",
-        "employee_roles",
-        "employee_payroll_profiles",
-        "enrollment_sessions",
-        "kiosk_auth_attempts",
-      ]) {
-        await client.query(`delete from ${table} where employee_id = $1`, [id]);
-      }
-      await client.query("delete from employees where id = $1", [id]);
-
-      // The person record (freeing its email for reuse) — unless another
-      // employee row still carries it, which its cascade would take too.
-      if (input.personId) {
-        const others = await client.query("select 1 from employees where person_id = $1 limit 1", [input.personId]);
-        if (others.rowCount === 0) {
-          await client.query("delete from kiosk_auth_attempts where person_id = $1", [input.personId]);
-          await client.query("delete from auth_reset_tokens where person_id = $1", [input.personId]);
-          await client.query("delete from people where id = $1", [input.personId]);
-        }
-      }
-      return { deleted: true };
-    },
+    (client) => deleteEmployeeWithin(client, input),
   );
+}
+
+/**
+ * The employee delete's steps on the caller's open transaction, so a door
+ * that does more first (the fold of a duplicate profile, SCRUM-794) deletes
+ * on the same transaction and a refusal here takes its earlier writes back
+ * too. The caller rolls back on anything but `deleted: true`, and on a
+ * foreign-key error, as `deleteEmployeeWhole` does.
+ */
+export async function deleteEmployeeWithin(
+  client: Pick<PoolClient, "query">,
+  input: EmployeeDeletionInput,
+): Promise<RecordDeletionOutcome> {
+  const { rows } = await client.query<{ full_name: string }>(
+    "select full_name from employees where id = $1 and tenant_id = $2 for update",
+    [input.employeeId, input.tenantId],
+  );
+  const employee = rows[0];
+  if (!employee) return { deleted: false, status: 404, message: "Employee not found" };
+
+  // What the employee keeps is named first (SCRUM-547), so an employee
+  // with a contract and a login hears about the contract.
+  const blockers = await blockersOf(client, input.employeeId, EMPLOYEE_KEEPS);
+  if (blockers.length > 0) {
+    return {
+      deleted: false,
+      status: 409,
+      reason: "has_records",
+      message: `${employee.full_name} cannot be deleted: they have ${listBlockers(blockers)}. ${EMPLOYEE_OFFBOARD_INSTEAD}`,
+      blocking: asBlocking(blockers),
+    };
+  }
+
+  const id = input.employeeId;
+  if (input.leavingUserId) {
+    // The employee's own links to the login leaving with them (SCRUM-543
+    // writes user_id and the policy's core_user_id at enable-login) must
+    // not hold that login back; a refusal below still rolls them back.
+    await client.query(
+      `update employees set
+         user_id = case when user_id = $2 then null else user_id end,
+         updated_by = case when updated_by = $2 then null else updated_by end,
+         profile_photo_updated_by = case when profile_photo_updated_by = $2 then null else profile_photo_updated_by end
+       where id = $1`,
+      [id, input.leavingUserId],
+    );
+    if (input.personId) {
+      await client.query("update access_policies set core_user_id = null where person_id = $1 and core_user_id = $2", [
+        input.personId,
+        input.leavingUserId,
+      ]);
+    }
+  }
+  const userRefusal = await leavingUserRefusal(client, input.leavingUserId);
+  if (userRefusal) return userRefusal;
+
+  // History that names the employee keeps its rows, without the name.
+  await client.query("update activity_log set employee_id = null where employee_id = $1", [id]);
+  await client.query("update attention_items set employee_id = null where employee_id = $1", [id]);
+  await client.query("update shifts set employee_id = null where employee_id = $1", [id]);
+  // What belongs to the employee goes with them.
+  await client.query(
+    "delete from offboarding_checklist where employee_id = $1 or offboarding_id in (select id from employee_offboarding where employee_id = $1)",
+    [id],
+  );
+  for (const table of [
+    "employee_offboarding",
+    "employee_changes",
+    "employee_documents",
+    "employee_letters",
+    "employee_assets",
+    "employee_time_off",
+    "employee_roles",
+    "employee_payroll_profiles",
+    "enrollment_sessions",
+    "kiosk_auth_attempts",
+  ]) {
+    await client.query(`delete from ${table} where employee_id = $1`, [id]);
+  }
+  await client.query("delete from employees where id = $1", [id]);
+
+  // The person record (freeing its email for reuse) — unless another
+  // employee row still carries it, which its cascade would take too.
+  if (input.personId) {
+    const others = await client.query("select 1 from employees where person_id = $1 limit 1", [input.personId]);
+    if (others.rowCount === 0) {
+      await client.query("delete from kiosk_auth_attempts where person_id = $1", [input.personId]);
+      await client.query("delete from auth_reset_tokens where person_id = $1", [input.personId]);
+      await client.query("delete from people where id = $1", [input.personId]);
+    }
+  }
+  return { deleted: true };
 }
 
 // ─── People (advisors) ───────────────────────────────────────────────────────

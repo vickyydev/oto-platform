@@ -1,4 +1,5 @@
-import type { Express, Request } from "express";
+import type { Express, Request, RequestHandler, Response } from "express";
+import type { Pool } from "pg";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -16,7 +17,8 @@ import { hrPayResponse } from "@shared/hr-salary-permission";
 import { db } from "./db";
 import { storage } from "./storage";
 import { requireAuth } from "./auth";
-import { canUserAccessBranch, requireManager } from "./auth-middleware";
+import { canUserAccessBranch, requireAction, requireAdmin, requireManager } from "./auth-middleware";
+import { foldEmployeeInto, type FoldInput } from "./lib/employeeFold";
 
 /**
  * SCRUM-794: one person, two profiles. A staff member was offboarded, so her
@@ -24,14 +26,24 @@ import { canUserAccessBranch, requireManager } from "./auth-middleware";
  * signs in and clocks in with it (the login was switched on again by hand, and
  * her face enrolment is on it); a second profile was made only to put her on
  * the rota in a new position, and carries her shifts, checklists and tasks.
+ * Two doors put her back together:
  *
  *  - POST /api/employees/:id/rehire — the Left profile active again in its
- *    new position, its login back on.
+ *    new position, its login back on;
+ *  - POST /api/employees/:id/fold-into/:targetId (and GET .../preview) — the
+ *    duplicate's assignments moved onto the original and the duplicate deleted.
  */
 
 export interface EmployeeRehireDependencies {
+  pool: Pool;
   employeeOfParkGroup: (req: Request, employeeId: string) => Promise<Employee | undefined>;
+  userManagementTenant: (req: Request) => Promise<string | undefined>;
   managedUserTenant: (userId: string) => Promise<string | undefined>;
+  employeeDeletionInput: (
+    employee: Employee,
+    tenantId: string,
+  ) => Promise<{ employeeId: string; tenantId: string; personId: string | null; leavingUserId: string | null }>;
+  employeeDeleteOutsideParkGroup: (employee: Employee, tenantId: string) => Promise<{ message: string } | null>;
   /** After a commit that changed an employee: the attention engine's trigger. */
   committed: (employeeId: string) => void;
 }
@@ -48,6 +60,8 @@ const rehireBody = z.object({
 }).strict();
 
 export function registerEmployeeRehireRoutes(app: Express, deps: EmployeeRehireDependencies) {
+  const { pool } = deps;
+
   // ── Rehire ────────────────────────────────────────────────────────────────
 
   app.post("/api/employees/:id/rehire", requireAuth, requireManager, async (req, res, next) => {
@@ -180,4 +194,73 @@ export function registerEmployeeRehireRoutes(app: Express, deps: EmployeeRehireD
       next(error);
     }
   });
+
+  // ── Fold a duplicate into the original ───────────────────────────────────
+
+  /** Both profiles in the caller's park group and branches; what the duplicate's delete may take. */
+  const foldInput = async (req: Request, res: Response, write: boolean): Promise<FoldInput | null> => {
+    const tenantId = await deps.userManagementTenant(req);
+    const actor = req.userWithAccess;
+    if (!tenantId || !actor) {
+      res.status(403).json({ message: "Access denied" });
+      return null;
+    }
+    if (req.params.id === req.params.targetId) {
+      res.status(400).json({ message: "A profile cannot be folded into itself" });
+      return null;
+    }
+    const duplicate = await storage.getEmployeeInTenant(req.params.id, tenantId);
+    const target = await storage.getEmployeeInTenant(req.params.targetId, tenantId);
+    if (!duplicate || !target) {
+      res.status(404).json({ message: "Employee not found" });
+      return null;
+    }
+    const outside = await deps.employeeDeleteOutsideParkGroup(duplicate, tenantId);
+    if (outside) {
+      res.status(404).json(outside);
+      return null;
+    }
+    if (!canUserAccessBranch(actor, duplicate.branchId) || !canUserAccessBranch(actor, target.branchId)) {
+      res.status(403).json({ message: "Both profiles must be in a branch you manage" });
+      return null;
+    }
+    // The duplicate's delete takes what the employee delete would take with
+    // it, never the original's person record or login (a duplicate made with
+    // the same email finds those by email).
+    const own = await deps.employeeDeletionInput(duplicate, tenantId);
+    const original = await deps.employeeDeletionInput(target, tenantId);
+    const personId = own.personId && own.personId !== original.personId && own.personId !== target.personId ? own.personId : null;
+    const leavingUserId = own.leavingUserId && own.leavingUserId !== original.leavingUserId && own.leavingUserId !== target.userId
+      ? own.leavingUserId : null;
+    return {
+      duplicateId: duplicate.id,
+      targetId: target.id,
+      tenantId,
+      deletion: { personId, leavingUserId },
+      actorId: actor.id,
+      write,
+    };
+  };
+
+  const foldDoor = (write: boolean): RequestHandler => async (req, res, next) => {
+    try {
+      const input = await foldInput(req, res, write);
+      if (!input) return;
+      const outcome = await foldEmployeeInto(pool, input);
+      if (!outcome.folded) {
+        const { folded: _folded, status, ...refusal } = outcome;
+        return res.status(status).json(refusal);
+      }
+      const answer = { moved: outcome.moved, skipped: outcome.skipped, deleted: outcome.deleted };
+      if (!write) return res.json(answer);
+      deps.committed(input.targetId);
+      res.json(answer);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  const foldGate = [requireAuth, requireAdmin, requireAction("settings.delete_data", "settings")];
+  app.get("/api/employees/:id/fold-into/:targetId/preview", ...foldGate, foldDoor(false));
+  app.post("/api/employees/:id/fold-into/:targetId", ...foldGate, foldDoor(true));
 }

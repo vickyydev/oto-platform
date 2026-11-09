@@ -55,7 +55,7 @@ import { Switch } from "@/components/ui/switch";
 import { EmployeeDocument } from "@shared/schema";
 import { UpdateTermsModal } from "@/components/update-terms-modal";
 import { OffboardingModal } from "@/components/offboarding-modal";
-import { RehireAction } from "@/components/employee-rehire-actions";
+import { FoldIntoAction, RehireAction } from "@/components/employee-rehire-actions";
 import { IssueWarningModal } from "@/components/issue-warning-modal";
 import { EmployeeOnboardingStepper } from "@/components/employee-onboarding-stepper";
 import {
@@ -3262,8 +3262,9 @@ export default function EmployeeEditorPage() {
                   </Badge>
                 );
               })()}
-              {/* SCRUM-794: renders only on a Left profile, for a caller holding the right. */}
+              {/* SCRUM-794: each renders only for a caller holding its right. */}
               {!isNew && employee && <RehireAction employee={employee} branches={branches} departments={departments} />}
+              {!isNew && employee && <FoldIntoAction employee={employee} />}
             </div>
             <p className="text-muted-foreground">
               {isNew ? "Add a new employee to your directory" : "Update employee information"}

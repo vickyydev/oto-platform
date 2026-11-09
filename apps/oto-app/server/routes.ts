@@ -4814,10 +4814,15 @@ export async function registerRoutes(
     }
   });
 
-  // SCRUM-794: rehire a Left profile.
+  // SCRUM-794: rehire a Left profile, and fold a duplicate profile into the
+  // original.
   registerEmployeeRehireRoutes(app, {
+    pool,
     employeeOfParkGroup,
+    userManagementTenant,
     managedUserTenant,
+    employeeDeletionInput,
+    employeeDeleteOutsideParkGroup,
     committed: (employeeId) => {
       evaluateForEmployee(employeeId).catch(err => console.error("[AttentionEngine] Rehire trigger failed:", err));
     },
