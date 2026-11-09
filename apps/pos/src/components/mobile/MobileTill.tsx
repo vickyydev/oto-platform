@@ -47,7 +47,7 @@ import { getSale } from '@/api/history';
 import { laneSale } from '@/api/boxSales';
 import { apiMemberToMember } from '@/api/mappers';
 import { rebuildResumedSale } from '@/lib/resumeSale';
-import { bahtLabel, holdButtonReasons, useHeldSaleDesk, type ResumedHold } from '@/lib/heldSales';
+import { bahtLabel, holdButtonReasons, partPaidShown, useHeldSaleDesk, type ResumedHold } from '@/lib/heldSales';
 import { HeldSaleDeskDialog, HeldSaleDeskPanel, HoldSaleButtons } from '@/components/till/HeldSales';
 import { lookupMember } from '@/api/members';
 import { type PlatformBooking, type RedeemOutcome, type ScannedBooking } from '@/api/bookings';
@@ -2435,6 +2435,7 @@ export default function MobileTill() {
                 <HoldSaleButtons
                   holdReason={holdReasons.hold}
                   partPaidReason={holdReasons.partPaid}
+                  showPartPaid={partPaidShown(paymentStage.state.partial, paidOnScreen)}
                   onHold={() => heldDesk.openHoldDialog('held')}
                   onSavePartPaid={() => heldDesk.openHoldDialog('part_paid')}
                 />

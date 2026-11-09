@@ -119,7 +119,7 @@ import { forgetSaleOnScreen, rememberSaleOnScreen } from '@/lib/saleOnScreen';
 import { getSale } from '@/api/history';
 import { laneSale } from '@/api/boxSales';
 import { HeldSaleDeskDialog, HeldSaleDeskPanel, HoldSaleButtons } from '@/components/till/HeldSales';
-import { bahtLabel, holdButtonReasons, useHeldSaleDesk, type ResumedHold } from '@/lib/heldSales';
+import { bahtLabel, holdButtonReasons, partPaidShown, useHeldSaleDesk, type ResumedHold } from '@/lib/heldSales';
 import type { CartQuoteState } from '@/lib/cartQuote';
 import { formatVoucherStamp } from '@/lib/tillVoucher';
 import { apiChildToSavedChild, apiMemberToMember } from '@/api/mappers';
@@ -3674,6 +3674,7 @@ export default function Till() {
                 <HoldSaleButtons
                   holdReason={holdReasons.hold}
                   partPaidReason={holdReasons.partPaid}
+                  showPartPaid={partPaidShown(paymentStage.state.partial, paidOnScreen)}
                   onHold={() => heldDesk.openHoldDialog('held')}
                   onSavePartPaid={() => heldDesk.openHoldDialog('part_paid')}
                 />

@@ -19,6 +19,8 @@ export const DICTIONARY: Record<string, Record<SupportedLang, string>> = {
   'payment.stage.recorded': { en: 'Recorded payments', zh: '已记录的付款', th: 'การชำระเงินที่บันทึกแล้ว', ru: 'Записанные платежи', fr: 'Paiements enregistrés' },
   'payment.stage.balance': { en: 'Balance due', zh: '待付余额', th: 'ยอดคงเหลือที่ต้องชำระ', ru: 'Остаток к оплате', fr: 'Solde à payer' },
   'payment.stage.amount': { en: 'Payment amount', zh: '付款金额', th: 'จำนวนเงินที่ชำระ', ru: 'Сумма платежа', fr: 'Montant du paiement' },
+  'payment.stage.partial': { en: 'Partial payment', zh: '部分付款', th: 'ชำระบางส่วน', ru: 'Частичная оплата', fr: 'Paiement partiel' },
+  'payment.stage.fullAmount': { en: 'Full amount', zh: '全额', th: 'เต็มจำนวน', ru: 'Полная сумма', fr: 'Montant total' },
   'payment.stage.cashReceived': { en: 'Cash received', zh: '收到的现金', th: 'เงินสดที่รับ', ru: 'Получено наличными', fr: 'Espèces reçues' },
   'payment.stage.change': { en: 'Change', zh: '找零', th: 'เงินทอน', ru: 'Сдача', fr: 'Monnaie à rendre' },
   'payment.stage.decimalPoint': { en: 'Decimal point', zh: '小数点', th: 'จุดทศนิยม', ru: 'Десятичная точка', fr: 'Point décimal' },

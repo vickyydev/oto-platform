@@ -119,6 +119,15 @@ export function holdButtonReasons(input: {
   };
 }
 
+/**
+ * SCRUM-796 — Save as partly paid is offered only when it can mean something:
+ * staff chose Partial payment on this tender, or part of the sale is already
+ * paid (a part taken here, or a part-paid sale resumed). A whole-amount
+ * payment never shows it.
+ */
+export const partPaidShown = (partial: boolean | undefined, paidSatang: number): boolean =>
+  Boolean(partial) || paidSatang > 0;
+
 export const BOX_SALE_NOT_HELD =
   'This sale was rung up on the counter box while the platform could not be reached — it cannot be held. Take the payment now.';
 export const BOX_LANE_NO_HOLD =

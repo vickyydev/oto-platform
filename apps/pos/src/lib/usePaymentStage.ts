@@ -84,6 +84,13 @@ export interface PaymentStageState {
    * gone once another method is chosen or the cancel goes through.
    */
   cancelRefusal: string | null;
+  /**
+   * SCRUM-796 — staff chose "Partial payment": the amount field is open for a
+   * part amount. Off (the default), the tender takes the whole balance and no
+   * amount is asked for. Back off at every fresh tender: after a part is
+   * taken, the next one starts at the remaining balance again.
+   */
+  partial?: boolean;
 }
 export interface PaymentStageOptions {
   scope: string | number;
@@ -132,6 +139,12 @@ export interface PaymentStageController {
   selectMethod: (token: string) => void;
   setAmountSatang: (amount: number) => void;
   setTenderedSatang: (amount: number) => void;
+  /**
+   * SCRUM-796 — open or close the part amount. On keeps the amount where it
+   * is (the balance, for staff to reduce); off puts it back to the balance.
+   * Left out by a stage whose amount is fixed (a party's collect step).
+   */
+  setPartial?: (on: boolean) => void;
   submit: () => Promise<void>;
   retry: () => Promise<void>;
   inquire: () => Promise<void>;
@@ -158,8 +171,10 @@ const initial = (total: number): PaymentStageState => ({
   phase: 'ready', saleId: null, method: null, kind: null, outstandingSatang: total, amountSatang: total,
   tenderedSatang: total, attempt: null, route: null, qr: emptyQr, error: null, retryable: false, settlements: [],
   creditSatang: 0, creditSaleId: null, creditRefusedSaleId: null, creditRefusalMessage: null, creditRefusalSeq: 0,
-  cancelRefusal: null,
+  cancelRefusal: null, partial: false,
 });
+/** Said when the cash handed over is less than the payment: on the press, and under Cash received. */
+export const CASH_SHORT_REFUSAL = 'Cash received must cover this payment.';
 /**
  * S2-14a round 3 — the platform's refusals of a credit press that take
  * nothing: the wallet is empty, holds less than asked, or its credit has
@@ -331,7 +346,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
       return;
     }
     update({ phase: 'ready', outstandingSatang: result.outstandingSatang!, amountSatang: result.outstandingSatang!,
-      tenderedSatang: result.outstandingSatang!, method: null, attempt: null, route: null, qr: emptyQr });
+      tenderedSatang: result.outstandingSatang!, method: null, attempt: null, route: null, qr: emptyQr, partial: false });
   };
   const settlement = (attempt: PaymentAttemptView, method: string, kind: SaleTenderPayload['kind']) => {
     if (!taken(attempt) || stateRef.current.settlements.some((part) => part.attemptId === attempt.id)) return;
@@ -366,7 +381,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
       } else {
         retryOperation.current = null;
         update({ phase: 'ready', method: null, amountSatang: outstanding, tenderedSatang: outstanding,
-          attempt: null, route: null, qr: emptyQr });
+          attempt: null, route: null, qr: emptyQr, partial: false });
       }
     } else if (!unresolved(attempt)) {
       update({ phase: 'ready', method: null, error: `Payment ${attempt.status.replaceAll('_', ' ')}. Choose a payment method.`, qr: emptyQr });
@@ -476,7 +491,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
             creditRefusedSaleId: sale.id, creditRefusalMessage: SPLIT_CREDIT_OFFLINE_REFUSAL,
             creditRefusalSeq: (stateRef.current.creditRefusalSeq ?? 0) + 1,
             method: cash?.id ?? null, kind: cash ? 'cash' : null,
-            amountSatang: outstanding, tenderedSatang: outstanding, attempt: null, route: null, qr: emptyQr });
+            amountSatang: outstanding, tenderedSatang: outstanding, attempt: null, route: null, qr: emptyQr, partial: false });
           return;
         }
         const onBox = sent === 'box' || boxSale !== null;
@@ -506,7 +521,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
           update({ phase: 'failed', error: err.message, retryable: false,
             creditRefusedSaleId: sale.id, creditRefusalMessage: err.message, creditRefusalSeq: (stateRef.current.creditRefusalSeq ?? 0) + 1,
             method: cash?.id ?? null, kind: cash ? 'cash' : null,
-            amountSatang: outstanding, tenderedSatang: outstanding, attempt: null, route: null, qr: emptyQr });
+            amountSatang: outstanding, tenderedSatang: outstanding, attempt: null, route: null, qr: emptyQr, partial: false });
           return;
         }
         if (!current(ctx)) { retain(ctx, { saleId: sale.id }); return; }
@@ -545,7 +560,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
         if (!coversRemainder) {
           retryOperation.current = null;
           update({ phase: 'ready', method: chosen?.id ?? cash?.id ?? null, kind: chosen?.kind ?? (cash ? 'cash' : null),
-            amountSatang: remaining, tenderedSatang: remaining, error: null, retryable: false });
+            amountSatang: remaining, tenderedSatang: remaining, error: null, retryable: false, partial: false });
           return;
         }
         amount = Math.min(amount, remaining);
@@ -557,7 +572,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
       }
       if (method.kind === 'cash' || method.kind === 'other') {
         if (method.kind === 'cash' && (!money(tendered) || tendered < amount)) {
-          update({ phase: 'failed', error: 'Cash received must cover this payment.', retryable: false });
+          update({ phase: 'failed', error: CASH_SHORT_REFUSAL, retryable: false });
           return;
         }
         const tender: SaleTenderPayload = { method: method.id, kind: method.kind, amountSatang: amount,
@@ -583,7 +598,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
           return;
         }
         update({ phase: 'ready', method: null, outstandingSatang: result.outstandingSatang!,
-          amountSatang: result.outstandingSatang!, tenderedSatang: result.outstandingSatang!, error: null });
+          amountSatang: result.outstandingSatang!, tenderedSatang: result.outstandingSatang!, error: null, partial: false });
       } else if (method.kind === 'card' || method.kind === 'qr') {
         const body: PaymentStartBody = { saleId: sale.id, actionId, method: method.id, kind: method.kind,
           tender: method.kind, amountSatang: amount, ...(method.kind === 'qr' ? { requestQrPayload: true, qrDirection: 'show' } : {}) };
@@ -708,7 +723,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
       retryOperation.current = null;
       cancelled = true;
       update({ phase: 'ready', method: null, kind: null, attempt: null, route: null, qr: emptyQr, error: null, retryable: false,
-        cancelRefusal: null, outstandingSatang: outstanding, amountSatang: outstanding, tenderedSatang: outstanding });
+        cancelRefusal: null, outstandingSatang: outstanding, amountSatang: outstanding, tenderedSatang: outstanding, partial: false });
       optionsRef.current.onTenderCancelled?.(result.attempt.saleId ?? ctx.saleId);
     }, ctx).then(() => cancelled);
   };
@@ -806,11 +821,11 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
         }
         const outstanding = answer.outstandingSatang!;
         resumedSale.current = saleId;
-        update({ phase: 'ready', outstandingSatang: outstanding, amountSatang: outstanding, tenderedSatang: outstanding, method: null, error: null, retryable: false });
+        update({ phase: 'ready', outstandingSatang: outstanding, amountSatang: outstanding, tenderedSatang: outstanding, method: null, error: null, retryable: false, partial: false });
       } else {
         const outstanding = detail.sale.status === 'paid' ? 0 : detail.sale.totals.grossSatang;
         resumedSale.current = saleId;
-        update({ phase: 'ready', outstandingSatang: outstanding, amountSatang: outstanding, tenderedSatang: outstanding, method: null, error: null, retryable: false });
+        update({ phase: 'ready', outstandingSatang: outstanding, amountSatang: outstanding, tenderedSatang: outstanding, method: null, error: null, retryable: false, partial: false });
       }
       resumedSale.current = saleId;
     };
@@ -877,6 +892,14 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
         tenderedSatang: stateRef.current.tenderedSatang === stateRef.current.amountSatang ? amount : stateRef.current.tenderedSatang });
     },
     setTenderedSatang: (amount) => { if (!locked && state.phase !== 'manual' && money(amount)) update({ tenderedSatang: amount }); },
+    setPartial: (on) => {
+      const now = stateRef.current;
+      if (locked || now.phase === 'manual' || now.phase === 'complete' || on === Boolean(now.partial)) return;
+      if (on) { update({ partial: true }); return; }
+      // Back to the whole balance; cash handed over that matched the part follows it.
+      update({ partial: false, amountSatang: now.outstandingSatang,
+        tenderedSatang: now.tenderedSatang === now.amountSatang ? now.outstandingSatang : now.tenderedSatang });
+    },
     submit, retry, inquire, confirm, manual, cancel,
   };
 }

@@ -939,6 +939,11 @@ test('separate display guest shop uses captured sizes, lock retention, disconnec
     await payment;
     await expect(publicShop.getByText('Amount to pay', { exact: true })).toBeVisible({ timeout: 20_000 });
     await page.getByRole('button', { name: /^Cash / }).click();
+    // SCRUM-796 — the tender takes the whole amount unless Partial payment is chosen.
+    await expect(page.getByLabel('Payment amount', { exact: true })).toHaveCount(0);
+    await expect(page.getByLabel('Cash received', { exact: true })).toHaveValue((quote.totals.grossSatang / 100).toFixed(2));
+    await page.getByRole('button', { name: 'Partial payment', exact: true }).click();
+    await expect(page.getByLabel('Payment amount', { exact: true })).toHaveValue((quote.totals.grossSatang / 100).toFixed(2));
     await page.getByLabel('Payment amount', { exact: true }).fill('100.00');
     await page.getByLabel('Cash received', { exact: true }).fill('110.00');
     const partial = page.waitForResponse(response => /\/api\/sales\/[^/]+\/finalise$/.test(new URL(response.url()).pathname)

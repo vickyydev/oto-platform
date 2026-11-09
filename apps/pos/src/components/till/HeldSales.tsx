@@ -35,9 +35,15 @@ export interface HoldButtonsProps {
   partPaidReason: string | null;
   onHold: () => void;
   onSavePartPaid: () => void;
+  /**
+   * SCRUM-796 — Save as partly paid shows only once staff chose Partial
+   * payment, or money is already paid on the sale (`partPaidShown` in
+   * lib/heldSales). Left out, it shows as it always did.
+   */
+  showPartPaid?: boolean;
 }
 
-export function HoldSaleButtons({ holdReason, partPaidReason, onHold, onSavePartPaid }: HoldButtonsProps) {
+export function HoldSaleButtons({ holdReason, partPaidReason, onHold, onSavePartPaid, showPartPaid = true }: HoldButtonsProps) {
   return (
     <div className="mt-6 grid grid-cols-2 gap-3" data-testid="hold-sale-buttons">
       <div className="flex flex-col gap-1">
@@ -47,13 +53,13 @@ export function HoldSaleButtons({ holdReason, partPaidReason, onHold, onSavePart
         </Button>
         {holdReason && <p className="text-xs text-muted-foreground" data-testid="hold-sale-reason">{holdReason}</p>}
       </div>
-      <div className="flex flex-col gap-1">
+      {showPartPaid && <div className="flex flex-col gap-1">
         <Button variant="outline" size="lg" className="h-14 gap-2" disabled={partPaidReason !== null} onClick={onSavePartPaid}>
           <Wallet className="h-5 w-5" />
           Save as partly paid
         </Button>
         {partPaidReason && <p className="text-xs text-muted-foreground" data-testid="part-paid-reason">{partPaidReason}</p>}
-      </div>
+      </div>}
     </div>
   );
 }

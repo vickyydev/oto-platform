@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { findPaymentMethod } from '@/lib/payments';
-import { isCreditSettlement, paymentStageText as label, type PaymentStageController } from '@/lib/usePaymentStage';
+import { CASH_SHORT_REFUSAL, isCreditSettlement, paymentStageText as label, type PaymentStageController } from '@/lib/usePaymentStage';
 import { NumberKeypad } from './NumberKeypad';
 import { PaymentExpiry, PaymentQr } from './PaymentQr';
 
@@ -23,6 +23,14 @@ export function paymentSubmitLabel(stage: PaymentStageController, confirmationLa
  * `fixedAmount` — the screen has already fixed what this tender takes (a pass is
  * paid in one tender; a party's collect step froze its amount), so no part
  * amount is offered here.
+ *
+ * SCRUM-796 — THE AMOUNT IS THE BALANCE UNLESS STAFF SAY OTHERWISE. A tender
+ * takes the whole amount due and no amount is asked for; "Partial payment"
+ * (where the amount field stood) opens the field, filled with the amount due
+ * for staff to reduce, and "Full amount" closes it again. Cash received starts
+ * at the amount being paid — exact cash — so the common case is the method and
+ * the button; tapping the field brings the keypad, whose first key replaces
+ * the figure instead of adding to it.
  */
 export function PaymentTenderPanel({ stage, showSubmit = true, fixedAmount = false }: { stage: PaymentStageController; showSubmit?: boolean; fixedAmount?: boolean }) {
   const { state } = stage;
@@ -30,16 +38,18 @@ export function PaymentTenderPanel({ stage, showSubmit = true, fixedAmount = fal
   // A person answering a gateway QR has no terminal to read: it says what they do have.
   const review = (key: string) => label(state.route === 'gateway' ? `${key}Qr` : key);
   const [field, setField] = useState<'amount' | 'cash' | null>(null);
-  const [text, setText] = useState('');
+  // Null until staff type into the open field: it shows the stage's figure, and the first key replaces it.
+  const [text, setText] = useState<string | null>(null);
   const [approvalCode, setApprovalCode] = useState('');
   const [tid, setTid] = useState('');
   const [note, setNote] = useState('');
   const [checked, setChecked] = useState(false);
   useEffect(() => {
-    setField(null); setApprovalCode(''); setTid(''); setNote(''); setChecked(false);
-  }, [state.saleId, state.attempt?.id, state.outstandingSatang]);
+    setField(null); setText(null); setApprovalCode(''); setTid(''); setNote(''); setChecked(false);
+  }, [state.saleId, state.attempt?.id, state.outstandingSatang, state.method]);
+  const partial = Boolean(state.partial) && Boolean(stage.setPartial);
   const enter = (next: string) => {
-    if (!/^\d*(\.\d{0,2})?$/.test(next)) return;
+    if (!field || !/^\d*(\.\d{0,2})?$/.test(next)) return;
     const [whole = '', fraction = ''] = next.split('.');
     const amount = Number(whole || 0) * 100 + Number(fraction.padEnd(2, '0'));
     if (!Number.isSafeInteger(amount)) return;
@@ -47,9 +57,16 @@ export function PaymentTenderPanel({ stage, showSubmit = true, fixedAmount = fal
     if (field === 'cash') stage.setTenderedSatang(amount); else stage.setAmountSatang(amount);
   };
   const chooseField = (next: 'amount' | 'cash') => {
-    setField(next); setText('');
-    if (next === 'cash') stage.setTenderedSatang(0); else stage.setAmountSatang(0);
+    if (field === next) return;
+    setField(next); setText(null);
   };
+  const choosePartial = (on: boolean) => {
+    stage.setPartial?.(on);
+    setText(null);
+    setField(on ? 'amount' : null);
+  };
+  const shown = (which: 'amount' | 'cash', satang: number) => (field === which && text !== null ? text : format(satang));
+  const cashShort = kind === 'cash' && state.amountSatang > 0 && state.tenderedSatang < state.amountSatang;
   return <div className="mt-6 space-y-4" data-testid="payment-stage">
     {!stage.online && <p role="alert" className="rounded-xl border border-amber-500/40 p-4">{label('reconnect')}</p>}
     {state.settlements.length > 0 && <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
@@ -59,18 +76,27 @@ export function PaymentTenderPanel({ stage, showSubmit = true, fixedAmount = fal
     </div>}
     {!fixedAmount && state.method && !stage.locked && state.phase !== 'manual' && state.outstandingSatang > 0 && <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
-        <div><Label htmlFor="payment-part-amount">{label('amount')}</Label>
-          <Input id="payment-part-amount" inputMode="decimal" value={field === 'amount' ? text : format(state.amountSatang)}
-            onFocus={() => chooseField('amount')} onChange={(event) => enter(event.target.value)} />
-        </div>
+        {partial ? <div>
+          <div className="flex items-center justify-between gap-2">
+            <Label htmlFor="payment-part-amount">{label('amount')}</Label>
+            <Button type="button" variant="link" size="sm" className="h-auto min-h-0 p-0" data-testid="payment-full-amount"
+              onClick={() => choosePartial(false)}>{label('fullAmount')}</Button>
+          </div>
+          <Input id="payment-part-amount" inputMode="decimal" value={shown('amount', state.amountSatang)}
+            onFocus={(event) => { chooseField('amount'); event.currentTarget.select(); }} onChange={(event) => enter(event.target.value)} />
+        </div> : stage.setPartial ? <div className="flex items-end">
+          <Button type="button" variant="outline" className="w-full" data-testid="payment-partial"
+            onClick={() => choosePartial(true)}>{label('partial')}</Button>
+        </div> : <div />}
         {kind === 'cash' && <div><Label htmlFor="payment-cash-received">{label('cashReceived')}</Label>
-          <Input id="payment-cash-received" inputMode="decimal" value={field === 'cash' ? text : format(state.tenderedSatang)}
-            onFocus={() => chooseField('cash')} onChange={(event) => enter(event.target.value)} />
+          <Input id="payment-cash-received" inputMode="decimal" value={shown('cash', state.tenderedSatang)}
+            onFocus={(event) => { chooseField('cash'); event.currentTarget.select(); }} onChange={(event) => enter(event.target.value)} />
         </div>}
       </div>
       {kind === 'cash' && <p className="text-lg font-bold">{label('change')} ฿{format(Math.max(0, state.tenderedSatang - state.amountSatang))}</p>}
-      {field && <><NumberKeypad value={text} onChange={enter} maxLength={10} />
-        <Button type="button" variant="outline" className="w-full h-12" disabled={text.includes('.')} onClick={() => enter(`${text || '0'}.`)}>{label('decimalPoint')}</Button></>}
+      {cashShort && <p className="text-sm text-muted-foreground" data-testid="payment-cash-short">{CASH_SHORT_REFUSAL}</p>}
+      {field && <><NumberKeypad value={text ?? ''} onChange={enter} maxLength={10} />
+        <Button type="button" variant="outline" className="w-full h-12" disabled={(text ?? '').includes('.')} onClick={() => enter(`${text || '0'}.`)}>{label('decimalPoint')}</Button></>}
     </div>}
     {state.attempt && <div className="rounded-xl border p-4" data-testid="payment-attempt-status">
       <p className="font-bold">{label(`status.${state.attempt.status}`)}</p>
