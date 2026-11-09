@@ -24,7 +24,7 @@ import {
   newId,
   saleReceiptDocument,
 } from '@oto/shared';
-import { RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 import { salePrintSnapshotOf } from '../src/services/sale-printing';
 
 /**
@@ -216,8 +216,15 @@ describe('the owner’s rule, as one answer', () => {
 
 describe('platform-sync lays the voucher type and links the shop items', () => {
   it('a gift-day free ticket on the Full Day Pass, offline refused, linked to the item; a second run writes nothing', async () => {
+    // The seed sells no Golden Ticket, so its own sync laid no type: the
+    // type comes with the park's item, created above.
+    const seeded = await ctx.db
+      .select({ id: voucherDefinition.id })
+      .from(voucherDefinition)
+      .where(and(eq(voucherDefinition.operatorId, operatorId), eq(voucherDefinition.code, GOLDEN_TICKET_DEFINITION_CODE)));
+    expect(seeded).toEqual([]);
     const first = await syncGoldenTicket(ctx.db);
-    expect(first.itemsLinked).toBe(1);
+    expect(first).toEqual({ definitionsCreated: 1, itemsLinked: 1 });
     const [def] = await ctx.db
       .select()
       .from(voucherDefinition)
@@ -235,6 +242,45 @@ describe('platform-sync lays the voucher type and links the shop items', () => {
     const links = await ctx.db.select().from(voucherSaleItem).where(eq(voucherSaleItem.productId, goldenHkt));
     expect(links).toEqual([expect.objectContaining({ voucherDefinitionId: def!.id, operatorId })]);
     expect(await syncGoldenTicket(ctx.db)).toEqual({ definitionsCreated: 0, itemsLinked: 0 });
+  });
+
+  it('a Golden Ticket type with no item linked is still never issued free: off the picker, refused at Issue and as a campaign', async () => {
+    const definitionId = newId();
+    await ctx.db.insert(voucherDefinition).values({
+      id: definitionId,
+      operatorId,
+      ticketPackageId: fullDayHkt,
+      code: `zz-test-gift-unlinked-${definitionId}`,
+      nameEn: 'ZZ TEST Unlinked gift',
+      kind: 'free_ticket',
+      valueType: 'item',
+      ticketOffer: 'gift_day',
+    });
+    expect(await ctx.db.select().from(voucherSaleItem).where(eq(voucherSaleItem.voucherDefinitionId, definitionId))).toEqual([]);
+
+    const picker = await ctx.app.inject({ method: 'GET', url: '/vouchers/issuable', headers: { cookie: till } });
+    expect(picker.statusCode, picker.body).toBe(200);
+    expect((picker.json() as { definitions: { id: string }[] }).definitions.map((d) => d.id)).not.toContain(definitionId);
+
+    const issued = await ctx.app.inject({
+      method: 'POST',
+      url: '/vouchers/issue',
+      headers: { cookie: till, 'idempotency-key': newId() },
+      payload: { definitionId },
+    });
+    expect(issued.statusCode, issued.body).toBe(409);
+    expect(issued.json().error.code).toBe('VOUCHER_SOLD_AS_ITEM');
+
+    const admin = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+    const campaign = await ctx.app.inject({
+      method: 'POST',
+      url: '/voucher-campaigns',
+      headers: { cookie: admin, 'idempotency-key': newId() },
+      payload: { definitionId, branchId: hktId, name: 'ZZ TEST Free gift days', quantity: 2 },
+    });
+    expect(campaign.statusCode, campaign.body).toBe(409);
+    expect(campaign.json().error.code).toBe('VOUCHER_SOLD_AS_ITEM');
+    expect(await ctx.db.select().from(voucher).where(eq(voucher.voucherDefinitionId, definitionId))).toEqual([]);
   });
 });
 

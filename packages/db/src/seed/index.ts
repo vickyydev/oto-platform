@@ -1773,6 +1773,8 @@ export async function seed(db: Db = getDb(), opts: SeedOptions = {}): Promise<vo
 
   // SCRUM-798: the Golden Ticket's voucher type, which needs the Full Day Pass
   // the packages above laid — `platformSync` at the top ran before they existed.
+  // The seed sells no Golden Ticket item, so this lays nothing on a fresh
+  // database: the type comes with the first CF-TK-GOLDEN / RC-TK-GOLDEN item.
   await syncGoldenTicket(db);
 
   console.log(

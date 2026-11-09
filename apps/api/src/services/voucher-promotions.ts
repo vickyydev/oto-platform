@@ -1,5 +1,5 @@
 import { createHash, randomInt } from 'node:crypto';
-import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
 import {
   account,
   boxCommand,
@@ -442,12 +442,18 @@ async function issuableDefinition(
   if (window && window.code === 'VOUCHER_PROMOTION_ENDED') throw window;
   // SCRUM-798 — a voucher the park SELLS (the Golden Ticket) is issued by its
   // sale and nowhere else: a free one from the Issue picker or a campaign
-  // would be the 1,500 THB item given away with nothing rung up.
-  const [sold] = await db
-    .select({ id: voucherSaleItem.id })
-    .from(voucherSaleItem)
-    .where(eq(voucherSaleItem.voucherDefinitionId, def.id))
-    .limit(1);
+  // would be the 1,500 THB item given away with nothing rung up. Read off the
+  // type itself as well as its item link, so a Golden Ticket type with no
+  // item linked yet is refused the same way.
+  const sold =
+    def.ticketOffer === 'gift_day' ||
+    (
+      await db
+        .select({ id: voucherSaleItem.id })
+        .from(voucherSaleItem)
+        .where(eq(voucherSaleItem.voucherDefinitionId, def.id))
+        .limit(1)
+    ).length > 0;
   if (sold) {
     throw new AppError(
       409,
@@ -663,7 +669,9 @@ export async function issuableDefinitionsAt(
         eq(voucherDefinition.active, true),
         isNull(voucherDefinition.archivedAt),
         sql`(${voucherDefinition.validUntil} is null or ${voucherDefinition.validUntil} >= ${day}::date)`,
-        // SCRUM-798 — a voucher the park sells is issued by its sale, never picked here.
+        // SCRUM-798 — a voucher the park sells is issued by its sale, never
+        // picked here: the Golden Ticket type, linked to its item or not yet.
+        ne(voucherDefinition.ticketOffer, 'gift_day'),
         sql`not exists (select 1 from ${voucherSaleItem} where ${voucherSaleItem.voucherDefinitionId} = ${voucherDefinition.id})`,
       ),
     )

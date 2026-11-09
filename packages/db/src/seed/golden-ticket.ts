@@ -12,7 +12,8 @@
  *      `gift_day`, admitting to the operator's Full Day Pass (a package is
  *      matched by name at the redeeming park, `packageAtBranch`). Insert-if-
  *      absent: an administrator's later edit (its words, its expiry, switching
- *      it off) is never undone by a sync.
+ *      it off) is never undone by a sync. Only for an operator that sells a
+ *      Golden Ticket item: a type nothing sells is never laid.
  *   2. a `promo.voucher_sale_item` row for each Golden Ticket item the
  *      operator sells, so its sale mints one voucher per unit. Also insert-if-
  *      absent, and only for a live item: an item archived or not there yet is
@@ -67,6 +68,21 @@ export async function syncGoldenTicket(db: Db): Promise<GoldenTicketSync> {
     .from(s.operator)
     .where(isNull(s.operator.archivedAt));
   for (const { id: operatorId } of operators) {
+    // The items first: an operator that sells no Golden Ticket gets no type.
+    // A type with nothing selling it could only be issued free, which is the
+    // 1,500 THB item given away; the sync after an item is created lays it.
+    const items = await db
+      .select({ id: s.product.id })
+      .from(s.product)
+      .where(
+        and(
+          eq(s.product.operatorId, operatorId),
+          inArray(s.product.code, [...GOLDEN_TICKET_PRODUCT_CODES]),
+          isNull(s.product.archivedAt),
+        ),
+      );
+    if (items.length === 0) continue;
+
     const [existing] = await db
       .select({ id: s.voucherDefinition.id })
       .from(s.voucherDefinition)
@@ -125,16 +141,6 @@ export async function syncGoldenTicket(db: Db): Promise<GoldenTicketSync> {
       }
     }
 
-    const items = await db
-      .select({ id: s.product.id })
-      .from(s.product)
-      .where(
-        and(
-          eq(s.product.operatorId, operatorId),
-          inArray(s.product.code, [...GOLDEN_TICKET_PRODUCT_CODES]),
-          isNull(s.product.archivedAt),
-        ),
-      );
     for (const item of items) {
       const linked = await db
         .insert(s.voucherSaleItem)
