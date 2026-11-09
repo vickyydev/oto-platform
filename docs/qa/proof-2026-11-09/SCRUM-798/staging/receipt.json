@@ -1,0 +1,3340 @@
+{
+  "unit": "SCRUM-798",
+  "liveCommit": "85b18b5c2ac0b16cb7a5e7e3243b7c3b3cf67551",
+  "pos": "https://oto-pos-web-staging.onrender.com",
+  "console": "https://oto-console-staging.onrender.com",
+  "startedAt": "2026-11-09T11:36:08.711Z",
+  "fixture": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "branchName": "Oto Play Park, Central Floresta",
+    "branchCode": "hkt-central",
+    "walkInPhone": "+66897980011",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "boxName": "Virtual box 1",
+    "till": {
+      "id": "01a1c018-c293-7c00-8b93-ee7fc43e2c05",
+      "name": "ZZ TEST SCRUM-798 till",
+      "prefix": "Z798",
+      "ready": true,
+      "routing": {
+        "qr": "none",
+        "card": "manual"
+      },
+      "devices": [
+        "adult_band:Band Printer (adults)",
+        "kids_band:Band Printer (kids)",
+        "receipt:Receipt Printer 1"
+      ]
+    },
+    "tillSignedInAt": "2026-11-09T11:54:48.718Z",
+    "receptionPerms": [
+      [
+        "pos:print:voucher",
+        true
+      ],
+      [
+        "pos:refund:create",
+        true
+      ],
+      [
+        "pos:refund:approve",
+        false
+      ],
+      [
+        "pos:voucher:redeem",
+        true
+      ]
+    ],
+    "consoleSignedInAt": "2026-11-09T11:37:38.260Z",
+    "goldenDefinitionId": "01a1c015-5885-73c2-bf80-06da7ec369d0",
+    "shopRun": {
+      "purpose": "gt3",
+      "successPicture": "s798-st-06a-third-golden-ticket-sold-to-refund-unused",
+      "successShows": "Shop tab, a third Golden Ticket, cash ฿1,500, sold to be refunded unused: Sale Confirmed with its voucher code"
+    },
+    "sales": {
+      "gt1": {
+        "id": "01a1c01b-a7f2-79f9-914a-bf7f438ed880",
+        "receipt": "Z798-000001",
+        "status": "finalised",
+        "gross": 150000,
+        "issuedVouchers": [
+          {
+            "id": "01a1c01b-b840-7c6d-9a6d-b7292fcb0ada",
+            "code": "TV8FKTBZHBT",
+            "definitionCode": "golden-ticket",
+            "nameEn": "Golden Ticket",
+            "productId": "01a1bf0a-1f12-7e51-827c-33646a66fc68",
+            "status": "issued",
+            "issuedAt": "2026-11-09T11:40:04.491Z",
+            "expiresAt": null
+          }
+        ],
+        "lines": [
+          {
+            "id": "01a1c01b-a7f2-73f5-b4c2-3cfce65d647c",
+            "kind": "merch_item",
+            "label": "Golden Ticket",
+            "productId": "01a1bf0a-1f12-7e51-827c-33646a66fc68",
+            "quantity": 1,
+            "grossSatang": 150000
+          }
+        ],
+        "payments": [
+          {
+            "method": "cash",
+            "status": "approved",
+            "amount": 150000
+          }
+        ],
+        "printJobs": [
+          {
+            "id": "01a1c01b-b85d-7ad1-b4dd-1631242c4da8",
+            "kind": "receipt",
+            "status": "printed",
+            "deviceId": "01a0be8c-89a4-756b-aca1-3be1082c669d",
+            "createdAt": null,
+            "keys": "id,kind,role,status,stationId,deviceId,deviceLabel,subjectType,subjectId,reprintOf,reprintReason,requestedByName,errorCode,errorMessage,queuedAt,finishedAt"
+          }
+        ],
+        "voucherCodeText": [],
+        "receiptLines": null,
+        "printouts": [
+          {
+            "seq": 1,
+            "at": "2026-11-09T11:40:09.087Z",
+            "h": 542,
+            "previewUrl": "/devices/01a0be8c-89a4-756b-aca1-3be1082c669d/printouts/1/preview.png"
+          },
+          {
+            "seq": 2,
+            "at": "2026-11-09T11:40:09.273Z",
+            "h": 0,
+            "previewUrl": "/devices/01a0be8c-89a4-756b-aca1-3be1082c669d/printouts/2/preview.png"
+          }
+        ],
+        "receiptPrintout": {
+          "seq": 1,
+          "at": "2026-11-09T11:40:09.087Z",
+          "status": 200,
+          "file": "s798-st-02c-receipt-printout-voucher-code.png"
+        },
+        "saleKeys": "timeExtension,sale,correctionBandShortCode,refundStatus,refundableSatang,refunds,printJobs,bands,grants,issuedVouchers,pickupCode,attempts,taxBreakdown,taxConfig,lines,discounts"
+      },
+      "redeem1": {
+        "id": "01a1c021-768f-74cf-88c9-f72edfdefca3",
+        "receipt": "Z798-000002",
+        "status": "finalised",
+        "gross": 0,
+        "totals": {
+          "subtotalSatang": 150000,
+          "manualDiscountSatang": 0,
+          "promoDiscountSatang": 150000,
+          "discountSatang": 150000,
+          "netSatang": 0,
+          "serviceChargeSatang": 0,
+          "taxInclusiveSatang": 0,
+          "taxExclusiveSatang": 0,
+          "grossSatang": 0,
+          "unappliedDiscountSatang": 0,
+          "refundedSatang": 0
+        },
+        "lines": [
+          {
+            "kind": "kids",
+            "label": "Kids",
+            "productId": null,
+            "quantity": 1,
+            "unitSatang": 109000,
+            "discountSatang": 109000,
+            "grossSatang": 0,
+            "voucherGift": null
+          },
+          {
+            "kind": "adults_paid",
+            "label": "Adults",
+            "productId": null,
+            "quantity": 1,
+            "unitSatang": 35000,
+            "discountSatang": 35000,
+            "grossSatang": 0,
+            "voucherGift": null
+          },
+          {
+            "kind": "socks",
+            "label": "Regular Socks",
+            "productId": "01a0cb02-13a9-790f-85a1-73e6ccf9f9da",
+            "quantity": 1,
+            "unitSatang": 6000,
+            "discountSatang": 6000,
+            "grossSatang": 0,
+            "voucherGift": null
+          }
+        ],
+        "discounts": [
+          {
+            "kind": "promo",
+            "label": "Golden Ticket (voucher …ZHBT)",
+            "code": "…ZHBT",
+            "amountSatang": 150000,
+            "voucherId": null,
+            "targetLineId": "01a1c021-bae2-7e02-9851-876177bd3cd1"
+          }
+        ],
+        "grants": [],
+        "bands": [
+          {
+            "kind": "kid",
+            "status": "active",
+            "holder": null,
+            "gate": null,
+            "creditSatang": null,
+            "keys": "id,kind,status,shortCode,saleLineId,childId,childName,printedJobId,createdAt"
+          },
+          {
+            "kind": "adult",
+            "status": "active",
+            "holder": null,
+            "gate": null,
+            "creditSatang": null,
+            "keys": "id,kind,status,shortCode,saleLineId,childId,childName,printedJobId,createdAt"
+          }
+        ],
+        "payments": [],
+        "printJobs": [
+          {
+            "kind": "adult_wristband",
+            "status": "printed",
+            "device": "Band Printer (adults)"
+          },
+          {
+            "kind": "kids_wristband",
+            "status": "printed",
+            "device": "Band Printer (kids)"
+          },
+          {
+            "kind": "receipt",
+            "status": "printed",
+            "device": "Receipt Printer 1"
+          }
+        ],
+        "refundStatus": "none",
+        "movements": [
+          {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "kind": "sale",
+            "quantity": -1,
+            "levelAfter": 0,
+            "occurredAt": "2026-11-09T11:47:38.562Z"
+          }
+        ],
+        "socksAfter": {
+          "at": "2026-11-09T11:48:00.901Z",
+          "total": 0,
+          "status": "out",
+          "places": [
+            {
+              "locationId": "01a0fa0b-8a47-78fe-9834-fe6333770607",
+              "name": "Store",
+              "quantity": 0
+            },
+            {
+              "locationId": "01a0fa0b-8a48-7dc8-812a-1b4e39997316",
+              "name": "BOH",
+              "quantity": 0
+            },
+            {
+              "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+              "name": "FOH (sell point)",
+              "quantity": 0
+            }
+          ],
+          "sellable": {
+            "variantId": null,
+            "label": null,
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "available": 0,
+            "atSellPoint": 0,
+            "lowStockThreshold": 20,
+            "status": "out"
+          }
+        },
+        "walletsRead": {
+          "status": 404,
+          "n": null
+        },
+        "receiptPrintout": {
+          "job": {
+            "id": "01a1c022-a61f-793e-9432-5653f037afbf",
+            "status": "printed",
+            "queuedAt": "2026-11-09T11:47:38.562Z",
+            "finishedAt": "2026-11-09T11:47:39.221Z"
+          },
+          "printouts": [
+            {
+              "seq": 1,
+              "at": "2026-11-09T11:40:09.087Z",
+              "h": 542
+            },
+            {
+              "seq": 2,
+              "at": "2026-11-09T11:40:09.273Z",
+              "h": 0
+            },
+            {
+              "seq": 3,
+              "at": "2026-11-09T11:47:39.185Z",
+              "h": 676
+            }
+          ],
+          "saved": {
+            "seq": 3,
+            "at": "2026-11-09T11:47:39.185Z",
+            "status": 200
+          }
+        }
+      },
+      "gt2": {
+        "id": "01a1c025-aad6-7c36-b31b-e7d31edd9e7b",
+        "receipt": "Z798-000003",
+        "status": "finalised",
+        "gross": 150000,
+        "issuedVouchers": [
+          {
+            "id": "01a1c025-b9ee-7ff1-8586-921b745f1655",
+            "code": "TV25N7JN9WM",
+            "definitionCode": "golden-ticket",
+            "nameEn": "Golden Ticket",
+            "productId": "01a1bf0a-1f12-7e51-827c-33646a66fc68",
+            "status": "issued",
+            "issuedAt": "2026-11-09T11:51:00.294Z",
+            "expiresAt": null
+          }
+        ],
+        "lines": [
+          {
+            "id": "01a1c025-aad6-717d-92e2-88e21a4d395f",
+            "kind": "merch_item",
+            "label": "Golden Ticket",
+            "productId": "01a1bf0a-1f12-7e51-827c-33646a66fc68",
+            "quantity": 1,
+            "grossSatang": 150000
+          }
+        ],
+        "payments": [
+          {
+            "method": "cash",
+            "status": "approved",
+            "amount": 150000
+          }
+        ],
+        "printJobs": [
+          {
+            "id": "01a1c025-ba02-7f32-9d31-419cce69223d",
+            "kind": "receipt",
+            "status": "printed",
+            "deviceId": "01a0be8c-89a4-756b-aca1-3be1082c669d",
+            "createdAt": null,
+            "keys": "id,kind,role,status,stationId,deviceId,deviceLabel,subjectType,subjectId,reprintOf,reprintReason,requestedByName,errorCode,errorMessage,queuedAt,finishedAt"
+          }
+        ],
+        "voucherCodeText": [],
+        "receiptLines": null,
+        "printouts": [
+          {
+            "seq": 1,
+            "at": "2026-11-09T11:40:09.087Z",
+            "h": 542,
+            "previewUrl": "/devices/01a0be8c-89a4-756b-aca1-3be1082c669d/printouts/1/preview.png"
+          },
+          {
+            "seq": 2,
+            "at": "2026-11-09T11:40:09.273Z",
+            "h": 0,
+            "previewUrl": "/devices/01a0be8c-89a4-756b-aca1-3be1082c669d/printouts/2/preview.png"
+          },
+          {
+            "seq": 3,
+            "at": "2026-11-09T11:47:39.185Z",
+            "h": 676,
+            "previewUrl": "/devices/01a0be8c-89a4-756b-aca1-3be1082c669d/printouts/3/preview.png"
+          },
+          {
+            "seq": 4,
+            "at": "2026-11-09T11:51:04.198Z",
+            "h": 547,
+            "previewUrl": "/devices/01a0be8c-89a4-756b-aca1-3be1082c669d/printouts/4/preview.png"
+          },
+          {
+            "seq": 5,
+            "at": "2026-11-09T11:51:04.296Z",
+            "h": 0,
+            "previewUrl": "/devices/01a0be8c-89a4-756b-aca1-3be1082c669d/printouts/5/preview.png"
+          }
+        ],
+        "saleKeys": "timeExtension,sale,correctionBandShortCode,refundStatus,refundableSatang,refunds,printJobs,bands,grants,issuedVouchers,pickupCode,attempts,taxBreakdown,taxConfig,lines,discounts"
+      },
+      "redeem2": {
+        "id": "01a1c029-6a68-76f2-9998-21d5dba3cb42",
+        "receipt": "Z798-000004",
+        "status": "finalised",
+        "totals": {
+          "subtotalSatang": 131500,
+          "manualDiscountSatang": 0,
+          "promoDiscountSatang": 131500,
+          "discountSatang": 131500,
+          "netSatang": 0,
+          "serviceChargeSatang": 0,
+          "taxInclusiveSatang": 0,
+          "taxExclusiveSatang": 0,
+          "grossSatang": 0,
+          "unappliedDiscountSatang": 0,
+          "refundedSatang": 0
+        },
+        "lines": [
+          {
+            "kind": "kids",
+            "label": "Kids",
+            "quantity": 1,
+            "unitSatang": 109000,
+            "discountSatang": 109000,
+            "grossSatang": 0
+          },
+          {
+            "kind": "service_fee",
+            "label": "Drop-off service",
+            "quantity": 1,
+            "unitSatang": 22500,
+            "discountSatang": 22500,
+            "grossSatang": 0
+          }
+        ],
+        "discounts": [
+          {
+            "kind": "promo",
+            "label": "Golden Ticket (voucher …N9WM)",
+            "amountSatang": 131500,
+            "targetLineId": "01a1c02b-85ec-7798-9d50-105002cad773"
+          }
+        ],
+        "grants": [],
+        "bands": [],
+        "printJobs": [
+          {
+            "kind": "receipt",
+            "status": "printed"
+          }
+        ],
+        "attempts": [],
+        "registration": {
+          "id": "01a1c02b-85ec-7798-9d50-104fd0983b3c",
+          "guardianName": "ZZ TEST 798 Guardian",
+          "guardianPhoneLast4": "0011",
+          "children": [
+            {
+              "name": "ZZ TEST 798 Child",
+              "service": "drop_off",
+              "status": "registered",
+              "paid": null,
+              "keys": "id,registrationId,childId,childName,childAgeYears,dateOfBirth,allergies,foodRestrictions,mayOrderFood,foodProvision,service,status,scheduledFor,bookedMinutes,nannyId,checkedInAt,saleId,bandId,visitId,photoFileId,paidOnline,paidAtTill"
+            }
+          ],
+          "keys": "id,branchId,memberId,guardianName,guardianPhone,contactChannel,consentRecordedAt,acknowledgedConfirmations,source,photoFileId,createdAt,children"
+        }
+      },
+      "gt3": {
+        "id": "01a1c02f-bbfc-74ef-a615-841a969d3c5e",
+        "receipt": "Z798-000005",
+        "status": "finalised",
+        "gross": 150000,
+        "issuedVouchers": [
+          {
+            "id": "01a1c02f-cd09-700a-9dba-064edb2e4056",
+            "code": "TVMCW4CBX5J",
+            "definitionCode": "golden-ticket",
+            "nameEn": "Golden Ticket",
+            "productId": "01a1bf0a-1f12-7e51-827c-33646a66fc68",
+            "status": "issued",
+            "issuedAt": "2026-11-09T12:02:00.446Z",
+            "expiresAt": null
+          }
+        ],
+        "lines": [
+          {
+            "id": "01a1c02f-bbfc-7e7c-a85e-795cc13abc7b",
+            "kind": "merch_item",
+            "label": "Golden Ticket",
+            "productId": "01a1bf0a-1f12-7e51-827c-33646a66fc68",
+            "quantity": 1,
+            "grossSatang": 150000
+          }
+        ],
+        "payments": [
+          {
+            "method": "cash",
+            "status": "approved",
+            "amount": 150000
+          }
+        ],
+        "printJobs": [
+          {
+            "id": "01a1c02f-cd21-7fb2-ad01-d6c9f6cd4679",
+            "kind": "receipt",
+            "status": "printed",
+            "deviceId": "01a0be8c-89a4-756b-aca1-3be1082c669d",
+            "createdAt": null,
+            "keys": "id,kind,role,status,stationId,deviceId,deviceLabel,subjectType,subjectId,reprintOf,reprintReason,requestedByName,errorCode,errorMessage,queuedAt,finishedAt"
+          }
+        ],
+        "voucherCodeText": [],
+        "receiptLines": null,
+        "printouts": [
+          {
+            "seq": 4,
+            "at": "2026-11-09T11:51:04.198Z",
+            "h": 547,
+            "previewUrl": "/devices/01a0be8c-89a4-756b-aca1-3be1082c669d/printouts/4/preview.png"
+          },
+          {
+            "seq": 5,
+            "at": "2026-11-09T11:51:04.296Z",
+            "h": 0,
+            "previewUrl": "/devices/01a0be8c-89a4-756b-aca1-3be1082c669d/printouts/5/preview.png"
+          },
+          {
+            "seq": 6,
+            "at": "2026-11-09T11:59:54.180Z",
+            "h": 541,
+            "previewUrl": "/devices/01a0be8c-89a4-756b-aca1-3be1082c669d/printouts/6/preview.png"
+          },
+          {
+            "seq": 7,
+            "at": "2026-11-09T12:02:04.284Z",
+            "h": 547,
+            "previewUrl": "/devices/01a0be8c-89a4-756b-aca1-3be1082c669d/printouts/7/preview.png"
+          },
+          {
+            "seq": 8,
+            "at": "2026-11-09T12:02:04.320Z",
+            "h": 0,
+            "previewUrl": "/devices/01a0be8c-89a4-756b-aca1-3be1082c669d/printouts/8/preview.png"
+          }
+        ],
+        "saleKeys": "timeExtension,sale,correctionBandShortCode,refundStatus,refundableSatang,refunds,printJobs,bands,grants,issuedVouchers,pickupCode,attempts,taxBreakdown,taxConfig,lines,discounts"
+      }
+    },
+    "readRun": {
+      "purpose": "gt3",
+      "receiptPicture": null
+    },
+    "vreadTag": "after the refunds (step 6)",
+    "adj": {
+      "tag": "plus1",
+      "delta": 1,
+      "expectBefore": 0,
+      "reason": "ZZ TEST SCRUM-798: one pair for the Golden Ticket's free socks",
+      "picture": "s798-st-03a-console-adjust-regular-socks-plus-1-zz-test",
+      "shows": "Console > Inventory, Central Floresta, Regular Socks (out, 0) > Adjust +1 with the reason 'ZZ TEST SCRUM-798: one pair for the Golden Ticket's free socks' — the pair the gift's socks take in step 3 (the platform refuses socks at 0 with STOCK_SHORT, as the SCRUM-799 proof showed)"
+    },
+    "regularSocksId": "01a0cb02-13a9-790f-85a1-73e6ccf9f9da",
+    "socksItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+    "redeemRun": {
+      "tag": "gt2",
+      "code": "TV25N7JN9WM",
+      "expect": "card"
+    },
+    "cardShot": {
+      "name": "s798-st-03b-golden-ticket-card-appears",
+      "shows": "Ticket screen, new walk-in sale (Tourist): the code typed into Redeem voucher; the voucher card \"Golden Ticket — Full Day Pass for one child — parent free, or drop-off from age 5; free socks on request; no food credit\" and under it the Golden Ticket card: what it gives, Child's age (Ask the age…), Parent stays / Drop-off, Free pair of Regular Socks, Ring up the Golden Ticket"
+    },
+    "ageRun": {
+      "tag": "gt2",
+      "age": 7,
+      "choice": "Drop-off",
+      "socks": false,
+      "picture": "s798-st-05b-age-7-drop-off-offered-chosen",
+      "shows": "Second code on a new walk-in ticket sale: Golden Ticket card, Child's age 7 years: {state}; Drop-off chosen; the button reads 'Ring up and open the Drop-Off form'"
+    },
+    "panelShot": {
+      "top": "s798-st-05h-drop-off-order-amount-due-0",
+      "showsTop": "The drop-off Golden Ticket sale rung up and saved (tendering, gross ฿0): the order holds ZZ TEST 798 Child ฿1315 (Full Day Pass ฿1090 + Drop-off service ฿225) under ZZ TEST 798 Guardian and the Golden Ticket takes −฿1315; the payment screen reads Amount Due ฿0, No payment needed, Complete Sale"
+    },
+    "payRun": {
+      "tag": "redeem2",
+      "what": "Golden Ticket redemption, drop-off, age 7, ฿0",
+      "successPicture": "s798-st-05i-drop-off-complete-sale-success",
+      "successShows": "Complete Sale for the drop-off Golden Ticket: the till success for the ฿0 sale (band codes and QR grids hidden)"
+    },
+    "redeemRead": "redeem1",
+    "printRun": {
+      "purpose": "redeem1",
+      "picture": "s798-st-03h-receipt-printout-golden-ticket-sale-0",
+      "shows": "Receipt Z798-000002 as the simulated Receipt Printer 1 drew it: the Full Day Pass parts with the Golden Ticket discount, total ฿0, and no credit issued"
+    },
+    "refuseRun": {
+      "tag": "void",
+      "code": "TVMCW4CBX5J",
+      "toTickets": true,
+      "picture": "s798-st-06f-refunded-code-refused-void",
+      "shows": "Manager on the ZZ TEST till, new walk-in ticket sale (Tourist), Redeem voucher with the refunded third Golden Ticket code: refused — \"{notice}\""
+    },
+    "cancelEmpty": false,
+    "now": {
+      "name": "s798-st-05h-drop-off-order-amount-due-0",
+      "shows": "The drop-off Golden Ticket sale rung up: the order holds ZZ TEST 798 Child ฿1315 (Full Day Pass ฿1090 + Drop-off service ฿225) under ZZ TEST 798 Guardian, the Golden Ticket takes −฿1315; the payment screen reads Amount Due ฿0, No payment needed, Complete Sale"
+    },
+    "doneShot": {
+      "name": "s798-st-05g-customer-details-done-on-family-half",
+      "shows": "Back, then Pay ฿0 from the order: the till asks for the customer details; the family half shows Enter your details with the start number kept and a Done button"
+    },
+    "reg798": "01a1c02b-85ec-7798-9d50-104fd0983b3c",
+    "histRun": {
+      "receipt": "Z798-000005"
+    },
+    "refundRun": {
+      "tag": "gt3",
+      "purpose": "gt3",
+      "note": "ZZ TEST SCRUM-798: refund the unused third Golden Ticket",
+      "beforePicture": "s798-st-06d-manager-refund-unused-golden-ticket-dialog",
+      "beforeShows": "Manager, History > Z798-000005 (the third Golden Ticket, code unused) > Refund: Whole sale, reason, ZZ TEST note, Refund ฿1500",
+      "afterPicture": "s798-st-06e-unused-golden-ticket-refunded",
+      "afterShows": "The whole refund of Z798-000005 made (cash, by hand); the sale now reads refunded"
+    },
+    "who": "MANAGER",
+    "maskRun": {
+      "file": "s798-st-03h-receipt-printout-golden-ticket-sale-0.png",
+      "rects": [
+        [
+          22,
+          535,
+          200,
+          46
+        ]
+      ]
+    },
+    "member798": {
+      "id": "01a1c02b-848a-7305-923d-1a420c6d1b61",
+      "name": null,
+      "nickname": "ZZ TEST 798 Guardian",
+      "children": [
+        "ZZ TEST 798 Child"
+      ]
+    }
+  },
+  "steps": {
+    "s1": {
+      "consoleRow": "Golden Ticket Slip: the park’s own words, once a booth using it is published Second kids ticket free — Full Day Pass Never expires on no booth prize Live",
+      "issuable": {
+        "status": 200,
+        "names": [
+          "100 THB Voucher",
+          "1+1 Kids Ticket",
+          "150 THB Voucher",
+          "200 THB Voucher",
+          "300 THB Voucher",
+          "Free Bracelet Workshop",
+          "Kids Pizza",
+          "Mystery Box",
+          "ZZ TEST F6 recheck 50",
+          "ZZ TEST Wallet credit 100"
+        ],
+        "hasGolden": false
+      },
+      "pickerOptions": [
+        "Choose a promotion…",
+        "100 THB Voucher",
+        "1+1 Kids Ticket",
+        "150 THB Voucher",
+        "200 THB Voucher",
+        "300 THB Voucher",
+        "Free Bracelet Workshop",
+        "Kids Pizza",
+        "Mystery Box",
+        "ZZ TEST F6 recheck 50 (0/1 used)",
+        "ZZ TEST Wallet credit 100 (1/1 used)"
+      ],
+      "issueRefusal": {
+        "at": "2026-11-09T11:38:11.570Z",
+        "status": 409,
+        "code": "VOUCHER_SOLD_AS_ITEM",
+        "message": "Golden Ticket is sold as a shop item — selling it issues the voucher"
+      },
+      "evidence": {
+        "readAt": "2026-11-09T12:07:15.596Z",
+        "definition": {
+          "id": "01a1c015-5885-73c2-bf80-06da7ec369d0",
+          "code": "golden-ticket",
+          "nameEn": "Golden Ticket",
+          "nameTh": null,
+          "kind": "free_ticket",
+          "valueType": "item",
+          "valueSatang": null,
+          "valueBp": null,
+          "productId": null,
+          "ticketPackageId": "01a0bbdc-8cc7-7792-9545-459882841007",
+          "expiryDays": null,
+          "offlinePolicy": "refuse",
+          "singleUse": true,
+          "costSatang": 0,
+          "titleEn": "Golden Ticket",
+          "titleTh": null,
+          "instructionEn": "Full-day entry for one child, with free socks if needed. The parent enters free, or a child aged 5 or over may be dropped off free. Show this code at OTO Reception.",
+          "instructionTh": null,
+          "termsEn": "One child, one use. No food credit. No cash value.",
+          "termsTh": null,
+          "active": true,
+          "codeMode": "generated",
+          "fixedCode": null,
+          "legacyQrPayload": null,
+          "createdAt": "2026-11-09T11:33:06.822Z",
+          "updatedAt": "2026-11-09T11:33:06.822Z",
+          "archivedAt": null,
+          "product": null,
+          "ticketPackage": {
+            "id": "01a0bbdc-8cc7-7792-9545-459882841007",
+            "name": "Full Day Pass",
+            "code": null,
+            "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+            "branchName": "Oto Play Park, Central Floresta",
+            "live": true
+          },
+          "usedBy": [],
+          "parkProducts": [],
+          "unredeemedVouchers": 0,
+          "target": null,
+          "usageLimit": null,
+          "perCustomerLimit": null,
+          "validFrom": null,
+          "validUntil": null,
+          "redeemedVouchers": 2
+        },
+        "menuItem": [
+          {
+            "id": "01a1bf0a-1f12-7e51-827c-33646a66fc68",
+            "code": "CF-TK-GOLDEN",
+            "name": "Golden Ticket",
+            "kind": "merch",
+            "priceSatang": 150000,
+            "active": true,
+            "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+          }
+        ],
+        "predeployLog": [
+          {
+            "t": "2026-11-09T11:33:06.838311867Z",
+            "m": "Golden Ticket: created the voucher type for 1 operator(s), linked 2 shop item(s)."
+          }
+        ],
+        "migrationLog": [
+          {
+            "t": "2026-11-09T11:33:03.877812004Z",
+            "m": "[⣷] applying migrations...\u001b[2K\u001b[1G[✓] migrations applied successfully!"
+          }
+        ]
+      }
+    },
+    "shop_gt1": {
+      "cart": "Test harness — staff station (left) + customer display (right) share one live sale. In production the customer display runs on a separate device. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks All Tickets & passes Balloons Merchandise Workshop 1 Golden Ticket ฿1500 School Admission Ticket ฿250 Thai-International Admission Ticket ฿200 Guest sale No wristband — pay by cash or card Sale (1) Clear Golden Ticket ฿1500 each 1 ฿1500 Apply Add manual discount VAT included ฿98.13 Charge ฿1500 English O Oto Play Park Your Sale 1 Golden Ticket ฿1500 each ฿1500 VAT included ฿98.13 Total ฿1500",
+      "cashReceived": "1500.00",
+      "at": "2026-11-09T11:40:03.809Z",
+      "net": [
+        {
+          "at": "2026-11-09T11:40:04.211Z",
+          "method": "POST",
+          "path": "/api/sales/01a1c01b-a7f2-79f9-914a-bf7f438ed880/finalise",
+          "status": 200,
+          "issuedVouchers": [
+            {
+              "id": "01a1c01b-b840-7c6d-9a6d-b7292fcb0ada",
+              "code": "TV8FKTBZHBT",
+              "definitionCode": "golden-ticket",
+              "nameEn": "Golden Ticket",
+              "productId": "01a1bf0a-1f12-7e51-827c-33646a66fc68",
+              "status": "issued",
+              "issuedAt": "2026-11-09T11:40:04.491Z",
+              "expiresAt": null
+            }
+          ]
+        },
+        {
+          "at": "2026-11-09T11:40:04.263Z",
+          "method": "POST",
+          "path": "/api/box/v1/station/01a1c018-c293-7c00-8b93-ee7fc43e2c05/intents",
+          "status": 200,
+          "issuedVouchers": null
+        }
+      ],
+      "codesOnScreen": "Golden Ticket TV8FKTBZHBT Give this code to the family — it is on the receipt, and redeemed at the ticket till.",
+      "confirmText": "Test harness — staff station (left) + customer display (right) share one live sale. In production the customer display runs on a separate device. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Sale Confirmed Items handed over at the till Oto Play Park Sale #0001 • Guest Receipt Z[n] Golden Ticket TV8FKTBZHBT Give this code to the family — it is on the receipt, and redeemed at the ticket till. ITEMS 1× Golden Ticket ฿1500 Total ฿1500 Cash ฿1500 Thank you for visiting! · Tax ID [n] New Sale English Thank you! Enjoy your new Oto gear! YOUR PURCHASE 1× Golden Ticket ฿1500 Total ฿1500 Cash ฿1500 Sending to printers Receipt → Receipt Printer 1",
+      "saleId": "01a1c01b-a7f2-79f9-914a-bf7f438ed880"
+    },
+    "adj_plus1": {
+      "before": {
+        "at": "2026-11-09T11:41:19.343Z",
+        "total": 0,
+        "status": "out",
+        "places": [
+          {
+            "locationId": "01a0fa0b-8a47-78fe-9834-fe6333770607",
+            "name": "Store",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4e39997316",
+            "name": "BOH",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+            "name": "FOH (sell point)",
+            "quantity": 0
+          }
+        ],
+        "sellable": {
+          "variantId": null,
+          "label": null,
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "available": 0,
+          "atSellPoint": 0,
+          "lowStockThreshold": 20,
+          "status": "out"
+        }
+      },
+      "cardBefore": "Regular Socks Add-on 01a0cb02-13a9-790f-85a1-73e6ccf9f9da Default Out Adjust",
+      "net": [
+        {
+          "at": "2026-11-09T11:41:22.203Z",
+          "method": "POST",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/adjustments",
+          "status": 200,
+          "request": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": 1,
+            "reason": "ZZ TEST SCRUM-798: one pair for the Golden Ticket's free socks"
+          }
+        }
+      ],
+      "after": {
+        "at": "2026-11-09T11:41:27.255Z",
+        "total": 1,
+        "status": "low",
+        "places": [
+          {
+            "locationId": "01a0fa0b-8a47-78fe-9834-fe6333770607",
+            "name": "Store",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4e39997316",
+            "name": "BOH",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+            "name": "FOH (sell point)",
+            "quantity": 1
+          }
+        ],
+        "sellable": {
+          "variantId": null,
+          "label": null,
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "available": 1,
+          "atSellPoint": 1,
+          "lowStockThreshold": 20,
+          "status": "low"
+        }
+      },
+      "cardAfter": "Regular Socks Add-on 01a0cb02-13a9-790f-85a1-73e6ccf9f9da Default Low · 1 Adjust"
+    },
+    "redeem_gt1": {
+      "at": "2026-11-09T11:46:20.818Z",
+      "net": [
+        {
+          "at": "2026-11-09T11:46:20.943Z",
+          "method": "GET",
+          "path": "/api/vouchers/lookup",
+          "query": "?code=TV8FKTBZHBT",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "response": {
+            "voucher": {
+              "id": "01a1c01b-b840-7c6d-9a6d-b7292fcb0ada",
+              "code": "TV8FKTBZHBT",
+              "source": "manual",
+              "state": "available",
+              "prize": {
+                "nameEn": "Golden Ticket",
+                "nameTh": null
+              },
+              "definitionCode": "golden-ticket",
+              "kind": "free_ticket",
+              "effect": {
+                "type": "gift_ticket",
+                "package": {
+                  "id": "01a0bbdc-8cc7-7792-9545-459882841007",
+                  "name": "Full Day Pass"
+                },
+                "dropOffMinAge": 5
+              },
+              "summary": "Full Day Pass for one child — parent free, or drop-off from age 5; free socks on request; no food credit",
+              "issuedAt": "2026-11-09T11:40:04.491Z",
+              "issuedBooth": null,
+              "issuedBranch": {
+                "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                "name": "Oto Play Park, Central Floresta"
+              },
+              "expiresAt": null,
+              "legacyFormat": false,
+              "hold": null,
+              "redeemableOffline": false,
+              "staffLabel": null,
+              "issuedBy": {
+                "name": "Som",
+                "code": "S-QWT6"
+              }
+            }
+          }
+        },
+        {
+          "at": "2026-11-09T11:46:21.044Z",
+          "method": "POST",
+          "path": "/api/sales/01a1c021-768f-74cf-88c9-f72edfdefca3/vouchers",
+          "query": "",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "response": {
+            "voucher": {
+              "id": "01a1c01b-b840-7c6d-9a6d-b7292fcb0ada",
+              "code": "TV8FKTBZHBT",
+              "source": "manual",
+              "state": "held_here",
+              "prize": {
+                "nameEn": "Golden Ticket",
+                "nameTh": null
+              },
+              "definitionCode": "golden-ticket",
+              "kind": "free_ticket",
+              "effect": {
+                "type": "gift_ticket",
+                "package": {
+                  "id": "01a0bbdc-8cc7-7792-9545-459882841007",
+                  "name": "Full Day Pass"
+                },
+                "dropOffMinAge": 5
+              },
+              "summary": "Full Day Pass for one child — parent free, or drop-off from age 5; free socks on request; no food credit",
+              "issuedAt": "2026-11-09T11:40:04.491Z",
+              "issuedBooth": null,
+              "issuedBranch": {
+                "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                "name": "Oto Play Park, Central Floresta"
+              },
+              "expiresAt": null,
+              "legacyFormat": false,
+              "hold": {
+                "saleId": "01a1c021-768f-74cf-88c9-f72edfdefca3",
+                "stationId": "01a1c018-c293-7c00-8b93-ee7fc43e2c05",
+                "stationName": "ZZ TEST SCRUM-798 till",
+                "heldAt": "2026-11-09T11:46:21.470Z"
+              },
+              "redeemableOffline": false,
+              "staffLabel": null,
+              "issuedBy": {
+                "name": "Som",
+                "code": "S-QWT6"
+              }
+            },
+            "saleId": "01a1c021-768f-74cf-88c9-f72edfdefca3",
+            "alreadyHeld": false
+          }
+        },
+        {
+          "at": "2026-11-09T11:46:21.355Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "query": "",
+          "status": 400,
+          "code": "BAD_REQUEST",
+          "message": "The cart is empty"
+        }
+      ],
+      "card": "Golden Ticket — what it gives Full Day Pass for one child Parent enters free with an adult band, or drop-off for a child aged 5 or over One free pair of Regular Socks on request No food credit Child's age Ask the age… Under 1 1 year 2 years 3 years 4 years 5 years 6 years 7 years 8 years 9 years 10 years 11 years 12 years 13 years 14 years 15 years 16 years 17 years Parent stays Drop-off Free pair of Regular Socks Ring up the Golden Ticket",
+      "voucherCard": "Golden Ticket Full Day Pass for one child — parent free, or drop-off from age 5; free socks on request; no food credit TV8FKTBZHBT · Till voucher printed 9 Nov 2026 18:40 · never expires Printed by Som (S-QWT6) The cart is empty …",
+      "panel": "Current Order TOURIST No items added yet Apply Golden Ticket Full Day Pass for one child — parent free, or drop-off from age 5; free socks on request; no food credit TV8FKTBZHBT · Till voucher printed 9 Nov 2026 18:40 · never expires Printed by Som (S-QWT6) The cart is empty … Golden Ticket — what it gives Full Day Pass for one child Parent enters free with an adult band, or drop-off for a child aged 5 or over One free pair of Regular Socks on request No food credit Child's age Ask the age… Under 1 1 year 2 years 3 years 4 years 5 years 6 years 7 years 8 years 9 years 10 years 11 years 12 years 13 years 14 years 15 years 16 years 17 years Parent stays Drop-off Free pair of Regular Socks Ring up the Golden Ticket Redeem Issue a voucher… Add manual discount Subtotal ฿0 Total ฿0 Priced on this till. The platform did not price this cart. Cancel Pay ฿0"
+    },
+    "age_gt1": {
+      "parentStaysEnabled": true,
+      "dropOffEnabled": false,
+      "underAgeNote": "Under 5, the parent stays with the child — drop-off is from age 5.",
+      "ringLabel": "Ring up the Golden Ticket",
+      "card": "Golden Ticket — what it gives Full Day Pass for one child Parent enters free with an adult band, or drop-off for a child aged 5 or over One free pair of Regular Socks on request No food credit Child's age Ask the age… Under 1 1 year 2 years 3 years 4 years 5 years 6 years 7 years 8 years 9 years 10 years 11 years 12 years 13 years 14 years 15 years 16 years 17 years Parent stays Drop-off Under 5, the parent stays with the child — drop-off is from age 5. Free pair of Regular Socks Ring up the Golden Ticket"
+    },
+    "ringup_gt1": {
+      "net": [
+        {
+          "at": "2026-11-09T11:46:38.529Z",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "request": {
+            "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+            "stationId": "01a1c018-c293-7c00-8b93-ee7fc43e2c05",
+            "channel": "till",
+            "tier": "tourist",
+            "pricingMode": "weekday",
+            "pricingModeReason": "Weekday pricing",
+            "socks": {
+              "addOnId": "a-socks",
+              "unitSatang": 6000,
+              "label": "Regular Socks"
+            },
+            "lines": [
+              {
+                "id": "01a1c021-bae2-7e02-9851-876177bd3cd1",
+                "packageId": "01a0bbdc-8cc7-7792-9545-459882841007",
+                "packageName": "Full Day Pass",
+                "tier": "tourist",
+                "kids": 1,
+                "adults": 1,
+                "socks": 1,
+                "addOns": [],
+                "serviceFee": null,
+                "foodProvision": null,
+                "promoItem": null,
+                "lineTotalSatang": 150000,
+                "stayHours": 8,
+                "stayDurationLabel": "All Day",
+                "voucherGift": true
+              }
+            ],
+            "promos": [],
+            "manualDiscounts": [],
+            "promoCodes": [
+              "TV8FKTBZHBT"
+            ],
+            "memberId": null,
+            "customerPhone": "+66897980011",
+            "customerNickname": null,
+            "expectedTotalSatang": 150000
+          },
+          "quote": {
+            "totals": {
+              "subtotalSatang": 150000,
+              "manualDiscountSatang": 0,
+              "promoDiscountSatang": 150000,
+              "discountSatang": 150000,
+              "netSatang": 0,
+              "serviceChargeSatang": 0,
+              "taxInclusiveSatang": 0,
+              "taxExclusiveSatang": 0,
+              "grossSatang": 0,
+              "unappliedDiscountSatang": 0
+            },
+            "lines": [
+              {
+                "lineNo": 1,
+                "cartLineId": "01a1c021-bae2-7e02-9851-876177bd3cd1",
+                "kind": "kids",
+                "componentKey": "kids",
+                "ticketPackageId": "01a0bbdc-8cc7-7792-9545-459882841007",
+                "productId": null,
+                "label": "Kids",
+                "revenueCategory": "tickets",
+                "taxableCategory": "tickets",
+                "quantity": 1,
+                "unitSatang": 109000,
+                "baseSatang": 109000,
+                "discountSatang": 109000,
+                "netSatang": 0,
+                "serviceChargeSatang": 0,
+                "taxSatang": 0,
+                "taxMode": "inclusive",
+                "taxRateBp": 700,
+                "taxRateId": "vat",
+                "taxName": "VAT",
+                "grossSatang": 0,
+                "customerTier": "tourist",
+                "kidCount": 1,
+                "adultCount": 1,
+                "freeAdultCount": 0,
+                "stayHours": 8,
+                "stayDurationLabel": "All Day",
+                "payload": null
+              },
+              {
+                "lineNo": 2,
+                "cartLineId": "01a1c021-bae2-7e02-9851-876177bd3cd1",
+                "kind": "adults_paid",
+                "componentKey": "adults",
+                "ticketPackageId": "01a0bbdc-8cc7-7792-9545-459882841007",
+                "productId": null,
+                "label": "Adults",
+                "revenueCategory": "tickets",
+                "taxableCategory": "tickets",
+                "quantity": 1,
+                "unitSatang": 35000,
+                "baseSatang": 35000,
+                "discountSatang": 35000,
+                "netSatang": 0,
+                "serviceChargeSatang": 0,
+                "taxSatang": 0,
+                "taxMode": "inclusive",
+                "taxRateBp": 700,
+                "taxRateId": "vat",
+                "taxName": "VAT",
+                "grossSatang": 0,
+                "customerTier": "tourist",
+                "kidCount": 1,
+                "adultCount": 1,
+                "freeAdultCount": 0,
+                "stayHours": 8,
+                "stayDurationLabel": "All Day",
+                "payload": null
+              },
+              {
+                "lineNo": 3,
+                "cartLineId": "01a1c021-bae2-7e02-9851-876177bd3cd1",
+                "kind": "socks",
+                "componentKey": "socks",
+                "ticketPackageId": "01a0bbdc-8cc7-7792-9545-459882841007",
+                "productId": "01a0cb02-13a9-790f-85a1-73e6ccf9f9da",
+                "label": "Regular Socks",
+                "revenueCategory": "addons",
+                "taxableCategory": "addons",
+                "quantity": 1,
+                "unitSatang": 6000,
+                "baseSatang": 6000,
+                "discountSatang": 6000,
+                "netSatang": 0,
+                "serviceChargeSatang": 0,
+                "taxSatang": 0,
+                "taxMode": "inclusive",
+                "taxRateBp": 700,
+                "taxRateId": "vat",
+                "taxName": "VAT",
+                "grossSatang": 0,
+                "customerTier": "tourist",
+                "kidCount": 1,
+                "adultCount": 1,
+                "freeAdultCount": 0,
+                "stayHours": 8,
+                "stayDurationLabel": "All Day",
+                "payload": {
+                  "priceSource": "till_snapshot"
+                }
+              }
+            ],
+            "vouchers": {
+              "voucherId": "01a1c01b-b840-7c6d-9a6d-b7292fcb0ada",
+              "code": "TV8FKTBZHBT",
+              "definitionCode": "golden-ticket",
+              "label": "Golden Ticket (voucher …ZHBT)",
+              "effect": {
+                "type": "gift_ticket",
+                "package": {
+                  "id": "01a0bbdc-8cc7-7792-9545-459882841007",
+                  "name": "Full Day Pass"
+                },
+                "dropOffMinAge": 5
+              },
+              "amountSatang": 150000,
+              "applicable": true,
+              "reason": null
+            },
+            "discounts": null
+          }
+        }
+      ],
+      "panel": "Current Order TOURIST Full Day Pass ฿1500 Kids ฿1090 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 1 Apply Golden Ticket Full Day Pass for one child — parent free, or drop-off from age 5; free socks on request; no food credit TV8FKTBZHBT · Till voucher printed 9 Nov 2026 18:40 · never expires Printed by Som (S-QWT6) -฿1500 Golden Ticket — what it gives Full Day Pass for one child Parent enters free with an adult band, or drop-off for a child aged 5 or over One free pair of Regular Socks on request No food credit Child's age Ask the age… Under 1 1 year 2 years 3 years 4 years 5 years 6 years 7 years 8 years 9 years 10 years 11 years 12 years 13 years 14 years 15 years 16 years 17 years Parent stays Drop-off Under 5, the parent stays with the child — drop-off is from age 5. Free pair of Regular Socks On this sale: one child, the parent free, one pair of socks. Update the Golden Ticket Redeem Issue a voucher… Add manual discount Subtotal ฿1500 Total ฿0 Cancel Pay ฿0",
+      "body": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 3 out of stock · 1 low Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Add to Sale Add drop-off child Done Adding Add ticket — select a play ticket for kids and adults 1 Hour Play 1 Hour ฿690 per person 2 Hours Play 2 Hours ฿890 per person Full Day Pass All Day ฿1090 per person Eat & Play Kids Pass All Day + Meal ฿1300 per person 1 Kid + 1 Adult (1 hour) 1 Hour ฿500 per person Current Order TOURIST Full Day Pass ฿1500 Kids ฿1090 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 1 Apply Golden Ticket Full Day Pass for one child — parent free, or drop-off from age 5; free socks on request; no food credit TV8FKTBZHBT · Till voucher printed 9 Nov 2026 18:40 · never expires Printed by Som (S-QWT6) -฿1500 Golden Ticket — what it gives Full Day Pass for one child Parent enters free with an adult band, or drop-off for a child aged 5 or over One free pair of Regular Socks on request No food credit Child's age Ask the age… Under 1 1 year 2 years 3 years 4 years 5 years 6 years 7 years 8 years 9 years 10 years 11 years 12 years 13 years 14 years 15 years 16 years 17 years Parent stays Drop-off Under 5, the parent stays with the child — drop-off is from age 5. Free pair of Regular Socks On this sale: one child, the parent free, one pair of socks. Update the Golden Ticket Redeem Issue a voucher… Add manual discount Subtotal ฿1500 Total ฿0 Cancel Pay ฿0 O Oto Play Park Your Order English Full Day Pass ฿1500 Kids1 × ฿1090 ฿1090 Adults1 × ฿350 ฿350 Regular Socks1 × ฿60 ฿60 Golden Ticket −฿1500 Total ฿0"
+    },
+    "pay0_redeem1": {
+      "commit": [
+        {
+          "at": "2026-11-09T11:46:53.032Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "saleId": "01a1c021-768f-74cf-88c9-f72edfdefca3",
+          "saleStatus": "tendering",
+          "gross": 0
+        }
+      ],
+      "saleId": "01a1c021-768f-74cf-88c9-f72edfdefca3",
+      "payScreen": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 3 out of stock · 1 low Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Amount Due ฿0 No payment needed This sale is fully covered — nothing to collect. Hold sale Nothing is owed on this sale — complete it instead. Back Complete Sale Current Order TOURIST Full Day Pass ฿1500 Kids ฿1090 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 1 Apply Golden Ticket Full Day Pass for one child — parent free, or drop-off from age 5; free socks on request; no food credit TV8FKTBZHBT · Till voucher printed 9 Nov 2026 18:40 · never expires Printed by Som (S-QWT6) -฿1500 Golden Ticket — what it gives Full Day Pass for one child Parent enters free with an adult band, or drop-off for a child aged 5 or over One free pair of Regular Socks on request No food credit Child's age Ask the age… Under 1 1 year 2 years 3 years 4 years 5 years 6 years 7 years 8 years 9 years 10 years 11 years 12 years 13 years 14 years 15 years 16 years 17 years Parent stays Drop-off Under 5, the parent stays with the child — drop-off is from age 5. Free pair of Regular Socks On this sale: one child, the parent free, one pair of socks. Update the Golden Ticket Redeem Issue a voucher… Add manual discount Subtotal ฿1500 Total ฿0 Cancel Pay ฿0 English Golden Ticket ฿0 Complimentary — enjoy!",
+      "confirmEnabled": null,
+      "completeAt": "2026-11-09T11:47:38.010Z",
+      "close": [
+        {
+          "at": "2026-11-09T11:47:38.261Z",
+          "method": "POST",
+          "path": "/api/sales/01a1c021-768f-74cf-88c9-f72edfdefca3/finalise",
+          "status": 200,
+          "code": null,
+          "saleStatus": "finalised",
+          "receipt": "Z798-000002",
+          "grants": []
+        },
+        {
+          "at": "2026-11-09T11:47:38.329Z",
+          "method": "POST",
+          "path": "/api/box/v1/station/01a1c018-c293-7c00-8b93-ee7fc43e2c05/intents",
+          "status": 200,
+          "code": null,
+          "saleStatus": null,
+          "receipt": null,
+          "grants": null
+        }
+      ],
+      "success": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Oto Play Park Payment Successful Receipt Z[n] • ฿0 Voucher TV8FKTBZHBT used · Full Day Pass for one child — parent free, or drop-off from age 5; free socks on request; no food credit Thank you for visiting! · Tax ID [n] Bracelets to Print 2 TOTAL 1× Child bracelet All Day • Full Day Pass Z798-[band code withheld] ALL DAY 1× Adult bracelet All Day • Full Day Pass Z798-[band code withheld] ALL DAY Credit Grants to Print 1 TOTAL Regular Socks ×1 to collect #1 Start New Sale English Thank you! Here's what you're receiving — enjoy your play! 1 Child bracelet 1 Adult bracelet Items to Collect Regular Socks ×1 Sending to printers Adult bracelet → Band Printer (adults) Kids bracelet → Band Printer (kids) Receipt → Receipt Printer 1"
+    },
+    "backout": {
+      "at": "2026-11-09T11:44:34.570Z",
+      "toast": "",
+      "release": [
+        {
+          "at": "2026-11-09T11:45:06.739Z",
+          "method": "DELETE",
+          "path": "/api/sales/01a1c01d-6fa0-7e64-8990-12ce7e32a278/vouchers/01a1c01b-b840-7c6d-9a6d-b7292fcb0ada",
+          "status": 200
+        },
+        {
+          "at": "2026-11-09T11:45:07.029Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200
+        }
+      ],
+      "cancelDialog": ""
+    },
+    "reload": {
+      "at": "2026-11-09T11:45:55.814Z",
+      "body": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 3 out of stock · 1 low Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Membership Check The customer is entering their phone on their display to apply any verified rate. Waiting for the customer… Enter phone to look up membership A phone number is required for every visit — it is how the team reaches the family about their child’s safety. Phone — Nickname — EVENT PASSES Flat day entry — no membership needed No active events Today's camp sessions and upcoming events appear here. Redeem Booking Current Order No items added yet Apply Redeem Issue a voucher… Add manual discount Subtotal ฿0 Total ฿0 Cancel Pay ฿0 English MEMBERS SAVE What's ",
+      "net": [
+        {
+          "method": "PUT",
+          "path": "/api/me/session/station",
+          "status": 200
+        }
+      ]
+    },
+    "refuse_used": {
+      "at": "2026-11-09T11:49:00.678Z",
+      "notice": "Already redeemed on 9 Nov 2026 18:47 at Oto Play Park, Central Floresta / ZZ TEST SCRUM-798 till by Som TV8FKTBZHBT",
+      "net": [
+        {
+          "at": "2026-11-09T11:49:00.806Z",
+          "method": "GET",
+          "path": "/api/vouchers/lookup",
+          "status": 409,
+          "response": {
+            "error": {
+              "code": "ALREADY_REDEEMED",
+              "message": "Already redeemed on 9 Nov 2026 18:47 at Oto Play Park, Central Floresta / ZZ TEST SCRUM-798 till by Som",
+              "details": {
+                "redeemedAt": "2026-11-09T11:47:38.562Z",
+                "branchName": "Oto Play Park, Central Floresta",
+                "stationName": "ZZ TEST SCRUM-798 till",
+                "staffName": "Som",
+                "saleId": "01a1c021-768f-74cf-88c9-f72edfdefca3",
+                "receiptNumber": "Z798-000002"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "refuse_unknown": {
+      "at": "2026-11-09T11:49:15.856Z",
+      "notice": "Invalid code ZZTEST798XQ",
+      "net": [
+        {
+          "at": "2026-11-09T11:49:15.980Z",
+          "method": "GET",
+          "path": "/api/vouchers/lookup",
+          "status": 422,
+          "response": {
+            "error": {
+              "code": "INVALID_CODE",
+              "message": "Invalid code"
+            }
+          }
+        }
+      ]
+    },
+    "shop_gt2": {
+      "cart": "Test harness — staff station (left) + customer display (right) share one live sale. In production the customer display runs on a separate device. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks All Tickets & passes Balloons Merchandise Workshop 1 Golden Ticket ฿1500 School Admission Ticket ฿250 Thai-International Admission Ticket ฿200 Guest sale No wristband — pay by cash or card Sale (1) Clear Golden Ticket ฿1500 each 1 ฿1500 Apply Add manual discount VAT included ฿98.13 Charge ฿1500 English O Oto Play Park Your Sale 1 Golden Ticket ฿1500 each ฿1500 VAT included ฿98.13 Total ฿1500",
+      "cashReceived": "1500.00",
+      "at": "2026-11-09T11:50:59.730Z",
+      "net": [
+        {
+          "at": "2026-11-09T11:50:59.925Z",
+          "method": "POST",
+          "path": "/api/sales/01a1c025-aad6-7c36-b31b-e7d31edd9e7b/finalise",
+          "status": 200,
+          "issuedVouchers": [
+            {
+              "id": "01a1c025-b9ee-7ff1-8586-921b745f1655",
+              "code": "TV25N7JN9WM",
+              "definitionCode": "golden-ticket",
+              "nameEn": "Golden Ticket",
+              "productId": "01a1bf0a-1f12-7e51-827c-33646a66fc68",
+              "status": "issued",
+              "issuedAt": "2026-11-09T11:51:00.294Z",
+              "expiresAt": null
+            }
+          ]
+        },
+        {
+          "at": "2026-11-09T11:51:00.008Z",
+          "method": "POST",
+          "path": "/api/box/v1/station/01a1c018-c293-7c00-8b93-ee7fc43e2c05/intents",
+          "status": 200,
+          "issuedVouchers": null
+        }
+      ],
+      "codesOnScreen": "Golden Ticket TV25N7JN9WM Give this code to the family — it is on the receipt, and redeemed at the ticket till.",
+      "confirmText": "Test harness — staff station (left) + customer display (right) share one live sale. In production the customer display runs on a separate device. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Sale Confirmed Items handed over at the till Oto Play Park Sale #0001 • Guest Receipt Z[n] Golden Ticket TV25N7JN9WM Give this code to the family — it is on the receipt, and redeemed at the ticket till. ITEMS 1× Golden Ticket ฿1500 Total ฿1500 Cash ฿1500 Thank you for visiting! · Tax ID [n] New Sale English Thank you! Enjoy your new Oto gear! YOUR PURCHASE 1× Golden Ticket ฿1500 Total ฿1500 Cash ฿1500 Sending to printers Receipt → Receipt Printer 1",
+      "saleId": "01a1c025-aad6-7c36-b31b-e7d31edd9e7b"
+    },
+    "redeem_gt2": {
+      "at": "2026-11-09T11:55:01.991Z",
+      "net": [
+        {
+          "at": "2026-11-09T11:55:02.120Z",
+          "method": "GET",
+          "path": "/api/vouchers/lookup",
+          "query": "?code=TV25N7JN9WM",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "response": {
+            "voucher": {
+              "id": "01a1c025-b9ee-7ff1-8586-921b745f1655",
+              "code": "TV25N7JN9WM",
+              "source": "manual",
+              "state": "available",
+              "prize": {
+                "nameEn": "Golden Ticket",
+                "nameTh": null
+              },
+              "definitionCode": "golden-ticket",
+              "kind": "free_ticket",
+              "effect": {
+                "type": "gift_ticket",
+                "package": {
+                  "id": "01a0bbdc-8cc7-7792-9545-459882841007",
+                  "name": "Full Day Pass"
+                },
+                "dropOffMinAge": 5
+              },
+              "summary": "Full Day Pass for one child — parent free, or drop-off from age 5; free socks on request; no food credit",
+              "issuedAt": "2026-11-09T11:51:00.294Z",
+              "issuedBooth": null,
+              "issuedBranch": {
+                "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                "name": "Oto Play Park, Central Floresta"
+              },
+              "expiresAt": null,
+              "legacyFormat": false,
+              "hold": null,
+              "redeemableOffline": false,
+              "staffLabel": null,
+              "issuedBy": {
+                "name": "Som",
+                "code": "S-QWT6"
+              }
+            }
+          }
+        },
+        {
+          "at": "2026-11-09T11:55:02.229Z",
+          "method": "POST",
+          "path": "/api/sales/01a1c029-6a68-76f2-9998-21d5dba3cb42/vouchers",
+          "query": "",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "response": {
+            "voucher": {
+              "id": "01a1c025-b9ee-7ff1-8586-921b745f1655",
+              "code": "TV25N7JN9WM",
+              "source": "manual",
+              "state": "held_here",
+              "prize": {
+                "nameEn": "Golden Ticket",
+                "nameTh": null
+              },
+              "definitionCode": "golden-ticket",
+              "kind": "free_ticket",
+              "effect": {
+                "type": "gift_ticket",
+                "package": {
+                  "id": "01a0bbdc-8cc7-7792-9545-459882841007",
+                  "name": "Full Day Pass"
+                },
+                "dropOffMinAge": 5
+              },
+              "summary": "Full Day Pass for one child — parent free, or drop-off from age 5; free socks on request; no food credit",
+              "issuedAt": "2026-11-09T11:51:00.294Z",
+              "issuedBooth": null,
+              "issuedBranch": {
+                "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                "name": "Oto Play Park, Central Floresta"
+              },
+              "expiresAt": null,
+              "legacyFormat": false,
+              "hold": {
+                "saleId": "01a1c029-6a68-76f2-9998-21d5dba3cb42",
+                "stationId": "01a1c018-c293-7c00-8b93-ee7fc43e2c05",
+                "stationName": "ZZ TEST SCRUM-798 till",
+                "heldAt": "2026-11-09T11:55:02.658Z"
+              },
+              "redeemableOffline": false,
+              "staffLabel": null,
+              "issuedBy": {
+                "name": "Som",
+                "code": "S-QWT6"
+              }
+            },
+            "saleId": "01a1c029-6a68-76f2-9998-21d5dba3cb42",
+            "alreadyHeld": false
+          }
+        },
+        {
+          "at": "2026-11-09T11:55:02.539Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "query": "",
+          "status": 400,
+          "code": "BAD_REQUEST",
+          "message": "The cart is empty"
+        }
+      ],
+      "card": "Golden Ticket — what it gives Full Day Pass for one child Parent enters free with an adult band, or drop-off for a child aged 5 or over One free pair of Regular Socks on request No food credit Child's age Ask the age… Under 1 1 year 2 years 3 years 4 years 5 years 6 years 7 years 8 years 9 years 10 years 11 years 12 years 13 years 14 years 15 years 16 years 17 years Parent stays Drop-off Free pair of Regular Socks Ring up the Golden Ticket",
+      "voucherCard": "Golden Ticket Full Day Pass for one child — parent free, or drop-off from age 5; free socks on request; no food credit TV25N7JN9WM · Till voucher printed 9 Nov 2026 18:51 · never expires Printed by Som (S-QWT6) The cart is empty …",
+      "panel": "Current Order TOURIST No items added yet Apply Golden Ticket Full Day Pass for one child — parent free, or drop-off from age 5; free socks on request; no food credit TV25N7JN9WM · Till voucher printed 9 Nov 2026 18:51 · never expires Printed by Som (S-QWT6) The cart is empty … Golden Ticket — what it gives Full Day Pass for one child Parent enters free with an adult band, or drop-off for a child aged 5 or over One free pair of Regular Socks on request No food credit Child's age Ask the age… Under 1 1 year 2 years 3 years 4 years 5 years 6 years 7 years 8 years 9 years 10 years 11 years 12 years 13 years 14 years 15 years 16 years 17 years Parent stays Drop-off Free pair of Regular Socks Ring up the Golden Ticket Redeem Issue a voucher… Add manual discount Subtotal ฿0 Total ฿0 Priced on this till. The platform did not price this cart. Cancel Pay ฿0"
+    },
+    "age_gt2": {
+      "parentStaysEnabled": true,
+      "dropOffEnabled": true,
+      "underAgeNote": "",
+      "ringLabel": "Ring up and open the Drop-Off form",
+      "card": "Golden Ticket — what it gives Full Day Pass for one child Parent enters free with an adult band, or drop-off for a child aged 5 or over One free pair of Regular Socks on request No food credit Child's age Ask the age… Under 1 1 year 2 years 3 years 4 years 5 years 6 years 7 years 8 years 9 years 10 years 11 years 12 years 13 years 14 years 15 years 16 years 17 years Parent stays Drop-off Free pair of Regular Socks Ring up and open the Drop-Off form"
+    },
+    "dropopen": {
+      "at": "2026-11-09T11:55:39.257Z",
+      "net": [
+        {
+          "at": "2026-11-09T11:55:39.632Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200,
+          "code": null
+        }
+      ],
+      "formVisible": false,
+      "formText": null,
+      "nameValue": null,
+      "body": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Agreements — ticked by the family on their screen Supervision and photo consent · not ticked yet I will remain within 15 minutes of the venue · not ticked yet I understand early pickup does not qualify for refund · not ticked yet I acknowledge the emergency evacuation point · not ticked yet Children playing alone No adult on this sale. Name each child and confirm their age so we know who needs supervision. 7 yrs Drop-off required Before payment • Every child needs a name. • This child needs a photo taken. • Parent must give their name and consent on the customer screen. • Parent must accept every required confirmation on the customer screen. Back Continue to payment English PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. Child's name Age 7 yrs Drop-off supervision needed Required for this age — ฿225 one-time Photo of child with parent / guardian One photo with both of you in the shot — we use it to verify pickup. No photo yet Start camera Allergies / medical Dietary notes Food & drinks for this child No food Prepaid credit Choose items Staff will not be able to place food orders for this child without a manager override. Parent / guardian name Phone number [n] We will use the number you gave at the start. I authorize Oto Play Park staff to supervise my child, and I consent to a photo of my child and me (parent / guardian) together being taken for safe check-in and pickup verification. Please confirm I will remain within 15 minutes of the venue I understand early pickup does not qualify for refund I acknowledge the emergency evacuation point",
+      "testids": [
+        "consent-ticks-status",
+        "consent-kept-phone",
+        "consent-ack",
+        "consent-confirmation"
+      ]
+    },
+    "fill1": {
+      "at": "2026-11-09T11:55:51.850Z",
+      "btns": [
+        "Hide customer display",
+        "0 in park no gate",
+        "F&B",
+        "Shop",
+        "Events",
+        "Check-in",
+        "History",
+        "Today",
+        "7 Messages",
+        "Cash",
+        "7 overdue Review →",
+        "7 yrs",
+        "Back",
+        "Continue to payment",
+        "English",
+        "7 yrs",
+        "Retake",
+        "No food",
+        "Prepaid credit",
+        "Choose items",
+        "I authorize Oto Play Park staff to supervise my child, and I consent to a photo of my child and me (parent / guardian) together being taken for safe check-in and pickup verification.",
+        "I will remain within 15 minutes of the venue",
+        "I understand early pickup does not qualify for refund",
+        "I acknowledge the emergency evacuation point"
+      ],
+      "body": "7 overdue Review → Agreements — ticked by the family on their screen Supervision and photo consent · not ticked yet I will remain within 15 minutes of the venue · not ticked yet I understand early pickup does not qualify for refund · not ticked yet I acknowledge the emergency evacuation point · not ticked yet Children playing alone No adult on this sale. Name each child and confirm their age so we know who needs supervision. 7 yrs Drop-off required Before payment • Every child needs a name. • Parent must give their name and consent on the customer screen. • Parent must accept every required confirmation on the customer screen. Back Continue to payment English PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. Child's name Age 7 yrs Drop-off supervision needed Required for this age — ฿225 one-time Photo of child with parent / guardian One photo with both of you in the shot — we use it to verify pickup. Retake Allergies / medical Dietary notes Food & drinks for this child No food Prepaid credit Choose items Staff will not be able to place food orders for this child without a manager override. Parent / guardian name Phone number [n] We will use the number you gave at the start. I authorize Oto Play Park staff to supervise my child, and I consent to a photo of my child and me (parent / guardian) together being taken for safe check-in and pickup verification. Please confirm I will remain within 15 minutes of the venue I understand early pickup does not qualify for refund I acknowledge the emergency evacuation point"
+    },
+    "backout2": {
+      "at": "2026-11-09T11:54:10.829Z",
+      "reason": "headless Chromium had no working camera (NotReadableError); the browser is restarted with a fake video file",
+      "release": [
+        {
+          "at": "2026-11-09T11:54:13.470Z",
+          "method": "DELETE",
+          "path": "/api/sales/01a1c026-32e1-7e6d-bf29-e5401cbf35df/vouchers/01a1c025-b9ee-7ff1-8586-921b745f1655",
+          "status": 200
+        },
+        {
+          "at": "2026-11-09T11:54:13.764Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200
+        }
+      ],
+      "after": "7 overdue Review → Membership Check The customer is entering their phone on their display to apply any verified rate. Waiting for the customer… Enter phone to look up membership A phone number is required for every visit — it is how the team reaches the family about their child’s safety. Phone — Nickname — EVENT PASSES Flat day entry — no membership needed No active events Today's camp sessions and upcoming events appear here. Redeem Booking Current Order No items added yet Apply Redeem Issue a voucher… Add manual discount Subtotal ฿0 Total ฿0 Cancel Pay ฿0 English MEMBERS SAVE What's your pho",
+      "tendering": [],
+      "tillSignOut": 200,
+      "tillMe": 401,
+      "consoleSignOut": 200
+    },
+    "fill2": {
+      "at": "2026-11-09T11:56:52.940Z",
+      "ticks": "Agreements — ticked by the family on their screen Supervision and photo consent · ticked I will remain within 15 minutes of the venue · ticked I understand early pickup does not qualify for refund · ticked I acknowledge the emergency evacuation point · ticked",
+      "continueEnabled": true,
+      "gate": "7 overdue Review → Agreements — ticked by the family on their screen Supervision and photo consent · ticked I will remain within 15 minutes of the venue · ticked I understand early pickup does not qualify for refund · ticked I acknowledge the emergency evacuation point · ticked Children playing alone No adult on this sale. Name each child and confirm their age so we know who needs supervision. 7 yrs Drop-off required Before payment • ZZ TEST 798 Child (age 7) needs drop-off supervision. Back Continue to payment English PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. Child's name Age 7 yrs Drop-off supervision needed Required for this age — ฿225 one-time Photo of child with parent / guardian One photo with both of you in the shot — we use it to verify pickup. Retake Allergies / medical Dietary notes Food & drinks for ZZ TEST 798 Child No food Prepaid credit Choose items Staff will not be able to place food orders for ZZ TEST 798 Child without a manager override. Parent / guardian name Phone number [n] We will use the number "
+    },
+    "cont": {
+      "at": "2026-11-09T11:57:19.738Z",
+      "net": [
+        {
+          "at": "2026-11-09T11:57:20.032Z",
+          "method": "POST",
+          "path": "/api/members",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "regId": null,
+          "saleId": null,
+          "saleStatus": null,
+          "gross": null
+        },
+        {
+          "at": "2026-11-09T11:57:20.139Z",
+          "method": "POST",
+          "path": "/api/members/01a1c02b-848a-7305-923d-1a420c6d1b61/children",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "regId": null,
+          "saleId": null,
+          "saleStatus": null,
+          "gross": null
+        },
+        {
+          "at": "2026-11-09T11:57:20.240Z",
+          "method": "POST",
+          "path": "/api/visits",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "regId": null,
+          "saleId": null,
+          "saleStatus": null,
+          "gross": null
+        },
+        {
+          "at": "2026-11-09T11:57:20.375Z",
+          "method": "POST",
+          "path": "/api/checkin/registrations",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "regId": null,
+          "saleId": null,
+          "saleStatus": null,
+          "gross": null
+        },
+        {
+          "at": "2026-11-09T11:57:20.462Z",
+          "method": "POST",
+          "path": "/api/files",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "regId": null,
+          "saleId": null,
+          "saleStatus": null,
+          "gross": null
+        },
+        {
+          "at": "2026-11-09T11:57:21.044Z",
+          "method": "PUT",
+          "path": "/api/files/01a1c02b-8675-7496-9250-ba1e32b35055/content",
+          "status": 204,
+          "code": null,
+          "message": null,
+          "regId": null,
+          "saleId": null,
+          "saleStatus": null,
+          "gross": null
+        },
+        {
+          "at": "2026-11-09T11:57:21.169Z",
+          "method": "POST",
+          "path": "/api/checkin/registrations/01a1c02b-85ec-7798-9d50-104fd0983b3c/photo",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "regId": null,
+          "saleId": null,
+          "saleStatus": null,
+          "gross": null
+        },
+        {
+          "at": "2026-11-09T11:57:21.456Z",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "regId": null,
+          "saleId": null,
+          "saleStatus": null,
+          "gross": 0,
+          "quoteLines": [
+            [
+              "kids",
+              "Kids",
+              1,
+              109000,
+              0
+            ],
+            [
+              "service_fee",
+              "Drop-off service",
+              1,
+              22500,
+              0
+            ]
+          ]
+        }
+      ],
+      "body": "7 overdue Review → Amount Due ฿1315 Select Payment Method Cash Card PromptPay Hold sale The sale is still being saved — wait a moment. Back Confirm Payment Received Current Order TOURIST ZZ TEST 798 Guardian ZZ TEST 798 Child ฿1315 Full Day Pass ฿1090 Drop-off service ฿225 Configure Apply Golden Ticket Full Day Pass for one child — parent free, or drop-off from age 5; free socks on request; no food credit TV25N7JN9WM · Till voucher printed 9 Nov 2026 18:51 · never expires Printed by Som (S-QWT6) -฿1315 Golden Ticket — what it gives Full Day Pass for one child Parent enters free with an adult band, or drop-off for a child aged 5 or over One free pair of Regular Socks on request No food credit Child's age Ask the age… Under 1 1 year 2 years 3 years 4 years 5 years 6 years 7 years 8 years 9 years 10 years 11 years 12 years 13 years 14 years 15 years 16 years 17 years Parent stays Drop-off Free pair of Regular Socks On this sale: one child, dropped off. Update the Golden Ticket Redeem Issue a voucher… The platform is still pricing the voucher — press again in a moment TV25N7JN9WM Add manual discount Subtotal ฿1315 Total ฿0 Cancel Pay ฿0 English Customer ZZ TEST 798 Guardian Golden Ticket ฿0 Complimentary — enjoy!"
+    },
+    "finding1": {
+      "at": "2026-11-09T11:57:50.877Z",
+      "amountDue": "Amount Due ฿1315",
+      "notice": "The platform is still pricing the voucher — press again in a moment TV25N7JN9WM",
+      "tendering": []
+    },
+    "repay": {
+      "at": "2026-11-09T11:58:07.926Z",
+      "afterBack": "ocker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Customer Details Ask the customer to enter their details on their display. Waiting for the customer… The customer display is now their turn to enter a phone & nickname. Phone [n] Nickname — Back Current Order TOURIST ZZ TEST 798 Guardian ZZ TEST 798 Child ฿1315 Full Day Pass ฿1090 Drop-off service ฿225 Configure Apply Golden Ticket Full Day Pass for one child — parent free, or drop-off from age 5; free socks on request; no food credit TV25N7JN9WM · Till voucher printed 9 Nov 2026 18:51 · never expires Printed by Som (S-QWT6) -฿1315 Golden Ticket — what it gives Full Day Pass"
+    },
+    "done": {
+      "at": "2026-11-09T11:59:11.054Z",
+      "net": [
+        {
+          "at": "2026-11-09T11:59:12.087Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "saleId": "01a1c029-6a68-76f2-9998-21d5dba3cb42",
+          "saleStatus": "tendering",
+          "gross": 0
+        }
+      ],
+      "body": "ocker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Amount Due ฿0 No payment needed This sale is fully covered — nothing to collect. Hold sale Nothing is owed on this sale — complete it instead. Back Complete Sale Current Order TOURIST ZZ TEST 798 Guardian ZZ TEST 798 Child ฿1315 Full Day Pass ฿1090 Drop-off service ฿225 Configure Apply Golden Ticket Full Day Pass for one child — parent free, or drop-off from age 5; free socks on request; no food credit TV25N7JN9WM · Till voucher printed 9 Nov 2026 18:51 · never expires Printed by Som (S-QWT6) -฿1315 Golden Ticket — what it gives Full Day Pass for one child Parent enters free with an adult band, or drop-off for a child aged 5 or over One free pair of Regular Socks on request No food credit Child's age Ask the age… Under 1 1 year 2 years 3 years 4 years 5 years 6 years 7 years 8 years 9 years 10 years 11 years 12 years 13 years 14 years 15 years 16 years 17 years Parent stays Drop-off Free pair of Regular Socks On this sale: one child, dropped off. Update the Golden Ti"
+    },
+    "pay0_redeem2": {
+      "completeAt": "2026-11-09T11:59:51.810Z",
+      "close": [
+        {
+          "at": "2026-11-09T11:59:52.259Z",
+          "method": "POST",
+          "path": "/api/sales/01a1c029-6a68-76f2-9998-21d5dba3cb42/finalise",
+          "status": 200,
+          "code": null,
+          "saleStatus": "finalised",
+          "receipt": "Z798-000004",
+          "grants": []
+        },
+        {
+          "at": "2026-11-09T11:59:52.297Z",
+          "method": "POST",
+          "path": "/api/box/v1/station/01a1c018-c293-7c00-8b93-ee7fc43e2c05/intents",
+          "status": 200,
+          "code": null,
+          "saleStatus": null,
+          "receipt": null,
+          "grants": null
+        }
+      ],
+      "success": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Oto Play Park Payment Successful Receipt Z[n] • ฿0 Voucher TV25N7JN9WM used · Full Day Pass for one child — parent free, or drop-off from age 5; free socks on request; no food credit Thank you for visiting! · Tax ID [n] Bracelets to Print 0 TOTAL Start New Sale English Customer ZZ TEST 798 Guardian Thank you! Here's what you're receiving — enjoy your play! 1 Child bracelet 0 Adult bracelets Sending to printers Receipt → Receipt Printer 1 Check in the drop-off child? Payment is complete. For each registration, choose whether to check the child in now or leave them booked for later. ZZ TEST 798 Child Drop-off Leave as booked Check in now"
+    },
+    "leave": {
+      "at": "2026-11-09T12:00:15.097Z",
+      "net": [
+        {
+          "method": "POST",
+          "path": "/api/checkin/leave-as-booked",
+          "status": 200
+        }
+      ],
+      "after": "ocker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Oto Play Park Payment Successful Receipt Z[n] • ฿0 Voucher TV25N7JN9WM used · Full Day Pass for one child — parent free, or drop-off from age 5; free socks on request; no food credit Thank you for visiting! · Tax ID [n] Bracelets to Print 0 TOTAL Start New Sale English Customer ZZ TEST 798 Guardian Thank you! Here's what you're receiving — enjoy your play! 1 Child bracelet 0 Adult bracelets Left as booked ZZ TEST 798 Child — checkable later from the Drop-Off board."
+    },
+    "board1": {
+      "at": "2026-11-09T12:00:33.286Z",
+      "card": "ZZ TEST 798 Guardian +66•••••0011 Message Awaiting confirmation Waiting for parent to tap \"Confirm received\" in WhatsApp. 🇹🇭 +66 WhatsApp Telegram LINE Stored as: +66•••••0011 Save & re-send Resend Sim: parent confirms Couldn't reach ZZ TEST 798 Child 7 yrs DROP-OFF Overdue · 18:59 Booked & paid · no payment needed Check in",
+      "amountDue": 0,
+      "dialog": "Check in child ZZ TEST 798 Guardian · already booked & paid — no payment needed. ZZ TEST 798 Child 7 yrs Drop-Off No prepaid food Check in & issue band Close",
+      "net": [
+        {
+          "at": "2026-11-09T12:00:44.758Z",
+          "method": "POST",
+          "path": "/api/checkin/check-in-booked",
+          "status": 200,
+          "code": null
+        }
+      ],
+      "after": "anny Drop-Off Unconfirmed 14 Upcoming 13 In Park 8 Out 0 Nannies free now: Bow, Jum, Pim No children in this list. Checked in 1 child is now in the park."
+    },
+    "board2": {
+      "at": "2026-11-09T12:01:09.341Z",
+      "inPark": "ZZ TEST 798 Guardian +66•••••0011 Message Awaiting confirmation Waiting for parent to tap \"Confirm received\" in WhatsApp. 🇹🇭 +66 WhatsApp Telegram LINE Stored as: +66•••••0011 Save & re-send Resend Sim: parent confirms Couldn't reach ZZ TEST 798 Child 7 yrs DROP-OFF 8h 00m left Check Out",
+      "first": "Who is collecting? ZZ TEST 798 Child · 7 yrs · ZZ TEST 798 Guardian Select the person collecting this child. Only authorized persons may collect. ZZ TEST 798 Guardian Parent / dropper-off Person not on the list Close",
+      "btns": [
+        "",
+        "Retake",
+        "Confirm pickup & check out",
+        "Close"
+      ],
+      "label": "Confirm pickup & check out",
+      "net": [
+        {
+          "method": "POST",
+          "path": "/api/checkin/pickups/stays/01a1c02b-85ec-7798-9d50-105002cad773/release",
+          "status": 200,
+          "code": null
+        }
+      ],
+      "outCard": "ZZ TEST 798 Guardian +66•••••0011 Message Awaiting confirmation Waiting for parent to tap \"Confirm received\" in WhatsApp. 🇹🇭 +66 WhatsApp Telegram LINE Stored as: +66•••••0011 Save & re-send Resend Sim: parent confirms Couldn't reach ZZ TEST 798 Child 7 yrs DROP-OFF Out · 19:01"
+    },
+    "shop_gt3": {
+      "cart": "Test harness — staff station (left) + customer display (right) share one live sale. In production the customer display runs on a separate device. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks All Tickets & passes Balloons Merchandise Workshop 1 Golden Ticket ฿1500 School Admission Ticket ฿250 Thai-International Admission Ticket ฿200 Guest sale No wristband — pay by cash or card Sale (1) Clear Golden Ticket ฿1500 each 1 ฿1500 Apply Add manual discount VAT included ฿98.13 Charge ฿1500 English O Oto Play Park Your Sale 1 Golden Ticket ฿1500 each ฿1500 VAT included ฿98.13 Total ฿1500",
+      "cashReceived": "1500.00",
+      "at": "2026-11-09T12:01:59.772Z",
+      "net": [
+        {
+          "at": "2026-11-09T12:02:00.232Z",
+          "method": "POST",
+          "path": "/api/sales/01a1c02f-bbfc-74ef-a615-841a969d3c5e/finalise",
+          "status": 200,
+          "issuedVouchers": [
+            {
+              "id": "01a1c02f-cd09-700a-9dba-064edb2e4056",
+              "code": "TVMCW4CBX5J",
+              "definitionCode": "golden-ticket",
+              "nameEn": "Golden Ticket",
+              "productId": "01a1bf0a-1f12-7e51-827c-33646a66fc68",
+              "status": "issued",
+              "issuedAt": "2026-11-09T12:02:00.446Z",
+              "expiresAt": null
+            }
+          ]
+        },
+        {
+          "at": "2026-11-09T12:02:00.358Z",
+          "method": "POST",
+          "path": "/api/box/v1/station/01a1c018-c293-7c00-8b93-ee7fc43e2c05/intents",
+          "status": 200,
+          "issuedVouchers": null
+        }
+      ],
+      "codesOnScreen": "Golden Ticket TVMCW4CBX5J Give this code to the family — it is on the receipt, and redeemed at the ticket till.",
+      "confirmText": "Test harness — staff station (left) + customer display (right) share one live sale. In production the customer display runs on a separate device. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Sale Confirmed Items handed over at the till Oto Play Park Sale #0001 • Guest Receipt Z[n] Golden Ticket TVMCW4CBX5J Give this code to the family — it is on the receipt, and redeemed at the ticket till. ITEMS 1× Golden Ticket ฿1500 Total ฿1500 Cash ฿1500 Thank you for visiting! · Tax ID [n] New Sale English Thank you! Enjoy your new Oto gear! YOUR PURCHASE 1× Golden Ticket ฿1500 Total ฿1500 Cash ฿1500 Sending to printers Receipt → Receipt Printer 1",
+      "saleId": "01a1c02f-bbfc-74ef-a615-841a969d3c5e"
+    },
+    "swap": {
+      "at": "2026-11-09T12:02:15.982Z",
+      "tendering": [],
+      "receptionSignOut": 200,
+      "receptionMe": 401,
+      "managerPerms": [
+        [
+          "pos:refund:create",
+          true
+        ],
+        [
+          "pos:refund:approve",
+          true
+        ],
+        [
+          "pos:voucher:redeem",
+          true
+        ]
+      ],
+      "body": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Khun Lek 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Membership Check The customer is entering their phone on their display to apply any verified rate. Waiting for the customer… Enter phone to look up membership A phone number is"
+    },
+    "refund_gt1": {
+      "at": "2026-11-09T12:03:14.167Z",
+      "reasons": [
+        "Service recovery",
+        "Staff / family",
+        "Damaged item",
+        "Manager comp",
+        "Promotion",
+        "Loyalty",
+        "Other"
+      ],
+      "reason": "Service recovery",
+      "dialogBefore": "Refund By Khun Lek (Manager) · up to ฿1500 refundable · logged for the refunds report. Refund Whole sale By item Amount Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿1500 Hand the refund back to the customer manually. Refund ฿1500 Close",
+      "net": [
+        {
+          "at": "2026-11-09T12:03:16.832Z",
+          "method": "POST",
+          "path": "/api/sales/01a1c01b-a7f2-79f9-914a-bf7f438ed880/refunds",
+          "status": 409,
+          "request": {
+            "mode": "whole",
+            "reason": "Service recovery",
+            "note": "ZZ TEST SCRUM-798: refund the first Golden Ticket sale (its code was used on Z798-000002)",
+            "actionId": "29e79974-2020-45b0-a6ec-ef82ee3b67f6"
+          },
+          "code": "SOLD_VOUCHER_USED",
+          "message": "The Golden Ticket sold on this sale (code ending ZHBT) has already been used (receipt Z798-000002), so it cannot be refunded.",
+          "refund": null
+        }
+      ],
+      "dialogOpen": true,
+      "dialogAfter": "Refund By Khun Lek (Manager) · up to ฿1500 refundable · logged for the refunds report. Refund Whole sale By item Amount Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿1500 Hand the refund back to the customer manually. The Golden Ticket sold on this sale (code ending ZHBT) has already been used (receipt Z798-000002), so it cannot be refunded. Refund ฿1500 Close",
+      "page": " Regular Socks Back to history Paid Ticket sale Z[n] Walk-in 09 Nov, 18:40 · sold by Som ZZ TEST SCRUM-798 till · trading day [n] · Tourist · Weekday pricing Items · Tourist ฿1500 Golden Ticket 1× ฿1500 ฿1500 Subtotal ฿1500 VAT (included) ฿98.13 Total paid ฿1500 Payment Cash · Approved 09 Nov, 18:40 ฿1500 Reprint Refund (฿1500 left) Add time, refunds, voids and reprints need the platform: with the station offline, a refund can only be noted as requested, for a manager to make once it is back online. Refund By Khun Lek (Manager) · up to ฿1500 refundable · logged for the refunds report. Refund Whole sale By item Amount Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿1500 Hand the refund back to the customer manually. The Golden Ticket sold on this sale (code ending ZHBT) has already been used (receipt Z[n]), so it cannot be refunded. Refund ฿1500 Close",
+      "saleAfter": {
+        "receipt": "Z798-000001",
+        "status": "finalised",
+        "refundStatus": "none",
+        "refundableSatang": 150000,
+        "refunds": [],
+        "issuedVouchers": [
+          {
+            "code": "TV8FKTBZHBT",
+            "status": "redeemed"
+          }
+        ]
+      }
+    },
+    "refund_gt3": {
+      "at": "2026-11-09T12:03:42.655Z",
+      "reasons": [
+        "Service recovery",
+        "Staff / family",
+        "Damaged item",
+        "Manager comp",
+        "Promotion",
+        "Loyalty",
+        "Other"
+      ],
+      "reason": "Service recovery",
+      "dialogBefore": "Refund By Khun Lek (Manager) · up to ฿1500 refundable · logged for the refunds report. Refund Whole sale By item Amount Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿1500 Hand the refund back to the customer manually. Refund ฿1500 Close",
+      "net": [
+        {
+          "at": "2026-11-09T12:03:45.240Z",
+          "method": "POST",
+          "path": "/api/sales/01a1c02f-bbfc-74ef-a615-841a969d3c5e/refunds",
+          "status": 200,
+          "request": {
+            "mode": "whole",
+            "reason": "Service recovery",
+            "note": "ZZ TEST SCRUM-798: refund the unused third Golden Ticket",
+            "actionId": "73bda29c-ccfc-4d2c-b6bd-d2350cbb1bbd"
+          },
+          "code": null,
+          "message": null,
+          "refund": {
+            "number": "Z798-R-000001",
+            "amount": 150000
+          }
+        }
+      ],
+      "dialogOpen": false,
+      "dialogAfter": null,
+      "page": " Regular Socks Back to history Refunded Ticket sale Z[n] Walk-in 09 Nov, 19:01 · sold by Som ZZ TEST SCRUM-798 till · trading day [n] · Tourist · Weekday pricing Items · Tourist ฿1500 Golden Ticket 1× ฿1500 ฿1500 Subtotal ฿1500 VAT (included) ฿98.13 Total paid ฿1500 Refunded −฿1500 Payment Cash · Approved 09 Nov, 19:02 ฿1500 REFUND HISTORY −฿1500 09 Nov, 19:03 Service recovery · Z798-R-000001 “ZZ TEST SCRUM-798: refund the unused third Golden Ticket” Cash — hand it back in cash ฿1500 by Lek · manager approval Refund recorded · Z798-R-000001 · −฿1500 Cash — hand it back in cash ฿1500 Start corrected order New saleDone",
+      "saleAfter": {
+        "receipt": "Z798-000005",
+        "status": "refunded",
+        "refundStatus": "refunded",
+        "refundableSatang": 0,
+        "refunds": [
+          {
+            "number": "Z798-R-000001",
+            "amount": 150000,
+            "mode": "whole"
+          }
+        ],
+        "issuedVouchers": [
+          {
+            "code": "TVMCW4CBX5J",
+            "status": "void"
+          }
+        ]
+      }
+    },
+    "refuse_void": {
+      "at": "2026-11-09T12:06:36.593Z",
+      "notice": "This voucher has been cancelled TVMCW4CBX5J",
+      "net": [
+        {
+          "at": "2026-11-09T12:06:36.736Z",
+          "method": "GET",
+          "path": "/api/vouchers/lookup",
+          "status": 409,
+          "response": {
+            "error": {
+              "code": "VOUCHER_VOID",
+              "message": "This voucher has been cancelled"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "images": [
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-01a-console-voucher-types-golden-ticket.png",
+      "at": "2026-11-09T11:37:55.395Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/voucher-types",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Console > Catalogue & money > Voucher types (admin): the \"Golden Ticket\" type created by the pre-deploy platform-sync, on the Full Day Pass, never expires, on no booth prize, Live. The worth column still uses the 1+1 wording for a free_ticket type (a known cosmetic point the lane left open)."
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-01b-till-issue-picker-no-golden-ticket.png",
+      "at": "2026-11-09T11:38:11.479Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "ZZ TEST till (reception), Current Order > \"Issue a voucher…\" opened, its list shown in full: Choose a promotion… | 100 THB Voucher | 1+1 Kids Ticket | 150 THB Voucher | 200 THB Voucher | 300 THB Voucher | Free Bracelet Workshop | Kids Pizza | Mystery Box | ZZ TEST F6 recheck 50 (0/1 used) | ZZ TEST Wallet credit 100 (1/1 used) — no Golden Ticket (a type the park sells as a shop item is issued only by its sale)."
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-02a-shop-golden-ticket-on-the-order.png",
+      "at": "2026-11-09T11:40:00.317Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/merch-station",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Shop tab, guest, category Tickets & passes: Golden Ticket ฿1,500 on the order, Charge ฿1500"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-02b-shop-sale-confirmed-voucher-code.png",
+      "at": "2026-11-09T11:40:07.888Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/merch-station",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Shop tab, Sale Confirmed after cash ฿1,500: the Golden Ticket's voucher code in full (SoldVoucherCodes), 'Give this code to the family — it is on the receipt, and redeemed at the ticket till'"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-02c-receipt-printout-voucher-code.png",
+      "at": "2026-11-09T11:40:28.650Z",
+      "page": "api",
+      "url": "GET /devices/01a0be8c-89a4-756b-aca1-3be1082c669d/printouts/1/preview.png",
+      "shows": "The receipt as the simulated Receipt Printer 1 (Virtual box 1) drew it for Z798-000001: the Golden Ticket line ฿1,500 with 'Voucher code: <code>' under it",
+      "printoutAt": "2026-11-09T11:40:09.087Z",
+      "status": 200
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-03a-console-adjust-regular-socks-plus-1-zz-test.png",
+      "at": "2026-11-09T11:41:21.683Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/inventory",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Console > Inventory, Central Floresta, Regular Socks (out, 0) > Adjust +1 with the reason 'ZZ TEST SCRUM-798: one pair for the Golden Ticket's free socks' — the pair the gift's socks take in step 3 (the platform refuses socks at 0 with STOCK_SHORT, as the SCRUM-799 proof showed)"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-03b-golden-ticket-card-appears.png",
+      "at": "2026-11-09T11:46:26.286Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Ticket screen, new walk-in sale (Tourist): the code typed into Redeem voucher; the voucher card \"Golden Ticket — Full Day Pass for one child — parent free, or drop-off from age 5; free socks on request; no food credit\" and under it the Golden Ticket card: what it gives, Child's age (Ask the age…), Parent stays / Drop-off, Free pair of Regular Socks, Ring up the Golden Ticket"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-03c-age-4-parent-stays-only-socks-ticked.png",
+      "at": "2026-11-09T11:46:38.162Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Golden Ticket card, Child's age 4 years: Parent stays enabled: true, Drop-off enabled: false, note \"Under 5, the parent stays with the child — drop-off is from age 5.\"; Parent stays chosen; Free pair of Regular Socks ticked; the button reads Ring up the Golden Ticket"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-03d-rung-up-full-day-pass-1-child-1-adult-socks-total-0.png",
+      "at": "2026-11-09T11:46:45.987Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "After 'Ring up the Golden Ticket': Current Order holds one Full Day Pass line (Kids 1 × ฿1090, Adults 1 × ฿350, Regular Socks 1 × ฿60) and the Golden Ticket voucher card takes −฿1500; the customer half's Your Order reads the same with Total ฿0. The platform's quote prices each part (Kids, Adults, Regular Socks) at ฿0 gross."
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-03e-rung-up-card-on-this-sale-total-0.png",
+      "at": "2026-11-09T11:46:47.478Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The same order, panel scrolled down: 'On this sale: one child, the parent free, one pair of socks.', the button now 'Update the Golden Ticket', Subtotal ฿1500, Total ฿0, Pay ฿0"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-03f-payment-screen-amount-due-0.png",
+      "at": "2026-11-09T11:47:27.725Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Pay ฿0 pressed: the payment screen for the Golden Ticket sale, Amount Due ฿0"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-03g-complete-sale-success-bands-no-credit.png",
+      "at": "2026-11-09T11:47:43.065Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Complete Sale (nothing to collect): the till's success screen for the ฿0 Golden Ticket sale with a band for the child and one for the adult, and no food credit anywhere (band codes and QR grids hidden)"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-03h-receipt-printout-golden-ticket-sale-0.png",
+      "at": "2026-11-09T11:48:14.702Z",
+      "page": "api",
+      "url": "GET /devices/01a0be8c-89a4-756b-aca1-3be1082c669d/printouts/3/preview.png",
+      "shows": "Receipt Z798-000002 as the simulated Receipt Printer 1 drew it: the Full Day Pass parts with the Golden Ticket discount, total ฿0, and no credit issued",
+      "printoutAt": "2026-11-09T11:47:39.185Z",
+      "status": 200,
+      "masked": "band codes hidden: [[22,535,200,46]]"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-04a-same-code-again-refused-already-redeemed.png",
+      "at": "2026-11-09T11:49:03.743Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "New sale, Redeem voucher with the first Golden Ticket code again: refused — \"Already redeemed on 9 Nov 2026 18:47 at Oto Play Park, Central Floresta / ZZ TEST SCRUM-798 till by Som TV8FKTBZHBT\""
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-04b-made-up-code-refused-invalid.png",
+      "at": "2026-11-09T11:49:18.911Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Same new sale, Redeem voucher with a made-up code ZZTEST798XQ: refused — \"Invalid code ZZTEST798XQ\""
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-05a-second-golden-ticket-sold-voucher-code.png",
+      "at": "2026-11-09T11:51:03.490Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/merch-station",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Shop tab, second Golden Ticket, cash ฿1,500: Sale Confirmed with its own voucher code in full"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-05b-age-7-drop-off-offered-chosen.png",
+      "at": "2026-11-09T11:55:39.174Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Second code on a new walk-in ticket sale: Golden Ticket card, Child's age 7 years: Parent stays enabled: true, Drop-off enabled: true; Drop-off chosen; the button reads 'Ring up and open the Drop-Off form'"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-05c-drop-off-form-opens-age-7-filled.png",
+      "at": "2026-11-09T11:55:45.955Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "After Ring up and open the Drop-Off form: the till shows the Children playing alone gate for the gift child (7 yrs, Drop-off required) and the customer half opens Tell us about your child with Age 7 yrs already filled and Drop-off supervision needed"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-05d-drop-off-form-filled-zz-test-agreements-ticked.png",
+      "at": "2026-11-09T11:57:07.452Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The family s half filled with ZZ TEST details: child ZZ TEST 798 Child, 7 yrs, photo taken (a synthetic test frame from the browser s fake camera), guardian ZZ TEST 798 Guardian, the start number kept; the till s gate lists all four agreements as ticked by the family and Continue to payment is enabled"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-05e-after-continue-payment-screen-1315-not-saved.png",
+      "at": "2026-11-09T11:57:51.943Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Right after Continue to payment (drop-off registered): the payment screen reads Amount Due ฿1315 with Cash / Card / PromptPay and \"The sale is still being saved — wait a moment\", while the order panel reads Total ฿0 / Pay ฿0 and the voucher box says \"The platform is still pricing the voucher — press again in a moment\". No sale had been written (no POST /sales)."
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-05f-voucher-box-still-pricing-press-again.png",
+      "at": "2026-11-09T11:57:53.426Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The same moment, order panel scrolled to the voucher box: \"The platform is still pricing the voucher — press again in a moment\""
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-05g-customer-details-done-on-family-half.png",
+      "at": "2026-11-09T11:59:11.900Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Back, then Pay ฿0 from the order: the till asks for the customer details; the family half shows Enter your details with the start number kept and a Done button"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-05h-drop-off-order-amount-due-0.png",
+      "at": "2026-11-09T11:59:40.034Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The drop-off Golden Ticket sale rung up and saved (tendering, gross ฿0): the order holds ZZ TEST 798 Child ฿1315 (Full Day Pass ฿1090 + Drop-off service ฿225) under ZZ TEST 798 Guardian and the Golden Ticket takes −฿1315; the payment screen reads Amount Due ฿0, No payment needed, Complete Sale"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-05i-drop-off-complete-sale-success.png",
+      "at": "2026-11-09T11:59:57.274Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Complete Sale for the drop-off Golden Ticket: the till success for the ฿0 sale (band codes and QR grids hidden)"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-05j-drop-off-sale-success-left-as-booked.png",
+      "at": "2026-11-09T12:00:19.002Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Payment Successful, Receipt Z798-000004 • ฿0, \"Voucher TV25N7JN9WM used\", left as booked (the child band prints at check-in: Bracelets to Print 0); the customer half: 1 child bracelet, 0 adult bracelets, no credit"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-05k-board-child-booked-and-paid.png",
+      "at": "2026-11-09T12:00:42.427Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/drop-off",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Check-in board, search \"ZZ TEST 798\": ZZ TEST 798 Child (7, drop-off) listed as booked with the Golden Ticket sale paid at the till; Check in offered (guardian number hidden)"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-05l-board-check-in-issue-band.png",
+      "at": "2026-11-09T12:00:44.565Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/drop-off",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Check in from the board: the check-in step for the paid drop-off child (no payment asked), Check in & issue band"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-05m-board-in-park-checked-in.png",
+      "at": "2026-11-09T12:01:12.784Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/drop-off",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Check-in board > In Park: ZZ TEST 798 Child checked in from the board (guardian number hidden)"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-05n-board-checked-out.png",
+      "at": "2026-11-09T12:01:27.132Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/drop-off",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Check-in board > Out: ZZ TEST 798 Child checked out with the pickup photo — nothing of this run stays in care"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-06a-third-golden-ticket-sold-to-refund-unused.png",
+      "at": "2026-11-09T12:02:04.013Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/merch-station",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Shop tab, a third Golden Ticket, cash ฿1,500, sold to be refunded unused: Sale Confirmed with its voucher code"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-06b-manager-refund-first-golden-ticket-sale-dialog.png",
+      "at": "2026-11-09T12:03:16.647Z",
+      "page": "M",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Manager (refund approval) on the ZZ TEST till, History > Z798-000001 (Golden Ticket ฿1,500 cash) > Refund: Whole sale, a reason chosen, a ZZ TEST note, Refund ฿1500"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-06c-refund-refused-golden-ticket-code-already-used.png",
+      "at": "2026-11-09T12:03:23.567Z",
+      "page": "M",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The platform's answer to the whole refund of Z798-000001, whose Golden Ticket code was already redeemed on Z798-000002"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-06d-manager-refund-unused-golden-ticket-dialog.png",
+      "at": "2026-11-09T12:03:45.070Z",
+      "page": "M",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Manager, History > Z798-000005 (the third Golden Ticket, code unused) > Refund: Whole sale, reason, ZZ TEST note, Refund ฿1500"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-06e-unused-golden-ticket-refunded.png",
+      "at": "2026-11-09T12:03:51.951Z",
+      "page": "M",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The whole refund of Z798-000005 made (cash, by hand); the sale now reads refunded"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-06f-refunded-code-refused-void.png",
+      "at": "2026-11-09T12:06:39.644Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Manager on the ZZ TEST till, new walk-in ticket sale (Tourist), Redeem voucher with the refunded third Golden Ticket code: refused — \"This voucher has been cancelled TVMCW4CBX5J\""
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-798/staging/s798-st-01c-api-reads-sync-definition-item-link.png",
+      "at": "2026-11-09T12:07:16.514Z",
+      "page": "EV",
+      "url": "about:blank",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Evidence card (a plain drawing of live API answers read as the admin): the pre-deploy log line \"Golden Ticket: created the voucher type for 1 operator(s), linked 2 shop item(s).\", the golden-ticket definition (free_ticket on the Full Day Pass, offline refuse, single use, never expires), the gift-day value text, the CF-TK-GOLDEN item at ฿1,500, the issuable list without it, the issue refusal VOUCHER_SOLD_AS_ITEM and the sale that minted through the item link"
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1c018-c293-7c00-8b93-ee7fc43e2c05",
+      "name": "ZZ TEST SCRUM-798 till",
+      "box": "Virtual box 1",
+      "prefix": "Z798",
+      "at": "2026-11-09T11:36:50.052Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1c01b-a7f2-79f9-914a-bf7f438ed880",
+      "what": "Golden Ticket shop sale (gt1), cash",
+      "at": "2026-11-09T11:40:03.809Z"
+    },
+    {
+      "kind": "stock-adjustment",
+      "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+      "delta": 1,
+      "reason": "ZZ TEST SCRUM-798: one pair for the Golden Ticket's free socks",
+      "at": "2026-11-09T11:41:27.271Z"
+    },
+    {
+      "kind": "sale",
+      "id": null,
+      "what": "Golden Ticket redemption, parent stays, age 4, socks, ฿0",
+      "at": "2026-11-09T11:43:48.894Z",
+      "note": "nothing written: the till refused at Pay (its stock cache still read Regular Socks 0); the cart was cancelled and redone after a page reload"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1c021-768f-74cf-88c9-f72edfdefca3",
+      "what": "Golden Ticket redemption, parent stays, age 4, socks, ฿0",
+      "at": "2026-11-09T11:47:27.726Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1c025-aad6-7c36-b31b-e7d31edd9e7b",
+      "what": "Golden Ticket shop sale (gt2), cash",
+      "at": "2026-11-09T11:50:59.730Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1c029-6a68-76f2-9998-21d5dba3cb42",
+      "what": "Golden Ticket redemption, drop-off, age 7, ฿0",
+      "at": "2026-11-09T11:59:21.011Z"
+    },
+    {
+      "kind": "registration",
+      "id": "01a1c02b-85ec-7798-9d50-104fd0983b3c",
+      "guardian": "ZZ TEST 798 Guardian",
+      "at": "2026-11-09T12:00:19.208Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1c02f-bbfc-74ef-a615-841a969d3c5e",
+      "what": "Golden Ticket shop sale (gt3), cash",
+      "at": "2026-11-09T12:01:59.772Z"
+    },
+    {
+      "kind": "member",
+      "id": "01a1c02b-848a-7305-923d-1a420c6d1b61",
+      "name": "ZZ TEST 798 Guardian",
+      "via": "drop-off gate (find or create the parent)"
+    }
+  ],
+  "writes": [
+    {
+      "at": "2026-11-09T11:36:50.052Z",
+      "by": "admin api",
+      "what": "POST /branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200,
+      "result": {
+        "stationId": "01a1c018-c293-7c00-8b93-ee7fc43e2c05",
+        "name": "ZZ TEST SCRUM-798 till",
+        "prefix": "Z798",
+        "box": "Virtual box 1",
+        "devices": [
+          "adult_band:Band Printer (adults)",
+          "kids_band:Band Printer (kids)",
+          "receipt:Receipt Printer 1"
+        ]
+      }
+    },
+    {
+      "at": "2026-11-09T11:37:02.274Z",
+      "by": "till (reception)",
+      "what": "POST /auth/sign-in + station pick",
+      "station": "ZZ TEST SCRUM-798 till"
+    },
+    {
+      "at": "2026-11-09T11:38:11.570Z",
+      "by": "till session (reception)",
+      "what": "POST /vouchers/issue {definitionId: golden-ticket} — expected refusal",
+      "status": 409,
+      "code": "VOUCHER_SOLD_AS_ITEM"
+    },
+    {
+      "at": "2026-11-09T11:41:27.271Z",
+      "by": "Console (admin)",
+      "what": "Regular Socks Adjust 1",
+      "reason": "ZZ TEST SCRUM-798: one pair for the Golden Ticket's free socks",
+      "net": [
+        {
+          "at": "2026-11-09T11:41:22.203Z",
+          "method": "POST",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/adjustments",
+          "status": 200,
+          "request": {
+            "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+            "delta": 1,
+            "reason": "ZZ TEST SCRUM-798: one pair for the Golden Ticket's free socks"
+          }
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T11:54:48.718Z",
+      "by": "till (reception)",
+      "what": "POST /auth/sign-in + station pick",
+      "station": "ZZ TEST SCRUM-798 till"
+    },
+    {
+      "at": "2026-11-09T12:02:24.457Z",
+      "by": "till (manager)",
+      "what": "POST /auth/sign-in + station pick",
+      "station": "ZZ TEST SCRUM-798 till"
+    },
+    {
+      "at": "2026-11-09T12:03:14.167Z",
+      "by": "till (manager)",
+      "what": "History refund, whole sale: Z798-000001",
+      "net": [
+        {
+          "at": "2026-11-09T12:03:16.832Z",
+          "method": "POST",
+          "path": "/api/sales/01a1c01b-a7f2-79f9-914a-bf7f438ed880/refunds",
+          "status": 409,
+          "request": {
+            "mode": "whole",
+            "reason": "Service recovery",
+            "note": "ZZ TEST SCRUM-798: refund the first Golden Ticket sale (its code was used on Z798-000002)",
+            "actionId": "29e79974-2020-45b0-a6ec-ef82ee3b67f6"
+          },
+          "code": "SOLD_VOUCHER_USED",
+          "message": "The Golden Ticket sold on this sale (code ending ZHBT) has already been used (receipt Z798-000002), so it cannot be refunded.",
+          "refund": null
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T12:03:42.655Z",
+      "by": "till (manager)",
+      "what": "History refund, whole sale: Z798-000005",
+      "net": [
+        {
+          "at": "2026-11-09T12:03:45.240Z",
+          "method": "POST",
+          "path": "/api/sales/01a1c02f-bbfc-74ef-a615-841a969d3c5e/refunds",
+          "status": 200,
+          "request": {
+            "mode": "whole",
+            "reason": "Service recovery",
+            "note": "ZZ TEST SCRUM-798: refund the unused third Golden Ticket",
+            "actionId": "73bda29c-ccfc-4d2c-b6bd-d2350cbb1bbd"
+          },
+          "code": null,
+          "message": null,
+          "refund": {
+            "number": "Z798-R-000001",
+            "amount": 150000
+          }
+        }
+      ]
+    }
+  ],
+  "browser": "Chromium 153.0.8010.12",
+  "voucherReads": [
+    {
+      "at": "2026-11-09T11:40:46.894Z",
+      "tag": "after the first Golden Ticket sale (step 2)",
+      "codes": {
+        "gt1": {
+          "status": 200,
+          "body": {
+            "vouchers": [
+              {
+                "record": "voucher",
+                "id": "01a1c01b-b840-7c6d-9a6d-b7292fcb0ada",
+                "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                "branchName": "Oto Play Park, Central Floresta",
+                "issuedAt": "2026-11-09T11:40:04.491Z",
+                "businessDate": "2026-11-09",
+                "type": {
+                  "id": "01a1c015-5885-73c2-bf80-06da7ec369d0",
+                  "code": "golden-ticket",
+                  "nameEn": "Golden Ticket",
+                  "nameTh": null,
+                  "kind": "free_ticket"
+                },
+                "prize": null,
+                "value": {
+                  "kind": "ticket",
+                  "text": "Gift day for one child: Full Day Pass",
+                  "redeemedSatang": null
+                },
+                "place": {
+                  "kind": "counter",
+                  "stationId": null,
+                  "name": "Counter (station not recorded)"
+                },
+                "codeLast4": "ZHBT",
+                "source": "manual",
+                "status": "issued",
+                "printCount": 0,
+                "expiresAt": null,
+                "redeemed": null
+              }
+            ]
+          }
+        }
+      },
+      "ledger": [],
+      "ledgerStatus": 200
+    },
+    {
+      "at": "2026-11-09T11:48:01.026Z",
+      "tag": "after the Golden Ticket sale Z798-000002 closed (step 3)",
+      "codes": {
+        "gt1": {
+          "status": 200,
+          "body": {
+            "vouchers": [
+              {
+                "record": "voucher",
+                "id": "01a1c01b-b840-7c6d-9a6d-b7292fcb0ada",
+                "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                "branchName": "Oto Play Park, Central Floresta",
+                "issuedAt": "2026-11-09T11:40:04.491Z",
+                "businessDate": "2026-11-09",
+                "type": {
+                  "id": "01a1c015-5885-73c2-bf80-06da7ec369d0",
+                  "code": "golden-ticket",
+                  "nameEn": "Golden Ticket",
+                  "nameTh": null,
+                  "kind": "free_ticket"
+                },
+                "prize": null,
+                "value": {
+                  "kind": "ticket",
+                  "text": "Gift day for one child: Full Day Pass",
+                  "redeemedSatang": 150000
+                },
+                "place": {
+                  "kind": "counter",
+                  "stationId": null,
+                  "name": "Counter (station not recorded)"
+                },
+                "codeLast4": "ZHBT",
+                "source": "manual",
+                "status": "redeemed",
+                "printCount": 0,
+                "expiresAt": null,
+                "redeemed": {
+                  "at": "2026-11-09T11:47:38.562Z",
+                  "branchName": "Oto Play Park, Central Floresta",
+                  "stationName": "ZZ TEST SCRUM-798 till",
+                  "saleId": "01a1c021-768f-74cf-88c9-f72edfdefca3",
+                  "receiptNumber": "Z798-000002"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "ledger": [],
+      "ledgerStatus": 200
+    },
+    {
+      "at": "2026-11-09T12:01:33.472Z",
+      "tag": "after the drop-off redemption Z798-000004 and the board check-in/out (step 5)",
+      "codes": {
+        "gt1": {
+          "status": 200,
+          "body": {
+            "vouchers": [
+              {
+                "record": "voucher",
+                "id": "01a1c01b-b840-7c6d-9a6d-b7292fcb0ada",
+                "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                "branchName": "Oto Play Park, Central Floresta",
+                "issuedAt": "2026-11-09T11:40:04.491Z",
+                "businessDate": "2026-11-09",
+                "type": {
+                  "id": "01a1c015-5885-73c2-bf80-06da7ec369d0",
+                  "code": "golden-ticket",
+                  "nameEn": "Golden Ticket",
+                  "nameTh": null,
+                  "kind": "free_ticket"
+                },
+                "prize": null,
+                "value": {
+                  "kind": "ticket",
+                  "text": "Gift day for one child: Full Day Pass",
+                  "redeemedSatang": 150000
+                },
+                "place": {
+                  "kind": "counter",
+                  "stationId": null,
+                  "name": "Counter (station not recorded)"
+                },
+                "codeLast4": "ZHBT",
+                "source": "manual",
+                "status": "redeemed",
+                "printCount": 0,
+                "expiresAt": null,
+                "redeemed": {
+                  "at": "2026-11-09T11:47:38.562Z",
+                  "branchName": "Oto Play Park, Central Floresta",
+                  "stationName": "ZZ TEST SCRUM-798 till",
+                  "saleId": "01a1c021-768f-74cf-88c9-f72edfdefca3",
+                  "receiptNumber": "Z798-000002"
+                }
+              }
+            ]
+          }
+        },
+        "gt2": {
+          "status": 200,
+          "body": {
+            "vouchers": [
+              {
+                "record": "voucher",
+                "id": "01a1c025-b9ee-7ff1-8586-921b745f1655",
+                "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                "branchName": "Oto Play Park, Central Floresta",
+                "issuedAt": "2026-11-09T11:51:00.294Z",
+                "businessDate": "2026-11-09",
+                "type": {
+                  "id": "01a1c015-5885-73c2-bf80-06da7ec369d0",
+                  "code": "golden-ticket",
+                  "nameEn": "Golden Ticket",
+                  "nameTh": null,
+                  "kind": "free_ticket"
+                },
+                "prize": null,
+                "value": {
+                  "kind": "ticket",
+                  "text": "Gift day for one child: Full Day Pass",
+                  "redeemedSatang": 131500
+                },
+                "place": {
+                  "kind": "counter",
+                  "stationId": null,
+                  "name": "Counter (station not recorded)"
+                },
+                "codeLast4": "N9WM",
+                "source": "manual",
+                "status": "redeemed",
+                "printCount": 0,
+                "expiresAt": null,
+                "redeemed": {
+                  "at": "2026-11-09T11:59:52.463Z",
+                  "branchName": "Oto Play Park, Central Floresta",
+                  "stationName": "ZZ TEST SCRUM-798 till",
+                  "saleId": "01a1c029-6a68-76f2-9998-21d5dba3cb42",
+                  "receiptNumber": "Z798-000004"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "ledger": [],
+      "ledgerStatus": 200
+    },
+    {
+      "at": "2026-11-09T12:04:02.318Z",
+      "tag": "after the refunds (step 6)",
+      "codes": {
+        "gt1": {
+          "status": 200,
+          "body": {
+            "vouchers": [
+              {
+                "record": "voucher",
+                "id": "01a1c01b-b840-7c6d-9a6d-b7292fcb0ada",
+                "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                "branchName": "Oto Play Park, Central Floresta",
+                "issuedAt": "2026-11-09T11:40:04.491Z",
+                "businessDate": "2026-11-09",
+                "type": {
+                  "id": "01a1c015-5885-73c2-bf80-06da7ec369d0",
+                  "code": "golden-ticket",
+                  "nameEn": "Golden Ticket",
+                  "nameTh": null,
+                  "kind": "free_ticket"
+                },
+                "prize": null,
+                "value": {
+                  "kind": "ticket",
+                  "text": "Gift day for one child: Full Day Pass",
+                  "redeemedSatang": 150000
+                },
+                "place": {
+                  "kind": "counter",
+                  "stationId": null,
+                  "name": "Counter (station not recorded)"
+                },
+                "codeLast4": "ZHBT",
+                "source": "manual",
+                "status": "redeemed",
+                "printCount": 0,
+                "expiresAt": null,
+                "redeemed": {
+                  "at": "2026-11-09T11:47:38.562Z",
+                  "branchName": "Oto Play Park, Central Floresta",
+                  "stationName": "ZZ TEST SCRUM-798 till",
+                  "saleId": "01a1c021-768f-74cf-88c9-f72edfdefca3",
+                  "receiptNumber": "Z798-000002"
+                }
+              }
+            ]
+          }
+        },
+        "gt2": {
+          "status": 200,
+          "body": {
+            "vouchers": [
+              {
+                "record": "voucher",
+                "id": "01a1c025-b9ee-7ff1-8586-921b745f1655",
+                "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                "branchName": "Oto Play Park, Central Floresta",
+                "issuedAt": "2026-11-09T11:51:00.294Z",
+                "businessDate": "2026-11-09",
+                "type": {
+                  "id": "01a1c015-5885-73c2-bf80-06da7ec369d0",
+                  "code": "golden-ticket",
+                  "nameEn": "Golden Ticket",
+                  "nameTh": null,
+                  "kind": "free_ticket"
+                },
+                "prize": null,
+                "value": {
+                  "kind": "ticket",
+                  "text": "Gift day for one child: Full Day Pass",
+                  "redeemedSatang": 131500
+                },
+                "place": {
+                  "kind": "counter",
+                  "stationId": null,
+                  "name": "Counter (station not recorded)"
+                },
+                "codeLast4": "N9WM",
+                "source": "manual",
+                "status": "redeemed",
+                "printCount": 0,
+                "expiresAt": null,
+                "redeemed": {
+                  "at": "2026-11-09T11:59:52.463Z",
+                  "branchName": "Oto Play Park, Central Floresta",
+                  "stationName": "ZZ TEST SCRUM-798 till",
+                  "saleId": "01a1c029-6a68-76f2-9998-21d5dba3cb42",
+                  "receiptNumber": "Z798-000004"
+                }
+              }
+            ]
+          }
+        },
+        "gt3": {
+          "status": 200,
+          "body": {
+            "vouchers": [
+              {
+                "record": "voucher",
+                "id": "01a1c02f-cd09-700a-9dba-064edb2e4056",
+                "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                "branchName": "Oto Play Park, Central Floresta",
+                "issuedAt": "2026-11-09T12:02:00.446Z",
+                "businessDate": "2026-11-09",
+                "type": {
+                  "id": "01a1c015-5885-73c2-bf80-06da7ec369d0",
+                  "code": "golden-ticket",
+                  "nameEn": "Golden Ticket",
+                  "nameTh": null,
+                  "kind": "free_ticket"
+                },
+                "prize": null,
+                "value": {
+                  "kind": "ticket",
+                  "text": "Gift day for one child: Full Day Pass",
+                  "redeemedSatang": null
+                },
+                "place": {
+                  "kind": "counter",
+                  "stationId": null,
+                  "name": "Counter (station not recorded)"
+                },
+                "codeLast4": "BX5J",
+                "source": "manual",
+                "status": "void",
+                "printCount": 0,
+                "expiresAt": null,
+                "redeemed": null
+              }
+            ]
+          }
+        }
+      },
+      "ledger": [],
+      "ledgerStatus": 200
+    }
+  ],
+  "cleanup": {
+    "actions": [
+      {
+        "at": "2026-11-09T12:00:49.175Z",
+        "what": "board check-in ZZ TEST 798 Child (paid, left as booked)",
+        "net": [
+          {
+            "at": "2026-11-09T12:00:44.758Z",
+            "method": "POST",
+            "path": "/api/checkin/check-in-booked",
+            "status": 200,
+            "code": null
+          }
+        ]
+      },
+      {
+        "at": "2026-11-09T12:01:27.135Z",
+        "what": "check out ZZ TEST 798 Child with pickup photo",
+        "label": "Confirm pickup & check out",
+        "net": [
+          {
+            "method": "POST",
+            "path": "/api/checkin/pickups/stays/01a1c02b-85ec-7798-9d50-105002cad773/release",
+            "status": 200,
+            "code": null
+          }
+        ]
+      },
+      {
+        "at": "2026-11-09T12:07:57.970Z",
+        "what": "Cancel the empty ticket order on the till"
+      },
+      {
+        "at": "2026-11-09T12:07:58.291Z",
+        "what": "archive member ZZ TEST 798 Guardian",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-09T12:07:58.388Z",
+        "what": "till sign-out (its own session route)",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-09T12:07:58.558Z",
+        "what": "unassign printers on ZZ TEST SCRUM-798 till",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-09T12:07:58.650Z",
+        "what": "archive station ZZ TEST SCRUM-798 till",
+        "status": 200,
+        "code": null
+      }
+    ],
+    "startedAt": "2026-11-09T12:07:55.502Z",
+    "salesBefore": [
+      {
+        "id": "01a1c02f-bbfc-74ef-a615-841a969d3c5e",
+        "receipt": "Z798-000005",
+        "status": "refunded",
+        "gross": 150000
+      },
+      {
+        "id": "01a1c029-6a68-76f2-9998-21d5dba3cb42",
+        "receipt": "Z798-000004",
+        "status": "finalised",
+        "gross": 0
+      },
+      {
+        "id": "01a1c025-aad6-7c36-b31b-e7d31edd9e7b",
+        "receipt": "Z798-000003",
+        "status": "finalised",
+        "gross": 150000
+      },
+      {
+        "id": "01a1c021-768f-74cf-88c9-f72edfdefca3",
+        "receipt": "Z798-000002",
+        "status": "finalised",
+        "gross": 0
+      },
+      {
+        "id": "01a1c01b-a7f2-79f9-914a-bf7f438ed880",
+        "receipt": "Z798-000001",
+        "status": "finalised",
+        "gross": 150000
+      }
+    ],
+    "tillMeAfterSignOut": 401,
+    "readBack": {
+      "at": "2026-11-09T12:07:58.998Z",
+      "till": {
+        "id": "01a1c018-c293-7c00-8b93-ee7fc43e2c05",
+        "name": "ZZ TEST SCRUM-798 till",
+        "archived": true,
+        "archivedAt": null,
+        "devices": 0
+      },
+      "salesAfter": [
+        {
+          "id": "01a1c02f-bbfc-74ef-a615-841a969d3c5e",
+          "receipt": "Z798-000005",
+          "status": "refunded",
+          "gross": 150000
+        },
+        {
+          "id": "01a1c029-6a68-76f2-9998-21d5dba3cb42",
+          "receipt": "Z798-000004",
+          "status": "finalised",
+          "gross": 0
+        },
+        {
+          "id": "01a1c025-aad6-7c36-b31b-e7d31edd9e7b",
+          "receipt": "Z798-000003",
+          "status": "finalised",
+          "gross": 150000
+        },
+        {
+          "id": "01a1c021-768f-74cf-88c9-f72edfdefca3",
+          "receipt": "Z798-000002",
+          "status": "finalised",
+          "gross": 0
+        },
+        {
+          "id": "01a1c01b-a7f2-79f9-914a-bf7f438ed880",
+          "receipt": "Z798-000001",
+          "status": "finalised",
+          "gross": 150000
+        }
+      ],
+      "walkInNumberAfter": {
+        "status": 200,
+        "found": false
+      },
+      "registration": null,
+      "socks": {
+        "at": "2026-11-09T12:07:59.178Z",
+        "total": 0,
+        "status": "out",
+        "places": [
+          {
+            "locationId": "01a0fa0b-8a47-78fe-9834-fe6333770607",
+            "name": "Store",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4e39997316",
+            "name": "BOH",
+            "quantity": 0
+          },
+          {
+            "locationId": "01a0fa0b-8a48-7dc8-812a-1b4fd0d322ed",
+            "name": "FOH (sell point)",
+            "quantity": 0
+          }
+        ],
+        "sellable": {
+          "variantId": null,
+          "label": null,
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "available": 0,
+          "atSellPoint": 0,
+          "lowStockThreshold": 20,
+          "status": "out"
+        }
+      },
+      "untouched": [
+        {
+          "name": "FWBooth1",
+          "archived": false,
+          "devices": 1
+        },
+        {
+          "name": "Reception Till 1",
+          "archived": false,
+          "devices": 7
+        },
+        {
+          "name": "Till 1 (Pi)",
+          "archived": false,
+          "devices": 4
+        },
+        {
+          "name": "Till 2 (test)",
+          "archived": false,
+          "devices": 4
+        }
+      ]
+    },
+    "finishedAt": "2026-11-09T12:07:59.179Z"
+  },
+  "audit": {
+    "voucher_gt1": [
+      {
+        "action": "voucher.redeem",
+        "at": "2026-11-09T11:47:38.562Z",
+        "actor": "Som (Reception)",
+        "after": {
+          "code": "TV8FKTBZHBT",
+          "saleId": "01a1c021-768f-74cf-88c9-f72edfdefca3",
+          "status": "redeemed",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "stationId": "01a1c018-c293-7c00-8b93-ee7fc43e2c05",
+          "redeemedAt": "2026-11-09T11:47:38.562Z"
+        },
+        "before": {
+          "status": "issued",
+          "heldSaleId": "01a1c021-768f-74cf-88c9-f72edfdefca3"
+        }
+      },
+      {
+        "action": "voucher.apply",
+        "at": "2026-11-09T11:46:53.430Z",
+        "actor": "Som (Reception)",
+        "after": {
+          "code": "TV8FKTBZHBT",
+          "effect": "gift_ticket",
+          "saleId": "01a1c021-768f-74cf-88c9-f72edfdefca3",
+          "stationId": "01a1c018-c293-7c00-8b93-ee7fc43e2c05",
+          "amountSatang": 150000
+        },
+        "before": null
+      },
+      {
+        "action": "voucher.hold",
+        "at": "2026-11-09T11:46:21.475Z",
+        "actor": "Som (Reception)",
+        "after": {
+          "code": "TV8FKTBZHBT",
+          "effect": "gift_ticket",
+          "saleId": "01a1c021-768f-74cf-88c9-f72edfdefca3",
+          "stationId": "01a1c018-c293-7c00-8b93-ee7fc43e2c05"
+        },
+        "before": null
+      },
+      {
+        "action": "voucher.release",
+        "at": "2026-11-09T11:45:07.177Z",
+        "actor": "Som (Reception)",
+        "after": {
+          "reason": "line_removed",
+          "stationId": "01a1c018-c293-7c00-8b93-ee7fc43e2c05"
+        },
+        "before": {
+          "saleId": "01a1c01d-6fa0-7e64-8990-12ce7e32a278",
+          "heldStationId": "01a1c018-c293-7c00-8b93-ee7fc43e2c05"
+        }
+      },
+      {
+        "action": "voucher.hold",
+        "at": "2026-11-09T11:41:57.567Z",
+        "actor": "Som (Reception)",
+        "after": {
+          "code": "TV8FKTBZHBT",
+          "effect": "gift_ticket",
+          "saleId": "01a1c01d-6fa0-7e64-8990-12ce7e32a278",
+          "stationId": "01a1c018-c293-7c00-8b93-ee7fc43e2c05"
+        },
+        "before": null
+      },
+      {
+        "action": "voucher.issue",
+        "at": "2026-11-09T11:40:04.490Z",
+        "actor": "Som (Reception)",
+        "after": {
+          "source": "manual",
+          "memberId": null,
+          "codeLast4": "ZHBT",
+          "expiresAt": null,
+          "productId": "01a1bf0a-1f12-7e51-827c-33646a66fc68",
+          "stationId": "01a1c018-c293-7c00-8b93-ee7fc43e2c05",
+          "definitionId": "01a1c015-5885-73c2-bf80-06da7ec369d0",
+          "issuedSaleId": "01a1c01b-a7f2-79f9-914a-bf7f438ed880",
+          "definitionCode": "golden-ticket"
+        },
+        "before": null
+      }
+    ],
+    "voucher_gt2": [
+      {
+        "action": "voucher.redeem",
+        "at": "2026-11-09T11:59:52.463Z",
+        "actor": "Som (Reception)",
+        "after": {
+          "code": "TV25N7JN9WM",
+          "saleId": "01a1c029-6a68-76f2-9998-21d5dba3cb42",
+          "status": "redeemed",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "stationId": "01a1c018-c293-7c00-8b93-ee7fc43e2c05",
+          "redeemedAt": "2026-11-09T11:59:52.463Z"
+        },
+        "before": {
+          "status": "issued",
+          "heldSaleId": "01a1c029-6a68-76f2-9998-21d5dba3cb42"
+        }
+      },
+      {
+        "action": "voucher.apply",
+        "at": "2026-11-09T11:59:12.500Z",
+        "actor": "Som (Reception)",
+        "after": {
+          "code": "TV25N7JN9WM",
+          "effect": "gift_ticket",
+          "saleId": "01a1c029-6a68-76f2-9998-21d5dba3cb42",
+          "stationId": "01a1c018-c293-7c00-8b93-ee7fc43e2c05",
+          "amountSatang": 131500
+        },
+        "before": null
+      },
+      {
+        "action": "voucher.hold",
+        "at": "2026-11-09T11:55:02.664Z",
+        "actor": "Som (Reception)",
+        "after": {
+          "code": "TV25N7JN9WM",
+          "effect": "gift_ticket",
+          "saleId": "01a1c029-6a68-76f2-9998-21d5dba3cb42",
+          "stationId": "01a1c018-c293-7c00-8b93-ee7fc43e2c05"
+        },
+        "before": null
+      },
+      {
+        "action": "voucher.release",
+        "at": "2026-11-09T11:54:13.914Z",
+        "actor": "Som (Reception)",
+        "after": {
+          "reason": "line_removed",
+          "stationId": "01a1c018-c293-7c00-8b93-ee7fc43e2c05"
+        },
+        "before": {
+          "saleId": "01a1c026-32e1-7e6d-bf29-e5401cbf35df",
+          "heldStationId": "01a1c018-c293-7c00-8b93-ee7fc43e2c05"
+        }
+      },
+      {
+        "action": "voucher.hold",
+        "at": "2026-11-09T11:51:31.836Z",
+        "actor": "Som (Reception)",
+        "after": {
+          "code": "TV25N7JN9WM",
+          "effect": "gift_ticket",
+          "saleId": "01a1c026-32e1-7e6d-bf29-e5401cbf35df",
+          "stationId": "01a1c018-c293-7c00-8b93-ee7fc43e2c05"
+        },
+        "before": null
+      },
+      {
+        "action": "voucher.issue",
+        "at": "2026-11-09T11:51:00.294Z",
+        "actor": "Som (Reception)",
+        "after": {
+          "source": "manual",
+          "memberId": null,
+          "codeLast4": "N9WM",
+          "expiresAt": null,
+          "productId": "01a1bf0a-1f12-7e51-827c-33646a66fc68",
+          "stationId": "01a1c018-c293-7c00-8b93-ee7fc43e2c05",
+          "definitionId": "01a1c015-5885-73c2-bf80-06da7ec369d0",
+          "issuedSaleId": "01a1c025-aad6-7c36-b31b-e7d31edd9e7b",
+          "definitionCode": "golden-ticket"
+        },
+        "before": null
+      }
+    ],
+    "voucher_gt3": [
+      {
+        "action": "voucher.void",
+        "at": "2026-11-09T12:03:45.656Z",
+        "actor": "Khun Lek (Manager)",
+        "after": {
+          "reason": "Service recovery",
+          "status": "void",
+          "refundId": "01a1c031-6783-779b-b75e-690e2d8bd516",
+          "codeLast4": "BX5J",
+          "definitionId": "01a1c015-5885-73c2-bf80-06da7ec369d0",
+          "issuedSaleId": "01a1c02f-bbfc-74ef-a615-841a969d3c5e"
+        },
+        "before": {
+          "status": "issued",
+          "codeLast4": "BX5J"
+        }
+      },
+      {
+        "action": "voucher.issue",
+        "at": "2026-11-09T12:02:00.446Z",
+        "actor": "Som (Reception)",
+        "after": {
+          "source": "manual",
+          "memberId": null,
+          "codeLast4": "BX5J",
+          "expiresAt": null,
+          "productId": "01a1bf0a-1f12-7e51-827c-33646a66fc68",
+          "stationId": "01a1c018-c293-7c00-8b93-ee7fc43e2c05",
+          "definitionId": "01a1c015-5885-73c2-bf80-06da7ec369d0",
+          "issuedSaleId": "01a1c02f-bbfc-74ef-a615-841a969d3c5e",
+          "definitionCode": "golden-ticket"
+        },
+        "before": null
+      }
+    ],
+    "sale_gt3": [
+      {
+        "action": "sale.refund",
+        "at": "2026-11-09T12:03:45.656Z",
+        "actor": "Khun Lek (Manager)",
+        "after": {
+          "mode": "whole",
+          "number": "Z798-R-000001",
+          "reason": "Service recovery",
+          "slices": [
+            {
+              "route": "cash",
+              "status": "done",
+              "attemptId": "01a1c02f-cc92-79f7-b5e3-9aa2f206d06e",
+              "amountSatang": 150000
+            }
+          ],
+          "status": "refunded",
+          "refundId": "01a1c031-6783-779b-b75e-690e2d8bd516",
+          "restocked": [],
+          "amountSatang": 150000,
+          "refundStatus": "refunded",
+          "refundedSatang": 150000,
+          "revokedBandIds": [],
+          "requestedSatang": 150000,
+          "soldVouchersVoided": [
+            {
+              "id": "01a1c02f-cd09-700a-9dba-064edb2e4056",
+              "codeLast4": "BX5J"
+            }
+          ],
+          "approvedByAccountId": "01a0c9ae-5377-7b34-a9ab-22bf8086f5f7"
+        }
+      },
+      {
+        "action": "sale.print",
+        "at": "2026-11-09T12:02:00.446Z",
+        "actor": "Som (Reception)",
+        "after": {
+          "jobs": [
+            {
+              "id": "01a1c02f-cd21-7fb2-ad01-d6c9f6cd4679",
+              "kind": "receipt",
+              "status": "queued",
+              "subjectType": "sale"
+            }
+          ],
+          "notes": [],
+          "bandIds": []
+        }
+      },
+      {
+        "action": "sale.finalise",
+        "at": "2026-11-09T12:02:00.446Z",
+        "actor": "Som (Reception)",
+        "after": {
+          "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+          "status": "finalised",
+          "tender": {
+            "method": "cash",
+            "amountSatang": 150000,
+            "changeSatang": 0
+          },
+          "stationId": "01a1c018-c293-7c00-8b93-ee7fc43e2c05",
+          "grossSatang": 150000,
+          "receiptNumber": "Z798-000005"
+        }
+      },
+      {
+        "action": "sale.create",
+        "at": "2026-11-09T12:01:56.889Z",
+        "actor": "Som (Reception)",
+        "after": {
+          "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+          "status": "tendering",
+          "lineCount": 1,
+          "stationId": "01a1c018-c293-7c00-8b93-ee7fc43e2c05",
+          "grossSatang": 150000,
+          "pricingMode": "weekday",
+          "businessDate": "2026-11-09",
+          "customerTier": "tourist",
+          "discountSatang": 0,
+          "registrationIds": []
+        }
+      }
+    ],
+    "sale_gt1": [
+      {
+        "action": "sale.print",
+        "at": "2026-11-09T11:40:04.490Z",
+        "actor": "Som (Reception)"
+      },
+      {
+        "action": "sale.finalise",
+        "at": "2026-11-09T11:40:04.490Z",
+        "actor": "Som (Reception)"
+      },
+      {
+        "action": "sale.create",
+        "at": "2026-11-09T11:40:00.932Z",
+        "actor": "Som (Reception)"
+      }
+    ]
+  },
+  "finishedAt": "2026-11-09T12:08:07.684Z",
+  "summary": {
+    "liveCommit": "85b18b5c2ac0b16cb7a5e7e3243b7c3b3cf67551",
+    "deploysLive": {
+      "oto-api-staging": "dep-dboqtkbbc2fs73cvaml0 live 11:34:40Z",
+      "oto-pos-web-staging": "dep-dboqtkrbc2fs73cvaoj0 live 11:33:36Z",
+      "oto-pos-staging": "dep-dboqtl1srm7s73crc3ug live 11:31:33Z"
+    },
+    "till": "ZZ TEST SCRUM-798 till (Z798) on Virtual box 1, Central Floresta — archived at the end",
+    "receipts": {
+      "Z798-000001": "Golden Ticket sold, cash ฿1,500, code …ZHBT (used on Z798-000002); refund refused SOLD_VOUCHER_USED; stays finalised",
+      "Z798-000002": "Golden Ticket redeemed, parent stays, age 4, socks: Kids/Adults/Regular Socks at ฿0, gross ฿0, no grants, 1 kid + 1 adult band",
+      "Z798-000003": "second Golden Ticket sold, cash ฿1,500, code …N9WM (used on Z798-000004); stays finalised",
+      "Z798-000004": "Golden Ticket redeemed, drop-off, age 7: Kids ฿0 + Drop-off service ฿0, gross ฿0, no grants; child checked in and out from the board",
+      "Z798-000005": "third Golden Ticket sold, cash ฿1,500, code …BX5J; refunded whole by the manager (Z798-R-000001), code voided, till answers VOUCHER_VOID"
+    }
+  }
+}
