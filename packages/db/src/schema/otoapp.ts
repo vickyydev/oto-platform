@@ -73,6 +73,13 @@ export const otoappUsers = otoapp.table('users', {
   /** Unique there, so two users cannot carry the same number. */
   phoneE164: text('phone_e164'),
   /**
+   * The app's own word that `phone_e164` is this person's: NOT NULL there with
+   * default false, set by the app's SMS check (`twilio-service.ts`) and by an
+   * administrator's edit of the employee's phone, and what the app's own SMS
+   * sign-in and reset require. Read by SCRUM-795's staff accounts script.
+   */
+  phoneVerified: boolean('phone_verified').notNull().default(false),
+  /**
    * The platform account this user is the same person as. Unique and
    * nullable: it is what `platformSignOn.ts` resolves the signed-in person by,
    * and every user that predates the platform has none.

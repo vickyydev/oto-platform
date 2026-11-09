@@ -21,8 +21,10 @@ import { createTestDatabase, stopTestServer } from '../src/testing';
  * one table the owner reviews; a dry run writes nothing and says, per person,
  * one outcome; applying needs an administrator as the actor; each person gets
  * an active account with no password, the identity link, the stamp, the tile
- * and the mapped role at the right scope, audited without a phone; and a
- * second run finds nothing to do.
+ * and the mapped role at the right scope, audited without a phone; the app's
+ * forced change is carried to the account and left on the app user; the
+ * phone counts as verified only where the app proves the user's own
+ * phone_e164; and a second run finds nothing to do.
  */
 
 let db: Db;
@@ -61,7 +63,14 @@ const PHONES = {
   held: '+66811111024',
   noCopy: '+66811111025',
   heldAccount: '+66811111026',
+  managerAll: '+66811111027',
+  managerHeadOffice: '+66811111028',
 };
+
+/** The provisioned people the app still owes a password change: all but `admin`, who changed it. */
+const MUST_CHANGE = (key: string) => key !== 'admin';
+/** The provisioned people whose phone the app proves: their own phone_e164 with phone_verified. */
+const VERIFIED = new Set(['staffA', 'admin']);
 
 async function count(table: 'account' | 'app_identity' | 'audit_log' | 'role_assignment'): Promise<number> {
   const r = await db.execute<{ n: number }>(sql.raw(`select count(*)::int as n from core.${table}`));
@@ -77,16 +86,19 @@ async function appUser(
     isActive?: boolean;
     operatorId?: string | null;
     platformUserId?: string | null;
+    /** The app's own defaults: a forced change owed, the phone not verified. */
+    mustChangePassword?: boolean;
+    phoneVerified?: boolean;
   },
 ): Promise<string> {
   const id = newId();
   u[key] = id;
   await db.execute(sql`
     insert into otoapp.users (id, email, password, full_name, role, operator_id, is_active, must_change_password,
-      phone_number, phone_e164, platform_user_id)
+      phone_number, phone_e164, phone_verified, platform_user_id)
     values (${id}, ${`zz-${key}@example.test`}, 'not-a-real-hash', ${`ZZ Person ${key}`}, ${opts.role},
-      ${opts.operatorId ?? null}, ${opts.isActive ?? true}, true, ${opts.phoneNumber ?? null},
-      ${opts.phoneE164 ?? null}, ${opts.platformUserId ?? null})`);
+      ${opts.operatorId ?? null}, ${opts.isActive ?? true}, ${opts.mustChangePassword ?? true}, ${opts.phoneNumber ?? null},
+      ${opts.phoneE164 ?? null}, ${opts.phoneVerified ?? false}, ${opts.platformUserId ?? null})`);
   return id;
 }
 
@@ -183,18 +195,34 @@ beforeAll(async () => {
       (${headOffice}, ${ours}, 'Head Office', '', null),
       (${elsewhere}, ${theirs}, 'Elsewhere', '', null)`);
 
-  await access(await appUser('staffA', { role: 'staff', phoneE164: PHONES.staffA }), ours, appCentral);
+  await access(await appUser('staffA', { role: 'staff', phoneE164: PHONES.staffA, phoneVerified: true }), ours, appCentral);
   await appEmployee('staffA', ours, u.staffA!);
   await mirror('staffA', appEmployees.staffA!, PHONES.staffA);
 
-  await access(await appUser('staffB', { role: 'staff', phoneNumber: PHONES.staffBLocal }), ours, null);
+  // The app's flag says verified, but of a phone_e164 this user does not have:
+  // the free-text number given to the account is not what it proves.
+  await access(
+    await appUser('staffB', { role: 'staff', phoneNumber: PHONES.staffBLocal, phoneVerified: true }),
+    ours,
+    null,
+  );
 
   await access(await appUser('staffC', { role: 'staff' }), ours, appChalong);
   await appEmployee('staffC', ours, u.staffC!);
   await mirror('staffC', appEmployees.staffC!, PHONES.staffCEmployee);
 
   await access(await appUser('manager', { role: 'manager', phoneE164: PHONES.manager }), ours, appChalong);
-  await access(await appUser('admin', { role: 'admin', phoneE164: PHONES.admin }), ours, appCentral);
+  await access(await appUser('managerAll', { role: 'manager', phoneE164: PHONES.managerAll }), ours, null);
+  await access(
+    await appUser('managerHeadOffice', { role: 'manager', phoneE164: PHONES.managerHeadOffice }),
+    ours,
+    headOffice,
+  );
+  await access(
+    await appUser('admin', { role: 'admin', phoneE164: PHONES.admin, mustChangePassword: false, phoneVerified: true }),
+    ours,
+    appCentral,
+  );
   await access(
     await appUser('opAdmin', { role: 'operator_admin', phoneE164: PHONES.opAdmin, operatorId: appOperator }),
     ours,
@@ -241,6 +269,8 @@ const EXPECTED: Record<string, StaffAccountsReport['people'][number]['outcome']>
   staffB: 'provision',
   staffC: 'provision',
   manager: 'provision',
+  managerAll: 'provision',
+  managerHeadOffice: 'provision',
   admin: 'provision',
   opAdmin: 'provision',
   advisor: 'provision',
@@ -265,10 +295,10 @@ const outcomeOf = (r: StaffAccountsReport) =>
 const person = (r: StaffAccountsReport, key: string) => r.people.find((p) => p.userId === u[key])!;
 
 describe('SCRUM-795: the role mapping', () => {
-  it('is the one reviewed table: staff and advisor to staff, manager to branch_manager, the admins operator-wide, global_admin skipped', () => {
+  it('is the one reviewed table: staff and advisor the tile alone, manager to branch_manager, the admins operator-wide, global_admin skipped', () => {
     expect(OTO_APP_ROLE_TO_PLATFORM).toEqual({
-      staff: { role: 'staff', scope: 'app_branches' },
-      advisor: { role: 'staff', scope: 'app_branches' },
+      staff: { role: null },
+      advisor: { role: null },
       manager: { role: 'branch_manager', scope: 'app_branches' },
       admin: { role: 'operator_admin', scope: 'operator' },
       operator_admin: { role: 'operator_admin', scope: 'operator' },
@@ -287,7 +317,7 @@ describe('SCRUM-795: provisioning the OTO App users', () => {
     expect(dryRun).toMatchObject({ installed: true, applied: false, read: Object.keys(u).length });
     expect(outcomeOf(dryRun)).toEqual(EXPECTED);
     expect(dryRun.outcomes).toMatchObject({
-      provision: 9,
+      provision: 11,
       global_admin: 1,
       inactive: 1,
       already_linked: 2,
@@ -310,20 +340,36 @@ describe('SCRUM-795: provisioning the OTO App users', () => {
     expect(person(dryRun, 'staffC')).toMatchObject({ phoneSource: 'employee', employeeLink: 'linked', employeeId: mirrors.staffC });
     expect(person(dryRun, 'ambiguous')).toMatchObject({ employeeLink: 'ambiguous', employeeId: null });
     expect(person(dryRun, 'noCopy')).toMatchObject({ employeeLink: 'no_copy', employeeId: null });
-    expect(dryRun.phoneSources).toEqual({ user_phone_e164: 7, user_phone_number: 1, employee: 1 });
-    expect(dryRun.employeeLinks).toMatchObject({ linked: 2, none: 5, ambiguous: 1, no_copy: 1 });
+    expect(dryRun.phoneSources).toEqual({ user_phone_e164: 9, user_phone_number: 1, employee: 1 });
+    expect(dryRun.employeeLinks).toMatchObject({ linked: 2, none: 7, ambiguous: 1, no_copy: 1 });
   });
 
-  it('maps each role to its platform role at the app branches, or operator-wide', () => {
-    expect(person(dryRun, 'staffA')).toMatchObject({ platformRole: 'staff', branchIds: [central] });
-    expect(person(dryRun, 'staffB')).toMatchObject({ platformRole: 'staff', branchIds: [central, chalong].sort() });
+  it('maps each role to its platform role at the app branches, or operator-wide, and staff and advisor to the tile alone', () => {
+    expect(person(dryRun, 'staffA')).toMatchObject({ platformRole: null, branchIds: [] });
+    expect(person(dryRun, 'staffB')).toMatchObject({ platformRole: null, branchIds: [] });
     expect(person(dryRun, 'manager')).toMatchObject({ platformRole: 'branch_manager', branchIds: [chalong] });
+    // Access to every branch of the park group: each park joined to one of them.
+    expect(person(dryRun, 'managerAll')).toMatchObject({ platformRole: 'branch_manager', branchIds: [central, chalong].sort() });
+    // Head Office is an app-only branch: the manager's role lands nowhere and they get the tile alone.
+    expect(person(dryRun, 'managerHeadOffice')).toMatchObject({ platformRole: 'branch_manager', branchIds: [] });
     expect(person(dryRun, 'admin')).toMatchObject({ platformRole: 'operator_admin', branchIds: [] });
     expect(person(dryRun, 'opAdmin')).toMatchObject({ platformRole: 'operator_admin', branchIds: [] });
-    // Head Office is an app-only branch: the advisor gets the tile and nothing else.
-    expect(person(dryRun, 'advisor')).toMatchObject({ platformRole: 'staff', branchIds: [] });
+    expect(person(dryRun, 'advisor')).toMatchObject({ platformRole: null, branchIds: [] });
+    expect(dryRun.tileOnly).toBe(6);
     expect(dryRun.withoutPlatformRole).toBe(1);
-    expect(dryRun.roleAssignments).toEqual({ staff: 6, branch_manager: 1, operator_admin: 2 });
+    expect(dryRun.roleAssignments).toEqual({ staff: 0, branch_manager: 3, operator_admin: 2 });
+  });
+
+  it('carries the forced change the app still owes, and counts a phone verified only where the app proves the user’s own phone_e164', () => {
+    const provisioned = Object.keys(EXPECTED).filter((key) => EXPECTED[key] === 'provision');
+    for (const key of provisioned) {
+      expect(person(dryRun, key), key).toMatchObject({
+        mustChangePassword: MUST_CHANGE(key),
+        phoneVerified: VERIFIED.has(key),
+      });
+    }
+    expect(dryRun.appForcedChange).toBe(10);
+    expect(dryRun.phoneVerification).toEqual({ verified: 2, unverified: 9 });
   });
 
   it('never carries a phone number or a name in the report', () => {
@@ -343,7 +389,7 @@ describe('SCRUM-795: provisioning the OTO App users', () => {
     expect(await count('account')).toBe(before);
   });
 
-  it('applies: an active account with no password, the link, the stamp, the tile and the mapped role', async () => {
+  it('applies: an active account with no password, the link, the stamp, the tile and the mapped role, the forced change carried', async () => {
     const applied = await provisionOtoAppStaffAccounts(db, { operatorId, apply: true, actorAccountId: actorId });
     expect(applied.applied).toBe(true);
     expect(outcomeOf(applied)).toEqual(EXPECTED);
@@ -361,30 +407,41 @@ describe('SCRUM-795: provisioning the OTO App users', () => {
       staffB: PHONES.staffB,
       staffC: PHONES.staffCEmployee,
       manager: PHONES.manager,
+      managerAll: PHONES.managerAll,
+      managerHeadOffice: PHONES.managerHeadOffice,
       admin: PHONES.admin,
       opAdmin: PHONES.opAdmin,
       advisor: PHONES.advisor,
       ambiguous: PHONES.ambiguous,
       noCopy: PHONES.noCopy,
     };
+    expect(Object.keys(phoneOf).sort()).toEqual(
+      Object.keys(EXPECTED)
+        .filter((key) => EXPECTED[key] === 'provision')
+        .sort(),
+    );
     for (const [key, phone] of Object.entries(phoneOf)) {
       const p = person(applied, key);
       expect(p.accountId, key).toBeTruthy();
       const [acc] = await db.select().from(s.account).where(eq(s.account.id, p.accountId!));
+      // FORCED CHANGE: the account owes what the app user owed.
       expect(acc, key).toMatchObject({
         operatorId,
         phone,
         passwordHash: null,
         status: 'active',
-        mustChangePassword: false,
+        mustChangePassword: MUST_CHANGE(key),
         employeeId: p.employeeId,
       });
-      expect(acc!.phoneVerifiedAt, key).toBeInstanceOf(Date);
+      // PHONE VERIFIED: only where the app proves the user's own phone_e164.
+      if (VERIFIED.has(key)) expect(acc!.phoneVerifiedAt, key).toBeInstanceOf(Date);
+      else expect(acc!.phoneVerifiedAt, key).toBeNull();
 
       const [identity] = await db.select().from(s.appIdentity).where(eq(s.appIdentity.accountId, p.accountId!));
       expect(identity, key).toMatchObject({ app: 'oto_app', externalUserId: u[key], createdBy: actorId });
+      // The stamp, and the app's own forced change left as the app has it.
       const [user] = await db.select().from(otoappUsers).where(eq(otoappUsers.id, u[key]!));
-      expect(user, key).toMatchObject({ platformUserId: p.accountId, mustChangePassword: false });
+      expect(user, key).toMatchObject({ platformUserId: p.accountId, mustChangePassword: MUST_CHANGE(key) });
 
       const grants = await db
         .select({ roleId: s.roleAssignment.roleId, scopeType: s.roleAssignment.scopeType, scopeId: s.roleAssignment.scopeId })
@@ -394,10 +451,15 @@ describe('SCRUM-795: provisioning the OTO App users', () => {
         { roleId: accessRole!.id, scopeType: 'operator', scopeId: operatorId },
         ...(p.platformRole === 'operator_admin'
           ? [{ roleId: roleIds.operator_admin, scopeType: 'operator', scopeId: operatorId }]
-          : p.branchIds.map((b) => ({ roleId: roleIds[p.platformRole!], scopeType: 'branch', scopeId: b }))),
+          : p.platformRole
+            ? p.branchIds.map((b) => ({ roleId: roleIds[p.platformRole!], scopeType: 'branch', scopeId: b }))
+            : []),
       ];
       expect(grants, key).toEqual(expect.arrayContaining(expected));
       expect(grants, key).toHaveLength(expected.length);
+      if (['staffA', 'staffB', 'staffC', 'advisor', 'ambiguous', 'noCopy', 'managerHeadOffice'].includes(key)) {
+        expect(grants, `${key}: the tile alone`).toHaveLength(1);
+      }
 
       const rows = await db
         .select()
@@ -405,15 +467,23 @@ describe('SCRUM-795: provisioning the OTO App users', () => {
         .where(and(eq(s.auditLog.action, 'app_identity.provision'), eq(s.auditLog.entityId, identity!.id)));
       expect(rows, key).toHaveLength(1);
       expect(rows[0]).toMatchObject({ actorAccountId: actorId, operatorId, requestId: STAFF_ACCOUNTS_REQUEST_ID });
-      expect(rows[0]!.after).toMatchObject({ accountId: p.accountId, externalUserId: u[key], passwordSet: false });
+      expect(rows[0]!.after).toMatchObject({
+        accountId: p.accountId,
+        externalUserId: u[key],
+        passwordSet: false,
+        mustChangePassword: MUST_CHANGE(key),
+        phoneVerified: VERIFIED.has(key),
+      });
       expect(JSON.stringify(rows[0]!.after)).not.toContain(phone);
     }
+    expect(applied.appForcedChange).toBe(10);
+    expect(applied.phoneVerification).toEqual({ verified: 2, unverified: 9 });
 
     const assignmentRows = await db
       .select()
       .from(s.auditLog)
       .where(and(eq(s.auditLog.action, 'role_assignment.create'), eq(s.auditLog.requestId, STAFF_ACCOUNTS_REQUEST_ID)));
-    expect(assignmentRows).toHaveLength(9);
+    expect(assignmentRows).toHaveLength(5);
 
     // Nobody skipped was touched.
     for (const key of ['global', 'inactive', 'noPhone', 'taken', 'shared1', 'shared2', 'foreign', 'odd', 'held']) {
@@ -426,7 +496,7 @@ describe('SCRUM-795: provisioning the OTO App users', () => {
     const before = await Promise.all([count('account'), count('app_identity'), count('audit_log'), count('role_assignment')]);
     const again = await provisionOtoAppStaffAccounts(db, { operatorId, apply: true, actorAccountId: actorId });
     expect(again.outcomes.provision).toBe(0);
-    expect(again.outcomes.already_linked).toBe(11);
+    expect(again.outcomes.already_linked).toBe(13);
     expect(await Promise.all([count('account'), count('app_identity'), count('audit_log'), count('role_assignment')])).toEqual(before);
   });
 });

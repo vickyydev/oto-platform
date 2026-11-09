@@ -34,34 +34,69 @@ import {
  * checks it against the app's own hash once and keeps an argon2 hash of it).
  *
  * What one person gets, in one transaction:
- *   - `core.account` in the operator: their phone, `active`, the phone counted
- *     as verified (it is the number the park already holds for them), no
- *     password hash, no forced change;
+ *   - `core.account` in the operator: their phone, `active`, no password hash,
+ *     the forced change and the phone's verification as `FORCED CHANGE` and
+ *     `PHONE VERIFIED` below decide them;
  *   - the account's employee record: the copy of their app employee
  *     (`core.employee`, source `otoapp`) when the app links exactly one
  *     employee to the user — see `EMPLOYEE LINK` below;
  *   - the identity link (`core.app_identity`, app `oto_app`) and the stamp on
- *     their app user (`platform_user_id`, and the app's forced change switched
- *     off as `linkOtoAppUser` does it, SCRUM-539);
+ *     their app user (`platform_user_id` — and, unlike `linkOtoAppUser`, the
+ *     app's own forced change left as the app has it: `FORCED CHANGE` below);
  *   - the OTO App tile: the operator's `app_access_oto_app` role at operator
  *     scope — the Console's link with no branch choice, and SCRUM-539's
  *     provisioning, grant exactly this;
- *   - their platform role, by `OTO_APP_ROLE_TO_PLATFORM` below.
+ *   - a platform role where `OTO_APP_ROLE_TO_PLATFORM` below gives one.
+ *
+ * FORCED CHANGE. The app sets `must_change_password` on every user it creates
+ * and at every administrator reset, and shows that temporary password to the
+ * administrator (`apps/oto-app/server/routes.ts`, the user create and reset
+ * routes, `storage.resetUserPassword`). The first launcher sign-in adopts
+ * whatever password the user holds, so a user still on such a password would
+ * keep, as their suite password, one an administrator chose or saw. The flag
+ * is therefore carried: `core.account.must_change_password` is the app user's
+ * own, read under the row lock, so the adopting sign-in answers
+ * `mustChangePassword: true` and `requireAuth` holds every business route
+ * (the OTO App hand-off included) until `/auth/change-password`, which takes
+ * the adopted hash as the current password — SCRUM-539 sets the same flag on
+ * the temporary password it issues (`otoapp-provision.ts`). The app's own flag
+ * is NOT switched off here, as `linkOtoAppUser` switches it: a launcher session
+ * never sees it (the app's `/api/user` answers false for a platform session),
+ * and the app's own password is still the temporary one, which its legacy
+ * form (`OTOAPP_LEGACY_LOGIN`, kept for the cutover rehearsal) must not take
+ * without the change. Counted as `appForcedChange` in the report. OWNER
+ * QUESTION, in PLAN.md: both halves of this rule.
+ *
+ * PHONE VERIFIED. `/auth/password-reset/request` sends a reset code to any
+ * active account whose phone is verified, so a verified phone is a way into
+ * the account that does not need the app password. SCRUM-539 marks the phone
+ * verified because an administrator typed the number for the person in front
+ * of them; restored data carries no such moment. So `phone_verified_at` is set
+ * only where the app itself says the number is proven: the phone was taken
+ * from the user's own `phone_e164` AND the app's `phone_verified` is true —
+ * the condition the app's own SMS sign-in and reset look a user up by
+ * (`twilio-service.ts`). Every other account starts unverified: it signs in
+ * with the app password as before, and SMS reset is refused until a
+ * verification (an administrator's temporary password marks the phone, as for
+ * any account). Counted as `phoneVerification` in the report. OWNER QUESTION,
+ * in PLAN.md, not a decided fact.
  *
  * WHY THESE ROWS ARE WRITTEN HERE AND NOT BY THE API'S SERVICES. `linkOtoAppUser`,
  * `ensureAppAccessRole`, `grantAppAccess` and `audit.record` live in
  * `apps/api/src/services`, and this package cannot import from the api — the
  * dependency only points the other way (the same reason the branch seam lives
  * in `schema/otoapp.ts`). So this writes the same rows those services write,
- * column for column: the stamp of `linkOtoAppUser`, the role and grant of
+ * column for column: the stamp of `linkOtoAppUser` (all but its switching off
+ * of the app's forced change, FORCED CHANGE above), the role and grant of
  * `ensureAppAccessRole` + `grantAppAccess(…, null)`, and audit rows of the
  * shape `audit.record` inserts. `test/s795-staff-accounts.test.ts` in the api
  * holds the result to the api's own readers (the tile's permission, the grant
  * read back as operator-wide, the identity the role context resolves), so a
  * drift on either side fails a test rather than a person at the launcher.
- * What it does not do is call `reconcileOtoAppRole`: the platform roles below
- * are the inverse of `roleFor`, so for every mapped role but `operator_admin`
- * the reconciliation would write nothing — see the note on that row.
+ * What it does not do is call `reconcileOtoAppRole`: `roleFor` reads the
+ * grants below back as the app role each person already holds, so for every
+ * mapped role but `operator_admin` the reconciliation would write nothing —
+ * see the note on that row.
  *
  * WHO IS TAKEN, AND WHO IS COUNTED AND LEFT. Every `otoapp.users` row that is
  * active and has no platform link, in a park group anchored to this operator.
@@ -75,38 +110,64 @@ import {
 /** The `request_id` on every audit row this writes, so the run is findable. */
 export const STAFF_ACCOUNTS_REQUEST_ID = 'script:otoapp-staff-accounts';
 
-/** The platform's system roles a mapped OTO App role lands on. */
+/**
+ * The platform's system roles a mapped OTO App role may land on. `staff` is
+ * kept in the vocabulary, though no row below uses it today, so that the
+ * owner's answer to the staff question is a one-line change of the table.
+ */
 export type PlatformStaffRole = 'staff' | 'branch_manager' | 'operator_admin';
 
-export interface PlatformRoleMapping {
-  role: PlatformStaffRole;
-  /**
-   * `app_branches`: one assignment at each platform branch the user may access
-   * in the app (`user_branch_access` joined to `branches.core_branch_id`).
-   * `operator`: one assignment at operator scope.
-   */
-  scope: 'app_branches' | 'operator';
-}
+export type PlatformRoleMapping =
+  /** The OTO App tile alone: no platform role. */
+  | { role: null }
+  | {
+      role: PlatformStaffRole;
+      /**
+       * `app_branches`: one assignment at each platform branch the user may
+       * access in the app (`user_branch_access` joined to
+       * `branches.core_branch_id`). `operator`: one assignment at operator scope.
+       */
+      scope: 'app_branches' | 'operator';
+    };
 
 /**
- * THE ROLE MAPPING, the inverse of `roleFor(grants)` in
- * `apps/api/src/services/oto-app-users.ts` — one table, reviewed as one.
+ * THE ROLE MAPPING — one table, reviewed as one, and an OWNER QUESTION in
+ * PLAN.md as a whole: it decides what each restored person may do in the
+ * suite beyond opening the OTO App.
  *
- * `roleFor` reads platform grants into an app role: `operator_admin` at
- * operator scope is `admin`, `branch_manager` anywhere is `manager`, anything
- * else is `staff`. Turned round:
+ * What the OTO App needs is `roleFor(grants)` in
+ * `apps/api/src/services/oto-app-users.ts`, which reads platform grants back
+ * into an app role where the app's operator has platform roles switched on:
+ * `operator_admin` at operator scope is `admin`, `branch_manager` anywhere is
+ * `manager`, anything else — no grant at all included — is `staff`; an
+ * advisor is left as an advisor. The tile alone opens the app and seats a
+ * sign-in (it is operator-wide). So the table grants a platform role only
+ * where `roleFor` needs one to read the person's app role back, and nothing
+ * more — which is also all the Console's Link gives (the tile):
  *
- *   staff           → staff at each of their app branches
- *   advisor         → staff at each of their app branches (an advisor's reach
- *                     inside the app comes from their access policy, so most
- *                     have no branch rows and get the tile alone)
- *   manager         → branch_manager at each of their app branches
- *   admin           → operator_admin, operator-wide
+ *   staff           → the tile alone. `roleFor` reads no grant as `staff`. The
+ *                     platform `staff` bundle would add the till, the booth,
+ *                     the counter's reads, benefits and the assistant to people
+ *                     who have none of it today — left to the owner.
+ *   advisor         → the tile alone. `reconcileOtoAppRole` never rewrites an
+ *                     advisor, whose reach inside the app comes from their
+ *                     access policy.
+ *   manager         → branch_manager at each of their app branches. What
+ *                     `roleFor` needs for `manager`; the bundle also carries
+ *                     account administration at those parks (temporary
+ *                     passwords included), role assignment, refund and cash
+ *                     approval and device pairing. A manager whose app branches
+ *                     join no park gets no assignment, and `roleFor` would then
+ *                     read them as `staff`.
+ *   admin           → operator_admin, operator-wide. What `roleFor` needs for
+ *                     `admin`; it is every permission across the operator,
+ *                     where the app admin's reach is one park group.
  *   operator_admin  → operator_admin, operator-wide. `roleFor` reads that grant
  *                     back as `admin`, so where the app's operator has platform
  *                     roles switched on, the next hand-off rewrites this user's
- *                     app role from `operator_admin` to `admin` — reported as a
- *                     question, not decided here.
+ *                     app role from `operator_admin` to `admin`, which drops
+ *                     the app's owner-only `payroll.lock` — a question, not
+ *                     decided here.
  *   global_admin    → nothing: skipped, and listed by id for a hand link in
  *                     the Console. Nobody's estate-wide app role is minted by a
  *                     script.
@@ -115,13 +176,18 @@ export interface PlatformRoleMapping {
  * `unknown_role` and skipped.
  */
 export const OTO_APP_ROLE_TO_PLATFORM: Readonly<Record<OtoAppUserRole, PlatformRoleMapping | null>> = {
-  staff: { role: 'staff', scope: 'app_branches' },
-  advisor: { role: 'staff', scope: 'app_branches' },
+  staff: { role: null },
+  advisor: { role: null },
   manager: { role: 'branch_manager', scope: 'app_branches' },
   admin: { role: 'operator_admin', scope: 'operator' },
   operator_admin: { role: 'operator_admin', scope: 'operator' },
   global_admin: null,
 };
+
+/** The system roles some row of the table lands on: what `--apply` needs to exist. */
+const MAPPED_SYSTEM_ROLES: readonly PlatformStaffRole[] = [
+  ...new Set(Object.values(OTO_APP_ROLE_TO_PLATFORM).flatMap((m) => (m?.role ? [m.role] : []))),
+].sort();
 
 /**
  * One outcome per app user, in the order they are decided.
@@ -162,6 +228,20 @@ export type StaffAccountOutcome = (typeof STAFF_ACCOUNT_OUTCOMES)[number];
 export const STAFF_ACCOUNT_PHONE_SOURCES = ['user_phone_e164', 'user_phone_number', 'employee'] as const;
 export type StaffAccountPhoneSource = (typeof STAFF_ACCOUNT_PHONE_SOURCES)[number];
 
+/** PHONE VERIFIED, as the report counts it. */
+export const STAFF_ACCOUNT_PHONE_VERIFICATION = ['verified', 'unverified'] as const;
+export type StaffAccountPhoneVerification = (typeof STAFF_ACCOUNT_PHONE_VERIFICATION)[number];
+
+/**
+ * PHONE VERIFIED, the rule: the app's own proof of the number, and only for
+ * the number it proves — the user's `phone_e164`, which is where the app's
+ * SMS check writes. A free-text `phone_number` or an employee record's phone
+ * is never counted as verified, whatever the flag says.
+ */
+function phoneCountsVerified(source: StaffAccountPhoneSource, appPhoneVerified: boolean): boolean {
+  return source === 'user_phone_e164' && appPhoneVerified;
+}
+
 /**
  * EMPLOYEE LINK — which employee record the account is given.
  *
@@ -194,6 +274,16 @@ export interface StaffAccountPerson {
   employeeLink: StaffAccountEmployeeLink | null;
   /** The mirror `core.employee.id` linked, when `employeeLink` is `linked`. */
   employeeId: string | null;
+  /**
+   * The app user's own `must_change_password`, carried to the account
+   * (FORCED CHANGE). Null for anybody stopped before the plan reached the
+   * account. Re-read under the row lock on apply, so an applied person shows
+   * what was written.
+   */
+  mustChangePassword: boolean | null;
+  /** Whether the account's phone is counted as verified (PHONE VERIFIED). Null, and re-read, as above. */
+  phoneVerified: boolean | null;
+  /** Null for the tile alone, by the table or because nothing to provision. */
   platformRole: PlatformStaffRole | null;
   /** Platform branches the role is assigned at (empty for an operator-wide role). */
   branchIds: string[];
@@ -215,9 +305,15 @@ export interface StaffAccountsReport {
   byAppRole: Record<string, Partial<Record<StaffAccountOutcome, number>>>;
   /** Of those provisioned (or to be). */
   phoneSources: Record<StaffAccountPhoneSource, number>;
+  /** Of those provisioned (or to be): the phone counted as verified, or not (PHONE VERIFIED). */
+  phoneVerification: Record<StaffAccountPhoneVerification, number>;
+  /** Of those provisioned (or to be): the app still owes a password change, carried to the account. */
+  appForcedChange: number;
   employeeLinks: Record<StaffAccountEmployeeLink, number>;
   /** Assignments made (or to be made), by platform role. */
   roleAssignments: Record<PlatformStaffRole, number>;
+  /** Provisioned people the table gives the OTO App tile alone (staff, advisor). */
+  tileOnly: number;
   /** Provisioned people whose mapped role landed nowhere: no app branch joined to a park. The tile only. */
   withoutPlatformRole: number;
   /** The `global_admin` users, by `otoapp.users.id`, for a hand link in the Console. */
@@ -327,8 +423,11 @@ export async function provisionOtoAppStaffAccounts(
     outcomes: zero(STAFF_ACCOUNT_OUTCOMES),
     byAppRole: {},
     phoneSources: zero(STAFF_ACCOUNT_PHONE_SOURCES),
+    phoneVerification: zero(STAFF_ACCOUNT_PHONE_VERIFICATION),
+    appForcedChange: 0,
     employeeLinks: zero(STAFF_ACCOUNT_EMPLOYEE_LINKS),
     roleAssignments: zero(['staff', 'branch_manager', 'operator_admin'] as const),
+    tileOnly: 0,
     withoutPlatformRole: 0,
     globalAdminUserIds: [],
     eligibleActorIds: await eligibleActors(db, operatorId),
@@ -358,6 +457,8 @@ export async function provisionOtoAppStaffAccounts(
       operatorId: otoappUsers.operatorId,
       phoneE164: otoappUsers.phoneE164,
       phoneNumber: otoappUsers.phoneNumber,
+      phoneVerified: otoappUsers.phoneVerified,
+      mustChangePassword: otoappUsers.mustChangePassword,
       platformUserId: otoappUsers.platformUserId,
     })
     .from(otoappUsers)
@@ -481,6 +582,8 @@ export async function provisionOtoAppStaffAccounts(
       phoneSource: null,
       employeeLink: null,
       employeeId: null,
+      mustChangePassword: null,
+      phoneVerified: null,
       platformRole: null,
       branchIds: [],
       accountId: null,
@@ -547,8 +650,10 @@ export async function provisionOtoAppStaffAccounts(
       continue;
     }
     person.employeeId = person.employeeLink === 'linked' ? copy!.id : null;
+    person.mustChangePassword = u.mustChangePassword;
+    person.phoneVerified = phoneCountsVerified(chosen.source, u.phoneVerified);
     person.platformRole = mapping.role;
-    person.branchIds = mapping.scope === 'operator' ? [] : platformBranchesOf(u.id);
+    person.branchIds = mapping.role === null || mapping.scope === 'operator' ? [] : platformBranchesOf(u.id);
     phones.set(u.id, chosen.phone);
   }
 
@@ -574,16 +679,10 @@ export async function provisionOtoAppStaffAccounts(
         await db
           .select({ id: role.id, name: role.name })
           .from(role)
-          .where(
-            and(
-              eq(role.isSystem, true),
-              isNull(role.operatorId),
-              inArray(role.name, ['staff', 'branch_manager', 'operator_admin']),
-            ),
-          )
+          .where(and(eq(role.isSystem, true), isNull(role.operatorId), inArray(role.name, [...MAPPED_SYSTEM_ROLES])))
       ).map((r) => [r.name, r.id]),
     );
-    for (const name of ['staff', 'branch_manager', 'operator_admin']) {
+    for (const name of MAPPED_SYSTEM_ROLES) {
       if (!systemRoles.has(name)) {
         throw new StaffAccountsRefused('SYSTEM_ROLE_MISSING', `The system role ${name} is missing: run platform:sync first`);
       }
@@ -597,7 +696,7 @@ export async function provisionOtoAppStaffAccounts(
           actor,
           person,
           phone: phones.get(person.userId)!,
-          platformRoleId: systemRoles.get(person.platformRole!)!,
+          platformRoleId: person.platformRole ? systemRoles.get(person.platformRole)! : null,
         });
       } catch (err) {
         person.outcome = 'failed';
@@ -618,9 +717,15 @@ export async function provisionOtoAppStaffAccounts(
     byRole[person.outcome] = (byRole[person.outcome] ?? 0) + 1;
     if (person.outcome !== 'provision') continue;
     report.phoneSources[person.phoneSource!] += 1;
+    report.phoneVerification[person.phoneVerified ? 'verified' : 'unverified'] += 1;
+    if (person.mustChangePassword) report.appForcedChange += 1;
     report.employeeLinks[person.employeeLink!] += 1;
+    if (!person.platformRole) {
+      report.tileOnly += 1;
+      continue;
+    }
     const assignments = person.platformRole === 'operator_admin' ? 1 : person.branchIds.length;
-    report.roleAssignments[person.platformRole!] += assignments;
+    report.roleAssignments[person.platformRole] += assignments;
     if (assignments === 0) report.withoutPlatformRole += 1;
   }
   return report;
@@ -634,7 +739,8 @@ async function provisionOne(
     actor: string;
     person: StaffAccountPerson;
     phone: string;
-    platformRoleId: string;
+    /** Null for the tile alone. */
+    platformRoleId: string | null;
   },
 ): Promise<string> {
   const { operatorId, actor, person, phone } = input;
@@ -643,11 +749,27 @@ async function provisionOne(
     // under the app user's row lock, which the Console's Link also has to take
     // (its stamp is an UPDATE of this row).
     const [user] = await tx
-      .select({ isActive: otoappUsers.isActive, platformUserId: otoappUsers.platformUserId })
+      .select({
+        isActive: otoappUsers.isActive,
+        platformUserId: otoappUsers.platformUserId,
+        mustChangePassword: otoappUsers.mustChangePassword,
+        phoneE164: otoappUsers.phoneE164,
+        phoneVerified: otoappUsers.phoneVerified,
+      })
       .from(otoappUsers)
       .where(eq(otoappUsers.id, person.userId))
       .for('update');
     if (!user || !user.isActive || user.platformUserId) throw new PersonStopped('changed_since_plan');
+    // FORCED CHANGE and PHONE VERIFIED from the row as it is now, locked: an
+    // administrator's reset since the plan is carried, and a phone counts as
+    // verified only while the app's proof is of the number being given.
+    const mustChangePassword = user.mustChangePassword;
+    const phoneVerified =
+      phoneCountsVerified(person.phoneSource!, user.phoneVerified) &&
+      Boolean(user.phoneE164) &&
+      normalizePhone(user.phoneE164!) === phone;
+    person.mustChangePassword = mustChangePassword;
+    person.phoneVerified = phoneVerified;
     const [identity] = await tx
       .select({ id: appIdentity.id })
       .from(appIdentity)
@@ -679,16 +801,18 @@ async function provisionOne(
       // No platform password yet: the first sign-in adopts the app's (SCRUM-795).
       passwordHash: null,
       status: 'active',
-      // The number the park already holds for this person, not one typed now.
-      phoneVerifiedAt: new Date(),
-      mustChangePassword: false,
+      // PHONE VERIFIED (an owner question): only the app's own proof of this number.
+      phoneVerifiedAt: phoneVerified ? new Date() : null,
+      // FORCED CHANGE (an owner question): what the app user still owes.
+      mustChangePassword,
     });
 
-    // The stamp, as `linkOtoAppUser` writes it (SCRUM-539: the app's own
-    // forced change switched off, since the launcher is their way in).
+    // The stamp: `platform_user_id` as `linkOtoAppUser` writes it, and the
+    // app's own `must_change_password` deliberately left as it is — FORCED
+    // CHANGE above says why.
     const stamped = await tx
       .update(otoappUsers)
-      .set({ platformUserId: accountId, mustChangePassword: false, updatedAt: new Date() })
+      .set({ platformUserId: accountId, updatedAt: new Date() })
       .where(and(eq(otoappUsers.id, person.userId), isNull(otoappUsers.platformUserId)))
       .returning({ id: otoappUsers.id });
     if (stamped.length !== 1) throw new PersonStopped('changed_since_plan');
@@ -735,8 +859,9 @@ async function provisionOne(
       scopeId: operatorId,
     });
 
-    const scopes =
-      person.platformRole === 'operator_admin'
+    const scopes = !input.platformRoleId
+      ? []
+      : person.platformRole === 'operator_admin'
         ? [{ scopeType: 'operator' as const, scopeId: operatorId }]
         : person.branchIds.map((id) => ({ scopeType: 'branch' as const, scopeId: id }));
     for (const scope of scopes) {
@@ -744,7 +869,7 @@ async function provisionOne(
       await tx.insert(roleAssignment).values({
         id: assignmentId,
         accountId,
-        roleId: input.platformRoleId,
+        roleId: input.platformRoleId!,
         ...scope,
       });
       await tx.insert(auditLog).values({
@@ -781,6 +906,8 @@ async function provisionOne(
         platformScopes: scopes.length,
         accountCreated: true,
         passwordSet: false,
+        mustChangePassword,
+        phoneVerified,
         accessGranted: true,
       },
     });

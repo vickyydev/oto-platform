@@ -68,13 +68,23 @@ function print(r: StaffAccountsReport): void {
   console.log(
     `phone, of those ${r.applied ? 'provisioned' : 'to provision'}: user phone_e164 ${p.user_phone_e164}, user phone_number ${p.user_phone_number}, employee record ${p.employee}`,
   );
+  const v = r.phoneVerification;
+  console.log(
+    `phone counted as verified (the app's phone_verified on the user's own phone_e164): verified ${v.verified}, unverified ${v.unverified} (no SMS reset until verified)`,
+  );
+  console.log(
+    `forced password change carried from the app (must_change_password): ${r.appForcedChange} (changed at the first launcher sign-in)`,
+  );
   const e = r.employeeLinks;
   console.log(
     `employee record: linked ${e.linked}, none carries the user ${e.none}, ambiguous ${e.ambiguous}, no platform copy yet ${e.no_copy}`,
   );
   const a = r.roleAssignments;
   console.log(
-    `platform role assignments: staff ${a.staff} (branch), branch_manager ${a.branch_manager} (branch), operator_admin ${a.operator_admin} (operator-wide); with the app tile only ${r.withoutPlatformRole}`,
+    `platform role assignments: staff ${a.staff} (branch), branch_manager ${a.branch_manager} (branch), operator_admin ${a.operator_admin} (operator-wide)`,
+  );
+  console.log(
+    `the app tile alone: by the mapping (staff, advisor) ${r.tileOnly}, mapped role landed at no park ${r.withoutPlatformRole}`,
   );
   if (r.globalAdminUserIds.length) list('global_admin skipped, link by hand in the Console', r.globalAdminUserIds);
   const failed = r.people.filter((x) => x.outcome === 'failed');
