@@ -39,6 +39,7 @@ import { generateBeoPdf, type BeoPdfData } from "./pdf";
 import { OBJECT_STORAGE } from "./config/env";
 import { uploadToObjectStorage } from "./file-storage";
 import { s3PresignedGet } from "./storage/s3Storage";
+import { onStaff } from "./lib/payOnlyAccess";
 
 type KitchenMenuBucket = "kids" | "adults";
 type KitchenMenuLine = { source?: string; [key: string]: unknown };
@@ -1709,7 +1710,8 @@ export function registerBeoRoutes(app: Express) {
         displayName: users.fullName,
         role: users.role,
       }).from(users)
-        .where(eq(users.isActive, true));
+        // SCRUM-769: on staff — a login in pay only (the employment ended) staffs no event.
+        .where(onStaff());
       
       res.json(staffList);
     } catch (error) {
@@ -1758,7 +1760,8 @@ export function registerBeoRoutes(app: Express) {
         .from(users)
         .where(and(
           eq(users.operatorId, user.operatorId),
-          eq(users.isActive, true)
+          // SCRUM-769: on staff — a login in pay only (the employment ended) hosts no party.
+          onStaff(),
         ))
         .orderBy(asc(users.fullName));
       

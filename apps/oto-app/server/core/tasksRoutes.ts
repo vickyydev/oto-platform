@@ -35,6 +35,7 @@ import {
   insertTaskCompletionSchema,
 } from "../db/coreSchema";
 import { generateInstanceForDefinition } from "./taskGeneration";
+import { onStaff } from "../lib/payOnlyAccess";
 
 const attachmentUpload = multer({
   storage: multer.memoryStorage(),
@@ -367,7 +368,8 @@ router.get("/assignable-users", requireAuth, async (req: Request, res: Response)
         sql`EXISTS (SELECT 1 FROM ${userBranchAccess} uba WHERE uba.user_id = ${users.id} AND uba.tenant_id = ${tenantId})`,
         operatorId ? or(eq(users.operatorId, operatorId), isNull(users.operatorId)) : undefined,
         inArray(users.role, ['global_admin', 'operator_admin', 'admin', 'manager']),
-        eq(users.isActive, true)
+        // SCRUM-769: on staff — a login in pay only (the employment ended) is assigned nothing.
+        onStaff(),
       ));
 
     const result = allUsers.map(u => ({

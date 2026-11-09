@@ -28,7 +28,8 @@ import { bangkokToday } from "./engagementDates";
  *    console — so the person's suite access outside My pay ends that night, as
  *    the switch-off ended it before;
  *  - the app then answers My pay alone (the fence below and the client's
- *    pay-only shell), and addresses no notification to the login;
+ *    pay-only shell), addresses no notification to the login, and leaves it
+ *    out of the lists of people still on staff (`onStaff`);
  *  - a login an administrator switches off is a different switch: it is off,
  *    and pay only changes nothing about that;
  *  - Offboard never switches the login off. With a last working day already
@@ -176,6 +177,15 @@ export async function platformRestrictionDelivered(exec: DbExecutor, userId: str
     .orderBy(desc(loginLifecycleEvents.createdAt)).limit(1);
   return last?.state === "delivered";
 }
+
+/**
+ * A login still on staff: switched on and reaching the whole app. A login in
+ * pay only is switched on (so its owner can read their pay) but its employment
+ * has ended, so the lists of people to assign work to, to staff an event with
+ * or to alert leave it out beside the logins that are off: anything addressed
+ * to it would reach nobody.
+ */
+export const onStaff = (): SQL => and(eq(users.isActive, true), eq(users.accessMode, FULL_ACCESS))!;
 
 // ─── What a login in pay only reaches ────────────────────────────────────────
 

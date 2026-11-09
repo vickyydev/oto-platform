@@ -4,6 +4,7 @@ import { canUserAccessBranch } from "./auth-middleware";
 import { db } from "./db";
 import { createFixReportUrgentNotification } from "./notification-service";
 import { storage } from "./storage";
+import { onStaff } from "./lib/payOnlyAccess";
 
 /**
  * SCRUM-656: the logins of a Fix Department's members, counted the three ways
@@ -36,7 +37,8 @@ export async function readFixDepartmentLogins(tenantId: string, departmentId: st
     .filter((id): id is string => !!id))];
   if (!ids.length) return [];
   const active = await db.select({ id: users.id }).from(users)
-    .where(and(inArray(users.id, ids), eq(users.isActive, true)));
+    // SCRUM-769: on staff — a login in pay only (the employment ended) reads no inbox.
+    .where(and(inArray(users.id, ids), onStaff()));
   return active.map(row => row.id);
 }
 

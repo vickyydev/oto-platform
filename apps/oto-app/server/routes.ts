@@ -28411,7 +28411,8 @@ ${context}`;
           .map(p => [p.coreUserId!, p.accessLevel])
       );
 
-      const results = allUsers.filter(u => u.isActive).map(user => {
+      // SCRUM-769: on staff — a login in pay only (the employment ended) holds no working permissions.
+      const results = allUsers.filter(u => u.isActive && u.accessMode === "full").map(user => {
         const userOverrides = allOverrides.filter(o => o.userId === user.id);
         const linkedEmployee = allEmployees.find(e => e.userId === user.id);
 
