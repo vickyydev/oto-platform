@@ -69,6 +69,7 @@ process.env.LOG_LEVEL ??= "info";
 const { registerAIRoutes } = await import("../server/ai-routes");
 const { registerBeoRoutes } = await import("../server/beo-routes");
 const { renderTranscript, resolveCatalogueAnswer, loadBeoCatalogue } = await import("../server/lib/beoCatalogueFill");
+const { REQUIRED_FIELDS_HEADING } = await import("../server/lib/aiFill");
 const { resolveSetMenuLines } = await import("../server/lib/setMenuResolve");
 const { db, pool: appDbPool } = await import("../server/db");
 const { initialReviewState, approveBodyOf, undecidedLines, fillBeyondApproval } = await import("../client/src/lib/beo-ai-review");
@@ -475,6 +476,11 @@ try {
       assert.ok(formCall.user.endsWith(CONVERSATIONS[lang][3]!.text), `${lang}: the form reads the ruling message`);
       assert.ok(!formCall.user.includes("#1 [") && !formCall.user.includes(CONVERSATIONS[lang][0]!.text), `${lang}: no family line in the form's read`);
       assert.ok(!formCall.system.includes("THE PARK'S CATALOGUE") && !formCall.system.includes("THE CONVERSATION"));
+      // SCRUM-816: each read names the keys its answer is read by, whatever a saved format says:
+      // the conversation's the catalogue section's alone, the form's its own fields.
+      assert.ok(conversationCall.system.includes(`\n\n${REQUIRED_FIELDS_HEADING}\n`), `${lang}: the conversation's read names its keys`);
+      assert.ok(conversationCall.system.includes("\n- catalogue.setMenu.choices[].itemId: ") && !conversationCall.system.includes("\n- event.eventDate: "));
+      assert.ok(formCall.system.includes("\n- event.eventDate: ") && !formCall.system.includes("\n- catalogue."), `${lang}: the form's read names its own`);
       reviews[lang] = res.body.review;
       fills[lang] = res.body.fill;
       sources[lang] = res.body.source;
@@ -763,6 +769,8 @@ try {
     assert.ok(call.user.endsWith(CONVERSATIONS.en[3]!.text), "the ruling message, unnumbered");
     assert.ok(!call.user.includes("#1 ["));
     assert.ok(!call.system.includes("THE CONVERSATION"));
+    // SCRUM-816: that one read answers the form and the catalogue section, and its prompt names both.
+    assert.ok(call.system.includes("\n- event.eventDate: ") && call.system.includes("\n- catalogue.package.templateId: "));
     assert.equal(plain.body.review.transcript.lines, 1);
     assert.deepEqual(plain.body.review.proposal.entertainment.find((e: any) => e.templateId === cat.face)?.from, { source: "team", at: at(3), line: null });
   });

@@ -50,6 +50,12 @@ function AISettingsSection({ settings }: { settings: Setting[] }) {
     "ai_beo_parsing_advice",
     "ai_beo_parsing_output_format",
   ];
+  // SCRUM-816: a saved output format words the answer; the keys the app's code reads are added when it runs.
+  const FIELD_NOTES: Record<string, string> = {
+    ai_beo_parsing_output_format:
+      "The app adds the fields its own code needs (the party date, the catalogue matches) to this format when it runs.",
+    ai_event_extraction_output_format: "The app adds the fields its own code needs to this format when it runs.",
+  };
   const aiSettings = settings
     .filter((s) => s.key.startsWith("ai_"))
     .sort((a, b) => {
@@ -196,6 +202,11 @@ function AISettingsSection({ settings }: { settings: Setting[] }) {
                     </pre>
                   )}
                 </div>
+              )}
+              {FIELD_NOTES[setting.key] && (
+                <p className="mt-2 text-xs text-muted-foreground" data-testid={`note-${setting.key}`}>
+                  {FIELD_NOTES[setting.key]}
+                </p>
               )}
             </div>
           );

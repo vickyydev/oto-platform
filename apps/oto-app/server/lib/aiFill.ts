@@ -168,7 +168,12 @@ export interface AiPrompt {
   advice: string;
   outputFormat: string;
   model: string;
-  from: { advice: AiValueSource; outputFormat: AiValueSource; model: AiValueSource };
+  /**
+   * `requiredFields`: the fields the app's code reads (`requiredFieldsBlock`)
+   * ride after the output format on every run, saved format or built-in
+   * (SCRUM-816).
+   */
+  from: { advice: AiValueSource; outputFormat: AiValueSource; model: AiValueSource; requiredFields: "appended" };
 }
 
 /** The caller's park group's setting value, or nothing when it has none. */
@@ -204,8 +209,107 @@ export async function resolveAiPrompt(helper: AiHelper, read: SettingReader): Pr
       advice: advice ? "setting" : "built_in",
       outputFormat: outputFormat ? "setting" : "built_in",
       model: storedModel && model === storedModel ? "setting" : "built_in",
+      requiredFields: "appended",
     },
   };
+}
+
+// --- The fields the app's code reads (SCRUM-816) ---------------------------------------
+
+/**
+ * A park group's saved output format REPLACES the built-in one, so a field the
+ * code came to read after the format was saved (SCRUM-814's party date,
+ * SCRUM-815's catalogue matches) was never asked of the model there. The saved
+ * setting customises the WORDING, never the SHAPE: every run's prompt names,
+ * after the output format (saved or built-in), each key the code reads the
+ * answer by and its format, taken from the very schema that reads it, so the
+ * list cannot drift from the code.
+ */
+export const REQUIRED_FIELDS_HEADING = "FIELDS THE APP REQUIRES";
+
+type AnyZod = z.ZodTypeAny;
+type ZodDefLike = {
+  typeName?: string;
+  innerType?: AnyZod;
+  schema?: AnyZod;
+  checks?: Array<{ kind: string; message?: string }>;
+  values?: readonly string[];
+};
+
+/** The schema under its wrappers (optional, nullable, default, preprocess, transform), and the first description met. */
+function unwrapField(schema: AnyZod): { inner: AnyZod; optional: boolean; description: string | undefined } {
+  let at = schema;
+  let optional = false;
+  let description: string | undefined;
+  for (;;) {
+    description ??= at.description;
+    const def = at._def as ZodDefLike;
+    if (def.typeName === "ZodOptional" || def.typeName === "ZodNullable" || def.typeName === "ZodDefault") {
+      optional = true;
+      at = def.innerType!;
+    } else if (def.typeName === "ZodEffects") {
+      at = def.schema!;
+    } else {
+      return { inner: at, optional, description };
+    }
+  }
+}
+
+/** A value's format as its schema checks it. */
+function formatOf(schema: AnyZod): string {
+  const def = schema._def as ZodDefLike;
+  switch (def.typeName) {
+    case "ZodString":
+      return def.checks?.find((c) => c.kind === "regex")?.message ?? "text";
+    case "ZodNumber":
+      return def.checks?.some((c) => c.kind === "int") ? "a whole number" : "a number";
+    case "ZodBoolean":
+      return "true or false";
+    case "ZodEnum":
+      return `one of ${(def.values ?? []).map((v) => JSON.stringify(v)).join(", ")}`;
+    default:
+      return "a value";
+  }
+}
+
+/** One line per key the schema reads: its path in the answer and its format; a list's entries as `list[].key`. */
+function fieldLines(schema: AnyZod, path: string, inEntry: boolean, out: string[]): void {
+  const { inner, optional, description } = unwrapField(schema);
+  const typeName = (inner._def as ZodDefLike).typeName;
+  if (!description && typeName === "ZodObject") {
+    for (const [key, value] of Object.entries((inner as z.AnyZodObject).shape)) {
+      fieldLines(value as AnyZod, path ? `${path}.${key}` : key, inEntry, out);
+    }
+    return;
+  }
+  if (!description && typeName === "ZodArray") {
+    const entry = unwrapField((inner as z.ZodArray<AnyZod>).element);
+    if (!entry.description && (entry.inner._def as ZodDefLike).typeName === "ZodObject") {
+      fieldLines(entry.inner, `${path}[]`, true, out);
+    } else {
+      out.push(`- ${path}: a list, each entry ${entry.description ?? formatOf(entry.inner)}`);
+    }
+    return;
+  }
+  out.push(`- ${path}: ${description ?? formatOf(inner)}${inEntry && !optional ? " (in every entry)" : ""}`);
+}
+
+/**
+ * The block every run's system prompt carries after the output format: each
+ * key of `shape` (the schema the code reads this run's answer by) with its
+ * format, required in addition to whatever the format above describes.
+ */
+export function requiredFieldsBlock(shape: AnyZod): string {
+  const lines: string[] = [];
+  fieldLines(shape, "", false, lines);
+  return (
+    `\n\n${REQUIRED_FIELDS_HEADING}\n` +
+    "The app's own code reads your answer by the keys below. They are required in addition to whatever the format above " +
+    "describes: answer with exactly these key names, at these places in the JSON object and in these formats, including " +
+    'any key the format above leaves out or names differently. "a[]" is a list and "a[].b" a key of each of its entries. ' +
+    "A key the text does not speak to may be left out or given as null: the app reads both as nothing said.\n" +
+    lines.join("\n")
+  );
 }
 
 // --- Reading the model's answer ------------------------------------------------------
@@ -236,7 +340,7 @@ const optAmount = z.preprocess((v) => {
     return /^\d+(\.\d+)?$/.test(cleaned) ? Number(cleaned) : v;
   }
   return v;
-}, z.number().min(0).max(100_000_000).optional());
+}, z.number().min(0).max(100_000_000).optional()).describe("an amount in baht, as a number");
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -247,8 +351,8 @@ const normaliseTime = (v: unknown) => {
   const m = /^\s*([01]?\d|2[0-3])[:.]([0-5]\d)\s*$/.exec(v);
   return m ? `${m[1]!.padStart(2, "0")}:${m[2]}` : v;
 };
-const optTime = z.preprocess(normaliseTime, z.string().regex(TIME, "a time as HH:MM").optional());
-const reqTime = z.preprocess(normaliseTime, z.string().regex(TIME, "a time as HH:MM"));
+const optTime = z.preprocess(normaliseTime, z.string().regex(TIME, "a time as HH:MM on the 24-hour clock").optional());
+const reqTime = z.preprocess(normaliseTime, z.string().regex(TIME, "a time as HH:MM on the 24-hour clock"));
 
 const optDate = z.preprocess(
   (v) => (blank(v) ? undefined : v),
@@ -269,7 +373,14 @@ const readPartyDay = z.preprocess((v) => {
   const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
   const t = new Date(Date.UTC(y, mo - 1, d));
   return t.getUTCFullYear() === y && t.getUTCMonth() === mo - 1 && t.getUTCDate() === d ? `${m[1]}-${m[2]}-${m[3]}` : undefined;
-}, z.string().optional());
+}, z.string().optional()).describe(
+  "a date as YYYY-MM-DD: the party's date as the new text names it, never taken from the existing event data; null when the text names no date",
+);
+
+/** A person or a role the message itself names: the review proposes a real one of the park from it. */
+const namedPerson = optText(200).describe(
+  "a person or a role only as the message itself names them, written exactly as it writes them; never one you choose",
+);
 
 /** A list: null is none; blank entries (null, or with every value empty) are dropped, as a person would. */
 const list = <T extends z.ZodTypeAny>(item: T, max = 100) =>
@@ -314,7 +425,7 @@ export const BeoFillSchema = z.object({
     childName: optText(200),
     bookingName: optText(200),
     eventDate: readPartyDay,
-    eventDateText: optText(300),
+    eventDateText: optText(300).describe("the new text's own words for that date, exactly as written; null when it names none"),
     numChildren: optCount,
     numAdults: optCount,
     startTime: optTime,
@@ -327,7 +438,7 @@ export const BeoFillSchema = z.object({
   }),
   setupPlan: section({
     readyBy: optTime,
-    responsible: optText(200),
+    responsible: namedPerson,
     simplifiedTasks: list(z.object({ itemLabel: reqText(300), notes: optText(1000) })),
   }),
   kitchenPlan: section({
@@ -353,8 +464,8 @@ export const BeoFillSchema = z.object({
   }),
   timeline: list(z.object({ time: reqTime, label: reqText(300) })),
   team: section({
-    partyHost: optText(200),
-    entertainmentHost: optText(200),
+    partyHost: namedPerson,
+    entertainmentHost: namedPerson,
   }),
 });
 export type BeoFill = z.infer<typeof BeoFillSchema>;
@@ -421,7 +532,9 @@ export const EventExtractionSchema = z.object({
   ),
   missing_required: list(z.string().max(100), 40),
   assumptions: list(z.string().max(1000), 40),
-  suggested_branch_id: optText(100),
+  suggested_branch_id: optText(100).describe(
+    "the id of one of the branches listed at the end of this prompt, only when the notes name that branch",
+  ),
 });
 export type EventExtraction = z.infer<typeof EventExtractionSchema>;
 
@@ -518,7 +631,13 @@ export async function runAiHelper<T>(
   input: {
     helper: AiHelper;
     schema: z.ZodType<T, z.ZodTypeDef, unknown>;
-    /** Appended to the system prompt after the advice and the output format (the branch list). */
+    /**
+     * The shape the app's code reads this run's answer by, named after the output
+     * format whatever a saved format says (SCRUM-816): the helper's own schema
+     * (`BeoFillSchema`, `EventExtractionSchema`) when not given.
+     */
+    requiredShape?: z.ZodTypeAny;
+    /** Appended to the system prompt after the advice, the output format and the required fields (the branch list). */
     systemExtra?: string;
     user: string;
     inputChars: number;
@@ -541,10 +660,13 @@ export async function runAiHelper<T>(
 
   const prompt = await resolveAiPrompt(input.helper, deps.readSetting);
   facts.from = prompt.from;
+  // SCRUM-816: a saved format words the answer; the keys the code reads ride after it regardless.
+  const requiredShape = input.requiredShape ?? (input.helper === "beo_parsing" ? BeoFillSchema : EventExtractionSchema);
   const system =
     prompt.advice +
     "\n\n" +
     prompt.outputFormat +
+    requiredFieldsBlock(requiredShape) +
     (input.systemExtra ?? "") +
     "\n\nReturn ONLY a valid JSON object, with no markdown fences or commentary.";
 
@@ -591,6 +713,7 @@ export function runLogFields(facts: AiRunFacts): Record<string, unknown> {
     adviceFrom: facts.from?.advice ?? null,
     outputFormatFrom: facts.from?.outputFormat ?? null,
     modelFrom: facts.from?.model ?? null,
+    requiredFields: facts.from?.requiredFields ?? null,
     inputChars: facts.inputChars,
     answerChars: facts.answerChars,
     outcome: facts.outcome,

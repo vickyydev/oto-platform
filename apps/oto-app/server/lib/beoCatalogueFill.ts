@@ -17,7 +17,7 @@ import {
   type BeoAiSetMenuItem,
   type BeoAiSource,
 } from "@shared/beoAiFill";
-import { parkClockAt } from "./aiFill";
+import { BeoFillSchema, parkClockAt } from "./aiFill";
 import type { InboxTranscriptLine } from "./inboxConfirmation";
 import type { DbExecutor } from "./packageSnapshot";
 
@@ -410,38 +410,87 @@ const optTime = z.preprocess((v) => {
   if (typeof v !== "string") return undefined;
   const m = /^\s*([01]?\d|2[0-3])[:.]([0-5]\d)\s*$/.exec(v);
   return m ? `${m[1]!.padStart(2, "0")}:${m[2]}` : undefined;
-}, z.string().optional());
-const optDay = z.preprocess((v) => (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v.trim()) ? v.trim() : undefined), z.string().optional());
-const ref = { line: optInt(1), source: optSource };
+}, z.string().optional()).describe("a time as HH:MM on the 24-hour clock");
+const optDay = z.preprocess((v) => (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v.trim()) ? v.trim() : undefined), z.string().optional()).describe("a date as YYYY-MM-DD");
+const ref = { line: optInt(1).describe("a whole number: the number of the conversation line it comes from"), source: optSource };
+// The descriptions below are what the prompt's "fields the app requires" block says of each key (SCRUM-816).
+const said = optStr(500).describe("the conversation's own words for it, exactly as written");
+const chatPrice = optBaht.describe("a number in baht: only a price the conversation itself names for it");
+const catalogueId = (what: string, max = 100) => optStr(max).describe(`${what}, or null when nothing in it fits`);
 
-const PackageAnswer = z.object({ templateId: optStr(100), said: optStr(500), chatPrice: optBaht, ...ref });
-const AddOnAnswer = z.object({ lineId: optStr(100), said: optStr(500), quantity: optInt(0), chatPrice: optBaht, ...ref });
-const ChoiceAnswer = z.object({ itemId: optStr(100), option: optStr(300), said: optStr(500), ...ref });
-const MenuLineAnswer = z.object({
-  productCode: optStr(64),
-  itemName: optStr(300),
-  menu: z.preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase() : undefined), z.enum(BEO_AI_MENUS).optional()),
-  quantity: optInt(1),
-  notInMenu: z.preprocess((v) => (typeof v === "boolean" ? v : undefined), z.boolean().optional()),
-  chatPrice: optBaht,
+const PackageAnswer = z.object({ templateId: catalogueId("a package id from the park's catalogue"), said, chatPrice, ...ref });
+const AddOnAnswer = z.object({
+  lineId: catalogueId('an add-on line id of the chosen package (one of its lines whose "included" is false)'),
+  said,
+  quantity: optInt(0),
+  chatPrice,
   ...ref,
 });
-const EntertainmentAnswer = z.object({ templateId: optStr(100), said: optStr(500), quantity: optInt(1), chatPrice: optBaht, ...ref });
+/** The set menu as named; its `choices` are read apart, each leniently. */
+const SetMenuAnswer = z.object({ templateId: catalogueId("a set menu id from the park's catalogue"), said, ...ref });
+const ChoiceAnswer = z.object({
+  itemId: optStr(100).describe("a choice group id of the chosen set menu"),
+  option: optStr(300).describe("one of that choice group's options, written exactly as listed"),
+  said,
+  ...ref,
+});
+const MenuLineAnswer = z.object({
+  productCode: catalogueId('a food code from the catalogue\'s "food"', 64),
+  itemName: optStr(300).describe("the conversation's own words for the dish or drink"),
+  menu: z.preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase() : undefined), z.enum(BEO_AI_MENUS).optional()),
+  quantity: optInt(1),
+  notInMenu: z.preprocess((v) => (typeof v === "boolean" ? v : undefined), z.boolean().optional()).describe(
+    "true or false: true when no food code fits",
+  ),
+  chatPrice,
+  ...ref,
+});
+const EntertainmentAnswer = z.object({ templateId: catalogueId("an entertainment id from the park's catalogue"), said, quantity: optInt(1), chatPrice, ...ref });
 const SourcedText = z.object({ value: optStr(200), ...ref });
 const SourcedCount = z.object({ value: optInt(0), ...ref });
 const SourcedTime = z.object({ value: optTime, ...ref });
 const CakeAnswer = z.object({
   mode: z.preprocess((v) => (typeof v === "string" ? v.trim().toUpperCase() : undefined), z.enum(BEO_AI_CAKE_MODES).optional()),
-  notes: optStr(1000),
+  notes: optStr(1000).describe("the conversation's own words for the cake"),
   time: optTime,
   ...ref,
 });
 const DepositAnswer = z.object({
-  amount: optBaht,
-  paid: z.preprocess((v) => (typeof v === "boolean" ? v : undefined), z.boolean().optional()),
+  amount: optBaht.describe("an amount in baht, as a number"),
+  paid: z.preprocess((v) => (typeof v === "boolean" ? v : undefined), z.boolean().optional()).describe(
+    "true or false: true only when the conversation says it was received",
+  ),
   date: optDay,
   ...ref,
 });
+
+/**
+ * SCRUM-816: the `catalogue` section as `resolveCatalogueAnswer` reads it,
+ * built from the very entry schemas it reads each piece with. It reads nothing
+ * itself (each piece is read apart, leniently, so one entry off its shape is
+ * left out, never fatal): it is what the prompt's "fields the app requires"
+ * block names, so a park group's saved output format can never leave a key of
+ * it out.
+ */
+export const BeoCatalogueAnswerShape = z
+  .object({
+    package: PackageAnswer,
+    addOns: z.array(AddOnAnswer),
+    setMenu: SetMenuAnswer.extend({ choices: z.array(ChoiceAnswer).optional() }),
+    menuLines: z.array(MenuLineAnswer),
+    entertainment: z.array(EntertainmentAnswer),
+    event: z
+      .object({ childName: SourcedText, numChildren: SourcedCount, numAdults: SourcedCount, startTime: SourcedTime, endTime: SourcedTime })
+      .partial(),
+    cake: CakeAnswer,
+    deposit: DepositAnswer,
+  })
+  .partial();
+
+/** SCRUM-816: what the form's read handed the catalogue (no conversation) answers: the form's fields and the catalogue section. */
+export const BEO_FILL_WITH_CATALOGUE_SHAPE = BeoFillSchema.extend({ catalogue: BeoCatalogueAnswerShape.optional() });
+/** SCRUM-816: what the conversation's read answers: the catalogue section alone. */
+export const CATALOGUE_ONLY_SHAPE = z.object({ catalogue: BeoCatalogueAnswerShape.optional() });
 
 /** One entry read leniently: an entry off its shape is left out, never fatal to the fill. */
 function readOne<T>(schema: z.ZodType<T, z.ZodTypeDef, unknown>, raw: unknown): T | null {
@@ -537,7 +586,7 @@ export function resolveCatalogueAnswer(
   }
 
   // The set menu: the one named, else the chosen package's own.
-  const setAnswer = readOne(PackageAnswer.extend({ choices: z.unknown() }), answer.setMenu);
+  const setAnswer = readOne(SetMenuAnswer.extend({ choices: z.unknown() }), answer.setMenu);
   const named = setAnswer?.templateId ? catalogue.setMenus.find((m) => m.id === setAnswer.templateId) : undefined;
   const fromPackage = !named && pkg?.setMenuTemplateId ? catalogue.setMenus.find((m) => m.id === pkg.setMenuTemplateId) : undefined;
   const menu = named ?? fromPackage;

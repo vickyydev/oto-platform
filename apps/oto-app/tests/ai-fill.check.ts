@@ -24,7 +24,14 @@
 //     answer names the party's date and the message's words for it, a date
 //     that is not a real day is dropped (never fatal), and the review line
 //     shows it beside the booked date, marked when they differ.
+//   - SCRUM-816: a park group's saved output format words the answer but
+//     never drops a key the code reads: every run's prompt names, after the
+//     format, each key of the schema the answer is read by (the party's date,
+//     the catalogue section with its ids and sources), so a format saved
+//     before those keys existed still gets them asked, and the answer's date
+//     still reaches the review.
 import assert from "node:assert/strict";
+import { z } from "zod";
 import {
   AI_FILL_MESSAGES,
   AI_SETTING_KEYS,
@@ -34,10 +41,12 @@ import {
   BUILT_IN_EVENT_EXTRACTION_OUTPUT_FORMAT,
   BeoFillSchema,
   EventExtractionSchema,
+  REQUIRED_FIELDS_HEADING,
   beoTodayLine,
   inboxFillAnswer,
   parkClockAt,
   readModelAnswer,
+  requiredFieldsBlock,
   resolveAiPrompt,
   runAiHelper,
   runLogFields,
@@ -46,6 +55,14 @@ import {
 } from "../server/lib/aiFill";
 import { DEFAULT_AI_MODEL, type AiCompleteOptions } from "../server/lib/anthropic";
 import { normaliseName, proposeTeam, type TeamCandidates } from "../server/lib/beoTeamProposals";
+import {
+  BEO_CATALOGUE_OUTPUT_FORMAT,
+  BEO_FILL_WITH_CATALOGUE_SHAPE,
+  CATALOGUE_ONLY_SHAPE,
+  beoCatalogueSystemBlock,
+  resolveCatalogueAnswer,
+  type BeoCatalogue,
+} from "../server/lib/beoCatalogueFill";
 import { aiFillDateLine, dayLabel } from "../client/src/lib/beo-ai-date";
 
 const results: Record<string, boolean> = {};
@@ -142,6 +159,48 @@ const ANSWERS: Record<string, unknown> = {
 /** The stub reads the message the way a model would be asked it, and answers in its language. */
 const languageOf = (user: string) => (/[฀-๿]/.test(user) ? "th" : /[Ѐ-ӿ]/.test(user) ? "ru" : "en");
 
+/**
+ * SCRUM-816: an output format a park group saved before SCRUM-814 and
+ * SCRUM-815 (the old seed's shape, as Central Floresta's of 1 May 2026): no
+ * party date, no team, no catalogue section.
+ */
+const SAVED_MAY_FORMAT = `Parse the BEO document and return a JSON object with the following structure:
+{
+  "summary": "One sentence summary of the event",
+  "event": { "title": "Event title", "childName": "Name of the birthday child or main guest", "numChildren": 0, "startTime": "HH:MM (24-hour)" },
+  "partyDetails": { "packageName": "Package or POS name", "prepaymentReceived": 0, "depositDate": "YYYY-MM-DD" }
+}
+
+Omit any top-level key entirely if no relevant information was found for it.`;
+
+/** A park's catalogue of one package, as `loadBeoCatalogue` gives it (satang). */
+const CATALOGUE: BeoCatalogue = {
+  packages: [
+    {
+      id: "zz-816-floresta",
+      name: "ZZ TEST Birthday package, Central Floresta",
+      kidsIncluded: 10,
+      adultsIncluded: 4,
+      hours: 3,
+      priceWeekday: 1_690_000,
+      priceWeekend: 2_090_000,
+      basePrice: 1_690_000,
+      setMenuTemplateId: null,
+      lines: [],
+    },
+  ],
+  setMenus: [],
+  entertainment: [],
+  food: [],
+};
+
+/** The keys a block names, as written: `kitchenPlan.kidsMenu[].itemName`. */
+const blockKeys = (block: string) =>
+  block
+    .split("\n")
+    .filter((l) => l.startsWith("- "))
+    .map((l) => l.slice(2, l.indexOf(": ")));
+
 try {
   await check("builtInAdviceNamesTheThreeLanguagesAndKeepsWording", () => {
     for (const advice of [BUILT_IN_BEO_PARSING_ADVICE, BUILT_IN_EVENT_EXTRACTION_ADVICE]) {
@@ -158,7 +217,7 @@ try {
     for (const helper of ["beo_parsing", "event_extraction"] as const) {
       const prompt = await resolveAiPrompt(helper, settingsOf());
       assert.equal(prompt.model, DEFAULT_AI_MODEL);
-      assert.deepEqual(prompt.from, { advice: "built_in", outputFormat: "built_in", model: "built_in" });
+      assert.deepEqual(prompt.from, { advice: "built_in", outputFormat: "built_in", model: "built_in", requiredFields: "appended" });
       assert.equal(prompt.advice, helper === "beo_parsing" ? BUILT_IN_BEO_PARSING_ADVICE : BUILT_IN_EVENT_EXTRACTION_ADVICE);
     }
     // An empty saved value is no value.
@@ -183,7 +242,7 @@ try {
       [AI_SETTING_KEYS.model]: "claude-sonnet-4-6",
     };
     const prompt = await resolveAiPrompt("beo_parsing", settingsOf(rows));
-    assert.deepEqual(prompt.from, { advice: "setting", outputFormat: "setting", model: "setting" });
+    assert.deepEqual(prompt.from, { advice: "setting", outputFormat: "setting", model: "setting", requiredFields: "appended" });
     const model = stubModel(() => JSON.stringify(ANSWERS.en));
     const run = await beoRun(deps(model.complete, rows));
     assert.equal(run.ok, true);
@@ -481,9 +540,109 @@ try {
     const kept = inboxFillAnswer({ event: { eventDate: "2026-11-22", internalStaffNotes: "x" } }, ENGLISH, { event: { internalStaffNotes: "mine" } });
     assert.equal(kept.fill.event?.eventDate, "2026-11-22");
   });
+
+  await check("savedFormatStillCarriesTheFieldsTheAppReads", async () => {
+    assert.ok(!SAVED_MAY_FORMAT.includes("eventDate") && !SAVED_MAY_FORMAT.includes("catalogue") && !SAVED_MAY_FORMAT.includes("team"));
+    const rows = { [AI_SETTING_KEYS.beoAdvice]: "PARK ADVICE", [AI_SETTING_KEYS.beoOutputFormat]: SAVED_MAY_FORMAT };
+    const today = beoTodayLine({ name: "ZZ TEST Park", timeZone: "Asia/Bangkok" }, new Date("2026-11-10T03:05:00Z"));
+    const catalogueAnswer = { package: { templateId: CATALOGUE.packages[0]!.id, said: "пакет Флореста", line: 1, source: "team" } };
+    const answer = { summary: "ZZ Маша", event: { childName: "Маша", eventDate: "2026-11-21", eventDateText: "21 ноября" }, catalogue: catalogueAnswer };
+
+    // The form's read handed the park's catalogue (Create BEO with no transcript), as ai-routes' runBeoFill runs it.
+    const model = stubModel(() => JSON.stringify(answer));
+    const run = await runAiHelper(deps(model.complete, rows), {
+      helper: "beo_parsing",
+      schema: BeoFillSchema.extend({ catalogue: z.unknown().optional() }),
+      requiredShape: BEO_FILL_WITH_CATALOGUE_SHAPE,
+      systemExtra: beoCatalogueSystemBlock(CATALOGUE, { conversation: false }) + today,
+      user: RUSSIAN,
+      inputChars: RUSSIAN.length,
+    });
+    assert.equal(run.ok, true, JSON.stringify(run.ok ? null : run.reason));
+    const system = model.calls[0]!.system;
+    // The saved advice and format still word it, first; the fields the app reads ride right after
+    // them, before the catalogue and today.
+    const block = requiredFieldsBlock(BEO_FILL_WITH_CATALOGUE_SHAPE);
+    assert.ok(system.startsWith(`PARK ADVICE\n\n${SAVED_MAY_FORMAT}${block}\n\nTHE PARK'S CATALOGUE`), system.slice(0, 600));
+    assert.ok(system.indexOf("THE PARK'S CATALOGUE") < system.indexOf("Today at ZZ TEST Park is 2026-11-10"));
+    assert.ok(block.startsWith(`\n\n${REQUIRED_FIELDS_HEADING}\n`));
+    assert.match(block, /required in addition to whatever the format above describes/);
+    const keys = blockKeys(block);
+    for (const key of [
+      "event.eventDate",
+      "event.eventDateText",
+      "team.partyHost",
+      "team.entertainmentHost",
+      "catalogue.package.templateId",
+      "catalogue.package.line",
+      "catalogue.package.source",
+      "catalogue.addOns[].lineId",
+      "catalogue.setMenu.templateId",
+      "catalogue.setMenu.choices[].itemId",
+      "catalogue.setMenu.choices[].option",
+      "catalogue.menuLines[].productCode",
+      "catalogue.entertainment[].templateId",
+      "catalogue.event.numChildren.value",
+      "catalogue.deposit.paid",
+    ]) {
+      assert.ok(keys.includes(key), `the block names ${key}`);
+    }
+    assert.match(block, /\n- event\.eventDate: a date as YYYY-MM-DD: the party's date as the new text names it, never taken from the existing event data; null when the text names no date\n/);
+    assert.match(block, /\n- catalogue\.package\.source: one of "team", "family"\n/);
+    assert.match(block, /\n- timeline\[\]\.time: a time as HH:MM on the 24-hour clock \(in every entry\)\n/);
+    // The sources say so, in the log line and the activity row.
+    assert.deepEqual(run.facts.from, { advice: "setting", outputFormat: "setting", model: "built_in", requiredFields: "appended" });
+    assert.equal(runLogFields(run.facts).requiredFields, "appended");
+    // The stubbed answer's date reaches the review's Date line, and its catalogue section the proposal.
+    if (run.ok) {
+      assert.equal(run.value.event?.eventDate, "2026-11-21");
+      assert.deepEqual(aiFillDateLine(run.value, "2026-11-20"), { read: "2026-11-21", readText: "21 ноября", booked: "2026-11-20", differs: true });
+      const proposal = resolveCatalogueAnswer(run.value.catalogue, CATALOGUE, [], { source: "team", at: null, line: null });
+      assert.equal(proposal.package?.templateId, CATALOGUE.packages[0]!.id);
+    }
+
+    // The conversation's read answers only the catalogue: its block names the catalogue's keys, none of the form's.
+    const conversation = stubModel(() => JSON.stringify({ catalogue: catalogueAnswer }));
+    await runAiHelper(deps(conversation.complete, rows), {
+      helper: "beo_parsing",
+      schema: z.object({ catalogue: z.unknown().optional() }),
+      requiredShape: CATALOGUE_ONLY_SHAPE,
+      systemExtra: beoCatalogueSystemBlock(CATALOGUE, { conversation: true }) + today,
+      user: "#1 [team, RULING] 2026-11-03 14:00: ZZ",
+      inputChars: 1,
+    });
+    const conversationSystem = conversation.calls[0]!.system;
+    assert.ok(conversationSystem.startsWith(`PARK ADVICE\n\n${SAVED_MAY_FORMAT}${requiredFieldsBlock(CATALOGUE_ONLY_SHAPE)}\n\nTHE CONVERSATION`));
+    const conversationKeys = blockKeys(requiredFieldsBlock(CATALOGUE_ONLY_SHAPE));
+    assert.ok(conversationKeys.length > 0 && conversationKeys.every((k) => k.startsWith("catalogue.")), conversationKeys.join(", "));
+
+    // One source: every key a block names is the schema's, and the built-in formats ask each of them too.
+    const segments = (key: string) => key.replace(/\[\]/g, "").split(".");
+    for (const key of blockKeys(requiredFieldsBlock(BeoFillSchema))) {
+      for (const s of segments(key)) assert.ok(BUILT_IN_BEO_PARSING_OUTPUT_FORMAT.includes(`"${s}"`), `the built-in format asks ${key}`);
+    }
+    for (const key of conversationKeys) {
+      for (const s of segments(key)) assert.ok(BEO_CATALOGUE_OUTPUT_FORMAT.includes(`"${s}"`), `the catalogue format asks ${key}`);
+    }
+    // The Events helper's saved format cannot drop a key its form reads either; with nothing saved the block rides too.
+    const events = stubModel(() => JSON.stringify({ extracted: {} }));
+    await runAiHelper(deps(events.complete, { [AI_SETTING_KEYS.eventOutputFormat]: "ZZ EVENT FORMAT" }), {
+      helper: "event_extraction",
+      schema: EventExtractionSchema,
+      user: "x",
+      inputChars: 1,
+    });
+    assert.ok(events.calls[0]!.system.includes(`\n\nZZ EVENT FORMAT${requiredFieldsBlock(EventExtractionSchema)}\n\nReturn ONLY`));
+    for (const key of blockKeys(requiredFieldsBlock(EventExtractionSchema))) {
+      for (const s of segments(key)) assert.ok(BUILT_IN_EVENT_EXTRACTION_OUTPUT_FORMAT.includes(s), `the built-in event format asks ${key}`);
+    }
+    const builtIn = stubModel(() => JSON.stringify(ANSWERS.en));
+    await beoRun(deps(builtIn.complete));
+    assert.ok(builtIn.calls[0]!.system.includes(`${BUILT_IN_BEO_PARSING_OUTPUT_FORMAT}${requiredFieldsBlock(BeoFillSchema)}\n\nReturn ONLY`));
+  });
 } finally {
   // Nothing to clean: no database, no network.
 }
 
 console.log(JSON.stringify({ results, failures }, null, 2));
-if (Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 12) process.exit(1);
+if (Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 13) process.exit(1);

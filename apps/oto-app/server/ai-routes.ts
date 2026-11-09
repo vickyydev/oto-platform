@@ -32,6 +32,8 @@ import {
 } from "./lib/beoTeamProposals";
 import { readInboxConfirmation, type InboxRead } from "./lib/inboxConfirmation";
 import {
+  BEO_FILL_WITH_CATALOGUE_SHAPE,
+  CATALOGUE_ONLY_SHAPE,
   beoCatalogueSystemBlock,
   catalogueIsEmpty,
   emptyCatalogue,
@@ -268,9 +270,11 @@ export async function runBeoFill(
   const conversation = catalogue ? (input.conversation ?? null) : null;
   // The form's own fields: `text` alone, as SCRUM-660 read it. With a catalogue and no
   // conversation, the same read also answers the catalogue section, from `text`.
+  // SCRUM-816: each read's prompt names the keys its answer is read by, whatever a saved format says.
   const formRead = runAiHelper(ai, {
     helper: "beo_parsing",
     schema: (catalogue && !conversation ? BeoFillWithCatalogueSchema : BeoFillSchema) as typeof BeoFillWithCatalogueSchema,
+    requiredShape: catalogue && !conversation ? BEO_FILL_WITH_CATALOGUE_SHAPE : BeoFillSchema,
     systemExtra: (catalogue && !conversation ? beoCatalogueSystemBlock(catalogue, { conversation: false }) : "") + today,
     user: beoParseUserMessage(input.text, input.existingData),
     inputChars: input.text.length,
@@ -281,6 +285,7 @@ export async function runBeoFill(
       ? runAiHelper(ai, {
           helper: "beo_parsing",
           schema: CatalogueOnlySchema,
+          requiredShape: CATALOGUE_ONLY_SHAPE,
           systemExtra: beoCatalogueSystemBlock(catalogue, { conversation: true }) + today,
           user: beoParseUserMessage(conversation.text, undefined),
           inputChars: conversation.text.length,
