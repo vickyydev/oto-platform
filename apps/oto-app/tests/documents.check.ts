@@ -937,14 +937,28 @@ try {
     assert.equal(index, 1);
     const p = await leaver("h16-backstop");
     assert.equal((await offboard(p.id, day(5))).status, 201);
+    // SCRUM-794: migration 0038 adds one OPEN offboarding per employee
+    // (`employee_offboarding_one_open`, reonboarded_at null) beside 0008's
+    // index, so a second open row breaks both and Postgres names whichever it
+    // checks first. A second row closed by Onboard Again (re-onboarded) is
+    // 0008's alone: refused by it, by name, while it stands.
+    await assert.rejects(
+      q(
+        `insert into employee_offboarding (employee_id, offboarding_type, reason_code, last_working_day, created_by, reonboarded_at)
+         values ($1, 'resignation', 'other', now(), $2, now())`,
+        [p.id, A.admin.id],
+      ),
+      /employee_offboarding_employee_unique/,
+    );
     await assert.rejects(
       q(
         `insert into employee_offboarding (employee_id, offboarding_type, reason_code, last_working_day, created_by)
          values ($1, 'resignation', 'other', now(), $2)`,
         [p.id, A.admin.id],
       ),
-      /employee_offboarding_employee_unique/,
+      /duplicate key value violates unique constraint "employee_offboarding_(employee_unique|one_open)"/,
     );
+    assert.equal(await count("select count(*) as n from employee_offboarding where employee_id = $1", [p.id]), 1);
   });
 
   await check("the readable reason: a code reads as the form's words, free text as it was written", async () => {
