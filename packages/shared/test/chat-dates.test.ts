@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  PARTY_CHAT_WINDOW_DAYS,
   PARTY_DATE_TIME_ZONE,
   mentionsPartyDate,
   mentionsPartyTime,
@@ -311,6 +312,54 @@ describe('readChatPartyDate: a whole chat, its lines in order', () => {
     // A start word, or a time given as a point, still counts.
     expect(readChatPartyDate([line('21 ноября'), line('Начало в 15:00', true)], TUE)).toMatchObject({ time: '15:00' });
     expect(readChatPartyDate([line('21 พ.ย.'), line('เริ่ม 15.00 น. ค่ะ', true)], TUE)).toMatchObject({ time: '15:00' });
+  });
+
+  it('within one kind the later line wins, whoever wrote it: a move after the team’s date, a new party after an old one', () => {
+    expect(readChatPartyDate([line('Подтверждаем 16 ноября', true), line('перенести на 22 ноября?')], TUE)).toMatchObject({
+      date: '2026-11-22',
+      phrase: '22 ноября',
+      by: 'customer',
+      line: 1,
+    });
+    // The team's old confirmation, written in March: its 15 March has gone.
+    const old = { text: 'Подтверждаем ваш праздник 15 марта в 14:00', team: true, at: '2026-03-01T03:00:00Z' };
+    expect(readChatPartyDate([old, line('Хотим снова праздник 21 ноября')], TUE)).toMatchObject({ date: '2026-11-21', by: 'customer' });
+    // Nor is the old party's time the new one's: its line names another day.
+    expect(readChatPartyDate([old, line('Хотим снова праздник 21 ноября')], TUE).time).toBeNull();
+    expect(readChatPartyDate([line(old.text, true), line('Хотим снова праздник 21 ноября')], TUE)).toMatchObject({ date: '2026-11-21', time: null });
+    // Within the window too: written on 20 October, its 25 October has gone; the customer's Saturday stands.
+    const recent = { text: 'Подтверждаем ваш праздник 25 октября в 14:00', team: true, at: '2026-10-20T03:00:00Z' };
+    expect(readChatPartyDate([recent, line('Хотим снова праздник в субботу')], TUE)).toMatchObject({ date: '2026-11-14', phrase: 'в субботу' });
+  });
+
+  it('each line is counted from the day it was written; a line older than the window is not read', () => {
+    expect(PARTY_CHAT_WINDOW_DAYS).toBe(60);
+    // Written on Wednesday 4 November (in Bangkok): "в субботу" was 7 November.
+    expect(readChatPartyDate([{ text: 'Можно в субботу?', team: false, at: '2026-11-04T03:00:00Z' }], TUE).date).toBeNull();
+    // Written on Monday 9 November: the 14th.
+    expect(readChatPartyDate([{ text: 'Можно в субботу?', team: false, at: '2026-11-09T03:00:00Z' }], TUE).date).toBe('2026-11-14');
+    // Inside the window, a date still ahead; outside it, nothing.
+    expect(readChatPartyDate([{ text: '21 December please', team: false, at: '2026-10-01T03:00:00Z' }], TUE).date).toBe('2026-12-21');
+    expect(readChatPartyDate([{ text: '21 December please', team: false, at: '2026-08-01T03:00:00Z' }], TUE).date).toBeNull();
+    // A line that says no day, or a day after today, is read as today's.
+    expect(readChatPartyDate([{ text: 'в субботу', team: false, at: 'not a time' }], TUE).date).toBe('2026-11-14');
+    expect(readChatPartyDate([{ text: 'в субботу', team: false, at: '2026-11-20T03:00:00Z' }], TUE).date).toBe('2026-11-14');
+    // An old line's time is not read either.
+    expect(readChatPartyDate([{ text: 'Начало в 15:00', team: true, at: '2026-08-01T03:00:00Z' }, line('21 ноября')], TUE).time).toBeNull();
+  });
+
+  it('"today" and "tomorrow" are not a party’s date in a chat: a greeting or a call-back says them', () => {
+    for (const lines of [
+      [line('Hi, how much is a party?'), line('Hello! How can I help you today?', true)],
+      [line('Сколько стоит праздник?'), line('Здравствуйте! Чем можем помочь сегодня?', true)],
+      [line('ราคาเท่าไหร่คะ'), line('สวัสดีค่ะ วันนี้ให้ช่วยอะไรคะ', true)],
+      [line('Сколько стоит?'), line('Уточню у менеджера и отвечу завтра', true)],
+      [line('Можно завтра?')],
+    ]) {
+      expect(readChatPartyDate(lines, TUE), lines[lines.length - 1]!.text).toMatchObject({ date: null, phrase: '', by: null });
+    }
+    // A real date beside them is read.
+    expect(readChatPartyDate([line('Hello! How can I help you today?', true), line('21 November please')], TUE).date).toBe('2026-11-21');
   });
 
   it('a chat that names no date or time', () => {

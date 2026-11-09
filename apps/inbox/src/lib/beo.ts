@@ -17,9 +17,13 @@ import type { ConversationRow, Message } from '@/api/inbox';
  * — the owner reported Book Date opening without the chat's date. They are
  * replaced by the shared reader (`@oto/shared` chat-dates, the one the api's
  * BEO confirmation picker uses), over the WHOLE chat: the customer's lines and
- * the team's, a team line's date winning over a customer's when they differ;
- * and the time is read too. The shape stays the prototype's: the phrase the
- * chat said is kept and shown beside the date so a person confirms it.
+ * the team's, the later line's date winning (the team's answer to the
+ * customer's ask, or the customer's move after the team's confirmation), each
+ * line counted from the day it was written, a date gone by and a line older
+ * than the window passed over, "today" and "tomorrow" not read (a greeting
+ * says them); and the time is read too. The shape stays the prototype's: the
+ * phrase the chat said is kept and shown beside the date so a person confirms
+ * it.
  *
  * What the platform adds is only what the Events module needs that the
  * prototype's free text could not give it: the phrase becomes a calendar date
@@ -40,7 +44,7 @@ export interface BeoData {
   branchId: string | null;
   /** The phrase as the chat said it ("21/mar", "saturday", "15 ноября"), or empty. */
   eventDate: string;
-  /** Whose line the date came from: a team line's wins over a customer's. */
+  /** Whose line the date came from: the later line's wins, the team's or the customer's. */
   eventDateBy: 'team' | 'customer' | null;
   /** The party's start as the chat names it, `HH:MM`, or empty. */
   eventTime: string;
@@ -68,26 +72,30 @@ export function customerTextOf(messages: readonly Pick<Message, 'authorKind' | '
     .join(' \n ');
 }
 
+/** A loaded message as the reading needs it; when it was written, when the caller has it. */
+type ChatMessage = Pick<Message, 'authorKind' | 'body'> & Partial<Pick<Message, 'createdAt'>>;
+
 /**
  * The chat's lines the date and time are read from, in order: the customer's
  * and the team's people's (not the assistant's or a system notice), each with
- * its text.
+ * its text and when it was written (a date in it is counted from that day).
  */
-export function chatLinesOf(messages: readonly Pick<Message, 'authorKind' | 'body'>[]): PartyChatLine[] {
+export function chatLinesOf(messages: readonly ChatMessage[]): PartyChatLine[] {
   return messages
     .filter((m) => (m.authorKind === 'customer' || m.authorKind === 'staff') && typeof m.body === 'string')
-    .map((m) => ({ text: m.body as string, team: m.authorKind === 'staff' }));
+    .map((m) => ({ text: m.body as string, team: m.authorKind === 'staff', ...(m.createdAt ? { at: m.createdAt } : {}) }));
 }
 
 /**
  * `parseBeoFromConversation`, on the platform's conversation and its loaded
  * messages. `today` (the park's day, `YYYY-MM-DD`, or an instant read in the
- * parks' zone) is the day a weekday or "tomorrow" in the chat is counted from,
- * and a date whose own year is past is passed over.
+ * parks' zone) is the day the chat's dates are checked against: a date gone by
+ * (its own year past, or a weekday or day written on an earlier day) is passed
+ * over.
  */
 export function parseBeoFromConversation(
   conv: Pick<ConversationRow, 'contact' | 'language' | 'branchId' | 'intent'>,
-  messages: readonly Pick<Message, 'authorKind' | 'body'>[],
+  messages: readonly ChatMessage[],
   today: string | Date = new Date(),
 ): BeoData {
   const customerText = customerTextOf(messages);

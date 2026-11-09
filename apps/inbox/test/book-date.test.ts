@@ -175,6 +175,9 @@ function buttonNamed(html: string, text: string): string | null {
   return null;
 }
 
+// The day msg() writes its lines: the chat's dates are counted from it (SCRUM-814), so the reading is the same whatever day the test runs.
+const WRITTEN_ON = '2026-11-04';
+
 describe("the prototype's reading of the chat, ported (parseBeoFromConversation, :2109-2158)", () => {
   const conv = row();
   it('reads the kids, the date phrase, the age, an animator and a cake from the customer’s own lines', () => {
@@ -182,7 +185,7 @@ describe("the prototype's reading of the chat, ported (parseBeoFromConversation,
       msg('Hello! Can we book a party for 15 kids on 21/mar?'),
       msg('Sure, which package?', 'staff'),
       msg('My son will be 5 years old. We want an animator and a cake 🎂'),
-    ]);
+    ], WRITTEN_ON);
     expect(data).toMatchObject({
       customerName: 'Olga Demo',
       contact: '+66812345678',
@@ -199,23 +202,23 @@ describe("the prototype's reading of the chat, ported (parseBeoFromConversation,
   });
 
   it('reads Russian and Thai the prototype’s way, and a weekday', () => {
-    expect(parseBeoFromConversation(conv, [msg('День рождения, 12 детей, в субботы')]).numKids).toBe('12');
-    expect(parseBeoFromConversation(conv, [msg('งานวันเกิด 20 เด็ก')]).numKids).toBe('20');
-    expect(parseBeoFromConversation(conv, [msg('ฉลอง 7 ขวบ')]).age).toBe('7');
-    expect(parseBeoFromConversation(conv, [msg('Can we come next saturday with 8 kids')]).eventDate).toBe('next saturday');
-    expect(parseBeoFromConversation(conv, [msg('party on Sunday')]).eventDate).toBe('Sunday');
+    expect(parseBeoFromConversation(conv, [msg('День рождения, 12 детей, в субботы')], WRITTEN_ON).numKids).toBe('12');
+    expect(parseBeoFromConversation(conv, [msg('งานวันเกิด 20 เด็ก')], WRITTEN_ON).numKids).toBe('20');
+    expect(parseBeoFromConversation(conv, [msg('ฉลอง 7 ขวบ')], WRITTEN_ON).age).toBe('7');
+    expect(parseBeoFromConversation(conv, [msg('Can we come next saturday with 8 kids')], WRITTEN_ON).eventDate).toBe('next saturday');
+    expect(parseBeoFromConversation(conv, [msg('party on Sunday')], WRITTEN_ON).eventDate).toBe('Sunday');
   });
 
   it('keeps what the prototype’s kids rule does not read: a staff line', () => {
-    expect(parseBeoFromConversation(conv, [msg('for 30 kids', 'staff')]).numKids).toBe('');
-    expect(parseBeoFromConversation(conv, [msg('nothing useful')])).toMatchObject({ eventDate: '', numKids: '', age: '', animator: false, cake: false });
+    expect(parseBeoFromConversation(conv, [msg('for 30 kids', 'staff')], WRITTEN_ON).numKids).toBe('');
+    expect(parseBeoFromConversation(conv, [msg('nothing useful')], WRITTEN_ON)).toMatchObject({ eventDate: '', numKids: '', age: '', animator: false, cake: false });
   });
 
   // SCRUM-814: the prototype's date pattern needed a separator ("14/mar") and so never read
   // "14 March" — the owner reported it as not working. The shared reader reads it, in the
   // chat's own words.
   it('reads "14 March" with a space (SCRUM-814: the prototype’s pattern did not)', () => {
-    expect(parseBeoFromConversation(conv, [msg('on 14 March please')]).eventDate).toBe('14 March');
+    expect(parseBeoFromConversation(conv, [msg('on 14 March please')], WRITTEN_ON).eventDate).toBe('14 March');
   });
 });
 
@@ -244,7 +247,7 @@ describe('the phrase becomes a calendar date, from the park’s day', () => {
 
 describe('the dialog opens with the reading and checks before it saves', () => {
   const draft = bookDateDraft(
-    parseBeoFromConversation(row(), [msg('Party for 15 kids on 21/mar, she turns 6 years')]),
+    parseBeoFromConversation(row(), [msg('Party for 15 kids on 21/mar, she turns 6 years')], WRITTEN_ON),
     '2026-11-04',
     CENTRAL,
   );
@@ -268,7 +271,7 @@ describe('the dialog opens with the reading and checks before it saves', () => {
       channel: 'instagram',
       contact: { id: '0192f0a0-1234-7abc-8def-0123456789ad', channel: 'instagram', handle: '17841400000000001', displayName: 'Olga Demo', phone: null, language: 'en', erased: false },
     });
-    const data = parseBeoFromConversation(instagram, [msg('Party for 15 kids on 21/mar')]);
+    const data = parseBeoFromConversation(instagram, [msg('Party for 15 kids on 21/mar')], WRITTEN_ON);
     // The prototype's free contact keeps the handle; the Phone field does not take it.
     expect(data.contact).toBe('17841400000000001');
     expect(data.phone).toBe('');

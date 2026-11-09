@@ -41,7 +41,7 @@ function row(language: string): ConversationRow {
 }
 
 let seq = 10;
-function msg(body: string, authorKind: Message['authorKind'] = 'customer'): Message {
+function msg(body: string, authorKind: Message['authorKind'] = 'customer', createdAt = '2026-11-10T03:00:00.000Z'): Message {
   seq += 1;
   return {
     id: `0192f0a0-1234-7abc-8def-0000000000${seq}`,
@@ -63,7 +63,7 @@ function msg(body: string, authorKind: Message['authorKind'] = 'customer'): Mess
     deliveredAt: null,
     readAt: null,
     redacted: false,
-    createdAt: '2026-11-10T03:00:00.000Z',
+    createdAt,
   };
 }
 
@@ -183,7 +183,7 @@ describe('Book Date’s first values on an English chat', () => {
 
   it('the assistant’s and the system’s lines are not read; the team’s and the customer’s are', () => {
     const messages = [msg('Party on 21 November please'), msg('See you on 22 November!', 'ai'), msg('Booked for 23 November', 'system')];
-    expect(chatLinesOf(messages)).toEqual([{ text: 'Party on 21 November please', team: false }]);
+    expect(chatLinesOf(messages)).toEqual([{ text: 'Party on 21 November please', team: false, at: '2026-11-10T03:00:00.000Z' }]);
     expect(draftOf('en', messages).date).toBe('2026-11-21');
   });
 
@@ -197,5 +197,49 @@ describe('Book Date’s first values on an English chat', () => {
     const draft = draftOf('en', [msg('Hello! How much is a party?')]);
     expect(draft).toMatchObject({ date: '', dateFrom: '', startTime: DEFAULT_START_TIME, timeFrom: '' });
     expect(dialog(draft)).toContain('The chat names no date');
+  });
+});
+
+describe('Book Date on a chat with no party date: a team greeting is not one', () => {
+  it('"today" and "tomorrow" in the team’s greeting or reply open with no date, in the three languages', () => {
+    for (const [language, customer, team] of [
+      ['en', 'Hi, how much is a party?', 'Hello! How can I help you today?'],
+      ['ru', 'Сколько стоит праздник?', 'Здравствуйте! Чем можем помочь сегодня?'],
+      ['th', 'ราคาเท่าไหร่คะ', 'สวัสดีค่ะ วันนี้ให้ช่วยอะไรคะ'],
+      ['ru', 'Сколько стоит?', 'Уточню у менеджера и отвечу завтра'],
+    ] as const) {
+      expect(draftOf(language, [msg(customer), msg(team, 'staff')]), team).toMatchObject({ date: '', dateFrom: '' });
+    }
+  });
+});
+
+describe('Book Date reads the chat’s latest date, and not an old one', () => {
+  it('a customer’s new date after the team’s confirmation of a past party', () => {
+    const d = draftOf('ru', [
+      msg('Подтверждаем ваш праздник 15 марта в 14:00', 'staff', '2026-03-01T03:00:00.000Z'),
+      msg('Хотим снова праздник 21 ноября'),
+    ]);
+    expect(d).toMatchObject({ date: '2026-11-21', dateFrom: '21 ноября' });
+    // Even when the old confirmation is inside the window, its day has gone.
+    const recent = draftOf('ru', [
+      msg('Подтверждаем ваш праздник 25 октября в 14:00', 'staff', '2026-10-20T03:00:00.000Z'),
+      msg('Хотим снова праздник в субботу'),
+    ]);
+    expect(recent).toMatchObject({ date: '2026-11-14', dateFrom: 'в субботу' });
+  });
+
+  it('a move the customer asks for after the team’s date', () => {
+    const d = draftOf('ru', [msg('Подтверждаем 16 ноября', 'staff'), msg('перенести на 22 ноября?')]);
+    expect(d).toMatchObject({ date: '2026-11-22', dateFrom: '22 ноября' });
+    expect(parseBeoFromConversation(row('ru'), [msg('Подтверждаем 16 ноября', 'staff'), msg('перенести на 22 ноября?')], TODAY).eventDateBy).toBe('customer');
+  });
+
+  it('a weekday written on an earlier day is counted from that day', () => {
+    // Written on Wednesday 4 November: "в субботу" was 7 November, gone by the 10th.
+    expect(draftOf('ru', [msg('Можно в субботу?', 'customer', '2026-11-04T03:00:00.000Z')])).toMatchObject({ date: '', dateFrom: '' });
+    // A date still ahead from a line in the window is read.
+    expect(draftOf('en', [msg('Party on 21 November please', 'customer', '2026-10-01T03:00:00.000Z')])).toMatchObject({ date: '2026-11-21' });
+    // A line older than the window is not read.
+    expect(draftOf('en', [msg('Party on 21 December please', 'customer', '2026-08-01T03:00:00.000Z')])).toMatchObject({ date: '', dateFrom: '' });
   });
 });

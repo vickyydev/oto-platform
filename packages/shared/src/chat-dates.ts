@@ -584,15 +584,22 @@ interface Best {
   at: number;
 }
 
-/** The party's date in one text, with its kind; null when it names none. */
-function bestDate(text: string, today: Day): Best | null {
+/**
+ * The party's date in one text, counted from `today` (the day it was written),
+ * with its kind; null when it names none. `notBefore`: a date before it is
+ * not the party's (default `today`). `minTier`: weaker kinds are not read.
+ */
+function bestDate(text: string, today: Day, opts: { notBefore?: string; minTier?: Tier } = {}): Best | null {
   const { original, scan: t } = prepared(text);
-  const from = isoOfDay(today);
+  const notBefore = opts.notBefore ?? isoOfDay(today);
   let best: Best | null = null;
   for (const f of datesIn(t, today)) {
+    if (f.tier < (opts.minTier ?? RELATIVE)) continue;
     if (notThePartysAt(t, f.phraseStart, f.clauseFrom)) continue;
     const date = f.resolve(today);
-    if (!date || (f.yearGiven && date < from)) continue;
+    // A year-less date resolves on or after `today`; one with its own year, or one
+    // written on an earlier day, may fall before `notBefore`.
+    if (!date || date < notBefore) continue;
     if (!best || f.tier > best.tier || (f.tier === best.tier && f.start >= best.at)) {
       best = { date, phrase: original.slice(f.phraseStart, f.end).trim(), tier: f.tier, at: f.start };
     }
@@ -806,7 +813,16 @@ export interface PartyChatLine {
   text: string;
   /** Written by a person on the team (not the customer, the assistant or a system notice). */
   team: boolean;
+  /**
+   * When it was written, an ISO instant: a date in it is counted from that day
+   * (an old "15 марта" or "в субботу" is a day that has gone), and a line
+   * older than `PARTY_CHAT_WINDOW_DAYS` is not read. Absent: written today.
+   */
+  at?: string | null;
 }
+
+/** A chat's lines written more than this many days before today are not read for the party's date or time. */
+export const PARTY_CHAT_WINDOW_DAYS = 60;
 
 export interface PartyChatReading extends PartyDateReading {
   /** Whose line the date came from. */
@@ -821,12 +837,20 @@ export interface PartyChatReading extends PartyDateReading {
 
 /**
  * The party's date and time in a whole chat, its lines in order. A day named
- * outright beats a weekday wherever it is; then a team line's date beats a
- * customer's (the team confirms what the customer asked); then the later line
- * wins. The time is the one written with that date, else the team's latest,
- * else the customer's latest, from a line that names the party's day or its
- * start or gives the time as a point ("в 14:00"); a deadline ("до 18:00") or
- * the opening hours leave it empty, and the Events module's start stands.
+ * outright beats a day of the month alone, that beats a weekday, wherever each
+ * is; within one kind the LATER line wins, whoever wrote it: a team line
+ * answers what the customer asked before it ("15 ноября занято, есть 16
+ * ноября"), and a customer's later date (a new party, a move: "перенести на 22
+ * ноября?") answers the team's. "Today" and "tomorrow" are not read here: a
+ * greeting or a promise to call back says them ("How can I help you today?",
+ * "отвечу завтра"). Each line's date is counted from the day it was written,
+ * and a date that has gone by today is passed over, as is a line older than
+ * `PARTY_CHAT_WINDOW_DAYS`.
+ *
+ * The time is the one written with that date, else the team's latest, else the
+ * customer's latest, from a line that names the party's day or its start or
+ * gives the time as a point ("в 14:00"); a deadline ("до 18:00") or the opening
+ * hours leave it empty, and the Events module's start stands.
  */
 export function readChatPartyDate(
   lines: readonly PartyChatLine[],
@@ -834,23 +858,38 @@ export function readChatPartyDate(
   timeZone: string = PARTY_DATE_TIME_ZONE,
 ): PartyChatReading {
   const day = todayDay(today, timeZone);
+  const todayIso = day ? isoOfDay(day) : '';
+  const oldest = day ? plusDays(day, -PARTY_CHAT_WINDOW_DAYS) : '';
+  /** The day a line was written (today when it does not say, or says a later day); null: too old to read. */
+  const writtenOn = (l: PartyChatLine): Day | null => {
+    if (!day || !l.at) return day;
+    const instant = new Date(l.at);
+    if (Number.isNaN(instant.getTime())) return day;
+    const iso = isoDateInTz(instant, timeZone);
+    if (iso < oldest) return null;
+    return iso >= todayIso ? day : dayFromIso(iso);
+  };
+  const lineDays = lines.map(writtenOn);
   let chosen: { line: number; team: boolean; found: Best } | null = null;
-  for (let i = 0; day && i < lines.length; i++) {
+  for (let i = 0; i < lines.length; i++) {
     const l = lines[i]!;
-    const found = bestDate(l.text, day);
-    if (!found) continue;
-    const better =
-      !chosen ||
-      found.tier > chosen.found.tier ||
-      (found.tier === chosen.found.tier && l.team && !chosen.team) ||
-      (found.tier === chosen.found.tier && l.team === chosen.team);
-    if (better) chosen = { line: i, team: l.team, found };
+    const from = lineDays[i];
+    if (!from) continue;
+    const found = bestDate(l.text, from, { notBefore: todayIso, minTier: WEEKDAY });
+    if (found && (!chosen || found.tier >= chosen.found.tier)) chosen = { line: i, team: l.team, found };
   }
   let time: PartyTimeReading | null = chosen ? readPartyTimePhrase(lines[chosen.line]!.text) : null;
+  /** Another line names another party: a day that has gone, or a different day ("Подтверждаем ваш праздник 15 марта в 14:00"). */
+  const anotherParty = (l: PartyChatLine, from: Day): boolean => {
+    if (!mentionsPartyDate(l.text)) return false;
+    const its = bestDate(l.text, from, { notBefore: todayIso, minTier: WEEKDAY });
+    return !its || (its.tier === EXACT && its.date !== chosen?.found.date);
+  };
   for (const team of [true, false]) {
     for (let i = lines.length - 1; i >= 0 && !time; i--) {
       const l = lines[i]!;
-      if (l.team !== team) continue;
+      const from = lineDays[i];
+      if (l.team !== team || !from || anotherParty(l, from)) continue;
       const found = readPartyTimePhrase(l.text);
       if (found && isPartyTimeLine(l.text, found)) time = found;
     }

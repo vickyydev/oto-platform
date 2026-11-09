@@ -370,11 +370,19 @@ sign-on.
 - **The party's date and time (SCRUM-814):** one reader in `@oto/shared`
   (`chat-dates`) reads them in Thai, English and Russian ("15 ноября",
   "21-го ноября", "21 November", "Nov 21", "15 พ.ย.", "15.11", a Buddhist
-  year, weekdays, tomorrow; "в 14:00", "2 pm", "14.00 น.", "บ่าย 2 โมง").
-  Book Date opens with the date and time it finds in the whole chat — a team
-  line's date wins over a customer's, a day named outright over a weekday, a
-  deposit's or a birth's date is passed over — each with the chat's own words
-  beside it, and the Events module's 14:00 only when the chat names no time.
+  year, a day without its month ("the 21st", "15-го", "วันที่ 15"),
+  weekdays, tomorrow; "в 14:00", "2 pm", "14.00 น.", "บ่าย 2 โมง").
+  Book Date opens with the date and time it finds in the whole chat — a day
+  named outright beats a day without its month, that beats a weekday, and
+  within one kind the later line wins (the team's answer, or the customer's
+  move after it); each line is counted from the day it was written, a date
+  gone by and a line older than 60 days are passed over, and "today" /
+  "tomorrow" (a greeting says them) are not read; a deposit's or a birth's
+  date, and a price after a date, are passed over — each with the chat's own
+  words beside it. The time is the date's own line's, else one from a line
+  that names the party's day or start or gives it as a point ("в 14:00"); a
+  duration ("на 2 часа"), a deadline ("до 18:00") or the opening hours are
+  not a start, and the Events module's 14:00 stands when the chat names none.
   The api's confirmation picker uses the same reader. The BEO's AI Fill is
   told the park's today (date, weekday, clock, zone) so a year-less or
   relative date reads against it, and answers the party's date with the
