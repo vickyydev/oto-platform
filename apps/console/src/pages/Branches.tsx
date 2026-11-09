@@ -14,6 +14,8 @@ import {
   type BranchAppReconcileReport,
 } from '@/api/platform';
 import { apiBranchToBranch, type OrganisationBranch } from '@/api/organisation';
+import { fleetApi } from '@/api/fleet';
+import { PartySlipsStationField } from '@/components/PartySlipsStationField';
 import { isMissingRoute } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/Drawer';
@@ -341,6 +343,34 @@ function BranchEditor({
     editableHours(branch.openingHours) ? branch.openingHours : {},
   );
   const [hoursChanged, setHoursChanged] = useState(false);
+  // SCRUM-805 — the station whose kitchen and bar printers receive party slips.
+  const [slipsStation, setSlipsStation] = useState(branch.partySlipsStationId ?? '');
+  const [slipStations, setSlipStations] = useState<Array<{ id: string; name: string }> | null>(null);
+  const [slipStationsError, setSlipStationsError] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    void working
+      .run(() => fleetApi.stations(branch.id))
+      .then((answer) => {
+        if (live && working.isCurrent()) {
+          setSlipStations(
+            answer.stations
+              .filter((row) => row.branchId === branch.id && !row.archived)
+              .map((row) => ({ id: row.id, name: row.name })),
+          );
+        }
+      })
+      .catch((failure: unknown) => {
+        if (live && working.isCurrent()) {
+          setSlipStationsError(
+            'The park’s stations could not be read' + (failure instanceof Error ? ': ' + failure.message : '.'),
+          );
+        }
+      });
+    return () => {
+      live = false;
+    };
+  }, [branch.id, working.run, working.isCurrent]);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
@@ -358,6 +388,7 @@ function BranchEditor({
     if (name.trim() !== branch.name) body.name = name.trim();
     if (timezone !== branch.timezone) body.timezone = timezone;
     if (dayStart !== (branch.businessDayStart ?? '')) body.businessDayStart = dayStart;
+    if (slipsStation !== (branch.partySlipsStationId ?? '')) body.partySlipsStationId = slipsStation || null;
     if (hoursChanged && hoursMode !== 'legacy') {
       if (
         hoursMode === 'weekly' &&
@@ -450,6 +481,13 @@ function BranchEditor({
           onChange={(event) => setDayStart(event.target.value)}
         />
       </label>
+      <PartySlipsStationField
+        value={slipsStation}
+        stations={slipStations}
+        error={slipStationsError}
+        fieldClass={fieldClass}
+        onChange={setSlipsStation}
+      />
       <label className="flex flex-col gap-1 text-sm font-semibold">
         Opening hours
         <select
