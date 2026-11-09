@@ -24,7 +24,9 @@
 //      party edit) lands in `beo_event_billing.pos_order_ref` and reads back
 //      from the view;
 //   4. Generate from BEO bills the package's satang as the whole baht a
-//      billing line holds (SCRUM-806): a 5,000 THB add-on bills 5,000;
+//      billing line holds (SCRUM-806): a 5,000 THB add-on bills 5,000; an
+//      add-on switched off or at quantity 0 bills nothing, and one at 2 bills
+//      two, as the view reads the party's add-ons;
 //   5. script/seed-birthday-packages.mjs on rows shaped as staging holds them
 //      (the two Floresta templates, facts in descriptions): the dry run writes
 //      nothing, the run updates those rows in place (the weekday template
@@ -765,6 +767,49 @@ try {
       .filter((l: { isIncluded: boolean }) => !l.isIncluded)
       .reduce((sum: number, l: { qty: number; unitPriceIncVat: number }) => sum + l.qty * l.unitPriceIncVat, 0);
     assert.equal(total, 5_000 + 1_000 + 6_500);
+  });
+
+  await check("an add-on switched off or at quantity 0 adds nothing to the billing; a quantity bills that many", async () => {
+    const billed = await birthday(A);
+    const applied = await call("POST", `/api/beo/events/${billed}/package-snapshot`, { cookie, body: { templateId: packageId } });
+    assert.equal(applied.status, 201, show(applied));
+    const itemOf = (prefix: string) => applied.body.items.find((i: { label: string }) => i.label.startsWith(prefix)).id as string;
+    const table = itemOf("Reserved table");
+    const upgrade = itemOf("Upgrade");
+    const setItem = async (itemId: string, body: Record<string, unknown>) => {
+      const res = await call("PATCH", `/api/beo/events/${billed}/package-snapshot/items/${itemId}`, { cookie, body });
+      assert.equal(res.status, 200, show(res));
+    };
+    await setItem(table, { qty: 0 });
+    await setItem(upgrade, { billable: false });
+    const generate = async () => {
+      const res = await call("POST", `/api/events/${billed}/line-items/generate-from-beo`, { cookie, body: { mode: "replace" } });
+      assert.equal(res.status, 201, show(res));
+      const lines = await call("GET", `/api/events/${billed}/line-items`, { cookie });
+      assert.equal(lines.status, 200, show(lines));
+      return lines.body as Array<{ name: string; qty: number; unitPriceIncVat: number; isIncluded: boolean }>;
+    };
+    const billedTotal = (lines: Array<{ qty: number; unitPriceIncVat: number; isIncluded: boolean }>) =>
+      lines.filter((l) => !l.isIncluded).reduce((sum, l) => sum + l.qty * l.unitPriceIncVat, 0);
+
+    const none = await generate();
+    assert.deepEqual(none.filter((l) => l.name.startsWith("Add-on:")), [], "nothing the party did not buy");
+    assert.ok(none.some((l) => l.name === "Package: Ice-cream cake with candles and birthday song"), "the included lines stay");
+    assert.equal(billedTotal(none), 0);
+
+    await setItem(table, { qty: 2 });
+    const two = await generate();
+    assert.deepEqual(
+      two.filter((l) => l.name.startsWith("Add-on:")).map((l) => [l.name, l.qty, l.unitPriceIncVat]),
+      [["Add-on: Reserved table for adults, up to 10 adults", 2, 5_000]],
+    );
+    assert.equal(billedTotal(two), 10_000);
+    // The billing and the view agree on what the party bought.
+    const addOns = (await q<{ add_ons: Array<{ name: string; qty: number }> }>(
+      "select add_ons from otoapp_v.event_packages where event_id = $1",
+      [billed],
+    ))[0].add_ons;
+    assert.deepEqual(addOns.map((a) => [a.name, a.qty]), [["Reserved table for adults, up to 10 adults", 2]]);
   });
 
   // ── 5. the repo seed, on rows shaped as staging holds them ───────────────

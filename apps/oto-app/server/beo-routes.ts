@@ -2166,9 +2166,13 @@ export function registerBeoRoutes(app: Express) {
       // Birthday package snapshot items (breakdown + add-ons). The package and
       // entertainment tables keep satang; a billing line keeps whole baht
       // (formatThb shows it as it is, the app's seed writes 5500 for 5,500),
-      // so both are converted here (SCRUM-806).
+      // so both are converted here (SCRUM-806). An add-on is billed only as
+      // the BEO keeps it: switched to billable, at the quantity staff set; one
+      // switched off or at 0 was not bought and adds nothing, as
+      // otoapp_v.event_packages reads the party's add-ons (SCRUM-803).
       if (packageSnapshot && pkgSnapshotItems.length > 0) {
         for (const pi of pkgSnapshotItems) {
+          if (!pi.included && (!pi.billable || !(pi.qty > 0))) continue;
           const sourceKey = `package_item_${pi.id}`;
           if (mode === "replace" || !existingSourceIds.has(sourceKey)) {
             const prefix = pi.included ? "Package" : "Add-on";
@@ -2176,7 +2180,7 @@ export function registerBeoRoutes(app: Express) {
               eventId,
               name: `${prefix}: ${pi.label}`,
               category: "SERVICE",
-              qty: pi.qty || 1,
+              qty: pi.included ? pi.qty || 1 : pi.qty,
               unitPriceIncVat: wholeBahtFromSatang(pi.unitPrice),
               isIncluded: pi.included,
               isManual: false,
