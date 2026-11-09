@@ -1,0 +1,547 @@
+{
+  "unit": "SCRUM-805",
+  "liveCommit": "9f92a316d4768a5c3dcd61d71d44f4f68e17e284",
+  "deploysBefore": [
+    "== oto-api-staging",
+    "dep-dbov73vg6t6s73d9bjpg live           9f92a316 2026-11-09T16:31:06.813144Z",
+    "== oto-pos-web-staging",
+    "dep-dbov743hf81s73c3t2b0 live           9f92a316 2026-11-09T16:28:54.711895Z",
+    "== oto-pos-staging",
+    "dep-dbov74fig07c73ai2k0g live           9f92a316 2026-11-09T16:31:21.365006Z",
+    "== oto-console-staging",
+    "dep-dbov74utlv9c73bcfbvg live           9f92a316 2026-11-09T16:24:48.893675Z"
+  ],
+  "deploysAfter": [
+    "== oto-api-staging",
+    "dep-dbov73vg6t6s73d9bjpg live           9f92a316 2026-11-09T16:31:06.813144Z",
+    "== oto-pos-web-staging",
+    "dep-dbov743hf81s73c3t2b0 live           9f92a316 2026-11-09T16:28:54.711895Z",
+    "== oto-pos-staging",
+    "dep-dbov74fig07c73ai2k0g live           9f92a316 2026-11-09T16:31:21.365006Z",
+    "== oto-console-staging",
+    "dep-dbov74utlv9c73bcfbvg live           9f92a316 2026-11-09T16:24:48.893675Z",
+    "== oto-app-staging",
+    "dep-dbov6eavcj2c739tmakg live           3802ced5 2026-11-09T16:25:17.738391Z"
+  ],
+  "browser": "Chromium 153.0.8010.12",
+  "startedAt": "2026-11-09T16:37:18.569Z",
+  "branch": {
+    "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "code": "hkt-central",
+    "otoAppBranchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99"
+  },
+  "till": {
+    "id": "01a1c12c-2692-7a39-af70-fe970adf69eb",
+    "name": "ZZ TEST SCRUM-804 till",
+    "prefix": "Z804X",
+    "box": "Virtual box 1",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "devicesAtCreate": [
+      "adult_band:Band Printer (adults)",
+      "kids_band:Band Printer (kids)",
+      "receipt:Receipt Printer 1"
+    ],
+    "devicesWithKitchen": [
+      "adult_band:Band Printer (adults)",
+      "kids_band:Band Printer (kids)",
+      "kitchen:Kitchen Printer",
+      "receipt:Receipt Printer 1"
+    ]
+  },
+  "partyDate": "2026-11-09",
+  "party1": {
+    "id": "a1c4655a-b724-40f2-8671-f44c18e93b1d",
+    "title": "ZZ TEST 804 party",
+    "slipTimeChanges": [
+      {
+        "at": "2026-11-09T17:03:40.691Z",
+        "bkk": "10/11/2026, 00:03:40",
+        "patch": {
+          "status": 200,
+          "slipsTime": "00:06:00"
+        },
+        "read": {
+          "status": 200,
+          "slipsTime": "00:06:00"
+        }
+      }
+    ],
+    "records": [
+      {
+        "id": "01a1c149-318e-7f00-a2bd-7c53788ab076",
+        "run": 3,
+        "station": "kitchen",
+        "trigger": "reprint",
+        "status": "printed",
+        "at": "00:09",
+        "printJobId": "01a1c149-3192-751c-9412-42d035f2929d",
+        "jobStatus": "printed",
+        "createdAt": "2026-11-09T17:09:21.908Z"
+      },
+      {
+        "id": "01a1c149-3197-74d4-98ad-54545200d411",
+        "run": 3,
+        "station": "bar",
+        "trigger": "reprint",
+        "status": "no_printer",
+        "at": "00:09",
+        "printJobId": null,
+        "jobStatus": null,
+        "createdAt": "2026-11-09T17:09:21.908Z"
+      },
+      {
+        "id": "01a1c148-733f-7a89-80f8-428aedc4e7d9",
+        "run": 2,
+        "station": "kitchen",
+        "trigger": "reprint",
+        "status": "printed",
+        "at": "00:08",
+        "printJobId": "01a1c148-7342-7461-9044-a80c13306f59",
+        "jobStatus": "printed",
+        "createdAt": "2026-11-09T17:08:33.192Z"
+      },
+      {
+        "id": "01a1c148-7346-7fea-af1c-bfceb9e6e1ad",
+        "run": 2,
+        "station": "bar",
+        "trigger": "reprint",
+        "status": "no_printer",
+        "at": "00:08",
+        "printJobId": null,
+        "jobStatus": null,
+        "createdAt": "2026-11-09T17:08:33.192Z"
+      },
+      {
+        "id": "01a1c146-304f-7c4c-96ae-e103c08d1d23",
+        "run": 1,
+        "station": "kitchen",
+        "trigger": "schedule",
+        "status": "no_printer",
+        "at": "00:06",
+        "printJobId": null,
+        "jobStatus": null,
+        "createdAt": "2026-11-09T17:06:04.818Z"
+      },
+      {
+        "id": "01a1c146-30a3-7c02-aa3f-1c302303b56d",
+        "run": 1,
+        "station": "bar",
+        "trigger": "schedule",
+        "status": "no_printer",
+        "at": "00:06",
+        "printJobId": null,
+        "jobStatus": null,
+        "createdAt": "2026-11-09T17:06:04.818Z"
+      }
+    ]
+  },
+  "party2": {
+    "id": "2b3b890e-0c02-42f0-9c4b-0d85b15f263f",
+    "title": "ZZ TEST 805 timed party",
+    "date": "2026-11-09",
+    "children": 6,
+    "adults": 2,
+    "packageApply": {
+      "status": 201,
+      "packageName": "Birthday package, Central Floresta",
+      "slipsTime": "11:00:00",
+      "items": 11,
+      "setMenuTemplateId": "0b1db99d-296a-4418-abb8-9d6071a367c4"
+    },
+    "slipTimeChanges": [
+      {
+        "at": "2026-11-09T17:09:08.404Z",
+        "bkk": "10/11/2026, 00:09:08",
+        "patch": {
+          "status": 200,
+          "slipsTime": "00:11:00"
+        },
+        "read": {
+          "status": 200,
+          "slipsTime": "00:11:00"
+        }
+      }
+    ],
+    "records": [
+      {
+        "id": "01a1c14a-c448-7e9f-9e62-185a49f59566",
+        "run": 1,
+        "station": "kitchen",
+        "trigger": "schedule",
+        "status": "printed",
+        "at": "00:11",
+        "printJobId": "01a1c14a-c450-7f7d-9bc4-42935894a0a9",
+        "jobStatus": "printed",
+        "createdAt": "2026-11-09T17:11:04.899Z"
+      },
+      {
+        "id": "01a1c14a-c45a-795a-b452-909e280c1af6",
+        "run": 1,
+        "station": "bar",
+        "trigger": "schedule",
+        "status": "nothing_to_print",
+        "at": "00:11",
+        "printJobId": null,
+        "jobStatus": null,
+        "createdAt": "2026-11-09T17:11:04.899Z"
+      }
+    ],
+    "laterTicks": "job ticks at 00:12:04 and 00:13:04 (Bangkok) made no further run: run 1 only"
+  },
+  "branchSetting": {
+    "set": {
+      "net": [
+        {
+          "at": "2026-11-09T17:08:15.738Z",
+          "method": "PATCH",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "status": 200
+        }
+      ],
+      "readBack": {
+        "partySlipsStationId": "01a1c12c-2692-7a39-af70-fe970adf69eb",
+        "isZzTestTill": true
+      }
+    },
+    "cleared": {
+      "partySlipsStationId": null
+    }
+  },
+  "tillPrinters": {
+    "added": "kitchen: Kitchen Printer (Virtual box 1, simulated)",
+    "bar": "Virtual box 1 has no bar printer, so none was assigned"
+  },
+  "kitchenJobs": [
+    {
+      "id": "01a1c14a-c450-7f7d-9bc4-42935894a0a9",
+      "kind": "kitchen_ticket",
+      "status": "printed",
+      "device": "Kitchen Printer",
+      "role": "kitchen",
+      "reprintOf": null,
+      "queuedAt": "2026-11-09T17:11:04.538Z",
+      "finishedAt": "2026-11-09T17:11:05.730Z"
+    },
+    {
+      "id": "01a1c149-3192-751c-9412-42d035f2929d",
+      "kind": "kitchen_ticket",
+      "status": "printed",
+      "device": "Kitchen Printer",
+      "role": "kitchen",
+      "reprintOf": "01a1c148-7342-7461-9044-a80c13306f59",
+      "queuedAt": "2026-11-09T17:09:21.890Z",
+      "finishedAt": "2026-11-09T17:09:25.584Z"
+    },
+    {
+      "id": "01a1c148-7342-7461-9044-a80c13306f59",
+      "kind": "kitchen_ticket",
+      "status": "printed",
+      "device": "Kitchen Printer",
+      "role": "kitchen",
+      "reprintOf": null,
+      "queuedAt": "2026-11-09T17:08:33.175Z",
+      "finishedAt": "2026-11-09T17:08:35.617Z"
+    }
+  ],
+  "health": {
+    "row": "job:parties.slips ok, every 1 m, last ran each minute",
+    "runDetail": "not shown: the Health page and GET /platform/jobs carry the last outcome only, never the run detail (noPrinter 2); the run is evidenced by the party slip records (run 1, schedule, kitchen and bar no_printer at 00:06)"
+  },
+  "checks": [
+    [
+      "before a station is named: slip time and Not printed yet",
+      "PASS (805-st-01)"
+    ],
+    [
+      "slip time moved to 00:06 in the OTO App; at 00:06 the job records No printer named for this park for both slips",
+      "PASS (run 1 schedule 00:06:04, 805-st-02)"
+    ],
+    [
+      "Health lists job:parties.slips with last run detail noPrinter 2",
+      "PARTIAL: the row is listed ok; no screen or route shows the run detail"
+    ],
+    [
+      "Console Branches field set to the ZZ TEST till; GET /branches shows partySlipsStationId",
+      "PASS"
+    ],
+    [
+      "Print party slips now: kitchen Printed 00:08, bar No bar printer at ZZ TEST SCRUM-804 till",
+      "PASS"
+    ],
+    [
+      "kitchen_ticket job, preview: BIRTHDAY PARTY, name, Children: 10, READY BY 13:40, Margherita, French fries, Fruit skewers",
+      "PASS"
+    ],
+    [
+      "preview shows Room, Party starts and 3x Margherita",
+      "NOT ON THE SLIP: no Room (the party has none); no Party starts line (dropped on purpose in 07ea77fe8); no quantities (the staging set menu names no portions)"
+    ],
+    [
+      "timed party printed by the job at its slip time with no press, once",
+      "PASS (00:11:04, run 1 only)"
+    ],
+    [
+      "second press: new run, reprint_of points at the earlier run's job; block shows newest run",
+      "PASS (run 3 kitchen job reprint_of = run 2 job; run 1 had no job)"
+    ]
+  ],
+  "wordingNote": "After the station was named, run 1 (recorded with no station) read \"No kitchen printer at ZZ TEST SCRUM-804 till\" on the page: the words are drawn against the station named now, not the one at the time of the run.",
+  "images": [
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-805/staging/805-st-01-slips-not-printed-yet.png",
+      "at": "2026-11-09T17:03:34.886Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/parties",
+      "viewport": {
+        "width": 1440,
+        "height": 1600
+      },
+      "shows": "ZZ TEST 804 party page, Kitchen & bar slips block before any station is named: Slip time 11:00, Kitchen slip and Bar slip Not printed yet",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-805/staging/805-st-02-slips-no-printer-named.png",
+      "at": "2026-11-09T17:07:41.943Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/parties",
+      "viewport": {
+        "width": 1440,
+        "height": 1600
+      },
+      "shows": "After the slip time (00:06) passed with no station named: Kitchen slip and Bar slip read No printer named for this park (the job run 1, trigger schedule, 00:06)",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-805/staging/805-st-03-health-job-parties-slips.png",
+      "at": "2026-11-09T17:07:49.651Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/health",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Console Health: job:parties.slips, ok, every 1 minute, last ran a few seconds ago",
+      "masked": {
+        "names": {
+          "occurrences": 17,
+          "boxes": 17
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-805/staging/805-st-04-branch-party-slips-station-field.png",
+      "at": "2026-11-09T17:08:14.306Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/branches",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Console Branches > Central Floresta > Edit: Party slips printer station set to ZZ TEST SCRUM-804 till, with its sentence",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-805/staging/805-st-05-branch-edit-dialog.png",
+      "at": "2026-11-09T17:08:15.255Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/branches",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Console Branches > Central Floresta > Edit: Party slips printer station set to ZZ TEST SCRUM-804 till, with its sentence (the Edit branch dialog)",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-805/staging/805-st-06-print-now-kitchen-printed.png",
+      "at": "2026-11-09T17:08:39.139Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/parties",
+      "viewport": {
+        "width": 1440,
+        "height": 1600
+      },
+      "shows": "After pressing Print party slips now with the ZZ TEST till named: Kitchen slip Printed HH:MM; Bar slip No bar printer at ZZ TEST SCRUM-804 till (Virtual box 1 has no bar printer)",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-805/staging/805-st-07-kitchen-slip-preview-run2.png",
+      "at": "2026-11-09T17:08:52.082Z",
+      "page": "api",
+      "url": "GET /devices/01a0be8c-89a9-7c0b-a630-a16c81fdea52/printouts/1/preview.png",
+      "shows": "The simulated Kitchen Printer printout of the party kitchen slip (run 2, Print party slips now), as the API previews it",
+      "printoutAt": "2026-11-09T17:08:35.588Z",
+      "status": 200
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-805/staging/805-st-08-print-again-newest-run.png",
+      "at": "2026-11-09T17:09:27.855Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/parties",
+      "viewport": {
+        "width": 1440,
+        "height": 1600
+      },
+      "shows": "Second press of Print party slips now on the ZZ TEST 804 party: the block shows the newest run (kitchen Printed HH:MM, bar No bar printer at the ZZ TEST till)",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-805/staging/805-st-09-console-print-record-kitchen.png",
+      "at": "2026-11-09T17:09:57.426Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/devices",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Console Devices, Virtual box 1, Printing: the two kitchen ticket jobs of the party slips (run 2 and its reprint run 3) on the simulated Kitchen Printer, with the Kitchen Printer paper chosen",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-805/staging/805-st-10-kitchen-slip-preview-run3-reprint.png",
+      "at": "2026-11-09T17:10:05.287Z",
+      "page": "api",
+      "url": "GET /devices/01a0be8c-89a9-7c0b-a630-a16c81fdea52/printouts/2/preview.png",
+      "shows": "The simulated Kitchen Printer printout of the second press (run 3, a reprint of run 2)",
+      "printoutAt": "2026-11-09T17:09:25.547Z",
+      "status": 200
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-805/staging/805-st-11-timed-party-printed-by-the-job.png",
+      "at": "2026-11-09T17:12:35.779Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/parties",
+      "viewport": {
+        "width": 1440,
+        "height": 1600
+      },
+      "shows": "ZZ TEST 805 timed party: slip time 00:11; the job printed its kitchen slip at 00:11 with no press (Printed 00:11); bar slip Nothing to print (no bar plan)",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-805/staging/805-st-12-timed-party-page.png",
+      "at": "2026-11-09T17:12:36.696Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/parties",
+      "viewport": {
+        "width": 1440,
+        "height": 1600
+      },
+      "shows": "ZZ TEST 805 timed party: slip time 00:11; the job printed its kitchen slip at 00:11 with no press (Printed 00:11); bar slip Nothing to print (no bar plan) (whole party page)",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-805/staging/805-st-13-timed-party-kitchen-slip-preview.png",
+      "at": "2026-11-09T17:12:36.931Z",
+      "page": "api",
+      "url": "GET /devices/01a0be8c-89a9-7c0b-a630-a16c81fdea52/printouts/3/preview.png",
+      "shows": "The simulated Kitchen Printer printout the job made for the ZZ TEST 805 timed party at its slip time",
+      "printoutAt": "2026-11-09T17:11:05.709Z",
+      "status": 200
+    }
+  ],
+  "cleanup": {
+    "branchReadBack": {
+      "partySlipsStationId": null
+    },
+    "tillReadBack": {
+      "id": "01a1c12c-2692-7a39-af70-fe970adf69eb",
+      "name": "ZZ TEST SCRUM-804 till",
+      "prefix": "Z804X",
+      "archived": true,
+      "devices": 0
+    },
+    "parties": [
+      {
+        "key": "party1",
+        "id": "a1c4655a-b724-40f2-8671-f44c18e93b1d",
+        "title": "ZZ TEST 804 party",
+        "billingBefore": {
+          "status": 200,
+          "posOrderRef": null
+        },
+        "delete": 204,
+        "readBack": {
+          "event": 404,
+          "snapshot": 404,
+          "tillParty": 404
+        }
+      },
+      {
+        "key": "party2",
+        "id": "2b3b890e-0c02-42f0-9c4b-0d85b15f263f",
+        "title": "ZZ TEST 805 timed party",
+        "billingBefore": {
+          "status": 200,
+          "posOrderRef": null
+        },
+        "delete": 204,
+        "readBack": {
+          "event": 404,
+          "snapshot": 404,
+          "tillParty": 404
+        }
+      }
+    ]
+  },
+  "signOuts": {
+    "consoleMeBefore": 200,
+    "console": 200,
+    "consoleMe": 401
+  }
+}
