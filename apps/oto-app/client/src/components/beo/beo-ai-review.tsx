@@ -6,12 +6,16 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 import { AlertCircle, CalendarDays, CheckCircle2, ClipboardPaste, Gift, Loader2, MessageSquare, Music, Sparkles, Trash2, Utensils, Wallet } from "lucide-react";
-import { BEO_AI_MENUS, beoAiMatchLabel, beoAiSourceLabel, type BeoAiCakeMode, type BeoAiMenu, type BeoAiReview } from "@shared/beoAiFill";
+import { BEO_AI_MENUS, beoAiMatchLabel, beoAiSourceLabel, type BeoAiApproveBody, type BeoAiCakeMode, type BeoAiMenu, type BeoAiReview } from "@shared/beoAiFill";
+import { dayLabel } from "@/lib/beo-ai-date";
 import {
+  APPROVAL_LEAVES,
+  APPROVAL_WRITES,
   addOnLinesOf,
   approveBodyOf,
   choiceGroupsOf,
   edited,
+  fillBeyondApproval,
   initialReviewState,
   packageOf,
   packagePrices,
@@ -186,6 +190,50 @@ export function BeoAiReviewBody({
             data-testid="input-ai-review-childName"
           />
         </Row>
+        {/* SCRUM-814: the confirmation's date beside the booked one; marked when they differ, applied only when ticked. */}
+        {state.date && (
+          <div
+            className={cn(
+              "flex gap-2 text-sm rounded-md",
+              state.date.differs && "bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-1.5 -mx-1.5",
+            )}
+            data-testid="ai-review-event-date"
+          >
+            <span className="text-muted-foreground w-28 shrink-0">Date:</span>
+            <div className="space-y-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-medium">{dayLabel(state.date.read)}</span>
+                {state.date.readText && (
+                  <span className="text-xs text-muted-foreground">{`— the message says "${state.date.readText}"`}</span>
+                )}
+                <SourceMark field={{ from: review.ruling, changed: false }} />
+              </div>
+              {state.date.differs ? (
+                <>
+                  <div className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-300" data-testid="text-ai-review-date-differs">
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                    {state.date.booked
+                      ? `The event is booked for ${dayLabel(state.date.booked)}: not the same day.`
+                      : "The event has no date yet."}
+                  </div>
+                  <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={state.useDate}
+                      onChange={(e) => set({ useDate: e.target.checked })}
+                      data-testid="checkbox-ai-review-event-date"
+                    />
+                    {`Tick to make ${dayLabel(state.date.read)} the event's date.`}
+                  </label>
+                </>
+              ) : (
+                <div className="text-xs text-muted-foreground" data-testid="text-ai-review-date-same">
+                  The same day the event is booked for.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         {count(state.numChildren, "numChildren", "Children")}
         {count(state.numAdults, "numAdults", "Adults")}
         {time(state.startTime, "startTime", "Start")}
@@ -260,26 +308,57 @@ export function BeoAiReviewBody({
         </Row>
         {groups.map((g) => {
           const c = state.choices[g.id] ?? null;
-          const proposed = review.proposal.setMenu?.choices.find((x) => x.itemId === g.id && x.option === c?.value);
-          const code = c?.value ? (g.optionProductCodes[c.value] ?? g.productCode) : null;
+          const chosen = c?.value ?? [];
+          const choose = (options: string[]) => set({ choices: { ...state.choices, [g.id]: edited(c, options) } });
+          // The choice already recorded (the parent link, or an earlier approval), kept when this group is left unchosen on that set menu.
+          const parent =
+            review.parentSelection?.templateId === state.setMenuId.value
+              ? review.parentSelection.choices.find((x) => x.itemId === g.id)?.options ?? []
+              : [];
           return (
             <div key={g.id} className="space-y-0.5" data-testid={`ai-review-choice-${g.id}`}>
-              <Row label={g.label} field={c?.value ? c : null}>
-                <select
-                  className={SELECT}
-                  value={c?.value ?? ""}
-                  onChange={(e) => set({ choices: { ...state.choices, [g.id]: edited(c, e.target.value) } })}
-                  data-testid={`select-ai-review-choice-${g.id}`}
-                >
-                  <option value="">Not chosen yet</option>
-                  {g.options.map((o) => (
-                    <option key={o} value={o}>{o}</option>
-                  ))}
-                </select>
+              <Row label={g.label} field={chosen.length > 0 ? c : null}>
+                {g.allowMultiple ? (
+                  <span className="inline-flex flex-wrap gap-x-3 gap-y-1" data-testid={`checkboxes-ai-review-choice-${g.id}`}>
+                    {g.options.map((o) => (
+                      <label key={o} className="flex items-center gap-1 text-sm cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={chosen.includes(o)}
+                          onChange={(e) => choose(e.target.checked ? g.options.filter((x) => x === o || chosen.includes(x)) : chosen.filter((x) => x !== o))}
+                          data-testid={`checkbox-ai-review-choice-${g.id}`}
+                        />
+                        {o}
+                      </label>
+                    ))}
+                  </span>
+                ) : (
+                  <select
+                    className={SELECT}
+                    value={chosen[0] ?? ""}
+                    onChange={(e) => choose(e.target.value ? [e.target.value] : [])}
+                    data-testid={`select-ai-review-choice-${g.id}`}
+                  >
+                    <option value="">Not chosen yet</option>
+                    {g.options.map((o) => (
+                      <option key={o} value={o}>{o}</option>
+                    ))}
+                  </select>
+                )}
               </Row>
-              {proposed?.said && c && !c.changed && (
-                <div className="pl-[7.5rem] text-xs text-muted-foreground" data-testid="text-ai-review-match">
-                  {beoAiMatchLabel(proposed.said, c.value, code)}
+              {c && !c.changed &&
+                chosen.map((option) => {
+                  const proposed = review.proposal.setMenu?.choices.find((x) => x.itemId === g.id && x.option === option);
+                  if (!proposed?.said) return null;
+                  return (
+                    <div key={option} className="pl-[7.5rem] text-xs text-muted-foreground" data-testid="text-ai-review-match">
+                      {beoAiMatchLabel(proposed.said, option, g.optionProductCodes[option] ?? g.productCode)}
+                    </div>
+                  );
+                })}
+              {chosen.length === 0 && parent.length > 0 && (
+                <div className="pl-[7.5rem] text-xs text-muted-foreground" data-testid="text-ai-review-parent-choice">
+                  {`Already recorded for this set menu: ${parent.join(", ")}. It stays unless you choose here.`}
                 </div>
               )}
             </div>
@@ -477,13 +556,23 @@ export function BeoAiReviewBody({
 export function BeoAiReviewDialog({
   eventId,
   pending,
+  bookedDate,
   onClose,
   onFallback,
+  onApproved,
 }: {
   eventId: string;
   pending: BeoAiPending | null;
+  /** SCRUM-814: the date the form holds, beside the one the confirmation names. */
+  bookedDate: string | null;
   onClose: () => void;
   onFallback: (pending: BeoAiPending) => void;
+  /**
+   * After Approve and create is saved and the BEO read again: the part of the
+   * same fill the approval does not write (`fillBeyondApproval`), for the
+   * preview of before; null when there is none.
+   */
+  onApproved: (rest: Record<string, unknown> | null, pending: BeoAiPending) => void;
 }) {
   const { toast } = useToast();
   const [state, setState] = useState<BeoAiReviewState | null>(null);
@@ -493,39 +582,45 @@ export function BeoAiReviewDialog({
   if (pending !== opened) {
     // A new proposal: the review starts from it.
     setOpened(pending);
-    setState(pending ? initialReviewState(pending.review) : null);
+    setState(pending ? initialReviewState(pending.review, { fill: pending.fill, bookedDate }) : null);
     setError(null);
   }
   if (!pending || !state) return null;
   const { review, source } = pending;
   const undecided = undecidedLines(state);
+  const rest = fillBeyondApproval(pending.fill);
 
   const approve = async () => {
     setApproving(true);
     setError(null);
+    let body: BeoAiApproveBody;
     try {
-      await apiRequest(
-        "POST",
-        `/api/events/${eventId}/beo/ai-fill/approve`,
-        approveBodyOf(review, state, { conversationId: source?.conversationId ?? null, messageId: source?.messageId ?? null }),
-      );
-      for (const queryKey of [
-        ["/api/events", eventId, "beo"],
-        ["/api/events", eventId, "beo", "timeline"],
-        ["/api/beo/events", eventId, "package-snapshot"],
-        ["/api/beo/events", eventId, "entertainment-selections"],
-        ["/api/beo/set-menu-selections", eventId],
-        ["/api/admin/events"],
-      ]) {
-        queryClient.invalidateQueries({ queryKey });
-      }
-      toast({ title: "BEO created from the conversation", description: "The package, menu, entertainment and counts you approved are saved." });
-      onClose();
+      body = approveBodyOf(review, state, { conversationId: source?.conversationId ?? null, messageId: source?.messageId ?? null });
+      await apiRequest("POST", `/api/events/${eventId}/beo/ai-fill/approve`, body);
     } catch (err: any) {
       setError(err?.message || "The BEO was not saved: the server could not be reached just now.");
-    } finally {
       setApproving(false);
+      return;
     }
+    try {
+      // The form reads the BEO again before the rest of the fill opens, so loading
+      // the rest lands on what was approved, never under it.
+      await Promise.all(
+        [
+          ["/api/events", eventId, "beo"],
+          ["/api/events", eventId, "beo", "timeline"],
+          ["/api/beo/events", eventId, "package-snapshot"],
+          ["/api/beo/events", eventId, "entertainment-selections"],
+          ["/api/beo/set-menu-selections", eventId],
+          ["/api/admin/events"],
+        ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+      );
+    } catch {
+      // The BEO is saved; a read that failed catches up on the next one.
+    }
+    toast({ title: "BEO created from the conversation", description: `Saved: ${APPROVAL_WRITES}.` });
+    setApproving(false);
+    onApproved(fillBeyondApproval(pending.fill, body.otherLines), pending);
   };
 
   return (
@@ -562,6 +657,11 @@ export function BeoAiReviewDialog({
               Approve and create also puts the team's confirmation, word for word, in Final Message to Parent.
             </p>
           )}
+          <p className="text-xs text-muted-foreground" data-testid="text-ai-review-leaves">
+            {rest
+              ? `Approve and create writes ${APPROVAL_WRITES}. It does not write ${APPROVAL_LEAVES}: what the team's confirmation says of those opens next, to load into the editor as before and save.`
+              : `Approve and create writes ${APPROVAL_WRITES}.`}
+          </p>
         </div>
         {review.replaces.length > 0 && (
           <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-2 text-xs text-amber-800 dark:text-amber-200" data-testid="text-ai-review-replaces">

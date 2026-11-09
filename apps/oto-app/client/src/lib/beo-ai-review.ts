@@ -7,6 +7,7 @@ import type {
   BeoAiReview,
   BeoAiSetMenuItem,
 } from "@shared/beoAiFill";
+import { aiFillDateLine, type AiFillDateLine } from "./beo-ai-date";
 
 /**
  * THE AI FILL'S REVIEW IN EDIT MODE (SCRUM-815), its state and what it sends.
@@ -18,7 +19,10 @@ import type {
  * source; a field the reviewer changes is theirs ("changed here"). A line the
  * catalogue lacks waits for a decision (keep it as a free line, or leave it
  * out) before "Approve and create" can be pressed; nothing is written before
- * it is. Pure, so the app's check holds it.
+ * it is. The date the confirmation names sits beside the booked one and is
+ * applied only when ticked (SCRUM-814). What Approve and create does not
+ * write — the form's other fields the same fill read — opens next in the
+ * preview of before (`fillBeyondApproval`). Pure, so the app's check holds it.
  */
 
 export type BeoAiDecision = "keep" | "drop" | null;
@@ -71,8 +75,11 @@ export interface BeoAiReviewState {
   /** Quantities of the chosen package's add-ons, by line id. */
   addOns: Record<string, Reviewed<number>>;
   setMenuId: Reviewed<string | null>;
-  /** The chosen option of each choice group, by the group's id ("" none). */
-  choices: Record<string, Reviewed<string>>;
+  /**
+   * The chosen options of each choice group, by the group's id (none: empty):
+   * one for a group of one choice, any of its options for a group that takes several.
+   */
+  choices: Record<string, Reviewed<string[]>>;
   menuLines: ReviewMenuLine[];
   entertainment: ReviewEntertainment[];
   otherLines: ReviewOtherLine[];
@@ -83,19 +90,31 @@ export interface BeoAiReviewState {
   endTime: Reviewed<string> | null;
   cake: Reviewed<{ mode: BeoAiCakeMode; notes: string; time: string }> | null;
   deposit: Reviewed<{ amount: number; paid: boolean; date: string }> | null;
+  /** SCRUM-814: the date the confirmation names beside the booked one; null when it names none. */
+  date: AiFillDateLine | null;
+  /** The read date replaces the booked one only when this is ticked (and they differ). */
+  useDate: boolean;
 }
 
 let seq = 0;
 const key = (prefix: string) => `${prefix}_${++seq}`;
 const fresh = <T>(value: T, from: BeoAiFrom | null): Reviewed<T> => ({ value, from, changed: false });
 
-/** The review as it opens: the proposal, every field with its source. */
-export function initialReviewState(review: BeoAiReview): BeoAiReviewState {
+/**
+ * The review as it opens: the proposal, every field with its source. `fill`
+ * is the free-text fill read beside it (its date, SCRUM-814) and `bookedDate`
+ * the date the form holds.
+ */
+export function initialReviewState(review: BeoAiReview, opts: { fill?: unknown; bookedDate?: string | null } = {}): BeoAiReviewState {
   const p = review.proposal;
   const addOns: BeoAiReviewState["addOns"] = {};
   for (const a of p.addOns) addOns[a.lineId] = fresh(a.quantity, a.from);
+  // Every option the proposal gives a group; the group's source is its latest one's.
   const choices: BeoAiReviewState["choices"] = {};
-  for (const c of p.setMenu?.choices ?? []) choices[c.itemId] = fresh(c.option, c.from);
+  for (const c of p.setMenu?.choices ?? []) {
+    const had = choices[c.itemId];
+    choices[c.itemId] = had && !had.value.includes(c.option) ? fresh([...had.value, c.option], laterFrom(had.from, c.from)) : had ?? fresh([c.option], c.from);
+  }
   const sourced = <T>(f: { value: T; from: BeoAiFrom } | undefined) => (f ? fresh(f.value, f.from) : null);
   return {
     packageId: fresh(p.package?.templateId ?? null, p.package?.from ?? null),
@@ -134,7 +153,66 @@ export function initialReviewState(review: BeoAiReview): BeoAiReviewState {
     endTime: sourced(p.event.endTime),
     cake: p.cake ? fresh({ mode: p.cake.mode, notes: p.cake.notes ?? "", time: p.cake.time ?? "" }, p.cake.from) : null,
     deposit: p.deposit ? fresh({ amount: p.deposit.amount, paid: p.deposit.paid, date: p.deposit.date ?? "" }, p.deposit.from) : null,
+    date: aiFillDateLine(opts.fill, opts.bookedDate),
+    useDate: false,
   };
+}
+
+/** Of two sources for one group, the one its mark shows: the team's, else the later line's. */
+function laterFrom(a: BeoAiFrom | null, b: BeoAiFrom): BeoAiFrom {
+  if (!a) return b;
+  if (a.source !== b.source) return a.source === "team" ? a : b;
+  return (b.line ?? 0) >= (a.line ?? 0) ? b : a;
+}
+
+/** What Approve and create writes, in the words the review says it. */
+export const APPROVAL_WRITES = "the child's name, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment and the deposit";
+/** What it leaves for the preview of before, in the same words. */
+export const APPROVAL_LEAVES =
+  "the title, the booking name, the location, the special requests, the activities, the decoration, the setup plan, the party details, the timeline and the team";
+
+const asRecord = (v: unknown): Record<string, unknown> | null =>
+  v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+const filled = (v: unknown) => v !== undefined && v !== null && !(typeof v === "string" && v.trim() === "");
+
+/**
+ * The part of the free-text fill (read from the ruling message) that Approve
+ * and create does not write: the event's title, booking name, location,
+ * special requests, activities and decoration, the setup plan, Party Details
+ * (but its prepayment and deposit date, which the approval writes), the
+ * timeline and the team the message names (assigned only where ticked). It
+ * opens in the preview of before once the approval is saved, so Load into
+ * Editor applies it with the preview's own rules; null when the fill holds
+ * none of it. `keptLines` are the free lines the approval added to Special
+ * Requests: the message's special requests carry them after its own, so
+ * loading one never drops the other.
+ */
+export function fillBeyondApproval(fill: unknown, keptLines: string[] = []): Record<string, unknown> | null {
+  const f = asRecord(fill);
+  if (!f) return null;
+  const rest: Record<string, unknown> = {};
+  const ev = asRecord(f.event) ?? {};
+  const event: Record<string, unknown> = {};
+  for (const k of ["title", "bookingName", "locationText", "activities", "decoration"]) if (filled(ev[k])) event[k] = ev[k];
+  if (typeof ev.specialRequests === "string" && ev.specialRequests.trim()) {
+    const own = ev.specialRequests.trim();
+    event.specialRequests = [own, ...keptLines.filter((l) => !own.includes(l))].join("\n");
+  }
+  if (Object.keys(event).length > 0) rest.event = event;
+  const setup = asRecord(f.setupPlan);
+  if (setup && Object.values(setup).some((v) => (Array.isArray(v) ? v.length > 0 : filled(v)))) rest.setupPlan = setup;
+  const party = asRecord(f.partyDetails);
+  if (party) {
+    const { prepaymentReceived: _paid, depositDate: _on, ...others } = party;
+    if (Object.values(others).some((v) => (Array.isArray(v) ? v.length > 0 : filled(v)))) rest.partyDetails = others;
+  }
+  if (Array.isArray(f.timeline) && f.timeline.length > 0) rest.timeline = f.timeline;
+  const proposals = asRecord(f.proposals);
+  const team = proposals && Object.values(proposals).some(Boolean) ? proposals : null;
+  if (Object.keys(rest).length === 0 && !team) return null;
+  if (team) rest.proposals = team;
+  if (filled(f.summary)) rest.summary = f.summary;
+  return rest;
 }
 
 /** A field the reviewer set: their value, marked as changed here. */
@@ -217,9 +295,11 @@ export function approveBodyOf(
   const groups = choiceGroupsOf(review, state.setMenuId.value);
   const choices = groups.flatMap((g) => {
     const c = state.choices[g.id];
-    if (!c?.value) return [];
+    // The group's own options, in its own order; a group of one choice sends one.
+    const options = g.options.filter((o) => c?.value.includes(o));
+    if (!c || options.length === 0) return [];
     note(`choice:${g.id}`, c);
-    return [{ itemId: g.id, options: [c.value] }];
+    return [{ itemId: g.id, options: g.allowMultiple ? options : options.slice(-1) }];
   });
   const setMenu = state.setMenuId.value ? { templateId: state.setMenuId.value, choices } : null;
   if (setMenu) note("setMenu", state.setMenuId);
@@ -270,6 +350,11 @@ export function approveBodyOf(
       event[k] = f.value;
       note(k, f);
     }
+  }
+  // SCRUM-814: the date the confirmation names, only where it differs from the booked one and was ticked.
+  if (state.date?.differs && state.useDate) {
+    event.eventDate = state.date.read;
+    note("eventDate", { from: review.ruling, changed: false });
   }
   if (review.finalMessage) event.internalStaffNotes = review.finalMessage;
 

@@ -75,6 +75,7 @@ import {
 } from "lucide-react";
 import { BeoTimelineEditor } from "./beo-timeline-editor";
 import { BeoAiReviewDialog, type BeoAiPending } from "./beo-ai-review";
+import { APPROVAL_WRITES } from "@/lib/beo-ai-review";
 import { BeoPackageModule } from "./beo-package-module";
 import { BeoParentExperienceModule } from "./beo-parent-experience-module";
 import { ONE_OFF_EVENT_COLOR_OPTIONS } from "@/lib/event-types";
@@ -664,6 +665,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const autoFillTaken = useRef(false);
   // SCRUM-815: Create BEO's AI Fill matched to the park's catalogue, reviewed in edit mode before anything is written.
   const [aiReview, setAiReview] = useState<BeoAiPending | null>(null);
+  // SCRUM-815: the preview is showing what an approval left (the rest of the same fill).
+  const [aiFillAfterApproval, setAiFillAfterApproval] = useState(false);
   const packagePriceRef = useRef<EditableTextHandle>(null);
   const responsibleSearchRef = useRef<HTMLInputElement>(null);
 
@@ -1291,6 +1294,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   /** AI Fill's review step on an answer the server validated: from a pasted message, or (with `source`) the inbox. */
   const openAiFillPreview = (fill: any, source: AiFillInboxSource | null) => {
     setAiFillParsed(fill);
+    setAiFillAfterApproval(false);
     setAiFillAccepted(new Set());
     setAiFillUseDate(false);
     setAiFillSource(source);
@@ -3543,6 +3547,16 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                 </div>
               )}
               <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                {/* SCRUM-815: what an approval saved, and that this is the rest of the same fill. */}
+                {aiFillAfterApproval && (
+                  <div
+                    className="flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-800 dark:text-emerald-300"
+                    data-testid="text-ai-fill-after-approval"
+                  >
+                    <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>{`Saved: ${APPROVAL_WRITES}. Below is what the same message says of the rest: load it into the editor, then Save.`}</span>
+                  </div>
+                )}
                 {/* SCRUM-660: the inbox message Create BEO's AI Fill read, to check before loading it. */}
                 {aiFillSource && (
                   <div className="border rounded-lg p-3 space-y-1.5" data-testid="ai-fill-inbox-source">
@@ -3773,10 +3787,20 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       <BeoAiReviewDialog
         eventId={eventId}
         pending={aiReview}
+        bookedDate={eventData.eventDate || null}
         onClose={() => setAiReview(null)}
         onFallback={(pending) => {
           setAiReview(null);
           openAiFillPreview(pending.fill, pending.source);
+        }}
+        onApproved={(rest, pending) => {
+          setAiReview(null);
+          // What the approval does not write opens in the preview of before, with its own
+          // rules (the team ticked to assign); Final Message to Parent is already written.
+          if (rest) {
+            openAiFillPreview(rest, pending.source ? { ...pending.source, fillsFinalMessage: false } : null);
+            setAiFillAfterApproval(true);
+          }
         }}
       />
 
