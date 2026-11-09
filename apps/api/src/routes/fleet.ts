@@ -12,7 +12,7 @@ import {
   STATION_DEVICE_ROLES,
   STATION_KINDS,
 } from '@oto/db';
-import { DeviceSettingsSchema, newId, PaymentRoutingSchema, ScreenPresenceSchema, TillScreenSchema } from '@oto/shared';
+import { DeviceSettingsSchema, DisplayPresenceSchema, newId, PaymentRoutingSchema, TillScreenSchema } from '@oto/shared';
 import type { App } from '../app';
 import { AppError } from '../lib/errors';
 import { nullableResponseEnumTransform } from '../lib/nullable-response-enum';
@@ -276,11 +276,13 @@ const CredentialSchema = z.object({
   revokedReason: z.string().nullable(),
   scopes: z.array(z.string()),
   /**
-   * SCRUM-771 — a paired display's online or offline, on the list. Null for
-   * any other kind, for a display not paired or revoked, and on a pairing's
-   * answer (stored for replay before this field existed, too).
+   * SCRUM-771 — a paired display's online or offline, on the list, or
+   * `via_box` for a display on a Pi box the platform has not heard lately
+   * (the box serves it and does not report it yet). Null for any other kind,
+   * for a display not paired or revoked, and on a pairing's answer (stored for
+   * replay before this field existed, too).
    */
-  presence: ScreenPresenceSchema.nullable().default(null),
+  presence: DisplayPresenceSchema.nullable().default(null),
 });
 
 const StaffCandidateSchema = z.object({

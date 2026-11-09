@@ -1312,7 +1312,8 @@ function CredentialRowItem({
     }
   };
 
-  // SCRUM-771 — a paired display is online or offline by the boxes' rule.
+  // SCRUM-771 — a paired display is online or offline by the boxes' rule, or
+  // "Via box" on a Pi box, which serves it and does not report it yet.
   const presence = credential.kind === 'display' && !credential.revokedAt && !outstanding ? credential.presence ?? null : null;
 
   return (

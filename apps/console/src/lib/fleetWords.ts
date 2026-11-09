@@ -72,10 +72,12 @@ export function toneForBoxStatus(status: string): Tone {
 /**
  * A screen's presence (SCRUM-771): a customer display, or a till's own screen.
  * The box's words and colours, because it is the box's rule — online, or quiet
- * for longer than the boxes' threshold.
+ * for longer than the boxes' threshold. A display on a Pi box the platform has
+ * not heard lately reads "Via box", in no alarming colour: the box serves it
+ * and does not report it yet.
  */
 export const screenPresenceWord = (state: string): string =>
-  state === 'online' ? 'Online' : state === 'offline' ? 'Offline' : tidy(state);
+  state === 'online' ? 'Online' : state === 'offline' ? 'Offline' : state === 'via_box' ? 'Via box' : tidy(state);
 
 export const toneForScreenPresence = (state: string): Tone =>
   state === 'online' ? 'ok' : state === 'offline' ? 'down' : 'idle';

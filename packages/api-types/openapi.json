@@ -24278,7 +24278,8 @@
                                 "type": "string",
                                 "enum": [
                                   "online",
-                                  "offline"
+                                  "offline",
+                                  "via_box"
                                 ]
                               },
                               "lastSeenAt": {
@@ -24291,13 +24292,32 @@
                               },
                               "offlineAfterSeconds": {
                                 "type": "integer"
+                              },
+                              "box": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "nullable": true
                               }
                             },
                             "required": [
                               "state",
                               "lastSeenAt",
                               "lastSeenAgeSeconds",
-                              "offlineAfterSeconds"
+                              "offlineAfterSeconds",
+                              "box"
                             ],
                             "additionalProperties": false,
                             "nullable": true,
@@ -24474,7 +24494,8 @@
                               "type": "string",
                               "enum": [
                                 "online",
-                                "offline"
+                                "offline",
+                                "via_box"
                               ]
                             },
                             "lastSeenAt": {
@@ -24487,13 +24508,32 @@
                             },
                             "offlineAfterSeconds": {
                               "type": "integer"
+                            },
+                            "box": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ],
+                              "additionalProperties": false,
+                              "nullable": true
                             }
                           },
                           "required": [
                             "state",
                             "lastSeenAt",
                             "lastSeenAgeSeconds",
-                            "offlineAfterSeconds"
+                            "offlineAfterSeconds",
+                            "box"
                           ],
                           "additionalProperties": false,
                           "nullable": true,

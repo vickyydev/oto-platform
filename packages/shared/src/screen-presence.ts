@@ -51,6 +51,32 @@ export const ScreenPresenceSchema = z.object({
 });
 export type ScreenPresence = z.infer<typeof ScreenPresenceSchema>;
 
+/**
+ * A customer display adds one state a till's screen never has: `via_box`.
+ *
+ * A display at a station on a Pi box reads that box: the box serves its page
+ * on loopback and answers its session and channel from the box's own copy, so
+ * its calls never reach the platform and `last_seen_at` stops at pairing. The
+ * box does not report its displays on its heartbeat yet, so the platform cannot
+ * say whether such a display is there. Heard by the platform recently, it is
+ * online; otherwise it reads `via_box`, never `offline`, and nothing is raised.
+ * A display on a virtual box is heard on every call and reads online or
+ * offline, as before.
+ */
+export const DISPLAY_PRESENCE_STATES = [...SCREEN_PRESENCE_STATES, 'via_box'] as const;
+export type DisplayPresenceState = (typeof DISPLAY_PRESENCE_STATES)[number];
+
+export const DisplayPresenceSchema = ScreenPresenceSchema.extend({
+  state: z.enum(DISPLAY_PRESENCE_STATES),
+  /**
+   * The box the display's station is on, when that box is not the platform's
+   * own (a Pi): the box it reads through. Null on a virtual box, and for a
+   * station on no box at all.
+   */
+  box: z.object({ id: z.string().uuid(), name: z.string() }).nullable(),
+});
+export type DisplayPresence = z.infer<typeof DisplayPresenceSchema>;
+
 /** A till's screen, and the scanner it hears. */
 export const TillScreenSchema = ScreenPresenceSchema.extend({
   scannerLastUsedAt: z.string().nullable(),

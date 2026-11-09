@@ -1,7 +1,8 @@
 import { randomBytes } from 'node:crypto';
 import { and, eq, like } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { alert, auditLog, branch, deviceCredential, station } from '@oto/db';
+import { alert, auditLog, box, branch, deviceCredential, station } from '@oto/db';
+import { newId } from '@oto/shared';
 import { runWatchdog } from '../src/services/jobs';
 import type { AlertChannel, AlertMessage } from '../src/services/ops';
 import {
@@ -54,13 +55,31 @@ describe('SCRUM-771 — presence, read the same way for every screen', () => {
     expect(quiet.lastSeenAgeSeconds).toBe(THRESHOLD + 1);
   });
 
+  const VIRTUAL_BOX = { id: '01965b00-0000-7000-8000-0000000007b1', name: 'ZZ TEST virtual box', role: 'virtual' };
+  const PI_BOX = { id: '01965b00-0000-7000-8000-0000000007b2', name: 'ZZ TEST counter box', role: 'counter' };
+
   it('answers a display only once it is paired and while it is not revoked', () => {
     const seen = new Date(NOW - 5_000);
     const paired = { kind: 'display', pairedAt: new Date(NOW - 60_000), revokedAt: null, lastSeenAt: seen };
-    expect(displayPresence(paired, NOW, THRESHOLD)?.state).toBe('online');
-    expect(displayPresence({ ...paired, pairedAt: null }, NOW, THRESHOLD)).toBeNull();
-    expect(displayPresence({ ...paired, revokedAt: new Date(NOW) }, NOW, THRESHOLD)).toBeNull();
-    expect(displayPresence({ ...paired, kind: 'booth' }, NOW, THRESHOLD)).toBeNull();
+    expect(displayPresence(paired, NOW, THRESHOLD, VIRTUAL_BOX)?.state).toBe('online');
+    expect(displayPresence({ ...paired, pairedAt: null }, NOW, THRESHOLD, VIRTUAL_BOX)).toBeNull();
+    expect(displayPresence({ ...paired, revokedAt: new Date(NOW) }, NOW, THRESHOLD, VIRTUAL_BOX)).toBeNull();
+    expect(displayPresence({ ...paired, kind: 'booth' }, NOW, THRESHOLD, VIRTUAL_BOX)).toBeNull();
+  });
+
+  it('reads a display on a virtual box offline once quiet, and one on a Pi box as reading through it, never offline', () => {
+    const quiet = { kind: 'display', pairedAt: new Date(NOW - 86_400_000), revokedAt: null, lastSeenAt: new Date(NOW - 86_400_000) };
+    expect(displayPresence(quiet, NOW, THRESHOLD, VIRTUAL_BOX)).toMatchObject({ state: 'offline', box: null });
+    expect(displayPresence(quiet, NOW, THRESHOLD, PI_BOX)).toMatchObject({
+      state: 'via_box', box: { id: PI_BOX.id, name: PI_BOX.name }, lastSeenAgeSeconds: 86_400,
+    });
+    expect(displayPresence({ ...quiet, lastSeenAt: null }, NOW, THRESHOLD, PI_BOX)?.state).toBe('via_box');
+    // A station on no box cannot hold a session for a display to show: not judged either.
+    expect(displayPresence(quiet, NOW, THRESHOLD, null)).toMatchObject({ state: 'via_box', box: null });
+    // Heard by the platform lately (its page served from the platform), it is online wherever it stands.
+    expect(displayPresence({ ...quiet, lastSeenAt: new Date(NOW - 5_000) }, NOW, THRESHOLD, PI_BOX)).toMatchObject({
+      state: 'online', box: { id: PI_BOX.id, name: PI_BOX.name },
+    });
   });
 
   it('answers a till’s screen with its scanner’s last use, and nothing for any other kind', () => {
@@ -334,6 +353,58 @@ describe('SCRUM-771 — displays and till screens against the api and the watchd
     expect((await ctx.app.inject({ method: 'POST', url: '/me/station/heartbeat', payload: {} })).statusCode).toBe(401);
     expect((await heartbeat(receptionCookie, { lastScanSecondsAgo: -1 })).statusCode).toBe(400);
     expect((await heartbeat(receptionCookie, { lastScanSecondsAgo: 1.5 })).statusCode).toBe(400);
+  });
+
+  it('neither raises nor reads as offline a display on a Pi box, which reads the box, and closes the alert it had on a virtual one', async () => {
+    const [till] = await ctx.db.select().from(station).where(eq(station.id, tillId));
+    const operatorId = till!.operatorId;
+    const [piBox] = await ctx.db.insert(box).values({
+      id: newId(), operatorId, branchId, name: 'ZZ TEST 771 counter box', slot: 'zz-test-771', role: 'counter',
+    }).returning();
+    // Stood first on the till's own virtual box, where the platform hears every call.
+    const [counter] = await ctx.db.insert(station).values({
+      id: newId(), operatorId, branchId, boxId: till!.boxId, name: 'ZZ TEST 771 counter till', kind: 'till', codePrefix: 'Z7',
+    }).returning();
+    const longAgo = new Date(Date.now() - 86_400_000);
+    const [onBox] = await ctx.db.insert(deviceCredential).values({
+      id: newId(), operatorId, branchId, kind: 'display', stationId: counter!.id, label: 'ZZ TEST 771 counter display',
+      secretHash: randomBytes(32).toString('hex'), pairedAt: longAgo, lastSeenAt: longAgo,
+    }).returning();
+    const key = `display.offline:${onBox!.id}`;
+    const presenceOf = async () => {
+      const res = await ctx.app.inject({
+        method: 'GET', url: `/branches/${branchId}/credentials`, headers: { cookie: adminCookie },
+      });
+      expect(res.statusCode).toBe(200);
+      return (res.json().credentials as Array<{ id: string; presence: Record<string, unknown> | null }>)
+        .find((c) => c.id === onBox!.id)!.presence;
+    };
+
+    await watchdog();
+    expect((await alertsOf(key))[0]).toMatchObject({ status: 'open' });
+    expect(await presenceOf()).toMatchObject({ state: 'offline', box: null });
+
+    // The station moves to a Pi box: its display now reads the box, and the
+    // platform's silence says nothing about it.
+    await ctx.db.update(station).set({ boxId: piBox!.id }).where(eq(station.id, counter!.id));
+    await watchdog();
+    const [closed] = await alertsOf(key);
+    expect(closed).toMatchObject({ status: 'resolved', resolvedReason: 'reads through its box' });
+    expect(delivered.filter((d) => d.key === key && d.event === 'resolved')[0]!.summary)
+      .toContain('reads through ZZ TEST 771 counter box');
+
+    // A day quiet, the park open: nothing raised, and not offline.
+    await ctx.db.delete(alert).where(eq(alert.key, key));
+    await watchdog();
+    await watchdog();
+    expect(await alertsOf(key)).toHaveLength(0);
+    const quiet = await presenceOf();
+    expect(quiet).toMatchObject({ state: 'via_box', box: { id: piBox!.id, name: 'ZZ TEST 771 counter box' } });
+    expect(quiet!.state).not.toBe('offline');
+
+    // Heard by the platform lately, it is online.
+    await ctx.db.update(deviceCredential).set({ lastSeenAt: new Date() }).where(eq(deviceCredential.id, onBox!.id));
+    expect(await presenceOf()).toMatchObject({ state: 'online', box: { id: piBox!.id } });
   });
 
   // Last: it revokes the one display this file pairs.

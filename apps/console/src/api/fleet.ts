@@ -251,6 +251,16 @@ export interface ScreenPresenceView {
   offlineAfterSeconds?: number | null;
 }
 
+/**
+ * A paired display's presence. `via_box`: the display is at a station on a Pi
+ * box, which serves it and does not report its displays yet, and the platform
+ * has not heard it lately — not Offline. `box` names that box.
+ */
+export interface DisplayPresenceView extends ScreenPresenceView {
+  state: 'online' | 'offline' | 'via_box' | string;
+  box?: { id: string; name: string } | null;
+}
+
 /** A till's screen, and when a scanner last typed a code into it. */
 export interface TillScreenView extends ScreenPresenceView {
   scannerLastUsedAt?: string | null;
@@ -406,8 +416,8 @@ export interface CredentialRow {
   revokedAt?: string | null;
   revokedReason?: string | null;
   scopes?: string[];
-  /** SCRUM-771 — a paired display's online or offline. Null for other kinds. */
-  presence?: ScreenPresenceView | null;
+  /** SCRUM-771 — a paired display's online, offline or via its box. Null for other kinds. */
+  presence?: DisplayPresenceView | null;
 }
 
 export const DISPLAY_TEST_STAGES = ['identify', 'welcome', 'order', 'input', 'payment', 'thankyou'] as const;

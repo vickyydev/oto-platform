@@ -1,4 +1,4 @@
-import type { ScreenPresenceView, TillScreenView } from '@/api/fleet';
+import type { DisplayPresenceView, ScreenPresenceView, TillScreenView } from '@/api/fleet';
 import { StatusMark } from '@/components/Status';
 import { StatusChip, TONE_INK } from '@/components/redesign/chips';
 import { screenPresenceWord, toneForScreenPresence } from '@/lib/fleetWords';
@@ -7,10 +7,12 @@ import { cn } from '@/lib/utils';
 
 /**
  * SCRUM-771 — whether a screen is still there, in the box card's own words:
- * the status, then how long ago it was last heard from. A customer display is
- * heard on every call it makes; a till's screen (the iPad) sends a heartbeat
- * every minute. Both are offline once quiet for longer than a box may be. The
- * ages are the API's count, never this laptop's clock.
+ * the status, then how long ago it was last heard from. A customer display on
+ * a virtual box is heard on every call it makes; a till's screen (the iPad)
+ * sends a heartbeat every minute. Both are offline once quiet for longer than
+ * a box may be. A display on a Pi box reads the box, which does not report it
+ * yet, so it reads "Via box" rather than Offline. The ages are the API's
+ * count, never this laptop's clock.
  */
 
 /** "Offline · last seen 12m ago", or "never reported". */
@@ -27,12 +29,22 @@ export function PresenceChip({ presence }: { presence: ScreenPresenceView }) {
   );
 }
 
+/**
+ * A display the platform does not hear: one at a station on a Pi box, which
+ * serves it and does not report its displays yet. Not Offline, and not raised.
+ */
+export function viaBoxSentence(presence: DisplayPresenceView): string {
+  return presence.box?.name
+    ? `Reads through ${presence.box.name}; the box does not report its displays yet`
+    : 'Its till is on no box, so nothing reports this display yet';
+}
+
 /** The status line under a paired display, as the box card's foot reads. */
 export function DisplayPresenceLine({
   presence,
   timezone,
 }: {
-  presence: ScreenPresenceView;
+  presence: DisplayPresenceView;
   timezone?: string | null;
 }) {
   const tone = toneForScreenPresence(presence.state);
@@ -41,7 +53,7 @@ export function DisplayPresenceLine({
       title={presence.lastSeenAt ? formatWhen(presence.lastSeenAt, timezone) : undefined}>
       <StatusMark tone={tone} />
       <span className="min-w-0">
-        {presenceSentence(presence)}
+        {presence.state === 'via_box' ? viaBoxSentence(presence) : presenceSentence(presence)}
         {presence.state === 'offline' && presence.offlineAfterSeconds
           ? ` — quiet for longer than ${elapsed(presence.offlineAfterSeconds)}`
           : ''}
@@ -55,8 +67,8 @@ export function DisplayPresenceLine({
  *
  * The scanner line says what the time is, because it is not what a box says
  * about its scanner: a cradle plugged into the iPad is a keyboard to it, so the
- * till knows it only by the codes it types (or a code pasted into the wristband
- * field), and the time of the last one is its only presence.
+ * till knows it only by the codes it types at a scanner's pace, and the time of
+ * the last one is its only presence.
  */
 export function TillScreenPresence({ screen, timezone }: { screen: TillScreenView; timezone?: string | null }) {
   const tone = toneForScreenPresence(screen.state);

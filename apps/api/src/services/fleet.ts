@@ -39,7 +39,7 @@ import {
   newId,
   STATION_SESSION_STAGES,
   type DeviceSettings,
-  type ScreenPresence,
+  type DisplayPresence,
   type TillScreen,
 } from '@oto/shared';
 import { TerminalCommandPayloadSchema } from '@oto/box-agent';
@@ -230,10 +230,11 @@ export interface CredentialView {
   revokedReason: string | null;
   scopes: string[];
   /**
-   * SCRUM-771 — a paired display's online or offline, on the list only. Null
-   * for any other kind, and for a display not paired or revoked.
+   * SCRUM-771 — a paired display's online or offline (or `via_box`, on a Pi
+   * box the platform has not heard lately), on the list only. Null for any
+   * other kind, and for a display not paired or revoked.
    */
-  presence?: ScreenPresence | null;
+  presence?: DisplayPresence | null;
 }
 
 /** Somebody who may be put on a station's list: the staff of that branch. */
@@ -2460,12 +2461,24 @@ export async function listCredentials(
       ),
     )
     .orderBy(desc(deviceCredential.createdAt));
-  // SCRUM-771 — a paired display's online or offline, by the boxes' threshold.
+  // SCRUM-771 — a paired display's online or offline, by the boxes' threshold,
+  // and the box its station is on: a display on a Pi box reads that box, and
+  // the platform does not hear it (`displayPresence`).
   const now = Date.now();
   const offlineAfterS = screenOfflineAfterS();
+  const displayStationIds = [...new Set(rows.flatMap((row) =>
+    row.kind === 'display' && row.stationId ? [row.stationId] : []))];
+  const stationBoxes = displayStationIds.length
+    ? await db
+        .select({ stationId: station.id, id: box.id, name: box.name, role: box.role })
+        .from(station)
+        .innerJoin(box, eq(box.id, station.boxId))
+        .where(and(eq(station.operatorId, ctx.operatorId), inArray(station.id, displayStationIds)))
+    : [];
+  const boxOf = new Map(stationBoxes.map((row) => [row.stationId, row]));
   const viewOf = (row: typeof deviceCredential.$inferSelect): CredentialView => ({
     ...credentialView(row),
-    presence: displayPresence(row, now, offlineAfterS),
+    presence: displayPresence(row, now, offlineAfterS, (row.stationId && boxOf.get(row.stationId)) || null),
   });
   const displayIds = rows.filter((row) => row.kind === 'display').map((row) => row.id);
   if (!displayIds.length) return rows.map(viewOf);

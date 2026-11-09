@@ -1,6 +1,6 @@
 import { and, eq, isNotNull, isNull, sql } from 'drizzle-orm';
-import { alert, branch, deviceCredential, operator, station, type Db } from '@oto/db';
-import type { ScreenPresence, TillScreen } from '@oto/shared';
+import { alert, box, branch, deviceCredential, operator, station, type Db } from '@oto/db';
+import type { DisplayPresence, ScreenPresence, TillScreen } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { boxSettings, withinOpeningHours } from './box';
 import type { FleetCondition, OpeningHoursState } from './ops';
@@ -16,14 +16,17 @@ import { withTx, type OpContext } from './tx';
  * raising `box.offline` while the park is open. Neither screen had any of
  * that. This file gives them the same clock and the same threshold:
  *
- *   - A DISPLAY is already heard on every protected call it makes — its poll
- *     every second, or its stream's re-check every five — which stamps
- *     `device_credential.last_seen_at` (`authenticateDisplay`). So nothing new
- *     is sent: its state is derived from that, and the watchdog raises
- *     `display.offline` for a paired display gone quiet while its park is
- *     open, and clears it when the display calls again. Through the same
+ *   - A DISPLAY ON A VIRTUAL BOX is already heard on every protected call it
+ *     makes — its poll every second, or its stream's re-check every five —
+ *     which stamps `device_credential.last_seen_at` (`authenticateDisplay`).
+ *     So nothing new is sent: its state is derived from that, and the watchdog
+ *     raises `display.offline` for a paired display gone quiet while its park
+ *     is open, and clears it when the display calls again. Through the same
  *     `raiseAlert` and alert routing the box rules use, so it is muted, routed
  *     and listed exactly as they are.
+ *   - A DISPLAY ON A PI BOX reads the box, not the platform, and the box does
+ *     not report its displays yet (`platformHearsDisplay`). It is online when
+ *     the platform heard it lately, `via_box` otherwise, and never raised.
  *   - A TILL'S SCREEN sends a heartbeat of its own (`POST /me/station/heartbeat`)
  *     every 60 seconds while the till is open, locked or not, which stamps
  *     `station.last_seen_at`. Its existing calls cannot stand in for one: the
@@ -62,17 +65,47 @@ export function screenPresence(
   };
 }
 
+/** The box a display's station is on, as far as the presence rule needs it. */
+export interface StationBox {
+  id: string;
+  name: string;
+  role: string;
+}
+
+/**
+ * Whether the platform hears every call a display at this station makes: only
+ * on a virtual box, whose mount is the platform itself. A Pi box serves its
+ * counter's display on loopback and answers its session and channel from the
+ * box's own copy, checking the credential against the hashes it holds, so the
+ * display's calls never reach the platform and `last_seen_at` stops at
+ * pairing. The box keeps that presence in memory and does not report it on
+ * its heartbeat yet. A station on no box cannot hold a session for a display
+ * to show either.
+ */
+export function platformHearsDisplay(stationBox: StationBox | null): boolean {
+  return stationBox?.role === 'virtual';
+}
+
 /**
  * A paired display's presence, or null where the question has no answer: any
  * other kind of credential, one not paired yet, or one revoked.
+ *
+ * On a virtual box it is online or offline by the boxes' threshold. Anywhere
+ * else the platform's own clock is only half the answer: heard lately, the
+ * display is online; otherwise it reads `via_box`, never offline, because the
+ * silence is the box serving it, not the display gone.
  */
 export function displayPresence(
   row: { kind: string; pairedAt: Date | null; revokedAt: Date | null; lastSeenAt: Date | null },
   now: number,
   offlineAfterS: number,
-): ScreenPresence | null {
+  stationBox: StationBox | null,
+): DisplayPresence | null {
   if (row.kind !== 'display' || !row.pairedAt || row.revokedAt) return null;
-  return screenPresence(row.lastSeenAt, now, offlineAfterS);
+  const presence = screenPresence(row.lastSeenAt, now, offlineAfterS);
+  if (platformHearsDisplay(stationBox)) return { ...presence, box: null };
+  const box = stationBox ? { id: stationBox.id, name: stationBox.name } : null;
+  return presence.state === 'online' ? { ...presence, box } : { ...presence, state: 'via_box', box };
 }
 
 /**
@@ -222,22 +255,28 @@ export function evaluateDisplay(row: DisplayPresenceRow, offlineAfterS: number, 
 }
 
 /**
- * Every live paired display, evaluated, for the watchdog — and the alerts
- * still open for a display that is no longer one.
+ * Every live paired display the platform hears, evaluated, for the watchdog —
+ * and the alerts still open for a display that is no longer one.
  *
  * Live is: a display credential, paired, holding a secret, not revoked, at a
- * station, park and operator none of which is archived. A display revoked, or
- * whose station or park was archived, while its alert stood open is no longer
- * expected to call; nothing here would evaluate it again, so its alert is
- * closed as such rather than left open for ever. Platform-wide, like the box
- * sweep: a condition is true whoever happens to be looking.
+ * station, park and operator none of which is archived. Only a display at a
+ * station on a virtual box is evaluated (`platformHearsDisplay`): one on a Pi
+ * box reads that box, so its silence here says nothing about it, and raising
+ * it would put a working counter display in red every day the park opens.
+ *
+ * A display revoked, or whose station or park was archived, while its alert
+ * stood open is no longer expected to call; nothing here would evaluate it
+ * again, so its alert is closed as such rather than left open for ever. So is
+ * one still paired whose station is now on a Pi box, in those words.
+ * Platform-wide, like the box sweep: a condition is true whoever happens to be
+ * looking.
  */
 export async function displayConditions(
   db: Db,
   now = Date.now(),
 ): Promise<{ displays: number; conditions: FleetCondition[] }> {
   const offlineAfterS = screenOfflineAfterS();
-  const rows: DisplayPresenceRow[] = await db
+  const live = await db
     .select({
       credentialId: deviceCredential.id,
       label: deviceCredential.label,
@@ -249,6 +288,9 @@ export async function displayConditions(
       stationId: station.id,
       stationName: station.name,
       lastSeenAt: deviceCredential.lastSeenAt,
+      boxId: box.id,
+      boxName: box.name,
+      boxRole: box.role,
     })
     .from(deviceCredential)
     .innerJoin(station, and(
@@ -258,6 +300,7 @@ export async function displayConditions(
     ))
     .innerJoin(branch, and(eq(branch.id, station.branchId), eq(branch.operatorId, station.operatorId)))
     .innerJoin(operator, eq(operator.id, station.operatorId))
+    .leftJoin(box, eq(box.id, station.boxId))
     .where(and(
       eq(deviceCredential.kind, 'display'),
       isNull(deviceCredential.revokedAt),
@@ -268,14 +311,25 @@ export async function displayConditions(
       isNull(operator.archivedAt),
     ));
 
-  const conditions = rows.map((row) => evaluateDisplay(row, offlineAfterS, now));
-  const live = new Set(conditions.map((c) => c.key));
+  const heard: DisplayPresenceRow[] = [];
+  /** A live display the platform does not hear, by its alert's key: the box it reads through. */
+  const throughBox = new Map<string, string | null>();
+  for (const { boxId, boxName, boxRole, ...row } of live) {
+    const stationBox = boxId && boxName && boxRole ? { id: boxId, name: boxName, role: boxRole } : null;
+    if (platformHearsDisplay(stationBox)) heard.push(row);
+    else throughBox.set(`${DISPLAY_OFFLINE}:${row.credentialId}`, stationBox?.name ?? null);
+  }
+
+  const conditions = heard.map((row) => evaluateDisplay(row, offlineAfterS, now));
+  const evaluated = new Set(conditions.map((c) => c.key));
   const standing = await db
     .select({ key: alert.key, subject: alert.subject, operatorId: alert.operatorId, branchId: alert.branchId })
     .from(alert)
     .where(and(eq(alert.category, DISPLAY_OFFLINE), isNull(alert.resolvedAt)));
   for (const open of standing) {
-    if (live.has(open.key)) continue;
+    if (evaluated.has(open.key)) continue;
+    const viaBox = throughBox.has(open.key);
+    const boxName = throughBox.get(open.key) ?? null;
     conditions.push({
       key: open.key,
       category: DISPLAY_OFFLINE,
@@ -286,12 +340,20 @@ export async function displayConditions(
       active: false,
       summary: open.subject,
       detail: {},
-      clear: {
-        category: DISPLAY_OFFLINE,
-        reason: 'no longer paired',
-        summary: `${open.subject} is no longer paired here, so it is not expected to call`,
-      },
+      clear: viaBox
+        ? {
+            category: DISPLAY_OFFLINE,
+            reason: boxName ? 'reads through its box' : 'its station is on no box',
+            summary: boxName
+              ? `${open.subject} reads through ${boxName}, which does not report its displays yet, so the platform does not judge it`
+              : `${open.subject} is at a station on no box, so the platform does not judge it`,
+          }
+        : {
+            category: DISPLAY_OFFLINE,
+            reason: 'no longer paired',
+            summary: `${open.subject} is no longer paired here, so it is not expected to call`,
+          },
     });
   }
-  return { displays: rows.length, conditions };
+  return { displays: heard.length, conditions };
 }

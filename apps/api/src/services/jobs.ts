@@ -265,7 +265,11 @@ export interface WatchdogSummary extends Record<string, unknown> {
   /** Live boxes examined, and how many of them this pass moved to `offline`. */
   boxes: number;
   boxesSilenced: number;
-  /** Live paired customer displays examined (SCRUM-771), and whether that read answered. */
+  /**
+   * Live paired customer displays examined (SCRUM-771) — those on a virtual
+   * box, which the platform hears; one on a Pi box reads the box — and whether
+   * that read answered.
+   */
   displays: number;
   displaysEvaluated: boolean;
   /** Unread supporting evidence forbids every fallback-derived fleet effect. */

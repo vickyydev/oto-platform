@@ -11162,10 +11162,15 @@ export interface paths {
                                 /** @default null */
                                 presence: {
                                     /** @enum {string} */
-                                    state: "online" | "offline";
+                                    state: "online" | "offline" | "via_box";
                                     lastSeenAt: string | null;
                                     lastSeenAgeSeconds: number | null;
                                     offlineAfterSeconds: number;
+                                    box: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string;
+                                    } | null;
                                 } | null;
                             }[];
                         };
@@ -11244,10 +11249,15 @@ export interface paths {
                                 /** @default null */
                                 presence: {
                                     /** @enum {string} */
-                                    state: "online" | "offline";
+                                    state: "online" | "offline" | "via_box";
                                     lastSeenAt: string | null;
                                     lastSeenAgeSeconds: number | null;
                                     offlineAfterSeconds: number;
+                                    box: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string;
+                                    } | null;
                                 } | null;
                             };
                             pairingCode?: string;

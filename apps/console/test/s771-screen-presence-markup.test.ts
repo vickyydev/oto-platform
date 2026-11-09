@@ -88,4 +88,21 @@ describe('a paired display', () => {
     expect(online).toContain('Online · seen 1s ago');
     expect(online).not.toContain('quiet for longer');
   });
+
+  it('reads one on a Pi box as reading through it, never Offline, in no alarming colour', () => {
+    expect(screenPresenceWord('via_box')).toBe('Via box');
+    expect(toneForScreenPresence('via_box')).toBe('idle');
+    const chip = renderToStaticMarkup(createElement(PresenceChip, { presence: { state: 'via_box' } }));
+    expect(chip).toContain('Via box');
+    expect(chip).not.toContain('Offline');
+    const html = renderToStaticMarkup(createElement(DisplayPresenceLine, {
+      presence: { state: 'via_box', lastSeenAgeSeconds: 86_400, offlineAfterSeconds: 180, box: { id: 'box', name: 'Counter 1 box' } },
+    }));
+    expect(html).toContain('Reads through Counter 1 box; the box does not report its displays yet');
+    expect(html).not.toContain('Offline');
+    expect(html).not.toContain('quiet for longer');
+    expect(renderToStaticMarkup(createElement(DisplayPresenceLine, {
+      presence: { state: 'via_box', lastSeenAgeSeconds: null, box: null },
+    }))).toContain('Its till is on no box, so nothing reports this display yet');
+  });
 });
