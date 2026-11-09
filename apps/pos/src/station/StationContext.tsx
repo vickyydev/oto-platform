@@ -17,6 +17,7 @@ import { forgetStaffToken, rememberStaffToken } from '@/auth/staffToken';
 import { noteLaneFailure, setLaneStation } from '@/lib/lane';
 import { holdBoxSession, setBridgeOrigin } from '@/api/bridge';
 import { forgetOfflineStation, prepareOfflineStation } from '@/auth/offlinePreparation';
+import { useStationHeartbeat } from '@/station/heartbeat';
 
 interface StationContextValue {
   /** The station this till is working, or null while none has been picked. */
@@ -422,6 +423,13 @@ export function StationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setLaneStation(laneStationId);
   }, [laneStationId]);
+
+  /**
+   * SCRUM-771 — the platform hears this till's screen every minute while it
+   * holds a platform station, through the lock as well. A prototype profile
+   * on a deployment with no fleet routes has nothing to report against.
+   */
+  useStationHeartbeat(laneStationId);
 
   return (
     <StationContext.Provider

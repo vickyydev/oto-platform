@@ -4,6 +4,7 @@ import {
   SCANNER_BURST_MAX_LENGTH_TILL,
   SCANNER_BURST_MIN_LENGTH,
 } from '@oto/shared';
+import { noteScannerUse } from '@/lib/scannerUse';
 
 /**
  * S2-10b (SCRUM-207) — A USB SCANNER PLUGGED INTO THE COMPUTER RUNNING THE TILL.
@@ -175,6 +176,9 @@ export function useScannerBurst(
         withCommand: event.ctrlKey || event.altKey || event.metaKey,
       });
       if (!consumed || code === null) return;
+      // SCRUM-771 — a scanner typed here, whichever page's code it was: the
+      // only sign the till has of a cradle plugged into the iPad.
+      noteScannerUse();
       if (accept.current && !accept.current(code)) return;
       event.preventDefault();
       event.stopPropagation();

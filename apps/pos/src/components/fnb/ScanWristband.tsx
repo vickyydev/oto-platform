@@ -9,6 +9,7 @@ import { currentLane, isBoxLaneTrigger, laneStation, noteLaneFailure, useLane } 
 import { screenHidden } from '@/lib/scanChannel';
 import { SCANNER_BURST_MIN_LENGTH } from '@/lib/scannerBurst';
 import { SCAN_PACE_GAP_MS, SCAN_PACE_QUIET_MS } from '@/lib/pageScan';
+import { noteScannerUse } from '@/lib/scannerUse';
 import { useDemoControls } from '@/lib/demoControls';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -162,9 +163,15 @@ export function ScanWristband({
       quiet.current = null;
       run.current = { length: 0, at: 0, pasted: false };
       const typed = field.current?.value ?? '';
-      if (typed.trim()) void submit(typed);
+      if (!typed.trim()) return;
+      // SCRUM-771 — the field took this as a scan or a paste: the scanner's
+      // only sign of life, reported on the station heartbeat.
+      noteScannerUse();
+      void submit(typed);
     }, FIELD_SCAN_QUIET_MS);
   };
+  /** Whether what is in the field arrived as a scan or a paste, not typed by hand. */
+  const arrivedWhole = () => run.current.pasted || run.current.length >= SCANNER_BURST_MIN_LENGTH;
 
   useEffect(() => {
     if (!scanned) return;
@@ -222,7 +229,9 @@ export function ScanWristband({
               e.preventDefault();
               stopWaiting();
               const typed = e.currentTarget.value;
-              if (typed.trim()) void submit(typed);
+              if (!typed.trim()) return;
+              if (arrivedWhole()) noteScannerUse();
+              void submit(typed);
             }}
             placeholder="Wristband code e.g. 1001"
             className="h-16 text-2xl px-5"
