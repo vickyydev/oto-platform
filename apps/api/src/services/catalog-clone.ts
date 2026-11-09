@@ -603,12 +603,29 @@ export async function planBranchClone(
       copiedStockLabels.set(row.id, label);
       plan.stockItems.create.push(label);
     }
+    // SCRUM-799 — `product.stock_item_id` is the product's OWN stock marker,
+    // or "takes stock from" another item's shelf (Free Socks from Regular
+    // Socks): the stock item it names stocks a different product. A share is
+    // one park's setting that a person makes at each park (`setProductStockShare`,
+    // audited `product.stock_share`), so it is not copied and is not the
+    // product's own stock: the copy lands taking stock from nothing, and the
+    // product is never left out for its owner's shelf.
+    const pointed = [...new Set(sourceProducts.flatMap(row => row.stockItemId !== null && copiedProductIds.has(row.id) ? [row.stockItemId] : []))];
+    const stockOwnerOf = new Map((pointed.length
+      ? await exec.select({ id: stockItem.id, productId: stockItem.productId }).from(stockItem).where(inArray(stockItem.id, pointed))
+      : []).map(item => [item.id, item.productId]));
+    const ownStockItemOf = (row: typeof product.$inferSelect): string | null => {
+      if (row.stockItemId === null) return null;
+      const owner = stockOwnerOf.get(row.stockItemId);
+      return owner != null && owner !== row.id ? null : row.stockItemId;
+    };
     // A tracked product must not silently become untracked when one of its
     // stock definitions is blocked. Remove that whole copied product graph
     // before planning its modifiers, discounts and tax overrides below.
     for (const row of sourceProducts) {
       if (!copiedProductIds.has(row.id)) continue;
-      const missingStock = (row.stockItemId !== null && !stockIdAtTarget.has(row.stockItemId))
+      const ownStockItemId = ownStockItemOf(row);
+      const missingStock = (ownStockItemId !== null && !stockIdAtTarget.has(ownStockItemId))
         || sourceRows.some(stock => stock.productId === row.id && !stockIdAtTarget.has(stock.id));
       if (missingStock) {
         const productId = productIdAtTarget.get(row.id)!;
@@ -628,8 +645,8 @@ export async function planBranchClone(
             stockIdAtTarget.delete(stock.id);
           }
         }
-      } else if (row.stockItemId !== null) {
-        writes.productStockLinks.push({ productId: productIdAtTarget.get(row.id)!, stockItemId: stockIdAtTarget.get(row.stockItemId)! });
+      } else if (ownStockItemId !== null) {
+        writes.productStockLinks.push({ productId: productIdAtTarget.get(row.id)!, stockItemId: stockIdAtTarget.get(ownStockItemId)! });
       }
     }
     if (sourceRows.length) {

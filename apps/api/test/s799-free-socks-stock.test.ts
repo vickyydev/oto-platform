@@ -326,6 +326,82 @@ describe('out of stock refuses the free pair too', () => {
   });
 });
 
+describe('a catalogue clone copies Free Socks without its share', () => {
+  // "Takes stock from" is one park's setting, made by a person at each park
+  // and audited there (`product.stock_share`); a clone copies the add-on and
+  // leaves the share for an admin at the new park. It is never the add-on's
+  // own stock definition, so it never leaves the add-on out of the copy.
+  let ordinal = 0;
+  async function newPark(): Promise<string> {
+    const id = newId();
+    ordinal += 1;
+    await ctx.db.insert(branch).values({
+      id,
+      operatorId,
+      name: `ZZ TEST SCRUM-799 park ${ordinal}`,
+      code: `Z799-${ordinal}`,
+      timezone: 'Asia/Bangkok',
+      country: 'TH',
+    });
+    return id;
+  }
+  const cloneInto = (target: string) => call('POST', `/branches/${target}/clone`, admin, { sourceBranchId: branchId });
+  const atPark = async (park: string, name: string) =>
+    (await ctx.db.select().from(product).where(and(eq(product.branchId, park), eq(product.name, name))))[0];
+
+  it('into a park without Regular Socks: copies both, Regular Socks keeps its own shelf, Free Socks takes from nothing', async () => {
+    // The share is set at HKT Central as the clone runs.
+    expect((await menuProduct(freeSocksId)).stockShareItemId).toBe(regularItemId);
+    const park = await newPark();
+    const res = await cloneInto(park);
+    expect(res.statusCode, res.body).toBe(200);
+    const plan = res.json().plan as { products: { blocked: Array<{ name: string }> } };
+    expect(plan.products.blocked.map((b) => b.name)).not.toContain('ZZ TEST Free Socks');
+
+    const copiedRegular = (await atPark(park, regularSocks.name))!;
+    const [copiedShelf] = await ctx.db
+      .select()
+      .from(stockItem)
+      .where(and(eq(stockItem.branchId, park), eq(stockItem.productId, copiedRegular.id)));
+    expect(copiedRegular.stockItemId).toBe(copiedShelf!.id);
+
+    const copiedFree = (await atPark(park, 'ZZ TEST Free Socks'))!;
+    expect(copiedFree).toMatchObject({ priceSatang: 0, stockItemId: null });
+    const shares = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'product.stock_share'), eq(auditLog.entityId, copiedFree.id)));
+    expect(shares).toEqual([]);
+    // The source keeps its share.
+    expect((await menuProduct(freeSocksId)).stockShareItemId).toBe(regularItemId);
+  });
+
+  it('into a park whose Regular Socks has no stock item: Free Socks is still copied, with no share', async () => {
+    const park = await newPark();
+    await ctx.db.insert(product).values({
+      id: newId(),
+      operatorId,
+      branchId: park,
+      kind: 'addon',
+      name: regularSocks.name,
+      categoryId: regularSocks.categoryId,
+      priceSatang: regularSocks.priceSatang,
+    });
+    const res = await cloneInto(park);
+    expect(res.statusCode, res.body).toBe(200);
+    const plan = res.json().plan as {
+      products: { exists: string[]; blocked: Array<{ name: string; reason: string }> };
+    };
+    expect(plan.products.blocked.find((b) => b.name === 'ZZ TEST Free Socks')).toBeUndefined();
+    expect(plan.products.exists.some((name) => name.startsWith(regularSocks.name))).toBe(true);
+
+    const copiedFree = (await atPark(park, 'ZZ TEST Free Socks'))!;
+    expect(copiedFree).toMatchObject({ priceSatang: 0, stockItemId: null });
+    // The park's own Regular Socks keeps its inventory choice: no shelf is attached to it.
+    expect((await atPark(park, regularSocks.name))!.stockItemId).toBeNull();
+  });
+});
+
 describe('a share whose shelf has gone is released, never left counting nothing', () => {
   it('unlinking Regular Socks from its stock item clears the Free Socks share, with an audit row saying why', async () => {
     const unlink = await call('PATCH', `/branches/${branchId}/menu/products/${regularSocks.id}`, admin, { stockLinks: [] });
