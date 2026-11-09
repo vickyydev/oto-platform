@@ -7,6 +7,7 @@ import { registerTimekeepingReviewRoutes } from "./timekeeping-review-routes";
 import { registerPayrollRoutes } from "./payroll/routes";
 import { registerEmployeeActionRoutes } from "./employee-action-routes";
 import { registerEmployeeRehireRoutes } from "./employee-rehire-routes";
+import { leaverStatusOf } from "./lib/engagementDates";
 import { registerQaRoutes } from "./qa/routes";
 import { registerSuiteSignInRoutes, unusablePassword } from "./suite-sign-in-routes";
 import { readPhone } from "./lib/suiteSignIn";
@@ -8206,6 +8207,12 @@ OTO Company Limited`,
 
       const newEmploymentState = lastWorkingDayStr >= todayBangkok ? 'LEAVING' : 'LEFT';
       const newStatus = validatedData.offboardingType === "resignation" ? "resigned" : "terminated";
+      // SCRUM-794: a last working day still to come leaves the profile working
+      // under its current contract until then — its status, login, shifts and
+      // tasks as they are; the 03:00 batch ends the employment the day after
+      // (sets the status and switches the login off). A last day of today or
+      // earlier ends it here, as the app always did.
+      const endsLater = lastWorkingDayStr > todayBangkok;
       // The backstop (round 6's review, F2): the login switched off here is
       // only one the app's strict placement puts in the employee's park group.
       // A login another park group holds (a link made before the wizard and
@@ -8243,8 +8250,9 @@ OTO Company Limited`,
 
         // Update employee status and employment state
         await storage.updateEmployee(employeeId, {
-          status: newStatus,
+          ...(endsLater ? {} : { status: newStatus }),
           employmentState: newEmploymentState,
+          offboardingType: validatedData.offboardingType === "resignation" ? "RESIGNATION" : "TERMINATION",
           endReason: validatedData.reasonText || validatedData.reasonCode,
           lastWorkingDay: new Date(validatedData.lastWorkingDay),
           noticeDate: validatedData.noticeDate ? new Date(validatedData.noticeDate) : undefined,
@@ -8427,10 +8435,16 @@ OTO Company Limited`,
           newLastDay.setHours(0, 0, 0, 0);
 
           const newEmploymentState = newLastDay >= today ? 'LEAVING' : 'LEFT';
+          // SCRUM-794: a profile still working until a later last day keeps its
+          // status (the create's rule); moved to today or earlier, the
+          // employment ends now, as the create ends it.
+          const todayBangkok = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok' }).format(new Date());
+          const endsNow = validated.lastWorkingDay.split('T')[0] <= todayBangkok && employee.status === "active";
 
           await storage.updateEmployee(employeeId, {
             lastWorkingDay: new Date(validated.lastWorkingDay),
             employmentState: newEmploymentState,
+            ...(endsNow ? { status: leaverStatusOf(offboarding.offboardingType) } : {}),
           }, tx);
 
           await storage.updateAssetsExpectedReturnBy(employeeId, newLastDay, tx);

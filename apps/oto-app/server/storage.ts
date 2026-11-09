@@ -7176,6 +7176,24 @@ export class DatabaseStorage implements IStorage {
                         )
                         .returning();
 
+                // SCRUM-794: an offboarding with a later last working day left
+                // the profile's status as it was (it worked until then); once the
+                // day has passed the employment has ended, so the status follows
+                // the offboarding: resigned or terminated. Profiles offboarded
+                // before this rule already carry that status and are untouched.
+                await db.execute(sql`
+                        update employees e
+                           set status = case when lower(o.offboarding_type) like 'termin%' then 'terminated' else 'resigned' end,
+                               updated_at = now()
+                          from (select distinct on (employee_id) employee_id, offboarding_type
+                                  from employee_offboarding
+                                 order by employee_id, created_at desc) o
+                         where o.employee_id = e.id
+                           and e.status = 'active'
+                           and e.employment_state = 'LEFT'
+                           and e.last_working_day < (${today.toISOString()}::timestamptz at time zone 'UTC')
+                           ${tenantId ? sql`and e.tenant_id = ${tenantId}` : sql``}`);
+
                 return result.length;
         }
 

@@ -152,6 +152,15 @@ const receptionToken = await kioskSession(receptionDevice);
 const pinOf = async (id: string) =>
   (await q<{ timeclock_pin_hash: string | null }>("select timeclock_pin_hash from employees where id = $1", [id]))[0]?.timeclock_pin_hash;
 const statusOf = async (id: string) => (await q<{ status: string }>("select status from employees where id = $1", [id]))[0]?.status;
+/**
+ * What a recorded offboarding leaves on the employee. Its last working day is
+ * 14 days off, so (SCRUM-794) the employee works until then: status active,
+ * Leaving, the offboarding of that type recorded; the 03:00 batch sets
+ * resigned or terminated the day after the last day.
+ */
+const offboardedAs = async (id: string) => (await q<{ status: string; employment_state: string; offboarding_type: string }>(
+  `select e.status, e.employment_state, o.offboarding_type
+     from employees e join employee_offboarding o on o.employee_id = e.id where e.id = $1`, [id]))[0];
 /** The salted form pin-utils' hashPin writes: 128 hex characters, a dot, a 32-hex salt. */
 const SALTED = /^[a-f0-9]{128}\.[a-f0-9]{32}$/;
 
@@ -334,13 +343,13 @@ try {
   await check("a manager still records a resignation", async () => {
     const res = await offboard("manager", resigning, "resignation");
     assert.ok(res.status === 200 || res.status === 201, show(res));
-    assert.equal(await statusOf(resigning), "resigned");
+    assert.deepEqual(await offboardedAs(resigning), { status: "active", employment_state: "LEAVING", offboarding_type: "resignation" });
   });
 
   await check("an operator admin terminates", async () => {
     const res = await offboard("opAdmin", terminated, "termination");
     assert.ok(res.status === 200 || res.status === 201, show(res));
-    assert.equal(await statusOf(terminated), "terminated");
+    assert.deepEqual(await offboardedAs(terminated), { status: "active", employment_state: "LEAVING", offboarding_type: "termination" });
   });
 
   await check("a manager cannot edit a termination; the operator admin can", async () => {

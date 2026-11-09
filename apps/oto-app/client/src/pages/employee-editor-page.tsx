@@ -2704,7 +2704,8 @@ export default function EmployeeEditorPage() {
 
   const { data: letters } = useQuery<EmployeeLetter[]>({
     queryKey: ["/api/employees", id, "letters"],
-    enabled: !isNew && (employee?.status === "resigned" || employee?.status === "terminated"),
+    enabled: !isNew && (employee?.status === "resigned" || employee?.status === "terminated" ||
+      employee?.employmentState === "LEAVING" || employee?.employmentState === "LEFT"),
   });
 
   const { data: assets, refetch: refetchAssets } = useQuery<EmployeeAsset[]>({
@@ -2780,19 +2781,25 @@ export default function EmployeeEditorPage() {
   }, [roles, selectedBranchId]);
   
   // Clear offboarding fields when status is changed back to active
+  // SCRUM-794: a profile working out its notice reads active until its last
+  // working day; its offboarding fields are kept, so saving the form never
+  // clears the last day the night batch ends the employment on.
+  const workingOutNotice = employee?.status === "active" && employee?.employmentState === "LEAVING";
   useEffect(() => {
-    if (employeeStatus === "active") {
+    if (employeeStatus === "active" && !workingOutNotice) {
       form.setValue("endReason", null);
       form.setValue("lastWorkingDay", null);
     }
-  }, [employeeStatus, form]);
+  }, [employeeStatus, form, workingOutNotice]);
 
   // Helper to detect if employee is offboarding (resigned/terminated via status or legacy endReason)
+  // SCRUM-794: or recorded with a last working day still to come (the status stays active until then).
   const endReason = form.watch("endReason");
-  const isOffboarding = employeeStatus === "resigned" || employeeStatus === "terminated" || 
+  const offboardingRecorded = !!employee?.lastWorkingDay && employee?.employmentState !== "ACTIVE";
+  const isOffboarding = employeeStatus === "resigned" || employeeStatus === "terminated" || offboardingRecorded ||
     endReason?.toLowerCase().includes("resign") || endReason?.toLowerCase().includes("terminat");
-  const isResigning = employeeStatus === "resigned" || endReason?.toLowerCase().includes("resign");
-  const isTerminating = employeeStatus === "terminated" || endReason?.toLowerCase().includes("terminat");
+  const isResigning = employeeStatus === "resigned" || employee?.offboardingType === "RESIGNATION" || endReason?.toLowerCase().includes("resign");
+  const isTerminating = employeeStatus === "terminated" || employee?.offboardingType === "TERMINATION" || endReason?.toLowerCase().includes("terminat");
 
   // Track initial employee status to detect user-initiated changes
   const [initialStatus, setInitialStatus] = useState<string | null>(null);
@@ -3298,14 +3305,17 @@ export default function EmployeeEditorPage() {
                 <AlertTriangle className="mr-2 h-4 w-4" />
                 Issue Warning
               </Button>
-              <Button 
-                variant="destructive" 
-                onClick={() => setOffboardingOpen(true)}
-                data-testid="button-offboard-employee"
-              >
-                <UserX className="mr-2 h-4 w-4" />
-                Offboard
-              </Button>
+              {/* An offboarding already recorded (the profile works until its last day) is edited below, not started again. */}
+              {!offboardingRecorded && (
+                <Button 
+                  variant="destructive" 
+                  onClick={() => setOffboardingOpen(true)}
+                  data-testid="button-offboard-employee"
+                >
+                  <UserX className="mr-2 h-4 w-4" />
+                  Offboard
+                </Button>
+              )}
             </>
           )}
         </div>
