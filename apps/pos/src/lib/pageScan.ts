@@ -49,11 +49,14 @@ import { looksLikeVoucherCode } from '@/lib/tillVoucher';
  *   - a field that reads codes itself — the wristband box, History's bracelet
  *     box and its search box, Add time's bracelet field, a held sale's name —
  *     carries `data-reads-scans`. The listener leaves it alone entirely.
- *   - any other field. Keys typed by hand are that field's. A wristband typed
- *     into it at a scanner's pace is the scanner's: the screen takes it, the
- *     field is put back as it was before the scan, and the scanner's Enter does
- *     not submit the field's form. A voucher or a booking QR stays the field's,
- *     as it always was (the promo box, Redeem voucher).
+ *   - any other field. Keys typed by hand are that field's. A band's QR (its
+ *     signed code) or a credit voucher's QR typed into it at a scanner's pace is
+ *     the scanner's: the screen takes it, the field is put back as it was before
+ *     the scan, and the scanner's Enter does not submit the field's form. Those
+ *     are codes no person types at that pace. The short code printed under a
+ *     band is not: two quick words ("extra cheese", a child's name) take its
+ *     shape, so in a field it stays the field's. A voucher or a booking QR stays
+ *     the field's, as it always was (the promo box, Redeem voucher).
  *   - no field: every route.
  *
  * The rules are pure (`createPageScanner`, `classifyScannedCode`,
@@ -228,15 +231,27 @@ export interface PageScanRoute {
 }
 
 /**
+ * A code nobody types into a field at a scanner's pace: a band's signed code
+ * (the QR, 40 and more characters with a `.`) or a credit voucher's `QR-…`.
+ * A band's printed short code is not one: "extra cheese" or a child's two
+ * names, typed quickly into a note or a name, take its shape.
+ */
+function isScannerOnlyCode(code: string): boolean {
+  return isBandCodeShape(code) || isWalletQrCode(code);
+}
+
+/**
  * The one thing to do with a code, or null when nobody on screen takes it: a
  * wristband or a credit voucher for the screen's `tab` route from anywhere but
- * a field that reads codes itself (which never reaches here); a voucher or a
- * booking QR only with no field selected, as before.
+ * a field that reads codes itself (which never reaches here), and from another
+ * field only by its QR, so text typed there by hand stays that field's; a
+ * voucher or a booking QR only with no field selected, as before.
  */
 export function planPageScan(commit: PageScanCommit, route: PageScanRoute | null): (() => void) | null {
   if (!route) return null;
   const kind = classifyScannedCode(commit.code);
   if (kind === 'band' || kind === 'wallet') {
+    if (commit.focus === 'field' && !isScannerOnlyCode(commit.code)) return null;
     const scan = tabScanOfScannedCode(commit.code);
     const take = route.tab;
     return scan && take ? () => take(scan) : null;

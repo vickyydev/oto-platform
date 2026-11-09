@@ -232,6 +232,19 @@ describe('who takes it', () => {
     }
   });
 
+  it('a band’s printed short code goes to the tab route from no field only: in a field it is two words typed quickly', () => {
+    const route = routes();
+    planPageScan(commit(SHORT), route)!();
+    expect(route.tab).toHaveBeenCalledWith({ ok: true, what: 'band', key: SHORT, code: SHORT });
+    expect(planPageScan(commit(SHORT, 'field'), route)).toBeNull();
+    // What a kitchen note or a child's name can be, and why: each has the printed code's shape.
+    for (const typed of ['extra cheese', 'no cheese', 'no pepper', 'Mali Seeker']) {
+      expect(classifyScannedCode(typed), typed).toBe('band');
+      expect(planPageScan(commit(typed, 'field'), route), typed).toBeNull();
+    }
+    expect(route.tab).toHaveBeenCalledTimes(1);
+  });
+
   it('a voucher and a booking QR as before: from no field only, and only where a screen takes them', () => {
     const route = routes();
     planPageScan(commit(VOUCHER), route)!();
@@ -518,6 +531,25 @@ describe('usePageScanShell — the one listener', () => {
     expect(field.value).toBe(SHORT);
     expect(field.dispatchEvent).not.toHaveBeenCalled();
     expect(events.at(-1)!.preventDefault).not.toHaveBeenCalled();
+  });
+
+  it('two words typed quickly into a field stay the field’s, though they have a printed band’s shape', () => {
+    for (const enter of [true, false]) {
+      const note = stubField();
+      page.doc.activeElement = note;
+      const events = type('extra cheese', 70, note, enter);
+      vi.advanceTimersByTime(500);
+      expect(route.tab, `enter: ${enter}`).not.toHaveBeenCalled();
+      expect(note.value).toBe('extra cheese');
+      expect(note.dispatchEvent).not.toHaveBeenCalled();
+      expect(events.some((e) => e.preventDefault.mock.calls.length > 0)).toBe(false);
+    }
+  });
+
+  it('a band’s printed short code at a scanner’s pace opens with nothing selected', () => {
+    page.doc.activeElement = body;
+    type(SHORT, 15, body);
+    expect(route.tab).toHaveBeenCalledWith({ ok: true, what: 'band', key: SHORT, code: SHORT });
   });
 
   it('a voucher scanned into a field stays the field’s, as before; with nothing selected it is redeemed', () => {
