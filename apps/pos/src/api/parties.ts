@@ -27,7 +27,6 @@ import type {
   PartyPlanStatus,
   PartySettleAnswer,
   PartySettleBody,
-  PartySettlePreviewAnswer,
   PartySettlePreviewBody,
   PartySettleQuote,
   PartyTenderBody,
@@ -65,13 +64,13 @@ export const partiesApi = {
     }),
   /** SCRUM-804 — the party with the plan the OTO App published for it. */
   detail: (branchId: string, partyId: string) =>
-    api.get<PartyDetailAnswer>(`/parties/${encodeURIComponent(partyId)}?branchId=${branchId}`),
+    api.get<ApiResponse<'/parties/{id}', 'get'>>(`/parties/${encodeURIComponent(partyId)}?branchId=${branchId}`),
   /** SCRUM-804 — what settling it would come to, priced by the platform; writes nothing. */
   settlePreview: (partyId: string, body: PartySettlePreviewBody) =>
-    api.post<PartySettlePreviewAnswer>(`/parties/${encodeURIComponent(partyId)}/settle/preview`, body),
+    api.post<ApiResponse<'/parties/{id}/settle/preview', 'post'>>(`/parties/${encodeURIComponent(partyId)}/settle/preview`, body),
   /** SCRUM-804 — settle it as one sale, under the ids of one press of Confirm. */
   settle: (partyId: string, body: PartySettleBody & { actionId: string }) =>
-    api.post<PartySettleAnswer>(`/parties/${encodeURIComponent(partyId)}/settle`, body, {
+    api.post<ApiResponse<'/parties/{id}/settle', 'post'>>(`/parties/${encodeURIComponent(partyId)}/settle`, body, {
       idempotencyKey: `party-settle:${body.settlementId}`,
       headers: { 'x-oto-action-id': body.actionId },
     }),

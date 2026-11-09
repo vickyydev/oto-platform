@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { newId, partySocksIncludedFor, type PartyPlan, type PartySettleQuote } from '@oto/shared';
 import { useOperator } from '@/auth/OperatorContext';
-import { api, ApiError } from '@/api/client';
+import { ApiError } from '@/api/client';
 import {
   previewSettlementOnPlatform,
   settlePartyOnPlatform,
   type PartySettleForm,
   type PartySettleIds,
 } from '@/api/parties';
-import { finaliseSale, type ApiSale } from '@/api/sales';
+import { finaliseSale, salesApi } from '@/api/sales';
 import { usePaymentStage, type PaymentDisplayState } from '@/lib/usePaymentStage';
 import { useTenderPresentation } from '@/lib/tenderDisplay';
 import type { StationDisplayHandoff } from '@/lib/displaySession';
@@ -246,7 +246,7 @@ export function PartySettleModal({ open, onOpenChange, party, plan, stationId, r
     prepareSale: async (): Promise<SaleWriteOutcome> => {
       if (!saleId) return { ok: false, saleId: '', message: 'This party has not been settled yet.', retryable: false };
       try {
-        const detail = await api.get<{ sale: ApiSale }>(`/sales/${encodeURIComponent(saleId)}`);
+        const detail = await salesApi.get(saleId);
         return { ok: true, written: true, sale: detail.sale, replay: true, saleId };
       } catch (err) {
         return { ok: false, saleId, message: err instanceof Error ? err.message : String(err), retryable: true };
