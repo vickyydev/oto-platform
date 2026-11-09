@@ -209,6 +209,17 @@ describe('readPartyTime: the first clock time, 24-hour', () => {
       expect(readPartyTime(text), text).toBeNull();
     }
   });
+
+  it('a Russian duration is not the start: "на 2 часа", "длительность 3 часа"', () => {
+    expect(readPartyTimePhrase('Пакет на 2 часа, 21 ноября в 15:00')).toEqual({ time: '15:00', phrase: 'в 15:00' });
+    expect(readPartyTimePhrase('праздник 21 ноября, длительность 3 часа, начало в 14:00')).toEqual({ time: '14:00', phrase: 'в 14:00' });
+    for (const text of ['Пакет на 2 часа', 'длительность 3 часа', 'праздник 2 часа']) {
+      expect(readPartyTime(text), text).toBeNull();
+    }
+    // With "в" before it, or "дня" after it, a small hour is the clock.
+    expect(readPartyTime('в 3 часа')).toBe('15:00');
+    expect(readPartyTime('на 2 часа дня')).toBe('14:00');
+  });
 });
 
 describe('mentionsPartyDate / mentionsPartyTime: what the BEO confirmation picker asks', () => {
@@ -258,6 +269,20 @@ describe('readChatPartyDate: a whole chat, its lines in order', () => {
     expect(r).toMatchObject({ date: '2026-11-21', time: '15:00', timePhrase: 'at 15:00' });
     const c = readChatPartyDate([line('Around 16:00 is best'), line('Which day?', true), line('21 November')], TUE);
     expect(c).toMatchObject({ date: '2026-11-21', time: '16:00' });
+  });
+
+  it('a deadline or the opening hours on another line is not the party’s time', () => {
+    for (const lines of [
+      [line('Хотим праздник 21 ноября'), line('внесите депозит до 18:00 сегодня', true)],
+      [line('Party on 21 November please'), line('We are open today until 20:00', true)],
+      [line('Хотим праздник 21 ноября'), line('Мы работаем с 10:00 до 20:00', true)],
+      [line('ขอจองวันที่ 21 พ.ย. ค่ะ'), line('เปิด 10.00-20.00 น. ค่ะ', true)],
+    ]) {
+      expect(readChatPartyDate(lines, TUE), lines[1]!.text).toMatchObject({ date: '2026-11-21', time: null, timePhrase: '' });
+    }
+    // A start word, or a time given as a point, still counts.
+    expect(readChatPartyDate([line('21 ноября'), line('Начало в 15:00', true)], TUE)).toMatchObject({ time: '15:00' });
+    expect(readChatPartyDate([line('21 พ.ย.'), line('เริ่ม 15.00 น. ค่ะ', true)], TUE)).toMatchObject({ time: '15:00' });
   });
 
   it('a chat that names no date or time', () => {

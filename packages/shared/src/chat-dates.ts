@@ -616,10 +616,16 @@ const TIME_PATTERNS: Array<{ re: RegExp; read: (m: RegExpExecArray) => string | 
     read: (m) => clock(Number(m[2]), Number(m[3])),
     numberAt: (m) => m.index + m[0].indexOf(m[2]!),
   },
-  // 14 часов, в 2 часа дня, в 5 ч.
+  // 14 часов, в 2 часа дня, в 5 ч. A bare "2 часа" ("Пакет на 2 часа", "длительность 3 часа")
+  // is how long the party lasts, not when it starts: a small hour is a clock time only with
+  // "в/во/к/с" before it or "дня/вечера/утра/ночи" after it.
   {
     re: /(?:(в|во|к|с)\s+)?(\d{1,2})\s*(?:час(?:а|ов)?(?!\p{L})|ч\.?(?!\p{L}))(?:\s*(дня|вечера|утра|ночи)(?!\p{L}))?/giu,
-    read: (m) => russianHour(Number(m[2]), m[3]),
+    read: (m) => {
+      // "к" glued to a word ("праздник 2 часа") is that word's last letter, not "к".
+      const before = !!m[1] && !isLetter(m.input[m.index - 1]);
+      return before || m[3] || Number(m[2]) >= 8 ? russianHour(Number(m[2]), m[3]) : null;
+    },
     numberAt: (m) => m.index + m[0].indexOf(m[2]!),
   },
   // в 2 дня, к 5 вечера
@@ -726,6 +732,23 @@ export function mentionsPartyTime(text: string): boolean {
   return readPartyTimePhrase(text) !== null;
 }
 
+/** A word for the party's start ("начало в 14:00", "we start at 3pm", "เริ่ม 14.00 น."). */
+const START_WORD = /(?:^|[^\p{L}])(?:start|starts|starting|begin|begins|beginning)(?!\p{L})|начал|начн|начин|เริ่ม/iu;
+/** A time given as a point ("at 15:00", "в 14:00", "around 16:00", "เวลา 14.00"), not a deadline ("до 18:00", "until 20:00"). */
+const TIME_AS_A_POINT = /^(?:at|в|во|с|from|around|около|เวลา)(?!\p{L})/iu;
+/** The park's opening hours are no party's time ("We are open today until 20:00", "работаем с 10:00"). */
+const OPENING_HOURS = /(?:^|[^\p{L}])(?:open|opens|opening|close|closes|closing|closed)(?!\p{L})|работаем|открыт|закрыва|закрыт|เปิด|ปิด/iu;
+
+/**
+ * A line's time is the party's when the line names the party's day or its
+ * start, or gives the time as a point ("в 14:00", "around 16:00"); not a
+ * deadline ("внесите депозит до 18:00 сегодня") nor the opening hours.
+ */
+function isPartyTimeLine(text: string, time: PartyTimeReading): boolean {
+  if (OPENING_HOURS.test(text)) return false;
+  return mentionsPartyDate(text) || START_WORD.test(text) || TIME_AS_A_POINT.test(time.phrase);
+}
+
 // --- A whole chat ------------------------------------------------------------------------
 
 export interface PartyChatLine {
@@ -750,7 +773,9 @@ export interface PartyChatReading extends PartyDateReading {
  * outright beats a weekday wherever it is; then a team line's date beats a
  * customer's (the team confirms what the customer asked); then the later line
  * wins. The time is the one written with that date, else the team's latest,
- * else the customer's latest.
+ * else the customer's latest, from a line that names the party's day or its
+ * start or gives the time as a point ("в 14:00"); a deadline ("до 18:00") or
+ * the opening hours leave it empty, and the Events module's start stands.
  */
 export function readChatPartyDate(
   lines: readonly PartyChatLine[],
@@ -772,7 +797,12 @@ export function readChatPartyDate(
   }
   let time: PartyTimeReading | null = chosen ? readPartyTimePhrase(lines[chosen.line]!.text) : null;
   for (const team of [true, false]) {
-    for (let i = lines.length - 1; i >= 0 && !time; i--) if (lines[i]!.team === team) time = readPartyTimePhrase(lines[i]!.text);
+    for (let i = lines.length - 1; i >= 0 && !time; i--) {
+      const l = lines[i]!;
+      if (l.team !== team) continue;
+      const found = readPartyTimePhrase(l.text);
+      if (found && isPartyTimeLine(l.text, found)) time = found;
+    }
   }
   return {
     date: chosen?.found.date ?? null,

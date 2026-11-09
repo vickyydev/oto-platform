@@ -129,6 +129,17 @@ describe('Book Date’s first values on a Russian chat', () => {
     expect(d).toMatchObject({ date: '2026-11-21', dateFrom: '21 ноября', startTime: '14:00' });
   });
 
+  it('a duration is not the start, and a deadline on another line leaves the Events module’s start', () => {
+    expect(draftOf('ru', [msg('Пакет на 2 часа, 21 ноября в 15:00')])).toMatchObject({ date: '2026-11-21', startTime: '15:00', timeFrom: 'в 15:00' });
+    expect(draftOf('ru', [msg('праздник 21 ноября, длительность 3 часа, начало в 14:00')])).toMatchObject({ startTime: '14:00', timeFrom: 'в 14:00' });
+    const d = draftOf('ru', [msg('Хотим праздник 21 ноября'), msg('внесите депозит до 18:00 сегодня', 'staff')]);
+    expect(d).toMatchObject({ date: '2026-11-21', startTime: DEFAULT_START_TIME, timeFrom: '' });
+    expect(draftOf('en', [msg('Party on 21 November please'), msg('We are open today until 20:00', 'staff')])).toMatchObject({
+      startTime: DEFAULT_START_TIME,
+      timeFrom: '',
+    });
+  });
+
   it('nor when the deposit is written with a thousands comma, in the three languages', () => {
     for (const [language, text, dateFrom] of [
       ['ru', 'Подтверждаем праздник 21 ноября в 14:00. Депозит 1,500 бат получен 9 ноября.', '21 ноября'],
