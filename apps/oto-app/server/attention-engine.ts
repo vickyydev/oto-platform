@@ -41,12 +41,39 @@ function generateFingerprint(data: Record<string, unknown>): string {
   return crypto.createHash('md5').update(JSON.stringify(data)).digest('hex');
 }
 
+/**
+ * SCRUM-794: a profile with an offboarding recorded. Offboarding used to set
+ * the status (resigned or terminated) at once; with a last working day still
+ * to come the status now stays active until the day after it, and the
+ * profile reads LEAVING with its offboarding type set (and LEFT after). The
+ * rules read it as offboarding from the moment it is recorded, as they did.
+ */
+export function isOffboarding(employee: Employee): boolean {
+  return employee.status === "resigned" || employee.status === "terminated" ||
+    ((employee.employmentState === "LEAVING" || employee.employmentState === "LEFT") && !!employee.offboardingType);
+}
+
+/** The rules for people at work: active, and not working out an offboarding (they never ran for one). */
+export function isWorking(employee: Employee): boolean {
+  return employee.status === "active" && !isOffboarding(employee);
+}
+
+/** Resignation or termination: the offboarding's own type first, then the status or the end reason's words. */
+function offboardingKind(employee: Employee): { isResigned: boolean; isTerminated: boolean } {
+  if (employee.offboardingType === "RESIGNATION") return { isResigned: true, isTerminated: false };
+  if (employee.offboardingType === "TERMINATION") return { isResigned: false, isTerminated: true };
+  return {
+    isResigned: employee.status === "resigned" || !!employee.endReason?.toLowerCase().includes("resign"),
+    isTerminated: employee.status === "terminated" || !!employee.endReason?.toLowerCase().includes("terminat"),
+  };
+}
+
 const rules: AttentionRule[] = [
   {
     type: "CONTRACT_NOT_SENT",
     ruleKey: "CONTRACT_NOT_SENT",
     evaluate: (employee, contracts) => {
-      if (employee.status !== "active") return null;
+      if (!isWorking(employee)) return null;
       
       const unsent = contracts.find(c => 
         c.status === "finalized" && 
@@ -91,7 +118,7 @@ const rules: AttentionRule[] = [
     type: "CONTRACT_NOT_SIGNED",
     ruleKey: "CONTRACT_NOT_SIGNED",
     evaluate: (employee, contracts) => {
-      if (employee.status !== "active") return null;
+      if (!isWorking(employee)) return null;
       
       const unsigned = contracts.find(c => 
         c.signingStatus === "awaiting_signature" &&
@@ -135,7 +162,7 @@ const rules: AttentionRule[] = [
     type: "CHANGE_NO_CONTRACT",
     ruleKey: "CHANGE_NO_CONTRACT",
     evaluate: (employee, contracts) => {
-      if (employee.status !== "active") return null;
+      if (!isWorking(employee)) return null;
       
       const hasSignedContract = contracts.some(c => 
         c.signingStatus === "signed" && c.employeeId === employee.id
@@ -192,7 +219,7 @@ const rules: AttentionRule[] = [
     type: "PROBATION_REVIEW_DUE_SOON",
     ruleKey: "PROBATION_REVIEW_DUE_SOON",
     evaluate: (employee) => {
-      if (employee.status !== "active") return null;
+      if (!isWorking(employee)) return null;
       if (employee.probationReviewCompletedAt) return null;
       if (!employee.probationEndDate) return null;
       
@@ -232,7 +259,7 @@ const rules: AttentionRule[] = [
     type: "PROBATION_REVIEW_OVERDUE",
     ruleKey: "PROBATION_REVIEW_OVERDUE",
     evaluate: (employee) => {
-      if (employee.status !== "active") return null;
+      if (!isWorking(employee)) return null;
       if (employee.probationReviewCompletedAt) return null;
       if (!employee.probationEndDate) return null;
       
@@ -271,10 +298,9 @@ const rules: AttentionRule[] = [
     type: "MISSING_OFFBOARD_DOC",
     ruleKey: "MISSING_OFFBOARD_DOC",
     evaluate: (employee, _contracts, documents = [], letters = []) => {
-      if (employee.status === "active") return null;
+      if (employee.status === "active" && !isOffboarding(employee)) return null;
       
-      const isResigned = employee.status === "resigned" || employee.endReason?.toLowerCase().includes("resign");
-      const isTerminated = employee.status === "terminated" || employee.endReason?.toLowerCase().includes("terminat");
+      const { isResigned, isTerminated } = offboardingKind(employee);
       
       // Check for signed resignation letter OR legacy document paths
       const hasSignedResignationLetter = letters.some(l => l.letterType === "resignation" && l.status === "signed");
@@ -351,7 +377,7 @@ const rules: AttentionRule[] = [
     type: "OFFBOARDING_DATES_INCOMPLETE",
     ruleKey: "OFFBOARDING_DATES_INCOMPLETE",
     evaluate: (employee) => {
-      if (employee.status === "active") return null;
+      if (employee.status === "active" && !isOffboarding(employee)) return null;
       
       if (!employee.lastWorkingDay || !employee.endReason) {
         const ruleKey = "OFFBOARDING_DATES_INCOMPLETE";
@@ -389,7 +415,7 @@ const rules: AttentionRule[] = [
     type: "VISA_EXPIRING",
     ruleKey: "VISA_EXPIRING",
     evaluate: (employee) => {
-      if (employee.status !== "active") return null;
+      if (!isWorking(employee)) return null;
       if (!employee.isForeignStaff) return null;
       if (!employee.visaExpiryDate) return null;
       
@@ -433,7 +459,7 @@ const rules: AttentionRule[] = [
     type: "WORK_PERMIT_EXPIRING",
     ruleKey: "WORK_PERMIT_EXPIRING",
     evaluate: (employee) => {
-      if (employee.status !== "active") return null;
+      if (!isWorking(employee)) return null;
       if (!employee.isForeignStaff) return null;
       if (!employee.workPermitExpiryDate) return null;
       
@@ -477,7 +503,7 @@ const rules: AttentionRule[] = [
     type: "MISSING_VISA_WP_POLICY",
     ruleKey: "MISSING_VISA_WP_POLICY",
     evaluate: (employee) => {
-      if (employee.status !== "active") return null;
+      if (!isWorking(employee)) return null;
       if (!employee.isForeignStaff) return null;
       
       const missingVisa = !employee.visaExpiryDate;
@@ -580,7 +606,7 @@ const rules: AttentionRule[] = [
     type: "FACE_ENROLLMENT_REQUIRED",
     ruleKey: "FACE_ENROLLMENT_REQUIRED",
     evaluate: (employee) => {
-      if (employee.status !== "active") return null;
+      if (!isWorking(employee)) return null;
       if (employee.faceEnrollmentStatus === "ENROLLED") return null;
       
       const createdAt = employee.createdAt ? new Date(employee.createdAt) : new Date();
@@ -620,7 +646,7 @@ const rules: AttentionRule[] = [
     type: "FREQUENT_PIN_USAGE",
     ruleKey: "FREQUENT_PIN_USAGE",
     evaluate: (employee) => {
-      if (employee.status !== "active") return null;
+      if (!isWorking(employee)) return null;
       if (!employee.pinUsageCount30Day) return null;
       
       const usageCount = employee.pinUsageCount30Day;
@@ -658,7 +684,7 @@ const rules: AttentionRule[] = [
     type: "UNSIGNED_EMPLOYMENT_CONTRACT",
     ruleKey: "UNSIGNED_EMPLOYMENT_CONTRACT",
     evaluate: (employee, contracts) => {
-      if (employee.status !== "active") return null;
+      if (!isWorking(employee)) return null;
       
       const hasSignedContract = contracts.some(c => 
         c.signingStatus === "signed" && c.employeeId === employee.id
@@ -703,7 +729,7 @@ const rules: AttentionRule[] = [
     type: "OFFBOARDING_LETTER_UNSIGNED",
     ruleKey: "OFFBOARDING_LETTER_UNSIGNED",
     evaluate: (employee, _contracts, _documents, letters = []) => {
-      if (employee.status === "active") return null;
+      if (employee.status === "active" && !isOffboarding(employee)) return null;
       
       const unsignedLetter = letters.find(l => 
         (l.letterType === "resignation" || l.letterType === "termination") && 
@@ -750,7 +776,7 @@ const rules: AttentionRule[] = [
     type: "EMPLOYEE_UNSIGNED",
     ruleKey: "EMPLOYEE_UNSIGNED",
     evaluate: (employee, contracts) => {
-      if (employee.status !== "active") return null;
+      if (!isWorking(employee)) return null;
       
       const hasAnyContract = contracts.some(c => c.employeeId === employee.id);
       const hasSignedContract = contracts.some(c => 
@@ -806,7 +832,7 @@ const rules: AttentionRule[] = [
     type: "TERMS_CHANGED_REQUIRES_NEW_CONTRACT",
     ruleKey: "TERMS_CHANGED_REQUIRES_NEW_CONTRACT",
     evaluate: (employee, contracts) => {
-      if (employee.status !== "active") return null;
+      if (!isWorking(employee)) return null;
       
       const signedContracts = contracts
         .filter(c => c.signingStatus === "signed" && c.employeeId === employee.id)
@@ -877,7 +903,7 @@ const rules: AttentionRule[] = [
     type: "EMPLOYEE_MISSING_DEPARTMENT",
     ruleKey: "EMPLOYEE_MISSING_DEPARTMENT",
     evaluate: (employee) => {
-      if (employee.status !== "active") return null;
+      if (!isWorking(employee)) return null;
       if (employee.primaryDepartmentId) return null;
       
       const createdAt = employee.createdAt ? new Date(employee.createdAt) : new Date();
@@ -915,7 +941,7 @@ const rules: AttentionRule[] = [
     type: "EMPLOYEE_MISSING_ROLE",
     ruleKey: "EMPLOYEE_MISSING_ROLE",
     evaluate: (employee, _contracts, _documents, _letters, _assets, roles) => {
-      if (employee.status !== "active") return null;
+      if (!isWorking(employee)) return null;
       if (roles && roles.length > 0) return null;
       
       const createdAt = employee.createdAt ? new Date(employee.createdAt) : new Date();
@@ -1158,7 +1184,7 @@ export async function runFullReconciliation(opts: AttentionRunOptions = {}): Pro
   
   // MISSING_LOGIN_ACCESS rule - check for active employees without login access
   for (const employee of employees) {
-    if (employee.status !== "active" && employee.status !== "leaving") continue;
+    if (!isWorking(employee) && employee.status !== "leaving") continue;
     
     const ruleKey = "MISSING_LOGIN_ACCESS";
     const entityKey = `employee:${employee.id}:missing-login`;

@@ -26,7 +26,11 @@
 //     and the app's own six-hourly run resolving a no-show alert it did not
 //     raise (the app's rule, kept);
 //   - the night batches' Attention writes (a stuck clock-in) carry the park
-//     group of the person they are about.
+//     group of the person they are about;
+//   - SCRUM-794: an offboarding 14 days out (the status stays active until
+//     the last working day) raises the offboarding rules at once, its
+//     termination named by the offboarding's type, and resolves the rules
+//     for people at work.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
@@ -551,6 +555,62 @@ try {
     );
     assert.ok(rows.length >= 1);
     for (const r of rows) assert.equal(r.tenant_id, B.tenant);
+  })();
+
+  // SCRUM-794: an offboarding with a later last working day leaves the status
+  // active until the day after it; the rules still read it as offboarding
+  // from the moment it is recorded, as when the status was set at once.
+  console.log("an offboarding whose last working day is 14 days out (SCRUM-794):");
+  const leaving = await employee(A.tenant, A.branch, "a-leaving");
+  const openFor = async (id: string) =>
+    q<{ rule_key: string; entity_key: string }>(
+      "select rule_key, entity_key from attention_items where employee_id = $1 and status = 'open' order by rule_key, entity_key",
+      [id],
+    );
+  const AT_WORK_RULES = ["CHANGE_NO_CONTRACT", "EMPLOYEE_MISSING_DEPARTMENT", "EMPLOYEE_MISSING_ROLE", "MISSING_LOGIN_ACCESS"];
+  await check("before it, the rules for people at work raise for them", async () => {
+    const res = await job(origin, "attention", keyA, A.tenant);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const keys = (await openFor(leaving)).map((i) => i.rule_key);
+    for (const rule of AT_WORK_RULES) assert.ok(keys.includes(rule), `${rule}: ${JSON.stringify(keys)}`);
+  })();
+  const lastWorkingDay = new Date(Date.parse(`${today}T00:00:00Z`) + 14 * 86_400_000).toISOString().slice(0, 10);
+  await check("a termination for misconduct recorded 14 days ahead: still active, LEAVING, and the missing termination letter raised at once", async () => {
+    const res = await call(origin, "POST", `/api/employees/${leaving}/offboarding`, {
+      cookie: cookie.a,
+      body: { offboardingType: "termination", reasonCode: "misconduct", lastWorkingDay },
+    });
+    assert.equal(res.status, 201, JSON.stringify(res.body));
+    const [row] = await q<{ status: string; employment_state: string; offboarding_type: string }>(
+      "select status, employment_state, offboarding_type from employees where id = $1", [leaving]);
+    assert.deepEqual(row, { status: "active", employment_state: "LEAVING", offboarding_type: "TERMINATION" });
+    await job(origin, "attention", keyA, A.tenant);
+    const open = await openFor(leaving);
+    // "misconduct" names neither resignation nor termination: the offboarding's own type says which letter.
+    assert.ok(
+      open.some((i) => i.rule_key === "MISSING_OFFBOARD_DOC" && i.entity_key === `employee:${leaving}:termination`),
+      JSON.stringify(open),
+    );
+    assert.ok(!open.some((i) => i.entity_key === `employee:${leaving}:resignation`), JSON.stringify(open));
+  })();
+  await check("…and the rules for people at work no longer raise for them: their items are resolved", async () => {
+    const keys = (await openFor(leaving)).map((i) => i.rule_key);
+    for (const rule of AT_WORK_RULES) assert.ok(!keys.includes(rule), `${rule} still open: ${JSON.stringify(keys)}`);
+    const resolved = await q<{ rule_key: string }>(
+      "select rule_key from attention_items where employee_id = $1 and status = 'resolved'", [leaving]);
+    for (const rule of AT_WORK_RULES) assert.ok(resolved.some((i) => i.rule_key === rule), `${rule} resolved: ${JSON.stringify(resolved)}`);
+  })();
+  await check("during the notice, a termination letter awaiting signature and a missing end reason raise their items", async () => {
+    await q(
+      "insert into employee_letters (employee_id, branch_id, letter_type, status, created_by) values ($1, $2, 'termination', 'signing_link_created', $3)",
+      [leaving, A.branch, A.admin.id],
+    );
+    await q("update employees set end_reason = null where id = $1", [leaving]);
+    await job(origin, "attention", keyA, A.tenant);
+    const keys = (await openFor(leaving)).map((i) => i.rule_key);
+    for (const rule of ["MISSING_OFFBOARD_DOC", "OFFBOARDING_DATES_INCOMPLETE", "OFFBOARDING_LETTER_UNSIGNED"]) {
+      assert.ok(keys.includes(rule), `${rule}: ${JSON.stringify(keys)}`);
+    }
   })();
 
   console.log(`attention.check: ${checks} checks passed`);
