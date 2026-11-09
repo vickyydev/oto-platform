@@ -69,6 +69,17 @@ export function toneForBoxStatus(status: string): Tone {
   }
 }
 
+/**
+ * A screen's presence (SCRUM-771): a customer display, or a till's own screen.
+ * The box's words and colours, because it is the box's rule — online, or quiet
+ * for longer than the boxes' threshold.
+ */
+export const screenPresenceWord = (state: string): string =>
+  state === 'online' ? 'Online' : state === 'offline' ? 'Offline' : tidy(state);
+
+export const toneForScreenPresence = (state: string): Tone =>
+  state === 'online' ? 'ok' : state === 'offline' ? 'down' : 'idle';
+
 const DEVICE_KIND_WORDS: Record<DeviceKind, string> = {
   receipt_printer: 'Receipt printer',
   band_printer: 'Band printer',

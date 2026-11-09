@@ -232,6 +232,29 @@ export interface StationRow {
   paymentRouting?: PaymentRouting | null;
   offlineWalletCapSatang?: number | null;
   lastSeenAt?: string | null;
+  /**
+   * SCRUM-771 — a till's own screen (the iPad) and the scanner it hears. Null
+   * for any other kind and absent from an older api.
+   */
+  screen?: TillScreenView | null;
+}
+
+/**
+ * Whether a screen is still there, as the API counted it (SCRUM-771): online,
+ * or quiet for longer than the boxes' threshold. The ages are the API's own,
+ * for the reason `BoxRow.heartbeatAgeSeconds` is.
+ */
+export interface ScreenPresenceView {
+  state: 'online' | 'offline' | string;
+  lastSeenAt?: string | null;
+  lastSeenAgeSeconds?: number | null;
+  offlineAfterSeconds?: number | null;
+}
+
+/** A till's screen, and when a scanner last typed a code into it. */
+export interface TillScreenView extends ScreenPresenceView {
+  scannerLastUsedAt?: string | null;
+  scannerLastUsedAgeSeconds?: number | null;
 }
 
 /**
@@ -383,6 +406,8 @@ export interface CredentialRow {
   revokedAt?: string | null;
   revokedReason?: string | null;
   scopes?: string[];
+  /** SCRUM-771 — a paired display's online or offline. Null for other kinds. */
+  presence?: ScreenPresenceView | null;
 }
 
 export const DISPLAY_TEST_STAGES = ['identify', 'welcome', 'order', 'input', 'payment', 'thankyou'] as const;

@@ -78,7 +78,9 @@ import {
   credentialKindWord,
   stationKindWord,
   toneForBoxStatus,
+  toneForScreenPresence,
 } from '@/lib/fleetWords';
+import { DisplayPresenceLine, PresenceChip, TillScreenPresence } from '@/components/devices/ScreenPresence';
 import { elapsed, formatWhen, timeAgo } from '@/lib/time';
 import { cn } from '@/lib/utils';
 import { boxCardsForView, stationCardsForView, type FleetStatusFilter } from '@/lib/fleetFilters';
@@ -397,6 +399,7 @@ export function Devices() {
                     key={station.id}
                     station={station}
                     branchLabel={branchName(station.branchId) ?? currentBranchName}
+                    timezone={timezone}
                     onOpen={() => setOpenStation(station)}
                   />
                 ))}
@@ -980,10 +983,12 @@ const STATION_ICONS: Record<string, LucideIcon> = {
 export function StationCard({
   station,
   branchLabel,
+  timezone,
   onOpen,
 }: {
   station: StationRow;
   branchLabel: string;
+  timezone?: string | null;
   onOpen: () => void;
 }) {
   const capabilities = station.capabilities ?? [];
@@ -1028,6 +1033,11 @@ export function StationCard({
           <p>{station.ready ? 'Ready for selling' : 'Not ready for selling'}</p>
           {station.reasons?.map((reason) => <p key={reason}>{reason}</p>)}
         </div>
+      )}
+
+      {/* SCRUM-771 — the till's own screen and its scanner, read as a box is. */}
+      {station.kind === 'till' && station.screen && !station.archived && (
+        <TillScreenPresence screen={station.screen} timezone={timezone} />
       )}
 
       {capabilities.length > 0 && (
@@ -1302,14 +1312,18 @@ function CredentialRowItem({
     }
   };
 
+  // SCRUM-771 — a paired display is online or offline by the boxes' rule.
+  const presence = credential.kind === 'display' && !credential.revokedAt && !outstanding ? credential.presence ?? null : null;
+
   return (
     <li className="px-3 py-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <StatusMark tone={credential.revokedAt || outstanding ? 'idle' : 'ok'} />
+        <StatusMark tone={credential.revokedAt || outstanding ? 'idle' : presence ? toneForScreenPresence(presence.state) : 'ok'} />
         <span className="text-sm font-semibold min-w-0 break-words">
           {credential.label ?? credentialKindWord(credential.kind)}
         </span>
         <Tag>{credentialKindWord(credential.kind)}</Tag>
+        {presence && <PresenceChip presence={presence} />}
         {credential.revokedAt && <StatusChip tone="idle">Access revoked</StatusChip>}
         {stationLabel && <span className="text-sm text-muted-foreground">on {stationLabel}</span>}
         {canSnapshot && (
@@ -1347,6 +1361,7 @@ function CredentialRowItem({
             ? `Waiting to be paired${credential.pairingCodeExpiresAt ? `; the code expires ${formatWhen(credential.pairingCodeExpiresAt, timezone)}` : ''}.`
             : `Paired ${formatWhen(credential.pairedAt, timezone)}${credential.lastSeenAt ? `, last seen ${timeAgo(credential.lastSeenAt)}` : ', never seen since'}.`}
       </p>
+      {presence && <DisplayPresenceLine presence={presence} timezone={timezone} />}
       {credential.kind === 'display' && (
         <div className="mt-1 text-xs text-muted-foreground space-y-1">
           <p>{credential.lastSeenAt
