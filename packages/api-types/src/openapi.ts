@@ -2659,6 +2659,8 @@ export interface paths {
                                 openingHours?: unknown;
                                 businessDayStart: string;
                                 archived: boolean;
+                                /** Format: uuid */
+                                partySlipsStationId: string | null;
                             }[];
                         };
                     };
@@ -2871,7 +2873,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Update or archive a branch */
+        /** @description Update or archive a branch. SCRUM-805 — `partySlipsStationId` names the station whose kitchen and bar printers receive the party slips (one of this branch's live stations), or null to name none; refused 400 STATION_NOT_AT_BRANCH for any other station. */
         patch: {
             parameters: {
                 query?: never;
@@ -2921,6 +2923,8 @@ export interface paths {
                             } | null;
                         } | null;
                         businessDayStart?: string;
+                        /** Format: uuid */
+                        partySlipsStationId?: string | null;
                     };
                 };
             };
@@ -24849,7 +24853,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description One of the branch's parties: the OTO App's booking and bill, laid under the edits a till made that the app has not taken yet, with the tab's POS ledgers — the walk-ups, the charges and the payments — the till's edit stamp and the bill (total = base + charges; outstanding = total − deposit − payments, never below zero). 404 for anything that is not one of the branch's parties. SCRUM-804 — with the plan the OTO App published for it (`plan`: the package with its limits and prices, the counts, the add-ons, the entertainment, the set menu, the food times and the deposit, money in satang), or null and the reason (`planStatus`); and its settlement sale (`event.party.settlement`): while the package and its deposit are that sale's, the bill is the tab's own charges and payments. */
+        /** @description One of the branch's parties: the OTO App's booking and bill, laid under the edits a till made that the app has not taken yet, with the tab's POS ledgers — the walk-ups, the charges and the payments — the till's edit stamp and the bill (total = base + charges; outstanding = total − deposit − payments, never below zero). 404 for anything that is not one of the branch's parties. SCRUM-804 — with the plan the OTO App published for it (`plan`: the package with its limits and prices, the counts, the add-ons, the entertainment, the set menu, the food times and the deposit, money in satang), or null and the reason (`planStatus`); and its settlement sale (`event.party.settlement`): while the package and its deposit are that sale's, the bill is the tab's own charges and payments. SCRUM-805 — and its kitchen and bar slips on its day (`slips`: the slip time, the station the park names for them, the newest slip per station and every run), null for a party with no plan. */
         get: {
             parameters: {
                 query: {
@@ -25100,6 +25104,71 @@ export interface paths {
                             } | null;
                             /** @enum {string} */
                             planStatus?: "ready" | "no_package" | "seam_missing" | "seam_not_granted";
+                            slips?: {
+                                partyDate: string;
+                                slipsTime: string;
+                                station: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                                latest: {
+                                    kitchen: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        /** @enum {string} */
+                                        station: "kitchen" | "bar";
+                                        run: number;
+                                        /** @enum {string} */
+                                        trigger: "schedule" | "reprint";
+                                        /** @enum {string} */
+                                        status: "printed" | "no_printer" | "nothing_to_print";
+                                        at: string;
+                                        /** Format: uuid */
+                                        printJobId: string | null;
+                                        /** @enum {string|null} */
+                                        jobStatus: "queued" | "printed" | "failed" | "skipped" | null;
+                                        requestedByName: string | null;
+                                        createdAt: string;
+                                    } | null;
+                                    bar: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        /** @enum {string} */
+                                        station: "kitchen" | "bar";
+                                        run: number;
+                                        /** @enum {string} */
+                                        trigger: "schedule" | "reprint";
+                                        /** @enum {string} */
+                                        status: "printed" | "no_printer" | "nothing_to_print";
+                                        at: string;
+                                        /** Format: uuid */
+                                        printJobId: string | null;
+                                        /** @enum {string|null} */
+                                        jobStatus: "queued" | "printed" | "failed" | "skipped" | null;
+                                        requestedByName: string | null;
+                                        createdAt: string;
+                                    } | null;
+                                };
+                                records: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    /** @enum {string} */
+                                    station: "kitchen" | "bar";
+                                    run: number;
+                                    /** @enum {string} */
+                                    trigger: "schedule" | "reprint";
+                                    /** @enum {string} */
+                                    status: "printed" | "no_printer" | "nothing_to_print";
+                                    at: string;
+                                    /** Format: uuid */
+                                    printJobId: string | null;
+                                    /** @enum {string|null} */
+                                    jobStatus: "queued" | "printed" | "failed" | "skipped" | null;
+                                    requestedByName: string | null;
+                                    createdAt: string;
+                                }[];
+                            } | null;
                         };
                     };
                 };
@@ -26138,6 +26207,137 @@ export interface paths {
                             qrImageUrl: string | null;
                             expiresAt: string | null;
                             expiryTimerMs: number | null;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/parties/{id}/slips/print": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description SCRUM-805 — "Print party slips now": the party's kitchen slip and bar slip, composed from the set menu and bar plan the OTO App publishes for it and headed "Birthday party" with its name, room, children, start and READY BY (the kids' food time less the ready offset, else its start), queued to the kitchen and bar printers of the station the branch names for party slips. A new run whatever ran before, kept beside the earlier ones: a slip with no station named, or none of its kind on that station, is recorded `no_printer` and nothing is queued; one the plan has nothing for, `nothing_to_print`. The same action id again answers the run it made, under x-oto-replay, as does the same Idempotency-Key. 409 PARTY_NO_PLAN for a party the OTO App has no package for; 404 for anything that is not one of the branch's parties. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        branchId: string;
+                        actionId?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            printed: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                station: "kitchen" | "bar";
+                                run: number;
+                                /** @enum {string} */
+                                trigger: "schedule" | "reprint";
+                                /** @enum {string} */
+                                status: "printed" | "no_printer" | "nothing_to_print";
+                                at: string;
+                                /** Format: uuid */
+                                printJobId: string | null;
+                                /** @enum {string|null} */
+                                jobStatus: "queued" | "printed" | "failed" | "skipped" | null;
+                                requestedByName: string | null;
+                                createdAt: string;
+                            }[];
+                            slips: {
+                                partyDate: string;
+                                slipsTime: string;
+                                station: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                                latest: {
+                                    kitchen: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        /** @enum {string} */
+                                        station: "kitchen" | "bar";
+                                        run: number;
+                                        /** @enum {string} */
+                                        trigger: "schedule" | "reprint";
+                                        /** @enum {string} */
+                                        status: "printed" | "no_printer" | "nothing_to_print";
+                                        at: string;
+                                        /** Format: uuid */
+                                        printJobId: string | null;
+                                        /** @enum {string|null} */
+                                        jobStatus: "queued" | "printed" | "failed" | "skipped" | null;
+                                        requestedByName: string | null;
+                                        createdAt: string;
+                                    } | null;
+                                    bar: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        /** @enum {string} */
+                                        station: "kitchen" | "bar";
+                                        run: number;
+                                        /** @enum {string} */
+                                        trigger: "schedule" | "reprint";
+                                        /** @enum {string} */
+                                        status: "printed" | "no_printer" | "nothing_to_print";
+                                        at: string;
+                                        /** Format: uuid */
+                                        printJobId: string | null;
+                                        /** @enum {string|null} */
+                                        jobStatus: "queued" | "printed" | "failed" | "skipped" | null;
+                                        requestedByName: string | null;
+                                        createdAt: string;
+                                    } | null;
+                                };
+                                records: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    /** @enum {string} */
+                                    station: "kitchen" | "bar";
+                                    run: number;
+                                    /** @enum {string} */
+                                    trigger: "schedule" | "reprint";
+                                    /** @enum {string} */
+                                    status: "printed" | "no_printer" | "nothing_to_print";
+                                    at: string;
+                                    /** Format: uuid */
+                                    printJobId: string | null;
+                                    /** @enum {string|null} */
+                                    jobStatus: "queued" | "printed" | "failed" | "skipped" | null;
+                                    requestedByName: string | null;
+                                    createdAt: string;
+                                }[];
+                            };
+                            replayed: boolean;
                         };
                     };
                 };

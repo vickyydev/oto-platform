@@ -12,6 +12,7 @@ import {
   member,
   nanny,
   operator,
+  partySlipPrint,
   paymentAttempt,
   printJob,
   printTemplate,
@@ -201,15 +202,16 @@ export interface SalePrintingResult {
   failed: { code: string; message: string } | null;
 }
 
-interface JobRequest {
+export interface JobRequest {
   kind: PrintKind;
-  subjectType: 'sale' | 'band' | 'sale_line' | 'wallet' | 'end_of_day';
+  /** SCRUM-805 — `party_slip`: one row of `pos.party_slip_print`, a party's kitchen or bar slip. */
+  subjectType: 'sale' | 'band' | 'sale_line' | 'wallet' | 'end_of_day' | 'party_slip';
   subjectId: string;
   reprintOf?: string | null;
   reprintReason?: string | null;
 }
 
-interface JobScope {
+export interface JobScope {
   operatorId: string;
   branchId: string;
   /**
@@ -252,8 +254,11 @@ interface JobScope {
  * prints (`GET /box/v1/print-jobs/:id/document`). Written with the CALLER'S
  * transaction handle, as the terminal's commands are (`payments/terminal.ts`),
  * so a box can never collect a command for a sale that rolled back.
+ *
+ * Exported for a party's kitchen and bar slips (SCRUM-805, `party-slips.ts`),
+ * which queue to a station's prep printers exactly as a sale's tickets do.
  */
-async function writeJob(tx: Tx, scope: JobScope, request: JobRequest, offsetMs: number): Promise<SalePrintJobView> {
+export async function writeJob(tx: Tx, scope: JobScope, request: JobRequest, offsetMs: number): Promise<SalePrintJobView> {
   const role = ROLE_OF[request.kind];
   const boxId = scope.stationRow.boxId;
   if (!boxId) throw new Error('the station has no box');
@@ -1356,6 +1361,24 @@ export async function buildPrintDocument(
     const data = await endOfDayReceiptDocumentOf(db, row.subjectId, copy);
     if (!data) throw noDocument();
     return { ...base, job: data as RenderJob };
+  }
+  /**
+   * SCRUM-805 — a party's kitchen or bar slip prints the slip its record keeps:
+   * composed from the OTO App's plan when the run was made, which is what the
+   * kitchen was given whatever the plan says later.
+   */
+  if (
+    row.subjectType === 'party_slip' &&
+    row.subjectId &&
+    (row.kind === 'kitchen_ticket' || row.kind === 'bar_ticket')
+  ) {
+    const [slip] = await db
+      .select({ document: partySlipPrint.document })
+      .from(partySlipPrint)
+      .where(and(eq(partySlipPrint.id, row.subjectId), eq(partySlipPrint.operatorId, row.operatorId)))
+      .limit(1);
+    if (!slip?.document) throw noDocument();
+    return { ...base, job: { kind: row.kind, data: slip.document } as RenderJob };
   }
   /** S2-20 E3 — an event band has no sale: its paper is the check-in's (`eventBandDocumentOf`). */
   if (row.subjectType === 'band' && row.subjectId && (row.kind === 'kids_wristband' || row.kind === 'adult_wristband')) {

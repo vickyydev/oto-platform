@@ -77,8 +77,26 @@ export interface PrepTicketData {
   holderName?: string;
   /** The band's allergy/medical text, before the "⚠ ALLERGY (name):" wrapper. */
   allergiesMedical?: string;
-  lines: PrintLine[];
+  lines: PrepLine[];
   orderNote?: string;
+  /**
+   * SCRUM-805 — a party's slip (`PartySlipDocument` in `@oto/shared`): the
+   * "Birthday party" heading over the order line, which then names the party
+   * without a `#`; the party's room, children and start; and READY BY, with
+   * the reason when it is the party's start. Absent on a sale's ticket, which
+   * prints as it always has.
+   */
+  heading?: string;
+  details?: string[];
+  readyBy?: string;
+  readyByNote?: string;
+}
+
+/** A prep ticket's line: a party's set menu may print a dish with no count. */
+export interface PrepLine {
+  qty?: number;
+  name: string;
+  note?: string;
 }
 
 export type SupervisionMode = 'DROP-OFF' | 'NANNY';

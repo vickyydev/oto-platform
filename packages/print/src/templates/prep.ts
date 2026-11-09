@@ -45,14 +45,22 @@ export interface PrepInput {
 export function buildPrepTicket({ template, type, data, device }: PrepInput): PrintDocument {
   const blocks: Block[] = [...headerBlocks(template, data.title)];
 
-  if (fieldOn(template, type, 'orderRefTime')) {
+  // SCRUM-805 — a party's slip says so first.
+  if (data.heading) {
+    blocks.push(text(data.heading.toUpperCase(), { sizeDots: SIZE.header, weight: 'bold' }));
+  }
+
+  // On a party's slip this row is the party's name and when it printed — the
+  // slip's own header — so it prints whatever the order-ref toggle says.
+  if (data.heading || fieldOn(template, type, 'orderRefTime')) {
     blocks.push(divider());
     blocks.push({
       k: 'columns',
       gapDots: 8,
       cells: [
         {
-          runs: [{ text: `#${data.orderRef}` }],
+          // A party's slip names the party here, not an order number.
+          runs: [{ text: data.heading ? data.orderRef : `#${data.orderRef}` }],
           align: 'left',
           style: { sizeDots: SIZE.header, weight: 'bold' },
           flex: 1,
@@ -65,6 +73,17 @@ export function buildPrepTicket({ template, type, data, device }: PrepInput): Pr
         },
       ],
     });
+  }
+
+  // SCRUM-805 — the party's room, children and start, then READY BY, before
+  // the lines, so the kitchen reads when it is due before what it is.
+  for (const line of data.details ?? []) blocks.push(text(line, body));
+  if (data.readyBy || data.readyByNote) {
+    blocks.push(space(2));
+    if (data.readyBy) {
+      blocks.push(text(`READY BY ${data.readyBy}`, { sizeDots: SIZE.header, weight: 'bold' }));
+    }
+    if (data.readyByNote) blocks.push(text(data.readyBy ? `(${data.readyByNote})` : data.readyByNote, small));
   }
 
   if (fieldOn(template, type, 'holderName') && data.holderName) {
@@ -95,7 +114,10 @@ export function buildPrepTicket({ template, type, data, device }: PrepInput): Pr
         k: 'text',
         align: 'left',
         style: bodyBold,
-        runs: [{ text: `${line.qty}× ` }, { text: line.name, style: { weight: 'regular' } }],
+        runs:
+          line.qty === undefined
+            ? [{ text: line.name, style: { weight: 'regular' } }]
+            : [{ text: `${line.qty}× ` }, { text: line.name, style: { weight: 'regular' } }],
       });
       if (line.note && showNotes) blocks.push(text(`  ${line.note}`, small));
     }

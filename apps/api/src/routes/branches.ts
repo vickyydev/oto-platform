@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { and, asc, eq, inArray, isNull, type SQL } from 'drizzle-orm';
-import { branch } from '@oto/db';
+import { branch, station } from '@oto/db';
 import type { App } from '../app';
-import { errors } from '../lib/errors';
+import { AppError, errors } from '../lib/errors';
 import { audit } from '../services/audit';
 import { branchReach, outOfBranchScope } from '../services/access-control';
 import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
@@ -86,6 +86,8 @@ export async function branchRoutes(app: App): Promise<void> {
           // Older JSONB rows have no shape constraint. Read them honestly;
           // only a new hours write is validated against the weekly format.
           openingHours: z.unknown().nullable(), businessDayStart: z.string(), archived: z.boolean(),
+          /** SCRUM-805 — the station whose kitchen and bar printers receive party slips; null until the park names one. */
+          partySlipsStationId: z.string().uuid().nullable(),
         })) }) },
       },
     },
@@ -122,6 +124,7 @@ export async function branchRoutes(app: App): Promise<void> {
           businessDayStart: b.businessDayStart,
           country: b.country,
           archived: b.archivedAt !== null,
+          partySlipsStationId: b.partySlipsStationId,
         })),
       };
     },
@@ -294,7 +297,10 @@ export async function branchRoutes(app: App): Promise<void> {
     {
       config: { permission: 'admin:branch:update', target: { branchId: 'params.id' } },
       schema: {
-        description: 'Update or archive a branch',
+        description:
+          'Update or archive a branch. SCRUM-805 — `partySlipsStationId` names the station whose kitchen and bar ' +
+          'printers receive the party slips (one of this branch\'s live stations), or null to name none; refused 400 ' +
+          'STATION_NOT_AT_BRANCH for any other station.',
         params: z.object({ id: z.string().uuid() }),
         body: z
           .object({
@@ -306,6 +312,7 @@ export async function branchRoutes(app: App): Promise<void> {
             confirmName: z.string().optional(),
             openingHours: OpeningHoursSchema.optional(),
             businessDayStart: BusinessDayStartSchema.optional(),
+            partySlipsStationId: z.string().uuid().nullable().optional(),
           })
           .strict(),
         response: { 200: z.object({
@@ -325,6 +332,24 @@ export async function branchRoutes(app: App): Promise<void> {
       const { archived, confirmName, ...rest } = req.body;
       const patch: Partial<typeof branch.$inferInsert> = { ...rest };
       if (archived !== undefined) patch.archivedAt = archived ? new Date() : null;
+      if (rest.partySlipsStationId) {
+        // SCRUM-805 — only a live station standing in this park prints its party slips.
+        const [named] = await app.db
+          .select({ id: station.id })
+          .from(station)
+          .where(
+            and(
+              eq(station.id, rest.partySlipsStationId),
+              eq(station.branchId, before.id),
+              eq(station.operatorId, auth.operatorId),
+              isNull(station.archivedAt),
+            ),
+          )
+          .limit(1);
+        if (!named) {
+          throw new AppError(400, 'STATION_NOT_AT_BRANCH', "Name one of this park's stations for its party slips");
+        }
+      }
       return withTx(app.db, opCtx(req), 'branch.update', async (tx) => {
         const current = archived === true ? await lockBranchForArchive(tx, auth.operatorId, before.id) : before;
         if (archived === true) await assertArchiveAllowed(tx, {

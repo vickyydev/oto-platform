@@ -320,6 +320,8 @@ export const PRINT_SUBJECT_TYPES = [
   'wallet',
   /** S2-15a round 2 — the End of Day receipt prints one closed day. */
   'end_of_day',
+  /** SCRUM-805 — a party's kitchen or bar slip prints one `pos.party_slip_print` row. */
+  'party_slip',
 ] as const;
 export type PrintSubjectType = (typeof PRINT_SUBJECT_TYPES)[number];
 

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { FastifyRequest } from 'fastify';
 import {
   PartyChargeBodySchema,
-  PartyDetailAnswerSchema,
+  PartyDetailWithSlipsAnswerSchema,
   PartyPatchBodySchema,
   PartyPaymentBodySchema,
   PartyQuerySchema,
@@ -10,14 +10,18 @@ import {
   PartySettleBodySchema,
   PartySettlePreviewAnswerSchema,
   PartySettlePreviewBodySchema,
+  PartySlipsPrintAnswerSchema,
+  PartySlipsPrintBodySchema,
   PartyTenderBodySchema,
   PartyWriteAnswerSchema,
+  newId,
   type Permission,
 } from '@oto/shared';
 import type { App } from '../app';
 import { chargeParty, getParty, payParty, startPartyTender, updateParty } from '../services/parties';
 import { readPartyPlan } from '../services/party-plan';
 import { previewPartySettlement, settleParty } from '../services/party-settlement';
+import { partySlipsView, printPartySlipsNow } from '../services/party-slips';
 import { queueDrawerKick } from '../services/payments/drawer';
 import type { ActorContext } from '../services/sale';
 import { AttemptSchema } from './payments';
@@ -34,6 +38,7 @@ import { opCtx } from '../services/tx';
  *   PATCH /parties/:id            edit its own fields — written back to the OTO App
  *   POST  /parties/:id/charges    extra tickets or F&B on the tab — a ledger entry, not a sale
  *   POST  /parties/:id/payments   money against the balance — a real tender, not a sale of goods
+ *   POST  /parties/:id/slips/print  its kitchen and bar slips, now (SCRUM-805)
  *
  * Branch-scoped like every events route: the permission is checked at the
  * branch the till names, and the service loads that branch inside the
@@ -81,10 +86,12 @@ export async function partyRoutes(app: App): Promise<void> {
           'published for it (`plan`: the package with its limits and prices, the counts, the add-ons, the ' +
           'entertainment, the set menu, the food times and the deposit, money in satang), or null and the reason ' +
           '(`planStatus`); and its settlement sale (`event.party.settlement`): while the package and its deposit ' +
-          'are that sale\'s, the bill is the tab\'s own charges and payments.',
+          'are that sale\'s, the bill is the tab\'s own charges and payments. SCRUM-805 — and its kitchen and bar ' +
+          'slips on its day (`slips`: the slip time, the station the park names for them, the newest slip per ' +
+          'station and every run), null for a party with no plan.',
         params: PartyParams,
         querystring: PartyQuerySchema,
-        response: { 200: PartyDetailAnswerSchema },
+        response: { 200: PartyDetailWithSlipsAnswerSchema },
       },
     },
     async (req) => {
@@ -97,7 +104,15 @@ export async function partyRoutes(app: App): Promise<void> {
         now: new Date(),
       });
       const { plan, status } = await readPartyPlan(app.db, { branchId: req.query.branchId, eventId: answer.event.id });
-      return { ...answer, plan, planStatus: status };
+      const slips = plan
+        ? await partySlipsView(app.db, {
+            operatorId: auth.operatorId,
+            branchId: req.query.branchId,
+            eventId: answer.event.id,
+            plan,
+          })
+        : null;
+      return { ...answer, plan, planStatus: status, slips };
     },
   );
 
@@ -312,6 +327,50 @@ export async function partyRoutes(app: App): Promise<void> {
         req.params.id,
         { ...req.body, actionId: actionIdOf(req, req.body.actionId) },
       );
+      if (answer.replayed) reply.header('x-oto-replay', 'true');
+      return answer;
+    },
+  );
+
+  app.post(
+    '/:id/slips/print',
+    {
+      // An act on the party itself, as an edit is: no money, no sale.
+      config: { permission: 'pos:party:update', target: { branchId: 'body.branchId' } },
+      schema: {
+        description:
+          "SCRUM-805 — \"Print party slips now\": the party's kitchen slip and bar slip, composed from the set menu and " +
+          'bar plan the OTO App publishes for it and headed "Birthday party" with its name, room, children, start and ' +
+          'READY BY (the kids\' food time less the ready offset, else its start), queued to the kitchen and bar ' +
+          'printers of the station the branch names for party slips. A new run whatever ran before, kept beside ' +
+          'the earlier ones: a slip with no station named, or none of its kind on that station, is recorded ' +
+          '`no_printer` and nothing is queued; one the plan has nothing for, `nothing_to_print`. The same action id ' +
+          'again answers the run it made, under x-oto-replay, as does the same Idempotency-Key. 409 PARTY_NO_PLAN ' +
+          'for a party the OTO App has no package for; 404 for anything that is not one of the branch\'s parties.',
+        params: PartyParams,
+        body: PartySlipsPrintBodySchema,
+        response: { 200: PartySlipsPrintAnswerSchema },
+      },
+    },
+    async (req, reply) => {
+      const auth = req.requireAuth();
+      const now = new Date();
+      // The branch's party, or 404, before anything prints.
+      const party = await getParty(app.db, {
+        operatorId: auth.operatorId,
+        branchId: req.body.branchId,
+        partyId: req.params.id,
+        now,
+      });
+      const answer = await printPartySlipsNow(app.db, opCtx(req), {
+        operatorId: auth.operatorId,
+        branchId: req.body.branchId,
+        eventId: party.event.id,
+        actorAccountId: auth.accountId,
+        actionId: actionIdOf(req, req.body.actionId) ?? newId(),
+        requestId: req.id,
+        now,
+      });
       if (answer.replayed) reply.header('x-oto-replay', 'true');
       return answer;
     },

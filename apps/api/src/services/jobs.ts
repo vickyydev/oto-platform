@@ -19,6 +19,7 @@ import {
 import { purgeExpiredHandoffTokens } from './handoff';
 import { purgeExpiredThrottles } from './throttle';
 import { OCCUPANCY_JOB, runOccupancyJob } from './occupancy';
+import { PARTY_SLIPS_JOB, runPartySlipsJob } from './party-slips';
 import { JobFailedError } from './job-failure';
 import { buildOtoAppJobsClient } from './otoapp-directory';
 import { OTOAPP_EMPLOYEE_SYNC_JOB, runOtoAppEmployeeSync } from './otoapp-employee-sync';
@@ -743,6 +744,25 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
       run: async ({ db, now }) => ({
         detail: await runMorningNannyDutySync(db, now, withinOpeningHours),
       }),
+    },
+    /**
+     * `job:parties.slips` — A PARTY'S KITCHEN AND BAR SLIPS AT ITS SLIP TIME
+     * (SCRUM-805; birthday plan §5, the owner's decision 3).
+     *
+     * Every minute: each live branch's parties of its trading day whose slip
+     * time (the BEO's, 11:00 when it names none) has passed on the park's clock
+     * and which have no run recorded for the day print their kitchen slip and
+     * bar slip once, to the printers of the station the branch names — or are
+     * recorded "no printer" until the park names one (`services/party-slips.ts`).
+     * The schedule's claim keeps one instance per tick; a transaction lock on
+     * each party's day and its record keep one run, whatever runs beside it.
+     */
+    {
+      name: PARTY_SLIPS_JOB,
+      description:
+        "Prints each party's kitchen and bar slips once at its slip time, from the OTO App's set menu and bar plan, to the printers of the station each park names, and records no printer where none is named",
+      intervalSeconds: 60,
+      run: async ({ db, now }) => ({ detail: await runPartySlipsJob(db, now) }),
     },
     /**
      * `job:occupancy.facts` — THE HEAD COUNT, KEPT (S2-12 round 4).

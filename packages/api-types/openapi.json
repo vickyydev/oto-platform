@@ -4895,6 +4895,11 @@
                           },
                           "archived": {
                             "type": "boolean"
+                          },
+                          "partySlipsStationId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
                           }
                         },
                         "required": [
@@ -4905,7 +4910,8 @@
                           "address",
                           "country",
                           "businessDayStart",
-                          "archived"
+                          "archived",
+                          "partySlipsStationId"
                         ],
                         "additionalProperties": false
                       }
@@ -5381,7 +5387,7 @@
     },
     "/branches/{id}": {
       "patch": {
-        "description": "Update or archive a branch",
+        "description": "Update or archive a branch. SCRUM-805 — `partySlipsStationId` names the station whose kitchen and bar printers receive the party slips (one of this branch's live stations), or null to name none; refused 400 STATION_NOT_AT_BRANCH for any other station.",
         "requestBody": {
           "required": true,
           "content": {
@@ -5551,6 +5557,11 @@
                   "businessDayStart": {
                     "type": "string",
                     "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$"
+                  },
+                  "partySlipsStationId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
                   }
                 },
                 "additionalProperties": false
@@ -59822,7 +59833,7 @@
     },
     "/parties/{id}": {
       "get": {
-        "description": "One of the branch's parties: the OTO App's booking and bill, laid under the edits a till made that the app has not taken yet, with the tab's POS ledgers — the walk-ups, the charges and the payments — the till's edit stamp and the bill (total = base + charges; outstanding = total − deposit − payments, never below zero). 404 for anything that is not one of the branch's parties. SCRUM-804 — with the plan the OTO App published for it (`plan`: the package with its limits and prices, the counts, the add-ons, the entertainment, the set menu, the food times and the deposit, money in satang), or null and the reason (`planStatus`); and its settlement sale (`event.party.settlement`): while the package and its deposit are that sale's, the bill is the tab's own charges and payments.",
+        "description": "One of the branch's parties: the OTO App's booking and bill, laid under the edits a till made that the app has not taken yet, with the tab's POS ledgers — the walk-ups, the charges and the payments — the till's edit stamp and the bill (total = base + charges; outstanding = total − deposit − payments, never below zero). 404 for anything that is not one of the branch's parties. SCRUM-804 — with the plan the OTO App published for it (`plan`: the package with its limits and prices, the counts, the add-ons, the entertainment, the set menu, the food times and the deposit, money in satang), or null and the reason (`planStatus`); and its settlement sale (`event.party.settlement`): while the package and its deposit are that sale's, the bill is the tab's own charges and payments. SCRUM-805 — and its kitchen and bar slips on its day (`slips`: the slip time, the station the park names for them, the newest slip per station and every run), null for a party with no plan.",
         "parameters": [
           {
             "schema": {
@@ -60974,6 +60985,278 @@
                         "seam_missing",
                         "seam_not_granted"
                       ]
+                    },
+                    "slips": {
+                      "type": "object",
+                      "properties": {
+                        "partyDate": {
+                          "type": "string"
+                        },
+                        "slipsTime": {
+                          "type": "string"
+                        },
+                        "station": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "latest": {
+                          "type": "object",
+                          "properties": {
+                            "kitchen": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "station": {
+                                  "type": "string",
+                                  "enum": [
+                                    "kitchen",
+                                    "bar"
+                                  ]
+                                },
+                                "run": {
+                                  "type": "integer",
+                                  "minimum": 1
+                                },
+                                "trigger": {
+                                  "type": "string",
+                                  "enum": [
+                                    "schedule",
+                                    "reprint"
+                                  ]
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "printed",
+                                    "no_printer",
+                                    "nothing_to_print"
+                                  ]
+                                },
+                                "at": {
+                                  "type": "string"
+                                },
+                                "printJobId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                },
+                                "jobStatus": {
+                                  "type": "string",
+                                  "enum": [
+                                    "queued",
+                                    "printed",
+                                    "failed",
+                                    "skipped"
+                                  ],
+                                  "nullable": true
+                                },
+                                "requestedByName": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "createdAt": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "station",
+                                "run",
+                                "trigger",
+                                "status",
+                                "at",
+                                "printJobId",
+                                "jobStatus",
+                                "requestedByName",
+                                "createdAt"
+                              ],
+                              "additionalProperties": false,
+                              "nullable": true
+                            },
+                            "bar": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "station": {
+                                  "type": "string",
+                                  "enum": [
+                                    "kitchen",
+                                    "bar"
+                                  ]
+                                },
+                                "run": {
+                                  "type": "integer",
+                                  "minimum": 1
+                                },
+                                "trigger": {
+                                  "type": "string",
+                                  "enum": [
+                                    "schedule",
+                                    "reprint"
+                                  ]
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "printed",
+                                    "no_printer",
+                                    "nothing_to_print"
+                                  ]
+                                },
+                                "at": {
+                                  "type": "string"
+                                },
+                                "printJobId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                },
+                                "jobStatus": {
+                                  "type": "string",
+                                  "enum": [
+                                    "queued",
+                                    "printed",
+                                    "failed",
+                                    "skipped"
+                                  ],
+                                  "nullable": true
+                                },
+                                "requestedByName": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "createdAt": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "station",
+                                "run",
+                                "trigger",
+                                "status",
+                                "at",
+                                "printJobId",
+                                "jobStatus",
+                                "requestedByName",
+                                "createdAt"
+                              ],
+                              "additionalProperties": false,
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "kitchen",
+                            "bar"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "records": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "station": {
+                                "type": "string",
+                                "enum": [
+                                  "kitchen",
+                                  "bar"
+                                ]
+                              },
+                              "run": {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              "trigger": {
+                                "type": "string",
+                                "enum": [
+                                  "schedule",
+                                  "reprint"
+                                ]
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "printed",
+                                  "no_printer",
+                                  "nothing_to_print"
+                                ]
+                              },
+                              "at": {
+                                "type": "string"
+                              },
+                              "printJobId": {
+                                "type": "string",
+                                "format": "uuid",
+                                "nullable": true
+                              },
+                              "jobStatus": {
+                                "type": "string",
+                                "enum": [
+                                  "queued",
+                                  "printed",
+                                  "failed",
+                                  "skipped"
+                                ],
+                                "nullable": true
+                              },
+                              "requestedByName": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "createdAt": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "station",
+                              "run",
+                              "trigger",
+                              "status",
+                              "at",
+                              "printJobId",
+                              "jobStatus",
+                              "requestedByName",
+                              "createdAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "partyDate",
+                        "slipsTime",
+                        "station",
+                        "latest",
+                        "records"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
                     }
                   },
                   "required": [
@@ -64863,6 +65146,417 @@
                     "qrImageUrl",
                     "expiresAt",
                     "expiryTimerMs"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/parties/{id}/slips/print": {
+      "post": {
+        "description": "SCRUM-805 — \"Print party slips now\": the party's kitchen slip and bar slip, composed from the set menu and bar plan the OTO App publishes for it and headed \"Birthday party\" with its name, room, children, start and READY BY (the kids' food time less the ready offset, else its start), queued to the kitchen and bar printers of the station the branch names for party slips. A new run whatever ran before, kept beside the earlier ones: a slip with no station named, or none of its kind on that station, is recorded `no_printer` and nothing is queued; one the plan has nothing for, `nothing_to_print`. The same action id again answers the run it made, under x-oto-replay, as does the same Idempotency-Key. 409 PARTY_NO_PLAN for a party the OTO App has no package for; 404 for anything that is not one of the branch's parties.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "branchId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "actionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "branchId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "printed": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "station": {
+                            "type": "string",
+                            "enum": [
+                              "kitchen",
+                              "bar"
+                            ]
+                          },
+                          "run": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "trigger": {
+                            "type": "string",
+                            "enum": [
+                              "schedule",
+                              "reprint"
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "printed",
+                              "no_printer",
+                              "nothing_to_print"
+                            ]
+                          },
+                          "at": {
+                            "type": "string"
+                          },
+                          "printJobId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "jobStatus": {
+                            "type": "string",
+                            "enum": [
+                              "queued",
+                              "printed",
+                              "failed",
+                              "skipped"
+                            ],
+                            "nullable": true
+                          },
+                          "requestedByName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "station",
+                          "run",
+                          "trigger",
+                          "status",
+                          "at",
+                          "printJobId",
+                          "jobStatus",
+                          "requestedByName",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "slips": {
+                      "type": "object",
+                      "properties": {
+                        "partyDate": {
+                          "type": "string"
+                        },
+                        "slipsTime": {
+                          "type": "string"
+                        },
+                        "station": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "latest": {
+                          "type": "object",
+                          "properties": {
+                            "kitchen": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "station": {
+                                  "type": "string",
+                                  "enum": [
+                                    "kitchen",
+                                    "bar"
+                                  ]
+                                },
+                                "run": {
+                                  "type": "integer",
+                                  "minimum": 1
+                                },
+                                "trigger": {
+                                  "type": "string",
+                                  "enum": [
+                                    "schedule",
+                                    "reprint"
+                                  ]
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "printed",
+                                    "no_printer",
+                                    "nothing_to_print"
+                                  ]
+                                },
+                                "at": {
+                                  "type": "string"
+                                },
+                                "printJobId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                },
+                                "jobStatus": {
+                                  "type": "string",
+                                  "enum": [
+                                    "queued",
+                                    "printed",
+                                    "failed",
+                                    "skipped"
+                                  ],
+                                  "nullable": true
+                                },
+                                "requestedByName": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "createdAt": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "station",
+                                "run",
+                                "trigger",
+                                "status",
+                                "at",
+                                "printJobId",
+                                "jobStatus",
+                                "requestedByName",
+                                "createdAt"
+                              ],
+                              "additionalProperties": false,
+                              "nullable": true
+                            },
+                            "bar": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "station": {
+                                  "type": "string",
+                                  "enum": [
+                                    "kitchen",
+                                    "bar"
+                                  ]
+                                },
+                                "run": {
+                                  "type": "integer",
+                                  "minimum": 1
+                                },
+                                "trigger": {
+                                  "type": "string",
+                                  "enum": [
+                                    "schedule",
+                                    "reprint"
+                                  ]
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "printed",
+                                    "no_printer",
+                                    "nothing_to_print"
+                                  ]
+                                },
+                                "at": {
+                                  "type": "string"
+                                },
+                                "printJobId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                },
+                                "jobStatus": {
+                                  "type": "string",
+                                  "enum": [
+                                    "queued",
+                                    "printed",
+                                    "failed",
+                                    "skipped"
+                                  ],
+                                  "nullable": true
+                                },
+                                "requestedByName": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "createdAt": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "station",
+                                "run",
+                                "trigger",
+                                "status",
+                                "at",
+                                "printJobId",
+                                "jobStatus",
+                                "requestedByName",
+                                "createdAt"
+                              ],
+                              "additionalProperties": false,
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "kitchen",
+                            "bar"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "records": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "station": {
+                                "type": "string",
+                                "enum": [
+                                  "kitchen",
+                                  "bar"
+                                ]
+                              },
+                              "run": {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              "trigger": {
+                                "type": "string",
+                                "enum": [
+                                  "schedule",
+                                  "reprint"
+                                ]
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "printed",
+                                  "no_printer",
+                                  "nothing_to_print"
+                                ]
+                              },
+                              "at": {
+                                "type": "string"
+                              },
+                              "printJobId": {
+                                "type": "string",
+                                "format": "uuid",
+                                "nullable": true
+                              },
+                              "jobStatus": {
+                                "type": "string",
+                                "enum": [
+                                  "queued",
+                                  "printed",
+                                  "failed",
+                                  "skipped"
+                                ],
+                                "nullable": true
+                              },
+                              "requestedByName": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "createdAt": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "station",
+                              "run",
+                              "trigger",
+                              "status",
+                              "at",
+                              "printJobId",
+                              "jobStatus",
+                              "requestedByName",
+                              "createdAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "partyDate",
+                        "slipsTime",
+                        "station",
+                        "latest",
+                        "records"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "replayed": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "printed",
+                    "slips",
+                    "replayed"
                   ],
                   "additionalProperties": false
                 }

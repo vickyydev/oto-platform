@@ -617,3 +617,56 @@ export async function getEventPackage(
     },
   };
 }
+
+/**
+ * SCRUM-805 — every plan of the branch's parties on one day, in one read, for
+ * the slips job: the parties whose kitchen and bar slips may be due. Read as
+ * `getEventPackage` reads one; a deployment without the view answers none, and
+ * one whose role may not read it is refused naming the grant, so the job that
+ * asks fails loudly rather than printing nothing.
+ */
+export async function listEventPackagesOn(
+  exec: Exec,
+  q: { branchId: string; date: string },
+): Promise<SeamEventPackage[]> {
+  if (!UUID.test(q.branchId) || !DATE.test(q.date)) return [];
+  const seam = await otoAppEventPackagesSeam(exec);
+  if (seam === 'missing') return [];
+  if (seam === 'not_granted') throw eventPackagesNotGranted();
+  const res = await exec.execute<{
+    event_id: string;
+    branch_id: string;
+    party_date: string | null;
+    start_time: string | null;
+    end_time: string | null;
+    package: unknown;
+    counts: unknown;
+    add_ons: unknown;
+    entertainment: unknown;
+    set_menu: unknown;
+    bar_items: unknown;
+    kitchen: unknown;
+    settlement: unknown;
+  }>(sql`
+    select event_id::text as event_id, core_branch_id::text as branch_id, party_date::text as party_date,
+           start_time::text as start_time, end_time::text as end_time, package, counts, add_ons,
+           entertainment, set_menu, bar_items, kitchen, settlement
+      from otoapp_v.event_packages
+     where core_branch_id = ${q.branchId}::uuid and party_date = ${q.date}::date
+     order by start_time nulls last, event_id`);
+  return res.rows.map((r) => ({
+    eventId: r.event_id,
+    branchId: r.branch_id,
+    partyDate: r.party_date,
+    startTime: r.start_time,
+    endTime: r.end_time,
+    package: r.package,
+    counts: r.counts,
+    addOns: r.add_ons,
+    entertainment: r.entertainment,
+    setMenu: r.set_menu,
+    barItems: r.bar_items,
+    kitchen: r.kitchen,
+    settlement: r.settlement,
+  }));
+}
