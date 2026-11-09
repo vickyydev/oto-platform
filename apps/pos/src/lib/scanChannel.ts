@@ -181,9 +181,13 @@ export { WALLET_QR_HANDLER };
  * voucher QR. `key` is what a person would have typed to open the same tab, so
  * a screen hands it to the typed path and has no second one. Null when the scan
  * is neither.
+ *
+ * `code` is set only for a code read off the page's own keyboard (SCRUM-766,
+ * `lib/pageScan.ts`): the code exactly as the scanner typed it, which the typed
+ * path is handed in place of `key`. The box never sends a band's signed code.
  */
 export type TabScan =
-  | { ok: true; what: 'band' | 'wallet'; key: string }
+  | { ok: true; what: 'band' | 'wallet'; key: string; code?: string }
   | { ok: false; what: 'band' | 'wallet'; message: string };
 
 export function readTabScan(event: StationScanEvent): TabScan | null {

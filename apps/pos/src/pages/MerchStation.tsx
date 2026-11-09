@@ -9,6 +9,7 @@ import { asksForSize, isOutOfStock, merchSizes } from '@/lib/merch';
 import { merchLineTotal } from '@/lib/cartWire';
 import { readProductScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
 import { useCounterTabScan } from '@/lib/tabScan';
+import { usePageScanRoute } from '@/lib/pageScan';
 import { validateItemPromoCode } from '@/lib/itemPromo';
 import { useItemCartQuote } from '@/lib/cartQuote';
 import { useSaleWriter, type SaleWriteOutcome } from '@/lib/saleWriter';
@@ -318,6 +319,9 @@ export default function MerchStation() {
    * from the same form, and only on the first screen.
    */
   const tabScan = useCounterTabScan({ stage, held: wristband, locked, noun: 'sale' });
+  // SCRUM-766 — and the same from the scanner in the iPad, heard anywhere on
+  // this screen (the shell's one listener, `lib/pageScan.ts`).
+  usePageScanRoute({ tab: tabScan.take }, !locked);
   const handleScan = (event: StationScanEvent) => {
     if (staffLocked.current) return;
     if (tabScan.hear(event)) return;

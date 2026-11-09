@@ -32,6 +32,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { staffThemeController } from "@/lib/themePref";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { ServiceWorkerUpdater } from "@/pwa/ServiceWorkerUpdater";
+import { usePageScanShell } from "@/lib/pageScan";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 
@@ -149,6 +150,16 @@ function AuthGate() {
   );
 }
 
+/**
+ * SCRUM-766 — the till's one scanner listener. Renders nothing; the screen on
+ * show says what it takes (`usePageScanRoute`), and a screen that takes nothing
+ * hears nothing.
+ */
+function PageScanShell() {
+  usePageScanShell();
+  return null;
+}
+
 function StaffToaster() {
   const { operator, locked } = useOperator();
   return operator && !locked ? <Toaster /> : null;
@@ -181,6 +192,7 @@ function StaffApp() {
                   </Route>
                 </Switch>
               <StaffToaster />
+              <PageScanShell />
               {/* SCRUM-648: a support administrator's view-as window, named over every staff screen. */}
               <ImpersonationBanner />
               <OfflineSignInBanner />

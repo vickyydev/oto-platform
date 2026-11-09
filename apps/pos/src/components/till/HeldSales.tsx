@@ -112,6 +112,7 @@ export function HoldSaleDialog({
             <Label htmlFor="hold-label">Customer’s name or band</Label>
             <Input
               id="hold-label"
+              data-reads-scans=""
               value={label}
               maxLength={HOLD_LABEL_MAX}
               placeholder="e.g. Khun Anna, or band T1-7KMQ4X"

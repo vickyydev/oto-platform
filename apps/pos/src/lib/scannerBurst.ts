@@ -44,6 +44,11 @@ import {
  * driven key by key; the hook below is the few lines that feed it the page's
  * `keydown` events. `apps/pos` has no unit-test runner: the machine is proved in
  * the browser, by typing a code at scanner speed and at a person's.
+ *
+ * SCRUM-766: the staff screens (the ticket till, F&B, the shop, History) no
+ * longer listen here. They hear the scanner through the staff app's one
+ * listener, `lib/pageScan.ts`, which also catches a wristband. This hook still
+ * serves the self-service kiosk, which is outside the staff app.
  */
 
 export interface BurstKey {

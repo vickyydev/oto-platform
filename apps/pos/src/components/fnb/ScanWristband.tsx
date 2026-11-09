@@ -8,6 +8,7 @@ import { getActiveBranch } from '@/store/catalogStore';
 import { currentLane, isBoxLaneTrigger, laneStation, noteLaneFailure, useLane } from '@/lib/lane';
 import { screenHidden } from '@/lib/scanChannel';
 import { SCANNER_BURST_MIN_LENGTH } from '@/lib/scannerBurst';
+import { SCAN_PACE_GAP_MS, SCAN_PACE_QUIET_MS } from '@/lib/pageScan';
 import { useDemoControls } from '@/lib/demoControls';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -26,16 +27,23 @@ import { ScanLine, UserRound, Wallet, AlertCircle, ArrowRight, Gift } from 'luci
  *  - PASTE. Text that lands in one go is a whole code, whatever its length.
  *  - SCAN. At least `SCANNER_BURST_MIN_LENGTH` characters in a row, each within
  *    `FIELD_SCAN_GAP_MS` of the one before. A person does not type a band code
- *    at that pace. The gap is wider than the page listener's 50 ms on purpose:
- *    a tablet's keyboard channel delivers keys less evenly than a laptop's, and
- *    a wrong guess here costs one early lookup, never a swallowed key.
+ *    at that pace. The gap is wider than the 50 ms the box's reader uses on
+ *    purpose: a tablet's keyboard channel delivers keys less evenly than a
+ *    laptop's, and a wrong guess here costs one early lookup, never a
+ *    swallowed key.
  *  - QUIET. `FIELD_SCAN_QUIET_MS` with nothing more arriving ends the code. An
  *    Enter inside that time loads the tab at once, as it always did.
  *
  * A person typing by hand is left alone and still presses Enter or Load Tab.
+ *
+ * SCRUM-766 — the same pace rule now hears the scanner anywhere on the page
+ * (`lib/pageScan.ts`), so a band scanned with this box not selected opens the
+ * tab too: the page hands the code here through `scanned`, and the box shows
+ * it. The field carries `data-reads-scans`, so while it is selected the page
+ * leaves its keys to it and a scan is acted on once.
  */
-export const FIELD_SCAN_GAP_MS = 80;
-export const FIELD_SCAN_QUIET_MS = 150;
+export const FIELD_SCAN_GAP_MS = SCAN_PACE_GAP_MS;
+export const FIELD_SCAN_QUIET_MS = SCAN_PACE_QUIET_MS;
 
 interface ScanWristbandProps {
   onLoadTab: (wristband: Wristband) => void;
@@ -161,6 +169,11 @@ export function ScanWristband({
   useEffect(() => {
     if (!scanned) return;
     onScannedTaken?.();
+    // SCRUM-766 — the box shows what was scanned, and a code that opens
+    // nothing stays in it under the same words as a typed one.
+    stopWaiting();
+    run.current = { length: 0, at: 0, pasted: false };
+    setCode(scanned);
     void submit(scanned, true);
     // Asked once per key: `submit` and the callback are fresh on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -187,6 +200,7 @@ export function ScanWristband({
           <Input
             ref={field}
             autoFocus
+            data-reads-scans=""
             // Band codes carry letters (`T1-7KMQ4X`), so no numbers-first keyboard.
             inputMode="text"
             autoCapitalize="characters"

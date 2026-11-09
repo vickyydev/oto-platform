@@ -49,7 +49,6 @@ import { confirmVisitChildren, membersApi } from '@/api/platform';
 import { childrenApi, lookupMember } from '@/api/members';
 import { ApiError, isMissingRoute } from '@/api/client';
 import {
-  looksLikeBookingQr,
   typedBookingQr,
   readBookingScan,
   type PlatformBooking,
@@ -86,7 +85,7 @@ import { useSaleWriter, type SaleWriteInput, type SaleWriteOutcome } from '@/lib
 import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
 import { readTabScan, readVoucherScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
 import { ticketTillTabScanWords } from '@/lib/tabScan';
-import { useScannerBurst } from '@/lib/scannerBurst';
+import { usePageScanRoute } from '@/lib/pageScan';
 import { vouchersApi } from '@/api/vouchers';
 import {
   CANCELLED_AT_THE_TILL,
@@ -1608,15 +1607,23 @@ export default function Till() {
     const tabScan = readTabScan(event);
     if (tabScan) toast(ticketTillTabScanWords(tabScan));
   });
-  useScannerBurst(redeemScannedVoucher, { accept: looksLikeVoucherCode, enabled: !locked });
-  // A booking QR read by a scanner on this device rather than the box's.
-  useScannerBurst(
-    (code) => {
-      // Sent whole: only the platform can check this code's signature.
-      const qr = typedBookingQr(code);
-      if (qr) openScannedBooking({ qr });
+  // SCRUM-766 — a scanner on this device rather than the box's, heard anywhere
+  // on the till by the shell's one listener (`lib/pageScan.ts`): a voucher and a
+  // booking QR as before, and a wristband or a credit voucher says where it
+  // opens, as the box's scan of it does.
+  usePageScanRoute(
+    {
+      tab: (tabScan) => toast(ticketTillTabScanWords(tabScan)),
+      voucher: redeemScannedVoucher,
+      booking: showRedeemModal
+        ? undefined
+        : (code) => {
+            // Sent whole: only the platform can check this code's signature.
+            const qr = typedBookingQr(code);
+            if (qr) openScannedBooking({ qr });
+          },
     },
-    { accept: looksLikeBookingQr, enabled: !locked && !showRedeemModal },
+    !locked,
   );
 
   /**

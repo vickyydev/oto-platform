@@ -515,6 +515,7 @@ export function ExtensionPayment({
               <div className="flex gap-2">
                 <Input
                   aria-label="Scan bracelet"
+                  data-reads-scans=""
                   type="password"
                   autoComplete="off"
                   value={scan}

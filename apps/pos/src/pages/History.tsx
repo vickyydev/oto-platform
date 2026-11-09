@@ -24,7 +24,8 @@ import { useOperator } from '@/auth/OperatorContext';
 import { useStation } from '@/station/StationContext';
 import { toast } from '@/hooks/use-toast';
 import { explainLookup, useSearchLookup } from '@/lib/historyLookup';
-import { readTabScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
+import { readTabScan, useStationScans, type StationScanEvent, type TabScan } from '@/lib/scanChannel';
+import { usePageScanRoute } from '@/lib/pageScan';
 import { decideHistoryTabScan, type BandScanSlot } from '@/lib/tabScan';
 import { useTenderDisplay } from '@/lib/tenderDisplay';
 import { readRefundRequests, type RefundRequestNote } from '@/lib/refundRequests';
@@ -379,10 +380,12 @@ export default function History() {
    * when typed, from whichever list is on screen. An open Add time dialog asks for
    * it, and takes it as it takes the typed code. What it cannot open is said in
    * words (`decideHistoryTabScan`).
+   *
+   * SCRUM-766 — the same for the scanner in the iPad, heard anywhere on this
+   * screen by the shell's one listener (`lib/pageScan.ts`). Its band opens with
+   * the code as read, as the bracelet box opens it when the code is typed there.
    */
-  useStationScans(locked ? undefined : station?.stationId, (event: StationScanEvent) => {
-    const scan = readTabScan(event);
-    if (!scan) return;
+  const hearTabScan = (scan: TabScan) => {
     const decision = decideHistoryTabScan(scan, selected !== null, addTimeScan.current !== null);
     if (decision.kind === 'say') {
       const { kind: _kind, ...words } = decision;
@@ -393,10 +396,15 @@ export default function History() {
       addTimeScan.current?.(decision.key);
       return;
     }
-    const search = parseHistorySearch(decision.key);
+    const search = parseHistorySearch(scan.ok && scan.code ? scan.code : decision.key);
     if (search.kind === 'band') void openBand(search);
     else toast({ title: 'That is not a bracelet code', description: 'Nothing changed here.', variant: 'destructive' });
+  };
+  useStationScans(locked ? undefined : station?.stationId, (event: StationScanEvent) => {
+    const scan = readTabScan(event);
+    if (scan) hearTabScan(scan);
   });
+  usePageScanRoute({ tab: hearTabScan }, !locked);
 
   /** The search box asking the platform, when what it holds is a band code or a phone. */
   const lookup = useSearchLookup(query, branchApiId, reread);
@@ -478,6 +486,7 @@ export default function History() {
                   <form onSubmit={submitScan} className="flex gap-3 mb-3">
                     <Input
                       autoFocus
+                      data-reads-scans=""
                       value={scanInput}
                       onChange={(e) => {
                         setScanInput(e.target.value);
@@ -618,6 +627,7 @@ export default function History() {
                   <input
                     type="text"
                     inputMode="search"
+                    data-reads-scans=""
                     aria-label="Search transactions"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}

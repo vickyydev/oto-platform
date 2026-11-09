@@ -27,7 +27,7 @@ import { useFnbDisplay } from '@/lib/fnbDisplaySession';
 import { hasBridgeOrigin } from '@/api/bridge';
 import { readBenefitScan, readVoucherScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
 import { useCounterTabScan } from '@/lib/tabScan';
-import { useScannerBurst } from '@/lib/scannerBurst';
+import { usePageScanRoute } from '@/lib/pageScan';
 import {
   CANCELLED_AT_THE_TILL,
   VOUCHER_AFTER_PAY,
@@ -915,7 +915,11 @@ export default function OrderStation() {
     const code = readVoucherScan(event);
     if (code) redeemScannedVoucher(code);
   });
-  useScannerBurst(redeemScannedVoucher, { accept: looksLikeVoucherCode, enabled: !locked });
+  // SCRUM-766 — the scanner in the iPad, heard anywhere on this screen (the
+  // shell's one listener, `lib/pageScan.ts`): a wristband or a credit voucher
+  // goes where the counter box's scan of it goes, and a Lucky Wheel voucher
+  // where it always went.
+  usePageScanRoute({ tab: tabScan.take, voucher: redeemScannedVoucher }, !locked);
 
   /**
    * S2-10b — THE ORDER THROWN AWAY: the order panel's X and Clear.

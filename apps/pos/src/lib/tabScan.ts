@@ -198,7 +198,13 @@ export function useCounterTabScan(input: {
   held: Pick<Wristband, 'code' | 'qrCode'> | null;
   locked: boolean;
   noun: 'order' | 'sale';
-}): { scanned: string | null; taken: () => void; hear: (event: StationScanEvent) => boolean } {
+}): {
+  scanned: string | null;
+  taken: () => void;
+  hear: (event: StationScanEvent) => boolean;
+  /** SCRUM-766 — the same, for a code read off the page's own keyboard (`lib/pageScan.ts`). */
+  take: (scan: TabScan) => void;
+} {
   const [scanned, setScanned] = useState<string | null>(null);
   const latest = useRef(input);
   latest.current = input;
@@ -207,21 +213,27 @@ export function useCounterTabScan(input: {
     if (input.locked || input.stage !== 'scan') setScanned(null);
   }, [input.locked, input.stage]);
 
+  const take = (scan: TabScan) => {
+    const now = latest.current;
+    if (now.locked) return;
+    const decision = decideCounterTabScan(scan, now.stage, now.held, now.noun);
+    // The code as read goes to the form, as if it had been typed there.
+    if (decision.kind === 'open') setScanned(scan.ok && scan.code ? scan.code : decision.key);
+    else {
+      const { kind: _kind, ...words } = decision;
+      toast(words);
+    }
+  };
+
   return {
     scanned,
     taken: () => setScanned(null),
     hear: (event) => {
       const scan = readTabScan(event);
       if (!scan) return false;
-      const now = latest.current;
-      if (now.locked) return true;
-      const decision = decideCounterTabScan(scan, now.stage, now.held, now.noun);
-      if (decision.kind === 'open') setScanned(decision.key);
-      else {
-        const { kind: _kind, ...words } = decision;
-        toast(words);
-      }
+      take(scan);
       return true;
     },
+    take,
   };
 }
