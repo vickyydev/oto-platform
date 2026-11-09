@@ -957,7 +957,17 @@ export type ExtensionSelection =
   | { mode: 'count'; braceletCount: number };
 /** SCRUM-797 — `unitSatang` is ONE child's price for the option's hours (hours × ฿300). */
 export interface SaleExtensionOption { id: string; label: string; hours: number; minutes: number; unitSatang: number }
-export interface ExtensionBand { id: string; shortCode: string; kind: string }
+export interface ExtensionBand {
+  id: string;
+  shortCode: string;
+  kind: string;
+  /**
+   * SCRUM-797 — a child's bracelet on one of the order's 1- or 2-hour tickets:
+   * that child is charged for the extra hour, so the bracelet always carries it
+   * and stays ticked. Absent from an older platform's answer.
+   */
+  charged?: boolean;
+}
 export interface SaleExtension {
   id: string;
   chargeSaleId: string;

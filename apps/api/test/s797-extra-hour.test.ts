@@ -51,7 +51,8 @@ async function admission(...tickets: Ticket[]) {
   const closed = await ctx.app.inject({ method: 'POST', url: `/sales/${id}/finalise`, headers: { cookie }, payload: { actionId: newId() } });
   expect(closed.statusCode, closed.body).toBe(200);
   const bands = await ctx.db.select().from(band).where(eq(band.saleId, id)).orderBy(asc(band.createdAt), asc(band.id));
-  return { id, bands };
+  const lines = await ctx.db.select().from(saleLine).where(eq(saleLine.saleId, id));
+  return { id, bands, lines };
 }
 
 function read(sourceId: string) {
@@ -115,10 +116,19 @@ describe('the amount is hours × children × ฿300', () => {
     expect(charge).toMatchObject({ subtotalSatang: 180000, grossSatang: 180000 });
   });
 
-  it('the money follows the order, not the bracelets ticked: one band ticked still charges every child', async () => {
-    const source = await admission({ packageId: twoHoursId, kids: 2, adults: 1 });
-    const kid = source.bands.find((b) => b.kind === 'kid')!;
-    const made = await extend(source.id, 'ext-180', [kid.id]);
+  it('every child on the order is charged, and the read names each child’s bracelet so the till keeps it ticked', async () => {
+    const source = await admission({ packageId: twoHoursId, kids: 2, adults: 1 }, { packageId: fullDayId, kids: 1, adults: 0 });
+    const answer = await read(source.id);
+    expect(answer.json().children).toBe(2);
+    const twoHourKids = new Set(source.bands.filter((b) => b.kind === 'kid' && b.saleLineId
+      && source.lines.find((l) => l.id === b.saleLineId)?.stayHours === 2).map((b) => b.id));
+    expect(twoHourKids.size).toBe(2);
+    // The two children on 2 Hours Play are charged; the adult's band and the Full Day child's are not.
+    const charged = (answer.json().eligibleBands as Array<{ id: string; kind: string; charged: boolean }>)
+      .map((b) => [b.kind, b.charged, twoHourKids.has(b.id)]);
+    expect(charged.sort()).toEqual([['adult', false, false], ['kid', false, false], ['kid', true, true], ['kid', true, true]]);
+    // The platform still takes the order's children as the money, whichever bracelets carry the time.
+    const made = await extend(source.id, 'ext-180', [...twoHourKids].slice(0, 1));
     expect(made.statusCode, made.body).toBe(200);
     expect(made.json().extension).toMatchObject({ amountSatang: 180000, braceletCount: 1 });
     expect(await chargeLine(made.json().sale.id as string)).toMatchObject({ label: 'Extra hour x 3', quantity: 2, unitSatang: 90000 });

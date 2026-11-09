@@ -1,7 +1,7 @@
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { account, auditLog, band, employee, paymentAttempt, sale, saleExtension, saleExtensionBand, saleLine, station, type ExtensionSelection } from '@oto/db';
 import {
-  bandShortCode, computeTaxBreakdown, EXTRA_HOUR_OPTIONS, EXTRA_HOUR_PER_CHILD_SATANG, extraHourChildren, extraHourLineLabel,
+  bandShortCode, computeTaxBreakdown, EXTRA_HOUR_OPTIONS, EXTRA_HOUR_PER_CHILD_SATANG, extraHourChildBandIds, extraHourChildren, extraHourLineLabel,
   newId, PAYMENT_ATTEMPT_TAKEN_STATUSES, PRICING_ENGINE_VERSION,
 } from '@oto/shared';
 import { errors } from '../lib/errors';
@@ -16,10 +16,15 @@ import type { Exec, Tx } from './tx';
 // ฿60, +1 hour ฿100, +2 hours ฿180). No catalogue or invented expiry.
 export const EXTENSION_OPTIONS = EXTRA_HOUR_OPTIONS;
 
+/** The ledger fields of a sale line the extra hour reads ("the information in the order"). */
+function extraHourLines(lines: readonly (typeof saleLine.$inferSelect)[]) {
+  return lines.map((line) => ({ id: line.id, cartLineId: line.cartLineId,
+    ticket: line.ticketPackageId !== null, kidCount: line.kidCount, stayHours: line.stayHours }));
+}
+
 /** "Depending on the information in the order": the children on its 1- and 2-hour tickets. */
 function extraHourRule(lines: readonly (typeof saleLine.$inferSelect)[]) {
-  return extraHourChildren(lines.map((line) => ({ id: line.id, cartLineId: line.cartLineId,
-    ticket: line.ticketPackageId !== null, kidCount: line.kidCount, stayHours: line.stayHours })));
+  return extraHourChildren(extraHourLines(lines));
 }
 
 type ExtensionRow = typeof saleExtension.$inferSelect;
@@ -59,11 +64,15 @@ export async function readSaleExtensions(db: Exec, actor: ActorContext, sourceSa
       inArray(paymentAttempt.status, [...PAYMENT_ATTEMPT_TAKEN_STATUSES])))
     .orderBy(asc(paymentAttempt.createdAt)) : [];
   const activeIds = new Set(bands.map((row) => row.id));
+  // SCRUM-797 — every child on the order's 1- and 2-hour tickets is charged, so
+  // each of their bracelets carries the time: the till keeps these ticked.
+  const charged = new Set(extraHourChildBandIds(extraHourLines(lines), bands));
   return { options: eligible ? [...EXTENSION_OPTIONS] : [],
     children: rule.ok ? rule.children : 0,
     perChildHourSatang: EXTRA_HOUR_PER_CHILD_SATANG,
     refusal: open && !rule.ok ? { code: rule.code, message: rule.message } : null,
-    eligibleBands: open ? bands.map((row) => ({ id: row.id, shortCode: bandShortCode(row.code), kind: row.kind })) : [],
+    eligibleBands: open ? bands.map((row) => ({ id: row.id, shortCode: bandShortCode(row.code), kind: row.kind,
+      charged: charged.has(row.id) })) : [],
     extensions: rows.map((row) => {
       const currentBandIds = selected.filter((entry) => entry.extensionId === row.id).map((entry) => entry.bandId);
       const paymentMethods = [...new Set(tenders.filter((entry) => entry.saleId === row.chargeSaleId)
@@ -134,7 +143,9 @@ export async function createSaleExtension(tx: Tx, actor: ActorContext, sourceSal
   const scope = await resolvePricingScope(tx, source.branchId, actor.operatorId, now);
   // hours × children × ฿300: the option's unit is one child's price for its
   // hours. The bracelets chosen below carry the added time; they never change
-  // the money, which follows the order.
+  // the money, which follows the order. The till keeps every charged child's
+  // bracelet ticked (`charged` on the read); whether an extra hour can be
+  // bought for only some of the children is the owner's open question.
   const base = option.unitSatang * children;
   const tax = computeTaxBreakdown([{ category: 'tickets', base }], 0, scope.taxConfig);
   const category = tax.categories[0]!;

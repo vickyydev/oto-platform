@@ -315,6 +315,10 @@ export function ExtensionPayment({
     };
   }, []);
   const option = data.options.find((item) => item.id === optionId);
+  // SCRUM-797 — every child on the order's 1- and 2-hour tickets is charged,
+  // so each child's bracelet carries the time and cannot be left out; an
+  // adult's bracelet stays the staff's choice.
+  const charged = new Set(data.eligibleBands.filter((band) => band.charged).map((band) => band.id));
   const quantity = mode === 'bands' ? bandIds.length : count;
   // SCRUM-797 — the money follows the order: each option's unit is one
   // child's price for its hours, times the children on the order's 1- and
@@ -460,7 +464,8 @@ export function ExtensionPayment({
         <fieldset disabled={locked} className="space-y-5 py-2">
           <p className="text-sm font-medium text-muted-foreground">How many bracelets?</p>
           <p className="text-xs text-muted-foreground">
-            Charged per child on this order. The ticked bracelets carry the added time.
+            Charged for every child on this order, and every child&apos;s bracelet carries the
+            added time.
           </p>
           <div className="grid grid-cols-2 gap-2">
             <Button
@@ -487,7 +492,7 @@ export function ExtensionPayment({
                   <QuantityStepper
                     value={count}
                     onChange={setCount}
-                    min={1}
+                    min={Math.max(1, charged.size)}
                     max={data.eligibleBands.length}
                     ariaLabel="bracelet"
                   />
@@ -533,12 +538,13 @@ export function ExtensionPayment({
                   <input
                     type="checkbox"
                     checked={bandIds.includes(band.id)}
+                    disabled={charged.has(band.id) && bandIds.includes(band.id)}
                     onChange={(event) =>
-                      setBandIds((ids) =>
-                        event.target.checked
-                          ? [...ids, band.id]
-                          : ids.filter((id) => id !== band.id),
-                      )
+                      setBandIds((ids) => {
+                        if (event.target.checked) return ids.includes(band.id) ? ids : [...ids, band.id];
+                        // A charged child's bracelet always carries the time.
+                        return charged.has(band.id) ? ids : ids.filter((id) => id !== band.id);
+                      })
                     }
                   />
                   {band.shortCode}

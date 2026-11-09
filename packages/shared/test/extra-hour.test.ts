@@ -3,8 +3,10 @@ import {
   EXTRA_HOUR_OPTIONS,
   EXTRA_HOUR_PER_CHILD_SATANG,
   extraHourAmountSatang,
+  extraHourChildBandIds,
   extraHourChildren,
   extraHourFactors,
+  isExtraHourLine,
   extraHourLineLabel,
   extraHourSum,
   type ExtraHourLine,
@@ -66,5 +68,28 @@ describe('the children it is charged for', () => {
     expect(extraHourChildren([])).toMatchObject({ ok: false, code: 'EXTENSION_NO_CHILDREN' });
     const refused = extraHourChildren(ticket('a', 2, 0, 8));
     expect(refused.ok ? '' : refused.message).toContain('1 or 2-hour child ticket');
+  });
+});
+
+describe('the bracelets that always carry it', () => {
+  it('a 1 or 2-hour ticket line takes an extra hour; a longer one, an unrecorded one or a non-ticket does not', () => {
+    expect(isExtraHourLine({ ticket: true, stayHours: 1 })).toBe(true);
+    expect(isExtraHourLine({ ticket: true, stayHours: 2 })).toBe(true);
+    expect(isExtraHourLine({ ticket: true, stayHours: 8 })).toBe(false);
+    expect(isExtraHourLine({ ticket: true, stayHours: null })).toBe(false);
+    expect(isExtraHourLine({ ticket: false, stayHours: 1 })).toBe(false);
+  });
+
+  it('every child’s band on a 1 or 2-hour ticket, never an adult’s or a Full Day child’s', () => {
+    const lines = [...ticket('a', 2, 1, 1), ...ticket('b', 1, 0, 8)];
+    const bands = [
+      { id: 'k1', kind: 'kid', saleLineId: 'a-kids' },
+      { id: 'k2', kind: 'kid', saleLineId: 'a-kids' },
+      { id: 'a1', kind: 'adult', saleLineId: 'a-adults' },
+      { id: 'k3', kind: 'kid', saleLineId: 'b-kids' },
+      { id: 'event', kind: 'kid', saleLineId: null },
+    ];
+    expect(extraHourChildBandIds(lines, bands)).toEqual(['k1', 'k2']);
+    expect(extraHourChildBandIds(ticket('a', 2, 0, 8), bands)).toEqual([]);
   });
 });

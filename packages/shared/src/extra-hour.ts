@@ -83,13 +83,44 @@ export function extraHourChildren(lines: readonly ExtraHourLine[]): ExtraHourChi
   for (const first of byCart.values()) {
     const count = Math.max(0, first.kidCount);
     kids += count;
-    if (first.stayHours !== null && EXTRA_HOUR_TICKET_HOURS.includes(first.stayHours)) children += count;
+    if (isExtraHourLine(first)) children += count;
   }
   if (kids === 0) return { ok: false, code: 'EXTENSION_NO_CHILDREN', message: EXTRA_HOUR_NO_CHILDREN_MESSAGE };
   if (children === 0) {
     return { ok: false, code: 'EXTENSION_TICKET_NOT_ELIGIBLE', message: EXTRA_HOUR_NOT_ELIGIBLE_MESSAGE };
   }
   return { ok: true, children };
+}
+
+/** A ticket line sold on 1 or 2 hours of play: the ticket an extra hour is added to. */
+export function isExtraHourLine(line: Pick<ExtraHourLine, 'ticket' | 'stayHours'>): boolean {
+  return line.ticket && line.stayHours !== null && EXTRA_HOUR_TICKET_HOURS.includes(line.stayHours);
+}
+
+/** A band as the rule reads it: whose it is and the ticket row it was issued against. */
+export interface ExtraHourBand {
+  id: string;
+  kind: string;
+  saleLineId: string | null;
+}
+
+/**
+ * The children's bracelets the extra hour is charged for: each kid band issued
+ * on one of the order's 1- or 2-hour ticket lines. The charge covers every
+ * child on those tickets ("depending on the information in the order"), so
+ * each of these bracelets carries the added time and the till keeps them
+ * ticked; an adult's bracelet, or a Full Day child's, stays the staff's
+ * choice. Whether an extra hour can be bought for only some of an order's
+ * children is put to the owner.
+ */
+export function extraHourChildBandIds(
+  lines: readonly ExtraHourLine[],
+  bands: readonly ExtraHourBand[],
+): string[] {
+  const onTicket = new Set(lines.filter(isExtraHourLine).map((line) => line.id));
+  return bands
+    .filter((band) => band.kind === 'kid' && band.saleLineId !== null && onTicket.has(band.saleLineId))
+    .map((band) => band.id);
 }
 
 /** hours × children × ฿300, in satang: 3 children for 2 hours is 180,000 (฿1,800). */

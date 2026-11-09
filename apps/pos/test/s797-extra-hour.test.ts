@@ -54,10 +54,10 @@ const order: SaleExtensionsRead = {
   perChildHourSatang: 30000,
   refusal: null,
   eligibleBands: [
-    { id: 'band-k1', shortCode: 'T1-7KMQ4X', kind: 'kid' },
-    { id: 'band-k2', shortCode: 'T1-9ABCDE', kind: 'kid' },
-    { id: 'band-k3', shortCode: 'T1-4FGHJK', kind: 'kid' },
-    { id: 'band-a1', shortCode: 'T1-2LMNPQ', kind: 'adult' },
+    { id: 'band-k1', shortCode: 'T1-7KMQ4X', kind: 'kid', charged: true },
+    { id: 'band-k2', shortCode: 'T1-9ABCDE', kind: 'kid', charged: true },
+    { id: 'band-k3', shortCode: 'T1-4FGHJK', kind: 'kid', charged: true },
+    { id: 'band-a1', shortCode: 'T1-2LMNPQ', kind: 'adult', charged: false },
   ],
   extensions: [],
 };
@@ -96,13 +96,38 @@ describe('the extra hour is priced per child from the order', () => {
     hook.unmount(); post.mockRestore(); get.mockRestore();
   });
 
-  it('unticking a bracelet does not change the money', () => {
+  it('every child on the order is charged, so every child’s bracelet stays ticked; an adult’s can be left out', async () => {
+    const post = vi.spyOn(api, 'post').mockResolvedValue({ sale: { id: 'charge-1', status: 'tendering', totals: { grossSatang: 90_000 } }, extension: {}, replay: false });
+    const get = vi.spyOn(api, 'get').mockResolvedValue({ sale: { id: 'charge-1', status: 'tendering', totals: { grossSatang: 90_000 } }, attempts: [] });
     const hook = open(order);
+    expect(words(hook.result.current)).toContain('Charged for every child on this order');
     (button(hook.result.current, '+1 hour').props.onClick as () => void)();
     const boxes = () => elements(hook.result.current).filter((node) => node.type === 'input' && node.props.type === 'checkbox');
-    (boxes()[3]!.props.onChange as (event: unknown) => void)({ target: { checked: false } });
+    expect(boxes().map((box) => box.props.disabled)).toEqual([true, true, true, false]);
+    const untick = (index: number) => (boxes()[index]!.props.onChange as (event: unknown) => void)({ target: { checked: false } });
+    untick(0);
+    untick(3);
     expect(boxes().map((box) => box.props.checked)).toEqual([true, true, true, false]);
     expect(words(hook.result.current)).toContain('Amount to charge฿900');
+    (button(hook.result.current, 'Continue to payment').props.onClick as () => void)();
+    await settle();
+    expect(post.mock.calls[0]?.[1]).toMatchObject({ optionId: 'ext-60',
+      selection: { mode: 'bands', bandIds: ['band-k1', 'band-k2', 'band-k3'] } });
+    hook.unmount(); post.mockRestore(); get.mockRestore();
+  });
+
+  it('Count only cannot count fewer bracelets than the children charged', () => {
+    const hook = open(order);
+    (button(hook.result.current, 'Count only').props.onClick as () => void)();
+    const stepper = elements(hook.result.current).find((node) => node.props.ariaLabel === 'bracelet');
+    expect(stepper?.props).toMatchObject({ min: 3, max: 4, value: 4 });
+    hook.unmount();
+  });
+
+  it('an older platform that names no charged bracelet leaves every bracelet free, as before', () => {
+    const hook = open({ ...order, eligibleBands: order.eligibleBands.map((band) => ({ id: band.id, shortCode: band.shortCode, kind: band.kind })) });
+    const boxes = elements(hook.result.current).filter((node) => node.type === 'input' && node.props.type === 'checkbox');
+    expect(boxes.map((box) => box.props.disabled)).toEqual([false, false, false, false]);
     hook.unmount();
   });
 
