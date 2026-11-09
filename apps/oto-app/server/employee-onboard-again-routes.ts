@@ -46,8 +46,8 @@ import { bangkokToday } from "./lib/engagementDates";
  *  - POST /api/employees/:id/fold-into/:targetId (and GET .../preview) — a
  *    duplicate profile made for the same person folded into the one that
  *    holds the login: its shifts, checklists, tasks, contracts, time records,
- *    face, documents, letters, company property, leave, payroll profile and
- *    history moved, the duplicate deleted, and — when the original has left
+ *    face, documents, letters, company property, leave, payroll profile,
+ *    history and org chart entries moved, the duplicate deleted, and — when the original has left
  *    or is leaving and the duplicate is the one working — the original
  *    onboarded again into the duplicate's employment, on its terms.
  *  - POST /api/employees/:id/review/rematch — the profile's pending
@@ -462,6 +462,8 @@ export function registerEmployeeOnboardAgainRoutes(app: Express, deps: EmployeeO
         supersededContracts: outcome.supersededContracts,
         replaced: outcome.replaced,
         clockedOnBoth: outcome.clockedOnBoth,
+        orgChartMoved: outcome.orgChartMoved,
+        orgChartDropped: outcome.orgChartDropped,
         reonboard: outcome.reonboard,
         deleted: outcome.deleted,
       };

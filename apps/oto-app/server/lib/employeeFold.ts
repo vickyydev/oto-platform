@@ -10,6 +10,7 @@ import {
   asBlocking,
   blockersOf,
   deleteEmployeeWithin,
+  linksBeyondEmployeeDelete,
   listBlockers,
   tableWords,
   type EmployeeDeletionInput,
@@ -74,7 +75,16 @@ import {
  *  - its history: activity entries, attention items (the open ones the
  *    attention engine raised for the duplicate itself resolved, as its own
  *    run resolves an item no profile triggers any more), staff movement
- *    entries, kiosk sign-in attempts and missing clock-in notices.
+ *    entries, kiosk sign-in attempts and missing clock-in notices;
+ *  - its org chart entries (`org_nodes.person_employee_id`), chart by chart
+ *    (park group, live or draft, the company chart or a branch's): one in a
+ *    chart where the original has no entry (one not marked deleted) becomes
+ *    the original's, in its place, under its parent; one in a chart where the
+ *    original already has its entry is deleted outright (a row folded away,
+ *    not the chart's soft mark), and the entries that reported to it report to
+ *    the original's (`orgChartMoved`, `orgChartDropped`). The Org Chart page
+ *    adds an entry for every active employee missing from the chart it reads,
+ *    so a working duplicate is usually on a chart.
  * A move that would give the original an assignment it already has is
  * skipped and counted: the duplicate's copy goes with the duplicate (a
  * skipped shift's duties and breaks with it, the original keeping its own);
@@ -104,7 +114,10 @@ import {
  * original's, which runs its current contract on them until its last working
  * day (fold on or after the start date); and a payroll profile, cost
  * allocations or leave settings on both profiles when nobody is onboarded
- * again.
+ * again. Once everything has moved, a row anything else still points at the
+ * duplicate with (a foreign key to `employees` the fold does not move and the
+ * employee delete has no step for) refuses the fold naming each table, "still
+ * linked by …", rather than the first foreign-key error alone.
  *
  * With `write: false` (the preview) the same steps run and are rolled back, so
  * the preview's counts and refusals are the fold's own.
@@ -192,6 +205,10 @@ export type FoldOutcome =
       replaced: FoldReplaced;
       /** Days with time records on both profiles: the same hours may be recorded twice; left for a manager to check. */
       clockedOnBoth: number;
+      /** The duplicate's org chart entries the original takes, in their place and under their parent. */
+      orgChartMoved: number;
+      /** The duplicate's org chart entries deleted, in charts where the original already has its own entry. */
+      orgChartDropped: number;
       reonboard: FoldReonboard | null;
       deleted: { profile: 1; login: 0 | 1 };
     }
@@ -561,6 +578,73 @@ async function moveHistory(client: Exec, from: string, to: string): Promise<numb
   return moved;
 }
 
+/**
+ * The duplicate's org chart entries in the park group, chart by chart (a chart
+ * is the park group's live or draft chart of the company or of one branch).
+ * Its entries not marked deleted go first, so the one it shows on a chart is
+ * the one kept there.
+ *
+ *  - The original has no entry on that chart (none not marked deleted): the
+ *    entry becomes the original's as it stands, its place, parent, position
+ *    and name override unchanged. The chart shows a person's entry with the
+ *    employee's own nickname, so it reads as the original at once.
+ *  - The original has its entry there already: the duplicate's is deleted
+ *    outright (a row folded away; the chart's own soft mark would leave it
+ *    naming the duplicate, which the delete refuses). The entries that reported to
+ *    it report to the original's, as they reported to the same person; the
+ *    chart draws only an entry whose parent it holds. When the original's
+ *    entry is itself below the duplicate's, the one of those entries on the
+ *    way down to it takes the dropped entry's parent instead, so no entry
+ *    ends up below itself. An entry already marked deleted keeps the entries
+ *    under it as they are: the chart draws none of them now, and still none.
+ */
+async function moveOrgChart(client: Exec, from: string, to: string, tenantId: string): Promise<{ moved: number; dropped: number }> {
+  const { rows: entries } = await client.query<{ id: string; mode: string; scope_type: string; scope_branch_id: string | null; reports_to_node_id: string | null; is_deleted: boolean }>(
+    `select id, mode::text as mode, scope_type::text as scope_type, scope_branch_id, reports_to_node_id, is_deleted
+       from org_nodes where person_employee_id = $1 and tenant_id = $2
+      order by is_deleted, sort_order, created_at, id`,
+    [from, tenantId],
+  );
+  let moved = 0;
+  let dropped = 0;
+  for (const entry of entries) {
+    const { rows: own } = await client.query<{ id: string }>(
+      `select id from org_nodes
+        where person_employee_id = $1 and tenant_id = $2 and not is_deleted
+          and mode::text = $3 and scope_type::text = $4 and scope_branch_id is not distinct from $5
+        order by sort_order, created_at, id limit 1`,
+      [to, tenantId, entry.mode, entry.scope_type, entry.scope_branch_id],
+    );
+    const kept = own[0]?.id;
+    if (!kept) {
+      await client.query("update org_nodes set person_employee_id = $2, updated_at = now() where id = $1", [entry.id, to]);
+      moved += 1;
+      continue;
+    }
+    if (!entry.is_deleted) {
+      // The entry under the dropped one on the way down to the original's, if the original's is below it.
+      const { rows: path } = await client.query<{ id: string }>(
+        `with recursive up(id, parent, depth) as (
+           select id, reports_to_node_id, 0 from org_nodes where id = $1
+           union all
+           select n.id, n.reports_to_node_id, up.depth + 1 from org_nodes n join up on n.id = up.parent
+            where up.depth < 1000 and up.parent <> $2
+         )
+         select id from up where parent = $2 limit 1`,
+        [kept, entry.id],
+      );
+      await client.query(
+        `update org_nodes set reports_to_node_id = case when id = $4 then $3 else $2 end, updated_at = now()
+          where reports_to_node_id = $1 and tenant_id = $5`,
+        [entry.id, kept, entry.reports_to_node_id, path[0]?.id ?? null, tenantId],
+      );
+    }
+    await client.query("delete from org_nodes where id = $1", [entry.id]);
+    dropped += 1;
+  }
+  return { moved, dropped };
+}
+
 const refusalOf = (outcome: Exclude<RecordDeletionOutcome, { deleted: true }>): FoldOutcome => ({
   folded: false,
   status: outcome.status,
@@ -743,6 +827,7 @@ async function foldWithin(client: PoolClient, input: FoldInput): Promise<FoldOut
   const onePerProfile = await moveOnePerProfile(client, from, to, reonboard);
   await movePresence(client, from, to);
   const history = await moveHistory(client, from, to);
+  const orgChart = await moveOrgChart(client, from, to, tenantId);
 
   // Contracts. The duplicate's active contract is the person's contract now:
   // the original's active one is superseded — at once, or, when the
@@ -885,6 +970,21 @@ async function foldWithin(client: PoolClient, input: FoldInput): Promise<FoldOut
   const moved = counted("moved");
   const skipped = counted("skipped");
 
+  // Anything else still pointing at the duplicate, every table named in plain
+  // words before the delete's foreign keys would name only the first.
+  const linked = await linksBeyondEmployeeDelete(client, from);
+  if (linked.length > 0) {
+    const words = linked.map((l) => l.words);
+    return {
+      folded: false,
+      status: 409,
+      reason: "still_referenced",
+      message: `This profile is still linked by ${words.length > 1 ? `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}` : words[0]}, ` +
+        "which a fold does not move, so nothing was folded. Move those to the profile kept, or remove them, first.",
+      blocking: linked.map((l) => ({ label: `still linked by ${l.words}`, count: l.count })),
+    };
+  }
+
   const deletion = await deleteEmployeeWithin(client, {
     employeeId: from,
     tenantId,
@@ -913,6 +1013,9 @@ async function foldWithin(client: PoolClient, input: FoldInput): Promise<FoldOut
         `, with ${moved.documents} document(s), ${moved.letters} letter(s), ${moved.assets} asset(s), ${moved.timeOff} leave record(s), ` +
         `${moved.availability} availability day(s), ${moved.leaveSettings} leave setting(s), ${moved.payrollProfile} payroll profile(s), ` +
         `${moved.costAllocations} cost allocation(s) and ${moved.history} history entr(ies)` +
+        (orgChart.moved + orgChart.dropped > 0
+          ? `; ${orgChart.moved} org chart entr(ies) taken, ${orgChart.dropped} dropped where this profile already had its entry`
+          : "") +
         (replacedWords ? `; its own ${replacedWords} replaced by the folded profile's` : "") +
         (clockedOnBoth > 0 ? `; ${clockedOnBoth} day(s) have time records from both profiles, to be checked` : "") +
         (supersededContracts > 0
@@ -934,6 +1037,8 @@ async function foldWithin(client: PoolClient, input: FoldInput): Promise<FoldOut
         supersededContracts,
         replaced,
         clockedOnBoth,
+        orgChartMoved: orgChart.moved,
+        orgChartDropped: orgChart.dropped,
         ...(reonboarded ? { engagementId: reonboarded.engagementId, started: reonboarded.started } : {}),
       }),
       input.actorId,
@@ -948,6 +1053,8 @@ async function foldWithin(client: PoolClient, input: FoldInput): Promise<FoldOut
     supersededContracts,
     replaced,
     clockedOnBoth,
+    orgChartMoved: orgChart.moved,
+    orgChartDropped: orgChart.dropped,
     reonboard: reonboarded,
     deleted: { profile: 1, login: input.deletion.leavingUserId ? 1 : 0 },
   };

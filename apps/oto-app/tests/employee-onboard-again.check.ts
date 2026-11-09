@@ -490,7 +490,8 @@ try {
     // The original works on (active, no last working day): nobody is onboarded again, nothing replaced, and no face moves.
     assert.deepEqual(res.body, {
       moved: DUPLICATE_HOLDS, skipped: NONE, face: "none", supersededContracts: 0,
-      replaced: { payrollProfile: 0, costAllocations: 0, leaveSettings: 0 }, clockedOnBoth: 0, reonboard: null, deleted: { profile: 1, login: 0 },
+      replaced: { payrollProfile: 0, costAllocations: 0, leaveSettings: 0 }, clockedOnBoth: 0, orgChartMoved: 0, orgChartDropped: 0,
+      reonboard: null, deleted: { profile: 1, login: 0 },
     });
     assert.equal(await shiftsOf(duplicate), 3);
     assert.deepEqual(await q("select employee_id from duty_blocks where id = $1", [dupDuty]), [{ employee_id: duplicate }]);

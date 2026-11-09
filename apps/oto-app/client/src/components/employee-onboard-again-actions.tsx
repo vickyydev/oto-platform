@@ -80,6 +80,9 @@ interface FoldAnswer {
   supersededContracts: number;
   replaced: Replaced;
   clockedOnBoth: number;
+  /** Org chart entries the profile kept takes, and the ones dropped where it already has its own. */
+  orgChartMoved: number;
+  orgChartDropped: number;
   reonboard: {
     startDate: string;
     started: boolean;
@@ -157,6 +160,17 @@ function replacedWords(replaced: Replaced, kept: string): string | null {
     replaced.leaveSettings > 0 ? `${replaced.leaveSettings} leave setting(s)` : null,
   ].filter(Boolean);
   return parts.length > 0 ? `${kept}'s own ${parts.join(", ")} are replaced by this profile's, with the employment.` : null;
+}
+
+/** This profile's org chart entries: taken by the profile kept, or dropped where it already has its own on that chart. */
+function orgChartWords(answer: FoldAnswer, kept: string): string | null {
+  const parts = [
+    answer.orgChartMoved > 0 ? `${kept} takes ${answer.orgChartMoved} org chart entr(ies) of this profile's, in their place` : null,
+    answer.orgChartDropped > 0
+      ? `${answer.orgChartDropped} org chart entr(ies) are removed where ${kept} already has its own, the entries under them moving under ${kept}'s`
+      : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? `${parts.join("; ")}.` : null;
 }
 
 const clockedWords = (days: number) =>
@@ -562,6 +576,7 @@ export function FoldIntoAction({ employee }: { employee: Employee }) {
       const extra = [
         reonboardWords(answer, kept),
         replacedWords(answer.replaced, kept),
+        orgChartWords(answer, kept),
         faceWords(answer.face, kept),
         clockedWords(answer.clockedOnBoth),
       ].filter(Boolean).join(" ");
@@ -601,7 +616,7 @@ export function FoldIntoAction({ employee }: { employee: Employee }) {
           <DialogHeader>
             <DialogTitle>Fold into another profile</DialogTitle>
             <DialogDescription>
-              For a duplicate profile of the same person: its contracts, time records, shifts (with their duties and breaks), weekly template shifts, roles, checklists, tasks, face enrolment, documents, letters, company property, leave, payroll profile and history move to the profile you choose, and this profile is deleted.
+              For a duplicate profile of the same person: its contracts, time records, shifts (with their duties and breaks), weekly template shifts, roles, checklists, tasks, face enrolment, documents, letters, company property, leave, payroll profile, history and org chart entries move to the profile you choose, and this profile is deleted.
               Keep the profile the person signs in and scans their face with. If that profile has left or is leaving and this one is working, it is onboarded again into this profile's employment, on this profile's terms.
             </DialogDescription>
           </DialogHeader>
@@ -645,6 +660,9 @@ export function FoldIntoAction({ employee }: { employee: Employee }) {
                     )}
                     {replacedWords(preview.data.replaced, target.fullName) && (
                       <p data-testid="fold-preview-replaced">{replacedWords(preview.data.replaced, target.fullName)}</p>
+                    )}
+                    {orgChartWords(preview.data, target.fullName) && (
+                      <p data-testid="fold-preview-org-chart">{orgChartWords(preview.data, target.fullName)}</p>
                     )}
                     {clockedWords(preview.data.clockedOnBoth) && (
                       <p className="text-amber-700 dark:text-amber-400" data-testid="fold-preview-clocked-on-both">{clockedWords(preview.data.clockedOnBoth)}</p>

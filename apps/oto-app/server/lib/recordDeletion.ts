@@ -214,6 +214,79 @@ export const PAYROLL_KEPT = {
 /** What an employee delete refuses on: kept for the record, ended by offboarding. */
 export const EMPLOYEE_KEEPS = [CONTRACTS_KEPT, TIME_RECORDS_KEPT, PAYROLL_KEPT];
 
+/** History that names an employee: its rows are kept without the name when the employee is deleted. */
+const EMPLOYEE_HISTORY_UNNAMED = ["activity_log", "attention_items", "shifts"];
+
+/** What belongs to an employee and goes with them (after their offboarding checklist items). */
+const EMPLOYEE_OWN_ROWS = [
+  "employee_offboarding",
+  "employee_changes",
+  "employee_documents",
+  "employee_letters",
+  "employee_assets",
+  "employee_time_off",
+  "employee_roles",
+  "employee_payroll_profiles",
+  "enrollment_sessions",
+  "kiosk_auth_attempts",
+];
+
+/**
+ * Every table whose `employee_id` the employee delete has its own step or
+ * words for: cleared, taken with the employee, or named as kept for the
+ * record (its refusal before anything is written).
+ */
+const EMPLOYEE_DELETE_HANDLES = new Set([
+  ...EMPLOYEE_HISTORY_UNNAMED,
+  "offboarding_checklist",
+  ...EMPLOYEE_OWN_ROWS,
+  ...EMPLOYEE_KEEPS.flatMap((k) => k.tables),
+]);
+
+const quoted = (name: string) => `"${name.replace(/"/g, '""')}"`;
+
+/**
+ * What still points at an employee that the employee delete has no step or
+ * words for (SCRUM-794): every foreign key to `employees` that refuses a
+ * delete (NO ACTION or RESTRICT), read from pg_constraint so a reference added
+ * after this was written is found too, its rows naming the employee counted,
+ * per table in plain words. One of these is what would otherwise reach the
+ * caller only as the first foreign-key error.
+ */
+export async function linksBeyondEmployeeDelete(
+  client: Pick<PoolClient, "query">,
+  employeeId: string,
+): Promise<{ words: string; count: number }[]> {
+  const { rows: keys } = await client.query<{ schema: string; table: string; own_schema: boolean; columns: string[]; referenced: string[] }>(
+    `select n.nspname as schema, r.relname as table, r.relnamespace = e.relnamespace as own_schema,
+            array(select a.attname::text from unnest(c.conkey) with ordinality k(attnum, i)
+                    join pg_attribute a on a.attrelid = c.conrelid and a.attnum = k.attnum order by k.i) as columns,
+            array(select a.attname::text from unnest(c.confkey) with ordinality k(attnum, i)
+                    join pg_attribute a on a.attrelid = c.confrelid and a.attnum = k.attnum order by k.i) as referenced
+       from pg_constraint c
+       join pg_class r on r.oid = c.conrelid
+       join pg_namespace n on n.oid = r.relnamespace
+       join pg_class e on e.oid = c.confrelid
+      where c.contype = 'f' and c.confrelid = 'employees'::regclass and c.confdeltype in ('a', 'r')
+      order by r.relname, c.conname`,
+  );
+  const counted = new Map<string, number>();
+  for (const key of keys) {
+    const handled = key.own_schema && EMPLOYEE_DELETE_HANDLES.has(key.table) && key.columns.length === 1 && key.columns[0] === "employee_id";
+    if (handled) continue;
+    const { rows } = await client.query<{ n: number }>(
+      `select count(*)::int as n from ${quoted(key.schema)}.${quoted(key.table)}
+        where (${key.columns.map(quoted).join(", ")}) = (select ${key.referenced.map(quoted).join(", ")} from employees where id = $1)`,
+      [employeeId],
+    );
+    const n = Number(rows[0]?.n ?? 0);
+    if (n === 0) continue;
+    const words = tableWords(key.table);
+    counted.set(words, (counted.get(words) ?? 0) + n);
+  }
+  return [...counted].map(([words, count]) => ({ words, count }));
+}
+
 export const EMPLOYEE_OFFBOARD_INSTEAD = "Their history is kept for the record; offboard them instead to end their employment.";
 
 export interface EmployeeDeletionInput {
@@ -286,9 +359,9 @@ export async function deleteEmployeeWithin(
   if (userRefusal) return userRefusal;
 
   // History that names the employee keeps its rows, without the name.
-  await client.query("update activity_log set employee_id = null where employee_id = $1", [id]);
-  await client.query("update attention_items set employee_id = null where employee_id = $1", [id]);
-  await client.query("update shifts set employee_id = null where employee_id = $1", [id]);
+  for (const table of EMPLOYEE_HISTORY_UNNAMED) {
+    await client.query(`update ${table} set employee_id = null where employee_id = $1`, [id]);
+  }
   // The discarded drafts (the only contracts left: the count above refused
   // any other) leave the rows that name them without the link.
   const discarded = `select id from contract_instances where employee_id = $1 and ${DISCARDED_DRAFT}`;
@@ -299,18 +372,7 @@ export async function deleteEmployeeWithin(
     "delete from offboarding_checklist where employee_id = $1 or offboarding_id in (select id from employee_offboarding where employee_id = $1)",
     [id],
   );
-  for (const table of [
-    "employee_offboarding",
-    "employee_changes",
-    "employee_documents",
-    "employee_letters",
-    "employee_assets",
-    "employee_time_off",
-    "employee_roles",
-    "employee_payroll_profiles",
-    "enrollment_sessions",
-    "kiosk_auth_attempts",
-  ]) {
+  for (const table of EMPLOYEE_OWN_ROWS) {
     await client.query(`delete from ${table} where employee_id = $1`, [id]);
   }
   // After the movement entries that named them (employee_changes, above).
