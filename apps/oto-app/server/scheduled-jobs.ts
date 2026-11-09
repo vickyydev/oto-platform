@@ -1,6 +1,6 @@
 import { storage } from "./storage";
 import { db, pool } from "./db";
-import { employeeRoleAvailability, employees, users, tenants, timeEvents, scheduleAssignments, scheduleShiftRows, branches } from "@shared/schema";
+import { employeeRoleAvailability, employees, tenants, timeEvents, scheduleAssignments, scheduleShiftRows, branches } from "@shared/schema";
 import { serviceCheckins } from "./db/coreSchema";
 import { lt, eq, and, isNull, isNotNull, gte, lte, desc, sql } from "drizzle-orm";
 import { generateTaskInstances } from "./core/taskGeneration";
@@ -17,6 +17,7 @@ import {
 } from "./lib/nightJobs";
 import { holdNightBatch } from "./lib/nightBatchLock";
 import { startPlannedEngagements } from "./lib/onboardAgain";
+import { restrictDepartedLogins } from "./lib/payOnlyAccess";
 
 /**
  * Who a night job runs for, and who hears about an error it swallows (S2-17b
@@ -140,58 +141,31 @@ export async function runPlannedEngagementStarts(opts: NightJobOptions = {}): Pr
 }
 
 /**
- * Switch off the app login of everyone whose last working day has passed.
+ * Put the app login of everyone whose last working day has passed into pay
+ * only (SCRUM-769, `lib/payOnlyAccess.ts`): the person still signs in, to My
+ * pay alone. The login is no longer switched off here, so no switch-off is
+ * queued for the platform; a login an administrator switched off stays off.
  *
  * The 03:00 batch calls it with no tenant, across every park group, as it
  * always has. The manual trigger (`POST /api/admin/run-departed-deactivation`)
  * passes the caller's own park group, so one park group's admin never
- * switches off another's people (S2-17b round 1), and so does the platform's
- * job endpoint, for the park group its key is bound to (round 3).
- *
- * The app's active-to-inactive write also queues a durable identity event.
- * The separate lifecycle transport asks the platform to switch off the linked
- * account through its identity seam; this batch keeps its existing criteria.
+ * restricts another's people (S2-17b round 1), and so does the platform's
+ * job endpoint, for the park group its key is bound to (round 3). The people
+ * it reaches are the ones it switched off before, by the same rule.
  */
-export async function runDepartedAccountDeactivation(opts: NightJobOptions = {}): Promise<number> {
-  console.log("[ACCOUNT_DEACTIVATION] Checking for departed employees with active accounts...");
-  let deactivated = 0;
+export async function runDepartedLoginsPayOnly(opts: NightJobOptions = {}): Promise<number> {
+  console.log("[PAY_ONLY] Checking for departed employees whose login still has full access...");
+  let moved = 0;
 
   try {
-    const today = getThailandMidnightUTC();
-
-    const departed = await db
-      .select({ userId: employees.userId })
-      .from(employees)
-      .innerJoin(users, eq(employees.userId, users.id))
-      .where(
-        and(
-          isNotNull(employees.lastWorkingDay),
-          lt(employees.lastWorkingDay, today),
-          isNotNull(employees.userId),
-          eq(users.isActive, true),
-          opts.tenantId ? eq(employees.tenantId, opts.tenantId) : undefined,
-          // SCRUM-794: an Onboard Again employment planned on the profile
-          // keeps its login on between the two employments.
-          sql`not exists (select 1 from employee_engagements g
-                           where g.employee_id = ${employees.id} and g.status = 'planned')`,
-        ),
-      );
-
-    for (const row of departed) {
-      await db
-        .update(users)
-        .set({ isActive: false })
-        .where(eq(users.id, row.userId!));
-      deactivated++;
-    }
-
-    console.log(`[ACCOUNT_DEACTIVATION] Deactivated ${deactivated} user account(s)`);
+    moved = await restrictDepartedLogins({ bangkokMidnight: getThailandMidnightUTC(), tenantId: opts.tenantId });
+    console.log(`[PAY_ONLY] Moved ${moved} login(s) to pay only`);
   } catch (error) {
-    console.error("[ACCOUNT_DEACTIVATION] Error:", error);
+    console.error("[PAY_ONLY] Error:", error);
     opts.onError?.(error);
   }
 
-  return deactivated;
+  return moved;
 }
 
 export async function runMidnightTimekeepingAutoClockOut(opts: NightJobOptions = {}): Promise<number> {
@@ -636,7 +610,7 @@ export const NIGHT_BATCHES: Record<NightJobName, readonly NightStep[]> = {
       run: async (opts) => ({ generated: await runMidnightTaskGeneration(opts) }),
     },
   ],
-  /** 03:00 Bangkok: presence repaired, leavers moved to Left and their logins switched off, old availability cleared. */
+  /** 03:00 Bangkok: presence repaired, leavers moved to Left and their logins to pay only, old availability cleared. */
   reconcile: [
     presenceStep,
     {
@@ -653,7 +627,7 @@ export const NIGHT_BATCHES: Record<NightJobName, readonly NightStep[]> = {
     {
       step: "departedLogins",
       onFailure: "continue",
-      run: async (opts) => ({ deactivated: await runDepartedAccountDeactivation(opts) }),
+      run: async (opts) => ({ payOnly: await runDepartedLoginsPayOnly(opts) }),
     },
     {
       step: "availabilityCleanup",

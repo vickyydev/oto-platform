@@ -519,9 +519,10 @@ async function stateOf(g: ParkGroupRows) {
   const [emp] = await q<{ status: string }>(`select status from employees where id = $1`, [
     g.pending,
   ]);
-  const [dep] = await q<{ is_active: boolean }>(`select is_active from users where id = $1`, [
-    g.departedUser,
-  ]);
+  const [dep] = await q<{ is_active: boolean; access_mode: string }>(
+    `select is_active, access_mode from users where id = $1`,
+    [g.departedUser],
+  );
   const [lea] = await q<{ employment_state: string }>(
     `select employment_state from employees where id = $1`,
     [g.leaving],
@@ -533,6 +534,8 @@ async function stateOf(g: ParkGroupRows) {
   return {
     pending: emp!.status,
     departedActive: dep!.is_active,
+    // SCRUM-769: the app's departed step puts the leaver's login in pay only; it stays on.
+    departedAccess: dep!.access_mode,
     leaving: lea!.employment_state,
     photo: pho!.profile_photo_path,
   };
@@ -540,6 +543,7 @@ async function stateOf(g: ParkGroupRows) {
 const UNTOUCHED = {
   pending: 'pending',
   departedActive: true,
+  departedAccess: 'full',
   leaving: 'LEAVING',
   photo: OLD_PHOTO,
 };
@@ -906,7 +910,8 @@ describe.skipIf(!HAS_APP_RUNTIME)(
         expect(await stateOf(A)).toEqual(UNTOUCHED);
         expect(await stateOf(B)).toEqual({
           pending: 'active',
-          departedActive: false,
+          departedActive: true,
+          departedAccess: 'pay_only',
           leaving: 'LEFT',
           photo: null,
         });
@@ -920,7 +925,8 @@ describe.skipIf(!HAS_APP_RUNTIME)(
         }
         expect(await stateOf(A)).toEqual({
           pending: 'active',
-          departedActive: false,
+          departedActive: true,
+          departedAccess: 'pay_only',
           leaving: 'LEFT',
           photo: null,
         });

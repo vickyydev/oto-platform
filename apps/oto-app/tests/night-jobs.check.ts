@@ -17,7 +17,8 @@
 //     checks out the forgotten guest, closes each stale clock-in with exactly
 //     ONE out at midnight (and none more on a second run), and makes the day's
 //     recurring task once; the 03:00 batch repairs presence, moves the leaver
-//     to Left, switches off the leaver's login and clears old availability;
+//     to Left, puts the leaver's login in pay only (SCRUM-769: it is no longer
+//     switched off) and clears old availability;
 //     the presence check repairs presence;
 //   - the same park group's batch already running answers 409 and runs nothing;
 //   - an error a step swallows is a failed step, named in words, and the
@@ -193,6 +194,8 @@ async function stateOf(g: ParkGroup) {
     ).b,
     leaving: (await one<{ s: string }>("select employment_state as s from employees where id = $1", [g.leaving])).s,
     departedActive: (await one<{ a: boolean }>("select is_active as a from users where id = $1", [g.departedUser])).a,
+    // SCRUM-769: how much of the app the leaver's login reaches.
+    departedAccess: (await one<{ m: string }>("select access_mode as m from users where id = $1", [g.departedUser])).m,
     availability: Number(
       (await one<{ n: string }>("select count(*) as n from employee_role_availability where id = $1", [g.availability])).n,
     ),
@@ -206,6 +209,7 @@ const untouched = {
   mismatchBranch: B.branch,
   leaving: "LEAVING",
   departedActive: true,
+  departedAccess: "full",
   availability: 1,
 };
 
@@ -502,7 +506,7 @@ try {
       await q("drop function zz_nj_refuse_cleanup()");
     }
   })();
-  await check("it runs for A: presence repaired, the leaver Left, their login off, old availability gone — B untouched", async () => {
+  await check("it runs for A: presence repaired, the leaver Left, their login kept on in pay only, old availability gone — B untouched", async () => {
     const res = await job(platform, "reconcile", keyA, { tenantId: A.tenant });
     assert.equal(res.status, 200, JSON.stringify(res.body));
     assert.equal(res.body.ok, true, JSON.stringify(res.body));
@@ -515,7 +519,9 @@ try {
     const a = await stateOf(A);
     assert.equal(a.mismatchBranch, null);
     assert.equal(a.leaving, "LEFT");
-    assert.equal(a.departedActive, false);
+    // SCRUM-769: the night after the last day restricts the login to My pay; it no longer switches it off.
+    assert.equal(a.departedActive, true);
+    assert.equal(a.departedAccess, "pay_only");
     assert.equal(a.availability, 0);
     assert.deepEqual(await stateOf(B), untouched);
   })();
@@ -551,6 +557,9 @@ try {
   await employee(B.tenant, B.branch, "b", { last_working_day: "2020-01-01", user_id: departedB });
   const leavingA = await employee(A.tenant, A.branch, "a", { employment_state: "LEAVING", last_working_day: "2020-01-01" });
   const active = async (id: string) => (await q<{ a: boolean }>("select is_active as a from users where id = $1", [id]))[0]!.a;
+  /** SCRUM-769: the login's switch and how much of the app it reaches, as one value. */
+  const login = async (id: string) =>
+    (await q<{ is_active: boolean; access_mode: string }>("select is_active, access_mode from users where id = $1", [id]))[0]!;
   const stateOfEmployee = async (id: string) =>
     (await q<{ s: string }>("select employment_state as s from employees where id = $1", [id]))[0]!.s;
 
@@ -561,15 +570,17 @@ try {
       assert.equal(res.status, 409, res.text);
       assert.deepEqual(res.body, JOBS_ON_PLATFORM_REFUSAL);
       assert.equal(await active(departedA), true);
+      assert.deepEqual(await login(departedA), { is_active: true, access_mode: "full" });
       assert.equal(await stateOfEmployee(leavingA), "LEAVING");
     })();
   }
   const adminInProcess = await signIn(inprocess, A.admin.email);
-  await check("under inprocess the departed deactivation runs as today, for the caller's park group only", async () => {
+  await check("under inprocess the departed step runs as today, for the caller's park group only: the leaver's login in pay only (SCRUM-769)", async () => {
     const res = await post(inprocess, "/api/admin/run-departed-deactivation", adminInProcess);
     assert.equal(res.status, 200, res.text);
-    assert.equal(await active(departedA), false);
-    assert.equal(await active(departedB), true);
+    assert.equal(res.body.payOnly, 1);
+    assert.deepEqual(await login(departedA), { is_active: true, access_mode: "pay_only" });
+    assert.deepEqual(await login(departedB), { is_active: true, access_mode: "full" });
   })();
   await check("under inprocess transition-left runs as today, for the caller's park group only", async () => {
     const res = await post(inprocess, "/api/scheduler/transition-left", adminInProcess);

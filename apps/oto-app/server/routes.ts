@@ -1622,9 +1622,10 @@ export async function registerRoutes(
   // only, where it used to switch off logins across every one (S2-17b round 1).
   app.post("/api/admin/run-departed-deactivation", requireAuth, requireAdmin, followsJobsSwitch(JOBS_MODE), parkGroupOnly(userManagementTenant), async (req, res, next) => {
     try {
-      const { runDepartedAccountDeactivation } = await import("./scheduled-jobs");
-      const deactivated = await runDepartedAccountDeactivation({ tenantId: parkGroupOf(res) });
-      res.json({ deactivated });
+      // SCRUM-769: the leavers' logins go to pay only; none is switched off.
+      const { runDepartedLoginsPayOnly } = await import("./scheduled-jobs");
+      const payOnly = await runDepartedLoginsPayOnly({ tenantId: parkGroupOf(res) });
+      res.json({ payOnly });
     } catch (error) {
       next(error);
     }

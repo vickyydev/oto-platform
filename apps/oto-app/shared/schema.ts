@@ -145,6 +145,17 @@ const validBirthdayCheck = sql`
   )
 `;
 
+/**
+ * How much of the app a login reaches (SCRUM-769). `full` is every login's
+ * as it always was. `pay_only` is a login whose employment has ended: the
+ * 03:00 batch puts it there the night after the last working day (unless an
+ * Onboard Again employment is planned), and it then signs in to My pay alone
+ * (server/lib/payOnlyAccess.ts). It is a separate switch from `is_active`: a
+ * login an administrator switches off stays off, whatever this says.
+ */
+export const userAccessModes = ["full", "pay_only"] as const;
+export type UserAccessMode = typeof userAccessModes[number];
+
 // Users table with roles
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -159,6 +170,7 @@ export const users = pgTable("users", {
   role: text("role", { enum: userRoles }).notNull().default("staff"),
   operatorId: uuid("operator_id").references(() => operators.id), // required for operator_admin, null for global_admin
   isActive: boolean("is_active").notNull().default(true),
+  accessMode: text("access_mode", { enum: userAccessModes }).notNull().default("full"),
   mustChangePassword: boolean("must_change_password").notNull().default(true),
   permissionReviewRequired: boolean("permission_review_required").notNull().default(false),
   createdBy: varchar("created_by"),
@@ -180,6 +192,7 @@ export const users = pgTable("users", {
   index("idx_users_operator").on(table.operatorId),
   index("idx_users_username").on(table.username),
   check("users_birthday_valid", validBirthdayCheck),
+  check("users_access_mode_check", sql`${table.accessMode} IN ('full', 'pay_only')`),
 ]);
 
 // Durable app-to-platform disable notifications. These identity snapshots have

@@ -1370,6 +1370,8 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app: its endpoint, the platform j
       [newId(), tenantA, appCentral, `zz-r3-other-e-${otherUser.slice(-6)}@example.com`, otherUser],
     );
     const active = async (id: string) => (await q<{ a: boolean }>('select is_active as a from users where id = $1', [id]))[0]!.a;
+    // SCRUM-769: the app's departed step puts a leaver's login in pay only; it stays on.
+    const accessMode = async (id: string) => (await q<{ m: string }>('select access_mode as m from users where id = $1', [id]))[0]!.m;
 
     const signIn = async (base: string) => {
       const res = await fetch(`${base}/api/login`, {
@@ -1394,12 +1396,13 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app: its endpoint, the platform j
       expect(String(res.body.message)).not.toMatch(/Run now/);
     }
     expect(await active(leaverUser)).toBe(true);
+    expect(await accessMode(leaverUser)).toBe('full');
 
     const inProcess = await signIn(origin.inprocess);
     const res = await trigger(origin.inprocess, inProcess, '/api/admin/run-departed-deactivation');
     expect(res.status).toBe(200);
-    expect(await active(leaverUser)).toBe(false);
-    expect(await active(otherUser)).toBe(true);
+    expect([await active(leaverUser), await accessMode(leaverUser)]).toEqual([true, 'pay_only']);
+    expect([await active(otherUser), await accessMode(otherUser)]).toEqual([true, 'full']);
   });
 
   it('review F2: a second midnight batch of one date makes no second instance — a task due at 06:30 Bangkok, and one at 18:00', async () => {

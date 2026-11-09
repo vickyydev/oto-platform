@@ -288,6 +288,13 @@
       "when": 1794226640235,
       "tag": "0042_otoapp_v_event_packages",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1794222396631,
+      "tag": "0040_users_access_mode",
+      "breakpoints": true
     }
   ]
 }

@@ -1312,7 +1312,10 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app', () => {
       const failed = (await runsFor(job.name, today)).find((r) => detailOf(r).groups?.some((x) => x.tenantId === t))!;
       expect(failed.errorCode).toBe(NIGHT_STEP_FAILED);
       expect(failed.errorMessage).toContain(`park group ${t}: departedLogins failed (the batch carried on): zz review: departedLogins refused`);
-      expect((await q<{ a: boolean }>('select is_active as a from users where id = $1', [u.id]))[0]!.a).toBe(true);
+      // SCRUM-769: the step puts the leaver's login in pay only (it stays on); refused, it wrote nothing.
+      const login = async () =>
+        (await q<{ is_active: boolean; access_mode: string }>('select is_active, access_mode from users where id = $1', [u.id]))[0]!;
+      expect(await login()).toEqual({ is_active: true, access_mode: 'full' });
 
       // F1: this run's key list holds t alone, and the app holds staff in
       // other park groups by now, so each later run fails for those alone.
@@ -1324,7 +1327,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app', () => {
       clock = at(today, '12:10');
       expect(await runner.runJob(job.name, { force: true })).toBe('failed');
       expect((await latestFor(job.name, today, t)).group.outcome).toBe('done');
-      expect((await q<{ a: boolean }>('select is_active as a from users where id = $1', [u.id]))[0]!.a).toBe(false);
+      expect(await login()).toEqual({ is_active: true, access_mode: 'pay_only' });
       expect(await successesFor(job.name, today, t)).toBe(1);
     });
   });
@@ -1333,7 +1336,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app', () => {
   // J3. Q4 against the app's own rule
   // ---------------------------------------------------------------------------
 
-  describe("J3. Q4 — the platform lists exactly the active accounts of the logins the app's 03:00 batch switches off", () => {
+  describe("J3. Q4 — the platform lists exactly the active accounts of the leavers the app's 03:00 batch ends (their logins in pay only, SCRUM-769)", () => {
     it('the same night, the same people: yesterday\'s leavers in, today\'s out, an inactive account never listed', async () => {
       const x = await appTenant('x');
       const branch = await appBranch(x, chalong);
@@ -1356,14 +1359,18 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app', () => {
       expect(await runnerFor(job, env).runJob(job.name, { force: true })).toBe('failed');
       failedOnlyUnkeyed((await latestFor(job.name, today, x)).run);
 
-      const appActive = async (id: string) => (await q<{ a: boolean }>('select is_active as a from users where id = $1', [id]))[0]!.a;
+      // SCRUM-769: the app's batch keeps a leaver's login on and puts it in pay only.
+      const appLogin = async (id: string) => {
+        const [row] = await q<{ is_active: boolean; access_mode: string }>('select is_active, access_mode from users where id = $1', [id]);
+        return `${row!.is_active ? 'on' : 'off'}/${row!.access_mode}`;
+      };
       // The app's own rule, as its batch just applied it.
       expect({
-        gone: await appActive(gone.user),
-        lastDayToday: await appActive(lastDayToday.user),
-        goneSwitchedOff: await appActive(goneSwitchedOff.user),
-        staying: await appActive(staying.user),
-      }).toEqual({ gone: false, lastDayToday: true, goneSwitchedOff: false, staying: true });
+        gone: await appLogin(gone.user),
+        lastDayToday: await appLogin(lastDayToday.user),
+        goneSwitchedOff: await appLogin(goneSwitchedOff.user),
+        staying: await appLogin(staying.user),
+      }).toEqual({ gone: 'on/pay_only', lastDayToday: 'on/full', goneSwitchedOff: 'on/pay_only', staying: 'on/full' });
 
       const run = (await runsFor(job.name, today)).find((r) => detailOf(r).groups?.some((g) => g.tenantId === x))!;
       const group = detailOf(run).groups.find((g) => g.tenantId === x)!;
@@ -1539,7 +1546,11 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app', () => {
       const leavingP = await appEmployee(p, bp, { employment_state: 'LEAVING', last_working_day: '2020-01-01 00:00:00' });
       const leavingR = await appEmployee(r, br, { employment_state: 'LEAVING', last_working_day: '2020-01-01 00:00:00' });
 
-      const active = async (id: string) => (await q<{ a: boolean }>('select is_active as a from users where id = $1', [id]))[0]!.a;
+      // SCRUM-769: a leaver's login stays on and goes to pay only; both are read, as one value.
+      const active = async (id: string) => {
+        const [row] = await q<{ is_active: boolean; access_mode: string }>('select is_active, access_mode from users where id = $1', [id]);
+        return `${row!.is_active ? 'on' : 'off'}/${row!.access_mode}`;
+      };
       const stateOf = async (id: string) => (await q<{ s: string }>('select employment_state as s from employees where id = $1', [id]))[0]!.s;
       const snapshot = async () => ({
         leaverP: await active(leaverP.id),
@@ -1560,7 +1571,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app', () => {
         const res = await fetch(`${base}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: '{}' });
         return { status: res.status, body: (await res.json()) as Record<string, unknown> };
       };
-      const untouched = { leaverP: true, leaverR: true, leavingP: 'LEAVING', leavingR: 'LEAVING' };
+      const untouched = { leaverP: 'on/full', leaverR: 'on/full', leavingP: 'LEAVING', leavingR: 'LEAVING' };
 
       const onPlatform = await signIn(origin.platform);
       for (const path of ['/api/admin/run-departed-deactivation', '/api/scheduler/transition-left']) {
@@ -1572,7 +1583,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app', () => {
       const inProcess = await signIn(origin.inprocess);
       expect((await trigger(origin.inprocess, inProcess, '/api/scheduler/transition-left')).status).toBe(200);
       expect((await trigger(origin.inprocess, inProcess, '/api/admin/run-departed-deactivation')).status).toBe(200);
-      expect(await snapshot()).toEqual({ leaverP: false, leaverR: true, leavingP: 'LEFT', leavingR: 'LEAVING' });
+      expect(await snapshot()).toEqual({ leaverP: 'on/pay_only', leaverR: 'on/full', leavingP: 'LEFT', leavingR: 'LEAVING' });
     });
   });
 

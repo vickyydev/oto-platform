@@ -12,6 +12,7 @@ import { db, pool } from "../db";
 import { storage, type DbExecutor } from "../storage";
 import { bangkokToday } from "./engagementDates";
 import { rematchUnscheduledWork, type RematchCounts } from "./reviewRematch";
+import { liftPayOnlyWithin } from "./payOnlyAccess";
 
 /**
  * Onboard Again's start (SCRUM-794): a planned employment on a profile becomes
@@ -25,8 +26,10 @@ import { rematchUnscheduledWork, type RematchCounts } from "./reviewRematch";
  * re-onboarded, as the record of the contract that ended). A login that was
  * switched off is switched back on: the users trigger (migration 0031)
  * withdraws a switch-off still waiting for the platform, the same channel the
- * switch-off used. A contract for the planned employment signed before the
- * start date becomes the active contract now, superseding the one before it.
+ * switch-off used. A login the 03:00 batch put in pay only once the employment
+ * before had ended (SCRUM-769) reaches the whole app again. A contract for the
+ * planned employment signed before the start date becomes the active contract
+ * now, superseding the one before it.
  */
 
 export type LoginOutcome = "reactivated" | "already_on" | "none" | "outside_park_group";
@@ -39,6 +42,8 @@ export interface ActivationResult {
   login: LoginOutcome;
   /** The platform was already told of a switch-off; reactivating there is a platform administrator's step. */
   platformDeactivationDelivered: boolean;
+  /** SCRUM-769: the login was in pay only (its employment had ended) and reaches the whole app again. */
+  payOnlyLifted: boolean;
   contractActivated: boolean;
 }
 
@@ -98,6 +103,7 @@ export async function activateEngagementWithin(
   // The login, kept on or switched back on.
   let login: LoginOutcome = "none";
   let platformDeactivationDelivered = false;
+  let payOnlyLifted = false;
   if (current.userId) {
     if (!(await opts.loginInParkGroup(current.userId, current.tenantId))) {
       login = "outside_park_group";
@@ -119,6 +125,8 @@ export async function activateEngagementWithin(
             .orderBy(desc(loginLifecycleEvents.createdAt)).limit(1);
           platformDeactivationDelivered = last?.state === "delivered";
         }
+        // SCRUM-769: a login the 03:00 batch put in pay only reaches the whole app again.
+        payOnlyLifted = await liftPayOnlyWithin(tx, current.userId, now);
       }
     }
   }
@@ -163,6 +171,7 @@ export async function activateEngagementWithin(
     activityType: "employment_state_changed",
     summaryText: `Onboard Again: the new employment started on ${engagement.startDate}; employment state changed from ${current.employmentState} to ACTIVE`
       + (login === "reactivated" ? "; the login is switched on again" : "")
+      + (payOnlyLifted ? "; the login reaches the whole app again (it was limited to My pay)" : "")
       + (platformDeactivationDelivered
         ? ". The suite sign-in had already been switched off on the platform; a platform administrator reactivates it there"
         : ""),
@@ -176,6 +185,7 @@ export async function activateEngagementWithin(
     createdBy: engagement.createdBy,
     login,
     platformDeactivationDelivered,
+    payOnlyLifted,
     contractActivated,
   };
 }

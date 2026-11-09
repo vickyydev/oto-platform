@@ -114,7 +114,7 @@ async function parkGroup(label: string): Promise<ParkGroup> {
      values ($1, $2, '<p>ZZ</p>', 1, '{}'::jsonb, $3, 'signed')`,
     [pending, template, admin.id],
   );
-  // Gone since 2020 with a login still on: what the departed deactivation switches off.
+  // Gone since 2020 with a login still on: what the departed step puts in pay only (SCRUM-769).
   const departedUser = await user("staff", `zz-${label}-departed-${run}@example.com`);
   await employee({ last_working_day: "2020-01-01", user_id: departedUser });
   // LEAVING with the last day long past: what transition-left moves to LEFT.
@@ -131,17 +131,19 @@ const B = await parkGroup("b");
 /** Every row a fence must leave alone, in one comparable value. */
 async function stateOf(g: ParkGroup) {
   const [emp] = await q<{ status: string }>("select status from employees where id = $1", [g.pending]);
-  const [dep] = await q<{ is_active: boolean }>("select is_active from users where id = $1", [g.departedUser]);
+  const [dep] = await q<{ is_active: boolean; access_mode: string }>("select is_active, access_mode from users where id = $1", [g.departedUser]);
   const [lea] = await q<{ employment_state: string }>("select employment_state from employees where id = $1", [g.leaving]);
   const [pho] = await q<{ profile_photo_path: string | null }>("select profile_photo_path from employees where id = $1", [g.photo]);
   return {
     pending: emp!.status,
     departedActive: dep!.is_active,
+    // SCRUM-769: how much of the app the leaver's login reaches.
+    departedAccess: dep!.access_mode,
     leaving: lea!.employment_state,
     photo: pho!.profile_photo_path,
   };
 }
-const untouched = { pending: "pending", departedActive: true, leaving: "LEAVING", photo: "/profile-photos/zz.jpg" };
+const untouched = { pending: "pending", departedActive: true, departedAccess: "full", leaving: "LEAVING", photo: "/profile-photos/zz.jpg" };
 const userCount = async () => Number((await q<{ n: string }>("select count(*) as n from users"))[0]!.n);
 
 // ─── Users to delete, in park group A ────────────────────────────────────────
@@ -388,11 +390,11 @@ try {
     assert.equal((await stateOf(A)).leaving, "LEFT");
     assert.equal((await stateOf(B)).leaving, "LEAVING");
   })();
-  await check("the departed deactivation switches off park group A's login and not B's", async () => {
+  await check("the departed step puts park group A's leaver's login in pay only (SCRUM-769: still on) and not B's", async () => {
     const res = await call(local, "POST", "/api/admin/run-departed-deactivation", adminA);
     assert.equal(res.status, 200, JSON.stringify(res.body));
-    assert.equal((await stateOf(A)).departedActive, false);
-    assert.equal((await stateOf(B)).departedActive, true);
+    assert.deepEqual([(await stateOf(A)).departedActive, (await stateOf(A)).departedAccess], [true, "pay_only"]);
+    assert.deepEqual([(await stateOf(B)).departedActive, (await stateOf(B)).departedAccess], [true, "full"]);
   })();
 
   // ── The app's own branch edit ──────────────────────────────────────────────

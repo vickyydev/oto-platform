@@ -39,16 +39,18 @@
 //      A plan cancelled before its start date deletes its unsent draft and
 //      does nothing else.
 //   5. The 03:00 batch on a clock past the last day but before the start date:
-//      a leaver with nothing planned is ended (resigned, Left, login off, the
-//      platform told); the profile with Onboard Again planned keeps its login,
-//      status and shifts. A Left profile onboarded again whose switch-off the
-//      platform has had: the plan says a platform administrator reactivates
-//      the sign-in, and stops saying so once the login is back on.
+//      a leaver with nothing planned is ended (resigned, Left, the login kept
+//      on in pay only and nothing told to the platform, SCRUM-769); the
+//      profile with Onboard Again planned keeps its login, status and shifts.
+//      A Left profile onboarded again whose switch-off the platform has had:
+//      the plan says a platform administrator reactivates the sign-in, and
+//      stops saying so once the login is back on.
 //   6. The batch on a clock at the start date starts the employment: the
 //      department switched, the status active, the offboarding re-onboarded,
-//      the login kept on — or switched back on for a Left profile, the
-//      platform's pending switch-off withdrawn; the cancelled plan's profile
-//      ends. A start date already past starts at once.
+//      the login kept on — or, for a Left profile, out of pay only; the
+//      cancelled plan's profile ends. A start date already past starts at
+//      once, a login switched off when it was offboarded switched back on and
+//      the platform's pending switch-off withdrawn.
 //   7. Rematch: staff are refused; a manager's rematch resolves exactly the
 //      pending item whose day now has a shift.
 //   8. The new contract ends too: the earlier offboarding is kept as the
@@ -419,6 +421,9 @@ const profile = async (id: string) => (await q(
           default_merge_data->>'positionTitle' as position, face_enrollment_status
      from employees where id = $1`, [id]))[0]!;
 const loginOn = async (userId: string) => (await q<{ is_active: boolean }>("select is_active from users where id = $1", [userId]))[0]!.is_active;
+/** SCRUM-769: the login's switch and how much of the app it reaches. */
+const access = async (userId: string) =>
+  (await q<{ is_active: boolean; access_mode: string }>("select is_active, access_mode from users where id = $1", [userId]))[0]!;
 const lifecycle = async (userId: string) => (await q<{ state: string }>(
   "select state from login_lifecycle_events where user_id = $1 order by created_at", [userId])).map((r) => r.state);
 const engagementOf = async (employeeId: string) => q(
@@ -851,28 +856,29 @@ try {
   // ── 5. The night after the last day, before the start date ───────────────
   console.log("5. the 03:00 batch past the last day, before the start date:");
   const nightBetween = await serve(threeAmBangkok(plus(4)));
-  await check("a leaver with nothing planned is ended: resigned, Left, login off, the platform told; the planned profile keeps everything", async () => {
+  await check("a leaver with nothing planned is ended: resigned, Left, the login kept on in pay only, nothing told to the platform; the planned profile keeps everything", async () => {
     const steps = await reconcileAt(nightBetween);
     assert.equal(steps.find((s) => s.step === "statusTransitions")!.counts.onboarded, 0);
     const ended = await profile(leaver);
     assert.deepEqual([ended.status, ended.employment_state], ["resigned", "LEFT"]);
-    assert.equal(await loginOn(leaverLogin.id), false);
-    assert.deepEqual(await lifecycle(leaverLogin.id), ["pending"]);
+    // SCRUM-769: the night after the last day restricts the login to My pay; it no longer switches it off.
+    assert.deepEqual(await access(leaverLogin.id), { is_active: true, access_mode: "pay_only" });
+    assert.deepEqual(await lifecycle(leaverLogin.id), []);
     const kept = await profile(original);
     assert.deepEqual([kept.status, kept.employment_state, kept.primary_department_id], ["active", "LEAVING", PROMOTION]);
-    assert.equal(await loginOn(subject.id), true);
+    assert.deepEqual(await access(subject.id), { is_active: true, access_mode: "full" });
     assert.deepEqual(await lifecycle(subject.id), []);
     assert.deepEqual((await engagementOf(original)).map((g) => g.status), ["planned"]);
     assert.equal(await countOf("select count(*) as n from schedule_assignments where id = $1", [receptionShift]), 1, "the new department's shift stays");
     // The cancelled plan's profile has not reached its last day yet.
-    assert.deepEqual([(await profile(cancelled)).status, await loginOn(cancelLogin.id)], ["active", true]);
+    assert.deepEqual([(await profile(cancelled)).status, await access(cancelLogin.id)], ["active", { is_active: true, access_mode: "full" }]);
   });
-  await check("a Left profile is onboarded again, its login staying off until the start date", async () => {
+  await check("a Left profile is onboarded again, its login staying in pay only until the start date", async () => {
     const res = await call("POST", `/api/employees/${leaver}/onboard-again`, as.admin, { ...onboardBody, startDate: plus(3) });
     assert.equal(res.status, 201, show(res));
     assert.equal(res.body.started, false);
-    assert.equal(await loginOn(leaverLogin.id), false);
-    // Its switch-off still waits for the platform: the start withdraws it, nobody needs to act.
+    assert.deepEqual(await access(leaverLogin.id), { is_active: true, access_mode: "pay_only" });
+    // Nothing was switched off, so there is nothing for the platform to undo.
     assert.equal(res.body.platformSignInOff, false);
   });
   await check("a Left profile whose switch-off the platform has had: the plan says a platform administrator reactivates the sign-in", async () => {
@@ -915,14 +921,14 @@ try {
     );
     assert.equal((await statusOf(promotionContract))!.status, "superseded");
   });
-  await check("the Left profile's login is switched back on, and the platform's pending switch-off withdrawn", async () => {
+  await check("the Left profile's login reaches the whole app again, with nothing ever queued for the platform", async () => {
     const row = await profile(leaver);
     assert.deepEqual([row.status, row.employment_state, row.primary_department_id], ["active", "ACTIVE", RECEPTION]);
-    assert.equal(await loginOn(leaverLogin.id), true);
-    assert.deepEqual(await lifecycle(leaverLogin.id), ["superseded"]);
+    assert.deepEqual(await access(leaverLogin.id), { is_active: true, access_mode: "full" });
+    assert.deepEqual(await lifecycle(leaverLogin.id), []);
   });
-  await check("the cancelled plan's profile is ended once its last day has passed", async () => {
-    assert.deepEqual([(await profile(cancelled)).status, await loginOn(cancelLogin.id)], ["resigned", false]);
+  await check("the cancelled plan's profile is ended once its last day has passed, its login in pay only", async () => {
+    assert.deepEqual([(await profile(cancelled)).status, await access(cancelLogin.id)], ["resigned", { is_active: true, access_mode: "pay_only" }]);
   });
   await check("a start date already past starts the employment at once", async () => {
     const off = await offboard(pastCase, plus(-3));
