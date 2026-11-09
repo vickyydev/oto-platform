@@ -49,10 +49,13 @@ afterAll(async () => {
   await teardownAll();
 });
 
-async function admission(adults = 2) {
+// SCRUM-797 — the extra hour is charged per child on a 1 or 2-hour ticket, so
+// the admission is a child and an adult on a 2 Hours Play (two bracelets, as
+// before): each option costs one child × its hours × ฿300.
+async function admission() {
   await takeStation(ctx.app, cookie, stationId);
   const made = await ctx.app.inject({ method: 'POST', url: '/sales', headers: { cookie },
-    payload: { stationId, id: newId(), lines: [{ id: newId(), packageId: twoHoursId, kids: 0, adults }] } });
+    payload: { stationId, id: newId(), lines: [{ id: newId(), packageId: twoHoursId, kids: 1, adults: 1 }] } });
   expect(made.statusCode, made.body).toBe(200);
   const id = made.json().sale.id as string;
   const closed = await ctx.app.inject({ method: 'POST', url: `/sales/${id}/finalise`, headers: { cookie }, payload: { actionId: newId() } });
@@ -63,7 +66,7 @@ async function admission(adults = 2) {
 
 function extend(sourceId: string, selection: Record<string, unknown>, who = cookie, at = stationId, actionId = newId()) {
   return ctx.app.inject({ method: 'POST', url: `/sales/${sourceId}/extensions`, headers: { cookie: who },
-    payload: { actionId, stationId: at, optionId: 'ext-30', selection } });
+    payload: { actionId, stationId: at, optionId: 'ext-60', selection } });
 }
 
 describe('tenancy and park scope on the Add time routes', () => {
@@ -154,9 +157,9 @@ describe('Add time money', () => {
     expect(audits).toHaveLength(1);
     const [entry] = await ctx.db.select().from(saleExtensionBand).where(eq(saleExtensionBand.extensionId, extensionId));
     expect(entry!.bandId).toBe(source.bands[1]!.id);
-    expect(entry!.minutesAdded).toBe(30);
+    expect(entry!.minutesAdded).toBe(60);
     const [row] = await ctx.db.select().from(saleExtension).where(eq(saleExtension.id, extensionId));
-    expect(row!.amountSatang).toBe(6000);
+    expect(row!.amountSatang).toBe(30000);
     expect(row!.selection).toEqual({ mode: 'bands', bandIds: [source.bands[0]!.id] });
     const after = await ctx.app.inject({ method: 'GET', url: `/sales/${source.id}/extensions`, headers: { cookie } });
     expect(after.json().extensions[0].needsReselection).toBe(false);
@@ -179,7 +182,7 @@ describe('Add time money', () => {
     const done = await ctx.app.inject({ method: 'POST', url: `/sales/${chargeId}/finalise`, headers: { cookie }, payload: { actionId: newId() } });
     expect(done.json().finalised).toBe(true);
     const taken = await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, chargeId));
-    expect(taken.reduce((sum, row) => sum + row.amountSatang, 0)).toBe(6000);
+    expect(taken.reduce((sum, row) => sum + row.amountSatang, 0)).toBe(30000);
     const [row] = await ctx.db.select().from(saleExtension).where(eq(saleExtension.id, extensionId));
     expect(row!.status).toBe('applied');
   });

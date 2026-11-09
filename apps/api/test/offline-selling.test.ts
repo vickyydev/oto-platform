@@ -462,14 +462,14 @@ describe('a lane switch mid-sale converges (OD-1)', () => {
     // SCRUM-495 review reproduction: the platform receipt is already visible
     // before the box delivers its replacement-band fact.
     const appliedExtension = await call('POST', `/sales/${body.saleId}/extensions`, {
-      actionId: newId(), stationId: tillId, optionId: 'ext-30',
+      actionId: newId(), stationId: tillId, optionId: 'ext-60',
       selection: { mode: 'bands', bandIds: [platformBands.find((entry) => entry.kind === 'adult')!.id, platformBands.find((entry) => entry.kind === 'kid')!.id] },
     });
     expect(appliedExtension.statusCode).toBe(200);
     const appliedChargeId = (appliedExtension.body.sale as { id: string }).id;
     expect((await call('POST', `/sales/${appliedChargeId}/finalise`, { actionId: newId(), method: 'cash' })).statusCode).toBe(200);
     const extension = await call('POST', `/sales/${body.saleId}/extensions`, {
-      actionId: newId(), stationId: tillId, optionId: 'ext-30',
+      actionId: newId(), stationId: tillId, optionId: 'ext-60',
       selection: { mode: 'bands', bandIds: [platformBands.find((entry) => entry.kind === selectedKind)!.id] },
     });
     expect(extension.statusCode, JSON.stringify(extension.body)).toBe(200);
@@ -554,13 +554,13 @@ describe('a lane switch mid-sale converges (OD-1)', () => {
       expect(selected).toHaveLength(expectedIds.length);
       for (const current of selected) {
         expect(boxBands).toContain(current.bandId);
-        expect(current.minutesAdded).toBe(30);
+        expect(current.minutesAdded).toBe(60);
       }
     }
     expect(await attemptsOf(chargeId)).toHaveLength(2);
     expect(await attemptsOf(appliedChargeId)).toHaveLength(1);
     const counted = await call('POST', `/sales/${body.saleId}/extensions`, {
-      actionId: newId(), stationId: tillId, optionId: 'ext-30', selection: { mode: 'count', braceletCount: boxBands.length },
+      actionId: newId(), stationId: tillId, optionId: 'ext-60', selection: { mode: 'count', braceletCount: boxBands.length },
     });
     expect(counted.statusCode, JSON.stringify(counted.body)).toBe(200);
     const countId = (counted.body.sale as { id: string }).id;

@@ -1,19 +1,26 @@
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { account, auditLog, band, employee, paymentAttempt, sale, saleExtension, saleExtensionBand, saleLine, station, type ExtensionSelection } from '@oto/db';
-import { bandShortCode, computeTaxBreakdown, newId, PAYMENT_ATTEMPT_TAKEN_STATUSES, PRICING_ENGINE_VERSION } from '@oto/shared';
+import {
+  bandShortCode, computeTaxBreakdown, EXTRA_HOUR_OPTIONS, EXTRA_HOUR_PER_CHILD_SATANG, extraHourChildren, extraHourLineLabel,
+  newId, PAYMENT_ATTEMPT_TAKEN_STATUSES, PRICING_ENGINE_VERSION,
+} from '@oto/shared';
 import { errors } from '../lib/errors';
 import { audit } from './audit';
 import { planBands } from './bands';
 import { resolvePricingScope, resolveSalesChannel, saleViewOf, type ActorContext } from './sale';
 import type { Exec, Tx } from './tx';
 
-// Approved prototype mockApi.getExtensionOptions: per bracelet, before the
-// branch's existing ticket tax calculation. No catalogue or invented expiry.
-export const EXTENSION_OPTIONS = [
-  { id: 'ext-30', label: '+30 minutes', minutes: 30, unitSatang: 6000 },
-  { id: 'ext-60', label: '+1 hour', minutes: 60, unitSatang: 10000 },
-  { id: 'ext-120', label: '+2 hours', minutes: 120, unitSatang: 18000 },
-] as const;
+// SCRUM-797 — the owner's extra hour: 1, 2 or 3 hours at ฿300 per child per
+// hour, before the branch's existing ticket tax calculation. It replaced the
+// prototype's per-bracelet options (mockApi.getExtensionOptions: +30 minutes
+// ฿60, +1 hour ฿100, +2 hours ฿180). No catalogue or invented expiry.
+export const EXTENSION_OPTIONS = EXTRA_HOUR_OPTIONS;
+
+/** "Depending on the information in the order": the children on its 1- and 2-hour tickets. */
+function extraHourRule(lines: readonly (typeof saleLine.$inferSelect)[]) {
+  return extraHourChildren(lines.map((line) => ({ id: line.id, cartLineId: line.cartLineId,
+    ticket: line.ticketPackageId !== null, kidCount: line.kidCount, stayHours: line.stayHours })));
+}
 
 type ExtensionRow = typeof saleExtension.$inferSelect;
 export function extensionView(row: ExtensionRow) {
@@ -37,8 +44,13 @@ export async function readSaleExtensions(db: Exec, actor: ActorContext, sourceSa
   const lines = await db.select().from(saleLine).where(eq(saleLine.saleId, source.id));
   // The approved History offers Add time on any admission with bracelets; a
   // part refund leaves its bracelets active, so only a whole refund (status
-  // 'refunded', bracelets revoked) ends it.
-  const eligible = source.status === 'finalised' && planBands(lines).length > 0;
+  // 'refunded', bracelets revoked) ends it. That also keeps an earlier
+  // addition's bracelets repairable; the extra hour itself is sold only when
+  // the order has children on a 1 or 2-hour ticket (SCRUM-797), and the
+  // refusal is said in the platform's words.
+  const open = source.status === 'finalised' && planBands(lines).length > 0;
+  const rule = extraHourRule(lines);
+  const eligible = open && rule.ok;
   const selected = rows.length ? await db.select().from(saleExtensionBand).where(inArray(saleExtensionBand.extensionId, rows.map((row) => row.id))) : [];
   // The 'Time added' card names the tender that took each charge, as the
   // approved History card does; money taken is read from the charge's attempts.
@@ -48,13 +60,16 @@ export async function readSaleExtensions(db: Exec, actor: ActorContext, sourceSa
     .orderBy(asc(paymentAttempt.createdAt)) : [];
   const activeIds = new Set(bands.map((row) => row.id));
   return { options: eligible ? [...EXTENSION_OPTIONS] : [],
-    eligibleBands: eligible ? bands.map((row) => ({ id: row.id, shortCode: bandShortCode(row.code), kind: row.kind })) : [],
+    children: rule.ok ? rule.children : 0,
+    perChildHourSatang: EXTRA_HOUR_PER_CHILD_SATANG,
+    refusal: open && !rule.ok ? { code: rule.code, message: rule.message } : null,
+    eligibleBands: open ? bands.map((row) => ({ id: row.id, shortCode: bandShortCode(row.code), kind: row.kind })) : [],
     extensions: rows.map((row) => {
       const currentBandIds = selected.filter((entry) => entry.extensionId === row.id).map((entry) => entry.bandId);
       const paymentMethods = [...new Set(tenders.filter((entry) => entry.saleId === row.chargeSaleId)
         .map((entry) => entry.methodCode ?? entry.method))];
       return { ...extensionView(row), currentBandIds, paymentMethods,
-        needsReselection: eligible && row.status !== 'voided' && row.selection.mode === 'bands'
+        needsReselection: open && row.status !== 'voided' && row.selection.mode === 'bands'
           && (currentBandIds.length !== row.braceletCount || currentBandIds.some((id) => !activeIds.has(id))) };
     }) };
 
@@ -96,6 +111,11 @@ export async function createSaleExtension(tx: Tx, actor: ActorContext, sourceSal
   const originalLines = await tx.select().from(saleLine).where(eq(saleLine.saleId, source.id));
   const originalCount = planBands(originalLines).length;
   if (originalCount === 0) throw errors.conflict('EXTENSION_NO_BRACELETS', 'This sale has no admission bracelets to extend.');
+  // SCRUM-797 — charged per child on the order's 1- and 2-hour tickets; a
+  // Full Day pass and an order with no child are refused before any charge.
+  const rule = extraHourRule(originalLines);
+  if (!rule.ok) throw errors.conflict(rule.code, rule.message);
+  const children = rule.children;
   const allBands = await tx.select().from(band).where(eq(band.saleId, source.id)).for('update');
   const active = allBands.filter((row) => row.status === 'active');
   const count = selection.mode === 'bands' ? selection.bandIds.length : selection.braceletCount;
@@ -112,7 +132,10 @@ export async function createSaleExtension(tx: Tx, actor: ActorContext, sourceSal
   if (counter.kind !== 'till' || !counter.codePrefix) throw errors.badRequest('Extra time must be charged at a ticket till with a receipt prefix.');
   resolveSalesChannel(counter, 'till');
   const scope = await resolvePricingScope(tx, source.branchId, actor.operatorId, now);
-  const base = option.unitSatang * count;
+  // hours × children × ฿300: the option's unit is one child's price for its
+  // hours. The bracelets chosen below carry the added time; they never change
+  // the money, which follows the order.
+  const base = option.unitSatang * children;
   const tax = computeTaxBreakdown([{ category: 'tickets', base }], 0, scope.taxConfig);
   const category = tax.categories[0]!;
   const net = tax.grandTotal - tax.serviceChargeTotal - tax.inclusiveTaxTotal - tax.exclusiveTaxTotal;
@@ -134,15 +157,17 @@ export async function createSaleExtension(tx: Tx, actor: ActorContext, sourceSal
   if (!charge) throw new Error('Time extension charge was not recorded');
   // An addon is a priced line without new admission participants. Its ticket
   // tax/revenue classification is explicit; product/package IDs stay empty,
-  // so it grants no new bands, stock, food or stored value.
+  // so it grants no new bands, stock, food or stored value. One unit per
+  // child, each unit one child's hours: the receipt reads "3 Extra hour x 2".
   await tx.insert(saleLine).values({ id: newId(), saleId: charge.id, operatorId: actor.operatorId,
     branchId: source.branchId, businessDate: scope.businessDate, lineNo: 1, cartLineId: newId(), kind: 'addon',
-    componentKey: 'time_extension', label: `Extra play ${option.label}`, revenueCategory: 'tickets', taxableCategory: 'tickets',
-    quantity: count, unitSatang: option.unitSatang, baseSatang: base, netSatang: net,
+    componentKey: 'time_extension', label: extraHourLineLabel(option.hours), revenueCategory: 'tickets', taxableCategory: 'tickets',
+    quantity: children, unitSatang: option.unitSatang, baseSatang: base, netSatang: net,
     serviceChargeSatang: tax.serviceChargeTotal, taxSatang: tax.inclusiveTaxTotal + tax.exclusiveTaxTotal,
     taxMode: category.taxMode, taxRateBp: Math.round(category.taxPercent * 100), taxRateId: category.taxRateId ?? null,
     taxName: category.taxName ?? null, grossSatang: tax.grandTotal, customerTier: source.customerTier,
-    payload: { extensionId, sourceSaleId: source.id, minutesAdded: option.minutes } });
+    payload: { extensionId, sourceSaleId: source.id, minutesAdded: option.minutes, hours: option.hours, children,
+      perChildHourSatang: EXTRA_HOUR_PER_CHILD_SATANG, perChildSatang: option.unitSatang } });
   const [person] = await tx.select({ name: employee.name }).from(account).leftJoin(employee, eq(employee.id, account.employeeId)).where(eq(account.id, actor.accountId)).limit(1);
   const [extension] = await tx.insert(saleExtension).values({ id: extensionId, operatorId: actor.operatorId,
     branchId: source.branchId, sourceSaleId: source.id, chargeSaleId: charge.id, actionId: input.actionId,
@@ -153,7 +178,8 @@ export async function createSaleExtension(tx: Tx, actor: ActorContext, sourceSal
   if (selection.mode === 'bands') await tx.insert(saleExtensionBand).values(selection.bandIds.map((bandId) => ({ id: newId(), extensionId, bandId, minutesAdded: option.minutes })));
   await audit.record(tx, { actorAccountId: actor.accountId, operatorId: actor.operatorId, branchId: source.branchId,
     requestId: actor.requestId, actionId: input.actionId, action: 'sale.extension.create', entityType: 'sale_extension', entityId: extensionId,
-    after: { sourceSaleId: source.id, chargeSaleId: charge.id, optionId: option.id, braceletCount: count, amountSatang: tax.grandTotal, selection } });
+    after: { sourceSaleId: source.id, chargeSaleId: charge.id, optionId: option.id, hours: option.hours, children,
+      braceletCount: count, amountSatang: tax.grandTotal, selection } });
   return { extension: extensionView(extension), sale: await saleViewOf(tx, charge), replay: false };
 }
 

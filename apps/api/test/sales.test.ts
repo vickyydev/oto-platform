@@ -2143,9 +2143,13 @@ describe('the seam between this and the till', () => {
 });
 
 describe('SCRUM-495 paid time extensions', () => {
+  // SCRUM-797 — the extra hour is charged per child on a 1 or 2-hour ticket,
+  // so the admission these cases extend is a child and an adult on a 2 Hours
+  // Play (two bracelets, as before): every option below costs one child × its
+  // hours × ฿300, whichever bracelets carry it.
   async function admission() {
     await takeStation(ctx.app, cookie, stationId);
-    const made = await commit({ id: newId(), lines: [line(twoHoursId, 0, 2)] });
+    const made = await commit({ id: newId(), lines: [line(twoHoursId, 1, 1)] });
     expect(made.statusCode).toBe(200);
     const id = made.json().sale.id as string;
     const closed = await ctx.app.inject({ method: 'POST', url: `/sales/${id}/finalise`, headers: { cookie }, payload: { actionId: newId() } });
@@ -2154,7 +2158,7 @@ describe('SCRUM-495 paid time extensions', () => {
     expect(bands.length).toBe(2);
     return { id, bands, gross: closed.json().sale.totals.grossSatang as number };
   }
-  async function extension(sourceId: string, selection: { mode: 'bands'; bandIds: string[] } | { mode: 'count'; braceletCount: number }, actionId = newId(), optionId = 'ext-30') {
+  async function extension(sourceId: string, selection: { mode: 'bands'; bandIds: string[] } | { mode: 'count'; braceletCount: number }, actionId = newId(), optionId = 'ext-60') {
     return ctx.app.inject({ method: 'POST', url: `/sales/${sourceId}/extensions`, headers: { cookie }, payload: { actionId, stationId, optionId, selection } });
   }
   async function finish(id: string, amountSatang?: number) {
@@ -2169,14 +2173,14 @@ describe('SCRUM-495 paid time extensions', () => {
     expect(made.statusCode).toBe(200);
     const chargeId = made.json().sale.id as string;
     const extensionId = made.json().extension.id as string;
-    expect(made.json().extension).toMatchObject({ status: 'pending', amountSatang: 6000, minutesAdded: 30, selection });
+    expect(made.json().extension).toMatchObject({ status: 'pending', amountSatang: 30000, minutesAdded: 60, selection });
     expect((await extension(original.id, selection, actionId)).json()).toMatchObject({ replay: true, sale: { id: chargeId } });
-    expect((await extension(original.id, selection, actionId, 'ext-60')).statusCode).toBe(409);
+    expect((await extension(original.id, selection, actionId, 'ext-120')).statusCode).toBe(409);
     expect((await extension(original.id, selection)).json().error.code).toBe('EXTENSION_PENDING');
     expect((await finish(chargeId, 3000)).json().finalised).toBe(false);
     const resumed = await ctx.app.inject({ method: 'GET', url: `/sales/${chargeId}`, headers: { cookie } });
     expect(resumed.statusCode).toBe(200);
-    expect(resumed.json().timeExtension).toEqual({ id: extensionId, sourceSaleId: original.id, status: 'pending', minutesAdded: 30, braceletCount: 1 });
+    expect(resumed.json().timeExtension).toEqual({ id: extensionId, sourceSaleId: original.id, status: 'pending', minutesAdded: 60, braceletCount: 1 });
     expect(resumed.json().attempts).toEqual(expect.arrayContaining([expect.objectContaining({ method: 'cash', amountSatang: 3000, status: 'approved' })]));
     expect((await ctx.db.select().from(saleExtension).where(eq(saleExtension.id, extensionId)))[0]!.status).toBe('pending');
     expect((await ctx.db.select().from(saleExtensionBand).where(eq(saleExtensionBand.extensionId, extensionId)))[0]!.appliedAt).toBeNull();
@@ -2187,7 +2191,7 @@ describe('SCRUM-495 paid time extensions', () => {
     expect((await finish(chargeId)).json().replay).toBe(true);
     const applied = (await ctx.db.select().from(saleExtensionBand).where(eq(saleExtensionBand.extensionId, extensionId)))[0]!;
     expect(applied.appliedAt).not.toBeNull();
-    expect(applied.minutesAdded).toBe(30);
+    expect(applied.minutesAdded).toBe(60);
     expect(await ctx.db.select({ id: band.id }).from(band).where(eq(band.saleId, chargeId))).toEqual([]);
     const printKinds = await ctx.db.select({ kind: printJob.kind }).from(printJob).where(eq(printJob.subjectId, chargeId));
     expect(printKinds.every((p) => p.kind === 'receipt')).toBe(true);
@@ -2215,7 +2219,7 @@ describe('SCRUM-495 paid time extensions', () => {
     const original = await admission();
     const made = await extension(original.id, { mode: 'count', braceletCount: 2 });
     expect(made.statusCode).toBe(200);
-    expect(made.json().extension).toMatchObject({ braceletCount: 2, amountSatang: 12000 });
+    expect(made.json().extension).toMatchObject({ braceletCount: 2, amountSatang: 30000 });
     const chargeId = made.json().sale.id as string;
     const voided = await ctx.app.inject({ method: 'POST', url: `/sales/${chargeId}/void`, headers: { cookie }, payload: { reason: 'Fixture cancelled' } });
     expect(voided.statusCode).toBe(200);
@@ -2279,10 +2283,11 @@ describe('SCRUM-495 paid time extensions', () => {
     try {
       const made = await extension(original.id, { mode: 'count', braceletCount: 2 });
       expect(made.statusCode).toBe(200);
-      expect(made.json().extension.amountSatang).toBe(14124);
-      expect(made.json().sale.totals.grossSatang).toBe(14124);
+      // 1 child × 1 hour × ฿300, then 10 % service and 7 % VAT on both.
+      expect(made.json().extension.amountSatang).toBe(35310);
+      expect(made.json().sale.totals.grossSatang).toBe(35310);
       const [charge] = await ctx.db.select().from(sale).where(eq(sale.id, made.json().sale.id));
-      expect(charge).toMatchObject({ subtotalSatang: 12000, serviceChargeSatang: 1200, taxExclusiveSatang: 924, grossSatang: 14124 });
+      expect(charge).toMatchObject({ subtotalSatang: 30000, serviceChargeSatang: 3000, taxExclusiveSatang: 2310, grossSatang: 35310 });
       const [unchanged] = await ctx.db.select().from(sale).where(eq(sale.id, original.id));
       expect(unchanged!.grossSatang).toBe(original.gross);
     } finally {
@@ -2312,7 +2317,7 @@ describe('SCRUM-495 paid time extensions', () => {
     const id = made.json().sale.id as string;
     expect((await extension(id, { mode: 'count', braceletCount: 1 })).json().error.code).toBe('EXTENSION_SOURCE_UNAVAILABLE');
     expect((await ctx.app.inject({ method: 'GET', url: `/sales/${id}/extensions` })).statusCode).toBe(401);
-    const otherCounter = await ctx.app.inject({ method: 'POST', url: `/sales/${id}/extensions`, headers: { cookie }, payload: { actionId: newId(), stationId: newId(), optionId: 'ext-30', selection: { mode: 'count', braceletCount: 1 } } });
+    const otherCounter = await ctx.app.inject({ method: 'POST', url: `/sales/${id}/extensions`, headers: { cookie }, payload: { actionId: newId(), stationId: newId(), optionId: 'ext-60', selection: { mode: 'count', braceletCount: 1 } } });
     expect(otherCounter.json().error.code).toBe('EXTENSION_COUNTER_REQUIRED');
     expect(await ctx.db.select().from(saleExtension).where(eq(saleExtension.sourceSaleId, id))).toEqual([]);
   });

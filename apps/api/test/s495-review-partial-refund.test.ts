@@ -33,10 +33,13 @@ afterAll(async () => {
   await teardownAll();
 });
 
-async function admission(adults = 2) {
+// SCRUM-797 — the extra hour is charged per child on a 1 or 2-hour ticket, so
+// the admission is a child and an adult on a 2 Hours Play (two bracelets, as
+// before): each option costs one child × its hours × ฿300.
+async function admission() {
   await takeStation(ctx.app, cookie, stationId);
   const made = await ctx.app.inject({ method: 'POST', url: '/sales', headers: { cookie },
-    payload: { stationId, id: newId(), lines: [{ id: newId(), packageId: twoHoursId, kids: 0, adults }] } });
+    payload: { stationId, id: newId(), lines: [{ id: newId(), packageId: twoHoursId, kids: 1, adults: 1 }] } });
   expect(made.statusCode, made.body).toBe(200);
   const id = made.json().sale.id as string;
   const closed = await ctx.app.inject({ method: 'POST', url: `/sales/${id}/finalise`, headers: { cookie }, payload: { actionId: newId() } });
@@ -48,7 +51,7 @@ async function admission(adults = 2) {
 
 function extend(sourceId: string, selection: Record<string, unknown>, actionId = newId()) {
   return ctx.app.inject({ method: 'POST', url: `/sales/${sourceId}/extensions`, headers: { cookie },
-    payload: { actionId, stationId, optionId: 'ext-30', selection } });
+    payload: { actionId, stationId, optionId: 'ext-60', selection } });
 }
 
 function finalise(chargeId: string) {

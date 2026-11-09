@@ -43,6 +43,8 @@ export * from './station-bridge';
 export * from './whole-satang';
 export * from './ledger-lines';
 export * from './sale-print';
+// SCRUM-797: the extra hour sold from History, per child per hour.
+export * from './extra-hour';
 export * from './supervision';
 export * from './release';
 export * from './checkin-offline';
