@@ -4,8 +4,7 @@ _Written 2026-11-09 from the owner's and the tester's notes of the same day
 (the Floresta Birthday package, the two After School packages, the
 Entertainment menu, the tester's three rules, the owner's note on kitchen slips
 at a set time). Source texts: the three PDFs and the owner's text as pasted,
-kept with the catalog sources outside the repository. Status: PROPOSED, waiting
-for the owner's yes and two answers (section 6)._
+kept with the catalog sources outside the repository. Status: APPROVED by the owner on 2026-11-09 (section 6 holds the answers)._
 
 ## 1. What exists today (read from the code, 2026-11-09)
 
@@ -90,8 +89,8 @@ existing line kinds:
 - the participants: the actual kids and adults on a ticket line of the
   package's hours, so bands print at finalisation as for any ticket sale;
 - extra children beyond the included count at the package's extra-child price
-  for the date; extra adults beyond the included count at the rule the owner
-  confirms (section 6);
+  for the date; extra adults beyond the included count at the package's own
+  extra-adult price for the date (350 / 500 on the Floresta package);
 - socks: included pairs as free Regular Socks (stock reduced, as SCRUM-768 and
   SCRUM-799 built), extra pairs at 60;
 - add-ons from the plan as lines; a table reservation or private zone grants its
@@ -106,8 +105,9 @@ and attendees are unchanged; check-in on the board keeps working.
 
 ## 5. Lane 3, kitchen and bar slips at a set time
 
-- A branch setting: the time of day party slips print (for example 11:00) and
-  the station whose kitchen and bar printers receive them.
+- Each party carries its slip time (from the BEO, default 11:00); a branch
+  setting names the station whose kitchen and bar printers receive the slips
+  (tagged later by the park; until then the job records no printer).
 - A job in the api's runner: at that time, for every party of the day at the
   park, one kitchen slip and one bar slip per prep station from the set menu
   and bar plan, headed with the party name, table, number of children and
@@ -117,13 +117,16 @@ and attendees are unchanged; check-in on the board keeps working.
 - Changes after printing (void slip and updated slip, the owner's E1) follow in
   their own ticket once this lands.
 
-## 6. Decisions needed from the owner
+## 6. The owner's decisions (2026-11-09)
 
-1. Yes to the principle and the three lanes.
+1. The principle and the three lanes: agreed.
 2. Extra adult on the Floresta package: 350 weekday / 500 weekend as the PDF
-   prints, or the regular rate by day and tier as the tester wrote.
-3. Which station's printers receive the party slips at Central Floresta (and
-   at Robinson Chalong when it runs parties).
+   prints, because that is the package's price; the regular tier rate is for a
+   normal sale without a package. (After School includes its parents.)
+3. Slip time: settable per party from the birthday package in the BEO, with
+   11:00 as the default. Food slips go to the kitchen printer, which the park
+   tags later; drinks go to the bar printer. Until a station is tagged for a
+   park, the job records "no printer" and the party page shows it.
 
 ## 7. Answers to the tester's open questions
 
