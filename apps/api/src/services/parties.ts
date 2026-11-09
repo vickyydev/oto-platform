@@ -20,6 +20,7 @@ import {
   type PartyEditFields,
   type PartyPatchBody,
   type PartyPaymentBody,
+  type PartyStoredEditFields,
   type PartyTenderBody,
   type PartyWriteAnswer,
 } from '@oto/shared';
@@ -98,13 +99,13 @@ export interface PartyDeps {
   log?: FastifyBaseLogger;
 }
 
-interface BranchClock {
+export interface BranchClock {
   id: string;
   timezone: string;
   dayStartMinutes: number;
 }
 
-async function branchClockOf(db: Exec, operatorId: string, branchId: string): Promise<BranchClock> {
+export async function branchClockOf(db: Exec, operatorId: string, branchId: string): Promise<BranchClock> {
   const [row] = await db
     .select({ id: branch.id, timezone: branch.timezone, dayStart: branch.businessDayStart })
     .from(branch)
@@ -115,7 +116,7 @@ async function branchClockOf(db: Exec, operatorId: string, branchId: string): Pr
 }
 
 /** The seam installed but not granted: a fault to say, as the read routes say it. */
-async function seamRead<T>(read: () => Promise<T>): Promise<T> {
+export async function seamRead<T>(read: () => Promise<T>): Promise<T> {
   try {
     return await read();
   } catch (err) {
@@ -129,14 +130,14 @@ async function seamRead<T>(read: () => Promise<T>): Promise<T> {
 const partyNotFound = () => errors.notFound('Party not found');
 
 /** The branch's party, from the seam; 404 for anything that is not one of its parties. */
-async function partyOf(db: Exec, branchId: string, partyId: string): Promise<SeamEvent> {
+export async function partyOf(db: Exec, branchId: string, partyId: string): Promise<SeamEvent> {
   const event = await seamRead(() => getBranchEvent(db, { branchId, eventId: partyId }));
   if (!event || event.type !== 'party') throw partyNotFound();
   return event;
 }
 
 /** Where it was done — checked inside the caller's operator and at this branch. */
-async function stationAt(db: Exec, operatorId: string, branchId: string, stationId: string | undefined) {
+export async function stationAt(db: Exec, operatorId: string, branchId: string, stationId: string | undefined) {
   if (!stationId) return null;
   const [row] = await db
     .select()
@@ -852,8 +853,10 @@ function editableOf(body: PartyPatchBody): { fields: PartyEditFields; ignored: s
 }
 
 /** A till's edit in the OTO App's words (`editBodySchema`): money in whole baht. */
-function directoryFieldsOf(f: PartyEditFields): DirectoryEventEditFields {
+function directoryFieldsOf(f: PartyStoredEditFields): DirectoryEventEditFields {
   const out: DirectoryEventEditFields = {};
+  // SCRUM-804 — the settlement sale's id, which only the platform writes.
+  if (f.posSaleId !== undefined) out.posSaleId = f.posSaleId;
   if (f.title !== undefined) out.title = f.title;
   if (f.status !== undefined) out.status = f.status;
   if (f.date !== undefined) out.eventDate = f.date;
@@ -1034,7 +1037,7 @@ async function sendPartyEdit(
   // party cannot be read, every waiting edit is carried, as it would be shown.)
   const seam = await getBranchEvent(db, { branchId: row.branchId, eventId: row.otoappEventId }).catch(() => null);
   const carried = [...older.filter((e) => !seam || editStillShown(e, seam)), row];
-  const merged = Object.assign({}, ...carried.map((e) => e.fields as PartyEditFields)) as PartyEditFields;
+  const merged = Object.assign({}, ...carried.map((e) => e.fields as PartyStoredEditFields)) as PartyStoredEditFields;
 
   const startedAt = new Date();
   const outcome: DirectoryOutcome<DirectoryEventEditAnswer> = deps.directory.editEvent

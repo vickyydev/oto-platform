@@ -45,6 +45,7 @@ import { describeInboxSync, syncInboxSetup } from './inbox';
 import { stableJson } from './stable-id';
 import { syncSuiteRegistry } from './suite-controls';
 import { syncGoldenTicket } from './golden-ticket';
+import { syncPartyDepositTender } from './party-settlement';
 import * as s from '../schema/index';
 
 /**
@@ -102,6 +103,8 @@ export {
 export { DEMO_BOOTH_NAME, DEMO_BOOTH_PREFIX } from './demo-booth';
 /** SCRUM-798 — the Golden Ticket's voucher type and its sale items, as platform-sync lays them. */
 export { GOLDEN_TICKET_DEFINITION, syncGoldenTicket, type GoldenTicketSync } from './golden-ticket';
+/** SCRUM-804 — the party deposit tender, as platform-sync lays it. */
+export { syncPartyDepositTender } from './party-settlement';
 /** The Inbox's configuration and its demo conversations (S2-19 I1, I1b). */
 export {
   CONSOLE_NOTICE_CHANNELS,
@@ -214,6 +217,12 @@ export async function platformSync(db: Db = getDb()): Promise<Record<SystemRole,
       `Payment methods: wrote the ${DEFAULT_TENDERS.length} default tenders for ${converged.length} park(s) that had none.`,
     );
   }
+
+  // SCRUM-804 — the tender a party's settlement sale records its deposit under,
+  // switched off so only the settlement writes it; insert-if-absent, after the
+  // defaults above, so a park with no list still gets its three first.
+  const deposit = await syncPartyDepositTender(db);
+  if (deposit > 0) console.log(`Payment methods: laid the party deposit tender for ${deposit} park(s).`);
 
   // Stock (S2-14b round 2, H4): a branch with no stock places or items gets the
   // seed's — places, items, sizes, packs and links — and never an opening

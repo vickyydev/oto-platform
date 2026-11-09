@@ -30,6 +30,7 @@ import {
   type TenderActor,
 } from '../services/payments/terminal';
 import { writeBackSalePass } from '../services/booking-event-passes';
+import { writeBackPartySettlement } from '../services/party-settlement';
 import { cancelQrAttempt } from '../services/payments/gateway';
 import { startPaymentTender } from '../services/payments/routing';
 import { recordPaidAtTillRefusal } from '../services/checkin-paid-at-till';
@@ -405,6 +406,8 @@ export async function paymentRoutes(app: App): Promise<void> {
       }
       // SCRUM-732 — a pass this money closed goes to the OTO App now, till or no till.
       if (!recorded.replayed && recorded.attempt.saleId) await writeBackSalePass(app.db, req.log, recorded.attempt.saleId);
+      // SCRUM-804 — a party settled by this money tells the OTO App which sale did.
+      if (!recorded.replayed && recorded.attempt.saleId) await writeBackPartySettlement(app.db, req.log, recorded.attempt.saleId);
       return { attempt: recorded.attempt, replayed: recorded.replayed, phase: recorded.phase };
     },
   );
@@ -471,6 +474,7 @@ export async function paymentRoutes(app: App): Promise<void> {
         ),
       }));
       if (answer.attempt.saleId) await writeBackSalePass(app.db, req.log, answer.attempt.saleId);
+      if (answer.attempt.saleId) await writeBackPartySettlement(app.db, req.log, answer.attempt.saleId);
       return answer;
     },
   );

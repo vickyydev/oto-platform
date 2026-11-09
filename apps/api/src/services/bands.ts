@@ -4,6 +4,7 @@ import {
   BAND_CODE_BODY_LENGTH,
   BAND_CODE_SIGNATURE_LENGTH,
   bandShortCode,
+  isPartyTicketLine,
   mintBandCode,
   newId,
   normaliseBandCode,
@@ -87,11 +88,15 @@ export function planBands(
       id: line.id,
       cartLineId: line.cartLineId,
       kind: line.kind,
-      ticket: line.ticketPackageId !== null,
+      // SCRUM-804 — a party's admission lines owe bands as a ticket line's do,
+      // and its adults pass the gate, as a party guest's band at check-in does.
+      ticket: line.ticketPackageId !== null || isPartyTicketLine(line.payload),
       kidCount: line.kidCount,
       adultCount: line.adultCount,
       freeAdultCount: line.freeAdultCount,
-      gateAccess: line.ticketPackageId ? gateAccess.get(line.ticketPackageId) === true : false,
+      gateAccess: line.ticketPackageId
+        ? gateAccess.get(line.ticketPackageId) === true
+        : isPartyTicketLine(line.payload),
     })),
   );
 }

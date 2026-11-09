@@ -1,15 +1,18 @@
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
-import { account, employee, partyCharge, partyEdit, partyPayment, paymentAttempt } from '@oto/db';
+import { account, employee, partyCharge, partyEdit, partyPayment, partySettlement, paymentAttempt, sale } from '@oto/db';
 import {
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
   PartyChargeItemSchema,
   partyBillOf,
+  partySettlementLive,
   type PartyBill,
   type PartyChargeItem,
   type PartyChargeView,
   type PartyEditFields,
   type PartyEditState,
   type PartyPaymentView,
+  type PartySettlementState,
+  type PartySettlementView,
 } from '@oto/shared';
 import type { SeamEvent } from './otoapp-events';
 import type { Exec, Tx } from './tx';
@@ -43,6 +46,16 @@ export interface PartyLedgers {
   payments: PartyPaymentView[];
   /** Every edit a till made, oldest first, whatever the OTO App made of it. */
   edits: PartyEditWithStaff[];
+  /** SCRUM-804 — the party's settlement sale, the one not taken over by a later one; null when none. */
+  settlement: PartySettlementView | null;
+}
+
+/** A settlement's state, from its sale's. */
+export function partySettlementStateOf(status: string): PartySettlementState {
+  if (status === 'finalised') return 'settled';
+  if (status === 'voided') return 'voided';
+  if (status === 'refunded') return 'refunded';
+  return 'open';
 }
 
 /** What the park calls a member of staff: their nickname, then their name. */
@@ -73,7 +86,7 @@ export async function partyLedgersOf(
   q: { branchId: string; eventIds: readonly string[] },
 ): Promise<Map<string, PartyLedgers>> {
   const out = new Map<string, PartyLedgers>();
-  for (const id of q.eventIds) out.set(id, { charges: [], payments: [], edits: [] });
+  for (const id of q.eventIds) out.set(id, { charges: [], payments: [], edits: [], settlement: null });
   if (q.eventIds.length === 0) return out;
   const ids = [...q.eventIds];
 
@@ -145,6 +158,61 @@ export async function partyLedgersOf(
     .orderBy(asc(partyEdit.createdAt), asc(partyEdit.id));
   for (const e of edits) {
     out.get(e.row.otoappEventId)?.edits.push({ ...e.row, staffName: nameOf(e) });
+  }
+
+  // SCRUM-804 — the settlement each party holds: its sale's state, what has
+  // been taken on it (the deposit included), and whether the OTO App has its id.
+  const settlements = await db
+    .select({
+      row: partySettlement,
+      status: sale.status,
+      receiptNumber: sale.receiptNumber,
+      grossSatang: sale.grossSatang,
+      writeBack: partyEdit.syncState,
+    })
+    .from(partySettlement)
+    .innerJoin(sale, eq(sale.id, partySettlement.saleId))
+    .leftJoin(partyEdit, eq(partyEdit.id, partySettlement.writeBackEditId))
+    .where(
+      and(
+        eq(partySettlement.branchId, q.branchId),
+        inArray(partySettlement.otoappEventId, ids),
+        sql`${partySettlement.releasedAt} is null`,
+      ),
+    );
+  if (settlements.length > 0) {
+    const taken = await db
+      .select({ saleId: paymentAttempt.saleId, satang: sql<string>`sum(${paymentAttempt.amountSatang})` })
+      .from(paymentAttempt)
+      .where(
+        and(
+          inArray(paymentAttempt.saleId, settlements.map((s) => s.row.saleId)),
+          inArray(paymentAttempt.status, [...PAYMENT_ATTEMPT_TAKEN_STATUSES]),
+        ),
+      )
+      .groupBy(paymentAttempt.saleId);
+    const paidOf = new Map(taken.map((t) => [t.saleId, Number(t.satang)]));
+    for (const st of settlements) {
+      const paid = paidOf.get(st.row.saleId) ?? 0;
+      const state = partySettlementStateOf(st.status);
+      const entry = out.get(st.row.otoappEventId);
+      if (!entry) continue;
+      entry.settlement = {
+        id: st.row.id,
+        saleId: st.row.saleId,
+        state,
+        receiptNumber: st.receiptNumber,
+        grossSatang: st.grossSatang,
+        paidSatang: paid,
+        outstandingSatang: state === 'open' ? Math.max(0, st.grossSatang - paid) : 0,
+        depositSatang: st.row.depositSatang,
+        kids: st.row.kids,
+        adults: st.row.adults,
+        createdAt: st.row.createdAt.toISOString(),
+        settledAt: st.row.settledAt?.toISOString() ?? null,
+        writeBack: st.writeBack ?? null,
+      };
+    }
   }
   return out;
 }
@@ -244,12 +312,21 @@ export function lastEditedOf(edits: readonly PartyEditWithStaff[]): { by: string
  * The party's bill (`computePartyTotal`, `computePartyOutstanding`): the OTO
  * App's bill total as the base (its line items are inside it), the walk-ups and
  * the till's charges on top, less the deposit and the payments taken.
+ *
+ * SCRUM-804 — once the party is settled (its settlement sale open or paid),
+ * the package and its deposit are that sale's: the tab is then its own charges
+ * less its own payments, so nothing takes the package twice.
  */
-export function billOfParty(e: SeamEvent, walkUpsSatang: number, ledgers: Pick<PartyLedgers, 'charges' | 'payments'>): PartyBill {
+export function billOfParty(
+  e: SeamEvent,
+  walkUpsSatang: number,
+  ledgers: Pick<PartyLedgers, 'charges' | 'payments'> & { settlement?: PartySettlementView | null },
+): PartyBill {
+  const settled = partySettlementLive(ledgers.settlement);
   return partyBillOf({
-    baseSatang: e.totalValueSatang ?? 0,
+    baseSatang: settled ? 0 : (e.totalValueSatang ?? 0),
     chargesSatang: walkUpsSatang + ledgers.charges.reduce((sum, c) => sum + c.totalSatang, 0),
-    depositSatang: e.depositSatang ?? 0,
+    depositSatang: settled ? 0 : (e.depositSatang ?? 0),
     paidSatang: ledgers.payments.reduce((sum, p) => sum + p.amountSatang, 0),
   });
 }

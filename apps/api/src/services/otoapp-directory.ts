@@ -132,6 +132,12 @@ export interface DirectoryEventEditFields {
   totalValueThb?: number | null;
   prepaymentAmountThb?: number | null;
   prepaymentDate?: string | null;
+  /**
+   * SCRUM-804 — the sale that settled the party at the till, written back by
+   * the platform once it is paid (the app keeps it in
+   * `beo_event_billing.pos_order_ref`). Never a till's field.
+   */
+  posSaleId?: string;
 }
 
 /** `POST /api/directory/events/:id/edits` — the edit's own id, and when it was made at the till. */

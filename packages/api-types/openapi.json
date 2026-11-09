@@ -62010,6 +62010,610 @@
         }
       }
     },
+    "/parties/{id}/settle/preview": {
+      "post": {
+        "description": "SCRUM-804 — what settling a party as one sale comes to with these counts: the package at its own price for the party's date, the children and adults beyond its included counts at its own extra prices, the socks beyond its free pairs, and the plan's add-ons and entertainment kept, priced by the sale engine exactly as the settlement will be, with the F&B credit the add-ons grant, the deposit recorded as paid in advance and the balance. Writes nothing. 409 PARTY_NO_PACKAGE for a party the OTO App has no package for, and the refusals a settlement makes for counts it cannot price.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "branchId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "stationId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "kids": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 500
+                  },
+                  "adults": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 500
+                  },
+                  "socksGiven": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "extraChildren": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 500
+                  },
+                  "extraAdults": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 500
+                  },
+                  "addOnIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "maxItems": 100
+                  },
+                  "entertainmentIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "maxItems": 100
+                  },
+                  "tier": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  }
+                },
+                "required": [
+                  "branchId",
+                  "kids",
+                  "adults",
+                  "socksGiven",
+                  "addOnIds",
+                  "entertainmentIds"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "quote": {
+                      "type": "object",
+                      "properties": {
+                        "partyDate": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "rateMode": {
+                          "type": "string",
+                          "enum": [
+                            "weekday",
+                            "weekend"
+                          ]
+                        },
+                        "packageName": {
+                          "type": "string"
+                        },
+                        "lines": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "role": {
+                                "type": "string",
+                                "enum": [
+                                  "package",
+                                  "included",
+                                  "guests",
+                                  "extra_children",
+                                  "extra_adults",
+                                  "socks",
+                                  "add_on",
+                                  "entertainment"
+                                ]
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "quantity": {
+                                "type": "integer"
+                              },
+                              "unitSatang": {
+                                "type": "integer"
+                              },
+                              "totalSatang": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "role",
+                              "label",
+                              "quantity",
+                              "unitSatang",
+                              "totalSatang"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "packageSatang": {
+                          "type": "integer"
+                        },
+                        "extraChildren": {
+                          "type": "integer"
+                        },
+                        "extraChildrenSatang": {
+                          "type": "integer"
+                        },
+                        "extraAdults": {
+                          "type": "integer"
+                        },
+                        "extraAdultsSatang": {
+                          "type": "integer"
+                        },
+                        "freeSocks": {
+                          "type": "integer"
+                        },
+                        "paidSocks": {
+                          "type": "integer"
+                        },
+                        "socksSatang": {
+                          "type": "integer"
+                        },
+                        "addOnsSatang": {
+                          "type": "integer"
+                        },
+                        "entertainmentSatang": {
+                          "type": "integer"
+                        },
+                        "totalSatang": {
+                          "type": "integer"
+                        },
+                        "creditSatang": {
+                          "type": "integer"
+                        },
+                        "depositSatang": {
+                          "type": "integer"
+                        },
+                        "balanceSatang": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "partyDate",
+                        "rateMode",
+                        "packageName",
+                        "lines",
+                        "packageSatang",
+                        "extraChildren",
+                        "extraChildrenSatang",
+                        "extraAdults",
+                        "extraAdultsSatang",
+                        "freeSocks",
+                        "paidSocks",
+                        "socksSatang",
+                        "addOnsSatang",
+                        "entertainmentSatang",
+                        "totalSatang",
+                        "creditSatang",
+                        "depositSatang",
+                        "balanceSatang"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "quote"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/parties/{id}/settle": {
+      "post": {
+        "description": "SCRUM-804 — settle a party as ONE sale from the OTO App's plan: the package fee, the included items as 0-baht lines, the children and adults on admission lines (a band prints for each at the close), the free and sold socks (taken off the Regular Socks shelf), the add-ons and entertainment kept (an F&B credit add-on grants its credit and prints its voucher at the close), and the deposit recorded on the sale as \"Deposit (paid in advance)\". The sale is left at the payment stage for the balance (POST /sales/:id/finalise and the tender routes, as any sale); a deposit that covers it all closes it here. When it closes, the sale id is written back to the OTO App through the party edit path. Refused 409 PARTY_ALREADY_SETTLED while an earlier settlement sale is open or paid (void or refund it first), 409 PARTY_PAID_ON_TAB when the tab already took money for the package, and as the preview refuses. The same settlement id again answers what it made, under x-oto-replay.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "branchId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "stationId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "kids": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 500
+                  },
+                  "adults": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 500
+                  },
+                  "socksGiven": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "extraChildren": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 500
+                  },
+                  "extraAdults": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 500
+                  },
+                  "addOnIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "maxItems": 100
+                  },
+                  "entertainmentIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "maxItems": 100
+                  },
+                  "tier": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "settlementId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "saleId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "expectedTotalSatang": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "actionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "branchId",
+                  "stationId",
+                  "kids",
+                  "adults",
+                  "socksGiven",
+                  "addOnIds",
+                  "entertainmentIds",
+                  "settlementId",
+                  "saleId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "replayed": {
+                      "type": "boolean"
+                    },
+                    "quote": {
+                      "type": "object",
+                      "properties": {
+                        "partyDate": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "rateMode": {
+                          "type": "string",
+                          "enum": [
+                            "weekday",
+                            "weekend"
+                          ]
+                        },
+                        "packageName": {
+                          "type": "string"
+                        },
+                        "lines": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "role": {
+                                "type": "string",
+                                "enum": [
+                                  "package",
+                                  "included",
+                                  "guests",
+                                  "extra_children",
+                                  "extra_adults",
+                                  "socks",
+                                  "add_on",
+                                  "entertainment"
+                                ]
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "quantity": {
+                                "type": "integer"
+                              },
+                              "unitSatang": {
+                                "type": "integer"
+                              },
+                              "totalSatang": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "role",
+                              "label",
+                              "quantity",
+                              "unitSatang",
+                              "totalSatang"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "packageSatang": {
+                          "type": "integer"
+                        },
+                        "extraChildren": {
+                          "type": "integer"
+                        },
+                        "extraChildrenSatang": {
+                          "type": "integer"
+                        },
+                        "extraAdults": {
+                          "type": "integer"
+                        },
+                        "extraAdultsSatang": {
+                          "type": "integer"
+                        },
+                        "freeSocks": {
+                          "type": "integer"
+                        },
+                        "paidSocks": {
+                          "type": "integer"
+                        },
+                        "socksSatang": {
+                          "type": "integer"
+                        },
+                        "addOnsSatang": {
+                          "type": "integer"
+                        },
+                        "entertainmentSatang": {
+                          "type": "integer"
+                        },
+                        "totalSatang": {
+                          "type": "integer"
+                        },
+                        "creditSatang": {
+                          "type": "integer"
+                        },
+                        "depositSatang": {
+                          "type": "integer"
+                        },
+                        "balanceSatang": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "partyDate",
+                        "rateMode",
+                        "packageName",
+                        "lines",
+                        "packageSatang",
+                        "extraChildren",
+                        "extraChildrenSatang",
+                        "extraAdults",
+                        "extraAdultsSatang",
+                        "freeSocks",
+                        "paidSocks",
+                        "socksSatang",
+                        "addOnsSatang",
+                        "entertainmentSatang",
+                        "totalSatang",
+                        "creditSatang",
+                        "depositSatang",
+                        "balanceSatang"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "settlement": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "saleId": {
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "open",
+                            "settled",
+                            "voided",
+                            "refunded"
+                          ]
+                        },
+                        "receiptNumber": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "grossSatang": {
+                          "type": "integer"
+                        },
+                        "paidSatang": {
+                          "type": "integer"
+                        },
+                        "outstandingSatang": {
+                          "type": "integer"
+                        },
+                        "depositSatang": {
+                          "type": "integer"
+                        },
+                        "kids": {
+                          "type": "integer"
+                        },
+                        "adults": {
+                          "type": "integer"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "settledAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "writeBack": {
+                          "type": "string",
+                          "enum": [
+                            "synced",
+                            "pending",
+                            "failed"
+                          ],
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "saleId",
+                        "state",
+                        "receiptNumber",
+                        "grossSatang",
+                        "paidSatang",
+                        "outstandingSatang",
+                        "depositSatang",
+                        "kids",
+                        "adults",
+                        "createdAt",
+                        "settledAt",
+                        "writeBack"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "sale": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "receiptNumber": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "grossSatang": {
+                          "type": "integer"
+                        },
+                        "outstandingSatang": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "status",
+                        "receiptNumber",
+                        "grossSatang",
+                        "outstandingSatang"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "printingNotes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "replayed",
+                    "quote",
+                    "settlement",
+                    "sale",
+                    "printingNotes"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/parties/{id}/charges": {
       "post": {
         "description": "Charge extra tickets or F&B to a party's tab (`addPartyExtraCharge`): a ledger entry of the till's items and its total, clamped at ฿0. Not a sale — no receipt, no kitchen ticket, no stock movement, no bands — so the money reaches the books only when the party's balance is paid. The same charge id again answers what it made, under x-oto-replay.",

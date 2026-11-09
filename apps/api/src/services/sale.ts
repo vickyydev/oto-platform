@@ -53,6 +53,7 @@ import {
   ledgerUnitLabel,
   newId,
   isPaymentReversalPending,
+  isPartyDepositAttempt,
   PAID_ONLINE_TENDER_CODE,
   PAID_ONLINE_TENDER_METHOD,
   WALLET_TENDER_CODE,
@@ -84,6 +85,9 @@ import {
   type TicketCartTotals,
   type PaymentAttemptView,
   type SaleLineStockShare,
+  type PartyLineRole,
+  type PartySaleLineTag,
+  type TicketFreebieRule,
 } from '@oto/shared';
 import { errors } from '../lib/errors';
 import { audit } from './audit';
@@ -92,6 +96,7 @@ import { refusePaidAtTillStays, refuseTenderOnStaysPaidAtTill } from './checkin-
 import {
   attemptView,
   attemptsForSale,
+  failAttempt,
   findAttemptByAction,
   openAttempt,
   outstandingAfter,
@@ -126,6 +131,7 @@ import { bandsOfSale } from './bands';
 import { refundsOfSale } from './refund-slices';
 import { applySaleExtension, cancelSaleExtension, assertSaleExtensionCollectable } from './sale-extension-lifecycle';
 import { applyEventPassHold, releaseEventPassHold } from './event-pass-hold';
+import { applyPartySettlementClose } from './party-settlement-close';
 import { assertCartStock, stockSharesForLines, takeStockForSale } from './stock';
 import { printJobsOfSale, routeSalePrinting, type SalePrintingResult } from './sale-printing';
 import { debitForSale, grantSaleCredit, grantsOfSale } from './wallet';
@@ -466,6 +472,15 @@ export interface CartInput {
    */
   bookingPasses?: ReadonlyArray<NonNullable<CartInput['eventPass']>> | null;
   /**
+   * SCRUM-804 — A PARTY SETTLED AS ONE SALE: the lines the party's plan makes,
+   * composed by `services/party-settlement.ts` from the package the OTO App
+   * published and the counts staff confirmed. Set ONLY by that service; the
+   * sales route's body schema does not carry it, so a till cannot name its own
+   * party prices. Priced here by the same engine as every cart (see
+   * `PartySettlementCart`), and alone on its sale.
+   */
+  partySettlement?: PartySettlementCart | null;
+  /**
    * S2-21 round 3 — A COLLEAGUE'S STAFF BENEFIT on this F&B order: the QR the
    * till scanned and the application id it minted for the scan. Priced on
    * every quote (nothing claimed), applied by the commit (the quota claimed in
@@ -499,6 +514,53 @@ export interface PromoDiscountInput {
   freeItemId?: string;
   freeItemKind?: 'menu' | 'merch';
   target?: unknown;
+}
+
+/**
+ * SCRUM-804 — one line of a party's settlement, as the engine prices it: a
+ * flat price per child and per adult beyond the line's free adults (the
+ * package's own figures for the party's date, so the line costs the same
+ * whatever day the sale is rung up on), the socks of the cart's socks product
+ * with those that are free, and add-ons at the plan's prices.
+ */
+export interface PartySettlementCartLine {
+  /** The cart line's id, derived by the service from the settlement's. */
+  id: string;
+  /** What the line is for: its children and adults, its socks, its add-ons. */
+  role: PartyLineRole;
+  /** An admission line: its people get bands, its add-ons item vouchers, as a ticket line's do. */
+  ticket: boolean;
+  kids: number;
+  kidUnitSatang: number;
+  adults: number;
+  /** Adults within the package: ฿0 each. The rest pay `adultUnitSatang`. */
+  adultsFree: number;
+  adultUnitSatang: number;
+  /** Pairs of the cart's socks product on this line, and how many of them are free. */
+  socks: number;
+  freeSocks: number;
+  addOns: {
+    id: string;
+    name: string;
+    unitSatang: number;
+    quantity: number;
+    taxCategory?: TaxableCategory;
+    role: PartyLineRole;
+    /** F&B credit per unit, granted when the sale closes. */
+    fnbCreditSatang?: number;
+    creditHolder?: string;
+  }[];
+  /** The receipt's words for the line's children and adults. */
+  labels?: { kids?: string; adultsFree?: string; adultsPaid?: string };
+}
+
+export interface PartySettlementCart {
+  /** The OTO App's party. */
+  eventId: string;
+  settlementId: string;
+  /** The package's hours: the bands' stay. Null when the package names none. */
+  hours: number | null;
+  lines: PartySettlementCartLine[];
 }
 
 export interface CommitSaleInput extends CartInput {
@@ -866,6 +928,12 @@ export interface SaleLinePayload {
   holder?: { checkinId: string; foodOverride?: { accountId: string; at: string } };
   /** S2-20 E2 — on an event pass's line: the OTO App's event and the till's attendee. */
   eventPass?: { eventId: string; attendeeId: string };
+  /**
+   * SCRUM-804 — on every line of a party's settlement: the party, the
+   * settlement, what the line is for, whether it is an admission line (bands,
+   * item vouchers), and an add-on's F&B credit per unit.
+   */
+  party?: PartySaleLineTag;
 }
 
 /** A priced unit, ready to become a `pos.sale_line` row. */
@@ -1892,6 +1960,63 @@ export async function priceCart(
   }
 
   /**
+   * SCRUM-804 — A PARTY'S SETTLEMENT, priced here like any ticket line: each
+   * line the service composed from the party's plan becomes an engine line at
+   * flat prices (the package's own figures for the party's date, the same at
+   * every tier and on either rate), adults beyond the line's free ones at the
+   * package's extra-adult price, and the package's free socks as the ticket's
+   * free items are (SCRUM-768): Regular Socks at ฿0, out of the socks counted
+   * on the line. Alone on its sale.
+   */
+  const party = input.partySettlement ?? null;
+  if (party) {
+    if ((input.lines?.length ?? 0) > 0 || (input.items?.length ?? 0) > 0 || passes.length > 0) {
+      throw errors.badRequest('A party is settled on a sale of its own');
+    }
+    const flat = (satang: number) => ({ weekday: satang, weekend: satang });
+    for (const line of party.lines) {
+      if (line.socks > 0 && !input.socks) {
+        throw errors.badRequest('This party hands out socks, but no socks add-on was named');
+      }
+      // A free item rides a child charged at the line's rate, so the free pairs
+      // sit on a line with children; the service puts them there.
+      if (line.freeSocks > 0 && line.kids <= 0) throw new Error('a party line gives free socks with no child on it');
+      const freebies: TicketFreebieRule[] =
+        line.freeSocks > 0 ? [{ kind: 'addon', addOnId: ctx.socks.addOnId, quantity: line.freeSocks, tiers: [] }] : [];
+      const partyLine: TicketCartLine = {
+        id: line.id,
+        packageId: `party:${line.role}`,
+        package: {
+          prices: { [resolvedTier.code]: flat(line.kidUnitSatang) },
+          adultRules: {
+            [resolvedTier.code]: {
+              kind: 'free_adults',
+              freeAdults: line.adultsFree,
+              overflow: 'set_price',
+              price: flat(line.adultUnitSatang),
+            },
+          },
+          freebies,
+        },
+        tier: resolvedTier.code,
+        kids: line.kids,
+        adults: line.adults,
+        socks: line.socks,
+        addOns: line.addOns.map((addOn) => ({
+          id: addOn.id,
+          name: addOn.name,
+          price: addOn.unitSatang,
+          quantity: addOn.quantity,
+          ...(addOn.taxCategory ? { taxCategoryOverride: addOn.taxCategory } : {}),
+        })),
+        lineTotal: 0,
+      };
+      partyLine.lineTotal = priceCartLine(partyLine, ctx);
+      cartLines.push(partyLine);
+    }
+  }
+
+  /**
    * S2-09b — the F&B and shop lines, priced from the catalogue and appended to
    * the cart the engine totals, so one cascade covers the whole bill.
    */
@@ -2210,7 +2335,7 @@ export async function priceCart(
   // and its "One-time" duration; it has no package, so it owes no band. E5 —
   // the same for each pass a redeemed booking paid for.
   const passByLine = new Map(passes.map((p) => [p.lineId, p]));
-  const lines = passByLine.size > 0
+  const passed = passByLine.size > 0
     ? built.map((line) => {
         const p = line.cartLineId ? passByLine.get(line.cartLineId) : undefined;
         return p
@@ -2225,6 +2350,8 @@ export async function priceCart(
           : line;
       })
     : built;
+  // SCRUM-804 — a party's lines say what each is for, in the receipt's words.
+  const lines = party ? passed.map((line) => partyLineOf(line, party)) : passed;
 
   return {
     scope,
@@ -2269,6 +2396,53 @@ export async function priceCart(
           benefit.discount ? (totals.manualAmounts[benefit.discount.id] ?? 0) : 0,
         )
       : null,
+  };
+}
+
+/** "3 Hours", "1 Hour": a party package's stay, worded as a ticket package's `durationLabel` is. */
+const partyStayLabel = (hours: number): string => `${hours} ${hours === 1 ? 'Hour' : 'Hours'}`;
+
+/**
+ * SCRUM-804 — one priced unit of a party's settlement, tagged for the ledger:
+ * the party and the settlement, what the unit is for, whether its line is an
+ * admission line (its people get bands and its add-ons item vouchers, as a
+ * ticket line's do), an add-on's F&B credit per unit, the receipt's words for
+ * the children and adults, and the package's hours on the admission lines,
+ * which is what their bands print.
+ */
+function partyLineOf(line: PricedLine, party: PartySettlementCart): PricedLine {
+  const source = party.lines.find((l) => l.id === line.cartLineId);
+  if (!source) return line;
+  const addOn = line.kind === 'addon' ? source.addOns.find((a) => a.id === line.componentKey) : undefined;
+  const role: PartyLineRole = addOn
+    ? addOn.role
+    : line.kind === 'socks'
+      ? 'socks'
+      : line.kind === 'adults_paid' && source.role === 'guests'
+        ? 'extra_adults'
+        : source.role;
+  const label =
+    line.kind === 'kids'
+      ? (source.labels?.kids ?? line.label)
+      : line.kind === 'adults_free'
+        ? (source.labels?.adultsFree ?? line.label)
+        : line.kind === 'adults_paid'
+          ? (source.labels?.adultsPaid ?? line.label)
+          : line.label;
+  const tag: PartySaleLineTag = {
+    eventId: party.eventId,
+    settlementId: party.settlementId,
+    role,
+    ...(source.ticket ? { ticket: true as const } : {}),
+    ...(addOn?.fnbCreditSatang ? { fnbCreditSatang: addOn.fnbCreditSatang } : {}),
+    ...(addOn?.fnbCreditSatang && addOn.creditHolder ? { creditHolder: addOn.creditHolder } : {}),
+  };
+  const admission = source.ticket && (line.kind === 'kids' || line.kind === 'adults_paid' || line.kind === 'adults_free');
+  return {
+    ...line,
+    label,
+    ...(admission && party.hours ? { stayHours: party.hours, stayDurationLabel: partyStayLabel(party.hours) } : {}),
+    payload: { ...(line.payload ?? {}), party: tag },
   };
 }
 
@@ -3198,9 +3372,13 @@ export interface CommitResult {
  * fee and prepaid food each make one, and every F&B or shop line is one.
  */
 export function storedCartLineIds(
-  input: Pick<CartInput, 'lines' | 'items' | 'eventPass' | 'bookingPasses'>,
+  input: Pick<CartInput, 'lines' | 'items' | 'eventPass' | 'bookingPasses' | 'partySettlement'>,
 ): Set<string> {
   const ids = new Set<string>();
+  // SCRUM-804 — a party's lines, by the same rule as a ticket line's.
+  for (const line of input.partySettlement?.lines ?? []) {
+    if (line.kids > 0 || line.adults > 0 || line.socks > 0 || line.addOns.length > 0) ids.add(line.id.toLowerCase());
+  }
   // S2-20 E2 — an event pass is one kid unit under its own line id (E5: each
   // of a redeemed booking's passes too).
   if (input.eventPass) ids.add(input.eventPass.lineId.toLowerCase());
@@ -4936,6 +5114,8 @@ export async function finaliseSale(
   await applySaleExtension(tx, after, actor, now);
   // SCRUM-732 — a pass waiting for this money lands on the roster with it.
   await applyEventPassHold(tx, after, actor, now);
+  // SCRUM-804 — a party settled by this sale is settled, and the OTO App is told which sale.
+  await applyPartySettlementClose(tx, after, actor, now);
 
   /**
    * S2-14b — THE STOCK LEAVES THE SHELF, in this transaction, once the sale is
@@ -5167,11 +5347,23 @@ export async function voidSale(
       id: paymentAttempt.id,
       status: paymentAttempt.status,
       amountSatang: paymentAttempt.amountSatang,
+      methodCode: paymentAttempt.methodCode,
       payload: paymentAttempt.payload,
     })
     .from(paymentAttempt)
     .where(eq(paymentAttempt.saleId, saleId));
-  const taken = attempts.filter((a) => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status));
+  /**
+   * SCRUM-804 — a party's deposit, recorded on its settlement sale as paid in
+   * advance, is not money this sale's till took: it was paid in the OTO App
+   * and stays there. A settlement left unpaid is voided like any sale, and the
+   * record of the deposit is cancelled with it, below.
+   */
+  const deposits = attempts.filter(
+    (a) => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status) && isPartyDepositAttempt(a),
+  );
+  const taken = attempts.filter(
+    (a) => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status) && !isPartyDepositAttempt(a),
+  );
   if (taken.length > 0) {
     throw errors.conflict(
       'SALE_HAS_PAYMENT',
@@ -5214,6 +5406,16 @@ export async function voidSale(
     .where(eq(sale.id, saleId))
     .returning();
   if (!after) throw new Error('the sale was not voided');
+  // SCRUM-804 — the deposit's record goes with the sale; the deposit stays the party's.
+  for (const deposit of deposits) {
+    await failAttempt(tx, deposit.id, {
+      status: 'cancelled',
+      payload: {
+        ...((deposit.payload as Record<string, unknown> | null) ?? {}),
+        cancelledWithSale: { at: now.toISOString(), accountId: actor.accountId, reason },
+      },
+    });
+  }
   // SCRUM-774 — a held sale voided at a till or from the list leaves Held sales.
   await releaseOpenHold(tx, saleId, 'voided', actor, now);
   await cancelSaleExtension(tx, after, actor, now);
@@ -5260,7 +5462,8 @@ export async function voidSale(
       grossSatang: row.grossSatang,
       // The tenders that were tried and took nothing, so the void can be read
       // beside them.
-      failedAttemptIds: attempts.map((a) => a.id),
+      failedAttemptIds: attempts.filter((a) => !deposits.includes(a)).map((a) => a.id),
+      ...(deposits.length > 0 ? { cancelledDepositAttemptIds: deposits.map((a) => a.id) } : {}),
       releasedVoucherIds: held.map((v) => v.id),
       restoredTierClaimId,
       releasedBenefitApplicationIds: releasedBenefitIds,

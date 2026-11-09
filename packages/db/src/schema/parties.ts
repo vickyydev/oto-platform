@@ -3,7 +3,7 @@ import { bigint, check, date, index, integer, jsonb, text, timestamp, uniqueInde
 import { idPk, pos, timestamps } from './helpers';
 import { account, branch, operator } from './tenancy';
 import { box, station } from './fleet';
-import { paymentAttempt } from './sales';
+import { paymentAttempt, sale } from './sales';
 
 // --- The party tab: what the POS keeps of a party (schema `pos`) -------------
 //
@@ -181,5 +181,89 @@ export const partyEdit = pos.table(
     check('party_edit_fields_check', sql`jsonb_typeof(${t.fields}) = 'object'`),
     /** Synced means the app answered. */
     check('party_edit_synced_check', sql`${t.syncState} <> 'synced' or ${t.syncedAt} is not null`),
+  ],
+);
+
+/** The rate a settlement was priced at: the party's date, a branch holiday counting as weekend. */
+export const PARTY_SETTLEMENT_RATE_MODES = ['weekday', 'weekend'] as const;
+export type PartySettlementRateMode = (typeof PARTY_SETTLEMENT_RATE_MODES)[number];
+
+/**
+ * SCRUM-804 — A PARTY SETTLED AS ONE REAL SALE (birthday plan §4). The till's
+ * "Settle party" rings the party's package up as a sale (`pos.sale`, through
+ * the ordinary engine) from the plan the OTO App published for it; this row
+ * says which sale settled which party, what was counted (the children, the
+ * adults, the socks handed out), the rate the party's date priced it at, and
+ * the plan as it was priced (`plan`, a snapshot: the app may change its
+ * package tomorrow, the sale does not).
+ *
+ * One live settlement per party: `released_at` is set when its sale was voided
+ * or refunded and the party is settled again, which is the only way a second
+ * one is made. `deposit_attempt_id` is the deposit recorded on the sale as paid
+ * in advance; `write_back_edit_id` the party edit that tells the OTO App the
+ * sale's id once it is paid (`beo_event_billing.pos_order_ref` there), written
+ * in the transaction that closes the sale. No foreign key into the app's tables
+ * (C10): the party is the app's.
+ */
+export const partySettlement = pos.table(
+  'party_settlement',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    /** The OTO App's party. No foreign key: the app's tables are its own (C10). */
+    otoappEventId: uuid('otoapp_event_id').notNull(),
+    saleId: uuid('sale_id')
+      .notNull()
+      .references(() => sale.id, { onDelete: 'restrict' }),
+    /** Everyone who came: the children and the adults, the package's and the extras. */
+    kids: integer('kids').notNull(),
+    adults: integer('adults').notNull(),
+    /** Pairs of socks handed out, free and sold. */
+    socksGiven: integer('socks_given').notNull(),
+    /** The tier staff named, for the record only: the package's prices are the same at every tier. */
+    tier: text('tier'),
+    rateMode: text('rate_mode').$type<PartySettlementRateMode>().notNull(),
+    /** The party's date the rate was read from. */
+    partyDate: date('party_date', { mode: 'string' }).notNull(),
+    /** The package and the lines as they were priced: a snapshot, never re-read. */
+    plan: jsonb('plan').notNull(),
+    depositSatang: bigint('deposit_satang', { mode: 'number' }).notNull().default(0),
+    depositAttemptId: uuid('deposit_attempt_id').references(() => paymentAttempt.id, { onDelete: 'restrict' }),
+    writeBackEditId: uuid('write_back_edit_id').references(() => partyEdit.id, { onDelete: 'restrict' }),
+    /** When the sale was paid and closed. */
+    settledAt: timestamp('settled_at', { withTimezone: true, mode: 'date' }),
+    /** When a later settlement took its place, its sale having been voided or refunded. */
+    releasedAt: timestamp('released_at', { withTimezone: true, mode: 'date' }),
+    /** Who settled it, where, and under which press. */
+    accountId: uuid('account_id').references(() => account.id, { onDelete: 'restrict' }),
+    stationId: uuid('station_id').references(() => station.id, { onDelete: 'restrict' }),
+    boxId: uuid('box_id').references(() => box.id, { onDelete: 'restrict' }),
+    actionId: text('action_id'),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex('party_settlement_sale_unique').on(t.saleId),
+    /** One live settlement per party. */
+    uniqueIndex('party_settlement_live_unique')
+      .on(t.otoappEventId)
+      .where(sql`released_at is null`),
+    index('party_settlement_operator_idx').on(t.operatorId),
+    index('party_settlement_branch_idx').on(t.branchId, t.createdAt),
+    /** A party's bill reads its settlements. */
+    index('party_settlement_event_idx').on(t.otoappEventId, t.createdAt),
+    index('party_settlement_deposit_attempt_idx').on(t.depositAttemptId),
+    index('party_settlement_write_back_idx').on(t.writeBackEditId),
+    index('party_settlement_account_idx').on(t.accountId),
+    index('party_settlement_station_idx').on(t.stationId),
+    index('party_settlement_box_idx').on(t.boxId),
+    check('party_settlement_counts_check', sql`${t.kids} >= 0 and ${t.adults} >= 0 and ${t.socksGiven} >= 0`),
+    check('party_settlement_deposit_check', sql`${t.depositSatang} >= 0`),
+    check('party_settlement_rate_mode_check', sql`${t.rateMode} in ('weekday','weekend')`),
+    check('party_settlement_plan_check', sql`jsonb_typeof(${t.plan}) = 'object'`),
   ],
 );

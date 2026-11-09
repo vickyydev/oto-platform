@@ -26,6 +26,7 @@ import {
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
   eventBandDocument,
   groupPrepTickets,
+  isPartyTicketLine,
   newId,
   reprintRootOf,
   salePrintDocumentOf,
@@ -401,7 +402,8 @@ export async function routeSalePrinting(
       };
       const notes: string[] = [];
 
-      const ticketLines = lines.filter((l) => l.ticketPackageId !== null);
+      // SCRUM-804 — a party's admission lines owe bands as a ticket line does.
+      const ticketLines = lines.filter((l) => l.ticketPackageId !== null || isPartyTicketLine(l.payload));
       let bandRows: (typeof band.$inferSelect)[] = [];
       if (ticketLines.length > 0) {
         try {
@@ -834,7 +836,7 @@ export async function reprintSale(
       .from(band)
       .where(and(eq(band.saleId, saleRow.id), eq(band.kind, kind)))
       .orderBy(asc(band.createdAt), asc(band.id));
-    if (bands.length === 0 && lines.some((l) => l.ticketPackageId !== null)) {
+    if (bands.length === 0 && lines.some((l) => l.ticketPackageId !== null || isPartyTicketLine(l.payload))) {
       // A sale finalised with no band key: issue what it owes now.
       const minted = await mintSaleBands(tx, saleRow, stationRow.codePrefix ?? '', {
         stationId: stationRow.id,
@@ -1181,7 +1183,8 @@ export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<S
         label: l.label,
         quantity: l.quantity,
         grossSatang: l.grossSatang,
-        ticket: l.ticketPackageId !== null,
+        // SCRUM-804 — a party's admission lines print as a ticket line's do.
+        ticket: l.ticketPackageId !== null || isPartyTicketLine(l.payload),
         payload: (l.payload ?? null) as SalePrintSnapshot['lines'][number]['payload'],
         stayHours: l.stayHours,
         stayDurationLabel: l.stayDurationLabel,

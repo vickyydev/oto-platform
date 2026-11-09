@@ -31,6 +31,7 @@ import {
   normaliseBandCode,
   normaliseWalletKeyValue,
   parseDayStart,
+  partyLineCreditSatang,
   type SalePrintCredit,
   type WalletEntryKind,
   type WalletEntrySource,
@@ -870,15 +871,29 @@ export async function grantSaleCredit(
       quantity: saleLine.quantity,
       unitSatang: saleLine.unitSatang,
       lineNo: saleLine.lineNo,
+      label: saleLine.label,
+      payload: saleLine.payload,
     })
     .from(saleLine)
     .where(eq(saleLine.saleId, saleRow.id));
   const packageIds = [...new Set(lines.map((l) => l.ticketPackageId).filter((id): id is string => !!id))];
-  if (packageIds.length === 0) return [];
-  const packages = await tx
-    .select({ id: ticketPackage.id, creditRule: ticketPackage.creditRule, gateAccess: ticketPackage.gateAccess })
-    .from(ticketPackage)
-    .where(inArray(ticketPackage.id, packageIds));
+  /**
+   * SCRUM-804 — a party add-on that is F&B credit in full (the reserved table,
+   * the private zone) grants it here, one wallet per add-on line, after the
+   * ticket persons and through the same door, so it prints on the receipt as
+   * every grant's credit voucher does. Its line has no band, so the wallet is
+   * spent by its QR.
+   */
+  const partyCredits = lines
+    .filter((l) => l.quantity > 0 && partyLineCreditSatang(l.payload) > 0)
+    .sort((a, b) => a.lineNo - b.lineNo);
+  if (packageIds.length === 0 && partyCredits.length === 0) return [];
+  const packages = packageIds.length
+    ? await tx
+        .select({ id: ticketPackage.id, creditRule: ticketPackage.creditRule, gateAccess: ticketPackage.gateAccess })
+        .from(ticketPackage)
+        .where(inArray(ticketPackage.id, packageIds))
+    : [];
   // A drop-off or nanny child's cart line is minted under its check-in's id
   // (`bands.ts`, `supervisedCheckinsOf`): their food is their own wallet.
   const cartLineIds = [...new Set(lines.map((l) => l.cartLineId))];
@@ -898,7 +913,7 @@ export async function grantSaleCredit(
       gifted,
     ),
   );
-  if (persons.length === 0) return [];
+  if (persons.length === 0 && partyCredits.length === 0) return [];
   const { expiresAt } = await expiryFor(tx, saleRow.branchId, saleRow.occurredAt);
   for (const [personIndex, person] of persons.entries()) {
     const payload: WalletGrantEntryPayload = {
@@ -921,6 +936,34 @@ export async function grantSaleCredit(
           : 'Booking child'
         : 'Walk-in guest',
       amountSatang: person.creditSatang,
+      source: 'ticket_sale',
+      keys: [{ kind: 'voucher_qr', value: mintVoucherQr() }],
+      saleId: saleRow.id,
+      stationId: saleRow.stationId,
+      boxId: saleRow.boxId,
+      businessDate: saleRow.businessDate,
+      expiresAt,
+      payload,
+      now,
+    });
+  }
+  for (const [n, line] of partyCredits.entries()) {
+    const personIndex = persons.length + n;
+    const holder = (line.payload as { party?: { creditHolder?: unknown } } | null)?.party?.creditHolder;
+    const payload: WalletGrantEntryPayload = {
+      cartLineId: line.cartLineId,
+      role: 'adult',
+      ordinal: 0,
+      personIndex,
+      gateAccess: false,
+      listUnitSatang: line.unitSatang,
+    };
+    await createWalletWithGrant(tx, actor, {
+      actionId: grantActionId(saleRow.id, personIndex),
+      branchId: saleRow.branchId,
+      memberId: saleRow.memberId,
+      holderName: typeof holder === 'string' && holder.trim() ? holder.trim() : line.label,
+      amountSatang: line.quantity * partyLineCreditSatang(line.payload),
       source: 'ticket_sale',
       keys: [{ kind: 'voucher_qr', value: mintVoucherQr() }],
       saleId: saleRow.id,

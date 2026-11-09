@@ -6,6 +6,10 @@ import {
   PartyPatchBodySchema,
   PartyPaymentBodySchema,
   PartyQuerySchema,
+  PartySettleAnswerSchema,
+  PartySettleBodySchema,
+  PartySettlePreviewAnswerSchema,
+  PartySettlePreviewBodySchema,
   PartyTenderBodySchema,
   PartyWriteAnswerSchema,
   type Permission,
@@ -13,6 +17,7 @@ import {
 import type { App } from '../app';
 import { chargeParty, getParty, payParty, startPartyTender, updateParty } from '../services/parties';
 import { readPartyPlan } from '../services/party-plan';
+import { previewPartySettlement, settleParty } from '../services/party-settlement';
 import { queueDrawerKick } from '../services/payments/drawer';
 import type { ActorContext } from '../services/sale';
 import { AttemptSchema } from './payments';
@@ -40,7 +45,7 @@ import { opCtx } from '../services/tx';
 const PartyParams = z.object({ id: z.string().uuid() });
 
 /** The acting account, with the scope check for the branch the write turns out to be for. */
-function actorOf(req: FastifyRequest, permission: Permission): ActorContext {
+function actorOf(req: FastifyRequest, permission: Permission, ...also: Permission[]): ActorContext {
   const auth = req.requireAuth();
   return {
     accountId: auth.accountId,
@@ -49,6 +54,7 @@ function actorOf(req: FastifyRequest, permission: Permission): ActorContext {
     requestId: req.id,
     assertBranchAllowed: async (branchId: string) => {
       await req.requirePermission(permission, { branchId });
+      for (const more of also) await req.requirePermission(more, { branchId });
     },
   };
 }
@@ -92,6 +98,69 @@ export async function partyRoutes(app: App): Promise<void> {
       });
       const { plan, status } = await readPartyPlan(app.db, { branchId: req.query.branchId, eventId: answer.event.id });
       return { ...answer, plan, planStatus: status };
+    },
+  );
+
+  app.post(
+    '/:id/settle/preview',
+    {
+      config: { permission: 'pos:party:charge', target: { branchId: 'body.branchId' } },
+      schema: {
+        description:
+          'SCRUM-804 — what settling a party as one sale comes to with these counts: the package at its own price ' +
+          "for the party's date, the children and adults beyond its included counts at its own extra prices, the " +
+          "socks beyond its free pairs, and the plan's add-ons and entertainment kept, priced by the sale engine " +
+          'exactly as the settlement will be, with the F&B credit the add-ons grant, the deposit recorded as paid ' +
+          'in advance and the balance. Writes nothing. 409 PARTY_NO_PACKAGE for a party the OTO App has no package ' +
+          'for, and the refusals a settlement makes for counts it cannot price.',
+        params: PartyParams,
+        body: PartySettlePreviewBodySchema,
+        response: { 200: PartySettlePreviewAnswerSchema },
+      },
+    },
+    async (req) => {
+      const actor = actorOf(req, 'pos:party:charge');
+      return previewPartySettlement({ db: app.db, log: req.log }, actor, req.params.id, req.body);
+    },
+  );
+
+  app.post(
+    '/:id/settle',
+    {
+      config: {
+        permission: 'pos:sale:create',
+        target: { branchId: 'body.branchId' },
+        stationTrading: true,
+      },
+      schema: {
+        description:
+          "SCRUM-804 — settle a party as ONE sale from the OTO App's plan: the package fee, the included items as " +
+          '0-baht lines, the children and adults on admission lines (a band prints for each at the close), the free ' +
+          'and sold socks (taken off the Regular Socks shelf), the add-ons and entertainment kept (an F&B credit ' +
+          'add-on grants its credit and prints its voucher at the close), and the deposit recorded on the sale as ' +
+          '"Deposit (paid in advance)". The sale is left at the payment stage for the balance (POST ' +
+          '/sales/:id/finalise and the tender routes, as any sale); a deposit that covers it all closes it here. ' +
+          'When it closes, the sale id is written back to the OTO App through the party edit path. Refused 409 ' +
+          'PARTY_ALREADY_SETTLED while an earlier settlement sale is open or paid (void or refund it first), 409 ' +
+          'PARTY_PAID_ON_TAB when the tab already took money for the package, and as the preview refuses. The same ' +
+          'settlement id again answers what it made, under x-oto-replay.',
+        params: PartyParams,
+        body: PartySettleBodySchema,
+        response: { 200: PartySettleAnswerSchema },
+      },
+    },
+    async (req, reply) => {
+      const actor = actorOf(req, 'pos:sale:create', 'pos:party:charge');
+      const actionId = actionIdOf(req, req.body.actionId);
+      const answer = await settleParty(
+        { db: app.db, directory: app.otoAppDirectory, log: req.log },
+        opCtx(req),
+        actor,
+        req.params.id,
+        { ...req.body, ...(actionId ? { actionId } : {}) },
+      );
+      if (answer.replayed) reply.header('x-oto-replay', 'true');
+      return answer;
     },
   );
 

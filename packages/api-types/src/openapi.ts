@@ -25355,6 +25355,206 @@ export interface paths {
         };
         trace?: never;
     };
+    "/parties/{id}/settle/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description SCRUM-804 — what settling a party as one sale comes to with these counts: the package at its own price for the party's date, the children and adults beyond its included counts at its own extra prices, the socks beyond its free pairs, and the plan's add-ons and entertainment kept, priced by the sale engine exactly as the settlement will be, with the F&B credit the add-ons grant, the deposit recorded as paid in advance and the balance. Writes nothing. 409 PARTY_NO_PACKAGE for a party the OTO App has no package for, and the refusals a settlement makes for counts it cannot price. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        branchId: string;
+                        /** Format: uuid */
+                        stationId?: string;
+                        kids: number;
+                        adults: number;
+                        socksGiven: number;
+                        extraChildren?: number;
+                        extraAdults?: number;
+                        addOnIds: string[];
+                        entertainmentIds: string[];
+                        tier?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            quote: {
+                                partyDate: string;
+                                /** @enum {string} */
+                                rateMode: "weekday" | "weekend";
+                                packageName: string;
+                                lines: {
+                                    /** @enum {string} */
+                                    role: "package" | "included" | "guests" | "extra_children" | "extra_adults" | "socks" | "add_on" | "entertainment";
+                                    label: string;
+                                    quantity: number;
+                                    unitSatang: number;
+                                    totalSatang: number;
+                                }[];
+                                packageSatang: number;
+                                extraChildren: number;
+                                extraChildrenSatang: number;
+                                extraAdults: number;
+                                extraAdultsSatang: number;
+                                freeSocks: number;
+                                paidSocks: number;
+                                socksSatang: number;
+                                addOnsSatang: number;
+                                entertainmentSatang: number;
+                                totalSatang: number;
+                                creditSatang: number;
+                                depositSatang: number;
+                                balanceSatang: number;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/parties/{id}/settle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description SCRUM-804 — settle a party as ONE sale from the OTO App's plan: the package fee, the included items as 0-baht lines, the children and adults on admission lines (a band prints for each at the close), the free and sold socks (taken off the Regular Socks shelf), the add-ons and entertainment kept (an F&B credit add-on grants its credit and prints its voucher at the close), and the deposit recorded on the sale as "Deposit (paid in advance)". The sale is left at the payment stage for the balance (POST /sales/:id/finalise and the tender routes, as any sale); a deposit that covers it all closes it here. When it closes, the sale id is written back to the OTO App through the party edit path. Refused 409 PARTY_ALREADY_SETTLED while an earlier settlement sale is open or paid (void or refund it first), 409 PARTY_PAID_ON_TAB when the tab already took money for the package, and as the preview refuses. The same settlement id again answers what it made, under x-oto-replay. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        branchId: string;
+                        /** Format: uuid */
+                        stationId: string;
+                        kids: number;
+                        adults: number;
+                        socksGiven: number;
+                        extraChildren?: number;
+                        extraAdults?: number;
+                        addOnIds: string[];
+                        entertainmentIds: string[];
+                        tier?: string;
+                        /** Format: uuid */
+                        settlementId: string;
+                        /** Format: uuid */
+                        saleId: string;
+                        expectedTotalSatang?: number;
+                        actionId?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            replayed: boolean;
+                            quote: {
+                                partyDate: string;
+                                /** @enum {string} */
+                                rateMode: "weekday" | "weekend";
+                                packageName: string;
+                                lines: {
+                                    /** @enum {string} */
+                                    role: "package" | "included" | "guests" | "extra_children" | "extra_adults" | "socks" | "add_on" | "entertainment";
+                                    label: string;
+                                    quantity: number;
+                                    unitSatang: number;
+                                    totalSatang: number;
+                                }[];
+                                packageSatang: number;
+                                extraChildren: number;
+                                extraChildrenSatang: number;
+                                extraAdults: number;
+                                extraAdultsSatang: number;
+                                freeSocks: number;
+                                paidSocks: number;
+                                socksSatang: number;
+                                addOnsSatang: number;
+                                entertainmentSatang: number;
+                                totalSatang: number;
+                                creditSatang: number;
+                                depositSatang: number;
+                                balanceSatang: number;
+                            };
+                            settlement: {
+                                id: string;
+                                saleId: string;
+                                /** @enum {string} */
+                                state: "open" | "settled" | "voided" | "refunded";
+                                receiptNumber: string | null;
+                                grossSatang: number;
+                                paidSatang: number;
+                                outstandingSatang: number;
+                                depositSatang: number;
+                                kids: number;
+                                adults: number;
+                                createdAt: string;
+                                settledAt: string | null;
+                                /** @enum {string|null} */
+                                writeBack: "synced" | "pending" | "failed" | null;
+                            };
+                            sale: {
+                                id: string;
+                                status: string;
+                                receiptNumber: string | null;
+                                grossSatang: number;
+                                outstandingSatang: number;
+                            };
+                            printingNotes: string[];
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/parties/{id}/charges": {
         parameters: {
             query?: never;

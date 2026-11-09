@@ -339,6 +339,8 @@ function eventView(
                     walkUpCharges.reduce((sum, c) => sum + c.amountSatang, 0),
                     tab,
                   ),
+                  // SCRUM-804 — the settlement sale, when the till settled the party.
+                  settlement: tab.settlement,
                 }
               : {}),
           }

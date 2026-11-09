@@ -95,6 +95,7 @@ import type { FileStorage } from './services/files';
 import { buildSmsSender, configureNoticeLog, noticeLogModeFor, type SmsSender } from './services/sms';
 import { buildOtoAppDirectory, type OtoAppDirectory } from './services/otoapp-directory';
 import { configureBookingPassDirectory } from './services/booking-event-passes';
+import { configurePartySettlementDirectory } from './services/party-settlement';
 
 /** The Fastify instance with the Zod type provider — route schemas infer req.body/params. */
 export type App = FastifyInstance<
@@ -240,6 +241,9 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // settlement commits, which has no request to reach the app from: read
   // the decoration when it is needed, so a test's stub is the one used.
   configureBookingPassDirectory(() => app.otoAppDirectory);
+  // SCRUM-804 — so is a party settlement's sale id, when a terminal or the
+  // gateway closes its sale.
+  configurePartySettlementDirectory(() => app.otoAppDirectory);
 
   await app.register(cookie);
   // First, so its onSend and onResponse hooks see every request — including

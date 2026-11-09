@@ -342,6 +342,9 @@ describe('route guards (S2-01b)', () => {
       'POST /parties/:id/charges',
       'POST /parties/:id/payments',
       'POST /parties/:id/payments/tender',
+      // SCRUM-804: a party settled as one sale rings that sale up here, online
+      // only like the sale path it rides.
+      'POST /parties/:id/settle',
       'POST /payments/attempts',
       // Walking away from a gateway QR is a platform write on the attempt row,
       // like the press that opened it.

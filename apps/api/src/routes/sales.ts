@@ -32,6 +32,7 @@ import { gatewayFor } from '../services/payments/gateway';
 import { opCtx, withTx } from '../services/tx';
 import { queueDrawerKick, type DrawerKick } from '../services/payments/drawer';
 import { writeBackSalePass } from '../services/booking-event-passes';
+import { writeBackPartySettlement } from '../services/party-settlement';
 import { removeSaleBenefit } from '../services/benefit-checkout';
 import { holdSale, listHeldSales, resumeHeldSale } from '../services/sale-holds';
 import { recordPaidAtTillRefusal } from '../services/checkin-paid-at-till';
@@ -674,6 +675,8 @@ export async function saleRoutes(app: App): Promise<void> {
       // the till's close after a QR is that write-back's second chance. Nothing
       // is sent for any other sale, and it cannot fail this request.
       if (answer.finalised) await writeBackSalePass(app.db, req.log, req.params.id);
+      // SCRUM-804 — and a party this close settled tells the OTO App which sale did.
+      if (answer.finalised) await writeBackPartySettlement(app.db, req.log, req.params.id);
       if (answer.replay) reply.header('x-oto-replay', 'true');
       return answer;
     },
