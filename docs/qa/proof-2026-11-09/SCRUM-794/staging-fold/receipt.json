@@ -1,0 +1,961 @@
+{
+  "ticket": "SCRUM-794 follow-up — fold a working duplicate into the original; draft contract delete; offboard again",
+  "environment": {
+    "app": "https://oto-app-staging.onrender.com",
+    "api": "https://oto-app-staging.onrender.com/api",
+    "liveCommit": "877d23c9f34e16d600736e59992637b507416476",
+    "signedInAs": {
+      "via": "launcher sign-in as the staging admin, then POST /api/auth/handoff {app:\"oto_app\"}",
+      "appRole": "global_admin",
+      "appUserId": "01a1bea3-1105-7bfd-92b8-301d34f03f18"
+    },
+    "browser": "Playwright headless Chromium 1440x900, timezone Asia/Bangkok",
+    "date": "2026-11-09, between 19:22 and 19:29 Bangkok",
+    "signOut": "every run signed out at the launcher (POST /api/auth/sign-out answered 200 each time)"
+  },
+  "rules": {
+    "names": "No real name in any picture or in this file. The person is \"the staff member\"; her profiles are \"the original (Promotion) profile\" and \"the duplicate (Reception) profile\". Names were compared and masked in memory only. Face ids are written as short sha256 tags.",
+    "sms": "none sent",
+    "settingsChanged": "none",
+    "deploy": "none",
+    "commit": "none",
+    "herLoginAndFace": "not touched; nobody signed in as her",
+    "stagingAdminSecrets": "never written"
+  },
+  "partA": {
+    "outcome": "STOPPED at step 2: the fold preview refuses (409 still_referenced, the org chart). Nothing was written to either profile, her login or her face. Steps 3 to 5 (the fold, the read-back, the pictures after) were not run.",
+    "step1_factsHold": {
+      "verdict": "The facts still hold. The duplicate has no login, and neither profile changed status since the earlier proof.",
+      "read": [
+        "GET /api/employees/<id>",
+        "GET /api/employees/<id>/contracts",
+        "GET /api/employees/<id>/offboarding",
+        "GET /api/employees/<id>/onboard-again",
+        "GET /api/employees/<id>/changes",
+        "GET /api/employees/<id>/time-events?limit=500",
+        "GET /api/users",
+        "GET /api/schedule/week?branchId=<Central Floresta>&weekStartDate=<each Monday 26 Oct to 23 Nov>",
+        "GET /api/timekeeping/pending-issues?branchId=<Central Floresta>"
+      ],
+      "at": "2026-11-09 19:22:30 Bangkok",
+      "originalPromotionProfile": {
+        "id": "ac223128-5852-422e-b361-2f3e73a57808",
+        "status": "resigned",
+        "employmentState": "LEFT",
+        "department": "Promotion",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "login": {
+          "id": "3c91b8e0-79fd-48b1-bb91-5232f24ff7b5",
+          "isActive": false,
+          "role": "staff",
+          "platformLinked": false
+        },
+        "faceEnrollment": "ENROLLED",
+        "faceTag": "87714315",
+        "faceEnrolledAt": "2026-05-23T03:02:02.102Z",
+        "lastWorkingDay": "2026-10-31",
+        "offboarding": {
+          "status": 200,
+          "id": "44512e69-edb4-4b42-bef6-0aa5eb9184a9",
+          "lastWorkingDay": "2026-10-31",
+          "type": "resignation",
+          "reonboardedAt": null
+        },
+        "plannedOnboardAgain": null,
+        "startDateOnProfile": "2026-11-03",
+        "probationEndDate": "2027-03-03",
+        "positionTitleOnProfile": "Reception ",
+        "employmentBasis": "FULL_TIME",
+        "contracts": [
+          {
+            "id": "78bedb19-8031-4ad7-959d-8205725e6e8a",
+            "status": "active",
+            "signingStatus": "signed",
+            "archived": false,
+            "createdAt": "2026-05-12T09:19:37.956Z",
+            "contractStart": "2026-02-02",
+            "position": "Sale Booth"
+          }
+        ],
+        "changeHistory": {
+          "count": 1,
+          "rows": [
+            {
+              "id": "2a005d6c-fb14-4bfe-8795-b154c239cc3d",
+              "type": "resigned",
+              "effectiveDate": "2026-10-31",
+              "contractInstanceId": null,
+              "newDepartmentId": null
+            }
+          ]
+        },
+        "timeEvents": {
+          "total": 210,
+          "novemberDays": [
+            "2026-11-03",
+            "2026-11-04",
+            "2026-11-05"
+          ]
+        },
+        "shiftsAtCentralFloresta26Oct_to_29Nov": 0,
+        "pendingAttendanceReview": {
+          "total": 4,
+          "byType": {
+            "UNSCHEDULED_WORK": 4
+          },
+          "unscheduled": [
+            {
+              "id": "b190bac7-5f94-4024-ae23-09a68945c4a0",
+              "date": "2026-08-11",
+              "status": "OPEN"
+            },
+            {
+              "id": "e01fc79d-e346-456d-8478-613c739a4b3f",
+              "date": "2026-08-12",
+              "status": "OPEN"
+            },
+            {
+              "id": "897b3045-afde-4e81-8692-db28e1f13bb9",
+              "date": "2026-11-03",
+              "status": "OPEN"
+            },
+            {
+              "id": "9138884f-9f1a-40bc-ac2b-d4b7f22a9787",
+              "date": "2026-11-05",
+              "status": "OPEN"
+            }
+          ]
+        }
+      },
+      "duplicateReceptionProfile": {
+        "id": "0b0d898f-8e30-452a-92a9-3e6c9e852abd",
+        "status": "active",
+        "employmentState": "ACTIVE",
+        "badge": "Probation",
+        "department": "Reception",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "login": "none",
+        "faceEnrollment": "ENROLLED",
+        "faceTag": "bcdfb798",
+        "faceEnrolledAt": "2026-11-05T05:21:58.395Z",
+        "sameFaceAsOriginal": false,
+        "startDateOnProfile": "2026-11-03",
+        "probationEndDate": "2027-03-03",
+        "positionTitleOnProfile": "Reception",
+        "employmentBasis": "FULL_TIME",
+        "contracts": [
+          {
+            "id": "d9f50d6e-e93b-4efa-bda0-76486d251d90",
+            "status": "active",
+            "signingStatus": "signed",
+            "archived": false,
+            "createdAt": "2026-10-31T05:01:52.397Z",
+            "contractStart": "2026-11-03",
+            "position": "Reception"
+          },
+          {
+            "id": "fa8c4cc0-51b8-49c6-a443-1966f3c6fc76",
+            "status": "finalized",
+            "signingStatus": "not_sent",
+            "archived": false,
+            "createdAt": "2026-10-31T05:01:11.302Z",
+            "contractStart": "2026-11-03",
+            "position": "Reception"
+          }
+        ],
+        "changeHistory": {
+          "count": 0,
+          "rows": []
+        },
+        "timeEvents": {
+          "total": 7,
+          "days": [
+            "2026-11-05",
+            "2026-11-06",
+            "2026-11-07",
+            "2026-11-09"
+          ]
+        },
+        "shiftsAtCentralFloresta": {
+          "count": 10,
+          "dates": [
+            "2026-11-04",
+            "2026-11-05",
+            "2026-11-06",
+            "2026-11-07",
+            "2026-11-09",
+            "2026-11-10",
+            "2026-11-12",
+            "2026-11-13",
+            "2026-11-14",
+            "2026-11-15"
+          ]
+        },
+        "checklistTemplatesNamingIt": 0,
+        "tasks": "no app route lists task assignments by employee; the fold counts them, but its preview refused before counting",
+        "pendingAttendanceReview": {
+          "total": 0,
+          "byType": {},
+          "unscheduled": []
+        }
+      },
+      "daysClockedOnBothProfilesInNovember": [
+        "2026-11-05"
+      ],
+      "counts": {
+        "duplicate": {
+          "contracts": 2,
+          "timeEvents": 7,
+          "shiftsInNovember": 10,
+          "checklistTemplates": 0,
+          "pendingReviewItems": 0
+        },
+        "original": {
+          "contracts": 1,
+          "timeEvents": 210,
+          "shiftsInNovember": 0,
+          "pendingUnscheduledWork": 4
+        }
+      }
+    },
+    "step2_preview": {
+      "api": {
+        "at": "2026-11-09 19:22:30 Bangkok",
+        "method": "GET",
+        "path": "/api/employees/0b0d898f-8e30-452a-92a9-3e6c9e852abd/fold-into/ac223128-5852-422e-b361-2f3e73a57808/preview",
+        "status": 409,
+        "body": {
+          "reason": "still_referenced",
+          "message": "This profile is still linked to the org chart, so nothing was folded."
+        }
+      },
+      "ui": {
+        "how": "the duplicate's profile > Fold into another profile > search by the nickname (in memory) > choose the original",
+        "previewStatus": 409,
+        "previewBody": {
+          "reason": "still_referenced",
+          "message": "This profile is still linked to the org chart, so nothing was folded."
+        },
+        "dialogText": "This profile is still linked to the org chart, so nothing was folded.",
+        "foldButtonEnabled": false,
+        "typedConfirmationShown": false,
+        "originalOptionTags": "Login, Face, Resigned",
+        "picture": "A2-fold-dialog-still-referenced.png",
+        "namesMaskedRuns": 4,
+        "namesReadableAfterMask": 0
+      },
+      "expected": "200 with the counts, the face handling and the re-onboard line",
+      "got": "409 still_referenced: \"This profile is still linked to the org chart, so nothing was folded.\""
+    },
+    "whyItRefuses": {
+      "cause": "The org chart has a person node for the duplicate (org_nodes.person_employee_id, a foreign key with ON DELETE NO ACTION). The fold moves shifts, contracts, time records and the rest, then deletes the duplicate; that delete hits the org chart link, the route rolls everything back and answers 409 still_referenced. lib/employeeFold.ts does not move or remove org_nodes rows, and tests/employee-fold.check.ts builds no org chart node, so the check did not meet it.",
+      "duplicatesNodeBeforeThisProof": {
+        "chart": "live, company",
+        "nodeId": "7b38d18e-a0ad-4d73-84ef-7bf5cf61882a",
+        "createdAt": "2026-11-07T12:24:16.650Z (7 Nov 19:24 Bangkok)"
+      },
+      "theRefusalCameFirst": "The API preview answered 409 at 2026-11-09 19:22:30 Bangkok, before this proof read the org chart at all (first read 19:24:12 Bangkok).",
+      "originalsNodes": "the original has its own nodes in the live and draft company charts (made 10 May and 6 Jun)",
+      "nodesNamingEitherProfileNow": [
+        {
+          "read": "GET /api/org-chart/nodes?mode=live&scopeType=company",
+          "status": 200,
+          "nodes": 79,
+          "naming": [
+            {
+              "id": "14c02b5a-1ffc-46ac-8fba-17bfd0eed219",
+              "profile": "original (Promotion)",
+              "nodeType": "person",
+              "departmentId": null,
+              "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+              "isDisabled": false,
+              "isDeleted": false,
+              "isVacant": false,
+              "reportsTo": null
+            },
+            {
+              "id": "7b38d18e-a0ad-4d73-84ef-7bf5cf61882a",
+              "profile": "duplicate (Reception)",
+              "nodeType": "person",
+              "departmentId": null,
+              "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+              "isDisabled": false,
+              "isDeleted": false,
+              "isVacant": false,
+              "reportsTo": null
+            }
+          ]
+        },
+        {
+          "read": "GET /api/org-chart/nodes?mode=draft&scopeType=company",
+          "status": 200,
+          "nodes": 79,
+          "naming": [
+            {
+              "id": "4039d794-5247-4085-a437-110251515227",
+              "profile": "original (Promotion)",
+              "nodeType": "person",
+              "departmentId": null,
+              "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+              "isDisabled": false,
+              "isDeleted": false,
+              "isVacant": false,
+              "reportsTo": null
+            },
+            {
+              "id": "581dc208-7182-43e6-b340-e4270a7985a0",
+              "profile": "duplicate (Reception)",
+              "nodeType": "person",
+              "departmentId": null,
+              "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+              "isDisabled": false,
+              "isDeleted": false,
+              "isVacant": false,
+              "reportsTo": null
+            }
+          ]
+        },
+        {
+          "read": "GET /api/org-chart/nodes?mode=live&scopeType=branch&scopeBranchId=6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+          "status": 200,
+          "nodes": 48,
+          "naming": [
+            {
+              "id": "6f26e572-0d74-4511-af1a-ca1edf290665",
+              "profile": "duplicate (Reception)",
+              "nodeType": "person",
+              "departmentId": null,
+              "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+              "isDisabled": false,
+              "isDeleted": false,
+              "isVacant": false,
+              "reportsTo": null
+            }
+          ]
+        },
+        {
+          "read": "GET /api/org-chart/nodes?mode=draft&scopeType=branch&scopeBranchId=6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+          "status": 200,
+          "nodes": 48,
+          "naming": [
+            {
+              "id": "acb14e01-c376-4464-b561-f4d063f2d185",
+              "profile": "duplicate (Reception)",
+              "nodeType": "person",
+              "departmentId": null,
+              "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+              "isDisabled": false,
+              "isDeleted": false,
+              "isVacant": false,
+              "reportsTo": null
+            }
+          ]
+        }
+      ],
+      "howNodesAreMade": "GET /api/org-chart/nodes (the Org Chart page) adds a person node, in the chart being read, for every active employee that has none (orgChartRoutes.ts \"Auto-sync\"). A delete there only marks the node is_deleted, so the link stays and the next read adds a new node. Every active employee is therefore linked as soon as an admin opens the chart."
+    },
+    "notRun": [
+      "step 3: the fold (POST)",
+      "step 4: read-backs and the pictures of the original's header, contracts tab, Scheduling Reception rows and Attendance review count",
+      "Onboard Again of the original (the fold does it)"
+    ]
+  },
+  "partB": {
+    "outcome": "PASSED for both fixes. The B1 leaver is gone. B2: second offboarding 201, third 409 in words. The new B2 ZZ TEST profile could not be deleted at the end (409, org chart: this proof's own org chart read put it there), so its employment was ended today instead.",
+    "B1_leaverFromTheEarlierProof": {
+      "employeeId": "d9e82036-e60e-4931-a42b-25b1da335e0d",
+      "name": "ZZ TEST 794 Leaver 20261109-1641",
+      "before": {
+        "employee": {
+          "status": 200,
+          "empStatus": "resigned",
+          "employmentState": "LEAVING",
+          "lastWorkingDay": "2026-11-09",
+          "departmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+          "userId": "7b2ab5d5-8da3-4100-8aad-a94c931c6286"
+        },
+        "contracts": [
+          {
+            "id": "f5e5ffd3-3707-4a76-a4ed-7122c33cd597",
+            "status": "draft",
+            "signingStatus": "not_sent"
+          }
+        ],
+        "login": {
+          "id": "7b2ab5d5-8da3-4100-8aad-a94c931c6286",
+          "isActive": false,
+          "role": "staff",
+          "platformLinked": false
+        },
+        "orgNodes": []
+      },
+      "deleteDraftContract": {
+        "path": "/api/contracts/f5e5ffd3-3707-4a76-a4ed-7122c33cd597",
+        "status": 204,
+        "body": "",
+        "expected": "204 (was 500)"
+      },
+      "deleteProfile": {
+        "path": "/api/employees/d9e82036-e60e-4931-a42b-25b1da335e0d",
+        "status": 204,
+        "body": "",
+        "expected": "200 or 204"
+      },
+      "after": {
+        "employee": {
+          "status": 404,
+          "message": "Employee not found"
+        },
+        "contract": {
+          "status": 404
+        },
+        "login": "not found",
+        "orgNodes": []
+      },
+      "verdict": "PASS: draft 204, profile 204; the profile, the contract and its app-only login read back gone (404 / not found)."
+    },
+    "B2_offboardAgain": {
+      "employeeId": "bcad6c6b-3fcf-46b0-9471-d70f431df206",
+      "name": "ZZ TEST 794b Twice 20261109-1926",
+      "email": "zz-test-794b-20261109-1926@example.invalid",
+      "branch": "Robinson Chalong",
+      "department": "Reception",
+      "login": "none made",
+      "dates": {
+        "today": "2026-11-09",
+        "yesterday": "2026-11-08",
+        "lastDay1": "2026-11-12",
+        "start1": "2026-11-14",
+        "lastDay2": "2026-11-19",
+        "lastDay3": "2026-11-21"
+      },
+      "steps": {
+        "offboard1": {
+          "status": 201,
+          "id": "0c971505-82b4-43db-95aa-e3c60faa0d0b",
+          "message": null,
+          "expected": 201
+        },
+        "onboardAgainPlanned": {
+          "status": 201,
+          "engagementId": "87788d8b-6676-44f3-ad75-d08c811d0628",
+          "started": false,
+          "contract": {
+            "id": "0d7b955a-5457-4978-81aa-bbbf98d095c3",
+            "status": "draft",
+            "signingStatus": "not_sent"
+          },
+          "message": null,
+          "expected": "201, planned (started false)"
+        },
+        "afterPlan": {
+          "employee": {
+            "status": 200,
+            "empStatus": "active",
+            "employmentState": "LEAVING",
+            "lastWorkingDay": "2026-11-12",
+            "departmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+            "userId": null
+          },
+          "offboarding": {
+            "status": 200,
+            "id": "0c971505-82b4-43db-95aa-e3c60faa0d0b",
+            "lastWorkingDay": "2026-11-12",
+            "reonboardedAt": null
+          },
+          "contracts": [
+            {
+              "id": "0d7b955a-5457-4978-81aa-bbbf98d095c3",
+              "status": "draft",
+              "signingStatus": "not_sent"
+            }
+          ]
+        },
+        "startEarly": "No route starts a planned employment early: the 03:00 batch starts it, or Onboard Again itself when its start date is today or past. A start of today must follow the last working day, so the plan was cancelled, the last working day moved to yesterday, and Onboard Again was made from today.",
+        "cancelPlan": {
+          "status": 200,
+          "body": {
+            "cancelled": true,
+            "contractId": "0d7b955a-5457-4978-81aa-bbbf98d095c3",
+            "contractDeleted": true
+          },
+          "note": "contractDeleted true: Cancel plan now deletes its unsent draft"
+        },
+        "moveLastDayToYesterday": {
+          "status": 200,
+          "message": "Offboarding record updated successfully"
+        },
+        "afterMove": {
+          "employee": {
+            "status": 200,
+            "empStatus": "resigned",
+            "employmentState": "LEFT",
+            "lastWorkingDay": "2026-11-08",
+            "departmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+            "userId": null
+          },
+          "offboarding": {
+            "status": 200,
+            "id": "0c971505-82b4-43db-95aa-e3c60faa0d0b",
+            "lastWorkingDay": "2026-11-08",
+            "reonboardedAt": null
+          },
+          "contracts": []
+        },
+        "onboardAgainToday": {
+          "status": 201,
+          "engagementId": "42c3404b-3604-4a7e-8443-a8edbe8ebdef",
+          "started": true,
+          "contract": {
+            "id": "a55809a8-518d-45e5-b40e-f46a0aafb140",
+            "status": "draft",
+            "signingStatus": "not_sent"
+          },
+          "login": "none",
+          "rematch": {
+            "matched": 0,
+            "stillPending": 0
+          },
+          "message": null,
+          "expected": "201, started at once"
+        },
+        "afterStart": {
+          "employee": {
+            "status": 200,
+            "empStatus": "active",
+            "employmentState": "ACTIVE",
+            "lastWorkingDay": null,
+            "departmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+            "userId": null
+          },
+          "openOffboarding": {
+            "status": 200,
+            "id": null,
+            "lastWorkingDay": null,
+            "reonboardedAt": null
+          },
+          "plannedOnboardAgain": null,
+          "contracts": [
+            {
+              "id": "a55809a8-518d-45e5-b40e-f46a0aafb140",
+              "status": "draft",
+              "signingStatus": "not_sent"
+            }
+          ]
+        },
+        "offboard2": {
+          "status": 201,
+          "id": "08ef584b-c61e-4384-9d7f-4e2b3cfc03df",
+          "message": null,
+          "expected": "201 (the first offboarding is closed by the re-onboarding; 0039 dropped the one-per-employee index)"
+        },
+        "afterOffboard2": {
+          "employee": {
+            "status": 200,
+            "empStatus": "active",
+            "employmentState": "LEAVING",
+            "lastWorkingDay": "2026-11-19",
+            "departmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+            "userId": null
+          },
+          "openOffboarding": {
+            "status": 200,
+            "id": "08ef584b-c61e-4384-9d7f-4e2b3cfc03df",
+            "lastWorkingDay": "2026-11-19",
+            "reonboardedAt": null
+          }
+        },
+        "offboard3WhileOneOpen": {
+          "status": 409,
+          "id": null,
+          "message": "Offboarding already exists for this employee",
+          "expected": "409 in words (employee_offboarding_one_open)"
+        }
+      },
+      "verdict": "PASS: offboard #2 answered 201 after the re-onboarding closed #1; offboard #3 answered 409 \"Offboarding already exists for this employee\".",
+      "cleanUp": {
+        "steps": [
+          {
+            "label": "delete contract (draft/not_sent)",
+            "method": "DELETE",
+            "path": "/api/contracts/a55809a8-518d-45e5-b40e-f46a0aafb140",
+            "status": 204,
+            "body": ""
+          },
+          {
+            "label": "delete the ZZ TEST employee",
+            "method": "DELETE",
+            "path": "/api/employees/bcad6c6b-3fcf-46b0-9471-d70f431df206",
+            "status": 409,
+            "body": {
+              "message": "This employee is still linked to the org chart, so nothing was deleted. Their history is kept for the record; offboard them instead to end their employment.",
+              "reason": "still_referenced"
+            }
+          }
+        ],
+        "refused": "DELETE /api/employees/<ZZ TEST> answered 409: \"This employee is still linked to the org chart, so nothing was deleted. Their history is kept for the record; offboard them instead to end their employment.\" This proof's own read of the org chart (after the create) added four person nodes for it.",
+        "fallback": {
+          "patch": {
+            "status": 200,
+            "lastWorkingDay": "2026-11-09"
+          },
+          "read": {
+            "employee": {
+              "status": 200,
+              "empStatus": "resigned",
+              "employmentState": "LEAVING",
+              "lastWorkingDay": "2026-11-09",
+              "userId": null
+            },
+            "openOffboarding": {
+              "status": 200,
+              "id": "08ef584b-c61e-4384-9d7f-4e2b3cfc03df",
+              "lastWorkingDay": "2026-11-09"
+            },
+            "plannedOnboardAgain": null,
+            "contracts": 0,
+            "changes": [
+              {
+                "type": "resigned",
+                "effectiveDate": "2026-11-19",
+                "contractInstanceId": null
+              },
+              {
+                "type": "onboard_again",
+                "effectiveDate": "2026-11-14",
+                "contractInstanceId": null
+              },
+              {
+                "type": "resigned",
+                "effectiveDate": "2026-11-12",
+                "contractInstanceId": null
+              },
+              {
+                "type": "onboard_again",
+                "effectiveDate": "2026-11-09",
+                "contractInstanceId": null
+              }
+            ],
+            "shiftsThisWeek": 0
+          }
+        },
+        "state": "Left on staging: the ZZ TEST profile, no login, no contracts, no shifts, no plan; resigned with last working day today (the 03:00 run moves it to Left); its open offboarding is the second one; four org chart nodes name it. Both Onboard Again movement rows keep their rows with the contract link emptied."
+      }
+    }
+  },
+  "sideEffectOfThisProof_orgChartRows": {
+    "what": "Reading GET /api/org-chart/nodes (to find what names the profiles) runs the route's auto-sync, which stores a person node for every active employee missing from the chart read. This proof's reads therefore stored org chart rows. Nothing else in the app was changed by them, and an admin opening the Org Chart page in those charts would have made the same rows.",
+    "total": 118,
+    "forTheZzTestProfile": 4,
+    "forTheDuplicate": 3,
+    "forOtherActiveEmployees": 111,
+    "byChart": [
+      {
+        "scope": "mode=live&scopeType=company",
+        "rowsBefore": 75,
+        "made": 1,
+        "zz": 1,
+        "duplicate": 0,
+        "batches": {
+          "2026-11-09T12:26:10.077Z": 1
+        }
+      },
+      {
+        "scope": "mode=draft&scopeType=company",
+        "rowsBefore": 69,
+        "made": 7,
+        "zz": 1,
+        "duplicate": 1,
+        "batches": {
+          "2026-11-09T12:24:12.376Z": 6,
+          "2026-11-09T12:26:10.163Z": 1
+        }
+      },
+      {
+        "scope": "mode=live&scopeType=branch&scopeBranchId=6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "rowsBefore": 0,
+        "made": 44,
+        "zz": 0,
+        "duplicate": 1,
+        "batches": {
+          "2026-11-09T12:24:12.484Z": 44
+        }
+      },
+      {
+        "scope": "mode=draft&scopeType=branch&scopeBranchId=6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "rowsBefore": 0,
+        "made": 44,
+        "zz": 0,
+        "duplicate": 1,
+        "batches": {
+          "2026-11-09T12:24:12.600Z": 44
+        }
+      },
+      {
+        "scope": "mode=live&scopeType=branch&scopeBranchId=f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+        "rowsBefore": 0,
+        "made": 11,
+        "zz": 1,
+        "duplicate": 0,
+        "batches": {
+          "2026-11-09T12:26:10.247Z": 1,
+          "2026-11-09T12:26:08.600Z": 10
+        }
+      },
+      {
+        "scope": "mode=draft&scopeType=branch&scopeBranchId=f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+        "rowsBefore": 0,
+        "made": 11,
+        "zz": 1,
+        "duplicate": 0,
+        "batches": {
+          "2026-11-09T12:26:10.328Z": 1,
+          "2026-11-09T12:26:08.697Z": 10
+        }
+      }
+    ],
+    "note": "The Central Floresta and Robinson Chalong branch charts had no rows before (live and draft). Undoing this needs a database step: the app's node delete only marks a node deleted, the link stays, and the next read adds a new node. Not attempted.",
+    "measuredBy": "a re-read of the same six charts at 19:27 Bangkok (rows dated since 19:00; the advisor entries the route builds on every read are not stored and are left out)"
+  },
+  "findings": [
+    "The fold still cannot fold the real case: the duplicate is in the org chart, and the fold neither moves nor removes org chart nodes, so the delete at its end fails and the whole fold rolls back (409 still_referenced). Any active profile gets an org chart node as soon as an admin opens the Org Chart, so this will meet most working duplicates. The fold needs to re-point the duplicate's org_nodes to the original (or drop them where the original already has a node in that chart), with tests/employee-fold.check.ts building a node.",
+    "The same link blocks the plain employee delete of any profile the org chart has seen (B2 clean-up).",
+    "Fixed and seen on staging: deleting a cancelled plan's draft contract answers 204 (was 500); a profile whose plan was cancelled before the release deletes (204); Cancel plan deletes its own unsent draft (contractDeleted true); the Onboard Again movement rows keep their rows with the contract link emptied; a second offboarding after a re-onboarding answers 201; a third while one is open answers 409 in words."
+  ],
+  "log": [
+    {
+      "at": "2026-11-09T12:22:30.840Z",
+      "step": "A2 fold preview, duplicate into original (read; the route rolls it back)",
+      "method": "GET",
+      "path": "/api/employees/0b0d898f-8e30-452a-92a9-3e6c9e852abd/fold-into/ac223128-5852-422e-b361-2f3e73a57808/preview",
+      "status": 409,
+      "body": {
+        "reason": "still_referenced",
+        "message": "This profile is still linked to the org chart, so nothing was folded."
+      }
+    },
+    {
+      "at": "2026-11-09T12:24:15.303Z",
+      "step": "A2 fold preview from the Fold dialog (read; the route rolls it back)",
+      "method": "GET",
+      "path": "/api/employees/0b0d898f-8e30-452a-92a9-3e6c9e852abd/fold-into/ac223128-5852-422e-b361-2f3e73a57808/preview",
+      "status": 409,
+      "body": {
+        "reason": "still_referenced",
+        "message": "This profile is still linked to the org chart, so nothing was folded."
+      }
+    },
+    {
+      "at": "2026-11-09T12:26:08.324Z",
+      "step": "B1 delete the ZZ TEST leaver's draft contract (from the cancelled plan; expected 204, was 500)",
+      "method": "DELETE",
+      "path": "/api/contracts/f5e5ffd3-3707-4a76-a4ed-7122c33cd597",
+      "status": 204,
+      "body": ""
+    },
+    {
+      "at": "2026-11-09T12:26:08.534Z",
+      "step": "B1 delete the ZZ TEST leaver profile (expected 204)",
+      "method": "DELETE",
+      "path": "/api/employees/d9e82036-e60e-4931-a42b-25b1da335e0d",
+      "status": 204,
+      "body": ""
+    },
+    {
+      "at": "2026-11-09T12:26:09.428Z",
+      "step": "B2 create the ZZ TEST employee (no login)",
+      "method": "POST",
+      "path": "/api/employees",
+      "request": {
+        "fullName": "ZZ TEST 794b Twice 20261109-1926",
+        "nickname": "ZZ794b",
+        "email": "zz-test-794b-20261109-1926@example.invalid",
+        "branchId": "f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+        "primaryDepartmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+        "status": "active",
+        "employmentBasis": "FULL_TIME"
+      },
+      "status": 201,
+      "body": {
+        "id": "bcad6c6b-3fcf-46b0-9471-d70f431df206",
+        "fullName": "ZZ TEST 794b Twice 20261109-1926",
+        "email": "zz-test-794b-20261109-1926@example.invalid",
+        "branchId": "f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+        "primaryDepartmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+        "status": "active",
+        "userId": null
+      }
+    },
+    {
+      "at": "2026-11-09T12:26:09.968Z",
+      "step": "B2 offboard #1, last working day 2026-11-12 (3 days ahead; expected 201)",
+      "method": "POST",
+      "path": "/api/employees/bcad6c6b-3fcf-46b0-9471-d70f431df206/offboarding",
+      "request": {
+        "offboardingType": "resignation",
+        "reasonCode": "personal_reasons",
+        "lastWorkingDay": "2026-11-12",
+        "reasonText": "ZZ TEST staging proof for SCRUM-794 (offboard again)"
+      },
+      "status": 201,
+      "body": {
+        "id": "0c971505-82b4-43db-95aa-e3c60faa0d0b",
+        "employeeId": "bcad6c6b-3fcf-46b0-9471-d70f431df206",
+        "offboardingType": "resignation",
+        "lastWorkingDay": "2026-11-12T00:00:00.000Z",
+        "reonboardedAt": null
+      }
+    },
+    {
+      "at": "2026-11-09T12:26:10.087Z",
+      "step": "B2 Onboard Again from 2026-11-14 (5 days ahead; expected 201, planned)",
+      "method": "POST",
+      "path": "/api/employees/bcad6c6b-3fcf-46b0-9471-d70f431df206/onboard-again",
+      "request": {
+        "startDate": "2026-11-14",
+        "departmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+        "templateId": "5cbfc85e-fb45-447a-a921-124ca4913f7e",
+        "positionTitle": "ZZ TEST Reception"
+      },
+      "status": 201,
+      "body": {
+        "engagementId": "87788d8b-6676-44f3-ad75-d08c811d0628",
+        "startDate": "2026-11-14",
+        "contract": {
+          "id": "0d7b955a-5457-4978-81aa-bbbf98d095c3",
+          "status": "draft",
+          "signingStatus": "not_sent"
+        },
+        "started": false,
+        "platformSignInOff": false
+      }
+    },
+    {
+      "at": "2026-11-09T12:26:10.424Z",
+      "step": "B2 cancel the planned employment (no route starts it early)",
+      "method": "DELETE",
+      "path": "/api/employees/bcad6c6b-3fcf-46b0-9471-d70f431df206/onboard-again/87788d8b-6676-44f3-ad75-d08c811d0628",
+      "status": 200,
+      "body": {
+        "cancelled": true,
+        "contractId": "0d7b955a-5457-4978-81aa-bbbf98d095c3",
+        "contractDeleted": true
+      }
+    },
+    {
+      "at": "2026-11-09T12:26:10.522Z",
+      "step": "B2 move the last working day to 2026-11-08 (so a start today follows it)",
+      "method": "PATCH",
+      "path": "/api/employees/bcad6c6b-3fcf-46b0-9471-d70f431df206/offboarding",
+      "request": {
+        "lastWorkingDay": "2026-11-08"
+      },
+      "status": 200,
+      "body": {
+        "offboarding": {
+          "id": "0c971505-82b4-43db-95aa-e3c60faa0d0b",
+          "lastWorkingDay": "2026-11-08T00:00:00.000Z"
+        }
+      }
+    },
+    {
+      "at": "2026-11-09T12:26:10.879Z",
+      "step": "B2 Onboard Again from today 2026-11-09 (expected 201, started at once)",
+      "method": "POST",
+      "path": "/api/employees/bcad6c6b-3fcf-46b0-9471-d70f431df206/onboard-again",
+      "request": {
+        "startDate": "2026-11-09",
+        "departmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+        "templateId": "5cbfc85e-fb45-447a-a921-124ca4913f7e",
+        "positionTitle": "ZZ TEST Reception"
+      },
+      "status": 201,
+      "body": {
+        "engagementId": "42c3404b-3604-4a7e-8443-a8edbe8ebdef",
+        "startDate": "2026-11-09",
+        "contract": {
+          "id": "a55809a8-518d-45e5-b40e-f46a0aafb140",
+          "status": "draft",
+          "signingStatus": "not_sent"
+        },
+        "started": true,
+        "login": "none",
+        "platformDeactivationDelivered": false,
+        "rematch": {
+          "matched": 0,
+          "stillPending": 0
+        }
+      }
+    },
+    {
+      "at": "2026-11-09T12:26:11.280Z",
+      "step": "B2 offboard #2, last working day 2026-11-19 (expected 201: the first offboarding is closed by the re-onboarding)",
+      "method": "POST",
+      "path": "/api/employees/bcad6c6b-3fcf-46b0-9471-d70f431df206/offboarding",
+      "request": {
+        "offboardingType": "resignation",
+        "reasonCode": "personal_reasons",
+        "lastWorkingDay": "2026-11-19",
+        "reasonText": "ZZ TEST staging proof for SCRUM-794 (offboard again, second)"
+      },
+      "status": 201,
+      "body": {
+        "id": "08ef584b-c61e-4384-9d7f-4e2b3cfc03df",
+        "employeeId": "bcad6c6b-3fcf-46b0-9471-d70f431df206",
+        "offboardingType": "resignation",
+        "lastWorkingDay": "2026-11-19T00:00:00.000Z",
+        "reonboardedAt": null
+      }
+    },
+    {
+      "at": "2026-11-09T12:26:11.541Z",
+      "step": "B2 offboard #3 while #2 is open, last working day 2026-11-21 (expected 409)",
+      "method": "POST",
+      "path": "/api/employees/bcad6c6b-3fcf-46b0-9471-d70f431df206/offboarding",
+      "request": {
+        "offboardingType": "resignation",
+        "reasonCode": "personal_reasons",
+        "lastWorkingDay": "2026-11-21",
+        "reasonText": "ZZ TEST staging proof for SCRUM-794 (third, expected refused)"
+      },
+      "status": 409,
+      "body": {
+        "message": "Offboarding already exists for this employee"
+      }
+    },
+    {
+      "at": "2026-11-09T12:26:11.776Z",
+      "step": "B2 clean-up: delete contract (draft/not_sent)",
+      "method": "DELETE",
+      "path": "/api/contracts/a55809a8-518d-45e5-b40e-f46a0aafb140",
+      "status": 204,
+      "body": ""
+    },
+    {
+      "at": "2026-11-09T12:26:11.899Z",
+      "step": "B2 clean-up: delete the ZZ TEST employee",
+      "method": "DELETE",
+      "path": "/api/employees/bcad6c6b-3fcf-46b0-9471-d70f431df206",
+      "status": 409,
+      "body": {
+        "message": "This employee is still linked to the org chart, so nothing was deleted. Their history is kept for the record; offboard them instead to end their employment.",
+        "reason": "still_referenced"
+      }
+    },
+    {
+      "at": "2026-11-09T12:28:40.014Z",
+      "step": "B2 clean-up fallback: the delete was refused, so the ZZ TEST profile's last working day moves to today 2026-11-09",
+      "method": "PATCH",
+      "path": "/api/employees/bcad6c6b-3fcf-46b0-9471-d70f431df206/offboarding",
+      "request": {
+        "lastWorkingDay": "2026-11-09"
+      },
+      "status": 200,
+      "body": {
+        "offboardingId": "08ef584b-c61e-4384-9d7f-4e2b3cfc03df",
+        "lastWorkingDay": "2026-11-09",
+        "message": "Offboarding record updated successfully"
+      }
+    }
+  ]
+}
