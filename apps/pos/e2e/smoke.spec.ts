@@ -1,6 +1,7 @@
 import { expect, request, test, type Browser, type Page, type Request, type Response } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { chooseLanguageFirst } from './walk-in';
 
 const PHONE = process.env.POS_E2E_PHONE ?? '';
 const PASSWORD = process.env.POS_E2E_PASSWORD ?? '';
@@ -237,6 +238,11 @@ async function pairedDisplay(browser: Browser, staff: Page, baseURL: string, str
     if (streaming) expect(await opened).not.toBeNull();
     else await displayPrompt(display, payload.prompt.requestId);
     await expect(display.getByTestId('display-station')).toContainText(STATION_NAME, { timeout: 20_000 });
+    // SCRUM-763 — the sale opens on the guest's language, before the phone number.
+    await expect(display.getByTestId('language-choice')).toBeVisible({ timeout: 20_000 });
+    await expect(display.getByRole('button', { name: 'Continue', exact: true })).toHaveCount(0);
+    await captureLocalCheck(display, 'ticket-display-language-choice-local.png');
+    await chooseLanguageFirst(display, 'en');
     await expect(display.getByRole('button', { name: 'Continue', exact: true })).toBeVisible({ timeout: 20_000 });
     await expect(staff.getByRole('button', { name: 'Continue', exact: true })).toHaveCount(0);
     expect((await display.request.get('/api/me')).status()).toBe(401);

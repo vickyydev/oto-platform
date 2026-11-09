@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { walkInByPhone } from './walk-in';
+import { chooseLanguageFirst, walkInByPhone } from './walk-in';
 
 /**
  * SCRUM-745 — ON THE TILL'S CUSTOMER DISPLAY, THE LANGUAGE BUTTON NEVER COVERS
@@ -39,7 +39,7 @@ async function shot(page: Page, name: string): Promise<void> {
   await page.screenshot({ path: resolve(SHOTS, `${name}.png`) });
 }
 
-async function ticketOnTheTill(page: Page): Promise<void> {
+async function signInAtTheTill(page: Page): Promise<void> {
   await page.goto('/');
   await page.locator('input[inputmode="tel"], input[type="tel"]').first().fill(PHONE);
   await page.locator('input[type="password"]').first().fill(PASSWORD);
@@ -51,6 +51,10 @@ async function ticketOnTheTill(page: Page): Promise<void> {
     })
     .toBe(true);
   if (await picker.isVisible()) await page.getByRole('button', { name: /Reception Till 1/ }).first().click();
+}
+
+async function ticketOnTheTill(page: Page): Promise<void> {
+  await signInAtTheTill(page);
   await walkInByPhone(page, '812076205');
   await page.getByRole('heading', { name: 'Tourist', exact: true }).click();
   // At an iPad's portrait width the staff side's ticket cards overlap one another
@@ -76,6 +80,29 @@ async function measure(page: Page, lang: (typeof LANGUAGES)[number]) {
   expect(b && h, 'both the button and the heading are on the screen').toBeTruthy();
   return { button, buttonBox: b!, headingBox: h! };
 }
+
+/**
+ * SCRUM-763 — THE SALE'S FIRST CUSTOMER SCREEN IS THE LANGUAGE.
+ *
+ * Before the phone number, every language named in its own; Thai pressed, the
+ * phone-number step and its safety line read in Thai, with the language button
+ * back beside them.
+ */
+test('the first customer screen asks the language, and the phone number follows in it', async ({ page }) => {
+  test.skip(!PHONE || !PASSWORD, 'Set POS_E2E_PHONE and POS_E2E_PASSWORD (a reception account)');
+  await signInAtTheTill(page);
+  const choice = page.getByTestId('language-choice');
+  await expect(choice).toBeVisible({ timeout: 20_000 });
+  for (const lang of LANGUAGES) await expect(choice.getByTestId(`language-choice-${lang.code}`)).toContainText(lang.label);
+  await expect(page.getByRole('heading', { name: "What's your phone number?", exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Change language', exact: true })).toHaveCount(0);
+  await shot(page, 's763-language-first');
+  await chooseLanguageFirst(page, 'th');
+  await expect(page.getByRole('heading', { name: 'เบอร์โทรศัพท์ของคุณคืออะไร?', exact: true })).toBeVisible();
+  await expect(page.getByTestId('identify-safety')).toContainText('เราขอเบอร์โทรศัพท์ทุกครั้งที่มา');
+  await expect(page.getByRole('button', { name: 'เปลี่ยนภาษา', exact: true })).toBeVisible();
+  await shot(page, 's763-phone-in-thai');
+});
 
 for (const width of [1440, 1024, 768]) {
   test.describe(`at ${width} px`, () => {
