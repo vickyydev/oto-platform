@@ -48,6 +48,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/i18n/LanguageContext';
 import type { ContactChannel } from '@/types';
 import { readTicketDisplayView } from '@/lib/displaySession';
+import { useLanguageChoice } from '@/lib/languageChoice';
 import { displayErrorText } from '@/lib/customerDisplayCopy';
 import { PublicSavedChildrenReview } from '@/components/shared/PublicSavedChildrenReview';
 import { FnbCustomerDisplay, type FnbCustomerStage } from '@/components/fnb/FnbCustomerDisplay';
@@ -357,6 +358,11 @@ export default function Display() {
   // The public response deliberately omits the staff wizard step. Its validated
   // input prompt identifies the review without exposing that staff-only state.
   const childReview = view?.childReview ?? null;
+  // SCRUM-763 — the guest's language before the phone number. This screen is
+  // told the till's stage, not its sale, and the phone-number step is only ever
+  // a sale's first screen: the choice opens again when the screen comes back to
+  // it from any other (a finished or cancelled sale, the idle screen).
+  const language = useLanguageChoice(view?.stage === 'identify');
 
   return <div className="dark h-[100dvh] w-full min-w-0 overflow-hidden bg-background text-foreground flex flex-col" data-testid="separate-display">
     {session && connection === 'reconnecting' && <p role="status" className="shrink-0 px-4 py-2 text-sm">{t('display.reconnecting')}</p>}
@@ -425,6 +431,7 @@ export default function Display() {
           contactChannel={contactChannel} onPhoneChange={setPhone} onNicknameChange={setNickname} onContactChannelChange={setContactChannel}
           onIdentify={() => { void send('display.identify', { requestId, phone, nickname, contactChannel }); }}
           fixedPhone={keptPhone}
+          chooseLanguage={language.open} onLanguageChosen={language.choose}
           onCustomerDone={() => { void send('display.contact_done', { requestId, phone, nickname, contactChannel }); }} />
       </div>
       {(busy || !!answer) && <p role="status" className="shrink-0 text-center py-3">{busy ? t('display.sending') : t('display.thankYouWait')}</p>}

@@ -513,6 +513,11 @@ export const DICTIONARY: Record<string, Record<SupportedLang, string>> = {
   'display.tender.confirmed': { en: 'Payment confirmed. Please wait for the team.', zh: '付款已确认。请等待工作人员。', th: 'ยืนยันการชำระเงินแล้ว กรุณารอพนักงาน', ru: 'Оплата подтверждена. Пожалуйста, подождите сотрудника.', fr: "Paiement confirmé. Veuillez attendre le personnel." },
   'display.retry': { en: 'Retry', zh: '重试', th: 'ลองอีกครั้ง', ru: 'Повторить', fr: 'Réessayer' },
   'display.error.tryAgain': { en: 'Please try again.', zh: '请重试。', th: 'กรุณาลองอีกครั้ง', ru: 'Пожалуйста, попробуйте ещё раз.', fr: 'Veuillez réessayer.' },
+  // SCRUM-763 — the first screen of a sale: the guest's language, chosen before anything else.
+  // `display.language.continue` is read in its own language on its own button, so each
+  // entry names the language it is written in.
+  'display.language.title': { en: 'Choose your language', zh: '请选择您的语言', th: 'เลือกภาษาของคุณ', ru: 'Выберите язык', fr: 'Choisissez votre langue' },
+  'display.language.continue': { en: 'Continue in English', zh: '使用中文继续', th: 'ดำเนินการต่อเป็นภาษาไทย', ru: 'Продолжить на русском', fr: 'Continuer en français' },
   'display.keyboard.space': { en: 'Space', zh: '空格', th: 'เว้นวรรค', ru: 'Пробел', fr: 'Espace' },
   'display.keypad.clear': { en: 'Clear', zh: '清除', th: 'ล้าง', ru: 'Очистить', fr: 'Effacer' },
   'display.keyboard.backspace': { en: 'Backspace', zh: '退格', th: 'ลบตัวอักษร', ru: 'Стереть', fr: 'Retour arrière' },

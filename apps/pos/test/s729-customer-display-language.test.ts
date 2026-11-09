@@ -677,7 +677,7 @@ describe('the words themselves', () => {
 
   it('every key a customer screen asks for answers in every language, and only a name or a shared word reads like English', () => {
     const files = [
-      'components/till/CustomerDisplay.tsx', 'components/fnb/FnbCustomerDisplay.tsx', 'components/merch/MerchCustomerDisplay.tsx',
+      'components/till/CustomerDisplay.tsx', 'components/till/CustomerLanguageChoice.tsx', 'components/fnb/FnbCustomerDisplay.tsx', 'components/merch/MerchCustomerDisplay.tsx',
       'components/merch/PublicMerchCustomerDisplay.tsx', 'components/till/PublicConsentCapture.tsx', 'components/till/ConsentCapture.tsx',
       'components/shared/PublicSavedChildrenReview.tsx', 'components/shared/SavedChildrenReview.tsx', 'components/shared/PromptPayCustomerScreen.tsx',
       'components/parties/PartySettlementCustomerScreen.tsx', 'components/shared/PhoneInput.tsx', 'components/shared/ChildDobPicker.tsx',
@@ -709,7 +709,7 @@ describe('the words themselves', () => {
 
   it('no customer screen draws a word of its own in English any more', () => {
     const files = [
-      'components/till/CustomerDisplay.tsx', 'components/fnb/FnbCustomerDisplay.tsx', 'components/merch/MerchCustomerDisplay.tsx',
+      'components/till/CustomerDisplay.tsx', 'components/till/CustomerLanguageChoice.tsx', 'components/fnb/FnbCustomerDisplay.tsx', 'components/merch/MerchCustomerDisplay.tsx',
       'components/merch/PublicMerchCustomerDisplay.tsx', 'components/till/PublicConsentCapture.tsx',
       'components/shared/PublicSavedChildrenReview.tsx', 'components/shared/PromptPayCustomerScreen.tsx',
       'components/parties/PartySettlementCustomerScreen.tsx', 'components/till/NumberKeypad.tsx', 'components/till/PaymentQr.tsx',

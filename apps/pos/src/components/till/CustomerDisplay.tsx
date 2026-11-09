@@ -9,6 +9,7 @@ import type { PaymentDisplayState } from '@/lib/usePaymentStage';
 import type { DisplayLineBreakdown } from '@oto/shared';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
+import { CustomerLanguageChoice } from './CustomerLanguageChoice';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { resolveName } from '@/i18n/resolveTranslation';
 import {
@@ -150,6 +151,16 @@ interface CustomerDisplayProps {
   lineBreakdowns?: Record<string, DisplayLineBreakdown>;
   /** Summary-only grants have no redeemable code to render. */
   showGrantQr?: boolean;
+  /**
+   * SCRUM-763 — the guest's language comes first. While set, the sale's first
+   * screen is the language choice instead of the phone number; a press sets the
+   * language and calls `onLanguageChosen`, and the caller then clears this so
+   * the phone-number step follows in that language. Once per customer: the
+   * caller holds it (`useLanguageChoice`). Absent, the first screen is the
+   * phone number, as every other caller has it.
+   */
+  chooseLanguage?: boolean;
+  onLanguageChosen?: () => void;
 }
 
 function ChargeBanner({ target }: { target: ChargeTarget }) {
@@ -291,6 +302,8 @@ export function CustomerDisplay({
   payment,
   lineBreakdowns,
   showGrantQr = true,
+  chooseLanguage = false,
+  onLanguageChosen,
 }: CustomerDisplayProps) {
   const { t, lang } = useLanguage();
   const displayName = nickname.trim() || member?.nickname || '';
@@ -300,6 +313,18 @@ export function CustomerDisplay({
       <h2 className="text-5xl font-black">{t('till.thankyou.title')}</h2>
       <p className="text-xl mt-4">{t('till.payment.received')}</p>
     </div></Shell>;
+  }
+  /**
+   * SCRUM-763 — BEFORE THE NUMBER, THE GUEST'S LANGUAGE (agreed 30 October).
+   * The choice stands in for the first screen; the language button joins the
+   * screens after it, so it is not drawn over the choice itself.
+   */
+  if (stage === 'identify' && chooseLanguage) {
+    return (
+      <Shell languageInHeader>
+        <CustomerLanguageChoice onChosen={onLanguageChosen} />
+      </Shell>
+    );
   }
   /**
    * SCRUM-762 — THE NUMBER IS ASKED ONCE, AT THE START, AND IT IS REQUIRED.

@@ -155,6 +155,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Baby } from 'lucide-react';
 import type { Booking } from '@/types';
 import { currentLane, useLane } from '@/lib/lane';
+import { useLanguageChoice } from '@/lib/languageChoice';
 
 // Break a ticket line into its discountable component rows (kids/adults/socks/
 // each add-on) for the manual-discount picker. Mirrors computeLineBreakdown so
@@ -3414,6 +3415,9 @@ export default function Till() {
   else if (step === 1) customerStage = 'identify';
   else if (lines.length > 0) customerStage = 'order';
   else customerStage = 'welcome';
+  // SCRUM-763 — the customer half asks the guest's language before the phone
+  // number, once per sale: `resetSale` moves the epoch, and the next guest chooses again.
+  const customerLanguage = useLanguageChoice(customerStage === 'identify', `${saleEpochRef.current}`);
 
   const reviewCandidate: Omit<ChildReviewPrompt, 'kind' | 'requestId'> = {
     visitorId: reviewVisitorId, referenceDate: reviewReferenceDate,
@@ -4041,6 +4045,8 @@ export default function Till() {
               totals={saleResult ? undefined : cart.totals}
               voucherPrize={voucher.held?.view.prize ?? null}
               nothingToPay={saleOwesNothing}
+              chooseLanguage={customerLanguage.open}
+              onLanguageChosen={customerLanguage.choose}
             />
           </div>
         )}
