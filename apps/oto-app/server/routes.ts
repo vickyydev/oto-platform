@@ -40,6 +40,7 @@ import { birthdaySchema } from "../shared/birthday";
 import { findBirthdayEmployee, getPersonBirthdays } from "./person-birthdays";
 import { computeSidebarBadges } from "./sidebar-badges";
 import { isHexCalendarColor, isOtherEventColor } from "@shared/event-colors";
+import { pickTodayChecklistRun } from "@shared/checklist-today-run";
 
 // Format date as dd-mm-yyyy
 function formatDateDDMMYYYY(dateStr: string | null | undefined): string {
@@ -20953,21 +20954,25 @@ OTO Company Limited`,
       
       // Enrich templates with assignment names and today's run status
       const enrichedTemplates = await Promise.all(templates.map(async (template: any) => {
-        // Check for today's runs
+        // Today's runs in the branch Today is showing (the run the Ops board
+        // shows for it). The open one wins over a run written today for an
+        // earlier, missed period, so an overdue run can still be continued
+        // from here (SCRUM-751, pickTodayChecklistRun).
         const runs = await db.select()
           .from(checklistRuns)
           .where(and(
             eq(checklistRuns.templateId, template.id),
+            ...(effectiveBranchId ? [eq(checklistRuns.branchId, effectiveBranchId)] : []),
             gte(checklistRuns.createdAt, todayStart),
             lte(checklistRuns.createdAt, todayEnd)
           ))
-          .orderBy(desc(checklistRuns.createdAt))
-          .limit(1);
-        
+          .orderBy(desc(checklistRuns.createdAt));
+
         let computedStatus: string = 'not_started';
         let todayRun = null;
-        if (runs.length > 0) {
-          todayRun = runs[0];
+        const pickedRun = pickTodayChecklistRun(runs);
+        if (pickedRun) {
+          todayRun = pickedRun;
           if (todayRun.status === 'completed') {
             computedStatus = 'completed';
           } else {

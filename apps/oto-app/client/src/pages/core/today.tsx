@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { todayChecklistAction } from "@shared/checklist-today-run";
 import { LoadingScreen } from "@/components/ui/loading-spinner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogBody } from "@/components/ui/dialog";
@@ -60,7 +61,7 @@ interface ChecklistTemplateItem {
 interface ChecklistRun {
   id: string;
   templateId: string;
-  status: "not_started" | "in_progress" | "completed";
+  status: "pending" | "in_progress" | "issues" | "completed" | "missed" | "cancelled";
   startedAt: Date | null;
   completedAt: Date | null;
 }
@@ -357,7 +358,10 @@ export default function TodayPage() {
   };
 
   const getActionButton = (checklist: ChecklistWithStatus) => {
-    if (!checklist.todayRun) {
+    // Continue on any open run, overdue or not; the link is the one the Ops
+    // module opens the run with (SCRUM-751, todayChecklistAction).
+    const action = todayChecklistAction(checklist.todayRun);
+    if (action.kind === "start") {
       return (
         <Button
           className="h-10"
@@ -371,9 +375,9 @@ export default function TodayPage() {
       );
     }
 
-    if (checklist.todayRun.status === "in_progress") {
+    if (action.kind === "continue") {
       return (
-        <Link href={`/core/checklist/${checklist.todayRun.id}`}>
+        <Link href={action.href}>
           <Button className="h-10" data-testid={`button-continue-${checklist.id}`}>
             <Play className="mr-2 h-4 w-4" />
             Continue
@@ -383,7 +387,7 @@ export default function TodayPage() {
     }
 
     return (
-      <Link href={`/core/checklist/${checklist.todayRun.id}`}>
+      <Link href={action.href}>
         <Button variant="secondary" className="h-10" data-testid={`button-view-${checklist.id}`}>
           <Eye className="mr-2 h-4 w-4" />
           View
