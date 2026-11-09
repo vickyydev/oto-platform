@@ -22349,12 +22349,20 @@ OTO Company Limited`,
         return res.status(404).json({ message: "Checklist template not found" });
       }
       
-      // Verify branch access
-      if (template.branchId && !canUserAccessBranch(user, template.branchId)) {
+      // Verify access: any one of the checklist's branches (a shared checklist
+      // runs at each of them), or a checklist bound to no branch.
+      if (!canReachChecklistTemplate(user, template)) {
         return res.status(403).json({ message: "Access denied to this checklist" });
       }
-      
-      const effectiveBranchId = template.branchId || requestBranchId || user.allowedBranchIds[0];
+
+      // The run goes in the branch it is started from when the checklist runs
+      // there, where Today and the Ops board read it; the recurring run creator
+      // writes one run per branch the same way (SCRUM-751).
+      const templateBranches = checklistTemplateBranches(template);
+      const startedHere = typeof requestBranchId === "string" && requestBranchId !== ""
+        && (templateBranches.length === 0 || templateBranches.includes(requestBranchId))
+        && canUserAccessBranch(user, requestBranchId);
+      const effectiveBranchId = (startedHere ? requestBranchId : null) || template.branchId || requestBranchId || user.allowedBranchIds[0];
       if (!effectiveBranchId) {
         return res.status(400).json({ message: "Could not determine branch for this checklist run" });
       }

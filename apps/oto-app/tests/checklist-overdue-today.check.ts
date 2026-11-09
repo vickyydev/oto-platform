@@ -22,6 +22,10 @@
 //      is offered View, and the run stays read-only.
 //   5. The button rule itself: Start without a run, Continue on every open
 //      status, View on every closed one.
+//   6. A checklist shared to two branches, started from Today on the second
+//      branch by a person with both: the run is written in that branch, so
+//      Today there offers Continue on it and, once it is completed, reads
+//      completed; the first branch's Today does not take it.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
@@ -209,6 +213,22 @@ const onlyMissedRun = await runRow({
   done: 0,
 });
 
+// A shared checklist with no run today, and a person on both branches (check 6).
+const sharedStart = await checklist("Shared start", 1);
+const bothBranches = { id: randomUUID(), email: `zz-od-both-${run}@example.com` };
+await q(
+  `insert into users (id, email, password, full_name, role, is_active, must_change_password)
+   values ($1, $2, $3, $4, 'staff', true, false)`,
+  [bothBranches.id, bothBranches.email, hash(PASSWORD), `ZZ TEST Both ${run}`],
+);
+for (const branchId of [branch, otherBranch]) {
+  await q("insert into user_branch_access (tenant_id, user_id, branch_id, access_scope) values ($1, $2, $3, 'selected_branches')", [
+    tenant,
+    bothBranches.id,
+    branchId,
+  ]);
+}
+
 // ─── The server ──────────────────────────────────────────────────────────────
 
 const children: ChildProcess[] = [];
@@ -284,8 +304,8 @@ async function call(method: string, path: string, body?: unknown): Promise<{ sta
 
 type TodayRow = { id: string; computedStatus: string; todayRun: { id: string; status: string } | null };
 /** The checklist's row in Today, asked for as the Today page asks for it. */
-async function todayRow(templateId: string): Promise<TodayRow> {
-  const res = await call("GET", `/api/checklists/today?branchId=${branch}`);
+async function todayRow(templateId: string, branchId: string = branch): Promise<TodayRow> {
+  const res = await call("GET", `/api/checklists/today?branchId=${branchId}`);
   assert.equal(res.status, 200, `Today: ${res.status} ${res.text}`);
   const row = (res.json as TodayRow[]).find((t) => t.id === templateId);
   assert.ok(row, "the checklist is missing from Today");
@@ -360,6 +380,38 @@ try {
     }
     for (const status of ["completed", "missed", "cancelled"]) {
       assert.deepEqual(todayChecklistAction({ id: "r", status }), { kind: "view", href: "/core/checklist/r" }, status);
+    }
+  });
+
+  await check("a shared checklist started from Today on its second branch is run there: Continue, then completed", async () => {
+    const staffCookie = COOKIE;
+    COOKIE = await signIn(bothBranches.email);
+    try {
+      const before = await todayRow(sharedStart.id, otherBranch);
+      assert.equal(before.todayRun, null, "the shared checklist already has a run today");
+      assert.equal(todayChecklistAction(before.todayRun).kind, "start");
+      const started = await call("POST", "/api/checklist-runs/start", { templateId: sharedStart.id, branchId: otherBranch });
+      assert.equal(started.status, 200, `starting from the second branch: ${started.status} ${started.text}`);
+      const [stored] = await q<{ branch_id: string }>("select branch_id from checklist_runs where id = $1", [started.json.id]);
+      assert.equal(stored.branch_id, otherBranch, "the run was written in the checklist's first branch, not where it was started");
+      const open = await todayRow(sharedStart.id, otherBranch);
+      assert.equal(open.todayRun?.id, started.json.id, "Today on the second branch does not show the run started there");
+      assert.deepEqual(todayChecklistAction(open.todayRun), { kind: "continue", href: `/core/checklist/${started.json.id}` });
+      const items = await q<{ id: string }>("select id from checklist_run_items where run_id = $1", [started.json.id]);
+      assert.equal(items.length, 1);
+      for (const item of items) {
+        const ticked = await call("PATCH", `/api/checklist-run-items/${item.id}`, { completed: true });
+        assert.equal(ticked.status, 200, `completing the item: ${ticked.status} ${ticked.text}`);
+      }
+      const done = await call("PATCH", `/api/checklist-runs/${started.json.id}`, { status: "completed" });
+      assert.equal(done.status, 200, `completing the run: ${done.status} ${done.text}`);
+      const after = await todayRow(sharedStart.id, otherBranch);
+      assert.equal(after.todayRun?.id, started.json.id);
+      assert.equal(after.computedStatus, "completed", "the completed checklist is still on the second branch's to-do list");
+      const first = await todayRow(sharedStart.id, branch);
+      assert.equal(first.todayRun, null, "the first branch's Today took the second branch's run");
+    } finally {
+      COOKIE = staffCookie;
     }
   });
 
