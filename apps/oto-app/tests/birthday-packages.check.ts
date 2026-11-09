@@ -22,7 +22,15 @@
 //      per party with a package, in the contract's shape, its satang the
 //      stored satang; the till's settlement sale (`posSaleId` on the directory
 //      party edit) lands in `beo_event_billing.pos_order_ref` and reads back
-//      from the view.
+//      from the view;
+//   4. Generate from BEO bills the package's satang as the whole baht a
+//      billing line holds (SCRUM-806): a 5,000 THB add-on bills 5,000;
+//   5. script/seed-birthday-packages.mjs on rows shaped as staging holds them
+//      (the two Floresta templates, facts in descriptions): the dry run writes
+//      nothing, the run updates those rows in place (the weekday template
+//      renamed and given both days, the weekend one archived, no duplicate)
+//      and does exactly what the dry run printed, and a second run changes
+//      nothing.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
@@ -757,6 +765,183 @@ try {
       .filter((l: { isIncluded: boolean }) => !l.isIncluded)
       .reduce((sum: number, l: { qty: number; unitPriceIncVat: number }) => sum + l.qty * l.unitPriceIncVat, 0);
     assert.equal(total, 5_000 + 1_000 + 6_500);
+  });
+
+  // ── 5. the repo seed, on rows shaped as staging holds them ───────────────
+
+  // A park group as staging was left on 9 November: the printed catalogue
+  // entered through the app's routes before the fields existed — Floresta as
+  // two templates, facts in descriptions, portions in set-menu labels.
+  const C = await parkGroup("seed");
+  await q("update branches set name = 'Central Floresta' where id = $1", [C.branch]);
+  const cookieC = await signIn(C.admin.email);
+  const asStaged = async (path: string, body: Record<string, unknown>) => {
+    const res = await call("POST", path, { cookie: cookieC, body });
+    assert.equal(res.status, 201, `${path}: ${show(res)}`);
+    return res.body.id as string;
+  };
+  const stagedLine = (category: string, label: string, priceThb: number, isIncluded: boolean, qty = 1, unitLabel: string | null = null) => ({
+    category, label, qtyDefault: qty, qtyEditable: !isIncluded, unitLabel, included: isIncluded,
+    defaultUnitPrice: priceThb * 100, billableByDefault: !isIncluded,
+  });
+  const florestaLines = (extraChild: number, extraAdult: number) => [
+    stagedLine("setup", "Kids' table reserved for 3 hours", 0, true),
+    stagedLine("food", "Special birthday set menu", 0, true),
+    stagedLine("entertainment", "Interactive birthday animation program, 30 minutes", 0, true),
+    stagedLine("cake", "Ice-cream cake with candles and birthday song", 0, true),
+    stagedLine("play", "Entry for 4 accompanying adults", 0, true, 4, "adults"),
+    stagedLine("other", "Socks for all children", 0, true, 10, "pairs"),
+    stagedLine("play", "Extra child", extraChild, false, 1, "child"),
+    stagedLine("play", "Additional adult", extraAdult, false, 1, "adult"),
+    stagedLine("setup", "Reserved table for adults, up to 10 adults", 5000, false),
+    stagedLine("setup", "Classic balloon decoration", 4000, false),
+    stagedLine("setup", "PRO photo zone with decorations", 8900, false),
+    stagedLine("entertainment", "Upgrade or customize your activity program", 1000, false),
+    stagedLine("entertainment", "Bracelet Making", 100, false, 1, "child"),
+  ];
+  const staged: Record<string, string> = {};
+  for (const [name, price, extraChild, extraAdult] of [
+    ["Birthday package, Central Floresta (weekday)", 16900, 1300, 350],
+    ["Birthday package, Central Floresta (weekend)", 20900, 1500, 500],
+  ] as const) {
+    staged[name] = await asStaged("/api/beo/birthday-packages", { name, basePrice: price * 100, pricingMode: "fixed", tags: ["Central Floresta"] });
+    for (const line of florestaLines(extraChild, extraAdult)) await asStaged(`/api/beo/birthday-packages/${staged[name]}/line-items`, line);
+  }
+  staged.as10 = await asStaged("/api/beo/birthday-packages", { name: "After School Birthday Package, Central (10 kids)", basePrice: 1_090_000 });
+  for (const line of [
+    stagedLine("setup", "Table reservation", 0, true),
+    stagedLine("play", "Entrance for 10 children", 0, true, 10, "children"),
+    stagedLine("setup", "Private Zone (guaranteed)", 3000, false),
+  ]) await asStaged(`/api/beo/birthday-packages/${staged.as10}/line-items`, line);
+  staged.zombie = await asStaged("/api/beo/entertainment-templates", {
+    name: "Zombie game", category: "Games", durationMinutes: 30, defaultPrice: 400_000, billableByDefault: true,
+    description: "Age 6+. Up to 10 kids. Extra child 400 THB. Immersive game, where kids become real detectives and need to save the world by finding the antidote that is guarded by a zombie.",
+  });
+  staged.menu10 = await asStaged("/api/beo/set-menu-templates", {
+    name: "After School food set (10 kids)",
+    items: [
+      { id: "item_as10_fries", type: "always_included", label: "French Fries x3" },
+      { id: "item_as10_fish_chips", type: "always_included", label: "Fish & Chips x1 (or 2 Chicken Schnitzel)" },
+    ],
+  });
+
+  const SEED = join(APP_DIR, "script", "seed-birthday-packages.mjs");
+  type SeedRun = { dryRun: boolean; created: number; updated: number; renamed: number; archived: number; removed: number; unchanged: number };
+  const seed = (...flags: string[]) =>
+    new Promise<{ out: string; result: SeedRun }>((resolve, reject) => {
+      const child = spawn(process.execPath, [SEED, "--tenant", C.tenant, ...flags], {
+        cwd: APP_DIR,
+        env: { ...process.env, DATABASE_URL, DB_SCHEMA: "otoapp" },
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+      let out = "";
+      child.stdout!.on("data", (c: Buffer) => (out += c.toString("utf8")));
+      child.stderr!.on("data", (c: Buffer) => (out += c.toString("utf8")));
+      child.on("exit", (code) => {
+        const m = /seed-birthday-packages: (\{.*\})\s*$/.exec(out);
+        if (code !== 0 || !m) return reject(new Error(`seed exited ${code}:\n${out}`));
+        resolve({ out, result: JSON.parse(m[1]!) as SeedRun });
+      });
+    });
+  /** Every row the seed may touch in this park group, as one value. */
+  const fingerprint = async () =>
+    (await q<{ f: string }>(
+      `select md5(concat_ws('|',
+         (select json_agg(t order by t.id)::text from birthday_package_templates t where t.tenant_id = $1),
+         (select json_agg(l order by l.id)::text from package_line_item_templates l
+            join birthday_package_templates p on p.id = l.package_template_id where p.tenant_id = $1),
+         (select json_agg(e order by e.id)::text from entertainment_package_templates e where e.tenant_id = $1),
+         (select json_agg(m order by m.id)::text from beo_set_menu_templates m where m.tenant_id = $1))) as f`,
+      [C.tenant],
+    ))[0].f;
+
+  let dry: SeedRun | null = null;
+  await check("the seed's dry run prints the plan and writes nothing", async () => {
+    const before = await fingerprint();
+    const run1 = await seed("--dry-run");
+    dry = run1.result;
+    assert.equal(dry.dryRun, true);
+    assert.deepEqual([dry.renamed, dry.archived, dry.removed], [1, 1, 2], run1.out);
+    assert.ok(dry.created > 0 && dry.updated > 0, run1.out);
+    assert.match(run1.out, /renamed\s+package "Birthday package, Central Floresta \(weekday\)"/);
+    assert.match(run1.out, /questions for the owner/);
+    assert.equal(await fingerprint(), before);
+  });
+
+  await check("the seed writes the printed data onto the staged rows, updating rather than duplicating", async () => {
+    const { result } = await seed();
+    assert.deepEqual({ ...result, dryRun: true }, dry, "the run did exactly what the dry run said");
+    const names = await q<{ name: string; n: number }>(
+      "select name, count(*)::int as n from birthday_package_templates where tenant_id = $1 group by name order by name",
+      [C.tenant],
+    );
+    assert.deepEqual(names, [
+      { name: "After School Birthday Package, Central (10 kids)", n: 1 },
+      { name: "After School Birthday Package, Central (20 kids)", n: 1 },
+      { name: "Birthday package, Central Floresta", n: 1 },
+      { name: "Birthday package, Central Floresta (weekend)", n: 1 },
+    ]);
+    const floresta = await call("GET", `/api/beo/birthday-packages/${staged["Birthday package, Central Floresta (weekday)"]}`, { cookie: cookieC });
+    assert.equal(floresta.body.name, "Birthday package, Central Floresta", "the weekday row is the merged package");
+    for (const [key, value] of Object.entries(FLORESTA_FIELDS)) assert.equal(floresta.body[key], value, key);
+    assert.equal(floresta.body.basePrice, 1_690_000);
+    assert.equal(floresta.body.slipsTime, "11:00:00");
+    assert.equal(floresta.body.branchId, C.branch);
+    assert.equal(floresta.body.isActive, true);
+    const menuId = (await q<{ id: string }>("select id from beo_set_menu_templates where tenant_id = $1 and name = 'Birthday set menu, Central Floresta'", [C.tenant]))[0].id;
+    assert.equal(floresta.body.setMenuTemplateId, menuId);
+    const labels = floresta.body.lineItems.map((l: { label: string }) => l.label);
+    assert.ok(!labels.includes("Extra child") && !labels.includes("Additional adult"), "now the package's own extra prices");
+    const table = floresta.body.lineItems.find((l: { label: string }) => l.label.startsWith("Reserved table"));
+    assert.deepEqual([table.fnbCredit, table.printsVoucher], [500_000, true]);
+    const upgrade = floresta.body.lineItems.find((l: { label: string }) => l.label.startsWith("Upgrade"));
+    assert.equal(upgrade.priceIsFrom, true);
+
+    const weekend = await call("GET", `/api/beo/birthday-packages/${staged["Birthday package, Central Floresta (weekend)"]}`, { cookie: cookieC });
+    assert.equal(weekend.body.isActive, false, "archived, the way Event Settings archives a package");
+    assert.equal(weekend.body.lineItems.length, 13, "and otherwise left as it was");
+
+    const as10 = await call("GET", `/api/beo/birthday-packages/${staged.as10}`, { cookie: cookieC });
+    assert.deepEqual(
+      [as10.body.kidsIncluded, as10.body.adultsIncluded, as10.body.socksIncluded, as10.body.hours, as10.body.branchId],
+      [10, 10, null, null, null],
+    );
+    assert.equal(as10.body.setMenuTemplateId, staged.menu10);
+    const zone = as10.body.lineItems.find((l: { label: string }) => l.label === "Private Zone (guaranteed)");
+    assert.equal(zone.fnbCredit, 300_000);
+    assert.equal(as10.body.lineItems.filter((l: { label: string }) => l.label === "Private Zone (guaranteed)").length, 1);
+
+    const zombie = (await call("GET", "/api/beo/entertainment-templates", { cookie: cookieC })).body.filter((t: { name: string }) => t.name === "Zombie game");
+    assert.equal(zombie.length, 1);
+    assert.equal(zombie[0].id, staged.zombie);
+    assert.deepEqual(
+      [zombie[0].ageRange, zombie[0].maxKids, zombie[0].extraChildPrice, zombie[0].unit, zombie[0].priceIsFrom, zombie[0].defaultPrice],
+      ["6+", 10, 40_000, "session", false, 400_000],
+    );
+    assert.ok(!zombie[0].description.startsWith("Age 6+"), "the facts are fields now");
+    assert.equal((await q("select 1 from entertainment_package_templates where tenant_id = $1", [C.tenant])).length, 19);
+
+    const menus = (await call("GET", "/api/beo/set-menu-templates", { cookie: cookieC })).body as Array<{ id: string; name: string; items: unknown[] }>;
+    assert.equal(menus.length, 3);
+    const menu10 = menus.find((m) => m.id === staged.menu10)!;
+    assert.deepEqual(menu10.items.slice(0, 1), [{ id: "item_as10_fries", type: "always_included", label: "French Fries", productCode: "CF-11", qty: 3 }]);
+    assert.deepEqual(menu10.items.find((i) => (i as { id: string }).id === "item_as10_fish_chips"), {
+      id: "item_as10_fish_chips", type: "always_included", label: "Fish & Chips", productCode: "CF-36", qty: 1,
+      note: "Can be replaced with 2 portions of Chicken Schnitzel",
+    });
+    const skewers = menu10.items.find((i) => (i as { id: string }).id === "item_as10_fruit_skewers") as { productCode?: string };
+    assert.equal(skewers.productCode, undefined, "no catalogue product: no code");
+  });
+
+  await check("a second run of the seed changes nothing", async () => {
+    const before = await fingerprint();
+    const { result } = await seed();
+    assert.deepEqual(
+      [result.created, result.updated, result.renamed, result.archived, result.removed],
+      [0, 0, 0, 0, 0],
+    );
+    assert.ok(result.unchanged > 50);
+    assert.equal(await fingerprint(), before);
   });
 
   console.log(`birthday-packages.check: ${checks} checks passed`);

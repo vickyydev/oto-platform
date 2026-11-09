@@ -93,6 +93,10 @@ COPY script/tenant-ownership-readback.mjs ./script/tenant-ownership-readback.mjs
 # whether migration 0008 could make its one-offboarding-per-employee index on
 # this deployment, and if not, which employees stand in its way (S2-17b round 6).
 COPY script/offboarding-census.mjs ./script/offboarding-census.mjs
+# The park's printed birthday packages (`npm run seed:birthday-packages`,
+# SCRUM-803): idempotent by name, run once on a deployment as a one-off job,
+# with --dry-run first. Plain JavaScript needing only pg, like the migrator.
+COPY script/seed-birthday-packages.mjs ./script/seed-birthday-packages.mjs
 
 ARG APP_VERSION
 ARG APP_CHANGE_ID

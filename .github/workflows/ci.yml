@@ -866,7 +866,10 @@ jobs:
       # package copies its limits, day prices and slip time onto the party and
       # starts the kitchen plan on its set menu; otoapp_v.event_packages
       # (migration 0042) in the contract's shape with satang passed through,
-      # and the till's settlement sale written back into pos_order_ref.
+      # and the till's settlement sale written back into pos_order_ref;
+      # Generate from BEO bills 5,000 THB as 5,000 (SCRUM-806); the repo seed
+      # (script/seed-birthday-packages.mjs) dry run, run, and run again with
+      # nothing to change, on rows shaped as staging holds them.
       - name: The app's birthday package checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/birthday-packages.check.ts
