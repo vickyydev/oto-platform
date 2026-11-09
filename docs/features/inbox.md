@@ -367,6 +367,19 @@ sign-on.
   chip opens the form as before. Each run is a `beo_ai_fill` activity row
   in the app, never the text; the app logs sizes and outcomes only. Both AI
   helpers run on built-in prompts when a park group has no saved AI settings.
+- **The party's date and time (SCRUM-814):** one reader in `@oto/shared`
+  (`chat-dates`) reads them in Thai, English and Russian ("15 ноября",
+  "21-го ноября", "21 November", "Nov 21", "15 พ.ย.", "15.11", a Buddhist
+  year, weekdays, tomorrow; "в 14:00", "2 pm", "14.00 น.", "บ่าย 2 โมง").
+  Book Date opens with the date and time it finds in the whole chat — a team
+  line's date wins over a customer's, a day named outright over a weekday, a
+  deposit's or a birth's date is passed over — each with the chat's own words
+  beside it, and the Events module's 14:00 only when the chat names no time.
+  The api's confirmation picker uses the same reader. The BEO's AI Fill is
+  told the park's today (date, weekday, clock, zone) so a year-less or
+  relative date reads against it, and answers the party's date with the
+  message's words; the review step shows it beside the booked date, marks the
+  line when they differ, and applies it only when the person ticks it.
 - **AI:** one provider behind an interface with a simulator: language
   detection, intent classification, FAQ answers from a knowledge base the
   marketing role maintains, BEO extraction, transcription, translation.
