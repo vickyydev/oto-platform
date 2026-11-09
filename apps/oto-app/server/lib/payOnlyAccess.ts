@@ -1,10 +1,12 @@
 import type { NextFunction, Request, Response } from "express";
-import { and, desc, eq, inArray, isNotNull, lt, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, lt, not, sql, type SQL } from "drizzle-orm";
 import { employees, loginLifecycleEvents, users, type UserAccessMode } from "@shared/schema";
 import { EMPLOYMENT_ENDED, PAY_ONLY_MESSAGE } from "@shared/payOnly";
 import { db } from "../db";
 import type { DbExecutor } from "../storage";
 import { payOnlyRefuses } from "./payOnlyRoutes";
+import { bangkokMidnight } from "./employmentEnded";
+import { bangkokToday } from "./engagementDates";
 
 /**
  * "Pay only" (SCRUM-769): what a login reaches once its employment has ended.
@@ -29,30 +31,52 @@ import { payOnlyRefuses } from "./payOnlyRoutes";
  *    pay-only shell), and addresses no notification to the login;
  *  - a login an administrator switches off is a different switch: it is off,
  *    and pay only changes nothing about that;
- *  - Offboard itself never sets it; Onboard Again's start lifts it
- *    (`lib/onboardAgain.ts`).
+ *  - Offboard never switches the login off. With a last working day already
+ *    past it puts the login in pay only at once (`restrictLoginWithin`), the
+ *    state the batch would put it in that night.
  *
- * How long pay only lasts is not decided: nothing here ends it but Onboard
- * Again or an administrator switching the login off.
+ * Pay only ends when the person works here again: Onboard Again's start
+ * (`lib/onboardAgain.ts`), or a last working day moved to today or later
+ * (`liftPayOnlyIfWorkingWithin`, and the batch's own two-way step). Otherwise
+ * nothing ends it but an administrator switching the login off.
  */
 
 export const PAY_ONLY: UserAccessMode = "pay_only";
 export const FULL_ACCESS: UserAccessMode = "full";
 
+/** Whether the profile has an Onboard Again employment planned (SCRUM-794): its login is held as it is. */
+const planned = (employeeId: SQL | string) =>
+  sql`exists (select 1 from employee_engagements g where g.employee_id = ${employeeId} and g.status = 'planned')`;
+
 /**
- * The night batch's step (the 03:00 batch's `departedLogins`): the login of
- * every profile whose last working day is before today in Bangkok
- * (`bangkokMidnight`, the batch's own instant) and which has no Onboard Again
- * employment planned goes to pay only — the people the step switched off
- * before SCRUM-769, by the same rule; one park group's when `tenantId` is
- * given. Answers how many logins it moved.
+ * Whether one of the login's profiles has a last working day before the
+ * instant (the batch's Bangkok midnight): the departed rule's own half, so the
+ * restriction and its lifting never disagree about the same login.
+ */
+const endedProfileOf = (instant: Date) =>
+  sql`exists (select 1 from employees e
+               where e.user_id = ${users.id} and e.last_working_day is not null and e.last_working_day < ${instant})`;
+
+/**
+ * The night batch's step (the 03:00 batch's `departedLogins`), both ways:
  *
- * Only `access_mode` is written, never `is_active`. A login that is already
- * off (an administrator switched it off, or Offboard did for a last day
- * already past) stays off, and is marked too: switched back on later, by an
+ *  - the login of every profile whose last working day is before today in
+ *    Bangkok (`bangkokMidnight`, the batch's own instant) and which has no
+ *    Onboard Again employment planned goes to pay only — the people the step
+ *    switched off before SCRUM-769, by the same rule;
+ *  - a login in pay only none of whose profiles has a last working day before
+ *    today any more (the day was moved later, or cleared) reaches the whole app
+ *    again. A profile with Onboard Again planned keeps its last day until the
+ *    start, so its login stays as it is until Onboard Again's start lifts it.
+ *
+ * One park group's when `tenantId` is given. Answers how many logins moved each
+ * way. Only `access_mode` is written, never `is_active`: a login that is
+ * already off stays off, and is marked too, so switched back on later, by an
  * administrator here or on the platform, it reaches My pay and nothing more.
  */
-export async function restrictDepartedLogins(opts: { bangkokMidnight: Date; tenantId?: string }): Promise<number> {
+export async function restrictDepartedLogins(
+  opts: { bangkokMidnight: Date; tenantId?: string },
+): Promise<{ payOnly: number; fullAgain: number }> {
   const departed = db
     .select({ userId: employees.userId })
     .from(employees)
@@ -63,8 +87,7 @@ export async function restrictDepartedLogins(opts: { bangkokMidnight: Date; tena
       opts.tenantId ? eq(employees.tenantId, opts.tenantId) : undefined,
       // SCRUM-794: an Onboard Again employment planned on the profile keeps
       // its login as it is between the two employments.
-      sql`not exists (select 1 from employee_engagements g
-                       where g.employee_id = ${employees.id} and g.status = 'planned')`,
+      not(planned(sql`${employees.id}`)),
     ));
   const moved = await db
     .update(users)
@@ -74,7 +97,37 @@ export async function restrictDepartedLogins(opts: { bangkokMidnight: Date; tena
       eq(users.accessMode, FULL_ACCESS),
     ))
     .returning({ id: users.id });
-  return moved.length;
+  const lifted = await db
+    .update(users)
+    .set({ accessMode: FULL_ACCESS, updatedAt: new Date() })
+    .where(and(
+      eq(users.accessMode, PAY_ONLY),
+      sql`exists (select 1 from employees e where e.user_id = ${users.id}
+                   ${opts.tenantId ? sql`and e.tenant_id = ${opts.tenantId}` : sql``})`,
+      not(endedProfileOf(opts.bangkokMidnight)),
+    ))
+    .returning({ id: users.id });
+  return { payOnly: moved.length, fullAgain: lifted.length };
+}
+
+/**
+ * Offboard with a last working day already past (SCRUM-769): the employment
+ * has ended, so the login goes to pay only now, as the 03:00 batch would put
+ * it that night — never switched off. A profile with Onboard Again planned is
+ * held as the batch holds it. On the caller's transaction; answers whether the
+ * login moved.
+ */
+export async function restrictLoginWithin(
+  tx: DbExecutor,
+  profile: { id: string; userId: string },
+  now: Date = new Date(),
+): Promise<boolean> {
+  const moved = await tx
+    .update(users)
+    .set({ accessMode: PAY_ONLY, updatedAt: now })
+    .where(and(eq(users.id, profile.userId), eq(users.accessMode, FULL_ACCESS), not(planned(profile.id))))
+    .returning({ id: users.id });
+  return moved.length > 0;
 }
 
 /**
@@ -88,6 +141,26 @@ export async function liftPayOnlyWithin(tx: DbExecutor, userId: string, now: Dat
     .update(users)
     .set({ accessMode: FULL_ACCESS, updatedAt: now })
     .where(and(eq(users.id, userId), eq(users.accessMode, PAY_ONLY)))
+    .returning({ id: users.id });
+  return lifted.length > 0;
+}
+
+/**
+ * A last working day moved to today or later (the offboarding's edit): the
+ * person is working out their notice again, so a login in pay only reaches the
+ * whole app again — when none of the login's profiles still has a last working
+ * day before today, the batch's own rule. On the caller's transaction, after
+ * the profile's new last day is written; answers whether the login moved.
+ */
+export async function liftPayOnlyIfWorkingWithin(tx: DbExecutor, userId: string, now: Date = new Date()): Promise<boolean> {
+  const lifted = await tx
+    .update(users)
+    .set({ accessMode: FULL_ACCESS, updatedAt: now })
+    .where(and(
+      eq(users.id, userId),
+      eq(users.accessMode, PAY_ONLY),
+      not(endedProfileOf(bangkokMidnight(bangkokToday(now)))),
+    ))
     .returning({ id: users.id });
   return lifted.length > 0;
 }

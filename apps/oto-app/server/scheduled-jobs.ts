@@ -144,7 +144,11 @@ export async function runPlannedEngagementStarts(opts: NightJobOptions = {}): Pr
  * Put the app login of everyone whose last working day has passed into pay
  * only (SCRUM-769, `lib/payOnlyAccess.ts`): the person still signs in, to My
  * pay alone. The login is no longer switched off here, so no switch-off is
- * queued for the platform; a login an administrator switched off stays off.
+ * queued for the platform; the restriction is (migration 0041), and the
+ * platform withdraws the account's roles outside the OTO App. A login an
+ * administrator switched off stays off. Both ways: a login in pay only whose
+ * last working day has since moved to today or later reaches the whole app
+ * again.
  *
  * The 03:00 batch calls it with no tenant, across every park group, as it
  * always has. The manual trigger (`POST /api/admin/run-departed-deactivation`)
@@ -153,13 +157,13 @@ export async function runPlannedEngagementStarts(opts: NightJobOptions = {}): Pr
  * job endpoint, for the park group its key is bound to (round 3). The people
  * it reaches are the ones it switched off before, by the same rule.
  */
-export async function runDepartedLoginsPayOnly(opts: NightJobOptions = {}): Promise<number> {
+export async function runDepartedLoginsPayOnly(opts: NightJobOptions = {}): Promise<{ payOnly: number; fullAgain: number }> {
   console.log("[PAY_ONLY] Checking for departed employees whose login still has full access...");
-  let moved = 0;
+  let moved = { payOnly: 0, fullAgain: 0 };
 
   try {
     moved = await restrictDepartedLogins({ bangkokMidnight: getThailandMidnightUTC(), tenantId: opts.tenantId });
-    console.log(`[PAY_ONLY] Moved ${moved} login(s) to pay only`);
+    console.log(`[PAY_ONLY] Moved ${moved.payOnly} login(s) to pay only, ${moved.fullAgain} back to full access`);
   } catch (error) {
     console.error("[PAY_ONLY] Error:", error);
     opts.onError?.(error);
@@ -627,7 +631,7 @@ export const NIGHT_BATCHES: Record<NightJobName, readonly NightStep[]> = {
     {
       step: "departedLogins",
       onFailure: "continue",
-      run: async (opts) => ({ payOnly: await runDepartedLoginsPayOnly(opts) }),
+      run: async (opts) => ({ ...(await runDepartedLoginsPayOnly(opts)) }),
     },
     {
       step: "availabilityCleanup",

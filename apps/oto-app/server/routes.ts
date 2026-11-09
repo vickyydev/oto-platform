@@ -179,7 +179,7 @@ import { FACE_CLOCK_OFF_REFUSAL, FACE_ENROLMENT_OFF_REFUSAL, FACE_OFF_NO_MATCH, 
 import { SHIFT_GROUP_DELETE_NEEDS_TARGET, SHIFT_GROUP_REQUIRED, noShiftGroup, shiftStillOnRota } from "./lib/shiftGroupRequired";
 import { archivedBranchIds } from "./lib/platformBranches";
 import { branchAddedAt, branchesAddedByEdit, checklistRunStartDate } from "./lib/checklistBranchStart";
-import { payOnlyFence } from "./lib/payOnlyAccess";
+import { liftPayOnlyIfWorkingWithin, payOnlyFence, restrictLoginWithin } from "./lib/payOnlyAccess";
 import { kioskEmploymentEnded, refuseEndedEmployment } from "./lib/kioskEmploymentEnded";
 import {
   BRANCH_NOT_FOUND,
@@ -1628,8 +1628,7 @@ export async function registerRoutes(
     try {
       // SCRUM-769: the leavers' logins go to pay only; none is switched off.
       const { runDepartedLoginsPayOnly } = await import("./scheduled-jobs");
-      const payOnly = await runDepartedLoginsPayOnly({ tenantId: parkGroupOf(res) });
-      res.json({ payOnly });
+      res.json(await runDepartedLoginsPayOnly({ tenantId: parkGroupOf(res) }));
     } catch (error) {
       next(error);
     }
@@ -8315,14 +8314,14 @@ OTO Company Limited`,
       // SCRUM-794: a last working day still to come leaves the profile working
       // under its current contract until then — its status, login, shifts and
       // tasks as they are; the 03:00 batch ends the employment the day after
-      // (sets the status and switches the login off), unless an Onboard Again
-      // employment is planned. A last day of today or earlier ends it here, as
-      // the app always did.
+      // (sets the status and puts the login in pay only, SCRUM-769), unless an
+      // Onboard Again employment is planned. A last day of today or earlier
+      // ends it here, as the app always did.
       const endsLater = lastWorkingDayStr > todayBangkok;
-      // The backstop (round 6's review, F2): the login switched off here is
-      // only one the app's strict placement puts in the employee's park group.
-      // A login another park group holds (a link made before the wizard and
-      // the employee edit were held to the park group) is left on, as a
+      // The backstop (round 6's review, F2): the login limited here is only
+      // one the app's strict placement puts in the employee's park group. A
+      // login another park group holds (a link made before the wizard and the
+      // employee edit were held to the park group) is left as it is, as a
       // leaving date still to come leaves it, for the 03:00 batch's own step.
       const loginInParkGroup = !!employee.userId && (await managedUserTenant(employee.userId)) === employee.tenantId;
 
@@ -8369,13 +8368,14 @@ OTO Company Limited`,
           noticeDate: validatedData.noticeDate ? new Date(validatedData.noticeDate) : undefined,
         }, tx);
 
-        // Deactivate user account if departure date is already in the past —
-        // the app's rule exactly: only here, only when the last working day has
-        // passed, and only the login the employee record names (`user_id`),
+        // A departure date already in the past: the employment has ended, so
+        // the login goes to pay only now (SCRUM-769: My pay alone, never
+        // switched off at Offboard), the state the 03:00 batch would put it in
+        // that night. Only the login the employee record names (`user_id`),
         // when that login is the employee's park group's (the backstop above).
         // A later last working day is left to the 03:00 batch, as before.
         if (newEmploymentState === 'LEFT' && employee.userId && loginInParkGroup) {
-          await storage.updateUser(employee.userId, { isActive: false } as any, tx);
+          await restrictLoginWithin(tx, { id: employeeId, userId: employee.userId });
         }
 
         // Flag future shifts after departure date for reassignment
@@ -8580,6 +8580,8 @@ OTO Company Limited`,
             employmentState: newEmploymentState,
             ...(endsNow ? { status: leaverStatusOf(offboarding.offboardingType) } : {}),
           }, tx);
+          // SCRUM-769: moved to today or later, the person works out a notice again; a login in pay only reaches the whole app.
+          if (employee.userId && validated.lastWorkingDay.split('T')[0] >= todayBangkok) await liftPayOnlyIfWorkingWithin(tx, employee.userId);
 
           await storage.updateAssetsExpectedReturnBy(employeeId, newLastDay, tx);
 
