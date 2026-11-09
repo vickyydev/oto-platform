@@ -649,6 +649,22 @@ jobs:
       - name: The app's profile fold checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/employee-fold.check.ts
+      # SCRUM-769: an ended employment, the day after the last working day —
+      # the 03:00 batch keeps the login on in pay only (nothing told to the
+      # platform), the leaver signs in to their own payslips and is refused
+      # every other route in words, the kiosk refuses their clock-in while a
+      # colleague in their notice clocks in, Onboard Again lifts it, and a
+      # login an administrator switched off stays off; then the pay-only screen
+      # under jsdom: My pay alone, whatever address, asking for nothing the
+      # server would refuse.
+      - name: The app's ended-employment access checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/employee-left-access.check.ts
+      - name: The app's ended-employment screen check
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/employee-left-access-ui.check.ts
       # S2-17b round 6: the document modules as the app does them — templates,
       # policies, the asset catalogue and leave policies per park group
       # (migration 0008), contracts and letters fenced, offboarding in one
