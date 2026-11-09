@@ -26,7 +26,8 @@ async function accountsFixture(page: Page, options: { read?: boolean; audit?: bo
   const calls: Array<{ method: string; path: string; body: unknown; key: string | undefined }> = [];
   let accounts = [row(), row(MAI, 'ZZ TEST Mai')];
   let sessions = [{ id: 'session-one', branchId: BRANCH, stationId: null, lockedAt: '2026-10-22T06:00:00Z',
-    lastSeenAt: '2026-10-22T06:00:00Z', expiresAt: '2099-10-22T06:00:00Z', createdAt: '2026-10-22T05:00:00Z' }];
+    lastSeenAt: '2026-10-22T06:00:00Z', expiresAt: '2099-10-22T06:00:00Z', createdAt: '2026-10-22T05:00:00Z',
+    status: 'locked', endedAt: null, current: false }];
   let tokens = [{ jti: 'fixture-token-id', accountId: SOM, stationId: 'fixture-station', boxId: 'fixture-box',
     issuedAt: '2026-10-22T05:00:00Z', expiresAt: '2099-10-22T06:00:00Z', revokedAt: null as string | null, revokedReason: null as string | null }];
   await page.route('**/api/**', async (route) => {
@@ -69,7 +70,8 @@ async function accountsFixture(page: Page, options: { read?: boolean; audit?: bo
       sessions = [];
       return route.fulfill({ json: { sessionsEnded } });
     }
-    if (path.endsWith('/sessions')) return route.fulfill({ json: { sessions } });
+    // SCRUM-793 — one page with the total, as the api answers it.
+    if (path.endsWith('/sessions')) return route.fulfill({ json: { sessions, total: sessions.length, limit: 10, offset: 0 } });
     if (path.endsWith('/staff-tokens')) return route.fulfill({ json: { tokens } });
     if (path === '/staff-tokens/settings') return route.fulfill({ json: { available: true, kid: 'fixture-key-id', ttlSeconds: 57_600, offlineSignIn: false } });
     if (path.startsWith('/staff-tokens/') && method === 'DELETE') {

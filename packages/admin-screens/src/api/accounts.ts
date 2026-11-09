@@ -2,7 +2,11 @@ import type { ApiBody, ApiResponse } from '@oto/api-types';
 import type { AdminApi } from './admin-api';
 
 export type AccountRow = ApiResponse<'/accounts/', 'get'>['accounts'][number];
-export type SessionRow = ApiResponse<'/accounts/{id}/sessions', 'get'>['sessions'][number];
+/** SCRUM-793 — one page of an account's sessions, newest sign-in first, with the total; each row says what it is now. */
+export type SessionsPage = ApiResponse<'/accounts/{id}/sessions', 'get'>;
+export type SessionRow = SessionsPage['sessions'][number];
+/** How many sessions the Sessions dialog shows at a time. */
+export const SESSIONS_PAGE_SIZE = 10;
 export type StaffTokenRow = ApiResponse<'/accounts/{id}/staff-tokens', 'get'>['tokens'][number];
 export type StaffTokenSettings = ApiResponse<'/staff-tokens/settings', 'get'>;
 
@@ -50,7 +54,8 @@ export function createAccountsApi(api: AdminApi) {
       api.patch<ApiResponse<'/accounts/{id}', 'patch'>>(accountPath(id), patch, { idempotencyKey: freshKey() }),
     tempPassword: (id: string) =>
       api.post<ApiResponse<'/accounts/{id}/temp-password', 'post'>>(`${accountPath(id)}/temp-password`, undefined, { idempotencyKey: freshKey() }),
-    accountSessions: (id: string) => api.get<ApiResponse<'/accounts/{id}/sessions', 'get'>>(`${accountPath(id)}/sessions`),
+    accountSessions: (id: string, page: { limit: number; offset: number } = { limit: SESSIONS_PAGE_SIZE, offset: 0 }) =>
+      api.get<SessionsPage>(`${accountPath(id)}/sessions?limit=${page.limit}&offset=${page.offset}`),
     revokeSessions: (id: string) => api.post<ApiResponse<'/accounts/{id}/sessions/revoke', 'post'>>(`${accountPath(id)}/sessions/revoke`, undefined, { idempotencyKey: freshKey() }),
     accountStaffTokens: (id: string) => api.get<ApiResponse<'/accounts/{id}/staff-tokens', 'get'>>(`${accountPath(id)}/staff-tokens`),
     endStaffToken: (jti: string) => api.delete<ApiResponse<'/staff-tokens/{jti}', 'delete'>>(`/staff-tokens/${encodeURIComponent(jti)}`, { idempotencyKey: freshKey() }),

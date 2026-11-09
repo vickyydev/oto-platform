@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Permission } from '@oto/shared/permissions';
 import type { AdminApi } from '../api/admin-api';
-import { createAccountsApi, type AccountRow, type SessionRow, type StaffTokenRow, type StaffTokenSettings, type DenialRow } from '../api/accounts';
+import { SESSIONS_PAGE_SIZE, createAccountsApi, type AccountRow, type SessionsPage, type StaffTokenRow, type StaffTokenSettings, type DenialRow } from '../api/accounts';
+import { AccountSessionsList } from './AccountSessionsList';
 import {
   KeyRound,
   Pencil,
@@ -13,7 +14,6 @@ import {
   UserCheck,
   Loader2,
   LayoutGrid,
-  Lock,
   LogOut,
   MonitorSmartphone,
   Tablet,
@@ -123,7 +123,9 @@ export function LoginUsersPanel({ api, branches, me, can, onPermissions, onApps,
   const [issuedVisible, setIssuedVisible] = useState(false);
 
   const [sessionsFor, setSessionsFor] = useState<AccountRow | null>(null);
-  const [sessions, setSessions] = useState<SessionRow[] | null>(null);
+  /** SCRUM-793 — the page of sessions on screen, and whether another one has been asked for. */
+  const [sessions, setSessions] = useState<SessionsPage | null>(null);
+  const [sessionsPaging, setSessionsPaging] = useState(false);
   const [denials, setDenials] = useState<DenialRow[]>([]);
 
   /** Shift tokens for the account in the Sessions dialog (SCRUM-512); null while loading. */
@@ -301,10 +303,11 @@ export function LoginUsersPanel({ api, branches, me, can, onPermissions, onApps,
     sessionsAccount.current = a.id;
     setSessionsFor(a);
     setSessions(null);
+    setSessionsPaging(false);
     setSessionsError(null);
     void adminApi
-      .accountSessions(a.id)
-      .then((r) => { if (request === sessionsRequest.current) setSessions(r.sessions); })
+      .accountSessions(a.id, { limit: SESSIONS_PAGE_SIZE, offset: 0 })
+      .then((r) => { if (request === sessionsRequest.current) setSessions(r); })
       .catch((err: unknown) => { if (request === sessionsRequest.current) setSessionsError(err instanceof Error ? err.message : 'Unknown error'); });
     loadStaffTokens(a);
     // The deployment's terms do not change between accounts: read once.
@@ -314,6 +317,17 @@ export function LoginUsersPanel({ api, branches, me, can, onPermissions, onApps,
         .then(setTokenSettings)
         .catch(() => setTokenSettings(null));
     }
+  };
+
+  /** Another page of the open account's sessions (SCRUM-793); the page on screen stays until it arrives, and stays if it cannot be read. */
+  const showSessionsPage = (a: AccountRow, offset: number) => {
+    const request = ++sessionsRequest.current;
+    setSessionsPaging(true);
+    void adminApi
+      .accountSessions(a.id, { limit: SESSIONS_PAGE_SIZE, offset })
+      .then((r) => { if (request === sessionsRequest.current) setSessions(r); })
+      .catch((err: unknown) => { if (request === sessionsRequest.current) apiFail("Couldn't read more sessions")(err); })
+      .finally(() => { if (request === sessionsRequest.current) setSessionsPaging(false); });
   };
 
   /**
@@ -628,31 +642,13 @@ export function LoginUsersPanel({ api, branches, me, can, onPermissions, onApps,
             </div>
           ) : (
             <div className="flex flex-col gap-3 max-h-[55vh] overflow-y-auto">
-              {sessions.length === 0 && (
-                <p className="text-sm text-foreground/50">No sessions on record.</p>
-              )}
-              {sessions.map((s) => (
-                <div
-                  key={s.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-foreground/10 px-3 py-2 text-sm"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 font-medium">
-                      <MonitorSmartphone className="w-4 h-4 text-foreground/40" />
-                      {s.stationId ? 'Station' : 'Till / browser'}
-                      {s.lockedAt && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-600">
-                          <Lock className="w-3 h-3" />
-                          locked
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-foreground/50 tabular-nums">
-                      last seen {when(s.lastSeenAt)} · expires {when(s.expiresAt)}
-                    </div>
-                  </div>
-                </div>
-              ))}
+              <AccountSessionsList
+                page={sessions}
+                loading={sessionsPaging}
+                onPage={(offset) => { if (sessionsFor) showSessionsPage(sessionsFor, offset); }}
+                when={when}
+              />
+
               {/* Shift tokens (SCRUM-512) */}
               <div className="mt-1 flex flex-col gap-2">
                 <h3 className="flex items-center gap-2 text-sm font-bold">
