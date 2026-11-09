@@ -687,7 +687,8 @@ describe('D. read off the code', () => {
     for (const write of [
       /tx\.insert\(employeeOffboarding\)/,
       /storage\.updateEmployee\(employeeId, \{[\s\S]*?\}, tx\);/,
-      /storage\.updateUser\(employee\.userId, \{ isActive: false \} as any, tx\);/,
+      // SCRUM-769: a departure already past puts the login on pay only inside the same transaction; it is never switched off here.
+      /restrictLoginWithin\(tx, \{ id: employeeId, userId: employee\.userId \}\);/,
       /storage\.createAttentionItem\(\{[\s\S]*?\}, tx\);/,
       /storage\.updateAssetsExpectedReturnBy\(employeeId, lastWorkingDayDate, tx\);/,
       /storage\.createEmployeeChange\(\{[\s\S]*?\}, tx\);/,
@@ -701,7 +702,7 @@ describe('D. read off the code', () => {
     expect(outside).not.toMatch(/storage\.(update|create|logActivity|delete)/);
     // The app's linked-login rule, with round 6's review backstop (F2): only a login the strict placement puts
     // in the employee's park group, decided before the transaction (a read, so the writes keep the app's order).
-    expect(inside).toMatch(/if \(newEmploymentState === 'LEFT' && employee\.userId && loginInParkGroup\) \{\s*await storage\.updateUser/);
+    expect(inside).toMatch(/if \(newEmploymentState === 'LEFT' && employee\.userId && loginInParkGroup\) \{\s*await restrictLoginWithin/);
     expect(post.slice(0, start)).toMatch(/const loginInParkGroup = !!employee\.userId && \(await managedUserTenant\(employee\.userId\)\) === employee\.tenantId;/);
   });
 

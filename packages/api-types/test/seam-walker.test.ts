@@ -111,6 +111,12 @@ const MACHINE_CALLERS: Array<{ prefix: string; exact?: boolean; except?: string;
       "the OTO App outbox pump (server/lib/platformLifecycle.ts, SCRUM-633), posting only an event ID with the operator-bound provision credential",
   },
   {
+    prefix: '/admin/apps/oto_app/lifecycle-restrictions',
+    exact: true,
+    caller:
+      "the OTO App outbox pump (server/lib/platformLifecycle.ts, SCRUM-769), posting a restrict event's ID the same way when a leaver's login goes to pay only",
+  },
+  {
     prefix: '/console/deploy-events',
     exact: true,
     caller:

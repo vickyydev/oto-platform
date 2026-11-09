@@ -497,7 +497,8 @@ describe('A. fences and seams', () => {
       'storage/s3Client.ts': '9d51fea745ad10e3944543ec6b9e17a36d5af128c923703b010e4be7c1c8ddcb',
       'pdf.ts': 'e56ab0b8d875508edf5829c8ab8519f356360deff91182dafcbf161679105997',
       // SCRUM-803 / SCRUM-806: Generate from BEO bills the package in baht and only the add-ons a party bought; where the BEO's documents live is unchanged.
-      'beo-routes.ts': '845dae0b815cac6869ad1a207fd5b030bc0c40262728bdb8273df1e6ec29b5b5',
+      // SCRUM-769: the BEO's staff list leaves out a login whose employment has ended (onStaff); where documents live is unchanged.
+      'beo-routes.ts': 'b2d715cc5d0bbf90ddd9997b1a86e17d0d538778ec42b99c42607742d5f7be42',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);
@@ -1255,6 +1256,8 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
     attention: await count('select count(*) as n from attention_items where employee_id = $1', [p.id]),
     employee: (await q('select status, employment_state, end_reason, last_working_day, notice_date from employees where id = $1', [p.id]))[0],
     loginActive: (await q<{ is_active: boolean }>('select is_active from users where id = $1', [p.login]))[0]!.is_active,
+    // SCRUM-769: a leaver's login is never switched off at Offboard; a past last day puts it on pay only.
+    loginMode: (await q<{ access_mode: string }>('select access_mode from users where id = $1', [p.login]))[0]!.access_mode,
     assetDue: (await q<{ expected_return_by: Date | null }>('select expected_return_by from employee_assets where id = $1', [p.asset]))[0]!.expected_return_by,
     shift: await count('select count(*) as n from schedule_assignments where id = $1', [p.shift]),
     order: await q<{ tbl: string; op: string }>(`select tbl, op from ${LOG} where k = any($1) order by seq`, [[p.id, p.login]]),
@@ -1303,7 +1306,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
     it(`C. H16 create: a failure injected at ${where} leaves nothing behind — and the same request then does all of it, in the app's order`, async () => {
       const p = await leaver(`h16-${table}-${event}-${createPoints.findIndex((x) => x[0] === where)}`);
       const before = await footprint(p);
-      expect(before.loginActive).toBe(true);
+      expect([before.loginActive, before.loginMode]).toEqual([true, 'full']);
       await inject(table, event, when(p));
       try {
         const failed = await offboard(p, day(-2));
@@ -1318,7 +1321,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
       expect(after.offboardings).toHaveLength(1);
       expect([after.checklist, after.changes, after.activity, after.attention]).toEqual([6, 1, 2, 1]);
       expect(after.employee).toMatchObject({ status: 'terminated', employment_state: 'LEFT', end_reason: 'misconduct' });
-      expect(after.loginActive).toBe(false);
+      expect([after.loginActive, after.loginMode]).toEqual([true, 'pay_only']);
       expect(after.assetDue).not.toBeNull();
       expect(after.order.map((o) => `${o.tbl} ${o.op}`)).toEqual(APP_CREATE_ORDER);
     }, 60_000);

@@ -78,9 +78,10 @@ await check('a switch-off is a deactivate event; a pay-only move queues one rest
   await client.query('UPDATE users SET is_active=false WHERE id=$1',[userId]);
   await client.query('UPDATE users SET is_active=true WHERE id=$1',[userId]);
   const afterSwitch = await events(client,userId);
-  assert.deepEqual(afterSwitch.map(row => `${row.kind}:${row.state}`), ['restrict:pending','deactivate:superseded']);
+  // Both rows share the transaction's created_at, so their order falls to their random ids: compare them sorted.
+  assert.deepEqual(afterSwitch.map(row => `${row.kind}:${row.state}`).sort(), ['deactivate:superseded','restrict:pending']);
   await client.query("UPDATE users SET access_mode='full' WHERE id=$1",[userId]);
-  assert.deepEqual((await events(client,userId)).map(row => `${row.kind}:${row.state}`), ['restrict:superseded','deactivate:superseded']);
+  assert.deepEqual((await events(client,userId)).map(row => `${row.kind}:${row.state}`).sort(), ['deactivate:superseded','restrict:superseded']);
 }));
 await check('an unlinked pay-only move queues nothing', () => fixture(async (client,userId) => {
   await client.query("UPDATE users SET access_mode='pay_only' WHERE id=$1",[userId]); assert.equal((await events(client,userId)).length,0);

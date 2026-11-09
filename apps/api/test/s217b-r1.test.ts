@@ -858,6 +858,9 @@ const SEAMS: Record<string, string[]> = {
     'session',
     'login_lifecycle_events',
   ],
+  // SCRUM-769: the restriction door reads a leaver's access mode and settles
+  // its restrict event; the same two tables the switch-off door reads above.
+  'apps/api/src/services/otoapp-lifecycle-restriction.ts': ['users', 'login_lifecycle_events'],
   'apps/api/src/services/booth-duty.ts': [
     'schedule_assignments',
     'schedule_shift_rows',

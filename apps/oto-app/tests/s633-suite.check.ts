@@ -83,7 +83,7 @@ try {
   for (const [file, expected] of [
     ["s633-employee-suite-sign-in.check.ts", 15],
     ["s633-employee-wizard.check.ts", 9],
-    ["s633-lifecycle.check.ts", 11],
+    ["s633-lifecycle.check.ts", 14],
     ["s633-lifecycle-privileges.check.ts", 4],
   ] as const) await command(file, [tsx, join(APP_DIR, "tests", file)], expected);
   completed = true;
@@ -99,6 +99,6 @@ try {
     }
   } catch { process.exitCode = 1; }
   finally { await admin.end().catch(() => {}); }
-  console.log(JSON.stringify({ suite: "s633", passed: completed && removed, checks: completed ? 39 : null, ownDatabaseRemoved: removed }));
+  console.log(JSON.stringify({ suite: "s633", passed: completed && removed, checks: completed ? 42 : null, ownDatabaseRemoved: removed }));
   if (!completed || !removed) process.exitCode = 1;
 }
