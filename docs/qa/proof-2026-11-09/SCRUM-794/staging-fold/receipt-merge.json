@@ -1,0 +1,729 @@
+{
+  "unit": "SCRUM-794 real merge (part A)",
+  "at": "2026-11-09T13:42:05.237Z",
+  "liveCommit": "39c45636df40e0289efabd2e07afcf5d27625c2e",
+  "preview": {
+    "status": 200,
+    "body": {
+      "moved": {
+        "shifts": 10,
+        "duties": 0,
+        "breaks": 10,
+        "templateShifts": 0,
+        "roles": 0,
+        "checklists": 0,
+        "tasks": 0,
+        "contracts": 2,
+        "timeRecords": 7,
+        "documents": 0,
+        "letters": 0,
+        "assets": 0,
+        "timeOff": 7,
+        "availability": 0,
+        "leaveSettings": 4,
+        "payrollProfile": 0,
+        "costAllocations": 0,
+        "history": 24
+      },
+      "skipped": {
+        "shifts": 0,
+        "duties": 0,
+        "breaks": 0,
+        "templateShifts": 0,
+        "roles": 2,
+        "checklists": 0,
+        "tasks": 0,
+        "contracts": 0,
+        "timeRecords": 0,
+        "documents": 0,
+        "letters": 0,
+        "assets": 0,
+        "timeOff": 0,
+        "availability": 0,
+        "leaveSettings": 0,
+        "payrollProfile": 0,
+        "costAllocations": 0,
+        "history": 0
+      },
+      "face": "original_kept",
+      "supersededContracts": 1,
+      "replaced": {
+        "payrollProfile": 0,
+        "costAllocations": 0,
+        "leaveSettings": 4
+      },
+      "clockedOnBoth": 0,
+      "orgChartMoved": 4,
+      "orgChartDropped": 0,
+      "orgChartReplaced": 2,
+      "reonboard": {
+        "engagementId": "b2eebf6a-ce82-47c9-84dd-753fd0d86dfa",
+        "startDate": "2026-11-03",
+        "started": true,
+        "department": {
+          "id": "4b09c719-337e-4de6-8137-11aa4619b725",
+          "name": "Reception"
+        },
+        "branch": {
+          "id": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+          "name": "Oto Play Park, Central Floresta "
+        },
+        "positionTitle": "Reception",
+        "employmentBasis": "FULL_TIME",
+        "probationEndDate": "2027-03-03",
+        "contractId": "d9f50d6e-e93b-4efa-bda0-76486d251d90",
+        "login": "reactivated",
+        "platformDeactivationDelivered": false
+      },
+      "deleted": {
+        "profile": 1,
+        "login": 0
+      }
+    }
+  },
+  "fold": {
+    "status": 200,
+    "body": {
+      "moved": {
+        "shifts": 10,
+        "duties": 0,
+        "breaks": 10,
+        "templateShifts": 0,
+        "roles": 0,
+        "checklists": 0,
+        "tasks": 0,
+        "contracts": 2,
+        "timeRecords": 7,
+        "documents": 0,
+        "letters": 0,
+        "assets": 0,
+        "timeOff": 7,
+        "availability": 0,
+        "leaveSettings": 4,
+        "payrollProfile": 0,
+        "costAllocations": 0,
+        "history": 24
+      },
+      "skipped": {
+        "shifts": 0,
+        "duties": 0,
+        "breaks": 0,
+        "templateShifts": 0,
+        "roles": 2,
+        "checklists": 0,
+        "tasks": 0,
+        "contracts": 0,
+        "timeRecords": 0,
+        "documents": 0,
+        "letters": 0,
+        "assets": 0,
+        "timeOff": 0,
+        "availability": 0,
+        "leaveSettings": 0,
+        "payrollProfile": 0,
+        "costAllocations": 0,
+        "history": 0
+      },
+      "face": "original_kept",
+      "supersededContracts": 1,
+      "replaced": {
+        "payrollProfile": 0,
+        "costAllocations": 0,
+        "leaveSettings": 4
+      },
+      "clockedOnBoth": 0,
+      "orgChartMoved": 4,
+      "orgChartDropped": 0,
+      "orgChartReplaced": 2,
+      "reonboard": {
+        "engagementId": "03448c44-e65f-4ded-9769-ab54a60a956b",
+        "startDate": "2026-11-03",
+        "started": true,
+        "department": {
+          "id": "4b09c719-337e-4de6-8137-11aa4619b725",
+          "name": "Reception"
+        },
+        "branch": {
+          "id": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+          "name": "Oto Play Park, Central Floresta "
+        },
+        "positionTitle": "Reception",
+        "employmentBasis": "FULL_TIME",
+        "probationEndDate": "2027-03-03",
+        "contractId": "d9f50d6e-e93b-4efa-bda0-76486d251d90",
+        "login": "reactivated",
+        "platformDeactivationDelivered": false
+      },
+      "deleted": {
+        "profile": 1,
+        "login": 0
+      },
+      "faceRemovedFromCollection": true,
+      "rematch": {
+        "matched": 1,
+        "stillPending": 3
+      }
+    }
+  },
+  "before": {
+    "original": {
+      "status": 200,
+      "empStatus": "resigned",
+      "employmentState": "LEFT",
+      "departmentId": "4b996d24-a5b4-4264-9f53-61acb1494e00",
+      "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+      "userId": "3c91b8e0-79fd-48b1-bb91-5232f24ff7b5",
+      "personIdSet": true,
+      "face": "ENROLLED",
+      "faceTag": "87714315",
+      "faceEnrolledAt": "2026-05-23T03:02:02.102Z",
+      "startDate": "2026-11-03",
+      "lastWorkingDay": "2026-10-31",
+      "offboardingType": null,
+      "positionTitle": "Reception ",
+      "employmentBasis": "FULL_TIME",
+      "dailyRateSet": false,
+      "probationEndDate": "2027-03-03",
+      "probationReviewCompletedAt": "2026-11-03T03:34:56.382Z",
+      "contracts": [
+        {
+          "id": "78bedb19-8031-4ad7-959d-8205725e6e8a",
+          "status": "active",
+          "signingStatus": "signed",
+          "archived": false,
+          "createdAt": "2026-05-12T09:19:37.956Z",
+          "contractStart": "2026-02-02",
+          "position": "Sale Booth"
+        }
+      ],
+      "offboarding": {
+        "status": 200,
+        "id": "44512e69-edb4-4b42-bef6-0aa5eb9184a9",
+        "lastWorkingDay": "2026-10-31",
+        "type": "resignation",
+        "reonboardedAt": null
+      },
+      "plannedOnboardAgain": null,
+      "changes": {
+        "count": 1,
+        "rows": [
+          {
+            "id": "2a005d6c-fb14-4bfe-8795-b154c239cc3d",
+            "type": "resigned",
+            "effectiveDate": "2026-10-31",
+            "contractInstanceId": null,
+            "newDepartmentId": null
+          }
+        ]
+      },
+      "timeEvents": {
+        "total": 210,
+        "listed": 210,
+        "days": [
+          "2026-05-23",
+          "2026-05-24",
+          "2026-05-27",
+          "2026-05-28",
+          "2026-05-29",
+          "2026-05-30",
+          "2026-05-31",
+          "2026-06-06",
+          "2026-06-07",
+          "2026-06-09",
+          "2026-06-10",
+          "2026-06-11",
+          "2026-06-12",
+          "2026-06-13",
+          "2026-06-16",
+          "2026-06-18",
+          "2026-06-19",
+          "2026-06-20",
+          "2026-06-23",
+          "2026-06-24",
+          "2026-06-25",
+          "2026-06-26",
+          "2026-06-27",
+          "2026-06-30",
+          "2026-07-01",
+          "2026-07-02",
+          "2026-07-03",
+          "2026-07-04",
+          "2026-07-07",
+          "2026-07-08",
+          "2026-07-09",
+          "2026-07-10",
+          "2026-07-11",
+          "2026-07-16",
+          "2026-07-17",
+          "2026-07-18",
+          "2026-07-23",
+          "2026-07-24",
+          "2026-07-25",
+          "2026-07-28",
+          "2026-07-31",
+          "2026-08-01",
+          "2026-08-02",
+          "2026-08-03",
+          "2026-08-06",
+          "2026-08-07",
+          "2026-08-08",
+          "2026-08-11",
+          "2026-08-12",
+          "2026-08-13",
+          "2026-08-14",
+          "2026-08-15",
+          "2026-08-18",
+          "2026-08-19",
+          "2026-08-20",
+          "2026-08-22",
+          "2026-08-25",
+          "2026-08-26",
+          "2026-08-27",
+          "2026-08-28",
+          "2026-08-29",
+          "2026-09-01",
+          "2026-09-02",
+          "2026-09-03",
+          "2026-09-04",
+          "2026-09-07",
+          "2026-09-10",
+          "2026-09-11",
+          "2026-09-12",
+          "2026-09-15",
+          "2026-09-22",
+          "2026-09-23",
+          "2026-09-24",
+          "2026-09-25",
+          "2026-09-26",
+          "2026-09-29",
+          "2026-09-30",
+          "2026-10-01",
+          "2026-10-02",
+          "2026-10-04",
+          "2026-10-05",
+          "2026-10-08",
+          "2026-10-09",
+          "2026-10-10",
+          "2026-10-13",
+          "2026-10-14",
+          "2026-10-15",
+          "2026-10-16",
+          "2026-10-17",
+          "2026-10-20",
+          "2026-10-21",
+          "2026-10-22",
+          "2026-10-23",
+          "2026-10-24",
+          "2026-10-27",
+          "2026-10-28",
+          "2026-10-29",
+          "2026-10-30",
+          "2026-10-31",
+          "2026-11-03",
+          "2026-11-04",
+          "2026-11-05"
+        ]
+      },
+      "login": {
+        "id": "3c91b8e0-79fd-48b1-bb91-5232f24ff7b5",
+        "isActive": false,
+        "role": "staff",
+        "platformLinked": false
+      }
+    },
+    "duplicate": {
+      "status": 200,
+      "empStatus": "active",
+      "employmentState": "ACTIVE",
+      "departmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+      "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+      "userId": null,
+      "personIdSet": false,
+      "face": "ENROLLED",
+      "faceTag": "bcdfb798",
+      "faceEnrolledAt": "2026-11-05T05:21:58.395Z",
+      "startDate": "2026-11-03",
+      "lastWorkingDay": null,
+      "offboardingType": null,
+      "positionTitle": "Reception",
+      "employmentBasis": "FULL_TIME",
+      "dailyRateSet": false,
+      "probationEndDate": "2027-03-03",
+      "probationReviewCompletedAt": null,
+      "contracts": [
+        {
+          "id": "d9f50d6e-e93b-4efa-bda0-76486d251d90",
+          "status": "active",
+          "signingStatus": "signed",
+          "archived": false,
+          "createdAt": "2026-10-31T05:01:52.397Z",
+          "contractStart": "2026-11-03",
+          "position": "Reception"
+        },
+        {
+          "id": "fa8c4cc0-51b8-49c6-a443-1966f3c6fc76",
+          "status": "finalized",
+          "signingStatus": "not_sent",
+          "archived": false,
+          "createdAt": "2026-10-31T05:01:11.302Z",
+          "contractStart": "2026-11-03",
+          "position": "Reception"
+        }
+      ],
+      "offboarding": {
+        "status": 200,
+        "id": null,
+        "lastWorkingDay": null,
+        "type": null,
+        "reonboardedAt": null
+      },
+      "plannedOnboardAgain": null,
+      "changes": {
+        "count": 0,
+        "rows": []
+      },
+      "timeEvents": {
+        "total": 7,
+        "listed": 7,
+        "days": [
+          "2026-11-05",
+          "2026-11-06",
+          "2026-11-07",
+          "2026-11-09"
+        ]
+      },
+      "login": null
+    },
+    "shiftsByWeek": {
+      "2026-10-26": {
+        "original": 0,
+        "duplicate": 0
+      },
+      "2026-11-02": {
+        "original": 0,
+        "duplicate": 4
+      },
+      "2026-11-09": {
+        "original": 0,
+        "duplicate": 6
+      },
+      "2026-11-16": {
+        "original": 0,
+        "duplicate": 0
+      },
+      "2026-11-23": {
+        "original": 0,
+        "duplicate": 0
+      }
+    },
+    "orgNodes": [
+      {
+        "read": "/org-chart/nodes?mode=live&scopeType=company",
+        "status": 200,
+        "nodes": 80,
+        "original": [
+          "14c02b5a-1ffc-46ac-8fba-17bfd0eed219"
+        ],
+        "duplicate": [
+          "7b38d18e-a0ad-4d73-84ef-7bf5cf61882a"
+        ]
+      },
+      {
+        "read": "/org-chart/nodes?mode=draft&scopeType=company",
+        "status": 200,
+        "nodes": 80,
+        "original": [
+          "4039d794-5247-4085-a437-110251515227"
+        ],
+        "duplicate": [
+          "581dc208-7182-43e6-b340-e4270a7985a0"
+        ]
+      },
+      {
+        "read": "/org-chart/nodes?mode=live&scopeType=branch&scopeBranchId=6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "status": 200,
+        "nodes": 48,
+        "original": [],
+        "duplicate": [
+          "6f26e572-0d74-4511-af1a-ca1edf290665"
+        ]
+      },
+      {
+        "read": "/org-chart/nodes?mode=draft&scopeType=branch&scopeBranchId=6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "status": 200,
+        "nodes": 48,
+        "original": [],
+        "duplicate": [
+          "acb14e01-c376-4464-b561-f4d063f2d185"
+        ]
+      }
+    ]
+  },
+  "after": {
+    "original": {
+      "status": 200,
+      "empStatus": "active",
+      "employmentState": "ACTIVE",
+      "departmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+      "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+      "userId": "3c91b8e0-79fd-48b1-bb91-5232f24ff7b5",
+      "personIdSet": true,
+      "face": "ENROLLED",
+      "faceTag": "87714315",
+      "faceEnrolledAt": "2026-05-23T03:02:02.102Z",
+      "startDate": "2026-11-03",
+      "lastWorkingDay": null,
+      "offboardingType": null,
+      "positionTitle": "Reception",
+      "employmentBasis": "FULL_TIME",
+      "dailyRateSet": false,
+      "probationEndDate": "2027-03-03",
+      "probationReviewCompletedAt": null,
+      "contracts": [
+        {
+          "id": "d9f50d6e-e93b-4efa-bda0-76486d251d90",
+          "status": "active",
+          "signingStatus": "signed",
+          "archived": false,
+          "createdAt": "2026-10-31T05:01:52.397Z",
+          "contractStart": "2026-11-03",
+          "position": "Reception"
+        },
+        {
+          "id": "fa8c4cc0-51b8-49c6-a443-1966f3c6fc76",
+          "status": "finalized",
+          "signingStatus": "not_sent",
+          "archived": false,
+          "createdAt": "2026-10-31T05:01:11.302Z",
+          "contractStart": "2026-11-03",
+          "position": "Reception"
+        },
+        {
+          "id": "78bedb19-8031-4ad7-959d-8205725e6e8a",
+          "status": "superseded",
+          "signingStatus": "signed",
+          "archived": false,
+          "createdAt": "2026-05-12T09:19:37.956Z",
+          "contractStart": "2026-02-02",
+          "position": "Sale Booth"
+        }
+      ],
+      "offboarding": {
+        "status": 200,
+        "id": null,
+        "lastWorkingDay": null,
+        "type": null,
+        "reonboardedAt": null
+      },
+      "plannedOnboardAgain": null,
+      "changes": {
+        "count": 2,
+        "rows": [
+          {
+            "id": "8902c8a9-8fcd-4639-8417-f254e879e10a",
+            "type": "onboard_again",
+            "effectiveDate": "2026-11-03",
+            "note": "Onboard again (from a folded profile) from 2026-11-03; the earlier contract ended on its last working day 2026-10-31",
+            "contractInstanceId": "d9f50d6e-e93b-4efa-bda0-76486d251d90",
+            "newDepartmentId": "4b09c719-337e-4de6-8137-11aa4619b725"
+          },
+          {
+            "id": "2a005d6c-fb14-4bfe-8795-b154c239cc3d",
+            "type": "resigned",
+            "effectiveDate": "2026-10-31",
+            "contractInstanceId": null,
+            "newDepartmentId": null
+          }
+        ]
+      },
+      "timeEvents": {
+        "total": 217,
+        "listed": 217,
+        "days": [
+          "2026-05-23",
+          "2026-05-24",
+          "2026-05-27",
+          "2026-05-28",
+          "2026-05-29",
+          "2026-05-30",
+          "2026-05-31",
+          "2026-06-06",
+          "2026-06-07",
+          "2026-06-09",
+          "2026-06-10",
+          "2026-06-11",
+          "2026-06-12",
+          "2026-06-13",
+          "2026-06-16",
+          "2026-06-18",
+          "2026-06-19",
+          "2026-06-20",
+          "2026-06-23",
+          "2026-06-24",
+          "2026-06-25",
+          "2026-06-26",
+          "2026-06-27",
+          "2026-06-30",
+          "2026-07-01",
+          "2026-07-02",
+          "2026-07-03",
+          "2026-07-04",
+          "2026-07-07",
+          "2026-07-08",
+          "2026-07-09",
+          "2026-07-10",
+          "2026-07-11",
+          "2026-07-16",
+          "2026-07-17",
+          "2026-07-18",
+          "2026-07-23",
+          "2026-07-24",
+          "2026-07-25",
+          "2026-07-28",
+          "2026-07-31",
+          "2026-08-01",
+          "2026-08-02",
+          "2026-08-03",
+          "2026-08-06",
+          "2026-08-07",
+          "2026-08-08",
+          "2026-08-11",
+          "2026-08-12",
+          "2026-08-13",
+          "2026-08-14",
+          "2026-08-15",
+          "2026-08-18",
+          "2026-08-19",
+          "2026-08-20",
+          "2026-08-22",
+          "2026-08-25",
+          "2026-08-26",
+          "2026-08-27",
+          "2026-08-28",
+          "2026-08-29",
+          "2026-09-01",
+          "2026-09-02",
+          "2026-09-03",
+          "2026-09-04",
+          "2026-09-07",
+          "2026-09-10",
+          "2026-09-11",
+          "2026-09-12",
+          "2026-09-15",
+          "2026-09-22",
+          "2026-09-23",
+          "2026-09-24",
+          "2026-09-25",
+          "2026-09-26",
+          "2026-09-29",
+          "2026-09-30",
+          "2026-10-01",
+          "2026-10-02",
+          "2026-10-04",
+          "2026-10-05",
+          "2026-10-08",
+          "2026-10-09",
+          "2026-10-10",
+          "2026-10-13",
+          "2026-10-14",
+          "2026-10-15",
+          "2026-10-16",
+          "2026-10-17",
+          "2026-10-20",
+          "2026-10-21",
+          "2026-10-22",
+          "2026-10-23",
+          "2026-10-24",
+          "2026-10-27",
+          "2026-10-28",
+          "2026-10-29",
+          "2026-10-30",
+          "2026-10-31",
+          "2026-11-03",
+          "2026-11-04",
+          "2026-11-05",
+          "2026-11-06",
+          "2026-11-07",
+          "2026-11-09"
+        ]
+      },
+      "login": {
+        "id": "3c91b8e0-79fd-48b1-bb91-5232f24ff7b5",
+        "isActive": true,
+        "role": "staff",
+        "platformLinked": false
+      }
+    },
+    "duplicate": {
+      "status": 404,
+      "body": {
+        "message": "Employee not found"
+      }
+    },
+    "shiftsByWeek": {
+      "2026-10-26": {
+        "original": 0,
+        "duplicate": 0
+      },
+      "2026-11-02": {
+        "original": 4,
+        "duplicate": 0
+      },
+      "2026-11-09": {
+        "original": 6,
+        "duplicate": 0
+      },
+      "2026-11-16": {
+        "original": 0,
+        "duplicate": 0
+      },
+      "2026-11-23": {
+        "original": 0,
+        "duplicate": 0
+      }
+    },
+    "orgNodes": [
+      {
+        "read": "/org-chart/nodes?mode=live&scopeType=company",
+        "status": 200,
+        "nodes": 79,
+        "original": [
+          "7b38d18e-a0ad-4d73-84ef-7bf5cf61882a"
+        ],
+        "duplicate": []
+      },
+      {
+        "read": "/org-chart/nodes?mode=draft&scopeType=company",
+        "status": 200,
+        "nodes": 79,
+        "original": [
+          "581dc208-7182-43e6-b340-e4270a7985a0"
+        ],
+        "duplicate": []
+      },
+      {
+        "read": "/org-chart/nodes?mode=live&scopeType=branch&scopeBranchId=6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "status": 200,
+        "nodes": 48,
+        "original": [
+          "6f26e572-0d74-4511-af1a-ca1edf290665"
+        ],
+        "duplicate": []
+      },
+      {
+        "read": "/org-chart/nodes?mode=draft&scopeType=branch&scopeBranchId=6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "status": 200,
+        "nodes": 48,
+        "original": [
+          "acb14e01-c376-4464-b561-f4d063f2d185"
+        ],
+        "duplicate": []
+      }
+    ]
+  },
+  "originalBadge": "Probation",
+  "duplicatePage": {
+    "status": 200,
+    "textNoNames": "Edit Employee Update employee information Overview Personal & documents Job & contract Payroll Time & leave Access Leaving & property"
+  }
+}

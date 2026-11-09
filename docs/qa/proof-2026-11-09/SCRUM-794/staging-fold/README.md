@@ -80,3 +80,37 @@ The Org Chart page adds an entry for every active employee who has none each tim
 - `A2-fold-dialog-still-referenced.png`: the Fold dialog on the duplicate (Reception) profile, with the original (Promotion) profile chosen. It shows the original's Login and Face tags and "Resigned", the refusal "This profile is still linked to the org chart, so nothing was folded.", and the disabled Fold button. The name and the search box are masked.
 
 Every run signed out at the launcher (200).
+
+## Part A, third round: the real merge done (9 November, 20:50 Bangkok, on 39c45636)
+
+The org-chart round landed and the merge of the two profiles ran through the Fold dialog
+on the duplicate (Reception) profile with the original (Promotion, Left) chosen.
+Receipt: `receipt-merge.json` (ids, counts, statuses; no names).
+
+- **Preview 200.** The dialog read: moves 2 contracts, 7 time records, 10 shifts with 10
+  breaks, 7 leave records, 4 leave settings, 24 history entries; skips 2 roles the original
+  already has; the original keeps its own face enrolment and the duplicate's face is removed
+  from the face collection; the original is onboarded again, active in Reception at Central
+  Floresta as Reception (full-time, on probation until 3 March 2027) from 3 November 2026
+  with the duplicate's active contract, its previous active contract superseded, its login
+  switched back on; 4 leave settings replaced; the original takes 4 org chart entries in the
+  duplicate's place and 2 of its own are removed where the duplicate's is the current one.
+- **FOLD typed, Fold pressed: 200** with the same counts. The duplicate's face left the
+  face collection (true). Approvals re-matched: 1 matched, 3 still pending.
+- **Read back.** The duplicate answers 404 (its address shows an empty Edit Employee shell).
+  The original: active, Reception, Probation badge, login on, its own face kept, 217 time
+  records (210 + 7), contracts active/signed (the duplicate's), finalized/not sent,
+  superseded/signed (its old one); 4 shifts in the week of 2 November and 6 in the week of
+  9 November now on the original (none before); every org chart read (live and draft,
+  company and Central Floresta) names the original once and the duplicate not at all; the
+  profile's changes list the onboard_again of 3 November from the folded profile and the
+  resignation of 31 October.
+
+Pictures: `A3-01-fold-dialog-preview.png` (the preview and the Fold button, names masked),
+`A3-03-original-profile-after-fold.png` (the original's page after the fold, Probation,
+avatar and name masked), `A3-05-original-job-and-contract-after-fold.png`,
+`A3-04-duplicate-address-after-fold.png` (the folded address).
+
+Side note for the planner: the original's login was switched off before the fold (the 03:00
+batch had done it when the profile was Left) and the fold switched it back on, as the
+preview said.
