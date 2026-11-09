@@ -16,6 +16,9 @@ export * from './schema/otoapp';
 /** SCRUM-646: the code-owned settings catalogue and its idempotent convergence. */
 export * from './setting-registry';
 
+/** SCRUM-795: a platform account for every OTO App user who has none (one-off, by script). */
+export * from './otoapp-staff-accounts';
+
 export type Db = NodePgDatabase<typeof schema>;
 
 let _pool: pg.Pool | null = null;

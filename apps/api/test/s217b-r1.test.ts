@@ -906,6 +906,19 @@ const SEAMS: Record<string, string[]> = {
     'event_attendees',
     'camp_registrations',
   ],
+  // SCRUM-795: the one-off staff accounts script. It places each user in a park
+  // group the way `oto-app-users.ts` does (users, their branch access, the app's
+  // branches, tenants and operators), stamps the user it provisions, and reads
+  // `employees` for its two seam columns only (id, user_id) to find the one
+  // employee the app links to a user. Never the api: a script, run by hand.
+  'packages/db/src/otoapp-staff-accounts.ts': [
+    'users',
+    'user_branch_access',
+    'branches',
+    'tenants',
+    'operators',
+    'employees',
+  ],
 };
 
 describe('F. H19: app tables only through the declared seams; an app-only change still runs this suite', () => {
