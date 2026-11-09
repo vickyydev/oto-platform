@@ -733,6 +733,32 @@ try {
     assert.equal(await saleOf(fresh), `ZZ-${run}-000003`);
   });
 
+  // ── 4. Generate from BEO bills the package in baht (SCRUM-806) ───────────
+
+  await check("Generate from BEO bills a 5,000 THB add-on as 5,000, not 500,000", async () => {
+    const billed = await birthday(A);
+    const applied = await call("POST", `/api/beo/events/${billed}/package-snapshot`, { cookie, body: { templateId: packageId } });
+    assert.equal(applied.status, 201, show(applied));
+    const sel = await call("POST", `/api/beo/events/${billed}/entertainment-selections`, { cookie, body: { templateId: crio } });
+    assert.equal(sel.status, 201, show(sel));
+    const res = await call("POST", `/api/events/${billed}/line-items/generate-from-beo`, { cookie, body: { mode: "replace" } });
+    assert.equal(res.status, 201, show(res));
+    const lines = await call("GET", `/api/events/${billed}/line-items`, { cookie });
+    assert.equal(lines.status, 200, show(lines));
+    const price = Object.fromEntries(
+      lines.body.map((l: { name: string; unitPriceIncVat: number }) => [l.name, l.unitPriceIncVat]),
+    );
+    assert.equal(price["Add-on: Reserved table for adults, up to 10 adults"], 5_000);
+    assert.equal(price["Add-on: Upgrade or customize your activity program"], 1_000);
+    assert.equal(price["Package: Ice-cream cake with candles and birthday song"], 0);
+    assert.equal(price[`Entertainment: ZZ TEST Crio show ${run}`], 6_500);
+    // What the billing screen totals (qty x unit price of every line not included).
+    const total = lines.body
+      .filter((l: { isIncluded: boolean }) => !l.isIncluded)
+      .reduce((sum: number, l: { qty: number; unitPriceIncVat: number }) => sum + l.qty * l.unitPriceIncVat, 0);
+    assert.equal(total, 5_000 + 1_000 + 6_500);
+  });
+
   console.log(`birthday-packages.check: ${checks} checks passed`);
 } catch (err) {
   console.error("birthday-packages.check FAILED:", err);
