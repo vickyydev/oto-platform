@@ -1,0 +1,913 @@
+{
+  "ticket": "SCRUM-803",
+  "what": "The park's real birthday catalogue entered into the OTO App on staging through the app's own routes (production data on staging on purpose, not ZZ TEST).",
+  "app": "https://oto-app-staging.onrender.com",
+  "actor": {
+    "role": "global_admin",
+    "tenantId": "6b21b917-8196-4097-a647-d68b65e25316"
+  },
+  "sources": [
+    "catalog-source/birthday-packages-2026-11-09.md (owner text, tester rules)",
+    "catalog-source/BIRTHDAY_CONTRACT.md (fixed prices and rules)",
+    "catalog-source/Birthday Package_Floresta.pdf (page 1, read as image)",
+    "catalog-source/Entertainment menu_eng.pdf (pages 1-5, read as image)"
+  ],
+  "routes": {
+    "packages": "GET/POST /api/beo/birthday-packages, PATCH /api/beo/birthday-packages/:id",
+    "lineItems": "GET /api/beo/birthday-packages/:id (lineItems), POST /api/beo/birthday-packages/:id/line-items, PATCH .../line-items/:itemId",
+    "entertainment": "GET/POST /api/beo/entertainment-templates, PATCH /api/beo/entertainment-templates/:id",
+    "setMenus": "GET/POST /api/beo/set-menu-templates, PUT /api/beo/set-menu-templates/:id"
+  },
+  "units": "birthday_package_templates.base_price, package_line_item_templates.default_unit_price and entertainment_package_templates.default_price hold SATANG (THB x 100): the settings screens divide by 100 and the app seed (script/minimal/main.ts) writes 1500000 for 15,000 THB. Seeded accordingly; screens read 16900.00 etc.",
+  "branch": "None of the three template tables has a branch or tenant-branch column; the app has one tenant on staging. Branch is carried in the names and as tags (Central Floresta / Central).",
+  "rules": "Matched by name (packages, entertainment, set menus) and by label within a package (line items); created when absent, patched only the differing fields when present. Nothing deleted, archived or renamed. Pre-existing set menus left untouched.",
+  "before": {
+    "packages": 0,
+    "entertainment": 0,
+    "setMenus": [
+      {
+        "id": "3f02f557-1050-4c6e-9926-9f40e86b1adb",
+        "name": "Set Central",
+        "items": 12
+      },
+      {
+        "id": "05305846-1ad2-4af9-aecc-b10459cc312b",
+        "name": "Set at Robinson",
+        "items": 7
+      },
+      {
+        "id": "adac1610-27b5-453b-b96f-b5a463a78233",
+        "name": "Cake (under 10 kids)",
+        "items": 1
+      },
+      {
+        "id": "19cec0eb-debd-4647-8a79-9216e6b54818",
+        "name": "Cake (over 10 kids)",
+        "items": 1
+      },
+      {
+        "id": "959c4c52-6395-43c2-acd7-14583a0d1a53",
+        "name": "After school 10 kids chalong",
+        "items": 6
+      },
+      {
+        "id": "43dbbf67-dfd7-4f13-9ad3-30cc551c9123",
+        "name": "After school central 20pax",
+        "items": 10
+      }
+    ]
+  },
+  "run1": {
+    "at": "2026-11-09T11:44:18.429Z",
+    "actions": {
+      "created": 70
+    },
+    "refused": []
+  },
+  "run2Idempotency": {
+    "at": "2026-11-09T11:44:45.182Z",
+    "actions": {
+      "unchanged": 70
+    },
+    "refused": [],
+    "readBack": {
+      "packages": 4,
+      "entertainment": 19,
+      "setMenus": 9
+    }
+  },
+  "packages": [
+    {
+      "name": "Birthday package, Central Floresta (weekday)",
+      "id": "391b269d-159a-4039-89a2-51ac132da747",
+      "action": "created",
+      "basePriceSatang": 1690000,
+      "basePriceThb": 16900,
+      "lineItems": [
+        {
+          "label": "Kids' table reserved for 3 hours",
+          "id": "c7d1b709-0cad-4b3e-825b-554d23a52fe8",
+          "action": "created",
+          "category": "setup",
+          "included": true,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Special birthday set menu",
+          "id": "00114c2b-2cc9-4ac5-b30c-cbed258960a6",
+          "action": "created",
+          "category": "food",
+          "included": true,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Interactive birthday animation program, 30 minutes",
+          "id": "5e058354-119f-4908-8a5a-e878b0692711",
+          "action": "created",
+          "category": "entertainment",
+          "included": true,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Ice-cream cake with candles and birthday song",
+          "id": "25671048-da68-435c-93af-3b50191d8804",
+          "action": "created",
+          "category": "cake",
+          "included": true,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Entry for 4 accompanying adults",
+          "id": "8177e735-a8ed-4a83-a3a2-cde40d9bd6e0",
+          "action": "created",
+          "category": "play",
+          "included": true,
+          "qty": 4,
+          "unitLabel": "adults",
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Socks for all children",
+          "id": "ad2f6ba7-c877-4cb5-b21d-b493e91630ac",
+          "action": "created",
+          "category": "other",
+          "included": true,
+          "qty": 10,
+          "unitLabel": "pairs",
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Extra child",
+          "id": "21f9b949-d0a3-495b-94fd-5c5c2c2158c2",
+          "action": "created",
+          "category": "play",
+          "included": false,
+          "qty": 1,
+          "unitLabel": "child",
+          "unitPriceThb": 1300,
+          "billable": true
+        },
+        {
+          "label": "Additional adult",
+          "id": "ff9ea997-debe-4433-83eb-191d73b0c47b",
+          "action": "created",
+          "category": "play",
+          "included": false,
+          "qty": 1,
+          "unitLabel": "adult",
+          "unitPriceThb": 350,
+          "billable": true
+        },
+        {
+          "label": "Reserved table for adults, up to 10 adults",
+          "id": "9e6e742b-8b86-400f-9529-40a0dd6f3609",
+          "action": "created",
+          "category": "setup",
+          "included": false,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 5000,
+          "billable": true
+        },
+        {
+          "label": "Classic balloon decoration",
+          "id": "0cccd030-b526-404e-974c-9068ee3c321b",
+          "action": "created",
+          "category": "setup",
+          "included": false,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 4000,
+          "billable": true
+        },
+        {
+          "label": "PRO photo zone with decorations",
+          "id": "8bc54d11-0b69-406a-a8a1-052419a51361",
+          "action": "created",
+          "category": "setup",
+          "included": false,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 8900,
+          "billable": true
+        },
+        {
+          "label": "Upgrade or customize your activity program",
+          "id": "3ae21db2-8293-40cd-a065-949caad9b38a",
+          "action": "created",
+          "category": "entertainment",
+          "included": false,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 1000,
+          "billable": true
+        },
+        {
+          "label": "Bracelet Making",
+          "id": "caa709a0-6b21-4430-8f59-69872ca5215b",
+          "action": "created",
+          "category": "entertainment",
+          "included": false,
+          "qty": 1,
+          "unitLabel": "child",
+          "unitPriceThb": 100,
+          "billable": true
+        }
+      ]
+    },
+    {
+      "name": "Birthday package, Central Floresta (weekend)",
+      "id": "520ce459-b407-44c3-a16f-f27916bbfa2a",
+      "action": "created",
+      "basePriceSatang": 2090000,
+      "basePriceThb": 20900,
+      "lineItems": [
+        {
+          "label": "Kids' table reserved for 3 hours",
+          "id": "78b77c53-2b5f-4862-bf36-b6e3c9392fbf",
+          "action": "created",
+          "category": "setup",
+          "included": true,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Special birthday set menu",
+          "id": "cf2dc88a-4d60-4ae4-a348-8be55d4daaa6",
+          "action": "created",
+          "category": "food",
+          "included": true,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Interactive birthday animation program, 30 minutes",
+          "id": "6e83f053-a08a-4ef2-8881-c49ec37272b8",
+          "action": "created",
+          "category": "entertainment",
+          "included": true,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Ice-cream cake with candles and birthday song",
+          "id": "a5485860-fcc4-47eb-bf86-b519ac313a64",
+          "action": "created",
+          "category": "cake",
+          "included": true,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Entry for 4 accompanying adults",
+          "id": "d3dec3a8-2640-483e-9c51-beb331a17e72",
+          "action": "created",
+          "category": "play",
+          "included": true,
+          "qty": 4,
+          "unitLabel": "adults",
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Socks for all children",
+          "id": "136eb02c-c37e-4938-af2f-b994ca2edb64",
+          "action": "created",
+          "category": "other",
+          "included": true,
+          "qty": 10,
+          "unitLabel": "pairs",
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Extra child",
+          "id": "bf2540a4-ce9d-4394-851f-a22cb2e82d46",
+          "action": "created",
+          "category": "play",
+          "included": false,
+          "qty": 1,
+          "unitLabel": "child",
+          "unitPriceThb": 1500,
+          "billable": true
+        },
+        {
+          "label": "Additional adult",
+          "id": "bce0ebe2-1aa0-4a51-8dc8-d7a0ad6b835c",
+          "action": "created",
+          "category": "play",
+          "included": false,
+          "qty": 1,
+          "unitLabel": "adult",
+          "unitPriceThb": 500,
+          "billable": true
+        },
+        {
+          "label": "Reserved table for adults, up to 10 adults",
+          "id": "866e2172-351f-48d5-91c0-eb0dbfe9a148",
+          "action": "created",
+          "category": "setup",
+          "included": false,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 5000,
+          "billable": true
+        },
+        {
+          "label": "Classic balloon decoration",
+          "id": "6857be44-151a-4ee2-9385-f9057ec638f0",
+          "action": "created",
+          "category": "setup",
+          "included": false,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 4000,
+          "billable": true
+        },
+        {
+          "label": "PRO photo zone with decorations",
+          "id": "26ef46c7-2d15-4728-98e5-c144f3d6cd32",
+          "action": "created",
+          "category": "setup",
+          "included": false,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 8900,
+          "billable": true
+        },
+        {
+          "label": "Upgrade or customize your activity program",
+          "id": "cd71bc11-076f-40a8-b950-626e8cd2e2bf",
+          "action": "created",
+          "category": "entertainment",
+          "included": false,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 1000,
+          "billable": true
+        },
+        {
+          "label": "Bracelet Making",
+          "id": "8f80030d-5a86-403e-8d8b-e7e4dc550be9",
+          "action": "created",
+          "category": "entertainment",
+          "included": false,
+          "qty": 1,
+          "unitLabel": "child",
+          "unitPriceThb": 100,
+          "billable": true
+        }
+      ]
+    },
+    {
+      "name": "After School Birthday Package, Central (10 kids)",
+      "id": "0a8137c3-2775-491d-ac4d-567e7332b3ad",
+      "action": "created",
+      "basePriceSatang": 1090000,
+      "basePriceThb": 10900,
+      "lineItems": [
+        {
+          "label": "Table reservation",
+          "id": "517f517b-adf8-45d9-b937-cabe15edbf74",
+          "action": "created",
+          "category": "setup",
+          "included": true,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Entrance for 10 children",
+          "id": "fce3856e-f629-41a2-8bdc-d102065953de",
+          "action": "created",
+          "category": "play",
+          "included": true,
+          "qty": 10,
+          "unitLabel": "children",
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Entrance for 10 adults",
+          "id": "02e2a134-e03f-4d31-a489-36b04126981c",
+          "action": "created",
+          "category": "play",
+          "included": true,
+          "qty": 10,
+          "unitLabel": "adults",
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Birthday Food Set for Kids",
+          "id": "e33023c2-6e74-4677-b7d3-5863cea04d03",
+          "action": "created",
+          "category": "food",
+          "included": true,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Ice Cream Cake",
+          "id": "84eb3f67-e56e-418a-adb8-6faee1eb6205",
+          "action": "created",
+          "category": "cake",
+          "included": true,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Unlimited complimentary drinking water",
+          "id": "77e6ab9c-245d-4888-9158-241a663376d9",
+          "action": "created",
+          "category": "other",
+          "included": true,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Private Zone (guaranteed)",
+          "id": "61cc1b0f-69ba-4d0f-a61b-ae240be30d68",
+          "action": "created",
+          "category": "setup",
+          "included": false,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 3000,
+          "billable": true
+        },
+        {
+          "label": "Socks (per pair)",
+          "id": "cdccbd4a-96d3-4b6b-b68e-8fd9da1fcfca",
+          "action": "created",
+          "category": "other",
+          "included": false,
+          "qty": 1,
+          "unitLabel": "pair",
+          "unitPriceThb": 60,
+          "billable": true
+        },
+        {
+          "label": "Bracelet Making",
+          "id": "494fc851-f4a7-45f8-a870-58c956af8f20",
+          "action": "created",
+          "category": "entertainment",
+          "included": false,
+          "qty": 1,
+          "unitLabel": "child",
+          "unitPriceThb": 100,
+          "billable": true
+        }
+      ]
+    },
+    {
+      "name": "After School Birthday Package, Central (20 kids)",
+      "id": "842004d6-6cb9-4910-9755-f1d2e7d9ecad",
+      "action": "created",
+      "basePriceSatang": 1890000,
+      "basePriceThb": 18900,
+      "lineItems": [
+        {
+          "label": "Table reservation",
+          "id": "ad6509bb-50ef-4637-bf4f-4b3abbb4aeba",
+          "action": "created",
+          "category": "setup",
+          "included": true,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Entrance for 20 children",
+          "id": "4d083178-f69c-48ac-a1d2-c599a07a5414",
+          "action": "created",
+          "category": "play",
+          "included": true,
+          "qty": 20,
+          "unitLabel": "children",
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Entrance for 20 adults",
+          "id": "57f1a326-af60-4a2e-9467-5edb5fbdfd25",
+          "action": "created",
+          "category": "play",
+          "included": true,
+          "qty": 20,
+          "unitLabel": "adults",
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Birthday Food Set for Kids",
+          "id": "638ffd04-611a-4347-8bd1-98f6341f4d75",
+          "action": "created",
+          "category": "food",
+          "included": true,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Ice Cream Cake",
+          "id": "bd156bf9-ea0d-4754-a9ff-8b0615e7b09d",
+          "action": "created",
+          "category": "cake",
+          "included": true,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Unlimited complimentary drinking water",
+          "id": "16eac94e-dcb5-44ef-a149-77fa9da5f265",
+          "action": "created",
+          "category": "other",
+          "included": true,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 0,
+          "billable": false
+        },
+        {
+          "label": "Private Zone (guaranteed)",
+          "id": "7da2815a-a580-4645-b1da-1547367934e1",
+          "action": "created",
+          "category": "setup",
+          "included": false,
+          "qty": 1,
+          "unitLabel": null,
+          "unitPriceThb": 3000,
+          "billable": true
+        },
+        {
+          "label": "Socks (per pair)",
+          "id": "7806db98-26f3-4a7f-ab83-469a9bd1f7da",
+          "action": "created",
+          "category": "other",
+          "included": false,
+          "qty": 1,
+          "unitLabel": "pair",
+          "unitPriceThb": 60,
+          "billable": true
+        },
+        {
+          "label": "Bracelet Making",
+          "id": "117a7d51-40cd-4f53-adc9-a01227cb2ac0",
+          "action": "created",
+          "category": "entertainment",
+          "included": false,
+          "qty": 1,
+          "unitLabel": "child",
+          "unitPriceThb": 100,
+          "billable": true
+        }
+      ]
+    }
+  ],
+  "entertainment": [
+    {
+      "name": "Birthday entertainment program",
+      "id": "f514a0a2-eaca-4c28-8a67-60f2583d8179",
+      "action": "created",
+      "category": "Games",
+      "durationMinutes": 30,
+      "priceThb": 3000,
+      "included": true,
+      "billable": false
+    },
+    {
+      "name": "Zombie game",
+      "id": "cebe220b-fd77-48bc-9401-235b18059704",
+      "action": "created",
+      "category": "Games",
+      "durationMinutes": 30,
+      "priceThb": 4000,
+      "included": false,
+      "billable": true
+    },
+    {
+      "name": "Squid games",
+      "id": "96c3a9fe-5a5d-4cfd-a14b-bb5d56335142",
+      "action": "created",
+      "category": "Games",
+      "durationMinutes": 30,
+      "priceThb": 4000,
+      "included": false,
+      "billable": true
+    },
+    {
+      "name": "Jurassic park",
+      "id": "04406b4f-1b99-43b5-bf71-41573364969e",
+      "action": "created",
+      "category": "Games",
+      "durationMinutes": 30,
+      "priceThb": 4000,
+      "included": false,
+      "billable": true
+    },
+    {
+      "name": "Tesla show",
+      "id": "0b42c1e2-e003-4c7f-8a00-f4fd4db87cf3",
+      "action": "created",
+      "category": "Shows",
+      "durationMinutes": 40,
+      "priceThb": 8000,
+      "included": false,
+      "billable": true
+    },
+    {
+      "name": "Bubble show",
+      "id": "e6558131-d972-4bda-a4ff-edcff35d4110",
+      "action": "created",
+      "category": "Shows",
+      "durationMinutes": 30,
+      "priceThb": 5500,
+      "included": false,
+      "billable": true
+    },
+    {
+      "name": "Crio show",
+      "id": "27c0ffe4-630c-45e2-aa49-3335872a91c5",
+      "action": "created",
+      "category": "Shows",
+      "durationMinutes": 30,
+      "priceThb": 6500,
+      "included": false,
+      "billable": true
+    },
+    {
+      "name": "Minecraft: Creeper hunt",
+      "id": "37c480a4-b138-4150-992b-d118c66fb468",
+      "action": "created",
+      "category": "Shows",
+      "durationMinutes": 30,
+      "priceThb": 5000,
+      "included": false,
+      "billable": true
+    },
+    {
+      "name": "Slime Master Class",
+      "id": "a64a41b5-106d-4a1d-bdb3-7c9e74c6efbc",
+      "action": "created",
+      "category": "Workshops",
+      "durationMinutes": null,
+      "priceThb": 4000,
+      "included": false,
+      "billable": true
+    },
+    {
+      "name": "Cooking Class (pizza/cookies)",
+      "id": "a0334ad2-e367-45ff-bd7c-38952284afa0",
+      "action": "created",
+      "category": "Workshops",
+      "durationMinutes": null,
+      "priceThb": 7000,
+      "included": false,
+      "billable": true
+    },
+    {
+      "name": "Ocean in a glass",
+      "id": "999eb0b2-7981-45a9-9dcd-9c5ab92ef67f",
+      "action": "created",
+      "category": "Workshops",
+      "durationMinutes": null,
+      "priceThb": 4000,
+      "included": false,
+      "billable": true
+    },
+    {
+      "name": "ECO bracelet-making",
+      "id": "18daea79-e44d-4bd9-a06f-de626edda194",
+      "action": "created",
+      "category": "Workshops",
+      "durationMinutes": null,
+      "priceThb": 600,
+      "included": false,
+      "billable": true
+    },
+    {
+      "name": "Cookie decorating",
+      "id": "ec795150-2afd-4e1b-b46c-5b258db5e9f3",
+      "action": "created",
+      "category": "Workshops",
+      "durationMinutes": null,
+      "priceThb": 5000,
+      "included": false,
+      "billable": true
+    },
+    {
+      "name": "Mini aquarium / Jurassic",
+      "id": "1fc9f4c6-a677-45a6-933c-89a452636487",
+      "action": "created",
+      "category": "Workshops",
+      "durationMinutes": null,
+      "priceThb": 4000,
+      "included": false,
+      "billable": true
+    },
+    {
+      "name": "Make & Take Workshop",
+      "id": "ebc4dbf3-8fa9-473e-8a10-988defc0d1ed",
+      "action": "created",
+      "category": "Workshops",
+      "durationMinutes": null,
+      "priceThb": 100,
+      "included": false,
+      "billable": true
+    },
+    {
+      "name": "Face painting",
+      "id": "58e51fd7-197b-49a9-b85e-d744c2c6d789",
+      "action": "created",
+      "category": "Other",
+      "durationMinutes": 60,
+      "priceThb": 2000,
+      "included": false,
+      "billable": true
+    },
+    {
+      "name": "Glitter tattoo",
+      "id": "3e3d2f99-e252-4ce2-9921-5302e8d2d74d",
+      "action": "created",
+      "category": "Other",
+      "durationMinutes": null,
+      "priceThb": 1000,
+      "included": false,
+      "billable": true
+    },
+    {
+      "name": "Pinata",
+      "id": "6b65cf26-40d9-473c-978b-2fbd9bb57610",
+      "action": "created",
+      "category": "Other",
+      "durationMinutes": null,
+      "priceThb": 2000,
+      "included": false,
+      "billable": true
+    },
+    {
+      "name": "Neon party",
+      "id": "db7c4058-fa9d-4705-b412-0153e62ae14e",
+      "action": "created",
+      "category": "Other",
+      "durationMinutes": 30,
+      "priceThb": 5500,
+      "included": false,
+      "billable": true
+    }
+  ],
+  "setMenus": [
+    {
+      "name": "Birthday set menu, Central Floresta",
+      "id": "0b1db99d-296a-4418-abb8-9d6071a367c4",
+      "action": "created",
+      "items": [
+        "CHOICE Pizza: Margherita / Hawaiian / Pepperoni",
+        "CHOICE Hot dish: Chicken schnitzel / Fish fingers",
+        "ALWAYS French fries",
+        "CHOICE Waffles or pancakes: Waffles / Pancakes",
+        "CHOICE Fried rice: Veggie / Chicken / Shrimp",
+        "ALWAYS Veggie sticks",
+        "ALWAYS Fruit skewers",
+        "CHOICE Drinks pitcher: Juice / Mors"
+      ]
+    },
+    {
+      "name": "After School food set (10 kids)",
+      "id": "87e49b75-754f-4e5a-9336-995d5307b135",
+      "action": "created",
+      "items": [
+        "ALWAYS French Fries x3",
+        "ALWAYS Margherita Pizza x3",
+        "ALWAYS Vegetable Sticks x2",
+        "ALWAYS Belgian Waffles x2",
+        "ALWAYS Chicken Schnitzel x1",
+        "ALWAYS Fish & Chips x1 (or 2 Chicken Schnitzel)",
+        "ALWAYS Fruit Skewers x2"
+      ]
+    },
+    {
+      "name": "After School food set (20 kids)",
+      "id": "f6c4d307-44ac-412d-80a4-b0467e9d8d27",
+      "action": "created",
+      "items": [
+        "ALWAYS French Fries x5",
+        "ALWAYS Margherita Pizza x3",
+        "ALWAYS Hawaiian Pizza x1",
+        "ALWAYS Pepperoni Pizza x1",
+        "ALWAYS Vegetable Sticks x3",
+        "ALWAYS Belgian Waffles x4",
+        "ALWAYS Chicken Schnitzel x2",
+        "ALWAYS Fish & Chips x1",
+        "ALWAYS Fruit Skewers x3",
+        "ALWAYS Fried Rice x2"
+      ]
+    }
+  ],
+  "refused": [],
+  "notStored": [
+    "Weekday and weekend prices on one package: no field. Stored as two templates, (weekday) 16,900 and (weekend) 20,900, each with its own extra-child (1,300 / 1,500) and additional-adult (350 / 500) add-on.",
+    "Children included (10 Floresta, 10/20 After School), adults included (4 / 10 / 20), hours (3): no package columns. Adults and After School children are quantities on included play lines; Floresta \"up to 10 children\" and \"3 hours\" are only in the description, a tag and the table line label.",
+    "Socks \"for all children\": stored as qty 10 pairs (the package size); the contract wants -1 for \"all children\" and there is no field for it.",
+    "F&B credit and voucher printing: reserved table for adults 5,000 credit (prints the voucher), Private Zone 3,000 credit, additional adult \"full amount used for food & drinks\": no credit or prints-voucher field on line items; text in the description only.",
+    "\"From\" prices (activity program upgrade from 1,000; Make & Take from 100; Pinata from 2,000): no minimum/custom-price flag; stored as the default price with \"From\" in the description.",
+    "Per-child / per-piece pricing: line items carry it as unit label (Bracelet Making \"child\", Socks \"pair\"); entertainment templates have no unit field, so ECO bracelet-making 600 per piece and Make & Take per piece are in the description.",
+    "Entertainment age range, maximum kids and extra-child price: no fields; written at the start of each description (\"Age 6+. Up to 10 kids. Extra child 400 THB.\").",
+    "Entertainment \"Included\" is one global flag per template: \"Birthday entertainment program\" is marked Included, so it also reads Included when attached to an After School party, whose package does not include it. No per-package link.",
+    "Entertainment menu footer \"For groups larger than 10, an additional fee applies per extra child\" (Other page): no field; not stored.",
+    "Package to set-menu link: no field; the food line description names the set-menu template to use.",
+    "Set-menu items: no product codes (CF-xx) and no numeric quantities; quantities are in the label text (e.g. \"French Fries x3\").",
+    "Kitchen slip time (11:00) and food-ready time: no field on any template.",
+    "Package Breakdown total: the printed packages do not price their included items, so each included line is 0 and the builder shows the base price as \"unallocated\" in amber. Expected, not an error."
+  ],
+  "concerns": [
+    "BILLING UNIT MISMATCH (pre-existing app defect): POST /api/events/:eventId/line-items/generate-from-beo (apps/oto-app/server/beo-routes.ts:2167 and :2193) copies the package snapshot unit_price and the entertainment selection price (satang) unconverted into event_line_items.unit_price_inc_vat, which the billing module formats as THB (shared/vat-utils.ts formatThb). Once staff apply one of these real packages to a party and press Generate from BEO, a 5,000 THB add-on would bill as 500,000 THB. Needs a fix ticket before anyone bills a party from these templates.",
+    "BIRTHDAY_CONTRACT.md says \"the app stores THB; the view converts\". For these three tables that is wrong: they store satang, so the Lane 1 view must pass these prices through as satang without multiplying by 100.",
+    "Possible duplicates for the owner to decide: the existing staff-entered \"After school central 20pax\" (created 2026-10-08) holds the same ten lines as the new \"After School food set (20 kids)\"; \"Set Central\" (12 items, 3 pizza choices, 2 mains, 2 drinks) is the staff's own shape of the Floresta birthday set menu. Both left untouched; the names in the brief did not match them.",
+    "The package builder UI sends includedSummary and excludedSummary as null on every Save, so those columns were not used; the printed notes are in the description."
+  ],
+  "textEdits": "Entertainment blurbs transcribed from the PDF images with obvious typos corrected: \"\\the antidote\" -> \"the antidote\", \"ejoy\" -> \"enjoy\", \"they›re\" -> \"they're\", \"palete\" -> \"palette\"; em dashes rewritten as commas/colons.",
+  "screenshots": [
+    {
+      "file": "01-birthday-packages-list.png",
+      "what": "Event Settings > Packages: the four package templates with price and tags",
+      "url": "/events/settings?tab=packages",
+      "size": "1440x940"
+    },
+    {
+      "file": "02-package-floresta-weekday-breakdown.png",
+      "what": "Floresta weekday package opened: details, included breakdown, add-on items",
+      "url": "/events/settings?tab=packages",
+      "size": "1440x2524"
+    },
+    {
+      "file": "03-package-after-school-10-breakdown.png",
+      "what": "After School 10 kids package opened: details, included breakdown, add-on items",
+      "url": "/events/settings?tab=packages",
+      "size": "1440x2100"
+    },
+    {
+      "file": "04-entertainment-templates.png",
+      "what": "Event Settings > Entertainment: the 19 lines of the Entertainment menu",
+      "url": "/events/settings?tab=entertainment",
+      "size": "1440x2893"
+    },
+    {
+      "file": "05-set-menu-templates.png",
+      "what": "Event Settings > Set Menus: the three seeded set menus expanded beside the existing ones",
+      "url": "/events/settings?tab=set-menus",
+      "size": "1440x1968"
+    }
+  ],
+  "screenshotNote": "The app scrolls inside an inner container, so each picture is 1440 wide with the viewport grown to the content height.",
+  "signOut": {
+    "seedRun1": {
+      "app": 200,
+      "launcher": 200
+    },
+    "seedRun2": {
+      "app": 200,
+      "launcher": 200
+    },
+    "screenshots": {
+      "app": 200,
+      "launcher": 200
+    }
+  },
+  "scripts": "C:/Users/waqar/AppData/Local/Temp/claude/9d4c56906b777e8e/317fcfce-2754-44c9-bec5-9a762ab18d03/scratchpad/bdayseed",
+  "writtenAt": "2026-11-09T11:46:50.410Z"
+}
