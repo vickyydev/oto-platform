@@ -92,6 +92,11 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
    * the screen's effects before the station's), and its first figures are
    * the ones from before the payment screen opened. A method staff chose is
    * never replaced, and nothing is picked over a payment error.
+   *
+   * SCRUM-796 — the payment is the rest after credit unless staff chose
+   * Partial payment: then the part they type is the payment and is left as
+   * typed (the press takes the credit first, then that part, up to the rest).
+   * Full amount turns the choice off and the payment is the rest again.
    */
   useEffect(() => {
     if (!creditSelected) { wasCreditSelected.current = false; return; }
@@ -103,7 +108,7 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
       const unchosen = stage.state.method === null && stage.state.error === null;
       if (preferred && (entering || unchosen)) stage.selectMethod(preferred);
     }
-    if (stage.state.amountSatang !== remainderSatang) stage.setAmountSatang(remainderSatang);
+    if (!stage.state.partial && stage.state.amountSatang !== remainderSatang) stage.setAmountSatang(remainderSatang);
     // The stage's own setters read current refs; every new stage state is a
     // trigger, so a stage that starts afresh is filled again.
     // eslint-disable-next-line react-hooks/exhaustive-deps

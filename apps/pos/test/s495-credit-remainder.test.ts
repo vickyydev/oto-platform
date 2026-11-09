@@ -1,10 +1,13 @@
 import * as ReactModule from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { PaymentAttemptView } from '@oto/shared';
 import { apiSale } from './support/fixtures';
 import { renderHook, type RenderedHook } from './support/hooks';
+import * as salesModule from '@/api/sales';
 import { FnbPayment } from '@/components/fnb/FnbPayment';
-import { paymentSubmitLabel } from '@/components/till/PaymentTenderPanel';
+import { NumberKeypad } from '@/components/till/NumberKeypad';
+import { PaymentTenderPanel, paymentSubmitLabel } from '@/components/till/PaymentTenderPanel';
 import * as paymentMethods from '@/lib/payments';
 import { usePaymentStage, type PaymentStageController, type PaymentStageOptions } from '@/lib/usePaymentStage';
 import type { SaleWriteOutcome } from '@/lib/saleWriter';
@@ -53,7 +56,7 @@ const outcome = (totalSatang: number): SaleWriteOutcome => {
  * the station's child — rendered inside the station's render, its effects
  * run before the station's, as React commits them.
  */
-function counter(kind: Counter, balanceTHB: number, start: StationProps) {
+function counter(kind: Counter, balanceTHB: number, start: StationProps, finalise?: PaymentStageOptions['finaliseSale']) {
   let props = start;
   let screen: RenderedHook<PaymentProps, void> | null = null;
   let tree: ReactElement | null = null;
@@ -64,7 +67,7 @@ function counter(kind: Counter, balanceTHB: number, start: StationProps) {
       scope: 'order-1', isCurrentScope: (scope) => scope === 'order-1',
       active: p.onPayment, totalSatang: p.totalSatang,
       prepareSale: async () => outcome(p.totalSatang),
-      finaliseSale: async () => outcome(p.totalSatang),
+      finaliseSale: finalise ?? (async () => outcome(p.totalSatang)),
       onComplete: () => undefined,
       wallet: balanceTHB > 0 ? { key: 'QR-ABCDEFGHJKMNPQRSTVWX', useCredit: p.useCredit, previewSatang: balanceTHB * 100 } : null,
     } satisfies PaymentStageOptions);
@@ -245,4 +248,97 @@ describe('the rest after credit starts on card the first time the payment screen
     expect(test.stage.state.method).toBe('park-card');
     expect(test.stage.state.amountSatang).toBe(15_000);
   });
+});
+
+/**
+ * SCRUM-796 — A PART PAID AFTER CREDIT IS THE PART STAFF TYPED. With the
+ * customer's credit selected the screen keeps the tender on the rest after
+ * credit; once staff choose Partial payment the figure they type is the
+ * payment, and the press takes the credit first and then that part, leaving
+ * the balance owed. Full amount puts the payment back to the rest after credit.
+ */
+describe('a partial payment after credit on the restaurant and shop counters', () => {
+  const cashAttempt = (amountSatang: number): PaymentAttemptView => ({
+    id: 'attempt-cash-part', saleId: 'sale-1', method: 'cash', provider: 'manual', status: 'approved',
+    amountSatang, tenderedSatang: amountSatang, changeSatang: 0, terminalRef: null, tid: null, approvalCode: null,
+    last4: null, invoiceNo: null, tranRef: null, actionId: 'press:cash', offline: false,
+    paidAt: '2026-11-09T05:00:00.000Z', createdAt: '2026-11-09T05:00:00.000Z',
+  });
+  const creditAttempt = (amountSatang: number): PaymentAttemptView => ({
+    ...cashAttempt(amountSatang), id: 'attempt-credit', method: 'wallet', tenderedSatang: null, changeSatang: null, actionId: 'press:wallet',
+  });
+  const byTestId = (tree: ReactNode, id: string) => elements(tree).find((el) => el.props['data-testid'] === id);
+  const byId = (tree: ReactNode, id: string) => elements(tree).find((el) => el.props.id === id);
+  const keypad = (tree: ReactNode) => elements(tree).find((el) => el.type === NumberKeypad);
+
+  /** The counter with its tender panel drawn beside it, as FnbPayment draws it. */
+  function counterWithPanel(kind: Counter, totalSatang: number, finalise?: PaymentStageOptions['finaliseSale']) {
+    const test = counter(kind, 350, { onPayment: false, useCredit: true, totalSatang }, finalise);
+    test.show({ onPayment: true });
+    const panel = renderHook((s: PaymentStageController) => PaymentTenderPanel({ stage: s, showSubmit: false }), test.stage);
+    unmounts.push(panel.unmount);
+    const view = () => { panel.rerender(test.stage); return panel.result.current as ReactNode; };
+    return { test, view };
+  }
+
+  for (const [kind, totalSatang, typed, partSatang] of [
+    ['F&B counter', 40_000, ['2', '20'], 2_000],
+    ['F&B phone', 40_000, ['2', '20'], 2_000],
+    ['shop', 50_000, ['5', '50'], 5_000],
+  ] as const) {
+    const restSatang = totalSatang - 35_000;
+    it(`${kind}: ฿350 credit on a ฿${totalSatang / 100} order, cash for the rest, a ฿${partSatang / 100} part typed — that part is taken`, async () => {
+      const spend = vi.spyOn(salesModule, 'spendWalletOnSale').mockResolvedValue({
+        sale: apiSale(), replay: false, finalised: false, outstandingSatang: restSatang,
+        walletAttempt: creditAttempt(35_000), walletSpend: { walletId: 'wallet-1', amountSatang: 35_000, balanceAfterSatang: 0 },
+      });
+      const finalise = vi.fn<PaymentStageOptions['finaliseSale']>().mockImplementation(async () => {
+        const sale = apiSale({ totals: { ...apiSale().totals, grossSatang: totalSatang } });
+        return { ok: true, written: true, saleId: sale.id, sale, replay: false, finalised: false,
+          outstandingSatang: restSatang - partSatang, attempt: cashAttempt(partSatang) };
+      });
+      const { test, view } = counterWithPanel(kind, totalSatang, finalise);
+      remainderButton(test.tree, 'park-cash')({ stopPropagation: () => undefined });
+      expect(test.stage.state.amountSatang).toBe(restSatang);
+
+      (byTestId(view(), 'payment-partial')!.props.onClick as () => void)();
+      for (const next of typed) (keypad(view())!.props.onChange as (value: string) => void)(next);
+      test.show({});
+      const tree = view();
+      expect(test.stage.state.partial).toBe(true);
+      expect(test.stage.state.amountSatang).toBe(partSatang);
+      expect(test.stage.state.tenderedSatang).toBe(partSatang);
+      expect(byId(tree, 'payment-part-amount')?.props.value).toBe(typed[typed.length - 1]);
+      expect(byId(tree, 'payment-cash-received')?.props.value).toBe((partSatang / 100).toFixed(2));
+      expect(test.stage.canSubmit).toBe(true);
+
+      await test.stage.submit();
+      expect(spend).toHaveBeenCalledTimes(1);
+      expect(finalise).toHaveBeenCalledTimes(1);
+      expect(finalise.mock.calls[0]![0]).toEqual({
+        method: 'park-cash', kind: 'cash', amountSatang: partSatang, tenderedSatang: partSatang, changeSatang: 0,
+      });
+      // Credit and the part are recorded; the sale stays open on the balance.
+      expect(test.stage.state.phase).toBe('ready');
+      expect(test.stage.state.outstandingSatang).toBe(restSatang - partSatang);
+      expect(test.stage.state.settlements.map((part) => part.amountSatang)).toEqual([35_000, partSatang]);
+      expect(test.stage.state.partial).toBe(false);
+      expect(test.stage.state.amountSatang).toBe(restSatang - partSatang);
+    });
+
+    it(`${kind}: Full amount after a typed part puts the payment back to the rest after credit`, () => {
+      const { test, view } = counterWithPanel(kind, totalSatang);
+      remainderButton(test.tree, 'park-cash')({ stopPropagation: () => undefined });
+      (byTestId(view(), 'payment-partial')!.props.onClick as () => void)();
+      for (const next of typed) (keypad(view())!.props.onChange as (value: string) => void)(next);
+      expect(test.stage.state.amountSatang).toBe(partSatang);
+
+      (byTestId(view(), 'payment-full-amount')!.props.onClick as () => void)();
+      test.show({});
+      expect(test.stage.state.partial).toBe(false);
+      expect(test.stage.state.amountSatang).toBe(restSatang);
+      expect(test.stage.state.tenderedSatang).toBe(restSatang);
+      expect(byId(view(), 'payment-part-amount')).toBeUndefined();
+    });
+  }
 });
