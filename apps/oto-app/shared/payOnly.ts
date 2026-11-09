@@ -4,11 +4,14 @@
  * differently. No imports: the client bundle and the server both read it.
  */
 
-/** The refusal's code: the app's fence for a login in pay only. */
+/** The refusal's code: the app's fence for a login in pay only, and the kiosk's for a clock-in. */
 export const EMPLOYMENT_ENDED = "EMPLOYMENT_ENDED";
 
 /** What a login in pay only is told, on My pay and in every refusal of the app's fence. */
 export const PAY_ONLY_MESSAGE = "Your employment has ended; your pay information stays available here.";
+
+/** What the kiosk shows a person whose employment has ended when they try to clock in or out. */
+export const KIOSK_EMPLOYMENT_ENDED_MESSAGE = "Employment ended; see reception";
 
 /** Whether a signed-in user is in pay only (`users.access_mode`). */
 export function isPayOnly(user: { accessMode?: string | null } | null | undefined): boolean {

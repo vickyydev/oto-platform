@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { ApiError, apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
+import { EMPLOYMENT_ENDED } from "@shared/payOnly";
 import { normalizeEnrollmentIdentity, type KioskEnrollmentIdentity } from "@/lib/kiosk-enrollment";
 import { Camera, QrCode, Clock, CheckCircle, XCircle, User, ArrowLeft, AlertTriangle, Keyboard, RefreshCw, Loader2 } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
@@ -352,6 +353,13 @@ export default function KioskPage({ branchId }: KioskPageProps) {
         }
       }
     } catch (error: any) {
+      // SCRUM-769: an ended employment is not a face to try again; the tablet says why.
+      if (error instanceof ApiError && error.reasonCode === EMPLOYMENT_ENDED) {
+        stopCamera();
+        showErrorScreen(error.message);
+        setIsProcessing(false);
+        return;
+      }
       if (newAttempts >= 3) {
         setFailedPhotoData(faceImageBase64);
         setScreen("phone-photo");

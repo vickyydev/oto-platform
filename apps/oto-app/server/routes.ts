@@ -180,6 +180,7 @@ import { SHIFT_GROUP_DELETE_NEEDS_TARGET, SHIFT_GROUP_REQUIRED, noShiftGroup, sh
 import { archivedBranchIds } from "./lib/platformBranches";
 import { branchAddedAt, branchesAddedByEdit, checklistRunStartDate } from "./lib/checklistBranchStart";
 import { payOnlyFence } from "./lib/payOnlyAccess";
+import { kioskEmploymentEnded, refuseEndedEmployment } from "./lib/kioskEmploymentEnded";
 import {
   BRANCH_NOT_FOUND,
   CATALOG_ITEM_NOT_FOUND,
@@ -10556,6 +10557,10 @@ OTO Company Limited`,
           message: "Matched employee not found in system"
         });
       }
+      // SCRUM-769: an ended employment is refused before any clock door is reached.
+      if (await kioskEmploymentEnded(employee)) {
+        return refuseEndedEmployment(res, { employeeId: employee.id, branchId, kioskDeviceId, method: "FACE" });
+      }
 
       res.json({
         success: true,
@@ -10683,6 +10688,10 @@ OTO Company Limited`,
       const employee = await storage.getEmployeeInTenant(employeeId, device.tenantId);
       if (!employee) {
         return refuseKiosk(res);
+      }
+      // SCRUM-769: an ended employment clocks neither in nor out; nothing is written.
+      if (await kioskEmploymentEnded(employee)) {
+        return refuseEndedEmployment(res, { employeeId: employee.id, branchId, kioskDeviceId, method: "FACE" });
       }
 
       // The event is filed at the branch the kiosk stands in, which is where
@@ -10907,6 +10916,10 @@ OTO Company Limited`,
       if (!employee) {
         return refuseKiosk(res);
       }
+      // SCRUM-769: an ended employment clocks neither in nor out; nothing is written.
+      if (await kioskEmploymentEnded(employee)) {
+        return refuseEndedEmployment(res, { employeeId: employee.id, branchId, kioskDeviceId, method: "FACE" });
+      }
 
       const now = new Date();
       const scheduledEndTime = new Date(scheduledEnd);
@@ -11040,6 +11053,10 @@ OTO Company Limited`,
       const employee = await storage.getEmployeeInTenant(employeeId, device.tenantId);
       if (!employee) {
         return refuseKiosk(res);
+      }
+      // SCRUM-769: an ended employment clocks neither in nor out; nothing is written.
+      if (await kioskEmploymentEnded(employee)) {
+        return refuseEndedEmployment(res, { employeeId: employee.id, branchId, kioskDeviceId, method: "FACE" });
       }
 
       const now = new Date();
@@ -11175,6 +11192,10 @@ OTO Company Limited`,
       const employee = await storage.getEmployeeInTenant(employeeId, device.tenantId);
       if (!employee) {
         return refuseKiosk(res);
+      }
+      // SCRUM-769: an ended employment clocks neither in nor out; nothing is written.
+      if (await kioskEmploymentEnded(employee)) {
+        return refuseEndedEmployment(res, { employeeId: employee.id, branchId, kioskDeviceId, method: "FACE" });
       }
 
       const now = new Date();
@@ -11439,6 +11460,10 @@ OTO Company Limited`,
       if (!branchId) {
         return res.status(400).json({ message: "Branch ID required" });
       }
+      // SCRUM-769: an ended employment clocks neither in nor out; nothing is written.
+      if (await kioskEmploymentEnded(employee)) {
+        return refuseEndedEmployment(res, { employeeId: employee.id, branchId, kioskDeviceId, method: "PHONE_FALLBACK", photoEvidenceUrl, sessionId });
+      }
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -11571,6 +11596,10 @@ OTO Company Limited`,
 
       if (!branchId) {
         return res.status(400).json({ message: "Branch ID required" });
+      }
+      // SCRUM-769: an ended employment clocks neither in nor out; nothing is written.
+      if (await kioskEmploymentEnded(employee)) {
+        return refuseEndedEmployment(res, { employeeId: employee.id, branchId, kioskDeviceId, method: "PIN", photoEvidenceUrl, sessionId });
       }
 
       const today = new Date();
