@@ -1,5 +1,5 @@
 import { createCatalogueAdminApi } from '@oto/admin-screens/lifted/api/platform';
-import { createMenuCatalogueApi } from '@oto/admin-screens/lifted/api/menu';
+import { createMenuCatalogueApi, stockShareOptionsOf, type StockShareOption } from '@oto/admin-screens/lifted/api/menu';
 import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Permission } from '@oto/shared/permissions';
@@ -29,6 +29,8 @@ interface Snapshot {
   addOns: AddOn[];
   menu: Menu;
   productBranches: Map<string, string | null>;
+  /** SCRUM-799 — the shelves at this park an add-on can take stock from. */
+  stockShareOptions: StockShareOption[];
 }
 
 /** The host owns only the canonical records these three panels actually read. */
@@ -99,6 +101,7 @@ export function Catalogue({ page }: { page: Page }) {
         setSnapshot({ tiers: tierAnswer?.tiers ?? [], tickets: ticketAnswer?.packages.map(apiPackageToTicketType) ?? [],
           addOns: mapped?.addOns ?? [], menu,
           productBranches: new Map(menuAnswer?.products.map((row) => [row.id, row.branchId]) ?? []),
+          stockShareOptions: menuAnswer ? stockShareOptionsOf(menuAnswer.products) : [],
         });
       }
     } catch (failure) {
@@ -170,6 +173,7 @@ export function Catalogue({ page }: { page: Page }) {
         }} /> : null}
         {page === 'add-ons' ? <AddOnsPanelWithPorts ports={{
           addOns: snapshot.addOns, formatWWPrice, canManage: can('catalog:menu:manage', parkId),
+          stockShareOptions: snapshot.stockShareOptions,
           canManageAddOn: (addOn) => snapshot.productBranches.get(addOn.id) === parkId ||
             (snapshot.productBranches.get(addOn.id) === null && can('catalog:menu:manage')),
           upsertAddOn: (addOn) => afterWrite(() => snapshot.addOns.some((row) => row.id === addOn.id)

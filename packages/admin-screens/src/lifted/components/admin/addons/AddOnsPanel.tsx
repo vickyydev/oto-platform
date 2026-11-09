@@ -172,6 +172,7 @@ export function AddOnsPanelWithPorts({ ports }: { ports: AddOnsPanelPorts }) {
         open={formOpen}
         addOn={editing}
         onOpenChange={setFormOpen}
+        {...(ports.stockShareOptions ? { stockShareOptions: ports.stockShareOptions } : {})}
         onSave={async (addOn, trackStock) => {
           if (ports.canManage === false || (editing && !canManage(editing))) throw new Error('This add-on is read-only with the current access.');
           // Reconcile the inventory link to match the "Track stock" toggle.

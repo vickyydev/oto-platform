@@ -11,6 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 // Sentinel for "inherit from the 'addons' category rule" — Radix can't use ''.
 const USE_DEFAULT = '__default__';
 
+// Sentinel for "takes stock from no other item" (SCRUM-799) — Radix can't use ''.
+const NO_SHARE = '__none__';
+
+/** SCRUM-799 — a shelf this add-on can take stock from (`stockShareOptionsOf`). */
+export interface AddOnStockShareOption {
+  stockItemId: string;
+  productId: string;
+  name: string;
+}
+
 // All sellable taxable categories an add-on can be reassigned to.
 const TAX_CAT_OPTIONS: { value: TaxableCategory; label: string }[] = [
   { value: 'addons',   label: 'Add-ons (default)' },
@@ -32,11 +42,62 @@ interface AddOnFormDialogProps {
    * unified inventory item (create the link when true, drop it when false).
    */
   onSave: (addOn: AddOn, trackStock: boolean) => void | Promise<void>;
+  /**
+   * SCRUM-799 — the shelves "Takes stock from" offers. Absent or empty, and
+   * with no share already set, the field is not shown.
+   */
+  stockShareOptions?: ReadonlyArray<AddOnStockShareOption>;
 }
 
 interface FormErrors {
   name?: string;
   price?: string;
+}
+
+/**
+ * SCRUM-799 — "TAKES STOCK FROM": a free or complimentary version of a stocked
+ * item (Free Socks) sells from that item's shelf, so each one handed out
+ * leaves the count right. Shown only when the add-on does not track stock of
+ * its own; the add-on's own shelf is never offered.
+ */
+export function AddOnStockShareField({
+  addOnId,
+  options,
+  value,
+  onChange,
+}: {
+  addOnId: string | null;
+  options: ReadonlyArray<AddOnStockShareOption>;
+  /** The chosen stock item id, or null for none. */
+  value: string | null;
+  onChange: (stockItemId: string | null) => void;
+}) {
+  const offered = options.filter((o) => o.productId !== addOnId);
+  const chosen = value ? offered.find((o) => o.stockItemId === value) : undefined;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor="addon-stock-share">Takes stock from</Label>
+      <Select value={value ?? NO_SHARE} onValueChange={(next) => onChange(next === NO_SHARE ? null : next)}>
+        <SelectTrigger id="addon-stock-share">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={NO_SHARE}>Nothing — not counted</SelectItem>
+          {value && !chosen && <SelectItem value={value}>The shelf it takes from now</SelectItem>}
+          {offered.map((o) => (
+            <SelectItem key={o.stockItemId} value={o.stockItemId}>
+              {o.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <p className="text-xs text-foreground/50">
+        {value
+          ? `Each one sold takes one from ${chosen?.name ?? 'that item'}'s stock, whatever its price. Pairs given out with no sale go through Inventory → Adjust.`
+          : 'For a free or complimentary version of a stocked item, like Free Socks: each one sold takes one from that item\'s stock.'}
+      </p>
+    </div>
+  );
 }
 
 /**
@@ -48,16 +109,19 @@ export function AddOnFormDialog({
   addOn,
   onOpenChange,
   onSave,
+  stockShareOptions,
 }: AddOnFormDialogProps) {
   const [name, setName] = useState('');
   const [price, setPrice] = useState<WeekdayWeekendPrice>({ weekday: 0, weekend: 0 });
   const [trackStock, setTrackStock] = useState(false);
+  const [stockShare, setStockShare] = useState<string | null>(null);
   const [taxCategoryOverride, setTaxCategoryOverride] = useState<string>(USE_DEFAULT);
   const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const draft = JSON.stringify([name, price, trackStock, taxCategoryOverride]);
+  const draft = JSON.stringify([name, price, trackStock, stockShare, taxCategoryOverride]);
+  const shareOffered = !trackStock && ((stockShareOptions?.length ?? 0) > 0 || stockShare !== null);
   const draftRef = useRef(draft);
   draftRef.current = draft;
   const mounted = useRef(true);
@@ -71,6 +135,7 @@ export function AddOnFormDialog({
       // Reflect the current link state when editing; new add-ons default to
       // non-stocked (lockers, digital extras, etc. shouldn't be forced stocked).
       setTrackStock(!!addOn?.inventoryItemId);
+      setStockShare(addOn?.stockShareItemId ?? null);
       setTaxCategoryOverride(addOn?.taxCategoryOverride ?? USE_DEFAULT);
       setErrors({});
       setSaveError(null);
@@ -108,6 +173,8 @@ export function AddOnFormDialog({
         ...(taxCategoryOverride !== USE_DEFAULT
           ? { taxCategoryOverride: taxCategoryOverride as TaxableCategory }
           : { taxCategoryOverride: undefined }),
+        // SCRUM-799 — an add-on tracking stock of its own takes from no other shelf.
+        stockShareItemId: !trackStock && stockShare ? stockShare : undefined,
       },
       trackStock,
     );
@@ -193,6 +260,15 @@ export function AddOnFormDialog({
                 : 'Leave off for unlimited extras like lockers or digital items.'}
             </p>
           </div>
+
+          {shareOffered && (
+            <AddOnStockShareField
+              addOnId={addOn?.id ?? null}
+              options={stockShareOptions ?? []}
+              value={stockShare}
+              onChange={setStockShare}
+            />
+          )}
 
           {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
           <DialogFooter>

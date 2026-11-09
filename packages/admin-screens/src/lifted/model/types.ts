@@ -228,6 +228,10 @@ export interface AddOn {
   // Optional link to an InventoryItem. When set the add-on is stocked; selling
   // it decrements the linked variant. Absent = no stock tracking (backward compat).
   inventoryItemId?: string;
+  // SCRUM-799 — the platform stock item (one size, stocking another item) this
+  // add-on takes stock from: Free Socks from the Regular Socks shelf. Absent =
+  // it takes from no other item's shelf.
+  stockShareItemId?: string;
   // Override the default 'addons' taxable category for this specific item.
   // Absent = inherit the 'addons' category rule from the tax config.
   taxCategoryOverride?: TaxableCategory;

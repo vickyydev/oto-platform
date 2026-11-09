@@ -62,7 +62,8 @@ export type ApiProduct = Pick<MenuRead['products'][number],
   'id' | 'kind' | 'code' | 'categoryId' | 'name' | 'description' | 'priceSatang' | 'priceWeekendSatang' | 'costSatang' |
   'prepStationOverride' | 'taxCategoryOverride' | 'translations' | 'sku' | 'stockItemId' | 'sortOrder' | 'active' |
   'archivedAt' | 'linkedModifierGroupIds'> & Partial<Pick<MenuRead['products'][number],
-  'branchId' | 'effectiveWeekendSatang' | 'effectivePrepStation' | 'effectiveTaxCategory' | 'variants' | 'stockLinks'>>;
+  'branchId' | 'effectiveWeekendSatang' | 'effectivePrepStation' | 'effectiveTaxCategory' | 'variants' | 'stockLinks' |
+  'stockShareItemId'>>;
 
 
 /** S2-14b — one size's stock item at the branch (`ProductStockLink` in `@oto/shared`). */
@@ -156,6 +157,38 @@ interface ServerFields {
   stockLinks: ApiProductStockLink[];
   /** S2-14b — the sizes the catalogue sells it in, as last read (`[]` for one size). */
   sizes: Array<{ id: string; label: string }>;
+  /** SCRUM-799 — the stock item it takes stock from at this branch, as last read (null = none). */
+  stockShareItemId: string | null;
+}
+
+
+/** SCRUM-799 — a shelf an add-on can take stock from: a one-size stock item that stocks another item. */
+export interface StockShareOption {
+  stockItemId: string;
+  /** The item that owns the shelf. */
+  productId: string;
+  /** That item, as the menu names it ("Regular Socks"). */
+  name: string;
+}
+
+/**
+ * SCRUM-799 — THE SHELVES "Takes stock from" OFFERS, from the menu read alone:
+ * every live item at this branch counted in one size (exactly one stock link,
+ * with no size), named for that item. A sized item's shelves are not offered —
+ * the platform refuses them — and the form leaves out the add-on's own.
+ */
+export function stockShareOptionsOf(
+  products: ReadonlyArray<Pick<ApiProduct, 'id' | 'name' | 'archivedAt' | 'stockLinks'>>,
+): StockShareOption[] {
+  return products
+    .filter((p) => !p.archivedAt)
+    .flatMap((p) => {
+      const links = p.stockLinks ?? [];
+      return links.length === 1 && links[0]!.variantId === null
+        ? [{ stockItemId: links[0]!.stockItemId, productId: p.id, name: p.name }]
+        : [];
+    })
+    .sort((a, b) => a.name.localeCompare(b.name) || a.stockItemId.localeCompare(b.stockItemId));
 }
 
 
@@ -621,9 +654,23 @@ function apiProductToAddOn(p: ApiProduct): AddOn {
       weekend: baht(p.priceWeekendSatang ?? p.priceSatang),
     },
     ...stockKeyOf(p),
+    ...(p.stockShareItemId ? { stockShareItemId: p.stockShareItemId } : {}),
     ...(p.taxCategoryOverride ? { taxCategoryOverride: p.taxCategoryOverride } : {}),
     ...(p.translations ? { translations: p.translations } : {}),
   };
+}
+
+
+/**
+ * SCRUM-799 — "TAKES STOCK FROM", SENT only when the form changed it: absent
+ * leaves the platform's setting alone, so an edit of the name or the price
+ * never touches the shelf a Free Socks takes from, and a read that predates the
+ * field cannot clear it.
+ */
+function stockShareBody(addOn: AddOn): { stockShareItemId?: string | null } {
+  const held = serverFields.get(addOn.id)?.stockShareItemId ?? null;
+  const want = addOn.stockShareItemId ?? null;
+  return want !== held ? { stockShareItemId: want } : {};
 }
 
 
@@ -644,6 +691,7 @@ function addOnToApiBody(
     taxCategoryOverride: addOn.taxCategoryOverride ?? null,
     translations: addOn.translations ?? null,
     ...stockLinksBody(addOn.id, addOn.inventoryItemId),
+    ...stockShareBody(addOn),
     sortOrder: held?.sortOrder ?? 0,
     active: held?.active ?? true,
   };
@@ -798,6 +846,7 @@ function mapMenu(menu: ApiMenu): MappedMenu {
       description: p.description,
       stockLinks: p.stockLinks ?? [],
       sizes: (p.variants ?? []).map((v) => ({ id: v.id, label: v.label })),
+      stockShareItemId: p.stockShareItemId ?? null,
     });
   }
   loaded = true;

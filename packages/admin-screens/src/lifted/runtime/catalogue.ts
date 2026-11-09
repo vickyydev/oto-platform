@@ -42,6 +42,12 @@ export interface AddOnsPanelPorts {
   deleteInventoryItem: CatalogueMutation<string>;
   canManage?: boolean;
   canManageAddOn?: (addOn: AddOn) => boolean;
+  /**
+   * SCRUM-799 — the shelves an add-on can take stock from at this park
+   * (`stockShareOptionsOf`). Absent on a host that has no platform stock: the
+   * form then offers no "Takes stock from" at all.
+   */
+  stockShareOptions?: ReadonlyArray<{ stockItemId: string; productId: string; name: string }>;
 }
 
 export interface OperatorTierCapabilities { canCreate: boolean; canUpdate: boolean }
