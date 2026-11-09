@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import type { ApiResponse } from '@oto/api-types';
 import { SCREEN_HEARTBEAT_INTERVAL_S, type StationHeartbeatResponse } from '@oto/shared';
 import { api } from '@/api/client';
 import { lastScanSecondsAgo } from '@/lib/scannerUse';
@@ -20,8 +21,8 @@ import { lastScanSecondsAgo } from '@/lib/scannerUse';
  * fails is simply the next one's job; nothing on screen depends on it.
  */
 export const stationHeartbeatApi = {
-  send: () =>
-    api.post<StationHeartbeatResponse>('/me/station/heartbeat', {
+  send: (): Promise<StationHeartbeatResponse> =>
+    api.post<ApiResponse<'/me/station/heartbeat', 'post'>>('/me/station/heartbeat', {
       lastScanSecondsAgo: lastScanSecondsAgo(),
     }),
 };
