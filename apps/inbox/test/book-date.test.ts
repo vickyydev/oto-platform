@@ -206,10 +206,16 @@ describe("the prototype's reading of the chat, ported (parseBeoFromConversation,
     expect(parseBeoFromConversation(conv, [msg('party on Sunday')]).eventDate).toBe('Sunday');
   });
 
-  it('keeps what the prototype’s pattern does not read: a staff line, "14 March" with a space', () => {
+  it('keeps what the prototype’s kids rule does not read: a staff line', () => {
     expect(parseBeoFromConversation(conv, [msg('for 30 kids', 'staff')]).numKids).toBe('');
-    expect(parseBeoFromConversation(conv, [msg('on 14 March please')]).eventDate).toBe('');
     expect(parseBeoFromConversation(conv, [msg('nothing useful')])).toMatchObject({ eventDate: '', numKids: '', age: '', animator: false, cake: false });
+  });
+
+  // SCRUM-814: the prototype's date pattern needed a separator ("14/mar") and so never read
+  // "14 March" — the owner reported it as not working. The shared reader reads it, in the
+  // chat's own words.
+  it('reads "14 March" with a space (SCRUM-814: the prototype’s pattern did not)', () => {
+    expect(parseBeoFromConversation(conv, [msg('on 14 March please')]).eventDate).toBe('14 March');
   });
 });
 
@@ -247,6 +253,7 @@ describe('the dialog opens with the reading and checks before it saves', () => {
       date: '2027-03-21',
       dateFrom: '21/mar',
       startTime: DEFAULT_START_TIME,
+      timeFrom: '',
       branchId: CENTRAL,
       kids: '15',
       adults: '',

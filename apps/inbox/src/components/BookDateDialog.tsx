@@ -172,7 +172,13 @@ export function BookDateDialog({
         >
           <input type="date" value={draft.date} onChange={(e) => set('date', e.target.value)} aria-label="Date" className={INPUT} />
         </Field>
-        <Field icon={Clock3} label="Start time">
+        <Field
+          icon={Clock3}
+          label="Start time"
+          hint={
+            draft.timeFrom ? <span className="text-[11px] text-slate-500 dark:text-slate-400">The chat says “{draft.timeFrom}”</span> : undefined
+          }
+        >
           <input
             type="time"
             value={draft.startTime}

@@ -1,22 +1,29 @@
+import { readChatPartyDate, readPartyDate, type PartyChatLine } from '@oto/shared/chat-dates';
+import { INBOX_DAY_TIMEZONE } from '@oto/shared/inbox';
 import type { ConversationRow, Message } from '@/api/inbox';
 
 /**
- * BOOK DATE'S READING OF THE CHAT (SCRUM-775).
+ * BOOK DATE'S READING OF THE CHAT (SCRUM-775, the date and time SCRUM-814).
  *
  * The prototype's BEO modal pre-filled itself from the conversation
  * (`WhatsAppDemo.tsx` `parseBeoFromConversation`, :2109-2158), and those rules
  * are ported here unchanged: the customer's own lines, joined; the first
- * "<n> kids" in English, Russian or Thai; the first day-and-month or weekday
- * phrase; the first "<n> years"; an animator or a cake mentioned; the package
- * from the conversation's topic. The patterns are the prototype's, character
- * for character, including what they do not read ("14 March" with a space, a
- * full month name): a rule that looks narrow is a question for the owner, not
- * a change made here.
+ * "<n> kids" in English, Russian or Thai; the first "<n> years"; an animator
+ * or a cake mentioned; the package from the conversation's topic.
+ *
+ * THE DATE AND TIME (SCRUM-814). The prototype's date patterns needed a
+ * separator between day and month and used ASCII word boundaries, so they
+ * never read a Russian or Thai date ("15 ноября", "15 พ.ย.") nor "21 November"
+ * — the owner reported Book Date opening without the chat's date. They are
+ * replaced by the shared reader (`@oto/shared` chat-dates, the one the api's
+ * BEO confirmation picker uses), over the WHOLE chat: the customer's lines and
+ * the team's, a team line's date winning over a customer's when they differ;
+ * and the time is read too. The shape stays the prototype's: the phrase the
+ * chat said is kept and shown beside the date so a person confirms it.
  *
  * What the platform adds is only what the Events module needs that the
  * prototype's free text could not give it: the phrase becomes a calendar date
- * (`resolveEventDate`), shown beside the phrase it came from so a person
- * confirms it.
+ * (`resolveEventDate`).
  */
 
 export interface BeoData {
@@ -31,9 +38,14 @@ export interface BeoData {
   phone: string;
   language: string | null;
   branchId: string | null;
-  /** The phrase as the chat said it ("21/mar", "saturday"), or empty. */
+  /** The phrase as the chat said it ("21/mar", "saturday", "15 ноября"), or empty. */
   eventDate: string;
+  /** Whose line the date came from: a team line's wins over a customer's. */
+  eventDateBy: 'team' | 'customer' | null;
+  /** The party's start as the chat names it, `HH:MM`, or empty. */
   eventTime: string;
+  /** The chat's own words for that time ("в 14:00", "บ่าย 2 โมง"), or empty. */
+  eventTimeFrom: string;
   numKids: string;
   numAdults: string;
   packageName: string;
@@ -44,10 +56,6 @@ export interface BeoData {
 }
 
 const KIDS = /(\d{1,3})\s*(детей|ребен|kids|children|kid|child|เด็ก|คน)/i;
-const DAY_MONTH =
-  /\b(\d{1,2})[-./]\s*(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|พ\.ค|ม\.ค|ก\.พ|มี\.ค|เม\.ย|มิ\.ย|ก\.ค|ส\.ค|ก\.ย|ต\.ค|พ\.ย|ธ\.ค)\b/i;
-const WEEKDAY =
-  /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|next sunday|next saturday|субботы|воскресенья|следующую субботу)\b/i;
 const ANIMATOR = /(animator|аниматор|นักแสดง|นัก)/i;
 const CAKE = /(cake|торт|เค้ก|🎂)/i;
 const AGE = /(\d{1,2})\s*(лет|years|year|ปี|ขวบ)/i;
@@ -60,18 +68,34 @@ export function customerTextOf(messages: readonly Pick<Message, 'authorKind' | '
     .join(' \n ');
 }
 
-/** `parseBeoFromConversation`, on the platform's conversation and its loaded messages. */
+/**
+ * The chat's lines the date and time are read from, in order: the customer's
+ * and the team's people's (not the assistant's or a system notice), each with
+ * its text.
+ */
+export function chatLinesOf(messages: readonly Pick<Message, 'authorKind' | 'body'>[]): PartyChatLine[] {
+  return messages
+    .filter((m) => (m.authorKind === 'customer' || m.authorKind === 'staff') && typeof m.body === 'string')
+    .map((m) => ({ text: m.body as string, team: m.authorKind === 'staff' }));
+}
+
+/**
+ * `parseBeoFromConversation`, on the platform's conversation and its loaded
+ * messages. `today` (the park's day, `YYYY-MM-DD`, or an instant read in the
+ * parks' zone) is the day a weekday or "tomorrow" in the chat is counted from,
+ * and a date whose own year is past is passed over.
+ */
 export function parseBeoFromConversation(
   conv: Pick<ConversationRow, 'contact' | 'language' | 'branchId' | 'intent'>,
   messages: readonly Pick<Message, 'authorKind' | 'body'>[],
+  today: string | Date = new Date(),
 ): BeoData {
   const customerText = customerTextOf(messages);
 
   const numKidsMatch = customerText.match(KIDS);
   const numKids = numKidsMatch ? numKidsMatch[1]! : '';
 
-  const dateMatch = customerText.match(DAY_MONTH) || customerText.match(WEEKDAY);
-  const eventDate = dateMatch ? dateMatch[0] : '';
+  const when = readChatPartyDate(chatLinesOf(messages), today, INBOX_DAY_TIMEZONE);
 
   const animator = ANIMATOR.test(customerText);
   const cake = CAKE.test(customerText);
@@ -97,8 +121,10 @@ export function parseBeoFromConversation(
     phone: conv.contact.phone ?? '',
     language: conv.language,
     branchId: conv.branchId,
-    eventDate,
-    eventTime: '',
+    eventDate: when.phrase,
+    eventDateBy: when.by,
+    eventTime: when.time ?? '',
+    eventTimeFrom: when.timePhrase,
     numKids,
     numAdults: '',
     packageName,
@@ -110,52 +136,16 @@ export function parseBeoFromConversation(
 
 // --- The phrase as a calendar date -----------------------------------------------------
 
-/** Each month word the prototype's pattern reads, to its month (1-12). */
-const MONTHS: Record<string, number> = {
-  jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
-  января: 1, февраля: 2, марта: 3, апреля: 4, мая: 5, июня: 6, июля: 7, августа: 8, сентября: 9, октября: 10, ноября: 11, декабря: 12,
-  'ม.ค': 1, 'ก.พ': 2, 'มี.ค': 3, 'เม.ย': 4, 'พ.ค': 5, 'มิ.ย': 6, 'ก.ค': 7, 'ส.ค': 8, 'ก.ย': 9, 'ต.ค': 10, 'พ.ย': 11, 'ธ.ค': 12,
-};
-
-/** Each weekday word the prototype's pattern reads, to its day (0 Sunday … 6 Saturday). */
-const WEEKDAYS: Record<string, number> = {
-  sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6,
-  'next sunday': 0, 'next saturday': 6,
-  субботы: 6, воскресенья: 0, 'следующую субботу': 6,
-};
-
-const iso = (y: number, m: number, d: number) =>
-  `${String(y).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-
 /**
  * The calendar date a phrase the parser found means, from `today` (the park's
- * day, `YYYY-MM-DD`): a day and month is its next occurrence, today or later
- * (this year, else next); a weekday is the next such day, today or later.
- * Null when there is no phrase or it names no real date (31/feb).
+ * day, `YYYY-MM-DD`), by the shared reader: a day and month is its next
+ * occurrence, today or later (this year, else a later one); a weekday is the
+ * next such day, today or later ("next …" after today); a phrase with its own
+ * year is that day. Null when there is no phrase or it names no real date (31/feb).
  */
 export function resolveEventDate(phrase: string, today: string): string | null {
-  const text = phrase.trim().toLowerCase();
-  if (!text || !/^\d{4}-\d{2}-\d{2}$/.test(today)) return null;
-  const [ty, tm, td] = today.split('-').map(Number) as [number, number, number];
-  const dm = /^(\d{1,2})[-./]\s*(.+)$/.exec(text);
-  if (dm) {
-    const day = Number(dm[1]);
-    const month = MONTHS[dm[2]!.trim()];
-    if (!month) return null;
-    for (const year of [ty, ty + 1]) {
-      const d = new Date(Date.UTC(year, month - 1, day));
-      if (d.getUTCMonth() !== month - 1 || d.getUTCDate() !== day) continue; // 29/feb outside a leap year
-      const candidate = iso(year, month, day);
-      if (candidate >= today) return candidate;
-    }
-    return null;
-  }
-  const weekday = WEEKDAYS[text];
-  if (weekday === undefined) return null;
-  const start = new Date(Date.UTC(ty, tm - 1, td));
-  const ahead = (weekday - start.getUTCDay() + 7) % 7;
-  start.setUTCDate(start.getUTCDate() + ahead);
-  return start.toISOString().slice(0, 10);
+  if (!phrase.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(today)) return null;
+  return readPartyDate(phrase, today, INBOX_DAY_TIMEZONE).date;
 }
 
 // --- The Book Date dialog's first values -----------------------------------------------
@@ -168,6 +158,8 @@ export interface BookDateDraft {
   /** The chat's phrase the date came from, shown beside it; empty when the chat named none. */
   dateFrom: string;
   startTime: string;
+  /** The chat's words for the start time, shown beside it; empty when the chat named none (the Events module's default). */
+  timeFrom: string;
   branchId: string;
   kids: string;
   adults: string;
@@ -177,12 +169,17 @@ export interface BookDateDraft {
   childAge: string;
 }
 
-/** What the dialog opens with: the parser's reading, the conversation's park, the Events module's start time. */
+/**
+ * What the dialog opens with: the parser's reading of the chat (its date and
+ * time, each with the chat's words), the conversation's park, and the Events
+ * module's start time only when the chat names none.
+ */
 export function bookDateDraft(data: BeoData, today: string, branchId: string | null): BookDateDraft {
   return {
     date: resolveEventDate(data.eventDate, today) ?? '',
     dateFrom: data.eventDate,
-    startTime: DEFAULT_START_TIME,
+    startTime: data.eventTime || DEFAULT_START_TIME,
+    timeFrom: data.eventTime ? data.eventTimeFrom : '',
     branchId: branchId ?? data.branchId ?? '',
     kids: data.numKids,
     adults: data.numAdults,

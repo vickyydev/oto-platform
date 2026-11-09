@@ -352,7 +352,7 @@ export function ChatPanel({
   const bookDraft = useMemo(
     () =>
       bookDateDraft(
-        parseBeoFromConversation(conv, thread.messages),
+        parseBeoFromConversation(conv, thread.messages, dayOf(now)),
         dayOf(now),
         effectiveBranchId(conv, me.teams),
       ),
