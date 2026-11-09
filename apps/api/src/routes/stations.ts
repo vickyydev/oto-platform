@@ -322,7 +322,7 @@ export async function stationSessionRoutes(app: App): Promise<void> {
       if (!holdsGrantAt(await req.effectivePermissions(), auth.operatorId, row.branchId)) {
         throw new AppError(403, 'STATION_OTHER_BRANCH', 'That station is at a branch you do not work at');
       }
-      return recordTillHeartbeat(app.db, row, { lastScanSecondsAgo: req.body.lastScanSecondsAgo });
+      return recordTillHeartbeat(app.db, opCtx(req), row, { lastScanSecondsAgo: req.body.lastScanSecondsAgo });
     },
   );
 

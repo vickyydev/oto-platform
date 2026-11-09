@@ -5,6 +5,7 @@ import { AppError } from '../lib/errors';
 import { boxSettings, withinOpeningHours } from './box';
 import type { FleetCondition, OpeningHoursState } from './ops';
 import type { StationRow } from './station-session';
+import { withTx, type OpContext } from './tx';
 
 /**
  * SCRUM-771 — THE SCREENS' PRESENCE: a paired customer display, and the till's
@@ -98,32 +99,36 @@ export function tillScreen(
  * Stamp the station this session is standing at as seen now, and its scanner
  * as last used when the screen says.
  *
- * One statement, outside `updated_at` and outside `withTx`: presence is not a
- * change to the station, so it writes no audit row and moves no version, and a
- * heartbeat every minute from every till would otherwise be a minute-by-minute
- * edit history. The scan time only ever moves forwards (`greatest`), so a
- * second screen at the same station, or a heartbeat that arrives late, cannot
- * set it back; and it is never later than now, whatever the screen sent.
+ * One statement in one transaction, as every write is, and outside
+ * `updated_at`: presence is not a change to the station, so it writes no audit
+ * row and moves no version, and a heartbeat every minute from every till would
+ * otherwise be a minute-by-minute edit history. The scan time only ever moves
+ * forwards (`greatest`), so a second screen at the same station, or a
+ * heartbeat that arrives late, cannot set it back; and it is never later than
+ * now, whatever the screen sent.
  */
 export async function recordTillHeartbeat(
   db: Db,
+  ctx: OpContext,
   row: StationRow,
   input: { lastScanSecondsAgo: number | null },
   now = new Date(),
 ): Promise<{ stationId: string; lastSeenAt: string; scannerLastUsedAt: string | null }> {
   const scanAt =
     input.lastScanSecondsAgo === null ? null : new Date(now.getTime() - input.lastScanSecondsAgo * 1000);
-  const result = await db.execute<{ last_seen_at: Date | string; last_scan_at: Date | string | null }>(sql`
-    update ${station}
-       set last_seen_at = ${now.toISOString()}::timestamptz,
-           last_scan_at = greatest(last_scan_at, ${scanAt?.toISOString() ?? null}::timestamptz)
-     where id = ${row.id} and operator_id = ${row.operatorId} and archived_at is null
-     returning last_seen_at, last_scan_at`);
-  const [written] = result.rows;
-  if (!written) throw new AppError(404, 'STATION_NOT_FOUND', 'No such station');
-  const iso = (value: Date | string | null): string | null =>
-    value === null ? null : new Date(value).toISOString();
-  return { stationId: row.id, lastSeenAt: iso(written.last_seen_at)!, scannerLastUsedAt: iso(written.last_scan_at) };
+  return withTx(db, ctx, 'station.heartbeat', async (tx) => {
+    const result = await tx.execute<{ last_seen_at: Date | string; last_scan_at: Date | string | null }>(sql`
+      update ${station}
+         set last_seen_at = ${now.toISOString()}::timestamptz,
+             last_scan_at = greatest(last_scan_at, ${scanAt?.toISOString() ?? null}::timestamptz)
+       where id = ${row.id} and operator_id = ${row.operatorId} and archived_at is null
+       returning last_seen_at, last_scan_at`);
+    const [written] = result.rows;
+    if (!written) throw new AppError(404, 'STATION_NOT_FOUND', 'No such station');
+    const iso = (value: Date | string | null): string | null =>
+      value === null ? null : new Date(value).toISOString();
+    return { stationId: row.id, lastSeenAt: iso(written.last_seen_at)!, scannerLastUsedAt: iso(written.last_scan_at) };
+  });
 }
 
 // --- The display rule --------------------------------------------------------
