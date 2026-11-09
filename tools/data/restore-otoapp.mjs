@@ -206,6 +206,12 @@ async function prepare() {
   await connection(withDatabase(serverUrl, 'postgres'), (c) => c.query(`CREATE DATABASE ${quoteIdentifier(scratch)}`));
   say('scratch database created');
   try {
+    // A pg_dump plain file may create the public schema itself (an RDS source
+    // owns it); a Navicat file never does. Make room so either loads.
+    if (/^CREATE SCHEMA (IF NOT EXISTS )?("?public"?);/m.test(readFileSync(sourceCopy, 'latin1'))) {
+      await connection(scratchUrl, (c) => c.query('DROP SCHEMA public CASCADE'));
+      say('the dump creates public itself; dropped the empty one first');
+    }
     pgTool('psql', ['-q', '-v', 'ON_ERROR_STOP=1', '-f', inContainer(sourceCopy)], scratchUrl, 'load dump into scratch public');
 
     const before = await connection(scratchUrl, async (c) => {
