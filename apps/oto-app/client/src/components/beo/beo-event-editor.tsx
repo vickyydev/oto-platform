@@ -74,6 +74,7 @@ import {
   Download,
 } from "lucide-react";
 import { BeoTimelineEditor } from "./beo-timeline-editor";
+import { BeoAiReviewDialog, type BeoAiPending } from "./beo-ai-review";
 import { BeoPackageModule } from "./beo-package-module";
 import { BeoParentExperienceModule } from "./beo-parent-experience-module";
 import { ONE_OFF_EVENT_COLOR_OPTIONS } from "@/lib/event-types";
@@ -661,6 +662,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const [aiFillInboxRunning, setAiFillInboxRunning] = useState(false);
   const [autoFillReady, setAutoFillReady] = useState(false);
   const autoFillTaken = useRef(false);
+  // SCRUM-815: Create BEO's AI Fill matched to the park's catalogue, reviewed in edit mode before anything is written.
+  const [aiReview, setAiReview] = useState<BeoAiPending | null>(null);
   const packagePriceRef = useRef<EditableTextHandle>(null);
   const responsibleSearchRef = useRef<HTMLInputElement>(null);
 
@@ -1309,7 +1312,10 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       const res = await apiRequest("POST", `/api/events/${eventId}/beo/ai-fill/inbox`, { existingData: buildAiFillExistingData() });
       const body = await res.json();
       if (!body?.fill) throw new Error("AI Fill did not run: the answer could not be read.");
-      openAiFillPreview(body.fill, body.source ?? null);
+      // SCRUM-815: with the park's catalogue, the proposed BEO opens in the review's edit mode;
+      // without one, the preview of before.
+      if (body.review) setAiReview({ review: body.review, fill: body.fill, source: body.source ?? null });
+      else openAiFillPreview(body.fill, body.source ?? null);
     } catch (err: any) {
       setAiFillNotice(err?.message || "AI Fill did not run: the server could not be reached just now.");
     } finally {
@@ -3762,6 +3768,17 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
           )}
         </DialogContent>
       </Dialog>
+
+      {/* SCRUM-815: the BEO proposed from the conversation, in edit mode; Load into Editor stays the fallback. */}
+      <BeoAiReviewDialog
+        eventId={eventId}
+        pending={aiReview}
+        onClose={() => setAiReview(null)}
+        onFallback={(pending) => {
+          setAiReview(null);
+          openAiFillPreview(pending.fill, pending.source);
+        }}
+      />
 
       {/* Parent Link Dialog */}
       <Dialog open={showParentLinkDialog} onOpenChange={setShowParentLinkDialog}>
