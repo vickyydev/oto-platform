@@ -109,6 +109,44 @@ describe('readPartyDate: one phrase, from today', () => {
     expect(readPartyDate('21.03.2025', TUE).date).toBeNull();
   });
 
+  it('a deposit with a thousands comma and its date after the party’s date: the party’s date, in the three languages', () => {
+    // The comma inside "1,500" does not end the clause; "Депозит" / "Deposit" / "มัดจำ" stay in it.
+    for (const [text, phrase] of [
+      ['Подтверждаем праздник 21 ноября в 14:00. Депозит 1,500 бат получен 9 ноября.', '21 ноября'],
+      ['Confirmed: Saturday 21 November at 14:00. Deposit of 1,500 baht received on 9 November.', 'Saturday 21 November'],
+      ['ยืนยันงานวันที่ 21 พ.ย. เวลา 14.00 น. มัดจำ 1,500 บาท วันที่ 9 พ.ย.', '21 พ.ย.'],
+    ] as const) {
+      expect(readPartyDate(text, TUE), text).toEqual({ date: '2026-11-21', phrase, confidence: 'exact' });
+    }
+    for (const text of [
+      'Prepayment 3,000 THB received 9.11',
+      'มัดจำ 1,500 บาท วันที่ 9 พ.ย.',
+      'Предоплата 2,000 бат, оплачено 9 ноября',
+      'Депозит 1,500 бат, получен 9 ноября',
+      'Deposit 1,500 baht, received 9 Nov',
+    ]) {
+      expect(readPartyDate(text, TUE).date, text).toBeNull();
+    }
+    // The clause starts after the date before it: the deposit's word does not reach the party's date.
+    expect(readPartyDate('Депозит 9 ноября и праздник 21 ноября', TUE).date).toBe('2026-11-21');
+  });
+
+  it('a price after a day and month is not its year; a year more than three years ahead is none', () => {
+    for (const text of [
+      'วันที่ 21 พ.ย. 2590 บาท',
+      '21 Nov 2050 baht for the package',
+      'Праздник 21 ноября, 2000 бат депозит',
+      'งานวันที่ 21 พ.ย. 2500 บาท',
+      '21 Nov 2050 for the package',
+    ]) {
+      expect(readPartyDate(text, TUE), text).toMatchObject({ date: '2026-11-21', confidence: 'exact' });
+    }
+    expect(readPartyDate('21 Nov 2050 baht for the package', TUE).phrase).toBe('21 Nov');
+    // A written year near today stays the year, a Russian "года" after it too.
+    expect(readPartyDate('21 ноября 2027 года', TUE).date).toBe('2027-11-21');
+    expect(readPartyDate('21 พ.ย. 2570', TUE).date).toBe('2027-11-21');
+  });
+
   it('what is not a date: a count, a measure, a clock time, a phone number, a week, the verb "may"', () => {
     for (const text of [
       'party for 5-6 kids',

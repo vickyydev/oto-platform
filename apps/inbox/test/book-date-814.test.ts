@@ -128,6 +128,16 @@ describe('Book Date’s first values on a Russian chat', () => {
     const d = draftOf('ru', [msg('Подтверждаем день рождения 21 ноября в 14:00, 12 детей. Депозит получен 9 ноября', 'staff')]);
     expect(d).toMatchObject({ date: '2026-11-21', dateFrom: '21 ноября', startTime: '14:00' });
   });
+
+  it('nor when the deposit is written with a thousands comma, in the three languages', () => {
+    for (const [language, text, dateFrom] of [
+      ['ru', 'Подтверждаем праздник 21 ноября в 14:00. Депозит 1,500 бат получен 9 ноября.', '21 ноября'],
+      ['en', 'Confirmed: Saturday 21 November at 14:00. Deposit of 1,500 baht received on 9 November.', 'Saturday 21 November'],
+      ['th', 'ยืนยันงานวันที่ 21 พ.ย. เวลา 14.00 น. มัดจำ 1,500 บาท วันที่ 9 พ.ย.', '21 พ.ย.'],
+    ] as const) {
+      expect(draftOf(language, [msg('Хотим праздник'), msg(text, 'staff')]), text).toMatchObject({ date: '2026-11-21', dateFrom, startTime: '14:00' });
+    }
+  });
 });
 
 describe('Book Date’s first values on a Thai chat', () => {

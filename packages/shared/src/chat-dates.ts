@@ -29,8 +29,10 @@ import { isoDateInTz } from './dates';
  * and a weekday beats "today / tomorrow" (those words are as often about a
  * transfer or a call as about the party); within one kind, the LAST one wins
  * (the latest confirmed version). A date written after a payment or a birth
- * ("депозит получен 9 ноября", "deposit paid on 9 Nov", "born 15 Nov 2020") is
- * not the party's, nor is a date whose own year is already past.
+ * ("депозит получен 9 ноября", "Deposit of 1,500 baht received on 9 November",
+ * "born 15 Nov 2020") is not the party's, nor is a date whose own year is
+ * already past. A price after a day and month is not its year ("21 พ.ย. 2590
+ * บาท").
  *
  * What it does not do: decide between two dates a person must choose from.
  * The phrase it read is always returned beside the date, so the screen shows
@@ -196,10 +198,17 @@ const UNIT_AFTER = new RegExp(
  */
 const NOT_THE_PARTY = new RegExp(
   '(?:^|[^\\p{L}])(?:deposit|prepa(?:id|y)|pa(?:id|y)|transfer|invoice|receipt|born|birth ?date|date of birth|dob)|' +
-    'депозит|предоплат|оплат|перев[её]л|перевод|внес[её]н|внесл|чек|родил|дата рождения|' +
+    'депозит|предоплат|оплат|оплач|перев[её]л|перевод|внес[её]н|внесл|чек|родил|дата рождения|' +
     'มัดจำ|โอน|ชำระ|จ่าย|ใบเสร็จ|เกิดวันที่|เกิดเมื่อ',
   'iu',
 );
+/** "Received" before a date is a payment's when a payment is named just before it ("Deposit 1,500 baht, received 9 Nov"). */
+const RECEIVED = /получен|получил|(?:^|[^\p{L}])received(?!\p{L})|ได้รับ/iu;
+const A_PAYMENT = /депозит|предоплат|оплат|оплач|(?:^|[^\p{L}])(?:deposit|prepa(?:id|y)|payment)|มัดจำ/iu;
+/** Where a clause ends: a full stop, a question, a line; a comma, but not the one inside "1,500". */
+const CLAUSE_END = /[;!?\n]|,(?!\d)|\.\s/gu;
+/** A price right after a number: it is no year ("21 Nov 2050 baht", "21 พ.ย. 2500.-"). */
+const PRICE_AFTER = /^\s*(?:[.,]-|baht|thb|฿|บาท|бат\p{L}*|руб\p{L}*|р\.?(?!\p{L}))/iu;
 
 const EN_WEEKDAYS: Record<string, number> = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
 const RU_WEEKDAY_STEMS: Array<[string, number]> = [
@@ -302,13 +311,22 @@ function scan(re: RegExp, text: string, accept: (m: RegExpExecArray) => Found | 
 /** Thai digits as ASCII, one for one, so every index stays the text's own. */
 const asciiDigits = (text: string) => text.replace(/[๐-๙]/gu, (c) => String(c.charCodeAt(0) - 0x0e50));
 
-/** The year after a day and month, when there is a real one there; else nothing (the number is something else). */
-function yearAt(text: string, at: number): { year: number; end: number } | null {
+/**
+ * The year after a day and month, when there is a real one there; else nothing
+ * (the number is something else, and the day and month stand without a year).
+ * Not a price ("21 พ.ย. 2590 บาท", "21 ноября, 2000 бат"), nor a year more than
+ * three years after today ("21 Nov 2050 for the package"). A past year stays a
+ * year: "15 Nov 2020" is a day that has gone, not this year's 15 November.
+ */
+function yearAt(text: string, at: number, today: Day | null): { year: number; end: number } | null {
   YEAR_AFTER.lastIndex = at;
   const y = YEAR_AFTER.exec(text);
   if (!y) return null;
+  const end = at + y[0].length;
+  if (PRICE_AFTER.test(text.slice(end))) return null;
   const year = fullYear(y[1]!);
-  return year === null ? null : { year, end: at + y[0].length };
+  if (year === null || (today && year > today.y + 3)) return null;
+  return { year, end };
 }
 
 /** "may" typed in lower case and followed by a word is the verb ("15 may we come"), not May. */
@@ -316,7 +334,7 @@ function mayTheVerb(word: string, after: string): boolean {
   return word === 'may' && /^\s+\p{L}/u.test(after);
 }
 
-function dayMonth(text: string): Found[] {
+function dayMonth(text: string, today: Day | null): Found[] {
   return scan(DAY_MONTH, text, (m) => {
     if (!numberStartsAt(text, m.index)) return null;
     const day = Number(m[1]);
@@ -324,7 +342,7 @@ function dayMonth(text: string): Found[] {
     if (!month || day < 1 || day > 31) return null;
     let end = m.index + m[0].length;
     if (mayTheVerb(m[2]!, text.slice(end))) return null;
-    const year = yearAt(text, end);
+    const year = yearAt(text, end, today);
     if (year) end = year.end;
     return {
       start: m.index,
@@ -336,7 +354,7 @@ function dayMonth(text: string): Found[] {
   });
 }
 
-function monthDay(text: string): Found[] {
+function monthDay(text: string, today: Day | null): Found[] {
   return scan(MONTH_DAY, text, (m) => {
     if (isLetter(text[m.index - 1])) return null;
     const word = m[1]!.replace(/\.$/u, '');
@@ -346,7 +364,7 @@ function monthDay(text: string): Found[] {
     if (!month || day < 1 || day > 31) return null;
     let end = m.index + m[0].length;
     if (UNIT_AFTER.test(text.slice(end))) return null;
-    const year = yearAt(text, end);
+    const year = yearAt(text, end, today);
     if (year) end = year.end;
     return {
       start: m.index,
@@ -469,11 +487,21 @@ function relatives(text: string): Found[] {
   ];
 }
 
-/** Every date the text names, in order, overlaps resolved (the earlier, then the longer, stands). */
-function datesIn(text: string): Array<Found & { phraseStart: number }> {
-  const all = [...isoDates(text), ...numeric(text), ...dayMonth(text), ...monthDay(text), ...weekdays(text), ...relatives(text)].sort(
-    (a, b) => a.start - b.start || b.end - a.end,
-  );
+/**
+ * Every date the text names, in order, overlaps resolved (the earlier, then the
+ * longer, stands). `today` (when known) is what a written year is checked
+ * against. `clauseFrom` is where the date's own clause can start at the
+ * earliest: the end of the date before it.
+ */
+function datesIn(text: string, today: Day | null): Array<Found & { phraseStart: number; clauseFrom: number }> {
+  const all = [
+    ...isoDates(text),
+    ...numeric(text),
+    ...dayMonth(text, today),
+    ...monthDay(text, today),
+    ...weekdays(text),
+    ...relatives(text),
+  ].sort((a, b) => a.start - b.start || b.end - a.end);
   const kept: Found[] = [];
   for (const f of all) {
     const last = kept[kept.length - 1];
@@ -484,7 +512,8 @@ function datesIn(text: string): Array<Found & { phraseStart: number }> {
   return kept.map((f, i) => {
     const prev = kept[i - 1];
     const joins = f.tier === 3 && prev && prev.tier === 2 && WEEKDAY_GAP.test(text.slice(prev.end, f.start));
-    return { ...f, phraseStart: joins ? prev.start : f.start };
+    const before = joins ? kept[i - 2] : prev;
+    return { ...f, phraseStart: joins ? prev.start : f.start, clauseFrom: before ? before.end : 0 };
   });
 }
 
@@ -509,8 +538,8 @@ function bestDate(text: string, today: Day): Best | null {
   const { original, scan: t } = prepared(text);
   const from = isoOfDay(today);
   let best: Best | null = null;
-  for (const f of datesIn(t)) {
-    if (notThePartysAt(t, f.phraseStart)) continue;
+  for (const f of datesIn(t, today)) {
+    if (notThePartysAt(t, f.phraseStart, f.clauseFrom)) continue;
     const date = f.resolve(today);
     if (!date || (f.yearGiven && date < from)) continue;
     if (!best || f.tier > best.tier || (f.tier === best.tier && f.start >= best.at)) {
@@ -520,11 +549,18 @@ function bestDate(text: string, today: Day): Best | null {
   return best;
 }
 
-/** The clause before a date names a payment or a birth: "депозит получен 9 ноября". */
-function notThePartysAt(text: string, start: number): boolean {
-  const before = text.slice(Math.max(0, start - 48), start);
-  const cut = Math.max(before.search(/[,;!?\n][^,;!?\n]*$/u), before.search(/\.\s[^.]*$/u));
-  return NOT_THE_PARTY.test(cut >= 0 ? before.slice(cut + 1) : before);
+/**
+ * The clause before a date names a payment or a birth: "депозит получен 9
+ * ноября", "Deposit of 1,500 baht received on 9 November". The clause starts
+ * after the date before it and after the last clause mark (not the comma inside
+ * "1,500").
+ */
+function notThePartysAt(text: string, start: number, clauseFrom: number): boolean {
+  const near = text.slice(Math.max(clauseFrom, start - 48), start);
+  let cut = 0;
+  for (const m of near.matchAll(CLAUSE_END)) cut = m.index + m[0].length;
+  const clause = near.slice(cut);
+  return NOT_THE_PARTY.test(clause) || (RECEIVED.test(clause) && A_PAYMENT.test(near));
 }
 
 /**
@@ -544,7 +580,7 @@ export function readPartyDate(text: string, today: string | Date = new Date(), t
  * one that names the party's day (`carriesBirthdayDetails`, api).
  */
 export function mentionsPartyDate(text: string): boolean {
-  return datesIn(prepared(text).scan).some((f) => f.tier >= 2);
+  return datesIn(prepared(text).scan, null).some((f) => f.tier >= 2);
 }
 
 // --- The time ----------------------------------------------------------------------------
