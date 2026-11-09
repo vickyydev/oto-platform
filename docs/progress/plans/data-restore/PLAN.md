@@ -99,6 +99,72 @@ the owner's user in the app (`listUnlinkedOtoAppUsers` / `linkOtoAppUser`,
 inside the app; remove the laptop's address from the allow list; keep the
 `target-*-before.dump` backup until the owner says the restored data stands.
 
+## Staff accounts
+
+_SCRUM-795._ The restore brings the app's users (about 78: 55 staff, 16
+managers, 6 admins, 1 advisor) without a platform account or an identity link,
+so none of them can open the HR app from the launcher. A one-off script gives
+each of them one, with no platform password: their first sign-in on the
+launcher checks the app password they already have against the app's own hash
+once, keeps an argon2 copy, and from then on the account is like any other.
+
+- **The script**: `packages/db/scripts/otoapp-staff-accounts.ts`, logic in
+  `packages/db/src/otoapp-staff-accounts.ts`. Dry run by default; `--apply`
+  writes one transaction per person; a second run finds nothing to do.
+- **The sign-in**: `signIn` in `apps/api/src/services/auth.ts`. A wrong
+  password on a new account is refused and counted exactly as anywhere else;
+  an account that already has a platform password never looks at the app's.
+- **Each person gets**: an active account in the operator (their phone, counted
+  as verified; no password yet; no forced change), their employee record when
+  the app links exactly one employee to them, the identity link and the stamp
+  on their app user, the OTO App tile for the whole operator (as a Console link
+  without a branch choice gives it), and a platform role:
+
+  | App role | Platform role | Where |
+  | --- | --- | --- |
+  | staff, advisor | `staff` | each park in their app branch access |
+  | manager | `branch_manager` | each park in their app branch access |
+  | admin, operator_admin | `operator_admin` | the whole operator |
+  | global_admin | none: skipped, listed by id | linked by hand in the Console |
+
+- **The phone** comes from the app user (`phone_e164`, then `phone_number`),
+  then from their employee record, normalised to `+66…`. Nobody is given a
+  number another account already holds, or one two of them share.
+
+### Running it on staging
+
+1. Commit and push; deploy the api at that SHA:
+   `node scripts/agent/render.mjs deploy oto-api-staging <sha>`, then
+   `node scripts/agent/render.mjs deploys oto-api-staging` until it is live.
+2. The employee copy must have run since the restore (every quarter-hour, or
+   Console Health, "Copy the OTO App's staff now"): the employee record and the
+   phone fallback come from it.
+3. Dry run, which writes nothing:
+   `node scripts/agent/render.mjs job "pnpm --filter @oto/db exec tsx scripts/otoapp-staff-accounts.ts"`
+4. Apply, naming the administrator recorded as who made each link (the owner's
+   own account, one of the ids the dry run lists last):
+   `node scripts/agent/render.mjs job "pnpm --filter @oto/db exec tsx scripts/otoapp-staff-accounts.ts --apply --actor <account id>"`
+5. The dry run again: `provision 0`, everybody provisioned now `already_linked`.
+
+### What the dry run prints
+
+Counts and ids only, never a name or a phone number: the operator; app users
+read; one count per outcome (`provision`, `inactive`, `already_linked`,
+`global_admin`, `unknown_role`, `other_park_group`, `no_phone`, `phone_taken`,
+`phone_shared`, `employee_held`, and `failed` on apply); the outcomes per app
+role; where the phones come from; how many employee records are linked; the
+role assignments per platform role and how many people get the tile alone (no
+app branch joined to a park); the `global_admin` user ids; and the account ids
+that may be named with `--actor`. Exit 1 when refused or a person failed.
+
+Everybody counted under anything but `provision` is left as they were and is
+done by hand in the Console (Login Users, Apps) once their data is right.
+
+### For staff
+
+> Sign in on the launcher with your phone number and your usual app password;
+> the first sign-in keeps it for the suite.
+
 ## What the restore does not do
 
 - It does not touch the platform's own schemas. Parks, tills, boxes,
