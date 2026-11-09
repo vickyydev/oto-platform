@@ -19,7 +19,14 @@ import { requireAuth } from "./auth";
 import { canUserAccessBranch, requireAction, requireAdmin, requireManager } from "./auth-middleware";
 import { foldEmployeeInto, type FoldInput } from "./lib/employeeFold";
 import { rematchUnscheduledWork } from "./lib/reviewRematch";
-import { activateEngagementWithin, rematchAfter, reviewReach, type ActivationResult, type RematchAnswer } from "./lib/onboardAgain";
+import {
+  activateEngagementWithin,
+  platformSignInSwitchedOff,
+  rematchAfter,
+  reviewReach,
+  type ActivationResult,
+  type RematchAnswer,
+} from "./lib/onboardAgain";
 import { bangkokToday } from "./lib/engagementDates";
 
 /**
@@ -93,7 +100,7 @@ export function registerEmployeeOnboardAgainRoutes(app: Express, deps: EmployeeO
     roleCanPerformAction(req.userWithAccess?.role ?? req.user?.role, "hr.terminate_employee", "hr");
 
   /** The planned employment of a profile, with the names the profile page shows. */
-  const plannedView = async (employeeId: string) => {
+  const plannedView = async (employeeId: string, userId: string | null) => {
     const [engagement] = await db.select().from(employeeEngagements)
       .where(and(eq(employeeEngagements.employeeId, employeeId), eq(employeeEngagements.status, "planned"))).limit(1);
     if (!engagement) return null;
@@ -120,6 +127,9 @@ export function registerEmployeeOnboardAgainRoutes(app: Express, deps: EmployeeO
       department: department ?? null,
       branch: branch ?? null,
       contract: contract ?? null,
+      // The platform switched the sign-in off when the last contract ended:
+      // a platform administrator reactivates it before the start date.
+      platformSignInOff: await platformSignInSwitchedOff(userId),
     };
   };
 
@@ -131,7 +141,7 @@ export function registerEmployeeOnboardAgainRoutes(app: Express, deps: EmployeeO
       const employee = await deps.employeeOfParkGroup(req, req.params.id);
       if (!actor || !employee) return res.status(404).json({ message: "Employee not found" });
       if (!canUserAccessBranch(actor, employee.branchId)) return res.status(403).json({ message: "Access denied to this employee" });
-      res.json({ engagement: await plannedView(employee.id) });
+      res.json({ engagement: await plannedView(employee.id, employee.userId) });
     } catch (error) {
       next(error);
     }
@@ -304,6 +314,7 @@ export function registerEmployeeOnboardAgainRoutes(app: Express, deps: EmployeeO
         startDate: body.startDate,
         contract: done.contract,
         started: !!done.activation,
+        ...(done.activation ? {} : { platformSignInOff: await platformSignInSwitchedOff(employee.userId) }),
         ...(done.activation ? {
           login: done.activation.login,
           platformDeactivationDelivered: done.activation.platformDeactivationDelivered,

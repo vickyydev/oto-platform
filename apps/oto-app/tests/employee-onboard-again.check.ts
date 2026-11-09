@@ -38,7 +38,9 @@
 //   5. The 03:00 batch on a clock past the last day but before the start date:
 //      a leaver with nothing planned is ended (resigned, Left, login off, the
 //      platform told); the profile with Onboard Again planned keeps its login,
-//      status and shifts.
+//      status and shifts. A Left profile onboarded again whose switch-off the
+//      platform has had: the plan says a platform administrator reactivates
+//      the sign-in, and stops saying so once the login is back on.
 //   6. The batch on a clock at the start date starts the employment: the
 //      department switched, the status active, the offboarding re-onboarded,
 //      the login kept on — or switched back on for a Left profile, the
@@ -164,6 +166,7 @@ const subject = await user("staff", "subject", ONLY_A, randomUUID());
 const leaverLogin = await user("staff", "leaver", ONLY_A, randomUUID());
 const pastLogin = await user("staff", "past", ONLY_A, randomUUID());
 const cancelLogin = await user("staff", "cancel", ONLY_A, randomUUID());
+const deliveredLogin = await user("staff", "delivered", ONLY_A, randomUUID());
 
 async function employee(label: string, branchId: string, opts: { userId?: string | null; department?: string } = {}): Promise<string> {
   const id = randomUUID();
@@ -185,6 +188,7 @@ const leaver = await employee("leaver", BRANCH_A, { userId: leaverLogin.id });
 const sameDay = await employee("same-day", BRANCH_A);
 const pastCase = await employee("past", BRANCH_A, { userId: pastLogin.id });
 const cancelled = await employee("cancelled", BRANCH_A, { userId: cancelLogin.id });
+const delivered = await employee("delivered", BRANCH_A, { userId: deliveredLogin.id });
 
 // ─── The rota: a Reception and a Promotion row in branch A, one past week ────
 
@@ -837,6 +841,23 @@ try {
     assert.equal(res.status, 201, show(res));
     assert.equal(res.body.started, false);
     assert.equal(await loginOn(leaverLogin.id), false);
+    // Its switch-off still waits for the platform: the start withdraws it, nobody needs to act.
+    assert.equal(res.body.platformSignInOff, false);
+  });
+  await check("a Left profile whose switch-off the platform has had: the plan says a platform administrator reactivates the sign-in", async () => {
+    const off = await offboard(delivered, plus(-2));
+    assert.equal(off.status, 201, show(off));
+    assert.equal(await loginOn(deliveredLogin.id), false);
+    // What the platform's consumer marks once it has switched the account off (the harness runs no transport).
+    await q("update login_lifecycle_events set state = 'delivered', settled_at = now() where user_id = $1 and state = 'pending'", [deliveredLogin.id]);
+    const res = await call("POST", `/api/employees/${delivered}/onboard-again`, as.admin, { ...onboardBody, startDate: plus(30) });
+    assert.deepEqual([res.status, res.body.started, res.body.platformSignInOff], [201, false, true], show(res));
+    const read = await call("GET", `/api/employees/${delivered}/onboard-again`, as.manager);
+    assert.equal(read.body.engagement.platformSignInOff, true, show(read));
+    // A platform administrator's reactivation switches the app login back on (activateOtoAppUser): then nothing is asked.
+    await q("update users set is_active = true where id = $1", [deliveredLogin.id]);
+    const after = await call("GET", `/api/employees/${delivered}/onboard-again`, as.manager);
+    assert.equal(after.body.engagement.platformSignInOff, false, show(after));
   });
 
   // ── 6. The night of the start date ────────────────────────────────────────

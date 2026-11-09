@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
-import { CalendarClock, FileSignature, Loader2, Merge, UserPlus, X } from "lucide-react";
+import { AlertTriangle, CalendarClock, FileSignature, Loader2, Merge, UserPlus, X } from "lucide-react";
 import type { Branch, Department, Employee, Template, TemplateAssignment } from "@shared/schema";
 import { isAdminRole, roleCanPerformAction } from "@shared/permissions";
 import { useAuth } from "@/hooks/use-auth";
@@ -69,7 +69,13 @@ interface PlannedEmployment {
   department: { id: string; name: string } | null;
   branch: { id: string; name: string } | null;
   contract: { id: string; status: string; signingStatus: string; sentAt: string | null; signedAt: string | null } | null;
+  /** The platform switched the suite sign-in off when the last contract ended. */
+  platformSignInOff?: boolean;
 }
+
+const PLATFORM_SIGN_IN_OFF =
+  "The suite sign-in was switched off on the platform when the last contract ended, and the app cannot switch it back on. " +
+  "A platform administrator reactivates the account on the Console's Login users page before the start date; that switches this login back on too, so the new shifts show in the app.";
 
 const plannedKey = (employeeId: string) => ["/api/employees", employeeId, "onboard-again"];
 
@@ -161,7 +167,13 @@ export function OnboardAgainAction({ employee, branches, departments, defaultTem
         employmentBasis: employmentBasis === KEEP ? null : employmentBasis,
         templateId: templateId || null,
       });
-      return res.json() as Promise<{ started: boolean; login?: string; platformDeactivationDelivered?: boolean; rematch?: RematchAnswer }>;
+      return res.json() as Promise<{
+        started: boolean;
+        login?: string;
+        platformDeactivationDelivered?: boolean;
+        platformSignInOff?: boolean;
+        rematch?: RematchAnswer;
+      }>;
     },
     onSuccess: (answer) => {
       setOpen(false);
@@ -179,7 +191,8 @@ export function OnboardAgainAction({ employee, branches, departments, defaultTem
       } else {
         toast({
           title: "Onboard Again planned",
-          description: `The new employment starts on ${dayWords(startDate)}. Its shifts can be added from that date, and a draft contract is ready.`,
+          description: `The new employment starts on ${dayWords(startDate)}. Its shifts can be added from that date, and a draft contract is ready.` +
+            (answer.platformSignInOff ? ` ${PLATFORM_SIGN_IN_OFF}` : ""),
         });
       }
     },
@@ -359,6 +372,15 @@ export function PlannedEmploymentCard({ employee }: { employee: Employee }) {
           Shifts in the new department can be added from the start date and show in the employee's app as soon as they are added.
           The current department's shifts and tasks carry on up to the last working day.
         </p>
+        {engagement.platformSignInOff && (
+          <div
+            className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200"
+            data-testid="text-planned-platform-sign-in-off"
+          >
+            <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            <p><span className="font-medium">Platform sign-in is off.</span> {PLATFORM_SIGN_IN_OFF}</p>
+          </div>
+        )}
         <div className="flex flex-wrap gap-2">
           {engagement.contract && (
             <Link href={`/contracts/${engagement.contract.id}`}>

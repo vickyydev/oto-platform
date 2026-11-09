@@ -251,6 +251,25 @@ export async function planOfSignedContract(contract: {
   return { engagement: { ...planned, contractInstanceId: contract.id }, ownContract: true };
 }
 
+/**
+ * Whether the profile's login is off and the platform has been told
+ * (SCRUM-794): its newest switch-off was delivered, so the platform account —
+ * the launcher, the only way in while the app's own password sign-in is off —
+ * is switched off too. Nothing in the app switches it back on: the platform
+ * takes no reactivation from the app, so a platform administrator reactivates
+ * the account (which switches this login back on as well). A switch-off still
+ * pending is withdrawn when the employment starts, and needs nobody.
+ */
+export async function platformSignInSwitchedOff(userId: string | null): Promise<boolean> {
+  if (!userId) return false;
+  const [account] = await db.select({ isActive: users.isActive }).from(users).where(eq(users.id, userId));
+  if (!account || account.isActive) return false;
+  const [last] = await db.select({ state: loginLifecycleEvents.state }).from(loginLifecycleEvents)
+    .where(eq(loginLifecycleEvents.userId, userId))
+    .orderBy(desc(loginLifecycleEvents.createdAt)).limit(1);
+  return last?.state === "delivered";
+}
+
 /** The branches a user settles attendance review items in: the attendance review's own rule. */
 export async function reviewReach(userId: string): Promise<string[] | null> {
   const access = await storage.getUserBranchAccess(userId);
