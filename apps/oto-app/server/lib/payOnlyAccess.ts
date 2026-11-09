@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
-import { and, eq, inArray, isNotNull, lt, sql } from "drizzle-orm";
-import { employees, users, type UserAccessMode } from "@shared/schema";
+import { and, desc, eq, inArray, isNotNull, lt, sql } from "drizzle-orm";
+import { employees, loginLifecycleEvents, users, type UserAccessMode } from "@shared/schema";
 import { EMPLOYMENT_ENDED, PAY_ONLY_MESSAGE } from "@shared/payOnly";
 import { db } from "../db";
 import type { DbExecutor } from "../storage";
@@ -17,9 +17,14 @@ import { payOnlyRefuses } from "./payOnlyRoutes";
  * it puts the login in pay only (`users.access_mode`, migration 0040):
  *
  *  - the login stays active, so the launcher hand-off and the app's own sign-in
- *    still let the person in, and `is_active` — the switch the platform's
- *    lifecycle trigger (0031) reports — does not change: no switch-off is
- *    queued for the platform while the person is in pay only;
+ *    still let the person in, and `is_active` does not change: no switch-off is
+ *    queued for the platform (0031);
+ *  - the platform is told instead that the login is restricted (migration
+ *    0041's trigger on `access_mode`, delivered by `./platformLifecycle.ts`):
+ *    it keeps the account on with its road to the OTO App, ends its sessions
+ *    and withdraws every other role it holds — the till, the booth, the
+ *    console — so the person's suite access outside My pay ends that night, as
+ *    the switch-off ended it before;
  *  - the app then answers My pay alone (the fence below and the client's
  *    pay-only shell), and addresses no notification to the login;
  *  - a login an administrator switches off is a different switch: it is off,
@@ -75,7 +80,8 @@ export async function restrictDepartedLogins(opts: { bangkokMidnight: Date; tena
 /**
  * Onboard Again's start: the login of the profile whose new employment has
  * started reaches the whole app again. On the caller's transaction; answers
- * whether the login was in pay only.
+ * whether the login was in pay only. Lifting it withdraws a restriction still
+ * waiting for the platform (0041's trigger).
  */
 export async function liftPayOnlyWithin(tx: DbExecutor, userId: string, now: Date = new Date()): Promise<boolean> {
   const lifted = await tx
@@ -84,6 +90,18 @@ export async function liftPayOnlyWithin(tx: DbExecutor, userId: string, now: Dat
     .where(and(eq(users.id, userId), eq(users.accessMode, PAY_ONLY)))
     .returning({ id: users.id });
   return lifted.length > 0;
+}
+
+/**
+ * Whether the platform has had this login's newest restriction (0041): its
+ * roles outside the OTO App were withdrawn there, and nothing in the app gives
+ * them back — a platform administrator does, on the Console's Login users page.
+ */
+export async function platformRestrictionDelivered(exec: DbExecutor, userId: string): Promise<boolean> {
+  const [last] = await exec.select({ state: loginLifecycleEvents.state }).from(loginLifecycleEvents)
+    .where(and(eq(loginLifecycleEvents.userId, userId), eq(loginLifecycleEvents.kind, "restrict")))
+    .orderBy(desc(loginLifecycleEvents.createdAt)).limit(1);
+  return last?.state === "delivered";
 }
 
 // ─── What a login in pay only reaches ────────────────────────────────────────

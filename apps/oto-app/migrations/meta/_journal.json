@@ -295,6 +295,13 @@
       "when": 1794222396631,
       "tag": "0040_users_access_mode",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1794227145280,
+      "tag": "0041_login_lifecycle_restrict",
+      "breakpoints": true
     }
   ]
 }

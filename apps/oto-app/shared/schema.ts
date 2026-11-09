@@ -198,6 +198,15 @@ export const users = pgTable("users", {
 // Durable app-to-platform disable notifications. These identity snapshots have
 // no user FK: unlink/delete must neither erase an event nor gain a new blocker.
 export const loginLifecycleStates = ["pending", "delivered", "superseded"] as const;
+/**
+ * What an event asks of the platform (SCRUM-769, migration 0041): `deactivate`
+ * — the login was switched off, so the platform account is switched off (the
+ * users trigger of 0031) — or `restrict` — the login was put in pay only, so
+ * the platform account keeps the launcher's road to the OTO App and loses
+ * every other role (the access_mode trigger of 0041).
+ */
+export const loginLifecycleKinds = ["deactivate", "restrict"] as const;
+export type LoginLifecycleKind = typeof loginLifecycleKinds[number];
 export const loginLifecycleEvents = pgTable("login_lifecycle_events", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: varchar("user_id").notNull(),
@@ -207,10 +216,12 @@ export const loginLifecycleEvents = pgTable("login_lifecycle_events", {
   settledAt: timestamp("settled_at", { withTimezone: true }),
   attemptCount: integer("attempt_count").notNull().default(0),
   lastErrorCode: text("last_error_code"),
+  kind: text("kind", { enum: loginLifecycleKinds }).notNull().default("deactivate"),
 }, (table) => [
   index("idx_login_lifecycle_pending").on(table.state, table.createdAt, table.id),
   check("login_lifecycle_events_state_check", sql`${table.state} IN ('pending', 'delivered', 'superseded')`),
   check("login_lifecycle_events_attempt_count_check", sql`${table.attemptCount} >= 0`),
+  check("login_lifecycle_events_kind_check", sql`${table.kind} IN ('deactivate', 'restrict')`),
 ]);
 
 export const session = pgTable("session", {

@@ -13,19 +13,27 @@ export interface PlatformLifecycleSummary {
   superseded: number;
   failed: number;
 }
+// SCRUM-769 (migration 0041): an event is a switch-off ('deactivate', every
+// event before 0041) or a restriction to pay only ('restrict'), each consumed
+// on its own platform door. A row read without the column is a switch-off.
 const pendingEvent = z.object({
   id: z.string().uuid(), user_id: z.string().min(1), platform_account_id: z.string().uuid(), state: z.literal("pending"),
+  kind: z.enum(["deactivate", "restrict"]).default("deactivate"),
 }).strict();
+const DOORS = {
+  deactivate: "/admin/apps/oto_app/lifecycle-deactivations",
+  restrict: "/admin/apps/oto_app/lifecycle-restrictions",
+} as const;
 const acknowledgement = z.object({
   ok: z.literal(true), eventId: z.string().uuid(), state: z.enum(["delivered", "superseded"]), replayed: z.boolean(),
 }).strict();
 
-function endpoint(config: SuiteProvisionConfig | null): string | null {
+function endpoint(config: SuiteProvisionConfig | null, kind: keyof typeof DOORS): string | null {
   if (!config || !config.key.trim()) return null;
   try {
     const url = new URL(config.apiUrl);
     if (!["https:", "http:"].includes(url.protocol) || url.username || url.password || url.search || url.hash || url.pathname !== "/") return null;
-    return url.origin + "/admin/apps/oto_app/lifecycle-deactivations";
+    return url.origin + DOORS[kind];
   } catch { return null; }
 }
 
@@ -39,15 +47,15 @@ export async function drainPlatformLifecycleEvents(
   const summary: PlatformLifecycleSummary = { selected: 0, delivered: 0, superseded: 0, failed: 0 };
   let rows: unknown[];
   try {
-    rows = (await database.query(`SELECT id,user_id,platform_account_id,state FROM login_lifecycle_events
+    rows = (await database.query(`SELECT id,user_id,platform_account_id,state,kind FROM login_lifecycle_events
       WHERE state='pending' ORDER BY attempt_count,created_at,id LIMIT $1`, [limit])).rows;
   } catch { summary.failed++; return summary; }
   summary.selected = rows.length;
-  const url = endpoint(dependencies.config);
   for (const row of rows) {
     const parsed = pendingEvent.safeParse(row);
     if (!parsed.success) { summary.failed++; continue; }
     const event = parsed.data;
+    const url = endpoint(dependencies.config, event.kind);
     let failure: string | null = null;
     try {
       // A concurrent reactivation or another consumer may already have settled

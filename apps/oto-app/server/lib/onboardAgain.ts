@@ -12,7 +12,7 @@ import { db, pool } from "../db";
 import { storage, type DbExecutor } from "../storage";
 import { bangkokToday } from "./engagementDates";
 import { rematchUnscheduledWork, type RematchCounts } from "./reviewRematch";
-import { liftPayOnlyWithin } from "./payOnlyAccess";
+import { liftPayOnlyWithin, platformRestrictionDelivered } from "./payOnlyAccess";
 
 /**
  * Onboard Again's start (SCRUM-794): a planned employment on a profile becomes
@@ -27,7 +27,10 @@ import { liftPayOnlyWithin } from "./payOnlyAccess";
  * switched off is switched back on: the users trigger (migration 0031)
  * withdraws a switch-off still waiting for the platform, the same channel the
  * switch-off used. A login the 03:00 batch put in pay only once the employment
- * before had ended (SCRUM-769) reaches the whole app again. A contract for the
+ * before had ended (SCRUM-769) reaches the whole app again, and a restriction
+ * still waiting for the platform is withdrawn (migration 0041's trigger); one
+ * the platform has had withdrew the account's roles outside the OTO App there,
+ * which a platform administrator gives back. A contract for the
  * planned employment signed before the start date becomes the active contract
  * now, superseding the one before it.
  */
@@ -44,6 +47,8 @@ export interface ActivationResult {
   platformDeactivationDelivered: boolean;
   /** SCRUM-769: the login was in pay only (its employment had ended) and reaches the whole app again. */
   payOnlyLifted: boolean;
+  /** SCRUM-769: the platform had withdrawn the account's roles outside the OTO App; giving them back is a platform administrator's step. */
+  platformRestrictionDelivered: boolean;
   contractActivated: boolean;
 }
 
@@ -104,6 +109,7 @@ export async function activateEngagementWithin(
   let login: LoginOutcome = "none";
   let platformDeactivationDelivered = false;
   let payOnlyLifted = false;
+  let restrictionDelivered = false;
   if (current.userId) {
     if (!(await opts.loginInParkGroup(current.userId, current.tenantId))) {
       login = "outside_park_group";
@@ -121,12 +127,13 @@ export async function activateEngagementWithin(
         }
         if (login === "reactivated") {
           const [last] = await tx.select({ state: loginLifecycleEvents.state }).from(loginLifecycleEvents)
-            .where(eq(loginLifecycleEvents.userId, current.userId))
+            .where(and(eq(loginLifecycleEvents.userId, current.userId), eq(loginLifecycleEvents.kind, "deactivate")))
             .orderBy(desc(loginLifecycleEvents.createdAt)).limit(1);
           platformDeactivationDelivered = last?.state === "delivered";
         }
         // SCRUM-769: a login the 03:00 batch put in pay only reaches the whole app again.
         payOnlyLifted = await liftPayOnlyWithin(tx, current.userId, now);
+        restrictionDelivered = payOnlyLifted && await platformRestrictionDelivered(tx, current.userId);
       }
     }
   }
@@ -174,6 +181,9 @@ export async function activateEngagementWithin(
       + (payOnlyLifted ? "; the login reaches the whole app again (it was limited to My pay)" : "")
       + (platformDeactivationDelivered
         ? ". The suite sign-in had already been switched off on the platform; a platform administrator reactivates it there"
+        : "")
+      + (restrictionDelivered
+        ? ". The platform had withdrawn the suite roles outside the OTO App (the till and the other apps); a platform administrator gives them back on the Console's Login users page"
         : ""),
     createdBy: opts.actorId ?? undefined,
   }, tx);
@@ -186,6 +196,7 @@ export async function activateEngagementWithin(
     login,
     platformDeactivationDelivered,
     payOnlyLifted,
+    platformRestrictionDelivered: restrictionDelivered,
     contractActivated,
   };
 }
@@ -275,7 +286,7 @@ export async function platformSignInSwitchedOff(userId: string | null): Promise<
   const [account] = await db.select({ isActive: users.isActive }).from(users).where(eq(users.id, userId));
   if (!account || account.isActive) return false;
   const [last] = await db.select({ state: loginLifecycleEvents.state }).from(loginLifecycleEvents)
-    .where(eq(loginLifecycleEvents.userId, userId))
+    .where(and(eq(loginLifecycleEvents.userId, userId), eq(loginLifecycleEvents.kind, "deactivate")))
     .orderBy(desc(loginLifecycleEvents.createdAt)).limit(1);
   return last?.state === "delivered";
 }
