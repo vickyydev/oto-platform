@@ -144,7 +144,7 @@ export async function runPlannedEngagementStarts(opts: NightJobOptions = {}): Pr
  * Put the app login of everyone whose last working day has passed into pay
  * only (SCRUM-769, `lib/payOnlyAccess.ts`): the person still signs in, to My
  * pay alone. The login is no longer switched off here, so no switch-off is
- * queued for the platform; the restriction is (migration 0041), and the
+ * queued for the platform; the restriction is (migration 0044), and the
  * platform withdraws the account's roles outside the OTO App. A login an
  * administrator switched off stays off. Both ways: a login in pay only whose
  * last working day has since moved to today or later reaches the whole app

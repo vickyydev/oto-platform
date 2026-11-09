@@ -1372,7 +1372,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app', () => {
         goneSwitchedOff: await appLogin(goneSwitchedOff.user),
         staying: await appLogin(staying.user),
       }).toEqual({ gone: 'on/pay_only', lastDayToday: 'on/full', goneSwitchedOff: 'on/pay_only', staying: 'on/full' });
-      // SCRUM-769: and asks the platform to restrict each leaver's account (its migration 0041), never to switch it off.
+      // SCRUM-769: and asks the platform to restrict each leaver's account (its migration 0044), never to switch it off.
       const asked = async (id: string) =>
         (await q<{ kind: string; state: string }>('select kind, state from login_lifecycle_events where user_id = $1 order by created_at, id', [id]))
           .map((r) => `${r.kind}:${r.state}`);

@@ -1,6 +1,6 @@
 {
-  "id": "b4b8784a-8d9c-45ec-b7c3-6510bd634890",
-  "prevId": "5cdbebd9-9991-457a-868b-b4a2c0192d85",
+  "id": "cfc4ddaf-5abf-4eb4-9768-557af283864a",
+  "prevId": "ca8a7bc7-352c-473e-afe1-6d4b730c37fc",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -7586,6 +7586,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'deactivate'"
         }
       },
       "indexes": {
@@ -7629,6 +7636,10 @@
         "login_lifecycle_events_attempt_count_check": {
           "name": "login_lifecycle_events_attempt_count_check",
           "value": "\"login_lifecycle_events\".\"attempt_count\" >= 0"
+        },
+        "login_lifecycle_events_kind_check": {
+          "name": "login_lifecycle_events_kind_check",
+          "value": "\"login_lifecycle_events\".\"kind\" IN ('deactivate', 'restrict')"
         }
       },
       "isRLSEnabled": false
@@ -25352,6 +25363,72 @@
           "primaryKey": false,
           "notNull": false
         },
+        "kids_included": {
+          "name": "kids_included",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "adults_included": {
+          "name": "adults_included",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "socks_included": {
+          "name": "socks_included",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hours": {
+          "name": "hours",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_weekday": {
+          "name": "price_weekday",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_weekend": {
+          "name": "price_weekend",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extra_child_weekday": {
+          "name": "extra_child_weekday",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extra_child_weekend": {
+          "name": "extra_child_weekend",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extra_adult_weekday": {
+          "name": "extra_adult_weekday",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extra_adult_weekend": {
+          "name": "extra_adult_weekend",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "slips_time": {
+          "name": "slips_time",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -26372,6 +26449,85 @@
           "notNull": true,
           "default": 0
         },
+        "kids_included": {
+          "name": "kids_included",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "adults_included": {
+          "name": "adults_included",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "socks_included": {
+          "name": "socks_included",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hours": {
+          "name": "hours",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_weekday": {
+          "name": "price_weekday",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_weekend": {
+          "name": "price_weekend",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extra_child_weekday": {
+          "name": "extra_child_weekday",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extra_child_weekend": {
+          "name": "extra_child_weekend",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extra_adult_weekday": {
+          "name": "extra_adult_weekday",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extra_adult_weekend": {
+          "name": "extra_adult_weekend",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "set_menu_template_id": {
+          "name": "set_menu_template_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "slips_time": {
+          "name": "slips_time",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'11:00'"
+        },
+        "branch_id": {
+          "name": "branch_id",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -26423,6 +26579,36 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "idx_birthday_package_templates_branch": {
+          "name": "idx_birthday_package_templates_branch",
+          "columns": [
+            {
+              "expression": "branch_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_birthday_package_templates_set_menu": {
+          "name": "idx_birthday_package_templates_set_menu",
+          "columns": [
+            {
+              "expression": "set_menu_template_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -26437,6 +26623,32 @@
             "id"
           ],
           "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "birthday_package_templates_set_menu_template_id_beo_set_menu_templates_id_fk": {
+          "name": "birthday_package_templates_set_menu_template_id_beo_set_menu_templates_id_fk",
+          "tableFrom": "birthday_package_templates",
+          "tableTo": "beo_set_menu_templates",
+          "columnsFrom": [
+            "set_menu_template_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "birthday_package_templates_branch_id_branches_id_fk": {
+          "name": "birthday_package_templates_branch_id_branches_id_fk",
+          "tableFrom": "birthday_package_templates",
+          "tableTo": "branches",
+          "columnsFrom": [
+            "branch_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         },
         "birthday_package_templates_created_by_user_id_users_id_fk": {
@@ -26456,7 +26668,16 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "birthday_package_templates_limits_check": {
+          "name": "birthday_package_templates_limits_check",
+          "value": "(\"birthday_package_templates\".\"kids_included\" IS NULL OR \"birthday_package_templates\".\"kids_included\" >= 0) AND (\"birthday_package_templates\".\"adults_included\" IS NULL OR \"birthday_package_templates\".\"adults_included\" >= 0) AND (\"birthday_package_templates\".\"socks_included\" IS NULL OR \"birthday_package_templates\".\"socks_included\" >= -1) AND (\"birthday_package_templates\".\"hours\" IS NULL OR \"birthday_package_templates\".\"hours\" > 0)"
+        },
+        "birthday_package_templates_prices_check": {
+          "name": "birthday_package_templates_prices_check",
+          "value": "(\"birthday_package_templates\".\"price_weekday\" IS NULL OR \"birthday_package_templates\".\"price_weekday\" >= 0) AND (\"birthday_package_templates\".\"price_weekend\" IS NULL OR \"birthday_package_templates\".\"price_weekend\" >= 0) AND (\"birthday_package_templates\".\"extra_child_weekday\" IS NULL OR \"birthday_package_templates\".\"extra_child_weekday\" >= 0) AND (\"birthday_package_templates\".\"extra_child_weekend\" IS NULL OR \"birthday_package_templates\".\"extra_child_weekend\" >= 0) AND (\"birthday_package_templates\".\"extra_adult_weekday\" IS NULL OR \"birthday_package_templates\".\"extra_adult_weekday\" >= 0) AND (\"birthday_package_templates\".\"extra_adult_weekend\" IS NULL OR \"birthday_package_templates\".\"extra_adult_weekend\" >= 0)"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.camp_attendance": {
@@ -29947,6 +30168,37 @@
           "notNull": true,
           "default": 0
         },
+        "age_range": {
+          "name": "age_range",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "max_kids": {
+          "name": "max_kids",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extra_child_price": {
+          "name": "extra_child_price",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "unit": {
+          "name": "unit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_is_from": {
+          "name": "price_is_from",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -30031,7 +30283,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "entertainment_package_templates_menu_check": {
+          "name": "entertainment_package_templates_menu_check",
+          "value": "(\"entertainment_package_templates\".\"max_kids\" IS NULL OR \"entertainment_package_templates\".\"max_kids\" > 0) AND (\"entertainment_package_templates\".\"extra_child_price\" IS NULL OR \"entertainment_package_templates\".\"extra_child_price\" >= 0) AND (\"entertainment_package_templates\".\"unit\" IS NULL OR \"entertainment_package_templates\".\"unit\" IN ('session', 'piece', 'hour'))"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.escalations": {
@@ -34919,6 +35176,26 @@
           "notNull": true,
           "default": 0
         },
+        "fnb_credit": {
+          "name": "fnb_credit",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prints_voucher": {
+          "name": "prints_voucher",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "price_is_from": {
+          "name": "price_is_from",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -34962,7 +35239,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "package_line_item_templates_fnb_credit_check": {
+          "name": "package_line_item_templates_fnb_credit_check",
+          "value": "\"package_line_item_templates\".\"fnb_credit\" IS NULL OR \"package_line_item_templates\".\"fnb_credit\" >= 0"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.parent_message_logs": {

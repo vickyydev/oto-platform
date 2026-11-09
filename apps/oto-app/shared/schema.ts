@@ -199,11 +199,11 @@ export const users = pgTable("users", {
 // no user FK: unlink/delete must neither erase an event nor gain a new blocker.
 export const loginLifecycleStates = ["pending", "delivered", "superseded"] as const;
 /**
- * What an event asks of the platform (SCRUM-769, migration 0041): `deactivate`
+ * What an event asks of the platform (SCRUM-769, migration 0044): `deactivate`
  * — the login was switched off, so the platform account is switched off (the
  * users trigger of 0031) — or `restrict` — the login was put in pay only, so
  * the platform account keeps the launcher's road to the OTO App and loses
- * every other role (the access_mode trigger of 0041).
+ * every other role (the access_mode trigger of 0044).
  */
 export const loginLifecycleKinds = ["deactivate", "restrict"] as const;
 export type LoginLifecycleKind = typeof loginLifecycleKinds[number];

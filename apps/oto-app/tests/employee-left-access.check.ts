@@ -14,7 +14,7 @@
 //      kiosk refuses the clock-in.
 //   2. The 03:00 batch on the night after the last day: the leaver is ended
 //      (resigned, Left), the login stays ON in pay only, and the platform is
-//      asked to restrict the account (a 'restrict' event, migration 0041), never
+//      asked to restrict the account (a 'restrict' event, migration 0044), never
 //      to switch it off; a profile still in its notice is untouched; a login an
 //      administrator switched off stays off (marked pay only, so switching it
 //      back on would reach My pay alone).

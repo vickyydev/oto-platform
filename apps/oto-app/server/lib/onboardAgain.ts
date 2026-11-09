@@ -28,7 +28,7 @@ import { liftPayOnlyWithin, platformRestrictionDelivered } from "./payOnlyAccess
  * withdraws a switch-off still waiting for the platform, the same channel the
  * switch-off used. A login the 03:00 batch put in pay only once the employment
  * before had ended (SCRUM-769) reaches the whole app again, and a restriction
- * still waiting for the platform is withdrawn (migration 0041's trigger); one
+ * still waiting for the platform is withdrawn (migration 0044's trigger); one
  * the platform has had withdrew the account's roles outside the OTO App there,
  * which a platform administrator gives back. A contract for the
  * planned employment signed before the start date becomes the active contract

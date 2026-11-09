@@ -33,7 +33,7 @@ const events = async (client: pg.PoolClient, userId: string) =>
 await check('durable queue is installed with private immutable identity snapshots and bounded state fields', async () => {
   const { rows } = await pool.query(`SELECT column_name,data_type,is_nullable FROM information_schema.columns
     WHERE table_schema='otoapp' AND table_name='login_lifecycle_events' ORDER BY ordinal_position`);
-  // SCRUM-769 (migration 0041): the kind of request, a switch-off or a restriction to pay only.
+  // SCRUM-769 (migration 0044): the kind of request, a switch-off or a restriction to pay only.
   assert.deepEqual(rows.map(row => row.column_name), ['id','user_id','platform_account_id','created_at','state','settled_at','attempt_count','last_error_code','kind']);
   assert.equal(rows[0].data_type, 'uuid'); assert.equal(rows[2].data_type, 'uuid');
   assert.equal(rows[3].data_type, 'timestamp with time zone'); assert.equal(rows[5].data_type, 'timestamp with time zone');

@@ -16,13 +16,13 @@ import { bangkokToday } from "./engagementDates";
  * after, the person reaches no schedule, no clock-in and no internal data,
  * and may still read their own pay information while the final salary is
  * settled. So the 03:00 batch no longer switches the login off on that night;
- * it puts the login in pay only (`users.access_mode`, migration 0040):
+ * it puts the login in pay only (`users.access_mode`, migration 0043):
  *
  *  - the login stays active, so the launcher hand-off and the app's own sign-in
  *    still let the person in, and `is_active` does not change: no switch-off is
  *    queued for the platform (0031);
  *  - the platform is told instead that the login is restricted (migration
- *    0041's trigger on `access_mode`, delivered by `./platformLifecycle.ts`):
+ *    0044's trigger on `access_mode`, delivered by `./platformLifecycle.ts`):
  *    it keeps the account on with its road to the OTO App, ends its sessions
  *    and withdraws every other role it holds — the till, the booth, the
  *    console — so the person's suite access outside My pay ends that night, as
@@ -135,7 +135,7 @@ export async function restrictLoginWithin(
  * Onboard Again's start: the login of the profile whose new employment has
  * started reaches the whole app again. On the caller's transaction; answers
  * whether the login was in pay only. Lifting it withdraws a restriction still
- * waiting for the platform (0041's trigger).
+ * waiting for the platform (0044's trigger).
  */
 export async function liftPayOnlyWithin(tx: DbExecutor, userId: string, now: Date = new Date()): Promise<boolean> {
   const lifted = await tx
@@ -167,7 +167,7 @@ export async function liftPayOnlyIfWorkingWithin(tx: DbExecutor, userId: string,
 }
 
 /**
- * Whether the platform has had this login's newest restriction (0041): its
+ * Whether the platform has had this login's newest restriction (0044): its
  * roles outside the OTO App were withdrawn there, and nothing in the app gives
  * them back — a platform administrator does, on the Console's Login users page.
  */

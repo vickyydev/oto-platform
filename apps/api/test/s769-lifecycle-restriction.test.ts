@@ -15,7 +15,7 @@ import { ADMIN, SECOND_OPERATOR_ADMIN, createTestContext, signInAs, teardownAll,
  * their last working day, while the launcher keeps their road to My pay.
  *
  * The OTO App keeps a leaver's login on, limited to My pay, and queues a
- * `restrict` event (its migration 0041: the trigger on `users.access_mode`).
+ * `restrict` event (its migration 0044: the trigger on `users.access_mode`).
  * The platform consumes it on its own door, beside SCRUM-633's switch-off
  * door: the account stays active, its sessions end, and every role it holds
  * but the OTO App's access role is withdrawn — the till first among them.

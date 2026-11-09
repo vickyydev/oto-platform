@@ -279,9 +279,9 @@ export async function activateOtoAppUser(
 export type OtoAppLifecycleEventState = 'pending' | 'delivered' | 'superseded';
 
 /**
- * What the event asks (SCRUM-769, the app's migration 0041): `deactivate` — the
+ * What the event asks (SCRUM-769, the app's migration 0044): `deactivate` — the
  * app switched the login off — or `restrict` — the app put the login in pay
- * only. An app schema from before 0041 has no kind; every event there is a
+ * only. An app schema from before 0044 has no kind; every event there is a
  * switch-off.
  */
 export type OtoAppLifecycleEventKind = 'deactivate' | 'restrict';
@@ -316,7 +316,7 @@ export async function readOtoAppLifecycleEvent(
     }
   }
   // The kind through a JSON projection, so an API instance can run beside an
-  // app whose own migrator has not added the column yet (0041).
+  // app whose own migrator has not added the column yet (0044).
   const row = (await exec.execute<OtoAppLifecycleEvent>(sql`
     select e.id::text as id, e.user_id as "userId", e.platform_account_id::text as "platformAccountId", e.state,
       coalesce(to_jsonb(e)->>'kind', 'deactivate') as kind

@@ -24,7 +24,7 @@ import { withTx, type Exec, type OpContext } from './tx';
  * tester's rule is that offboarding ends access to internal data.
  *
  * So the app queues a `restrict` event when it puts a login in pay only (its
- * migration 0041, beside 0031's switch-off), and this consumes it:
+ * migration 0044, beside 0031's switch-off), and this consumes it:
  *
  *  - the account stays `active`;
  *  - its platform sessions and staff tokens end (`invalidateAllSessions`), so
@@ -53,7 +53,7 @@ export interface ConsumedLifecycleRestriction {
   replayed: boolean;
 }
 
-/** The app's word for a login limited to My pay (`users.access_mode`, its migration 0040). */
+/** The app's word for a login limited to My pay (`users.access_mode`, its migration 0043). */
 const PAY_ONLY = 'pay_only';
 
 /**
@@ -131,7 +131,7 @@ export async function accountsBeyondMyPay(exec: Exec, operatorId: string, accoun
   return new Set(accountIds.filter((id) => !restricted.has(id) || beyond.has(id)));
 }
 
-/** The accounts whose newest restriction event (the app's 0041) the platform has had; none on an app without the queue. */
+/** The accounts whose newest restriction event (the app's 0044) the platform has had; none on an app without the queue. */
 async function restrictionDelivered(exec: Exec, accountIds: readonly string[]): Promise<Set<string>> {
   const [queue] = (await exec.execute<{ readable: boolean | null }>(sql`
     select has_table_privilege(to_regclass('otoapp.login_lifecycle_events')::oid, 'SELECT') as readable

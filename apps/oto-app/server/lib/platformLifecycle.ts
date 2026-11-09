@@ -13,8 +13,8 @@ export interface PlatformLifecycleSummary {
   superseded: number;
   failed: number;
 }
-// SCRUM-769 (migration 0041): an event is a switch-off ('deactivate', every
-// event before 0041) or a restriction to pay only ('restrict'), each consumed
+// SCRUM-769 (migration 0044): an event is a switch-off ('deactivate', every
+// event before 0044) or a restriction to pay only ('restrict'), each consumed
 // on its own platform door. A row read without the column is a switch-off.
 const pendingEvent = z.object({
   id: z.string().uuid(), user_id: z.string().min(1), platform_account_id: z.string().uuid(), state: z.literal("pending"),
