@@ -1,0 +1,1745 @@
+{
+  "unit": "SCRUM-769",
+  "what": "After the last working day: the OTO App opens on My pay only, the face kiosk refuses a clock-in, the login stays on, the platform takes back the other roles; Onboard Again lifts it.",
+  "where": {
+    "app": "https://oto-app-staging.onrender.com",
+    "launcher": "https://oto-launcher-staging.onrender.com",
+    "console": "https://oto-console-staging.onrender.com"
+  },
+  "liveBefore": {
+    "at": "2026-11-09T15:01:10.380Z",
+    "live": [
+      {
+        "name": "oto-app-staging",
+        "deployId": "dep-dbotpq6417fc739cp030",
+        "status": "live",
+        "sha": "61e6c8d8747437bd39d81b35e7d400856a699804",
+        "finishedAt": "2026-11-09T14:50:08.86593Z"
+      },
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbotpqgu01pc738d2et0",
+        "status": "live",
+        "sha": "61e6c8d8747437bd39d81b35e7d400856a699804",
+        "finishedAt": "2026-11-09T14:51:16.26103Z"
+      },
+      {
+        "name": "oto-launcher-staging",
+        "deployId": "dep-dbospke8bjmc73bk98vg",
+        "status": "live",
+        "sha": "dd55771115c549a20359f6c35a50d5a2af97053e",
+        "finishedAt": "2026-11-09T13:39:29.138857Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dbotbts9v7es738b8so0",
+        "status": "live",
+        "sha": "31db95a09640c25834d43f8d55f6fab917b33d75",
+        "finishedAt": "2026-11-09T14:18:38.095249Z"
+      }
+    ]
+  },
+  "liveAfter": {
+    "at": "2026-11-09T15:12:25.006Z",
+    "live": [
+      {
+        "name": "oto-app-staging",
+        "deployId": "dep-dbotpq6417fc739cp030",
+        "status": "live",
+        "sha": "61e6c8d8747437bd39d81b35e7d400856a699804",
+        "finishedAt": "2026-11-09T14:50:08.86593Z"
+      },
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbotpqgu01pc738d2et0",
+        "status": "live",
+        "sha": "61e6c8d8747437bd39d81b35e7d400856a699804",
+        "finishedAt": "2026-11-09T14:51:16.26103Z"
+      },
+      {
+        "name": "oto-launcher-staging",
+        "deployId": "dep-dbospke8bjmc73bk98vg",
+        "status": "live",
+        "sha": "dd55771115c549a20359f6c35a50d5a2af97053e",
+        "finishedAt": "2026-11-09T13:39:29.138857Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dbotbts9v7es738b8so0",
+        "status": "live",
+        "sha": "31db95a09640c25834d43f8d55f6fab917b33d75",
+        "finishedAt": "2026-11-09T14:18:38.095249Z"
+      }
+    ]
+  },
+  "appVersion": {
+    "status": 200,
+    "body": {
+      "enabled": true,
+      "version": "61e6c8d8747437bd39d81b35e7d400856a699804",
+      "acceptsVideo": true,
+      "audioTranscription": false
+    }
+  },
+  "ranAt": {
+    "from": "2026-11-09T15:01:21.602Z",
+    "to": "2026-11-09T15:12:20.193Z",
+    "bangkokToday": "2026-11-09",
+    "lastWorkingDayUsed": "2026-11-08",
+    "startDateUsed": "2026-10-09"
+  },
+  "fixture": {
+    "employeeId": "ac5e161f-7a8a-4364-9ca7-3962bed686aa",
+    "appUserId": "0fc76a98-325a-4745-98f9-f98065b2195a",
+    "platformAccountId": "01a1c0d4-25b1-7275-b8fa-15444b612396",
+    "kioskDeviceId": "e321d18a-c958-4af3-995d-e97902d22b62",
+    "offboardingId": "968f0794-65f9-4a13-acfb-713457f2f317",
+    "onboardAgainEngagementId": "aa8d22e5-adc5-4218-a6ae-d9b630bdf148",
+    "onboardAgainDraftContractId": "c8729fa7-2c93-4878-b5cf-defb193698bc",
+    "branch": "Robinson Chalong (OTO App f0034cfa-9fe8-45dd-a870-15d3b89c8421, platform 01a0c9ae-52cf-7aa1-baca-fc55e449148e)",
+    "department": "Reception",
+    "note": "ZZ TEST profile, login, platform account and kiosk device were made for this proof; the phone is a ZZ TEST number (not written here)."
+  },
+  "steps": {
+    "1-setup": {
+      "provision": {
+        "status": 200,
+        "replayed": false,
+        "code": null,
+        "message": null
+      },
+      "roleAssign": {
+        "status": 200,
+        "body": {
+          "id": "01a1c0d4-28d6-76be-b4ae-ce509bc2e2c5"
+        }
+      },
+      "numbersTried": [
+        {
+          "n": 1,
+          "inUsers": false,
+          "inEmps": false,
+          "accountsLookup": 200,
+          "inAccounts": false
+        }
+      ],
+      "readBack": {
+        "appLogin": {
+          "id": "0fc76a98-325a-4745-98f9-f98065b2195a",
+          "isActive": true,
+          "accessMode": "full",
+          "role": "staff",
+          "mustChangePassword": false,
+          "platformUserIdIsTheAccount": true,
+          "platformLinked": true
+        },
+        "profile": {
+          "status": 200,
+          "empStatus": "active",
+          "employmentState": "ACTIVE",
+          "startDate": "2026-10-09",
+          "lastWorkingDay": null,
+          "branchId": "f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+          "departmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+          "userIdIsTheLogin": true
+        },
+        "platformAccount": {
+          "id": "01a1c0d4-25b1-7275-b8fa-15444b612396",
+          "status": "active",
+          "mustChangePassword": true,
+          "employeeLinked": true
+        },
+        "platformRoles": [
+          {
+            "id": "01a1c0d4-28d6-76be-b4ae-ce509bc2e2c5",
+            "roleName": "reception",
+            "scopeType": "branch",
+            "scopeId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+          },
+          {
+            "id": "01a1c0d4-25ba-7856-9184-a973eeb6f8ce",
+            "roleName": "app_access_oto_app",
+            "scopeType": "operator",
+            "scopeId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+          }
+        ],
+        "platformPermissionsCount": 62,
+        "platformPermissions": [
+          "admin:branch:read",
+          "app:booth:access",
+          "app:oto_app:access",
+          "app:pos:access",
+          "assistant:ask:use",
+          "catalog:holiday:read",
+          "catalog:menu:read",
+          "catalog:package:read",
+          "catalog:tax:read",
+          "pos:benefit:apply",
+          "pos:booking:read",
+          "pos:booking:redeem",
+          "pos:cash:day_close",
+          "pos:cash:movement",
+          "pos:cash:read",
+          "pos:cash:session_close",
+          "pos:cash:session_open",
+          "pos:checkin:create",
+          "pos:checkin:guardian_manage",
+          "pos:checkin:read",
+          "pos:checkin:release",
+          "pos:checkin:update",
+          "pos:child:create",
+          "pos:child:read",
+          "pos:child:update",
+          "pos:event:attendee_create",
+          "pos:event:checkin",
+          "pos:event:pass_sell",
+          "pos:event:read",
+          "pos:member:create",
+          "pos:member:read",
+          "pos:member:update",
+          "pos:party:charge",
+          "pos:party:payment",
+          "pos:party:update",
+          "pos:payment:capture",
+          "pos:payment:confirm",
+          "pos:payment:read",
+          "pos:payment:void",
+          "pos:print:band",
+          "pos:print:read",
+          "pos:print:receipt",
+          "pos:print:reprint",
+          "pos:print:voucher",
+          "pos:refund:create",
+          "pos:refund:read",
+          "pos:sale:create",
+          "pos:sale:discount",
+          "pos:sale:read",
+          "pos:sale:update",
+          "pos:sale:void",
+          "pos:stock:count",
+          "pos:stock:read",
+          "pos:stock:receive",
+          "pos:stock:transfer",
+          "pos:visit:create",
+          "pos:visit:read",
+          "pos:visit:update",
+          "pos:voucher:redeem",
+          "pos:wallet:grant",
+          "pos:wallet:read",
+          "pos:wallet:spend"
+        ],
+        "platformSessions": {
+          "total": 0,
+          "rows": []
+        }
+      }
+    },
+    "2-zz-first-sign-in": {
+      "firstSignIn": {
+        "status": 200,
+        "accountIsTheOne": true,
+        "mustChangePassword": true,
+        "error": null
+      },
+      "changePassword": {
+        "status": 200,
+        "body": {
+          "ok": true
+        }
+      },
+      "launcherMe": {
+        "status": 200,
+        "accountIsTheOne": true,
+        "mustChangePassword": false
+      },
+      "appExchange": 200,
+      "appUser": {
+        "status": 200,
+        "isTheLogin": true,
+        "role": "staff",
+        "accessMode": "full"
+      },
+      "appUrl": "/core/today",
+      "payOnlyShell": 0,
+      "sidebarLinks": 4,
+      "ownProfileRoute": {
+        "status": 200
+      },
+      "masked": 2,
+      "leaks": 0,
+      "shot": "769-st-01-zz-full-app-before-last-day.png"
+    },
+    "3-kiosk-before": {
+      "clockIn": {
+        "status": 200,
+        "success": true,
+        "eventType": "IN",
+        "eventTime": "2026-11-09T15:02:27.931Z",
+        "employeeIsZz": true
+      },
+      "clockOut": {
+        "status": 200,
+        "success": true,
+        "eventType": "OUT",
+        "eventTime": "2026-11-09T15:02:28.023Z",
+        "employeeIsZz": true
+      },
+      "eventsMade": [
+        {
+          "id": "3dadac76-23bc-4b8c-a6ef-3af2db6b0473",
+          "eventType": "OUT",
+          "authMethod": "PHONE_FALLBACK",
+          "kioskIsZz": true
+        },
+        {
+          "id": "8be4b03c-06e7-43c9-9cad-2ade58ad5969",
+          "eventType": "IN",
+          "authMethod": "PHONE_FALLBACK",
+          "kioskIsZz": true
+        }
+      ],
+      "takenBack": [
+        {
+          "id": "3dadac76-23bc-4b8c-a6ef-3af2db6b0473",
+          "status": 204
+        },
+        {
+          "id": "8be4b03c-06e7-43c9-9cad-2ade58ad5969",
+          "status": 204
+        }
+      ],
+      "eventsLeft": 0
+    },
+    "4-offboard-yesterday": {
+      "offboard": {
+        "status": 201,
+        "id": "968f0794-65f9-4a13-acfb-713457f2f317",
+        "message": null,
+        "keys": [
+          "id",
+          "employeeId",
+          "branchId",
+          "offboardingType",
+          "reasonCode",
+          "reasonText",
+          "noticeDate",
+          "lastWorkingDay",
+          "leavePublicHolidaysDays",
+          "leaveAnnualDays",
+          "leaveOtherDays",
+          "leaveOtherLabel",
+          "notes",
+          "createdBy",
+          "createdAt",
+          "updatedAt",
+          "reonboardedAt"
+        ]
+      },
+      "readBackNow": {
+        "appLogin": {
+          "id": "0fc76a98-325a-4745-98f9-f98065b2195a",
+          "isActive": true,
+          "accessMode": "pay_only",
+          "role": "staff",
+          "mustChangePassword": false,
+          "platformUserIdIsTheAccount": true,
+          "platformLinked": true
+        },
+        "profile": {
+          "status": 200,
+          "empStatus": "resigned",
+          "employmentState": "LEFT",
+          "startDate": "2026-10-09",
+          "lastWorkingDay": "2026-11-08",
+          "branchId": "f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+          "departmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+          "userIdIsTheLogin": true
+        },
+        "platformAccount": {
+          "id": "01a1c0d4-25b1-7275-b8fa-15444b612396",
+          "status": "active",
+          "mustChangePassword": false,
+          "employeeLinked": true
+        },
+        "platformRoles": [
+          {
+            "id": "01a1c0d4-28d6-76be-b4ae-ce509bc2e2c5",
+            "roleName": "reception",
+            "scopeType": "branch",
+            "scopeId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+          },
+          {
+            "id": "01a1c0d4-25ba-7856-9184-a973eeb6f8ce",
+            "roleName": "app_access_oto_app",
+            "scopeType": "operator",
+            "scopeId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+          }
+        ],
+        "platformPermissionsCount": 62,
+        "platformPermissions": [
+          "admin:branch:read",
+          "app:booth:access",
+          "app:oto_app:access",
+          "app:pos:access",
+          "assistant:ask:use",
+          "catalog:holiday:read",
+          "catalog:menu:read",
+          "catalog:package:read",
+          "catalog:tax:read",
+          "pos:benefit:apply",
+          "pos:booking:read",
+          "pos:booking:redeem",
+          "pos:cash:day_close",
+          "pos:cash:movement",
+          "pos:cash:read",
+          "pos:cash:session_close",
+          "pos:cash:session_open",
+          "pos:checkin:create",
+          "pos:checkin:guardian_manage",
+          "pos:checkin:read",
+          "pos:checkin:release",
+          "pos:checkin:update",
+          "pos:child:create",
+          "pos:child:read",
+          "pos:child:update",
+          "pos:event:attendee_create",
+          "pos:event:checkin",
+          "pos:event:pass_sell",
+          "pos:event:read",
+          "pos:member:create",
+          "pos:member:read",
+          "pos:member:update",
+          "pos:party:charge",
+          "pos:party:payment",
+          "pos:party:update",
+          "pos:payment:capture",
+          "pos:payment:confirm",
+          "pos:payment:read",
+          "pos:payment:void",
+          "pos:print:band",
+          "pos:print:read",
+          "pos:print:receipt",
+          "pos:print:reprint",
+          "pos:print:voucher",
+          "pos:refund:create",
+          "pos:refund:read",
+          "pos:sale:create",
+          "pos:sale:discount",
+          "pos:sale:read",
+          "pos:sale:update",
+          "pos:sale:void",
+          "pos:stock:count",
+          "pos:stock:read",
+          "pos:stock:receive",
+          "pos:stock:transfer",
+          "pos:visit:create",
+          "pos:visit:read",
+          "pos:visit:update",
+          "pos:voucher:redeem",
+          "pos:wallet:grant",
+          "pos:wallet:read",
+          "pos:wallet:spend"
+        ],
+        "platformSessions": {
+          "total": 1,
+          "rows": [
+            {
+              "id": "01a1c0d4-bcf2-73f9-99df-905462665914",
+              "status": "active",
+              "createdAt": "2026-11-09T15:02:09.907Z",
+              "endedAt": null,
+              "endReason": null
+            }
+          ]
+        }
+      },
+      "uiBadge": "Left",
+      "uiButtons": {
+        "onboardAgain": true,
+        "offboard": false
+      },
+      "masked": 0,
+      "leaks": 0,
+      "shots": [
+        "769-st-02-profile-left-after-offboard.png",
+        "769-st-02b-profile-page-full.png"
+      ],
+      "zzAppSessionAfterOffboard": {
+        "status": 401,
+        "accessMode": null
+      },
+      "zzOwnProfileRouteAfterOffboard": {
+        "status": 401,
+        "body": {
+          "message": "Authentication required"
+        }
+      },
+      "poll": [
+        {
+          "s": 1,
+          "launcherMe": 401,
+          "roles": [
+            "app_access_oto_app"
+          ]
+        }
+      ],
+      "delivered": true,
+      "deliveredAfterSeconds": 1,
+      "readBackAfterDelivery": {
+        "appLogin": {
+          "id": "0fc76a98-325a-4745-98f9-f98065b2195a",
+          "isActive": true,
+          "accessMode": "pay_only",
+          "role": "staff",
+          "mustChangePassword": false,
+          "platformUserIdIsTheAccount": true,
+          "platformLinked": true
+        },
+        "profile": {
+          "status": 200,
+          "empStatus": "resigned",
+          "employmentState": "LEFT",
+          "startDate": "2026-10-09",
+          "lastWorkingDay": "2026-11-08",
+          "branchId": "f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+          "departmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+          "userIdIsTheLogin": true
+        },
+        "platformAccount": {
+          "id": "01a1c0d4-25b1-7275-b8fa-15444b612396",
+          "status": "active",
+          "mustChangePassword": false,
+          "employeeLinked": true
+        },
+        "platformRoles": [
+          {
+            "id": "01a1c0d4-25ba-7856-9184-a973eeb6f8ce",
+            "roleName": "app_access_oto_app",
+            "scopeType": "operator",
+            "scopeId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+          }
+        ],
+        "platformPermissionsCount": 1,
+        "platformPermissions": [
+          "app:oto_app:access"
+        ],
+        "platformSessions": {
+          "total": 1,
+          "rows": [
+            {
+              "id": "01a1c0d4-bcf2-73f9-99df-905462665914",
+              "status": "ended",
+              "createdAt": "2026-11-09T15:02:09.907Z",
+              "endedAt": "2026-11-09T15:03:03.412Z",
+              "endReason": null
+            }
+          ]
+        }
+      },
+      "zzAppSessionAfterDelivery": {
+        "status": 401,
+        "accessMode": null
+      }
+    },
+    "5-kiosk-after": {
+      "api": {
+        "status": 403,
+        "body": {
+          "success": false,
+          "reason": "EMPLOYMENT_ENDED",
+          "reasonCode": "EMPLOYMENT_ENDED",
+          "message": "Employment ended; see reception"
+        }
+      },
+      "uiClockPhone": {
+        "status": 403
+      },
+      "uiErrorTitle": "Error",
+      "uiErrorMessage": "Employment ended; see reception",
+      "shot": "769-st-03-kiosk-refuses-ended-employment.png",
+      "net": [
+        {
+          "path": "/api/kiosk/identify-face",
+          "status": 200,
+          "body": {
+            "success": true,
+            "matched": false,
+            "message": "No matching face found. Please clock in with your phone number."
+          }
+        },
+        {
+          "path": "/api/kiosk/identify-face",
+          "status": 200,
+          "body": {
+            "success": true,
+            "matched": false,
+            "message": "No matching face found. Please clock in with your phone number."
+          }
+        },
+        {
+          "path": "/api/kiosk/identify-face",
+          "status": 200,
+          "body": {
+            "success": true,
+            "matched": false,
+            "message": "No matching face found. Please clock in with your phone number."
+          }
+        },
+        {
+          "path": "/api/kiosk/clock-phone",
+          "status": 403,
+          "body": {
+            "success": false,
+            "reasonCode": "EMPLOYMENT_ENDED",
+            "message": "Employment ended; see reception"
+          }
+        }
+      ],
+      "timeEventsForZz": 0
+    },
+    "6-leaver-in-the-app": {
+      "oldSessionA": {
+        "launcherMe": 401,
+        "appUser": 401
+      },
+      "signIn": {
+        "status": 200,
+        "accountIsTheOne": true,
+        "error": null
+      },
+      "launcherMe": {
+        "status": 200,
+        "permissions": null
+      },
+      "posHandoff": {
+        "status": 403,
+        "code": "FORBIDDEN",
+        "message": "Missing permission app:pos:access"
+      },
+      "appExchange": 200,
+      "landedOn": "/payroll/me/payslips",
+      "notice": "Your employment has ended; your pay information stays available here.",
+      "headerNav": [
+        "My pay"
+      ],
+      "headerButtons": [
+        "Logout"
+      ],
+      "masked1": 0,
+      "leaks1": 0,
+      "deepLinks": [
+        {
+          "opened": "/employees",
+          "landedOn": "/payroll/me/payslips"
+        },
+        {
+          "opened": "/core/today",
+          "landedOn": "/payroll/me/payslips"
+        },
+        {
+          "opened": "/hr/schedule",
+          "landedOn": "/payroll/me/payslips"
+        }
+      ],
+      "masked2": 0,
+      "leaks2": 0,
+      "api": {
+        "who am I": {
+          "method": "GET",
+          "path": "/api/user",
+          "status": 200,
+          "body": {
+            "isTheLogin": true,
+            "accessMode": "pay_only",
+            "isActive": true
+          }
+        },
+        "own payslips": {
+          "method": "GET",
+          "path": "/api/payroll/me/payslips",
+          "status": 200,
+          "body": {
+            "employeeIsZz": true,
+            "payslips": 0
+          }
+        },
+        "employee list": {
+          "method": "GET",
+          "path": "/api/employees",
+          "status": 403,
+          "body": {
+            "reason": "EMPLOYMENT_ENDED",
+            "reasonCode": "EMPLOYMENT_ENDED",
+            "message": "Your employment has ended; your pay information stays available here."
+          }
+        },
+        "own profile (My Account)": {
+          "method": "GET",
+          "path": "/api/my-account/employee-info",
+          "status": 403,
+          "body": {
+            "reason": "EMPLOYMENT_ENDED",
+            "reasonCode": "EMPLOYMENT_ENDED",
+            "message": "Your employment has ended; your pay information stays available here."
+          }
+        },
+        "notifications": {
+          "method": "GET",
+          "path": "/api/notifications",
+          "status": 403,
+          "body": {
+            "reason": "EMPLOYMENT_ENDED",
+            "reasonCode": "EMPLOYMENT_ENDED",
+            "message": "Your employment has ended; your pay information stays available here."
+          }
+        },
+        "checklists today": {
+          "method": "GET",
+          "path": "/api/checklists/today?branchId=f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+          "status": 403,
+          "body": {
+            "reason": "EMPLOYMENT_ENDED",
+            "reasonCode": "EMPLOYMENT_ENDED",
+            "message": "Your employment has ended; your pay information stays available here."
+          }
+        }
+      },
+      "logout": {
+        "status": 200
+      },
+      "appUserAfterLogout": 401,
+      "launcherSignOut": 200,
+      "launcherMeAfter": 401
+    },
+    "7-platform-side": {
+      "facts": {
+        "appLogin": {
+          "id": "0fc76a98-325a-4745-98f9-f98065b2195a",
+          "isActive": true,
+          "accessMode": "pay_only",
+          "role": "staff",
+          "mustChangePassword": false,
+          "platformUserIdIsTheAccount": true,
+          "platformLinked": true
+        },
+        "profile": {
+          "status": 200,
+          "empStatus": "resigned",
+          "employmentState": "LEFT",
+          "startDate": "2026-10-09",
+          "lastWorkingDay": "2026-11-08",
+          "branchId": "f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+          "departmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+          "userIdIsTheLogin": true
+        },
+        "platformAccount": {
+          "id": "01a1c0d4-25b1-7275-b8fa-15444b612396",
+          "status": "active",
+          "mustChangePassword": false,
+          "employeeLinked": true
+        },
+        "platformRoles": [
+          {
+            "id": "01a1c0d4-25ba-7856-9184-a973eeb6f8ce",
+            "roleName": "app_access_oto_app",
+            "scopeType": "operator",
+            "scopeId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+          }
+        ],
+        "platformPermissionsCount": 1,
+        "platformPermissions": [
+          "app:oto_app:access"
+        ],
+        "platformSessions": {
+          "total": 2,
+          "rows": [
+            {
+              "id": "01a1c0d6-c9f7-777c-8440-b1d284104b67",
+              "status": "ended",
+              "createdAt": "2026-11-09T15:04:24.311Z",
+              "endedAt": "2026-11-09T15:04:40.702Z",
+              "endReason": null
+            },
+            {
+              "id": "01a1c0d4-bcf2-73f9-99df-905462665914",
+              "status": "ended",
+              "createdAt": "2026-11-09T15:02:09.907Z",
+              "endedAt": "2026-11-09T15:03:03.412Z",
+              "endReason": null
+            }
+          ]
+        }
+      },
+      "audit": {
+        "status": 200,
+        "matching": 1,
+        "entries": [
+          {
+            "id": "01a1c0d5-8df6-7d1d-bc14-0934f23711b3",
+            "action": "app_identity.lifecycle_restriction",
+            "createdAt": "2026-11-09T15:03:03.397Z",
+            "entityId": "0c22cd61-5749-4fd1-89b0-69064a761a2d",
+            "actorAccountId": null,
+            "before": {
+              "status": "active",
+              "roles": [
+                {
+                  "roleName": "reception",
+                  "scopeType": "branch",
+                  "scopeId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+                }
+              ]
+            },
+            "after": {
+              "state": "delivered",
+              "accountStatus": "active",
+              "rolesWithdrawn": 1,
+              "sessionsEnded": 1,
+              "otoAppRoadGranted": null,
+              "externalUserIdIsTheLogin": true
+            }
+          }
+        ]
+      },
+      "queueRead": {
+        "jobId": "job-dbou2gmgekts73f78dgg",
+        "source": "61e6c8d8747437bd39d81b35e7d400856a699804",
+        "readOnly": true,
+        "events": [
+          {
+            "id": "0c22cd61-5749-4fd1-89b0-69064a761a2d",
+            "kind": "restrict",
+            "state": "delivered",
+            "attempt_count": 1,
+            "last_error_code": null,
+            "created_at": "2026-11-09T15:02:58.072Z",
+            "acctIsTheOne": true
+          }
+        ],
+        "login": [
+          {
+            "is_active": true,
+            "access_mode": "pay_only"
+          }
+        ],
+        "timeEvents": [
+          {
+            "n": 0
+          }
+        ],
+        "attempts": [
+          {
+            "method": "PHONE_FALLBACK",
+            "outcome": "FAIL",
+            "fail_reason": "employment_ended",
+            "n": 2
+          },
+          {
+            "method": "PHONE_FALLBACK",
+            "outcome": "SUCCESS",
+            "fail_reason": null,
+            "n": 2
+          }
+        ],
+        "deviceAttempts": [
+          {
+            "outcome": "FAIL",
+            "fail_reason": "employment_ended",
+            "n": 2
+          },
+          {
+            "outcome": "SUCCESS",
+            "fail_reason": null,
+            "n": 2
+          }
+        ]
+      },
+      "tableRows": [
+        "[ZZ TEST name] [phone] active"
+      ],
+      "phoneMasked": 1,
+      "masked": 2,
+      "leaks": 0,
+      "shot": "769-st-06-console-login-users-zz-account.png"
+    },
+    "7b-console-dialogs": {
+      "dialogText": "Permissions — [ZZ TEST name] Assigned roles and the effective permissions they resolve to, with scopes. Role assignments app_access_oto_app operator-wide Remove Role reception staff branch_manager operator_admin Scope Branch — Oto Play Park, Central Floresta Branch — Oto Play Park, Robinson Chalong Operator-wide (all branches) Platform-wide (every operator) Add Effective permissions (1) app:oto_app:access Close",
+      "phoneMasked1": 1,
+      "masked1": 0,
+      "leaks1": 0,
+      "shot1": "769-st-07-console-permissions-only-oto-app.png",
+      "sessionsText": "Sessions — [ZZ TEST name] Devices this account is signed in on. A locked session is still signed in — it unlocks with the password. Till / browser ended last seen 09/11/2026, 22:04 · ended 09/11/2026, 22:04 Till / browser ended last seen 09/11/2026, 22:02 · ended 09/11/2026, 22:03 Showing 1–2 of 2 Shift tokens Issued when they pick a station. With the password, a token unlocks that till from the box's own copy when the internet is down, so end it when a device goes missing. Each lasts 16 hours at the one station it was issued for. Offline sign-in without a token is on. No shift tokens on record. Sign out everywhere Close",
+      "phoneMasked2": 1,
+      "masked2": 0,
+      "leaks2": 0,
+      "shot2": "769-st-08-console-sessions-ended.png"
+    },
+    "8-onboard-again": {
+      "bangkokToday": "2026-11-09",
+      "onboardAgain": {
+        "status": 201,
+        "body": {
+          "engagementId": "aa8d22e5-adc5-4218-a6ae-d9b630bdf148",
+          "startDate": "2026-11-09",
+          "contract": {
+            "id": "c8729fa7-2c93-4878-b5cf-defb193698bc",
+            "status": "draft",
+            "signingStatus": "not_sent"
+          },
+          "started": true,
+          "login": "already_on",
+          "platformDeactivationDelivered": false,
+          "rematch": {
+            "matched": 0,
+            "stillPending": 0
+          }
+        }
+      },
+      "readBack": {
+        "appLogin": {
+          "id": "0fc76a98-325a-4745-98f9-f98065b2195a",
+          "isActive": true,
+          "accessMode": "full",
+          "role": "staff",
+          "mustChangePassword": false,
+          "platformUserIdIsTheAccount": true,
+          "platformLinked": true
+        },
+        "profile": {
+          "status": 200,
+          "empStatus": "active",
+          "employmentState": "ACTIVE",
+          "startDate": "2026-10-09",
+          "lastWorkingDay": null,
+          "branchId": "f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+          "departmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+          "userIdIsTheLogin": true
+        },
+        "platformAccount": {
+          "id": "01a1c0d4-25b1-7275-b8fa-15444b612396",
+          "status": "active",
+          "mustChangePassword": false,
+          "employeeLinked": true
+        },
+        "platformRoles": [
+          {
+            "id": "01a1c0d4-25ba-7856-9184-a973eeb6f8ce",
+            "roleName": "app_access_oto_app",
+            "scopeType": "operator",
+            "scopeId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+          }
+        ],
+        "platformPermissionsCount": 1,
+        "platformPermissions": [
+          "app:oto_app:access"
+        ],
+        "platformSessions": {
+          "total": 2,
+          "rows": [
+            {
+              "id": "01a1c0d6-c9f7-777c-8440-b1d284104b67",
+              "status": "ended",
+              "createdAt": "2026-11-09T15:04:24.311Z",
+              "endedAt": "2026-11-09T15:04:40.702Z",
+              "endReason": null
+            },
+            {
+              "id": "01a1c0d4-bcf2-73f9-99df-905462665914",
+              "status": "ended",
+              "createdAt": "2026-11-09T15:02:09.907Z",
+              "endedAt": "2026-11-09T15:03:03.412Z",
+              "endReason": null
+            }
+          ]
+        }
+      },
+      "signIn": {
+        "status": 200,
+        "error": null
+      },
+      "appExchange": 200,
+      "landedOn": "/core/today",
+      "payOnlyShell": 0,
+      "appUser": {
+        "status": 200,
+        "isTheLogin": true,
+        "accessMode": "full",
+        "isActive": true,
+        "role": "staff"
+      },
+      "api": {
+        "own profile (My Account)": {
+          "path": "/api/my-account/employee-info",
+          "status": 200
+        },
+        "checklists today": {
+          "path": "/api/checklists/today?branchId=f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+          "status": 200
+        },
+        "notifications": {
+          "path": "/api/notifications",
+          "status": 200
+        }
+      },
+      "masked": 0,
+      "leaks": 0,
+      "shot": "769-st-09-onboard-again-whole-app-back.png",
+      "appLogout": 200,
+      "appUserAfter": 401,
+      "launcherSignOut": 200,
+      "launcherMeAfter": 401
+    },
+    "9-clean-up": {
+      "steps": [
+        {
+          "label": "Console: deactivate the ZZ TEST platform account",
+          "method": "PATCH",
+          "path": "/api/accounts/01a1c0d4-25b1-7275-b8fa-15444b612396",
+          "status": 200,
+          "answer": {
+            "ok": true
+          }
+        },
+        {
+          "label": "Console: unlink the ZZ TEST account from the OTO App",
+          "method": "DELETE",
+          "path": "/api/admin/apps/oto_app/users/01a1c0d4-25b1-7275-b8fa-15444b612396",
+          "status": 200,
+          "answer": {
+            "ok": true,
+            "accessRevoked": true
+          }
+        },
+        {
+          "label": "delete the ZZ TEST employee",
+          "method": "DELETE",
+          "path": "/api/employees/ac5e161f-7a8a-4364-9ca7-3962bed686aa",
+          "status": 409,
+          "answer": {
+            "reason": "has_records",
+            "message": "[ZZ TEST name] cannot be deleted: they have 1 contract. Their history is kept for the record; offboard them instead to end their employment.",
+            "blocking": [
+              {
+                "label": "contracts",
+                "count": 1
+              }
+            ]
+          }
+        },
+        {
+          "label": "delete the draft contract Onboard Again made (it blocks the employee delete)",
+          "method": "DELETE",
+          "path": "/api/contracts/c8729fa7-2c93-4878-b5cf-defb193698bc",
+          "status": 204,
+          "answer": ""
+        },
+        {
+          "label": "delete the ZZ TEST employee (again)",
+          "method": "DELETE",
+          "path": "/api/employees/ac5e161f-7a8a-4364-9ca7-3962bed686aa",
+          "status": 204,
+          "answer": ""
+        },
+        {
+          "label": "delete the ZZ TEST kiosk device",
+          "method": "DELETE",
+          "path": "/api/kiosk-devices/e321d18a-c958-4af3-995d-e97902d22b62",
+          "status": 204,
+          "answer": ""
+        }
+      ],
+      "activityLog": {
+        "status": 200,
+        "rows": [
+          {
+            "type": "employee_updated",
+            "text": "Onboard again planned: a new employment from 2026-11-09, with a draft contract"
+          },
+          {
+            "type": "employment_state_changed",
+            "text": "Onboard Again: the new employment started on 2026-11-09; employment state changed from LEFT to ACTIVE; the login reaches the whole app again (it was limited to My pay). The platform had withdrawn the suite roles outside the OTO App (the till and the other apps); a platform administrator gives them back on the Console's Login users page"
+          },
+          {
+            "type": "offboarding_started",
+            "text": "[ZZ TEST nickname] resigned - ZZ TEST staging proof for SCRUM-769"
+          },
+          {
+            "type": "employment_state_changed",
+            "text": "[ZZ TEST nickname] employment state changed from ACTIVE to LEFT"
+          },
+          {
+            "type": "employee_created",
+            "text": "New employee \"[ZZ TEST nickname]\" was added"
+          }
+        ]
+      },
+      "employeeDeleted": true,
+      "readBack": {
+        "appLogin": "gone",
+        "profile": {
+          "status": 404
+        },
+        "timeEvents": 0,
+        "kioskDevice": "gone",
+        "platformAccount": {
+          "status": "inactive"
+        },
+        "platformRoles": [],
+        "platformAppLinks": []
+      },
+      "zzSignInAfter": {
+        "status": 401,
+        "code": "INVALID_CREDENTIALS"
+      },
+      "signOut": {
+        "appLogout": 200,
+        "consoleSignOut": 200,
+        "launcherSignOut": 200,
+        "appUserAfter": 401,
+        "consoleMeAfter": 401,
+        "launcherMeAfter": 401
+      },
+      "contextsLeft": [
+        "admin"
+      ]
+    },
+    "10-final-read-only-check": {
+      "jobId": "job-dbou44ui0phs73er3bu0",
+      "source": "61e6c8d8747437bd39d81b35e7d400856a699804",
+      "readOnly": true,
+      "appUser": [
+        {
+          "n": 0
+        }
+      ],
+      "employee": [
+        {
+          "n": 0
+        }
+      ],
+      "person": [
+        {
+          "n": 0
+        }
+      ],
+      "timeEvents": [
+        {
+          "n": 0
+        }
+      ],
+      "attempts": [
+        {
+          "n": 0
+        }
+      ],
+      "device": [
+        {
+          "n": 0
+        }
+      ],
+      "presence": [
+        {
+          "n": 0
+        }
+      ],
+      "contracts": [
+        {
+          "n": 0
+        }
+      ],
+      "engagements": [
+        {
+          "n": 0
+        }
+      ],
+      "lifecycle": [
+        {
+          "kind": "restrict",
+          "state": "delivered"
+        },
+        {
+          "kind": "deactivate",
+          "state": "pending"
+        }
+      ],
+      "account": [
+        {
+          "status": "inactive",
+          "has_password": true
+        }
+      ],
+      "roles": [
+        {
+          "n": 0
+        }
+      ],
+      "liveSessions": [
+        {
+          "n": 0
+        }
+      ],
+      "links": [
+        {
+          "n": 0
+        }
+      ],
+      "platformEmployee": [
+        {
+          "n": 1,
+          "archived": true
+        }
+      ]
+    },
+    "11-lifecycle-queue-read": {
+      "jobId": "job-dbou50ec6qcc738p5lj0",
+      "readOnly": true,
+      "ours": [
+        {
+          "kind": "restrict",
+          "state": "delivered",
+          "attempt_count": 1,
+          "last_error_code": null,
+          "created_at": "2026-11-09T15:02:58.072Z",
+          "user_rows": 0
+        },
+        {
+          "kind": "deactivate",
+          "state": "pending",
+          "attempt_count": 6,
+          "last_error_code": "PLATFORM_HTTP_REFUSED",
+          "created_at": "2026-11-09T15:08:43.715Z",
+          "user_rows": 0
+        }
+      ],
+      "pending": [
+        {
+          "kind": "deactivate",
+          "last_error_code": "PLATFORM_HTTP_REFUSED",
+          "n": 2,
+          "oldest": "2026-11-09T08:20:50.489Z",
+          "max_attempts": 839,
+          "user_gone": 2
+        }
+      ]
+    }
+  },
+  "stepRuns": [
+    {
+      "name": "00-helpers",
+      "ok": true,
+      "started": "2026-11-09T15:01:21.599Z",
+      "finished": "2026-11-09T15:01:21.601Z",
+      "error": null
+    },
+    {
+      "name": "01-setup",
+      "ok": true,
+      "started": "2026-11-09T15:01:21.602Z",
+      "finished": "2026-11-09T15:01:33.945Z",
+      "error": null
+    },
+    {
+      "name": "02-zz-first",
+      "ok": true,
+      "started": "2026-11-09T15:02:08.369Z",
+      "finished": "2026-11-09T15:02:15.856Z",
+      "error": null
+    },
+    {
+      "name": "02b-names",
+      "ok": true,
+      "started": "2026-11-09T15:02:26.926Z",
+      "finished": "2026-11-09T15:02:26.927Z",
+      "error": null
+    },
+    {
+      "name": "03-kiosk-before",
+      "ok": true,
+      "started": "2026-11-09T15:02:26.929Z",
+      "finished": "2026-11-09T15:02:27.773Z",
+      "error": null
+    },
+    {
+      "name": "04-offboard",
+      "ok": true,
+      "started": "2026-11-09T15:02:57.252Z",
+      "finished": "2026-11-09T15:03:06.745Z",
+      "error": null
+    },
+    {
+      "name": "05-kiosk-after",
+      "ok": true,
+      "started": "2026-11-09T15:03:38.243Z",
+      "finished": "2026-11-09T15:03:50.424Z",
+      "error": null
+    },
+    {
+      "name": "06-leaver-app",
+      "ok": true,
+      "started": "2026-11-09T15:04:22.445Z",
+      "finished": "2026-11-09T15:04:40.780Z",
+      "error": null
+    },
+    {
+      "name": "07-platform",
+      "ok": true,
+      "started": "2026-11-09T15:05:33.601Z",
+      "finished": "2026-11-09T15:06:33.553Z",
+      "error": null
+    },
+    {
+      "name": "07b-console-permissions",
+      "ok": true,
+      "started": "2026-11-09T15:06:58.012Z",
+      "finished": "2026-11-09T15:07:04.179Z",
+      "error": null
+    },
+    {
+      "name": "08-onboard-again",
+      "ok": true,
+      "started": "2026-11-09T15:07:29.166Z",
+      "finished": "2026-11-09T15:07:39.518Z",
+      "error": null
+    },
+    {
+      "name": "09-cleanup",
+      "ok": true,
+      "started": "2026-11-09T15:08:42.533Z",
+      "finished": "2026-11-09T15:08:49.919Z",
+      "error": null
+    },
+    {
+      "name": "10-final-read",
+      "ok": true,
+      "started": "2026-11-09T15:09:05.472Z",
+      "finished": "2026-11-09T15:10:22.799Z",
+      "error": null
+    },
+    {
+      "name": "11-queue-read",
+      "ok": true,
+      "started": "2026-11-09T15:10:56.038Z",
+      "finished": "2026-11-09T15:12:09.933Z",
+      "error": null
+    },
+    {
+      "name": "99-stop",
+      "ok": true,
+      "started": "2026-11-09T15:12:20.187Z",
+      "finished": "2026-11-09T15:12:20.193Z",
+      "error": null
+    }
+  ],
+  "writes": [
+    {
+      "at": "2026-11-09T15:01:30.390Z",
+      "step": "1 create ZZ TEST employee with a login",
+      "origin": "https://oto-app-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/employees",
+      "sent": {
+        "fullName": "[ZZ TEST name]",
+        "nickname": "[ZZ TEST nickname]",
+        "email": "[ZZ TEST email @example.invalid]",
+        "branchId": "f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+        "primaryDepartmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+        "status": "active",
+        "employmentBasis": "FULL_TIME",
+        "startDate": "2026-10-09",
+        "phone": "(ZZ TEST number)",
+        "phoneE164": "(ZZ TEST number)",
+        "setupLogin": true,
+        "loginPassword": "(random, held in memory only)",
+        "accessLevel": "STAFF"
+      },
+      "status": 201,
+      "answer": {
+        "id": "ac5e161f-7a8a-4364-9ca7-3962bed686aa",
+        "userId": "0fc76a98-325a-4745-98f9-f98065b2195a",
+        "status": "active",
+        "employmentState": "ACTIVE",
+        "startDate": "2026-10-09"
+      }
+    },
+    {
+      "at": "2026-11-09T15:01:30.605Z",
+      "step": "1 give the ZZ TEST login a suite sign-in (OTO App Users screen route)",
+      "origin": "https://oto-app-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/users/0fc76a98-325a-4745-98f9-f98065b2195a/suite-sign-in",
+      "sent": {
+        "actionId": "1b4921a0-16cb-4603-bd5d-20cdfc71b466",
+        "phone": "(ZZ TEST number)"
+      },
+      "status": 200,
+      "answer": {
+        "phone": "(ZZ TEST number)",
+        "temporaryPassword": "(shown once, held in memory only)",
+        "replayed": false
+      }
+    },
+    {
+      "at": "2026-11-09T15:01:31.557Z",
+      "step": "1 Console: give the ZZ TEST account the reception role at Robinson Chalong (something for the restriction to take back)",
+      "origin": "https://oto-console-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/accounts/01a1c0d4-25b1-7275-b8fa-15444b612396/role-assignments",
+      "sent": {
+        "roleName": "reception",
+        "scopeType": "branch",
+        "scopeId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+      },
+      "status": 200,
+      "answer": {
+        "id": "01a1c0d4-28d6-76be-b4ae-ce509bc2e2c5"
+      }
+    },
+    {
+      "at": "2026-11-09T15:02:09.471Z",
+      "step": "2 ZZ TEST first launcher sign-in with the temporary password",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "sent": {
+        "phone": "(ZZ TEST number)",
+        "password": "(temporary password)"
+      },
+      "status": 200,
+      "answer": {
+        "accountId": "01a1c0d4-25b1-7275-b8fa-15444b612396",
+        "mustChangePassword": true,
+        "error": null
+      }
+    },
+    {
+      "at": "2026-11-09T15:02:10.026Z",
+      "step": "2 ZZ TEST chooses their own password",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/auth/change-password",
+      "sent": {
+        "currentPassword": "(temporary password)",
+        "password": "(new ZZ TEST password, held in memory only)"
+      },
+      "status": 200,
+      "answer": {
+        "ok": true
+      }
+    },
+    {
+      "at": "2026-11-09T15:02:11.870Z",
+      "step": "2 ZZ TEST opens the OTO App from the launcher (hand-off)",
+      "origin": "https://oto-app-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/auth/handoff",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T15:02:27.116Z",
+      "step": "3 a ZZ TEST kiosk device at Robinson Chalong",
+      "origin": "https://oto-app-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/kiosk-devices",
+      "sent": {
+        "branchId": "f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+        "name": "ZZ TEST 769 kiosk"
+      },
+      "status": 201,
+      "answer": {
+        "id": "e321d18a-c958-4af3-995d-e97902d22b62",
+        "branchId": "f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+        "isActive": true,
+        "deviceSecret": "(shown once, held in memory only)"
+      }
+    },
+    {
+      "at": "2026-11-09T15:02:27.332Z",
+      "step": "3 kiosk phone clock in before the last working day",
+      "origin": "https://oto-app-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/kiosk/clock-phone",
+      "sent": {
+        "phone": "(ZZ TEST number, local form)",
+        "photoEvidenceUrl": "",
+        "deviceSecret": "(ZZ TEST kiosk secret)"
+      },
+      "status": 200,
+      "answer": {
+        "success": true,
+        "eventType": "IN",
+        "eventTime": "2026-11-09T15:02:27.931Z",
+        "employeeIsZz": true
+      }
+    },
+    {
+      "at": "2026-11-09T15:02:27.419Z",
+      "step": "3 kiosk phone clock out before the last working day",
+      "origin": "https://oto-app-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/kiosk/clock-phone",
+      "sent": {
+        "phone": "(ZZ TEST number, local form)",
+        "photoEvidenceUrl": "",
+        "deviceSecret": "(ZZ TEST kiosk secret)"
+      },
+      "status": 200,
+      "answer": {
+        "success": true,
+        "eventType": "OUT",
+        "eventTime": "2026-11-09T15:02:28.023Z",
+        "employeeIsZz": true
+      }
+    },
+    {
+      "at": "2026-11-09T15:02:27.604Z",
+      "step": "3 take back the ZZ TEST clock event",
+      "origin": "https://oto-app-staging.onrender.com",
+      "method": "DELETE",
+      "path": "/api/time-events/3dadac76-23bc-4b8c-a6ef-3af2db6b0473",
+      "status": 204,
+      "answer": ""
+    },
+    {
+      "at": "2026-11-09T15:02:27.687Z",
+      "step": "3 take back the ZZ TEST clock event",
+      "origin": "https://oto-app-staging.onrender.com",
+      "method": "DELETE",
+      "path": "/api/time-events/8be4b03c-06e7-43c9-9cad-2ade58ad5969",
+      "status": 204,
+      "answer": ""
+    },
+    {
+      "at": "2026-11-09T15:02:57.487Z",
+      "step": "4 Offboard with the last working day yesterday (Bangkok)",
+      "origin": "https://oto-app-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/employees/ac5e161f-7a8a-4364-9ca7-3962bed686aa/offboarding",
+      "sent": {
+        "offboardingType": "resignation",
+        "reasonCode": "personal_reasons",
+        "lastWorkingDay": "2026-11-08",
+        "reasonText": "ZZ TEST staging proof for SCRUM-769"
+      },
+      "status": 201,
+      "answer": {
+        "id": "968f0794-65f9-4a13-acfb-713457f2f317",
+        "lastWorkingDay": "2026-11-08T00:00:00.000Z"
+      }
+    },
+    {
+      "at": "2026-11-09T15:03:38.340Z",
+      "step": "5 kiosk phone clock-in after the last working day (API)",
+      "origin": "https://oto-app-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/kiosk/clock-phone",
+      "sent": {
+        "phone": "(ZZ TEST number, local form)",
+        "photoEvidenceUrl": "",
+        "deviceSecret": "(ZZ TEST kiosk secret)"
+      },
+      "status": 403,
+      "answer": {
+        "success": false,
+        "reason": "EMPLOYMENT_ENDED",
+        "reasonCode": "EMPLOYMENT_ENDED",
+        "message": "Employment ended; see reception"
+      }
+    },
+    {
+      "at": "2026-11-09T15:04:23.876Z",
+      "step": "6 the leaver signs in on the launcher (fresh browser)",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "sent": {
+        "phone": "(ZZ TEST number)",
+        "password": "(ZZ TEST password)"
+      },
+      "status": 200,
+      "answer": {
+        "accountIsTheOne": true,
+        "mustChangePassword": false,
+        "error": null
+      }
+    },
+    {
+      "at": "2026-11-09T15:04:24.904Z",
+      "step": "6 the leaver asks the launcher for the till (expected refusal)",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/auth/handoff",
+      "sent": {
+        "app": "pos"
+      },
+      "status": 403,
+      "answer": {
+        "status": 403,
+        "code": "FORBIDDEN",
+        "message": "Missing permission app:pos:access"
+      }
+    },
+    {
+      "at": "2026-11-09T15:04:26.163Z",
+      "step": "6 the leaver opens the OTO App from the launcher (hand-off)",
+      "origin": "https://oto-app-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/auth/handoff",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T15:07:29.459Z",
+      "step": "8 Onboard Again with a start date of today",
+      "origin": "https://oto-app-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/employees/ac5e161f-7a8a-4364-9ca7-3962bed686aa/onboard-again",
+      "sent": {
+        "startDate": "2026-11-09",
+        "departmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+        "templateId": "5cbfc85e-fb45-447a-a921-124ca4913f7e",
+        "positionTitle": "ZZ TEST Returner"
+      },
+      "status": 201,
+      "answer": {
+        "engagementId": "aa8d22e5-adc5-4218-a6ae-d9b630bdf148",
+        "startDate": "2026-11-09",
+        "contract": {
+          "id": "c8729fa7-2c93-4878-b5cf-defb193698bc",
+          "status": "draft",
+          "signingStatus": "not_sent"
+        },
+        "started": true,
+        "login": "already_on",
+        "platformDeactivationDelivered": false,
+        "rematch": {
+          "matched": 0,
+          "stillPending": 0
+        }
+      }
+    },
+    {
+      "at": "2026-11-09T15:07:32.574Z",
+      "step": "8 the returner signs in on the launcher",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "sent": {
+        "phone": "(ZZ TEST number)",
+        "password": "(ZZ TEST password)"
+      },
+      "status": 200,
+      "answer": {
+        "accountIsTheOne": true,
+        "error": null
+      }
+    },
+    {
+      "at": "2026-11-09T15:07:33.823Z",
+      "step": "8 the returner opens the OTO App (hand-off)",
+      "origin": "https://oto-app-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/auth/handoff",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T15:08:43.297Z",
+      "step": "9 clean-up: Console: deactivate the ZZ TEST platform account",
+      "origin": "https://oto-console-staging.onrender.com",
+      "method": "PATCH",
+      "path": "/api/accounts/01a1c0d4-25b1-7275-b8fa-15444b612396",
+      "sent": {
+        "status": "inactive"
+      },
+      "status": 200,
+      "answer": {
+        "ok": true
+      }
+    },
+    {
+      "at": "2026-11-09T15:08:43.783Z",
+      "step": "9 clean-up: Console: unlink the ZZ TEST account from the OTO App",
+      "origin": "https://oto-console-staging.onrender.com",
+      "method": "DELETE",
+      "path": "/api/admin/apps/oto_app/users/01a1c0d4-25b1-7275-b8fa-15444b612396",
+      "status": 200,
+      "answer": {
+        "ok": true,
+        "accessRevoked": true
+      }
+    },
+    {
+      "at": "2026-11-09T15:08:43.882Z",
+      "step": "9 clean-up: delete the ZZ TEST employee",
+      "origin": "https://oto-app-staging.onrender.com",
+      "method": "DELETE",
+      "path": "/api/employees/ac5e161f-7a8a-4364-9ca7-3962bed686aa",
+      "status": 409,
+      "answer": {
+        "reason": "has_records",
+        "message": "[ZZ TEST name] cannot be deleted: they have 1 contract. Their history is kept for the record; offboard them instead to end their employment.",
+        "blocking": [
+          {
+            "label": "contracts",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-11-09T15:08:43.981Z",
+      "step": "9 clean-up: delete the draft contract Onboard Again made (it blocks the employee delete)",
+      "origin": "https://oto-app-staging.onrender.com",
+      "method": "DELETE",
+      "path": "/api/contracts/c8729fa7-2c93-4878-b5cf-defb193698bc",
+      "status": 204,
+      "answer": ""
+    },
+    {
+      "at": "2026-11-09T15:08:44.205Z",
+      "step": "9 clean-up: delete the ZZ TEST employee (again)",
+      "origin": "https://oto-app-staging.onrender.com",
+      "method": "DELETE",
+      "path": "/api/employees/ac5e161f-7a8a-4364-9ca7-3962bed686aa",
+      "status": 204,
+      "answer": ""
+    },
+    {
+      "at": "2026-11-09T15:08:44.291Z",
+      "step": "9 clean-up: delete the ZZ TEST kiosk device",
+      "origin": "https://oto-app-staging.onrender.com",
+      "method": "DELETE",
+      "path": "/api/kiosk-devices/e321d18a-c958-4af3-995d-e97902d22b62",
+      "status": 204,
+      "answer": ""
+    },
+    {
+      "at": "2026-11-09T15:08:47.574Z",
+      "step": "9 sign-in on the switched-off ZZ TEST account (expected refusal)",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "sent": {
+        "phone": "(ZZ TEST number)",
+        "password": "(ZZ TEST password)"
+      },
+      "status": 401,
+      "answer": {
+        "error": {
+          "code": "INVALID_CREDENTIALS",
+          "message": "Phone or password is incorrect"
+        }
+      }
+    }
+  ],
+  "pictures": [
+    "769-st-01-zz-full-app-before-last-day.png",
+    "769-st-02-profile-left-after-offboard.png",
+    "769-st-02b-profile-page-full.png",
+    "769-st-03-kiosk-refuses-ended-employment.png",
+    "769-st-04-leaver-lands-on-my-pay.png",
+    "769-st-05-employees-link-sends-leaver-to-my-pay.png",
+    "769-st-06-console-login-users-zz-account.png",
+    "769-st-07-console-permissions-only-oto-app.png",
+    "769-st-08-console-sessions-ended.png",
+    "769-st-09-onboard-again-whole-app-back.png"
+  ]
+}
