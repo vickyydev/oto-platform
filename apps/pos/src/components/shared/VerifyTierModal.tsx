@@ -203,6 +203,98 @@ export function VerifyTierModal({
   };
 
   /**
+   * The rate this member already holds, and the way to end it (SCRUM-241).
+   * Nothing is erased: the document record stays and a revocation is filed
+   * after it with the reason typed here. The Expat step shows it for any held
+   * rate; the Thai confirmation shows it when the member holds another rate
+   * (Expat), because a member holding a current Expat rate reaches this modal
+   * only through the Thai card, and this is the till's one way to end it.
+   */
+  const heldBlock = held ? (
+    <div className="rounded-lg border border-amber-500/30 bg-amber-500/[0.07] p-4 space-y-3">
+      <div className="flex items-start gap-2 text-sm">
+        <ShieldOff className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
+        {heldAtTill ? (
+          <span>
+            Already holds <span className="font-semibold">{tierLabel(held.tier)}</span>, confirmed at
+            the till by {held.verifiedBy}.
+          </span>
+        ) : (
+          <span>
+            Already holds <span className="font-semibold">{tierLabel(held.tier)}</span> on{' '}
+            {/^[aeiou]/i.test(heldProof) ? 'an' : 'a'} {heldProof}
+            {held.expiresAt
+              ? held.reverifyDue
+                ? `, expired ${held.expiresAt} — re-verify`
+                : `, valid to ${held.expiresAt}`
+              : ' with no expiry'}{' '}
+            — verified by{' '}
+            {held.verifiedBy}.
+          </span>
+        )}
+      </div>
+      {!mayRevoke ? (
+        <p className="text-sm text-muted-foreground">
+          Taking that rate back off a member needs a manager.
+        </p>
+      ) : !revoking ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full h-11"
+          onClick={() => setRevoking(true)}
+        >
+          End the {tierLabel(held.tier)} rate — back to {baselineLabel}
+        </Button>
+      ) : (
+        <div className="space-y-2">
+          <label
+            htmlFor="tier-revoke-reason"
+            className="text-sm font-medium text-muted-foreground"
+          >
+            Why is it ending? <span className="text-destructive">*</span>
+          </label>
+          <Input
+            id="tier-revoke-reason"
+            value={revokeReason}
+            maxLength={REVOKE_REASON_MAX}
+            placeholder="e.g. Residence permit expired and was not renewed"
+            onChange={(e) => setRevokeReason(e.target.value)}
+          />
+          {revokeError && <p className="text-sm text-destructive">{revokeError}</p>}
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 h-11"
+              disabled={busy}
+              onClick={() => {
+                setRevoking(false);
+                setRevokeReason('');
+                setRevokeError(null);
+              }}
+            >
+              Keep it
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              className="flex-1 h-11 gap-2"
+              disabled={busy}
+              onClick={handleRevoke}
+            >
+              {busy && <Loader2 className="w-4 h-4 animate-spin" />}
+              Back to {baselineLabel}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  ) : null;
+  /** The Thai confirmation names a held rate only when it is another one. */
+  const heldOther = !!held && held.tier !== tier;
+
+  /**
    * The approved design's step asks for the proof type only, so the expiry is
    * optional for a member and for a visitor with no member yet alike. A
    * document with no expiry date never expires; one that is given must not
@@ -303,6 +395,10 @@ export function VerifyTierModal({
               </div>
             )}
 
+            {/* The other rate this member holds (Expat), and SCRUM-241's way
+                to end it. The confirmation itself stays the two buttons below. */}
+            {heldOther && heldBlock}
+
             {/* Recorded automatically — who confirmed it, fixed to the signed-in account. */}
             <div className="flex items-center gap-2 rounded-lg border border-dashed border-foreground/15 bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground">
               <UserCheck className="w-4 h-4 shrink-0 text-primary" />
@@ -356,90 +452,8 @@ export function VerifyTierModal({
               </div>
             )}
 
-            {/* The rate this member already holds, and the way to end it
-                (SCRUM-241). Nothing is erased: the document record stays and a
-                revocation is filed after it with the reason typed here. */}
-            {held && (
-              <div className="rounded-lg border border-amber-500/30 bg-amber-500/[0.07] p-4 space-y-3">
-                <div className="flex items-start gap-2 text-sm">
-                  <ShieldOff className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
-                  {heldAtTill ? (
-                    <span>
-                      Already holds <span className="font-semibold">{tierLabel(held.tier)}</span>, confirmed at
-                      the till by {held.verifiedBy}.
-                    </span>
-                  ) : (
-                    <span>
-                      Already holds <span className="font-semibold">{tierLabel(held.tier)}</span> on{' '}
-                      {/^[aeiou]/i.test(heldProof) ? 'an' : 'a'} {heldProof}
-                      {held.expiresAt
-                        ? held.reverifyDue
-                          ? `, expired ${held.expiresAt} — re-verify`
-                          : `, valid to ${held.expiresAt}`
-                        : ' with no expiry'}{' '}
-                      — verified by{' '}
-                      {held.verifiedBy}.
-                    </span>
-                  )}
-                </div>
-                {!mayRevoke ? (
-                  <p className="text-sm text-muted-foreground">
-                    Taking that rate back off a member needs a manager.
-                  </p>
-                ) : !revoking ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full h-11"
-                    onClick={() => setRevoking(true)}
-                  >
-                    End the {tierLabel(held.tier)} rate — back to {baselineLabel}
-                  </Button>
-                ) : (
-                  <div className="space-y-2">
-                    <label
-                      htmlFor="tier-revoke-reason"
-                      className="text-sm font-medium text-muted-foreground"
-                    >
-                      Why is it ending? <span className="text-destructive">*</span>
-                    </label>
-                    <Input
-                      id="tier-revoke-reason"
-                      value={revokeReason}
-                      maxLength={REVOKE_REASON_MAX}
-                      placeholder="e.g. Residence permit expired and was not renewed"
-                      onChange={(e) => setRevokeReason(e.target.value)}
-                    />
-                    {revokeError && <p className="text-sm text-destructive">{revokeError}</p>}
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="flex-1 h-11"
-                        disabled={busy}
-                        onClick={() => {
-                          setRevoking(false);
-                          setRevokeReason('');
-                          setRevokeError(null);
-                        }}
-                      >
-                        Keep it
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        className="flex-1 h-11 gap-2"
-                        disabled={busy}
-                        onClick={handleRevoke}
-                      >
-                        {busy && <Loader2 className="w-4 h-4 animate-spin" />}
-                        Back to {baselineLabel}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* The rate this member already holds, and the way to end it (SCRUM-241). */}
+            {heldBlock}
 
             <div className="space-y-2">
               <p className="text-sm font-medium text-muted-foreground">

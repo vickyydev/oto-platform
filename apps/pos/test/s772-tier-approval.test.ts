@@ -181,21 +181,63 @@ describe('SCRUM-772 — the Thai rate is one confirmation with two buttons', () 
     expect(out.toLowerCase()).not.toContain('pin');
   });
 
-  it('keeps it two buttons for a member holding another rate, even for a manager', () => {
+  /**
+   * SCRUM-241 — a member holding a current Expat rate reaches this modal at
+   * the till only through the Thai card, so the Thai confirmation names the
+   * rate they hold and keeps the manager's way to end it. The confirmation
+   * itself is still the two buttons.
+   */
+  const holdsExpat: Member = {
+    ...tourist,
+    tierVerification: {
+      tier: 'expat',
+      proofType: 'Passport',
+      verifiedBy: 'Som',
+      verifiedById: 'r',
+      verifiedAt: '2026-11-01T07:00:00.000Z',
+      expiresAt: '2027-11-01',
+    },
+  };
+
+  it('names the Expat rate a member holds, and a manager can end it from here', () => {
     mayRevoke = true;
-    const holdsExpat: Member = {
+    const out = modal({ member: holdsExpat });
+    expect(out).toContain(
+      'Already holds <span class="font-semibold">Expat</span> on a Passport, valid to 2027-11-01',
+    );
+    const pressed = buttons(out);
+    expect(pressed).toHaveLength(3);
+    expect(pressed[0]).toContain('End the Expat rate — back to Tourist');
+    expect(pressed[1]).toContain('>Cancel</button>');
+    expect(pressed[2]).toContain('Confirm Thai rate');
+    // Still no document step for the Thai rate.
+    expect(out).not.toContain('Proof checked');
+    expect(out).not.toContain('Document expiry date');
+  });
+
+  it('tells staff without the right that ending it needs a manager, and keeps the two buttons', () => {
+    const out = modal({ member: holdsExpat });
+    expect(out).toContain('Already holds <span class="font-semibold">Expat</span>');
+    expect(out).toContain('Taking that rate back off a member needs a manager.');
+    expect(out).not.toContain('End the Expat rate');
+    expect(buttons(out)).toHaveLength(2);
+  });
+
+  it('shows no held-rate block for a member already holding the Thai rate', () => {
+    mayRevoke = true;
+    const holdsThai: Member = {
       ...tourist,
       tierVerification: {
-        tier: 'expat',
-        proofType: 'Passport',
+        tier: 'thai',
+        proofType: TIER_APPROVAL_EVIDENCE,
         verifiedBy: 'Som',
         verifiedById: 'r',
-        verifiedAt: '2026-11-01T07:00:00.000Z',
+        verifiedAt: '2026-11-09T07:00:00.000Z',
       },
     };
-    const out = modal({ member: holdsExpat });
+    const out = modal({ member: holdsThai });
+    expect(out).not.toContain('Already holds');
     expect(buttons(out)).toHaveLength(2);
-    expect(out).not.toContain('End the Expat rate');
   });
 });
 
