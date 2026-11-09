@@ -269,7 +269,17 @@
       "breakpoints": true
     },
     {
-
+      "idx": 39,
+      "version": "7",
+      "when": 1794219648266,
+      "tag": "0039_offboarding_again",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1794225678293,
+      "tag": "0041_birthday_package_fields",
       "breakpoints": true
     },
     {
