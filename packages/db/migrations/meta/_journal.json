@@ -764,6 +764,13 @@
       "when": 1794234333075,
       "tag": "0108_party_settlement",
       "breakpoints": true
+    },
+    {
+      "idx": 109,
+      "version": "7",
+      "when": 1794239744414,
+      "tag": "0109_party_slips",
+      "breakpoints": true
     }
   ]
 }
