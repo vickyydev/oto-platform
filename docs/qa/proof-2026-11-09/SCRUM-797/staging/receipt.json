@@ -1,0 +1,1715 @@
+{
+  "unit": "SCRUM-797",
+  "what": "Staging proof: Extra Hour from History. A pasted wristband code (kid or adult) opens the order; Add time offers +1, +2 or +3 hours at ฿300 per child per hour for the order's 1 and 2-hour child tickets, shows the sum before payment, keeps the same wristbands; a Full Day pass and an order with no child are refused.",
+  "liveCommit": "b48dd7ac8cc0406de41b729e667b43e011e3a9c7",
+  "deploys": {
+    "readAt": "2026-11-09T10:44:08.946Z",
+    "services": {
+      "oto-api-staging": {
+        "liveDeploy": "dep-dboq5lou01pc7382vas0",
+        "status": "live",
+        "commit": "b48dd7ac",
+        "finishedAt": "2026-11-09T10:43:16.950916Z"
+      },
+      "oto-pos-web-staging": {
+        "liveDeploy": "dep-dboq5mbbc2fs73csvr00",
+        "status": "live",
+        "commit": "b48dd7ac",
+        "finishedAt": "2026-11-09T10:42:54.970928Z"
+      },
+      "oto-pos-staging": {
+        "liveDeploy": "dep-dboq5mu7bikc739v0o5g",
+        "status": "live",
+        "commit": "b48dd7ac",
+        "finishedAt": "2026-11-09T10:40:11.726669Z"
+      }
+    }
+  },
+  "pos": "https://oto-pos-web-staging.onrender.com",
+  "browser": "Chromium 153.0.8010.12 (headless), 1440x900, timezone Asia/Bangkok",
+  "startedAt": "2026-11-09T10:44:21.750Z",
+  "finishedAt": "2026-11-09T10:54:23.986Z",
+  "accounts": {
+    "stationSetUpAndReadBacks": "staging admin (api)",
+    "till": "staging reception account \"Som\" (browser)",
+    "credentials": "from scripts/agent/env.mjs, never printed or stored"
+  },
+  "fixture": {
+    "branch": "Oto Play Park, Central Floresta",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "box": "Virtual box 1",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "till": {
+      "id": "01a1bfe8-e878-715d-9058-e11029cdd634",
+      "name": "ZZ TEST SCRUM-797 till",
+      "prefix": "Z797",
+      "ready": true,
+      "routing": {
+        "qr": "none",
+        "card": "manual"
+      },
+      "devices": [
+        "adult_band:Band Printer (adults)",
+        "kids_band:Band Printer (kids)",
+        "receipt:Receipt Printer 1"
+      ]
+    },
+    "tier": "Tourist",
+    "walkInPhone": "+66897970011 (ZZ TEST number, not a member before or after)",
+    "note": "The till used the simulated band and receipt printers on Virtual box 1 (shared devices, not changed); they were unassigned from the ZZ TEST till before it was archived. Every print job of the four sales read back \"printed\"."
+  },
+  "sales": [
+    {
+      "purpose": "step 1 — walk-in 1 Hour Play, 3 kids + 1 adult, cash; the order extended in step 2",
+      "id": "01a1bfe9-48de-7b6b-834c-bce1c2cd7298",
+      "receipt": "Z797-000001",
+      "status": "finalised",
+      "grossSatang": 242000,
+      "bands": [
+        "kid Z797-7DDNB5",
+        "kid Z797-6573QJ",
+        "kid Z797-WK6KDQ",
+        "adult Z797-6Y6PK9"
+      ],
+      "lines": [
+        {
+          "id": "01a1bfe9-48de-7ad2-84f8-2aa1ec4dc947",
+          "label": "Kids",
+          "kind": "kids",
+          "kidCount": 3,
+          "adultCount": 1,
+          "stayHours": 1,
+          "quantity": 3,
+          "grossSatang": 207000
+        },
+        {
+          "id": "01a1bfe9-48de-7ced-b359-ccb5f1a60b72",
+          "label": "Adults",
+          "kind": "adults_paid",
+          "kidCount": 3,
+          "adultCount": 1,
+          "stayHours": 1,
+          "quantity": 1,
+          "grossSatang": 35000
+        }
+      ],
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amount": 242000
+        }
+      ]
+    },
+    {
+      "purpose": "step 2 — the extra-hour charge, +2 hours for 3 children, cash",
+      "id": "01a1bfec-110d-7c07-80e6-e56229757f3d",
+      "receipt": "Z797-000002",
+      "status": "finalised",
+      "grossSatang": 180000,
+      "lines": [
+        {
+          "label": "Extra hour x 2",
+          "kind": "addon",
+          "componentKey": "time_extension",
+          "quantity": 3,
+          "unitSatang": 60000,
+          "grossSatang": 180000
+        }
+      ],
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amount": 180000
+        }
+      ]
+    },
+    {
+      "purpose": "step 4 — walk-in Full Day Pass, 1 kid + the 1 adult, cash; Add time refused",
+      "id": "01a1bfef-656e-7156-84e1-aed094c46a37",
+      "receipt": "Z797-000003",
+      "status": "finalised",
+      "grossSatang": 144000,
+      "bands": [
+        "kid Z797-4EKVWY",
+        "adult Z797-DAYJJ7"
+      ],
+      "lines": [
+        {
+          "id": "01a1bfef-656e-7ec1-9388-8e045ad36e74",
+          "label": "Kids",
+          "kind": "kids",
+          "kidCount": 1,
+          "adultCount": 1,
+          "stayHours": 8,
+          "quantity": 1,
+          "grossSatang": 109000
+        },
+        {
+          "id": "01a1bfef-656e-7b99-b3e7-0d5c322efc55",
+          "label": "Adults",
+          "kind": "adults_paid",
+          "kidCount": 1,
+          "adultCount": 1,
+          "stayHours": 8,
+          "quantity": 1,
+          "grossSatang": 35000
+        }
+      ],
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amount": 144000
+        }
+      ]
+    },
+    {
+      "purpose": "step 4 — walk-in 2 Hours Play, 2 adults and no child, cash; Add time refused",
+      "id": "01a1bff0-7f56-7c77-aa41-7c7980989f1a",
+      "receipt": "Z797-000004",
+      "status": "finalised",
+      "grossSatang": 70000,
+      "bands": [
+        "adult Z797-G7MYXH",
+        "adult Z797-4VZJTF"
+      ],
+      "lines": [
+        {
+          "id": "01a1bff0-7f56-7060-a7fc-587d8ae8a0af",
+          "label": "Adults",
+          "kind": "adults_paid",
+          "kidCount": 0,
+          "adultCount": 2,
+          "stayHours": 2,
+          "quantity": 2,
+          "grossSatang": 70000
+        }
+      ],
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amount": 70000
+        }
+      ]
+    }
+  ],
+  "steps": {
+    "bandBox": [
+      {
+        "at": "2026-11-09T10:45:55.596Z",
+        "purpose": "oneHour",
+        "kind": "kid",
+        "shortCode": "Z797-7DDNB5",
+        "how": "clipboard paste (Ctrl+V) into \"Bracelet code\"",
+        "afterPaste": {
+          "value": "Z797-7DDNB5",
+          "boxStillShown": true
+        },
+        "pressed": "Find",
+        "lookups": [
+          {
+            "at": "2026-11-09T10:45:52.975Z",
+            "method": "GET",
+            "path": "/api/sales/lookup",
+            "query": "?band=<code>&branchId=01a0bbdc-8c42-7753-b7e3-5ae19fb66d33&limit=50",
+            "status": 200,
+            "saleIds": [
+              "01a1bfe9-48de-7b6b-834c-bce1c2cd7298"
+            ]
+          }
+        ],
+        "receiptShown": true,
+        "view": "0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Back to all transactions Walk-in #Z797-7DDNB5 Credit No credit on this band Total spent (Oto Play Park, Central Floresta) ฿2420 All Tickets F&B Drop-off 1 order Z797-000001 Ticket 09 Nov, 17:44 Som Oto Play Park, Central Floresta Paid ฿2420"
+      },
+      {
+        "at": "2026-11-09T10:50:44.481Z",
+        "purpose": "oneHour",
+        "kind": "adult",
+        "shortCode": "Z797-6Y6PK9",
+        "how": "clipboard paste (Ctrl+V) into \"Bracelet code\"",
+        "afterPaste": {
+          "value": "Z797-6Y6PK9",
+          "boxStillShown": true
+        },
+        "pressed": "Find",
+        "lookups": [
+          {
+            "at": "2026-11-09T10:50:41.966Z",
+            "method": "GET",
+            "path": "/api/sales/lookup",
+            "query": "?band=<code>&branchId=01a0bbdc-8c42-7753-b7e3-5ae19fb66d33&limit=50",
+            "status": 200,
+            "saleIds": [
+              "01a1bfe9-48de-7b6b-834c-bce1c2cd7298"
+            ]
+          }
+        ],
+        "receiptShown": true,
+        "view": "0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Back to all transactions Walk-in #Z797-6Y6PK9 Credit ฿350 Total spent (Oto Play Park, Central Floresta) ฿2420 All Tickets F&B Drop-off 1 order Z797-000001 Ticket 09 Nov, 17:44 Som Oto Play Park, Central Floresta Paid ฿2420"
+      },
+      {
+        "at": "2026-11-09T10:52:12.303Z",
+        "purpose": "fullDay",
+        "kind": "kid",
+        "shortCode": "Z797-4EKVWY",
+        "how": "clipboard paste (Ctrl+V) into \"Bracelet code\"",
+        "afterPaste": {
+          "value": "Z797-4EKVWY",
+          "boxStillShown": true
+        },
+        "pressed": "Find",
+        "lookups": [
+          {
+            "at": "2026-11-09T10:52:09.773Z",
+            "method": "GET",
+            "path": "/api/sales/lookup",
+            "query": "?band=<code>&branchId=01a0bbdc-8c42-7753-b7e3-5ae19fb66d33&limit=50",
+            "status": 200,
+            "saleIds": [
+              "01a1bfef-656e-7156-84e1-aed094c46a37"
+            ]
+          }
+        ],
+        "receiptShown": true,
+        "view": "0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Back to all transactions Walk-in #Z797-4EKVWY Credit No credit on this band Total spent (Oto Play Park, Central Floresta) ฿1440 All Tickets F&B Drop-off 1 order Z797-000003 Ticket 09 Nov, 17:51 Som Oto Play Park, Central Floresta Paid ฿1440"
+      },
+      {
+        "at": "2026-11-09T10:53:25.114Z",
+        "purpose": "adultsOnly",
+        "kind": "adult",
+        "shortCode": "Z797-G7MYXH",
+        "how": "clipboard paste (Ctrl+V) into \"Bracelet code\"",
+        "afterPaste": {
+          "value": "Z797-G7MYXH",
+          "boxStillShown": true
+        },
+        "pressed": "Find",
+        "lookups": [
+          {
+            "at": "2026-11-09T10:53:22.507Z",
+            "method": "GET",
+            "path": "/api/sales/lookup",
+            "query": "?band=<code>&branchId=01a0bbdc-8c42-7753-b7e3-5ae19fb66d33&limit=50",
+            "status": 200,
+            "saleIds": [
+              "01a1bff0-7f56-7c77-aa41-7c7980989f1a"
+            ]
+          }
+        ],
+        "receiptShown": true,
+        "view": "0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Back to all transactions Walk-in #Z797-G7MYXH Credit ฿350 Total spent (Oto Play Park, Central Floresta) ฿700 All Tickets F&B Drop-off 1 order Z797-000004 Ticket 09 Nov, 17:52 Som Oto Play Park, Central Floresta Paid ฿700"
+      }
+    ],
+    "s2_kidBand": {
+      "dialogOpened": {
+        "at": "2026-11-09T10:46:42.362Z",
+        "purpose": "oneHour",
+        "receipt": "Z797-000001",
+        "options": [
+          "+1 hour 3 children x 1 hour x ฿300 ฿900",
+          "+2 hours 3 children x 2 hours x ฿300 ฿1800",
+          "+3 hours 3 children x 3 hours x ฿300 ฿2700"
+        ],
+        "boxes": [
+          {
+            "label": "Z797-7DDNB5",
+            "checked": true,
+            "disabled": true
+          },
+          {
+            "label": "Z797-6573QJ",
+            "checked": true,
+            "disabled": true
+          },
+          {
+            "label": "Z797-WK6KDQ",
+            "checked": true,
+            "disabled": true
+          },
+          {
+            "label": "Z797-6Y6PK9",
+            "checked": true,
+            "disabled": false
+          }
+        ],
+        "refusal": null,
+        "extensionsRead": [
+          {
+            "at": "2026-11-09T10:46:37.218Z",
+            "path": "/api/sales/01a1bfe9-48de-7b6b-834c-bce1c2cd7298/extensions",
+            "status": 200,
+            "response": {
+              "options": [
+                {
+                  "id": "ext-60",
+                  "label": "+1 hour",
+                  "hours": 1,
+                  "minutes": 60,
+                  "unitSatang": 30000
+                },
+                {
+                  "id": "ext-120",
+                  "label": "+2 hours",
+                  "hours": 2,
+                  "minutes": 120,
+                  "unitSatang": 60000
+                },
+                {
+                  "id": "ext-180",
+                  "label": "+3 hours",
+                  "hours": 3,
+                  "minutes": 180,
+                  "unitSatang": 90000
+                }
+              ],
+              "children": 3,
+              "perChildHourSatang": 30000,
+              "refusal": null,
+              "eligibleBands": [
+                {
+                  "id": "01a1bfe9-7650-7019-ace4-b493d93d5c55",
+                  "shortCode": "Z797-7DDNB5",
+                  "kind": "kid",
+                  "charged": true
+                },
+                {
+                  "id": "01a1bfe9-7655-7f42-8a6b-b6c4aaf61112",
+                  "shortCode": "Z797-6573QJ",
+                  "kind": "kid",
+                  "charged": true
+                },
+                {
+                  "id": "01a1bfe9-7657-7198-99c5-0d50e210a9d3",
+                  "shortCode": "Z797-WK6KDQ",
+                  "kind": "kid",
+                  "charged": true
+                },
+                {
+                  "id": "01a1bfe9-7668-7995-91cb-ec3efe9b0775",
+                  "shortCode": "Z797-6Y6PK9",
+                  "kind": "adult",
+                  "charged": false
+                }
+              ],
+              "extensions": []
+            }
+          }
+        ],
+        "dialogText": "Add time By Som (Reception) · ฿300 per child per hour, on the same bracelets. How many bracelets? Charged for every child on this order, and every child's bracelet carries the added time. Select or scan bracelets Count only Add bracelet Z797-7DDNB5 Z797-6573QJ Z797-WK6KDQ Z797-6Y6PK9 All 4 How much time? +1 hour 3 children x 1 hour x ฿300 ฿900 +2 hours 3 children x 2 hours x ฿300 ฿1800 +3 hours 3 children x 3 hours x ฿300 ฿2700 Amount to charge ฿0 The payment total, including applicable tax and service charge, is confirmed before collection. Choose a duration A supervised child's check-in timer gets the added time once it is paid. Close"
+      },
+      "chose": {
+        "at": "2026-11-09T10:47:09.919Z",
+        "chose": "+2 hours",
+        "sumLine": "3 children x 2 hours x ฿300 = ฿1,800",
+        "amountToCharge": "฿1800",
+        "boxes": [
+          {
+            "label": "Z797-7DDNB5",
+            "checked": true,
+            "disabled": true
+          },
+          {
+            "label": "Z797-6573QJ",
+            "checked": true,
+            "disabled": true
+          },
+          {
+            "label": "Z797-WK6KDQ",
+            "checked": true,
+            "disabled": true
+          },
+          {
+            "label": "Z797-6Y6PK9",
+            "checked": true,
+            "disabled": false
+          }
+        ],
+        "kidUntickTry": {
+          "kidClick": "clicked",
+          "stillChecked": true
+        },
+        "continueEnabled": true
+      },
+      "payment": {
+        "at": "2026-11-09T10:48:01.020Z",
+        "press": [
+          "Continue to payment",
+          "Cash"
+        ],
+        "created": [
+          {
+            "at": "2026-11-09T10:48:01.175Z",
+            "path": "/api/sales/01a1bfe9-48de-7b6b-834c-bce1c2cd7298/extensions",
+            "status": 200,
+            "request": {
+              "optionId": "ext-120",
+              "selection": {
+                "mode": "bands",
+                "bandIds": [
+                  "01a1bfe9-7650-7019-ace4-b493d93d5c55",
+                  "01a1bfe9-7655-7f42-8a6b-b6c4aaf61112",
+                  "01a1bfe9-7657-7198-99c5-0d50e210a9d3",
+                  "01a1bfe9-7668-7995-91cb-ec3efe9b0775"
+                ]
+              },
+              "stationId": "01a1bfe8-e878-715d-9058-e11029cdd634"
+            },
+            "extension": {
+              "id": "01a1bfec-110d-7c07-80e6-e563353901d0",
+              "chargeSaleId": "01a1bfec-110d-7c07-80e6-e56229757f3d",
+              "optionId": "ext-120",
+              "label": "+2 hours",
+              "minutesAdded": 120,
+              "braceletCount": 4,
+              "amountSatang": 180000,
+              "selection": {
+                "mode": "bands",
+                "bandIds": [
+                  "01a1bfe9-7650-7019-ace4-b493d93d5c55",
+                  "01a1bfe9-7655-7f42-8a6b-b6c4aaf61112",
+                  "01a1bfe9-7657-7198-99c5-0d50e210a9d3",
+                  "01a1bfe9-7668-7995-91cb-ec3efe9b0775"
+                ]
+              },
+              "status": "pending",
+              "createdAt": "2026-11-09T10:48:01.536Z",
+              "createdByName": "Som (Reception)",
+              "appliedAt": null
+            },
+            "chargeSaleId": "01a1bfec-110d-7c07-80e6-e56229757f3d",
+            "chargeGross": 180000,
+            "chargeStatus": "tendering"
+          }
+        ],
+        "methods": [
+          "Cash",
+          "Card",
+          "PromptPay"
+        ],
+        "state": {
+          "amountField": 0,
+          "cashReceived": "1800.00",
+          "change": "Change ฿0.00",
+          "confirmLabel": "Record cash",
+          "confirmEnabled": true,
+          "amountToCharge": "฿1800"
+        }
+      },
+      "paid": {
+        "at": "2026-11-09T10:48:28.493Z",
+        "press": "Record cash",
+        "net": [
+          {
+            "at": "2026-11-09T10:48:28.696Z",
+            "method": "POST",
+            "path": "/api/sales/01a1bfec-110d-7c07-80e6-e56229757f3d/finalise",
+            "status": 200,
+            "tender": {
+              "method": "cash",
+              "kind": "cash",
+              "amountSatang": 180000,
+              "tenderedSatang": 180000,
+              "changeSatang": 0
+            },
+            "finalised": true
+          },
+          {
+            "at": "2026-11-09T10:48:28.775Z",
+            "method": "GET",
+            "path": "/api/sales/01a1bfe9-48de-7b6b-834c-bce1c2cd7298/extensions",
+            "status": 200,
+            "tender": null,
+            "finalised": null
+          }
+        ],
+        "flash": "4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks",
+        "timeAddedCard": "TIME ADDED +2 hours ฿1800 4 bracelets · Cash · 09 Nov, 17:48 · by Som (Reception)",
+        "charge": {
+          "receipt": "Z797-000002",
+          "status": "finalised",
+          "gross": 180000,
+          "lines": [
+            {
+              "label": "Extra hour x 2",
+              "kind": "addon",
+              "componentKey": "time_extension",
+              "quantity": 3,
+              "unitSatang": 60000,
+              "grossSatang": 180000
+            }
+          ],
+          "payments": [
+            {
+              "method": "cash",
+              "status": "approved",
+              "amount": 180000
+            }
+          ],
+          "bandsMinted": 0,
+          "printJobs": [
+            {
+              "kind": "receipt",
+              "status": "queued"
+            }
+          ]
+        }
+      },
+      "chargeDetail": {
+        "at": "2026-11-09T10:49:44.505Z",
+        "text": "0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Back to history Paid Extra-time charge Z797-000002 Walk-in 09 Nov, 17:48 · sold by Som ZZ TEST SCRUM-797 till · trading day 2026-11-09 · Tourist · Weekday pricing Items · Tourist ฿1800 Extra hour x 2 3× ฿600 ฿1800 Subtotal ฿1800 VAT (included) ฿117.76 Total paid ฿1800 Separate charge for 120 minutes × 4 bracelets. The original admission receipt stays unchanged. Extra play for Z797-000001 Payment Cash · Approved 09 Nov, 17:48 ฿1800 Reprint Refund (฿1800 left) Add time, refunds, voids and reprints need the platform: with the station offline, a refund can only be noted as requested, for a manager to make once it is back online.",
+        "addTimeButton": 0
+      }
+    },
+    "s3_adultBand": {
+      "dialogOpened": {
+        "at": "2026-11-09T10:50:57.676Z",
+        "purpose": "oneHour",
+        "receipt": "Z797-000001",
+        "options": [
+          "+1 hour 3 children x 1 hour x ฿300 ฿900",
+          "+2 hours 3 children x 2 hours x ฿300 ฿1800",
+          "+3 hours 3 children x 3 hours x ฿300 ฿2700"
+        ],
+        "boxes": [
+          {
+            "label": "Z797-7DDNB5",
+            "checked": true,
+            "disabled": true
+          },
+          {
+            "label": "Z797-6573QJ",
+            "checked": true,
+            "disabled": true
+          },
+          {
+            "label": "Z797-WK6KDQ",
+            "checked": true,
+            "disabled": true
+          },
+          {
+            "label": "Z797-6Y6PK9",
+            "checked": true,
+            "disabled": false
+          }
+        ],
+        "refusal": null,
+        "extensionsRead": [
+          {
+            "at": "2026-11-09T10:50:52.499Z",
+            "path": "/api/sales/01a1bfe9-48de-7b6b-834c-bce1c2cd7298/extensions",
+            "status": 200,
+            "response": {
+              "options": [
+                {
+                  "id": "ext-60",
+                  "label": "+1 hour",
+                  "hours": 1,
+                  "minutes": 60,
+                  "unitSatang": 30000
+                },
+                {
+                  "id": "ext-120",
+                  "label": "+2 hours",
+                  "hours": 2,
+                  "minutes": 120,
+                  "unitSatang": 60000
+                },
+                {
+                  "id": "ext-180",
+                  "label": "+3 hours",
+                  "hours": 3,
+                  "minutes": 180,
+                  "unitSatang": 90000
+                }
+              ],
+              "children": 3,
+              "perChildHourSatang": 30000,
+              "refusal": null,
+              "eligibleBands": [
+                {
+                  "id": "01a1bfe9-7650-7019-ace4-b493d93d5c55",
+                  "shortCode": "Z797-7DDNB5",
+                  "kind": "kid",
+                  "charged": true
+                },
+                {
+                  "id": "01a1bfe9-7655-7f42-8a6b-b6c4aaf61112",
+                  "shortCode": "Z797-6573QJ",
+                  "kind": "kid",
+                  "charged": true
+                },
+                {
+                  "id": "01a1bfe9-7657-7198-99c5-0d50e210a9d3",
+                  "shortCode": "Z797-WK6KDQ",
+                  "kind": "kid",
+                  "charged": true
+                },
+                {
+                  "id": "01a1bfe9-7668-7995-91cb-ec3efe9b0775",
+                  "shortCode": "Z797-6Y6PK9",
+                  "kind": "adult",
+                  "charged": false
+                }
+              ],
+              "extensions": [
+                {
+                  "id": "01a1bfec-110d-7c07-80e6-e563353901d0",
+                  "chargeSaleId": "01a1bfec-110d-7c07-80e6-e56229757f3d",
+                  "optionId": "ext-120",
+                  "label": "+2 hours",
+                  "minutesAdded": 120,
+                  "braceletCount": 4,
+                  "amountSatang": 180000,
+                  "selection": {
+                    "mode": "bands",
+                    "bandIds": [
+                      "01a1bfe9-7650-7019-ace4-b493d93d5c55",
+                      "01a1bfe9-7655-7f42-8a6b-b6c4aaf61112",
+                      "01a1bfe9-7657-7198-99c5-0d50e210a9d3",
+                      "01a1bfe9-7668-7995-91cb-ec3efe9b0775"
+                    ]
+                  },
+                  "status": "applied",
+                  "createdAt": "2026-11-09T10:48:01.536Z",
+                  "createdByName": "Som (Reception)",
+                  "appliedAt": "2026-11-09T10:48:29.018Z",
+                  "currentBandIds": [
+                    "01a1bfe9-7650-7019-ace4-b493d93d5c55",
+                    "01a1bfe9-7655-7f42-8a6b-b6c4aaf61112",
+                    "01a1bfe9-7657-7198-99c5-0d50e210a9d3",
+                    "01a1bfe9-7668-7995-91cb-ec3efe9b0775"
+                  ],
+                  "paymentMethods": [
+                    "cash"
+                  ],
+                  "needsReselection": false
+                }
+              ]
+            }
+          }
+        ],
+        "dialogText": "Add time By Som (Reception) · ฿300 per child per hour, on the same bracelets. How many bracelets? Charged for every child on this order, and every child's bracelet carries the added time. Select or scan bracelets Count only Add bracelet Z797-7DDNB5 Z797-6573QJ Z797-WK6KDQ Z797-6Y6PK9 All 4 How much time? +1 hour 3 children x 1 hour x ฿300 ฿900 +2 hours 3 children x 2 hours x ฿300 ฿1800 +3 hours 3 children x 3 hours x ฿300 ฿2700 Amount to charge ฿0 The payment total, including applicable tax and service charge, is confirmed before collection. Choose a duration A supervised child's check-in timer gets the added time once it is paid. Close"
+      },
+      "closed": {
+        "at": "2026-11-09T10:51:08.861Z",
+        "press": "Close (X)",
+        "writesAfterClose": [],
+        "extensionsAfter": [
+          {
+            "id": "01a1bfec-110d-7c07-80e6-e563353901d0",
+            "label": "+2 hours",
+            "status": "applied",
+            "amountSatang": 180000
+          }
+        ]
+      }
+    },
+    "s4_fullDay": {
+      "dialogOpened": {
+        "at": "2026-11-09T10:52:17.119Z",
+        "purpose": "fullDay",
+        "receipt": "Z797-000003",
+        "options": [],
+        "boxes": [
+          {
+            "label": "Z797-4EKVWY",
+            "checked": true,
+            "disabled": false
+          },
+          {
+            "label": "Z797-DAYJJ7",
+            "checked": true,
+            "disabled": false
+          }
+        ],
+        "refusal": "An extra hour is added only to a 1 or 2-hour child ticket. A Full Day pass cannot take extra hours.",
+        "extensionsRead": [
+          {
+            "at": "2026-11-09T10:52:12.667Z",
+            "path": "/api/sales/01a1bfef-656e-7156-84e1-aed094c46a37/extensions",
+            "status": 200,
+            "response": {
+              "options": [],
+              "children": 0,
+              "perChildHourSatang": 30000,
+              "refusal": {
+                "code": "EXTENSION_TICKET_NOT_ELIGIBLE",
+                "message": "An extra hour is added only to a 1 or 2-hour child ticket. A Full Day pass cannot take extra hours."
+              },
+              "eligibleBands": [
+                {
+                  "id": "01a1bfef-943d-7cf4-9ccf-2fcbe6d5bbc4",
+                  "shortCode": "Z797-4EKVWY",
+                  "kind": "kid",
+                  "charged": false
+                },
+                {
+                  "id": "01a1bfef-9440-740c-89c0-71b1e4f25c25",
+                  "shortCode": "Z797-DAYJJ7",
+                  "kind": "adult",
+                  "charged": false
+                }
+              ],
+              "extensions": []
+            }
+          }
+        ],
+        "dialogText": "Add time By Som (Reception) · ฿300 per child per hour, on the same bracelets. How many bracelets? Charged for every child on this order, and every child's bracelet carries the added time. Select or scan bracelets Count only Add bracelet Z797-4EKVWY Z797-DAYJJ7 All 2 How much time? An extra hour is added only to a 1 or 2-hour child ticket. A Full Day pass cannot take extra hours. Amount to charge ฿0 The payment total, including applicable tax and service charge, is confirmed before collection. Choose a duration A supervised child's check-in timer gets the added time once it is paid. Close"
+      },
+      "closed": {
+        "at": "2026-11-09T10:52:30.853Z",
+        "press": "Close (X)",
+        "writesAfterClose": [],
+        "readBack": {
+          "status": 200,
+          "options": 0,
+          "children": 0,
+          "refusal": {
+            "code": "EXTENSION_TICKET_NOT_ELIGIBLE",
+            "message": "An extra hour is added only to a 1 or 2-hour child ticket. A Full Day pass cannot take extra hours."
+          },
+          "extensions": 0
+        }
+      }
+    },
+    "s4_noChild": {
+      "dialogOpened": {
+        "at": "2026-11-09T10:53:29.980Z",
+        "purpose": "adultsOnly",
+        "receipt": "Z797-000004",
+        "options": [],
+        "boxes": [
+          {
+            "label": "Z797-G7MYXH",
+            "checked": true,
+            "disabled": false
+          },
+          {
+            "label": "Z797-4VZJTF",
+            "checked": true,
+            "disabled": false
+          }
+        ],
+        "refusal": "This order has no child ticket. An extra hour is charged per child on a 1 or 2-hour child ticket.",
+        "extensionsRead": [
+          {
+            "at": "2026-11-09T10:53:25.598Z",
+            "path": "/api/sales/01a1bff0-7f56-7c77-aa41-7c7980989f1a/extensions",
+            "status": 200,
+            "response": {
+              "options": [],
+              "children": 0,
+              "perChildHourSatang": 30000,
+              "refusal": {
+                "code": "EXTENSION_NO_CHILDREN",
+                "message": "This order has no child ticket. An extra hour is charged per child on a 1 or 2-hour child ticket."
+              },
+              "eligibleBands": [
+                {
+                  "id": "01a1bff0-b5ab-7607-a2ec-46222bfff569",
+                  "shortCode": "Z797-G7MYXH",
+                  "kind": "adult",
+                  "charged": false
+                },
+                {
+                  "id": "01a1bff0-b5bc-7b33-a8a8-bfefb6860645",
+                  "shortCode": "Z797-4VZJTF",
+                  "kind": "adult",
+                  "charged": false
+                }
+              ],
+              "extensions": []
+            }
+          }
+        ],
+        "dialogText": "Add time By Som (Reception) · ฿300 per child per hour, on the same bracelets. How many bracelets? Charged for every child on this order, and every child's bracelet carries the added time. Select or scan bracelets Count only Add bracelet Z797-G7MYXH Z797-4VZJTF All 2 How much time? This order has no child ticket. An extra hour is charged per child on a 1 or 2-hour child ticket. Amount to charge ฿0 The payment total, including applicable tax and service charge, is confirmed before collection. Choose a duration A supervised child's check-in timer gets the added time once it is paid. Close"
+      },
+      "closed": {
+        "at": "2026-11-09T10:53:32.657Z",
+        "press": "Close (X)",
+        "writesAfterClose": [],
+        "readBack": {
+          "status": 200,
+          "options": 0,
+          "children": 0,
+          "refusal": {
+            "code": "EXTENSION_NO_CHILDREN",
+            "message": "This order has no child ticket. An extra hour is charged per child on a 1 or 2-hour child ticket."
+          },
+          "extensions": 0
+        }
+      }
+    },
+    "s5_api": {
+      "at": "2026-11-09T10:53:50.689Z",
+      "extensionsRead": {
+        "path": "GET /sales/01a1bfe9-48de-7b6b-834c-bce1c2cd7298/extensions",
+        "status": 200,
+        "children": 3,
+        "perChildHourSatang": 30000,
+        "refusal": null,
+        "options": [
+          "ext-60 +1 hour 1h unit 30000",
+          "ext-120 +2 hours 2h unit 60000",
+          "ext-180 +3 hours 3h unit 90000"
+        ],
+        "extensions": [
+          {
+            "id": "01a1bfec-110d-7c07-80e6-e563353901d0",
+            "chargeSaleId": "01a1bfec-110d-7c07-80e6-e56229757f3d",
+            "optionId": "ext-120",
+            "label": "+2 hours",
+            "hours": 2,
+            "minutesAdded": 120,
+            "braceletCount": 4,
+            "amountSatang": 180000,
+            "status": "applied",
+            "appliedAt": "2026-11-09T10:48:29.018Z",
+            "paymentMethods": [
+              "cash"
+            ],
+            "createdByName": "Som (Reception)"
+          }
+        ]
+      },
+      "charge": {
+        "path": "GET /sales/01a1bfec-110d-7c07-80e6-e56229757f3d",
+        "receipt": "Z797-000002",
+        "status": "finalised",
+        "grossSatang": 180000,
+        "note": "Extra play for Z797-000001",
+        "timeExtension": {
+          "id": "01a1bfec-110d-7c07-80e6-e563353901d0",
+          "sourceSaleId": "01a1bfe9-48de-7b6b-834c-bce1c2cd7298",
+          "status": "applied",
+          "minutesAdded": 120,
+          "braceletCount": 4
+        },
+        "lines": [
+          {
+            "label": "Extra hour x 2",
+            "kind": "addon",
+            "componentKey": "time_extension",
+            "quantity": 3,
+            "unitSatang": 60000,
+            "grossSatang": 180000,
+            "payload": null
+          }
+        ],
+        "attempts": [
+          {
+            "method": "cash",
+            "status": "approved",
+            "amountSatang": 180000,
+            "tenderedSatang": 180000,
+            "changeSatang": 0
+          }
+        ],
+        "bandsMinted": 0,
+        "printJobs": [
+          {
+            "kind": "receipt",
+            "status": "printed"
+          }
+        ]
+      },
+      "sourceBandsAfter": [
+        {
+          "kind": "kid",
+          "shortCode": "Z797-7DDNB5",
+          "status": "active"
+        },
+        {
+          "kind": "kid",
+          "shortCode": "Z797-6573QJ",
+          "status": "active"
+        },
+        {
+          "kind": "kid",
+          "shortCode": "Z797-WK6KDQ",
+          "status": "active"
+        },
+        {
+          "kind": "adult",
+          "shortCode": "Z797-6Y6PK9",
+          "status": "active"
+        }
+      ],
+      "sourceBandsUnchanged": true,
+      "bandLookups": [
+        {
+          "kind": "kid",
+          "shortCode": "Z797-7DDNB5",
+          "status": 200,
+          "saleIds": [
+            "01a1bfe9-48de-7b6b-834c-bce1c2cd7298"
+          ],
+          "opensTheOrder": true
+        },
+        {
+          "kind": "kid",
+          "shortCode": "Z797-6573QJ",
+          "status": 200,
+          "saleIds": [
+            "01a1bfe9-48de-7b6b-834c-bce1c2cd7298"
+          ],
+          "opensTheOrder": true
+        },
+        {
+          "kind": "kid",
+          "shortCode": "Z797-WK6KDQ",
+          "status": 200,
+          "saleIds": [
+            "01a1bfe9-48de-7b6b-834c-bce1c2cd7298"
+          ],
+          "opensTheOrder": true
+        },
+        {
+          "kind": "adult",
+          "shortCode": "Z797-6Y6PK9",
+          "status": 200,
+          "saleIds": [
+            "01a1bfe9-48de-7b6b-834c-bce1c2cd7298"
+          ],
+          "opensTheOrder": true
+        }
+      ],
+      "receiptJob": {
+        "at": "2026-11-09T10:53:59.712Z",
+        "jobs": [
+          {
+            "id": "01a1bfec-7c8f-7dab-90a1-47025f799d43",
+            "kind": "receipt",
+            "status": "printed",
+            "keys": "id,kind,role,status,stationId,deviceId,deviceLabel,subjectType,subjectId,reprintOf,reprintReason,requestedByName,errorCode,errorMessage,queuedAt,finishedAt"
+          }
+        ],
+        "extraHourText": []
+      }
+    }
+  },
+  "pictures": [
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-797/staging/797-st-01-paid-1-hour-play-3-kids-1-adult.png",
+      "at": "2026-11-09T10:45:25.150Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 1: walk-in 1 Hour Play for 3 kids + 1 adult paid in cash, Payment Successful, receipt Z797-000001 ฿2420; the band codes on the success screen: 3 child bracelets (Z797-7DDNB5, Z797-6573QJ, Z797-WK6KDQ) and 1 adult bracelet (Z797-6Y6PK9); QR grids masked (the ticket's ฿350 credit grant is spendable)"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-797/staging/797-st-01b-adult-band-code.png",
+      "at": "2026-11-09T10:45:39.767Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 1 (cont.): the same success screen with the bracelets card scrolled: 1× Adult bracelet, 1 Hour Play, Z797-6Y6PK9; QR grids masked"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-797/staging/797-st-02a-kid-band-pasted-order-loads.png",
+      "at": "2026-11-09T10:45:56.284Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 2: History > Scan bracelet, the KID band code Z797-7DDNB5 pasted into the Bracelet code box; the paste alone did not search, Find was pressed: the band's page lists the order Z797-000001 (walk-in, ฿2420)"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-797/staging/797-st-02b-order-open-add-time.png",
+      "at": "2026-11-09T10:46:40.785Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 2: the order Z797-000001 opened from the kid band's page: the sale detail with its lines (3 kids, 1 adult, 1 Hour Play) and the Add time button beside Reprint"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-797/staging/797-st-02c-add-time-options-3-children.png",
+      "at": "2026-11-09T10:47:08.449Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 2: Add time on Z797-000001: \"฿300 per child per hour, on the same bracelets\"; the three kid bracelets ticked and greyed (locked), the adult bracelet ticked and free; How much time? +1 hour (3 children x 1 hour x ฿300) ฿900, +2 hours ฿1800, +3 hours ฿2700; no 30-minute option"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-797/staging/797-st-02d-plus-2-hours-sum-1800.png",
+      "at": "2026-11-09T10:47:37.336Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 2: +2 hours chosen (highlighted): Amount to charge ฿1800; the sum line under it reads \"3 children x 2 hours x ฿300 = ฿1,800\"; Continue to payment",
+      "note": "retaken without the password mask: the only password field on screen was the dialog's empty Scan bracelet box"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-797/staging/797-st-02e-kid-bands-ticked-and-locked.png",
+      "at": "2026-11-09T10:47:38.445Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 2: with +2 hours chosen, the dialog scrolled to its top: the three kid bracelets Z797-7DDNB5, Z797-6573QJ, Z797-WK6KDQ ticked and greyed out (they cannot be unticked), the adult Z797-6Y6PK9 ticked and still the staff's choice",
+      "note": "retaken without the password mask: the only password field on screen was the dialog's empty Scan bracelet box"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-797/staging/797-st-02f-cash-takes-1800.png",
+      "at": "2026-11-09T10:48:28.492Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 2: after Continue to payment the charge is recorded (pending) and Cash chosen: Cash received 1800.00, Change ฿0.00, Record cash; the sum line stays on screen"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-797/staging/797-st-02g-paid-time-added-1800-under-the-order.png",
+      "at": "2026-11-09T10:48:45.061Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 2: paid. Back on the order Z797-000001: the green flash \"Added +2 hours to 4 of 4 bracelets\"; the TIME ADDED card under the order's payment: +2 hours ฿1800, 4 bracelets · Cash · 09 Nov, 17:48 · by Som (Reception); BRACELETS PRINTED still the same 4 codes (no new wristband); Add time still offered"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-797/staging/797-st-02h-history-list-charge-1800.png",
+      "at": "2026-11-09T10:49:31.951Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 2: History list searched for \"Z797-\" (after leaving and re-entering History): Z797-000002 09 Nov 17:48 Paid ฿1800 (the extra-hour charge) above the order Z797-000001 Paid ฿2420"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-797/staging/797-st-02i-charge-detail-extra-hour-x-2.png",
+      "at": "2026-11-09T10:49:46.819Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 2: the charge Z797-000002 opened in History: an extra-time charge of ฿1800 paid in cash, its line \"Extra hour x 2\" ×3, \"Separate charge … The original admission receipt stays unchanged\"; no Add time on the charge itself"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-797/staging/797-st-03a-adult-band-pasted-same-order.png",
+      "at": "2026-11-09T10:50:45.214Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 3: History > Scan bracelet, the ADULT band code Z797-6Y6PK9 pasted into the Bracelet code box (then Find): the band's page lists the same order Z797-000001 (walk-in, ฿2420)"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-797/staging/797-st-03b-order-from-adult-band-time-added.png",
+      "at": "2026-11-09T10:50:56.081Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 3: the order Z797-000001 opened from the adult band's page: TIME ADDED +2 hours ฿1800 (4 bracelets · Cash) under the payment, Add time enabled again"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-797/staging/797-st-03c-second-add-time-offered.png",
+      "at": "2026-11-09T10:50:58.410Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 3: Add time pressed again on the same order (opened from the adult band): the three options are offered again (+1 hour ฿900, +2 hours ฿1800, +3 hours ฿2700 for 3 children); nothing chosen, not paid; closed"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-797/staging/797-st-04a-paid-full-day-pass-1-child.png",
+      "at": "2026-11-09T10:52:04.319Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 4: walk-in Full Day Pass for 1 child (+ the 1 adult) paid in cash: Payment Successful, receipt Z797-000003 ฿1440; bracelets ALL DAY: child Z797-4EKVWY, adult Z797-DAYJJ7; QR grids masked"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-797/staging/797-st-04b-full-day-refused.png",
+      "at": "2026-11-09T10:52:17.863Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 4: Add time on the Full Day Pass order Z797-000003 (opened from its kid band Z797-4EKVWY in History): under How much time? the red line \"An extra hour is added only to a 1 or 2-hour child ticket. A Full Day pass cannot take extra hours.\" and no options; Amount to charge ฿0; the button reads Choose a duration"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-797/staging/797-st-04c-paid-2-hours-play-adults-only.png",
+      "at": "2026-11-09T10:53:10.367Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 4: walk-in 2 Hours Play for 2 adults and no child paid in cash (the till allows it): Payment Successful, receipt and adult bracelets on screen; QR grids masked"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-797/staging/797-st-04d-no-child-refused.png",
+      "at": "2026-11-09T10:53:30.766Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 4: Add time on the adults-only order Z797-000004 (opened from its adult band Z797-G7MYXH in History): the red line \"This order has no child ticket. An extra hour is charged per child on a 1 or 2-hour child ticket.\" and no options; Amount to charge ฿0"
+    }
+  ],
+  "picturesRetaken": [
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-797/staging/797-st-02d-plus-2-hours-sum-1800.png",
+      "firstTakenAt": "2026-11-09T10:47:11.134Z",
+      "why": "retaken without the password mask: the first shot painted a stray magenta bar over the header for the dialog's empty, scrolled-off \"Scan bracelet\" box"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-797/staging/797-st-02e-kid-bands-ticked-and-locked.png",
+      "firstTakenAt": "2026-11-09T10:47:12.335Z",
+      "why": "retaken without the password mask: the first shot painted a stray magenta bar over the header for the dialog's empty, scrolled-off \"Scan bracelet\" box"
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1bfe8-e878-715d-9058-e11029cdd634",
+      "name": "ZZ TEST SCRUM-797 till",
+      "box": "Virtual box 1",
+      "prefix": "Z797",
+      "at": "2026-11-09T10:44:34.075Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1bfe9-48de-7b6b-834c-bce1c2cd7298",
+      "purpose": "oneHour",
+      "what": "ZZ TEST walk-in, Tourist, 1 Hour Play, 3 kids + 1 adults, cash only",
+      "at": "2026-11-09T10:45:02.354Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1bfec-110d-7c07-80e6-e56229757f3d",
+      "purpose": "extension1",
+      "what": "Extra hour charge (+2 hours, 3 children) on Z797-000001, rung at Continue to payment",
+      "at": "2026-11-09T10:48:01.020Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1bfef-656e-7156-84e1-aed094c46a37",
+      "purpose": "fullDay",
+      "what": "ZZ TEST walk-in, Tourist, Full Day Pass, 1 kids + 1 adults, cash only",
+      "at": "2026-11-09T10:51:42.891Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1bff0-7f56-7c77-aa41-7c7980989f1a",
+      "purpose": "adultsOnly",
+      "what": "ZZ TEST walk-in, Tourist, 2 Hours Play, 0 kids + 2 adults, cash only",
+      "at": "2026-11-09T10:52:55.032Z"
+    }
+  ],
+  "writes": [
+    {
+      "at": "2026-11-09T10:44:34.075Z",
+      "by": "admin api",
+      "what": "POST /branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200,
+      "result": {
+        "stationId": "01a1bfe8-e878-715d-9058-e11029cdd634",
+        "name": "ZZ TEST SCRUM-797 till",
+        "prefix": "Z797",
+        "box": "Virtual box 1",
+        "devices": [
+          "adult_band:Band Printer (adults)",
+          "kids_band:Band Printer (kids)",
+          "receipt:Receipt Printer 1"
+        ]
+      }
+    },
+    {
+      "at": "2026-11-09T10:44:40.154Z",
+      "by": "till (reception)",
+      "what": "POST /auth/sign-in + station pick",
+      "station": "ZZ TEST SCRUM-797 till"
+    },
+    {
+      "at": "2026-11-09T10:45:02.354Z",
+      "by": "till (reception)",
+      "what": "sale rung up at Pay",
+      "purpose": "oneHour",
+      "saleId": "01a1bfe9-48de-7b6b-834c-bce1c2cd7298",
+      "status": "tendering",
+      "net": [
+        {
+          "at": "2026-11-09T10:44:59.334Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:45:10.271Z",
+      "by": "till (reception)",
+      "what": "cash payment, full amount",
+      "purpose": "oneHour",
+      "saleId": "01a1bfe9-48de-7b6b-834c-bce1c2cd7298",
+      "receipt": "Z797-000001",
+      "status": "finalised",
+      "net": [
+        {
+          "at": "2026-11-09T10:45:10.655Z",
+          "method": "POST",
+          "path": "/api/sales/01a1bfe9-48de-7b6b-834c-bce1c2cd7298/finalise",
+          "status": 200,
+          "tender": {
+            "method": "cash",
+            "kind": "cash",
+            "amountSatang": 242000,
+            "tenderedSatang": 242000,
+            "changeSatang": 0
+          }
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:48:01.020Z",
+      "by": "till (reception)",
+      "what": "POST /sales/<source>/extensions (Continue to payment)",
+      "created": [
+        {
+          "at": "2026-11-09T10:48:01.175Z",
+          "path": "/api/sales/01a1bfe9-48de-7b6b-834c-bce1c2cd7298/extensions",
+          "status": 200,
+          "request": {
+            "optionId": "ext-120",
+            "selection": {
+              "mode": "bands",
+              "bandIds": [
+                "01a1bfe9-7650-7019-ace4-b493d93d5c55",
+                "01a1bfe9-7655-7f42-8a6b-b6c4aaf61112",
+                "01a1bfe9-7657-7198-99c5-0d50e210a9d3",
+                "01a1bfe9-7668-7995-91cb-ec3efe9b0775"
+              ]
+            },
+            "stationId": "01a1bfe8-e878-715d-9058-e11029cdd634"
+          },
+          "extension": {
+            "id": "01a1bfec-110d-7c07-80e6-e563353901d0",
+            "chargeSaleId": "01a1bfec-110d-7c07-80e6-e56229757f3d",
+            "optionId": "ext-120",
+            "label": "+2 hours",
+            "minutesAdded": 120,
+            "braceletCount": 4,
+            "amountSatang": 180000,
+            "selection": {
+              "mode": "bands",
+              "bandIds": [
+                "01a1bfe9-7650-7019-ace4-b493d93d5c55",
+                "01a1bfe9-7655-7f42-8a6b-b6c4aaf61112",
+                "01a1bfe9-7657-7198-99c5-0d50e210a9d3",
+                "01a1bfe9-7668-7995-91cb-ec3efe9b0775"
+              ]
+            },
+            "status": "pending",
+            "createdAt": "2026-11-09T10:48:01.536Z",
+            "createdByName": "Som (Reception)",
+            "appliedAt": null
+          },
+          "chargeSaleId": "01a1bfec-110d-7c07-80e6-e56229757f3d",
+          "chargeGross": 180000,
+          "chargeStatus": "tendering"
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:48:28.493Z",
+      "by": "till (reception)",
+      "what": "Add time charge paid in cash (Record cash)",
+      "saleId": "01a1bfec-110d-7c07-80e6-e56229757f3d",
+      "receipt": "Z797-000002",
+      "status": "finalised",
+      "net": [
+        {
+          "at": "2026-11-09T10:48:28.696Z",
+          "method": "POST",
+          "path": "/api/sales/01a1bfec-110d-7c07-80e6-e56229757f3d/finalise",
+          "status": 200,
+          "tender": {
+            "method": "cash",
+            "kind": "cash",
+            "amountSatang": 180000,
+            "tenderedSatang": 180000,
+            "changeSatang": 0
+          },
+          "finalised": true
+        },
+        {
+          "at": "2026-11-09T10:48:28.775Z",
+          "method": "GET",
+          "path": "/api/sales/01a1bfe9-48de-7b6b-834c-bce1c2cd7298/extensions",
+          "status": 200,
+          "tender": null,
+          "finalised": null
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:51:42.891Z",
+      "by": "till (reception)",
+      "what": "sale rung up at Pay",
+      "purpose": "fullDay",
+      "saleId": "01a1bfef-656e-7156-84e1-aed094c46a37",
+      "status": "tendering",
+      "net": [
+        {
+          "at": "2026-11-09T10:51:39.869Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:51:51.155Z",
+      "by": "till (reception)",
+      "what": "cash payment, full amount",
+      "purpose": "fullDay",
+      "saleId": "01a1bfef-656e-7156-84e1-aed094c46a37",
+      "receipt": "Z797-000003",
+      "status": "finalised",
+      "net": [
+        {
+          "at": "2026-11-09T10:51:51.417Z",
+          "method": "POST",
+          "path": "/api/sales/01a1bfef-656e-7156-84e1-aed094c46a37/finalise",
+          "status": 200,
+          "tender": {
+            "method": "cash",
+            "kind": "cash",
+            "amountSatang": 144000,
+            "tenderedSatang": 144000,
+            "changeSatang": 0
+          }
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:52:55.032Z",
+      "by": "till (reception)",
+      "what": "sale rung up at Pay",
+      "purpose": "adultsOnly",
+      "saleId": "01a1bff0-7f56-7c77-aa41-7c7980989f1a",
+      "status": "tendering",
+      "net": [
+        {
+          "at": "2026-11-09T10:52:52.030Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:53:05.055Z",
+      "by": "till (reception)",
+      "what": "cash payment, full amount",
+      "purpose": "adultsOnly",
+      "saleId": "01a1bff0-7f56-7c77-aa41-7c7980989f1a",
+      "receipt": "Z797-000004",
+      "status": "finalised",
+      "net": [
+        {
+          "at": "2026-11-09T10:53:05.587Z",
+          "method": "POST",
+          "path": "/api/sales/01a1bff0-7f56-7c77-aa41-7c7980989f1a/finalise",
+          "status": 200,
+          "tender": {
+            "method": "cash",
+            "kind": "cash",
+            "amountSatang": 70000,
+            "tenderedSatang": 70000,
+            "changeSatang": 0
+          }
+        }
+      ]
+    }
+  ],
+  "printJobsAfter": {
+    "at": "2026-11-09T10:54:46.696Z",
+    "signIn": 200,
+    "sales": [
+      {
+        "purpose": "oneHour",
+        "receipt": "Z797-000001",
+        "jobs": [
+          {
+            "kind": "adult_wristband",
+            "role": "adult_band",
+            "device": "Band Printer (adults)",
+            "status": "printed",
+            "error": null
+          },
+          {
+            "kind": "kids_wristband",
+            "role": "kids_band",
+            "device": "Band Printer (kids)",
+            "status": "printed",
+            "error": null
+          },
+          {
+            "kind": "kids_wristband",
+            "role": "kids_band",
+            "device": "Band Printer (kids)",
+            "status": "printed",
+            "error": null
+          },
+          {
+            "kind": "kids_wristband",
+            "role": "kids_band",
+            "device": "Band Printer (kids)",
+            "status": "printed",
+            "error": null
+          },
+          {
+            "kind": "receipt",
+            "role": "receipt",
+            "device": "Receipt Printer 1",
+            "status": "printed",
+            "error": null
+          }
+        ]
+      },
+      {
+        "purpose": "extension1",
+        "receipt": "Z797-000002",
+        "jobs": [
+          {
+            "kind": "receipt",
+            "role": "receipt",
+            "device": "Receipt Printer 1",
+            "status": "printed",
+            "error": null
+          }
+        ]
+      },
+      {
+        "purpose": "fullDay",
+        "receipt": "Z797-000003",
+        "jobs": [
+          {
+            "kind": "adult_wristband",
+            "role": "adult_band",
+            "device": "Band Printer (adults)",
+            "status": "printed",
+            "error": null
+          },
+          {
+            "kind": "kids_wristband",
+            "role": "kids_band",
+            "device": "Band Printer (kids)",
+            "status": "printed",
+            "error": null
+          },
+          {
+            "kind": "receipt",
+            "role": "receipt",
+            "device": "Receipt Printer 1",
+            "status": "printed",
+            "error": null
+          }
+        ]
+      },
+      {
+        "purpose": "adultsOnly",
+        "receipt": "Z797-000004",
+        "jobs": [
+          {
+            "kind": "adult_wristband",
+            "role": "adult_band",
+            "device": "Band Printer (adults)",
+            "status": "printed",
+            "error": null
+          },
+          {
+            "kind": "adult_wristband",
+            "role": "adult_band",
+            "device": "Band Printer (adults)",
+            "status": "printed",
+            "error": null
+          },
+          {
+            "kind": "receipt",
+            "role": "receipt",
+            "device": "Receipt Printer 1",
+            "status": "printed",
+            "error": null
+          }
+        ]
+      }
+    ],
+    "signOut": 200,
+    "meAfter": 401
+  },
+  "cleanup": {
+    "actions": [
+      {
+        "at": "2026-11-09T10:54:19.622Z",
+        "what": "till sign-out (its own session route)",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-09T10:54:19.794Z",
+        "what": "unassign printers on ZZ TEST SCRUM-797 till",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-09T10:54:19.884Z",
+        "what": "archive station ZZ TEST SCRUM-797 till",
+        "status": 200,
+        "code": null
+      }
+    ],
+    "startedAt": "2026-11-09T10:54:19.333Z",
+    "salesBefore": [
+      {
+        "id": "01a1bff0-7f56-7c77-aa41-7c7980989f1a",
+        "receipt": "Z797-000004",
+        "status": "finalised",
+        "gross": 70000
+      },
+      {
+        "id": "01a1bfef-656e-7156-84e1-aed094c46a37",
+        "receipt": "Z797-000003",
+        "status": "finalised",
+        "gross": 144000
+      },
+      {
+        "id": "01a1bfec-110d-7c07-80e6-e56229757f3d",
+        "receipt": "Z797-000002",
+        "status": "finalised",
+        "gross": 180000
+      },
+      {
+        "id": "01a1bfe9-48de-7b6b-834c-bce1c2cd7298",
+        "receipt": "Z797-000001",
+        "status": "finalised",
+        "gross": 242000
+      }
+    ],
+    "tillMeAfterSignOut": 401,
+    "readBack": {
+      "at": "2026-11-09T10:54:20.133Z",
+      "till": {
+        "id": "01a1bfe8-e878-715d-9058-e11029cdd634",
+        "name": "ZZ TEST SCRUM-797 till",
+        "archived": true,
+        "archivedAt": null,
+        "devices": 0
+      },
+      "salesAfter": [
+        {
+          "id": "01a1bff0-7f56-7c77-aa41-7c7980989f1a",
+          "receipt": "Z797-000004",
+          "status": "finalised",
+          "gross": 70000
+        },
+        {
+          "id": "01a1bfef-656e-7156-84e1-aed094c46a37",
+          "receipt": "Z797-000003",
+          "status": "finalised",
+          "gross": 144000
+        },
+        {
+          "id": "01a1bfec-110d-7c07-80e6-e56229757f3d",
+          "receipt": "Z797-000002",
+          "status": "finalised",
+          "gross": 180000
+        },
+        {
+          "id": "01a1bfe9-48de-7b6b-834c-bce1c2cd7298",
+          "receipt": "Z797-000001",
+          "status": "finalised",
+          "gross": 242000
+        }
+      ],
+      "walkInNumberIsNotAMember": {
+        "status": 200,
+        "found": false
+      },
+      "untouched": [
+        {
+          "name": "FWBooth1",
+          "archived": false,
+          "devices": 1
+        },
+        {
+          "name": "Reception Till 1",
+          "archived": false,
+          "devices": 7
+        },
+        {
+          "name": "Till 1 (Pi)",
+          "archived": false,
+          "devices": 4
+        },
+        {
+          "name": "Till 2 (test)",
+          "archived": false,
+          "devices": 4
+        }
+      ]
+    },
+    "finishedAt": "2026-11-09T10:54:20.133Z",
+    "adminSignOut": {
+      "at": "2026-11-09T10:54:23.986Z",
+      "status": 200,
+      "meAfter": 401
+    }
+  },
+  "pageErrors": [],
+  "findings": [
+    "History's \"Scan bracelet\" box does not search on a paste: in all four pastes the code sat in the box and Find had to be pressed. SCRUM-790's commit (1cba0361d) says the paste-to-load change covers History, but it only changed apps/pos/src/components/fnb/ScanWristband.tsx, which History does not use (History.tsx has its own Bracelet code input). The order loaded on Find every time.",
+    "The History list on screen did not show the new charge Z797-000002 until History was left and opened again (the open list is not re-read after an Add time payment). The order's own Time added card showed it at once.",
+    "The option amounts read ฿900 / ฿1800 / ฿2700 and \"Amount to charge ฿1800\" without a thousands comma; the sum line reads ฿1,800 with one (the lane kept the dialog's existing baht() style on purpose).",
+    "The sale detail returns print jobs with kind and status only, so the receipt's printed text (\"3 Extra hour x 2\") was not read back; the charge's line was (label \"Extra hour x 2\", quantity 3, unit ฿600)."
+  ],
+  "notTouched": "No real till was opened or pressed (Till 1 (Pi), Till 2 (test), Reception Till 1, FWBooth1 read back unchanged); the park Pi was not used; no till notice was pressed (the \"7 overdue\", \"4 out of stock\" and \"3 jobs waiting\" chips were left alone); no SMS, no setting changed; cash only, no card or QR payment started; no refund made. The four sales stay recorded."
+}
