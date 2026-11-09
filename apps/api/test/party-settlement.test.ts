@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
@@ -37,6 +38,7 @@ import type {
   OtoAppDirectory,
 } from '../src/services/otoapp-directory';
 import { salePrintSnapshotOf } from '../src/services/sale-printing';
+import { simulateGatewayEvent } from '../src/services/payments/gateway';
 import {
   ADMIN,
   CENTRAL_BRANCH_CODE,
@@ -70,6 +72,7 @@ import {
 
 let ctx: TestContext;
 let central: string;
+let operatorId: string;
 let till: string;
 let reception: string;
 let admin: string;
@@ -78,6 +81,7 @@ let socksPriceSatang: number;
 
 const appTenant = newId();
 const appCentral = newId();
+const GATEWAY_SECRET = randomBytes(32).toString('hex');
 
 /** A Wednesday, a Saturday, and a Tuesday inside the seeded Loy Krathong range (24–25 November). */
 const WEEKDAY = '2026-11-18';
@@ -267,8 +271,20 @@ async function socksHeld(): Promise<number> {
 }
 
 beforeAll(async () => {
-  ctx = await createTestContext({ otoapp: true });
+  // The gateway is the simulator, signed and delivered through the real
+  // notification path, as in `scrum-732-routed-tenders.test.ts`.
+  ctx = await createTestContext({
+    otoapp: true,
+    env: {
+      PGW_PROVIDER: 'simulator',
+      PGW_MERCHANT_ID: 'OTO804MERCHANT',
+      PGW_SECRET_KEY: GATEWAY_SECRET,
+      PGW_WEBHOOK_SECRET: 'a-path-filter-not-a-credential',
+    },
+  });
   central = await branchIdByCode(ctx.db, CENTRAL_BRANCH_CODE);
+  const [hkt] = await ctx.db.select().from(branch).where(eq(branch.id, central));
+  operatorId = hkt!.operatorId;
   reception = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
   admin = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
   const [t1] = await ctx.db.select().from(station).where(and(eq(station.branchId, central), eq(station.codePrefix, 'T1')));
@@ -777,5 +793,49 @@ describe('a settlement left unpaid is voided, and the party may be settled again
     // The till's grid reads the enabled ones only.
     const grid = await call<{ methods: Array<{ id: string; enabled: boolean }> }>('GET', admin, '/payment-methods');
     expect(grid.body.methods.find((m) => m.id === PARTY_DEPOSIT_TENDER.code)?.enabled ?? false).toBe(false);
+  });
+});
+
+// =============================================================================
+// The balance paid by QR, with the till gone
+// =============================================================================
+
+describe('a settlement balance paid by QR through the gateway, with no till close after it', () => {
+  it('the gateway closes the sale and the OTO App is told which sale settled the party', async () => {
+    const party = newId();
+    await appParty(party, 'Party paid by QR', WEEKDAY, 16_900, 3_000);
+    await appPlan(party, WEEKDAY, FLORESTA, { depositSatang: 300_000 });
+    const [before] = await ctx.db.select({ routing: station.paymentRouting }).from(station).where(eq(station.id, till));
+    await ctx.db.update(station).set({ paymentRouting: { qr: 'gateway' } }).where(eq(station.id, till));
+    try {
+      const settled = await settle(party, { kids: 10, adults: 4, socksGiven: 0 });
+      expect(settled.status, JSON.stringify(settled.body)).toBe(200);
+      const saleId = settled.body.sale.id;
+      expect(settled.body.sale).toMatchObject({ status: 'tendering', outstandingSatang: 1_390_000 });
+
+      const started = await call<{ route: string; attempt: { id: string; amountSatang: number } | null }>(
+        'POST',
+        reception,
+        '/payments/attempts',
+        { saleId, tender: 'qr', method: 'promptpay', kind: 'qr', requestQrPayload: true, qrDirection: 'show', actionId: newId() },
+      );
+      expect(started.status, JSON.stringify(started.body)).toBe(200);
+      expect(started.body.route).toBe('gateway');
+      expect(started.body.attempt).toMatchObject({ amountSatang: 1_390_000 });
+      expect(editCalls).toHaveLength(0);
+
+      // Nobody presses anything more: only the gateway answers.
+      await simulateGatewayEvent(ctx.db, ctx.app.env, ctx.app.log, { attemptId: started.body.attempt!.id, event: 'paid', operatorId });
+      const [closed] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+      expect(closed).toMatchObject({ status: 'finalised' });
+      expect(closed!.receiptNumber).toBeTruthy();
+      expect(editCalls).toEqual([expect.objectContaining({ eventId: party, body: expect.objectContaining({ fields: { posSaleId: saleId } }) })]);
+      const [row] = await ctx.db.select().from(partySettlement).where(eq(partySettlement.id, settled.body.settlement.id));
+      expect(row!.settledAt).not.toBeNull();
+      const [edit] = await ctx.db.select().from(partyEdit).where(eq(partyEdit.id, row!.writeBackEditId!));
+      expect(edit).toMatchObject({ fields: { posSaleId: saleId }, syncState: 'synced' });
+    } finally {
+      await ctx.db.update(station).set({ paymentRouting: before!.routing }).where(eq(station.id, till));
+    }
   });
 });

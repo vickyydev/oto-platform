@@ -1179,6 +1179,12 @@ export async function settlePaidAttempt(
   // SCRUM-732 — a pass this money closed goes to the OTO App now, till or no till.
   if (outcome.finalisedSale && input.attempt.saleId) {
     await writeBackSalePass(db, log, input.attempt.saleId);
+    // SCRUM-804 — and a party it settled tells the OTO App which sale did, till
+    // or no till (the notification and the inquiry sweep both land here).
+    // Loaded at the call: `party-settlement.ts` reaches this file through
+    // `parties.ts`, so a static import would be a load-order cycle.
+    const { writeBackPartySettlement } = await import('../party-settlement');
+    await writeBackPartySettlement(db, log, input.attempt.saleId);
   }
   const { bookingPaid, ...settled } = outcome;
   return {
