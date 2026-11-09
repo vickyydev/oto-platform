@@ -1,0 +1,11 @@
+-- SCRUM-771 (an iPad till's presence, and its scanner's last use) -
+-- expand-only: one nullable column, which PostgreSQL adds without rewriting
+-- the table. A release that does not know the column never reads it.
+--
+--   core.station.last_scan_at   timestamptz, null
+--       when a scanner last typed a code into the till's screen, as the
+--       screen reported it on its 60-second heartbeat. A cradle plugged into
+--       an iPad is a keyboard to it, so this is the scanner's only presence.
+--       Null on every station before this. The screen's own presence uses the
+--       existing core.station.last_seen_at, which nothing wrote until now.
+ALTER TABLE "core"."station" ADD COLUMN "last_scan_at" timestamp with time zone;

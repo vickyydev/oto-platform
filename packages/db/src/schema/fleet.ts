@@ -377,7 +377,24 @@ export const station = core.table(
      * release now deployed still reads it; the contract step drops it.
      */
     deviceKeyHash: text('device_key_hash'),
+    /**
+     * When the till's own screen last called in (SCRUM-771): the iPad, or any
+     * browser, holding a staff session at this station sends a heartbeat every
+     * 60 seconds while the till is open, locked or not. A box's presence is its
+     * own heartbeat on `box`; this is the screen's, which nothing else reports.
+     * Written outside `updated_at`, because presence is not a change to the
+     * station.
+     */
     lastSeenAt: timestamp('last_seen_at', { withTimezone: true, mode: 'date' }),
+    /**
+     * When a scanner last typed a code into that screen, as the screen reported
+     * it on its heartbeat (SCRUM-771). A cradle plugged into an iPad is a
+     * keyboard to it: the till can know the scanner only by the codes it
+     * receives, so this time is the scanner's only presence. Never moves
+     * backwards, so two screens at one station cannot undo each other. Null
+     * until a screen has reported one.
+     */
+    lastScanAt: timestamp('last_scan_at', { withTimezone: true, mode: 'date' }),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
       .notNull()

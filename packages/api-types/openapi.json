@@ -20022,6 +20022,48 @@
                         },
                         "archived": {
                           "type": "boolean"
+                        },
+                        "screen": {
+                          "type": "object",
+                          "properties": {
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "online",
+                                "offline"
+                              ]
+                            },
+                            "lastSeenAt": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "lastSeenAgeSeconds": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "offlineAfterSeconds": {
+                              "type": "integer"
+                            },
+                            "scannerLastUsedAt": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "scannerLastUsedAgeSeconds": {
+                              "type": "integer",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "state",
+                            "lastSeenAt",
+                            "lastSeenAgeSeconds",
+                            "offlineAfterSeconds",
+                            "scannerLastUsedAt",
+                            "scannerLastUsedAgeSeconds"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true,
+                          "default": null
                         }
                       },
                       "required": [
@@ -20310,6 +20352,48 @@
                           },
                           "archived": {
                             "type": "boolean"
+                          },
+                          "screen": {
+                            "type": "object",
+                            "properties": {
+                              "state": {
+                                "type": "string",
+                                "enum": [
+                                  "online",
+                                  "offline"
+                                ]
+                              },
+                              "lastSeenAt": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "lastSeenAgeSeconds": {
+                                "type": "integer",
+                                "nullable": true
+                              },
+                              "offlineAfterSeconds": {
+                                "type": "integer"
+                              },
+                              "scannerLastUsedAt": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "scannerLastUsedAgeSeconds": {
+                                "type": "integer",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "state",
+                              "lastSeenAt",
+                              "lastSeenAgeSeconds",
+                              "offlineAfterSeconds",
+                              "scannerLastUsedAt",
+                              "scannerLastUsedAgeSeconds"
+                            ],
+                            "additionalProperties": false,
+                            "nullable": true,
+                            "default": null
                           }
                         },
                         "required": [
@@ -20697,6 +20781,48 @@
                         },
                         "archived": {
                           "type": "boolean"
+                        },
+                        "screen": {
+                          "type": "object",
+                          "properties": {
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "online",
+                                "offline"
+                              ]
+                            },
+                            "lastSeenAt": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "lastSeenAgeSeconds": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "offlineAfterSeconds": {
+                              "type": "integer"
+                            },
+                            "scannerLastUsedAt": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "scannerLastUsedAgeSeconds": {
+                              "type": "integer",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "state",
+                            "lastSeenAt",
+                            "lastSeenAgeSeconds",
+                            "offlineAfterSeconds",
+                            "scannerLastUsedAt",
+                            "scannerLastUsedAgeSeconds"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true,
+                          "default": null
                         }
                       },
                       "required": [
@@ -20942,6 +21068,48 @@
                         },
                         "archived": {
                           "type": "boolean"
+                        },
+                        "screen": {
+                          "type": "object",
+                          "properties": {
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "online",
+                                "offline"
+                              ]
+                            },
+                            "lastSeenAt": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "lastSeenAgeSeconds": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "offlineAfterSeconds": {
+                              "type": "integer"
+                            },
+                            "scannerLastUsedAt": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "scannerLastUsedAgeSeconds": {
+                              "type": "integer",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "state",
+                            "lastSeenAt",
+                            "lastSeenAgeSeconds",
+                            "offlineAfterSeconds",
+                            "scannerLastUsedAt",
+                            "scannerLastUsedAgeSeconds"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true,
+                          "default": null
                         }
                       },
                       "required": [
@@ -21319,6 +21487,48 @@
                         },
                         "archived": {
                           "type": "boolean"
+                        },
+                        "screen": {
+                          "type": "object",
+                          "properties": {
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "online",
+                                "offline"
+                              ]
+                            },
+                            "lastSeenAt": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "lastSeenAgeSeconds": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "offlineAfterSeconds": {
+                              "type": "integer"
+                            },
+                            "scannerLastUsedAt": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "scannerLastUsedAgeSeconds": {
+                              "type": "integer",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "state",
+                            "lastSeenAt",
+                            "lastSeenAgeSeconds",
+                            "offlineAfterSeconds",
+                            "scannerLastUsedAt",
+                            "scannerLastUsedAgeSeconds"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true,
+                          "default": null
                         }
                       },
                       "required": [
@@ -24474,6 +24684,62 @@
                     "cacheAppliedAt",
                     "cacheAgeSeconds",
                     "journalEpoch"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/station/heartbeat": {
+      "post": {
+        "description": "The till screen standing at a station says it is still there, every 60 seconds while it is open, locked or not, with how long ago a scanner last typed a code into it (a scanner plugged into an iPad is a keyboard to it, so that is its only presence). Stamps the station as seen; writes no audit row and changes nothing else. The station is the one this session picked, never one named in the body.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "lastScanSecondsAgo": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2592000,
+                    "nullable": true,
+                    "default": null
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "stationId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "lastSeenAt": {
+                      "type": "string"
+                    },
+                    "scannerLastUsedAt": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "stationId",
+                    "lastSeenAt",
+                    "scannerLastUsedAt"
                   ],
                   "additionalProperties": false
                 }

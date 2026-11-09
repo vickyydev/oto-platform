@@ -9629,6 +9629,16 @@ export interface paths {
                                 }[];
                                 lastSeenAt: string | null;
                                 archived: boolean;
+                                /** @default null */
+                                screen: {
+                                    /** @enum {string} */
+                                    state: "online" | "offline";
+                                    lastSeenAt: string | null;
+                                    lastSeenAgeSeconds: number | null;
+                                    offlineAfterSeconds: number;
+                                    scannerLastUsedAt: string | null;
+                                    scannerLastUsedAgeSeconds: number | null;
+                                } | null;
                             };
                             staffToken: {
                                 token: string;
@@ -9722,6 +9732,16 @@ export interface paths {
                                 }[];
                                 lastSeenAt: string | null;
                                 archived: boolean;
+                                /** @default null */
+                                screen: {
+                                    /** @enum {string} */
+                                    state: "online" | "offline";
+                                    lastSeenAt: string | null;
+                                    lastSeenAgeSeconds: number | null;
+                                    offlineAfterSeconds: number;
+                                    scannerLastUsedAt: string | null;
+                                    scannerLastUsedAgeSeconds: number | null;
+                                } | null;
                             }[];
                         };
                     };
@@ -9833,6 +9853,16 @@ export interface paths {
                                 }[];
                                 lastSeenAt: string | null;
                                 archived: boolean;
+                                /** @default null */
+                                screen: {
+                                    /** @enum {string} */
+                                    state: "online" | "offline";
+                                    lastSeenAt: string | null;
+                                    lastSeenAgeSeconds: number | null;
+                                    offlineAfterSeconds: number;
+                                    scannerLastUsedAt: string | null;
+                                    scannerLastUsedAgeSeconds: number | null;
+                                } | null;
                             };
                         };
                     };
@@ -9916,6 +9946,16 @@ export interface paths {
                                 }[];
                                 lastSeenAt: string | null;
                                 archived: boolean;
+                                /** @default null */
+                                screen: {
+                                    /** @enum {string} */
+                                    state: "online" | "offline";
+                                    lastSeenAt: string | null;
+                                    lastSeenAgeSeconds: number | null;
+                                    offlineAfterSeconds: number;
+                                    scannerLastUsedAt: string | null;
+                                    scannerLastUsedAgeSeconds: number | null;
+                                } | null;
                             };
                         };
                     };
@@ -10054,6 +10094,16 @@ export interface paths {
                                 }[];
                                 lastSeenAt: string | null;
                                 archived: boolean;
+                                /** @default null */
+                                screen: {
+                                    /** @enum {string} */
+                                    state: "online" | "offline";
+                                    lastSeenAt: string | null;
+                                    lastSeenAgeSeconds: number | null;
+                                    offlineAfterSeconds: number;
+                                    scannerLastUsedAt: string | null;
+                                    scannerLastUsedAgeSeconds: number | null;
+                                } | null;
                             };
                         };
                     };
@@ -11307,6 +11357,54 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/station/heartbeat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description The till screen standing at a station says it is still there, every 60 seconds while it is open, locked or not, with how long ago a scanner last typed a code into it (a scanner plugged into an iPad is a keyboard to it, so that is its only presence). Stamps the station as seen; writes no audit row and changes nothing else. The station is the one this session picked, never one named in the body. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @default null */
+                        lastScanSecondsAgo?: number | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            stationId: string;
+                            lastSeenAt: string;
+                            scannerLastUsedAt: string | null;
+                        };
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;

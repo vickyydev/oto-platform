@@ -743,6 +743,13 @@
       "when": 1794217880823,
       "tag": "0105_golden_ticket",
       "breakpoints": true
+    },
+    {
+      "idx": 106,
+      "version": "7",
+      "when": 1794227813789,
+      "tag": "0106_station_screen_presence",
+      "breakpoints": true
     }
   ]
 }

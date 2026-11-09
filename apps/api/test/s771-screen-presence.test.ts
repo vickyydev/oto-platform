@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
-import { eq, like } from 'drizzle-orm';
+import { and, eq, like } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { alert, branch, deviceCredential, station } from '@oto/db';
+import { alert, auditLog, branch, deviceCredential, station } from '@oto/db';
 import { runWatchdog } from '../src/services/jobs';
 import type { AlertChannel, AlertMessage } from '../src/services/ops';
 import {
@@ -9,22 +9,27 @@ import {
   evaluateDisplay,
   screenOfflineAfterS,
   screenPresence,
+  tillScreen,
   type DisplayPresenceRow,
 } from '../src/services/screen-presence';
 import {
   ADMIN,
+  RECEPTION,
   createTestContext,
   signInAs,
+  takeStation,
   teardownAll,
   type TestContext,
 } from './helpers';
 
 /**
- * SCRUM-771 — a customer display's Offline and its alert.
+ * SCRUM-771 — a customer display's Offline and its alert, and the presence of a
+ * till's own screen (the iPad) with its scanner's last use.
  *
  * The display rule is the box's offline rule pointed at a screen: the same
  * threshold (`BOX_OFFLINE_AFTER_S`), the same watchdog `open` / `close`, the
- * same opening-hours judgement.
+ * same opening-hours judgement. The till's screen is shown and never raised,
+ * because the box rules raise nothing about a till station either.
  */
 
 const NOW = Date.parse('2026-11-09T05:00:00.000Z');
@@ -56,6 +61,26 @@ describe('SCRUM-771 — presence, read the same way for every screen', () => {
     expect(displayPresence({ ...paired, pairedAt: null }, NOW, THRESHOLD)).toBeNull();
     expect(displayPresence({ ...paired, revokedAt: new Date(NOW) }, NOW, THRESHOLD)).toBeNull();
     expect(displayPresence({ ...paired, kind: 'booth' }, NOW, THRESHOLD)).toBeNull();
+  });
+
+  it('answers a till’s screen with its scanner’s last use, and nothing for any other kind', () => {
+    const screen = tillScreen(
+      { kind: 'till', lastSeenAt: new Date(NOW - 30_000), lastScanAt: new Date(NOW - 125_000) },
+      NOW,
+      THRESHOLD,
+    );
+    expect(screen).toMatchObject({
+      state: 'online',
+      lastSeenAgeSeconds: 30,
+      scannerLastUsedAt: new Date(NOW - 125_000).toISOString(),
+      scannerLastUsedAgeSeconds: 125,
+    });
+    expect(tillScreen({ kind: 'till', lastSeenAt: null, lastScanAt: null }, NOW, THRESHOLD)).toMatchObject({
+      state: 'offline', scannerLastUsedAt: null, scannerLastUsedAgeSeconds: null,
+    });
+    for (const kind of ['booth', 'kiosk', 'gate', 'display']) {
+      expect(tillScreen({ kind, lastSeenAt: new Date(NOW), lastScanAt: null }, NOW, THRESHOLD)).toBeNull();
+    }
   });
 
   describe('the display rule', () => {
@@ -113,9 +138,10 @@ describe('SCRUM-771 — presence, read the same way for every screen', () => {
   });
 });
 
-describe('SCRUM-771 — displays against the api and the watchdog', () => {
+describe('SCRUM-771 — displays and till screens against the api and the watchdog', () => {
   let ctx: TestContext;
   let adminCookie: string;
+  let receptionCookie: string;
   let tillId: string;
   let branchId: string;
   let branchName: string;
@@ -144,14 +170,23 @@ describe('SCRUM-771 — displays against the api and the watchdog', () => {
     return (res.json().credentials as Array<{ id: string; presence: Record<string, unknown> | null }>)
       .find((c) => c.id === displayId)!;
   };
+  const stationRead = async (id = tillId) => {
+    const res = await ctx.app.inject({ method: 'GET', url: `/stations/${id}`, headers: { cookie: adminCookie } });
+    expect(res.statusCode).toBe(200);
+    return res.json().station as { kind: string; lastSeenAt: string | null; screen: Record<string, unknown> | null };
+  };
+  const heartbeat = (cookie: string, payload: Record<string, unknown> = {}) =>
+    ctx.app.inject({ method: 'POST', url: '/me/station/heartbeat', headers: { cookie }, payload });
 
   beforeAll(async () => {
     ctx = await createTestContext();
     adminCookie = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+    receptionCookie = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
     const [till] = await ctx.db.select().from(station).where(eq(station.name, 'Reception Till 1'));
     tillId = till!.id;
     branchId = till!.branchId;
     branchName = (await ctx.db.select().from(branch).where(eq(branch.id, branchId)))[0]!.name;
+    await takeStation(ctx.app, receptionCookie, tillId);
     authorization = `Bearer ${randomBytes(32).toString('hex')}`;
     const mint = await ctx.app.inject({ method: 'POST', url: '/display/pairing', headers: { authorization }, payload: {} });
     expect(mint.statusCode).toBe(200);
@@ -226,6 +261,79 @@ describe('SCRUM-771 — displays against the api and the watchdog', () => {
     expect(await alertsOf(`display.offline:${displayId}`)).toHaveLength(0);
     expect(delivered.filter((d) => d.key.startsWith('display.'))).toHaveLength(0);
     expect((await credentialRead()).presence).toMatchObject({ state: 'offline' });
+  });
+
+  it('stamps the till’s screen on its heartbeat, and the station read shows it online with its scanner’s last use', async () => {
+    const before = (await ctx.db.select().from(station).where(eq(station.id, tillId)))[0]!;
+    const res = await heartbeat(receptionCookie, { lastScanSecondsAgo: 30 });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as { stationId: string; lastSeenAt: string; scannerLastUsedAt: string | null };
+    expect(body.stationId).toBe(tillId);
+    expect(Math.abs(Date.parse(body.lastSeenAt) - Date.now())).toBeLessThan(5_000);
+    expect(Math.abs(Date.parse(body.scannerLastUsedAt!) - (Date.now() - 30_000))).toBeLessThan(5_000);
+
+    const read = await stationRead();
+    expect(read.lastSeenAt).toBe(body.lastSeenAt);
+    expect(read.screen).toMatchObject({
+      state: 'online', lastSeenAt: body.lastSeenAt, scannerLastUsedAt: body.scannerLastUsedAt,
+      offlineAfterSeconds: screenOfflineAfterS(),
+    });
+    expect(read.screen!.scannerLastUsedAgeSeconds as number).toBeGreaterThanOrEqual(29);
+    expect(read.screen!.scannerLastUsedAgeSeconds as number).toBeLessThan(40);
+
+    const list = await ctx.app.inject({ method: 'GET', url: `/branches/${branchId}/stations`, headers: { cookie: adminCookie } });
+    const listed = (list.json().stations as Array<{ id: string; kind: string; screen: unknown }>);
+    expect(listed.find((s) => s.id === tillId)!.screen).toMatchObject({ state: 'online' });
+    // Only a till has a screen of its own: a booth is its box.
+    for (const other of listed.filter((s) => s.kind !== 'till')) expect(other.screen).toBeNull();
+
+    // Presence is not a change to the station: no version, no edit time, no audit row.
+    const after = (await ctx.db.select().from(station).where(eq(station.id, tillId)))[0]!;
+    expect(after.updatedAt).toEqual(before.updatedAt);
+    expect(after.configVersion).toBe(before.configVersion);
+    const audits = await ctx.db.select().from(auditLog)
+      .where(and(eq(auditLog.entityId, tillId), like(auditLog.action, '%heartbeat%')));
+    expect(audits).toHaveLength(0);
+  });
+
+  it('never moves the scanner’s time backwards, and a heartbeat with no scan keeps it', async () => {
+    const first = (await heartbeat(receptionCookie, { lastScanSecondsAgo: 20 })).json().scannerLastUsedAt as string;
+    // An older scan reported later — a second screen, or a heartbeat delivered late.
+    expect((await heartbeat(receptionCookie, { lastScanSecondsAgo: 3_600 })).json().scannerLastUsedAt).toBe(first);
+    expect((await heartbeat(receptionCookie, {})).json().scannerLastUsedAt).toBe(first);
+    expect((await heartbeat(receptionCookie, { lastScanSecondsAgo: null })).json().scannerLastUsedAt).toBe(first);
+    const newer = (await heartbeat(receptionCookie, { lastScanSecondsAgo: 0 })).json().scannerLastUsedAt as string;
+    expect(Date.parse(newer)).toBeGreaterThan(Date.parse(first));
+  });
+
+  it('keeps reporting from a locked till, which may still do no business', async () => {
+    const cookie = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    await takeStation(ctx.app, cookie, tillId);
+    expect((await ctx.app.inject({ method: 'POST', url: '/auth/lock', headers: { cookie } })).statusCode).toBe(200);
+    expect((await ctx.app.inject({ method: 'GET', url: '/me/station/link', headers: { cookie } })).statusCode).toBe(423);
+    const res = await heartbeat(cookie, { lastScanSecondsAgo: null });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().stationId).toBe(tillId);
+  });
+
+  it('reads a till quiet past the threshold as offline, and raises nothing about it', async () => {
+    await ctx.db.update(station).set({ lastSeenAt: new Date(Date.now() - (screenOfflineAfterS() + 120) * 1000) })
+      .where(eq(station.id, tillId));
+    expect((await stationRead()).screen).toMatchObject({ state: 'offline' });
+    await watchdog();
+    const raised = await ctx.db.select().from(alert).where(like(alert.key, `%${tillId}%`));
+    expect(raised).toHaveLength(0);
+    await heartbeat(receptionCookie);
+    expect((await stationRead()).screen).toMatchObject({ state: 'online' });
+  });
+
+  it('refuses a session standing at no station, no session at all, and a scan age that is not one', async () => {
+    const none = await heartbeat(adminCookie);
+    expect(none.statusCode).toBe(409);
+    expect(none.json().error.code).toBe('NO_STATION_PICKED');
+    expect((await ctx.app.inject({ method: 'POST', url: '/me/station/heartbeat', payload: {} })).statusCode).toBe(401);
+    expect((await heartbeat(receptionCookie, { lastScanSecondsAgo: -1 })).statusCode).toBe(400);
+    expect((await heartbeat(receptionCookie, { lastScanSecondsAgo: 1.5 })).statusCode).toBe(400);
   });
 
   // Last: it revokes the one display this file pairs.

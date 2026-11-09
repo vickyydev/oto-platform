@@ -12,7 +12,7 @@ import {
   STATION_DEVICE_ROLES,
   STATION_KINDS,
 } from '@oto/db';
-import { DeviceSettingsSchema, newId, PaymentRoutingSchema, ScreenPresenceSchema } from '@oto/shared';
+import { DeviceSettingsSchema, newId, PaymentRoutingSchema, ScreenPresenceSchema, TillScreenSchema } from '@oto/shared';
 import type { App } from '../app';
 import { AppError } from '../lib/errors';
 import { nullableResponseEnumTransform } from '../lib/nullable-response-enum';
@@ -150,6 +150,13 @@ const StationBaseSchema = z.object({
   staff: z.array(z.object({ accountId: z.string().uuid(), name: z.string().nullable() })),
   lastSeenAt: z.string().nullable(),
   archived: z.boolean(),
+  /**
+   * SCRUM-771 — a till's own screen, online or offline by the boxes'
+   * threshold, and when its scanner was last used. Filled on the reads; null
+   * for any other kind, for an archived station and on a write's answer —
+   * which is also what a replay stored before this field existed reads as.
+   */
+  screen: TillScreenSchema.nullable().default(null),
 });
 
 const PickableStationSchema = z.object({

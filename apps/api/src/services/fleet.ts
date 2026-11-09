@@ -40,6 +40,7 @@ import {
   STATION_SESSION_STAGES,
   type DeviceSettings,
   type ScreenPresence,
+  type TillScreen,
 } from '@oto/shared';
 import { TerminalCommandPayloadSchema } from '@oto/box-agent';
 import { AppError } from '../lib/errors';
@@ -57,7 +58,7 @@ import { withTx, type Exec, type OpContext } from './tx';
 import type { Env } from '../env';
 import { lockActiveOrganisation } from './organisation-archive';
 import { readStationsSellingReadiness } from './payments/terminal';
-import { displayPresence, screenOfflineAfterS } from './screen-presence';
+import { displayPresence, screenOfflineAfterS, tillScreen } from './screen-presence';
 
 /**
  * The ordinary HTTP surface of the fleet (S2-04): the estate an administrator
@@ -151,6 +152,13 @@ export interface StationView {
   staff: Array<{ accountId: string; name: string | null }>;
   lastSeenAt: string | null;
   archived: boolean;
+  /**
+   * SCRUM-771 — the till's own screen and the scanner it hears, on the reads
+   * only (`listStations`, `getStationView`). Null for any other kind of
+   * station and for an archived one; absent from a write's answer and from
+   * audit rows, because presence is not part of what was written.
+   */
+  screen?: TillScreen | null;
 }
 
 export interface BoxView {
@@ -959,7 +967,7 @@ export async function listStations(
       ),
     )
     .orderBy(asc(station.name));
-  return stationViews(db, rows, { withStaff: true }, env);
+  return withTillScreens(await stationViews(db, rows, { withStaff: true }, env), rows);
 }
 
 export async function getStationView(
@@ -967,8 +975,25 @@ export async function getStationView(
   row: typeof station.$inferSelect,
   env?: BoxBridgePolicy,
 ): Promise<StationView> {
-  const [view] = await stationViews(db, [row], { withStaff: true }, env);
+  const [view] = withTillScreens(await stationViews(db, [row], { withStaff: true }, env), [row]);
   return view!;
+}
+
+/**
+ * SCRUM-771 — whether each till's screen is still there, and when its scanner
+ * was last used, worked out by the api's own clock at the moment of the read.
+ */
+function withTillScreens(
+  views: StationView[],
+  rows: Array<typeof station.$inferSelect>,
+  now = Date.now(),
+): StationView[] {
+  const offlineAfterS = screenOfflineAfterS();
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  return views.map((view) => {
+    const row = byId.get(view.id);
+    return { ...view, screen: row && !row.archivedAt ? tillScreen(row, now, offlineAfterS) : null };
+  });
 }
 
 // --- Writing a station ------------------------------------------------------

@@ -300,6 +300,14 @@ const SESSION_STATE_EXEMPT = new Set([
   'POST:/box/v1/station/:stationId/unlock',
   'POST:/box/v1/station/:stationId/lock',
   'GET:/box/v1/station/:stationId/status',
+  /**
+   * The till screen's heartbeat (SCRUM-771). A locked till is still standing
+   * at the counter, and a locked screen that went silent would read as an iPad
+   * that has gone. It does no business: it stamps the station as seen and
+   * carries a scan's age, never a code. It keeps no locked session alive: the
+   * session's sliding last-seen (`loadAuth`) still stops at the lock.
+   */
+  'POST:/me/station/heartbeat',
   'POST:/auth/change-password',
   'GET:/me',
   'GET:/me/permissions',

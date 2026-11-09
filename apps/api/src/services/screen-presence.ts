@@ -1,16 +1,19 @@
-import { and, eq, isNotNull, isNull } from 'drizzle-orm';
+import { and, eq, isNotNull, isNull, sql } from 'drizzle-orm';
 import { alert, branch, deviceCredential, operator, station, type Db } from '@oto/db';
-import type { ScreenPresence } from '@oto/shared';
+import type { ScreenPresence, TillScreen } from '@oto/shared';
+import { AppError } from '../lib/errors';
 import { boxSettings, withinOpeningHours } from './box';
 import type { FleetCondition, OpeningHoursState } from './ops';
+import type { StationRow } from './station-session';
 
 /**
- * SCRUM-771 — THE SCREENS' PRESENCE, starting with a paired customer display.
+ * SCRUM-771 — THE SCREENS' PRESENCE: a paired customer display, and the till's
+ * own screen (the iPad).
  *
  * A box reports itself, its printers, scanner and card terminal every minute,
  * and the watchdog calls it offline after `BOX_OFFLINE_AFTER_S` of silence,
- * raising `box.offline` while the park is open. A display had none of that.
- * This file gives it the same clock and the same threshold:
+ * raising `box.offline` while the park is open. Neither screen had any of
+ * that. This file gives them the same clock and the same threshold:
  *
  *   - A DISPLAY is already heard on every protected call it makes — its poll
  *     every second, or its stream's re-check every five — which stamps
@@ -20,6 +23,15 @@ import type { FleetCondition, OpeningHoursState } from './ops';
  *     open, and clears it when the display calls again. Through the same
  *     `raiseAlert` and alert routing the box rules use, so it is muted, routed
  *     and listed exactly as they are.
+ *   - A TILL'S SCREEN sends a heartbeat of its own (`POST /me/station/heartbeat`)
+ *     every 60 seconds while the till is open, locked or not, which stamps
+ *     `station.last_seen_at`. Its existing calls cannot stand in for one: the
+ *     link poll runs only on a fleet deployment and the scan poll only where a
+ *     stream cannot open, and both stop at the lock screen. The heartbeat also
+ *     carries when the screen last heard a scanner, which is the cradle's only
+ *     presence. PRESENCE ONLY, no alert: the box rules alert about boxes and
+ *     their devices, never about a till station, so a quiet iPad is shown and
+ *     not raised.
  */
 
 /** The boxes' threshold, read the way the box rules read it. */
@@ -60,6 +72,58 @@ export function displayPresence(
 ): ScreenPresence | null {
   if (row.kind !== 'display' || !row.pairedAt || row.revokedAt) return null;
   return screenPresence(row.lastSeenAt, now, offlineAfterS);
+}
+
+/**
+ * A till's screen and its scanner, or null for any other kind of station: a
+ * gate, a booth and a kiosk are run by their box or their own credential, and
+ * no staff screen heartbeats for them.
+ */
+export function tillScreen(
+  row: { kind: string; lastSeenAt: Date | null; lastScanAt: Date | null },
+  now: number,
+  offlineAfterS: number,
+): TillScreen | null {
+  if (row.kind !== 'till') return null;
+  return {
+    ...screenPresence(row.lastSeenAt, now, offlineAfterS),
+    scannerLastUsedAt: row.lastScanAt?.toISOString() ?? null,
+    scannerLastUsedAgeSeconds: ageSeconds(row.lastScanAt, now),
+  };
+}
+
+// --- The till's heartbeat -----------------------------------------------------
+
+/**
+ * Stamp the station this session is standing at as seen now, and its scanner
+ * as last used when the screen says.
+ *
+ * One statement, outside `updated_at` and outside `withTx`: presence is not a
+ * change to the station, so it writes no audit row and moves no version, and a
+ * heartbeat every minute from every till would otherwise be a minute-by-minute
+ * edit history. The scan time only ever moves forwards (`greatest`), so a
+ * second screen at the same station, or a heartbeat that arrives late, cannot
+ * set it back; and it is never later than now, whatever the screen sent.
+ */
+export async function recordTillHeartbeat(
+  db: Db,
+  row: StationRow,
+  input: { lastScanSecondsAgo: number | null },
+  now = new Date(),
+): Promise<{ stationId: string; lastSeenAt: string; scannerLastUsedAt: string | null }> {
+  const scanAt =
+    input.lastScanSecondsAgo === null ? null : new Date(now.getTime() - input.lastScanSecondsAgo * 1000);
+  const result = await db.execute<{ last_seen_at: Date | string; last_scan_at: Date | string | null }>(sql`
+    update ${station}
+       set last_seen_at = ${now.toISOString()}::timestamptz,
+           last_scan_at = greatest(last_scan_at, ${scanAt?.toISOString() ?? null}::timestamptz)
+     where id = ${row.id} and operator_id = ${row.operatorId} and archived_at is null
+     returning last_seen_at, last_scan_at`);
+  const [written] = result.rows;
+  if (!written) throw new AppError(404, 'STATION_NOT_FOUND', 'No such station');
+  const iso = (value: Date | string | null): string | null =>
+    value === null ? null : new Date(value).toISOString();
+  return { stationId: row.id, lastSeenAt: iso(written.last_seen_at)!, scannerLastUsedAt: iso(written.last_scan_at) };
 }
 
 // --- The display rule --------------------------------------------------------

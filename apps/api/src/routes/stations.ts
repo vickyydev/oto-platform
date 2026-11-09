@@ -8,6 +8,8 @@ import {
   STATION_INTENT_REFUSALS,
   STATION_SESSION_STAGES,
   STATION_VIEWS,
+  StationHeartbeatRequestSchema,
+  StationHeartbeatResponseSchema,
   StationIntentSchema,
   newId,
 } from '@oto/shared';
@@ -33,6 +35,7 @@ import {
   type StationRow,
 } from '../services/station-session';
 import { readStationScans, relayInProcessBoxScans } from '../services/station-scans';
+import { recordTillHeartbeat } from '../services/screen-presence';
 import { opCtx, withTx } from '../services/tx';
 
 /**
@@ -288,6 +291,38 @@ export async function stationSessionRoutes(app: App): Promise<void> {
         );
       }
       return stationLink(app.db, auth.stationId);
+    },
+  );
+
+  // --- The till's own screen, still there (SCRUM-771) ------------------------
+
+  app.post(
+    '/me/station/heartbeat',
+    {
+      config: { auth: 'session' },
+      schema: {
+        description:
+          'The till screen standing at a station says it is still there, every 60 seconds while it is open, locked or not, with how long ago a scanner last typed a code into it (a scanner plugged into an iPad is a keyboard to it, so that is its only presence). Stamps the station as seen; writes no audit row and changes nothing else. The station is the one this session picked, never one named in the body.',
+        body: StationHeartbeatRequestSchema,
+        response: { 200: StationHeartbeatResponseSchema },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      if (!auth.stationId) {
+        throw new AppError(
+          409,
+          'NO_STATION_PICKED',
+          'This session is not standing at a station yet',
+        );
+      }
+      const row = await loadStationRow(app.db, auth.operatorId, auth.stationId);
+      // The same question `standing` asks a holder: a shift that has outlived
+      // the grant behind it does not keep a till at another park looking alive.
+      if (!holdsGrantAt(await req.effectivePermissions(), auth.operatorId, row.branchId)) {
+        throw new AppError(403, 'STATION_OTHER_BRANCH', 'That station is at a branch you do not work at');
+      }
+      return recordTillHeartbeat(app.db, row, { lastScanSecondsAgo: req.body.lastScanSecondsAgo });
     },
   );
 
