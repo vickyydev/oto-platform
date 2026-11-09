@@ -17,17 +17,21 @@
 //
 //   1. The preview counts the contracts, time records, history, face, shifts,
 //      checklist and task and the day clocked on both, says the original is
-//      onboarded again on the duplicate's terms, counts the org chart entry
-//      taken and the one dropped, and writes nothing.
+//      onboarded again on the duplicate's terms, counts the two org chart
+//      entries taken and the original's own branch entry replaced, and writes
+//      nothing.
 //   2. The fold moves all of it; the original reads active and on probation in
 //      Reception with the duplicate's contract active and its own superseded,
 //      its offboarding re-onboarded, its login on again (the same login), its
 //      own face kept and the duplicate's removed from the face collection; the
 //      pending items on the duplicate's shift days matched, the one on the day
-//      clocked on both left pending; the duplicate gone (404); the company
-//      chart's entry the original's in its place, the branch chart's deleted
-//      and the position under it reporting to the original's; the Org Chart
-//      page's read shows the original once on each chart and adds nothing.
+//      clocked on both left pending; the duplicate gone (404); both of the
+//      duplicate's chart entries the original's in their place (onboarded
+//      again into the duplicate's employment, the duplicate's branch entry is
+//      the current one), the original's own branch entry deleted and the
+//      position under the duplicate's still under it; the Org Chart page's
+//      read shows the original once on each chart, as the receptionist, and
+//      adds nothing.
 //   3. Refused: a duplicate with a payroll record; two active contracts while
 //      the original's has no last working day.
 //   4. A face moves to an original with none; a start date still to come is
@@ -51,7 +55,11 @@
 //   9. The org chart: an entry deleted from the chart and added back by the
 //      next read (the live one taken, the marked one deleted); the kept
 //      profile's entry below the duplicate's (no entry ends up below itself);
-//      and a duplicate still pointed at by what a fold does not move (a nanny
+//      the kept profile's entry disabled and the duplicate's not, both
+//      working (the duplicate's taken in its place, the disabled one deleted,
+//      the entries under either under the one taken, none below itself; on a
+//      chart where neither is disabled the kept profile's stays); and a
+//      duplicate still pointed at by what a fold does not move (a nanny
 //      reservation, a voucher) refused naming each, nothing moved.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
@@ -219,16 +227,18 @@ async function orgEntry(opts: {
   position?: string | null;
   sort?: number;
   deleted?: boolean;
+  /** "Disable position" on the Org Chart page: drawn greyed, left out of headcount and cost. */
+  disabled?: boolean;
   mode?: "live" | "draft";
 }): Promise<string> {
   const id = randomUUID();
   await q(
     `insert into org_nodes (id, tenant_id, mode, scope_type, scope_branch_id, node_type, person_employee_id, title, position_title, branch_id,
-                            reports_to_node_id, is_vacant, is_deleted, sort_order)
-     values ($1, $2, $3, $4, $5, $6, $7, 'ZZ TEST', $8, $9, $10, $11, $12, $13)`,
+                            reports_to_node_id, is_vacant, is_deleted, sort_order, is_disabled)
+     values ($1, $2, $3, $4, $5, $6, $7, 'ZZ TEST', $8, $9, $10, $11, $12, $13, $14)`,
     [
       id, TENANT, opts.mode ?? "live", opts.scope, opts.scope === "branch" ? BRANCH : null, opts.person ? "person" : "vacant_role", opts.person ?? null,
-      opts.position ?? null, BRANCH, opts.parent ?? null, !opts.person, opts.deleted ?? false, opts.sort ?? 0,
+      opts.position ?? null, BRANCH, opts.parent ?? null, !opts.person, opts.deleted ?? false, opts.sort ?? 0, opts.disabled ?? false,
     ],
   );
   return id;
@@ -446,7 +456,8 @@ try {
   // The org chart, as the Org Chart page left it: the live company chart, read
   // only since the original left, holds the duplicate (under a manager's
   // position, in its place); the branch chart, read while the original
-  // worked, holds the original's entry and the duplicate's, with a trainee
+  // worked, holds the original's entry (from the employment that ended, its
+  // old position) and the duplicate's (the current one), with a trainee
   // position reporting to the duplicate's.
   const MANAGER = await orgEntry({ scope: "company", position: "ZZ Manager" });
   const dupCompany = await orgEntry({ scope: "company", person: duplicate, parent: MANAGER, position: "ZZ Receptionist", sort: 3 });
@@ -492,13 +503,14 @@ try {
     assert.equal(await countOf("select count(*) as n from employee_engagements where employee_id = $1", [original]), 0);
     assert.equal((await review(onShiftDays[0]!.issue))!.issue_status, "OPEN");
   });
-  await check("the preview counts the duplicate's org chart entries: one the original takes (the company chart), one dropped (the branch chart, where the original has its own), and writes nothing", async () => {
+  await check("the preview counts the duplicate's org chart entries: both taken (the company chart's, and the branch chart's as the current one, the original onboarded again into its employment), the original's own branch entry replaced, none dropped, and writes nothing", async () => {
     const res = await call("GET", `/api/employees/${duplicate}/fold-into/${original}/preview`, as.admin);
     assert.equal(res.status, 200, show(res));
-    assert.deepEqual([res.body.orgChartMoved, res.body.orgChartDropped], [1, 1]);
+    assert.deepEqual([res.body.orgChartMoved, res.body.orgChartDropped, res.body.orgChartReplaced], [2, 0, 1]);
     assert.equal(await chartRows(), 5);
     assert.deepEqual(await entryOf(dupCompany), { person_employee_id: duplicate, reports_to_node_id: MANAGER, position_title: "ZZ Receptionist", sort_order: 3, is_deleted: false });
-    assert.equal((await entryOf(dupBranch))?.person_employee_id, duplicate);
+    assert.deepEqual(await entryOf(dupBranch), { person_employee_id: duplicate, reports_to_node_id: null, position_title: "ZZ Receptionist", sort_order: 2, is_deleted: false });
+    assert.deepEqual(await entryOf(originalBranch), { person_employee_id: original, reports_to_node_id: null, position_title: "ZZ Promoter", sort_order: 0, is_deleted: false });
     assert.equal((await entryOf(trainee))?.reports_to_node_id, dupBranch);
   });
 
@@ -511,7 +523,7 @@ try {
     assert.equal(res.body.faceRemovedFromCollection, true);
     assert.equal(res.body.reonboard.started, true);
     assert.equal(res.body.clockedOnBoth, 1);
-    assert.deepEqual([res.body.orgChartMoved, res.body.orgChartDropped], [1, 1]);
+    assert.deepEqual([res.body.orgChartMoved, res.body.orgChartDropped, res.body.orgChartReplaced], [2, 0, 1]);
     // The day clocked on both is left for a manager: 2 matched, 2 pending.
     assert.deepEqual(res.body.rematch, { matched: 2, stillPending: 2 });
     assert.equal(await exists(duplicate), 0);
@@ -579,32 +591,36 @@ try {
     const meta = JSON.parse(log!.metadata_json) as { foldedProfileId: string; foldedFaceId: string; supersededContracts: number };
     assert.deepEqual([meta.foldedProfileId, meta.foldedFaceId, meta.supersededContracts], [duplicate, `zz-face-duplicate-${run}`, 1]);
   });
-  await check("the original's chart entries: the company chart's is the duplicate's, in its place under the manager; on the branch chart the duplicate's is deleted outright and the trainee reports to the original's", async () => {
+  await check("the original's chart entries: both of the duplicate's, in their place (the company chart's under the manager, the branch chart's with the trainee under it); the original's own branch entry from the employment that ended deleted outright", async () => {
     assert.deepEqual(await entryOf(dupCompany), { person_employee_id: original, reports_to_node_id: MANAGER, position_title: "ZZ Receptionist", sort_order: 3, is_deleted: false });
-    assert.equal(await entryOf(dupBranch), undefined, "deleted, not marked deleted");
-    assert.deepEqual(await entryOf(originalBranch), { person_employee_id: original, reports_to_node_id: null, position_title: "ZZ Promoter", sort_order: 0, is_deleted: false });
-    assert.equal((await entryOf(trainee))?.reports_to_node_id, originalBranch);
+    assert.deepEqual(await entryOf(dupBranch), { person_employee_id: original, reports_to_node_id: null, position_title: "ZZ Receptionist", sort_order: 2, is_deleted: false });
+    assert.equal(await entryOf(originalBranch), undefined, "deleted, not marked deleted");
+    assert.equal((await entryOf(trainee))?.reports_to_node_id, dupBranch);
     assert.equal(await chartRows(), 4);
     const [log] = await q<{ summary_text: string; metadata_json: string }>(
       "select summary_text, metadata_json from activity_log where employee_id = $1 and summary_text like 'A duplicate profile was folded%'", [original]);
-    assert.match(log!.summary_text, /1 org chart entr\(ies\) taken, 1 dropped where this profile already had its entry/);
-    const meta = JSON.parse(log!.metadata_json) as { orgChartMoved: number; orgChartDropped: number };
-    assert.deepEqual([meta.orgChartMoved, meta.orgChartDropped], [1, 1]);
+    assert.match(log!.summary_text, /2 org chart entr\(ies\) taken, 0 dropped where this profile kept its entry, 1 of its own replaced by the folded profile's current one/);
+    const meta = JSON.parse(log!.metadata_json) as { orgChartMoved: number; orgChartDropped: number; orgChartReplaced: number };
+    assert.deepEqual([meta.orgChartMoved, meta.orgChartDropped, meta.orgChartReplaced], [2, 0, 1]);
   });
-  await check("the Org Chart page's read, company and branch: the original once on each, the duplicate on neither, and nothing added", async () => {
-    type Node = { id: string; personEmployeeId: string | null; reportsToNodeId: string | null };
+  await check("the Org Chart page's read, company and branch: the original once on each, as the receptionist, the duplicate on neither, and nothing added", async () => {
+    type Node = { id: string; personEmployeeId: string | null; reportsToNodeId: string | null; positionTitle: string | null; isDisabled: boolean };
     for (const [path, expected] of [
       ["/api/org-chart/nodes?mode=live&scopeType=company", dupCompany],
-      [`/api/org-chart/nodes?mode=live&scopeType=branch&scopeBranchId=${BRANCH}`, originalBranch],
+      [`/api/org-chart/nodes?mode=live&scopeType=branch&scopeBranchId=${BRANCH}`, dupBranch],
     ] as const) {
       const res = await call("GET", path, as.admin);
       assert.equal(res.status, 200, `${path}: ${show(res)}`);
       const nodes = res.body as Node[];
-      assert.deepEqual(nodes.filter((n) => n.personEmployeeId === original).map((n) => n.id), [expected], path);
+      assert.deepEqual(
+        nodes.filter((n) => n.personEmployeeId === original).map((n) => [n.id, n.positionTitle, n.isDisabled]),
+        [[expected, "ZZ Receptionist", false]],
+        path,
+      );
       assert.equal(nodes.filter((n) => n.personEmployeeId === duplicate).length, 0, path);
     }
     const branch = (await call("GET", `/api/org-chart/nodes?mode=live&scopeType=branch&scopeBranchId=${BRANCH}`, as.admin)).body as Node[];
-    assert.equal(branch.find((n) => n.id === trainee)?.reportsToNodeId, originalBranch);
+    assert.equal(branch.find((n) => n.id === trainee)?.reportsToNodeId, dupBranch);
     assert.equal(await chartRows(), 4, "the read added no entry");
     assert.equal(await countOf("select count(*) as n from org_nodes where person_employee_id = $1", [original]), 2);
   });
@@ -881,9 +897,9 @@ try {
     const marked = await orgEntry({ scope: "company", person: other, deleted: true });
     const readBack = await orgEntry({ scope: "company", person: other, sort: 1 });
     const preview = await call("GET", `/api/employees/${other}/fold-into/${kept}/preview`, as.admin);
-    assert.deepEqual([preview.status, preview.body.orgChartMoved, preview.body.orgChartDropped], [200, 1, 1], show(preview));
+    assert.deepEqual([preview.status, preview.body.orgChartMoved, preview.body.orgChartDropped, preview.body.orgChartReplaced], [200, 1, 1, 0], show(preview));
     const res = await call("POST", `/api/employees/${other}/fold-into/${kept}`, as.admin);
-    assert.deepEqual([res.status, res.body.orgChartMoved, res.body.orgChartDropped], [200, 1, 1], show(res));
+    assert.deepEqual([res.status, res.body.orgChartMoved, res.body.orgChartDropped, res.body.orgChartReplaced], [200, 1, 1, 0], show(res));
     assert.equal(await entryOf(marked), undefined);
     assert.deepEqual(await entryOf(readBack), { person_employee_id: kept, reports_to_node_id: null, position_title: null, sort_order: 1, is_deleted: false });
     const read = await call("GET", "/api/org-chart/nodes?mode=live&scopeType=company", as.admin);
@@ -900,10 +916,69 @@ try {
     const keptEntry = await orgEntry({ scope: "branch", mode: "draft", person: kept, parent: dropped });
     const beside = await orgEntry({ scope: "branch", mode: "draft", parent: dropped, position: "ZZ Assistant" });
     const res = await call("POST", `/api/employees/${other}/fold-into/${kept}`, as.admin);
-    assert.deepEqual([res.status, res.body.orgChartMoved, res.body.orgChartDropped], [200, 0, 1], show(res));
+    assert.deepEqual([res.status, res.body.orgChartMoved, res.body.orgChartDropped, res.body.orgChartReplaced], [200, 0, 1, 0], show(res));
     assert.equal(await entryOf(dropped), undefined);
     assert.equal((await entryOf(keptEntry))?.reports_to_node_id, top);
     assert.equal((await entryOf(beside))?.reports_to_node_id, keptEntry);
+  });
+  await check("the kept profile's entry disabled and the duplicate's not, both working: the duplicate's taken in its place, the disabled one deleted, the entries under either under the one taken, none below itself; where neither is disabled the kept profile's stays", async () => {
+    const kept = await profile("disabled-kept", { department: PROMOTION, position: "ZZ Promoter" });
+    const other = await profile("disabled-dup", { department: PROMOTION, position: "ZZ Promoter" });
+    // The live company chart: the kept profile's old entry disabled, a position
+    // under it; the duplicate's under a manager, a team member under it.
+    const manager = await orgEntry({ scope: "company", position: "ZZ Manager" });
+    const keptOld = await orgEntry({ scope: "company", person: kept, position: "ZZ old position", disabled: true });
+    const underOld = await orgEntry({ scope: "company", parent: keptOld, position: "ZZ old assistant" });
+    const current = await orgEntry({ scope: "company", person: other, parent: manager, position: "ZZ current position", sort: 4 });
+    const team = await orgEntry({ scope: "company", parent: current, position: "ZZ team member" });
+    // A draft branch chart: the duplicate's entry below the kept profile's disabled one.
+    const head = await orgEntry({ scope: "branch", mode: "draft", position: "ZZ Head" });
+    const draftOld = await orgEntry({ scope: "branch", mode: "draft", person: kept, parent: head, disabled: true });
+    const draftCurrent = await orgEntry({ scope: "branch", mode: "draft", person: other, parent: draftOld, position: "ZZ current position" });
+    const draftBeside = await orgEntry({ scope: "branch", mode: "draft", parent: draftOld, position: "ZZ Assistant" });
+    // The live branch chart: neither disabled, nobody onboarded again.
+    const keptBranch = await orgEntry({ scope: "branch", person: kept, position: "ZZ Promoter" });
+    const otherBranch = await orgEntry({ scope: "branch", person: other, position: "ZZ current position", sort: 1 });
+    const branchUnder = await orgEntry({ scope: "branch", parent: otherBranch, position: "ZZ Helper" });
+
+    const preview = await call("GET", `/api/employees/${other}/fold-into/${kept}/preview`, as.admin);
+    assert.deepEqual([preview.status, preview.body.orgChartMoved, preview.body.orgChartDropped, preview.body.orgChartReplaced], [200, 2, 1, 2], show(preview));
+    assert.deepEqual(await entryOf(keptOld), { person_employee_id: kept, reports_to_node_id: null, position_title: "ZZ old position", sort_order: 0, is_deleted: false });
+    assert.equal((await entryOf(current))?.person_employee_id, other);
+    assert.equal((await entryOf(team))?.reports_to_node_id, current);
+    assert.equal((await entryOf(draftCurrent))?.reports_to_node_id, draftOld);
+    assert.equal((await entryOf(otherBranch))?.person_employee_id, other);
+
+    const res = await call("POST", `/api/employees/${other}/fold-into/${kept}`, as.admin);
+    assert.deepEqual([res.status, res.body.orgChartMoved, res.body.orgChartDropped, res.body.orgChartReplaced], [200, 2, 1, 2], show(res));
+    // The live company chart: the working entry stays where it is, now the kept profile's.
+    assert.deepEqual(await entryOf(current), { person_employee_id: kept, reports_to_node_id: manager, position_title: "ZZ current position", sort_order: 4, is_deleted: false });
+    assert.equal(await entryOf(keptOld), undefined, "deleted, not marked deleted");
+    assert.equal((await entryOf(team))?.reports_to_node_id, current);
+    assert.equal((await entryOf(underOld))?.reports_to_node_id, current);
+    // The draft branch chart: the one taken takes the disabled entry's parent.
+    assert.equal(await entryOf(draftOld), undefined);
+    assert.deepEqual(await entryOf(draftCurrent), { person_employee_id: kept, reports_to_node_id: head, position_title: "ZZ current position", sort_order: 0, is_deleted: false });
+    assert.equal((await entryOf(draftBeside))?.reports_to_node_id, draftCurrent);
+    // The live branch chart: the kept profile's entry stays, the duplicate's deleted.
+    assert.equal(await entryOf(otherBranch), undefined);
+    assert.deepEqual(await entryOf(keptBranch), { person_employee_id: kept, reports_to_node_id: null, position_title: "ZZ Promoter", sort_order: 0, is_deleted: false });
+    assert.equal((await entryOf(branchUnder))?.reports_to_node_id, keptBranch);
+    assert.deepEqual(
+      (await q<{ id: string; is_disabled: boolean }>("select id, is_disabled from org_nodes where person_employee_id = $1", [kept]))
+        .map((r) => [r.id, r.is_disabled]).sort(),
+      [[current, false], [draftCurrent, false], [keptBranch, false]].sort(),
+    );
+    // The Org Chart page's read: the kept profile once, enabled, under the manager, in the working position.
+    const read = await call("GET", "/api/org-chart/nodes?mode=live&scopeType=company", as.admin);
+    assert.equal(read.status, 200, show(read));
+    const nodes = read.body as { id: string; personEmployeeId: string | null; reportsToNodeId: string | null; positionTitle: string | null; isDisabled: boolean }[];
+    assert.deepEqual(
+      nodes.filter((n) => n.personEmployeeId === kept).map((n) => [n.id, n.reportsToNodeId, n.positionTitle, n.isDisabled]),
+      [[current, manager, "ZZ current position", false]],
+    );
+    assert.equal(nodes.filter((n) => n.personEmployeeId === other).length, 0);
+    assert.equal(nodes.find((n) => n.id === team)?.reportsToNodeId, current);
   });
   await check("anything else still pointing at the duplicate is named, every table, \"still linked by …\", in the preview and the fold, and nothing moves", async () => {
     const kept = await profile("linked-kept", { department: PROMOTION, position: "ZZ Promoter" });

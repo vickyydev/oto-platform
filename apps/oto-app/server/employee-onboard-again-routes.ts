@@ -464,6 +464,7 @@ export function registerEmployeeOnboardAgainRoutes(app: Express, deps: EmployeeO
         clockedOnBoth: outcome.clockedOnBoth,
         orgChartMoved: outcome.orgChartMoved,
         orgChartDropped: outcome.orgChartDropped,
+        orgChartReplaced: outcome.orgChartReplaced,
         reonboard: outcome.reonboard,
         deleted: outcome.deleted,
       };

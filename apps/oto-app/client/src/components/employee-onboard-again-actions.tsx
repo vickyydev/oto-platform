@@ -80,9 +80,13 @@ interface FoldAnswer {
   supersededContracts: number;
   replaced: Replaced;
   clockedOnBoth: number;
-  /** Org chart entries the profile kept takes, and the ones dropped where it already has its own. */
+  /**
+   * Org chart entries the profile kept takes; the ones dropped where it keeps
+   * its own; and its own replaced where this profile's is the current one.
+   */
   orgChartMoved: number;
   orgChartDropped: number;
+  orgChartReplaced: number;
   reonboard: {
     startDate: string;
     started: boolean;
@@ -162,12 +166,21 @@ function replacedWords(replaced: Replaced, kept: string): string | null {
   return parts.length > 0 ? `${kept}'s own ${parts.join(", ")} are replaced by this profile's, with the employment.` : null;
 }
 
-/** This profile's org chart entries: taken by the profile kept, or dropped where it already has its own on that chart. */
+/**
+ * This profile's org chart entries: taken by the profile kept, or dropped
+ * where it keeps its own on that chart; and the kept profile's own entries
+ * replaced where this profile's is the current one.
+ */
 function orgChartWords(answer: FoldAnswer, kept: string): string | null {
   const parts = [
     answer.orgChartMoved > 0 ? `${kept} takes ${answer.orgChartMoved} org chart entr(ies) of this profile's, in their place` : null,
+    answer.orgChartReplaced > 0
+      ? `${answer.orgChartReplaced} of ${kept}'s own org chart entr(ies) are removed where this profile's is the current one ` +
+        `(${kept} is onboarded again into this profile's employment, or ${kept}'s entry there is disabled), ` +
+        "the entries under them moving under the one taken"
+      : null,
     answer.orgChartDropped > 0
-      ? `${answer.orgChartDropped} org chart entr(ies) are removed where ${kept} already has its own, the entries under them moving under ${kept}'s`
+      ? `${answer.orgChartDropped} org chart entr(ies) are removed where ${kept} keeps its own, the entries under them moving under ${kept}'s`
       : null,
   ].filter(Boolean);
   return parts.length > 0 ? `${parts.join("; ")}.` : null;
