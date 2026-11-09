@@ -570,6 +570,13 @@ async function answeredRunningBefore(db: Exec, job: string, tenantId: string, da
  *
  * Filed every night the batch runs while it stands, as the copy files its
  * standing cases (Q17). Answers how many were filed, and their account ids.
+ *
+ * SCRUM-794: a profile still reading LEAVING after the app's batch is not a
+ * leaver. The batch moves every leaver whose last working day has passed to
+ * LEFT before this runs; the one it keeps LEAVING is a profile with Onboard
+ * Again planned, between its two contracts, whose login the app keeps on for
+ * the new one. Filing it would ask an administrator to switch off, the day
+ * before the new contract starts, a sign-in the person is about to use.
  */
 export async function raiseDepartedAccounts(db: Db, tenantId: string, date: string): Promise<DepartedAccounts> {
   if (!(await otoAppEmployeesInstalled(db))) {
@@ -593,7 +600,8 @@ export async function raiseDepartedAccounts(db: Db, tenantId: string, date: stri
       e.tenantId === tenantId &&
       e.platformUserId !== null &&
       e.lastWorkingDay !== null &&
-      e.lastWorkingDay.getTime() < midnight.getTime(),
+      e.lastWorkingDay.getTime() < midnight.getTime() &&
+      e.employmentState !== 'LEAVING',
   );
   if (leavers.length === 0) return { listed: 0, accountIds: [] };
 

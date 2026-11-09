@@ -337,20 +337,30 @@ async function platformAccount(operatorId: string, status: 'active' | 'inactive'
   return id;
 }
 
-/** An app employee in park group A with their own login, linked to a platform account. */
-async function appPerson(opts: { platformUserId: string; lastWorkingDay: string | null; label: string }) {
+/**
+ * An app employee in park group A with their own login, linked to a platform
+ * account. `employmentState` is the app's default (ACTIVE) unless named; the
+ * login is on only while no last working day is set, unless `loginOn` says.
+ */
+async function appPerson(opts: {
+  platformUserId: string;
+  lastWorkingDay: string | null;
+  label: string;
+  employmentState?: 'ACTIVE' | 'LEAVING' | 'LEFT';
+  loginOn?: boolean;
+}) {
   const user = newId();
   const email = `zz-r3-${opts.label}-${user.slice(-6)}@example.com`;
   await q(
     `insert into users (id, email, password, full_name, role, is_active, must_change_password, platform_user_id)
      values ($1, $2, $3, $4, 'staff', $5, false, $6)`,
-    [user, email, scrypt('zz-r3'), `ZZ r3 ${opts.label}`, opts.lastWorkingDay === null, opts.platformUserId],
+    [user, email, scrypt('zz-r3'), `ZZ r3 ${opts.label}`, opts.loginOn ?? opts.lastWorkingDay === null, opts.platformUserId],
   );
   const employee = newId();
   await q(
-    `insert into employees (id, tenant_id, branch_id, full_name, nickname, email, user_id, last_working_day)
-     values ($1, $2, $3, $4, 'ZZ', $5, $6, $7)`,
-    [employee, tenantA, appCentral, `ZZ r3 ${opts.label}`, email, user, opts.lastWorkingDay],
+    `insert into employees (id, tenant_id, branch_id, full_name, nickname, email, user_id, last_working_day, employment_state)
+     values ($1, $2, $3, $4, 'ZZ', $5, $6, $7, $8)`,
+    [employee, tenantA, appCentral, `ZZ r3 ${opts.label}`, email, user, opts.lastWorkingDay, opts.employmentState ?? 'ACTIVE'],
   );
   return { user, employee };
 }
@@ -809,7 +819,7 @@ describe('F. every error the app swallowed is a failed step, and fails the run i
 // =============================================================================
 
 describe("G. Q4 — the 03:00 run lists each leaver whose platform account is still active, and nobody else", () => {
-  const people = { active: '', inactive: '', foreign: '', stayer: '', activeEmployee: '' };
+  const people = { active: '', inactive: '', foreign: '', stayer: '', activeEmployee: '', between: '' };
 
   beforeAll(async () => {
     people.active = await platformAccount(oto);
@@ -821,6 +831,17 @@ describe("G. Q4 — the 03:00 run lists each leaver whose platform account is st
     await appPerson({ platformUserId: people.foreign, lastWorkingDay: '2026-10-01', label: 'foreign' });
     people.stayer = await platformAccount(oto);
     await appPerson({ platformUserId: people.stayer, lastWorkingDay: null, label: 'stayer' });
+    // SCRUM-794: between two contracts — the last day has passed, and the
+    // app's batch keeps the profile LEAVING and its login on because Onboard
+    // Again is planned on it.
+    people.between = await platformAccount(oto);
+    await appPerson({
+      platformUserId: people.between,
+      lastWorkingDay: '2026-10-01',
+      label: 'between',
+      employmentState: 'LEAVING',
+      loginOn: true,
+    });
   });
 
   /** The cases filed for one night (each carries its date). */
@@ -882,6 +903,19 @@ describe("G. Q4 — the 03:00 run lists each leaver whose platform account is st
     stub.reply = () => ({ kind: 'answer', status: 200, body: answer('reconcile', tenantA, { departedLogins: 'boom' }) });
     expect(await runnerFor(job, env).runJob(job.name, { force: true })).toBe('failed');
     expect(await cases('2026-11-24')).toEqual([]);
+  });
+
+  it('SCRUM-794: a profile still LEAVING after the batch, between two contracts, is not filed though its last day has passed', async () => {
+    stub.reset();
+    const date = '2026-11-25';
+    const env = envFor([[tenantA, keyA]]);
+    const job = nightJob('reconcile', () => at(date, '03:01'), env);
+    expect(await runnerFor(job, env).runJob(job.name, { force: true })).toBe('ok');
+    const filed = (await cases(date)).map((c) => (c.detail as { accountId: string }).accountId);
+    expect(filed).not.toContain(people.between);
+    expect(filed).toEqual([people.active]);
+    const [between] = await db.select({ status: account.status }).from(account).where(eq(account.id, people.between));
+    expect(between).toEqual({ status: 'active' });
   });
 });
 
