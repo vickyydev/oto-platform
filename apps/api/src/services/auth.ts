@@ -1035,6 +1035,13 @@ export async function signIn(
    * A wrong password here is a wrong password: the same `fail`, the same 401
    * and the same two buckets. An account that holds a platform password
    * never reaches the app's hash, and the app's hash is never copied.
+   *
+   * A password the app still wants changed (an administrator's temporary one)
+   * is adopted like any other, and the change is not lost: the script carries
+   * the app user's `must_change_password` onto the account, so this sign-in
+   * answers `mustChangePassword: true`, `requireAuth` holds every business
+   * route until `/auth/change-password`, and that route takes the adopted
+   * hash as the current password.
    */
   let adoption: { passwordHash: string; externalUserId: string } | null = null;
   if (acc!.passwordHash) {

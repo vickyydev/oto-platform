@@ -9,6 +9,7 @@ import {
   authThrottle,
   otoappUsers,
   provisionOtoAppStaffAccounts,
+  verificationCode,
   type StaffAccountsReport,
 } from '@oto/db';
 import { newId } from '@oto/shared';
@@ -41,6 +42,12 @@ import {
  * a wrong password is refused byte for byte as on any account and counted in
  * the same bucket; an account with a platform password never consults the
  * app hash; and a user switched off inside the app brings nothing.
+ *
+ * And the two owner questions the script carries as safe defaults: a user the
+ * app still owes a password change (an administrator's temporary password)
+ * adopts it, is told to change it, and can do nothing else until they have —
+ * the hand-off included; and an SMS reset is sent only to a phone the app
+ * proves, while an unproven one still signs in with the app password.
  */
 
 // --- `hashPassword` from apps/oto-app/server/auth.ts, verbatim ---------------
@@ -57,14 +64,22 @@ const KID = 'k1';
 const SECRET = 'handoff-test-secret-0123456789abcdef';
 const OTO_APP_ORIGIN = 'https://otoapp.test';
 
+/**
+ * `mustChange`: the app's own `must_change_password` — false for somebody who
+ * has changed the password an administrator gave them, true for somebody still
+ * on it. `phoneVerified`: the app's own `phone_verified` on their phone_e164.
+ */
 const PEOPLE = {
-  first: { phone: '+66811795001', appPassword: 'zz-app-first-795' },
-  wrong: { phone: '+66811795002', appPassword: 'zz-app-wrong-795' },
-  platform: { phone: '+66811795003', appPassword: 'zz-app-platform-795' },
-  off: { phone: '+66811795004', appPassword: 'zz-app-off-795' },
+  first: { phone: '+66811795001', appPassword: 'zz-app-first-795', role: 'staff', mustChange: false, phoneVerified: false },
+  wrong: { phone: '+66811795002', appPassword: 'zz-app-wrong-795', role: 'staff', mustChange: false, phoneVerified: false },
+  platform: { phone: '+66811795003', appPassword: 'zz-app-platform-795', role: 'staff', mustChange: false, phoneVerified: false },
+  off: { phone: '+66811795004', appPassword: 'zz-app-off-795', role: 'staff', mustChange: false, phoneVerified: false },
+  temp: { phone: '+66811795005', appPassword: 'zz-app-temp-795', role: 'staff', mustChange: true, phoneVerified: false },
+  manager: { phone: '+66811795006', appPassword: 'zz-app-manager-795', role: 'manager', mustChange: false, phoneVerified: true },
 } as const;
 type Key = keyof typeof PEOPLE;
 const PLATFORM_OWN_PASSWORD = 'zz-platform-own-795';
+const TEMP_NEW_PASSWORD = 'zz-suite-temp-795-new';
 
 let ctx: TestContext;
 let operatorId: string;
@@ -118,10 +133,11 @@ beforeAll(async () => {
       email: `zz-795-${key}@example.test`,
       password: appHashes[key],
       fullName: `ZZ TEST 795 ${key}`,
-      role: 'staff',
+      role: PEOPLE[key].role,
       isActive: true,
-      mustChangePassword: true,
+      mustChangePassword: PEOPLE[key].mustChange,
       phoneE164: PEOPLE[key].phone,
+      phoneVerified: PEOPLE[key].phoneVerified,
     });
     await ctx.db.execute(
       sql`insert into otoapp.user_branch_access (id, tenant_id, user_id, branch_id, access_scope) values (${newId()}, ${tenant}, ${id}, ${appBranch}, 'selected_branches')`,
@@ -147,20 +163,128 @@ afterAll(async () => {
 
 describe('SCRUM-795: the provisioned accounts', () => {
   it('are, to the api, what a Console link makes: the tile operator-wide, the role at the branch, the stamped user', async () => {
-    expect(report.outcomes.provision).toBe(4);
+    expect(report.outcomes.provision).toBe(6);
     expect(report.outcomes.failed).toBe(0);
     for (const key of Object.keys(PEOPLE) as Key[]) expect(accountIds[key], key).toBeTruthy();
 
+    // App staff: the tile and nothing else, as the Console's Link gives it.
     const effective = await resolveEffectivePermissions(ctx.db, accountIds.first);
-    expect(effective).toEqual(
+    expect(effective).toEqual([
+      expect.objectContaining({ permission: 'app:oto_app:access', scopeType: 'operator', scopeId: operatorId }),
+    ]);
+    // An app manager: the tile, and branch_manager at the park of their app branch.
+    const managers = await resolveEffectivePermissions(ctx.db, accountIds.manager);
+    expect(managers).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ permission: 'app:oto_app:access', scopeType: 'operator', scopeId: operatorId }),
-        expect.objectContaining({ permission: 'app:pos:access', scopeType: 'branch', scopeId: central, roleName: 'staff' }),
+        expect.objectContaining({ permission: 'app:pos:access', scopeType: 'branch', scopeId: central, roleName: 'branch_manager' }),
       ]),
     );
     expect(await appAccessBranches(ctx.db, accountIds.first, operatorId, 'oto_app')).toBeNull();
     expect((await findOtoAppUser(ctx.db, { platformUserId: accountIds.first }))?.id).toBe(userIds.first);
     expect(await storedHash('first')).toBeNull();
+  });
+});
+
+describe('SCRUM-795: a password the app still wants changed is changed at the first launcher sign-in', () => {
+  it('carries the forced change to the account and leaves the app’s own flag as it was', async () => {
+    const rows = await ctx.db
+      .select({ id: account.id, mustChangePassword: account.mustChangePassword })
+      .from(account)
+      .where(eq(account.id, accountIds.temp));
+    expect(rows[0]?.mustChangePassword).toBe(true);
+    const [first] = await ctx.db
+      .select({ mustChangePassword: account.mustChangePassword })
+      .from(account)
+      .where(eq(account.id, accountIds.first));
+    expect(first?.mustChangePassword).toBe(false);
+    const [user] = await ctx.db
+      .select({ mustChangePassword: otoappUsers.mustChangePassword })
+      .from(otoappUsers)
+      .where(eq(otoappUsers.id, userIds.temp));
+    expect(user?.mustChangePassword).toBe(true);
+  });
+
+  it('adopts it, answers mustChangePassword, refuses the hand-off until the change, and the change takes the adopted password', async () => {
+    await _resetThrottle(ctx.db);
+    const res = await signIn(PEOPLE.temp.phone, PEOPLE.temp.appPassword);
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.json()).toMatchObject({ accountId: accountIds.temp, mustChangePassword: true });
+    const kept = (await storedHash('temp'))!;
+    expect(await verify(kept, PEOPLE.temp.appPassword)).toBe(true);
+    expect(await adoptions('temp')).toHaveLength(1);
+    const cookie = cookieOf(res);
+
+    const held = await ctx.app.inject({
+      method: 'POST',
+      url: '/auth/handoff',
+      headers: { cookie },
+      payload: { app: 'oto_app' },
+    });
+    expect(held.statusCode, held.body).toBe(403);
+    expect(held.json().error.code).toBe('MUST_CHANGE_PASSWORD');
+
+    const changed = await ctx.app.inject({
+      method: 'POST',
+      url: '/auth/change-password',
+      headers: { cookie },
+      payload: { currentPassword: PEOPLE.temp.appPassword, password: TEMP_NEW_PASSWORD },
+    });
+    expect(changed.statusCode, changed.body).toBe(200);
+
+    const opened = await ctx.app.inject({
+      method: 'POST',
+      url: '/auth/handoff',
+      headers: { cookie },
+      payload: { app: 'oto_app' },
+    });
+    expect(opened.statusCode, opened.body).toBe(200);
+
+    // The temporary password is gone from the suite; the chosen one is it.
+    expect((await signIn(PEOPLE.temp.phone, PEOPLE.temp.appPassword)).statusCode).toBe(401);
+    const again = await signIn(PEOPLE.temp.phone, TEMP_NEW_PASSWORD);
+    expect(again.statusCode, again.body).toBe(200);
+    expect(again.json()).toMatchObject({ mustChangePassword: false });
+    expect(await adoptions('temp')).toHaveLength(1);
+    await _resetThrottle(ctx.db);
+  });
+});
+
+describe('SCRUM-795: an SMS reset goes only to a phone the app proves', () => {
+  const resetCodes = (key: Key) =>
+    ctx.db
+      .select({ id: verificationCode.id })
+      .from(verificationCode)
+      .where(and(eq(verificationCode.accountId, accountIds[key]), eq(verificationCode.purpose, 'password_reset')));
+
+  it('sends no code to an unproven phone, which still signs in with the app password', async () => {
+    const [acc] = await ctx.db
+      .select({ phoneVerifiedAt: account.phoneVerifiedAt })
+      .from(account)
+      .where(eq(account.id, accountIds.wrong));
+    expect(acc?.phoneVerifiedAt).toBeNull();
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/auth/password-reset/request',
+      payload: { phone: PEOPLE.wrong.phone },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(await resetCodes('wrong')).toEqual([]);
+  });
+
+  it('sends one to a phone the app proves', async () => {
+    const [acc] = await ctx.db
+      .select({ phoneVerifiedAt: account.phoneVerifiedAt })
+      .from(account)
+      .where(eq(account.id, accountIds.manager));
+    expect(acc?.phoneVerifiedAt).toBeInstanceOf(Date);
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/auth/password-reset/request',
+      payload: { phone: PEOPLE.manager.phone },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(await resetCodes('manager')).toHaveLength(1);
   });
 });
 
