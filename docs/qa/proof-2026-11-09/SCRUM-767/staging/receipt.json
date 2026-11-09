@@ -1,0 +1,537 @@
+{
+  "unit": "SCRUM-767",
+  "result": "passed",
+  "what": "Staging proof: on the till's consent screen (drop-off, no paired display, so staff tick on the till's customer half) a \"Please confirm\" line ticks once when its small box is tapped and stays ticked; a second tap unticks it; a tap on the words ticks once; Space on the focused box toggles once.",
+  "liveCommit": "748ed62f7cf03ad5d9645abe1e5d0bb546a561db",
+  "deploys": {
+    "readAt": "2026-11-09T12:52:50Z",
+    "how": "node scripts/agent/render.mjs deploys <service>, first two lines",
+    "services": {
+      "oto-pos-web-staging": [
+        {
+          "id": "dep-dbos2pugekts73f1op50",
+          "status": "live",
+          "commit": "748ed62f",
+          "at": "2026-11-09T12:52:28.281716Z"
+        },
+        {
+          "id": "dep-dborsvss728c73aio1tg",
+          "status": "deactivated",
+          "commit": "877d23c9",
+          "at": "2026-11-09T12:40:16.555946Z"
+        }
+      ],
+      "oto-pos-staging": [
+        {
+          "id": "dep-dbos2q5g1s2s7385vp9g",
+          "status": "live",
+          "commit": "748ed62f",
+          "at": "2026-11-09T12:50:39.191802Z"
+        },
+        {
+          "id": "dep-dbort04s728c73aio2e0",
+          "status": "deactivated",
+          "commit": "877d23c9",
+          "at": "2026-11-09T12:38:27.654747Z"
+        }
+      ],
+      "oto-api-staging": [
+        {
+          "id": "dep-dborregu01pc7387sf1g",
+          "status": "live",
+          "commit": "ed6e092d",
+          "at": "2026-11-09T12:37:59.929007Z"
+        },
+        {
+          "id": "dep-dborh13hf81s73c022ng",
+          "status": "deactivated",
+          "commit": "877d23c9",
+          "at": "2026-11-09T12:16:25.394767Z"
+        }
+      ]
+    },
+    "note": "oto-api-staging is not part of this change (both tickets are till-only, apps/pos); it was read for the record."
+  },
+  "bundle": {
+    "read": "GET https://oto-pos-web-staging.onrender.com/ and its script, before the run",
+    "scripts": {
+      "/assets/index-DZt4kWqy.js": {
+        "bytes": 2459336,
+        "readsScans": true,
+        "tillWords": true,
+        "consentConfirmation": true
+      }
+    }
+  },
+  "pos": "https://oto-pos-web-staging.onrender.com",
+  "browser": "Chromium 153.0.8010.12 (headless), 1440x900, hasTouch: true, timezone Asia/Bangkok, clipboard read/write allowed",
+  "touchAsTheAppSawIt": {
+    "maxTouchPoints": 1,
+    "coarse": true,
+    "ontouchstart": true
+  },
+  "startedAt": "2026-11-09T12:53:43.782Z",
+  "finishedAt": "2026-11-09T13:03:43.091Z",
+  "accounts": {
+    "tillAndFixture": "staging admin (api) made and archived the test till; the till ran as the staging reception account (browser)",
+    "credentials": "from scripts/agent/env.mjs, never printed or stored"
+  },
+  "fixture": {
+    "branch": "Oto Play Park, Central Floresta",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "box": "Virtual box 1",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "till": {
+      "id": "01a1c05f-5745-7a3c-8d01-8bdec6723938",
+      "name": "ZZ TEST SCRUM-767 till",
+      "prefix": "Z767",
+      "ready": true,
+      "routing": {
+        "qr": "none",
+        "card": "manual"
+      },
+      "devices": [
+        "adult_band:Band Printer (adults)",
+        "kids_band:Band Printer (kids)",
+        "receipt:Receipt Printer 1"
+      ]
+    },
+    "customerDisplay": "the till's own test harness half (Show customer display); no display was paired to the test till",
+    "walkInPhone": "+66897670011 (ZZ TEST number; not a member before or after)"
+  },
+  "pageErrors": [],
+  "how": "Each tap is a Playwright touch tap (locator.tap) in a context with hasTouch; every change of a box's ticked state (its data-state attribute) was logged in the page by a MutationObserver, so \"one tap, one change\" is read from the page, not assumed. The staff side's \"Agreements\" panel was read after each step.",
+  "setUp": {
+    "sale": "walk-in (Tourist) on the ZZ TEST number, 1 Hour Play, 1 kid and 0 adults, ฿690, NOT paid",
+    "cart": "Current Order TOURIST 1 Hour Play EDITING ฿690 Kids ฿690 each 1 Adults ฿350 each 0 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿690 VAT included ฿45.14 Total ฿690 Cancel Pay ฿690",
+    "gate": "Pay opened the supervision gate (\"Children playing alone\"); the customer half showed \"Tell us about your child\"; the child was named \"ZZ TEST 767 Child\" and given age 6 (born 1 Jan 2020) on the customer half: \"Drop-off supervision needed — ฿225 one-time\", then the consent line and the \"Please confirm\" list (3 lines)",
+    "pairedDisplay": "none (\"Private child details\" button absent)"
+  },
+  "ticks": [
+    {
+      "at": "2026-11-09T12:55:22.867Z",
+      "act": "tapBox",
+      "target": "box of \"I will remain within 15 minutes of the venue\"",
+      "how": "touch tap (Playwright locator.tap, hasTouch) at the centre of the 24x24 px box",
+      "before": {
+        "confirmations": [
+          "unchecked",
+          "unchecked",
+          "unchecked"
+        ],
+        "consentLine": "unchecked"
+      },
+      "after": {
+        "confirmations": [
+          "checked",
+          "unchecked",
+          "unchecked"
+        ],
+        "consentLine": "unchecked"
+      },
+      "staffSideAfter": "Agreements — ticked by the family on their screen Supervision and photo consent · not ticked yet I will remain within 15 minutes of the venue · ticked I understand early pickup does not qualify for refund · not ticked yet I acknowledge the emergency evacuation point · not ticked yet",
+      "focusedAfter": "consent-confirmation true",
+      "stateChangesLogged": [
+        {
+          "box": "consent-confirmation#0",
+          "state": "checked",
+          "ms": 607
+        }
+      ],
+      "pictureRetakenAt": "2026-11-09T12:55:37.096Z",
+      "retakeReason": "the first picture showed part of the ZZ TEST walk-in number above the consent line; retaken with it masked, nothing pressed in between",
+      "stateAtRetake": [
+        "checked",
+        "unchecked",
+        "unchecked"
+      ],
+      "changesLoggedAtRetake": [
+        {
+          "box": "consent-confirmation#0",
+          "state": "checked",
+          "ms": 607
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T12:55:47.056Z",
+      "act": "tapBox",
+      "target": "box of \"I will remain within 15 minutes of the venue\"",
+      "how": "touch tap (Playwright locator.tap, hasTouch) at the centre of the 24x24 px box",
+      "before": {
+        "confirmations": [
+          "checked",
+          "unchecked",
+          "unchecked"
+        ],
+        "consentLine": "unchecked"
+      },
+      "after": {
+        "confirmations": [
+          "unchecked",
+          "unchecked",
+          "unchecked"
+        ],
+        "consentLine": "unchecked"
+      },
+      "staffSideAfter": "Agreements — ticked by the family on their screen Supervision and photo consent · not ticked yet I will remain within 15 minutes of the venue · not ticked yet I understand early pickup does not qualify for refund · not ticked yet I acknowledge the emergency evacuation point · not ticked yet",
+      "focusedAfter": "consent-confirmation false",
+      "stateChangesLogged": [
+        {
+          "box": "consent-confirmation#0",
+          "state": "unchecked",
+          "ms": 24804
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T12:55:50.162Z",
+      "act": "tapWords",
+      "target": "line \"I understand early pickup does not qualify for refund\"",
+      "how": "touch tap on the line's words \"I understand early pickup does not qualify for refund\"",
+      "before": {
+        "confirmations": [
+          "unchecked",
+          "unchecked",
+          "unchecked"
+        ],
+        "consentLine": "unchecked"
+      },
+      "after": {
+        "confirmations": [
+          "unchecked",
+          "checked",
+          "unchecked"
+        ],
+        "consentLine": "unchecked"
+      },
+      "staffSideAfter": "Agreements — ticked by the family on their screen Supervision and photo consent · not ticked yet I will remain within 15 minutes of the venue · not ticked yet I understand early pickup does not qualify for refund · ticked I acknowledge the emergency evacuation point · not ticked yet",
+      "focusedAfter": "consent-confirmation true",
+      "stateChangesLogged": [
+        {
+          "box": "consent-confirmation#1",
+          "state": "checked",
+          "ms": 27903
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T12:56:00.290Z",
+      "act": "space",
+      "target": "box of \"I will remain within 15 minutes of the venue\"",
+      "how": "box focused (locator.focus), then one Space key press",
+      "before": {
+        "confirmations": [
+          "unchecked",
+          "checked",
+          "unchecked"
+        ],
+        "consentLine": "unchecked"
+      },
+      "after": {
+        "confirmations": [
+          "checked",
+          "checked",
+          "unchecked"
+        ],
+        "consentLine": "unchecked"
+      },
+      "staffSideAfter": "Agreements — ticked by the family on their screen Supervision and photo consent · not ticked yet I will remain within 15 minutes of the venue · ticked I understand early pickup does not qualify for refund · ticked I acknowledge the emergency evacuation point · not ticked yet",
+      "focusedAfter": "consent-confirmation true",
+      "stateChangesLogged": [
+        {
+          "box": "consent-confirmation#0",
+          "state": "checked",
+          "ms": 37950
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T12:56:03.624Z",
+      "act": "space",
+      "target": "box of \"I will remain within 15 minutes of the venue\"",
+      "how": "box focused (locator.focus), then one Space key press",
+      "before": {
+        "confirmations": [
+          "checked",
+          "checked",
+          "unchecked"
+        ],
+        "consentLine": "unchecked"
+      },
+      "after": {
+        "confirmations": [
+          "unchecked",
+          "checked",
+          "unchecked"
+        ],
+        "consentLine": "unchecked"
+      },
+      "staffSideAfter": "Agreements — ticked by the family on their screen Supervision and photo consent · not ticked yet I will remain within 15 minutes of the venue · not ticked yet I understand early pickup does not qualify for refund · ticked I acknowledge the emergency evacuation point · not ticked yet",
+      "focusedAfter": "consent-confirmation false",
+      "stateChangesLogged": [
+        {
+          "box": "consent-confirmation#0",
+          "state": "unchecked",
+          "ms": 41362
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T12:56:12.588Z",
+      "act": "tapBox",
+      "target": "box of the supervision consent line (\"I authorize Oto Play Park staff ...\")",
+      "how": "touch tap (Playwright locator.tap, hasTouch) at the centre of the 24x24 px box",
+      "before": {
+        "confirmations": [
+          "unchecked",
+          "checked",
+          "unchecked"
+        ],
+        "consentLine": "unchecked"
+      },
+      "after": {
+        "confirmations": [
+          "unchecked",
+          "checked",
+          "unchecked"
+        ],
+        "consentLine": "checked"
+      },
+      "staffSideAfter": "Agreements — ticked by the family on their screen Supervision and photo consent · ticked I will remain within 15 minutes of the venue · not ticked yet I understand early pickup does not qualify for refund · ticked I acknowledge the emergency evacuation point · not ticked yet",
+      "focusedAfter": "consent-ack true",
+      "stateChangesLogged": [
+        {
+          "box": "consent-ack#0",
+          "state": "checked",
+          "ms": 50319
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T12:56:14.926Z",
+      "act": "tapBox",
+      "target": "box of the supervision consent line (\"I authorize Oto Play Park staff ...\")",
+      "how": "touch tap (Playwright locator.tap, hasTouch) at the centre of the 24x24 px box",
+      "before": {
+        "confirmations": [
+          "unchecked",
+          "checked",
+          "unchecked"
+        ],
+        "consentLine": "checked"
+      },
+      "after": {
+        "confirmations": [
+          "unchecked",
+          "checked",
+          "unchecked"
+        ],
+        "consentLine": "unchecked"
+      },
+      "staffSideAfter": "Agreements — ticked by the family on their screen Supervision and photo consent · not ticked yet I will remain within 15 minutes of the venue · not ticked yet I understand early pickup does not qualify for refund · ticked I acknowledge the emergency evacuation point · not ticked yet",
+      "focusedAfter": "consent-ack false",
+      "stateChangesLogged": [
+        {
+          "box": "consent-ack#0",
+          "state": "unchecked",
+          "ms": 52670
+        }
+      ]
+    }
+  ],
+  "cancelled": {
+    "how": "Back from the gate, then Cancel on the order panel: the order emptied with no dialog",
+    "at": "2026-11-09T12:56:32.857Z",
+    "salesOnTheTillAfter": [],
+    "walkInIsMemberAfter": false,
+    "writes": "one POST /api/sales/quote when the ticket went into the cart (12:54:18); nothing else was written for this sale (see pageWrites)"
+  },
+  "pictures": [
+    {
+      "unit": "SCRUM-767",
+      "file": "docs/qa/proof-2026-11-09/SCRUM-767/staging/767-st-01-box-tap-ticks-and-stays.png",
+      "at": "2026-11-09T12:55:37.902Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 1: one touch tap on the small box of the first \"Please confirm\" line (I will remain within 15 minutes of the venue): the box is ticked and stays ticked 1.5 s later; the staff side reads it ticked (picture taken 14 s after the tap; still ticked, one state change logged)"
+    },
+    {
+      "unit": "SCRUM-767",
+      "file": "docs/qa/proof-2026-11-09/SCRUM-767/staging/767-st-02-box-tap-again-unticks.png",
+      "at": "2026-11-09T12:55:47.858Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 2: a second touch tap on the same small box: it unticks (one state change, checked to unchecked); the staff side reads it not ticked yet"
+    },
+    {
+      "unit": "SCRUM-767",
+      "file": "docs/qa/proof-2026-11-09/SCRUM-767/staging/767-st-03-words-tap-ticks-once.png",
+      "at": "2026-11-09T12:55:50.961Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 3: one touch tap on the words of the second line (I understand early pickup does not qualify for refund): that line ticks once and stays ticked; the first line stays unticked"
+    },
+    {
+      "unit": "SCRUM-767",
+      "file": "docs/qa/proof-2026-11-09/SCRUM-767/staging/767-st-04-space-on-focused-box-ticks-once.png",
+      "at": "2026-11-09T12:56:01.108Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Step 4: the first line's box focused and Space pressed once: it ticks (one state change, unchecked to checked) and stays ticked; the second line stays ticked from step 3"
+    }
+  ],
+  "pageWrites": [
+    {
+      "at": "2026-11-09T12:54:00.434Z",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T12:54:01.839Z",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T12:54:18.955Z",
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "status": 200
+    }
+  ],
+  "pageWritesNote": "pageWrites is every non-GET request the till page made in this run, read from the browser's response log; pageLookups is every band look-up it made (GET /api/wallets/scan and /api/sales/lookup). PUT /api/me/session/station is the till re-stating its station after each page load.",
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1c05f-5745-7a3c-8d01-8bdec6723938",
+      "name": "ZZ TEST SCRUM-767 till",
+      "box": "Virtual box 1",
+      "prefix": "Z767",
+      "at": "2026-11-09T12:53:55.576Z"
+    }
+  ],
+  "cleanup": {
+    "actions": [
+      {
+        "at": "2026-11-09T13:03:35.757Z",
+        "what": "till sign-out (its own session route)",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-09T13:03:35.950Z",
+        "what": "unassign printers on ZZ TEST SCRUM-767 till",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-09T13:03:36.045Z",
+        "what": "archive station ZZ TEST SCRUM-767 till",
+        "status": 200,
+        "code": null
+      }
+    ],
+    "startedAt": "2026-11-09T13:03:35.355Z",
+    "salesBefore": [
+      {
+        "id": "01a1c062-2c79-7c67-b0a2-840cb2c3e227",
+        "receipt": "Z767-000001",
+        "status": "finalised",
+        "gross": 104000
+      }
+    ],
+    "printJobs": [
+      {
+        "kind": "adult_wristband",
+        "status": "printed"
+      },
+      {
+        "kind": "kids_wristband",
+        "status": "printed"
+      },
+      {
+        "kind": "receipt",
+        "status": "printed"
+      }
+    ],
+    "bandsAfter": [
+      {
+        "kind": "kid",
+        "shortCode": "Z767-4HV7TD",
+        "status": "active"
+      },
+      {
+        "kind": "adult",
+        "shortCode": "Z767-HQBDM7",
+        "status": "active"
+      }
+    ],
+    "tillMeAfterSignOut": 401,
+    "readBack": {
+      "at": "2026-11-09T13:03:36.378Z",
+      "till": {
+        "id": "01a1c05f-5745-7a3c-8d01-8bdec6723938",
+        "name": "ZZ TEST SCRUM-767 till",
+        "archived": true,
+        "archivedAt": null,
+        "devices": 0
+      },
+      "salesAfter": [
+        {
+          "id": "01a1c062-2c79-7c67-b0a2-840cb2c3e227",
+          "receipt": "Z767-000001",
+          "status": "finalised",
+          "gross": 104000
+        }
+      ],
+      "walkInNumberIsNotAMember": {
+        "status": 200,
+        "found": false
+      },
+      "untouched": [
+        {
+          "name": "FWBooth1",
+          "archived": false,
+          "devices": 1
+        },
+        {
+          "name": "Reception Till 1",
+          "archived": false,
+          "devices": 7
+        },
+        {
+          "name": "Till 1 (Pi)",
+          "archived": false,
+          "devices": 4
+        },
+        {
+          "name": "Till 2 (test)",
+          "archived": false,
+          "devices": 4
+        }
+      ]
+    },
+    "finishedAt": "2026-11-09T13:03:36.378Z",
+    "adminSignOut": "POST /api/auth/sign-out on the admin api session at driver STOP",
+    "sharedWith": "the same test till then served the SCRUM-766 proof; it was signed out and archived at the end of both"
+  },
+  "notTouched": "No sale was made for SCRUM-767 (the cart was cancelled before payment); no member was created (no Continue on the gate); no photo was taken; no till notice was pressed; no setting changed; no SMS."
+}

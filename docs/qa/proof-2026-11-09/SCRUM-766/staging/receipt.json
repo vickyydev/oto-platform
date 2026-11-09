@@ -1,0 +1,799 @@
+{
+  "unit": "SCRUM-766",
+  "result": "passed, with one note: a play ticket's kid band carries no tab on staging, so the F&B and shop \"tab loads\" steps were shown with the same sale's adult band (the kid band's paste was caught on both screens and answered \"No tab found\")",
+  "what": "Staging proof: a wristband code pasted with no field selected is caught on F&B, the Shop, History and the ticket till without selecting the band box; typed by hand into a field it stays in the field.",
+  "liveCommit": "748ed62f7cf03ad5d9645abe1e5d0bb546a561db",
+  "deploys": {
+    "readAt": "2026-11-09T12:52:50Z",
+    "how": "node scripts/agent/render.mjs deploys <service>, first two lines",
+    "services": {
+      "oto-pos-web-staging": [
+        {
+          "id": "dep-dbos2pugekts73f1op50",
+          "status": "live",
+          "commit": "748ed62f",
+          "at": "2026-11-09T12:52:28.281716Z"
+        },
+        {
+          "id": "dep-dborsvss728c73aio1tg",
+          "status": "deactivated",
+          "commit": "877d23c9",
+          "at": "2026-11-09T12:40:16.555946Z"
+        }
+      ],
+      "oto-pos-staging": [
+        {
+          "id": "dep-dbos2q5g1s2s7385vp9g",
+          "status": "live",
+          "commit": "748ed62f",
+          "at": "2026-11-09T12:50:39.191802Z"
+        },
+        {
+          "id": "dep-dbort04s728c73aio2e0",
+          "status": "deactivated",
+          "commit": "877d23c9",
+          "at": "2026-11-09T12:38:27.654747Z"
+        }
+      ],
+      "oto-api-staging": [
+        {
+          "id": "dep-dborregu01pc7387sf1g",
+          "status": "live",
+          "commit": "ed6e092d",
+          "at": "2026-11-09T12:37:59.929007Z"
+        },
+        {
+          "id": "dep-dborh13hf81s73c022ng",
+          "status": "deactivated",
+          "commit": "877d23c9",
+          "at": "2026-11-09T12:16:25.394767Z"
+        }
+      ]
+    },
+    "note": "oto-api-staging is not part of this change (both tickets are till-only, apps/pos); it was read for the record."
+  },
+  "bundle": {
+    "read": "GET https://oto-pos-web-staging.onrender.com/ and its script, before the run",
+    "scripts": {
+      "/assets/index-DZt4kWqy.js": {
+        "bytes": 2459336,
+        "readsScans": true,
+        "tillWords": true,
+        "consentConfirmation": true
+      }
+    }
+  },
+  "pos": "https://oto-pos-web-staging.onrender.com",
+  "browser": "Chromium 153.0.8010.12 (headless), 1440x900, hasTouch: true, timezone Asia/Bangkok, clipboard read/write allowed",
+  "touchAsTheAppSawIt": {
+    "maxTouchPoints": 1,
+    "coarse": true,
+    "ontouchstart": true
+  },
+  "startedAt": "2026-11-09T12:53:43.782Z",
+  "finishedAt": "2026-11-09T13:03:43.091Z",
+  "accounts": {
+    "tillAndFixture": "staging admin (api) made and archived the test till; the till ran as the staging reception account (browser)",
+    "credentials": "from scripts/agent/env.mjs, never printed or stored"
+  },
+  "fixture": {
+    "branch": "Oto Play Park, Central Floresta",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "box": "Virtual box 1",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "till": {
+      "id": "01a1c05f-5745-7a3c-8d01-8bdec6723938",
+      "name": "ZZ TEST SCRUM-767 till",
+      "prefix": "Z767",
+      "ready": true,
+      "routing": {
+        "qr": "none",
+        "card": "manual"
+      },
+      "devices": [
+        "adult_band:Band Printer (adults)",
+        "kids_band:Band Printer (kids)",
+        "receipt:Receipt Printer 1"
+      ]
+    },
+    "customerDisplay": "the till's own test harness half (Show customer display); no display was paired to the test till",
+    "walkInPhone": "+66897670011 (ZZ TEST number; not a member before or after)"
+  },
+  "pageErrors": [],
+  "how": "Before each paste, the screen's heading was clicked and whatever kept focus was blurred; document.activeElement was read as BODY every time. The code was put on the context's clipboard (navigator.clipboard.writeText) and Ctrl+V pressed. Hand typing: page.keyboard.type at 200 ms a key, no Enter.",
+  "sale": {
+    "id": "01a1c062-2c79-7c67-b0a2-840cb2c3e227",
+    "receipt": "Z767-000001",
+    "status": "finalised",
+    "grossSatang": 104000,
+    "what": "walk-in (Tourist), 1 Hour Play, 1 kid + 1 adult, cash; the adult was added so the sale needs no drop-off form (a kid alone opens the supervision gate)",
+    "bands": [
+      "kid Z767-4HV7TD active",
+      "adult Z767-HQBDM7 active"
+    ],
+    "lines": [
+      {
+        "id": "01a1c062-2c79-79ad-a911-ed1c1041deb9",
+        "label": "Kids",
+        "kind": "kids",
+        "kidCount": 1,
+        "adultCount": 1,
+        "stayHours": 1,
+        "quantity": 1,
+        "grossSatang": 69000
+      },
+      {
+        "id": "01a1c062-2c79-77d6-bea2-559e0dbf9b7c",
+        "label": "Adults",
+        "kind": "adults_paid",
+        "kidCount": 1,
+        "adultCount": 1,
+        "stayHours": 1,
+        "quantity": 1,
+        "grossSatang": 35000
+      }
+    ],
+    "payments": [
+      {
+        "method": "cash",
+        "status": "approved",
+        "amount": 104000
+      }
+    ]
+  },
+  "tabsOnTheSale": {
+    "kidBand": {
+      "code": "Z767-4HV7TD",
+      "wallet": "none: GET /api/wallets/scan?key=Z767-4HV7TD answers 404 WALLET_NOT_FOUND (\"No wallet carries that band or voucher\")"
+    },
+    "adultBand": {
+      "code": "Z767-HQBDM7",
+      "wallet": "Walk-in guest, ฿350 credit (grant source ticket_sale), keys: the credit QR and this band"
+    },
+    "note": "The ticket's ฿350 F&B credit is granted on the adult's band (the till says \"Adults: Receives F&B credit\"); the kid band has no tab. So \"the tab loads\" was shown with the adult band."
+  },
+  "pastes": [
+    {
+      "at": "2026-11-09T12:57:55.764Z",
+      "screen": "fnb",
+      "how": "nothing selected (activeElement BODY), clipboard set to the code, Ctrl+V",
+      "code": "Z767-4HV7TD",
+      "urlBefore": "https://oto-pos-web-staging.onrender.com/order-station",
+      "urlAfter": "https://oto-pos-web-staging.onrender.com/order-station",
+      "lookups": [
+        {
+          "at": "2026-11-09T12:57:52.838Z",
+          "method": "GET",
+          "path": "/api/wallets/scan",
+          "query": "?key=Z767-4HV7TD&branchId=01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "status": 404,
+          "response": "{\"error\":{\"code\":\"WALLET_NOT_FOUND\",\"message\":\"No wallet carries that band or voucher — check the code and scan again.\"}}"
+        }
+      ],
+      "focusAfter": "BODY ",
+      "afterText": "Test harness — staff station (left) + customer display (right) share one live order. In production the customer display runs on a separate device. Show customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Scan Wristband Scan or type a wristband code to load the customer's tab. Load Tab No tab found for \"Z767-4HV7TD\". Try a code below or continue as guest. DEMO WRISTBANDS Mama Som #1001 credit ฿0 Nong Fah #1002 credit ฿0 Khun Lek #1003 credit ฿0 Tourist Tom #1004 credit ฿0 Little Emma #1005 credit ฿0 Little Tyler #1006 credit ฿0 Kai #1007 PREPAID FOOD credit ฿0 Mia #1008 prepaid ฿0 Walk-in guest #WK-E227-0 credit ฿0 Walk-in child #GT-E227-K0 credit ฿0 OR No wristband — continue as guest"
+    },
+    {
+      "at": "2026-11-09T12:58:50.511Z",
+      "screen": "fnb",
+      "how": "nothing selected (activeElement BODY), clipboard set to the code, Ctrl+V",
+      "code": "Z767-HQBDM7",
+      "urlBefore": "https://oto-pos-web-staging.onrender.com/order-station",
+      "urlAfter": "https://oto-pos-web-staging.onrender.com/order-station",
+      "lookups": [
+        {
+          "at": "2026-11-09T12:58:47.660Z",
+          "method": "GET",
+          "path": "/api/wallets/scan",
+          "query": "?key=Z767-HQBDM7&branchId=01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "status": 200,
+          "response": "{\"wallet\":{\"id\":\"01a1c062-571e-74a7-a15f-89b40059a930\",\"expiresAt\":\"2026-11-09T22:00:00.000Z\",\"lapsedSatang\":0,\"branchId\":\"01a0bbdc-8c42-7753-b7e3-5ae19fb66d33\",\"memberId\":null,\"holderName\":\"Walk-in guest\",\"status\":\"active\",\"balanceSatang\":35000,\"keys\":[{\"kind\":\"voucher_qr\",\"display\":\"QR-PA8T0887GNSC8YH6CQMG\"},{\"kind\":\"band\",\"display\":\"Z767-HQBDM7\"}],\"createdAt\":\"2026-11-09T12:57:12.693Z\"},\"ledger\":[{\"id\":\"01a1c062-5723-7071-bf5d-e6301ce54138\",\"kind\":\"grant\",\"source\":\"ticket_sale\",\"amountSatang\":35000,\"balanceAfterSatang\":35000,\"saleId\":\"01a1c062-2c79-7c67-b0a2-840cb2c3e227\",\"refundId\":null,\"b"
+        }
+      ],
+      "focusAfter": "BODY ",
+      "afterText": "Test harness — staff station (left) + customer display (right) share one live order. In production the customer display runs on a separate device. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Breakfast Sides Sharing Soup Salads Pasta Pizza Mains Asian Food Kids Desserts Coffee Iced Coffee Chocolate Soda Smoothies Juice Tea pot Soft drinks Kids juice Wine Beer Specials Free Drinks Menu Big breakfast ฿460 Vegetarian breakfast ฿400 Smashed avocado + bruschetta Customizable ฿370 Waffles ฿255 Pancakes ฿255 Porridge ฿230 Yogurt ฿230 Syrniki ฿230 Smoked salmon toast ฿390 Walk-in guest ฿350 credit • #Z767-HQBDM7 Order Tap menu items to add them to the order. Apply Redeem Add manual discount Scan staff benefitCharge ฿0 English Welcome back, Walk-in guest! Your credit balance ฿350 What can we get you today?"
+    },
+    {
+      "at": "2026-11-09T12:59:12.470Z",
+      "screen": "shop",
+      "how": "nothing selected (activeElement BODY), clipboard set to the code, Ctrl+V",
+      "code": "Z767-HQBDM7",
+      "urlBefore": "https://oto-pos-web-staging.onrender.com/merch-station",
+      "urlAfter": "https://oto-pos-web-staging.onrender.com/merch-station",
+      "lookups": [
+        {
+          "at": "2026-11-09T12:59:09.580Z",
+          "method": "GET",
+          "path": "/api/wallets/scan",
+          "query": "?key=Z767-HQBDM7&branchId=01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "status": 200,
+          "response": "{\"wallet\":{\"id\":\"01a1c062-571e-74a7-a15f-89b40059a930\",\"expiresAt\":\"2026-11-09T22:00:00.000Z\",\"lapsedSatang\":0,\"branchId\":\"01a0bbdc-8c42-7753-b7e3-5ae19fb66d33\",\"memberId\":null,\"holderName\":\"Walk-in guest\",\"status\":\"active\",\"balanceSatang\":35000,\"keys\":[{\"kind\":\"voucher_qr\",\"display\":\"QR-PA8T0887GNSC8YH6CQMG\"},{\"kind\":\"band\",\"display\":\"Z767-HQBDM7\"}],\"createdAt\":\"2026-11-09T12:57:12.693Z\"},\"ledger\":[{\"id\":\"01a1c062-5723-7071-bf5d-e6301ce54138\",\"kind\":\"grant\",\"source\":\"ticket_sale\",\"amountSatang\":35000,\"balanceAfterSatang\":35000,\"saleId\":\"01a1c062-2c79-7c67-b0a2-840cb2c3e227\",\"refundId\":null,\"b"
+        }
+      ],
+      "focusAfter": "BODY ",
+      "afterText": "Test harness — staff station (left) + customer display (right) share one live sale. In production the customer display runs on a separate device. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks All Tickets & passes Balloons Merchandise Workshop Golden Ticket ฿1500 School Admission Ticket ฿250 Thai-International Admission Ticket ฿200 Helium Balloon (65) ฿65 Helium Balloon (75) ฿75 Helium Foil Balloon S ฿150 Helium Foil Balloon M ฿200 Helium Foil Balloon L ฿250 Merch Little OTO ฿490 Merch Potato Head Toy ฿700 Merch Glasses Necklace ฿650 Merch Kids Beaded Necklace ฿200 Merch Frozen Bracelet Set ฿150 Merch Frozen Kids Backpack ฿1500 Merch Princess Jewelry Set ฿300 Merch Round Sunglasses ฿800 Merch Wooden Twist Animal ฿200 Merch Peppa Pig Figures ฿150 Merch Blue Emoji Toy ฿100 Merch Small Bunny ฿390 Merch Middle Bunny ฿690 Merch Big Bunny ฿1290 Merch Rainbow Kids Backpack ฿1500 Merch Duggee Dance Toy ฿690 Merch Deer Kids Backpack ฿1050 Merch Dino Monster Truck ฿1200 Merch Frozen Hair Brush ฿200 OTO CS Necklace ฿150 OTO CS Mirror & Pen ฿250 OTO CS Keychain ฿200 OTO CS Bracelet ฿100 Walk-in guest ฿350 credit • #Z767-HQBDM7 Sale Tap shop items to add them to the sale. Apply Add manual discountCharge ฿0 English Welcome back, Walk-in guest! Your credit ฿350 What can we get you today?"
+    },
+    {
+      "at": "2026-11-09T12:59:27.170Z",
+      "screen": "shop",
+      "how": "nothing selected (activeElement BODY), clipboard set to the code, Ctrl+V",
+      "code": "Z767-4HV7TD",
+      "urlBefore": "https://oto-pos-web-staging.onrender.com/merch-station",
+      "urlAfter": "https://oto-pos-web-staging.onrender.com/merch-station",
+      "lookups": [
+        {
+          "at": "2026-11-09T12:59:24.237Z",
+          "method": "GET",
+          "path": "/api/wallets/scan",
+          "query": "?key=Z767-4HV7TD&branchId=01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "status": 404,
+          "response": "{\"error\":{\"code\":\"WALLET_NOT_FOUND\",\"message\":\"No wallet carries that band or voucher — check the code and scan again.\"}}"
+        }
+      ],
+      "focusAfter": "BODY ",
+      "afterText": "Test harness — staff station (left) + customer display (right) share one live sale. In production the customer display runs on a separate device. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Retail Sale Scan a wristband to put the sale on the customer's tab, or continue as a guest. Load Tab No tab found for \"Z767-4HV7TD\". Try a code below or continue as guest. DEMO WRISTBANDS Mama Som #1001 credit ฿0 Nong Fah #1002 credit ฿0 Khun Lek #1003 credit ฿0 Tourist Tom #1004 credit ฿0 Little Emma #1005 credit ฿0 Little Tyler #1006 credit ฿0 Kai #1007 PREPAID FOOD credit ฿0 Mia #1008 prepaid ฿0 OR No wristband — continue as guest English Oto Shop Take a piece of Oto home — apparel, toys & more. Tap your wristband to use your credit! Our staff will ring you up at the counter"
+    },
+    {
+      "at": "2026-11-09T13:00:11.281Z",
+      "screen": "history",
+      "how": "nothing selected (activeElement BODY), clipboard set to the code, Ctrl+V",
+      "code": "Z767-4HV7TD",
+      "urlBefore": "https://oto-pos-web-staging.onrender.com/history",
+      "urlAfter": "https://oto-pos-web-staging.onrender.com/history",
+      "lookups": [
+        {
+          "at": "2026-11-09T13:00:08.229Z",
+          "method": "GET",
+          "path": "/api/sales/lookup",
+          "query": "?band=Z767-4HV7TD&branchId=01a0bbdc-8c42-7753-b7e3-5ae19fb66d33&limit=50",
+          "status": 200,
+          "response": "{\"match\":{\"by\":\"band\",\"bandIds\":[\"01a1c062-5731-741b-83ef-fdc513b429d7\"]},\"sales\":[{\"id\":\"01a1c062-2c79-7c67-b0a2-840cb2c3e227\",\"branchId\":\"01a0bbdc-8c42-7753-b7e3-5ae19fb66d33\",\"stationId\":\"01a1c05f-5745-7a3c-8d01-8bdec6723938\",\"boxId\":\"01a0be8c-89a0-74fa-9495-fb4a4acb65bc\",\"memberId\":null,\"visitId\":null,\"businessDate\":\"2026-11-09\",\"occurredAt\":\"2026-11-09T12:57:01.818Z\",\"status\":\"finalised\",\"salesChannel\":\"till\",\"pricingMode\":\"weekday\",\"pricingModeReason\":\"Weekday pricing\",\"customerTier\":\"tourist\",\"engineVersion\":\"2026.10.06-1\",\"receiptNumber\":\"Z767-000001\",\"receiptSeries\":\"Z767\",\"receiptSeq"
+        }
+      ],
+      "focusAfter": "BODY ",
+      "afterText": "0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Back to all transactions Walk-in #Z767-4HV7TD Credit No credit on this band Total spent (Oto Play Park, Central Floresta) ฿1040 All Tickets F&B Drop-off 1 order Z[number withheld] Ticket 09 Nov, 19:57 Som Oto Play Park, Central Floresta Paid ฿1040"
+    },
+    {
+      "at": "2026-11-09T13:01:10.665Z",
+      "screen": "tickets",
+      "how": "nothing selected (activeElement BODY), clipboard set to the code, Ctrl+V",
+      "code": "Z767-4HV7TD",
+      "urlBefore": "https://oto-pos-web-staging.onrender.com/",
+      "urlAfter": "https://oto-pos-web-staging.onrender.com/",
+      "lookups": [],
+      "focusAfter": "BODY ",
+      "afterText": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Configure: 1 Hour Play Back to tickets Participants Kids Requires adult supervision 1 Adults Receives F&B credit 1 Extras & Add-ons Free Socks +฿0 Out of stock 0 Regular Socks +฿60 Out of stock 0 Grip Socks +฿80 Sizes Locker Rental +฿100 Out of stock 0 Refillable Drink Cup +฿150 Out of stock 0 Glow Band +฿60 Out of stock 0 Add Another Ticket Continue Current Order TOURIST 1 Hour Play EDITING ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040 O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040 That is wristband Z767-4HV7TD It opens at F&B, the shop or History. Nothing changed on this sale.",
+      "orderBefore": "Current Order TOURIST 1 Hour Play EDITING ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040",
+      "orderAfter": "Current Order TOURIST 1 Hour Play EDITING ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040",
+      "orderUnchanged": true,
+      "toast": "That is wristband Z767-4HV7TD"
+    },
+    {
+      "at": "2026-11-09T13:03:03.355Z",
+      "screen": "fnb",
+      "how": "nothing selected (activeElement BODY), clipboard set to the code, Ctrl+V",
+      "code": "Z767-ZZZZZZ",
+      "urlBefore": "https://oto-pos-web-staging.onrender.com/order-station",
+      "urlAfter": "https://oto-pos-web-staging.onrender.com/order-station",
+      "lookups": [
+        {
+          "at": "2026-11-09T13:03:00.324Z",
+          "method": "GET",
+          "path": "/api/wallets/scan",
+          "query": "?key=Z767-ZZZZZZ&branchId=01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "status": 404,
+          "response": "{\"error\":{\"code\":\"WALLET_NOT_FOUND\",\"message\":\"No wallet carries that band or voucher — check the code and scan again.\"}}"
+        }
+      ],
+      "focusAfter": "BODY ",
+      "afterText": "Test harness — staff station (left) + customer display (right) share one live order. In production the customer display runs on a separate device. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Scan Wristband Scan or type a wristband code to load the customer's tab. Load Tab No tab found for \"Z767-ZZZZZZ\". Try a code below or continue as guest. DEMO WRISTBANDS Mama Som #1001 credit ฿0 Nong Fah #1002 credit ฿0 Khun Lek #1003 credit ฿0 Tourist Tom #1004 credit ฿0 Little Emma #1005 credit ฿0 Little Tyler #1006 credit ฿0 Kai #1007 PREPAID FOOD credit ฿0 Mia #1008 prepaid ฿0 OR No wristband — continue as guest English Order here Food, drinks & bar at Oto Play Park. Tap your wristband to use your credit! Our staff will take your order at the counter"
+    }
+  ],
+  "ticketTillCart": {
+    "rungUp": "Current Order TOURIST 1 Hour Play EDITING ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040",
+    "cancelledAfter": {
+      "at": "2026-11-09T13:01:21.031Z",
+      "orderAfter": "Current Order No items added yet Apply Redeem Issue a voucher… Add manual discount Subtotal ฿0 Total ฿0 Cancel Pay ฿0",
+      "writes": [],
+      "salesOnTheTill": [
+        {
+          "id": "01a1c062-2c79-7c67-b0a2-840cb2c3e227",
+          "receipt": "Z767-000001",
+          "status": "finalised"
+        }
+      ]
+    }
+  },
+  "typedByHand": [
+    {
+      "at": "2026-11-09T13:01:55.590Z",
+      "where": "history-search",
+      "field": {
+        "readsScans": true,
+        "tag": "INPUT",
+        "placeholder": "Search by name, receipt number, bracelet, phone, operator, amount…",
+        "aria": "Search transactions"
+      },
+      "code": "Z767-4HV7TD",
+      "how": "clicked into the field, typed 11 characters with page.keyboard.type at 200 ms a key (2377 ms in all), no Enter",
+      "urlBefore": "https://oto-pos-web-staging.onrender.com/history",
+      "urlAfter": "https://oto-pos-web-staging.onrender.com/history",
+      "valueAfter": "Z767-4HV7TD",
+      "focusAfter": "INPUT Search by name, receipt number, bracelet, phone, operator, amount…",
+      "bandPageOpen": false,
+      "tabOpen": false,
+      "lookups": [
+        {
+          "method": "GET",
+          "path": "/api/sales/lookup",
+          "query": "?band=Z767-4HV7TD&branchId=01a0bbdc-8c42-7753-b7e3-5ae19fb66d33&limit=50",
+          "status": 200
+        }
+      ],
+      "afterText": "0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Find by phone Scan bracelet All Tickets F&B Bracelet Z767-4HV7TD: 1 sale on the platform, any day Add time, refunds, voids and reprints need the platform: with the station offline, a refund can only be noted as requested, for a manager to make once it is back online. Z[number withheld] Nov, 19:57 Som Paid ฿1040",
+      "searchLookup": "Bracelet Z767-4HV7TD: 1 sale on the platform, any day"
+    },
+    {
+      "at": "2026-11-09T13:02:43.637Z",
+      "where": "fnb-dish-search",
+      "field": {
+        "readsScans": false,
+        "tag": "INPUT",
+        "placeholder": "Search dish…",
+        "aria": null
+      },
+      "code": "Z767-4HV7TD",
+      "how": "clicked into the field, typed 11 characters with page.keyboard.type at 200 ms a key (2369 ms in all), no Enter",
+      "urlBefore": "https://oto-pos-web-staging.onrender.com/order-station",
+      "urlAfter": "https://oto-pos-web-staging.onrender.com/order-station",
+      "valueAfter": "Z767-4HV7TD",
+      "focusAfter": "INPUT Search dish…",
+      "bandPageOpen": false,
+      "tabOpen": false,
+      "lookups": [],
+      "afterText": "Test harness — staff station (left) + customer display (right) share one live order. In production the customer display runs on a separate device. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks No dishes match Guest order No wristband — pay by cash or card Order Tap menu items to add them to the order. Apply Redeem Add manual discount Scan staff benefitCharge ฿0 English Let's order! Staff are adding your items now…"
+    }
+  ],
+  "pictures": [
+    {
+      "unit": "SCRUM-766",
+      "file": "docs/qa/proof-2026-11-09/SCRUM-766/staging/766-st-00-paid-1-hour-play-kid-band.png",
+      "at": "2026-11-09T12:57:36.966Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Set-up: walk-in 1 Hour Play, 1 kid + 1 adult, paid in cash, receipt Z767-000001, ฿1040; the kid bracelet's printed short code Z767-4HV7TD; the adult bracelet Z767-HQBDM7; the credit QR is masked"
+    },
+    {
+      "unit": "SCRUM-766",
+      "file": "docs/qa/proof-2026-11-09/SCRUM-766/staging/766-st-01a-fnb-kid-band-paste-caught-no-tab-on-it.png",
+      "at": "2026-11-09T12:57:56.671Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/order-station",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "F&B: on Scan Wristband with nothing selected, the KID band code Z767-4HV7TD pasted (Ctrl+V): the page caught it without the box being selected — the code is in the wristband box and one look-up went out (GET /api/wallets/scan?key=Z767-4HV7TD) — and the platform answered 404 WALLET_NOT_FOUND: a play ticket's kid band carries no tab (the ticket's ฿350 credit sits on the adult's band), so the box reads 'No tab found for \"Z767-4HV7TD\"'",
+      "renamedFrom": "766-st-01-fnb-paste-nothing-selected-tab-loads.png"
+    },
+    {
+      "unit": "SCRUM-766",
+      "file": "docs/qa/proof-2026-11-09/SCRUM-766/staging/766-st-01b-fnb-adult-band-paste-tab-loads.png",
+      "at": "2026-11-09T12:58:51.332Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/order-station",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "F&B: Scan Wristband reopened, nothing selected, the ADULT band code Z767-HQBDM7 of the same sale pasted (Ctrl+V): the tab loads (Walk-in guest, ฿350 credit) without the wristband box or Load Tab being touched"
+    },
+    {
+      "unit": "SCRUM-766",
+      "file": "docs/qa/proof-2026-11-09/SCRUM-766/staging/766-st-02-shop-paste-nothing-selected-tab-loads.png",
+      "at": "2026-11-09T12:59:13.254Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/merch-station",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Shop: on Retail Sale with nothing selected, the adult band code Z767-HQBDM7 pasted (Ctrl+V): the sale opens on that tab (Walk-in guest, ฿350 credit)"
+    },
+    {
+      "unit": "SCRUM-766",
+      "file": "docs/qa/proof-2026-11-09/SCRUM-766/staging/766-st-03-history-paste-nothing-selected-order-opens.png",
+      "at": "2026-11-09T13:00:21.963Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "History: on the day list with nothing selected, the kid band code Z767-4HV7TD pasted (Ctrl+V): the band's page opens (Walk-in #Z767-4HV7TD, Total spent ฿1040) with its one order, Z767-000001, Ticket, Paid ฿1040; one GET /api/sales/lookup?band=Z767-4HV7TD (picture taken a few seconds after the paste, nothing pressed in between)"
+    },
+    {
+      "unit": "SCRUM-766",
+      "file": "docs/qa/proof-2026-11-09/SCRUM-766/staging/766-st-04-ticket-till-paste-toast-sale-unchanged.png",
+      "at": "2026-11-09T13:01:11.484Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Ticket till: a sale being rung up (walk-in, 1 Hour Play, 1 kid + 1 adult, ฿1040, not paid), nothing selected, the kid band code Z767-4HV7TD pasted (Ctrl+V): the toast reads \"That is wristband Z767-4HV7TD. It opens at F&B, the shop or History. Nothing changed on this sale.\" and the order panel is the same as before the paste"
+    },
+    {
+      "unit": "SCRUM-766",
+      "file": "docs/qa/proof-2026-11-09/SCRUM-766/staging/766-st-05a-typed-by-hand-into-history-search-stays.png",
+      "at": "2026-11-09T13:01:56.380Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/history",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "History: the kid band code Z767-4HV7TD typed by hand into the Search transactions box (one key every 200 ms, no Enter): the code stays in the box, the box runs its own search, and no band page opens"
+    },
+    {
+      "unit": "SCRUM-766",
+      "file": "docs/qa/proof-2026-11-09/SCRUM-766/staging/766-st-05b-typed-by-hand-into-fnb-dish-search-stays.png",
+      "at": "2026-11-09T13:02:44.426Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/order-station",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "F&B (continue as guest): the kid band code Z767-4HV7TD typed by hand into Search dish... (a field that does not read codes itself; one key every 200 ms, no Enter): the text stays in the field, no wallet look-up is made and no tab loads (the order stays a guest order)"
+    },
+    {
+      "unit": "SCRUM-766",
+      "file": "docs/qa/proof-2026-11-09/SCRUM-766/staging/766-st-06-fnb-made-up-code-no-tab-found.png",
+      "at": "2026-11-09T13:03:04.170Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/order-station",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "F&B: Scan Wristband with nothing selected, a made-up band-shaped code Z767-ZZZZZZ pasted (Ctrl+V): the wristband box shows the code and its own words: No tab found for \"Z767-ZZZZZZ\". Try a code below or continue as guest."
+    }
+  ],
+  "pageWrites": [
+    {
+      "at": "2026-11-09T12:54:00.434Z",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T12:54:01.839Z",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T12:54:18.955Z",
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T12:56:58.310Z",
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T12:57:01.935Z",
+      "method": "POST",
+      "path": "/api/sales",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T12:57:12.415Z",
+      "method": "POST",
+      "path": "/api/sales/01a1c062-2c79-7c67-b0a2-840cb2c3e227/finalise",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T12:57:12.498Z",
+      "method": "POST",
+      "path": "/api/box/v1/station/01a1c05f-5745-7a3c-8d01-8bdec6723938/intents",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T12:58:43.908Z",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T12:59:05.923Z",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T12:59:20.592Z",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T12:59:34.411Z",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:00:56.565Z",
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:01:48.276Z",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:02:06.218Z",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:02:35.648Z",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:02:56.649Z",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200
+    }
+  ],
+  "pageLookups": [
+    {
+      "at": "2026-11-09T12:57:52.838Z",
+      "path": "/api/wallets/scan",
+      "query": "?key=Z767-4HV7TD&branchId=01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "status": 404
+    },
+    {
+      "at": "2026-11-09T12:58:47.660Z",
+      "path": "/api/wallets/scan",
+      "query": "?key=Z767-HQBDM7&branchId=01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T12:59:09.580Z",
+      "path": "/api/wallets/scan",
+      "query": "?key=Z767-HQBDM7&branchId=01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T12:59:24.237Z",
+      "path": "/api/wallets/scan",
+      "query": "?key=Z767-4HV7TD&branchId=01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "status": 404
+    },
+    {
+      "at": "2026-11-09T13:00:08.229Z",
+      "path": "/api/sales/lookup",
+      "query": "?band=Z767-4HV7TD&branchId=01a0bbdc-8c42-7753-b7e3-5ae19fb66d33&limit=50",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:01:53.374Z",
+      "path": "/api/sales/lookup",
+      "query": "?band=Z767-4HV7TD&branchId=01a0bbdc-8c42-7753-b7e3-5ae19fb66d33&limit=50",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:03:00.324Z",
+      "path": "/api/wallets/scan",
+      "query": "?key=Z767-ZZZZZZ&branchId=01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "status": 404
+    }
+  ],
+  "pageWritesNote": "pageWrites is every non-GET request the till page made in this run, read from the browser's response log; pageLookups is every band look-up it made (GET /api/wallets/scan and /api/sales/lookup). PUT /api/me/session/station is the till re-stating its station after each page load. Each paste made exactly one look-up; the ticket-till paste and the hand typing into Search dish… made none.",
+  "perStepRequestsDropped": "the per-step request lists were read from a capped buffer that was full by the F&B steps, so they are left out; pageWrites and pageLookups are complete.",
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1c05f-5745-7a3c-8d01-8bdec6723938",
+      "name": "ZZ TEST SCRUM-767 till",
+      "box": "Virtual box 1",
+      "prefix": "Z767",
+      "at": "2026-11-09T12:53:55.576Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1c062-2c79-7c67-b0a2-840cb2c3e227",
+      "purpose": "band766",
+      "what": "ZZ TEST walk-in, Tourist, 1 Hour Play, 1 kids + 1 adults, cash only",
+      "at": "2026-11-09T12:57:04.945Z"
+    }
+  ],
+  "writes": [
+    {
+      "at": "2026-11-09T12:53:55.576Z",
+      "by": "admin api",
+      "what": "POST /branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200,
+      "result": {
+        "stationId": "01a1c05f-5745-7a3c-8d01-8bdec6723938",
+        "name": "ZZ TEST SCRUM-767 till",
+        "prefix": "Z767",
+        "box": "Virtual box 1",
+        "devices": [
+          "adult_band:Band Printer (adults)",
+          "kids_band:Band Printer (kids)",
+          "receipt:Receipt Printer 1"
+        ]
+      }
+    },
+    {
+      "at": "2026-11-09T12:54:01.957Z",
+      "by": "till (reception)",
+      "what": "POST /auth/sign-in + station pick",
+      "station": "ZZ TEST SCRUM-767 till"
+    },
+    {
+      "at": "2026-11-09T12:57:04.945Z",
+      "by": "till (reception)",
+      "what": "sale rung up at Pay",
+      "purpose": "band766",
+      "saleId": "01a1c062-2c79-7c67-b0a2-840cb2c3e227",
+      "status": "tendering",
+      "net": [
+        {
+          "at": "2026-11-09T12:57:01.935Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T12:57:12.047Z",
+      "by": "till (reception)",
+      "what": "cash payment, full amount",
+      "purpose": "band766",
+      "saleId": "01a1c062-2c79-7c67-b0a2-840cb2c3e227",
+      "receipt": "Z767-000001",
+      "status": "finalised",
+      "net": [
+        {
+          "at": "2026-11-09T12:57:12.415Z",
+          "method": "POST",
+          "path": "/api/sales/01a1c062-2c79-7c67-b0a2-840cb2c3e227/finalise",
+          "status": 200,
+          "tender": {
+            "method": "cash",
+            "kind": "cash",
+            "amountSatang": 104000,
+            "tenderedSatang": 104000,
+            "changeSatang": 0
+          }
+        }
+      ]
+    }
+  ],
+  "cleanup": {
+    "actions": [
+      {
+        "at": "2026-11-09T13:03:35.757Z",
+        "what": "till sign-out (its own session route)",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-09T13:03:35.950Z",
+        "what": "unassign printers on ZZ TEST SCRUM-767 till",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-09T13:03:36.045Z",
+        "what": "archive station ZZ TEST SCRUM-767 till",
+        "status": 200,
+        "code": null
+      }
+    ],
+    "startedAt": "2026-11-09T13:03:35.355Z",
+    "salesBefore": [
+      {
+        "id": "01a1c062-2c79-7c67-b0a2-840cb2c3e227",
+        "receipt": "Z767-000001",
+        "status": "finalised",
+        "gross": 104000
+      }
+    ],
+    "printJobs": [
+      {
+        "kind": "adult_wristband",
+        "status": "printed"
+      },
+      {
+        "kind": "kids_wristband",
+        "status": "printed"
+      },
+      {
+        "kind": "receipt",
+        "status": "printed"
+      }
+    ],
+    "bandsAfter": [
+      {
+        "kind": "kid",
+        "shortCode": "Z767-4HV7TD",
+        "status": "active"
+      },
+      {
+        "kind": "adult",
+        "shortCode": "Z767-HQBDM7",
+        "status": "active"
+      }
+    ],
+    "tillMeAfterSignOut": 401,
+    "readBack": {
+      "at": "2026-11-09T13:03:36.378Z",
+      "till": {
+        "id": "01a1c05f-5745-7a3c-8d01-8bdec6723938",
+        "name": "ZZ TEST SCRUM-767 till",
+        "archived": true,
+        "archivedAt": null,
+        "devices": 0
+      },
+      "salesAfter": [
+        {
+          "id": "01a1c062-2c79-7c67-b0a2-840cb2c3e227",
+          "receipt": "Z767-000001",
+          "status": "finalised",
+          "gross": 104000
+        }
+      ],
+      "walkInNumberIsNotAMember": {
+        "status": 200,
+        "found": false
+      },
+      "untouched": [
+        {
+          "name": "FWBooth1",
+          "archived": false,
+          "devices": 1
+        },
+        {
+          "name": "Reception Till 1",
+          "archived": false,
+          "devices": 7
+        },
+        {
+          "name": "Till 1 (Pi)",
+          "archived": false,
+          "devices": 4
+        },
+        {
+          "name": "Till 2 (test)",
+          "archived": false,
+          "devices": 4
+        }
+      ]
+    },
+    "finishedAt": "2026-11-09T13:03:36.378Z",
+    "adminSignOut": "POST /api/auth/sign-out on the admin api session at driver STOP"
+  },
+  "notTouched": "No real till was opened or pressed (Till 1 (Pi), Till 2 (test), Reception Till 1, FWBooth1 read back unchanged); the park Pi was not used; no till notice was pressed (the \"7 overdue\" and \"4 out of stock\" banners were left alone); no setting changed; no SMS; cash only, nothing refunded. The tabs were only opened, never charged. The sale Z767-000001 stays recorded; its two bands stay active until they lapse."
+}
