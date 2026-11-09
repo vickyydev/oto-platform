@@ -44,6 +44,7 @@ import { DEFAULT_TENDERS, syncDefaultTenders, upsertDefaultTenders } from './ten
 import { describeInboxSync, syncInboxSetup } from './inbox';
 import { stableJson } from './stable-id';
 import { syncSuiteRegistry } from './suite-controls';
+import { syncGoldenTicket } from './golden-ticket';
 import * as s from '../schema/index';
 
 /**
@@ -99,6 +100,8 @@ export {
 } from './benefits';
 /** Demo Branch 2's own booth, whose day the demo day files beside its sales. */
 export { DEMO_BOOTH_NAME, DEMO_BOOTH_PREFIX } from './demo-booth';
+/** SCRUM-798 — the Golden Ticket's voucher type and its sale items, as platform-sync lays them. */
+export { GOLDEN_TICKET_DEFINITION, syncGoldenTicket, type GoldenTicketSync } from './golden-ticket';
 /** The Inbox's configuration and its demo conversations (S2-19 I1, I1b). */
 export {
   CONSOLE_NOTICE_CHANNELS,
@@ -232,6 +235,15 @@ export async function platformSync(db: Db = getDb()): Promise<Record<SystemRole,
   // maintenance window or tile state survives every sync.
   const registered = await syncSuiteRegistry(db);
   if (registered > 0) console.log(`Suite registry: registered ${registered} app(s).`);
+
+  // SCRUM-798 — the Golden Ticket's voucher type and the shop items whose sale
+  // issues it, insert-if-absent, so an edit made in the Console stands.
+  const golden = await syncGoldenTicket(db);
+  if (golden.definitionsCreated > 0 || golden.itemsLinked > 0) {
+    console.log(
+      `Golden Ticket: created the voucher type for ${golden.definitionsCreated} operator(s), linked ${golden.itemsLinked} shop item(s).`,
+    );
+  }
 
   // The settings catalogue (SCRUM-646, Q27): idempotent, never deletes, and
   // never writes last_changed_at — a catalogue run is not a setting edit.
@@ -1758,6 +1770,10 @@ export async function seed(db: Db = getDb(), opts: SeedOptions = {}): Promise<vo
   // fresh database, so the demo tenants get theirs here; on every later run
   // both calls find it laid and write nothing.
   await syncInboxSetup(db);
+
+  // SCRUM-798: the Golden Ticket's voucher type, which needs the Full Day Pass
+  // the packages above laid — `platformSync` at the top ran before they existed.
+  await syncGoldenTicket(db);
 
   console.log(
     'Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park\'s printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.',

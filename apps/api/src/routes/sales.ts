@@ -131,6 +131,11 @@ const CartLine = z.object({
   lineTotalSatang: z.number().int().min(0).optional(),
   stayHours: z.number().int().min(0).max(24).optional(),
   stayDurationLabel: z.string().max(60).optional(),
+  /**
+   * SCRUM-798 — the line the till rang a Golden Ticket up on: the child the
+   * gift admits. Says which line only; the voucher's worth is the platform's.
+   */
+  voucherGift: z.boolean().optional(),
 });
 
 /**

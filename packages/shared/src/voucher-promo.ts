@@ -234,6 +234,13 @@ export type VoucherEffect =
       };
     }
   | { type: 'free_kids_ticket'; package: { id: string; name: string } }
+  /**
+   * SCRUM-798 — the Golden Ticket (a `free_ticket` definition whose offer is
+   * `gift_day`): one child on `package` at ฿0, the parent free when they stay
+   * or a free drop-off for a child aged `dropOffMinAge` or over, one free pair
+   * of socks on request, and no food credit. See `giftTicketEntitlement`.
+   */
+  | { type: 'gift_ticket'; package: { id: string; name: string }; dropOffMinAge: number }
   | { type: 'hand_over' }
   /**
    * Credit LOADED onto a new wallet when the sale carrying the voucher closes.
@@ -242,3 +249,99 @@ export type VoucherEffect =
    * voucher up.
    */
   | { type: 'wallet_credit'; valueSatang: number };
+
+// --- The Golden Ticket (SCRUM-798) ---------------------------------------------
+
+/**
+ * SCRUM-798 — THE OWNER'S DEFINITION (9 November 2026), word for word:
+ *
+ *   "Golden Ticket (1,500 THB): Gift voucher for full-day entry for one child,
+ *   with free socks if needed. For kids 5 and up, the parent can choose free
+ *   drop-off or stay with the child. If the parent stays, print an adult
+ *   wristband for free entry with no food voucher. For kids under 5, the parent
+ *   stays and gets the same free entry and adult wristband. Please link the
+ *   Drop-Off Form only when drop-off is selected for a child aged 5 or older."
+ *
+ * The item is sold as a shop item and a voucher is issued from its sale; the
+ * voucher is redeemed at the ticket till against the park's Full Day Pass.
+ * These are the handles the platform-sync step and the tills share.
+ */
+
+/** The definition's slug, which the platform-sync step creates for every operator. */
+export const GOLDEN_TICKET_DEFINITION_CODE = 'golden-ticket';
+
+/** The shop items that sell it today: Central Floresta's and Robinson Chalong's. */
+export const GOLDEN_TICKET_PRODUCT_CODES = ['CF-TK-GOLDEN', 'RC-TK-GOLDEN'] as const;
+
+/** The package the gift admits one child to, matched by name at each park. */
+export const GOLDEN_TICKET_PACKAGE_NAME = 'Full Day Pass';
+
+/** "For kids 5 and up, the parent can choose free drop-off or stay with the child." */
+export const GIFT_TICKET_DROP_OFF_MIN_AGE = 5;
+
+/** The two ways a gift ticket's child is looked after. */
+export const GIFT_TICKET_CHOICES = ['parent_stays', 'drop_off'] as const;
+export type GiftTicketChoice = (typeof GIFT_TICKET_CHOICES)[number];
+
+/** The counter's words when a gift ticket cannot be used the way it was asked for. */
+export const GIFT_TICKET_MESSAGES = {
+  dropOffUnderAge: (minAge: number) =>
+    `Drop-off on the Golden Ticket is for a child aged ${minAge} or over — under ${minAge} the parent stays`,
+  noAge: "Ask the child's age first — it decides whether drop-off is offered",
+  noLine: (packageName: string) =>
+    `The Golden Ticket needs one child on a ${packageName} ticket on this sale`,
+} as const;
+
+/** The choices a gift ticket offers a child of this age: drop-off only from the minimum age. */
+export function giftTicketChoices(
+  childAgeYears: number,
+  dropOffMinAge: number = GIFT_TICKET_DROP_OFF_MIN_AGE,
+): GiftTicketChoice[] {
+  return childAgeYears >= dropOffMinAge ? ['parent_stays', 'drop_off'] : ['parent_stays'];
+}
+
+/**
+ * What one gift ticket gives, for a child of this age and the family's choice —
+ * the owner's rule as one answer, read by the platform when it prices the
+ * voucher and by the till when it rings it up:
+ *
+ *   - the child: one Full Day ticket at ฿0, always;
+ *   - the parent stays (any age): one adult band, free, with no food credit;
+ *   - drop-off (5 and over only): the drop-off registration and its fee at ฿0,
+ *     and no adult band;
+ *   - one pair of socks, free, when asked for;
+ *   - never any food credit.
+ */
+export type GiftTicketEntitlement =
+  | {
+      ok: true;
+      choice: GiftTicketChoice;
+      freeKids: 1;
+      freeAdultBand: boolean;
+      dropOff: boolean;
+      freeSocks: 1;
+      foodCredit: false;
+    }
+  | { ok: false; reason: string };
+
+export function giftTicketEntitlement(
+  childAgeYears: number | null,
+  choice: GiftTicketChoice,
+  dropOffMinAge: number = GIFT_TICKET_DROP_OFF_MIN_AGE,
+): GiftTicketEntitlement {
+  if (childAgeYears === null || !Number.isFinite(childAgeYears) || childAgeYears < 0) {
+    return { ok: false, reason: GIFT_TICKET_MESSAGES.noAge };
+  }
+  if (!giftTicketChoices(childAgeYears, dropOffMinAge).includes(choice)) {
+    return { ok: false, reason: GIFT_TICKET_MESSAGES.dropOffUnderAge(dropOffMinAge) };
+  }
+  return {
+    ok: true,
+    choice,
+    freeKids: 1,
+    freeAdultBand: choice === 'parent_stays',
+    dropOff: choice === 'drop_off',
+    freeSocks: 1,
+    foodCredit: false,
+  };
+}

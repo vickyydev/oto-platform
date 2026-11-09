@@ -182,6 +182,7 @@ import {
   type CartVoucherClaim,
   type VoucherEffect,
 } from './vouchers';
+import { issueSaleVouchers, issuedVouchersOfSale, type IssuedSaleVoucher } from './voucher-sale-issue';
 import { releaseOpenHold } from './sale-hold-release';
 
 /**
@@ -250,6 +251,12 @@ export interface CartLineInput {
   serviceFee?: { label: string; amountSatang: number } | null;
   foodProvision?: { mode: 'prepaid_items' | 'prepaid_credit'; paidSatang: number } | null;
   promoItem?: { itemId: string; itemKind: 'menu' | 'merch'; name: string; priceSatang: number } | null;
+  /**
+   * SCRUM-798 — the till rang a Golden Ticket up on this line: the child the
+   * gift admits. Only says WHICH line; what the gift takes off it is the
+   * platform's (`voucherPricing`), and it takes nothing without the voucher.
+   */
+  voucherGift?: boolean;
   /**
    * WHAT THE SCREEN SHOWED FOR THIS LINE. Not an instruction to charge it: the
    * platform prices the line from its own catalogue and refuses the sale when
@@ -1602,6 +1609,29 @@ async function resolveItemLines(
 }
 
 /**
+ * SCRUM-798 — the registered stays behind a cart's supervised lines, by cart
+ * line id (a drop-off line is minted under its stay's id): the child's age as
+ * the registration recorded it and the service the policy gave. Read only for
+ * a cart carrying a Golden Ticket, and only at the cart's own park.
+ */
+async function staysOfCartLines(
+  db: Exec,
+  operatorId: string,
+  branchId: string,
+  lines: readonly TicketCartLine[],
+): Promise<Map<string, { ageYears: number; service: string }>> {
+  const ids = [...new Set(lines.filter((l) => !l.promoItem).map((l) => l.id))];
+  if (ids.length === 0) return new Map();
+  const rows = await db
+    .select({ id: checkin.id, ageYears: checkin.childAgeYears, service: checkin.service })
+    .from(checkin)
+    .where(
+      and(inArray(checkin.id, ids), eq(checkin.operatorId, operatorId), eq(checkin.branchId, branchId)),
+    );
+  return new Map(rows.map((r) => [r.id, { ageYears: r.ageYears, service: r.service }]));
+}
+
+/**
  * Price a cart. Reads the catalogue, the branch's calendar and its tax
  * configuration, then hands the whole thing to `computeTicketCartTotals` — the
  * same function the public booking quote and the regression fixtures run
@@ -1991,10 +2021,23 @@ export async function priceCart(
   const manualDiscounts: ManualDiscountInput[] = benefit?.discount
     ? [...(input.manualDiscounts ?? []), benefit.discount]
     : (input.manualDiscounts ?? []);
+  /**
+   * SCRUM-798 — a Golden Ticket is aimed at the line the till marked, and a
+   * drop-off line is judged by its stay: the age the registration recorded
+   * decides whether the gift pays for the drop-off.
+   */
+  const giftAim =
+    voucherClaim?.effect.type === 'gift_ticket'
+      ? {
+          giftLineIds: new Set((input.lines ?? []).filter((l) => l.voucherGift).map((l) => l.id)),
+          stays: await staysOfCartLines(db, actor.operatorId, scope.branchId, cartLines),
+        }
+      : {};
   const voucherInputs = voucherClaim
     ? voucherPricing(voucherClaim, cartLines, ctx, resolvedTier.code, {
         manualDiscounts: manualDiscounts as ManualDiscount[],
         taxConfig: scope.taxConfig,
+        ...giftAim,
       })
     : null;
   /** The voucher's own line, by cart line id, so the ledger row can say what it is. */
@@ -3132,6 +3175,12 @@ export interface CommitResult {
    * Null when it carries none.
    */
   benefit?: BenefitBreakdown | null;
+  /**
+   * SCRUM-798 — the gift vouchers closing it sold (a Golden Ticket per unit),
+   * each with its whole code: it is what the family bought, and the receipt
+   * prints it. Empty when this call did not close the sale or it sold none.
+   */
+  issuedVouchers?: IssuedSaleVoucher[];
 }
 
 /**
@@ -4104,6 +4153,10 @@ export async function commitSale(
         now,
       )
     : [];
+  /** SCRUM-798 — a ฿0 close sells its gift vouchers like any other close, before the receipt that prints them. */
+  const issuedVouchers = finalising
+    ? await issueSaleVouchers(tx, written, { accountId: actor.accountId, requestId: actor.requestId ?? null }, now)
+    : [];
   /** S2-11 — a ฿0 close prints like any other: a receipt, and a comp admission's bands. */
   const printing =
     finalising && options.printing !== 'skip'
@@ -4130,6 +4183,7 @@ export async function commitSale(
     voucher: soldVoucherViewOf(priced.voucher),
     ...(promoPricing === 'as_recorded' ? { promoDifferences: priced.promoDifferences } : {}),
     benefit: benefitRowId ? priced.benefitView : null,
+    issuedVouchers,
   };
 }
 
@@ -4313,6 +4367,12 @@ export interface FinaliseResult {
    */
   walletAttempt?: PaymentAttemptView | null;
   walletSpend?: { walletId: string; amountSatang: number; balanceAfterSatang: number } | null;
+  /**
+   * SCRUM-798 — the gift vouchers this sale sold (a Golden Ticket per unit),
+   * each with its whole code. Minted by the call that closes the sale, read
+   * back on a replay; empty while the sale is open or when it sold none.
+   */
+  issuedVouchers?: IssuedSaleVoucher[];
 }
 
 /** Which counter's word the wallet's ledger records a spend under — one pool, two sources. */
@@ -4399,6 +4459,8 @@ export async function finaliseSale(
       receiptCollision: null,
       // Granted on the first answer, and read back here — never granted twice.
       grants: await grantsOfSale(tx, saleId),
+      // SCRUM-798 — sold on the first answer too, and read back, never minted twice.
+      issuedVouchers: await issuedVouchersOfSale(tx, saleId),
       ...(input.wallet
         ? {
             walletAttempt: input.actionId
@@ -4943,6 +5005,20 @@ export async function finaliseSale(
   );
 
   /**
+   * SCRUM-798 — THE GIFT VOUCHERS THIS SALE SOLD, in this transaction, after
+   * the number and before the paper that prints their codes: one per unit of
+   * an item linked to a voucher type, never twice for one sale. Not under the
+   * printing savepoint, for the reason the credit is not: it is what the family
+   * paid for.
+   */
+  const issuedVouchers = await issueSaleVouchers(
+    tx,
+    after,
+    { accountId: actor.accountId, requestId: actor.requestId ?? null },
+    now,
+  );
+
+  /**
    * S2-11 — THE PAPER, inside this transaction and after the number: the
    * receipt, the bands and the prep tickets become rows and box commands that
    * commit with the sale. Under a savepoint that never throws, so a printing
@@ -4975,6 +5051,7 @@ export async function finaliseSale(
     receiptCollision,
     // Read again after the paper: the bands it minted now carry the wallets.
     grants: grants.length > 0 ? await grantsOfSale(tx, saleId) : grants,
+    issuedVouchers,
     ...walletAnswer,
   };
 }
@@ -5491,6 +5568,12 @@ export async function getSaleDetail(
     bands: await bandsOfSale(db, saleId),
     /** S2-14a — the wallets this sale granted, each with the ONE QR its voucher printed. */
     grants: await grantsOfSale(db, saleId),
+    /**
+     * SCRUM-798 — the gift vouchers this sale sold, each with its whole code.
+     * Its receipt prints the code, and History reprints the receipt, so masking
+     * it here would hide nothing; a wallet's voucher QR is answered the same way.
+     */
+    issuedVouchers: await issuedVouchersOfSale(db, saleId),
     /** S2-09b — the code the guest holds, from the F&B lines that carry it. */
     pickupCode: recordedPickupCode(lines.filter((line) => line.kind === 'fnb_item')),
     attempts,

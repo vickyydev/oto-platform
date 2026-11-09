@@ -3956,6 +3956,7 @@ export interface paths {
                             lineTotalSatang?: number;
                             stayHours?: number;
                             stayDurationLabel?: string;
+                            voucherGift?: boolean;
                         }[];
                         /** @default [] */
                         items?: {
@@ -4174,6 +4175,7 @@ export interface paths {
                             lineTotalSatang?: number;
                             stayHours?: number;
                             stayDurationLabel?: string;
+                            voucherGift?: boolean;
                         }[];
                         /** @default [] */
                         items?: {
@@ -4329,6 +4331,7 @@ export interface paths {
                                 lineTotalSatang?: number;
                                 stayHours?: number;
                                 stayDurationLabel?: string;
+                                voucherGift?: boolean;
                             }[];
                             /** @default [] */
                             items?: {
@@ -4823,6 +4826,7 @@ export interface paths {
                             lineTotalSatang?: number;
                             stayHours?: number;
                             stayDurationLabel?: string;
+                            voucherGift?: boolean;
                         }[];
                         /** @default [] */
                         items?: {

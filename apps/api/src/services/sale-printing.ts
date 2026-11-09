@@ -56,6 +56,7 @@ import { bandHolderOfSale, isPrepaidSetAside } from './band-food';
 import { endOfDayReceiptDocumentOf } from './end-of-day-receipt';
 import { tillVoucherDocumentOf } from './voucher-promotions';
 import { maskedVoucherLineLabel, saleVoucherCodes } from './vouchers';
+import { issuedVouchersOfSale } from './voucher-sale-issue';
 import type { Exec, Tx } from './tx';
 
 /**
@@ -1146,6 +1147,20 @@ export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<S
     .leftJoin(nanny, eq(nanny.id, checkin.nannyId))
     .where(eq(band.saleId, saleRow.id))
     .orderBy(asc(band.createdAt), asc(band.id));
+  /**
+   * SCRUM-798 — the gift vouchers this sale sold, by the item that sold them,
+   * so each code prints under its own item's line, a line's quantity at a time.
+   */
+  const codesByItem = new Map<string, string[]>();
+  for (const sold of await issuedVouchersOfSale(db, saleRow.id)) {
+    if (!sold.productId) continue;
+    codesByItem.set(sold.productId, [...(codesByItem.get(sold.productId) ?? []), sold.code]);
+  }
+  const voucherCodesOf = (l: SaleLineRow): string[] | undefined => {
+    const left = l.productId ? codesByItem.get(l.productId) : undefined;
+    if (!left || left.length === 0) return undefined;
+    return left.splice(0, Math.max(1, l.quantity));
+  };
   return {
     saleId: saleRow.id,
     receiptNumber: saleRow.receiptNumber,
@@ -1158,18 +1173,22 @@ export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<S
     // SCRUM-762 — the number the family gave, else the member's own: on a
     // child's band when an adult stays with the child.
     customerPhone: saleRow.customerPhone ?? memberRow?.phone ?? null,
-    lines: lines.map((l) => ({
-      id: l.id,
-      kind: l.kind,
-      label: l.label,
-      quantity: l.quantity,
-      grossSatang: l.grossSatang,
-      ticket: l.ticketPackageId !== null,
-      payload: (l.payload ?? null) as SalePrintSnapshot['lines'][number]['payload'],
-      stayHours: l.stayHours,
-      stayDurationLabel: l.stayDurationLabel,
-      productCode: l.productId ? (productCodes.get(l.productId) ?? null) : null,
-    })),
+    lines: lines.map((l) => {
+      const voucherCodes = voucherCodesOf(l);
+      return {
+        id: l.id,
+        kind: l.kind,
+        label: l.label,
+        quantity: l.quantity,
+        grossSatang: l.grossSatang,
+        ticket: l.ticketPackageId !== null,
+        payload: (l.payload ?? null) as SalePrintSnapshot['lines'][number]['payload'],
+        stayHours: l.stayHours,
+        stayDurationLabel: l.stayDurationLabel,
+        productCode: l.productId ? (productCodes.get(l.productId) ?? null) : null,
+        ...(voucherCodes ? { voucherCodes } : {}),
+      };
+    }),
     subtotalSatang: saleRow.subtotalSatang,
     grossSatang: saleRow.grossSatang,
     taxBreakdown: saleRow.taxBreakdown as TaxBreakdown,

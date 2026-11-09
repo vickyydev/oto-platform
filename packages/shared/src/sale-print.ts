@@ -70,6 +70,12 @@ export interface SalePrintLine {
    * snapshot written before it was carried, which then prints as it did.
    */
   productCode?: string | null;
+  /**
+   * SCRUM-798 — the gift voucher codes this line's item sold (a Golden Ticket
+   * per unit), printed under the line: the receipt is the family's voucher.
+   * Absent on every other line, and on a snapshot written before it existed.
+   */
+  voucherCodes?: readonly string[];
 }
 
 /** Money taken, as the receipt lists it. Only tenders that took money belong here. */
@@ -337,7 +343,10 @@ function lineName(line: SalePrintLine): string {
 
 function lineNote(line: SalePrintLine): string | undefined {
   const note = line.payload?.note?.trim();
-  return note || undefined;
+  // SCRUM-798 — a gift voucher's code under the item that sold it.
+  const codes = (line.voucherCodes ?? []).map((code) => `Voucher code: ${code}`);
+  const parts = [...(note ? [note] : []), ...codes];
+  return parts.length > 0 ? parts.join('\n  ') : undefined;
 }
 
 /** How a tender reads on the receipt: "Cash", "Card •••• 4242", "QR". */

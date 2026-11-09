@@ -224,6 +224,8 @@ interface RawLedgerRow extends Record<string, unknown> {
   value_type: string;
   value_satang: number | null;
   value_bp: number | null;
+  /** SCRUM-798 — what a free ticket admits: the 1+1, or the Golden Ticket's gift day. */
+  ticket_offer: string;
   product_name: string | null;
   package_name: string | null;
   prize_id: string | null;
@@ -244,7 +246,7 @@ interface RawLedgerRow extends Record<string, unknown> {
 const ROW_COLUMNS = sql`
   v.id, v.code, v.source, v.issued_at, v.expires_at, v.print_count, v.redeemed_at, v.sale_id,
   d.id as def_id, d.code as def_code, d.name_en as def_name_en, d.name_th as def_name_th,
-  d.kind as def_kind, d.value_type, d.value_satang, d.value_bp,
+  d.kind as def_kind, d.value_type, d.value_satang, d.value_bp, d.ticket_offer,
   p.name as product_name, tp.name as package_name,
   bp.id as prize_id, bp.name_en as prize_name_en, bs.id as booth_id, bs.name as booth_name,
   ${SPIN_STAFF_LABEL} as staff_label,
@@ -280,6 +282,8 @@ function valueOf(
     valueSatang: number | null;
     valueBp: number | null;
     nameEn: string;
+    /** SCRUM-798 — absent where the caller read no offer: the 1+1, as before. */
+    ticketOffer?: string;
   },
   names: { product: string | null; package: string | null; prize: string | null },
   redeemedSatang: number | null,
@@ -304,6 +308,13 @@ function valueOf(
         redeemedSatang,
       };
     case 'ticket':
+      if (def.ticketOffer === 'gift_day') {
+        return {
+          kind,
+          text: names.package ? `Gift day for one child: ${names.package}` : 'Gift day for one child',
+          redeemedSatang,
+        };
+      }
       return {
         kind,
         text: names.package ? `Free kids ticket (1+1): ${names.package}` : 'Free kids ticket (1+1)',
@@ -352,6 +363,7 @@ function rowOf(r: RawLedgerRow): VoucherLedgerRow {
         valueSatang: r.value_satang,
         valueBp: r.value_bp,
         nameEn: r.def_name_en,
+        ticketOffer: r.ticket_offer,
       },
       { product: r.product_name, package: r.package_name, prize: r.prize_name_en },
       redeemedSatang,

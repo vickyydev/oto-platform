@@ -111,6 +111,24 @@ export type VoucherOfflinePolicy = (typeof VOUCHER_OFFLINE_POLICIES)[number];
 export const VOUCHER_CODE_MODES = ['generated', 'fixed'] as const;
 export type VoucherCodeMode = (typeof VOUCHER_CODE_MODES)[number];
 
+/**
+ * SCRUM-798 (migration 0105) — WHAT A `free_ticket` VOUCHER ADMITS.
+ *
+ *   one_plus_one  the booth's 1+1: with two kids tickets of the package on the
+ *                 sale, one kid's ticket is free. Every free-ticket definition
+ *                 written before this column meant this, and it is the default.
+ *   gift_day      the Golden Ticket (owner, 9 November 2026): one child on the
+ *                 package at ฿0 with no food credit; the parent free when they
+ *                 stay with the child, or a free drop-off for a child aged 5
+ *                 or over; one free pair of socks on request
+ *                 (`resolveVoucherEffect` and `voucherPricing` in
+ *                 `apps/api/src/services/vouchers.ts`).
+ *
+ * Read only for a `free_ticket`; every other kind ignores it.
+ */
+export const VOUCHER_TICKET_OFFERS = ['one_plus_one', 'gift_day'] as const;
+export type VoucherTicketOffer = (typeof VOUCHER_TICKET_OFFERS)[number];
+
 export const voucherDefinition = promo.table(
   'voucher_definition',
   {
@@ -213,11 +231,17 @@ export const voucherDefinition = promo.table(
     fixedCode: text('fixed_code'),
     /** Printed QR only; redemption remains in the existing POS. */
     legacyQrPayload: text('legacy_qr_payload'),
+    /** SCRUM-798 (migration 0105) — what a `free_ticket` admits; see `VOUCHER_TICKET_OFFERS`. */
+    ticketOffer: text('ticket_offer').$type<VoucherTicketOffer>().notNull().default('one_plus_one'),
     ...timestamps,
     ...archivedAt,
   },
   (t) => [
     index('voucher_definition_operator_idx').on(t.operatorId),
+    check(
+      'voucher_definition_ticket_offer_check',
+      sql`${t.ticketOffer} in ('one_plus_one','gift_day')`,
+    ),
     uniqueIndex('voucher_definition_fixed_code_unique')
       .on(t.operatorId, t.fixedCode)
       .where(sql`fixed_code is not null and archived_at is null`),
@@ -311,6 +335,42 @@ export const voucherProductLink = promo.table(
     index('voucher_product_link_operator_idx').on(t.operatorId),
     index('voucher_product_link_branch_idx').on(t.branchId),
     index('voucher_product_link_product_idx').on(t.productId),
+  ],
+);
+
+/**
+ * SCRUM-798 (migration 0105) — AN ITEM WHOSE SALE ISSUES A VOUCHER.
+ *
+ * The Golden Ticket is sold as a shop item (`CF-TK-GOLDEN` at Central
+ * Floresta, `RC-TK-GOLDEN` at Robinson Chalong) and redeemed as a voucher: one
+ * row here per item, naming the definition one voucher of which is minted per
+ * unit sold when the sale closes (`issueSaleVouchers`). The item stays the
+ * sellable — its price, its stock, its receipt line — and the voucher is
+ * issued from its sale. An item issues at most one kind of voucher.
+ */
+export const voucherSaleItem = promo.table(
+  'voucher_sale_item',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    /** Its foreign key is declared below under a short name (63-character identifiers). */
+    voucherDefinitionId: uuid('voucher_definition_id').notNull(),
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => product.id, { onDelete: 'restrict' }),
+    ...timestamps,
+  },
+  (t) => [
+    foreignKey({
+      columns: [t.voucherDefinitionId],
+      foreignColumns: [voucherDefinition.id],
+      name: 'voucher_sale_item_definition_fk',
+    }).onDelete('restrict'),
+    uniqueIndex('voucher_sale_item_product_unique').on(t.productId),
+    index('voucher_sale_item_operator_idx').on(t.operatorId),
+    index('voucher_sale_item_definition_idx').on(t.voucherDefinitionId),
   ],
 );
 
@@ -460,6 +520,15 @@ export const voucher = promo.table(
     heldAt: timestamp('held_at', { withTimezone: true, mode: 'date' }),
     /** S2-14a round 5: the campaign that minted it (source `campaign`); null otherwise. */
     campaignId: uuid('campaign_id').references(() => voucherCampaign.id, { onDelete: 'restrict' }),
+    /**
+     * SCRUM-798 (migration 0105) — THE SALE THAT SOLD IT: a gift voucher minted
+     * when a sale carrying an item linked to its definition closed
+     * (`promo.voucher_sale_item`, `issueSaleVouchers` in
+     * `apps/api/src/services/voucher-sale-issue.ts`). Null for every voucher a
+     * booth, a campaign, a till's Issue or the legacy import made. Not to be
+     * confused with `sale_id`, the sale that USED it up.
+     */
+    issuedSaleId: uuid('issued_sale_id').references(() => sale.id, { onDelete: 'restrict' }),
     ...timestamps,
   },
   (t) => [
@@ -492,6 +561,7 @@ export const voucher = promo.table(
     index('voucher_held_station_idx').on(t.heldStationId),
     index('voucher_held_by_idx').on(t.heldByAccountId),
     index('voucher_campaign_idx').on(t.campaignId),
+    index('voucher_issued_sale_idx').on(t.issuedSaleId),
     /**
      * The expiry sweep, and only vouchers that can still expire: one that never
      * expires, or has already been used, is not what that job is looking for.

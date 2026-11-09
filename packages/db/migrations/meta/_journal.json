@@ -736,6 +736,13 @@
       "when": 1793875841678,
       "tag": "0104_sale_customer_phone",
       "breakpoints": true
+    },
+    {
+      "idx": 105,
+      "version": "7",
+      "when": 1794217880823,
+      "tag": "0105_golden_ticket",
+      "breakpoints": true
     }
   ]
 }

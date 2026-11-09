@@ -50,6 +50,7 @@ import { claimDirtyDates, consumeDirtyClaim, releaseDirtyClaim } from './analyti
 import { audit } from './audit';
 import { findBandsByCode } from './bands';
 import type { Exec, Tx } from './tx';
+import { giftTicketLinesOfSale } from './voucher-sale-issue';
 
 /**
  * S2-14a — STORED VALUE (plan docs/progress/plans/wallet/PLAN.md §2.1-2.2).
@@ -885,11 +886,14 @@ export async function grantSaleCredit(
     .select({ id: checkin.id })
     .from(checkin)
     .where(and(eq(checkin.operatorId, saleRow.operatorId), inArray(checkin.id, cartLineIds)));
+  // SCRUM-798 — a Golden Ticket's line earns nothing: "free entry with no food
+  // voucher", for the child and for the parent who stays.
+  const gifted = await giftTicketLinesOfSale(tx, saleRow.operatorId, saleRow.id);
   const persons = earningPersonsOf(
     grantLinesOfLedger(
       lines,
       new Map(packages.map((p) => [p.id, { creditRule: p.creditRule, gateAccess: p.gateAccess }])),
-      new Set(supervised.map((s) => s.id)),
+      new Set([...supervised.map((s) => s.id), ...gifted]),
     ),
   );
   if (persons.length === 0) return [];

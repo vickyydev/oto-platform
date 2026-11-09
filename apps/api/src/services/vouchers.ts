@@ -26,9 +26,12 @@ import {
   BOOTH_CODE_LENGTH,
   boothStaffCode,
   boothStaffLabel,
+  computeLineBreakdown,
   computeTicketCartTotals,
   formatDayInTz,
   formatDayTimeInTz,
+  GIFT_TICKET_DROP_OFF_MIN_AGE,
+  GIFT_TICKET_MESSAGES,
   hasBoothCodeShape,
   isLegacyBoothCode,
   mintBoothCode,
@@ -36,6 +39,7 @@ import {
   normaliseBoothCode,
   priceForTier,
   resolveRate,
+  SERVICE_FEE_ROW_KEY,
   verifyBoothCode,
   VoucherTargetSchema,
   type CartPromo,
@@ -1060,6 +1064,15 @@ export async function resolveVoucherEffect(
         throw voucherErrors.notSetUp(def.code, 'no ticket package is linked');
       const row = await packageAtBranch(db, operatorId, def.ticketPackageId, branchId);
       if (!row) throw voucherErrors.itemUnavailable(def.code);
+      // SCRUM-798 — the Golden Ticket: one child's whole day on the package,
+      // not a second kid's ticket.
+      if (def.ticketOffer === 'gift_day') {
+        return {
+          type: 'gift_ticket',
+          package: { id: row.id, name: row.name },
+          dropOffMinAge: GIFT_TICKET_DROP_OFF_MIN_AGE,
+        };
+      }
       return { type: 'free_kids_ticket', package: { id: row.id, name: row.name } };
     }
     case 'manual':
@@ -1101,6 +1114,8 @@ export function describeEffect(effect: VoucherEffect, prizeName: string): string
       return `Ring up to use it, then hand over: ${effect.product.name}`;
     case 'free_kids_ticket':
       return `Second kids ticket free — ${effect.package.name}`;
+    case 'gift_ticket':
+      return `${effect.package.name} for one child — parent free, or drop-off from age ${effect.dropOffMinAge}; free socks on request; no food credit`;
     case 'hand_over':
       return `Ring up to use it, then hand over: ${prizeName}`;
     case 'wallet_credit':
@@ -1600,6 +1615,7 @@ async function fixedRedemptionRow(
       heldByAccountId: null,
       heldAt: null,
       campaignId: null,
+      issuedSaleId: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -2390,6 +2406,52 @@ export const VOUCHER_LINE_PACKAGE_KEY = 'voucher-line';
 export interface VoucherAimContext {
   manualDiscounts: readonly ManualDiscount[];
   taxConfig: TaxConfigShape;
+  /**
+   * SCRUM-798 — the cart lines the till rang a gift ticket up on (`voucherGift`
+   * on the line). The gift is aimed at the first of them; a cart that marks
+   * none falls back to a drop-off stay of the package, then to its first line.
+   */
+  giftLineIds?: ReadonlySet<string>;
+  /**
+   * SCRUM-798 — the registered stays behind the cart's supervised lines, by
+   * cart line id (a drop-off line is minted under its stay's id): the child's
+   * age as the registration recorded it, and the service the policy gave.
+   */
+  stays?: ReadonlyMap<string, { ageYears: number; service: string }>;
+}
+
+/**
+ * SCRUM-798 — WHAT A GIFT TICKET TAKES OFF ITS LINE, in the line's own rows
+ * (`computeLineBreakdown`), so the figure is the engine's and never a second
+ * reading of a price:
+ *
+ *   - one child's ticket, at the rate the line charges a child;
+ *   - when the parent stays (a line that is not a drop-off stay): one adult,
+ *     unless the rate already lets one in free;
+ *   - when the child is dropped off: the drop-off fee — never a nanny's;
+ *   - one pair of socks, unless the ticket already gives one free.
+ *
+ * Anything else on the line — a second adult, more socks, an add-on, prepaid
+ * food — is the family's to pay, and the line's food rows come last in the
+ * engine's units, so a markdown of this size never reaches them.
+ */
+function giftTicketValue(
+  line: TicketCartLine,
+  ctx: PricingContext,
+  stay: { ageYears: number; service: string } | null,
+): number {
+  const rows = computeLineBreakdown(line, ctx);
+  const firstPaid = (key: string): number =>
+    rows.find((r) => r.key === key && r.quantity > 0 && r.unitPrice > 0)?.unitPrice ?? 0;
+  const hasFree = (key: string): boolean => rows.some((r) => r.key === key && r.quantity > 0);
+  const kid = firstPaid('kids');
+  const adult = stay || hasFree('adults-free') ? 0 : firstPaid('adults');
+  const socks = hasFree('socks-free') ? 0 : firstPaid('socks');
+  const fee =
+    stay && stay.service !== 'nanny'
+      ? (rows.find((r) => r.key === SERVICE_FEE_ROW_KEY)?.subtotal ?? 0)
+      : 0;
+  return kid + adult + socks + fee;
 }
 
 export function voucherPricing(
@@ -2492,6 +2554,44 @@ export function voucherPricing(
         },
         line: null,
         notApplicable: `The 1+1 kids ticket needs two kids tickets of ${effect.package.name} on this sale`,
+      };
+    }
+    case 'gift_ticket': {
+      // SCRUM-798 — one child's line of the package: the one the till marked,
+      // else a drop-off stay of it, else the first.
+      const qualifying = lines.filter(
+        (l) => l.packageId === effect.package.id && !l.promoItem && l.kids > 0,
+      );
+      const giftLine =
+        qualifying.find((l) => aim.giftLineIds?.has(l.id)) ??
+        qualifying.find((l) => aim.stays?.has(l.id)) ??
+        qualifying[0];
+      if (!giftLine) {
+        return {
+          promo: { ...base, type: 'fixed', value: 0 },
+          line: null,
+          notApplicable: GIFT_TICKET_MESSAGES.noLine(effect.package.name),
+        };
+      }
+      const stay = aim.stays?.get(giftLine.id) ?? null;
+      // "Link the Drop-Off Form only when drop-off is selected for a child aged
+      // 5 or older": a stay for a younger child is not the gift's to pay for.
+      if (stay && stay.ageYears < effect.dropOffMinAge) {
+        return {
+          promo: { ...base, type: 'fixed', value: 0, line: { lineId: giftLine.id } },
+          line: null,
+          notApplicable: GIFT_TICKET_MESSAGES.dropOffUnderAge(effect.dropOffMinAge),
+        };
+      }
+      return {
+        promo: {
+          ...base,
+          type: 'fixed',
+          value: giftTicketValue(giftLine, ctx, stay),
+          line: { lineId: giftLine.id },
+        },
+        line: null,
+        notApplicable: GIFT_TICKET_MESSAGES.noLine(effect.package.name),
       };
     }
     case 'hand_over':

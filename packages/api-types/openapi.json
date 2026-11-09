@@ -7215,6 +7215,9 @@
                         "stayDurationLabel": {
                           "type": "string",
                           "maxLength": 60
+                        },
+                        "voucherGift": {
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -7874,6 +7877,9 @@
                         "stayDurationLabel": {
                           "type": "string",
                           "maxLength": 60
+                        },
+                        "voucherGift": {
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -8522,6 +8528,9 @@
                             "stayDurationLabel": {
                               "type": "string",
                               "maxLength": 60
+                            },
+                            "voucherGift": {
+                              "type": "boolean"
                             }
                           },
                           "required": [
@@ -9830,6 +9839,9 @@
                         "stayDurationLabel": {
                           "type": "string",
                           "maxLength": 60
+                        },
+                        "voucherGift": {
+                          "type": "boolean"
                         }
                       },
                       "required": [
