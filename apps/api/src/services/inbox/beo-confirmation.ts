@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, isNotNull, isNull, not, sql } from 'drizzle-orm';
 import { schema as s, type Db } from '@oto/db';
-import type { InboxBeoConfirmation } from '@oto/shared';
+import { mentionsPartyDate, mentionsPartyTime, type InboxBeoConfirmation } from '@oto/shared';
 import { errors } from '../../lib/errors';
 import { loadVisibleConversation, type InboxViewer } from './read-visibility';
 
@@ -49,34 +49,14 @@ export const BEO_CONFIRMATION_MESSAGES = {
  */
 const neverReceived = () => sql`${s.message.providerStatus} in ('failed', 'withdrawn', 'shadow')`;
 
-const MONTHS_EN =
-  'jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?';
-const MONTHS_RU = 'января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря';
-const MONTHS_TH =
-  'มกราคม|กุมภาพันธ์|มีนาคม|เมษายน|พฤษภาคม|มิถุนายน|กรกฎาคม|สิงหาคม|กันยายน|ตุลาคม|พฤศจิกายน|ธันวาคม|' +
-  'ม\\.ค|ก\\.พ|มี\\.ค|เม\\.ย|พ\\.ค|มิ\\.ย|ก\\.ค|ส\\.ค|ก\\.ย|ต\\.ค|พ\\.ย|ธ\\.ค';
-
-/** A date: 21/03, 21.03.2027, 2027-03-21, 21 March, March 21, 21 марта, 21 มีนาคม, or a weekday. */
-const DATE: RegExp[] = [
-  /(?<![\d.:/-])(?:0?[1-9]|[12]\d|3[01])[./-](?:0?[1-9]|1[0-2])(?:[./-](?:\d{4}|\d{2}))?(?![\d:])/,
-  /(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)/,
-  new RegExp(`(?<!\\d)\\d{1,2}(?:st|nd|rd|th)?\\s*(?:of\\s+)?(?:${MONTHS_EN})\\b`, 'i'),
-  new RegExp(`\\b(?:${MONTHS_EN})\\.?\\s+\\d{1,2}(?!\\d)`, 'i'),
-  new RegExp(`(?<!\\d)\\d{1,2}\\s*(?:${MONTHS_RU})`, 'i'),
-  new RegExp(`(?<!\\d)\\d{1,2}\\s*(?:${MONTHS_TH})`),
-  /\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i,
-  /(?:понедельник|вторник|сред[ау]|четверг|пятниц[ау]|суббот[ау]|воскресенье)/i,
-  /(?:วันจันทร์|วันอังคาร|วันพุธ|วันพฤหัส|วันศุกร์|วันเสาร์|วันอาทิตย์)/,
-];
-
-/** A time: 14:00, 2pm, 2:30 pm, 14.00 น., เวลา 14.00, в 14.00, 14 часов, บ่าย 2 โมง. */
-const TIME: RegExp[] = [
-  /(?<![\d:])(?:[01]?\d|2[0-3]):[0-5]\d(?!\d)/,
-  /(?<![\d:.])(?:1[0-2]|0?[1-9])(?:[:.][0-5]\d)?\s*(?:am|pm|a\.m\.|p\.m\.)/i,
-  /(?<![\d.])(?:[01]?\d|2[0-3])\.[0-5]\d\s*น/,
-  /(?:เวลา|в)\s*(?:[01]?\d|2[0-3])[.:][0-5]\d(?!\d)/i,
-  /(?<!\d)\d{1,2}\s*(?:час|โมง|นาฬิกา)/i,
-];
+/*
+ * A date and a time are read by the one reader the inbox's Book Date uses
+ * (`@oto/shared` chat-dates, SCRUM-814): 21/03, 21.03.2027, 2027-03-21,
+ * 21 March, March 21, 21 марта, 21-го ноября, 21 มีนาคม, 15 พ.ย., or a weekday
+ * in the three languages; 14:00, 2pm, 2:30 pm, 14.00 น., เวลา 14.00, в 14.00,
+ * 14 часов, บ่าย 2 โมง. "Today" and "tomorrow" alone are not a party's date
+ * here: a reminder says them too.
+ */
 
 /** A guest count, food, or the programme. */
 const DETAIL: RegExp[] = [
@@ -88,7 +68,7 @@ const DETAIL: RegExp[] = [
 /** Does this message carry a birthday's details: a date, a time, and one more party detail. */
 export function carriesBirthdayDetails(body: string): boolean {
   const text = body.normalize('NFC');
-  return DATE.some((r) => r.test(text)) && TIME.some((r) => r.test(text)) && DETAIL.some((r) => r.test(text));
+  return mentionsPartyDate(text) && mentionsPartyTime(text) && DETAIL.some((r) => r.test(text));
 }
 
 /** The conversation's confirmation message, chosen as the header says; a read. */

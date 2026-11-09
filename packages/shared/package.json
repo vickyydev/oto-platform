@@ -11,6 +11,7 @@
     "./i18n": "./src/i18n/index.ts",
     "./inbox": "./src/inbox.ts",
     "./inbox-reply": "./src/inbox-reply.ts",
+    "./chat-dates": "./src/chat-dates.ts",
     "./handoff-target": "./src/handoff-target.ts",
     "./ids": "./src/ids.ts",
     "./assistant-limits": "./src/assistant-limits.ts",

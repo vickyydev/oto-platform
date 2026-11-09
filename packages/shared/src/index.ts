@@ -69,6 +69,7 @@ export * from './booking-event-passes';
 export * from './benefit-credential';
 export * from './benefit-checkout';
 export * from './display-date';
+export * from './chat-dates';
 export * from './scanner-burst';
 export * from './inbox';
 export * from './inbox-actions';
