@@ -610,6 +610,12 @@ export interface CartLine {
   promoItem?: { itemId: string; itemKind: 'menu' | 'merch'; name: string; priceTHB: number };
   // Present only on drop-off lines (a single child checked in within this sale).
   dropOff?: DropOffLine;
+  /**
+   * SCRUM-798 — the line a Golden Ticket was rung up on (`lib/giftTicket.ts`):
+   * the child the gift admits. The platform prices the gift from the voucher;
+   * this only says which line, and keeps the line's people off the food credit.
+   */
+  voucherGift?: boolean;
 }
 
 /**

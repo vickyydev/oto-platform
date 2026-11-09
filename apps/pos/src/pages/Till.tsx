@@ -112,6 +112,17 @@ import {
   VoucherUsedNote,
   voucherIsGift,
 } from '@/components/till/RedeemVoucher';
+import { GoldenTicketCard } from '@/components/till/GoldenTicketCard';
+import {
+  buildGiftTicketLine,
+  dropGiftTicketMarks,
+  giftTicketDropOffMinAge,
+  giftTicketPackage,
+  giftTicketRequestEntitlement,
+  isGiftTicket,
+  placeGiftTicketLine,
+  type GiftTicketRequest,
+} from '@/lib/giftTicket';
 import { PriceSourceNote, SaleNotSavedNotice, SaleWriteFailure } from '@/components/till/SaleWriteStatus';
 import { useLeftBehindSales } from '@/lib/leftBehindSale';
 import { rebuildResumedSale } from '@/lib/resumeSale';
@@ -1683,6 +1694,39 @@ export default function Till() {
     setSupervisionResolved(false);
   };
 
+  /**
+   * SCRUM-798 — RING UP THE GOLDEN TICKET the family's way: one Full Day Pass
+   * child, the parent on the line when they stay, socks when asked for. A
+   * drop-off (a child of 5 or over only) opens the Drop-Off form on the
+   * customer display for that child, exactly as a paid drop-off does; the
+   * platform prices it all at ฿0 from the voucher.
+   */
+  const handleRingUpGiftTicket = (request: GiftTicketRequest) => {
+    const pkg = giftTicketPackage(voucher.held, getTicketTypes());
+    if (!tier || !pkg) return;
+    const entitled = giftTicketRequestEntitlement(request, giftTicketDropOffMinAge(voucher.held));
+    if (!entitled.ok) {
+      toast({ title: 'Golden Ticket', description: entitled.reason, variant: 'destructive' });
+      return;
+    }
+    const existing = lines.find((l) => l.voucherGift && !l.dropOff);
+    const giftLine = buildGiftTicketLine(pkg, tier, request, existing?.id ?? Math.random().toString(36).substring(7));
+    const next = placeGiftTicketLine(lines, giftLine);
+    setLines(next);
+    setManualDiscounts((mds) => dropOrphanedDiscounts(mds, next));
+    setActiveLineId(null);
+    setSupervisionResolved(false);
+    if (entitled.dropOff) {
+      openSupervisionGate({ lines: next, lineId: giftLine.id, age: request.childAgeYears ?? 0 });
+    }
+  };
+
+  // SCRUM-798 — the Golden Ticket left the cart: its line is an ordinary one again.
+  useEffect(() => {
+    if (voucher.held || !lines.some((l) => l.voucherGift)) return;
+    setLines((prev) => dropGiftTicketMarks(prev));
+  }, [voucher.held, lines]);
+
   // Attach registered children (from the Add-drop-off picker) as drop-off lines,
   // skipping any already in the cart. New siblings inherit length + service from
   // the first already-configured drop-off child (editable); if none is configured
@@ -1886,17 +1930,20 @@ export default function Till() {
 
   // Open the door-flow supervision gate: one editable slot per anonymous kid,
   // remembering which cart line (and ticket) it came from for the conversion.
-  const openSupervisionGate = () => {
+  // SCRUM-798 — a Golden Ticket's drop-off opens it for the gift's child alone
+  // (`only`), on the cart just rung up, with the age staff already asked.
+  const openSupervisionGate = (only?: { lines: CartLine[]; lineId: string; age: number }) => {
     const slots: SupervisedSlot[] = [];
-    for (const l of lines) {
+    for (const l of only?.lines ?? lines) {
       if (l.dropOff) continue;
+      if (only && l.id !== only.lineId) continue;
       for (let i = 0; i < l.kids; i++) {
         slots.push({
           id: `slot-${Math.random().toString(36).substring(2, 9)}`,
           sourceLineId: l.id,
           ticketType: l.ticketType,
           name: '',
-          age: '',
+          age: only ? String(only.age) : '',
           waived: false,
           // Unaccompanied kids always run the full drop-off safety flow. For a
           // no-fee ('none') child this auto-enrolls them at ฿0 (no opt-in
@@ -2472,6 +2519,7 @@ export default function Till() {
     }
 
     const usedCarry = new Set<string>();
+    const giftSourceIds = new Set(lines.filter((l) => l.voucherGift && !l.dropOff).map((l) => l.id));
     const dropLines: CartLine[] = supervised.map(({ slot, service }, i) => {
       let line = stayLine({
         ci: created[i],
@@ -2490,6 +2538,8 @@ export default function Till() {
         const foodTHB = line.dropOff?.foodProvision?.paidTHB ?? 0;
         line = { ...withExtras, lineTotal: computeLineTotal(withExtras) + line.dropOff!.serviceFeeTHB + foodTHB };
       }
+      // SCRUM-798 — the Golden Ticket's child stays the gift's line once dropped off.
+      if (giftSourceIds.has(slot.sourceLineId)) line = { ...line, voucherGift: true };
       return line;
     });
 
@@ -3308,6 +3358,11 @@ export default function Till() {
    * else on the cart, and the platform prices, commits and closes it at ฿0.
    */
   const voucherGift = voucherIsGift(voucher.held);
+  /** SCRUM-798 — what the Golden Ticket's line holds now, once it is rung up. */
+  const giftLineOnCart = lines.find((l) => l.voucherGift);
+  const giftOnCart = giftLineOnCart
+    ? { adults: giftLineOnCart.adults, socks: giftLineOnCart.socks, dropOff: !!giftLineOnCart.dropOff }
+    : null;
   /** Rung up with the voucher: it goes only with a void now, which Cancel does. */
   const voucherRungUp =
     voucher.held !== null && saleWriter.committed?.id === voucher.held.saleId;
@@ -3804,6 +3859,18 @@ export default function Till() {
                     // only ever its, so the card says why, in its words.
                     note={voucherUnpriced}
                     {...(voucherRungUp ? {} : { onRemove: () => void voucher.release() })}
+                  />
+                )}
+                {/* SCRUM-798 — the Golden Ticket: the child's age, the family's choice, the socks. */}
+                {voucher.held && isGiftTicket(voucher.held) && (
+                  <GoldenTicketCard
+                    key={voucher.held.code}
+                    held={voucher.held}
+                    ticket={giftTicketPackage(voucher.held, getTicketTypes())}
+                    onCart={giftOnCart}
+                    busy={voucher.busy}
+                    disabled={step === 5 || voucherRungUp}
+                    onRingUp={handleRingUpGiftTicket}
                   />
                 )}
                 <RedeemVoucherEntry

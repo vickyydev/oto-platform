@@ -305,6 +305,24 @@ export interface ApiSaleDetail {
   bands?: ApiSaleBand[];
   /** S2-09b — the code the guest holds for an F&B order. */
   pickupCode?: string | null;
+  /**
+   * SCRUM-798 — the gift vouchers this sale sold (a Golden Ticket per unit),
+   * each with its whole code, as its receipt prints it. Absent on a deployment
+   * older than SCRUM-798.
+   */
+  issuedVouchers?: ApiIssuedVoucher[];
+}
+
+/** A gift voucher a sale sold (`IssuedSaleVoucher` in the api). */
+export interface ApiIssuedVoucher {
+  id: string;
+  code: string;
+  definitionCode: string;
+  nameEn: string;
+  productId: string | null;
+  status: string;
+  issuedAt: string;
+  expiresAt: string | null;
 }
 
 /** Where a sale's refunds leave it (`refundStatusOf` in `@oto/shared`). */

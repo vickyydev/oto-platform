@@ -148,7 +148,11 @@ export function VoucherCard({ held, quoted, busy, onRemove, note }: VoucherCardP
   // A free item and a hand-over prize take nothing off the bill; the others do,
   // and the figure is the platform's own for this cart.
   const takesOff =
-    effect === 'amount_off' || effect === 'percent_off' || effect === 'free_kids_ticket';
+    effect === 'amount_off' ||
+    effect === 'percent_off' ||
+    effect === 'free_kids_ticket' ||
+    // SCRUM-798 — the Golden Ticket takes its child's day off the line it is rung up on.
+    effect === 'gift_ticket';
   const figure = !takesOff
     ? effect === 'free_item'
       ? 'Free'

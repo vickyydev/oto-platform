@@ -4,6 +4,7 @@ import { recordedOrderPromoRows } from '@/lib/itemPromo';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { SoldVoucherCodesOf } from '@/components/till/SoldVoucherCodes';
 import {
   CheckCircle2,
   ShoppingBag,
@@ -25,6 +26,12 @@ interface MerchConfirmationProps {
    * notice above says why — so its absence is never silent.
    */
   receiptNumber?: string | null;
+  /**
+   * SCRUM-798 — the platform's id for this sale, when it reached the ledger:
+   * the gift vouchers it sold (a Golden Ticket per unit) are read by it and
+   * shown in full under the receipt number.
+   */
+  saleId?: string | null;
 }
 
 export function MerchConfirmation({
@@ -32,6 +39,7 @@ export function MerchConfirmation({
   newBalance,
   onNewOrder,
   receiptNumber = null,
+  saleId = null,
 }: MerchConfirmationProps) {
   const { payment } = order;
   // Printout CONTENT follows the active receipt template (routing is unchanged).
@@ -65,6 +73,9 @@ export function MerchConfirmation({
               Receipt {receiptNumber}
             </p>
           )}
+          <div className="mt-2">
+            <SoldVoucherCodesOf saleId={saleId} />
+          </div>
         </div>
 
         <Card className="p-5 flex flex-col bg-card/50 mb-4 min-h-0 flex-1">

@@ -130,6 +130,8 @@ export interface SaleCartLinePayload {
   /** From the package, frozen onto every unit of the line: "2 Hours". */
   stayHours?: number;
   stayDurationLabel?: string;
+  /** SCRUM-798 — the line a Golden Ticket admits; the voucher's worth is the platform's. */
+  voucherGift?: boolean;
 }
 
 /**
@@ -976,6 +978,7 @@ export function buildCartPayload(
         lineTotalSatang: line.lineTotal,
         ...(source ? { stayHours: source.ticketType.hours } : {}),
         ...(source ? { stayDurationLabel: source.ticketType.durationLabel } : {}),
+        ...(source?.voucherGift ? { voucherGift: true } : {}),
       };
     }),
     promos: promoPayload(cart.promos),

@@ -736,6 +736,7 @@ export default function MerchStation() {
               newBalance={newBalance}
               onNewOrder={resetOrder}
               receiptNumber={platformSale?.receiptNumber ?? null}
+              saleId={platformSale?.id ?? null}
             />
           </div>
         )}

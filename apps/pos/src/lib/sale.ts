@@ -66,7 +66,9 @@ export function buildPersonGrants(lines: CartLine[]): PersonGrant[] {
   const out: PersonGrant[] = [];
   for (const line of lines) {
     if (line.promoItem || line.dropOff) continue;
-    const rule = line.ticketType.creditRule;
+    // SCRUM-798 — a Golden Ticket's people get their bands and no food credit:
+    // "free entry with no food voucher" (the platform's `grantSaleCredit` too).
+    const rule = line.voucherGift ? undefined : line.ticketType.creditRule;
     const gate = line.ticketType.gateAccess ?? false;
     const kidPrice = priceForTier(line.ticketType, line.tier);
     const adultLine = resolveAdultLine(line.ticketType, line.tier, line.adults);

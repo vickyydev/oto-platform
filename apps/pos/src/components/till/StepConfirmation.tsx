@@ -7,7 +7,15 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { getPrintTemplate } from '@/mockApi';
 import { paymentMethodLabel } from '@/lib/payments';
-import { bandsByCartLine, getSale, type ApiSaleBand, type ApiSaleLine, type ApiSalePrintJob } from '@/api/history';
+import {
+  bandsByCartLine,
+  getSale,
+  type ApiIssuedVoucher,
+  type ApiSaleBand,
+  type ApiSaleLine,
+  type ApiSalePrintJob,
+} from '@/api/history';
+import { SoldVoucherCodes } from './SoldVoucherCodes';
 import type { BoxSaleIssue } from '@/api/boxSales';
 import { reportsCreditVoucher } from '@/lib/salePrinting';
 import { grantsOf, walletQrFor, type ApiWalletGrant } from '@/api/wallet';
@@ -68,10 +76,15 @@ export interface SaleIssue {
    * seeded from the till's grant id. Null until the read lands.
    */
   grants: ApiWalletGrant[] | null;
+  /**
+   * SCRUM-798 — the gift vouchers the platform minted when this sale closed (a
+   * Golden Ticket per unit), each with its whole code. Null until the read lands.
+   */
+  issuedVouchers: ApiIssuedVoucher[] | null;
 }
 
 export function useSaleIssue(saleId: string, given?: SaleNumber, box?: BoxSaleIssue | null): SaleIssue {
-  const [asked, setAsked] = useState<SaleIssue>({ number: { kind: 'unknown' }, bands: null, lines: [], printJobs: null, grants: null });
+  const [asked, setAsked] = useState<SaleIssue>({ number: { kind: 'unknown' }, bands: null, lines: [], printJobs: null, grants: null, issuedVouchers: null });
 
   useEffect(() => {
     // The box lane already answered with its bands (offline finding 3): the
@@ -79,7 +92,7 @@ export function useSaleIssue(saleId: string, given?: SaleNumber, box?: BoxSaleIs
     // from the finalise answer instead, drawn by the same rows below.
     if (box || !PLATFORM_SALE_ID.test(saleId)) return;
     let live = true;
-    setAsked({ number: { kind: 'unknown' }, bands: null, lines: [], printJobs: null, grants: null });
+    setAsked({ number: { kind: 'unknown' }, bands: null, lines: [], printJobs: null, grants: null, issuedVouchers: null });
     void getSale(saleId)
       .then((detail) => {
         if (!live) return;
@@ -91,6 +104,7 @@ export function useSaleIssue(saleId: string, given?: SaleNumber, box?: BoxSaleIs
           lines: detail.lines ?? [],
           printJobs: detail.printJobs ?? null,
           grants: grantsOf(detail),
+          issuedVouchers: detail.issuedVouchers ?? null,
         });
       })
       .catch(() => {
@@ -110,6 +124,8 @@ export function useSaleIssue(saleId: string, given?: SaleNumber, box?: BoxSaleIs
       // the box lane does not carry it, so nothing pretends it did.
       printJobs: null,
       grants: null,
+      // A box's offline sale mints its vouchers when it lands; History shows them then.
+      issuedVouchers: null,
     };
     return given ? { ...fromBox, number: given } : fromBox;
   }
@@ -308,6 +324,11 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue }
           </p>
         )}
         {note && <div className="mt-2">{note}</div>}
+        {issue.issuedVouchers && issue.issuedVouchers.length > 0 && (
+          <div className="mt-2">
+            <SoldVoucherCodes vouchers={issue.issuedVouchers} />
+          </div>
+        )}
         {receiptTpl?.footerText && (
           <p className="text-muted-foreground/70 mt-1 text-xs italic">
             {receiptTpl.footerText}
