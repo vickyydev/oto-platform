@@ -57,8 +57,31 @@ type Counts = {
   roles: number;
   checklists: number;
   tasks: number;
+  contracts: number;
+  timeRecords: number;
 };
 type RematchAnswer = { matched: number; stillPending: number } | { failed: true };
+
+/** What the fold answers, preview and fold alike (server/lib/employeeFold.ts). */
+interface FoldAnswer {
+  moved: Counts;
+  skipped: Counts;
+  face: "none" | "taken" | "original_kept";
+  supersededContracts: number;
+  reonboard: {
+    startDate: string;
+    started: boolean;
+    department: { id: string; name: string | null };
+    branch: { id: string; name: string | null };
+    positionTitle: string | null;
+    contractId: string | null;
+    login: "reactivated" | "already_on" | "none" | "outside_park_group" | null;
+    platformDeactivationDelivered: boolean;
+  } | null;
+  deleted: { profile: number; login: number };
+  faceRemovedFromCollection?: boolean;
+  rematch?: RematchAnswer;
+}
 
 interface PlannedEmployment {
   id: string;
@@ -87,8 +110,32 @@ const rematchWords = (rematch: RematchAnswer | undefined) => {
 };
 
 const countWords = (c: Counts) =>
+  `${c.contracts} contract(s), ${c.timeRecords} time record(s), ` +
   `${c.shifts} shift(s) with ${c.duties} duty block(s) and ${c.breaks} break(s), ${c.templateShifts} weekly template shift(s), ` +
   `${c.roles} role(s), ${c.checklists} checklist(s), ${c.tasks} task(s)`;
+
+const skipWords = (c: Counts) =>
+  `${c.shifts} shift(s) with ${c.duties} duty block(s) and ${c.breaks} break(s), ${c.templateShifts} weekly template shift(s), ` +
+  `${c.roles} role(s), ${c.checklists} checklist(s), ${c.tasks} task(s)`;
+
+function faceWords(face: FoldAnswer["face"], kept: string): string | null {
+  if (face === "taken") return `${kept} takes this profile's face enrolment.`;
+  if (face === "original_kept") return `${kept} keeps its own face enrolment; this profile's face is removed from the face collection.`;
+  return null;
+}
+
+function reonboardWords(answer: FoldAnswer, kept: string): string | null {
+  const plan = answer.reonboard;
+  if (!plan) return null;
+  const where = [plan.department.name, plan.branch.name].filter(Boolean).join(", ");
+  const as = plan.positionTitle ? ` as ${plan.positionTitle}` : "";
+  const contract = plan.contractId ? " with this profile's active contract" : "";
+  const superseded = answer.supersededContracts > 0 ? `; ${kept}'s previous active contract is superseded` : "";
+  const login = plan.login === "reactivated" ? "; its login is switched back on" : "";
+  return plan.started
+    ? `${kept} is onboarded again: active in ${where}${as} from ${dayWords(plan.startDate)}${contract}${superseded}${login}.`
+    : `${kept} is onboarded again from ${dayWords(plan.startDate)} in ${where}${as}${contract}; the 03:00 batch starts it on that day.`;
+}
 
 const dayWords = (day: string) =>
   new Date(`${day}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
@@ -438,7 +485,7 @@ export function FoldIntoAction({ employee }: { employee: Employee }) {
   }, [people, search, employee.id, employee.branchId]);
   const target = (people ?? []).find((p) => p.id === targetId) ?? null;
 
-  const preview = useQuery<{ moved: Counts; skipped: Counts; deleted: { profile: number; login: number } }>({
+  const preview = useQuery<FoldAnswer>({
     queryKey: ["/api/employees", employee.id, "fold-into", targetId, "preview"],
     queryFn: async () => (await apiRequest("GET", `/api/employees/${employee.id}/fold-into/${targetId}/preview`)).json(),
     enabled: open && !!targetId,
@@ -448,16 +495,24 @@ export function FoldIntoAction({ employee }: { employee: Employee }) {
   const fold = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", `/api/employees/${employee.id}/fold-into/${targetId}`);
-      return res.json() as Promise<{ moved: Counts; skipped: Counts; rematch?: RematchAnswer }>;
+      return res.json() as Promise<FoldAnswer>;
     },
     onSuccess: (answer) => {
       setOpen(false);
       const into = targetId!;
+      const kept = target?.fullName ?? "The profile kept";
       queryClient.removeQueries({ queryKey: ["/api/employees", employee.id] });
       refreshEmployee(into);
+      queryClient.invalidateQueries({ queryKey: plannedKey(into) });
+      const extra = [reonboardWords(answer, kept), faceWords(answer.face, kept)].filter(Boolean).join(" ");
       toast({
         title: "Profile folded",
-        description: `Moved ${countWords(answer.moved)}; skipped ${countWords(answer.skipped)} already on the other profile. This profile is deleted.${rematchWords(answer.rematch)}`,
+        description: `Moved ${countWords(answer.moved)}; skipped ${skipWords(answer.skipped)} already on the other profile. This profile is deleted.` +
+          (extra ? ` ${extra}` : "") +
+          (answer.faceRemovedFromCollection === false
+            ? " This profile's face could not be removed from the face collection; ask a platform administrator to remove it."
+            : "") +
+          rematchWords(answer.rematch),
       });
       setLocation(`/employees/${into}`);
     },
@@ -486,8 +541,8 @@ export function FoldIntoAction({ employee }: { employee: Employee }) {
           <DialogHeader>
             <DialogTitle>Fold into another profile</DialogTitle>
             <DialogDescription>
-              For a duplicate profile of the same person: its shifts (with their duties and breaks), weekly template shifts, roles, checklists and tasks move to the profile you choose, and this profile is deleted.
-              Keep the profile the person signs in and scans their face with.
+              For a duplicate profile of the same person: its contracts, time records, shifts (with their duties and breaks), weekly template shifts, roles, checklists, tasks and face enrolment move to the profile you choose, and this profile is deleted.
+              Keep the profile the person signs in and scans their face with. If that profile has left or is leaving and this one is working, it is onboarded again into this profile's employment.
             </DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-4">
@@ -520,8 +575,14 @@ export function FoldIntoAction({ employee }: { employee: Employee }) {
                 {preview.error && <p className="text-destructive">{(preview.error as Error).message}</p>}
                 {preview.data && (
                   <>
-                    <p>Moves {countWords(preview.data.moved)} to {target.fullName}.</p>
-                    <p className="text-muted-foreground">Skips {countWords(preview.data.skipped)} {target.fullName} already has.</p>
+                    <p data-testid="fold-preview-moves">Moves {countWords(preview.data.moved)} to {target.fullName}.</p>
+                    <p className="text-muted-foreground">Skips {skipWords(preview.data.skipped)} {target.fullName} already has.</p>
+                    {faceWords(preview.data.face, target.fullName) && (
+                      <p data-testid="fold-preview-face">{faceWords(preview.data.face, target.fullName)}</p>
+                    )}
+                    {reonboardWords(preview.data, target.fullName) && (
+                      <p className="font-medium" data-testid="fold-preview-reonboard">{reonboardWords(preview.data, target.fullName)}</p>
+                    )}
                     <p className="text-muted-foreground">
                       Deletes this profile{preview.data.deleted.login ? " and the login that belongs to it" : ""}.
                     </p>

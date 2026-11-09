@@ -17,6 +17,7 @@ import { db } from "./db";
 import { storage } from "./storage";
 import { requireAuth } from "./auth";
 import { canUserAccessBranch, requireAction, requireAdmin, requireManager } from "./auth-middleware";
+import { faceRecognitionService } from "./face-recognition";
 import { foldEmployeeInto, type FoldInput } from "./lib/employeeFold";
 import { rematchUnscheduledWork } from "./lib/reviewRematch";
 import {
@@ -44,8 +45,10 @@ import { bangkokToday } from "./lib/engagementDates";
  *    when the start date is today or already past.
  *  - POST /api/employees/:id/fold-into/:targetId (and GET .../preview) — a
  *    duplicate profile made for the same person folded into the one that
- *    holds the login and the face: its shifts, checklists and tasks moved, the
- *    duplicate deleted.
+ *    holds the login: its shifts, checklists, tasks, contracts, time records
+ *    and face moved, the duplicate deleted, and — when the original has left
+ *    or is leaving and the duplicate is the one working — the original
+ *    onboarded again into the duplicate's employment.
  *  - POST /api/employees/:id/review/rematch — the profile's pending
  *    "Unscheduled work" approvals matched to the shifts it now has; run after a
  *    fold and after an Onboard Again start as well.
@@ -394,11 +397,11 @@ export function registerEmployeeOnboardAgainRoutes(app: Express, deps: EmployeeO
       res.status(403).json({ message: "Both profiles must be in a branch you manage" });
       return null;
     }
-    // The profile kept is the one the person signs in and clocks in with.
-    if ((duplicate.userId && !target.userId) ||
-        (duplicate.faceEnrollmentStatus === "ENROLLED" && target.faceEnrollmentStatus !== "ENROLLED")) {
+    // The profile kept is the one the person signs in with. A face enrolment
+    // moves with the fold when the profile kept has none (lib/employeeFold.ts).
+    if (duplicate.userId && !target.userId) {
       res.status(409).json({
-        message: "This profile holds the login or the face enrolment and the one chosen does not. Fold the other way round: keep the profile the person signs in and scans their face with.",
+        message: "This profile holds the login and the one chosen does not. Fold the other way round: keep the profile the person signs in and scans their face with.",
       });
       return null;
     }
@@ -415,6 +418,9 @@ export function registerEmployeeOnboardAgainRoutes(app: Express, deps: EmployeeO
       targetId: target.id,
       tenantId,
       deletion: { personId, leavingUserId },
+      // The login a re-onboarding switches back on is only one the app's strict
+      // placement puts in the park group, as Onboard Again's own door decides.
+      loginInParkGroup: !!target.userId && (await deps.managedUserTenant(target.userId)) === tenantId,
       actorId: actor.id,
       write,
     };
@@ -429,11 +435,33 @@ export function registerEmployeeOnboardAgainRoutes(app: Express, deps: EmployeeO
         const { folded: _folded, status, ...refusal } = outcome;
         return res.status(status).json(refusal);
       }
-      const answer = { moved: outcome.moved, skipped: outcome.skipped, deleted: outcome.deleted };
+      const answer = {
+        moved: outcome.moved,
+        skipped: outcome.skipped,
+        face: outcome.face,
+        supersededContracts: outcome.supersededContracts,
+        reonboard: outcome.reonboard,
+        deleted: outcome.deleted,
+      };
       if (!write) return res.json(answer);
       deps.committed(input.targetId);
+      // The folded profile's face leaves the face collection once the fold has
+      // committed: the collection is outside the transaction, and a face whose
+      // profile is gone must not be the one a scan matches.
+      let faceRemovedFromCollection: boolean | undefined;
+      if (outcome.faceToRemove) {
+        try {
+          // The face service's own removal, as a reset uses it: it matches nobody.
+          faceRemovedFromCollection = await faceRecognitionService.deleteFace(outcome.faceToRemove);
+        } catch {
+          faceRemovedFromCollection = false;
+        }
+        if (!faceRemovedFromCollection) {
+          console.warn(`[FOLD] The folded profile's face ${outcome.faceToRemove} could not be removed from the face collection`);
+        }
+      }
       const rematch = await rematchAfter({ id: input.targetId, tenantId: input.tenantId }, req.user!.id);
-      res.json({ ...answer, rematch });
+      res.json({ ...answer, ...(faceRemovedFromCollection === undefined ? {} : { faceRemovedFromCollection }), rematch });
     } catch (error) {
       next(error);
     }

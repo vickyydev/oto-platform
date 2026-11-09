@@ -611,8 +611,8 @@ jobs:
         run: npx tsx tests/timekeeping-review.check.ts
       # SCRUM-794: one person, one profile, across two contracts — a duplicate
       # folded into the profile that holds the login and the face (shifts,
-      # checklists and tasks moved, refused with a contract, the wrong way
-      # round or outside the caller's branches); an offboarding with a later
+      # checklists and tasks moved, refused with a payroll record, the wrong
+      # way round or outside the caller's branches); an offboarding with a later
       # last day keeps the login on and the status active; Onboard Again plans
       # the new employment with a draft contract, its department schedules the
       # profile from the start date while the current one does up to the last

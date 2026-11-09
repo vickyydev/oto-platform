@@ -12,10 +12,12 @@
 //      before and takes it after), 1 checklist assignment and 1 task
 //      assignment moved, the duplicate deleted, the original's history kept;
 //      the other way round
-//      is refused; a duplicate with a contract, a fold across branches, a move
-//      the original already has and a duplicate made with the original's email
-//      are handled as before; the stray "Unscheduled work" approval on a day
-//      that now has a shift is matched, the other stays pending.
+//      is refused; a duplicate with a payroll record is refused (its contract
+//      no longer is: contracts move, tests/employee-fold.check.ts); a fold
+//      across branches, a move the original already has and a duplicate made
+//      with the original's email are handled as before; the stray
+//      "Unscheduled work" approval on a day that now has a shift is matched,
+//      the other stays pending.
 //   2. Offboard: a last working day still to come keeps the login on and the
 //      status active (the profile works until then); a last day of today
 //      still sets the status at once, as the app always did.
@@ -284,6 +286,23 @@ async function unscheduled(employeeId: string, date: string) {
 const review = async (issue: string) =>
   (await q(`select i.status as issue_status, i.resolved_by, i.resolution_note, e.status as entry_status, e.approved_by
               from timekeeping_issues i join time_entries e on e.id = i.linked_time_entry_id where i.id = $1`, [issue]))[0];
+/** A payroll line on a profile (a payroll run of its own): kept on the profile it was paid to, so a fold refuses it. */
+async function payrollLine(employeeId: string) {
+  const operator = randomUUID();
+  await q("insert into operators (id, tenant_id, name) values ($1, $2, $3)", [operator, TENANT, `ZZ TEST s794 ${run}`]);
+  const [{ id: period }] = await q<{ id: string }>(
+    "insert into payroll_periods (tenant_id, operator_id, start_date, end_date) values ($1, $2, '2099-01-01', '2099-01-31') returning id",
+    [TENANT, operator],
+  );
+  const [{ id: payrollRun }] = await q<{ id: string }>(
+    "insert into payroll_runs (payroll_period_id, run_number, status, created_by) values ($1, 1, 'DRAFT', $2) returning id",
+    [period, admin.id],
+  );
+  await q(
+    "insert into payroll_line_items (payroll_run_id, employee_id, line_type, code, description, amount) values ($1, $2, 'EARNING', 'ZZ TEST', 'ZZ TEST line', 0)",
+    [payrollRun, employeeId],
+  );
+}
 
 // ─── A directory key for the night batch, as script/directory-client.mjs issues them ─
 
@@ -460,12 +479,15 @@ try {
     assert.equal(await countOf("select count(*) as n from employees where id = $1", [duplicate]), 1);
     assert.equal((await engagementOf(original)).length, 0);
   });
-  const NONE = { shifts: 0, duties: 0, breaks: 0, templateShifts: 0, roles: 0, checklists: 0, tasks: 0 };
-  const DUPLICATE_HOLDS = { shifts: 3, duties: 1, breaks: 1, templateShifts: 1, roles: 1, checklists: 1, tasks: 1 };
+  const NONE = { shifts: 0, duties: 0, breaks: 0, templateShifts: 0, roles: 0, checklists: 0, tasks: 0, contracts: 0, timeRecords: 0 };
+  const DUPLICATE_HOLDS = { ...NONE, shifts: 3, duties: 1, breaks: 1, templateShifts: 1, roles: 1, checklists: 1, tasks: 1 };
   await check("the preview counts 3 shifts (1 duty, 1 break), 1 template shift, 1 role, 1 checklist, 1 task and writes nothing", async () => {
     const res = await call("GET", `/api/employees/${duplicate}/fold-into/${original}/preview`, as.admin);
     assert.equal(res.status, 200, show(res));
-    assert.deepEqual(res.body, { moved: DUPLICATE_HOLDS, skipped: NONE, deleted: { profile: 1, login: 0 } });
+    // The original works on (active, no last working day): nobody is onboarded again, and no face moves.
+    assert.deepEqual(res.body, {
+      moved: DUPLICATE_HOLDS, skipped: NONE, face: "none", supersededContracts: 0, reonboard: null, deleted: { profile: 1, login: 0 },
+    });
     assert.equal(await shiftsOf(duplicate), 3);
     assert.deepEqual(await q("select employee_id from duty_blocks where id = $1", [dupDuty]), [{ employee_id: duplicate }]);
     assert.equal(await countOf("select count(*) as n from employees where id = $1", [duplicate]), 1);
@@ -487,18 +509,21 @@ try {
     assert.equal(within.status, 200, `the same admin previews a fold inside their branch: ${show(within)}`);
     assert.equal(await countOf("select count(*) as n from employees where id = $1", [elsewhere]), 1);
   });
-  await check("a duplicate with a contract is refused and keeps its shift", async () => {
-    await q(
+  await check("a duplicate with a payroll record is refused naming it alone (its contract moves now), and keeps its contract and shift", async () => {
+    const [{ id: contract }] = await q<{ id: string }>(
       `insert into contract_instances (employee_id, template_id, template_snapshot_html, template_snapshot_version, merge_data_json, created_by, status)
-       values ($1, $2, '<p>ZZ</p>', 1, '{}'::jsonb, $3, 'active')`,
+       values ($1, $2, '<p>ZZ</p>', 1, '{}'::jsonb, $3, 'active') returning id`,
       [contracted, TEMPLATE, admin.id],
     );
+    await payrollLine(contracted);
     await shift(contracted, day(4));
     const res = await call("POST", `/api/employees/${contracted}/fold-into/${original}`, as.admin);
     assert.equal(res.status, 409, show(res));
     assert.equal(res.body.reason, "has_records");
-    assert.deepEqual(res.body.blocking, [{ label: "contracts", count: 1 }]);
+    assert.deepEqual(res.body.blocking, [{ label: "payroll records", count: 1 }]);
+    assert.match(res.body.message, /Payroll records stay on the profile they were paid to/);
     assert.equal(await shiftsOf(contracted), 1);
+    assert.deepEqual(await q("select employee_id, status from contract_instances where id = $1", [contract]), [{ employee_id: contracted, status: "active" }]);
     assert.equal(await countOf("select count(*) as n from employees where id = $1", [contracted]), 1);
   });
   await check("before the fold, the row needing the duplicate's role refuses the original", async () => {

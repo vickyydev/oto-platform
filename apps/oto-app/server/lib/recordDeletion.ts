@@ -162,33 +162,38 @@ async function inOneTransaction(
 
 // ─── Employees ───────────────────────────────────────────────────────────────
 
+/** An employee's contracts, kept for the record. */
+export const CONTRACTS_KEPT = { singular: "contract", plural: "contracts", tables: ["contract_instances"], column: "employee_id" };
+
+/** An employee's time records: clock-ins, time entries, adjustments and attendance review items. */
+export const TIME_RECORDS_KEPT = {
+  singular: "time record",
+  plural: "time records",
+  tables: ["time_events", "time_entries", "time_adjustments", "timekeeping_issues"],
+  column: "employee_id",
+};
+
+/** An employee's payroll records, kept on the profile they were paid to. */
+export const PAYROLL_KEPT = {
+  singular: "payroll record",
+  plural: "payroll records",
+  tables: [
+    "payroll_line_items",
+    "payroll_employee_summaries",
+    "payroll_day_reconciliations",
+    "payroll_exceptions",
+    "payslips",
+    "salary_advances",
+    "salary_advance_repayments",
+    "statutory_calculation_results",
+    // SCRUM-567: the company payroll's profile (ON DELETE RESTRICT) is kept for the record too.
+    "payroll_profiles",
+  ],
+  column: "employee_id",
+};
+
 /** What an employee delete refuses on: kept for the record, ended by offboarding. */
-export const EMPLOYEE_KEEPS = [
-  { singular: "contract", plural: "contracts", tables: ["contract_instances"], column: "employee_id" },
-  {
-    singular: "time record",
-    plural: "time records",
-    tables: ["time_events", "time_entries", "time_adjustments", "timekeeping_issues"],
-    column: "employee_id",
-  },
-  {
-    singular: "payroll record",
-    plural: "payroll records",
-    tables: [
-      "payroll_line_items",
-      "payroll_employee_summaries",
-      "payroll_day_reconciliations",
-      "payroll_exceptions",
-      "payslips",
-      "salary_advances",
-      "salary_advance_repayments",
-      "statutory_calculation_results",
-      // SCRUM-567: the company payroll's profile (ON DELETE RESTRICT) is kept for the record too.
-      "payroll_profiles",
-    ],
-    column: "employee_id",
-  },
-];
+export const EMPLOYEE_KEEPS = [CONTRACTS_KEPT, TIME_RECORDS_KEPT, PAYROLL_KEPT];
 
 export const EMPLOYEE_OFFBOARD_INSTEAD = "Their history is kept for the record; offboard them instead to end their employment.";
 

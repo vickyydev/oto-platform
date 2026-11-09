@@ -1,6 +1,12 @@
 import type { Pool, PoolClient } from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
+import * as schema from "@shared/schema";
+import type { DbExecutor } from "../storage";
+import { bangkokToday } from "./engagementDates";
+import { activateEngagementWithin, type LoginOutcome } from "./onboardAgain";
 import {
-  EMPLOYEE_KEEPS,
+  PAYROLL_KEPT,
+  TIME_RECORDS_KEPT,
   asBlocking,
   blockersOf,
   deleteEmployeeWithin,
@@ -13,13 +19,14 @@ import {
 /**
  * Fold a duplicate employee profile into the original (SCRUM-794).
  *
- * A second profile made only to put somebody on the rota in a new position
- * carries their shifts, checklist and task assignments, while their login,
- * face and history stay on the original. The fold moves what the duplicate is
- * assigned to onto the original and then deletes the emptied duplicate
- * through the employee delete's own steps (`deleteEmployeeWithin`), all on
- * ONE transaction: a refusal anywhere, or a foreign key still pointing at the
- * duplicate, rolls every move back.
+ * A second profile made to put somebody to work in a new position carries
+ * their shifts, checklist and task assignments, and often their new contract,
+ * their clock-ins and a face enrolment of its own, while their login, face and
+ * history stay on the original. The fold moves what the duplicate holds onto
+ * the original and then deletes the emptied duplicate through the employee
+ * delete's own steps (`deleteEmployeeWithin`), all on ONE transaction: a
+ * refusal anywhere, or a foreign key still pointing at the duplicate, rolls
+ * every move back.
  *
  * What it moves:
  *  - schedule assignments (`schedule_assignments.employee_id`), with the
@@ -32,21 +39,46 @@ import {
  *  - checklist template assignments (`checklist_template_assignees` and the
  *    template's first-named `assigned_employee_id`, SCRUM-658);
  *  - task assignments (`task_assignments` of type employee and the task's
- *    `assigned_employee_id`).
+ *    `assigned_employee_id`);
+ *  - its contracts, every status, as they are. Its ACTIVE contract becomes the
+ *    original's active contract: the original's own active one is superseded
+ *    (its end is the last working day the original's offboarding records);
+ *  - its time records (`time_events`, `time_entries`, `time_adjustments`) and
+ *    attendance review items (`timekeeping_issues`), the ones the employee
+ *    delete counts;
+ *  - its face enrolment, when the original has none. When both have one the
+ *    original keeps its own, and the duplicate's face is removed from the face
+ *    collection once the fold has committed (by the route: the collection is
+ *    outside the database). The app holds one face per profile
+ *    (`employees.face_id`, which re-enrolment and reset replace or remove), and
+ *    the face service indexes a face under the profile id it was enrolled for,
+ *    which cannot be changed afterwards; a second face under the original
+ *    would be neither recorded nor removable, so it is not kept.
  * A move that would give the original an assignment it already has is
  * skipped and counted: the duplicate's copy goes with the duplicate (a
  * skipped shift's duties and breaks with it, the original keeping its own).
  *
- * It refuses, before anything is written, a duplicate with contracts, time
- * records or payroll records (the delete's own counting, EMPLOYEE_KEEPS).
- * Attendance review items (`timekeeping_issues`) are time records there, so a
- * duplicate that has any is refused rather than folded: they and the clock-ins
- * they stand on are kept for the record on the profile that made them.
+ * When the original's employment has ended or is ending (Left or Leaving) and
+ * the duplicate is the one working (active), the fold finishes as Onboard
+ * Again's start does (`activateEngagementWithin`): an employment from the
+ * moved active contract's start date, in the duplicate's department, branch
+ * and position, following the original's open offboarding; the original reads
+ * active in it, its offboarding re-onboarded, its login switched back on; the
+ * movement logged as "onboard again (from a folded profile)". A start date
+ * still to come is planned instead, for the 03:00 batch to start, as Onboard
+ * Again plans one.
+ *
+ * It refuses, before anything is written, a duplicate with payroll records
+ * (kept on the profile they were paid to); two active contracts while the
+ * original's has no last working day; an Onboard Again employment already
+ * planned on the original when the fold would start one; and a re-onboarding
+ * with no department or branch to put the original in.
  *
  * With `write: false` (the preview) the same steps run and are rolled back, so
  * the preview's counts and refusals are the fold's own.
  *
  * Plain `pg`, like recordDeletion.ts: the pool carries `search_path=otoapp`.
+ * Onboard Again's start runs on the same connection through Drizzle.
  */
 
 export interface FoldCounts {
@@ -60,6 +92,29 @@ export interface FoldCounts {
   roles: number;
   checklists: number;
   tasks: number;
+  /** Contracts of every status, re-pointed as they are. */
+  contracts: number;
+  /** Clock-ins, time entries, time adjustments and attendance review items. */
+  timeRecords: number;
+}
+
+/** The duplicate's face enrolment: none, taken by the original, or left out (the original keeps its own). */
+export type FoldFace = "none" | "taken" | "original_kept";
+
+export interface FoldReonboard {
+  engagementId: string;
+  startDate: string;
+  /** Started by the fold; false when the start date is still to come (the 03:00 batch starts it). */
+  started: boolean;
+  department: { id: string; name: string | null };
+  branch: { id: string; name: string | null };
+  positionTitle: string | null;
+  /** The moved active contract the employment starts with. */
+  contractId: string | null;
+  /** The login once started: switched back on, already on, none, or one the app does not place in the park group. */
+  login: LoginOutcome | null;
+  /** The platform was already told of a switch-off; reactivating there is a platform administrator's step. */
+  platformDeactivationDelivered: boolean;
 }
 
 export type FoldOutcome =
@@ -67,13 +122,19 @@ export type FoldOutcome =
       folded: true;
       moved: FoldCounts;
       skipped: FoldCounts;
+      face: FoldFace;
+      /** The duplicate's face to remove from the face collection after the commit; never sent to the browser. */
+      faceToRemove: string | null;
+      /** The original's earlier active contracts superseded by the duplicate's. */
+      supersededContracts: number;
+      reonboard: FoldReonboard | null;
       deleted: { profile: 1; login: 0 | 1 };
     }
   | {
       folded: false;
       status: 400 | 404 | 409;
       message: string;
-      reason?: "has_records" | "linked_to_platform" | "still_referenced";
+      reason?: "has_records" | "linked_to_platform" | "still_referenced" | "both_active" | "planned_employment" | "no_department";
       blocking?: { label: string; count: number }[];
     };
 
@@ -83,12 +144,14 @@ export interface FoldInput {
   tenantId: string;
   /** What the duplicate's delete takes with it, never the original's person or login. */
   deletion: Pick<EmployeeDeletionInput, "personId" | "leavingUserId">;
+  /** Whether the original's login is one the app places in the park group (the one a re-onboarding switches back on). */
+  loginInParkGroup: boolean;
   actorId: string;
   write: boolean;
 }
 
 const FOREIGN_KEY_VIOLATION = "23503";
-const FOLD_KEEPS_INSTEAD = "Its history is kept for the record, so it cannot be folded into another profile.";
+const PAYROLL_STAYS = "Payroll records stay on the profile they were paid to, so it cannot be folded into another profile.";
 
 type Exec = Pick<PoolClient, "query">;
 
@@ -228,6 +291,15 @@ async function moveTasks(client: Exec, from: string, to: string) {
   return { moved, skipped: total - moved };
 }
 
+/** The duplicate's time records and attendance review items, every table the employee delete counts. */
+async function moveTimeRecords(client: Exec, from: string, to: string): Promise<number> {
+  let moved = 0;
+  for (const table of TIME_RECORDS_KEPT.tables) {
+    moved += (await client.query(`update ${table} set employee_id = $2 where employee_id = $1`, [from, to])).rowCount ?? 0;
+  }
+  return moved;
+}
+
 const refusalOf = (outcome: Exclude<RecordDeletionOutcome, { deleted: true }>): FoldOutcome => ({
   folded: false,
   status: outcome.status,
@@ -235,26 +307,105 @@ const refusalOf = (outcome: Exclude<RecordDeletionOutcome, { deleted: true }>): 
   ...(outcome.status === 409 ? { reason: outcome.reason, ...(outcome.blocking ? { blocking: outcome.blocking } : {}) } : {}),
 });
 
-async function foldWithin(client: Exec, input: FoldInput): Promise<FoldOutcome> {
+interface ProfileRow {
+  id: string;
+  branch_id: string | null;
+  status: string;
+  employment_state: string;
+  primary_department_id: string | null;
+  position_title: string | null;
+  face_enrollment_status: string | null;
+  face_id: string | null;
+  start_day: string | null;
+  last_day: string | null;
+}
+
+/** Left, or Leaving: the profile's employment has ended or has a last working day. */
+const isEnding = (p: ProfileRow) =>
+  p.employment_state === "LEAVING" || p.employment_state === "LEFT" || p.status === "resigned" || p.status === "terminated";
+const hasFace = (p: ProfileRow) => !!p.face_id || p.face_enrollment_status === "ENROLLED";
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}/;
+const isoDay = (value: string | null | undefined) => (value && ISO_DAY.test(value) ? value.slice(0, 10) : null);
+const words = (value: string | null | undefined) => (value && value.trim() ? value.trim() : null);
+
+async function foldWithin(client: PoolClient, input: FoldInput): Promise<FoldOutcome> {
   const { duplicateId: from, targetId: to, tenantId } = input;
   if (from === to) return { folded: false, status: 400, message: "A profile cannot be folded into itself" };
-  // Both rows locked, in id order, so two folds of the same pair queue rather than deadlock.
-  const { rows } = await client.query<{ id: string; branch_id: string | null }>(
-    "select id, branch_id from employees where id = any($1::varchar[]) and tenant_id = $2 order by id for update",
+  // Offboarding's own per-employee lock (the offboarding route's and Onboard
+  // Again's), both profiles in id order, then both rows in id order, so a fold
+  // queues behind an offboarding or a plan of either profile, and two folds of
+  // the same pair queue rather than deadlock.
+  for (const id of [from, to].sort()) {
+    await client.query("select pg_advisory_xact_lock(hashtext('employee_offboarding'), hashtext($1::text))", [id]);
+  }
+  const { rows } = await client.query<ProfileRow>(
+    `select id, branch_id, status, employment_state, primary_department_id,
+            default_merge_data->>'positionTitle' as position_title, face_enrollment_status, face_id,
+            to_char(start_date, 'YYYY-MM-DD') as start_day, to_char(last_working_day, 'YYYY-MM-DD') as last_day
+       from employees where id = any($1::varchar[]) and tenant_id = $2 order by id for update`,
     [[from, to], tenantId],
   );
+  const duplicate = rows.find((r) => r.id === from);
   const target = rows.find((r) => r.id === to);
-  if (!rows.some((r) => r.id === from) || !target) return { folded: false, status: 404, message: "Employee not found" };
+  if (!duplicate || !target) return { folded: false, status: 404, message: "Employee not found" };
 
-  const blockers = await blockersOf(client, from, EMPLOYEE_KEEPS);
+  // Payroll records stay where they were paid; contracts and time records move.
+  const blockers = await blockersOf(client, from, [PAYROLL_KEPT]);
   if (blockers.length > 0) {
     return {
       folded: false,
       status: 409,
       reason: "has_records",
-      message: `This profile has ${listBlockers(blockers)}. ${FOLD_KEEPS_INSTEAD}`,
+      message: `This profile has ${listBlockers(blockers)}. ${PAYROLL_STAYS}`,
       blocking: asBlocking(blockers),
     };
+  }
+
+  const ending = isEnding(target);
+  const { rows: duplicateActive } = await client.query<{ id: string; start: string | null; position: string | null }>(
+    `select id, merge_data_json->>'startDate' as start, merge_data_json->>'positionTitle' as position
+       from contract_instances where employee_id = $1 and status = 'active' order by created_at desc`,
+    [from],
+  );
+  const active = duplicateActive[0] ?? null;
+  if (active && !ending && (await count(client, "select count(*)::int as n from contract_instances where employee_id = $1 and status = 'active'", [to])) > 0) {
+    return {
+      folded: false,
+      status: 409,
+      reason: "both_active",
+      message: "Both profiles have an active contract, and the contract of the profile kept has no last working day. " +
+        "Offboard it first (its last working day ends it), then fold: this profile's contract becomes the active one.",
+    };
+  }
+
+  // The original's employment ended (or ends), and the duplicate is the one working: it is onboarded again.
+  const reonboard = ending && duplicate.status === "active";
+  const departmentId = duplicate.primary_department_id ?? target.primary_department_id;
+  const branchId = duplicate.branch_id ?? target.branch_id;
+  const startDate = isoDay(active?.start) ?? duplicate.start_day ?? bangkokToday();
+  const startsNow = startDate <= bangkokToday();
+  if (reonboard) {
+    const { rows: planned } = await client.query<{ start_date: string }>(
+      "select start_date::text as start_date from employee_engagements where employee_id = $1 and status = 'planned' limit 1",
+      [to],
+    );
+    if (planned[0]) {
+      return {
+        folded: false,
+        status: 409,
+        reason: "planned_employment",
+        message: `The profile kept has an Onboard Again employment planned from ${planned[0].start_date}. ` +
+          "Cancel that plan first: the fold starts the employment this profile already works.",
+      };
+    }
+    if (!departmentId || !branchId) {
+      return {
+        folded: false,
+        status: 409,
+        reason: "no_department",
+        message: "Set this profile's department and branch first: the profile kept is onboarded again into them.",
+      };
+    }
   }
 
   const { shifts, duties, breaks } = await moveShifts(client, from, to);
@@ -262,6 +413,102 @@ async function foldWithin(client: Exec, input: FoldInput): Promise<FoldOutcome> 
   const roles = await moveRoles(client, from, to);
   const checklists = await moveChecklists(client, from, to);
   const tasks = await moveTasks(client, from, to);
+
+  // Contracts. The duplicate's active contract is the person's contract now:
+  // the original's active one is superseded — at once, or, when the
+  // employment it starts is still to come, by Onboard Again's start on that
+  // day (the moved contract waits, signed, as a contract signed for a planned
+  // employment waits).
+  let supersededContracts = 0;
+  if (active) {
+    await client.query("update contract_instances set status = 'superseded' where employee_id = $1 and status = 'active' and id <> $2", [from, active.id]);
+    if (reonboard && !startsNow) {
+      await client.query("update contract_instances set status = 'finalized' where id = $1", [active.id]);
+    } else {
+      supersededContracts = (await client.query("update contract_instances set status = 'superseded' where employee_id = $1 and status = 'active'", [to])).rowCount ?? 0;
+    }
+  }
+  const contracts = (await client.query("update contract_instances set employee_id = $2 where employee_id = $1", [from, to])).rowCount ?? 0;
+  const timeRecords = await moveTimeRecords(client, from, to);
+
+  // The face: the duplicate's, when the original has none.
+  let face: FoldFace = "none";
+  let faceToRemove: string | null = null;
+  if (hasFace(duplicate)) {
+    if (!hasFace(target)) {
+      await client.query(
+        `update employees t set face_enrollment_status = d.face_enrollment_status, face_id = d.face_id, face_enrolled_at = d.face_enrolled_at
+           from employees d where t.id = $1 and d.id = $2`,
+        [to, from],
+      );
+      face = "taken";
+    } else {
+      face = "original_kept";
+      faceToRemove = duplicate.face_id;
+    }
+  }
+
+  // Onboard Again's start, on this transaction.
+  let reonboarded: FoldReonboard | null = null;
+  if (reonboard && departmentId && branchId) {
+    const positionTitle = words(duplicate.position_title) ?? words(active?.position);
+    const { rows: open } = await client.query<{ id: string; last_day: string | null }>(
+      `select id, to_char(last_working_day, 'YYYY-MM-DD') as last_day from employee_offboarding
+        where employee_id = $1 and reonboarded_at is null order by created_at desc limit 1`,
+      [to],
+    );
+    const offboarding = open[0] ?? null;
+    const { rows: made } = await client.query<{ id: string }>(
+      `insert into employee_engagements (tenant_id, employee_id, start_date, department_id, branch_id, position_title,
+                                         contract_instance_id, offboarding_id, status, created_by)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, 'planned', $9) returning id`,
+      [tenantId, to, startDate, departmentId, branchId, positionTitle, active?.id ?? null, offboarding?.id ?? null, input.actorId],
+    );
+    const engagementId = made[0]!.id;
+    // Onboard Again's own start, on this connection: Drizzle over the same
+    // client, so it is this transaction. The cast only names the executor type
+    // the start is written for; the client underneath is this one.
+    const tx = drizzle(client, { schema }) as unknown as DbExecutor;
+    const started = startsNow
+      ? await activateEngagementWithin(tx, engagementId, { actorId: input.actorId, loginInParkGroup: async () => input.loginInParkGroup })
+      : null;
+    if (startsNow && !started) throw new Error("The employment the fold planned could not be started");
+
+    // The staff movement entry, as Onboard Again writes it.
+    const { rows: known } = await client.query<{ id: string }>(
+      "select id from departments where tenant_id = $1 and id = any($2::varchar[])",
+      [tenantId, [target.primary_department_id, departmentId].filter((v): v is string => !!v)],
+    );
+    const knownDepartment = (value: string | null) => (value && known.some((d) => d.id === value) ? value : null);
+    const lastDay = offboarding?.last_day ?? target.last_day;
+    await client.query(
+      `insert into employee_changes (employee_id, change_type, effective_date, old_title, new_title, old_branch_id, new_branch_id,
+                                     old_department_id, new_department_id, note, contract_generated, contract_instance_id, created_by)
+       values ($1, 'onboard_again', $2::date::timestamp, $3, $4, $5, $6, $7, $8, $9, false, $10, $11)`,
+      [
+        to, startDate, words(target.position_title), positionTitle ?? words(target.position_title), target.branch_id, branchId,
+        knownDepartment(target.primary_department_id), knownDepartment(departmentId),
+        `Onboard again (from a folded profile) from ${startDate}` + (lastDay ? `; the earlier contract ended on its last working day ${lastDay}` : ""),
+        active?.id ?? null, input.actorId,
+      ],
+    );
+    const { rows: names } = await client.query<{ department: string | null; branch: string | null }>(
+      "select (select name from departments where id = $1) as department, (select name from branches where id = $2) as branch",
+      [departmentId, branchId],
+    );
+    reonboarded = {
+      engagementId,
+      startDate,
+      started: !!started,
+      department: { id: departmentId, name: names[0]?.department ?? null },
+      branch: { id: branchId, name: names[0]?.branch ?? null },
+      positionTitle,
+      contractId: active?.id ?? null,
+      login: started?.login ?? null,
+      platformDeactivationDelivered: started?.platformDeactivationDelivered ?? false,
+    };
+  }
+
   const counted = (side: keyof Moved): FoldCounts => ({
     shifts: shifts[side],
     duties: duties[side],
@@ -270,6 +517,8 @@ async function foldWithin(client: Exec, input: FoldInput): Promise<FoldOutcome> 
     roles: roles[side],
     checklists: checklists[side],
     tasks: tasks[side],
+    contracts: side === "moved" ? contracts : 0,
+    timeRecords: side === "moved" ? timeRecords : 0,
   });
   const moved = counted("moved");
   const skipped = counted("skipped");
@@ -283,20 +532,49 @@ async function foldWithin(client: Exec, input: FoldInput): Promise<FoldOutcome> 
   if (!deletion.deleted) return refusalOf(deletion);
 
   // The original's own record of what came onto it. No names: the counts and the folded id.
+  const lastDay = target.last_day;
   await client.query(
     `insert into activity_log (tenant_id, branch_id, employee_id, activity_type, summary_text, metadata_json, created_by)
      values ($1, $2, $3, 'employee_updated', $4, $5, $6)`,
     [
       tenantId,
-      target.branch_id,
+      reonboarded?.started ? reonboarded.branch.id : target.branch_id,
       to,
-      `A duplicate profile was folded into this one: ${moved.shifts} shift(s) with ${moved.duties} duty block(s) and ${moved.breaks} break(s), ` +
-        `${moved.templateShifts} weekly template shift(s), ${moved.roles} role(s), ${moved.checklists} checklist(s) and ${moved.tasks} task(s) moved`,
-      JSON.stringify({ foldedProfileId: from, moved, skipped }),
+      `A duplicate profile was folded into this one: ${moved.contracts} contract(s), ${moved.timeRecords} time record(s), ` +
+        `${moved.shifts} shift(s) with ${moved.duties} duty block(s) and ${moved.breaks} break(s), ` +
+        `${moved.templateShifts} weekly template shift(s), ${moved.roles} role(s), ${moved.checklists} checklist(s) and ${moved.tasks} task(s) moved` +
+        (supersededContracts > 0
+          ? `; its own active contract superseded by the folded profile's${lastDay ? `, ended on its last working day ${lastDay}` : ""}`
+          : "") +
+        (face === "taken" ? "; the folded profile's face enrolment taken" : "") +
+        (face === "original_kept" ? "; this profile keeps its own face enrolment, the folded profile's is removed from the face collection" : "") +
+        (reonboarded
+          ? reonboarded.started
+            ? `; onboarded again (from a folded profile) from ${reonboarded.startDate}`
+            : `; onboard again (from a folded profile) planned from ${reonboarded.startDate}`
+          : ""),
+      JSON.stringify({
+        foldedProfileId: from,
+        moved,
+        skipped,
+        face,
+        ...(faceToRemove ? { foldedFaceId: faceToRemove } : {}),
+        supersededContracts,
+        ...(reonboarded ? { engagementId: reonboarded.engagementId, started: reonboarded.started } : {}),
+      }),
       input.actorId,
     ],
   );
-  return { folded: true, moved, skipped, deleted: { profile: 1, login: input.deletion.leavingUserId ? 1 : 0 } };
+  return {
+    folded: true,
+    moved,
+    skipped,
+    face,
+    faceToRemove,
+    supersededContracts,
+    reonboard: reonboarded,
+    deleted: { profile: 1, login: input.deletion.leavingUserId ? 1 : 0 },
+  };
 }
 
 export async function foldEmployeeInto(pool: Pool, input: FoldInput): Promise<FoldOutcome> {

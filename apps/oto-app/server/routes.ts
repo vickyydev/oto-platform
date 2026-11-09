@@ -10544,13 +10544,18 @@ OTO Company Limited`,
        if (advisorMatch) {
          return res.json({ success: true, matched: true, identityType: "ADVISOR", confidence: faceResult.confidence || 95, livenessScore, faceId: faceResult.faceId, identificationProof: issueAdvisorIdentificationProof(advisorMatch.person.id, kioskDeviceId, kioskBranch.id), advisor: { id: advisorMatch.person.id, fullName: advisorMatch.person.fullName } });
        }
-       const employee = await storage.getEmployeeInTenant(faceResult.employeeId, device.tenantId);
+       // SCRUM-794: a face a fold moved onto the profile kept stays indexed
+       // under the folded profile's id (the face service cannot re-key it), so
+       // a match whose id is no profile is read by its face id, among this
+       // kiosk's own enrolled candidates.
+       const employee = await storage.getEmployeeInTenant(faceResult.employeeId, device.tenantId)
+         ?? enrolledEmployees.find((e) => !!faceResult.faceId && e.faceId === faceResult.faceId);
       if (!employee) {
-        return res.json({ 
-          success: true, 
+        return res.json({
+          success: true,
           matched: false,
           livenessScore,
-          message: "Matched employee not found in system" 
+          message: "Matched employee not found in system"
         });
       }
 
