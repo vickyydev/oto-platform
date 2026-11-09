@@ -5,6 +5,7 @@ import {
   isPaymentReversalPending,
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
   PAYMENT_ATTEMPT_TERMINAL_STATUSES,
+  PARTY_DEPOSIT_TENDER,
   WALLET_TENDER_CODE,
   WALLET_TENDER_METHOD,
   type PaymentAttemptStatus,
@@ -395,6 +396,15 @@ export async function tenderMethodOf(
     if (options.platform === 'wallet') return WALLET_TENDER_METHOD;
     throw errors.badRequest(
       'Credit is taken by scanning the band or voucher, not chosen as a tender — scan it at the order screen',
+      { method: methodCode },
+    );
+  }
+  // SCRUM-804 — a party's deposit is recorded by its settlement (`openAttempt`
+  // directly, never through here), so no till, terminal, QR or offline fact may
+  // name it as the tender it took money in.
+  if (methodCode === PARTY_DEPOSIT_TENDER.code) {
+    throw errors.badRequest(
+      "A party's deposit is recorded by settling the party, not chosen as a tender — choose how this money was taken",
       { method: methodCode },
     );
   }

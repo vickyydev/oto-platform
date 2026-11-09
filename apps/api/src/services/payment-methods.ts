@@ -2,6 +2,7 @@ import { and, asc, count, eq, isNull } from 'drizzle-orm';
 import { paymentAttempt, paymentMethod } from '@oto/db';
 import {
   PAID_ONLINE_TENDER_CODE,
+  PARTY_DEPOSIT_TENDER,
   WALLET_TENDER_CODE,
   newId,
   type PaymentMethodKind,
@@ -198,6 +199,19 @@ function assertTenderableCode(code: string): void {
       `“${code}” is written by the platform itself — ${code === WALLET_TENDER_CODE ? 'stored-value credit, taken by scanning a wallet' : 'a booking paid on the booking site, settled when it is redeemed'} — ` +
         'and is never chosen from the tender grid, so a tender under that code could take no money. Use another code.',
       { code, reserved: [PAID_ONLINE_TENDER_CODE, WALLET_TENDER_CODE] },
+    );
+  }
+  /**
+   * SCRUM-804 — the third tender the platform writes by itself: a party's
+   * deposit, recorded on its settlement sale as paid in advance
+   * (`PARTY_DEPOSIT_TENDER`). Never a row, so never a button a counter could
+   * press to put the deposit on an ordinary sale.
+   */
+  if (code === PARTY_DEPOSIT_TENDER.code) {
+    throw errors.badRequest(
+      `“${code}” is written by the platform itself — a party's deposit, recorded on its settlement sale as paid in advance — ` +
+        'and is never chosen from the tender grid, so a tender under that code could take no money. Use another code.',
+      { code, reserved: [PARTY_DEPOSIT_TENDER.code] },
     );
   }
 }

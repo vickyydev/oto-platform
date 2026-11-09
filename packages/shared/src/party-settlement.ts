@@ -34,12 +34,15 @@ import type { RateMode } from './pricing-mode';
 // --- Constants -----------------------------------------------------------------
 
 /**
- * The tender a party's deposit is recorded under on its settlement sale. A
- * `pos.payment_method` row (kind `other`) laid by the seed and platform-sync,
- * switched off so it is never on a till's method grid: only the settlement
- * writes it. The attempt carries no station — the money reached the park
- * outside any counter — so End of Day never counts it as the till's takings
- * and no drawer opens for it.
+ * The tender a party's deposit is recorded under on its settlement sale. Like
+ * the paid-online and stored-value tenders (`PAID_ONLINE_TENDER_CODE`,
+ * `WALLET_TENDER_CODE`), a constant the PLATFORM writes, never a
+ * `pos.payment_method` row: only the settlement writes it, so it is never on a
+ * till's method grid, the park's tender list refuses the code, and
+ * `tenderMethodOf` refuses it as a tender. The receipt names it from its code
+ * ("Deposit paid in advance"); `label` is its readable name elsewhere. The
+ * attempt carries no station — the money reached the park outside any counter —
+ * so End of Day never counts it as the till's takings and no drawer opens for it.
  */
 export const PARTY_DEPOSIT_TENDER = {
   code: 'deposit_paid_in_advance',

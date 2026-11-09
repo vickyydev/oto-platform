@@ -17,7 +17,6 @@ import {
   stockItem,
   stockLevel,
 } from '@oto/db';
-import { syncPartyDepositTender } from '@oto/db/seed';
 import {
   PARTY_DEPOSIT_TENDER,
   PartyDetailAnswerSchema,
@@ -782,17 +781,35 @@ describe('a settlement left unpaid is voided, and the party may be settled again
     });
   });
 
-  it('platform-sync lays the deposit tender, switched off so it is never on the grid, once', async () => {
-    await syncPartyDepositTender(ctx.db);
-    await syncPartyDepositTender(ctx.db);
-    const rows = await ctx.db.select().from(paymentMethod).where(eq(paymentMethod.code, PARTY_DEPOSIT_TENDER.code));
-    const [hkt] = await ctx.db.select().from(branch).where(eq(branch.id, central));
-    const own = rows.filter((r) => r.operatorId === hkt!.operatorId);
-    expect(own).toHaveLength(1);
-    expect(own[0]).toMatchObject({ label: 'Deposit (paid in advance)', kind: 'other', enabled: false });
-    // The till's grid reads the enabled ones only.
-    const grid = await call<{ methods: Array<{ id: string; enabled: boolean }> }>('GET', admin, '/payment-methods');
-    expect(grid.body.methods.find((m) => m.id === PARTY_DEPOSIT_TENDER.code)?.enabled ?? false).toBe(false);
+  it('the deposit tender is the platform\'s own, as paid-online and credit are: never a row, never a tender a till names', async () => {
+    // The settlements above recorded their deposits with no row under the code.
+    expect(await ctx.db.select().from(paymentMethod).where(eq(paymentMethod.code, PARTY_DEPOSIT_TENDER.code))).toHaveLength(0);
+    // The park's tender list refuses the code, so it can never become a button on the grid.
+    const created = await ctx.app.inject({
+      method: 'POST',
+      url: '/payment-methods',
+      payload: { code: PARTY_DEPOSIT_TENDER.code, label: 'Deposit', kind: 'other' },
+      headers: { cookie: admin },
+    });
+    expect(created.statusCode, created.body).toBe(400);
+    expect(created.json().error.details).toMatchObject({ code: PARTY_DEPOSIT_TENDER.code, reserved: [PARTY_DEPOSIT_TENDER.code] });
+    expect(await ctx.db.select().from(paymentMethod).where(eq(paymentMethod.code, PARTY_DEPOSIT_TENDER.code))).toHaveLength(0);
+    // A till naming it as the tender it took money in is refused, whatever kind it declares.
+    const party = newId();
+    await appParty(party, 'Party paid with the deposit word', WEEKDAY, 16_900, 0);
+    for (const kind of ['other', 'cash']) {
+      const paid = await call<{ error: { message: string } }>('POST', reception, `/parties/${party}/payments`, {
+        branchId: central,
+        stationId: till,
+        paymentId: newId(),
+        actionId: newId(),
+        amountSatang: 100_000,
+        tender: { method: PARTY_DEPOSIT_TENDER.code, kind },
+      });
+      expect(paid.status, kind).toBe(400);
+      expect(paid.body.error.message).toContain("party's deposit");
+    }
+    expect((await detail(party)).body.event.party!.payments).toHaveLength(0);
   });
 });
 
