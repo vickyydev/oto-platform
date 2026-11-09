@@ -601,6 +601,14 @@ export default function MobileTill() {
    * put the previous visitor on the next visitor's sale.
    */
   const saleEpochRef = useRef(0);
+  /**
+   * SCRUM-763 — this sale's name on the paired display, as the counter's till
+   * keeps it (`saleKeyRef` in `pages/Till.tsx`): new with every sale and every
+   * load, so Back from tickets to tier inside one sale does not ask the guest
+   * for their language again, and the next guest is always asked.
+   */
+  const [firstSaleKey] = useState(() => crypto.randomUUID());
+  const saleKeyRef = useRef(firstSaleKey);
 
   /**
    * S2-09a (SCRUM-203). The phone-held till writes to the same ledger, through
@@ -672,6 +680,7 @@ export default function MobileTill() {
 
   const resetSale = () => {
     saleEpochRef.current += 1;
+    saleKeyRef.current = crypto.randomUUID();
     saleWriter.reset();
     setResumed(null);
     setCompletionRetry(null);
@@ -2115,6 +2124,7 @@ export default function MobileTill() {
     && cart.quote.source === 'platform' && !cart.pending && !cart.error;
   const linkedDisplay = useTicketDisplay(station?.stationId ?? null, {
     stage: displayStage.stage, step: displayStage.step, sessionKey: `${saleEpochRef.current}`,
+    saleKey: saleKeyRef.current,
     tier: tier ?? getDefaultTier().id,
     phone: customerPhone, nickname: customerNickname, contactChannel: customerContactChannel, member,
     sale: { ...liveSale, id: saleWriter.committed?.id ?? liveSale.id }, totals: cart.totals,

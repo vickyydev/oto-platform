@@ -48,7 +48,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/i18n/LanguageContext';
 import type { ContactChannel } from '@/types';
 import { readTicketDisplayView } from '@/lib/displaySession';
-import { useLanguageChoice } from '@/lib/languageChoice';
+import { useHeldSaleKey, useLanguageChoice } from '@/lib/languageChoice';
 import { displayErrorText } from '@/lib/customerDisplayCopy';
 import { PublicSavedChildrenReview } from '@/components/shared/PublicSavedChildrenReview';
 import { FnbCustomerDisplay, type FnbCustomerStage } from '@/components/fnb/FnbCustomerDisplay';
@@ -358,11 +358,15 @@ export default function Display() {
   // The public response deliberately omits the staff wizard step. Its validated
   // input prompt identifies the review without exposing that staff-only state.
   const childReview = view?.childReview ?? null;
-  // SCRUM-763 — the guest's language before the phone number. This screen is
-  // told the till's stage, not its sale, and the phone-number step is only ever
-  // a sale's first screen: the choice opens again when the screen comes back to
-  // it from any other (a finished or cancelled sale, the idle screen).
-  const language = useLanguageChoice(view?.stage === 'identify');
+  // SCRUM-763 — the guest's language before the phone number, once per sale.
+  // The till names its sale on the first screen's prompt; this screen keeps
+  // that name through the later screens, so a cancelled or held sale reads as
+  // the next guest even on the first screen, and the phone till's Back to its
+  // first screen, or a reconnect, does not. A first screen with no name (an
+  // older till or box) falls back to the stage: back at it from any other.
+  const firstScreen = view?.stage === 'identify';
+  const saleKey = useHeldSaleKey(firstScreen, view?.saleKey);
+  const language = useLanguageChoice(firstScreen, saleKey);
 
   return <div className="dark h-[100dvh] w-full min-w-0 overflow-hidden bg-background text-foreground flex flex-col" data-testid="separate-display">
     {session && connection === 'reconnecting' && <p role="status" className="shrink-0 px-4 py-2 text-sm">{t('display.reconnecting')}</p>}

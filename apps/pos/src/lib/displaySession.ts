@@ -30,6 +30,13 @@ export interface TicketDisplayState {
   stage: StationSessionStage;
   step: number;
   sessionKey: string;
+  /**
+   * SCRUM-763 — an opaque name for this sale, new with every sale and with
+   * every load of the till (never the epoch, which starts at 0 again on a
+   * reload). It rides on the first screen's prompt so a paired display can
+   * tell the next guest from this one coming back to the first screen.
+   */
+  saleKey?: string;
   tier: string;
   phone: string;
   nickname: string;
@@ -129,9 +136,13 @@ export function ticketDisplayPresentation(state: TicketDisplayState, requestId: 
     prompt: consent?.success && supported ? consent.data : childReview?.success && supported ? childReview.data : supported && (state.stage === 'identify' || state.stage === 'input') ? {
       kind: state.stage === 'identify' ? 'identify' : 'contact', requestId,
       phone: state.phone, nickname: state.nickname, contactChannel: state.contactChannel,
+      ...(state.stage === 'identify' && state.saleKey ? { saleKey: state.saleKey } : {}),
     } : null,
   };
 }
+
+/** SCRUM-763 — the till's name for the sale on a first screen's prompt, as the box bounds it. */
+const SALE_KEY_MAX = 64;
 
 export interface TicketDisplayView {
   stage: 'identify' | 'welcome' | 'order' | 'input' | 'payment' | 'thankyou';
@@ -145,6 +156,8 @@ export interface TicketDisplayView {
   nothingToPay?: boolean;
   childReview?: ChildReviewPrompt;
   consent?: ConsentPrompt;
+  /** SCRUM-763 — the sale the first screen belongs to, where the till names it; absent on every later screen. */
+  saleKey?: string;
 }
 
 /** Reject malformed public data before it reaches the customer renderer. */
@@ -182,6 +195,10 @@ export function readTicketDisplayView(document: StationSessionDocument): TicketD
   if (!earlyStages.includes(stage) && (!totals?.success || stage === 'payment' && !payment?.success)) return null;
   const cart = full.success ? full.data : null;
   const publicSale = cart?.sale;
+  // An unreadable name is no name: the stage rule stands for that screen.
+  const namedSale = stage === 'identify' && document.prompt?.kind === 'identify' ? document.prompt.saleKey : undefined;
+  const saleKey = typeof namedSale === 'string' && namedSale.trim().length > 0 && namedSale.length <= SALE_KEY_MAX
+    ? namedSale : undefined;
   const sale: Sale = {
     id: publicSale?.id ?? 'DISPLAY', operatorId: '', operatorName: '',
     tier: publicSale?.tier ?? (document.cart.sale as { tier: string }).tier,
@@ -208,6 +225,7 @@ export function readTicketDisplayView(document: StationSessionDocument): TicketD
     voucherPrize: cart?.voucherPrize, nothingToPay: cart?.nothingToPay,
     childReview: childReview?.success ? childReview.data : undefined,
     consent: consent?.success ? consent.data : undefined,
+    ...(saleKey ? { saleKey } : {}),
   };
 }
 

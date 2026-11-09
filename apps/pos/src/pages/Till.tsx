@@ -733,6 +733,14 @@ export default function Till() {
    * tier is re-resolved; the person on the record is wrong.
    */
   const saleEpochRef = useRef(0);
+  /**
+   * SCRUM-763 — THIS SALE'S NAME ON THE PAIRED DISPLAY. New with every sale
+   * (`resetSale`) and with every load of the till, so a cancelled sale on its
+   * first screen still reads as the next guest there, and Back to the first
+   * screen inside a sale does not. Never the epoch: it starts at 0 on a reload.
+   */
+  const [firstSaleKey] = useState(() => crypto.randomUUID());
+  const saleKeyRef = useRef(firstSaleKey);
 
   /**
    * WHO THIS CART BELONGS TO, in the platform's own ids — S2-09a (SCRUM-203).
@@ -812,6 +820,7 @@ export default function Till() {
     saleWriter.reset();
     setResumed(null);
     if (station?.stationId) forgetSaleOnScreen(station.stationId);
+    saleKeyRef.current = crypto.randomUUID();
     setCompletionRetry(null);
     voucher.reset();
     setVoucherUsed(null);
@@ -3497,6 +3506,7 @@ export default function Till() {
   reviewContext.current.eligible = !!childReview;
   const linkedDisplay = useTicketDisplay(station?.stationId ?? null, {
     stage: customerStage, step, sessionKey: `${saleEpochRef.current}`, tier: tier ?? getDefaultTier().id,
+    saleKey: saleKeyRef.current,
     phone: customerPhone, nickname: customerNickname, contactChannel: customerContactChannel, member,
     sale: { ...liveSale, id: saleWriter.committed?.id ?? liveSale.id }, totals: cart.totals,
     rateMode: cart.quote.pricingMode,

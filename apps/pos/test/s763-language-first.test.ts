@@ -89,7 +89,8 @@ function press(lang: SupportedLang, onChosen: (chosen: SupportedLang) => void): 
 /**
  * One customer screen through a visit, holding the gate the way
  * `useLanguageChoice` does: drawn from the state as it stands, settled after.
- * `saleKey` is the till's sale; the paired display has none.
+ * `saleKey` is the sale's name: the till's own, or the one a paired display
+ * reads off the first screen; a paired display behind an older till has none.
  */
 function screen(saleKey: string | null) {
   let gate: LanguageChoiceState = languageChoiceStart(saleKey);
@@ -232,7 +233,19 @@ describe('once per customer, not between steps', () => {
     expect(display.show('identify')).toContain(CHOICE);
   });
 
-  it('a paired display, told the stage and not the sale: back at the first screen is the next guest', () => {
+  it('a paired display the till names its sale to: Back to the first screen inside it is the same guest, in their language', () => {
+    const display = screen('sale-1');
+    display.show('identify');
+    display.choose('th');
+    display.show('welcome');
+    const back = display.show('identify');
+    expect(back.includes(CHOICE)).toBe(false);
+    expect(back).toContain(inMarkup(tFor('th')('till.identify.title')));
+    display.newSale('sale-2'); // cancelled on its first screen: the stage never moved
+    expect(display.show('identify')).toContain(CHOICE);
+  });
+
+  it('a paired display behind an older till, told the stage and not the sale: back at the first screen is the next guest', () => {
     const display = screen(null);
     expect(display.show('identify')).toContain(CHOICE);
     display.choose('th');
@@ -259,10 +272,24 @@ describe('both customer screens ask for it', () => {
     expect(till).toMatch(/<CustomerDisplay\s+stage=\{customerStage\}[\s\S]*?chooseLanguage=\{customerLanguage\.open\}\s+onLanguageChosen=\{customerLanguage\.choose\}/);
   });
 
-  it('the paired display (and the counter box’s screen, which is the same page)', () => {
+  it('the paired display (and the counter box’s screen, which is the same page), once per sale the till names', () => {
     const display = source('pages/Display.tsx');
-    expect(display).toContain("useLanguageChoice(view?.stage === 'identify')");
+    expect(display).toContain("const firstScreen = view?.stage === 'identify';");
+    expect(display).toContain('const saleKey = useHeldSaleKey(firstScreen, view?.saleKey);');
+    expect(display).toContain('const language = useLanguageChoice(firstScreen, saleKey);');
     expect(display).toContain('chooseLanguage={language.open} onLanguageChosen={language.choose}');
     expect(readFileSync(path.resolve(import.meta.dirname, '..', 'box-display/main.tsx'), 'utf8')).toContain("import Display from '../src/pages/Display'");
+  });
+
+  it('both tills name each sale for the paired display: once on load, again on every reset, never the epoch', () => {
+    for (const rel of ['pages/Till.tsx', 'components/mobile/MobileTill.tsx']) {
+      const till = source(rel);
+      expect(till, rel).toContain('const [firstSaleKey] = useState(() => crypto.randomUUID());');
+      expect(till, rel).toContain('const saleKeyRef = useRef(firstSaleKey);');
+      const reset = till.slice(till.indexOf('const resetSale = () => {'));
+      expect(reset.slice(0, reset.indexOf('\n  };')), rel).toContain('saleKeyRef.current = crypto.randomUUID();');
+      const publish = till.slice(till.indexOf('const linkedDisplay = useTicketDisplay(station?.stationId ?? null, {'));
+      expect(publish.slice(0, publish.indexOf('\n  }, ')), rel).toContain('\n    saleKey: saleKeyRef.current,\n');
+    }
   });
 });
