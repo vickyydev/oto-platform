@@ -33,6 +33,7 @@ import {
 import { useTheme } from "@/components/theme-provider";
 import { useSessionReplay } from "@/hooks/use-session-replay";
 import { SessionReplayDialog } from "@/components/session-replay-dialog";
+import { SHOW_SESSION_RECORDING_MENU } from "@/lib/session-recording-menu";
 
 import AuthPage from "@/pages/auth-page";
 import DashboardPage from "@/pages/dashboard-page";
@@ -267,14 +268,16 @@ function HRLayout({ children }: { children: React.ReactNode }) {
                     )}
                     {theme === "light" ? "Dark Mode" : "Light Mode"}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => isRecording ? stopRecording() : setReplayDialogOpen(true)} data-testid="menu-session-replay-hr">
-                    {isRecording ? (
-                      <VideoOff className="mr-2 h-4 w-4" />
-                    ) : (
-                      <Video className="mr-2 h-4 w-4" />
-                    )}
-                    {isRecording ? "Stop Recording" : "Start Recording"}
-                  </DropdownMenuItem>
+                  {SHOW_SESSION_RECORDING_MENU && (
+                    <DropdownMenuItem onClick={() => isRecording ? stopRecording() : setReplayDialogOpen(true)} data-testid="menu-session-replay-hr">
+                      {isRecording ? (
+                        <VideoOff className="mr-2 h-4 w-4" />
+                      ) : (
+                        <Video className="mr-2 h-4 w-4" />
+                      )}
+                      {isRecording ? "Stop Recording" : "Start Recording"}
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => logoutMutation.mutate()}

@@ -4,6 +4,7 @@ import { ModeSwitcher } from "@/components/mode-switcher";
 import { useTheme } from "@/components/theme-provider";
 import { useSessionReplay } from "@/hooks/use-session-replay";
 import { SessionReplayDialog } from "@/components/session-replay-dialog";
+import { SHOW_SESSION_RECORDING_MENU } from "@/lib/session-recording-menu";
 import { Button } from "@/components/ui/button";
 import { EmployeeAvatar } from "@/components/employee-avatar";
 import { useNotificationCount, NotificationPanel } from "@/components/notification-bell";
@@ -137,14 +138,16 @@ export function SetupLayout({ children }: SetupLayoutProps) {
                 )}
                 {theme === "light" ? "Dark Mode" : "Light Mode"}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => isRecording ? stopRecording() : setReplayDialogOpen(true)} data-testid="menu-session-replay-setup">
-                {isRecording ? (
-                  <VideoOff className="mr-2 h-4 w-4" />
-                ) : (
-                  <Video className="mr-2 h-4 w-4" />
-                )}
-                {isRecording ? "Stop Recording" : "Start Recording"}
-              </DropdownMenuItem>
+              {SHOW_SESSION_RECORDING_MENU && (
+                <DropdownMenuItem onClick={() => isRecording ? stopRecording() : setReplayDialogOpen(true)} data-testid="menu-session-replay-setup">
+                  {isRecording ? (
+                    <VideoOff className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Video className="mr-2 h-4 w-4" />
+                  )}
+                  {isRecording ? "Stop Recording" : "Start Recording"}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => logoutMutation.mutate()}
