@@ -75,15 +75,16 @@ export function buildPrepTicket({ template, type, data, device }: PrepInput): Pr
     });
   }
 
-  // SCRUM-805 — the party's room, children and start, then READY BY, before
-  // the lines, so the kitchen reads when it is due before what it is.
+  // SCRUM-805 — the party's room and children, then READY BY (or, when the
+  // kitchen plan has no kids' food time, the note in its place), before the
+  // lines, so the kitchen reads when it is due before what it is.
   for (const line of data.details ?? []) blocks.push(text(line, body));
-  if (data.readyBy || data.readyByNote) {
+  if (data.readyBy) {
     blocks.push(space(2));
-    if (data.readyBy) {
-      blocks.push(text(`READY BY ${data.readyBy}`, { sizeDots: SIZE.header, weight: 'bold' }));
-    }
-    if (data.readyByNote) blocks.push(text(data.readyBy ? `(${data.readyByNote})` : data.readyByNote, small));
+    blocks.push(text(`READY BY ${data.readyBy}`, { sizeDots: SIZE.header, weight: 'bold' }));
+  } else if (data.readyByNote) {
+    blocks.push(space(2));
+    blocks.push(text(data.readyByNote, small));
   }
 
   if (fieldOn(template, type, 'holderName') && data.holderName) {

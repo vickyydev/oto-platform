@@ -14,7 +14,7 @@ import {
 } from '@oto/db';
 import {
   PARTY_CHOICE_NOT_MADE,
-  PARTY_READY_BY_FROM_START,
+  PARTY_NO_KIDS_FOOD_TIME,
   PartyDetailWithSlipsAnswerSchema,
   PartySlipsPrintAnswerSchema,
   addDaysToIsoDate,
@@ -271,7 +271,7 @@ describe('the slip, composed from the plan', () => {
       heading: 'Birthday party',
       orderRef: "Mali's 6th",
       time: '11:00',
-      details: ['Room: Party room 1', 'Children: 10', 'Party starts 13:00'],
+      details: ['Room: Party room 1', 'Children: 10'],
       readyBy: '13:40',
       lines: [
         { qty: 3, name: 'Margherita' },
@@ -316,16 +316,20 @@ describe('the slip, composed from the plan', () => {
     expect(slips.bar).toBeNull();
   });
 
-  it('READY BY is the kids’ food time less the ready offset; the party’s start when the plan has no food time, and the slip says so', () => {
-    expect(partyReadyBy(plan())).toEqual({ time: '13:40', fromStart: false });
-    expect(partyReadyBy(plan({ kitchen: { kidsFoodTime: '00:10', adultsFoodTime: null, readyOffsetMinutes: 20, slipsTime: null } }))).toEqual({
-      time: '23:50',
-      fromStart: false,
-    });
+  it('READY BY is the kids’ food time less the ready offset; with no kids’ food time the slip prints no time, only that the OTO App has none', () => {
+    expect(partyReadyBy(plan())).toBe('13:40');
+    expect(partyReadyBy(plan({ kitchen: { kidsFoodTime: '00:10', adultsFoodTime: null, readyOffsetMinutes: 20, slipsTime: null } }))).toBe(
+      '23:50',
+    );
     const noFood = plan({ kitchen: { kidsFoodTime: null, adultsFoodTime: '15:00', readyOffsetMinutes: 20, slipsTime: null } });
-    expect(partyReadyBy(noFood)).toEqual({ time: '13:00', fromStart: true });
-    expect(compose(noFood).kitchen).toMatchObject({ readyBy: '13:00', readyByNote: PARTY_READY_BY_FROM_START });
-    expect(partyReadyBy(plan({ kitchen: null }))).toEqual({ time: '13:00', fromStart: true });
+    expect(partyReadyBy(noFood)).toBeNull();
+    const kitchen = compose(noFood).kitchen;
+    expect(kitchen).toMatchObject({ readyByNote: PARTY_NO_KIDS_FOOD_TIME });
+    expect(kitchen).not.toHaveProperty('readyBy');
+    expect(partyReadyBy(plan({ kitchen: null }))).toBeNull();
+    expect(compose(plan({ kitchen: null })).bar).toMatchObject({ readyByNote: PARTY_NO_KIDS_FOOD_TIME });
+    // A slip with a READY BY time carries no note.
+    expect(compose(plan()).kitchen).not.toHaveProperty('readyByNote');
   });
 
   it('the slip time is the party’s own, else 11:00', () => {
@@ -337,7 +341,7 @@ describe('the slip, composed from the plan', () => {
   it('nothing on the plan for a station prints nothing there, and a room the event has none of is left off', () => {
     const slips = compose(plan({ barItems: [], setMenu: [] }), null);
     expect(slips).toEqual({ kitchen: null, bar: null });
-    expect(compose(plan({ barItems: [] }), null).kitchen?.details).toEqual(['Children: 10', 'Party starts 13:00']);
+    expect(compose(plan({ barItems: [] }), null).kitchen?.details).toEqual(['Children: 10']);
   });
 });
 
@@ -424,7 +428,7 @@ describe('job:parties.slips — at the slip time, once', () => {
         heading: 'Birthday party',
         orderRef: "Ton's 5th",
         time: '11:00',
-        details: ['Room: Party room 1', 'Children: 10', 'Party starts 13:00'],
+        details: ['Room: Party room 1', 'Children: 10'],
         readyBy: '13:40',
         lines: [
           { qty: 3, name: 'Margherita' },

@@ -28,9 +28,10 @@ import { PREP_TICKET_TITLE, PRINT_JOB_STATUSES, type PrintingPrepStation } from 
  *     prints the group's name, marked as not chosen (the view names no options
  *     for an open group).
  *   - Each slip is headed "Birthday party" with the party's name, its room, the
- *     number of children, its start, and READY BY: the kitchen plan's kids' food
- *     time less its ready offset — the party's start when the kitchen plan has
- *     no food time, and the slip says so.
+ *     number of children and READY BY: the kitchen plan's kids' food time less
+ *     its ready offset (§5). When the kitchen plan has no kids' food time the
+ *     slip prints no READY BY time, only that the OTO App has none: which time
+ *     the kitchen works to then is a question for the owner, not a rule here.
  */
 
 /** The two slips, kitchen first: the prep stations that print (`print.ts`). */
@@ -49,8 +50,8 @@ export const PARTY_SLIPS_DEFAULT_TIME = '11:00';
 /** The heading every party slip carries. */
 export const PARTY_SLIP_HEADING = 'Birthday party';
 
-/** What the slip says when READY BY is the party's start rather than a food time. */
-export const PARTY_READY_BY_FROM_START = "the party's start: the kitchen plan has no food time";
+/** What the slip says in place of READY BY when the kitchen plan has no kids' food time. */
+export const PARTY_NO_KIDS_FOOD_TIME = "No kids' food time in the OTO App";
 
 /** What the slip says under an open choice group. */
 export const PARTY_CHOICE_NOT_MADE = 'Choice not made in the OTO App';
@@ -77,17 +78,12 @@ export function partySlipsTime(plan: Pick<PartyPlan, 'kitchen'> | null | undefin
 }
 
 /**
- * READY BY: the kitchen plan's kids' food time less its ready offset; the
- * party's start when the kitchen plan has no food time (`fromStart`); null
- * when neither is known.
+ * READY BY: the kitchen plan's kids' food time less its ready offset, "HH:MM";
+ * null when the kitchen plan has no kids' food time.
  */
-export function partyReadyBy(
-  plan: Pick<PartyPlan, 'kitchen' | 'startTime'>,
-): { time: string | null; fromStart: boolean } {
+export function partyReadyBy(plan: Pick<PartyPlan, 'kitchen'>): string | null {
   const food = clockMinutes(plan.kitchen?.kidsFoodTime ?? null);
-  if (food !== null) return { time: clockOf(food - (plan.kitchen?.readyOffsetMinutes ?? 0)), fromStart: false };
-  const start = clockMinutes(plan.startTime);
-  return { time: start === null ? null : clockOf(start), fromStart: true };
+  return food === null ? null : clockOf(food - (plan.kitchen?.readyOffsetMinutes ?? 0));
 }
 
 /** One line of a party slip. No quantity when the plan prints none. */
@@ -111,16 +107,17 @@ export interface PartySlipDocument {
   orderRef: string;
   /** When the slip was printed, "HH:MM" on the park's clock. */
   time: string;
-  /** Room, children, start: what the plan knows of them. */
+  /** Room and children: what the plan knows of them. */
   details: string[];
   readyBy?: string;
+  /** In place of READY BY when the kitchen plan has no kids' food time. */
   readyByNote?: string;
   lines: PartySlipLine[];
 }
 
 /** What the slips are composed from: the plan, the party as the page shows it, the catalogue. */
 export interface PartySlipInput {
-  plan: Pick<PartyPlan, 'setMenu' | 'barItems' | 'kitchen' | 'counts' | 'startTime'>;
+  plan: Pick<PartyPlan, 'setMenu' | 'barItems' | 'kitchen' | 'counts'>;
   /** The party's name and room as the party page shows them. */
   partyName: string;
   location: string | null;
@@ -160,7 +157,6 @@ export function composePartySlips(input: PartySlipInput): Record<PartySlipStatio
   const details = [
     ...(input.location?.trim() ? [`Room: ${input.location.trim()}`] : []),
     ...(input.plan.counts.kidsExpected === null ? [] : [`Children: ${input.plan.counts.kidsExpected}`]),
-    ...(clockMinutes(input.plan.startTime) === null ? [] : [`Party starts ${clockOf(clockMinutes(input.plan.startTime)!)}`]),
   ];
   const slip = (station: PartySlipStation): PartySlipDocument | null =>
     lines[station].length === 0
@@ -171,8 +167,7 @@ export function composePartySlips(input: PartySlipInput): Record<PartySlipStatio
           orderRef: input.partyName,
           time: input.printedAt,
           details,
-          ...(ready.time ? { readyBy: ready.time } : {}),
-          ...(ready.fromStart ? { readyByNote: ready.time ? PARTY_READY_BY_FROM_START : 'No food time or start time in the OTO App' } : {}),
+          ...(ready ? { readyBy: ready } : { readyByNote: PARTY_NO_KIDS_FOOD_TIME }),
           lines: lines[station],
         };
   return { kitchen: slip('kitchen'), bar: slip('bar') };

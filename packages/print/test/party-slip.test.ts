@@ -15,7 +15,7 @@ function textOf(data: PrepTicketData, kind: 'kitchen_ticket' | 'bar_ticket' = 'k
 
 /**
  * SCRUM-805 — a party's kitchen and bar slips are the prep ticket with the
- * party's heading, its room, children and start, and READY BY; a sale's ticket
+ * party's heading, its room and children, and READY BY; a sale's ticket
  * carries none of them and prints exactly as it did.
  */
 describe('a party slip on the prep ticket', () => {
@@ -24,7 +24,7 @@ describe('a party slip on the prep ticket', () => {
     heading: 'Birthday party',
     orderRef: "Mali's 6th",
     time: '11:00',
-    details: ['Room: Party room 1', 'Children: 10', 'Party starts 13:00'],
+    details: ['Room: Party room 1', 'Children: 10'],
     readyBy: '13:40',
     lines: [
       { qty: 3, name: 'Margherita' },
@@ -35,7 +35,7 @@ describe('a party slip on the prep ticket', () => {
 
   it('prints the heading, the party by name, its details and READY BY before the dishes', () => {
     const text = textOf(slip);
-    for (const part of ['BIRTHDAY PARTY', "Mali's 6th", 'Room: Party room 1', 'Children: 10', 'Party starts 13:00', 'READY BY 13:40']) {
+    for (const part of ['BIRTHDAY PARTY', "Mali's 6th", 'Room: Party room 1', 'Children: 10', 'READY BY 13:40']) {
       expect(text).toContain(part);
     }
     expect(text).not.toContain("#Mali's 6th");
@@ -49,10 +49,12 @@ describe('a party slip on the prep ticket', () => {
     expect(text).not.toMatch(/undefined/);
   });
 
-  it('says why READY BY is the party’s start when the plan has no food time', () => {
-    const text = textOf({ ...slip, readyBy: '13:00', readyByNote: "the party's start: the kitchen plan has no food time" }, 'bar_ticket');
-    expect(text).toContain('READY BY 13:00');
-    expect(text).toContain("(the party's start: the kitchen plan has no food time)");
+  it('prints no READY BY time when the kitchen plan has no kids’ food time, only the note in its place', () => {
+    const noTime: PrepTicketData = { ...slip, readyBy: undefined, readyByNote: "No kids' food time in the OTO App" };
+    const text = textOf(noTime, 'bar_ticket');
+    expect(text).not.toContain('READY BY');
+    expect(text).toContain("No kids' food time in the OTO App");
+    expect(text.indexOf("No kids' food time in the OTO App")).toBeLessThan(text.indexOf('Margherita'));
   });
 
   it('names the party even where the branch switched the order line off its kitchen template', () => {

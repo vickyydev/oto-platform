@@ -82,9 +82,9 @@ export interface PrepTicketData {
   /**
    * SCRUM-805 — a party's slip (`PartySlipDocument` in `@oto/shared`): the
    * "Birthday party" heading over the order line, which then names the party
-   * without a `#`; the party's room, children and start; and READY BY, with
-   * the reason when it is the party's start. Absent on a sale's ticket, which
-   * prints as it always has.
+   * without a `#`; the party's room and children; and READY BY, or in its
+   * place the note that the kitchen plan has no kids' food time. Absent on a
+   * sale's ticket, which prints as it always has.
    */
   heading?: string;
   details?: string[];
