@@ -1,0 +1,1253 @@
+{
+  "unit": "SCRUM-763",
+  "result": "passed on the till's customer half (steps 1-5) and on a separately paired display (step 6: first screen is the choice, Русский gives the Russian phone step). One observation on the paired display, outside the six steps: a sale reset on the till while it is still on its first screen does not reopen the choice on the paired display, because Virtual box 1 runs inside oto-api-staging, which is not yet on the box commit 36f19edee that carries the sale's name.",
+  "what": "Staging proof: the customer display opens on a language choice (five cards: English, 中文, ไทย, Русский, Français); a tap sets the language for this customer and the phone-number step follows in it; the choice shows once per customer and returns for the next after the sale completes or is cancelled; the small language button still works on later screens.",
+  "liveCommit": "183ed206ae2dd10dfab3fd0f8e009389bb99a514",
+  "deploys": {
+    "before": {
+      "services": {
+        "oto-pos-web-staging": [
+          {
+            "id": "dep-dboscom417fc7398v1kg",
+            "status": "live",
+            "commit": "183ed206",
+            "at": "2026-11-09T13:13:47.816629Z"
+          },
+          {
+            "id": "dep-dbos2pugekts73f1op50",
+            "status": "deactivated",
+            "commit": "748ed62f",
+            "at": "2026-11-09T12:52:28.281716Z"
+          }
+        ],
+        "oto-pos-staging": [
+          {
+            "id": "dep-dboscou417fc7398v4jg",
+            "status": "live",
+            "commit": "183ed206",
+            "at": "2026-11-09T13:11:56.579238Z"
+          },
+          {
+            "id": "dep-dbos2q5g1s2s7385vp9g",
+            "status": "deactivated",
+            "commit": "748ed62f",
+            "at": "2026-11-09T12:50:39.191802Z"
+          }
+        ],
+        "oto-api-staging": [
+          {
+            "id": "dep-dborregu01pc7387sf1g",
+            "status": "live",
+            "commit": "ed6e092d",
+            "at": "2026-11-09T12:37:59.929007Z"
+          },
+          {
+            "id": "dep-dborh13hf81s73c022ng",
+            "status": "deactivated",
+            "commit": "877d23c9",
+            "at": "2026-11-09T12:16:25.394767Z"
+          }
+        ]
+      },
+      "readAt": "2026-11-09T13:14:56Z"
+    },
+    "after": {
+      "services": {
+        "oto-pos-web-staging": [
+          {
+            "id": "dep-dboscom417fc7398v1kg",
+            "status": "live",
+            "commit": "183ed206",
+            "at": "2026-11-09T13:13:47.816629Z"
+          }
+        ],
+        "oto-pos-staging": [
+          {
+            "id": "dep-dboscou417fc7398v4jg",
+            "status": "live",
+            "commit": "183ed206",
+            "at": "2026-11-09T13:11:56.579238Z"
+          }
+        ],
+        "oto-api-staging": [
+          {
+            "id": "dep-dborregu01pc7387sf1g",
+            "status": "live",
+            "commit": "ed6e092d",
+            "at": "2026-11-09T12:37:59.929007Z"
+          }
+        ]
+      },
+      "readAt": "2026-11-09T13:23:21Z"
+    },
+    "how": "node scripts/agent/render.mjs deploys <service>",
+    "note": "oto-pos-web-staging (the till used here) and oto-pos-staging were live on 183ed206 before and after the run. oto-api-staging stayed on ed6e092d (an ancestor of 183ed206 without 36f19edee and 183ed206). Virtual box 1, which serves the test till and its paired display, is the box agent started inside oto-api-staging, so the box still keeps only kind, phone, nickname, requestId and contactChannel on the first screen's prompt (read on the display, see displayPromptRead)."
+  },
+  "bundle": {
+    "read": "GET https://oto-pos-web-staging.onrender.com/ and its script, before the run",
+    "scripts": {
+      "/assets/index-CxWQzB93.js": {
+        "bytes": 2462651,
+        "languageChoiceTestId": true,
+        "thaiTitle": true,
+        "continueInFrench": true,
+        "saleKey": true
+      }
+    }
+  },
+  "pos": "https://oto-pos-web-staging.onrender.com",
+  "browser": "Chromium 153.0.8010.12 (headless), till 1440x900, display 1024x768, hasTouch: true (every press on a customer screen is a touch tap), timezone Asia/Bangkok",
+  "touchAsTheAppSawIt": {
+    "maxTouchPoints": 1,
+    "coarse": true
+  },
+  "startedAt": "2026-11-09T13:15:38.892Z",
+  "finishedAt": "2026-11-09T13:23:16.556Z",
+  "accounts": {
+    "fixture": "staging admin (api) made the test till, claimed and revoked the display, and archived the till",
+    "till": "staging reception account (Som) in the browser",
+    "credentials": "from scripts/agent/env.mjs, never printed or stored"
+  },
+  "fixture": {
+    "branch": "Oto Play Park, Central Floresta",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "box": "Virtual box 1",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "till": {
+      "id": "01a1c073-6128-72c4-bdc2-d90fa08e4770",
+      "name": "ZZ TEST SCRUM-763 till",
+      "prefix": "Z763",
+      "ready": true,
+      "routing": {
+        "qr": "none",
+        "card": "manual"
+      },
+      "devices": [
+        "adult_band:Band Printer (adults)",
+        "kids_band:Band Printer (kids)",
+        "receipt:Receipt Printer 1"
+      ]
+    },
+    "customerScreens": "steps 1-5: the till's own customer half (test harness, right half); step 6: a separate display page in its own browser context, paired to the test till with that page's own pairing code",
+    "display": {
+      "credentialId": "01a1c077-7a7f-7d01-9533-f85058590a79",
+      "name": "ZZ TEST SCRUM-763 display",
+      "pairedAt": "2026-11-09T13:20:17.434Z"
+    },
+    "walkInNumbers": [
+      "+66897630011 (step 2-4 sale)",
+      "+66897630012 (step 5c, cancelled)"
+    ],
+    "note": "ZZ TEST numbers; neither was a member before or after (read back)"
+  },
+  "steps": {
+    "1_startOfSale": {
+      "at": "2026-11-09T13:16:04.425Z",
+      "customerHalf": {
+        "choiceShown": true,
+        "cards": [
+          {
+            "testid": "language-choice-en",
+            "lang": "en",
+            "text": "English Continue in English"
+          },
+          {
+            "testid": "language-choice-zh",
+            "lang": "zh",
+            "text": "中文 使用中文继续"
+          },
+          {
+            "testid": "language-choice-th",
+            "lang": "th",
+            "text": "ไทย ดำเนินการต่อเป็นภาษาไทย"
+          },
+          {
+            "testid": "language-choice-ru",
+            "lang": "ru",
+            "text": "Русский Продолжить на русском"
+          },
+          {
+            "testid": "language-choice-fr",
+            "lang": "fr",
+            "text": "Français Continuer en français"
+          }
+        ],
+        "headings": [
+          "Choose your language"
+        ],
+        "languageButton": null,
+        "keypadDigitButtons": 0,
+        "clearKey": null,
+        "safety": null,
+        "text": "LANGUAGE Choose your language 请选择您的语言 · เลือกภาษาของคุณ · Выберите язык · Choisissez votre langue English Continue in English 中文 使用中文继续 ไทย ดำเนินการต่อเป็นภาษาไทย Русский Продолжить на русском Français Continuer en français"
+      },
+      "staffHalf": "Membership Check The customer is entering their phone on their display to apply any verified rate. Waiting for the customer… Enter phone to look up membership A phone number is required for every visit — it is how the team reaches the family about their child’s safety. Phone — Nickname — EVENT PASSE",
+      "afterToast": {
+        "at": "2026-11-09T13:16:25.745Z",
+        "cards": [
+          "language-choice-en",
+          "language-choice-zh",
+          "language-choice-th",
+          "language-choice-ru",
+          "language-choice-fr"
+        ]
+      }
+    },
+    "2a_thaiTapped": {
+      "at": "2026-11-09T13:16:56.800Z",
+      "how": "touch tap (locator.tap, hasTouch) on the ไทย card (576x106 px)",
+      "customerHalf": {
+        "choiceShown": false,
+        "cards": [],
+        "headings": [
+          "เบอร์โทรศัพท์ของคุณคืออะไร?"
+        ],
+        "languageButton": "ไทย",
+        "keypadDigitButtons": 10,
+        "clearKey": "ล้าง",
+        "safety": "เราขอเบอร์โทรศัพท์ทุกครั้งที่มา เพื่อให้ติดต่อคุณได้เรื่องความปลอดภัยของลูก",
+        "text": "ไทย สมาชิกประหยัดกว่า เบอร์โทรศัพท์ของคุณคืออะไร? ระบบจะจำสมาชิกได้โดยอัตโนมัติและใช้ราคาสมาชิกให้ เราขอเบอร์โทรศัพท์ทุกครั้งที่มา เพื่อให้ติดต่อคุณได้เรื่องความปลอดภัยของลูก หมายเลขโทรศัพท์ 🇹🇭 +66 8X XXX XXXX [number withheld] ล้าง 0 WhatsApp Telegram LINE ชื่อเล่น (ไม่บังคับ) ดำเนินการต่อ"
+      },
+      "staffHalf": "Membership Check The customer is entering their phone on their display to apply any verified rate. Waiting for the customer… Enter phone to look up membership A phone number is required for every visit — it is how the team reaches the family about their child’s safety. Phone — Nickname — EVENT PASSE"
+    },
+    "2b_numberTypedAndContinue": {
+      "at": "2026-11-09T13:17:17.810Z",
+      "typed": "the ZZ TEST number +66897630011 (national digits on the customer keypad, country +66)",
+      "whileTyping": {
+        "headings": [
+          "เบอร์โทรศัพท์ของคุณคืออะไร?"
+        ],
+        "languageButton": "ไทย",
+        "choiceShown": false
+      },
+      "walkInOffered": true,
+      "customerAfterContinue": {
+        "choiceShown": false,
+        "cards": [],
+        "headings": [
+          "ยินดีต้อนรับสู่ Oto"
+        ],
+        "languageButton": null,
+        "keypadDigitButtons": 0,
+        "clearKey": null,
+        "safety": null,
+        "text": "ไทย O ยินดีต้อนรับสู่ Oto สนามเล่นในร่มที่มีความสุขที่สุดของไทย มาเตรียมตัวเล่นกันเลย! พนักงานของเราจะช่วยคุณที่เคาน์เตอร์"
+      },
+      "note": "languageButton reads null there only because the staff half's \"New member?\" dialog was open, which hides the rest of the page from the accessibility tree; the picture after the dialog shows the button"
+    },
+    "2c_welcomeInThai": {
+      "at": "2026-11-09T13:17:45.002Z",
+      "welcome": {
+        "headings": [
+          "ยินดีต้อนรับสู่ Oto"
+        ],
+        "languageButton": "ไทย",
+        "choiceShown": false,
+        "text": "ไทย O ยินดีต้อนรับสู่ Oto สนามเล่นในร่มที่มีความสุขที่สุดของไทย มาเตรียมตัวเล่นกันเลย! พนักงานของเราจะช่วยคุณที่เคาน์เตอร์"
+      }
+    },
+    "2d_orderInThai": {
+      "counts": {
+        "kids": 1,
+        "adults": 1
+      },
+      "customerHalf": {
+        "choiceShown": false,
+        "cards": [],
+        "headings": [],
+        "languageButton": "ไทย",
+        "keypadDigitButtons": 0,
+        "clearKey": null,
+        "safety": null,
+        "text": "O Oto เพลย์พาร์ค คำสั่งซื้อของคุณ ไทย เล่น 1 ชั่วโมง ฿1040 เด็ก1 × ฿690 ฿690 ผู้ใหญ่1 × ฿350 ฿350 รวมภาษีมูลค่าเพิ่ม ฿68.04 ยอดรวม ฿1040"
+      },
+      "staffHalf": "Configure: 1 Hour Play Back to tickets Participants Kids Requires adult supervision 1 Adults Receives F&B credit 1 Extras & Add-ons Free Socks +฿0 Out of stock 0 Regular Socks +฿60 Out of stock 0 Grip Socks +฿80 Sizes Locker Rental +฿100 Out of stock 0 Refillable Drink Cup +฿150 Out of stock 0 Glow "
+    },
+    "3_languageButtonToFrench": {
+      "at": "2026-11-09T13:17:59.781Z",
+      "how": "touch tap on the small language button (aria-label \"เปลี่ยนภาษา\"), then on Français in its menu",
+      "menuOffered": [
+        "English",
+        "中文",
+        "ไทย",
+        "Русский",
+        "Français"
+      ],
+      "customerHalf": {
+        "choiceShown": false,
+        "cards": [],
+        "headings": [],
+        "languageButton": "Français",
+        "keypadDigitButtons": 0,
+        "clearKey": null,
+        "safety": null,
+        "text": "O Oto Play Park Votre commande Français Jeu 1 heure ฿1040 Enfants1 × ฿690 ฿690 Adultes1 × ฿350 ฿350 TVA incluse ฿68.04 Total ฿1040"
+      }
+    },
+    "4a_paidCash": {
+      "at": "2026-11-09T13:18:24.353Z",
+      "tender": {
+        "cashReceived": "1040.00",
+        "change": "Change ฿0.00",
+        "amountDue": "฿1040"
+      },
+      "customerAtPayment": {
+        "headings": [],
+        "languageButton": "Français",
+        "choiceShown": false,
+        "text": "Français Veuillez payer ฿1040.00 à notre personnel"
+      },
+      "customerAfterPaid": {
+        "choiceShown": false,
+        "cards": [],
+        "headings": [
+          "Merci !"
+        ],
+        "languageButton": "Français",
+        "keypadDigitButtons": 0,
+        "clearKey": null,
+        "safety": null,
+        "text": "Français Merci ! Voici ce que vous allez recevoir — amusez-vous bien ! 1 Bracelet enfant 1 Bracelet adulte Crédits accordés Crédit ฿350"
+      }
+    },
+    "4b_nextSaleChoiceAgain": {
+      "at": "2026-11-09T13:18:39.911Z",
+      "customerHalf": {
+        "choiceShown": true,
+        "cards": [
+          {
+            "testid": "language-choice-en",
+            "lang": "en",
+            "text": "English Continue in English"
+          },
+          {
+            "testid": "language-choice-zh",
+            "lang": "zh",
+            "text": "中文 使用中文继续"
+          },
+          {
+            "testid": "language-choice-th",
+            "lang": "th",
+            "text": "ไทย ดำเนินการต่อเป็นภาษาไทย"
+          },
+          {
+            "testid": "language-choice-ru",
+            "lang": "ru",
+            "text": "Русский Продолжить на русском"
+          },
+          {
+            "testid": "language-choice-fr",
+            "lang": "fr",
+            "text": "Français Continuer en français"
+          }
+        ],
+        "headings": [
+          "Choisissez votre langue"
+        ],
+        "languageButton": null,
+        "keypadDigitButtons": 0,
+        "clearKey": null,
+        "safety": null,
+        "text": "LANGUE Choisissez votre langue Choose your language · 请选择您的语言 · เลือกภาษาของคุณ · Выберите язык English Continue in English 中文 使用中文继续 ไทย ดำเนินการต่อเป็นภาษาไทย Русский Продолжить на русском Français Continuer en français"
+      }
+    },
+    "5a_cancelWithChoiceOnScreen": {
+      "at": "2026-11-09T13:19:14.825Z",
+      "dialog": null,
+      "customerHalf": {
+        "choiceShown": true,
+        "cards": [
+          {
+            "testid": "language-choice-en",
+            "lang": "en",
+            "text": "English Continue in English"
+          },
+          {
+            "testid": "language-choice-zh",
+            "lang": "zh",
+            "text": "中文 使用中文继续"
+          },
+          {
+            "testid": "language-choice-th",
+            "lang": "th",
+            "text": "ไทย ดำเนินการต่อเป็นภาษาไทย"
+          },
+          {
+            "testid": "language-choice-ru",
+            "lang": "ru",
+            "text": "Русский Продолжить на русском"
+          },
+          {
+            "testid": "language-choice-fr",
+            "lang": "fr",
+            "text": "Français Continuer en français"
+          }
+        ],
+        "headings": [
+          "Choisissez votre langue"
+        ],
+        "languageButton": null,
+        "keypadDigitButtons": 0,
+        "clearKey": null,
+        "safety": null,
+        "text": "LANGUE Choisissez votre langue Choose your language · 请选择您的语言 · เลือกภาษาของคุณ · Выберите язык English Continue in English 中文 使用中文继续 ไทย ดำเนินการต่อเป็นภาษาไทย Русский Продолжить на русском Français Continuer en français"
+      },
+      "salesBefore": [
+        {
+          "receipt": "Z763-000001",
+          "status": "finalised"
+        }
+      ],
+      "salesAfter": [
+        {
+          "receipt": "Z763-000001",
+          "status": "finalised"
+        }
+      ],
+      "pageWrites": []
+    },
+    "5b_cancelAfterChineseChosen": {
+      "at": "2026-11-09T13:19:25.277Z",
+      "beforeCancel": {
+        "headings": [
+          "您的电话号码是多少？"
+        ],
+        "languageButton": "中文",
+        "clearKey": "清除",
+        "safety": "为了孩子的安全，每次来访我们都需要一个电话号码，以便随时联系您。"
+      },
+      "dialog": null,
+      "customerHalf": {
+        "choiceShown": true,
+        "cards": [
+          {
+            "testid": "language-choice-en",
+            "lang": "en",
+            "text": "English Continue in English"
+          },
+          {
+            "testid": "language-choice-zh",
+            "lang": "zh",
+            "text": "中文 使用中文继续"
+          },
+          {
+            "testid": "language-choice-th",
+            "lang": "th",
+            "text": "ไทย ดำเนินการต่อเป็นภาษาไทย"
+          },
+          {
+            "testid": "language-choice-ru",
+            "lang": "ru",
+            "text": "Русский Продолжить на русском"
+          },
+          {
+            "testid": "language-choice-fr",
+            "lang": "fr",
+            "text": "Français Continuer en français"
+          }
+        ],
+        "headings": [
+          "请选择您的语言"
+        ],
+        "languageButton": null,
+        "keypadDigitButtons": 0,
+        "clearKey": null,
+        "safety": null,
+        "text": "语言 请选择您的语言 Choose your language · เลือกภาษาของคุณ · Выберите язык · Choisissez votre langue English Continue in English 中文 使用中文继续 ไทย ดำเนินการต่อเป็นภาษาไทย Русский Продолжить на русском Français Continuer en français"
+      },
+      "salesBefore": [
+        {
+          "receipt": "Z763-000001",
+          "status": "finalised"
+        }
+      ],
+      "salesAfter": [
+        {
+          "receipt": "Z763-000001",
+          "status": "finalised"
+        }
+      ],
+      "pageWrites": []
+    },
+    "5c_cancelWithTicketInCart": {
+      "at": "2026-11-09T13:19:43.538Z",
+      "beforeCancel": {
+        "afterChoosing": {
+          "headings": [
+            "您的电话号码是多少？"
+          ],
+          "languageButton": "中文",
+          "clearKey": "清除",
+          "safety": "为了孩子的安全，每次来访我们都需要一个电话号码，以便随时联系您。"
+        },
+        "orderBeforeCancel": {
+          "languageButton": "中文",
+          "text": "O Oto 游乐园 您的订单 中文 1小时畅玩 ฿1040 儿童1 × ฿690 ฿690 成人1 × ฿350 ฿350 含增值税 ฿68.04 总计 ฿1040",
+          "cart": "Current Order TOURIST 1 Hour Play EDITING ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total "
+        }
+      },
+      "dialog": null,
+      "customerHalf": {
+        "choiceShown": true,
+        "cards": [
+          {
+            "testid": "language-choice-en",
+            "lang": "en",
+            "text": "English Continue in English"
+          },
+          {
+            "testid": "language-choice-zh",
+            "lang": "zh",
+            "text": "中文 使用中文继续"
+          },
+          {
+            "testid": "language-choice-th",
+            "lang": "th",
+            "text": "ไทย ดำเนินการต่อเป็นภาษาไทย"
+          },
+          {
+            "testid": "language-choice-ru",
+            "lang": "ru",
+            "text": "Русский Продолжить на русском"
+          },
+          {
+            "testid": "language-choice-fr",
+            "lang": "fr",
+            "text": "Français Continuer en français"
+          }
+        ],
+        "headings": [
+          "请选择您的语言"
+        ],
+        "languageButton": null,
+        "keypadDigitButtons": 0,
+        "clearKey": null,
+        "safety": null,
+        "text": "语言 请选择您的语言 Choose your language · เลือกภาษาของคุณ · Выберите язык · Choisissez votre langue English Continue in English 中文 使用中文继续 ไทย ดำเนินการต่อเป็นภาษาไทย Русский Продолжить на русском Français Continuer en français"
+      },
+      "staffHalf": "Membership Check The customer is entering their phone on their display to apply any verified rate. Waiting for the customer… Enter phone to look up membership A phone number is required for every visit — it is how the team reaches the family about their child’s safety. Phone — Nickname — EVENT PASSE",
+      "salesBefore": [
+        {
+          "receipt": "Z763-000001",
+          "status": "finalised"
+        }
+      ],
+      "salesAfter": [
+        {
+          "receipt": "Z763-000001",
+          "status": "finalised"
+        }
+      ],
+      "pageWrites": [
+        {
+          "at": "2026-11-09T13:19:40.906Z",
+          "page": "T",
+          "method": "POST",
+          "path": "/api/sales/quote",
+          "status": 200
+        }
+      ]
+    },
+    "6a_pairedDisplayFirstScreen": {
+      "at": "2026-11-09T13:20:17.434Z",
+      "claim": 200,
+      "displaysOnTheTillBefore": [],
+      "firstScreenRightAfterPairing": {
+        "choiceShown": true,
+        "cards": [
+          {
+            "testid": "language-choice-en",
+            "lang": "en",
+            "text": "English Continue in English"
+          },
+          {
+            "testid": "language-choice-zh",
+            "lang": "zh",
+            "text": "中文 使用中文继续"
+          },
+          {
+            "testid": "language-choice-th",
+            "lang": "th",
+            "text": "ไทย ดำเนินการต่อเป็นภาษาไทย"
+          },
+          {
+            "testid": "language-choice-ru",
+            "lang": "ru",
+            "text": "Русский Продолжить на русском"
+          },
+          {
+            "testid": "language-choice-fr",
+            "lang": "fr",
+            "text": "Français Continuer en français"
+          }
+        ],
+        "headings": [
+          "Choose your language"
+        ],
+        "languageButton": null,
+        "keypadDigitButtons": 0,
+        "clearKey": null,
+        "safety": null,
+        "text": "ZZ TEST SCRUM-763 till · ZZ TEST SCRUM-763 display LANGUAGE Choose your language 请选择您的语言 · เลือกภาษาของคุณ · Выберите язык · Choisissez votre langue English Continue in English 中文 使用中文继续 ไทย ดำเนินการต่อเป็นภาษาไทย Русский Продолжить на русском Français Continuer en français"
+      },
+      "till": {
+        "banner": "Display connected: ZZ TEST SCRUM-763 display",
+        "inlineCustomerHalves": 0
+      },
+      "pictureNote": "the picture was taken after one reload of the display page (made to read its first session document); the screen right after pairing, before the reload, read the same (firstScreenRightAfterPairing)"
+    },
+    "displayPromptRead": {
+      "at": "2026-11-09T13:21:08.838Z",
+      "why": "is the till's sale name (saleKey) on the first screen's prompt as the display receives it from Virtual box 1?",
+      "reads": [
+        {
+          "at": "2026-11-09T13:21:05.828Z",
+          "status": 200,
+          "stage": "identify",
+          "promptKind": "identify",
+          "promptKeys": [
+            "kind",
+            "phone",
+            "nickname",
+            "requestId",
+            "contactChannel"
+          ],
+          "saleKeyPresent": false
+        }
+      ]
+    },
+    "6b_pairedDisplayRussian": {
+      "at": "2026-11-09T13:21:22.486Z",
+      "how": "touch tap on the Русский card of the paired display",
+      "display": {
+        "choiceShown": false,
+        "cards": [],
+        "headings": [
+          "Ваш номер телефона?"
+        ],
+        "languageButton": "Русский",
+        "keypadDigitButtons": 10,
+        "clearKey": "Очистить",
+        "safety": "Номер телефона нужен при каждом визите, чтобы мы могли связаться с вами по поводу безопасности ребёнка.",
+        "text": "ZZ TEST SCRUM-763 till · ZZ TEST SCRUM-763 display Русский УЧАСТНИКИ ЭКОНОМЯТ Ваш номер телефона? Участников мы узнаём автоматически и применяем цену для участников. Номер телефона нужен при каждом визите, чтобы мы могли связаться с вами по поводу безопасности ребёнка. Номер телефона 🇹🇭 +66 8X XXX XXXX [number withheld] Очистить 0 WhatsApp Telegram LINE Имя (необязательно) Продолжить"
+      },
+      "till": {
+        "banner": "Display connected: ZZ TEST SCRUM-763 display",
+        "staffText": "Display connected: ZZ TEST SCRUM-763 display Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing Som 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Membership Check The customer is entering their phone on their display to apply any verified rate. Waiti",
+        "inlineCustomerHalves": 0
+      }
+    },
+    "6c_observation_tillCancelWhileDisplayOnPhoneStep": {
+      "at": "2026-11-09T13:22:33.982Z",
+      "what": "Cancel on the till, the paired display on the Russian phone step with nothing typed",
+      "tillWasLockedAndUnlocked": true,
+      "displayBeforeCancel": {
+        "choiceShown": false,
+        "headings": [
+          "Ваш номер телефона?"
+        ],
+        "languageButton": "Русский"
+      },
+      "display": {
+        "choiceShown": false,
+        "headings": [
+          "Ваш номер телефона?"
+        ],
+        "languageButton": "Русский"
+      },
+      "salesBefore": 1,
+      "salesAfter": 1,
+      "displayReadsAfter": []
+    }
+  },
+  "choiceAppearancesOnTheTillPage": {
+    "how": "a MutationObserver in the till page logged every time [data-testid=language-choice] appeared or disappeared, from just before the ไทย tap to the end of step 5",
+    "log": [
+      {
+        "at": "2026-11-09T13:16:56.672Z",
+        "shown": true,
+        "why": "observer start"
+      },
+      {
+        "at": "2026-11-09T13:16:56.751Z",
+        "shown": false
+      },
+      {
+        "at": "2026-11-09T13:18:39.898Z",
+        "shown": true
+      },
+      {
+        "at": "2026-11-09T13:19:24.172Z",
+        "shown": false
+      },
+      {
+        "at": "2026-11-09T13:19:25.272Z",
+        "shown": true
+      },
+      {
+        "at": "2026-11-09T13:19:34.572Z",
+        "shown": false
+      },
+      {
+        "at": "2026-11-09T13:19:43.524Z",
+        "shown": true
+      }
+    ]
+  },
+  "sale": {
+    "id": "01a1c075-b03a-76d5-92f2-c5f5aa4d198e",
+    "status": "finalised",
+    "gross": 104000,
+    "receipt": "Z763-000001",
+    "lines": [
+      {
+        "label": "Kids",
+        "kind": "kids",
+        "kidCount": 1,
+        "adultCount": 1,
+        "grossSatang": 69000
+      },
+      {
+        "label": "Adults",
+        "kind": "adults_paid",
+        "kidCount": 1,
+        "adultCount": 1,
+        "grossSatang": 35000
+      }
+    ],
+    "payments": [
+      {
+        "method": "cash",
+        "status": "approved",
+        "amount": 104000
+      }
+    ],
+    "paidAt": "2026-11-09T13:18:24.353Z",
+    "what": "walk-in (Tourist), 1 Hour Play, 1 kid + 1 adult, cash, full amount"
+  },
+  "pictures": [
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-763/staging/763-st-01a-start-of-sale-language-choice.png",
+      "at": "2026-11-09T13:16:24.387Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Start of a sale on the ZZ TEST till: the customer half (right) shows \"Choose your language\", the same question in the other four languages beneath, and the language cards, each in its own language. No keypad, no small language button. Staff half (left) waits for the customer."
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-763/staging/763-st-01b-language-choice-scrolled-five-cards.png",
+      "at": "2026-11-09T13:16:25.735Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The same choice scrolled to its end: all five cards, English, 中文, ไทย, Русский, Français, with \"Continue in …\" in each language."
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-763/staging/763-st-02a-thai-chosen-phone-step-in-thai.png",
+      "at": "2026-11-09T13:16:58.861Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "After a tap on ไทย: the customer half shows the phone-number step in Thai, \"เบอร์โทรศัพท์ของคุณคืออะไร?\", the safety line \"เราขอเบอร์โทรศัพท์ทุกครั้งที่มา…\", the keypad with ล้าง, and the small language button in the corner reading ไทย. The staff half stays in English."
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-763/staging/763-st-02b-thai-phone-step-keypad-clear-key.png",
+      "at": "2026-11-09T13:17:16.049Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The same Thai phone step scrolled down: the keypad with its ล้าง (Clear) key and backspace, the contact channel choice and the optional nickname \"ชื่อเล่น (ไม่บังคับ)\", and the Thai Continue button \"ดำเนินการต่อ\". The small language button (top right) still reads ไทย when scrolled back."
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-763/staging/763-st-02c-welcome-stays-in-thai.png",
+      "at": "2026-11-09T13:17:40.029Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "After the number, staff chose \"Continue as walk-in\": the customer half shows the welcome in Thai, \"ยินดีต้อนรับสู่ Oto\", with the small language button reading ไทย. The language choice did not come back."
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-763/staging/763-st-02d-order-screen-stays-in-thai.png",
+      "at": "2026-11-09T13:17:45.000Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Tourist, 1 Hour Play, 1 kid + 1 adult in the cart: the customer half shows the order in Thai, \"คำสั่งซื้อของคุณ\" beside the small language button reading ไทย. The language choice did not come back between steps; the staff half stays in English."
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-763/staging/763-st-03-language-button-switches-order-to-french.png",
+      "at": "2026-11-09T13:18:02.123Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The small language button on the order screen switched the customer half to Français: \"Votre commande\" beside the button reading Français, the ticket and totals in French. The language choice screen did not reappear."
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-763/staging/763-st-04a-paid-cash-thank-you-in-french.png",
+      "at": "2026-11-09T13:18:29.137Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The sale paid in cash (receipt Z763-000001): the staff half shows Payment Successful; the customer half thanks the guest in French. The language choice has not come back yet: the sale is still on screen."
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-763/staging/763-st-04b-next-sale-choice-again-headed-in-french.png",
+      "at": "2026-11-09T13:18:42.232Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "After Start New Sale: the customer half shows the language choice again for the next guest, headed in the last guest's language, \"Choisissez votre langue\", with the question in the other four languages beneath and the cards each in its own language. No keypad, no small language button."
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-763/staging/763-st-05a-cancel-with-choice-on-screen-choice-stays.png",
+      "at": "2026-11-09T13:19:18.790Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Cancel pressed on the till while the language choice was on screen: the next sale opens on the same choice (still headed in French, the last guest's language). No sale was written."
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-763/staging/763-st-05b-cancel-after-chinese-chosen-choice-returns.png",
+      "at": "2026-11-09T13:19:29.208Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "A guest chose 中文 and reached the phone step in Chinese, then staff pressed Cancel on the till (the guest walked away): the language choice is back for the next guest, headed in Chinese, \"请选择您的语言\", with the other four beneath. No sale was written."
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-763/staging/763-st-05c1-chinese-order-before-cancel.png",
+      "at": "2026-11-09T13:19:43.474Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Before the cancel: a second guest chose 中文; the walk-in order (1 Hour Play, 1 kid + 1 adult, not paid) shows in Chinese, \"您的订单\", with the small language button reading 中文."
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-763/staging/763-st-05c2-cancel-with-ticket-in-cart-choice-returns.png",
+      "at": "2026-11-09T13:19:47.513Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Cancel on the till with the unpaid Chinese order in the cart: the order empties and the customer half shows the language choice again for the next guest, headed in Chinese. No sale was written (only price quotes)."
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-763/staging/763-st-06a-paired-display-first-screen-language-choice.png",
+      "at": "2026-11-09T13:21:22.384Z",
+      "page": "D",
+      "url": "https://oto-pos-web-staging.onrender.com/display",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "shows": "A separate customer display paired to the ZZ TEST till (its own browser context, 1024 x 768, paired with the display page's own code): its first screen is the same language choice, \"Choose your language\" and the five cards. No keypad, no small language button."
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-763/staging/763-st-06b-paired-display-russian-phone-step.png",
+      "at": "2026-11-09T13:21:24.784Z",
+      "page": "D",
+      "url": "https://oto-pos-web-staging.onrender.com/display",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "shows": "After Русский on the paired display: the phone step in Russian, \"Ваш номер телефона?\", with the Russian safety line and the small language button reading Русский; the keypad's Очистить key is below."
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-763/staging/763-st-06c-till-staff-half-english-display-connected.png",
+      "at": "2026-11-09T13:21:25.565Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The ZZ TEST till at the same moment: \"Display connected: ZZ TEST SCRUM-763 display\", its own customer half gone (the paired display has the customer), and the staff half in English, waiting for the customer."
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-763/staging/763-st-06d-paired-display-after-till-cancel.png",
+      "at": "2026-11-09T13:22:42.828Z",
+      "page": "D",
+      "url": "https://oto-pos-web-staging.onrender.com/display",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "shows": "Observation, not a pass: after Cancel on the till (sale reset while it was still on its first screen), the paired display stays on the Russian phone step; it did not reopen the language choice. Virtual box 1 runs in oto-api-staging, which is at ed6e092d and does not carry 36f19edee (the box keeping the sale name on the first screen), so the display cannot tell this is a new sale."
+    }
+  ],
+  "pageWrites": [
+    {
+      "at": "2026-11-09T13:16:02.684Z",
+      "page": "T",
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:17:41.938Z",
+      "page": "T",
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:18:20.836Z",
+      "page": "T",
+      "method": "POST",
+      "path": "/api/sales",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:18:24.690Z",
+      "page": "T",
+      "method": "POST",
+      "path": "/api/sales/01a1c075-b03a-76d5-92f2-c5f5aa4d198e/finalise",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:18:24.848Z",
+      "page": "T",
+      "method": "POST",
+      "path": "/api/box/v1/station/01a1c073-6128-72c4-bdc2-d90fa08e4770/intents",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:19:40.906Z",
+      "page": "T",
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:20:17.376Z",
+      "page": "D",
+      "method": "POST",
+      "path": "/api/display/pairing",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:20:20.200Z",
+      "page": "T",
+      "method": "POST",
+      "path": "/api/box/v1/station/01a1c073-6128-72c4-bdc2-d90fa08e4770/lease",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:20:20.294Z",
+      "page": "T",
+      "method": "POST",
+      "path": "/api/box/v1/station/01a1c073-6128-72c4-bdc2-d90fa08e4770/intents",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:20:36.334Z",
+      "page": "T",
+      "method": "POST",
+      "path": "/api/box/v1/station/01a1c073-6128-72c4-bdc2-d90fa08e4770/lease/renew",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:20:52.328Z",
+      "page": "T",
+      "method": "POST",
+      "path": "/api/box/v1/station/01a1c073-6128-72c4-bdc2-d90fa08e4770/lease/renew",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:21:08.286Z",
+      "page": "T",
+      "method": "POST",
+      "path": "/api/box/v1/station/01a1c073-6128-72c4-bdc2-d90fa08e4770/lease/renew",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:21:22.570Z",
+      "page": "D",
+      "method": "POST",
+      "path": "/api/box/v1/station/01a1c073-6128-72c4-bdc2-d90fa08e4770/display/intents",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:21:24.277Z",
+      "page": "T",
+      "method": "POST",
+      "path": "/api/box/v1/station/01a1c073-6128-72c4-bdc2-d90fa08e4770/lease/renew",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:21:40.232Z",
+      "page": "T",
+      "method": "POST",
+      "path": "/api/box/v1/station/01a1c073-6128-72c4-bdc2-d90fa08e4770/lease/renew",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:21:43.615Z",
+      "page": "T",
+      "method": "POST",
+      "path": "/api/auth/lock",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:22:30.781Z",
+      "page": "T",
+      "method": "POST",
+      "path": "/api/box/v1/station/01a1c073-6128-72c4-bdc2-d90fa08e4770/lease/renew",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:22:34.107Z",
+      "page": "T",
+      "method": "POST",
+      "path": "/api/box/v1/station/01a1c073-6128-72c4-bdc2-d90fa08e4770/intents",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:22:46.988Z",
+      "page": "T",
+      "method": "POST",
+      "path": "/api/box/v1/station/01a1c073-6128-72c4-bdc2-d90fa08e4770/lease/renew",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:23:02.932Z",
+      "page": "T",
+      "method": "POST",
+      "path": "/api/box/v1/station/01a1c073-6128-72c4-bdc2-d90fa08e4770/lease/renew",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:23:11.130Z",
+      "page": "D",
+      "method": "POST",
+      "path": "/api/display/pairing",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:23:13.072Z",
+      "page": "D",
+      "method": "POST",
+      "path": "/api/display/pairing/expire",
+      "status": 200
+    },
+    {
+      "at": "2026-11-09T13:23:15.801Z",
+      "page": "T",
+      "method": "POST",
+      "path": "/api/box/v1/station/01a1c073-6128-72c4-bdc2-d90fa08e4770/lease/release",
+      "status": 401
+    }
+  ],
+  "pageWritesNote": "every non-GET request the till page (T) and the display page (D) made, from the browser's response log. POST /api/sales/quote is a price quote, not a sale.",
+  "pageErrors": [],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1c073-6128-72c4-bdc2-d90fa08e4770",
+      "name": "ZZ TEST SCRUM-763 till",
+      "box": "Virtual box 1",
+      "prefix": "Z763",
+      "at": "2026-11-09T13:15:48.811Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1c075-b03a-76d5-92f2-c5f5aa4d198e",
+      "what": "ZZ TEST walk-in, Tourist, 1 Hour Play, 1 kid + 1 adult, cash",
+      "at": "2026-11-09T13:18:22.342Z"
+    },
+    {
+      "kind": "display-credential",
+      "id": "01a1c077-7a7f-7d01-9533-f85058590a79",
+      "name": "ZZ TEST SCRUM-763 display",
+      "station": "ZZ TEST SCRUM-763 till",
+      "at": "2026-11-09T13:20:17.434Z"
+    }
+  ],
+  "writes": [
+    {
+      "at": "2026-11-09T13:15:48.811Z",
+      "by": "admin api",
+      "what": "POST /branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200,
+      "result": {
+        "stationId": "01a1c073-6128-72c4-bdc2-d90fa08e4770",
+        "name": "ZZ TEST SCRUM-763 till",
+        "prefix": "Z763",
+        "box": "Virtual box 1",
+        "devices": [
+          "adult_band:Band Printer (adults)",
+          "kids_band:Band Printer (kids)",
+          "receipt:Receipt Printer 1"
+        ]
+      }
+    },
+    {
+      "at": "2026-11-09T13:16:02.858Z",
+      "by": "till (reception)",
+      "what": "POST /auth/sign-in + station pick",
+      "station": "ZZ TEST SCRUM-763 till"
+    },
+    {
+      "at": "2026-11-09T13:20:17.434Z",
+      "by": "admin api",
+      "what": "POST /stations/01a1c073-6128-72c4-bdc2-d90fa08e4770/displays/claim (the display page's own pairing code)",
+      "status": 200,
+      "result": {
+        "credentialId": "01a1c077-7a7f-7d01-9533-f85058590a79",
+        "name": "ZZ TEST SCRUM-763 display"
+      }
+    }
+  ],
+  "cleanup": {
+    "actions": [
+      {
+        "at": "2026-11-09T13:23:10.763Z",
+        "what": "revoke the ZZ TEST SCRUM-763 display",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-09T13:23:15.502Z",
+        "what": "the display page after the revoke, then its new pairing code expired",
+        "shown": "Set up this display In the Console, open Devices, choose Pair a display, and enter this code for the station. •••••• This code expires at 20:33. Expire code now",
+        "after": "Set up this display In the Console, open Devices, choose Pair a display, and enter this code for the station. This code has expired. Create a new code when you are ready to pair this display. New code"
+      },
+      {
+        "at": "2026-11-09T13:23:15.690Z",
+        "what": "till sign-out (its own session route)",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-09T13:23:15.923Z",
+        "what": "unassign printers on ZZ TEST SCRUM-763 till",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-09T13:23:16.021Z",
+        "what": "archive station ZZ TEST SCRUM-763 till",
+        "status": 200,
+        "code": null
+      }
+    ],
+    "startedAt": "2026-11-09T13:23:10.500Z",
+    "salesBefore": [
+      {
+        "id": "01a1c075-b03a-76d5-92f2-c5f5aa4d198e",
+        "receipt": "Z763-000001",
+        "status": "finalised",
+        "gross": 104000
+      }
+    ],
+    "displays": {
+      "before": [
+        {
+          "name": "ZZ TEST SCRUM-763 display",
+          "connected": true,
+          "revokedAt": null
+        }
+      ],
+      "after": []
+    },
+    "tillMeAfterSignOut": 401,
+    "readBack": {
+      "at": "2026-11-09T13:23:16.477Z",
+      "till": {
+        "id": "01a1c073-6128-72c4-bdc2-d90fa08e4770",
+        "name": "ZZ TEST SCRUM-763 till",
+        "archived": true,
+        "archivedAt": null,
+        "devices": 0
+      },
+      "displaysOnTheTill": [],
+      "salesAfter": [
+        {
+          "id": "01a1c075-b03a-76d5-92f2-c5f5aa4d198e",
+          "receipt": "Z763-000001",
+          "status": "finalised",
+          "gross": 104000
+        }
+      ],
+      "walkInNumbersAreNotMembers": {
+        "first": {
+          "status": 200,
+          "found": false
+        },
+        "second": {
+          "status": 200,
+          "found": false
+        }
+      },
+      "receptionTill1Devices": 7,
+      "untouched": [
+        {
+          "name": "FWBooth1",
+          "archived": false,
+          "devices": 1
+        },
+        {
+          "name": "Reception Till 1",
+          "archived": false,
+          "devices": 7
+        },
+        {
+          "name": "Till 1 (Pi)",
+          "archived": false,
+          "devices": 4
+        },
+        {
+          "name": "Till 2 (test)",
+          "archived": false,
+          "devices": 4
+        }
+      ]
+    },
+    "finishedAt": "2026-11-09T13:23:16.556Z",
+    "adminSignOut": {
+      "status": 200,
+      "meAfter": 401,
+      "at": "2026-11-09T13:23:21.919Z"
+    }
+  },
+  "notTouched": "No real till or display was used: Till 1 (Pi), Till 2 (test), Reception Till 1 and FWBooth1 read back unchanged (Reception Till 1 keeps its 7 devices); the park Pi was not used. No till notice was pressed (the \"7 overdue\" and \"4 out of stock\" banners were left alone). No setting was read or changed, no SMS, cash only, nothing refunded. Z763-000001 stays recorded as paid; its two bands stay active until they lapse."
+}
