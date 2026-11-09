@@ -1,0 +1,1657 @@
+{
+  "unit": "SCRUM-792",
+  "api": "https://oto-api-staging.onrender.com",
+  "part1": {
+    "what": "API readback, signed in as the platform admin; GET requests only",
+    "startedAt": "2026-11-09T06:14:21.344Z",
+    "parks": {
+      "central": {
+        "branch": {
+          "name": "Oto Play Park, Central Floresta",
+          "code": "hkt-central"
+        },
+        "readAt": "2026-11-09T06:14:21.929Z",
+        "route": "GET /branches/{branchId}/menu (the till's own catalogue read, apps/pos/src/api/menu.ts) and ?includeArchived=true",
+        "liveProducts": 162,
+        "liveByKind": {
+          "menu": 125,
+          "merch": 31,
+          "addon": 6
+        },
+        "liveAndActiveByKind": {
+          "menu": 125,
+          "addon": 6,
+          "merch": 31
+        },
+        "realProducts": {
+          "count": 152,
+          "byKind": {
+            "menu": 124,
+            "merch": 28
+          },
+          "inactive": []
+        },
+        "otherLiveProducts": [
+          {
+            "code": null,
+            "name": "Bracelet Workshop",
+            "kind": "addon",
+            "category": "Ticket add-ons",
+            "baht": 150,
+            "active": true
+          },
+          {
+            "code": null,
+            "name": "Ice Cream Cone",
+            "kind": "menu",
+            "category": "F&B",
+            "baht": 60,
+            "active": true
+          },
+          {
+            "code": null,
+            "name": "Mystery box",
+            "kind": "merch",
+            "category": "Toys",
+            "baht": 0,
+            "active": true
+          },
+          {
+            "code": null,
+            "name": "Native payment free item 0d008153",
+            "kind": "merch",
+            "category": "Apparel",
+            "baht": 0,
+            "active": true
+          },
+          {
+            "code": null,
+            "name": "ZZ TEST Stock 496 Mug",
+            "kind": "merch",
+            "category": "Apparel",
+            "baht": 10,
+            "active": true
+          },
+          {
+            "code": "AO-SOCKS",
+            "name": "Regular Socks",
+            "kind": "addon",
+            "category": "Ticket add-ons",
+            "baht": 50,
+            "active": true
+          },
+          {
+            "code": "AO-GRIPSOCKS",
+            "name": "Grip Socks",
+            "kind": "addon",
+            "category": "Ticket add-ons",
+            "baht": 80,
+            "active": true
+          },
+          {
+            "code": "AO-LOCKER",
+            "name": "Locker Rental",
+            "kind": "addon",
+            "category": "Ticket add-ons",
+            "baht": 100,
+            "active": true
+          },
+          {
+            "code": "AO-CUP",
+            "name": "Refillable Drink Cup",
+            "kind": "addon",
+            "category": "Ticket add-ons",
+            "baht": 150,
+            "active": true
+          },
+          {
+            "code": "AO-GLOW",
+            "name": "Glow Band",
+            "kind": "addon",
+            "category": "Ticket add-ons",
+            "baht": 60,
+            "active": true
+          }
+        ],
+        "categoriesLive": 39,
+        "realTabsPresent": 27,
+        "realTabsMissing": [],
+        "categories": [
+          {
+            "name": "Coffee",
+            "code": "DRINKS-COFFEE",
+            "parent": "Drinks",
+            "sortOrder": 0,
+            "items": 0,
+            "kinds": {},
+            "realTab": false
+          },
+          {
+            "name": "F&B",
+            "code": "FB",
+            "parent": null,
+            "sortOrder": 0,
+            "items": 1,
+            "kinds": {
+              "menu": 1
+            },
+            "realTab": false
+          },
+          {
+            "name": "Food",
+            "code": "FOOD",
+            "parent": null,
+            "sortOrder": 0,
+            "items": 0,
+            "kinds": {},
+            "realTab": false
+          },
+          {
+            "name": "Mains",
+            "code": "FOOD-MAINS",
+            "parent": "Food",
+            "sortOrder": 0,
+            "items": 0,
+            "kinds": {},
+            "realTab": false
+          },
+          {
+            "name": "Drinks",
+            "code": "DRINKS",
+            "parent": null,
+            "sortOrder": 1,
+            "items": 0,
+            "kinds": {},
+            "realTab": false
+          },
+          {
+            "name": "Light Bites",
+            "code": "FOOD-LIGHT",
+            "parent": "Food",
+            "sortOrder": 1,
+            "items": 0,
+            "kinds": {},
+            "realTab": false
+          },
+          {
+            "name": "Bar",
+            "code": "BAR",
+            "parent": null,
+            "sortOrder": 2,
+            "items": 0,
+            "kinds": {},
+            "realTab": false
+          },
+          {
+            "name": "Snacks",
+            "code": "SNACKS",
+            "parent": null,
+            "sortOrder": 3,
+            "items": 0,
+            "kinds": {},
+            "realTab": false
+          },
+          {
+            "name": "Apparel",
+            "code": "MERCH-APPAREL",
+            "parent": null,
+            "sortOrder": 4,
+            "items": 2,
+            "kinds": {
+              "merch": 2
+            },
+            "realTab": false
+          },
+          {
+            "name": "Accessories",
+            "code": "MERCH-ACCESSORIES",
+            "parent": null,
+            "sortOrder": 5,
+            "items": 0,
+            "kinds": {},
+            "realTab": false
+          },
+          {
+            "name": "Toys",
+            "code": "MERCH-TOYS",
+            "parent": null,
+            "sortOrder": 6,
+            "items": 1,
+            "kinds": {
+              "merch": 1
+            },
+            "realTab": false
+          },
+          {
+            "name": "Ticket add-ons",
+            "code": "ADDONS",
+            "parent": null,
+            "sortOrder": 7,
+            "items": 6,
+            "kinds": {
+              "addon": 6
+            },
+            "realTab": false
+          },
+          {
+            "name": "Breakfast",
+            "code": "CAT-BREAKFAST",
+            "parent": null,
+            "sortOrder": 10,
+            "items": 9,
+            "kinds": {
+              "menu": 9
+            },
+            "realTab": true
+          },
+          {
+            "name": "Sides",
+            "code": "CAT-SIDES",
+            "parent": null,
+            "sortOrder": 11,
+            "items": 18,
+            "kinds": {
+              "menu": 18
+            },
+            "realTab": true
+          },
+          {
+            "name": "Sharing",
+            "code": "CAT-SHARING",
+            "parent": null,
+            "sortOrder": 12,
+            "items": 4,
+            "kinds": {
+              "menu": 4
+            },
+            "realTab": true
+          },
+          {
+            "name": "Soup",
+            "code": "CAT-SOUP",
+            "parent": null,
+            "sortOrder": 13,
+            "items": 1,
+            "kinds": {
+              "menu": 1
+            },
+            "realTab": true
+          },
+          {
+            "name": "Salads",
+            "code": "CAT-SALADS",
+            "parent": null,
+            "sortOrder": 14,
+            "items": 6,
+            "kinds": {
+              "menu": 6
+            },
+            "realTab": true
+          },
+          {
+            "name": "Pasta",
+            "code": "CAT-PASTA",
+            "parent": null,
+            "sortOrder": 15,
+            "items": 4,
+            "kinds": {
+              "menu": 4
+            },
+            "realTab": true
+          },
+          {
+            "name": "Pizza",
+            "code": "CAT-PIZZA",
+            "parent": null,
+            "sortOrder": 16,
+            "items": 9,
+            "kinds": {
+              "menu": 9
+            },
+            "realTab": true
+          },
+          {
+            "name": "Mains",
+            "code": "CAT-MAINS",
+            "parent": null,
+            "sortOrder": 17,
+            "items": 8,
+            "kinds": {
+              "menu": 8
+            },
+            "realTab": true
+          },
+          {
+            "name": "Asian Food",
+            "code": "CAT-ASIAN-FOOD",
+            "parent": null,
+            "sortOrder": 18,
+            "items": 7,
+            "kinds": {
+              "menu": 7
+            },
+            "realTab": true
+          },
+          {
+            "name": "Kids",
+            "code": "CAT-KIDS",
+            "parent": null,
+            "sortOrder": 19,
+            "items": 8,
+            "kinds": {
+              "menu": 8
+            },
+            "realTab": true
+          },
+          {
+            "name": "Desserts",
+            "code": "CAT-DESSERTS",
+            "parent": null,
+            "sortOrder": 20,
+            "items": 1,
+            "kinds": {
+              "menu": 1
+            },
+            "realTab": true
+          },
+          {
+            "name": "Coffee",
+            "code": "CAT-COFFEE",
+            "parent": null,
+            "sortOrder": 21,
+            "items": 7,
+            "kinds": {
+              "menu": 7
+            },
+            "realTab": true
+          },
+          {
+            "name": "Iced Coffee",
+            "code": "CAT-ICED-COFFEE",
+            "parent": null,
+            "sortOrder": 22,
+            "items": 6,
+            "kinds": {
+              "menu": 6
+            },
+            "realTab": true
+          },
+          {
+            "name": "Chocolate",
+            "code": "CAT-CHOCOLATE",
+            "parent": null,
+            "sortOrder": 23,
+            "items": 2,
+            "kinds": {
+              "menu": 2
+            },
+            "realTab": true
+          },
+          {
+            "name": "Soda",
+            "code": "CAT-SODA",
+            "parent": null,
+            "sortOrder": 24,
+            "items": 2,
+            "kinds": {
+              "menu": 2
+            },
+            "realTab": true
+          },
+          {
+            "name": "Smoothies",
+            "code": "CAT-SMOOTHIES",
+            "parent": null,
+            "sortOrder": 25,
+            "items": 3,
+            "kinds": {
+              "menu": 3
+            },
+            "realTab": true
+          },
+          {
+            "name": "Juice",
+            "code": "CAT-JUICE",
+            "parent": null,
+            "sortOrder": 26,
+            "items": 2,
+            "kinds": {
+              "menu": 2
+            },
+            "realTab": true
+          },
+          {
+            "name": "Tea pot",
+            "code": "CAT-TEA-POT",
+            "parent": null,
+            "sortOrder": 27,
+            "items": 6,
+            "kinds": {
+              "menu": 6
+            },
+            "realTab": true
+          },
+          {
+            "name": "Soft drinks",
+            "code": "CAT-SOFT-DRINKS",
+            "parent": null,
+            "sortOrder": 28,
+            "items": 7,
+            "kinds": {
+              "menu": 7
+            },
+            "realTab": true
+          },
+          {
+            "name": "Kids juice",
+            "code": "CAT-KIDS-JUICE",
+            "parent": null,
+            "sortOrder": 29,
+            "items": 4,
+            "kinds": {
+              "menu": 4
+            },
+            "realTab": true
+          },
+          {
+            "name": "Wine",
+            "code": "CAT-WINE",
+            "parent": null,
+            "sortOrder": 30,
+            "items": 7,
+            "kinds": {
+              "menu": 7
+            },
+            "realTab": true
+          },
+          {
+            "name": "Beer",
+            "code": "CAT-BEER",
+            "parent": null,
+            "sortOrder": 31,
+            "items": 1,
+            "kinds": {
+              "menu": 1
+            },
+            "realTab": true
+          },
+          {
+            "name": "Specials",
+            "code": "CAT-SPECIALS",
+            "parent": null,
+            "sortOrder": 32,
+            "items": 2,
+            "kinds": {
+              "menu": 2
+            },
+            "realTab": true
+          },
+          {
+            "name": "Free Drinks Menu",
+            "code": "CAT-FREE-DRINKS",
+            "parent": null,
+            "sortOrder": 33,
+            "items": 0,
+            "kinds": {},
+            "realTab": true
+          },
+          {
+            "name": "Balloons",
+            "code": "CAT-BALLOONS",
+            "parent": null,
+            "sortOrder": 34,
+            "items": 5,
+            "kinds": {
+              "merch": 5
+            },
+            "realTab": true
+          },
+          {
+            "name": "Merchandise",
+            "code": "CAT-MERCHANDISE",
+            "parent": null,
+            "sortOrder": 35,
+            "items": 19,
+            "kinds": {
+              "merch": 19
+            },
+            "realTab": true
+          },
+          {
+            "name": "Workshop",
+            "code": "CAT-WORKSHOP",
+            "parent": null,
+            "sortOrder": 36,
+            "items": 4,
+            "kinds": {
+              "merch": 4
+            },
+            "realTab": true
+          }
+        ],
+        "chineseTea": [
+          {
+            "code": "CF-CHINESE-TEA",
+            "name": "Chinese Tea",
+            "baht": 140,
+            "weekendBaht": null,
+            "category": "Tea pot",
+            "active": true,
+            "groups": [
+              {
+                "name": "Tea Choice",
+                "required": true,
+                "selectionType": "single",
+                "options": [
+                  "Rose black +0",
+                  "Osmanthus oolong +0",
+                  "Jasmine grape green +0",
+                  "Peach oolong +0",
+                  "Lychee black +0"
+                ]
+              }
+            ]
+          }
+        ],
+        "demoCodesAtThisBranch": {
+          "FB-NUGGETS": "archived",
+          "FB-FRIES": "archived",
+          "FB-PIZZA": "archived",
+          "FB-BURGER": "archived",
+          "FB-PADTHAI": "archived",
+          "FB-HOTDOG": "archived",
+          "FB-WATER": "archived",
+          "FB-JUICE": "archived",
+          "FB-SODA": "archived",
+          "FB-LATTE": "archived",
+          "FB-SHAKE": "archived",
+          "FB-BEER": "archived",
+          "FB-WINE": "archived",
+          "FB-MOJITO": "archived",
+          "FB-GINTONIC": "archived",
+          "FB-POPCORN": "archived",
+          "FB-ICECREAM": "archived",
+          "FB-COTTONCANDY": "archived",
+          "FB-FRUITCUP": "archived",
+          "FB-SLUSHIE": "archived",
+          "MR-TSHIRT": "archived",
+          "MR-CAP": "archived",
+          "MR-SOCKS": "archived",
+          "MR-BOTTLE": "archived",
+          "MR-PLUSH": "archived",
+          "MR-STICKERS": "archived",
+          "MR-KEYRING": "archived",
+          "MR-LANYARD": "archived",
+          "AO-SOCKS": "LIVE",
+          "AO-GRIPSOCKS": "LIVE",
+          "AO-LOCKER": "LIVE",
+          "AO-CUP": "LIVE",
+          "AO-GLOW": "LIVE"
+        },
+        "liveRowsWithADemoName": [
+          {
+            "code": null,
+            "name": "Ice Cream Cone"
+          },
+          {
+            "code": "AO-GRIPSOCKS",
+            "name": "Grip Socks"
+          },
+          {
+            "code": "CF-42",
+            "name": "Pad Thai"
+          },
+          {
+            "code": "CF-58-4",
+            "name": "Latte"
+          }
+        ],
+        "archivedRowsWithADemoName": [
+          "FB-BEER",
+          "FB-BURGER",
+          "FB-COTTONCANDY",
+          "FB-FRIES",
+          "FB-FRUITCUP",
+          "FB-GINTONIC",
+          "FB-HOTDOG",
+          "FB-ICECREAM",
+          "FB-JUICE",
+          "FB-MOJITO",
+          "FB-NUGGETS",
+          "FB-PADTHAI",
+          "FB-PIZZA",
+          "FB-POPCORN",
+          "FB-SLUSHIE",
+          "FB-SODA",
+          "FB-WATER",
+          "FB-WINE",
+          "MR-BOTTLE",
+          "MR-CAP",
+          "MR-KEYRING",
+          "MR-LANYARD",
+          "MR-PLUSH",
+          "MR-SOCKS",
+          "MR-STICKERS",
+          "MR-TSHIRT"
+        ],
+        "samples": {
+          "Pizza": [
+            "CF-24 Margherita 400",
+            "CF-25 Mushroom & olives 480",
+            "CF-26 Four cheese 515",
+            "CF-27 Hawaiian 515",
+            "CF-28 Smoked salmon 560",
+            "CF-29 Burrata & parma ham 590",
+            "CF-30 Sausage, brie & onion 480",
+            "CF-31 Pepperoni 420",
+            "CF-32 Veggie delight 390"
+          ],
+          "Tea pot": [
+            "CF-64-1 English breakfast 115",
+            "CF-64-2 Earl grey 115",
+            "CF-64-3 Peppermint 115",
+            "CF-64-4 Green tea 115",
+            "CF-64-5 Camomile 115",
+            "CF-CHINESE-TEA Chinese Tea 140"
+          ],
+          "Merchandise": [
+            "CF-MERCH-01 Merch Little OTO 490",
+            "CF-MERCH-02 Merch Potato Head Toy 700",
+            "CF-MERCH-03 Merch Glasses Necklace 650",
+            "CF-MERCH-04 Merch Kids Beaded Necklace 200",
+            "CF-MERCH-05 Merch Frozen Bracelet Set 150",
+            "CF-MERCH-06 Merch Frozen Kids Backpack 1500",
+            "CF-MERCH-07 Merch Princess Jewelry Set 300",
+            "CF-MERCH-08 Merch Round Sunglasses 800",
+            "CF-MERCH-09 Merch Wooden Twist Animal 200",
+            "CF-MERCH-10 Merch Peppa Pig Figures 150",
+            "CF-MERCH-11 Merch Blue Emoji Toy 100",
+            "CF-MERCH-12 Merch Small Bunny 390",
+            "CF-MERCH-13 Merch Middle Bunny 690",
+            "CF-MERCH-14 Merch Big Bunny 1290",
+            "CF-MERCH-15 Merch Rainbow Kids Backpack 1500",
+            "CF-MERCH-16 Merch Duggee Dance Toy 690",
+            "CF-MERCH-17 Merch Deer Kids Backpack 1050",
+            "CF-MERCH-18 Merch Dino Monster Truck 1200",
+            "CF-MERCH-19 Merch Frozen Hair Brush 200"
+          ],
+          "Specials": [
+            "CF-SPECIAL-01 Sea Salt & Maple Latte 170",
+            "CF-SPECIAL-02 OTO Buffalo Wings 240"
+          ]
+        },
+        "publicCatalog": {
+          "route": "GET /public/branches/hkt-central/catalog",
+          "status": 200,
+          "topLevelKeys": [
+            "supervision",
+            "branch",
+            "tiers",
+            "packages",
+            "rateMode",
+            "holidays",
+            "addOns",
+            "taxConfig"
+          ],
+          "extras": [
+            "01a0d4ed-9353-7325-9684-72605ecc7f09 Bracelet Workshop 150",
+            "a-socks Regular Socks 50",
+            "a-grip-socks Grip Socks 80",
+            "a-locker Locker Rental 100",
+            "a-cup Refillable Drink Cup 150",
+            "a-glow Glow Band 60"
+          ]
+        }
+      },
+      "chalong": {
+        "branch": {
+          "name": "Oto Play Park, Robinson Chalong",
+          "code": "robinson-chalong"
+        },
+        "readAt": "2026-11-09T06:14:22.220Z",
+        "route": "GET /branches/{branchId}/menu (the till's own catalogue read, apps/pos/src/api/menu.ts) and ?includeArchived=true",
+        "liveProducts": 150,
+        "liveByKind": {
+          "menu": 122,
+          "merch": 28,
+          "addon": 0
+        },
+        "liveAndActiveByKind": {
+          "menu": 122,
+          "merch": 28
+        },
+        "realProducts": {
+          "count": 149,
+          "byKind": {
+            "menu": 121,
+            "merch": 28
+          },
+          "inactive": []
+        },
+        "otherLiveProducts": [
+          {
+            "code": null,
+            "name": "ZZ TEST Spend Cup 1007",
+            "kind": "menu",
+            "category": "Snacks",
+            "baht": 40,
+            "active": true
+          }
+        ],
+        "categoriesLive": 39,
+        "realTabsPresent": 27,
+        "realTabsMissing": [],
+        "categories": [
+          {
+            "name": "Coffee",
+            "code": "DRINKS-COFFEE",
+            "parent": "Drinks",
+            "sortOrder": 0,
+            "items": 0,
+            "kinds": {},
+            "realTab": false
+          },
+          {
+            "name": "F&B",
+            "code": "FB",
+            "parent": null,
+            "sortOrder": 0,
+            "items": 0,
+            "kinds": {},
+            "realTab": false
+          },
+          {
+            "name": "Food",
+            "code": "FOOD",
+            "parent": null,
+            "sortOrder": 0,
+            "items": 0,
+            "kinds": {},
+            "realTab": false
+          },
+          {
+            "name": "Mains",
+            "code": "FOOD-MAINS",
+            "parent": "Food",
+            "sortOrder": 0,
+            "items": 0,
+            "kinds": {},
+            "realTab": false
+          },
+          {
+            "name": "Drinks",
+            "code": "DRINKS",
+            "parent": null,
+            "sortOrder": 1,
+            "items": 0,
+            "kinds": {},
+            "realTab": false
+          },
+          {
+            "name": "Light Bites",
+            "code": "FOOD-LIGHT",
+            "parent": "Food",
+            "sortOrder": 1,
+            "items": 0,
+            "kinds": {},
+            "realTab": false
+          },
+          {
+            "name": "Bar",
+            "code": "BAR",
+            "parent": null,
+            "sortOrder": 2,
+            "items": 0,
+            "kinds": {},
+            "realTab": false
+          },
+          {
+            "name": "Snacks",
+            "code": "SNACKS",
+            "parent": null,
+            "sortOrder": 3,
+            "items": 1,
+            "kinds": {
+              "menu": 1
+            },
+            "realTab": false
+          },
+          {
+            "name": "Apparel",
+            "code": "MERCH-APPAREL",
+            "parent": null,
+            "sortOrder": 4,
+            "items": 0,
+            "kinds": {},
+            "realTab": false
+          },
+          {
+            "name": "Accessories",
+            "code": "MERCH-ACCESSORIES",
+            "parent": null,
+            "sortOrder": 5,
+            "items": 0,
+            "kinds": {},
+            "realTab": false
+          },
+          {
+            "name": "Toys",
+            "code": "MERCH-TOYS",
+            "parent": null,
+            "sortOrder": 6,
+            "items": 0,
+            "kinds": {},
+            "realTab": false
+          },
+          {
+            "name": "Ticket add-ons",
+            "code": "ADDONS",
+            "parent": null,
+            "sortOrder": 7,
+            "items": 0,
+            "kinds": {},
+            "realTab": false
+          },
+          {
+            "name": "Breakfast",
+            "code": "CAT-BREAKFAST",
+            "parent": null,
+            "sortOrder": 10,
+            "items": 8,
+            "kinds": {
+              "menu": 8
+            },
+            "realTab": true
+          },
+          {
+            "name": "Sides",
+            "code": "CAT-SIDES",
+            "parent": null,
+            "sortOrder": 11,
+            "items": 18,
+            "kinds": {
+              "menu": 18
+            },
+            "realTab": true
+          },
+          {
+            "name": "Sharing",
+            "code": "CAT-SHARING",
+            "parent": null,
+            "sortOrder": 12,
+            "items": 4,
+            "kinds": {
+              "menu": 4
+            },
+            "realTab": true
+          },
+          {
+            "name": "Soup",
+            "code": "CAT-SOUP",
+            "parent": null,
+            "sortOrder": 13,
+            "items": 1,
+            "kinds": {
+              "menu": 1
+            },
+            "realTab": true
+          },
+          {
+            "name": "Salads",
+            "code": "CAT-SALADS",
+            "parent": null,
+            "sortOrder": 14,
+            "items": 6,
+            "kinds": {
+              "menu": 6
+            },
+            "realTab": true
+          },
+          {
+            "name": "Pasta",
+            "code": "CAT-PASTA",
+            "parent": null,
+            "sortOrder": 15,
+            "items": 4,
+            "kinds": {
+              "menu": 4
+            },
+            "realTab": true
+          },
+          {
+            "name": "Pizza",
+            "code": "CAT-PIZZA",
+            "parent": null,
+            "sortOrder": 16,
+            "items": 9,
+            "kinds": {
+              "menu": 9
+            },
+            "realTab": true
+          },
+          {
+            "name": "Mains",
+            "code": "CAT-MAINS",
+            "parent": null,
+            "sortOrder": 17,
+            "items": 7,
+            "kinds": {
+              "menu": 7
+            },
+            "realTab": true
+          },
+          {
+            "name": "Asian Food",
+            "code": "CAT-ASIAN-FOOD",
+            "parent": null,
+            "sortOrder": 18,
+            "items": 7,
+            "kinds": {
+              "menu": 7
+            },
+            "realTab": true
+          },
+          {
+            "name": "Kids",
+            "code": "CAT-KIDS",
+            "parent": null,
+            "sortOrder": 19,
+            "items": 7,
+            "kinds": {
+              "menu": 7
+            },
+            "realTab": true
+          },
+          {
+            "name": "Desserts",
+            "code": "CAT-DESSERTS",
+            "parent": null,
+            "sortOrder": 20,
+            "items": 1,
+            "kinds": {
+              "menu": 1
+            },
+            "realTab": true
+          },
+          {
+            "name": "Coffee",
+            "code": "CAT-COFFEE",
+            "parent": null,
+            "sortOrder": 21,
+            "items": 7,
+            "kinds": {
+              "menu": 7
+            },
+            "realTab": true
+          },
+          {
+            "name": "Iced Coffee",
+            "code": "CAT-ICED-COFFEE",
+            "parent": null,
+            "sortOrder": 22,
+            "items": 6,
+            "kinds": {
+              "menu": 6
+            },
+            "realTab": true
+          },
+          {
+            "name": "Chocolate",
+            "code": "CAT-CHOCOLATE",
+            "parent": null,
+            "sortOrder": 23,
+            "items": 2,
+            "kinds": {
+              "menu": 2
+            },
+            "realTab": true
+          },
+          {
+            "name": "Soda",
+            "code": "CAT-SODA",
+            "parent": null,
+            "sortOrder": 24,
+            "items": 2,
+            "kinds": {
+              "menu": 2
+            },
+            "realTab": true
+          },
+          {
+            "name": "Smoothies",
+            "code": "CAT-SMOOTHIES",
+            "parent": null,
+            "sortOrder": 25,
+            "items": 3,
+            "kinds": {
+              "menu": 3
+            },
+            "realTab": true
+          },
+          {
+            "name": "Juice",
+            "code": "CAT-JUICE",
+            "parent": null,
+            "sortOrder": 26,
+            "items": 2,
+            "kinds": {
+              "menu": 2
+            },
+            "realTab": true
+          },
+          {
+            "name": "Tea pot",
+            "code": "CAT-TEA-POT",
+            "parent": null,
+            "sortOrder": 27,
+            "items": 6,
+            "kinds": {
+              "menu": 6
+            },
+            "realTab": true
+          },
+          {
+            "name": "Soft drinks",
+            "code": "CAT-SOFT-DRINKS",
+            "parent": null,
+            "sortOrder": 28,
+            "items": 7,
+            "kinds": {
+              "menu": 7
+            },
+            "realTab": true
+          },
+          {
+            "name": "Kids juice",
+            "code": "CAT-KIDS-JUICE",
+            "parent": null,
+            "sortOrder": 29,
+            "items": 4,
+            "kinds": {
+              "menu": 4
+            },
+            "realTab": true
+          },
+          {
+            "name": "Wine",
+            "code": "CAT-WINE",
+            "parent": null,
+            "sortOrder": 30,
+            "items": 7,
+            "kinds": {
+              "menu": 7
+            },
+            "realTab": true
+          },
+          {
+            "name": "Beer",
+            "code": "CAT-BEER",
+            "parent": null,
+            "sortOrder": 31,
+            "items": 1,
+            "kinds": {
+              "menu": 1
+            },
+            "realTab": true
+          },
+          {
+            "name": "Specials",
+            "code": "CAT-SPECIALS",
+            "parent": null,
+            "sortOrder": 32,
+            "items": 2,
+            "kinds": {
+              "menu": 2
+            },
+            "realTab": true
+          },
+          {
+            "name": "Free Drinks Menu",
+            "code": "CAT-FREE-DRINKS",
+            "parent": null,
+            "sortOrder": 33,
+            "items": 0,
+            "kinds": {},
+            "realTab": true
+          },
+          {
+            "name": "Balloons",
+            "code": "CAT-BALLOONS",
+            "parent": null,
+            "sortOrder": 34,
+            "items": 5,
+            "kinds": {
+              "merch": 5
+            },
+            "realTab": true
+          },
+          {
+            "name": "Merchandise",
+            "code": "CAT-MERCHANDISE",
+            "parent": null,
+            "sortOrder": 35,
+            "items": 19,
+            "kinds": {
+              "merch": 19
+            },
+            "realTab": true
+          },
+          {
+            "name": "Workshop",
+            "code": "CAT-WORKSHOP",
+            "parent": null,
+            "sortOrder": 36,
+            "items": 4,
+            "kinds": {
+              "merch": 4
+            },
+            "realTab": true
+          }
+        ],
+        "chineseTea": [
+          {
+            "code": "RC-CHINESE-TEA",
+            "name": "Chinese Tea",
+            "baht": 140,
+            "weekendBaht": null,
+            "category": "Tea pot",
+            "active": true,
+            "groups": [
+              {
+                "name": "Tea Choice",
+                "required": true,
+                "selectionType": "single",
+                "options": [
+                  "Rose black +0",
+                  "Osmanthus oolong +0",
+                  "Jasmine grape green +0",
+                  "Peach oolong +0",
+                  "Lychee black +0"
+                ]
+              }
+            ]
+          }
+        ],
+        "demoCodesAtThisBranch": {
+          "FB-NUGGETS": "absent",
+          "FB-FRIES": "absent",
+          "FB-PIZZA": "absent",
+          "FB-BURGER": "absent",
+          "FB-PADTHAI": "absent",
+          "FB-HOTDOG": "absent",
+          "FB-WATER": "absent",
+          "FB-JUICE": "absent",
+          "FB-SODA": "absent",
+          "FB-LATTE": "absent",
+          "FB-SHAKE": "absent",
+          "FB-BEER": "absent",
+          "FB-WINE": "absent",
+          "FB-MOJITO": "absent",
+          "FB-GINTONIC": "absent",
+          "FB-POPCORN": "absent",
+          "FB-ICECREAM": "absent",
+          "FB-COTTONCANDY": "absent",
+          "FB-FRUITCUP": "absent",
+          "FB-SLUSHIE": "absent",
+          "MR-TSHIRT": "absent",
+          "MR-CAP": "absent",
+          "MR-SOCKS": "absent",
+          "MR-BOTTLE": "absent",
+          "MR-PLUSH": "absent",
+          "MR-STICKERS": "absent",
+          "MR-KEYRING": "absent",
+          "MR-LANYARD": "absent",
+          "AO-SOCKS": "absent",
+          "AO-GRIPSOCKS": "absent",
+          "AO-LOCKER": "absent",
+          "AO-CUP": "absent",
+          "AO-GLOW": "absent"
+        },
+        "liveRowsWithADemoName": [
+          {
+            "code": "RC-40",
+            "name": "Pad Thai"
+          },
+          {
+            "code": "RC-55-4",
+            "name": "Latte"
+          }
+        ],
+        "archivedRowsWithADemoName": [],
+        "samples": {
+          "Pizza": [
+            "RC-23 Margherita 400",
+            "RC-24 Mushroom & olives 480",
+            "RC-25 Four cheese 515",
+            "RC-26 Hawaiian 515",
+            "RC-27 Smoked salmon 560",
+            "RC-28 Burrata & parma ham 590",
+            "RC-29 Sausage, brie & onion 480",
+            "RC-30 Pepperoni 420",
+            "RC-31 Veggie delight 390"
+          ],
+          "Tea pot": [
+            "RC-61-1 English breakfast 115",
+            "RC-61-2 Earl grey 115",
+            "RC-61-3 Peppermint 115",
+            "RC-61-4 Green tea 115",
+            "RC-61-5 Camomile 115",
+            "RC-CHINESE-TEA Chinese Tea 140"
+          ],
+          "Merchandise": [
+            "RC-MERCH-01 Merch Little OTO 490",
+            "RC-MERCH-02 Merch Potato Head Toy 700",
+            "RC-MERCH-03 Merch Glasses Necklace 650",
+            "RC-MERCH-04 Merch Kids Beaded Necklace 200",
+            "RC-MERCH-05 Merch Frozen Bracelet Set 150",
+            "RC-MERCH-06 Merch Frozen Kids Backpack 1500",
+            "RC-MERCH-07 Merch Princess Jewelry Set 300",
+            "RC-MERCH-08 Merch Round Sunglasses 800",
+            "RC-MERCH-09 Merch Wooden Twist Animal 200",
+            "RC-MERCH-10 Merch Peppa Pig Figures 150",
+            "RC-MERCH-11 Merch Blue Emoji Toy 100",
+            "RC-MERCH-12 Merch Small Bunny 390",
+            "RC-MERCH-13 Merch Middle Bunny 690",
+            "RC-MERCH-14 Merch Big Bunny 1290",
+            "RC-MERCH-15 Merch Rainbow Kids Backpack 1500",
+            "RC-MERCH-16 Merch Duggee Dance Toy 690",
+            "RC-MERCH-17 Merch Deer Kids Backpack 1050",
+            "RC-MERCH-18 Merch Dino Monster Truck 1200",
+            "RC-MERCH-19 Merch Frozen Hair Brush 200"
+          ],
+          "Specials": [
+            "RC-SPECIAL-01 Sea Salt & Maple Latte 170",
+            "RC-SPECIAL-02 OTO Buffalo Wings 240"
+          ]
+        },
+        "publicCatalog": {
+          "route": "GET /public/branches/robinson-chalong/catalog",
+          "status": 200,
+          "topLevelKeys": [
+            "supervision",
+            "branch",
+            "tiers",
+            "packages",
+            "rateMode",
+            "holidays",
+            "addOns",
+            "taxConfig"
+          ],
+          "extras": []
+        }
+      }
+    },
+    "branchesListed": [
+      {
+        "name": "Oto Play Park, Central Floresta",
+        "code": "hkt-central",
+        "archived": false
+      },
+      {
+        "name": "Oto Play Park, Robinson Chalong",
+        "code": "robinson-chalong",
+        "archived": false
+      }
+    ],
+    "signOut": 200,
+    "meAfterSignOut": 401,
+    "finishedAt": "2026-11-09T06:14:22.367Z"
+  },
+  "part2": {
+    "what": "Console screenshots, headless Chromium 1440x900, signed in as the platform admin",
+    "console": "https://oto-console-staging.onrender.com",
+    "startedAt": "2026-11-09T06:19:48.823Z",
+    "screenshots": [
+      {
+        "file": "s792-st-01a-categories-top.png",
+        "at": "2026-11-09T06:19:56.608Z",
+        "url": "/catalogue/categories",
+        "parkChipAtCapture": "Oto Play Park, Central Floresta",
+        "shows": "Catalogue > Categories, Park = Central Floresta: the top of the shared F&B category list (the demo-era categories come first by sort order)"
+      },
+      {
+        "file": "s792-st-01b-categories-real-tabs.png",
+        "at": "2026-11-09T06:19:58.504Z",
+        "url": "/catalogue/categories",
+        "parkChipAtCapture": "Oto Play Park, Central Floresta",
+        "shows": "Catalogue > Categories, scrolled to the real tabs starting at Breakfast (Breakfast 9, Sides 18, Sharing 4, Soup 1, Salads 6, Pasta 4, Pizza 9, Mains 8 ...)"
+      },
+      {
+        "file": "s792-st-01c-categories-real-tabs-end.png",
+        "at": "2026-11-09T06:20:00.368Z",
+        "url": "/catalogue/categories",
+        "parkChipAtCapture": "Oto Play Park, Central Floresta",
+        "shows": "Catalogue > Categories, the end of the list (Wine, Beer, Specials, Free Drinks Menu 0, Balloons, Merchandise, Workshop). This page counts menu items only, so the three shop tabs read 0 here; their items are on the Merch page"
+      },
+      {
+        "file": "s792-st-01d-categories-full.png",
+        "at": "2026-11-09T06:20:01.794Z",
+        "url": "/catalogue/categories",
+        "parkChipAtCapture": "Oto Play Park, Central Floresta",
+        "shows": "Catalogue > Categories, Central Floresta, the whole page: all 39 live categories, the 12 demo-era ones first, then the 27 real tabs"
+      },
+      {
+        "file": "s792-st-02a-menu-central-top.png",
+        "at": "2026-11-09T06:20:05.843Z",
+        "url": "/catalogue/menu",
+        "parkChipAtCapture": "Oto Play Park, Central Floresta",
+        "shows": "Catalogue > Menu, Park = Central Floresta, top of the list (\"125 items\"), first tabs"
+      },
+      {
+        "file": "s792-st-02d-menu-central-full.png",
+        "at": "2026-11-09T06:20:07.827Z",
+        "url": "/catalogue/menu",
+        "parkChipAtCapture": "Oto Play Park, Central Floresta",
+        "shows": "Catalogue > Menu, Central Floresta, the whole page: the Park chip at the top and every tab with its items and prices (\"125 items\")"
+      },
+      {
+        "file": "s792-st-02b-menu-central-pizza.png",
+        "at": "2026-11-09T06:20:09.851Z",
+        "url": "/catalogue/menu",
+        "parkChipAtCapture": "Oto Play Park, Central Floresta",
+        "shows": "Catalogue > Menu, Central Floresta, the Pizza tab: Margherita 400, Mushroom & olives 480 ... Veggie delight 390 (codes CF-24..CF-32 in the API readback)"
+      },
+      {
+        "file": "s792-st-02c-menu-central-pizza-section.png",
+        "at": "2026-11-09T06:20:11.151Z",
+        "url": "/catalogue/menu",
+        "parkChipAtCapture": "Oto Play Park, Central Floresta",
+        "shows": "Element capture of the Pizza section alone, Central Floresta"
+      },
+      {
+        "file": "s792-st-03a-menu-central-tea-pot.png",
+        "at": "2026-11-09T06:20:13.037Z",
+        "url": "/catalogue/menu",
+        "parkChipAtCapture": "Oto Play Park, Central Floresta",
+        "shows": "Catalogue > Menu, Central Floresta, the Tea pot tab: the five teas at 115 and Chinese Tea at 140 with its 1 choice group (Tea Choice)"
+      },
+      {
+        "file": "s792-st-03b-menu-central-tea-pot-section.png",
+        "at": "2026-11-09T06:20:14.320Z",
+        "url": "/catalogue/menu",
+        "parkChipAtCapture": "Oto Play Park, Central Floresta",
+        "shows": "Element capture of the Tea pot section alone, Central Floresta"
+      },
+      {
+        "file": "s792-st-03c-menu-central-specials.png",
+        "at": "2026-11-09T06:20:16.203Z",
+        "url": "/catalogue/menu",
+        "parkChipAtCapture": "Oto Play Park, Central Floresta",
+        "shows": "Catalogue > Menu, Central Floresta, the Specials tab: Sea Salt & Maple Latte 170 and OTO Buffalo Wings 240"
+      },
+      {
+        "file": "s792-st-04a-merch-central-top.png",
+        "at": "2026-11-09T06:20:21.457Z",
+        "url": "/catalogue/merch",
+        "parkChipAtCapture": "Oto Play Park, Central Floresta",
+        "shows": "Catalogue > Merch, Park = Central Floresta, top of the shop list"
+      },
+      {
+        "file": "s792-st-04b-merch-central-full.png",
+        "at": "2026-11-09T06:20:22.840Z",
+        "url": "/catalogue/merch",
+        "parkChipAtCapture": "Oto Play Park, Central Floresta",
+        "shows": "Catalogue > Merch, Central Floresta, the whole page (balloons, merchandise, workshop and the remaining staging shop rows)"
+      },
+      {
+        "file": "s792-st-05a-menu-chalong-top.png",
+        "at": "2026-11-09T06:20:28.936Z",
+        "url": "/catalogue/menu",
+        "parkChipAtCapture": "Oto Play Park, Robinson Chalong",
+        "shows": "Catalogue > Menu, Park = Robinson Chalong, top of the list (\"122 items\"): Breakfast 8 here against 9 at Central"
+      },
+      {
+        "file": "s792-st-05d-menu-chalong-full.png",
+        "at": "2026-11-09T06:20:30.620Z",
+        "url": "/catalogue/menu",
+        "parkChipAtCapture": "Oto Play Park, Robinson Chalong",
+        "shows": "Catalogue > Menu, Robinson Chalong, the whole page: the Park chip at the top and every tab with its items and prices (\"122 items\")"
+      },
+      {
+        "file": "s792-st-05b-menu-chalong-pizza.png",
+        "at": "2026-11-09T06:20:32.504Z",
+        "url": "/catalogue/menu",
+        "parkChipAtCapture": "Oto Play Park, Robinson Chalong",
+        "shows": "Catalogue > Menu, Robinson Chalong (Park chip scrolled above), the Pizza tab; the same nine pizzas and prices as Central, codes RC-23..RC-31 in the API readback"
+      },
+      {
+        "file": "s792-st-05c-menu-chalong-tea-pot.png",
+        "at": "2026-11-09T06:20:34.395Z",
+        "url": "/catalogue/menu",
+        "parkChipAtCapture": "Oto Play Park, Robinson Chalong",
+        "shows": "Catalogue > Menu, Robinson Chalong (Park chip scrolled above), the Tea pot tab with Chinese Tea at 140 (RC-CHINESE-TEA)"
+      }
+    ],
+    "writes": [
+      {
+        "at": "2026-11-09T06:19:51.243Z",
+        "method": "POST",
+        "path": "oto-console-staging.onrender.com/api/auth/sign-in"
+      },
+      {
+        "at": "2026-11-09T06:20:34.427Z",
+        "method": "POST",
+        "path": "oto-console-staging.onrender.com/api/auth/sign-out"
+      }
+    ],
+    "notes": [
+      {
+        "page": "categories",
+        "text": "Home operator: OTO OPERATOR Current operator not confirmed OTO Second Operator Admin · Catalogue & money Categories Shared food and drink categories and their inherited defaults. Park Oto Play Park, Central Floresta Oto Play Park, Robinson Chalong F&B Categories (39) Add category F&B — · F&B 1 direct item Sub-category Food Kitchen · F&B 0 direct items · 2 sub-categories Sub-category Mains Kitchen (inherited) · F&B (inherited) · 0 items Light Bites Kitchen (inherited) · F&B (inherited) · 0 items Drinks Bar · F&B 0 direct items · 1 sub-category Sub-category Coffee Bar (inherited) · F&B (inherited) · 0 items Bar Bar · Bar (alcohol) 0 direct items Sub-category Snacks Kitchen · F&B 0 direct items Sub-category Apparel No prep ticket · Merch 0 direct items Sub-category Accessories No prep ticket · Merch 0 direct items Sub-category Toys No prep ticket · Merch 0 direct items Sub-category Ticket add-ons No prep ticket · Add-ons 0 direct items Sub-category Breakfast Kitchen · F&B 9 direct items Sub-category Sides Kitchen · F&B 18 direct items Sub-category Sharing Kitchen · F&B 4 direct items Sub-category Soup Kitchen · F&B 1 direct item Sub-category Salads Kitchen · F&B 6 direct items Sub-category Pasta Kitchen · F&B 4 direct items Sub-category Pizza Kitchen · F&B 9 direct items Sub-category Mains Kitchen · F&B 8 direct items Sub-category Asian Food Kitchen · F&B 7 direct items Sub-category Kids Kitchen · F&B 8 direct items Sub-category Desserts Kitchen · F&B 1 direct item Sub-category Coffee Bar · F&B 7 direct items Sub-category Iced Coffee Bar · F&B 6 direct items Sub-category Chocolate Bar · F&B 2 direct items Sub-category Soda Bar · F&B 2 direct items Sub-category Smoothies Bar · F&B 3 direct items Sub-category Juice Bar · F&B 2 direct items Sub-category Tea pot Bar · F&B 6 direct items Sub-category Soft drinks Bar · F&B 7 direct items Sub-category Kids juice Bar · F&B 4 direct items Sub-category Wine Bar · Bar (alcohol) 7 direct items Sub-category Beer Bar · Bar (alcohol) 1 direct item Sub-category Specials Kitchen · F&B 2 direct items Sub-category Free Drinks Menu Bar · F&B 0 direct items Sub-category Balloons No prep ticket · Merch 0 direct items Sub-category Merchandise No prep ticket · Merch 0 direct items Sub-category Workshop No prep ticket · Merch 0 direct items Sub-category"
+      },
+      {
+        "page": "menu Central",
+        "itemCountLine": "125 items",
+        "sectionHeadings": [
+          "F&B1",
+          "BREAKFAST9",
+          "SIDES18",
+          "SHARING4",
+          "SOUP1",
+          "SALADS6",
+          "PASTA4",
+          "PIZZA9",
+          "MAINS8",
+          "ASIAN FOOD7",
+          "KIDS8",
+          "DESSERTS1",
+          "COFFEE7",
+          "ICED COFFEE6",
+          "CHOCOLATE2",
+          "SODA2",
+          "SMOOTHIES3",
+          "JUICE2",
+          "TEA POT6",
+          "SOFT DRINKS7",
+          "KIDS JUICE4",
+          "WINE7",
+          "BEER1",
+          "SPECIALS2"
+        ]
+      },
+      {
+        "page": "menu Central Pizza",
+        "text": "PIZZA9 Margherita ฿400 Mushroom & olives ฿480 Four cheese ฿515 Hawaiian ฿515 Smoked salmon ฿560 Burrata & parma ham ฿590 Sausage, brie & onion ฿480 Pepperoni ฿420 Veggie delight ฿390"
+      },
+      {
+        "page": "menu Central Tea pot",
+        "text": "TEA POT6 English breakfast ฿115 Earl grey ฿115 Peppermint ฿115 Green tea ฿115 Camomile ฿115 Chinese Tea 1 group ฿140"
+      },
+      {
+        "page": "menu Central Specials",
+        "text": "SPECIALS2 Sea Salt & Maple Latte ฿170 OTO Buffalo Wings ฿240"
+      },
+      {
+        "page": "merch Central",
+        "text": "Home operator: OTO OPERATOR Current operator not confirmed OTO Second Operator Admin · Catalogue & money Merch Shop items, weekday and weekend prices, sizes and barcodes. Park Oto Play Park, Central Floresta Oto Play Park, Robinson Chalong To start stock tracking, link the item in Inventory. Turning Track stock on here alone does not create that link. Manage stock counts in Inventory. 31 items Add item NEEDS RESTOCKING (1) Adjust in Inventory panel ZZ TEST Stock 496 Mug Out of stock Mystery box Toys ฿0 Native payment free item 0d008153 Apparel ฿0 ZZ TEST Stock 496 Mug Apparel Out of stock ฿10 Helium Balloon (65) Balloons ฿65 Helium Balloon (75) Balloons ฿75 Helium Foil Balloon S Balloons ฿150 Helium Foil Balloon M Balloons ฿200 Helium Foil Balloon L Balloons ฿250 Merch Little OTO Merchandise ฿490 Merch Potato Head Toy Merchandise ฿700 Merch Glasses Necklace Merchandise ฿650 Merch Kids Beaded Necklace Merchandise ฿200 Merch Frozen Bracelet Set Merchandise ฿150 Merch Frozen Kids Backpack Merchandise ฿1,500 Merch Princess Jewelry Set Merchandise ฿300 Merch Round Sunglasses Merchandise ฿800 Merch Wooden Twist Animal Merchandise ฿200 Merch Peppa Pig Figures Merchandise ฿150 Merch Blue Emoji Toy Merchandise ฿100 Merch Small Bunny Merchandise ฿390 Merch Middle Bunny Merchandise ฿690 Merch Big Bunny Merchandise ฿1,290 Merch Rainbow Kids Backpack Merchandise ฿1,500 Merch Duggee Dance Toy Merchandise ฿690 Merch Deer Kids Backpack Merchandise ฿1,050 Merch Dino Monster Truck Merchandise ฿1,200 Merch Frozen Hair Brush Merchandise ฿200 OTO CS Necklace Workshop ฿150 OTO CS Mirror & Pen Workshop ฿250 OTO CS Keychain Workshop ฿200 OTO CS Bracelet Workshop ฿100 Stock levels are managed in the Inventory panel."
+      },
+      {
+        "page": "menu Chalong",
+        "itemCountLine": "122 items",
+        "sectionHeadings": [
+          "SNACKS1",
+          "BREAKFAST8",
+          "SIDES18",
+          "SHARING4",
+          "SOUP1",
+          "SALADS6",
+          "PASTA4",
+          "PIZZA9",
+          "MAINS7",
+          "ASIAN FOOD7",
+          "KIDS7",
+          "DESSERTS1",
+          "COFFEE7",
+          "ICED COFFEE6",
+          "CHOCOLATE2",
+          "SODA2",
+          "SMOOTHIES3",
+          "JUICE2",
+          "TEA POT6",
+          "SOFT DRINKS7",
+          "KIDS JUICE4",
+          "WINE7",
+          "BEER1",
+          "SPECIALS2"
+        ]
+      },
+      {
+        "page": "menu Chalong Pizza",
+        "text": "PIZZA9 Margherita ฿400 Mushroom & olives ฿480 Four cheese ฿515 Hawaiian ฿515 Smoked salmon ฿560 Burrata & parma ham ฿590 Sausage, brie & onion ฿480 Pepperoni ฿420 Veggie delight ฿390"
+      },
+      {
+        "page": "menu Chalong Tea pot",
+        "text": "TEA POT6 English breakfast ฿115 Earl grey ฿115 Peppermint ฿115 Green tea ฿115 Camomile ฿115 Chinese Tea 1 group ฿140"
+      }
+    ],
+    "browser": "Chromium 153.0.8010.12",
+    "signedInAt": "2026-11-09T06:19:52.066Z",
+    "signOut": {
+      "at": "2026-11-09T06:20:34.430Z",
+      "signInFormShownAgain": true
+    },
+    "unexpectedWrites": [],
+    "finishedAt": "2026-11-09T06:20:34.430Z"
+  },
+  "part3": {
+    "what": "Till web app F&B screen",
+    "done": false,
+    "at": "2026-11-09T06:20:58.822Z",
+    "why": "Skipped on purpose: the till opens no selling surface, F&B included, until a station is taken (apps/pos/src/App.tsx: fleetAvailable && !station shows the StationPicker). Taking one is a write, so the till was not opened at all."
+  },
+  "comparison": {
+    "realTabs": {
+      "expected": 27,
+      "central": 27,
+      "chalong": 27,
+      "missing": {
+        "central": [],
+        "chalong": []
+      },
+      "freeDrinksMenuItems": {
+        "central": 0,
+        "chalong": 0
+      },
+      "match": true
+    },
+    "realProducts": {
+      "expected": {
+        "central": 152,
+        "chalong": 149
+      },
+      "found": {
+        "central": 152,
+        "chalong": 149
+      },
+      "byKind": {
+        "central": {
+          "menu": 124,
+          "merch": 28
+        },
+        "chalong": {
+          "menu": 121,
+          "merch": 28
+        }
+      },
+      "match": true
+    },
+    "keptAddOnsCentral": {
+      "expected": 5,
+      "found": [
+        "AO-SOCKS",
+        "AO-GRIPSOCKS",
+        "AO-LOCKER",
+        "AO-CUP",
+        "AO-GLOW"
+      ],
+      "match": true
+    },
+    "chineseTea": {
+      "expected": "140 under Tea pot at both parks",
+      "central": {
+        "code": "CF-CHINESE-TEA",
+        "name": "Chinese Tea",
+        "baht": 140,
+        "weekendBaht": null,
+        "category": "Tea pot",
+        "active": true,
+        "groups": [
+          {
+            "name": "Tea Choice",
+            "required": true,
+            "selectionType": "single",
+            "options": [
+              "Rose black +0",
+              "Osmanthus oolong +0",
+              "Jasmine grape green +0",
+              "Peach oolong +0",
+              "Lychee black +0"
+            ]
+          }
+        ]
+      },
+      "chalong": {
+        "code": "RC-CHINESE-TEA",
+        "name": "Chinese Tea",
+        "baht": 140,
+        "weekendBaht": null,
+        "category": "Tea pot",
+        "active": true,
+        "groups": [
+          {
+            "name": "Tea Choice",
+            "required": true,
+            "selectionType": "single",
+            "options": [
+              "Rose black +0",
+              "Osmanthus oolong +0",
+              "Jasmine grape green +0",
+              "Peach oolong +0",
+              "Lychee black +0"
+            ]
+          }
+        ]
+      },
+      "match": true
+    },
+    "demoItemsCentral": {
+      "expected": "gone",
+      "demoCodesArchived": 28,
+      "demoCodesLive": [
+        "AO-SOCKS",
+        "AO-GRIPSOCKS",
+        "AO-LOCKER",
+        "AO-CUP",
+        "AO-GLOW"
+      ],
+      "match": true,
+      "note": "All 28 demo FB-/MR- codes are archived; the 5 AO- add-ons are the kept ones. Live rows that share a demo name are real menu lines (CF-42 Pad Thai, CF-58-4 Latte, AO-GRIPSOCKS Grip Socks) or the uncoded Ice Cream Cone below."
+    },
+    "differences": [
+      "Central has 5 further live rows with no code, outside the seed and outside the demo codes, so --retire-demo (which works by code) left them: Ice Cream Cone (menu, 60, in the demo-era category F&B), Bracelet Workshop (add-on, 150, Ticket add-ons, also offered on the booking site), Mystery box (merch, 0, Toys), Native payment free item 0d008153 (merch, 0, Apparel), ZZ TEST Stock 496 Mug (merch, 10, Apparel). Central live total is therefore 162 = 152 real + 5 AO- add-ons + 5 uncoded.",
+      "Chalong has 1 further live row with no code: ZZ TEST Spend Cup 1007 (menu, 40, Snacks). Chalong live total is 150 = 149 real + 1.",
+      "The 12 demo-era categories are still live operator-wide (F&B, Food, Mains, Light Bites, Drinks, Coffee, Bar, Snacks, Apparel, Accessories, Toys, Ticket add-ons), so the Console lists 39 categories, with two names doubled (Coffee, Mains). Empty at both parks except: Central F&B 1, Apparel 2, Toys 1, Ticket add-ons 6; Chalong Snacks 1.",
+      "Menu names carry no printed number: Central line 24 is the item Margherita with code CF-24 (Chalong RC-23). The number lives in the code, which the Console list does not show."
+    ]
+  }
+}
