@@ -127,8 +127,10 @@ export async function partyRoutes(app: App): Promise<void> {
   app.post(
     '/:id/settle',
     {
+      // A party route takes a party permission; the sale it rings up needs
+      // `pos:sale:create` at the same branch too, checked by the service.
       config: {
-        permission: 'pos:sale:create',
+        permission: 'pos:party:charge',
         target: { branchId: 'body.branchId' },
         stationTrading: true,
       },
@@ -143,14 +145,15 @@ export async function partyRoutes(app: App): Promise<void> {
           'When it closes, the sale id is written back to the OTO App through the party edit path. Refused 409 ' +
           'PARTY_ALREADY_SETTLED while an earlier settlement sale is open or paid (void or refund it first), 409 ' +
           'PARTY_PAID_ON_TAB when the tab already took money for the package, and as the preview refuses. The same ' +
-          'settlement id again answers what it made, under x-oto-replay.',
+          'settlement id again answers what it made, under x-oto-replay. Needs pos:party:charge and pos:sale:create at ' +
+          'the branch.',
         params: PartyParams,
         body: PartySettleBodySchema,
         response: { 200: PartySettleAnswerSchema },
       },
     },
     async (req, reply) => {
-      const actor = actorOf(req, 'pos:sale:create', 'pos:party:charge');
+      const actor = actorOf(req, 'pos:party:charge', 'pos:sale:create');
       const actionId = actionIdOf(req, req.body.actionId);
       const answer = await settleParty(
         { db: app.db, directory: app.otoAppDirectory, log: req.log },
