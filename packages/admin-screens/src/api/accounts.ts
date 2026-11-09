@@ -55,7 +55,7 @@ export function createAccountsApi(api: AdminApi) {
     tempPassword: (id: string) =>
       api.post<ApiResponse<'/accounts/{id}/temp-password', 'post'>>(`${accountPath(id)}/temp-password`, undefined, { idempotencyKey: freshKey() }),
     accountSessions: (id: string, page: { limit: number; offset: number } = { limit: SESSIONS_PAGE_SIZE, offset: 0 }) =>
-      api.get<SessionsPage>(`${accountPath(id)}/sessions?limit=${page.limit}&offset=${page.offset}`),
+      api.get<ApiResponse<'/accounts/{id}/sessions', 'get'>>(`${accountPath(id)}/sessions?limit=${page.limit}&offset=${page.offset}`),
     revokeSessions: (id: string) => api.post<ApiResponse<'/accounts/{id}/sessions/revoke', 'post'>>(`${accountPath(id)}/sessions/revoke`, undefined, { idempotencyKey: freshKey() }),
     accountStaffTokens: (id: string) => api.get<ApiResponse<'/accounts/{id}/staff-tokens', 'get'>>(`${accountPath(id)}/staff-tokens`),
     endStaffToken: (jti: string) => api.delete<ApiResponse<'/staff-tokens/{jti}', 'delete'>>(`/staff-tokens/${encodeURIComponent(jti)}`, { idempotencyKey: freshKey() }),
