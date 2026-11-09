@@ -468,7 +468,10 @@ try {
   await check("My Reports says the same for a report opened earlier and deleted since", async () => {
     await click(myRow(mineOpened)!);
     await waitFor("the comment bar", () => byTestId("input-staff-comment"));
-    assert.ok(byTestId("text-detail-reported-by"), "a live report has no reporter line");
+    // The reporter line arrives with the details read, a tick after the comment
+    // bar renders; waiting for it is the same assertion without the race that
+    // failed twice on a busy runner on 9 November 2026.
+    await waitFor("the reporter line on a live report", () => byTestId("text-detail-reported-by"));
     await escape();
     await waitFor("the sheet to close", () => !sheet());
     await deleteElsewhere(mineOpened);
