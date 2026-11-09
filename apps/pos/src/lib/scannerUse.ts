@@ -6,12 +6,14 @@ import { SCANNER_BURST_GAP_MS, SCANNER_BURST_MIN_LENGTH, SCREEN_SCAN_AGE_MAX_S }
  * A cradle plugged into the iPad is a keyboard to it. Nothing reports it,
  * nothing can ask it whether it is there; the only sign of it the till has is
  * the codes it types. So every place the till hears keys arrive at a scanner's
- * pace notes the moment here — a scan-paced burst the page listener took
- * (`lib/scannerBurst.ts`), and a scan-paced run the wristband field took
- * (`components/fnb/ScanWristband.tsx`, by `nextPacedRun` below) — and the
- * station heartbeat (`station/heartbeat.ts`) reports how long ago that was. A
- * paste, or text an iPad inserts in one go (QuickType, dictation), is not a
- * scanner and is never noted, whatever the field then does with it.
+ * pace notes the moment here — a scan-paced run the staff app's one page
+ * listener reads (`lib/pageScan.ts`, by `nextPacedKey` below; SCRUM-766), the
+ * kiosk's burst listener (`lib/scannerBurst.ts`), and a scan-paced run the
+ * wristband field reads itself (`components/fnb/ScanWristband.tsx`, by
+ * `nextPacedRun`) — and the station heartbeat (`station/heartbeat.ts`) reports
+ * how long ago that was. A paste, or text an iPad inserts in one go (QuickType,
+ * dictation), is not a scanner and is never noted, whatever the till then does
+ * with it.
  *
  * A scanner plugged into the BOX is not noted: the box reads it and reports it
  * on its own heartbeat.
@@ -100,4 +102,22 @@ export function nextPacedRun(run: PacedRun, change: { added: number; at: number;
 /** Whether the run reads as a scanner: long enough, every key at its pace. */
 export function pacedLikeScanner(run: PacedRun): boolean {
   return run.length >= SCANNER_BURST_MIN_LENGTH;
+}
+
+/** Keys a scanner presses on the way to a character, which neither add to a run nor end it. */
+const PASS_THROUGH_KEYS = new Set(['Shift', 'CapsLock']);
+const PRINTABLE_KEY = /^[\x20-\x7e]$/;
+
+/**
+ * The run after one key heard on the page (the staff app's one listener,
+ * `lib/pageScan.ts`): a printable character is one character typed; Shift and
+ * Caps Lock pass through, as a scanner holds Shift for a capital; Enter leaves
+ * the run to be read; anything else — a shortcut, Backspace, an arrow — is a
+ * person at the keys and ends it.
+ */
+export function nextPacedKey(run: PacedRun, key: { key: string; at: number; withCommand?: boolean }): PacedRun {
+  if (key.withCommand) return { length: 0, at: key.at };
+  if (key.key === 'Enter' || PASS_THROUGH_KEYS.has(key.key)) return run;
+  if (!PRINTABLE_KEY.test(key.key)) return { length: 0, at: key.at };
+  return nextPacedRun(run, { added: 1, at: key.at, pasted: false });
 }

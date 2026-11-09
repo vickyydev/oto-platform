@@ -11,6 +11,7 @@ import {
 } from '@oto/shared';
 import { looksLikeBookingQr } from '@/api/bookings';
 import type { TabScan } from '@/lib/scanChannel';
+import { NO_PACED_RUN, nextPacedKey, noteScannerUse, pacedLikeScanner, type PacedRun } from '@/lib/scannerUse';
 import { looksLikeVoucherCode } from '@/lib/tillVoucher';
 
 /**
@@ -375,6 +376,16 @@ export function usePageScanShell(): void {
       if (quiet) clearTimeout(quiet);
       quiet = null;
     };
+    // SCRUM-771 — the same keys read against the shared scanner rule, for the
+    // scanner's presence only (`lib/scannerUse.ts`): a run at a scanner's pace,
+    // whether or not a screen takes its code, is the only sign the till has of
+    // a cradle plugged into the iPad. A field that reads codes itself notes its
+    // own (`ScanWristband`), and a paste is never a scanner.
+    let paced: PacedRun = NO_PACED_RUN;
+    const notePaced = () => {
+      if (pacedLikeScanner(paced)) noteScannerUse();
+      paced = NO_PACED_RUN;
+    };
 
     /** Hand a code to the screen on show. True when it took it. */
     const deliver = (commit: PageScanCommit): boolean => {
@@ -390,15 +401,19 @@ export function usePageScanShell(): void {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.isComposing) return;
       const focus = scanFocusOf(event.target);
+      const withCommand = event.ctrlKey || event.altKey || event.metaKey;
+      paced = focus === 'own' ? NO_PACED_RUN : nextPacedKey(paced, { key: event.key, at: event.timeStamp, withCommand });
       const step = scanner.push({
         key: event.key,
         at: event.timeStamp,
-        withCommand: event.ctrlKey || event.altKey || event.metaKey,
+        withCommand,
         focus,
       });
       if (step.started) before = focus === 'field' ? fieldBefore(event.target) : null;
       stopWaiting();
+      if (!step.commit && event.key === 'Enter') paced = NO_PACED_RUN;
       if (step.commit) {
+        notePaced();
         if (deliver(step.commit)) {
           // The scanner's Enter, once a screen took the code: it must not also
           // submit a field's form or press the button that has focus.
@@ -411,7 +426,12 @@ export function usePageScanShell(): void {
         quiet = setTimeout(() => {
           quiet = null;
           const commit = scanner.settle();
-          if (commit) deliver(commit);
+          if (!commit) {
+            paced = NO_PACED_RUN;
+            return;
+          }
+          notePaced();
+          deliver(commit);
         }, step.settleInMs);
       }
     };
@@ -423,6 +443,7 @@ export function usePageScanShell(): void {
       scanner.reset();
       stopWaiting();
       before = null;
+      paced = NO_PACED_RUN;
       if (deliver({ code: text.trim(), focus: 'none', byEnter: false })) event.preventDefault();
     };
 
@@ -430,6 +451,7 @@ export function usePageScanShell(): void {
       scanner.reset();
       stopWaiting();
       before = null;
+      paced = NO_PACED_RUN;
     };
 
     window.addEventListener('keydown', onKeyDown, true);

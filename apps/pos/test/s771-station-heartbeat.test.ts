@@ -6,8 +6,10 @@ import { SCANNER_BURST_GAP_MS, SCANNER_BURST_MIN_LENGTH, SCREEN_HEARTBEAT_INTERV
 import { renderHook, type RenderedHook } from './support/hooks';
 import { useStationHeartbeat } from '@/station/heartbeat';
 import { useScannerBurst } from '@/lib/scannerBurst';
-// The wristband field's own gap (`FIELD_SCAN_GAP_MS` is this).
-import { SCAN_PACE_GAP_MS as FIELD_SCAN_GAP_MS } from '@/lib/pageScan';
+// The wristband field's own gap (`FIELD_SCAN_GAP_MS` is this) is the page listener's.
+import { SCAN_PACE_GAP_MS, registerPageScanRoute, usePageScanShell } from '@/lib/pageScan';
+
+const FIELD_SCAN_GAP_MS = SCAN_PACE_GAP_MS;
 import {
   NO_PACED_RUN,
   forgetScannerUse,
@@ -222,6 +224,87 @@ describe('what counts as the scanner typing', () => {
   it('does not note a person typing', () => {
     hook = renderHook(() => useScannerBurst(() => undefined));
     type('T1-7KMQ4XABCD', 1_000, 400);
+    expect(lastScanSecondsAgo()).toBeNull();
+  });
+});
+
+describe('what the staff app’s one page listener counts as the scanner typing (SCRUM-766)', () => {
+  type Listener = (event: unknown) => void;
+  let listeners: Map<string, Set<Listener>>;
+  let shell: RenderedHook<void, void> | undefined;
+  let leave: () => void;
+  let taken: string[];
+  const body = { tagName: 'BODY', closest: () => null };
+  /** A field that reads codes itself: the wristband box, which notes its own. */
+  const ownField = { tagName: 'INPUT', type: 'text', value: '', closest: (s: string) => (s === '[data-reads-scans]' ? {} : null) };
+
+  const fire = (type: string, event: unknown) => {
+    for (const fn of [...(listeners.get(type) ?? [])]) fn(event);
+  };
+  const press = (key: string, at: number, target: unknown) =>
+    fire('keydown', {
+      key, timeStamp: at, target, isComposing: false, ctrlKey: false, altKey: false, metaKey: false,
+      preventDefault: () => undefined, stopPropagation: () => undefined,
+    });
+  const type = (text: string, gap: number, target: unknown = body, enter = true) => {
+    [...text].forEach((key, index) => press(key, 1_000 + index * gap, target));
+    if (enter) press('Enter', 1_000 + text.length * gap, target);
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    forgetScannerUse();
+    listeners = new Map();
+    taken = [];
+    vi.stubGlobal('window', {
+      addEventListener: (type: string, fn: Listener) => {
+        if (!listeners.has(type)) listeners.set(type, new Set());
+        listeners.get(type)!.add(fn);
+      },
+      removeEventListener: (type: string, fn: Listener) => listeners.get(type)?.delete(fn),
+    });
+    vi.stubGlobal('document', { activeElement: body, visibilityState: 'visible' });
+    shell = renderHook(() => usePageScanShell());
+    leave = registerPageScanRoute(() => ({ tab: (scan) => taken.push(scan.ok ? scan.key : '') }));
+  });
+
+  afterEach(() => {
+    leave();
+    shell?.unmount();
+    shell = undefined;
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('notes a scanner-paced code, whether a screen takes it or not, and one that ends with no Enter', () => {
+    type('T1-7KMQ4XABCD', 15);
+    expect(lastScanSecondsAgo()).not.toBeNull();
+    forgetScannerUse();
+    // A retail barcode: no screen here takes it, and it is still the scanner.
+    type('8851234567890', 15);
+    expect(taken).toEqual([]);
+    expect(lastScanSecondsAgo()).not.toBeNull();
+    forgetScannerUse();
+    type('8851234567890', 15, body, false);
+    vi.advanceTimersByTime(500);
+    expect(lastScanSecondsAgo()).not.toBeNull();
+  });
+
+  it('does not note a person typing, a run at the page’s own wider gap, or a paste', () => {
+    type('T1-7KMQ4XABCD', 400);
+    expect(lastScanSecondsAgo()).toBeNull();
+    type('8851234567890', SCAN_PACE_GAP_MS);
+    vi.advanceTimersByTime(500);
+    expect(lastScanSecondsAgo()).toBeNull();
+    fire('paste', {
+      target: body, clipboardData: { getData: () => '8851234567890' }, preventDefault: () => undefined,
+    });
+    expect(lastScanSecondsAgo()).toBeNull();
+  });
+
+  it('leaves a field that reads codes itself to note its own', () => {
+    type('T1-7KMQ4XABCD', 15, ownField);
+    vi.advanceTimersByTime(500);
     expect(lastScanSecondsAgo()).toBeNull();
   });
 });
