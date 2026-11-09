@@ -1,0 +1,836 @@
+{
+  "unit": "SCRUM-795",
+  "what": "Staging proof: an OTO App user gets a platform account by the provisioning job, and the first launcher sign-in adopts the app password (here a temporary one, so the change is forced); afterwards only the suite password signs in.",
+  "date": "2026-11-09",
+  "timezone": "times are UTC",
+  "repoHead": "82c743c0c (main; nothing committed by this proof)",
+  "liveDeploys": [
+    {
+      "service": "oto-api-staging",
+      "status": "live",
+      "sha": "8250eca8fb5ac6e40d5bb23581f9db6fb7feecd7",
+      "finishedAt": "2026-11-09T08:01:28.596955Z"
+    },
+    {
+      "service": "oto-app-staging",
+      "status": "live",
+      "sha": "6fe36b12bf286214844299009e0e013e89742b87",
+      "finishedAt": "2026-11-09T06:51:45.268937Z"
+    },
+    {
+      "service": "oto-launcher-staging",
+      "status": "live",
+      "sha": "9d79b31fb360c0b91efae8648316ab7a2f5fd894",
+      "finishedAt": "2026-11-09T06:21:37.654156Z"
+    },
+    {
+      "service": "oto-console-staging",
+      "status": "live",
+      "sha": "9d79b31fb360c0b91efae8648316ab7a2f5fd894",
+      "finishedAt": "2026-11-09T06:21:42.143876Z"
+    }
+  ],
+  "rules": [
+    "Only a ZZ TEST user was created; no real person's account or password was touched.",
+    "No SMS was sent: the ZZ TEST phone is unverified, no reset or setup code was asked for (verification codes for the account: 0).",
+    "No setting, environment value or deploy was changed.",
+    "The temporary app password and the new ZZ TEST password lived only in the memory of the proof process and are written nowhere."
+  ],
+  "testSubject": {
+    "appUserId": "57b8850c-9575-4d73-a41b-121e5ba91887",
+    "appUserFullName": "ZZ TEST 795 Staff mw8zeis6",
+    "appUserEmail": "zz-test-795-mw8zeis6@example.invalid",
+    "phone": "+66900000795 (test number, no message is ever sent to it)",
+    "appRole": "staff",
+    "appBranch": {
+      "id": "f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+      "name": "Oto Play Park, Robinson Chalong",
+      "platformBranchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+    },
+    "platformAccountId": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+    "appIdentityId": "01a1bf62-22be-759e-a615-6dc5bda432ea",
+    "accessAssignmentId": "01a1bf62-22c2-700e-8487-7941068a362a"
+  },
+  "actors": {
+    "stagingAdminAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "stagingAdminAppRole": "global_admin",
+    "provisioningActor": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d"
+  },
+  "preflight": {
+    "jobId": "job-dboo00nf3r2c73bq24m0",
+    "at": "2026-11-09T08:11:50.456Z",
+    "readOnly": true,
+    "testNumberHeldByAnAccount": 0,
+    "zzTest795AppUsers": 0,
+    "robinsonChalong": [
+      {
+        "appBranchId": "f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+        "platformBranchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+        "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+      }
+    ],
+    "actor": [
+      {
+        "id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "status": "active",
+        "operator_id": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+      }
+    ],
+    "activeAppUsersWithoutLinkByRole": [
+      {
+        "role": "manager",
+        "n": 3
+      },
+      {
+        "role": "staff",
+        "n": 11
+      }
+    ],
+    "provisionedBeforeThisProof": 51,
+    "passwordAdoptionsBeforeThisProof": 0
+  },
+  "provisioning": {
+    "command": "node scripts/agent/render.mjs job \"pnpm --filter @oto/db exec tsx scripts/otoapp-staff-accounts.ts\" (then the same with --apply --actor 01a0bbdc-8c64-7283-aa3b-2af7e79c525d)",
+    "baselineDryRunBeforeTheTestUser": {
+      "jobId": "job-dboo0krm8hqs73eh5830",
+      "startedAt": "2026-11-09T08:12:01Z",
+      "finishedAt": null,
+      "mode": "dry run",
+      "summary": [
+        "OTO App staff accounts, operator 01a0bbdc-8c41-7204-bd58-2b92bd7dda75: DRY RUN, nothing written",
+        "app users read: 79",
+        "phone, of those to provision: user phone_e164 0, user phone_number 0, employee record 0",
+        "phone counted as verified (the app's phone_verified on the user's own phone_e164): verified 0, unverified 0 (no SMS reset until verified)",
+        "forced password change carried from the app (must_change_password): 0 (changed at the first launcher sign-in)",
+        "employee record: linked 0, none carries the user 0, ambiguous 0, no platform copy yet 0",
+        "platform role assignments: staff 0 (branch), branch_manager 0 (branch), operator_admin 0 (operator-wide)",
+        "the app tile alone: by the mapping (staff, advisor) 0, mapped role landed at no park 0"
+      ],
+      "outcomes": {
+        "provision": 0,
+        "inactive": 13,
+        "already_linked": 52,
+        "global_admin": 0,
+        "unknown_role": 0,
+        "other_park_group": 0,
+        "no_phone": 13,
+        "phone_taken": 1,
+        "phone_shared": 0,
+        "employee_held": 0,
+        "failed": 0
+      },
+      "byAppRole": {
+        "admin": "already_linked 6",
+        "advisor": "already_linked 1",
+        "global_admin": "already_linked 1",
+        "manager": "inactive 2, already_linked 11, no_phone 2, phone_taken 1",
+        "staff": "inactive 11, already_linked 33, no_phone 11"
+      },
+      "jobStatus": "succeeded"
+    },
+    "dryRun": {
+      "jobId": "job-dboo220u01pc73ft6l6g",
+      "startedAt": "2026-11-09T08:15:03Z",
+      "finishedAt": "2026-11-09T08:16:05Z",
+      "mode": "dry run",
+      "summary": [
+        "OTO App staff accounts, operator 01a0bbdc-8c41-7204-bd58-2b92bd7dda75: DRY RUN, nothing written",
+        "app users read: 80",
+        "phone, of those to provision: user phone_e164 1, user phone_number 0, employee record 0",
+        "phone counted as verified (the app's phone_verified on the user's own phone_e164): verified 0, unverified 1 (no SMS reset until verified)",
+        "forced password change carried from the app (must_change_password): 1 (changed at the first launcher sign-in)",
+        "employee record: linked 0, none carries the user 1, ambiguous 0, no platform copy yet 0",
+        "platform role assignments: staff 0 (branch), branch_manager 0 (branch), operator_admin 0 (operator-wide)",
+        "the app tile alone: by the mapping (staff, advisor) 1, mapped role landed at no park 0"
+      ],
+      "outcomes": {
+        "provision": 1,
+        "inactive": 13,
+        "already_linked": 52,
+        "global_admin": 0,
+        "unknown_role": 0,
+        "other_park_group": 0,
+        "no_phone": 13,
+        "phone_taken": 1,
+        "phone_shared": 0,
+        "employee_held": 0,
+        "failed": 0
+      },
+      "byAppRole": {
+        "admin": "already_linked 6",
+        "advisor": "already_linked 1",
+        "global_admin": "already_linked 1",
+        "manager": "inactive 2, already_linked 11, no_phone 2, phone_taken 1",
+        "staff": "provision 1, inactive 11, already_linked 33, no_phone 11"
+      },
+      "jobStatus": "succeeded"
+    },
+    "apply": {
+      "jobId": "job-dboo2ktg1s2s73fqr4gg",
+      "startedAt": "2026-11-09T08:16:18Z",
+      "finishedAt": "2026-11-09T08:17:36Z",
+      "mode": "apply",
+      "summary": [
+        "OTO App staff accounts, operator 01a0bbdc-8c41-7204-bd58-2b92bd7dda75: APPLIED",
+        "app users read: 80",
+        "phone, of those provisioned: user phone_e164 1, user phone_number 0, employee record 0",
+        "phone counted as verified (the app's phone_verified on the user's own phone_e164): verified 0, unverified 1 (no SMS reset until verified)",
+        "forced password change carried from the app (must_change_password): 1 (changed at the first launcher sign-in)",
+        "employee record: linked 0, none carries the user 1, ambiguous 0, no platform copy yet 0",
+        "platform role assignments: staff 0 (branch), branch_manager 0 (branch), operator_admin 0 (operator-wide)",
+        "the app tile alone: by the mapping (staff, advisor) 1, mapped role landed at no park 0"
+      ],
+      "outcomes": {
+        "provision": 1,
+        "inactive": 13,
+        "already_linked": 52,
+        "global_admin": 0,
+        "unknown_role": 0,
+        "other_park_group": 0,
+        "no_phone": 13,
+        "phone_taken": 1,
+        "phone_shared": 0,
+        "employee_held": 0,
+        "failed": 0
+      },
+      "byAppRole": {
+        "admin": "already_linked 6",
+        "advisor": "already_linked 1",
+        "global_admin": "already_linked 1",
+        "manager": "inactive 2, already_linked 11, no_phone 2, phone_taken 1",
+        "staff": "provision 1, inactive 11, already_linked 33, no_phone 11"
+      },
+      "jobStatus": "succeeded"
+    },
+    "gate": "Applied only because the dry run showed exactly one provision (staff 1) with every other outcome equal to the baseline."
+  },
+  "writes": [
+    {
+      "at": "2026-11-09T08:14:55.942Z",
+      "step": "1 create app user",
+      "origin": "https://oto-app-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/users",
+      "sent": {
+        "email": "zz-test-795-mw8zeis6@example.invalid",
+        "password": "(temporary password, held in memory only)",
+        "fullName": "ZZ TEST 795 Staff mw8zeis6",
+        "role": "staff",
+        "accessScope": "selected_branches",
+        "branchIds": [
+          "f0034cfa-9fe8-45dd-a870-15d3b89c8421"
+        ],
+        "mustChangePassword": true,
+        "phoneNumber": "+66900000795"
+      },
+      "status": 201,
+      "answer": {
+        "id": "57b8850c-9575-4d73-a41b-121e5ba91887",
+        "role": "staff",
+        "isActive": true,
+        "mustChangePassword": true,
+        "phoneE164": "+66900000795",
+        "phoneVerified": false,
+        "platformUserId": null
+      }
+    },
+    {
+      "at": "2026-11-09T08:17:22.092Z",
+      "step": "2 provisioning job --apply (one transaction for the ZZ TEST user)",
+      "origin": "Render one-off job on oto-api-staging",
+      "jobId": "job-dboo2ktg1s2s73fqr4gg",
+      "status": "succeeded",
+      "answer": {
+        "accountId": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+        "appIdentityId": "01a1bf62-22be-759e-a615-6dc5bda432ea",
+        "accessAssignmentId": "01a1bf62-22c2-700e-8487-7941068a362a",
+        "accountMustChangePassword": true,
+        "appUserStampedWith": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+        "appUserOwnMustChangePasswordLeftAs": true
+      }
+    },
+    {
+      "at": "2026-11-09T08:18:59.628Z",
+      "step": "3 first sign-in with the temporary app password (launcher UI)",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "sent": {
+        "phone": "+66900000795",
+        "password": "(temporary app password)"
+      },
+      "status": 200,
+      "answer": {
+        "accountId": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+        "mustChangePassword": true,
+        "error": null
+      }
+    },
+    {
+      "at": "2026-11-09T08:19:02.412Z",
+      "step": "3 OTO App hand-off asked before the change (expected refusal)",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/auth/handoff",
+      "sent": {
+        "app": "oto_app"
+      },
+      "status": 403,
+      "answer": {
+        "status": 403,
+        "code": "MUST_CHANGE_PASSWORD",
+        "message": "Password change required before continuing"
+      }
+    },
+    {
+      "at": "2026-11-09T08:19:02.997Z",
+      "step": "3 change to a new ZZ TEST password (launcher UI)",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/auth/change-password",
+      "sent": {
+        "currentPassword": "(temporary app password)",
+        "password": "(new ZZ TEST password, held in memory only)"
+      },
+      "status": 200,
+      "answer": {
+        "ok": true
+      }
+    },
+    {
+      "at": "2026-11-09T08:19:06.623Z",
+      "step": "3 OTO App tile: hand-off minted for the ZZ TEST account",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/auth/handoff",
+      "sent": {
+        "app": "oto_app"
+      },
+      "status": 200,
+      "answer": "(launch URL with a one-time token, not kept)"
+    },
+    {
+      "at": "2026-11-09T08:19:07.610Z",
+      "step": "3 OTO App exchanged the hand-off (app session for the ZZ TEST user)",
+      "origin": "https://oto-app-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/auth/handoff",
+      "status": 200,
+      "answer": "session opened"
+    },
+    {
+      "at": "2026-11-09T08:20:04.319Z",
+      "step": "4 sign out (launcher UI)",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200,
+      "answer": {
+        "ok": true
+      }
+    },
+    {
+      "at": "2026-11-09T08:20:05.503Z",
+      "step": "4 second sign-in with the NEW suite password (launcher UI)",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "sent": {
+        "phone": "+66900000795",
+        "password": "(new ZZ TEST password)"
+      },
+      "status": 200,
+      "answer": {
+        "accountId": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+        "mustChangePassword": false,
+        "error": null
+      }
+    },
+    {
+      "at": "2026-11-09T08:20:10.112Z",
+      "step": "4 sign out again (launcher UI)",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200,
+      "answer": {
+        "ok": true
+      }
+    },
+    {
+      "at": "2026-11-09T08:20:10.819Z",
+      "step": "4 sign-in with the OLD temporary app password (launcher UI, expected refusal)",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "sent": {
+        "phone": "+66900000795",
+        "password": "(old temporary app password)"
+      },
+      "status": 401,
+      "answer": {
+        "accountId": null,
+        "mustChangePassword": null,
+        "error": {
+          "code": "INVALID_CREDENTIALS",
+          "message": "Phone or password is incorrect"
+        }
+      }
+    },
+    {
+      "at": "2026-11-09T08:20:50.443Z",
+      "step": "5 Console: deactivate the ZZ TEST platform account",
+      "origin": "https://oto-console-staging.onrender.com",
+      "method": "PATCH",
+      "path": "/api/accounts/01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+      "sent": {
+        "status": "inactive"
+      },
+      "status": 200,
+      "answer": {
+        "ok": true
+      }
+    },
+    {
+      "at": "2026-11-09T08:20:51.483Z",
+      "step": "5 Console: unlink the ZZ TEST account from the OTO App",
+      "origin": "https://oto-console-staging.onrender.com",
+      "method": "DELETE",
+      "path": "/api/admin/apps/oto_app/users/01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+      "status": 200,
+      "answer": {
+        "ok": true,
+        "accessRevoked": true
+      }
+    },
+    {
+      "at": "2026-11-09T08:20:51.892Z",
+      "step": "5 OTO App: delete the ZZ TEST user",
+      "origin": "https://oto-app-staging.onrender.com",
+      "method": "DELETE",
+      "path": "/api/users/57b8850c-9575-4d73-a41b-121e5ba91887",
+      "status": 204,
+      "answer": ""
+    },
+    {
+      "at": "2026-11-09T08:20:54.435Z",
+      "step": "5 sign-in on the deactivated ZZ TEST account with the new password (expected refusal)",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "sent": {
+        "phone": "+66900000795",
+        "password": "(new ZZ TEST password)"
+      },
+      "status": 401,
+      "answer": {
+        "error": {
+          "code": "INVALID_CREDENTIALS",
+          "message": "Phone or password is incorrect"
+        }
+      }
+    },
+    {
+      "at": "2026-11-09T08:20:56.002Z",
+      "step": "5 sign out everywhere (admin)",
+      "origin": "https://oto-launcher-staging.onrender.com + https://oto-app-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/logout + /api/auth/sign-out",
+      "status": [
+        200,
+        200
+      ],
+      "answer": {
+        "launcherMeAfter": 401,
+        "appUserAfter": 401
+      }
+    },
+    {
+      "at": "2026-11-09T08:20:57.167Z",
+      "step": "5 sign out everywhere (zz)",
+      "origin": "https://oto-launcher-staging.onrender.com + https://oto-app-staging.onrender.com",
+      "method": "POST",
+      "path": "/api/logout + /api/auth/sign-out",
+      "status": [
+        200,
+        200
+      ],
+      "answer": {
+        "launcherMeAfter": 401,
+        "appUserAfter": 401
+      }
+    }
+  ],
+  "checks": {
+    "afterApplyConsoleReadBack": {
+      "account": {
+        "id": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+        "phone": "+66900000795",
+        "status": "active",
+        "mustChangePassword": true,
+        "employee": null
+      },
+      "identity": {
+        "id": "01a1bf62-22be-759e-a615-6dc5bda432ea",
+        "app": "oto_app",
+        "externalUserId": "57b8850c-9575-4d73-a41b-121e5ba91887",
+        "createdBy": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "createdAt": "2026-11-09T08:17:22.092Z",
+        "hasAccess": true,
+        "branches": {
+          "accessBranches": null,
+          "appBranches": {
+            "allBranches": false,
+            "branches": [
+              {
+                "id": "f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+                "name": "Oto Play Park, Robinson Chalong",
+                "platformBranchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+              }
+            ]
+          }
+        }
+      },
+      "permissions": {
+        "assignments": [
+          {
+            "id": "01a1bf62-22c2-700e-8487-7941068a362a",
+            "roleName": "app_access_oto_app",
+            "scopeType": "operator",
+            "scopeId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+          }
+        ],
+        "effective": [
+          {
+            "permission": "app:oto_app:access",
+            "roleName": "app_access_oto_app",
+            "scopeType": "operator",
+            "scopeId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+          }
+        ]
+      },
+      "appUser": {
+        "id": "57b8850c-9575-4d73-a41b-121e5ba91887",
+        "platformUserId": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+        "mustChangePassword": true,
+        "isActive": true,
+        "role": "staff"
+      }
+    },
+    "firstSignIn": {
+      "passwordFieldType": "password",
+      "firstSignIn": {
+        "status": 200,
+        "accountId": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+        "mustChangePassword": true,
+        "error": null
+      },
+      "handoffBeforeChange": {
+        "status": 403,
+        "code": "MUST_CHANGE_PASSWORD",
+        "message": "Password change required before continuing"
+      },
+      "changePassword": {
+        "status": 200,
+        "body": {
+          "ok": true
+        }
+      },
+      "meAfterChange": {
+        "status": 200,
+        "accountId": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+        "phone": "+66900000795",
+        "mustChangePassword": false,
+        "branch": "Oto Play Park, Central Floresta"
+      },
+      "handoffMint": {
+        "status": 200
+      },
+      "appExchange": {
+        "status": 200
+      },
+      "appUser": {
+        "status": 200,
+        "id": "57b8850c-9575-4d73-a41b-121e5ba91887",
+        "fullName": "ZZ TEST 795 Staff mw8zeis6",
+        "role": "staff",
+        "platformUserId": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+        "mustChangePassword": false
+      },
+      "appUrl": "https://oto-app-staging.onrender.com/core/today"
+    },
+    "secondSignIn": {
+      "userMenu": "shot",
+      "signOut1": 200,
+      "appAfterSignOut": {
+        "status": 401
+      },
+      "newPassword": {
+        "status": 200,
+        "accountId": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+        "mustChangePassword": false,
+        "error": null
+      },
+      "signOut2": 200,
+      "oldPassword": {
+        "status": 401,
+        "accountId": null,
+        "mustChangePassword": null,
+        "error": {
+          "code": "INVALID_CREDENTIALS",
+          "message": "Phone or password is incorrect"
+        }
+      },
+      "refusalShown": "Phone or password is incorrect First shift? Use \"Set up account\" below.",
+      "launcherMeAfterRefusal": {
+        "status": 401
+      }
+    },
+    "cleanupReadBack": {
+      "accountAfter": [
+        {
+          "id": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+          "phone": "+66900000795",
+          "status": "inactive",
+          "mustChangePassword": false,
+          "employee": null
+        }
+      ],
+      "identitiesAfter": {
+        "status": 200,
+        "identities": []
+      },
+      "permissionsAfter": {
+        "status": 200,
+        "body": {
+          "assignments": [],
+          "effective": []
+        }
+      },
+      "appUserAfter": {
+        "status": 404,
+        "body": {
+          "message": "User not found"
+        }
+      },
+      "signInAfterDeactivate": {
+        "status": 401,
+        "code": "INVALID_CREDENTIALS"
+      },
+      "signOut": {
+        "admin": {
+          "appLogout": 200,
+          "launcherSignOut": 200,
+          "launcherMeAfter": 401,
+          "appUserAfter": 401
+        },
+        "zz": {
+          "appLogout": 200,
+          "launcherSignOut": 200,
+          "launcherMeAfter": 401,
+          "appUserAfter": 401
+        }
+      },
+      "consoleSessionsAfter": {
+        "admin": {
+          "consoleMe": 401
+        },
+        "zz": {
+          "consoleMe": 401
+        }
+      }
+    },
+    "databaseAfter": {
+      "jobId": "job-dboo55jm8hqs73ehhpr0",
+      "readOnly": true,
+      "account": {
+        "id": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+        "status": "inactive",
+        "must_change_password": false,
+        "phone_verified": false,
+        "hash_is_argon2id": true,
+        "has_hash": true,
+        "employee_id": null
+      },
+      "auditTrail": [
+        {
+          "at": "2026-11-09T08:17:22.092Z",
+          "action": "app_identity.provision",
+          "entityType": "app_identity",
+          "entityId": "01a1bf62-22be-759e-a615-6dc5bda432ea",
+          "actor": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+          "requestId": "script:otoapp-staff-accounts",
+          "via": "otoapp_staff_accounts",
+          "passwordSet": "false",
+          "mustChangePassword": "true",
+          "phoneVerified": "false"
+        },
+        {
+          "at": "2026-11-09T08:18:59.709Z",
+          "action": "account.password_adopted",
+          "entityType": "account",
+          "entityId": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+          "actor": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+          "requestId": "d3376615-b439-4a19-8078-c752a03c43dc",
+          "after": {
+            "app": "oto_app",
+            "externalUserId": "57b8850c-9575-4d73-a41b-121e5ba91887"
+          }
+        },
+        {
+          "at": "2026-11-09T08:18:59.709Z",
+          "action": "auth.sign_in",
+          "entityType": "session",
+          "entityId": "01a1bf63-9ffd-7431-93fc-14453704298e",
+          "actor": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+          "requestId": "d3376615-b439-4a19-8078-c752a03c43dc"
+        },
+        {
+          "at": "2026-11-09T08:19:02.492Z",
+          "action": "access.denied",
+          "entityType": "request",
+          "entityId": "916dd4af-3483-4bc6-ab18-620d118ff176",
+          "actor": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+          "requestId": "916dd4af-3483-4bc6-ab18-620d118ff176"
+        },
+        {
+          "at": "2026-11-09T08:19:03.070Z",
+          "action": "auth.password_change",
+          "entityType": "account",
+          "entityId": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+          "actor": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+          "requestId": "5a1c3daf-fc0a-4a47-b8d1-8049eeebdfa8"
+        },
+        {
+          "at": "2026-11-09T08:19:06.695Z",
+          "action": "auth.handoff_issue",
+          "entityType": "session",
+          "entityId": "01a1bf63-9ffd-7431-93fc-14453704298e",
+          "actor": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+          "requestId": "f4e533d4-e853-46a2-b97e-f13df619fa6f"
+        },
+        {
+          "at": "2026-11-09T08:19:07.724Z",
+          "action": "auth.handoff_claim",
+          "entityType": "handoff",
+          "entityId": "01a1bf63-bb56-7b72-bce2-dd2e9f39bc92",
+          "actor": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+          "requestId": "35ecfedb-87cc-4a7a-b95d-88816264519e"
+        },
+        {
+          "at": "2026-11-09T08:19:07.753Z",
+          "action": "auth.handoff_exchange",
+          "entityType": "session",
+          "entityId": "01a1bf63-9ffd-7431-93fc-14453704298e",
+          "actor": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+          "requestId": "35ecfedb-87cc-4a7a-b95d-88816264519e"
+        },
+        {
+          "at": "2026-11-09T08:20:04.403Z",
+          "action": "auth.sign_out",
+          "entityType": "session",
+          "entityId": "01a1bf63-9ffd-7431-93fc-14453704298e",
+          "actor": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+          "requestId": "6fdb5632-3202-4fe8-b8d2-47447d3a8858"
+        },
+        {
+          "at": "2026-11-09T08:20:05.547Z",
+          "action": "auth.sign_in",
+          "entityType": "session",
+          "entityId": "01a1bf64-a12b-79d1-a1eb-0027e4533fac",
+          "actor": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+          "requestId": "e499a901-5eff-40c7-8c72-c872dda7af66"
+        },
+        {
+          "at": "2026-11-09T08:20:10.094Z",
+          "action": "auth.sign_out",
+          "entityType": "session",
+          "entityId": "01a1bf64-a12b-79d1-a1eb-0027e4533fac",
+          "actor": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+          "requestId": "cb746614-2ebf-4acd-9efa-107f11dc4542"
+        },
+        {
+          "at": "2026-11-09T08:20:10.913Z",
+          "action": "auth.sign_in_failed",
+          "entityType": "account",
+          "entityId": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+          "actor": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+          "requestId": "1947835e-5328-43cf-aba4-bb4a506f89db",
+          "reason": "bad_password"
+        },
+        {
+          "at": "2026-11-09T08:20:50.489Z",
+          "action": "account.update",
+          "entityType": "account",
+          "entityId": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+          "actor": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+          "requestId": "340982db-af6b-41ae-816e-92757f33f999",
+          "status": "inactive"
+        },
+        {
+          "at": "2026-11-09T08:20:51.454Z",
+          "action": "app_identity.unlink",
+          "entityType": "app_identity",
+          "entityId": "01a1bf62-22be-759e-a615-6dc5bda432ea",
+          "actor": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+          "requestId": "0e9762de-fc2d-46db-9e47-9f13cca33fc4",
+          "after": {
+            "accessRevoked": true
+          }
+        },
+        {
+          "at": "2026-11-09T08:20:54.518Z",
+          "action": "auth.sign_in_failed",
+          "entityType": "account",
+          "entityId": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+          "actor": "01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+          "requestId": "184cd090-a83f-48de-95a4-a7d2f034c85c",
+          "reason": "account_inactive"
+        }
+      ],
+      "appIdentitiesLeft": 0,
+      "roleAssignments": {
+        "total": 0,
+        "live": 0
+      },
+      "sessions": {
+        "total": 2,
+        "open": 0
+      },
+      "verificationCodes": 0,
+      "appUserRowsLeft": 0
+    }
+  },
+  "cleanup": [
+    {
+      "what": "platform account 01a1bf62-22b0-711e-ad7f-2de9eab6854a",
+      "done": "deactivated in the Console (PATCH /api/accounts/:id {status:inactive}) at 08:20:50Z",
+      "readBack": "status inactive, no role assignments, no open session; a sign-in is refused (401, audit reason account_inactive)"
+    },
+    {
+      "what": "OTO App identity link 01a1bf62-22be-759e-a615-6dc5bda432ea",
+      "done": "unlinked in the Console (DELETE /api/admin/apps/oto_app/users/:accountId) at 08:20:51Z, access revoked",
+      "readBack": "no app identity for the account or the app user"
+    },
+    {
+      "what": "operator-wide app_access_oto_app assignment 01a1bf62-22c2-700e-8487-7941068a362a",
+      "done": "withdrawn by the unlink",
+      "readBack": "role assignments for the account: 0"
+    },
+    {
+      "what": "OTO App user 57b8850c-9575-4d73-a41b-121e5ba91887",
+      "done": "deleted through the app's own route (DELETE /api/users/:id, 204) at 08:20:51.9Z; the deactivation had already switched it off",
+      "readBack": "GET /api/users/:id answers 404; no otoapp.users row"
+    },
+    {
+      "what": "sessions",
+      "done": "both browsers signed out of the launcher and the OTO App; the Console sessions were already ended by the launcher sign-out",
+      "readBack": "launcher /api/me 401, app /api/user 401, Console /api/me 401 for both"
+    }
+  ],
+  "leftOnStaging": [
+    "The inactive platform account 01a1bf62-22b0-711e-ad7f-2de9eab6854a still holds the test number +66900000795 (accounts are never hard-deleted). A later proof that wants this number again must free it first, or use another test number.",
+    "Audit rows for every step above (the platform is append-only), and the OTO App's own activity rows for creating and deleting the user."
+  ],
+  "noSecrets": "No password, token, hash or real person's phone number is in this file or the pictures."
+}
