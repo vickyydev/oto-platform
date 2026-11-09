@@ -1,0 +1,952 @@
+{
+  "unit": "SCRUM-814",
+  "what": "Book Date reads the party's date and time from Thai, English and Russian chats; the BEO AI Fill knows the park's today and shows the date it read beside the booked one",
+  "liveCommit": "3c1c41b26daaffb08756fe75eaa50cead872482a",
+  "run": {
+    "startedAt": "2026-11-09T20:43:10.473Z",
+    "endedAt": "2026-11-09T20:53:09.780Z",
+    "parkToday": "2026-11-10 (Tuesday, Asia/Bangkok)",
+    "browser": "Chromium 153.0.8010.12 headless, Asia/Bangkok, en-GB, 1440 wide"
+  },
+  "liveBefore": {
+    "at": "2026-11-09T20:43:17.184Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbp2rjt9fdbs73f1f8pg",
+        "status": "live",
+        "sha": "3c1c41b26daaffb08756fe75eaa50cead872482a",
+        "finishedAt": "2026-11-09T20:36:37.230246Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbp2rk2jnfac7382gqf0",
+        "status": "live",
+        "sha": "3c1c41b26daaffb08756fe75eaa50cead872482a",
+        "finishedAt": "2026-11-09T20:33:14.61817Z"
+      },
+      {
+        "name": "oto-app-staging",
+        "deployId": "dep-dbp2rklbedkc739mqmc0",
+        "status": "live",
+        "sha": "3c1c41b26daaffb08756fe75eaa50cead872482a",
+        "finishedAt": "2026-11-09T20:35:03.505049Z"
+      }
+    ],
+    "allLiveOnSha": true
+  },
+  "liveAfter": {
+    "at": "2026-11-09T20:53:06.670Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbp2rjt9fdbs73f1f8pg",
+        "status": "live",
+        "sha": "3c1c41b26daaffb08756fe75eaa50cead872482a",
+        "finishedAt": "2026-11-09T20:36:37.230246Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbp2rk2jnfac7382gqf0",
+        "status": "live",
+        "sha": "3c1c41b26daaffb08756fe75eaa50cead872482a",
+        "finishedAt": "2026-11-09T20:33:14.61817Z"
+      },
+      {
+        "name": "oto-app-staging",
+        "deployId": "dep-dbp2rklbedkc739mqmc0",
+        "status": "live",
+        "sha": "3c1c41b26daaffb08756fe75eaa50cead872482a",
+        "finishedAt": "2026-11-09T20:35:03.505049Z"
+      }
+    ],
+    "allLiveOnSha": true
+  },
+  "actor": "the staging administrator (owner view in the inbox, global_admin in the OTO App); name masked in every picture, never kept",
+  "channel": "Demo WhatsApp · Central Floresta (simulator account 01a156bb-6778-72b0-8237-6028f8874503): nothing reaches a real phone",
+  "inboxViewer": {
+    "roles": [
+      "owner"
+    ],
+    "capabilities": {
+      "writes": true,
+      "dashboard": true,
+      "assign": true,
+      "move": true,
+      "reopen": true,
+      "templates": true,
+      "kb": true,
+      "ai": true
+    }
+  },
+  "conversations": {
+    "ru": {
+      "id": "01a1c20d-8c99-711d-8ee7-3a2da3d46b40",
+      "contact": "ZZ TEST 814 RU date",
+      "from": "ZZ TEST simulator number +66898140001",
+      "language": "ru",
+      "lines": [
+        {
+          "by": "customer",
+          "text": "Здравствуйте! Хотим отметить день рождения сына 15 ноября, 12 детей",
+          "at": "2026-11-09T20:43:49.613Z",
+          "route": "POST /api/inbox/simulator/inbound",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "reopened": 0,
+          "messages": 1,
+          "duplicates": 0,
+          "conversationIds": [
+            "01a1c20d-8c99-711d-8ee7-3a2da3d46b40"
+          ],
+          "error": null
+        },
+        {
+          "by": "team",
+          "text": "Здравствуйте! 15 ноября занято, можем предложить 21-го ноября в 14:00",
+          "at": "2026-11-09T20:44:18.992Z",
+          "route": "the inbox composer (POST /api/inbox/conversations/:id/messages)",
+          "status": 200,
+          "messageId": "01a1c20d-fa9d-71df-bd0d-fc1c7e4622c4",
+          "providerStatus": "sent",
+          "authorKind": "staff",
+          "error": null
+        },
+        {
+          "by": "customer",
+          "text": "Да, давайте 21-го",
+          "at": "2026-11-09T20:44:25.727Z",
+          "route": "POST /api/inbox/simulator/inbound",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "reopened": 0,
+          "messages": 1,
+          "duplicates": 0,
+          "conversationIds": [
+            "01a1c20d-8c99-711d-8ee7-3a2da3d46b40"
+          ],
+          "error": null
+        }
+      ]
+    },
+    "ruw": {
+      "id": "01a1c20e-1bd5-77ff-b46b-fe04dbf2b9d9",
+      "contact": "ZZ TEST 814 RU weekday",
+      "from": "ZZ TEST simulator number +66898140002",
+      "language": "ru",
+      "lines": [
+        {
+          "by": "customer",
+          "text": "Можно в субботу в 2 часа дня?",
+          "at": "2026-11-09T20:44:26.276Z",
+          "route": "POST /api/inbox/simulator/inbound",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "reopened": 0,
+          "messages": 1,
+          "duplicates": 0,
+          "conversationIds": [
+            "01a1c20e-1bd5-77ff-b46b-fe04dbf2b9d9"
+          ],
+          "error": null
+        }
+      ]
+    },
+    "th": {
+      "id": "01a1c20e-1de3-7035-bc59-1bf31778931c",
+      "contact": "ZZ TEST 814 TH date",
+      "from": "ZZ TEST simulator number +66898140003",
+      "language": "th",
+      "lines": [
+        {
+          "by": "customer",
+          "text": "สวัสดีค่ะ อยากจัดงานวันเกิดลูก วันที่ 15 พ.ย. บ่าย 2 โมง เด็ก 10 คน",
+          "at": "2026-11-09T20:44:26.783Z",
+          "route": "POST /api/inbox/simulator/inbound",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "reopened": 0,
+          "messages": 1,
+          "duplicates": 0,
+          "conversationIds": [
+            "01a1c20e-1de3-7035-bc59-1bf31778931c"
+          ],
+          "error": null
+        },
+        {
+          "by": "customer",
+          "text": "หรือวันเสาร์หน้า 21 พฤศจิกายน 2569 ก็ได้ค่ะ",
+          "at": "2026-11-09T20:47:15.952Z",
+          "route": "POST /api/inbox/simulator/inbound",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "reopened": 0,
+          "messages": 1,
+          "duplicates": 0,
+          "conversationIds": [
+            "01a1c20e-1de3-7035-bc59-1bf31778931c"
+          ],
+          "error": null
+        }
+      ]
+    },
+    "en": {
+      "id": "01a1c20e-2161-7861-b2fb-0525889f3e3b",
+      "contact": "ZZ TEST 814 EN date",
+      "from": "ZZ TEST simulator number +66898140004",
+      "language": "en",
+      "lines": [
+        {
+          "by": "customer",
+          "text": "Hi, can we book a party on Saturday 21 November at 2 pm for 15 kids?",
+          "at": "2026-11-09T20:44:27.704Z",
+          "route": "POST /api/inbox/simulator/inbound",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "reopened": 0,
+          "messages": 1,
+          "duplicates": 0,
+          "conversationIds": [
+            "01a1c20e-2161-7861-b2fb-0525889f3e3b"
+          ],
+          "error": null
+        }
+      ]
+    }
+  },
+  "bookDate": {
+    "ru": {
+      "conversationId": "01a1c20d-8c99-711d-8ee7-3a2da3d46b40",
+      "chatLines": [
+        {
+          "authorKind": "customer",
+          "body": "Здравствуйте! Хотим отметить день рождения сына 15 ноября, 12 детей",
+          "createdAt": "2026-11-09T20:43:50.000Z"
+        },
+        {
+          "authorKind": "ai",
+          "body": "Большое спасибо! Наш менеджер по праздникам скоро свяжется с вами.",
+          "createdAt": "2026-11-09T20:43:56.732Z"
+        },
+        {
+          "authorKind": "staff",
+          "body": "Здравствуйте! 15 ноября занято, можем предложить 21-го ноября в 14:00",
+          "createdAt": "2026-11-09T20:44:19.676Z"
+        },
+        {
+          "authorKind": "customer",
+          "body": "Да, давайте 21-го",
+          "createdAt": "2026-11-09T20:44:26.000Z"
+        }
+      ],
+      "dialogFirstValues": {
+        "title": "Book Date — ZZ TEST 814 RU date",
+        "date": "2026-11-21",
+        "dateHint": "21-го ноября",
+        "startTime": "14:00",
+        "startTimeHint": "в 14:00",
+        "park": "Central Floresta",
+        "kids": "12",
+        "adults": "",
+        "childAge": ""
+      },
+      "checks": {
+        "date": {
+          "expected": "2026-11-21",
+          "read": "2026-11-21",
+          "pass": true
+        },
+        "dateHint": {
+          "expected": "21-го ноября",
+          "read": "21-го ноября",
+          "pass": true
+        },
+        "startTime": {
+          "expected": "14:00",
+          "read": "14:00",
+          "pass": true
+        },
+        "startTimeHint": {
+          "expected": "в 14:00",
+          "read": "в 14:00",
+          "pass": true
+        },
+        "kids": {
+          "expected": "12",
+          "read": "12",
+          "pass": true
+        }
+      },
+      "status": "PASS",
+      "cancelled": true,
+      "eventAfterCancel": null,
+      "pictures": [
+        "814-st-01-ru-chat-team-offers-21st.png",
+        "814-st-02-ru-book-date-21-nov-14-00-12-kids.png"
+      ]
+    },
+    "ruw": {
+      "conversationId": "01a1c20e-1bd5-77ff-b46b-fe04dbf2b9d9",
+      "chatLines": [
+        {
+          "authorKind": "customer",
+          "body": "Можно в субботу в 2 часа дня?",
+          "createdAt": "2026-11-09T20:44:26.000Z"
+        },
+        {
+          "authorKind": "ai",
+          "body": "Здравствуйте! Конечно, приходите, бронировать не нужно 😊",
+          "createdAt": "2026-11-09T20:44:39.889Z"
+        },
+        {
+          "authorKind": "ai",
+          "body": "Central Floresta открыт каждый день с 10:00 до 20:00, в субботу тоже. Будем рады вас видеть!",
+          "createdAt": "2026-11-09T20:44:39.890Z"
+        }
+      ],
+      "dialogFirstValues": {
+        "title": "Book Date — ZZ TEST 814 RU weekday",
+        "date": "2026-11-14",
+        "dateHint": "в субботу",
+        "startTime": "14:00",
+        "startTimeHint": "в 2 часа дня",
+        "park": "Central Floresta",
+        "kids": "",
+        "adults": "",
+        "childAge": ""
+      },
+      "checks": {
+        "date": {
+          "expected": "2026-11-14",
+          "read": "2026-11-14",
+          "pass": true
+        },
+        "dateHint": {
+          "expected": "в субботу",
+          "read": "в субботу",
+          "pass": true
+        },
+        "startTime": {
+          "expected": "14:00",
+          "read": "14:00",
+          "pass": true
+        },
+        "startTimeHint": {
+          "expected": "в 2 часа дня",
+          "read": "в 2 часа дня",
+          "pass": true
+        },
+        "kids": {
+          "expected": "",
+          "read": "",
+          "pass": true
+        }
+      },
+      "status": "PASS",
+      "cancelled": true,
+      "eventAfterCancel": null,
+      "pictures": [
+        "814-st-03-ru-weekday-chat.png",
+        "814-st-04-ru-weekday-book-date-saturday-14-00.png"
+      ]
+    },
+    "th1": {
+      "conversationId": "01a1c20e-1de3-7035-bc59-1bf31778931c",
+      "chatLines": [
+        {
+          "authorKind": "customer",
+          "body": "สวัสดีค่ะ อยากจัดงานวันเกิดลูก วันที่ 15 พ.ย. บ่าย 2 โมง เด็ก 10 คน",
+          "createdAt": "2026-11-09T20:44:27.000Z"
+        },
+        {
+          "authorKind": "ai",
+          "body": "ขอบคุณมากนะคะ ผู้จัดการฝ่ายงานวันเกิดของเราจะมาดูแลคุณในอีกไม่นานค่ะ",
+          "createdAt": "2026-11-09T20:44:41.920Z"
+        }
+      ],
+      "dialogFirstValues": {
+        "title": "Book Date — ZZ TEST 814 TH date",
+        "date": "2026-11-15",
+        "dateHint": "15 พ.ย.",
+        "startTime": "14:00",
+        "startTimeHint": "บ่าย 2 โมง",
+        "park": "Central Floresta",
+        "kids": "10",
+        "adults": "",
+        "childAge": ""
+      },
+      "checks": {
+        "date": {
+          "expected": "2026-11-15",
+          "read": "2026-11-15",
+          "pass": true
+        },
+        "dateHint": {
+          "expected": "15 พ.ย.",
+          "read": "15 พ.ย.",
+          "pass": true
+        },
+        "startTime": {
+          "expected": "14:00",
+          "read": "14:00",
+          "pass": true
+        },
+        "startTimeHint": {
+          "expected": "บ่าย 2 โมง",
+          "read": "บ่าย 2 โมง",
+          "pass": true
+        },
+        "kids": {
+          "expected": "10",
+          "read": "10",
+          "pass": true
+        }
+      },
+      "status": "PASS",
+      "cancelled": true,
+      "eventAfterCancel": null,
+      "pictures": [
+        "814-st-05-th-chat.png",
+        "814-st-06-th-book-date-15-nov-14-00-10-kids.png"
+      ]
+    },
+    "en": {
+      "conversationId": "01a1c20e-2161-7861-b2fb-0525889f3e3b",
+      "chatLines": [
+        {
+          "authorKind": "customer",
+          "body": "Hi, can we book a party on Saturday 21 November at 2 pm for 15 kids?",
+          "createdAt": "2026-11-09T20:44:28.000Z"
+        },
+        {
+          "authorKind": "ai",
+          "body": "Thank you so much! Our birthday manager will be with you shortly.",
+          "createdAt": "2026-11-09T20:44:45.305Z"
+        }
+      ],
+      "dialogFirstValues": {
+        "title": "Book Date — ZZ TEST 814 EN date",
+        "date": "2026-11-21",
+        "dateHint": "Saturday 21 November",
+        "startTime": "14:00",
+        "startTimeHint": "2 pm",
+        "park": "Central Floresta",
+        "kids": "15",
+        "adults": "",
+        "childAge": ""
+      },
+      "checks": {
+        "date": {
+          "expected": "2026-11-21",
+          "read": "2026-11-21",
+          "pass": true
+        },
+        "dateHint": {
+          "expected": "Saturday 21 November",
+          "read": "Saturday 21 November",
+          "pass": true
+        },
+        "startTime": {
+          "expected": "14:00",
+          "read": "14:00",
+          "pass": true
+        },
+        "startTimeHint": {
+          "expected": "2 pm",
+          "read": "2 pm",
+          "pass": true
+        },
+        "kids": {
+          "expected": "15",
+          "read": "15",
+          "pass": true
+        }
+      },
+      "status": "PASS",
+      "cancelled": true,
+      "eventAfterCancel": null,
+      "pictures": [
+        "814-st-09-en-chat.png",
+        "814-st-10-en-book-date-21-nov-14-00-15-kids.png"
+      ]
+    },
+    "th2": {
+      "conversationId": "01a1c20e-1de3-7035-bc59-1bf31778931c",
+      "chatLines": [
+        {
+          "authorKind": "customer",
+          "body": "สวัสดีค่ะ อยากจัดงานวันเกิดลูก วันที่ 15 พ.ย. บ่าย 2 โมง เด็ก 10 คน",
+          "createdAt": "2026-11-09T20:44:27.000Z"
+        },
+        {
+          "authorKind": "ai",
+          "body": "ขอบคุณมากนะคะ ผู้จัดการฝ่ายงานวันเกิดของเราจะมาดูแลคุณในอีกไม่นานค่ะ",
+          "createdAt": "2026-11-09T20:44:41.920Z"
+        },
+        {
+          "authorKind": "customer",
+          "body": "หรือวันเสาร์หน้า 21 พฤศจิกายน 2569 ก็ได้ค่ะ",
+          "createdAt": "2026-11-09T20:47:16.000Z"
+        }
+      ],
+      "dialogFirstValues": {
+        "title": "Book Date — ZZ TEST 814 TH date",
+        "date": "2026-11-21",
+        "dateHint": "วันเสาร์หน้า 21 พฤศจิกายน 2569",
+        "startTime": "14:00",
+        "startTimeHint": null,
+        "park": "Central Floresta",
+        "kids": "10",
+        "adults": "",
+        "childAge": ""
+      },
+      "checks": {
+        "date": {
+          "expected": "2026-11-21",
+          "read": "2026-11-21",
+          "pass": true
+        }
+      },
+      "status": "PASS",
+      "cancelled": true,
+      "eventAfterCancel": null,
+      "pictures": [
+        "814-st-07-th-chat-saturday-21-nov-2569.png",
+        "814-st-08-th-book-date-21-nov.png"
+      ]
+    }
+  },
+  "inboxApiRead": {
+    "note": "Book Date's reading runs in the browser; no inbox route hands back its parsed values. The one server read that uses the shared reader is the BEO confirmation pick: it needs a team line that names the date, the time AND a count, food or programme, so none of these four conversations has one (message null).",
+    "at": "2026-11-09T20:52:34.151Z",
+    "ru": {
+      "path": "/api/inbox/conversations/01a1c20d-8c99-711d-8ee7-3a2da3d46b40/beo-confirmation",
+      "status": 200,
+      "scanned": 1,
+      "eventId": null,
+      "message": null,
+      "error": null
+    },
+    "ruw": {
+      "path": "/api/inbox/conversations/01a1c20e-1bd5-77ff-b46b-fe04dbf2b9d9/beo-confirmation",
+      "status": 200,
+      "scanned": 0,
+      "eventId": null,
+      "message": null,
+      "error": null
+    },
+    "th": {
+      "path": "/api/inbox/conversations/01a1c20e-1de3-7035-bc59-1bf31778931c/beo-confirmation",
+      "status": 200,
+      "scanned": 0,
+      "eventId": null,
+      "message": null,
+      "error": null
+    },
+    "en": {
+      "path": "/api/inbox/conversations/01a1c20e-2161-7861-b2fb-0525889f3e3b/beo-confirmation",
+      "status": 200,
+      "scanned": 0,
+      "eventId": null,
+      "message": null,
+      "error": null
+    }
+  },
+  "aiFill": {
+    "event": {
+      "at": "2026-11-09T20:49:44.701Z",
+      "method": "POST",
+      "path": "/api/admin/events",
+      "status": "upcoming",
+      "id": "16796381-ab1c-4c01-a922-789e7302e66e",
+      "title": "ZZ TEST 814 date",
+      "eventType": "birthday",
+      "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+      "eventDate": "2026-11-15",
+      "startTime": "14:00",
+      "httpStatus": 201,
+      "note": "created with POST /api/admin/events as the s803p proof did (the \"status\" field here is the event's own status)"
+    },
+    "run1": {
+      "text": "Подтверждаем день рождения 21 ноября в 14:00, 12 детей, меню: пицца. Депозит получен 9 ноября",
+      "parse": {
+        "route": "POST /api/ai/parse-beo",
+        "status": 200,
+        "modelCalls": 1
+      },
+      "review": {
+        "title": "AI Fill — Review & Confirm",
+        "text": "AI Fill — Review & Confirm Birthday party confirmed for 21 November 2026 at 14:00 for 12 children, with pizza on the kids menu; deposit received 9 November. Event Info Title: ZZ TEST 814 date Children: 12 Adults: 4 Time: 14:00 – 17:00 Setup Plan Kitchen Plan Kids Menu: 1x Pizza Party Details This will replace existing data in the editor. Review the parsed data above, then click \"Load into Editor\" to fill the form. Back Load into Editor Close",
+        "dateLinePresent": false,
+        "dateCheckboxPresent": false
+      },
+      "dateLine": {
+        "expected": "Sat 21 Nov 2026 with the message's words, amber \"The event is booked for Sun 15 Nov 2026: not the same day.\", unticked",
+        "shown": false,
+        "status": "NOT SHOWN"
+      },
+      "load": {
+        "mode": "notick",
+        "dateCheckboxPresent": false,
+        "tickedAtLoad": null,
+        "formDate": "November 15th, 2026",
+        "header": "15 November '26 at 14:00",
+        "formTitle": "ZZ TEST 814 date",
+        "formPicture": "814-st-12-app-loaded-without-tick-date-stays-15-nov.png",
+        "depositDateInForm": "November 9th, 2026",
+        "prepaymentInForm": "0",
+        "depositPicture": "814-st-13-app-party-details-deposit-date-2026-11-09.png",
+        "serverBeforeSave": {
+          "at": "2026-11-09T20:52:05.151Z",
+          "event": {
+            "path": "/api/admin/events/16796381-ab1c-4c01-a922-789e7302e66e",
+            "status": 200,
+            "title": "ZZ TEST 814 date",
+            "eventDate": "2026-11-15",
+            "startTime": "14:00",
+            "numChildren": 12,
+            "updatedAt": "2026-11-09T20:49:45.590Z"
+          },
+          "beo": {
+            "path": "/api/events/16796381-ab1c-4c01-a922-789e7302e66e/beo",
+            "status": 200,
+            "eventDate": "2026-11-15",
+            "depositDate": null,
+            "prepaymentReceived": null
+          }
+        }
+      },
+      "save": {
+        "at": "2026-11-09T20:52:14.857Z",
+        "titleFromFill": "ZZ TEST 814 date",
+        "formDateAtSave": "November 15th, 2026",
+        "save": {
+          "route": "PUT /api/events/16796381-ab1c-4c01-a922-789e7302e66e/beo",
+          "status": 200
+        },
+        "headerAfter": "15 November '26 at 14:00",
+        "formDateAfter": "November 15th, 2026",
+        "serverAfterSave": {
+          "at": "2026-11-09T20:52:17.728Z",
+          "event": {
+            "path": "/api/admin/events/16796381-ab1c-4c01-a922-789e7302e66e",
+            "status": 200,
+            "title": "ZZ TEST 814 date",
+            "eventDate": "2026-11-15",
+            "startTime": "14:00",
+            "numChildren": 12,
+            "updatedAt": "2026-11-09T20:52:15.900Z"
+          },
+          "beo": {
+            "path": "/api/events/16796381-ab1c-4c01-a922-789e7302e66e/beo",
+            "status": 200,
+            "eventDate": "2026-11-15",
+            "depositDate": "2026-11-09",
+            "prepaymentReceived": 0
+          }
+        },
+        "picture": "814-st-14-app-saved-date-still-15-nov.png"
+      },
+      "depositDate": {
+        "expected": "2026-11-09",
+        "inForm": "November 9th, 2026",
+        "savedBeo": "2026-11-09",
+        "status": "PASS"
+      },
+      "dateNotChangedSilently": {
+        "expected": "2026-11-15",
+        "afterLoad": "2026-11-15",
+        "afterSave": "2026-11-15",
+        "status": "PASS"
+      }
+    },
+    "run2": {
+      "status": "NOT RUN",
+      "why": "there was no Date line and no tick to press (see run1.dateLine); a second model call could not change that"
+    },
+    "activityRows": {
+      "at": "2026-11-09T20:52:51.523Z",
+      "status": 200,
+      "rows": [
+        {
+          "at": "2026-11-09T20:50:01.473Z",
+          "summary": "AI Fill read a pasted message for the BEO of \"ZZ TEST 814 date\"",
+          "eventId": "16796381-ab1c-4c01-a922-789e7302e66e",
+          "outcome": "filled",
+          "model": "claude-opus-5",
+          "promptFrom": {
+            "advice": "setting",
+            "outputFormat": "setting",
+            "model": "built_in"
+          },
+          "source": "pasted",
+          "sections": [
+            "event",
+            "setupPlan",
+            "kitchenPlan",
+            "partyDetails"
+          ],
+          "inputChars": 93
+        }
+      ]
+    },
+    "aiSettingsByName": {
+      "note": "the park group's saved AI settings, by name only (values never printed or kept)",
+      "at": "2026-11-09T20:51:31.472Z",
+      "status": 200,
+      "rows": [
+        {
+          "key": "ai_event_extraction_model",
+          "hasValue": true,
+          "chars": 12,
+          "updatedAt": "2026-04-30T06:52:59.211Z",
+          "ownParkGroup": true,
+          "namesEventDate": false,
+          "namesEventDateText": false,
+          "namesDepositDate": false
+        },
+        {
+          "key": "ai_event_extraction_output_format",
+          "hasValue": true,
+          "chars": 2006,
+          "updatedAt": "2026-05-01T11:17:09.815Z",
+          "ownParkGroup": true,
+          "namesEventDate": false,
+          "namesEventDateText": false,
+          "namesDepositDate": false
+        },
+        {
+          "key": "ai_event_extraction_advice",
+          "hasValue": true,
+          "chars": 1257,
+          "updatedAt": "2026-05-01T11:17:33.300Z",
+          "ownParkGroup": true,
+          "namesEventDate": false,
+          "namesEventDateText": false,
+          "namesDepositDate": false
+        },
+        {
+          "key": "ai_beo_parsing_advice",
+          "hasValue": true,
+          "chars": 1009,
+          "updatedAt": "2026-05-01T11:55:32.987Z",
+          "ownParkGroup": true,
+          "namesEventDate": false,
+          "namesEventDateText": false,
+          "namesDepositDate": false
+        },
+        {
+          "key": "ai_beo_parsing_output_format",
+          "hasValue": true,
+          "chars": 1846,
+          "updatedAt": "2026-05-01T11:55:43.467Z",
+          "ownParkGroup": true,
+          "namesEventDate": false,
+          "namesEventDateText": false,
+          "namesDepositDate": true
+        }
+      ]
+    },
+    "finding": "The park group's own saved BEO output format (ai_beo_parsing_output_format, saved 2026-05-01, on staging since the 9 November restore from production) replaces the built-in format, and it does not ask for event.eventDate or event.eventDateText. The model is never asked for the party's date, so the review step shows no Date line and no tick. The activity row says promptFrom outputFormat: setting. The today line is appended to the saved advice as designed (the deposit read 2026-11-09)."
+  },
+  "cleanup": {
+    "at": "2026-11-09T20:52:51.558Z",
+    "event": {
+      "id": "16796381-ab1c-4c01-a922-789e7302e66e",
+      "delete": {
+        "path": "DELETE /api/admin/events/16796381-ab1c-4c01-a922-789e7302e66e",
+        "status": 204
+      },
+      "readBack": {
+        "event": 404,
+        "beo": 404
+      },
+      "zzTest814LeftAtCentralFloresta": 0,
+      "listStatus": 200
+    },
+    "conversations": {
+      "ru": {
+        "id": "01a1c20d-8c99-711d-8ee7-3a2da3d46b40",
+        "handle": {
+          "path": "POST /api/inbox/conversations/01a1c20d-8c99-711d-8ee7-3a2da3d46b40/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-09T20:52:53.501Z",
+          "event": null
+        }
+      },
+      "ruw": {
+        "id": "01a1c20e-1bd5-77ff-b46b-fe04dbf2b9d9",
+        "handle": {
+          "path": "POST /api/inbox/conversations/01a1c20e-1bd5-77ff-b46b-fe04dbf2b9d9/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-09T20:52:54.823Z",
+          "event": null
+        }
+      },
+      "th": {
+        "id": "01a1c20e-1de3-7035-bc59-1bf31778931c",
+        "handle": {
+          "path": "POST /api/inbox/conversations/01a1c20e-1de3-7035-bc59-1bf31778931c/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-09T20:52:55.791Z",
+          "event": null
+        }
+      },
+      "en": {
+        "id": "01a1c20e-2161-7861-b2fb-0525889f3e3b",
+        "handle": {
+          "path": "POST /api/inbox/conversations/01a1c20e-2161-7861-b2fb-0525889f3e3b/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-09T20:52:56.724Z",
+          "event": null
+        }
+      }
+    }
+  },
+  "signOut": {
+    "at": "2026-11-09T20:53:09.780Z",
+    "inbox": {
+      "inboxSignOut": 200,
+      "launcherSignOut": 200,
+      "inboxMeAfter": 401,
+      "launcherMeAfter": 401
+    },
+    "app": {
+      "appLogout": 200,
+      "launcherSignOut": 200,
+      "appUserAfter": 401,
+      "launcherMeAfter": 401
+    }
+  },
+  "notDone": [
+    "Book Date Save (SCRUM-812: the api cannot reach the OTO App directory since the restore)",
+    "Create BEO from the inbox (needs a booked event)",
+    "No setting read by value or changed; nothing deployed; no SMS; no real phone"
+  ],
+  "pictures": [
+    {
+      "file": "814-st-01-ru-chat-team-offers-21st.png",
+      "at": "2026-11-09T20:46:20.792Z",
+      "shows": "The ZZ TEST conversation (ru) as the team member reads it, before Book Date",
+      "namesMasked": 43,
+      "masks": 0
+    },
+    {
+      "file": "814-st-02-ru-book-date-21-nov-14-00-12-kids.png",
+      "at": "2026-11-09T20:46:22.470Z",
+      "shows": "Book Date opened on the ZZ TEST conversation (ru): its first values, not saved",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "814-st-03-ru-weekday-chat.png",
+      "at": "2026-11-09T20:46:37.261Z",
+      "shows": "The ZZ TEST conversation (ruw) as the team member reads it, before Book Date",
+      "namesMasked": 42,
+      "masks": 0
+    },
+    {
+      "file": "814-st-04-ru-weekday-book-date-saturday-14-00.png",
+      "at": "2026-11-09T20:46:38.920Z",
+      "shows": "Book Date opened on the ZZ TEST conversation (ruw): its first values, not saved",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "814-st-05-th-chat.png",
+      "at": "2026-11-09T20:46:46.723Z",
+      "shows": "The ZZ TEST conversation (th) as the team member reads it, before Book Date",
+      "namesMasked": 42,
+      "masks": 0
+    },
+    {
+      "file": "814-st-06-th-book-date-15-nov-14-00-10-kids.png",
+      "at": "2026-11-09T20:46:48.385Z",
+      "shows": "Book Date opened on the ZZ TEST conversation (th): its first values, not saved",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "814-st-09-en-chat.png",
+      "at": "2026-11-09T20:46:55.673Z",
+      "shows": "The ZZ TEST conversation (en) as the team member reads it, before Book Date",
+      "namesMasked": 42,
+      "masks": 0
+    },
+    {
+      "file": "814-st-10-en-book-date-21-nov-14-00-15-kids.png",
+      "at": "2026-11-09T20:46:57.352Z",
+      "shows": "Book Date opened on the ZZ TEST conversation (en): its first values, not saved",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "814-st-07-th-chat-saturday-21-nov-2569.png",
+      "at": "2026-11-09T20:47:21.906Z",
+      "shows": "The ZZ TEST conversation (th) as the team member reads it, before Book Date",
+      "namesMasked": 42,
+      "masks": 0
+    },
+    {
+      "file": "814-st-08-th-book-date-21-nov.png",
+      "at": "2026-11-09T20:47:23.584Z",
+      "shows": "Book Date opened on the ZZ TEST conversation (th): its first values, not saved",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "814-st-11-app-ai-fill-review-no-date-line-saved-format.png",
+      "at": "2026-11-09T20:51:51.891Z",
+      "shows": "AI Fill review (run1)",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "814-st-12-app-loaded-without-tick-date-stays-15-nov.png",
+      "at": "2026-11-09T20:52:03.453Z",
+      "shows": "After Load into Editor (run1, notick): the form's date, not saved",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "814-st-13-app-party-details-deposit-date-2026-11-09.png",
+      "at": "2026-11-09T20:52:04.922Z",
+      "shows": "Party Details after Load into Editor (run1): the deposit date the fill read",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "814-st-14-app-saved-date-still-15-nov.png",
+      "at": "2026-11-09T20:52:18.970Z",
+      "shows": "After Save (run1): the event's date read back",
+      "namesMasked": 0,
+      "masks": 0
+    }
+  ]
+}
