@@ -1724,3 +1724,48 @@ test('guest shop refuses private prompts, missing totals, bad completion and dis
     assert.equal((await h.manager.open(STATION_ID)).sequence, current.sequence);
   } finally { h.close(); }
 });
+
+test('SCRUM-763: the till names its sale on the first screen, and the guest’s screen reads the name', async () => {
+  const h = await openManager();
+  try {
+    const claim = await h.manager.claim({ stationId: STATION_ID, holder: 'named-sale-till', holderKind: 'till' });
+    assert.ok(claim.ok);
+    const identify = (prompt: Record<string, unknown>) => ({ stage: 'identify', step: 1, cart: { supported: true, sale: { tier: 'member' } },
+      member: null, totals: null, payment: null, prompt: { kind: 'identify', requestId: 'first-screen', phone: '', nickname: '', contactChannel: 'whatsapp', ...prompt } });
+    const named = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+      lastSeenSequence: claim.document.sequence, payload: identify({ saleKey: 'sale-name-1' }) }, { source: 'till' });
+    assert.ok(named.ok);
+    assert.equal(named.document.prompt?.saleKey, 'sale-name-1');
+    assert.equal(h.manager.snapshotFor(named.document, 'customer', null).document.prompt?.saleKey, 'sale-name-1');
+
+    // The guest's answer keeps the name on the prompt it answers.
+    const answered = await h.manager.applyIntent(STATION_ID, { type: 'display.identify', actionId: 'named-answer',
+      lastSeenSequence: named.document.sequence, payload: { requestId: 'first-screen', phone: '0811111111' } }, { source: 'display' });
+    assert.ok(answered.ok);
+    assert.equal(h.manager.snapshotFor(answered.document, 'customer', null).document.prompt?.saleKey, 'sale-name-1');
+
+    // An unreadable name is refused, and the screen stays as it was.
+    for (const saleKey of ['', '   ', 'x'.repeat(65), 7, { id: 'object' }]) {
+      const refused = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+        lastSeenSequence: answered.document.sequence, payload: identify({ saleKey }) }, { source: 'till' });
+      assert.equal(refused.ok, false, JSON.stringify(saleKey));
+    }
+    assert.equal((await h.manager.open(STATION_ID)).sequence, answered.document.sequence);
+
+    // Only the first screen carries it: a details prompt's name is not kept.
+    const contact = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+      lastSeenSequence: answered.document.sequence, payload: { stage: 'input', step: 4, cart: { supported: true, sale: { tier: 'member' } },
+        member: null, totals: null, payment: null,
+        prompt: { kind: 'contact', requestId: 'details', phone: '', nickname: '', contactChannel: 'whatsapp', saleKey: 'sale-name-1' } } }, { source: 'till' });
+    assert.ok(contact.ok);
+    assert.equal(contact.document.prompt?.kind, 'contact');
+    assert.equal(Object.hasOwn(contact.document.prompt ?? {}, 'saleKey'), false);
+
+    // An older till names nothing, and its first screen carries no name.
+    const unnamed = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+      lastSeenSequence: contact.document.sequence, payload: identify({ requestId: 'older-till' }) }, { source: 'till' });
+    assert.ok(unnamed.ok);
+    assert.equal(unnamed.document.prompt?.kind, 'identify');
+    assert.equal(Object.hasOwn(unnamed.document.prompt ?? {}, 'saleKey'), false);
+  } finally { h.close(); }
+});

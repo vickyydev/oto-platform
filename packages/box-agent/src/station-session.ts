@@ -1138,6 +1138,11 @@ export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
         if (!boundedText(proposedPrompt.requestId, 64)) return notPermitted('A display prompt needs a stable request id.');
         if (stage !== (proposedPrompt.kind === 'identify' ? 'identify' : 'input')) return wrong('That prompt belongs to another display stage.');
       }
+      // SCRUM-763 — the till's opaque name for the sale, on its first screen
+      // only: the display asks the guest's language once per sale by it.
+      if (proposedPrompt?.kind === 'identify' && proposedPrompt.saleKey !== undefined && !boundedText(proposedPrompt.saleKey, 64)) {
+        return notPermitted('That display prompt is not valid.');
+      }
       const childReview = proposedPrompt?.kind === 'child_review' ? ChildReviewPromptSchema.safeParse(proposedPrompt) : null;
       const consent = proposedPrompt?.kind === 'consent' ? ConsentPromptSchema.safeParse(proposedPrompt) : null;
       if (consent && !consent.success) return notPermitted('That guardian acknowledgement is not valid.');
@@ -1148,7 +1153,8 @@ export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
         return notPermitted('Ask staff to refresh this child review before continuing.');
       }
       const savedPrompt: Record<string, unknown> | null = consent?.success ? { ...consent.data } : childReview?.success ? { ...childReview.data }
-        : proposedPrompt ? Object.fromEntries(['kind', 'requestId', 'phone', 'nickname', 'contactChannel']
+        : proposedPrompt ? Object.fromEntries(['kind', 'requestId', 'phone', 'nickname', 'contactChannel',
+          ...(proposedPrompt.kind === 'identify' ? ['saleKey'] : [])]
           .filter((key) => key in proposedPrompt).map((key) => [key, proposedPrompt[key]])) : null;
       if (savedPrompt) {
         delete savedPrompt.answer;
