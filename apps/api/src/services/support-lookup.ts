@@ -6,6 +6,7 @@ import {
 } from '@oto/shared';
 import { audit } from './audit';
 import { maskPersonal } from './audit-mask';
+import { SESSION_PAGE_MAX } from './account-sessions';
 import { branchReach } from './access-control';
 import { callPlatform, type GetRouteTemplate, type PlatformResponse } from './assistant/call-platform';
 import { GATE_EVENTS_LIMIT } from './gate-events';
@@ -208,6 +209,11 @@ function voucherRow(row: Rows[number]): Rows[number] {
   }, ['status', 'type', 'value', 'codeLast4', 'park', 'redeemedAt', 'redeemedWhere', 'receiptNumber', 'expiresAt', 'prize', 'issuedAt', 'issuedFrom']);
 }
 
+/** One sign-in: whether it is still in use or when it ended, then when it was last used and when it runs out. */
+function sessionRow(row: Rows[number]): Rows[number] {
+  return deskFirst(row, ['status', 'endedAt', 'lastSeenAt', 'expiresAt', 'createdAt', 'lockedAt', 'stationId', 'branchId']);
+}
+
 /** What tells a person which of the OTO App's records this is, by the kind of record it says it is. */
 const OTO_APP_DESK: Readonly<Record<string, readonly string[]>> = {
   person: ['personKind', 'name', 'nickname', 'status', 'park'],
@@ -311,9 +317,13 @@ export async function supportLookup(app: FastifyInstance, input: SupportLookupIn
       sections.push(section({ key: 'pos.promo_voucher', app: 'pos', kind, label: 'Promotion voucher', ...promo, permission: 'admin:booth:read',
         rows: promo.rows.map(voucherRow), note: promo.status === 'empty' ? PROMO_CODES_NOT_SEARCHED : promo.note }));
     } else if (kind === 'account') {
-      const sessions = outcomeOf(await get(caller, `/accounts/${q}/sessions`, 'GET /accounts/:id/sessions'), body => listAt(body, 'sessions'));
+      // The reader answers a page, newest sign-in first, with the total (SCRUM-793): the most one page holds, and a note when that is not all of them.
+      const read = await get(caller, `/accounts/${q}/sessions?limit=${SESSION_PAGE_MAX}`, 'GET /accounts/:id/sessions');
+      const sessions = outcomeOf(read, body => listAt(body, 'sessions'));
+      const total = read.status === 200 && isRecord(read.body) && typeof read.body.total === 'number' ? read.body.total : sessions.rows.length;
       sections.push(section({ key: 'platform.account_sessions', app: 'platform', kind, label: 'Account sessions', ...sessions,
-        permission: 'admin:account:read' }));
+        permission: 'admin:account:read', rows: sessions.rows.map(sessionRow),
+        note: total > sessions.rows.length ? `Showing the newest ${sessions.rows.length} of ${total}.` : sessions.note }));
       const grants = outcomeOf(await get(caller, `/accounts/${q}/permissions`, 'GET /accounts/:id/permissions'), body => listAt(body, 'assignments'));
       sections.push(section({ key: 'platform.account_roles', app: 'platform', kind, label: 'Roles held', ...grants,
         permission: 'admin:role:read' }));

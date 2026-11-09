@@ -8,6 +8,7 @@ import {
   voucherDefinition, voucherMiss,
 } from '@oto/db';
 import { bandShortCode, mintBoothCode, newId } from '@oto/shared';
+import { hashToken, newSessionToken } from '../src/plugins/session';
 import { FakeOtoApp, OTOAPP_WORDS, fakeUser, seedFakeOtoAppWorld, type FakeOtoAppWorld } from './fake-otoapp';
 import {
   ADMIN, BRANCH_MANAGER, CENTRAL_BRANCH_CODE, CHALONG_BRANCH_CODE, CHALONG_MANAGER, OTO_OPERATOR_NAME, RECEPTION, SECOND_OPERATOR_ADMIN,
@@ -614,5 +615,52 @@ describe('SCRUM-674 the OTO App’s records by phone', () => {
       const source = readFileSync(new URL(file, import.meta.url), 'utf8');
       expect(source).not.toMatch(/(?<![-/\w])otoapp\.|otoapp_v|\bfetch\s*\(/);
     }
+  });
+});
+
+describe('SCRUM-793 an account’s sessions', () => {
+  const HOUR = 3600_000;
+  /** An account of this operator with `count` sign-ins an hour apart; `endedAgo` names the ones whose end has passed, by index from the oldest. */
+  async function signedInTimes(phone: string, count: number, endedAgo: number[] = []) {
+    const id = newId();
+    await ctx.db.insert(s.account).values({ id, operatorId: oto, phone, status: 'active' });
+    const now = Date.now();
+    const rows = Array.from({ length: count }, (_, i) => {
+      const createdAt = new Date(now - (count - i) * HOUR);
+      return { id: newId(), accountId: id, tokenHash: hashToken(newSessionToken()), createdAt, lastSeenAt: createdAt,
+        expiresAt: endedAgo.includes(i) ? new Date(now - 48 * HOUR) : new Date(now + 12 * HOUR) };
+    });
+    await ctx.db.insert(s.session).values(rows);
+    return { id, newestFirst: rows.map(row => row.id).reverse() };
+  }
+
+  it('answers the newest fifty and says how many there are, where the route alone would give ten', async () => {
+    const many = await signedInTimes('+66810793001', 55);
+    const res = await lookup(admin, many.id, 'account');
+    expect(res.status, res.raw).toBe(200);
+    const sessions = sectionOf(res, 'platform.account_sessions');
+    expect(sessions).toMatchObject({ app: 'platform', status: 'found', rowCount: 50, permission: 'admin:account:read', note: 'Showing the newest 50 of 55.' });
+    expect(sessions.rows.map(row => row.id)).toEqual(many.newestFirst.slice(0, 50));
+    const [row] = await lookupAudits();
+    expect((row!.after as { sections: unknown[] }).sections).toContainEqual({ key: 'platform.account_sessions', app: 'platform', kind: 'account', status: 'found', rows: 50 });
+
+    // More than the route's own page of ten, fewer than fifty: every one, and nothing said.
+    const twelve = await signedInTimes('+66810793002', 12);
+    const all = sectionOf(await lookup(admin, twelve.id, 'account'), 'platform.account_sessions');
+    expect(all).toMatchObject({ status: 'found', rowCount: 12, note: null });
+    expect(all.rows.map(row => row.id)).toEqual(twelve.newestFirst);
+  });
+
+  it('leads each session with whether it is still in use or when it ended, so that reaches the Console’s compact list', async () => {
+    const mixed = await signedInTimes('+66810793003', 3, [0]);
+    const rows = sectionOf(await lookup(admin, mixed.id, 'account'), 'platform.account_sessions').rows as Array<Record<string, unknown>>;
+    const ended = rows.find(row => row.status === 'ended')!;
+    const live = rows.find(row => row.status === 'active')!;
+    expect(ended.id).toBe(mixed.newestFirst[2]);
+    expect(onTheScreen(ended).slice(0, 5)).toEqual(['status', 'endedAt', 'lastSeenAt', 'expiresAt', 'createdAt']);
+    expect(ended.endedAt).toBe(ended.expiresAt);
+    expect(onTheScreen(live).slice(0, 4)).toEqual(['status', 'lastSeenAt', 'expiresAt', 'createdAt']);
+    // Only the order changed: the rest of the row is behind them.
+    expect(live).toMatchObject({ endedAt: null, lockedAt: null, current: false });
   });
 });
