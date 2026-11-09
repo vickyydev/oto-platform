@@ -2,6 +2,7 @@ import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { TierVerificationsPorts } from '../../../runtime/operations';
 import { ArrowRight, BadgeCheck, Info, RefreshCw } from "lucide-react";
+import { TIER_APPROVAL_EVIDENCE, tierConfirmedAtTillLine } from '@oto/shared';
 import { type ApiTierVerificationRecord } from "../../../api/platform";
 
 import { Button } from "../../ui/button";
@@ -13,7 +14,9 @@ import { TierApprovalCounts } from "./TierApprovalCounts";
  * Record-checking view (client extension): every tier upgrade with the member,
  * the document that was checked, its expiry, the staff account that checked it
  * (stamped server-side from the session) and the exact time. Read-only — the
- * records are created at the counter via the POS verify modal.
+ * records are created at the counter via the POS verify modal. A Thai rate
+ * confirmed at the till with no document (SCRUM-772) reads "Confirmed at the
+ * till by <name>", with the till.
  */
 export function TierVerificationsPanel() {
   const runtime = useAdminScreenRuntime();
@@ -57,15 +60,6 @@ export function TierVerificationsPanelWithPorts({ ports }: { ports: TierVerifica
     void refresh();
   }, [refresh]);
 
-  const fmtTime = (iso: string) =>
-    new Date(iso).toLocaleString(undefined, {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-
   if (error) return <div role="alert" className="flex flex-col gap-3 text-sm"><p>{error}</p>
     <Button variant="outline" onClick={() => void refresh()}>Try again</Button></div>;
   return (
@@ -89,117 +83,154 @@ export function TierVerificationsPanelWithPorts({ ports }: { ports: TierVerifica
             : 'No tier verifications recorded yet. Records appear here when staff verify a discounted rate at the counter.'}
         </div>
       ) : (
-        <>
-          {/* Desktop: table */}
-          <div className="hidden lg:block overflow-hidden rounded-2xl border border-foreground/10">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead>Member</TableHead>
-                  <TableHead className="w-40">Upgrade</TableHead>
-                  <TableHead className="w-44">Document</TableHead>
-                  <TableHead className="w-32">Expires</TableHead>
-                  <TableHead className="w-40">Checked by</TableHead>
-                  <TableHead className="w-44">Time</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {records.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell>
-                      <div className="font-medium">{r.member.nickname}</div>
-                      <div className="text-xs tabular-nums text-foreground/50">{r.member.phone}</div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="inline-flex items-center gap-1 text-sm">
-                        <span className="text-foreground/50">{tierLabel(r.fromTier)}</span>
-                        <ArrowRight className="w-3.5 h-3.5 text-foreground/30" />
-                        <span className="font-semibold">{tierLabel(r.toTier)}</span>
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {r.evidenceType}
-                      {r.note && <div className="text-xs text-foreground/50">{r.note}</div>}
-                    </TableCell>
-                    <TableCell>
-                      {r.evidenceExpiresAt ? (
-                        <span
-                          className={`text-sm tabular-nums ${
-                            r.expired ? 'font-semibold text-destructive' : 'text-foreground/70'
-                          }`}
-                        >
-                          {r.evidenceExpiresAt}
-                          {r.expired && ' · expired'}
-                        </span>
-                      ) : (
-                        <span className="text-sm text-foreground/40">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <span className="inline-flex items-center gap-1.5 text-sm">
-                        <BadgeCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                        {r.verifiedBy ?? 'Unknown'}
-                      </span>
-                      {r.branch && <div className="text-xs text-foreground/40">{r.branch}</div>}
-                    </TableCell>
-                    <TableCell className="text-sm tabular-nums text-foreground/70">
-                      {fmtTime(r.verifiedAt)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Mobile / narrow: stacked cards */}
-          <div className="flex flex-col gap-2 lg:hidden">
-            {records.map((r) => (
-              <div
-                key={r.id}
-                className="rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="truncate font-medium">{r.member.nickname}</div>
-                    <div className="text-xs tabular-nums text-foreground/50">{r.member.phone}</div>
-                  </div>
-                  <span className="inline-flex shrink-0 items-center gap-1 text-sm">
-                    <span className="text-foreground/50">{tierLabel(r.fromTier)}</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-foreground/30" />
-                    <span className="font-semibold">{tierLabel(r.toTier)}</span>
-                  </span>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-foreground/70">
-                  <span>
-                    {r.evidenceType}
-                    {r.note ? ` — ${r.note}` : ''}
-                  </span>
-                  {r.evidenceExpiresAt && (
-                    <span className={r.expired ? 'font-semibold text-destructive' : ''}>
-                      expires {r.evidenceExpiresAt}
-                      {r.expired && ' (expired)'}
-                    </span>
-                  )}
-                </div>
-                <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-foreground/50">
-                  <span className="inline-flex items-center gap-1">
-                    <BadgeCheck className="w-3.5 h-3.5 text-emerald-500" />
-                    {r.verifiedBy ?? 'Unknown'}
-                    {r.branch ? ` · ${r.branch}` : ''}
-                  </span>
-                  <span className="tabular-nums">{fmtTime(r.verifiedAt)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
+        <TierVerificationRecordList records={records} tierLabel={tierLabel} />
       )}
 
       <p className="flex items-center gap-2 text-xs text-foreground/40">
         <Info className="w-3.5 h-3.5 shrink-0" />
-        Read-only audit trail — who checked the document is recorded automatically from the signed-in
-        account at the counter and cannot be edited.
+        Read-only audit trail — who checked the document, or confirmed the Thai rate at the till, is
+        recorded automatically from the signed-in account at the counter and cannot be edited.
       </p>
     </div>
+  );
+}
+
+/**
+ * SCRUM-772 — what the Document column says. A document check names the
+ * document, with what staff typed for Other; the Thai rate confirmed at the
+ * till (the owner's rule of 6 November: no document, no expiry) reads
+ * "Confirmed at the till by <name>", with the till it was confirmed at.
+ */
+export function verificationEvidence(r: ApiTierVerificationRecord): { label: string; detail: string | null } {
+  if (r.evidenceType === TIER_APPROVAL_EVIDENCE) {
+    return { label: tierConfirmedAtTillLine(r.verifiedBy), detail: r.station ?? null };
+  }
+  return { label: r.evidenceType, detail: r.note };
+}
+
+const fmtTime = (iso: string) =>
+  new Date(iso).toLocaleString(undefined, {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+/** The records themselves: a table on a wide screen, cards on a narrow one. */
+export function TierVerificationRecordList({
+  records,
+  tierLabel,
+}: {
+  records: ApiTierVerificationRecord[];
+  tierLabel: (tier: string) => string;
+}) {
+  return (
+    <>
+      {/* Desktop: table */}
+      <div className="hidden lg:block overflow-hidden rounded-2xl border border-foreground/10">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead>Member</TableHead>
+              <TableHead className="w-40">Upgrade</TableHead>
+              <TableHead className="w-44">Document</TableHead>
+              <TableHead className="w-32">Expires</TableHead>
+              <TableHead className="w-40">Checked by</TableHead>
+              <TableHead className="w-44">Time</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {records.map((r) => (
+              <TableRow key={r.id}>
+                <TableCell>
+                  <div className="font-medium">{r.member.nickname}</div>
+                  <div className="text-xs tabular-nums text-foreground/50">{r.member.phone}</div>
+                </TableCell>
+                <TableCell>
+                  <span className="inline-flex items-center gap-1 text-sm">
+                    <span className="text-foreground/50">{tierLabel(r.fromTier)}</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-foreground/30" />
+                    <span className="font-semibold">{tierLabel(r.toTier)}</span>
+                  </span>
+                </TableCell>
+                <TableCell className="text-sm">
+                  {verificationEvidence(r).label}
+                  {verificationEvidence(r).detail && (
+                    <div className="text-xs text-foreground/50">{verificationEvidence(r).detail}</div>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {r.evidenceExpiresAt ? (
+                    <span
+                      className={`text-sm tabular-nums ${
+                        r.expired ? 'font-semibold text-destructive' : 'text-foreground/70'
+                      }`}
+                    >
+                      {r.evidenceExpiresAt}
+                      {r.expired && ' · expired'}
+                    </span>
+                  ) : (
+                    <span className="text-sm text-foreground/40">—</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <span className="inline-flex items-center gap-1.5 text-sm">
+                    <BadgeCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    {r.verifiedBy ?? 'Unknown'}
+                  </span>
+                  {r.branch && <div className="text-xs text-foreground/40">{r.branch}</div>}
+                </TableCell>
+                <TableCell className="text-sm tabular-nums text-foreground/70">
+                  {fmtTime(r.verifiedAt)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Mobile / narrow: stacked cards */}
+      <div className="flex flex-col gap-2 lg:hidden">
+        {records.map((r) => (
+          <div
+            key={r.id}
+            className="rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-4"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="truncate font-medium">{r.member.nickname}</div>
+                <div className="text-xs tabular-nums text-foreground/50">{r.member.phone}</div>
+              </div>
+              <span className="inline-flex shrink-0 items-center gap-1 text-sm">
+                <span className="text-foreground/50">{tierLabel(r.fromTier)}</span>
+                <ArrowRight className="w-3.5 h-3.5 text-foreground/30" />
+                <span className="font-semibold">{tierLabel(r.toTier)}</span>
+              </span>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-foreground/70">
+              <span>
+                {verificationEvidence(r).label}
+                {verificationEvidence(r).detail ? ` — ${verificationEvidence(r).detail}` : ''}
+              </span>
+              {r.evidenceExpiresAt && (
+                <span className={r.expired ? 'font-semibold text-destructive' : ''}>
+                  expires {r.evidenceExpiresAt}
+                  {r.expired && ' (expired)'}
+                </span>
+              )}
+            </div>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-foreground/50">
+              <span className="inline-flex items-center gap-1">
+                <BadgeCheck className="w-3.5 h-3.5 text-emerald-500" />
+                {r.verifiedBy ?? 'Unknown'}
+                {r.branch ? ` · ${r.branch}` : ''}
+              </span>
+              <span className="tabular-nums">{fmtTime(r.verifiedAt)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }

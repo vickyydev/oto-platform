@@ -57,6 +57,8 @@ export interface ApiTierVerificationRecord {
   expired: boolean;
   verifiedBy: string | null;
   branch: string | null;
+  /** SCRUM-772 — the till it was recorded at; absent from a platform before 9 November. */
+  station?: string | null;
   note: string | null;
   verifiedAt: string;
 }

@@ -6,12 +6,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 /**
  * SCRUM-772 — how often each staff member has approved the Thai rate by hand.
  *
- * The till lets the staff member on it approve the Thai rate alone for the
- * special cases a document check does not fit, so the customer does not
- * wait. This count is how that stays answerable: one row per staff member,
- * the last 30 days beside the total, so a name that comes up far more often
- * than the special cases call for is visible here. Each approval itself is on
- * the sale it priced and in the activity log.
+ * Since the owner's rule of 6 November the till confirms the Thai rate with
+ * no document — "Confirm Thai rate" or "Cancel" — and the staff member on it
+ * confirms alone, so the customer does not wait. This count is how that stays
+ * answerable: one row per staff member, the last 30 days beside the total, so
+ * a name that comes up far more often than expected is visible here. Each
+ * confirmation itself is on the sale it priced, in the activity log and, once
+ * saved to the member, in the records below.
  *
  * It reads on its own and fails on its own: the verification records below
  * still show when the count cannot be read.
@@ -71,8 +72,7 @@ export function TierApprovalCounts({ load, refreshSignal, isCurrent }: TierAppro
         <p className="text-sm text-foreground/50">Loading approvals…</p>
       ) : counts.staff.length === 0 ? (
         <p className="text-sm text-foreground/50">
-          No approvals by hand yet. They appear here when staff use “Special case, approve by hand” at the
-          till.
+          No approvals by hand yet. They appear here when staff press “Confirm Thai rate” at the till.
         </p>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-foreground/10">
