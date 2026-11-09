@@ -1,0 +1,1748 @@
+{
+  "unit": "SCRUM-796",
+  "what": "Staging proof: the till payment screen takes the amount due by default; Partial payment opens the amount field; Cash received starts at the amount due; Save as partly paid shows only once a part is chosen or money is paid.",
+  "liveCommit": "4d9ddb8cd1d3e4a85af0cc92bcc24df202a4664e",
+  "deploys": {
+    "readAt": "2026-11-09T10:13:18.671Z",
+    "services": {
+      "oto-pos-web-staging": {
+        "liveDeploy": "dep-dbopg449v7es7380dol0",
+        "commit": "4d9ddb8cd1d3e4a85af0cc92bcc24df202a4664e",
+        "finishedAt": "2026-11-09T09:56:01.559216Z"
+      },
+      "oto-pos-staging": {
+        "liveDeploy": "dep-dbopg4ec6qcc738b5i10",
+        "commit": "4d9ddb8cd1d3e4a85af0cc92bcc24df202a4664e",
+        "finishedAt": "2026-11-09T09:54:12.798763Z"
+      }
+    }
+  },
+  "pos": "https://oto-pos-web-staging.onrender.com",
+  "browser": "Chromium 153.0.8010.12 (headless), 1440x900; step 6 at 375x812, timezone Asia/Bangkok",
+  "startedAt": "2026-11-09T09:58:09.198Z",
+  "finishedAt": "2026-11-09T10:12:48.284Z",
+  "accounts": {
+    "stationSetUpAndReadBacks": "staging admin (api)",
+    "till": "staging reception account \"Som\" (browser)",
+    "credentials": "from scripts/agent/env.mjs, never printed or stored"
+  },
+  "fixture": {
+    "branch": "Oto Play Park, Central Floresta",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "box": "Virtual box 1",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "till": {
+      "id": "01a1bfbe-fa1a-7987-bf86-d97a897741c9",
+      "name": "ZZ TEST SCRUM-796 till",
+      "prefix": "Z796",
+      "ready": true,
+      "routing": {
+        "qr": "none",
+        "card": "manual"
+      },
+      "devices": [
+        "adult_band:Band Printer (adults)",
+        "kids_band:Band Printer (kids)",
+        "receipt:Receipt Printer 1"
+      ]
+    },
+    "ticket": "1 Kid + 1 Adult (1 hour)",
+    "tier": "Tourist",
+    "walkInPhone": "+66897960011 (ZZ TEST number, not a member before or after)",
+    "note": "The till used the simulated band and receipt printers on Virtual box 1 (shared devices, not changed); they were unassigned from the ZZ TEST till before it was archived."
+  },
+  "sales": [
+    {
+      "purpose": "step 1 — full amount by default, paid",
+      "id": "01a1bfc1-45b8-7b4f-86e0-ef2afae53522",
+      "receipt": "Z796-000001",
+      "status": "finalised",
+      "grossSatang": 50000
+    },
+    {
+      "purpose": "step 2 — over-payment, first try (its picture was retaken on the next sale)",
+      "id": "01a1bfc2-ae50-7913-869a-ba78d68c9720",
+      "receipt": "Z796-000002",
+      "status": "finalised",
+      "grossSatang": 50000
+    },
+    {
+      "purpose": "step 2 — over-payment, pictured",
+      "id": "01a1bfc3-e1a0-7863-8fe1-af8d7071d1b4",
+      "receipt": "Z796-000003",
+      "status": "finalised",
+      "grossSatang": 50000
+    },
+    {
+      "purpose": "step 3 — cash short, then cancelled at the till (void)",
+      "id": "01a1bfc4-c718-7829-88ed-04348bce3cf3",
+      "receipt": null,
+      "status": "voided",
+      "grossSatang": 50000
+    },
+    {
+      "purpose": "step 4 — partial ฿100, saved as partly paid, resumed, balance ฿400 paid",
+      "id": "01a1bfc5-bffd-7724-8650-163f53a0595d",
+      "receipt": "Z796-000004",
+      "status": "finalised",
+      "grossSatang": 50000
+    },
+    {
+      "purpose": "step 5 — Card tapped, nothing started, cancelled at the till (void)",
+      "id": "01a1bfc7-fb71-7f1e-89f9-55fda45f6b07",
+      "receipt": null,
+      "status": "voided",
+      "grossSatang": 50000
+    },
+    {
+      "purpose": "step 6 — phone layout, Cash tapped, then voided with the counter till Cancel",
+      "id": "01a1bfc9-7748-74b6-90b4-ec8e389081c5",
+      "receipt": null,
+      "status": "voided",
+      "grossSatang": 50000
+    }
+  ],
+  "steps": {
+    "s1_fullByDefault": {
+      "at": "2026-11-09T10:01:47.134Z",
+      "saleId": "01a1bfc1-45b8-7b4f-86e0-ef2afae53522",
+      "state": {
+        "amountFieldCount": 0,
+        "amountValue": null,
+        "partialButton": 1,
+        "fullAmountButton": 0,
+        "cashReceived": "500.00",
+        "change": "Change ฿0.00",
+        "cashShortLine": null,
+        "keypadOpen": false,
+        "holdButtons": "Hold sale",
+        "holdSaleCount": 1,
+        "savePartlyPaidCount": 0,
+        "savePartlyPaidEnabled": null,
+        "partPaidReason": null,
+        "confirmLabel": "Confirm Payment Received",
+        "confirmEnabled": true,
+        "amountDue": "฿500",
+        "stageText": "Partial payment Cash received Change ฿0.00"
+      },
+      "confirm": {
+        "at": "2026-11-09T10:02:09.981Z",
+        "presses": [
+          "Cash",
+          "Confirm Payment Received"
+        ],
+        "before": {
+          "cashReceived": "500.00",
+          "change": "Change ฿0.00",
+          "confirmEnabled": true
+        },
+        "saleAfter": {
+          "status": "finalised",
+          "receipt": "Z796-000001",
+          "gross": 50000,
+          "payments": []
+        },
+        "net": [
+          {
+            "at": "2026-11-09T10:02:10.217Z",
+            "method": "POST",
+            "path": "/api/sales/01a1bfc1-45b8-7b4f-86e0-ef2afae53522/finalise",
+            "status": 200,
+            "tender": {
+              "method": "cash",
+              "kind": "cash",
+              "amountSatang": 50000,
+              "tenderedSatang": 50000,
+              "changeSatang": 0
+            }
+          }
+        ]
+      }
+    },
+    "s2_overPayment": {
+      "at": "2026-11-09T10:03:13.396Z",
+      "saleId": "01a1bfc2-ae50-7913-869a-ba78d68c9720",
+      "afterCash": {
+        "amountFieldCount": 0,
+        "amountValue": null,
+        "partialButton": 1,
+        "fullAmountButton": 0,
+        "cashReceived": "500.00",
+        "change": "Change ฿0.00",
+        "cashShortLine": null,
+        "keypadOpen": false,
+        "holdButtons": "Hold sale",
+        "holdSaleCount": 1,
+        "savePartlyPaidCount": 0,
+        "savePartlyPaidEnabled": null,
+        "partPaidReason": null,
+        "confirmLabel": "Confirm Payment Received",
+        "confirmEnabled": true,
+        "amountDue": "฿500",
+        "stageText": "Partial payment Cash received Change ฿0.00"
+      },
+      "afterTap": {
+        "amountFieldCount": 0,
+        "amountValue": null,
+        "partialButton": 1,
+        "fullAmountButton": 0,
+        "cashReceived": "500.00",
+        "change": "Change ฿0.00",
+        "cashShortLine": null,
+        "keypadOpen": true,
+        "holdButtons": "Hold sale",
+        "holdSaleCount": 1,
+        "savePartlyPaidCount": 0,
+        "savePartlyPaidEnabled": null,
+        "partPaidReason": null,
+        "confirmLabel": "Confirm Payment Received",
+        "confirmEnabled": true,
+        "amountDue": "฿500",
+        "stageText": "Partial payment Cash received Change ฿0.00 1 2 3 4 5 6 7 8 9 Clear 0 Decimal point"
+      },
+      "typedOnKeypad": "1000",
+      "afterTyping": {
+        "amountFieldCount": 0,
+        "amountValue": null,
+        "partialButton": 1,
+        "fullAmountButton": 0,
+        "cashReceived": "1000",
+        "change": "Change ฿500.00",
+        "cashShortLine": null,
+        "keypadOpen": true,
+        "holdButtons": "Hold sale",
+        "holdSaleCount": 1,
+        "savePartlyPaidCount": 0,
+        "savePartlyPaidEnabled": null,
+        "partPaidReason": null,
+        "confirmLabel": "Confirm Payment Received",
+        "confirmEnabled": true,
+        "amountDue": "฿500",
+        "stageText": "Partial payment Cash received Change ฿500.00 1 2 3 4 5 6 7 8 9 Clear 0 Decimal point"
+      },
+      "confirm": {
+        "at": "2026-11-09T10:03:14.510Z",
+        "saleAfter": {
+          "status": "finalised",
+          "receipt": "Z796-000002",
+          "gross": 50000
+        },
+        "net": [
+          {
+            "at": "2026-11-09T10:03:14.710Z",
+            "method": "POST",
+            "path": "/api/sales/01a1bfc2-ae50-7913-869a-ba78d68c9720/finalise",
+            "status": 200,
+            "tender": {
+              "method": "cash",
+              "kind": "cash",
+              "amountSatang": 50000,
+              "tenderedSatang": 100000,
+              "changeSatang": 50000
+            }
+          }
+        ],
+        "successLine": "Receipt Z796-000002 • ฿500 • Cash",
+        "cashLines": null
+      }
+    },
+    "s2_over2": {
+      "at": "2026-11-09T10:04:16.615Z",
+      "saleId": "01a1bfc3-e1a0-7863-8fe1-af8d7071d1b4",
+      "afterCash": {
+        "amountFieldCount": 0,
+        "amountValue": null,
+        "partialButton": 1,
+        "fullAmountButton": 0,
+        "cashReceived": "500.00",
+        "change": "Change ฿0.00",
+        "cashShortLine": null,
+        "keypadOpen": false,
+        "holdButtons": "Hold sale",
+        "holdSaleCount": 1,
+        "savePartlyPaidCount": 0,
+        "savePartlyPaidEnabled": null,
+        "partPaidReason": null,
+        "confirmLabel": "Confirm Payment Received",
+        "confirmEnabled": true,
+        "amountDue": "฿500",
+        "stageText": "Partial payment Cash received Change ฿0.00"
+      },
+      "afterTap": {
+        "amountFieldCount": 0,
+        "amountValue": null,
+        "partialButton": 1,
+        "fullAmountButton": 0,
+        "cashReceived": "500.00",
+        "change": "Change ฿0.00",
+        "cashShortLine": null,
+        "keypadOpen": true,
+        "holdButtons": "Hold sale",
+        "holdSaleCount": 1,
+        "savePartlyPaidCount": 0,
+        "savePartlyPaidEnabled": null,
+        "partPaidReason": null,
+        "confirmLabel": "Confirm Payment Received",
+        "confirmEnabled": true,
+        "amountDue": "฿500",
+        "stageText": "Partial payment Cash received Change ฿0.00 1 2 3 4 5 6 7 8 9 Clear 0 Decimal point"
+      },
+      "typedOnKeypad": "1000",
+      "afterTyping": {
+        "amountFieldCount": 0,
+        "amountValue": null,
+        "partialButton": 1,
+        "fullAmountButton": 0,
+        "cashReceived": "1000",
+        "change": "Change ฿500.00",
+        "cashShortLine": null,
+        "keypadOpen": true,
+        "holdButtons": "Hold sale",
+        "holdSaleCount": 1,
+        "savePartlyPaidCount": 0,
+        "savePartlyPaidEnabled": null,
+        "partPaidReason": null,
+        "confirmLabel": "Confirm Payment Received",
+        "confirmEnabled": true,
+        "amountDue": "฿500",
+        "stageText": "Partial payment Cash received Change ฿500.00 1 2 3 4 5 6 7 8 9 Clear 0 Decimal point"
+      },
+      "confirm": {
+        "at": "2026-11-09T10:04:17.729Z",
+        "saleAfter": {
+          "status": "finalised",
+          "receipt": "Z796-000003",
+          "gross": 50000
+        },
+        "net": [
+          {
+            "at": "2026-11-09T10:04:17.982Z",
+            "method": "POST",
+            "path": "/api/sales/01a1bfc3-e1a0-7863-8fe1-af8d7071d1b4/finalise",
+            "status": 200,
+            "tender": {
+              "method": "cash",
+              "kind": "cash",
+              "amountSatang": 50000,
+              "tenderedSatang": 100000,
+              "changeSatang": 50000
+            }
+          }
+        ],
+        "successLine": "Receipt Z796-000003 • ฿500 • Cash",
+        "cashLines": null
+      },
+      "receiptRead": {
+        "at": "2026-11-09T10:04:33.222Z",
+        "jobs": [
+          {
+            "id": "01a1bfc4-09dd-7bc5-86da-28c6431150f8",
+            "kind": "adult_wristband",
+            "status": "printed",
+            "keys": "id,kind,role,status,stationId,deviceId,deviceLabel,subjectType,subjectId,reprintOf,reprintReason,requestedByName,errorCode,errorMessage,queuedAt,finishedAt"
+          },
+          {
+            "id": "01a1bfc4-09d9-7932-9d0f-70fd835e7c96",
+            "kind": "kids_wristband",
+            "status": "printed",
+            "keys": "id,kind,role,status,stationId,deviceId,deviceLabel,subjectType,subjectId,reprintOf,reprintReason,requestedByName,errorCode,errorMessage,queuedAt,finishedAt"
+          },
+          {
+            "id": "01a1bfc4-09d4-7367-a66b-31ca310b9d61",
+            "kind": "receipt",
+            "status": "printed",
+            "keys": "id,kind,role,status,stationId,deviceId,deviceLabel,subjectType,subjectId,reprintOf,reprintReason,requestedByName,errorCode,errorMessage,queuedAt,finishedAt"
+          }
+        ],
+        "attempts": [
+          {
+            "method": "cash",
+            "status": "approved",
+            "amount": 50000,
+            "tendered": 100000,
+            "change": 50000
+          }
+        ],
+        "sale": {
+          "tendered": null,
+          "change": null,
+          "payment": null
+        }
+      }
+    },
+    "s3_cashShort": {
+      "at": "2026-11-09T10:05:25.368Z",
+      "saleId": "01a1bfc4-c718-7829-88ed-04348bce3cf3",
+      "typedOnKeypad": "100",
+      "short": {
+        "amountFieldCount": 0,
+        "amountValue": null,
+        "partialButton": 1,
+        "fullAmountButton": 0,
+        "cashReceived": "100",
+        "change": "Change ฿0.00",
+        "cashShortLine": "Cash received must cover this payment.",
+        "keypadOpen": true,
+        "holdButtons": "Hold sale",
+        "holdSaleCount": 1,
+        "savePartlyPaidCount": 0,
+        "savePartlyPaidEnabled": null,
+        "partPaidReason": null,
+        "confirmLabel": "Confirm Payment Received",
+        "confirmEnabled": false,
+        "amountDue": "฿500",
+        "stageText": "Partial payment Cash received Change ฿0.00 Cash received must cover this payment. 1 2 3 4 5 6 7 8 9 Clear 0 Decimal point"
+      },
+      "backToFull": {
+        "at": "2026-11-09T10:05:29.745Z",
+        "typedOnKeypad": "Clear, 500",
+        "state": {
+          "amountFieldCount": 0,
+          "amountValue": null,
+          "partialButton": 1,
+          "fullAmountButton": 0,
+          "cashReceived": "500",
+          "change": "Change ฿0.00",
+          "cashShortLine": null,
+          "keypadOpen": true,
+          "holdButtons": "Hold sale",
+          "holdSaleCount": 1,
+          "savePartlyPaidCount": 0,
+          "savePartlyPaidEnabled": null,
+          "partPaidReason": null,
+          "confirmLabel": "Confirm Payment Received",
+          "confirmEnabled": true,
+          "amountDue": "฿500",
+          "stageText": "Partial payment Cash received Change ฿0.00 1 2 3 4 5 6 7 8 9 Clear 0 Decimal point"
+        }
+      },
+      "cancel": {
+        "at": "2026-11-09T10:05:29.745Z",
+        "press": "Cancel (order panel)",
+        "net": [
+          {
+            "at": "2026-11-09T10:05:29.881Z",
+            "method": "POST",
+            "path": "/api/sales/01a1bfc4-c718-7829-88ed-04348bce3cf3/void",
+            "status": 200,
+            "reason": "Cancelled at the till"
+          }
+        ],
+        "saleAfter": {
+          "status": "voided",
+          "receipt": null,
+          "voidReason": "Cancelled at the till"
+        }
+      }
+    },
+    "s4_partial": {
+      "at": "2026-11-09T10:06:17.677Z",
+      "saleId": "01a1bfc5-bffd-7724-8650-163f53a0595d",
+      "afterCash": {
+        "amountFieldCount": 0,
+        "amountValue": null,
+        "partialButton": 1,
+        "fullAmountButton": 0,
+        "cashReceived": "500.00",
+        "change": "Change ฿0.00",
+        "cashShortLine": null,
+        "keypadOpen": false,
+        "holdButtons": "Hold sale",
+        "holdSaleCount": 1,
+        "savePartlyPaidCount": 0,
+        "savePartlyPaidEnabled": null,
+        "partPaidReason": null,
+        "confirmLabel": "Confirm Payment Received",
+        "confirmEnabled": true,
+        "amountDue": "฿500",
+        "stageText": "Partial payment Cash received Change ฿0.00"
+      },
+      "partialOpen": {
+        "amountFieldCount": 1,
+        "amountValue": "500.00",
+        "partialButton": 0,
+        "fullAmountButton": 1,
+        "cashReceived": "500.00",
+        "change": "Change ฿0.00",
+        "cashShortLine": null,
+        "keypadOpen": true,
+        "holdButtons": "Hold sale Save as partly paid Take a part payment first — nothing has been paid on this sale yet.",
+        "holdSaleCount": 1,
+        "savePartlyPaidCount": 1,
+        "savePartlyPaidEnabled": false,
+        "partPaidReason": "Take a part payment first — nothing has been paid on this sale yet.",
+        "confirmLabel": "Confirm Payment Received",
+        "confirmEnabled": true,
+        "amountDue": "฿500",
+        "stageText": "Payment amount Full amount Cash received Change ฿0.00 1 2 3 4 5 6 7 8 9 Clear 0 Decimal point",
+        "amountFocused": false
+      },
+      "fullAmountAgain": {
+        "at": "2026-11-09T10:06:21.039Z",
+        "state": {
+          "amountFieldCount": 0,
+          "amountValue": null,
+          "partialButton": 1,
+          "fullAmountButton": 0,
+          "cashReceived": "500.00",
+          "change": "Change ฿0.00",
+          "cashShortLine": null,
+          "keypadOpen": false,
+          "holdButtons": "Hold sale",
+          "holdSaleCount": 1,
+          "savePartlyPaidCount": 0,
+          "savePartlyPaidEnabled": null,
+          "partPaidReason": null,
+          "confirmLabel": "Confirm Payment Received",
+          "confirmEnabled": true,
+          "amountDue": "฿500",
+          "stageText": "Partial payment Cash received Change ฿0.00"
+        }
+      },
+      "part100": {
+        "at": "2026-11-09T10:06:44.861Z",
+        "typedOnKeypad": "100",
+        "state": {
+          "amountFieldCount": 1,
+          "amountValue": "100",
+          "partialButton": 0,
+          "fullAmountButton": 1,
+          "cashReceived": "100.00",
+          "change": "Change ฿0.00",
+          "cashShortLine": null,
+          "keypadOpen": true,
+          "holdButtons": "Hold sale Save as partly paid Take a part payment first — nothing has been paid on this sale yet.",
+          "holdSaleCount": 1,
+          "savePartlyPaidCount": 1,
+          "savePartlyPaidEnabled": false,
+          "partPaidReason": "Take a part payment first — nothing has been paid on this sale yet.",
+          "confirmLabel": "Confirm Payment Received",
+          "confirmEnabled": true,
+          "amountDue": "฿500",
+          "stageText": "Payment amount Full amount Cash received Change ฿0.00 1 2 3 4 5 6 7 8 9 Clear 0 Decimal point"
+        }
+      },
+      "partRecorded": {
+        "at": "2026-11-09T10:06:46.010Z",
+        "recorded": "Recorded payments Cash · ฿100.00 Balance due ฿400.00",
+        "state": {
+          "amountFieldCount": 0,
+          "amountValue": null,
+          "partialButton": 0,
+          "fullAmountButton": 0,
+          "cashReceived": null,
+          "change": "",
+          "cashShortLine": null,
+          "keypadOpen": false,
+          "holdButtons": "Hold sale ฿100 has been paid on this sale — use Save as partly paid. Save as partly paid",
+          "holdSaleCount": 1,
+          "savePartlyPaidCount": 1,
+          "savePartlyPaidEnabled": true,
+          "partPaidReason": null,
+          "confirmLabel": "Confirm Payment Received",
+          "confirmEnabled": false,
+          "amountDue": "฿400",
+          "stageText": "Recorded payments Cash · ฿100.00 Balance due ฿400.00"
+        },
+        "net": [
+          {
+            "at": "2026-11-09T10:06:46.164Z",
+            "method": "POST",
+            "path": "/api/sales/01a1bfc5-bffd-7724-8650-163f53a0595d/finalise",
+            "status": 200,
+            "tender": {
+              "method": "cash",
+              "kind": "cash",
+              "amountSatang": 10000,
+              "tenderedSatang": 10000,
+              "changeSatang": 0
+            },
+            "outstanding": 40000
+          }
+        ],
+        "saleAfter": {
+          "status": "tendering",
+          "receipt": null,
+          "attempts": [
+            {
+              "method": "cash",
+              "status": "approved",
+              "amount": 10000,
+              "tendered": 10000,
+              "change": 0
+            }
+          ]
+        }
+      },
+      "cashAfterPart": {
+        "at": "2026-11-09T10:07:15.577Z",
+        "state": {
+          "amountFieldCount": 0,
+          "amountValue": null,
+          "partialButton": 1,
+          "fullAmountButton": 0,
+          "cashReceived": "400.00",
+          "change": "Change ฿0.00",
+          "cashShortLine": null,
+          "keypadOpen": false,
+          "holdButtons": "Hold sale ฿100 has been paid on this sale — use Save as partly paid. Save as partly paid",
+          "holdSaleCount": 1,
+          "savePartlyPaidCount": 1,
+          "savePartlyPaidEnabled": true,
+          "partPaidReason": null,
+          "confirmLabel": "Confirm Payment Received",
+          "confirmEnabled": true,
+          "amountDue": "฿400",
+          "stageText": "Recorded payments Cash · ฿100.00 Balance due ฿400.00 Partial payment Cash received Change ฿0.00"
+        }
+      },
+      "savedPartlyPaid": {
+        "at": "2026-11-09T10:07:17.515Z",
+        "dialogText": "Save as partly paid ฿100 paid, balance ฿400. The sale goes to Held sales on every till at this branch; resuming it asks only for the balance. Bands and the receipt are issued when the balance is paid. Customer’s name or band Say whose sale this is — the customer’s name or their band. Note (optional) Back Save as partly paid Close",
+        "label": "ZZ TEST 796 part",
+        "net": [
+          {
+            "at": "2026-11-09T10:07:17.663Z",
+            "method": "POST",
+            "path": "/api/sales/01a1bfc5-bffd-7724-8650-163f53a0595d/hold",
+            "status": 200,
+            "request": {
+              "label": "ZZ TEST 796 part",
+              "kind": "part_paid",
+              "note": null
+            },
+            "hold": {
+              "id": "01a1bfc6-c7ed-7143-b44e-5120ce527fa5",
+              "kind": "part_paid",
+              "label": "ZZ TEST 796 part",
+              "paid": 10000,
+              "balance": 40000
+            }
+          }
+        ],
+        "saleAfter": {
+          "status": "tendering",
+          "receipt": null,
+          "hold": null
+        },
+        "heldVisible": true,
+        "counts": "0 held · 1 partly paid",
+        "mineText": "ZZ TEST 796 part ฿100 paid · balance ฿400 Held by Som at ZZ TEST SCRUM-796 till · 17:07 Partly paid Resume — take the balance Cancel and refund A refund needs a manager’s approval — ask a manager to make it.",
+        "heldListOthers": 0
+      },
+      "resumed": {
+        "at": "2026-11-09T10:07:48.832Z",
+        "press": "Resume — take the balance (own held sale)",
+        "net": [
+          {
+            "at": "2026-11-09T10:07:48.991Z",
+            "method": "POST",
+            "path": "/api/sales/01a1bfc5-bffd-7724-8650-163f53a0595d/resume",
+            "status": 200
+          }
+        ],
+        "resumedLine": "Resumed from Held sales: ZZ TEST 796 part. ฿100 already paid — take the balance. Bands and the receipt are issued when it is paid.",
+        "onResume": {
+          "amountFieldCount": 0,
+          "amountValue": null,
+          "partialButton": 0,
+          "fullAmountButton": 0,
+          "cashReceived": null,
+          "change": "",
+          "cashShortLine": null,
+          "keypadOpen": false,
+          "holdButtons": "Hold sale ฿100 has been paid on this sale — use Save as partly paid. Save as partly paid",
+          "holdSaleCount": 1,
+          "savePartlyPaidCount": 1,
+          "savePartlyPaidEnabled": true,
+          "partPaidReason": null,
+          "confirmLabel": "Confirm Payment Received",
+          "confirmEnabled": false,
+          "amountDue": "฿400",
+          "stageText": "Recorded payments Cash · ฿100.00 Balance due ฿400.00"
+        },
+        "withCash": {
+          "amountFieldCount": 0,
+          "amountValue": null,
+          "partialButton": 1,
+          "fullAmountButton": 0,
+          "cashReceived": "400.00",
+          "change": "Change ฿0.00",
+          "cashShortLine": null,
+          "keypadOpen": false,
+          "holdButtons": "Hold sale ฿100 has been paid on this sale — use Save as partly paid. Save as partly paid",
+          "holdSaleCount": 1,
+          "savePartlyPaidCount": 1,
+          "savePartlyPaidEnabled": true,
+          "partPaidReason": null,
+          "confirmLabel": "Confirm Payment Received",
+          "confirmEnabled": true,
+          "amountDue": "฿400",
+          "stageText": "Recorded payments Cash · ฿100.00 Balance due ฿400.00 Partial payment Cash received Change ฿0.00"
+        }
+      },
+      "completed": {
+        "at": "2026-11-09T10:07:55.893Z",
+        "net": [
+          {
+            "at": "2026-11-09T10:07:56.218Z",
+            "method": "POST",
+            "path": "/api/sales/01a1bfc5-bffd-7724-8650-163f53a0595d/finalise",
+            "status": 200,
+            "tender": {
+              "method": "cash",
+              "kind": "cash",
+              "amountSatang": 40000,
+              "tenderedSatang": 40000,
+              "changeSatang": 0
+            }
+          }
+        ],
+        "successLine": "Receipt Z796-000004 • ฿500 • Cash",
+        "saleAfter": {
+          "status": "finalised",
+          "receipt": "Z796-000004",
+          "gross": 50000,
+          "attempts": [
+            {
+              "method": "cash",
+              "status": "approved",
+              "amount": 10000,
+              "tendered": 10000,
+              "change": 0
+            },
+            {
+              "method": "cash",
+              "status": "approved",
+              "amount": 40000,
+              "tendered": 40000,
+              "change": 0
+            }
+          ],
+          "printJobs": [
+            "adult_wristband:printed",
+            "kids_wristband:printed",
+            "receipt:printed"
+          ]
+        }
+      }
+    },
+    "s5_card": {
+      "at": "2026-11-09T10:08:43.072Z",
+      "saleId": "01a1bfc7-fb71-7f1e-89f9-55fda45f6b07",
+      "state": {
+        "amountFieldCount": 0,
+        "amountValue": null,
+        "partialButton": 1,
+        "fullAmountButton": 0,
+        "cashReceived": null,
+        "change": "",
+        "cashShortLine": null,
+        "keypadOpen": false,
+        "holdButtons": "Hold sale",
+        "holdSaleCount": 1,
+        "savePartlyPaidCount": 0,
+        "savePartlyPaidEnabled": null,
+        "partPaidReason": null,
+        "confirmLabel": null,
+        "confirmEnabled": null,
+        "amountDue": "฿500",
+        "stageText": "Partial payment"
+      },
+      "submitLabel": "Start card payment",
+      "pressed": [
+        "Card"
+      ],
+      "cancel": {
+        "at": "2026-11-09T10:08:44.164Z",
+        "press": "Cancel (order panel)",
+        "net": [
+          {
+            "at": "2026-11-09T10:08:44.437Z",
+            "method": "POST",
+            "path": "/api/sales/01a1bfc7-fb71-7f1e-89f9-55fda45f6b07/void",
+            "status": 200,
+            "reason": "Cancelled at the till"
+          }
+        ],
+        "saleAfter": {
+          "status": "voided",
+          "receipt": null,
+          "voidReason": "Cancelled at the till",
+          "attempts": 0
+        }
+      }
+    },
+    "s6_phone": {
+      "at": "2026-11-09T10:10:28.046Z",
+      "viewport": {
+        "width": 375,
+        "height": 812
+      },
+      "saleId": "01a1bfc9-7748-74b6-90b4-ec8e389081c5",
+      "state": {
+        "amountFieldCount": 0,
+        "amountValue": null,
+        "partialButton": 1,
+        "fullAmountButton": 0,
+        "cashReceived": "500.00",
+        "change": "Change ฿0.00",
+        "cashShortLine": null,
+        "keypadOpen": false,
+        "holdButtons": "Hold sale",
+        "holdSaleCount": 1,
+        "savePartlyPaidCount": 0,
+        "savePartlyPaidEnabled": null,
+        "partPaidReason": null,
+        "confirmLabel": "Confirm Payment Received",
+        "confirmEnabled": true,
+        "amountDue": "฿500",
+        "stageText": "Partial payment Cash received Change ฿0.00"
+      },
+      "layout": {
+        "widths": {
+          "doc": {
+            "client": 375,
+            "scroll": 375
+          },
+          "chain": [
+            {
+              "tag": "DIV",
+              "cls": "mb-8 text-center",
+              "client": 343,
+              "scroll": 343
+            },
+            {
+              "tag": "DIV",
+              "cls": "flex flex-col h-full overflow-y-auto animate-in fade-in slide-in-from-right-4 du",
+              "client": 343,
+              "scroll": 446
+            },
+            {
+              "tag": "DIV",
+              "cls": "h-full overflow-y-auto p-4",
+              "client": 375,
+              "scroll": 375
+            },
+            {
+              "tag": "DIV",
+              "cls": "flex-1 min-h-0",
+              "client": 375,
+              "scroll": 375
+            },
+            {
+              "tag": "DIV",
+              "cls": "h-full flex flex-col bg-background overflow-hidden",
+              "client": 375,
+              "scroll": 375
+            },
+            {
+              "tag": "DIV",
+              "cls": "flex-1 min-h-0 overflow-hidden",
+              "client": 375,
+              "scroll": 375
+            },
+            {
+              "tag": "DIV",
+              "cls": "h-[100dvh] flex flex-col bg-background text-foreground overflow-hidden",
+              "client": 375,
+              "scroll": 376
+            },
+            {
+              "tag": "DIV",
+              "cls": "contents",
+              "client": 0,
+              "scroll": 0
+            }
+          ]
+        },
+        "grid": {
+          "client": 343,
+          "scroll": 355,
+          "right": 359
+        },
+        "confirm": {
+          "left": 131,
+          "right": 462
+        }
+      },
+      "cancel": {
+        "at": "2026-11-09T10:11:21.402Z",
+        "press": "Cancel (beside Pay, phone layout)",
+        "dialog": null,
+        "net": [],
+        "saleAfter": {
+          "status": "tendering",
+          "receipt": null,
+          "voidReason": null,
+          "attempts": 0
+        }
+      },
+      "phoneCancelLeftSaleOpen": {
+        "note": "The phone layout's Cancel (resetSale) cleared the screen but sent no void: the sale stayed tendering. Pre-existing (resetSale last changed 2026-09-22), not part of SCRUM-796.",
+        "openSalesBefore": [
+          "01a1bfc9-7748-74b6-90b4-ec8e389081c5"
+        ]
+      },
+      "voidOnCounter": {
+        "at": "2026-11-09T10:12:12.069Z",
+        "notice": "Resumed after a reload: this sale was rung up at this till 9 Nov 2026 17:10. Take the payment, or Cancel to void it.",
+        "press": "Cancel (order panel, counter layout)",
+        "net": [
+          {
+            "at": "2026-11-09T10:12:12.206Z",
+            "method": "POST",
+            "path": "/api/sales/01a1bfc9-7748-74b6-90b4-ec8e389081c5/void",
+            "status": 200,
+            "reason": "Cancelled at the till"
+          }
+        ],
+        "saleAfter": {
+          "status": "voided",
+          "voidReason": "Cancelled at the till",
+          "attempts": 0
+        }
+      }
+    }
+  },
+  "pictures": [
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-01a-cash-takes-the-full-amount.png",
+      "at": "2026-11-09T10:02:09.945Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Cash tapped on a ฿500 sale: no Payment amount field, a Partial payment button in its place, Cash received 500.00, Change ฿0.00, no keypad, only Hold sale under the grid"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-01b-paid-in-two-taps.png",
+      "at": "2026-11-09T10:02:14.022Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Payment Successful after Cash and Confirm Payment Received (band codes masked)"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-02a-cash-1000-change-500.png",
+      "at": "2026-11-09T10:04:17.728Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Over-payment: Cash received tapped (it kept 500.00 and the keypad opened), 1000 typed on the keypad, Change ฿500.00"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-02b-over-payment-recorded.png",
+      "at": "2026-11-09T10:04:21.892Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Payment Successful for the over-payment sale (band codes masked)"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-03a-cash-short-refusal-line.png",
+      "at": "2026-11-09T10:05:26.918Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Cash short: 100 typed for a ฿500 sale; \"Cash received must cover this payment.\" under Change"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-03b-cash-short-confirm-shut.png",
+      "at": "2026-11-09T10:05:28.050Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Cash short, scrolled to the foot of the payment column: Confirm Payment Received disabled (pale) with 100 in Cash received"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-04a-partial-payment-opens-the-amount.png",
+      "at": "2026-11-09T10:06:18.792Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Partial payment tapped: Payment amount appears filled with 500.00 (the amount due) with Full amount beside its label, the keypad open"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-04b-save-as-partly-paid-shut-with-reason.png",
+      "at": "2026-11-09T10:06:19.923Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Same screen at the foot: Save as partly paid now shows beside Hold sale, shut, with its reason written under it"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-04c-full-amount-closes-the-field.png",
+      "at": "2026-11-09T10:06:22.156Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Full amount tapped: the Payment amount field is gone, Partial payment is back, Cash received 500.00, only Hold sale"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-04d-part-100-typed.png",
+      "at": "2026-11-09T10:06:46.009Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Partial payment again, 100 typed on the keypad: Payment amount 100, Cash received followed to 100.00, Change ฿0.00"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-04e-part-recorded-balance-400.png",
+      "at": "2026-11-09T10:06:50.115Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "After Confirm: Recorded payments Cash · ฿100.00, Balance due ฿400.00; Amount Due now ฿400"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-04f-save-as-partly-paid-open.png",
+      "at": "2026-11-09T10:06:51.229Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Foot of the same screen: Save as partly paid is now enabled beside Hold sale"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-04g-after-the-part-cash-reads-the-balance.png",
+      "at": "2026-11-09T10:07:16.721Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Cash tapped after the part: Partial payment closed, Cash received 400.00 (the balance), Recorded payments Cash ฿100.00 above"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-04h-held-sales-partly-paid.png",
+      "at": "2026-11-09T10:07:48.827Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Held sales in the order panel: ZZ TEST 796 part, ฿100 paid · balance ฿400, marked Partly paid, with Resume — take the balance"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-04i-resumed-asks-for-the-balance.png",
+      "at": "2026-11-09T10:07:54.745Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Resumed from Held sales: Amount Due ฿400 (the balance only), Recorded payments Cash ฿100.00, Cash tapped and Cash received already 400.00"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-04j-resumed-foot-save-as-partly-paid-visible.png",
+      "at": "2026-11-09T10:07:55.891Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Foot of the resumed screen: Save as partly paid visible (money already paid), Confirm Payment Received enabled"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-04k-resumed-sale-completed.png",
+      "at": "2026-11-09T10:08:00.048Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Payment Successful for the resumed part-paid sale (band codes masked)"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-05-card-takes-the-full-amount.png",
+      "at": "2026-11-09T10:08:44.163Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Card tapped: no Payment amount field (Partial payment in its place), no Cash received; nothing started on the card"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-06a-phone-cash-takes-the-full-amount.png",
+      "at": "2026-11-09T10:10:29.117Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 375,
+        "height": 812
+      },
+      "shows": "Phone layout (375x812), Cash tapped on a ฿500 sale: no Payment amount field, Partial payment in its place, Cash received 500.00, Change ฿0.00"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-06b-phone-only-hold-sale.png",
+      "at": "2026-11-09T10:10:52.168Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 375,
+        "height": 812
+      },
+      "shows": "Phone layout, foot of the same screen: only Hold sale (no Save as partly paid) and Confirm Payment Received (enabled; its right end runs past the screen edge, see README)"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-06c-phone-sale-resumed-on-the-counter-for-cancel.png",
+      "at": "2026-11-09T10:12:12.067Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The phone layout's Cancel left its rung-up sale open; back at counter width the till resumed it (\"Resumed after a reload … Cancel to void it\") before it was voided"
+    }
+  ],
+  "picturesRetaken": [
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-02a-cash-1000-change-500.png",
+      "firstTakenAt": "2026-11-09T10:03:14.509Z",
+      "why": "first over-payment try (sale Z796-000002): scrolled to the foot, the Cash received field was out of frame; retaken on sale Z796-000003"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-02b-over-payment-recorded.png",
+      "firstTakenAt": "2026-11-09T10:03:18.555Z",
+      "why": "first over-payment try (sale Z796-000002): scrolled to the foot, the Cash received field was out of frame; retaken on sale Z796-000003"
+    },
+    {
+      "file": "docs/qa/proof-2026-11-09/SCRUM-796/staging/796-st-06b-phone-only-hold-sale.png",
+      "firstTakenAt": "2026-11-09T10:10:30.620Z",
+      "why": "retaken: the first shot scrolled the phone column sideways"
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1bfbe-fa1a-7987-bf86-d97a897741c9",
+      "name": "ZZ TEST SCRUM-796 till",
+      "box": "Virtual box 1",
+      "prefix": "Z796",
+      "at": "2026-11-09T09:58:46.100Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1bfc1-45b8-7b4f-86e0-ef2afae53522",
+      "purpose": "full",
+      "what": "ZZ TEST walk-in, Tourist, 1 Hour Play, 1 kid, cash only",
+      "at": "2026-11-09T10:01:20.100Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1bfc2-ae50-7913-869a-ba78d68c9720",
+      "purpose": "over",
+      "what": "ZZ TEST walk-in, Tourist, 1 Hour Play, 1 kid, cash only",
+      "at": "2026-11-09T10:02:52.396Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1bfc3-e1a0-7863-8fe1-af8d7071d1b4",
+      "purpose": "over2",
+      "what": "ZZ TEST walk-in, Tourist, 1 Hour Play, 1 kid, cash only",
+      "at": "2026-11-09T10:04:11.097Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1bfc4-c718-7829-88ed-04348bce3cf3",
+      "purpose": "short",
+      "what": "ZZ TEST walk-in, Tourist, 1 Hour Play, 1 kid, cash only",
+      "at": "2026-11-09T10:05:09.807Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1bfc5-bffd-7724-8650-163f53a0595d",
+      "purpose": "part",
+      "what": "ZZ TEST walk-in, Tourist, 1 Hour Play, 1 kid, cash only",
+      "at": "2026-11-09T10:06:13.582Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1bfc7-fb71-7f1e-89f9-55fda45f6b07",
+      "purpose": "card",
+      "what": "ZZ TEST walk-in, Tourist, 1 Hour Play, 1 kid, cash only",
+      "at": "2026-11-09T10:08:39.817Z"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1bfc9-7748-74b6-90b4-ec8e389081c5",
+      "purpose": "mobile",
+      "what": "ZZ TEST walk-in on the phone layout, Tourist, 1 Kid + 1 Adult (1 hour), cash only",
+      "at": "2026-11-09T10:10:16.792Z"
+    }
+  ],
+  "writes": [
+    {
+      "at": "2026-11-09T09:58:46.100Z",
+      "by": "admin api",
+      "what": "POST /branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200,
+      "result": {
+        "stationId": "01a1bfbe-fa1a-7987-bf86-d97a897741c9",
+        "name": "ZZ TEST SCRUM-796 till",
+        "prefix": "Z796",
+        "box": "Virtual box 1",
+        "devices": [
+          "adult_band:Band Printer (adults)",
+          "kids_band:Band Printer (kids)",
+          "receipt:Receipt Printer 1"
+        ]
+      }
+    },
+    {
+      "at": "2026-11-09T09:58:51.705Z",
+      "by": "till (reception)",
+      "what": "POST /auth/sign-in + station pick",
+      "station": "ZZ TEST SCRUM-796 till"
+    },
+    {
+      "at": "2026-11-09T10:01:20.100Z",
+      "by": "till (reception)",
+      "what": "sale rung up at Pay",
+      "purpose": "full",
+      "saleId": "01a1bfc1-45b8-7b4f-86e0-ef2afae53522",
+      "status": "tendering",
+      "net": [
+        {
+          "at": "2026-11-09T10:01:17.097Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:02:09.981Z",
+      "by": "till (reception)",
+      "what": "cash payment, full amount",
+      "saleId": "01a1bfc1-45b8-7b4f-86e0-ef2afae53522",
+      "receipt": "Z796-000001",
+      "status": "finalised",
+      "net": [
+        {
+          "at": "2026-11-09T10:02:10.217Z",
+          "method": "POST",
+          "path": "/api/sales/01a1bfc1-45b8-7b4f-86e0-ef2afae53522/finalise",
+          "status": 200,
+          "tender": {
+            "method": "cash",
+            "kind": "cash",
+            "amountSatang": 50000,
+            "tenderedSatang": 50000,
+            "changeSatang": 0
+          }
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:02:52.396Z",
+      "by": "till (reception)",
+      "what": "sale rung up at Pay",
+      "purpose": "over",
+      "saleId": "01a1bfc2-ae50-7913-869a-ba78d68c9720",
+      "status": "tendering",
+      "net": [
+        {
+          "at": "2026-11-09T10:02:49.393Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:03:14.510Z",
+      "by": "till (reception)",
+      "what": "cash payment, ฿1000 handed over for ฿500",
+      "saleId": "01a1bfc2-ae50-7913-869a-ba78d68c9720",
+      "receipt": "Z796-000002",
+      "status": "finalised",
+      "net": [
+        {
+          "at": "2026-11-09T10:03:14.710Z",
+          "method": "POST",
+          "path": "/api/sales/01a1bfc2-ae50-7913-869a-ba78d68c9720/finalise",
+          "status": 200,
+          "tender": {
+            "method": "cash",
+            "kind": "cash",
+            "amountSatang": 50000,
+            "tenderedSatang": 100000,
+            "changeSatang": 50000
+          }
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:04:11.097Z",
+      "by": "till (reception)",
+      "what": "sale rung up at Pay",
+      "purpose": "over2",
+      "saleId": "01a1bfc3-e1a0-7863-8fe1-af8d7071d1b4",
+      "status": "tendering",
+      "net": [
+        {
+          "at": "2026-11-09T10:04:08.075Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:04:17.729Z",
+      "by": "till (reception)",
+      "what": "cash payment, ฿1000 handed over for ฿500",
+      "saleId": "01a1bfc3-e1a0-7863-8fe1-af8d7071d1b4",
+      "receipt": "Z796-000003",
+      "status": "finalised",
+      "net": [
+        {
+          "at": "2026-11-09T10:04:17.982Z",
+          "method": "POST",
+          "path": "/api/sales/01a1bfc3-e1a0-7863-8fe1-af8d7071d1b4/finalise",
+          "status": 200,
+          "tender": {
+            "method": "cash",
+            "kind": "cash",
+            "amountSatang": 50000,
+            "tenderedSatang": 100000,
+            "changeSatang": 50000
+          }
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:05:09.807Z",
+      "by": "till (reception)",
+      "what": "sale rung up at Pay",
+      "purpose": "short",
+      "saleId": "01a1bfc4-c718-7829-88ed-04348bce3cf3",
+      "status": "tendering",
+      "net": [
+        {
+          "at": "2026-11-09T10:05:06.825Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:05:29.745Z",
+      "by": "till (reception)",
+      "what": "unpaid sale cancelled with the till Cancel (void)",
+      "saleId": "01a1bfc4-c718-7829-88ed-04348bce3cf3",
+      "status": "voided",
+      "net": [
+        {
+          "at": "2026-11-09T10:05:29.881Z",
+          "method": "POST",
+          "path": "/api/sales/01a1bfc4-c718-7829-88ed-04348bce3cf3/void",
+          "status": 200,
+          "reason": "Cancelled at the till"
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:06:13.582Z",
+      "by": "till (reception)",
+      "what": "sale rung up at Pay",
+      "purpose": "part",
+      "saleId": "01a1bfc5-bffd-7724-8650-163f53a0595d",
+      "status": "tendering",
+      "net": [
+        {
+          "at": "2026-11-09T10:06:10.535Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:06:46.010Z",
+      "by": "till (reception)",
+      "what": "cash part payment ฿100",
+      "saleId": "01a1bfc5-bffd-7724-8650-163f53a0595d",
+      "status": "tendering",
+      "net": [
+        {
+          "at": "2026-11-09T10:06:46.164Z",
+          "method": "POST",
+          "path": "/api/sales/01a1bfc5-bffd-7724-8650-163f53a0595d/finalise",
+          "status": 200,
+          "tender": {
+            "method": "cash",
+            "kind": "cash",
+            "amountSatang": 10000,
+            "tenderedSatang": 10000,
+            "changeSatang": 0
+          },
+          "outstanding": 40000
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:07:17.515Z",
+      "by": "till (reception)",
+      "what": "Save as partly paid \"ZZ TEST 796 part\"",
+      "saleId": "01a1bfc5-bffd-7724-8650-163f53a0595d",
+      "net": [
+        {
+          "at": "2026-11-09T10:07:17.663Z",
+          "method": "POST",
+          "path": "/api/sales/01a1bfc5-bffd-7724-8650-163f53a0595d/hold",
+          "status": 200,
+          "request": {
+            "label": "ZZ TEST 796 part",
+            "kind": "part_paid",
+            "note": null
+          },
+          "hold": {
+            "id": "01a1bfc6-c7ed-7143-b44e-5120ce527fa5",
+            "kind": "part_paid",
+            "label": "ZZ TEST 796 part",
+            "paid": 10000,
+            "balance": 40000
+          }
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:07:48.832Z",
+      "by": "till (reception)",
+      "what": "resume own held sale \"ZZ TEST 796 part\"",
+      "saleId": "01a1bfc5-bffd-7724-8650-163f53a0595d",
+      "net": [
+        {
+          "at": "2026-11-09T10:07:48.991Z",
+          "method": "POST",
+          "path": "/api/sales/01a1bfc5-bffd-7724-8650-163f53a0595d/resume",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:07:55.893Z",
+      "by": "till (reception)",
+      "what": "cash balance ฿400 on the resumed sale",
+      "saleId": "01a1bfc5-bffd-7724-8650-163f53a0595d",
+      "receipt": "Z796-000004",
+      "status": "finalised",
+      "net": [
+        {
+          "at": "2026-11-09T10:07:56.218Z",
+          "method": "POST",
+          "path": "/api/sales/01a1bfc5-bffd-7724-8650-163f53a0595d/finalise",
+          "status": 200,
+          "tender": {
+            "method": "cash",
+            "kind": "cash",
+            "amountSatang": 40000,
+            "tenderedSatang": 40000,
+            "changeSatang": 0
+          }
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:08:39.817Z",
+      "by": "till (reception)",
+      "what": "sale rung up at Pay",
+      "purpose": "card",
+      "saleId": "01a1bfc7-fb71-7f1e-89f9-55fda45f6b07",
+      "status": "tendering",
+      "net": [
+        {
+          "at": "2026-11-09T10:08:36.892Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:08:44.164Z",
+      "by": "till (reception)",
+      "what": "unpaid card-selected sale cancelled with the till Cancel (void)",
+      "saleId": "01a1bfc7-fb71-7f1e-89f9-55fda45f6b07",
+      "status": "voided",
+      "net": [
+        {
+          "at": "2026-11-09T10:08:44.437Z",
+          "method": "POST",
+          "path": "/api/sales/01a1bfc7-fb71-7f1e-89f9-55fda45f6b07/void",
+          "status": 200,
+          "reason": "Cancelled at the till"
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:10:16.792Z",
+      "by": "till (reception), phone layout",
+      "what": "sale rung up at Pay",
+      "purpose": "mobile",
+      "saleId": "01a1bfc9-7748-74b6-90b4-ec8e389081c5",
+      "status": "tendering",
+      "net": [
+        {
+          "at": "2026-11-09T10:10:14.104Z",
+          "method": "POST",
+          "path": "/api/sales",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:11:21.402Z",
+      "by": "till (reception), phone layout",
+      "what": "unpaid sale cancelled with the till Cancel (void)",
+      "saleId": "01a1bfc9-7748-74b6-90b4-ec8e389081c5",
+      "status": "tendering",
+      "net": []
+    },
+    {
+      "at": "2026-11-09T10:12:12.069Z",
+      "by": "till (reception)",
+      "what": "phone-layout sale resumed on the counter and cancelled with the till Cancel (void)",
+      "saleId": "01a1bfc9-7748-74b6-90b4-ec8e389081c5",
+      "status": "voided",
+      "net": [
+        {
+          "at": "2026-11-09T10:12:12.206Z",
+          "method": "POST",
+          "path": "/api/sales/01a1bfc9-7748-74b6-90b4-ec8e389081c5/void",
+          "status": 200,
+          "reason": "Cancelled at the till"
+        }
+      ]
+    }
+  ],
+  "mobilePresses": [
+    {
+      "at": "2026-11-09T10:09:25.576Z",
+      "pressed": "h|Tourist"
+    },
+    {
+      "at": "2026-11-09T10:09:33.118Z",
+      "pressed": "t|1 Kid + 1 Adult (1 hour)"
+    },
+    {
+      "at": "2026-11-09T10:09:40.035Z",
+      "pressed": "b|Continue"
+    },
+    {
+      "at": "2026-11-09T10:09:47.460Z",
+      "pressed": "b|Customer is ready"
+    },
+    {
+      "at": "2026-11-09T10:11:09.316Z",
+      "pressed": "b|Back"
+    }
+  ],
+  "cleanup": {
+    "actions": [
+      {
+        "at": "2026-11-09T10:12:36.016Z",
+        "what": "till sign-out (its own session route)",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-09T10:12:36.185Z",
+        "what": "unassign printers on ZZ TEST SCRUM-796 till",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-09T10:12:36.278Z",
+        "what": "archive station ZZ TEST SCRUM-796 till",
+        "status": 200,
+        "code": null
+      }
+    ],
+    "startedAt": "2026-11-09T10:12:35.657Z",
+    "salesBefore": [
+      {
+        "id": "01a1bfc9-7748-74b6-90b4-ec8e389081c5",
+        "receipt": null,
+        "status": "voided",
+        "gross": 50000
+      },
+      {
+        "id": "01a1bfc7-fb71-7f1e-89f9-55fda45f6b07",
+        "receipt": null,
+        "status": "voided",
+        "gross": 50000
+      },
+      {
+        "id": "01a1bfc5-bffd-7724-8650-163f53a0595d",
+        "receipt": "Z796-000004",
+        "status": "finalised",
+        "gross": 50000
+      },
+      {
+        "id": "01a1bfc4-c718-7829-88ed-04348bce3cf3",
+        "receipt": null,
+        "status": "voided",
+        "gross": 50000
+      },
+      {
+        "id": "01a1bfc3-e1a0-7863-8fe1-af8d7071d1b4",
+        "receipt": "Z796-000003",
+        "status": "finalised",
+        "gross": 50000
+      },
+      {
+        "id": "01a1bfc2-ae50-7913-869a-ba78d68c9720",
+        "receipt": "Z796-000002",
+        "status": "finalised",
+        "gross": 50000
+      },
+      {
+        "id": "01a1bfc1-45b8-7b4f-86e0-ef2afae53522",
+        "receipt": "Z796-000001",
+        "status": "finalised",
+        "gross": 50000
+      }
+    ],
+    "heldSalesAfter": {
+      "status": 200,
+      "total": 0,
+      "mine": []
+    },
+    "tillMeAfterSignOut": 401,
+    "readBack": {
+      "at": "2026-11-09T10:12:36.529Z",
+      "till": {
+        "id": "01a1bfbe-fa1a-7987-bf86-d97a897741c9",
+        "name": "ZZ TEST SCRUM-796 till",
+        "archived": true,
+        "archivedAt": null,
+        "devices": 0
+      },
+      "salesAfter": [
+        {
+          "id": "01a1bfc9-7748-74b6-90b4-ec8e389081c5",
+          "receipt": null,
+          "status": "voided",
+          "gross": 50000
+        },
+        {
+          "id": "01a1bfc7-fb71-7f1e-89f9-55fda45f6b07",
+          "receipt": null,
+          "status": "voided",
+          "gross": 50000
+        },
+        {
+          "id": "01a1bfc5-bffd-7724-8650-163f53a0595d",
+          "receipt": "Z796-000004",
+          "status": "finalised",
+          "gross": 50000
+        },
+        {
+          "id": "01a1bfc4-c718-7829-88ed-04348bce3cf3",
+          "receipt": null,
+          "status": "voided",
+          "gross": 50000
+        },
+        {
+          "id": "01a1bfc3-e1a0-7863-8fe1-af8d7071d1b4",
+          "receipt": "Z796-000003",
+          "status": "finalised",
+          "gross": 50000
+        },
+        {
+          "id": "01a1bfc2-ae50-7913-869a-ba78d68c9720",
+          "receipt": "Z796-000002",
+          "status": "finalised",
+          "gross": 50000
+        },
+        {
+          "id": "01a1bfc1-45b8-7b4f-86e0-ef2afae53522",
+          "receipt": "Z796-000001",
+          "status": "finalised",
+          "gross": 50000
+        }
+      ],
+      "walkInNumberIsNotAMember": {
+        "status": 200,
+        "found": false
+      },
+      "untouched": [
+        {
+          "name": "FWBooth1",
+          "archived": false,
+          "devices": 1
+        },
+        {
+          "name": "Reception Till 1",
+          "archived": false,
+          "devices": 7
+        },
+        {
+          "name": "Till 1 (Pi)",
+          "archived": false,
+          "devices": 4
+        },
+        {
+          "name": "Till 2 (test)",
+          "archived": false,
+          "devices": 4
+        }
+      ]
+    },
+    "finishedAt": "2026-11-09T10:12:36.529Z",
+    "adminSignOut": {
+      "at": "2026-11-09T10:12:48.284Z",
+      "status": 200,
+      "meAfter": 401
+    }
+  },
+  "pageErrors": [],
+  "notTouched": "No real till was opened or pressed (Till 1 (Pi), Till 2 (test), Reception Till 1, FWBooth1 read back unchanged); the park Pi was not used; no till notice other than the ones this run created was pressed (the \"7 overdue\" and \"4 out of stock\" banners were left alone); no SMS, no setting changed; cash only, no card or QR payment started."
+}
