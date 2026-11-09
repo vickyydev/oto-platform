@@ -609,6 +609,15 @@ jobs:
       - name: The app's attendance reviewer transaction checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/timekeeping-review.check.ts
+      # SCRUM-794: one person on two profiles — a Left profile rehired (login
+      # back on, the queued platform switch-off withdrawn, the movement
+      # logged), a duplicate folded into the original (shifts, checklists and
+      # tasks moved, refused with a contract or outside the caller's
+      # branches), and the stray "Unscheduled work" approvals matched to the
+      # shifts the profile now has.
+      - name: The app's rehire and profile fold checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/employee-rehire.check.ts
       # S2-17b round 6: the document modules as the app does them — templates,
       # policies, the asset catalogue and leave policies per park group
       # (migration 0008), contracts and letters fenced, offboarding in one
