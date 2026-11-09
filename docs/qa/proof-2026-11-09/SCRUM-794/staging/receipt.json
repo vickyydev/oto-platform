@@ -1,0 +1,688 @@
+{
+  "ticket": "SCRUM-794 — Offboard keeps the login; Onboard Again; fold a duplicate profile",
+  "environment": {
+    "app": "https://oto-app-staging.onrender.com",
+    "api": "https://oto-app-staging.onrender.com/api",
+    "liveCommit": "ff9b0597f6351b5880f266be8e97836b9f56d7db",
+    "signedInAs": {
+      "via": "launcher sign-in, then POST /api/auth/handoff {app:\"oto_app\"}",
+      "appRole": "global_admin",
+      "appUserId": "01a1bea3-1105-7bfd-92b8-301d34f03f18"
+    },
+    "browser": "Playwright headless Chromium 1440x900, timezone Asia/Bangkok",
+    "date": "2026-11-09 (Bangkok)"
+  },
+  "rules": {
+    "names": "No real name in any picture or in this file. The person is \"the staff member\"; her profiles are \"the original (Promotion) profile\" and \"the duplicate (Reception) profile\". Names were compared in memory only.",
+    "sms": "none sent",
+    "settingsChanged": "none",
+    "deploy": "none",
+    "commit": "none",
+    "stagingAdminSecrets": "never written"
+  },
+  "partA": {
+    "outcome": "STOPPED before any write. The facts differ from the description, and the fold route itself refuses this pair.",
+    "whyStopped": [
+      "The duplicate (Reception) profile is not only shifts: it holds a signed, active Reception contract (made 31 Oct, start 3 Nov) and a finalized unsent copy, 7 time records, and its own face enrolment (a different face id, enrolled 5 Nov 2026 12:21 Bangkok).",
+      "The fold preview (GET .../fold-into/<original>/preview, which the route rolls back) answers 409 has_records: \"This profile has 2 contracts and 7 time records. Its history is kept for the record, so it cannot be folded into another profile.\" The Fold button stays disabled in the UI.",
+      "The reverse fold (original into duplicate) answers 409: the original holds the login and the duplicate does not.",
+      "Steps 3 to 6 (fold, Onboard Again on the original, read-backs) depend on the fold, so none was run. Nothing was written to either profile, her login or her face."
+    ],
+    "identifiedBy": "Central Floresta, GET /api/employees?branchId=<Central Floresta>: the one Promotion profile reading resigned/LEFT with a login, an enrolled face and a last working day of 31 Oct whose full name equals (compared in memory) that of an active Reception profile with no login. Both profiles carry the same email; neither shares a person record.",
+    "originalPromotionProfile": {
+      "id": "ac223128-5852-422e-b361-2f3e73a57808",
+      "status": "resigned",
+      "employmentState": "LEFT",
+      "department": "Promotion",
+      "branch": "Oto Play Park, Central Floresta",
+      "loginUserId": "3c91b8e0-79fd-48b1-bb91-5232f24ff7b5",
+      "face": "ENROLLED",
+      "faceEnrolledAt": "2026-05-23T03:02:02.102Z",
+      "lastWorkingDay": "2026-10-31T00:00:00.000Z",
+      "offboarding": {
+        "status": 200,
+        "id": "44512e69-edb4-4b42-bef6-0aa5eb9184a9",
+        "lastWorkingDay": "2026-10-31T00:00:00.000Z",
+        "type": "resignation",
+        "reonboardedAt": null
+      },
+      "startDateOnProfile": "2026-11-03T00:00:00.000Z",
+      "probationEndDate": "2027-03-03T00:00:00.000Z",
+      "probationReviewCompletedAt": "2026-11-03T03:34:56.382Z",
+      "positionTitleOnProfile": "Reception ",
+      "contracts": [
+        {
+          "id": "78bedb19-8031-4ad7-959d-8205725e6e8a",
+          "status": "active",
+          "signingStatus": "signed",
+          "createdAt": "2026-05-12T09:19:37.956Z",
+          "contractStartDate": "2026-02-02",
+          "archived": false
+        }
+      ],
+      "changeHistory": {
+        "status": 200,
+        "count": 1,
+        "types": [
+          "resigned"
+        ]
+      },
+      "plannedOnboardAgain": null,
+      "note": "The profile already reads start date 3 Nov 2026, probation review completed 3 Nov and position \"Reception\" in its contract defaults; its only contract is the old signed one."
+    },
+    "duplicateReceptionProfile": {
+      "id": "0b0d898f-8e30-452a-92a9-3e6c9e852abd",
+      "status": "active",
+      "employmentState": "ACTIVE",
+      "badge": "Probation",
+      "department": "Reception",
+      "branch": "Oto Play Park, Central Floresta",
+      "loginUserId": null,
+      "face": "ENROLLED",
+      "faceEnrolledAt": "2026-11-05T05:21:58.395Z",
+      "sameFaceIdAsOriginal": false,
+      "sameEmailAsOriginal": true,
+      "samePersonRecordAsOriginal": false,
+      "startDateOnProfile": "2026-11-03T00:00:00.000Z",
+      "createdAt": "2026-10-31T04:57:26.964Z",
+      "contracts": [
+        {
+          "id": "d9f50d6e-e93b-4efa-bda0-76486d251d90",
+          "status": "active",
+          "signingStatus": "signed",
+          "createdAt": "2026-10-31T05:01:52.397Z",
+          "contractStartDate": "2026-11-03",
+          "archived": false
+        },
+        {
+          "id": "fa8c4cc0-51b8-49c6-a443-1966f3c6fc76",
+          "status": "finalized",
+          "signingStatus": "not_sent",
+          "createdAt": "2026-10-31T05:01:11.302Z",
+          "contractStartDate": "2026-11-03",
+          "archived": false
+        }
+      ],
+      "changeHistory": {
+        "status": 200,
+        "count": 0,
+        "types": []
+      }
+    },
+    "shiftsByProfileAtCentralFloresta": {
+      "2026-10-26": {
+        "original": [],
+        "duplicate": [],
+        "note": "rows carry no department (shift-group rows)"
+      },
+      "2026-11-02": {
+        "original": [],
+        "duplicate": [
+          "2026-11-04",
+          "2026-11-05",
+          "2026-11-06",
+          "2026-11-07"
+        ],
+        "note": "rows carry no department (shift-group rows)"
+      },
+      "2026-11-09": {
+        "original": [],
+        "duplicate": [
+          "2026-11-09",
+          "2026-11-10",
+          "2026-11-12",
+          "2026-11-13",
+          "2026-11-14",
+          "2026-11-15"
+        ],
+        "note": "rows carry no department (shift-group rows)"
+      },
+      "2026-11-16": {
+        "original": [],
+        "duplicate": [],
+        "note": "rows carry no department (shift-group rows)"
+      }
+    },
+    "pendingAttendanceReviewAtCentralFloresta": {
+      "read": "GET /api/timekeeping/pending-issues?branchId=<Central Floresta>",
+      "at": "2026-11-09T09:35:28.552Z",
+      "branchTotal": 80,
+      "originalProfile": {
+        "total": 4,
+        "unscheduled": 4,
+        "byType": {
+          "UNSCHEDULED_WORK": 4
+        },
+        "dates": [
+          "2026-08-11",
+          "2026-08-12",
+          "2026-11-03",
+          "2026-11-05"
+        ]
+      },
+      "duplicateProfile": {
+        "total": 0,
+        "unscheduled": 0,
+        "byType": {},
+        "dates": []
+      }
+    },
+    "reads": [
+      {
+        "at": "2026-11-09T09:35:28.552Z",
+        "method": "GET",
+        "path": "/api/employees/0b0d898f-8e30-452a-92a9-3e6c9e852abd/fold-into/ac223128-5852-422e-b361-2f3e73a57808/preview",
+        "status": 409,
+        "body": {
+          "reason": "has_records",
+          "message": "This profile has 2 contracts and 7 time records. Its history is kept for the record, so it cannot be folded into another profile.",
+          "blocking": [
+            {
+              "label": "contracts",
+              "count": 2
+            },
+            {
+              "label": "time records",
+              "count": 7
+            }
+          ]
+        },
+        "note": "first preview, from the probe"
+      },
+      {
+        "at": "2026-11-09T09:39:23.427Z",
+        "step": "A2 fold preview, duplicate into original (read; the route rolls back)",
+        "method": "GET",
+        "path": "/api/employees/0b0d898f-8e30-452a-92a9-3e6c9e852abd/fold-into/ac223128-5852-422e-b361-2f3e73a57808/preview",
+        "status": 409,
+        "body": {
+          "reason": "has_records",
+          "message": "This profile has 2 contracts and 7 time records. Its history is kept for the record, so it cannot be folded into another profile.",
+          "blocking": [
+            {
+              "label": "contracts",
+              "count": 2
+            },
+            {
+              "label": "time records",
+              "count": 7
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-09T09:39:23.430Z",
+        "step": "A2 fold preview, original into duplicate (read; the route rolls back)",
+        "method": "GET",
+        "path": "/api/employees/ac223128-5852-422e-b361-2f3e73a57808/fold-into/0b0d898f-8e30-452a-92a9-3e6c9e852abd/preview",
+        "status": 409,
+        "body": {
+          "message": "This profile holds the login or the face enrolment and the one chosen does not. Fold the other way round: keep the profile the person signs in and scans their face with."
+        }
+      },
+      {
+        "method": "GET (UI, Fold dialog)",
+        "path": "/api/employees/0b0d898f-8e30-452a-92a9-3e6c9e852abd/fold-into/ac223128-5852-422e-b361-2f3e73a57808/preview",
+        "status": 409,
+        "shown": "This profile has 2 contracts and 7 time records. Its history is kept for the record, so it cannot be folded into another profile.",
+        "foldButtonEnabled": false,
+        "typeFoldInputShown": false
+      }
+    ],
+    "writes": [],
+    "stepsNotRun": [
+      "3 fold",
+      "4 original after the fold",
+      "5 Onboard Again on the original",
+      "6 read-backs (status, login, face, Reception shifts, rematch counts)"
+    ]
+  },
+  "partB": {
+    "outcome": "PASSED (forward flow); clean-up partly refused by the app: the ZZ TEST profile could not be deleted and is switched off instead.",
+    "branch": "Oto Play Park, Robinson Chalong",
+    "dates": {
+      "today": "2026-11-09",
+      "lastDay": "2026-11-14",
+      "start": "2026-11-16",
+      "gap": "2026-11-15",
+      "tooEarlyStart": "2026-11-12"
+    },
+    "records": {
+      "employeeId": "d9e82036-e60e-4931-a42b-25b1da335e0d",
+      "name": "ZZ TEST 794 Leaver 20261109-1641",
+      "email": "zz-test-794-20261109-1641@example.invalid",
+      "loginUserId": "7b2ab5d5-8da3-4100-8aad-a94c931c6286",
+      "offboardingId": "61b789ee-fc94-4e48-b459-f4a2f32b12a5",
+      "engagementId": "8c87f304-f473-47ef-82ec-ebc8a4f58cbf",
+      "draftContractId": "f5e5ffd3-3707-4a76-a4ed-7122c33cd597",
+      "currentDepartment": "Reception",
+      "newDepartment": "Management",
+      "shiftRowId": "de8637d1-c54c-4bf8-90d4-8187de47a64f",
+      "shiftRow": {
+        "id": "de8637d1-c54c-4bf8-90d4-8187de47a64f",
+        "departmentId": "a9258251-a474-41aa-b274-58231ed7ff4f",
+        "label": "Morning",
+        "start": "09:30:00",
+        "end": "18:30:00",
+        "activeFromDate": "2026-06-23",
+        "activeUntilDate": null,
+        "roles": [
+          {
+            "roleId": "bde623dc-76c0-47e4-9fff-9782ee5321c1",
+            "name": "Manager"
+          }
+        ]
+      },
+      "weekPlans": {
+        "start": "1a4b4304-08c2-4e27-955a-01870f7f4507",
+        "gap": "d9e709df-b591-4e1b-ba70-85cffd9135f6"
+      }
+    },
+    "writes": [
+      {
+        "at": "2026-11-09T09:41:11.044Z",
+        "step": "B1 create ZZ TEST employee with an app-only login",
+        "method": "POST",
+        "path": "/api/employees",
+        "status": 201,
+        "id": "d9e82036-e60e-4931-a42b-25b1da335e0d",
+        "userId": "7b2ab5d5-8da3-4100-8aad-a94c931c6286",
+        "name": "ZZ TEST 794 Leaver 20261109-1641",
+        "email": "zz-test-794-20261109-1641@example.invalid"
+      },
+      {
+        "at": "2026-11-09T09:41:11.788Z",
+        "step": "B2 offboard, last working day 5 days ahead",
+        "method": "POST",
+        "path": "/api/employees/d9e82036-e60e-4931-a42b-25b1da335e0d/offboarding",
+        "status": 201,
+        "id": "61b789ee-fc94-4e48-b459-f4a2f32b12a5",
+        "lastWorkingDay": "2026-11-14"
+      },
+      {
+        "at": "2026-11-09T09:41:15.310Z",
+        "step": "B3 Onboard Again with a start date before the last working day (expected 409)",
+        "method": "POST",
+        "path": "/api/employees/d9e82036-e60e-4931-a42b-25b1da335e0d/onboard-again",
+        "status": 409,
+        "startDate": "2026-11-12",
+        "message": "The new start date must be after the last working day (2026-11-14)"
+      },
+      {
+        "at": "2026-11-09T09:41:15.444Z",
+        "step": "B3 Onboard Again 7 days ahead into Management",
+        "method": "POST",
+        "path": "/api/employees/d9e82036-e60e-4931-a42b-25b1da335e0d/onboard-again",
+        "status": 201,
+        "engagementId": "8c87f304-f473-47ef-82ec-ebc8a4f58cbf",
+        "startDate": "2026-11-16",
+        "started": false,
+        "contract": {
+          "id": "f5e5ffd3-3707-4a76-a4ed-7122c33cd597",
+          "status": "draft",
+          "signingStatus": "not_sent"
+        },
+        "platformSignInOff": false
+      },
+      {
+        "at": "2026-11-09T09:41:20.729Z",
+        "step": "B4 give the ZZ TEST profile the Management row's job role (the row requires it)",
+        "method": "PATCH",
+        "path": "/api/employees/d9e82036-e60e-4931-a42b-25b1da335e0d/roles",
+        "status": 200,
+        "roleIds": [
+          "bde623dc-76c0-47e4-9fff-9782ee5321c1"
+        ],
+        "roleName": "Manager"
+      },
+      {
+        "at": "2026-11-09T09:41:20.968Z",
+        "step": "B4 shift in the new department (Management) on the start date (expected allowed)",
+        "method": "POST",
+        "path": "/api/schedule/assignments",
+        "status": 201,
+        "id": "4bb8e329-9544-4fef-887e-25f83609b1ad",
+        "shiftDate": "2026-11-16"
+      },
+      {
+        "at": "2026-11-09T09:41:21.062Z",
+        "step": "B4 shift in the new department on the day between the last day and the start (expected refused)",
+        "method": "POST",
+        "path": "/api/schedule/assignments",
+        "status": 400,
+        "shiftDate": "2026-11-15",
+        "reasonCode": "EMPLOYMENT_ENDED",
+        "message": "Can't assign: employee's last working day was 2026-11-14."
+      }
+    ],
+    "readbacks": {
+      "afterCreate": {
+        "employee": {
+          "status": 200,
+          "empStatus": "active",
+          "employmentState": "ACTIVE",
+          "offboardingType": null,
+          "lastWorkingDay": null,
+          "departmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+          "branchId": "f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+          "userId": "7b2ab5d5-8da3-4100-8aad-a94c931c6286"
+        },
+        "login": {
+          "isActive": true,
+          "role": "staff",
+          "platformLinked": false,
+          "emailIsZz": true
+        }
+      },
+      "afterOffboard": {
+        "employee": {
+          "status": 200,
+          "empStatus": "active",
+          "employmentState": "LEAVING",
+          "offboardingType": "RESIGNATION",
+          "lastWorkingDay": "2026-11-14",
+          "departmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+          "branchId": "f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+          "userId": "7b2ab5d5-8da3-4100-8aad-a94c931c6286"
+        },
+        "login": {
+          "isActive": true,
+          "role": "staff",
+          "platformLinked": false,
+          "emailIsZz": true
+        }
+      },
+      "uiAfterOffboard": {
+        "badge": "Leaving",
+        "buttons": {
+          "onboardAgain": true,
+          "updateTerms": true,
+          "offboard": false
+        }
+      },
+      "onboardAgainBeforeLastDay": {
+        "status": 409,
+        "message": "The new start date must be after the last working day (2026-11-14)"
+      },
+      "onboardAgainAnswer": {
+        "engagementId": "8c87f304-f473-47ef-82ec-ebc8a4f58cbf",
+        "startDate": "2026-11-16",
+        "contract": {
+          "id": "f5e5ffd3-3707-4a76-a4ed-7122c33cd597",
+          "status": "draft",
+          "signingStatus": "not_sent"
+        },
+        "started": false,
+        "platformSignInOff": false
+      },
+      "plannedEmployment": {
+        "status": 200,
+        "id": "8c87f304-f473-47ef-82ec-ebc8a4f58cbf",
+        "engagementStatus": "planned",
+        "startDate": "2026-11-16",
+        "department": "Management",
+        "branch": "Oto Play Park, Robinson Chalong",
+        "positionTitle": "ZZ TEST Manager",
+        "contract": {
+          "id": "f5e5ffd3-3707-4a76-a4ed-7122c33cd597",
+          "status": "draft",
+          "signingStatus": "not_sent"
+        },
+        "platformSignInOff": false
+      },
+      "profileWhilePlanned": {
+        "employee": {
+          "status": 200,
+          "empStatus": "active",
+          "employmentState": "LEAVING",
+          "offboardingType": "RESIGNATION",
+          "lastWorkingDay": "2026-11-14",
+          "departmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+          "branchId": "f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+          "userId": "7b2ab5d5-8da3-4100-8aad-a94c931c6286"
+        },
+        "login": {
+          "isActive": true,
+          "role": "staff",
+          "platformLinked": false,
+          "emailIsZz": true
+        }
+      },
+      "onboardingStatus": {
+        "status": 200,
+        "onboardAgain": {
+          "startDate": "2026-11-16",
+          "contractId": "f5e5ffd3-3707-4a76-a4ed-7122c33cd597",
+          "alreadySetUp": {
+            "essentialInfo": true,
+            "login": true,
+            "face": false
+          }
+        }
+      },
+      "uiPlannedCard": {
+        "start": "16 Nov 2026",
+        "department": "Management",
+        "contract": "Draft",
+        "cancelShown": true,
+        "badge": "Leaving"
+      },
+      "jobRole": {
+        "status": 200,
+        "roles": [
+          "bde623dc-76c0-47e4-9fff-9782ee5321c1"
+        ]
+      },
+      "shiftOnStartDate": {
+        "status": 201,
+        "id": "4bb8e329-9544-4fef-887e-25f83609b1ad"
+      },
+      "shiftOnDayBetween": {
+        "status": 400,
+        "reasonCode": "EMPLOYMENT_ENDED",
+        "message": "Can't assign: employee's last working day was 2026-11-14."
+      },
+      "weekOfStartDate": [
+        {
+          "id": "4bb8e329-9544-4fef-887e-25f83609b1ad",
+          "rowId": "de8637d1-c54c-4bf8-90d4-8187de47a64f",
+          "date": "2026-11-16",
+          "departmentId": "a9258251-a474-41aa-b274-58231ed7ff4f"
+        }
+      ],
+      "schedulingEngagement": {
+        "startDate": "2026-11-16",
+        "departmentId": "a9258251-a474-41aa-b274-58231ed7ff4f",
+        "branchId": "f0034cfa-9fe8-45dd-a870-15d3b89c8421"
+      }
+    },
+    "cleanup": [
+      {
+        "at": "2026-11-09T09:41:21.820Z",
+        "label": "delete the shift",
+        "method": "DELETE",
+        "path": "/api/schedule/assignments/4bb8e329-9544-4fef-887e-25f83609b1ad",
+        "status": 204,
+        "body": ""
+      },
+      {
+        "at": "2026-11-09T09:41:21.914Z",
+        "label": "cancel the planned employment",
+        "method": "DELETE",
+        "path": "/api/employees/d9e82036-e60e-4931-a42b-25b1da335e0d/onboard-again/8c87f304-f473-47ef-82ec-ebc8a4f58cbf",
+        "status": 200,
+        "body": {
+          "cancelled": true,
+          "contractId": "f5e5ffd3-3707-4a76-a4ed-7122c33cd597"
+        }
+      },
+      {
+        "at": "2026-11-09T09:41:22.002Z",
+        "label": "delete the ZZ TEST employee",
+        "method": "DELETE",
+        "path": "/api/employees/d9e82036-e60e-4931-a42b-25b1da335e0d",
+        "status": 409,
+        "body": {
+          "reason": "has_records",
+          "message": "ZZ TEST 794 Leaver 20261109-1641 cannot be deleted: they have 1 contract. Their history is kept for the record; offboard them instead to end their employment.",
+          "blocking": [
+            {
+              "label": "contracts",
+              "count": 1
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-09T09:41:22.093Z",
+        "label": "delete the draft contract Onboard Again made (it blocks the employee delete)",
+        "method": "DELETE",
+        "path": "/api/contracts/f5e5ffd3-3707-4a76-a4ed-7122c33cd597",
+        "status": 500,
+        "body": {
+          "message": "update or delete on table \"contract_instances\" violates foreign key constraint \"employee_changes_contract_instance_id_contract_instances_id_fk\" on table \"employee_changes\""
+        }
+      },
+      {
+        "at": "2026-11-09T09:41:22.188Z",
+        "label": "remove the job role",
+        "method": "PATCH",
+        "path": "/api/employees/d9e82036-e60e-4931-a42b-25b1da335e0d/roles",
+        "status": 200,
+        "body": []
+      },
+      {
+        "at": "2026-11-09T09:41:22.281Z",
+        "label": "end the employment today (last working day moved to today)",
+        "method": "PATCH",
+        "path": "/api/employees/d9e82036-e60e-4931-a42b-25b1da335e0d/offboarding",
+        "status": 200,
+        "body": {
+          "offboarding": {
+            "id": "61b789ee-fc94-4e48-b459-f4a2f32b12a5",
+            "employeeId": "d9e82036-e60e-4931-a42b-25b1da335e0d",
+            "branchId": "f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+            "offboardingType": "resignation",
+            "reasonCode": "personal_reasons",
+            "reasonText": "ZZ TEST staging proof for SCRUM-794",
+            "noticeDate": null,
+            "lastWorkingDay": "2026-11-09T00:00:00.000Z",
+            "leavePublicHolidaysDays": null,
+            "leaveAnnualDays": null,
+            "leaveOtherDays": null,
+            "leaveOtherLabel": null,
+            "notes": null,
+            "createdBy": "01a1bea3-1105-7bfd-92b8-301d34f03f18",
+            "createdAt": "2026-11-09T09:41:12.105Z",
+            "updatedAt": "2026-11-09T09:41:22.613Z",
+            "reonboardedAt": null
+          },
+          "message": "Offboarding record updated successfully"
+        }
+      },
+      {
+        "at": "2026-11-09T09:41:22.371Z",
+        "label": "switch the app-only login off",
+        "method": "PATCH",
+        "path": "/api/users/7b2ab5d5-8da3-4100-8aad-a94c931c6286",
+        "status": 200,
+        "body": {
+          "id": "7b2ab5d5-8da3-4100-8aad-a94c931c6286",
+          "username": null,
+          "email": "zz-test-794-20261109-1641@example.invalid",
+          "fullName": "ZZ TEST 794 Leaver 20261109-1641",
+          "preferredName": null,
+          "birthdayMonth": null,
+          "birthdayDay": null,
+          "birthdayYear": null,
+          "role": "staff",
+          "operatorId": null,
+          "isActive": false,
+          "mustChangePassword": true,
+          "permissionReviewRequired": true,
+          "createdBy": "01a1bea3-1105-7bfd-92b8-301d34f03f18",
+          "lastLoginAt": null,
+          "phoneNumber": null,
+          "phoneE164": null,
+          "phoneVerified": false,
+          "phoneVerifiedAt": null,
+          "profilePhotoPath": null,
+          "platformUserId": null,
+          "createdAt": "2026-11-09T09:41:11.292Z",
+          "updatedAt": "2026-11-09T09:41:22.707Z",
+          "branchAccess": [
+            {
+              "id": "a9eb3fce-bca3-40a0-8aed-4d6f99e6df59",
+              "tenantId": "6b21b917-8196-4097-a647-d68b65e25316",
+              "userId": "7b2ab5d5-8da3-4100-8aad-a94c931c6286",
+              "branchId": "f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+              "accessScope": "selected_branches",
+              "createdAt": "2026-11-09T09:41:11.306Z"
+            }
+          ],
+          "hasAllBranchesAccess": false,
+          "allowedBranchIds": [
+            "f0034cfa-9fe8-45dd-a870-15d3b89c8421"
+          ],
+          "tenantId": "6b21b917-8196-4097-a647-d68b65e25316",
+          "modules": {
+            "hr": false,
+            "core": false,
+            "studio": false
+          },
+          "linkedEmployeeId": "d9e82036-e60e-4931-a42b-25b1da335e0d",
+          "linkedEmployeeProfilePhoto": null
+        }
+      }
+    ],
+    "cleanupReadback": {
+      "employee": {
+        "status": 200,
+        "empStatus": "resigned",
+        "employmentState": "LEAVING",
+        "offboardingType": "RESIGNATION",
+        "lastWorkingDay": "2026-11-09",
+        "departmentId": "4b09c719-337e-4de6-8137-11aa4619b725",
+        "branchId": "f0034cfa-9fe8-45dd-a870-15d3b89c8421",
+        "userId": "7b2ab5d5-8da3-4100-8aad-a94c931c6286"
+      },
+      "plannedEngagement": null,
+      "shiftsLeft": 0,
+      "login": {
+        "isActive": false,
+        "role": "staff",
+        "platformLinked": false,
+        "emailIsZz": true
+      },
+      "contracts": [
+        {
+          "id": "f5e5ffd3-3707-4a76-a4ed-7122c33cd597",
+          "status": "draft",
+          "signingStatus": "not_sent"
+        }
+      ]
+    },
+    "deleteRefusedReason": "ZZ TEST 794 Leaver 20261109-1641 cannot be deleted: they have 1 contract. Their history is kept for the record; offboard them instead to end their employment.",
+    "leftOnStaging": {
+      "what": "The ZZ TEST profile d9e82036-e60e-4931-a42b-25b1da335e0d (status resigned, last working day today, no job role, no shift, plan cancelled) with its unsent draft contract f5e5ffd3-3707-4a76-a4ed-7122c33cd597, and its app-only login 7b2ab5d5-8da3-4100-8aad-a94c931c6286 switched off (not platform-linked, so nothing went to the platform). The 03:00 batch will move it to Left.",
+      "why": "DELETE /api/employees answered 409 (1 contract). DELETE /api/contracts/<draft> answered 500: the employee_changes row Onboard Again writes (\"onboard_again\", contract_instance_id = the draft) holds a foreign key with no ON DELETE, so the draft cannot be deleted, so the profile cannot be deleted. Before failing, the contract delete had already cleared the draft's link on its activity row (storage.deleteContract runs three statements without a transaction)."
+    }
+  },
+  "pictures": [
+    {
+      "file": "A1-fold-dialog-refused.png",
+      "shows": "The real case: the Fold dialog on the duplicate (Reception) profile with the original (Promotion) profile chosen; its Login and Face tags and \"Resigned\"; the route's refusal \"This profile has 2 contracts and 7 time records...\"; Fold disabled. The search box and the name are masked."
+    },
+    {
+      "file": "B1-zz-profile-leaving.png",
+      "shows": "ZZ TEST profile right after Offboard (last day 14 Nov): Create Contract, Update Terms and Onboard Again side by side, no Offboard button. The Leaving badge is cut at the right edge; B2 shows it whole."
+    },
+    {
+      "file": "B2-zz-planned-employment-card.png",
+      "shows": "ZZ TEST profile after Onboard Again: badge Leaving, the \"Onboard Again planned\" card: starts 16 Nov 2026, department Management, branch Robinson Chalong, position ZZ TEST Manager, contract Draft, Cancel plan."
+    }
+  ],
+  "signOut": {
+    "launcher": 200
+  }
+}
