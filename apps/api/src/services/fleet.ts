@@ -39,6 +39,7 @@ import {
   newId,
   STATION_SESSION_STAGES,
   type DeviceSettings,
+  type ScreenPresence,
 } from '@oto/shared';
 import { TerminalCommandPayloadSchema } from '@oto/box-agent';
 import { AppError } from '../lib/errors';
@@ -56,6 +57,7 @@ import { withTx, type Exec, type OpContext } from './tx';
 import type { Env } from '../env';
 import { lockActiveOrganisation } from './organisation-archive';
 import { readStationsSellingReadiness } from './payments/terminal';
+import { displayPresence, screenOfflineAfterS } from './screen-presence';
 
 /**
  * The ordinary HTTP surface of the fleet (S2-04): the estate an administrator
@@ -219,6 +221,11 @@ export interface CredentialView {
   revokedAt: string | null;
   revokedReason: string | null;
   scopes: string[];
+  /**
+   * SCRUM-771 — a paired display's online or offline, on the list only. Null
+   * for any other kind, and for a display not paired or revoked.
+   */
+  presence?: ScreenPresence | null;
 }
 
 /** Somebody who may be put on a station's list: the staff of that branch. */
@@ -2428,8 +2435,15 @@ export async function listCredentials(
       ),
     )
     .orderBy(desc(deviceCredential.createdAt));
+  // SCRUM-771 — a paired display's online or offline, by the boxes' threshold.
+  const now = Date.now();
+  const offlineAfterS = screenOfflineAfterS();
+  const viewOf = (row: typeof deviceCredential.$inferSelect): CredentialView => ({
+    ...credentialView(row),
+    presence: displayPresence(row, now, offlineAfterS),
+  });
   const displayIds = rows.filter((row) => row.kind === 'display').map((row) => row.id);
-  if (!displayIds.length) return rows.map(credentialView);
+  if (!displayIds.length) return rows.map(viewOf);
   const eventDeviceId = sql<string>`${stationEvent.payload}->>'deviceId'`;
   const refusals = await db.selectDistinctOn([stationEvent.stationId, eventDeviceId], {
     deviceId: eventDeviceId, stationId: stationEvent.stationId, at: stationEvent.receivedAt,
@@ -2444,7 +2458,7 @@ export async function listCredentials(
   const rejected = new Map(refusals.map((row) => [`${row.stationId}:${row.deviceId}`, row.at]));
   return rows.map((row) => {
     const at = rejected.get(`${row.stationId}:${row.id}`);
-    return { ...credentialView(row), lastRejectedAt: at?.toISOString() ?? null,
+    return { ...viewOf(row), lastRejectedAt: at?.toISOString() ?? null,
       lastRejectedCode: at ? 'DISPLAY_UNPAIRED' as const : null };
   });
 }

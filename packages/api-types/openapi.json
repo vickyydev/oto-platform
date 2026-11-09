@@ -24060,6 +24060,38 @@
                             "items": {
                               "type": "string"
                             }
+                          },
+                          "presence": {
+                            "type": "object",
+                            "properties": {
+                              "state": {
+                                "type": "string",
+                                "enum": [
+                                  "online",
+                                  "offline"
+                                ]
+                              },
+                              "lastSeenAt": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "lastSeenAgeSeconds": {
+                                "type": "integer",
+                                "nullable": true
+                              },
+                              "offlineAfterSeconds": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "state",
+                              "lastSeenAt",
+                              "lastSeenAgeSeconds",
+                              "offlineAfterSeconds"
+                            ],
+                            "additionalProperties": false,
+                            "nullable": true,
+                            "default": null
                           }
                         },
                         "required": [
@@ -24224,6 +24256,38 @@
                           "items": {
                             "type": "string"
                           }
+                        },
+                        "presence": {
+                          "type": "object",
+                          "properties": {
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "online",
+                                "offline"
+                              ]
+                            },
+                            "lastSeenAt": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "lastSeenAgeSeconds": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "offlineAfterSeconds": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "state",
+                            "lastSeenAt",
+                            "lastSeenAgeSeconds",
+                            "offlineAfterSeconds"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true,
+                          "default": null
                         }
                       },
                       "required": [

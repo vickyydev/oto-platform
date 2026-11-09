@@ -11109,6 +11109,14 @@ export interface paths {
                                 revokedAt: string | null;
                                 revokedReason: string | null;
                                 scopes: string[];
+                                /** @default null */
+                                presence: {
+                                    /** @enum {string} */
+                                    state: "online" | "offline";
+                                    lastSeenAt: string | null;
+                                    lastSeenAgeSeconds: number | null;
+                                    offlineAfterSeconds: number;
+                                } | null;
                             }[];
                         };
                     };
@@ -11183,6 +11191,14 @@ export interface paths {
                                 revokedAt: string | null;
                                 revokedReason: string | null;
                                 scopes: string[];
+                                /** @default null */
+                                presence: {
+                                    /** @enum {string} */
+                                    state: "online" | "offline";
+                                    lastSeenAt: string | null;
+                                    lastSeenAgeSeconds: number | null;
+                                    offlineAfterSeconds: number;
+                                } | null;
                             };
                             pairingCode?: string;
                             expiresAt?: string;

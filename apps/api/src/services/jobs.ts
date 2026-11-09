@@ -49,6 +49,7 @@ import {
 } from './ops';
 // SCRUM-644 (Q25): fingerprint mutes and recipients, consulted before any delivery.
 import { deliverRoutedAlert } from './alert-routing';
+import { displayConditions } from './screen-presence';
 import {
   purgeOldStationEvents,
   purgeOldSyncAnomalies,
@@ -264,6 +265,9 @@ export interface WatchdogSummary extends Record<string, unknown> {
   /** Live boxes examined, and how many of them this pass moved to `offline`. */
   boxes: number;
   boxesSilenced: number;
+  /** Live paired customer displays examined (SCRUM-771), and whether that read answered. */
+  displays: number;
+  displaysEvaluated: boolean;
   /** Unread supporting evidence forbids every fallback-derived fleet effect. */
   fleetAvailability: 'ok' | 'failed' | 'denied';
   fleetEvaluated: boolean;
@@ -300,6 +304,8 @@ export async function runWatchdog(deps: JobDeps): Promise<WatchdogSummary> {
     failing: 0,
     boxes: 0,
     boxesSilenced: 0,
+    displays: 0,
+    displaysEvaluated: false,
     fleetAvailability: 'ok',
     fleetEvaluated: false,
     opened: 0,
@@ -448,6 +454,28 @@ export async function runWatchdog(deps: JobDeps): Promise<WatchdogSummary> {
     } else {
       await close(failKey, 'ops.failing', expectation.name);
     }
+  }
+
+  /**
+   * The customer displays (SCRUM-771): the box's offline rule pointed at a
+   * screen, raised and cleared through the same `open` and `close` — so the
+   * same dedupe, flap suppression, mutes and routing — and only while the park
+   * is open (`evaluateDisplay`). Read before the boxes and on their own: a
+   * display read that fails says nothing about a box, and the box rules below
+   * must run whatever it answered. A failed read evaluates nothing, so it
+   * neither raises nor closes.
+   */
+  try {
+    const screens = await displayConditions(db, now.getTime());
+    summary.displays = screens.displays;
+    for (const c of screens.conditions) {
+      const scope = { operatorId: c.operatorId, branchId: c.branchId };
+      if (c.active) await open(c.key, c.category, c.severity, c.subject, c.summary, c.detail, scope);
+      else await close(c.key, c.category, c.subject, c.clear);
+    }
+    summary.displaysEvaluated = true;
+  } catch (err) {
+    log.warn({ err }, 'watchdog display presence skipped: the displays could not be read');
   }
 
   /**
