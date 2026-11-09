@@ -1,4 +1,5 @@
-import { requireSchedulePark, ScheduleScopeError, scheduleParkPredicate } from "./schedule-scope";
+import { requireSchedulePark, ScheduleScopeError, scheduleParkPredicate, assertScheduleChangeSetScope } from "./schedule-scope";
+import { captureScheduleState, diffScheduleStates, readScheduleChangeSet, recordScheduleChange, undoScheduleChangeSet, weekScope } from "./lib/scheduleChangeSet";
 import { attendanceEvidenceUpload, attendanceConfirmationBody } from "./attendance-evidence-upload";
 import { persistAttendanceEvidence, canReadAttendanceEvidence, ATTENDANCE_EVIDENCE_FOLDER } from "./attendance-evidence";
 import { registerTimekeepingReviewRoutes } from "./timekeeping-review-routes";
@@ -15999,6 +16000,9 @@ OTO Company Limited`,
 
       // Take scoped snapshot before deletion for restore history (scoped by shift row departmentId)
       const snapshot = await storage.snapshotByDepartmentAndWeek(branchId, departmentId, startDate, endDate, req.userWithAccess!.tenantId!);
+      // And what the clear itself removes, for "Undo this action" (SCRUM-777).
+      const changeScope = { branchId, from: startDate, to: endDate };
+      const beforeClear = await captureScheduleState(changeScope, tenantId);
 
       // Get shift rows that belong to this branch+department, active during this date range
       const deptShiftRows = await db.select({ id: scheduleShiftRows.id }).from(scheduleShiftRows)
@@ -16083,6 +16087,7 @@ OTO Company Limited`,
         performedBy: user.id,
         snapshotData: snapshot,
         summaryData,
+        changeSet: diffScheduleStates(changeScope, beforeClear, await captureScheduleState(changeScope, tenantId)),
       });
 
       res.json({
@@ -16952,13 +16957,15 @@ OTO Company Limited`,
       const weekPlan = await storage.getOrCreateWeekPlan(branchId, weekStartDate, user.id, req.userWithAccess!.tenantId!);
 
       const snapshot = await storage.snapshotWeekPlan(weekPlan.id, req.userWithAccess!.tenantId!);
-      await storage.applyTemplate(id, weekPlan.id, user.id, req.userWithAccess!.tenantId!);
+      const { changeSet } = await recordScheduleChange(weekScope(branchId, weekStartDate), tenantId,
+        () => storage.applyTemplate(id, weekPlan.id, user.id, req.userWithAccess!.tenantId!));
       await storage.logScheduleAudit(tenantId, 'apply_template', {
         weekPlanId: weekPlan.id,
         branchId,
         description: `Applied template (legacy) to week ${weekStartDate}`,
         performedBy: user.id,
         snapshotData: snapshot,
+        changeSet,
       });
 
       res.json({ success: true });
@@ -16982,12 +16989,13 @@ OTO Company Limited`,
       const weekPlan = await storage.getOrCreateWeekPlan(branchId, weekStartDate, user.id, req.userWithAccess!.tenantId!);
       const snapshot = await storage.snapshotWeekPlan(weekPlan.id, req.userWithAccess!.tenantId!);
 
-      const result = await storage.applyTemplateAdditive(
-        id,
-        branchId,
-        weekStartDate,
-        user.id, req.userWithAccess!.tenantId!,
-      );
+      const { result, changeSet } = await recordScheduleChange(weekScope(branchId, weekStartDate), tenantId,
+        () => storage.applyTemplateAdditive(
+          id,
+          branchId,
+          weekStartDate,
+          user.id, req.userWithAccess!.tenantId!,
+        ));
 
       await storage.logScheduleAudit(tenantId, 'apply_template_additive', {
         weekPlanId: weekPlan.id,
@@ -16995,6 +17003,7 @@ OTO Company Limited`,
         description: `Applied template (additive) to week ${weekStartDate}. Rows added: ${result.rowsAdded}, Rows skipped: ${result.rowsSkipped}, Assignments: ${result.assignmentsApplied}, Time-off: ${result.timeOffApplied}`,
         performedBy: user.id,
         snapshotData: snapshot,
+        changeSet,
       });
 
       res.json({ success: true, ...result });
@@ -17029,30 +17038,35 @@ OTO Company Limited`,
       const weekPlan = await storage.getWeekPlanById(id, req.userWithAccess!.tenantId!);
       if (weekPlan) {
         const snapshot = await storage.snapshotWeekPlan(id, req.userWithAccess!.tenantId!);
+        const weekStartStr = typeof weekPlan.weekStartDate === 'string'
+          ? weekPlan.weekStartDate
+          : weekPlan.weekStartDate.toISOString().split('T')[0];
+        // What the clear itself removes, for "Undo this action" (SCRUM-777):
+        // the history entry is written once the week is gone, with it.
+        const { changeSet } = await recordScheduleChange(weekScope(weekPlan.branchId, weekStartStr), tenantId, async () => {
+          const weekStart = new Date(weekStartStr + 'T00:00:00Z');
+          const weekEnd = new Date(weekStart);
+          weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
+
+          await storage.deleteTimeOffByBranchAndDateRange(
+            weekPlan.branchId,
+            weekStart,
+            weekEnd,
+            "CHANGE_DAY_OFF", req.userWithAccess!.tenantId!
+          );
+          await storage.deleteWeekPlan(id, req.userWithAccess!.tenantId!);
+        });
         await storage.logScheduleAudit(tenantId, 'clear_week', {
           weekPlanId: id,
           branchId: weekPlan.branchId,
           description: `Cleared entire week plan (${snapshot?.shiftRows?.length || 0} shift rows, ${snapshot?.assignments?.length || 0} assignments)`,
           performedBy: user.id,
           snapshotData: snapshot,
+          changeSet,
         });
-        
-        const weekStartStr = typeof weekPlan.weekStartDate === 'string' 
-          ? weekPlan.weekStartDate 
-          : weekPlan.weekStartDate.toISOString().split('T')[0];
-        const weekStart = new Date(weekStartStr + 'T00:00:00Z');
-        const weekEnd = new Date(weekStart);
-        weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
-        
-        await storage.deleteTimeOffByBranchAndDateRange(
-          weekPlan.branchId,
-          weekStart,
-          weekEnd,
-          "CHANGE_DAY_OFF", req.userWithAccess!.tenantId!
-        );
+      } else {
+        await storage.deleteWeekPlan(id, req.userWithAccess!.tenantId!);
       }
-      
-      await storage.deleteWeekPlan(id, req.userWithAccess!.tenantId!);
       res.status(204).send();
     } catch (error) {
       next(error);
@@ -17080,6 +17094,8 @@ OTO Company Limited`,
         performedBy: scheduleAuditLog.performedBy,
         createdAt: scheduleAuditLog.createdAt,
         hasSnapshot: sql<boolean>`${scheduleAuditLog.snapshotData} IS NOT NULL`,
+        // SCRUM-777 — the entry recorded what it changed, so it can be undone on its own.
+        hasChangeSet: sql<boolean>`${scheduleAuditLog.changeSet} IS NOT NULL`,
         summaryData: scheduleAuditLog.summaryData,
         // SCRUM-673 — set only on a row written inside a view-as window.
         actorType: scheduleAuditLog.actorType,
@@ -17155,6 +17171,68 @@ OTO Company Limited`,
       
       res.json(result);
     } catch (error) {
+      next(error);
+    }
+  });
+
+  // SCRUM-777 — undo one history entry: only what that action did, leaving
+  // everything anyone changed since as it is (server/lib/scheduleChangeSet.ts).
+  app.post("/api/schedule/audit-log/:id/undo", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = req.userWithAccess!.tenantId!;
+
+      const [auditEntry] = await db.select().from(scheduleAuditLog)
+        .where(and(and(eq(scheduleAuditLog.id, id), eq(scheduleAuditLog.tenantId, tenantId)), scheduleParkPredicate("schedule_audit_log", tenantId)));
+      if (!auditEntry) {
+        return res.status(404).json({ message: "Audit entry not found" });
+      }
+      if (!auditEntry.changeSet) {
+        return res.status(409).json({
+          message: auditEntry.snapshotData
+            ? "Only Restore is available for this entry: it was recorded before single actions could be undone."
+            : "This entry cannot be undone on its own: it holds no record of what it changed.",
+        });
+      }
+      const changeSet = readScheduleChangeSet(auditEntry.changeSet);
+      if (!changeSet) {
+        return res.status(409).json({ message: "This entry cannot be undone on its own: its record of what it changed cannot be read." });
+      }
+      await assertScheduleChangeSetScope(changeSet, tenantId);
+
+      const when = auditEntry.createdAt.toISOString().slice(0, 16).replace("T", " ");
+      const { result, touched } = await undoScheduleChangeSet(changeSet, tenantId, async (tx, outcome) => {
+        if (outcome.removed + outcome.putBack + outcome.changedBack === 0) return;
+        await storage.logScheduleAudit(tenantId, 'undo_action', {
+          weekPlanId: auditEntry.weekPlanId || undefined,
+          branchId: auditEntry.branchId || undefined,
+          departmentId: auditEntry.departmentId || undefined,
+          weekStartDate: auditEntry.weekStartDate || undefined,
+          description: `Undid the action of ${when} UTC (${auditEntry.description || auditEntry.action}): ${outcome.removed} removed, ${outcome.putBack} put back, ${outcome.changedBack} changed back, ${outcome.skipped.length} left as they are.`,
+          performedBy: user.id,
+          changeSet: outcome.changeSet,
+        }, tx);
+      });
+      // Automatic breaks follow the shifts on a row and date, as after any shift write.
+      for (const { shiftRowId, shiftDate } of touched) {
+        await generateBreaksForShiftRow(shiftRowId, shiftDate, tenantId).catch(err => console.error('[BREAKS] Generation error:', err));
+      }
+
+      const nothingUndone = result.removed + result.putBack + result.changedBack === 0;
+      res.json({
+        undoneCreated: result.removed,
+        restoredDeleted: result.putBack,
+        changedBack: result.changedBack,
+        skippedCount: result.skipped.length,
+        skipped: result.skipped,
+        nothingUndone,
+        message: nothingUndone
+          ? "Nothing was undone: what this action did has already been undone or changed since."
+          : `Undone: ${result.removed} removed, ${result.putBack} put back, ${result.changedBack} changed back, ${result.skipped.length} left as they are.`,
+      });
+    } catch (error) {
+      if (error instanceof ScheduleScopeError) return res.status(404).json({ message: error.message });
       next(error);
     }
   });

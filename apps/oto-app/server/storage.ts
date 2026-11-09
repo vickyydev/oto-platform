@@ -7560,9 +7560,12 @@ export class DatabaseStorage implements IStorage {
                         performedBy?: string;
                         snapshotData?: any;
                         summaryData?: { shiftRows: number; assignments: number; breaks: number };
+                        /** SCRUM-777 — what this one action changed (server/lib/scheduleChangeSet.ts). */
+                        changeSet?: unknown;
                 },
+                executor: DbExecutor = db,
         ): Promise<void> {
-                await db.insert(scheduleAuditLog).values({
+                await executor.insert(scheduleAuditLog).values({
                         tenantId,
                         weekPlanId: opts.weekPlanId,
                         branchId: opts.branchId,
@@ -7573,6 +7576,7 @@ export class DatabaseStorage implements IStorage {
                         performedBy: opts.performedBy,
                         snapshotData: opts.snapshotData,
                         summaryData: opts.summaryData as any,
+                        changeSet: opts.changeSet,
                         // SCRUM-673 — a row written inside a view-as window names who was really there.
                         ...scheduleAuditViewAs(currentViewAs()),
                 });

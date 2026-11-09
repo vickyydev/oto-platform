@@ -6368,6 +6368,7 @@ function ScheduleHistoryDialog({ open, onOpenChange, branchId, onRestored }: {
 }) {
   const { toast } = useToast();
   const [restoreEntry, setRestoreEntry] = useState<any | null>(null);
+  const [undoEntry, setUndoEntry] = useState<any | null>(null);
 
   const auditLogQuery = useQuery<any[]>({
     queryKey: ["/api/schedule/audit-log", { branchId }],
@@ -6402,6 +6403,39 @@ function ScheduleHistoryDialog({ open, onOpenChange, branchId, onRestored }: {
     },
   });
 
+  // SCRUM-777 — reverse only what one entry did; later changes stay.
+  const undoMutation = useMutation({
+    mutationFn: async (auditId: string) => {
+      const res = await apiRequest("POST", `/api/schedule/audit-log/${auditId}/undo`);
+      return res.json() as Promise<{
+        undoneCreated: number; restoredDeleted: number; changedBack: number; skippedCount: number;
+        skipped: { kind: string; id: string; reason: string }[]; nothingUndone: boolean; message: string;
+      }>;
+    },
+    onSuccess: (data) => {
+      const reasons = Object.entries(
+        data.skipped.reduce<Record<string, number>>((all, s) => ({ ...all, [s.reason]: (all[s.reason] ?? 0) + 1 }), {}),
+      ).map(([reason, n]) => `${n} ${reason}`).join(", ");
+      toast({
+        title: data.nothingUndone ? "Nothing to undo" : "Action undone",
+        description: data.nothingUndone
+          ? data.message
+          : [
+              `${data.undoneCreated} removed`,
+              `${data.restoredDeleted} put back`,
+              data.changedBack > 0 ? `${data.changedBack} changed back` : null,
+              data.skippedCount > 0 ? `${data.skippedCount} left as they are (${reasons})` : null,
+            ].filter(Boolean).join(", ") + ".",
+      });
+      setUndoEntry(null);
+      onRestored();
+      auditLogQuery.refetch();
+    },
+    onError: (err: Error) => {
+      toast({ title: "Undo failed", description: err.message, variant: "destructive" });
+    },
+  });
+
   const actionLabels: Record<string, string> = {
     apply_template: "Template Applied",
     apply_template_safe: "Template Applied (Safe)",
@@ -6409,6 +6443,7 @@ function ScheduleHistoryDialog({ open, onOpenChange, branchId, onRestored }: {
     clear_week: "Week Cleared",
     overwrite_department: "Department Overwritten",
     restore_from_snapshot: "Restored from Snapshot",
+    undo_action: "Undid an action",
   };
 
   const formatWeekRange = (weekStartDate: string | null) => {
@@ -6492,17 +6527,30 @@ function ScheduleHistoryDialog({ open, onOpenChange, branchId, onRestored }: {
                       <span>{format(new Date(entry.createdAt), "MMM d, yyyy h:mm a")}</span>
                     </div>
                   </div>
-                  {entry.hasSnapshot && entry.action !== "restore_from_snapshot" && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setRestoreEntry(entry)}
-                      data-testid={`button-restore-${entry.id}`}
-                    >
-                      <RotateCcw className="h-3 w-3 mr-1" />
-                      Restore
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {entry.hasChangeSet && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setUndoEntry(entry)}
+                        data-testid={`button-undo-${entry.id}`}
+                      >
+                        <Undo2 className="h-3 w-3 mr-1" />
+                        Undo this action
+                      </Button>
+                    )}
+                    {entry.hasSnapshot && entry.action !== "restore_from_snapshot" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setRestoreEntry(entry)}
+                        data-testid={`button-restore-${entry.id}`}
+                      >
+                        <RotateCcw className="h-3 w-3 mr-1" />
+                        Restore
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </Card>
             ))}
@@ -6561,6 +6609,39 @@ function ScheduleHistoryDialog({ open, onOpenChange, branchId, onRestored }: {
               data-testid={restoreEntry ? `button-restore-confirm-${restoreEntry.id}` : "button-restore-confirm"}
             >
               {restoreMutation.isPending ? "Restoring..." : buildRestoreButtonLabel(restoreEntry?.summaryData)}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Undo confirmation dialog (SCRUM-777) */}
+      <Dialog open={!!undoEntry} onOpenChange={(v) => { if (!v) setUndoEntry(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Undo this action?</DialogTitle>
+            <DialogDescription>
+              {undoEntry && (
+                <span>
+                  <strong>"{actionLabels[undoEntry.action] || undoEntry.action}"</strong> on{" "}
+                  {format(new Date(undoEntry.createdAt), "d MMM yyyy 'at' h:mm a")} by{" "}
+                  {(undoEntry.performedByUser?.fullName || undoEntry.performedByUser?.username || "Unknown")
+                    + (undoEntry.actorType === "impersonated" ? ` (${VIEW_AS_HISTORY_NOTE})` : "")}.{" "}
+                  Undo reverses only what this action did. Shifts added or changed by anyone since are kept.
+                  Restore puts the whole schedule back to how it was before this action.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setUndoEntry(null)} data-testid="button-undo-cancel">
+              Cancel
+            </Button>
+            <Button
+              onClick={() => undoEntry && undoMutation.mutate(undoEntry.id)}
+              disabled={undoMutation.isPending}
+              data-testid={undoEntry ? `button-undo-confirm-${undoEntry.id}` : "button-undo-confirm"}
+            >
+              {undoMutation.isPending ? "Undoing..." : "Undo this action"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -154,6 +154,53 @@ export async function assertScheduleSnapshotScope(value: unknown, tenantId: stri
   }
 }
 
+/**
+ * SCRUM-777 — every row a stored change set names is this park group's (or
+ * gone), and so is every row it points at that the change set does not hold
+ * itself, before an undo removes, puts back or changes back any of them.
+ */
+export async function assertScheduleChangeSetScope(value: unknown, tenantId: string): Promise<void> {
+  if (!tenantId || !value || typeof value !== "object") throw new ScheduleScopeError();
+  const changeSet = value as RecordData;
+  const read = scopeReader(tenantId);
+  const camel = (s: string) => s.replace(/_([a-z])/g, (_m, c: string) => c.toUpperCase());
+  const kinds: Record<string, Entity> = {
+    weekPlans: "week", shiftRows: "row", rowRoles: "rowRole", assignments: "assignment",
+    breaks: "shiftBreak", dutyBlocks: "dutyBlock", timeOff: "timeOff",
+  };
+  const records: Array<{ row: RecordData; kind: Entity }> = [];
+  for (const part of ["created", "updated", "deleted"]) {
+    const groups = changeSet[part];
+    if (groups == null) continue;
+    if (typeof groups !== "object" || Array.isArray(groups)) throw new ScheduleScopeError();
+    for (const [group, rows] of Object.entries(groups as RecordData)) {
+      const kind = kinds[group];
+      if (!kind || !Array.isArray(rows)) throw new ScheduleScopeError();
+      for (const entry of rows as RecordData[]) {
+        const pair = part === "updated" ? [entry?.before, entry?.after] : [entry];
+        for (const row of pair) records.push({ row: row as RecordData, kind });
+      }
+    }
+  }
+  const local = new Set<string>();
+  for (const { row, kind } of records) {
+    if (!row || typeof row !== "object" || row.tenantId !== tenantId || typeof row.id !== "string") throw new ScheduleScopeError();
+    await read(kind, row.id, true); // A recorded ID must not collide with another park's row.
+    local.add(kind + ":" + row.id);
+  }
+  for (const { row, kind } of records) {
+    for (const [field, parent] of Object.entries(parents[kind] || {})) {
+      const id = row[camel(field)];
+      if (id == null || local.has(parent + ":" + id)) continue;
+      if (typeof id !== "string" || !id) throw new ScheduleScopeError();
+      await read(parent, id, true); // Gone is fine (that row cannot come back); another park's is not.
+    }
+  }
+  const scope = changeSet.scope as RecordData | undefined;
+  if (!scope || typeof scope !== "object") throw new ScheduleScopeError();
+  await read("branch", scope.branchId);
+}
+
 /** Explicit request references are all checked before the original handler runs. */
 export const requireSchedulePark: RequestHandler = (req, res, next) => {
   void (async () => {
@@ -183,6 +230,9 @@ export const requireSchedulePark: RequestHandler = (req, res, next) => {
       }
       if (pathKind === "history" && route.endsWith("/restore") && row?.snapshot_data) {
         await assertScheduleSnapshotScope(row.snapshot_data, tenantId);
+      }
+      if (pathKind === "history" && route.endsWith("/undo") && row?.change_set) {
+        await assertScheduleChangeSetScope(row.change_set, tenantId);
       }
     }
     const fields: Record<string, Entity> = {

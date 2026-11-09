@@ -3712,6 +3712,15 @@ export const scheduleAuditLog = pgTable("schedule_audit_log", {
   actorAccountId: uuid("actor_account_id"),
   onBehalfOf: uuid("on_behalf_of"),
   impersonationId: uuid("impersonation_id"),
+  /**
+   * SCRUM-777 — what this one action changed, recorded as it ran
+   * (server/lib/scheduleChangeSet.ts): the rows it created and the rows it
+   * changed as they stood right after it, and the rows it deleted in full.
+   * "Undo this action" reverses only these. Empty on rows written before it
+   * existed and on actions that record none (a restore): those offer Restore
+   * only.
+   */
+  changeSet: jsonb("change_set"),
 }, (table) => [
   index("idx_schedule_audit_tenant").on(table.tenantId),
   index("idx_schedule_audit_week_plan").on(table.weekPlanId),

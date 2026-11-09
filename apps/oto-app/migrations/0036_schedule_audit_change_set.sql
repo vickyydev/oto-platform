@@ -1,0 +1,1 @@
+ALTER TABLE "schedule_audit_log" ADD COLUMN "change_set" jsonb;
