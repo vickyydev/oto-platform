@@ -3,6 +3,7 @@ import {
   REPEAT_HANDOVER,
   askedSlotsOf,
   buildPrompt,
+  questionsIn,
   readSlotAnswers,
   repeatGuard,
   repeatStep,
@@ -37,11 +38,13 @@ import type { Exec, Tx } from '../tx';
  *
  *   1. THE MEMORY (`loadOpenQuestionMemory`), before the prompt: the
  *      episode's questions (`inbox.conversation_open_question`), each open
- *      one read against the customer's lines after it — the reply IS the
+ *      one read against the customer's first reply to it — the reply IS the
  *      answer (`@oto/assistant` `readSlotAnswers`: numbers in Thai, Russian
- *      and English words and digits, a date, a time, a park). A question
- *      whose line never left, or after which a person wrote, is withdrawn.
- *      The prompt names every question and how it was answered
+ *      and English words and digits, a date, a time, a park), never a later
+ *      line. A question whose line never left is withdrawn; one a person
+ *      took over (a staff line, a hand-over) is withdrawn and still read
+ *      against the customer's replies to that person, so it can become
+ *      answered. The prompt names every question and how it was answered
  *      (`promptMemoryOf`, below the cache breakpoint).
  *   2. THE GUARD (`repeatStage`), after the gate: a reply that asks a slot
  *      the customer already answered (or one asked twice with no answer, or
@@ -103,19 +106,71 @@ export interface OpenQuestionMemory {
   fills: Array<{ id: string; slot: AiAskedSlot; answer: string | null; answeredMessageId: string }>;
   /** Questions this turn found withdrawn: their line never left, or a person wrote after it. */
   withdrawals: Array<{ id: string; slot: AiAskedSlot }>;
-  /** A question was still open when this burst came: the turn reads the burst as its answer. */
+  /** This burst is the customer's reply to a question still waiting for one: the turn reads it as the answer. */
   hadOpen: boolean;
 }
 
 // --- 1. The memory -------------------------------------------------------------------------
 
+/** The lines one commit writes are stamped `at + i` ms (`ai-engine.ts` `writeLines`): the asking reply's own lines, and a hand-over's. */
+const ONE_COMMIT_MS = 100;
+
+type Read = { state: InboxOpenQuestionState; answer: string | null; answeredMessageId: string | null };
+const WITHDRAWN: Read = { state: 'withdrawn', answer: null, answeredMessageId: null };
+
+/** One question as the loader reads it from the table. */
+type LoadedRow = EpisodeQuestionRow & { turnId: string; closedAt: Date | null; askedStatus: string | null };
+
 /**
- * The episode's questions, each open one read against the customer's lines
- * after it — and always against the turn's own burst: a provider stamps a
- * line in whole seconds, so a reply sent in the second the question went out
- * can sort before it (the engine's `burstOf` allows for the same). Questions
- * asked on the same line (the combined birthday question) are read together,
- * so a bare "8" answers only a line that asked one number.
+ * Which reply a customer line is: the first reply to the question (`direct`),
+ * a reply to a person (`person`: the lines that person wrote just before it,
+ * and whether it is the first time a person had the thread), or neither.
+ */
+type ReplyWindow = { kind: 'direct' } | { kind: 'person'; leads: string[]; first: boolean; replied: boolean } | null;
+
+/** The loader's walk over the lines after a question: the window, whether a person has the thread, and how often the customer answered one. */
+interface ReplyWalk {
+  window: ReplyWindow;
+  person: boolean;
+  personReplies: number;
+}
+
+/** A person's line opens a window for the customer's reply to it; a person's lines in a row are one lead. */
+function personWindow(walk: ReplyWalk, text: string | null): ReplyWindow {
+  const w = walk.window;
+  if (w?.kind === 'person' && !w.replied) return { ...w, leads: text === null ? w.leads : [...w.leads, text] };
+  if (w?.kind === 'person') walk.personReplies += 1;
+  return { kind: 'person', leads: text === null ? [] : [text], first: walk.personReplies === 0, replied: false };
+}
+
+/** Any other line of the park closes the window. */
+function closedWindow(walk: ReplyWalk): ReplyWindow {
+  if (walk.window?.kind === 'person' && walk.window.replied) walk.personReplies += 1;
+  return null;
+}
+
+/**
+ * The episode's questions, each read against the customer's reply to it
+ * (SCRUM-831 review: never against whatever comes later):
+ *
+ *   - AN OPEN QUESTION is read against the customer's FIRST reply to it only:
+ *     their lines after the asking reply, up to the next line of the park.
+ *     A reply that does not answer it leaves it open (an ask the guard still
+ *     counts), and a later line never fills it. The turn's own burst is
+ *     always read: a provider stamps a line in whole seconds, so a reply sent
+ *     in the second the question went out can sort before it (the engine's
+ *     `burstOf` allows for the same).
+ *   - A PERSON TOOK THE THREAD (a staff line after the question, or the
+ *     hand-over that withdrew it): the question is withdrawn, and the
+ *     customer's reply to each person's line is still read against it — the
+ *     fact is true whoever asked — so a withdrawn question can become
+ *     answered. A newer ask of the same slot replaces it.
+ *
+ * An answer with its unit ("8 years", "восемь лет", a date, a park) is read
+ * in any of those replies; a bare one ("8", "Mia") only where the line before
+ * it asked that slot, or, the first time a person had the thread, asked
+ * nothing. Questions one reply asked are read together (the combined birthday
+ * question), so a bare "8" answers only a reply that asked one number.
  */
 export async function loadOpenQuestionMemory(
   db: Exec,
@@ -125,15 +180,17 @@ export async function loadOpenQuestionMemory(
   burst: readonly EpisodeLine[],
   now: Date,
 ): Promise<OpenQuestionMemory> {
-  const rows = await db
+  const rows: LoadedRow[] = await db
     .select({
       id: conversationOpenQuestion.id,
       slot: conversationOpenQuestion.slot,
       state: conversationOpenQuestion.state,
+      turnId: conversationOpenQuestion.turnId,
       askedAt: conversationOpenQuestion.askedAt,
       askedMessageId: conversationOpenQuestion.askedMessageId,
       answer: conversationOpenQuestion.answer,
       answeredMessageId: conversationOpenQuestion.answeredMessageId,
+      closedAt: conversationOpenQuestion.closedAt,
       askedStatus: message.providerStatus,
     })
     .from(conversationOpenQuestion)
@@ -152,33 +209,64 @@ export async function loadOpenQuestionMemory(
 
   const today = isoDateInTz(now, ZONE);
   const memory: OpenQuestionMemory = { questions: [], fills: [], withdrawals: [], hadOpen: false };
-  const open = rows.filter((r) => r.state === 'open');
-  const byLine = new Map<string, typeof open>();
-  for (const r of open) byLine.set(r.askedMessageId, [...(byLine.get(r.askedMessageId) ?? []), r]);
+  const read = new Map<string, Read>();
+  const inBurst = new Set(burst.map((m) => m.id));
+  const neverLeft = (r: LoadedRow) => r.askedStatus === 'withdrawn';
 
-  const read = new Map<string, { state: InboxOpenQuestionState; answer: string | null; answeredMessageId: string | null }>();
-  for (const [lineId, asked] of byLine) {
-    const first = asked[0]!;
-    // The asking line never left (a person acted first, plan §A.3): nothing was asked.
-    if ((first.askedStatus as string) === 'withdrawn') {
-      for (const q of asked) read.set(q.id, { state: 'withdrawn', answer: null, answeredMessageId: null });
-      continue;
-    }
-    memory.hadOpen = true;
-    const at = episode.findIndex((m) => m.id === lineId);
-    const later = at >= 0 ? episode.slice(at + 1) : episode.filter((m) => m.at.getTime() > first.askedAt.getTime());
-    const inBurst = new Set(burst.map((m) => m.id));
+  // The asking line never left (a person acted first, plan §A.3): nothing was asked.
+  for (const r of rows) if (r.state === 'open' && neverLeft(r)) read.set(r.id, WITHDRAWN);
+
+  // Read: what is open, and what a person took over with no newer ask of its slot since.
+  const newest = new Map<AiAskedSlot, LoadedRow>();
+  for (const r of rows) if (!neverLeft(r)) newest.set(r.slot, r);
+  const readable = rows.filter(
+    (r) => !neverLeft(r) && (r.state === 'open' || (r.state === 'withdrawn' && r.closedAt !== null && newest.get(r.slot) === r)),
+  );
+  const byReply = new Map<string, LoadedRow[]>();
+  for (const r of readable) byReply.set(r.turnId, [...(byReply.get(r.turnId) ?? []), r]);
+
+  for (const asked of byReply.values()) {
+    const askedAt = Math.min(...asked.map((q) => q.askedAt.getTime()));
+    const lineIds = new Set(asked.map((q) => q.askedMessageId));
+    const at = episode.findIndex((m) => lineIds.has(m.id));
+    const later = at >= 0 ? episode.slice(at + 1) : episode.filter((m) => m.at.getTime() > askedAt);
     const after = [...episode.filter((m) => inBurst.has(m.id) && !later.includes(m)), ...later];
+    // The hand-over that withdrew these questions: its own lines are stamped from that moment.
+    const withdrawnAt = asked.find((q) => q.state === 'withdrawn')?.closedAt?.getTime() ?? null;
+    const ownReply = (m: EpisodeLine) => m.from === 'ai' && m.at.getTime() >= askedAt && m.at.getTime() < askedAt + ONE_COMMIT_MS;
+    const handoverLine = (m: EpisodeLine) =>
+      withdrawnAt !== null && m.from === 'ai' && m.at.getTime() >= withdrawnAt && m.at.getTime() < withdrawnAt + ONE_COMMIT_MS;
+
     const pending = new Set(asked.map((q) => q.slot));
+    const walk: ReplyWalk = { window: { kind: 'direct' }, person: false, personReplies: 0 };
     for (const line of after) {
-      // A person wrote after the question: the thread is theirs, the question with it.
-      if (line.from === 'staff') {
-        for (const q of asked) if (pending.has(q.slot)) read.set(q.id, { state: 'withdrawn', answer: null, answeredMessageId: null });
-        pending.clear();
-        break;
+      if (pending.size === 0) break;
+      if (line.from === 'system' || ownReply(line)) continue;
+      // A person took the thread: a staff line, or the hand-over's own line — or, after a hand-over that wrote no line, the customer's next one.
+      const tookOver = line.from === 'staff' || (line.from === 'ai' && !walk.person && handoverLine(line));
+      const silentHandover = line.from === 'customer' && !walk.person && withdrawnAt !== null && line.at.getTime() > withdrawnAt;
+      if (tookOver || silentHandover) {
+        if (line.from === 'staff') for (const q of asked) if (q.state === 'open' && pending.has(q.slot)) read.set(q.id, WITHDRAWN);
+        walk.window = personWindow(walk, tookOver ? line.text : null);
+        walk.person = true;
+        if (tookOver) continue;
+      } else if (line.from !== 'customer') {
+        // The assistant's next reply: a later line is never read as the answer.
+        walk.window = closedWindow(walk);
+        continue;
       }
-      if (line.from !== 'customer' || line.text === null || pending.size === 0) continue;
-      const answers = readSlotAnswers([...pending], line.text, today);
+      const reply = walk.window;
+      if (reply === null || line.text === null) continue;
+      const slots = [...pending];
+      let bare: AiAskedSlot[] | undefined;
+      if (reply.kind === 'person') {
+        reply.replied = true;
+        const leadAsks = slotsAskedIn(reply.leads);
+        const asksNothing = questionsIn(reply.leads).length === 0;
+        bare = slots.filter((s) => leadAsks.includes(s) || (reply.first && asksNothing));
+      }
+      if (inBurst.has(line.id)) memory.hadOpen = true;
+      const answers = readSlotAnswers(slots, line.text, today, bare === undefined ? {} : { bare });
       for (const q of asked) {
         if (!pending.has(q.slot) || !(q.slot in answers)) continue;
         read.set(q.id, { state: 'answered', answer: answers[q.slot] ?? null, answeredMessageId: line.id });
@@ -190,9 +278,9 @@ export async function loadOpenQuestionMemory(
   for (const r of rows) {
     const seen = read.get(r.id);
     if (seen?.state === 'answered') memory.fills.push({ id: r.id, slot: r.slot, answer: seen.answer, answeredMessageId: seen.answeredMessageId! });
-    if (seen?.state === 'withdrawn') memory.withdrawals.push({ id: r.id, slot: r.slot });
+    if (seen?.state === 'withdrawn' && r.state === 'open') memory.withdrawals.push({ id: r.id, slot: r.slot });
     // A line that never left asked nothing: it is no ask the guard counts, and the prompt does not name it.
-    if ((r.askedStatus as string) === 'withdrawn') continue;
+    if (neverLeft(r)) continue;
     memory.questions.push({
       id: r.id,
       slot: r.slot,
@@ -421,7 +509,8 @@ export interface OpenQuestionCommit {
 
 /**
  * Under the thread lock, on a live number: the answers this turn read are
- * kept, a hand-over withdraws every question still open (a person has the
+ * kept (an open question's, or one a person took over), a hand-over
+ * withdraws every question still open (a person has the
  * thread), and the questions the sent reply asks are recorded, each on the
  * line that asked it — an older open row of the same slot withdrawn first.
  * One audit row when anything changed, slots only.
@@ -446,12 +535,14 @@ export async function commitOpenQuestions(
   const memory = a.openQuestion?.memory;
   const scope = and(eq(conversationOpenQuestion.operatorId, a.conv.operatorId), eq(conversationOpenQuestion.conversationId, a.conv.id));
   const stillOpen = eq(conversationOpenQuestion.state, 'open');
+  // A question a person took over is answered too when the customer's reply to them says it.
+  const notAnswered = inArray(conversationOpenQuestion.state, ['open', 'withdrawn']);
 
   for (const f of memory?.fills ?? []) {
     const rows = await tx
       .update(conversationOpenQuestion)
       .set({ state: 'answered', answer: f.answer, answeredMessageId: f.answeredMessageId, closedAt: a.at, updatedAt: a.at })
-      .where(and(scope, eq(conversationOpenQuestion.id, f.id), stillOpen))
+      .where(and(scope, eq(conversationOpenQuestion.id, f.id), notAnswered))
       .returning({ id: conversationOpenQuestion.id });
     if (rows.length > 0) done.answered.push(f.slot);
   }
@@ -471,7 +562,8 @@ export async function commitOpenQuestions(
   if (!a.handover && v?.action === 'answer' && a.decision) {
     const sent = a.lines.filter((l): l is { id: string; body: string } => l.body !== null && l.body.trim() !== '');
     for (const slot of askedSlotsOf(a.decision.askedSlots, sent.map((l) => l.body))) {
-      const line = sent.find((l) => slotsAskedIn([l.body]).includes(slot)) ?? [...sent].reverse().find((l) => /[?？]/u.test(l.body)) ?? sent.at(-1);
+      const line =
+        sent.find((l) => slotsAskedIn([l.body]).includes(slot)) ?? [...sent].reverse().find((l) => questionsIn([l.body]).length > 0) ?? sent.at(-1);
       if (!line) continue;
       await withdraw(eq(conversationOpenQuestion.slot, slot));
       await tx.insert(conversationOpenQuestion).values({

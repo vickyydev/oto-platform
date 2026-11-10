@@ -667,7 +667,7 @@ export function slotFactOf(slot: AiAskedSlot, answer: string | null): string {
 export const MEMORY_LINES = {
   declare: `askedSlots: when a bubble of yours asks the customer something, list what it asks, from ${AI_ASKED_SLOTS.join(', ')} ("other" for anything else); empty when no bubble asks anything. The combined birthday question lists each part it asks.`,
   rule:
-    '<asked_before> is what you already asked the customer in this conversation, and how the server read their reply. An open question is what the customer\'s newest message most likely answers: read it as that answer. Never ask an answered question again: use the answer. A question asked twice with no answer is never asked a third time.',
+    '<asked_before> is what you already asked the customer in this conversation, and how the server read their reply. answered = they answered it (answer is what they said; null when it is not kept, such as a name). open = no answer was read from their reply yet: when the customer\'s newest message is that reply, read it as the answer; when the conversation shows they said it later, use that. withdrawn = a person took the thread before an answer was read: read the conversation for the answer they gave. Never ask an answered question again: use the answer. A question asked twice with no answer is never asked a third time.',
   age: "Ask the child's age only when the answer changes what you say (the drop-off and nanny age rules, the Golden Ticket by age, a party package's age band, the age rules), and only once: never as a reflex.",
 } as const;
 

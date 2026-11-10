@@ -241,6 +241,111 @@ describe("the owner's case: the age asked once, answered, never asked again", ()
   });
 });
 
+/**
+ * A real pause before the customer's next line. A provider stamps a line in
+ * whole seconds and never ahead of the clock, so a line written within the
+ * second of the park's last one can sort before it; these tests need the
+ * thread in the order it was written.
+ */
+const nextSecond = () => new Promise((resolve) => setTimeout(resolve, 1_100));
+
+/** The customer writes after a pause, and one tick at the moment decides the burst with the scripted steps. */
+async function inOrder(account: string, phone: string, text: string, ...decisions: AiDecision[]) {
+  await nextSecond();
+  const conv = await customer(w, account, phone, text);
+  const asked = w.fake.requests.length;
+  w.fake.push(...decisions.map((d) => ({ kind: 'decision' as const, decision: d })));
+  const sweep = await tick(w, new Date());
+  expect(w.fake.remaining).toBe(0);
+  // The send job is not this suite's: the assistant's lines left (a queued line a person's reply withdraws never asked anything).
+  await w.ctx.db
+    .update(s.message)
+    .set({ providerStatus: 'sent' })
+    .where(and(eq(s.message.conversationId, conv.id), eq(s.message.authorKind, 'ai'), eq(s.message.providerStatus, 'queued')));
+  return { conv, sweep, prompts: w.fake.requests.slice(asked).map((r) => r.prompt.messages[0].content) };
+}
+
+describe('the reply read is the first reply only (SCRUM-831 review)', () => {
+  it('the age asked, an off-topic reply, then a later line with a number: the age stays unread', async () => {
+    await drain();
+    const phone = nextPhone();
+    const first = await inOrder(
+      birthdays,
+      phone,
+      `A birthday party for my son please ${SENTINEL}`,
+      decision({ intent: 'birthday_party', reason: 'CLEAR_INTENT', bubbles: ['How old will the birthday boy be? 🎈'], askedSlots: ['child_age'] }),
+    );
+    expect(first.sweep.answered).toBe(1);
+    const convId = first.conv.id;
+    // The first reply asks something else: no answer, the question stays open.
+    const second = await inOrder(
+      birthdays,
+      phone,
+      'how much is it?',
+      decision({ intent: 'birthday_party', reason: 'CLEAR_INTENT', bubbles: ['Our birthday team will share the packages and prices with you 😊'] }),
+    );
+    expect(second.sweep.answered).toBe(1);
+    // A later line with a number is never read as the age.
+    const third = await inOrder(birthdays, phone, '8', decision({ intent: 'birthday_party', reason: 'CLEAR_INTENT', bubbles: ['Thank you! 😊'] }));
+    const thirdPrompt = third.prompts[0]!;
+    expect(third.sweep.answered).toBe(1);
+    expect(thirdPrompt).toContain('"slot":"child_age"');
+    expect(thirdPrompt).toContain('"state":"open","answer":null');
+    const [q] = await questionsOf(convId);
+    expect(q).toMatchObject({ slot: 'child_age', state: 'open', answer: null, answeredMessageId: null });
+    expect(await guardTrips(convId)).toEqual([]);
+  }, 60_000);
+
+  it('a question a person took over is still answered by the reply to them: a hand-over, "8", a staff line, Resume, and the re-ask is refused with the fact', async () => {
+    await drain();
+    const reception = await teamOf(w, 'reception', w.central);
+    const [, cookie] = await staff(w, '+66810083102', 'Open Question Test Agent', 'inbox_agent', { scopeType: 'department', scopeId: reception.departmentId! });
+    const phone = nextPhone();
+    const askAge = (text: string) =>
+      decision({ intent: 'drop_off_service', grounding: ['drop-off'], reason: 'FACT_IN_KB', bubbles: [text], askedSlots: ['child_age'] });
+
+    const { conv, sweep } = await inOrder(general, phone, `Do you have a drop-off service? ${SENTINEL}`, askAge('Yes we do 😊 How old is your little one?'));
+    expect(sweep.answered).toBe(1);
+    const handover = await inOrder(
+      general,
+      phone,
+      'can I talk to a person please',
+      decision({ intent: 'human_requested', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }),
+    );
+    expect(handover.sweep.handedOver).toBe(1);
+    // The hand-over withdrew the open question: a person has the thread.
+    expect((await questionsOf(conv.id))[0]).toMatchObject({ slot: 'child_age', state: 'withdrawn', answer: null });
+    await nextSecond();
+    await customer(w, general, phone, '8');
+    expect((await turnsOf(w, conv.id)).filter((t) => t.state === 'pending')).toHaveLength(0);
+    const eight = (await customerLines(conv.id)).find((l) => l.body === '8')!;
+    const reply = await w.ctx.app.inject({
+      method: 'POST',
+      url: `/inbox/conversations/${conv.id}/messages`,
+      headers: { cookie, 'idempotency-key': newId() },
+      payload: { id: newId(), text: `Thanks! Our drop-off team will be happy to help ${SENTINEL}` },
+    });
+    expect(reply.statusCode, reply.body).toBe(200);
+    expect((await call(w, cookie, 'POST', `/inbox/conversations/${conv.id}/ai-resume`)).status).toBe(200);
+    const t = await inOrder(
+      general,
+      phone,
+      'Great, is drop-off open every day?',
+      // The owner's case again: the model asks the age the parent gave the person…
+      askAge('Yes, every day 😊 And how old is your little one?'),
+      // …and, told what the parent said, answers without it.
+      decision({ intent: 'drop_off_service', grounding: ['drop-off'], reason: 'FACT_IN_KB', bubbles: ['Yes, every day 😊'] }),
+    );
+    expect(t.sweep.answered).toBe(1);
+    expect(t.prompts).toHaveLength(2);
+    expect(t.prompts[0]).toContain('"state":"answered","answer":"8"');
+    expect(t.prompts[1]).toContain('"customerAlreadySaid":"8 years old"');
+    expect((await aiLines(w, conv.id)).filter((l) => AGE_QUESTION.test(l.body ?? ''))).toHaveLength(1);
+    expect((await questionsOf(conv.id))[0]).toMatchObject({ slot: 'child_age', state: 'answered', answer: '8', answeredMessageId: eight.id });
+    expect(await guardTrips(conv.id)).toEqual([expect.objectContaining({ slot: 'child_age', kind: 'answered', round: 1, outcome: 'rethink' })]);
+  }, 60_000);
+});
+
 describe("the guard's hand-over: the thread stays with its team and gets its warm line", () => {
   it('still asked after the rethink: handed over, the closing line goes, never the second ask', async () => {
     await drain();
