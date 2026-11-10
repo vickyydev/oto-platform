@@ -16,6 +16,7 @@ import {
 import { apiBranchToBranch, type OrganisationBranch } from '@/api/organisation';
 import { fleetApi } from '@/api/fleet';
 import { PartySlipsStationField } from '@/components/PartySlipsStationField';
+import { HandoverContactsField, contactBody, contactChanged, draftOf } from '@/components/HandoverContactsField';
 import { isMissingRoute } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/Drawer';
@@ -371,6 +372,9 @@ function BranchEditor({
       live = false;
     };
   }, [branch.id, working.run, working.isCurrent]);
+  // SCRUM-823 — who a Birthdays & Events hand-over tells at this park.
+  const [birthdayManager, setBirthdayManager] = useState(() => draftOf(branch.birthdayManagerContact));
+  const [gmContact, setGmContact] = useState(() => draftOf(branch.gmContact));
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
@@ -389,6 +393,8 @@ function BranchEditor({
     if (timezone !== branch.timezone) body.timezone = timezone;
     if (dayStart !== (branch.businessDayStart ?? '')) body.businessDayStart = dayStart;
     if (slipsStation !== (branch.partySlipsStationId ?? '')) body.partySlipsStationId = slipsStation || null;
+    if (contactChanged(birthdayManager, branch.birthdayManagerContact)) body.birthdayManagerContact = contactBody(birthdayManager);
+    if (contactChanged(gmContact, branch.gmContact)) body.gmContact = contactBody(gmContact);
     if (hoursChanged && hoursMode !== 'legacy') {
       if (
         hoursMode === 'weekly' &&
@@ -487,6 +493,13 @@ function BranchEditor({
         error={slipStationsError}
         fieldClass={fieldClass}
         onChange={setSlipsStation}
+      />
+      <HandoverContactsField
+        birthdayManager={birthdayManager}
+        gm={gmContact}
+        fieldClass={fieldClass}
+        onBirthdayManager={setBirthdayManager}
+        onGm={setGmContact}
       />
       <label className="flex flex-col gap-1 text-sm font-semibold">
         Opening hours
