@@ -586,11 +586,12 @@ describe('D. the fences of 4a', () => {
   });
 
   it('hr:read is a scope the app and its key script know', () => {
+    // SCRUM-823 added notifications:write after it (the inbox's hand-over notices in the bell).
     expect(readFileSync(join(APP_SERVER, 'db', 'coreSchema.ts'), 'utf8')).toMatch(
-      /DIRECTORY_CLIENT_SCOPES = \["events:write", "jobs:run", "hr:read"\]/,
+      /DIRECTORY_CLIENT_SCOPES = \["events:write", "jobs:run", "hr:read", "notifications:write"\]/,
     );
     expect(readFileSync(join(APP_DIR, 'script', 'directory-client.mjs'), 'utf8')).toMatch(
-      /const SCOPES = \["events:write", "jobs:run", "hr:read"\];/,
+      /const SCOPES = \["events:write", "jobs:run", "hr:read", "notifications:write"\];/,
     );
   });
 
