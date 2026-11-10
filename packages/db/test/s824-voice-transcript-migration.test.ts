@@ -15,8 +15,8 @@ import { createTestDatabase, stopTestServer } from '../src/testing';
  *
  * The entry is found by its tag suffix, never by number, so a lane that lands
  * another migration first and renumbers this one does not break the test
- * (the lane's file is 0113 while 0110–0112 are in flight; its journal `idx`
- * follows its predecessor's, as every entry's does). The writes are
+ * (built as 0113 while three lanes were in flight, landed first as 0110; its
+ * journal `idx` follows its predecessor's, as every entry's does). The writes are
  * exercised in `apps/api/test/inbox-voice-notes.test.ts`.
  */
 const MIGRATIONS = join(dirname(fileURLToPath(import.meta.url)), '..', 'migrations');
