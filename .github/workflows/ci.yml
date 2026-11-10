@@ -186,6 +186,8 @@ jobs:
           # SCRUM-790: the wristband box loads the tab on a paste and on a scan
           # that ends with no Enter, and leaves a code typed by hand alone.
           pnpm --filter @oto/pos e2e e2e/band-field-scan.spec.ts
+          # SCRUM-801/800: phone cancellation voids its sale; payment fits 375 px.
+          pnpm --filter @oto/pos e2e e2e/phone-payment.spec.ts
           # SCRUM-766: a wristband scanned with no box selected opens on F&B,
           # the shop, History and the till, and is acted on once.
           pnpm --filter @oto/pos e2e e2e/band-anywhere-scan.spec.ts

@@ -65,6 +65,8 @@ import {
 } from '@/api/sales';
 import { useCartQuote, type CartQuoteState } from '@/lib/cartQuote';
 import { useSaleWriter, type SaleWriteOutcome } from '@/lib/saleWriter';
+import { CANCELLED_AT_THE_TILL } from '@/lib/tillVoucher';
+import { TillRefusalNotice } from '@/components/till/RedeemVoucher';
 import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
 import { useTicketDisplay } from '@/lib/displaySession';
 import {
@@ -339,6 +341,9 @@ export default function MobileTill() {
   /** SCRUM-762 — the details hand-off opened with the number already given: it is shown, not asked. */
   const [handoffPhoneKept, setHandoffPhoneKept] = useState(false);
   const [showCartSheet, setShowCartSheet] = useState(false);
+  const [cancelRefusal, setCancelRefusal] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const cancellingRef = useRef(false);
 
   // ── Sale state (same pattern as Till.tsx) ─────────────────────────────────
   const [tier, setTier] = useState<CustomerTier | null>(null);
@@ -678,6 +683,7 @@ export default function MobileTill() {
     unpricedCartLines(lines).length === 0;
 
   const resetSale = () => {
+    setCancelRefusal(null);
     saleEpochRef.current += 1;
     saleKeyRef.current = crypto.randomUUID();
     saleWriter.reset();
@@ -2277,6 +2283,35 @@ export default function MobileTill() {
 
   const displayName = customerNickname.trim() || member?.nickname || '';
 
+  // SCRUM-801 — use the counter's sale writer: only its successful void lets
+  // the phone forget the order. A refusal keeps the sale available to resolve.
+  const handleCancel = async () => {
+    if (cancellingRef.current || completionRetry || saleWriter.state.kind === 'finalising' || !paymentStage.canBack) return;
+    const epoch = saleEpochRef.current;
+    cancellingRef.current = true;
+    setCancelling(true);
+    setCancelRefusal(null);
+    try {
+      const cancelled = await saleWriter.cancel(CANCELLED_AT_THE_TILL);
+      if (saleEpochRef.current !== epoch) return;
+      if (!cancelled.ok) {
+        if (cancelled.closed) {
+          const outcome = await preparePaymentSale(epoch, paymentScope);
+          if (saleEpochRef.current === epoch && outcome.ok && outcome.written) {
+            completeSale(outcome.sale, paymentStage.state.settlements);
+          }
+          return;
+        }
+        setCancelRefusal(cancelled.message);
+        return;
+      }
+      resetSale();
+    } finally {
+      cancellingRef.current = false;
+      setCancelling(false);
+    }
+  };
+
   // Back-nav behaviour per step
   const canGoBack = (
     ['tickets', 'configure', 'dropoff-config', 'supervision', 'review', 'payment'] as MobileStep[]
@@ -2432,7 +2467,7 @@ export default function MobileTill() {
               onAddManualDiscount={() => setShowManualDiscountModal(true)}
               onRemoveManualDiscount={handleRemoveManualDiscount}
               onPay={() => setMStep('payment')}
-              onCancel={resetSale}
+              onCancel={() => void handleCancel()}
               canPay={payEnabled}
               payBlockedReason={payBlockedReason}
               totals={cart.totals}
@@ -2585,7 +2620,7 @@ export default function MobileTill() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-full flex flex-col bg-background overflow-hidden">
+    <div className="h-full min-w-0 flex flex-col bg-background overflow-hidden" inert={cancelling} aria-busy={cancelling}>
 
       {/* A paired customer display, named as the counter till names it (SCRUM-686) */}
       {linkedDisplay.connected.length > 0 && (
@@ -2632,7 +2667,7 @@ export default function MobileTill() {
           {mStep !== 'payment' && lines.length > 0 && (
             <button
               type="button"
-              onClick={resetSale}
+              onClick={() => void handleCancel()}
               className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded shrink-0"
             >
               Cancel
@@ -2640,6 +2675,9 @@ export default function MobileTill() {
           )}
         </div>
       )}
+
+      {cancelRefusal && <TillRefusalNotice message={cancelRefusal}
+        onDismiss={() => setCancelRefusal(null)} testId="cancel-refusal" />}
 
       {/* Step content */}
       <div className="flex-1 min-h-0">
@@ -2671,7 +2709,7 @@ export default function MobileTill() {
           }}
           onCancel={() => {
             setShowCartSheet(false);
-            resetSale();
+            void handleCancel();
           }}
           canPay={payEnabled}
           payBlockedReason={payBlockedReason}
