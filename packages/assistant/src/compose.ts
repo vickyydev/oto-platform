@@ -40,7 +40,9 @@
  *      survives side by side as the one message.
  *   3. THE PARK ASKED ONCE: once the park is known, a sentence that asks only
  *      which park is dropped (`asksOnlyThePark`), and the reply no longer
- *      declares the park asked — never the whole reply.
+ *      declares the park asked — never the whole reply, and never in the
+ *      price conversation or the birthday, which ask the park inside their
+ *      own one question (`OWN_PARK_QUESTION_INTENTS`).
  *   4. NO REPETITION (`repeatRule`): once the family answered the park
  *      question this episode, a sentence about the park (where it is, the way
  *      in, the parking, the hours: read against the knowledge,
@@ -63,6 +65,7 @@ import type { EpisodeQuestion, EpisodeState, GateInput, GateVerdict, GroundingSo
 import {
   ASIDE_INTENTS,
   INTENT_TABLE,
+  OWN_PARK_QUESTION_INTENTS,
   PARK_FIRST_INTENTS,
   birthdayThreadOf,
   topicsOfIntents,
@@ -738,11 +741,14 @@ export function composeTurn(v: GateVerdict, input: GateInput): GateVerdict {
   const familyPark = familyParkFor(v, input);
   const branchNamed = v.branchNamed ?? familyPark;
   const known = parkKnown(branchNamed, input.episode) || parkNamedByFamily(input) !== null;
+  // The price conversation and the birthday ask the park inside their own one question, which is
+  // theirs to word (and the repeat guard's to refuse): never cut from it, whatever the slot reader sees.
+  const ownQuestion = v.intents.some((i) => OWN_PARK_QUESTION_INTENTS.has(i));
   const join = topicsOfIntents(v.intents).length <= 1;
   const composed = composeMessage(v.bubbles, {
     join,
     ...(repeatRule(v, input) ?? {}),
-    ...(known ? { dropQuestion: asksOnlyThePark } : {}),
+    ...(known && !ownQuestion ? { dropQuestion: asksOnlyThePark } : {}),
   });
   const dropped = composed.duplicates + composed.repeats + composed.parkQuestions;
   const joined = join && v.bubbles.length > 1;

@@ -551,6 +551,18 @@ describe('SCRUM-832: the park question asked once — a park the model asks for 
     expect(v).toMatchObject({ askBranch: false, askedSlots: [] });
   });
 
+  it('the birthday’s and the price conversation’s own one question are never cut, the park known or not', () => {
+    // The Russian combined question: the slot reader sees only the park in it, yet it asks how many guests too.
+    const ru = 'Как здорово, спасибо! Будем рады организовать праздник. Сколько примерно будет гостей и в каком парке, Central Floresta или Robinson Chalong?';
+    const party = compose(verdict({ intent: 'birthday_party', intents: ['birthday_party'], language: 'ru', bubbles: [ru] }), { ...BIRTHDAYS, threadHasBranch: true });
+    expect(party.bubbles).toEqual([ru]);
+    const price = compose(
+      verdict({ intent: 'ticket_prices', intents: ['ticket_prices'], bubbles: [EN_PERSONA.branchResidencyQuestion] }),
+      { ...GENERAL, threadHasBranch: true },
+    );
+    expect(price.bubbles).toEqual([EN_PERSONA.branchResidencyQuestion]);
+  });
+
   it('only the question: the model’s answer goes as written, never an empty message', () => {
     const v = answer(gate({ ...asking, bubbles: [EN_PERSONA.branchQuestion] }, { ...GENERAL, threadHasBranch: true }, ['How do we find you?']));
     expect(v.bubbles).toEqual([EN_PERSONA.branchQuestion]);
