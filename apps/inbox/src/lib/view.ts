@@ -436,26 +436,43 @@ export interface PillContext {
   handoverNotices?: readonly HandoverNoticePill[];
 }
 
+/** Why a hand-over's notices told nobody (SCRUM-823). */
+export type HandoverNoticeMiss = 'no_contact' | 'ping_logged_only' | 'failed';
+
 /** One hand-over's notices, as the thread detail carries them (SCRUM-823). */
 export interface HandoverNoticePill {
   turnId: string;
   notifiedAt: string | null;
   notNotified: boolean;
+  notNotifiedWhy?: HandoverNoticeMiss | null;
   escalatedAt: string | null;
+  gmNotNotified?: boolean;
+  gmNotNotifiedWhy?: HandoverNoticeMiss | null;
 }
 
+const MISS_WORDS: Readonly<Record<HandoverNoticeMiss, string>> = {
+  no_contact: 'no contact',
+  ping_logged_only: 'ping logged only',
+  failed: 'sending failed',
+};
+const missNote = (who: string, why: HandoverNoticeMiss | null | undefined) => `${who} not notified${why ? ` (${MISS_WORDS[why]})` : ''}`;
+
 /**
- * SCRUM-823: what a hand-over's pill adds about who was told — "manager
- * notified 14:05", "manager not notified" when the park names nobody, and
- * "escalated to GM 14:20" when nobody picked it up within fifteen minutes.
+ * SCRUM-823: what a hand-over's pill adds about who was told — only what
+ * reached a person. "manager notified 14:05"; "manager not notified (no
+ * contact)" when the park names nobody, "(ping logged only)" while the phone
+ * ping is only written to the log, "(sending failed)"; "escalated to GM 14:20"
+ * when nobody picked it up within fifteen minutes and the GM was reached, and
+ * "GM not notified (…)" when the escalation reached nobody.
  */
 export function handoverNoticeNotes(ctx: PillContext, turnId: unknown): string[] {
   const n = typeof turnId === 'string' ? ctx.handoverNotices?.find((x) => x.turnId === turnId) : undefined;
   if (!n) return [];
   const notes: string[] = [];
   if (n.notifiedAt) notes.push(`manager notified ${clock(new Date(n.notifiedAt))}`);
-  else if (n.notNotified) notes.push('manager not notified');
+  else if (n.notNotified) notes.push(missNote('manager', n.notNotifiedWhy));
   if (n.escalatedAt) notes.push(`escalated to GM ${clock(new Date(n.escalatedAt))}`);
+  else if (n.gmNotNotified) notes.push(missNote('GM', n.gmNotNotifiedWhy));
   return notes;
 }
 

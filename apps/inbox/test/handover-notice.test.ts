@@ -1,7 +1,8 @@
-// SCRUM-823: the hand-over pill says who was told — the birthday manager on
-// duty when the bell or the ping went, "manager not notified" when the park
-// names nobody, and when the GM was told because nobody picked it up within
-// fifteen minutes. Node, no DOM.
+// SCRUM-823: the hand-over pill says who was told, and only what reached a
+// person — the birthday manager on duty when the bell (or a live ping) went,
+// "manager not notified (…)" with the reason otherwise, the GM when an
+// escalation reached them because nobody picked it up within fifteen minutes,
+// and "GM not notified (…)" when it reached nobody. Node, no DOM.
 import { describe, expect, it } from 'vitest';
 import type { InboxEvent, InboxMe } from '@/api/inbox';
 import { eventText, handoverNoticeNotes, timeline, type PillContext } from '@/lib/view';
@@ -26,6 +27,7 @@ const handover = (over: Partial<InboxEvent> = {}): InboxEvent => ({
 
 // 14:05 and 14:20 Bangkok.
 const NOTIFIED = { turnId: TURN, notifiedAt: '2026-11-10T07:05:02.000Z', notNotified: false, escalatedAt: null };
+const NOBODY = { turnId: TURN, notifiedAt: null, notNotified: true, escalatedAt: null };
 const ESCALATED = { ...NOTIFIED, escalatedAt: '2026-11-10T07:20:30.000Z' };
 
 describe('the hand-over pill says who was told (SCRUM-823)', () => {
@@ -40,9 +42,24 @@ describe('the hand-over pill says who was told (SCRUM-823)', () => {
     expect(eventText(handover(), ctx)).toMatch(/manager notified 14:05 · escalated to GM 14:20$/);
   });
 
-  it('"manager not notified" when the park names nobody, and the escalation still shows', () => {
-    const ctx: PillContext = { me, handoverNotices: [{ turnId: TURN, notifiedAt: null, notNotified: true, escalatedAt: '2026-11-10T07:20:30.000Z' }] };
-    expect(handoverNoticeNotes(ctx, TURN)).toEqual(['manager not notified', 'escalated to GM 14:20']);
+  it('"manager not notified (no contact)" and "GM not notified (no contact)" when the park names nobody', () => {
+    const ctx: PillContext = {
+      me,
+      handoverNotices: [{ ...NOBODY, notNotifiedWhy: 'no_contact', gmNotNotified: true, gmNotNotifiedWhy: 'no_contact' }],
+    };
+    expect(handoverNoticeNotes(ctx, TURN)).toEqual(['manager not notified (no contact)', 'GM not notified (no contact)']);
+  });
+
+  it('a ping only written to the log is never "notified"; a failed escalation is never "escalated"', () => {
+    const logged: PillContext = { me, handoverNotices: [{ ...NOBODY, notNotifiedWhy: 'ping_logged_only' }] };
+    expect(handoverNoticeNotes(logged, TURN)).toEqual(['manager not notified (ping logged only)']);
+    expect(eventText(handover(), logged)).toBe('AI handed over to Birthdays & Events · birthday advice · manager not notified (ping logged only)');
+    const failed: PillContext = { me, handoverNotices: [{ ...NOTIFIED, gmNotNotified: true, gmNotNotifiedWhy: 'failed' }] };
+    expect(handoverNoticeNotes(failed, TURN)).toEqual(['manager notified 14:05', 'GM not notified (sending failed)']);
+  });
+
+  it('an api from before the reasons: "manager not notified" alone', () => {
+    expect(handoverNoticeNotes({ me, handoverNotices: [NOBODY] }, TURN)).toEqual(['manager not notified']);
   });
 
   it('says nothing of notices for another hand-over, or with none read', () => {

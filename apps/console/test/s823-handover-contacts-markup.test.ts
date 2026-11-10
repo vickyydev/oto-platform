@@ -43,6 +43,10 @@ describe('Birthday manager on duty and GM contact', () => {
     expect(html).toContain(GM_CONTACT_SENTENCE);
     expect(BIRTHDAY_MANAGER_SENTENCE).toMatch(/manager not notified/);
     expect(GM_CONTACT_SENTENCE).toMatch(/15 minutes/);
+    // The phone ping is not promised while the sender only writes to the log.
+    expect(BIRTHDAY_MANAGER_SENTENCE).toMatch(/only written to the log until the WhatsApp\/Telegram sender is live/);
+    expect(GM_CONTACT_SENTENCE).toMatch(/only logged until the WhatsApp\/Telegram sender is live/);
+    expect(BIRTHDAY_MANAGER_SENTENCE).not.toMatch(/by a ping to this number/);
     expect(html).toContain('value="ZZ TEST Manager"');
     expect(html).toContain('value="user-1"');
     expect(html).toContain('value="+66812345678"');

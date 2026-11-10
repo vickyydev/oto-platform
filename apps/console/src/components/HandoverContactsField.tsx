@@ -1,9 +1,10 @@
 /**
- * SCRUM-823 — who an inbox Birthdays & Events hand-over tells at this park:
- * the birthday manager on duty (an OTO App notification and a WhatsApp or
- * Telegram ping, at once) and the GM (told once when nobody has picked the
- * conversation up within fifteen minutes). Both are branch settings; until a
- * park names them, a hand-over there is recorded "manager not notified".
+ * SCRUM-823 — who an inbox Birthdays & Events ADVICE hand-over tells at this
+ * park: the birthday manager on duty (an OTO App notification at once; the
+ * WhatsApp or Telegram ping is only written to the log until that sender is
+ * live) and the GM (told once when nobody has picked the conversation up
+ * within fifteen minutes). Both are branch settings; until a park names them,
+ * a hand-over there is recorded "manager not notified (no contact)".
  */
 
 export interface NoticeContactDraft {
@@ -43,9 +44,9 @@ export function contactChanged(draft: NoticeContactDraft, stored: NoticeContactV
 }
 
 export const BIRTHDAY_MANAGER_SENTENCE =
-  'Told at once when the assistant hands a Birthdays & Events conversation to a person: in the OTO App’s notifications and by a ping to this number. Until someone is named, the hand-over is recorded “manager not notified”.';
+  'Told at once when the assistant hands a family’s advice question in Birthdays & Events to a person, in the OTO App’s notifications. The ping to this number is only written to the log until the WhatsApp/Telegram sender is live, so it tells nobody yet. Until someone is named, the hand-over is recorded “manager not notified”.';
 export const GM_CONTACT_SENTENCE =
-  'Told once when nobody has picked up a Birthdays & Events hand-over within 15 minutes (no reply, no assignment by a person).';
+  'Told once, in the OTO App’s notifications, when nobody has picked up such a hand-over within 15 minutes (no reply and no other action by a person on the conversation). The ping to this number is only logged until the WhatsApp/Telegram sender is live.';
 
 function ContactFields({
   legend,
