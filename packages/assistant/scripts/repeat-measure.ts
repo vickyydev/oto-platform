@@ -31,7 +31,12 @@
  *
  * WHAT IT PRINTS: counts, and a chat id (the first 12 hex of the SHA-256 of
  * its text) per chat with a repeat. Never a name, a phone number, a line or a
- * file name. The parser below mirrors `scripts/inbox/whatsapp-history.mjs`
+ * file name — and never an error's message, which names the path (an export
+ * is named after the contact): a file or folder that does not read is counted
+ * by its error code, and a failure prints a fixed line and the code.
+ *
+ * A question is read against the customer's first reply after it only, as the
+ * engine reads it (`open-question.ts`); a later reply never fills it. The parser below mirrors `scripts/inbox/whatsapp-history.mjs`
  * `parseChat` (Android and iPhone formats); it stays a copy because that file
  * is plain JavaScript outside this package.
  */
@@ -114,12 +119,49 @@ function guessBusiness(chats: Line[][]): string | null {
   return [...seen.entries()].sort((a, b) => b[1].chats - a[1].chats || b[1].lines - a[1].lines)[0]?.[0] ?? null;
 }
 
-function exportsUnder(dir: string): string[] {
+/**
+ * A folder or a file the script could not read, counted and never named: an
+ * export's path names the contact ("WhatsApp Chat with …", often a phone
+ * number), and an fs error's message carries the path. Only its code is kept.
+ */
+interface Unreadable {
+  folders: number;
+  files: number;
+  byCode: Record<string, number>;
+}
+
+/** An error's code ("ENOENT", "EBUSY"), or "UNKNOWN": never its message. */
+function codeOf(err: unknown): string {
+  const code = typeof err === 'object' && err !== null && 'code' in err ? (err as { code: unknown }).code : null;
+  return typeof code === 'string' && /^[A-Z][A-Z0-9_]{1,31}$/u.test(code) ? code : 'UNKNOWN';
+}
+
+function countUnreadable(unreadable: Unreadable, kind: 'folders' | 'files', err: unknown): void {
+  unreadable[kind] += 1;
+  const code = codeOf(err);
+  unreadable.byCode[code] = (unreadable.byCode[code] ?? 0) + 1;
+}
+
+function exportsUnder(dir: string, unreadable: Unreadable): string[] {
   const files: string[] = [];
   const walk = (d: string) => {
-    for (const entry of readdirSync(d)) {
+    let entries: string[];
+    try {
+      entries = readdirSync(d);
+    } catch (err) {
+      countUnreadable(unreadable, 'folders', err);
+      return;
+    }
+    for (const entry of entries) {
       const full = join(d, entry);
-      if (statSync(full).isDirectory()) walk(full);
+      let folder: boolean;
+      try {
+        folder = statSync(full).isDirectory();
+      } catch (err) {
+        countUnreadable(unreadable, 'files', err);
+        continue;
+      }
+      if (folder) walk(full);
       else if (extname(entry).toLowerCase() === '.txt') files.push(full);
     }
   };
@@ -155,6 +197,8 @@ interface Asked {
   state: EpisodeQuestion['state'];
   answer: string | null;
   at: Date;
+  /** No customer reply has come since it was asked: the next one is read as its answer. */
+  awaiting: boolean;
 }
 
 /** A reply as the model's draft would be shaped: at most three bubbles, each within the bound. */
@@ -181,19 +225,27 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const dirAt = args.indexOf('--dir');
   const dir = dirAt >= 0 ? resolve(args[dirAt + 1]!) : join(ROOT, 'imports', 'whatsapp-history', 'raw');
-  if (!existsSync(dir)) throw new Error('No export folder found: pass --dir <folder holding the WhatsApp .txt exports>.');
+  if (!existsSync(dir)) fail('no export folder found: pass --dir <folder holding the WhatsApp .txt exports>');
 
-  const files = exportsUnder(dir);
+  const unreadable: Unreadable = { folders: 0, files: 0, byCode: {} };
+  const files = exportsUnder(dir, unreadable);
   const byHash = new Map<string, Line[]>();
   for (const f of files) {
-    const text = readFileSync(f, 'utf8');
+    let text: string;
+    try {
+      text = readFileSync(f, 'utf8');
+    } catch (err) {
+      // An export that does not read (locked, or a cloud file that did not download): counted by its code, never named.
+      countUnreadable(unreadable, 'files', err);
+      continue;
+    }
     const chat = parseChat(text);
     if (chat.length === 0) continue;
     byHash.set(createHash('sha256').update(text).digest('hex').slice(0, 12), chat);
   }
   const chats = [...byHash.entries()];
   const business = guessBusiness(chats.map(([, c]) => c));
-  if (!business) throw new Error('No messages found in the exports.');
+  if (!business) fail('no messages found in the exports');
 
   const knowledge = buildKnowledge({ kb: [], branches: [], examples: [] });
   const fake = new FakeAssistantClient();
@@ -217,8 +269,9 @@ async function main(): Promise<void> {
     for (const turn of turns) {
       at += 60_000;
       if (turn.side === 'customer') {
-        // The reply read as the answer to every question still open.
-        const open = memory.filter((q) => q.state === 'open');
+        // The customer's first reply after a question read as its answer, as the engine reads it; a later reply never is.
+        const open = memory.filter((q) => q.state === 'open' && q.awaiting);
+        for (const q of memory) q.awaiting = false;
         for (const text of turn.lines) {
           const read = readSlotAnswers([...new Set(open.filter((q) => q.state === 'open').map((q) => q.slot))], text, todayIso);
           for (const q of open) {
@@ -269,7 +322,7 @@ async function main(): Promise<void> {
       for (const slot of draftSlots) {
         asked[slot] += 1;
         for (const q of memory) if (q.slot === slot && q.state === 'open') q.state = 'withdrawn';
-        memory.push({ slot, state: 'open', answer: null, at: new Date(at) });
+        memory.push({ slot, state: 'open', answer: null, at: new Date(at), awaiting: true });
       }
       for (const text of turn.lines) episode.push({ from: 'staff', at: new Date(at), text });
     }
@@ -278,7 +331,13 @@ async function main(): Promise<void> {
 
   const beforeTotal = total(before.answered) + total(before.askedTwice);
   const report = {
-    corpus: { files: files.length, chats: chats.length, assistantEligibleTurns: eligible, draftsTheParserRefused: malformed },
+    corpus: {
+      files: files.length,
+      unreadable,
+      chats: chats.length,
+      assistantEligibleTurns: eligible,
+      draftsTheParserRefused: malformed,
+    },
     questionsAsked: { total: total(asked), bySlot: nonZero(asked) },
     answeredByTheNextReply: { total: total(answered), bySlot: nonZero(answered) },
     before: {
@@ -297,7 +356,11 @@ async function main(): Promise<void> {
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
 }
 
-main().catch((err: unknown) => {
-  process.stderr.write(`repeat-measure: ${err instanceof Error ? err.message : 'failed'}\n`);
+/** A fixed line, never a path or a name. */
+function fail(line: string): never {
+  process.stderr.write(`repeat-measure: ${line}\n`);
   process.exit(1);
-});
+}
+
+// Never the error's message: an fs error's names a path, and an export's path names the contact. A fixed line and the code only.
+main().catch((err: unknown) => fail(`failed (${codeOf(err)})`));
