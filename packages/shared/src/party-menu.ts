@@ -13,8 +13,10 @@ import { z } from 'zod';
  * /otoapp/party-menu/products`, the operator coming from the key), and the
  * platform makes it a till product in the "Party menu" category, marked
  * BEO-only: never on the till's selling grids or its F&B menu, but found by
- * its code by the party's plan and its kitchen and bar slips. The code is
- * written back to the BEO's line, so the plan names it like any catalogue item.
+ * its code by the party's plan, its kitchen and bar slips and its settlement,
+ * which charges a priced item on top of the package (`isPartyMenuCode`). The
+ * code is written back to the BEO's line, so the plan names it like any
+ * catalogue item.
  */
 
 /** Where a BEO-made item is made: the slip it prints on. */
@@ -27,6 +29,26 @@ export const PARTY_MENU_CATEGORY_NAME = 'Party menu';
 
 /** Every BEO-made product's code starts with this: `PARTY-3F9A21C4`. */
 export const PARTY_MENU_CODE_PREFIX = 'PARTY-';
+
+/**
+ * A code the BEO's "New item" door mints: the prefix and eight (or, when the
+ * eight are taken, twelve) upper-case hex digits of the product's id
+ * (`partyMenuCode` in the api's `services/party-menu.ts`).
+ */
+const PARTY_MENU_CODE_SHAPE = new RegExp(`^${PARTY_MENU_CODE_PREFIX}(?:[0-9A-F]{8}|[0-9A-F]{12})$`);
+
+/**
+ * Whether a plan's code names an item the BEO added (a special cake, a dish
+ * one family asked for) rather than one of the catalogue's. The party's
+ * settlement charges such an item on top of the package; a catalogue item the
+ * set menu names is part of the package. Decided by the code the door minted,
+ * not by the product's BEO-only flag: the Console may turn that flag on for a
+ * catalogue item a set menu names, or off for a BEO-made one, and neither
+ * changes what the family ordered.
+ */
+export function isPartyMenuCode(code: string | null | undefined): code is string {
+  return typeof code === 'string' && PARTY_MENU_CODE_SHAPE.test(code);
+}
 
 /** The most a BEO-made item may cost, in satang: the menu's own ceiling. */
 export const PARTY_MENU_PRICE_MAX_SATANG = 10_000_000;

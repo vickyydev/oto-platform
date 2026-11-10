@@ -36,6 +36,7 @@ import type {
   DirectoryOutcome,
   OtoAppDirectory,
 } from '../src/services/otoapp-directory';
+import { createPartyMenuProduct } from '../src/services/party-menu';
 import { salePrintSnapshotOf } from '../src/services/sale-printing';
 import { simulateGatewayEvent } from '../src/services/payments/gateway';
 import {
@@ -205,7 +206,14 @@ async function appPlan(
   eventId: string,
   date: string,
   pkg: Record<string, unknown>,
-  o: { addOns?: unknown[]; entertainment?: unknown[]; depositSatang?: number; kids?: number; adults?: number } = {},
+  o: {
+    addOns?: unknown[];
+    entertainment?: unknown[];
+    depositSatang?: number;
+    kids?: number;
+    adults?: number;
+    setMenu?: unknown[];
+  } = {},
 ) {
   await ctx.db.execute(sql`
     insert into zz_party_contract.event_packages values (
@@ -214,10 +222,12 @@ async function appPlan(
       ${JSON.stringify({ kids_expected: o.kids ?? 10, adults_expected: o.adults ?? 4 })}::jsonb,
       ${JSON.stringify(o.addOns ?? [])}::jsonb,
       ${JSON.stringify(o.entertainment ?? [])}::jsonb,
-      ${JSON.stringify([
-        { product_code: 'CF-24', name: 'Margherita', qty: 1, choice_group: 'pizza', chosen_option: 'margherita', note: null },
-        { product_code: 'CF-11', name: 'French fries', qty: 2, choice_group: null, chosen_option: null, note: null },
-      ])}::jsonb,
+      ${JSON.stringify(
+        o.setMenu ?? [
+          { product_code: 'CF-24', name: 'Margherita', qty: 1, choice_group: 'pizza', chosen_option: 'margherita', note: null },
+          { product_code: 'CF-11', name: 'French fries', qty: 2, choice_group: null, chosen_option: null, note: null },
+        ],
+      )}::jsonb,
       ${JSON.stringify([{ product_code: 'CF-66-1', name: 'Kids juice', qty: 2 }])}::jsonb,
       ${JSON.stringify({ kids_food_time: '14:00', adults_food_time: '14:30', ready_offset_minutes: 20, slips_time: '11:00' })}::jsonb,
       ${JSON.stringify({ deposit_satang: o.depositSatang ?? 0, pos_sale_id: null })}::jsonb)`);
@@ -899,5 +909,118 @@ describe('a settlement balance paid by QR through the gateway, with no till clos
     } finally {
       await ctx.db.update(station).set({ paymentRouting: before!.routing }).where(eq(station.id, till));
     }
+  });
+});
+
+// =============================================================================
+// SCRUM-828 — the items the BEO added that the catalogue did not have
+// =============================================================================
+
+describe('SCRUM-828: a priced item the BEO added is charged on the settlement; a free one is a 0-baht line', () => {
+  const party = newId();
+  const plain = newId();
+  let cake: { code: string; productId: string };
+  let juice: { code: string; productId: string };
+  const PIZZA_CODE = 'ZZ-828-PIZZA';
+  let plainTotal: number;
+
+  const setMenuLine = (code: string, name: string, qty: number | null) => ({
+    product_code: code,
+    name,
+    qty,
+    choice_group: null,
+    chosen_option: null,
+    note: null,
+  });
+
+  beforeAll(async () => {
+    // Made as the BEO's "New item" makes them, by the platform's own service.
+    const made = (name: string, station: 'kitchen' | 'bar', priceSatang: number | null) =>
+      createPartyMenuProduct(
+        ctx.db,
+        { requestId: 'zz-test-828-settlement' },
+        {
+          operatorId,
+          idempotencyKey: newId(),
+          branchId: central,
+          name,
+          station,
+          priceSatang,
+          free: priceSatang === null,
+          source: { eventId: party, lineLabel: name },
+        },
+      );
+    cake = await made('ZZ TEST unicorn cake', 'kitchen', 45_000);
+    juice = await made('ZZ TEST free juice', 'bar', null);
+    // A catalogue item the Console flagged BEO-only, named by the set menu: part of the package, never charged.
+    await ctx.db.insert(product).values({
+      id: newId(),
+      operatorId,
+      branchId: central,
+      kind: 'menu',
+      code: PIZZA_CODE,
+      name: 'ZZ TEST party pizza',
+      priceSatang: 30_000,
+      beoOnly: true,
+    });
+
+    await appParty(party, 'Party with a special cake', WEEKDAY, 16_900, 3_000);
+    await appPlan(party, WEEKDAY, FLORESTA, {
+      depositSatang: 300_000,
+      setMenu: [
+        setMenuLine(PIZZA_CODE, 'ZZ TEST party pizza', 1),
+        setMenuLine(cake.code, 'ZZ TEST unicorn cake', 1),
+        setMenuLine(juice.code, 'ZZ TEST free juice', 3),
+        // The same cake on the adults' list too: one charge, the quantities added up.
+        setMenuLine(cake.code, 'ZZ TEST unicorn cake', 1),
+      ],
+    });
+    // The same party with none of them, to measure against.
+    await appParty(plain, 'Party without a special cake', WEEKDAY, 16_900, 3_000);
+    await appPlan(plain, WEEKDAY, FLORESTA, { depositSatang: 300_000 });
+    const base = await preview(plain, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(base.status, JSON.stringify(base.body)).toBe(200);
+    plainTotal = base.body.quote.totalSatang;
+  });
+
+  it('the preview adds the priced item at its product\'s price, names the free one at ฿0, and leaves the catalogue item out', async () => {
+    const res = await preview(party, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    const q = res.body.quote;
+    expect(q.lines.filter((l) => l.label.startsWith('ZZ TEST'))).toEqual([
+      { role: 'add_on', label: 'ZZ TEST unicorn cake', quantity: 2, unitSatang: 45_000, totalSatang: 90_000 },
+      { role: 'included', label: 'ZZ TEST free juice', quantity: 3, unitSatang: 0, totalSatang: 0 },
+    ]);
+    expect(q.addOnsSatang).toBe(90_000);
+    expect(q.totalSatang).toBe(plainTotal + 90_000);
+    expect(q.balanceSatang).toBe(plainTotal + 90_000 - 300_000);
+  });
+
+  it('settles with them on the sale: the cake as F&B at 2 × 450, the juice at ฿0, the receipt naming both', async () => {
+    const res = await settle(party, { kids: 10, adults: 4, socksGiven: 0, expectedTotalSatang: plainTotal + 90_000 });
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.sale.grossSatang).toBe(plainTotal + 90_000);
+    const lines = await linesOf(res.body.sale.id);
+    expect(lines.find((l) => l.componentKey === `party_menu:${cake.code}`)).toMatchObject({
+      kind: 'addon',
+      label: 'ZZ TEST unicorn cake',
+      quantity: 2,
+      unitSatang: 45_000,
+      grossSatang: 90_000,
+      taxableCategory: 'fnb',
+    });
+    expect(lines.find((l) => l.componentKey === `party_menu:${juice.code}`)).toMatchObject({
+      label: 'ZZ TEST free juice',
+      quantity: 3,
+      grossSatang: 0,
+    });
+    expect(lines.some((l) => l.label === 'ZZ TEST party pizza')).toBe(false);
+
+    const closed = await finalise(res.body.sale.id, { method: 'cash', tenderedSatang: res.body.sale.outstandingSatang });
+    expect(closed.status, JSON.stringify(closed.body)).toBe(200);
+    const [row] = await ctx.db.select().from(sale).where(eq(sale.id, res.body.sale.id));
+    const receipt = saleReceiptDocument(await salePrintSnapshotOf(ctx.db, row!));
+    expect(receipt.lines.find((l) => l.name === 'ZZ TEST unicorn cake')).toBeDefined();
+    expect(receipt.lines.find((l) => l.name === 'ZZ TEST free juice')!.price).toBe('฿0');
   });
 });

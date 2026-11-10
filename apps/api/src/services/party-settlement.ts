@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import {
   branchHoliday,
@@ -16,6 +16,8 @@ import {
   composePartySettlement,
   deriveId,
   getRateModeForDate,
+  isPartyMenuCode,
+  itemTaxCategory,
   partySettlementLive,
   type PartyComposition,
   type PartyLineRole,
@@ -28,10 +30,12 @@ import {
   type PartySettleQuote,
   type PartySettlementView,
   type RateMode,
+  type TaxableCategory,
 } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import { linksOfEvents } from './event-writes';
+import { resolveItemTaxCategories } from './menu';
 import { eventPackagesNotGranted, type SeamEvent } from './otoapp-events';
 import { readPartyPlan } from './party-plan';
 import type { OtoAppDirectory } from './otoapp-directory';
@@ -76,6 +80,10 @@ import { withTx, type Exec, type OpContext } from './tx';
  *     add-on that is F&B credit grants it when the sale closes and its voucher
  *     prints on the receipt; one that prints a voucher without credit rides the
  *     admission line, so its item voucher prints as a ticket add-on's does;
+ *   - the items the BEO added that the catalogue did not have (SCRUM-828: a
+ *     special cake, a dish the family asked for), found by their codes like
+ *     every set-menu line: a priced one at its till product's price, a free /
+ *     included / alternate one as a 0-baht line (`partyMenuChargesOf`);
  *   - the deposit already paid in the app recorded on the sale as "Deposit
  *     (paid in advance)", so the receipt reads the balance, which the till then
  *     takes through its ordinary payment stage.
@@ -112,6 +120,74 @@ async function rateModeOf(db: Exec, branchId: string, date: string): Promise<Rat
     .from(branchHoliday)
     .where(and(eq(branchHoliday.branchId, branchId), isNull(branchHoliday.archivedAt)));
   return getRateModeForDate(date, holidays).mode;
+}
+
+/** One item the BEO added, as the settlement charges it. */
+interface PartyMenuCharge {
+  code: string;
+  name: string;
+  qty: number;
+  unitSatang: number;
+  taxCategory: TaxableCategory;
+}
+
+/**
+ * SCRUM-828 — the items the BEO added to the party that the till's catalogue
+ * did not have, as the settlement charges them.
+ *
+ * Which lines: the plan's set-menu lines whose code is one the BEO's "New
+ * item" door minted (`isPartyMenuCode`) and that a live product of the
+ * operator still carries — the lookup the party's slips make
+ * (`prepStationsByCode` in `party-slips.ts`). A catalogue item the set menu
+ * names is part of the package and is not charged here, whatever its
+ * BEO-only flag says.
+ *
+ * The price is the till PRODUCT's, for the party's date as the till prices
+ * any menu item (its weekend price on a weekend or a branch holiday, where the
+ * Console set one): the code is what the settlement finds the item by, and
+ * the product is what the Console edits; the price the BEO line shows in baht
+ * was copied from it when the item was made and can drift after an edit. A
+ * product priced 0 is a free / included / alternate item: a 0-baht line, so
+ * the receipt still names it. Taxed as the product's own category resolves
+ * (the Party menu category is F&B), as any menu item is.
+ *
+ * One charge per code, its lines' quantities added up (a line with no
+ * quantity counts one, the BEO's own default), in the order the plan first
+ * names them.
+ */
+async function partyMenuChargesOf(
+  db: Exec,
+  operatorId: string,
+  setMenu: PartyPlan['setMenu'],
+  rateMode: RateMode,
+): Promise<PartyMenuCharge[]> {
+  const codes = [...new Set(setMenu.map((m) => m.productCode).filter(isPartyMenuCode))];
+  if (codes.length === 0) return [];
+  const rows = await db
+    .select()
+    .from(product)
+    .where(and(eq(product.operatorId, operatorId), inArray(product.code, codes), isNull(product.archivedAt)));
+  const areas = await resolveItemTaxCategories(db, rows);
+  const byCode = new Map(rows.flatMap((row) => (row.code ? [[row.code, row] as const] : [])));
+  const charges = new Map<string, PartyMenuCharge>();
+  for (const line of setMenu) {
+    const row = line.productCode ? byCode.get(line.productCode) : undefined;
+    const qty = line.qty ?? 1;
+    if (!row?.code || qty <= 0) continue;
+    const held = charges.get(row.code);
+    if (held) {
+      held.qty += qty;
+      continue;
+    }
+    charges.set(row.code, {
+      code: row.code,
+      name: row.name,
+      qty,
+      unitSatang: rateMode === 'weekend' ? (row.priceWeekendSatang ?? row.priceSatang) : row.priceSatang,
+      taxCategory: itemTaxCategory(row.kind === 'merch' ? 'merch' : 'menu', areas.get(row.id)),
+    });
+  }
+  return [...charges.values()];
 }
 
 interface BuiltSettlement {
@@ -158,6 +234,7 @@ async function buildSettlement(
   if (socksGiven > 0 && !socksProductId) {
     throw errors.conflict('PARTY_NO_SOCKS', 'This park sells no Regular Socks, so socks cannot be handed out on this party');
   }
+  const partyMenu = await partyMenuChargesOf(db, actor.operatorId, plan.setMenu, c.rateMode);
 
   const lineId = (name: string) => deriveId(settlementId, `party-settlement:${name}`);
   const pkg = plan.package;
@@ -252,6 +329,16 @@ async function buildSettlement(
           ]
         : []),
     ]),
+    // SCRUM-828: what the add-ons come to includes a priced item the BEO added;
+    // a free one is one of what the package covers, at 0.
+    ...partyMenu.map((m) => ({
+      id: `party_menu:${m.code}`,
+      name: m.name,
+      unitSatang: m.unitSatang,
+      quantity: m.qty,
+      taxCategory: m.taxCategory,
+      role: (m.unitSatang > 0 ? 'add_on' : 'included') as PartyLineRole,
+    })),
   ];
   if (extras.length > 0) {
     lines.push({ ...blank, id: lineId('add-ons'), role: 'add_on', ticket: false, addOns: extras });
