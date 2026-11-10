@@ -47,6 +47,8 @@ const INBOX_TABLES = [
   'conversation',
   'conversation_tag',
   'event',
+  // SCRUM-823, 0111_inbox_handover_notification: who an assistant hand-over told.
+  'handover_notification',
   'kb_entry',
   'message',
   'note',
@@ -114,7 +116,7 @@ const operatorByName = async (name: string) =>
   (await db.select({ id: s.operator.id }).from(s.operator).where(eq(s.operator.name, name)).limit(1))[0]!.id;
 
 describe('0078_inbox_schema — structure (I1)', () => {
-  it('creates the inbox schema with its nineteen tables and writes no row', async () => {
+  it('creates the inbox schema with its twenty tables and writes no row', async () => {
     const tables = await pool.query<{ table_name: string }>(
       `select table_name from information_schema.tables where table_schema = 'inbox' and table_type = 'BASE TABLE' order by 1`,
     );
