@@ -47,7 +47,7 @@ import {
   openerBesideAdvice,
   type AdviceOpener,
 } from './advice';
-import { composeTurn, parkAnswerRead, type TurnComposition } from './compose';
+import { asksOnlyThePark, composeTurn, parkAnswerRead, type TurnComposition } from './compose';
 import {
   AI_REPLY_LANGUAGES,
   type AiDecision,
@@ -68,6 +68,7 @@ import {
 } from './guards';
 import {
   AGE_SLOT_INTENTS,
+  ASIDE_INTENTS,
   BIRTHDAY_DATE_OVERRULED,
   BIRTHDAY_INTENTS,
   BIRTHDAYS_PLAN,
@@ -76,6 +77,7 @@ import {
   CARE_SERVICE_INTENTS,
   IDENTITY_SECOND_ASK,
   INTENT_TABLE,
+  PARK_FIRST_INTENTS,
   birthdayThreadOf,
   intentPartsOf,
   resolvePlan,
@@ -484,6 +486,25 @@ function partOf(intent: AiIntent, episode: EpisodeState): Part | null {
   return { intent, kind: 'answer', rule };
 }
 
+/**
+ * SCRUM-832: the model asked which park and nothing else — `askBranch` and
+ * every bubble a sentence that asks only the park — for a park-dependent
+ * enquiry (where a park is, the way in, the hours; a greeting aside) on a
+ * general thread (not a birthday) where no park is known: not the thread's,
+ * not named in the burst, not answered to the park question this episode.
+ * Such a reply states
+ * no fact: the grounding gate asks it for no source, and `composeTurn` sends
+ * it as the park-first question.
+ */
+export function bareParkQuestion(d: AiDecision, episode: EpisodeState, intents: readonly AiIntent[]): boolean {
+  if (!d.askBranch || d.bubbles.length === 0 || !d.bubbles.every(asksOnlyThePark)) return false;
+  if ((episode.threadCategory ?? 'general') !== 'general' || intents.some((i) => BIRTHDAY_INTENTS.has(i))) return false;
+  const topical = intents.filter((i) => !ASIDE_INTENTS.has(i));
+  if (topical.length === 0 || !topical.every((i) => PARK_FIRST_INTENTS.has(i))) return false;
+  if (episode.threadHasBranch || d.branchNamed !== null) return false;
+  return !(episode.questions ?? []).some((q) => q.slot === 'park' && q.state === 'answered');
+}
+
 function gate({ decision: d, grounding, episode }: GateInput): GateVerdict {
   const labelled = intentPartsOf(d);
   const primary = labelled[0]!;
@@ -640,9 +661,16 @@ function gate({ decision: d, grounding, episode }: GateInput): GateVerdict {
     if (!source) return overruled({ reason: 'GROUNDING_UNKNOWN', rule: 'grounding' }) ?? silent('GROUNDING_UNKNOWN');
     cited.push(source);
   }
+  // SCRUM-832: the model's bare park question ("Which branch are you thinking
+  // of…?" and nothing else), as the prompt allows on a general enquiry with no
+  // park known, states no fact, so it needs no source: it is the park-first
+  // question (`composeTurn` words it and records the slot). Found on staging,
+  // 11 Nov: the question alone was refused here as GROUNDING_MISSING and the
+  // family was handed to the GM instead of asked the park.
+  const bareParkAsk = bareParkQuestion(d, episode, intents);
   for (const part of answers) {
     const topics = part.rule.groundingTopics;
-    if (topics === null) continue;
+    if (topics === null || bareParkAsk) continue;
     if (cited.length === 0) return overruled({ reason: 'GROUNDING_MISSING', rule: 'grounding' }) ?? silent('GROUNDING_MISSING');
     if (!cited.some((s) => topics.includes(s.topic))) {
       return overruled({ reason: 'GROUNDING_TOPIC', rule: 'grounding' }) ?? silent('GROUNDING_TOPIC');

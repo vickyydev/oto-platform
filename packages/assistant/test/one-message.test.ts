@@ -280,6 +280,38 @@ describe('SCRUM-832: the owner’s case — park first, then one message with th
 });
 
 describe('SCRUM-832: park first, only on the owner’s pattern', () => {
+  it('the model’s bare park question (nothing else, no source cited) IS the park question: never a hand-over (staging, 11 Nov)', () => {
+    // Found on staging: "How to find you guys?" on the operator-wide number got the park question alone from the model,
+    // which cited nothing; the grounding gate refused it (GROUNDING_MISSING) and the family was handed to the GM.
+    for (const lang of ['en', 'th', 'ru'] as const) {
+      const own = { en: 'Which park are you planning to visit, Central Floresta or Robinson Chalong? 😊', th: 'สะดวกสาขาไหนคะ Central Floresta หรือ Robinson Chalong', ru: 'А какой парк вам удобнее, Central Floresta или Robinson Chalong?' }[lang];
+      for (const bubble of [PARK_QUESTION[lang], own]) {
+        const v = answer(gate({ language: lang, intent: 'directions_parking', grounding: [], bubbles: [bubble], askBranch: true, askedSlots: ['park'], reason: 'FACT_IN_KB' }, GENERAL, [ASKS[lang]]));
+        expect(v.bubbles, bubble).toEqual([PARK_QUESTION[lang]]);
+        expect(v, bubble).toMatchObject({ intent: 'directions_parking', askBranch: true, askedSlots: ['park'], branchNamed: null, thenHandover: null, mayAutoHandle: false });
+        expect(v.composition, bubble).toMatchObject({ parkFirst: true, joined: true });
+      }
+      // With a greeting aside, and with the address intent, the same.
+      const hi = answer(gate({ language: lang, intent: 'greeting', intents: ['greeting', 'address'], grounding: [], bubbles: [PARK_QUESTION[lang]], askBranch: true, reason: 'FACT_IN_KB' }, GENERAL, [ASKS[lang]]));
+      expect(hi.bubbles).toEqual([PARK_QUESTION[lang]]);
+      expect(hi.askedSlots).toEqual(['park']);
+    }
+  });
+
+  it('the bare park question is let through only where the park is unknown and the answer depends on it; elsewhere the gate reads it as before', () => {
+    const bare = { intent: 'directions_parking' as const, grounding: [], bubbles: [PARK_QUESTION.en], askBranch: true, askedSlots: ['park' as const], reason: 'FACT_IN_KB' as const };
+    // The thread has its park, the model read one, or the family answered it: nothing to say but a question nobody needs — the old refusal.
+    expect(gate(bare, { ...GENERAL, threadHasBranch: true }, [ASKS.en])).toMatchObject({ reason: 'GROUNDING_MISSING' });
+    expect(gate({ ...bare, branchNamed: 'central' }, GENERAL, ['How do we find you at Central?'])).toMatchObject({ reason: 'GROUNDING_MISSING' });
+    expect(gate(bare, { ...GENERAL, questions: parkAnswered('Central') }, ['Central'])).toMatchObject({ reason: 'GROUNDING_MISSING' });
+    // A birthday thread, a GM thread, or an answer that does not depend on the park (a café question): as before.
+    expect(gate(bare, BIRTHDAYS, [ASKS.en])).toMatchObject({ reason: 'GROUNDING_MISSING' });
+    expect(gate(bare, { ...GENERAL, threadCategory: 'gm' }, [ASKS.en])).toMatchObject({ reason: 'GROUNDING_MISSING' });
+    expect(gate({ ...bare, intent: 'faq' }, GENERAL, ['Do you have a café?'])).toMatchObject({ reason: 'GROUNDING_MISSING' });
+    // A fact beside the question still needs its source.
+    expect(gate({ ...bare, bubbles: ['We open at 10.', PARK_QUESTION.en] }, GENERAL, [ASKS.en])).toMatchObject({ reason: 'GROUNDING_MISSING' });
+  });
+
   it('a message naming the park is answered at once, in one bubble, and the park is set', () => {
     for (const [lang, line] of [
       ['en', 'How do we find you at Central Floresta?'],

@@ -269,7 +269,8 @@ export function guessesOnePark(v: { groundingKeys: readonly string[] }, groundin
  * every part is park-dependent (a greeting or a thank-you aside), an answer
  * that depends on the park (`dependsOnPark`), and the owner's pattern: the
  * model asked which park (`askBranch`, or the park among the slots it asks),
- * or it answered for one park only (`guessesOnePark`).
+ * or it answered for one park only (`guessesOnePark`); the model's bare park
+ * question (nothing but the question, no source) is that pattern already.
  */
 export function parkFirst(v: AnswerVerdict, input: GateInput): AnswerVerdict | null {
   const ep = input.episode;
@@ -282,7 +283,10 @@ export function parkFirst(v: AnswerVerdict, input: GateInput): AnswerVerdict | n
   if (parksNamedIn((input.openLines ?? []).join('\n')).length > 0) return null;
   if (parkNamedByFamily(input) !== null) return null;
   if (parkQuestionOpen(ep.questions)) return null;
-  if (!dependsOnPark(v, input.grounding)) return null;
+  // The model's bare park question (the gate let it through with no source): the
+  // owner's pattern already, worded as the playbook's line and recorded.
+  const bareAsk = d.askBranch && v.bubbles.every(asksOnlyThePark);
+  if (!bareAsk && !dependsOnPark(v, input.grounding)) return null;
   const modelAsked = d.askBranch || askedSlotsOf(d.askedSlots, v.bubbles).includes('park');
   if (!modelAsked && !guessesOnePark(v, input.grounding)) return null;
   return {

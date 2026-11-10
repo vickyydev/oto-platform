@@ -205,6 +205,34 @@ describe('SCRUM-832: the owner’s case through the engine', () => {
     expect((await turnsOf(w, convId)).map((t) => t.messageIds.length)).toEqual([1, 1, 1, 1]);
   }, 60_000);
 
+  it('staging, 11 Nov: the model asks the park alone and cites nothing → the park question, never the GM; "Central" then sets the park and answers in one message', async () => {
+    // On staging the bare question was refused as GROUNDING_MISSING and the family went to the GM's queue;
+    // the thread's park then could not be set from "Central" (a GM thread).
+    await drain();
+    const phone = nextPhone();
+    const first = await say(
+      phone,
+      `How to find you guys? ${SENTINEL}`,
+      decision({ intent: 'directions_parking', grounding: [], bubbles: ['Which park are you planning to visit, Central Floresta or Robinson Chalong? 😊'], askBranch: true, askedSlots: ['park'], reason: 'FACT_IN_KB' }),
+    );
+    expect(first.sweep.answered).toBe(1);
+    expect(first.lines.map((l) => l.body)).toEqual([EN_PERSONA.branchQuestion]);
+    const convId = first.conv.id;
+    const row = await conversationRow(w, convId);
+    expect(row.branchId).toBeNull();
+    expect(row.category).toBe('general');
+    expect((await eventsOf(w, convId)).some((e) => e.kind === 'ai_handover')).toBe(false);
+    const [asked] = await questionsOf(convId);
+    expect(asked).toMatchObject({ slot: 'park', state: 'open', askedMessageId: first.lines[0]!.id });
+    expect((await repliedPayloads(convId))[0]).toMatchObject({ askBranch: true, composition: { parkFirst: true, bubbles: 1 } });
+
+    const second = await say(phone, 'Central', centralDirections(null));
+    expect(second.lines.map((l) => l.body)).toEqual([CENTRAL_PARTS.join(PART_JOIN)]);
+    expect((await conversationRow(w, convId)).branchId).toBe(w.central);
+    expect((await eventsOf(w, convId)).find((e) => e.kind === 'branch_set')!.payload).toMatchObject({ toBranchId: w.central, byAi: true });
+    expect((await questionsOf(convId))[0]).toMatchObject({ slot: 'park', state: 'answered', answer: 'central' });
+  }, 60_000);
+
   it('"Where are you? And do we need socks?" with no park: every answer goes, a bubble per topic, the model’s own park question recorded', async () => {
     await drain();
     const phone = nextPhone();
