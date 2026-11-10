@@ -1,6 +1,6 @@
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { auditLog, branch, partySlipPrint, product, productCategory } from '@oto/db';
+import { account, auditLog, branch, otoappUsers, partySlipPrint, product, productCategory } from '@oto/db';
 import {
   PARTY_MENU_CATEGORY_CODE,
   PartyMenuProductAnswerSchema,
@@ -40,7 +40,8 @@ import {
  *     not found, and an Idempotency-Key is required;
  *   - the category is made once and found again; each product is BEO-only,
  *     priced or free, its prep station the BEO's, its code `PARTY-` and eight
- *     hex digits, unique; both writes are audited;
+ *     hex digits, unique; both writes are audited, with the platform account
+ *     of the app user who pressed as their actor and the app user's id kept;
  *   - the same key and body answer the same product (nothing new written); the
  *     same key with another body is refused 409;
  *   - the till's catalogue read leaves it out, the Console's read shows it
@@ -60,6 +61,14 @@ let central: string;
 let otherBranch: string;
 let reception: string;
 let admin: string;
+/** The OTO App user who presses, stamped with the reception account, in a park group of this operator. */
+let presser: string;
+let presserAccountId: string;
+/** An OTO App user of the same park group with no suite sign-in yet. */
+let unstamped: string;
+/** That park group, and its park: the app's branch anchored to Central Floresta (one app branch per platform branch). */
+let appTenant: string;
+let appPark: string;
 
 const body = (over: Record<string, unknown> = {}) => ({
   branchId: central,
@@ -68,6 +77,7 @@ const body = (over: Record<string, unknown> = {}) => ({
   priceSatang: null,
   free: true,
   source: { eventId: newId(), lineLabel: 'ZZ TEST unicorn cake' },
+  actorAppUserId: presser,
   ...over,
 });
 
@@ -99,6 +109,37 @@ beforeAll(async () => {
   await ctx.restart();
   reception = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
   admin = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+
+  // The OTO App's people, in a park group anchored to Central Floresta.
+  const [receptionAccount] = await ctx.db.select({ id: account.id }).from(account).where(eq(account.phone, RECEPTION.phone));
+  presserAccountId = receptionAccount!.id;
+  const tenant = newId();
+  const park = newId();
+  await ctx.db.execute(sql`insert into otoapp.tenants (id, name, slug) values (${tenant}, 'ZZ TEST 828', ${`zz-828-${tenant}`})`);
+  await ctx.db.execute(sql`
+    insert into otoapp.branches (id, tenant_id, name, address, core_branch_id)
+    values (${park}, ${tenant}, 'ZZ TEST 828 park', 'Phuket', ${central})`);
+  appTenant = tenant;
+  appPark = park;
+  const appUser = async (platformUserId: string | null) => {
+    const id = newId();
+    await ctx.db.insert(otoappUsers).values({
+      id,
+      email: `zz-828-${id}@example.test`,
+      password: 'not-a-real-hash',
+      fullName: 'ZZ TEST 828 staff',
+      role: 'staff',
+      isActive: true,
+      mustChangePassword: false,
+      platformUserId,
+    });
+    await ctx.db.execute(
+      sql`insert into otoapp.user_branch_access (id, tenant_id, user_id, branch_id, access_scope) values (${newId()}, ${tenant}, ${id}, ${park}, 'selected_branches')`,
+    );
+    return id;
+  };
+  presser = await appUser(presserAccountId);
+  unstamped = await appUser(null);
 }, 300_000);
 
 afterAll(async () => {
@@ -231,13 +272,42 @@ describe('what it makes', () => {
       .from(auditLog)
       .where(and(eq(auditLog.action, 'party_menu_product.create'), eq(auditLog.entityId, answer.productId)));
     expect(made).toHaveLength(1);
-    expect(made[0]).toMatchObject({ operatorId, branchId: central, actorAccountId: null, entityType: 'product', actionId: key });
-    expect(made[0]!.after).toMatchObject({ code: answer.code, beoOnly: true, free: true, via: 'otoapp_provision_key' });
+    // Who pressed: the platform account stamped on the app user, and the app user's id beside it.
+    expect(made[0]).toMatchObject({ operatorId, branchId: central, actorAccountId: presserAccountId, entityType: 'product', actionId: key });
+    expect(made[0]!.after).toMatchObject({
+      code: answer.code,
+      beoOnly: true,
+      free: true,
+      via: 'otoapp_provision_key',
+      actorAppUserId: presser,
+    });
     const categoryMade = await ctx.db
       .select()
       .from(auditLog)
       .where(and(eq(auditLog.action, 'menu_category.create'), eq(auditLog.entityId, answer.categoryId)));
     expect(categoryMade).toHaveLength(1);
+    expect(categoryMade[0]).toMatchObject({ actorAccountId: presserAccountId });
+    expect(categoryMade[0]!.after).toMatchObject({ actorAppUserId: presser });
+  });
+
+  it('somebody with no suite sign-in may add an item too: no platform actor, their app user id kept', async () => {
+    const res = await door(body({ name: 'ZZ TEST lemonade', actorAppUserId: unstamped }));
+    expect(res.statusCode, res.body).toBe(200);
+    const [made] = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'party_menu_product.create'), eq(auditLog.entityId, res.json().productId)));
+    expect(made).toMatchObject({ actorAccountId: null });
+    expect(made!.after).toMatchObject({ actorAppUserId: unstamped });
+  });
+
+  it('who pressed is asked for: a body without it is 400, and nothing is made', async () => {
+    const before = await ctx.db.select({ id: product.id }).from(product);
+    const without: Record<string, unknown> = body();
+    delete without.actorAppUserId;
+    const res = await door(without);
+    expect(res.statusCode).toBe(400);
+    expect(await ctx.db.select({ id: product.id }).from(product)).toHaveLength(before.length);
   });
 
   it('a priced bar item: the same category, never a second one; its own code; the price and the bar station kept', async () => {
@@ -283,6 +353,10 @@ describe('what it makes', () => {
     const again = await door(sent, { idem: key });
     expect(again.statusCode, again.body).toBe(200);
     expect(again.json()).toEqual({ ...first.json(), replayed: true });
+    // Who pressed is not part of the request: a colleague's retry of the press is the same press.
+    const colleague = await door({ ...sent, actorAppUserId: unstamped }, { idem: key });
+    expect(colleague.statusCode, colleague.body).toBe(200);
+    expect(colleague.json()).toEqual({ ...first.json(), replayed: true });
     expect(await ctx.db.select({ id: product.id }).from(product)).toHaveLength(productsBefore.length);
     expect((await ctx.db.select({ id: auditLog.id }).from(auditLog)).length).toBe(auditBefore.length);
   });
@@ -342,13 +416,9 @@ describe('what it makes', () => {
   it('a BEO line carrying its code reaches the party’s plan, and the slips print each item at its own station', async () => {
     const [hkt] = await ctx.db.select().from(branch).where(eq(branch.id, central));
     const today = businessDate(new Date(), hkt!.timezone, parseDayStart(hkt!.businessDayStart));
-    const tenant = newId();
-    const appBranch = newId();
+    const tenant = appTenant;
+    const appBranch = appPark;
     const eventId = newId();
-    await ctx.db.execute(sql`insert into otoapp.tenants (id, name, slug) values (${tenant}, 'ZZ TEST 828', ${`zz-828-${tenant}`})`);
-    await ctx.db.execute(sql`
-      insert into otoapp.branches (id, tenant_id, name, address, core_branch_id)
-      values (${appBranch}, ${tenant}, 'ZZ TEST 828 park', 'Phuket', ${central})`);
     await ctx.db.execute(sql`
       insert into otoapp.core_events (
         id, tenant_id, branch_id, event_type, title, event_date, start_time, end_time,

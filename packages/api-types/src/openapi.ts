@@ -8004,6 +8004,7 @@ export interface paths {
                             eventId: string;
                             lineLabel: string;
                         };
+                        actorAppUserId: string;
                     };
                 };
             };

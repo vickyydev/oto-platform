@@ -948,6 +948,8 @@ describe('SCRUM-828: a priced item the BEO added is charged on the settlement; a
           priceSatang,
           free: priceSatang === null,
           source: { eventId: party, lineLabel: name },
+          // Nobody the platform knows: the item is made all the same.
+          actorAppUserId: 'zz-test-828-app-user',
         },
       );
     cake = await made('ZZ TEST unicorn cake', 'kitchen', 45_000);

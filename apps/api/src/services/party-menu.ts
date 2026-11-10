@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { and, desc, eq, isNull, sql } from 'drizzle-orm';
-import { auditLog, branch, product, productCategory, type Db } from '@oto/db';
+import { account, auditLog, branch, product, productCategory, type Db } from '@oto/db';
 import {
   PARTY_MENU_CATEGORY_CODE,
   PARTY_MENU_CATEGORY_NAME,
@@ -13,7 +13,8 @@ import {
 } from '@oto/shared';
 import { errors } from '../lib/errors';
 import { audit } from './audit';
-import { withTx, type OpContext, type Tx } from './tx';
+import { findOtoAppUser, otoAppUserIsOperators } from './oto-app-users';
+import { withTx, type Exec, type OpContext, type Tx } from './tx';
 
 /**
  * SCRUM-828 — A NEW MENU ITEM ADDED FROM THE BEO, made a till product.
@@ -45,6 +46,11 @@ import { withTx, type OpContext, type Tx } from './tx';
  * (`replayed`); with a different body it is refused 409, as the replay store
  * refuses one. The creation's audit row holds the request's digest, under an
  * id derived the same way, which is what a second arrival is compared with.
+ *
+ * **Who made it.** The app names the user who pressed (`actorAppUserId`);
+ * both audit rows carry the platform account stamped on that user as their
+ * actor (`actorAccountOf`), and the app user's id beside it. Who pressed is
+ * not part of the request's digest, so a retry by a colleague replays.
  */
 
 /** Every party-menu write for one operator, one at a time. */
@@ -95,6 +101,30 @@ export function partyMenuRequestDigest(input: PartyMenuProductBody): string {
   return createHash('sha256').update(JSON.stringify(asked)).digest('hex');
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The platform account of the OTO App user who pressed, for the audit rows:
+ * the account stamped on that user (`otoapp.users.platform_user_id`), when
+ * the user is in one of this operator's park groups and the account is this
+ * operator's — the resolution `provisionExistingOtoAppUser` makes of the
+ * administrator it names. Null when there is none (somebody with no suite
+ * sign-in yet): anyone who may create a BEO may add an item, so nobody is
+ * refused for it, and the rows keep the app user's id beside the null.
+ */
+export async function actorAccountOf(db: Exec, operatorId: string, appUserId: string): Promise<string | null> {
+  if (!(await otoAppUserIsOperators(db, { operatorId, userId: appUserId }))) return null;
+  const user = await findOtoAppUser(db, { id: appUserId });
+  const stamped = user?.platformUserId ?? null;
+  if (!stamped || !UUID.test(stamped)) return null;
+  const [held] = await db
+    .select({ id: account.id })
+    .from(account)
+    .where(and(eq(account.id, stamped), eq(account.operatorId, operatorId)))
+    .limit(1);
+  return held?.id ?? null;
+}
+
 /** The operator's live "Party menu" category, made once. */
 async function partyMenuCategory(tx: Tx, input: PartyMenuProductInput, ctx: OpContext): Promise<string> {
   const [held] = await tx
@@ -136,13 +166,18 @@ async function partyMenuCategory(tx: Tx, input: PartyMenuProductInput, ctx: OpCo
   };
   await tx.insert(productCategory).values(row);
   await audit.record(tx, {
-    actorAccountId: null,
+    actorAccountId: ctx.actorAccountId ?? null,
     operatorId: input.operatorId,
     branchId: input.branchId,
     action: 'menu_category.create',
     entityType: 'product_category',
     entityId: id,
-    after: { ...row, via: 'otoapp_provision_key', reason: 'party_menu_product' },
+    after: {
+      ...row,
+      via: 'otoapp_provision_key',
+      reason: 'party_menu_product',
+      actorAppUserId: input.actorAppUserId,
+    },
     actionId: input.idempotencyKey,
     sourceApp: 'oto_app',
     requestId: ctx.requestId,
@@ -181,7 +216,9 @@ export async function createPartyMenuProduct(
   if (priceProblem) throw errors.badRequest(priceProblem, { field: 'priceSatang' });
   const productId = partyMenuProductId(input.operatorId, input.idempotencyKey);
   const digest = partyMenuRequestDigest(input);
-  const scope: OpContext = { ...ctx, operatorId: input.operatorId, branchId: input.branchId };
+  // Asked before the transaction, so a failed operation's own audit row names them too.
+  const actorAccountId = await actorAccountOf(db, input.operatorId, input.actorAppUserId);
+  const scope: OpContext = { ...ctx, operatorId: input.operatorId, branchId: input.branchId, actorAccountId };
 
   return withTx(db, scope, 'party_menu_product.create', async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${lockOf(input.operatorId)}, 0))`);
@@ -208,7 +245,7 @@ export async function createPartyMenuProduct(
       .limit(1);
     if (!br) throw errors.notFound('Branch not found');
 
-    const categoryId = await partyMenuCategory(tx, input, ctx);
+    const categoryId = await partyMenuCategory(tx, input, scope);
     const code = await freeCode(tx, input.operatorId, productId);
     const row = {
       id: productId,
@@ -226,7 +263,7 @@ export async function createPartyMenuProduct(
     await tx.insert(product).values(row);
     await audit.record(tx, {
       id: creationAuditId(productId),
-      actorAccountId: null,
+      actorAccountId,
       operatorId: input.operatorId,
       branchId: input.branchId,
       action: 'party_menu_product.create',
@@ -237,6 +274,7 @@ export async function createPartyMenuProduct(
         free: input.free,
         source: input.source,
         via: 'otoapp_provision_key',
+        actorAppUserId: input.actorAppUserId,
         requestDigest: digest,
       },
       actionId: input.idempotencyKey,

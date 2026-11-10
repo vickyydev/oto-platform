@@ -16312,6 +16312,11 @@
                       "lineLabel"
                     ],
                     "additionalProperties": false
+                  },
+                  "actorAppUserId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
                   }
                 },
                 "required": [
@@ -16320,7 +16325,8 @@
                   "station",
                   "priceSatang",
                   "free",
-                  "source"
+                  "source",
+                  "actorAppUserId"
                 ],
                 "additionalProperties": false
               }

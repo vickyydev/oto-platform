@@ -57,7 +57,9 @@ export const PARTY_MENU_PRICE_MAX_SATANG = 10_000_000;
  * `POST /otoapp/party-menu/products`. `priceSatang` is the item's price, or
  * null (or 0) with `free` ticked; which of the two holds is
  * `partyMenuPriceProblem`'s to say, in a sentence. `source` names the BEO line
- * the item was made for, for the audit row.
+ * the item was made for, and `actorAppUserId` the OTO App user who pressed,
+ * both for the audit rows. Who pressed is not part of what was asked: a retry
+ * of the same press by somebody else answers the product the press made.
  */
 export const PartyMenuProductBodySchema = z
   .object({
@@ -76,6 +78,12 @@ export const PartyMenuProductBodySchema = z
         lineLabel: z.string().trim().min(1).max(200),
       })
       .strict(),
+    /**
+     * `otoapp.users.id` of the person who pressed "New item". The platform
+     * records the platform account stamped on that user as the audit rows'
+     * actor, where this operator has one; the id itself is kept beside it.
+     */
+    actorAppUserId: z.string().trim().min(1).max(64),
   })
   .strict();
 export type PartyMenuProductBody = z.infer<typeof PartyMenuProductBodySchema>;

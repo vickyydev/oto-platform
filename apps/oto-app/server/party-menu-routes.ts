@@ -63,8 +63,10 @@ export function registerPartyMenuRoutes(app: Express): void {
 
       // The event as the BEO's own routes read it: the caller's park group, a park they may open.
       const tenantId = (req.user as { tenantId?: string } | undefined)?.tenantId;
+      // Who pressed: named to the platform, which records them on its audit rows, and on this app's log line.
+      const userId = req.user?.id ?? "";
       const eventId = req.params.eventId ?? "";
-      if (!tenantId || !UUID.test(eventId)) return res.status(404).json({ message: "Event not found" });
+      if (!tenantId || !userId || !UUID.test(eventId)) return res.status(404).json({ message: "Event not found" });
       const [event] = await db
         .select({ id: coreEvents.id, tenantId: coreEvents.tenantId, branchId: coreEvents.branchId })
         .from(coreEvents)
@@ -94,6 +96,7 @@ export function registerPartyMenuRoutes(app: Express): void {
           priceSatang: body.free ? null : satangOfBaht(body.price ?? 0),
           free: body.free,
           source: { eventId: event.id, lineLabel: body.name },
+          actorAppUserId: userId,
         },
         req.requestId,
       );
@@ -120,7 +123,15 @@ export function registerPartyMenuRoutes(app: Express): void {
         return written;
       });
       log().info(
-        { eventId: event.id, productId: made.productId, code: made.code, station: body.station, free: body.free, replayed: made.replayed },
+        {
+          eventId: event.id,
+          userId,
+          productId: made.productId,
+          code: made.code,
+          station: body.station,
+          free: body.free,
+          replayed: made.replayed,
+        },
         "a new party menu item was made on the till and added to the BEO",
       );
       res.json({ line, productId: made.productId, productCode: made.code, replayed: made.replayed });

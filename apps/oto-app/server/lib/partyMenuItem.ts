@@ -37,6 +37,8 @@ export interface PartyMenuProductRequest {
   free: boolean;
   /** The BEO line it was made for, for the platform's audit row. */
   source: { eventId: string; lineLabel: string };
+  /** This app's user who pressed: the platform records the account stamped on them as the audit rows' actor. */
+  actorAppUserId: string;
 }
 
 export type PartyMenuProductResult =

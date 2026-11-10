@@ -105,7 +105,7 @@ await check("the client: the key as a Bearer and the press as the Idempotency-Ke
   const actionId = randomUUID();
   const input = {
     actionId, branchId: randomUUID(), name: "ZZ TEST unicorn cake", station: "kitchen" as const, priceSatang: null, free: true,
-    source: { eventId: randomUUID(), lineLabel: "ZZ TEST unicorn cake" },
+    source: { eventId: randomUUID(), lineLabel: "ZZ TEST unicorn cake" }, actorAppUserId: randomUUID(),
   };
   const first = await createPartyMenuProduct(config, input, "req-828");
   assert.equal(first.ok, true);
@@ -293,7 +293,8 @@ try {
     assert.deepEqual(sent.body, {
       branchId: A.coreBranch, name: "ZZ TEST unicorn cake", station: "kitchen", priceSatang: null, free: true,
       source: { eventId: partyA, lineLabel: "ZZ TEST unicorn cake" },
-    });
+      actorAppUserId: adminA.id,
+    }, "who pressed travels, for the platform's audit rows");
     const line = { id: `party_${actionId}`, itemName: "ZZ TEST unicorn cake", quantity: 1, notes: "", included: true, price: 0, productCode: res.body.productCode };
     assert.match(res.body.productCode, /^PARTY-ZZ/);
     assert.deepEqual(res.body.line, line);
@@ -309,6 +310,7 @@ try {
     assert.equal(res.status, 200, JSON.stringify(res.body));
     assert.equal(asked.at(-1)!.body.priceSatang, 45_050);
     assert.equal(asked.at(-1)!.body.station, "bar");
+    assert.equal(asked.at(-1)!.body.actorAppUserId, managerA.id);
     assert.deepEqual(res.body.line, {
       id: res.body.line.id, itemName: "ZZ TEST bubble tea", quantity: 1, notes: "", included: false, price: 450.5, productCode: res.body.productCode,
     });
