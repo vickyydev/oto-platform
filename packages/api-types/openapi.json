@@ -90006,6 +90006,74 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "openQuestions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "slot": {
+                            "type": "string",
+                            "enum": [
+                              "date",
+                              "time",
+                              "park",
+                              "kids_count",
+                              "adults_count",
+                              "guests_count",
+                              "child_age",
+                              "child_name",
+                              "package",
+                              "residency",
+                              "other"
+                            ]
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "open",
+                              "answered",
+                              "withdrawn"
+                            ]
+                          },
+                          "askedMessageId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "askedAt": {
+                            "type": "string"
+                          },
+                          "answer": {
+                            "type": "string",
+                            "maxLength": 40,
+                            "nullable": true
+                          },
+                          "answeredMessageId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "closedAt": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "slot",
+                          "state",
+                          "askedMessageId",
+                          "askedAt",
+                          "answer",
+                          "answeredMessageId",
+                          "closedAt"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [

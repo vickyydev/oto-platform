@@ -48,6 +48,13 @@ export interface InboxAiConfig {
   pacing: PacingConfig;
   /** SCRUM-677: the coherence review's hard cap; past it the reply goes as composed. Tests shorten it. */
   reviewTimeoutMs: number;
+  /**
+   * SCRUM-831: the effort a turn's model call runs at when a question the
+   * assistant asked is open (the customer's reply is read as its answer).
+   * Unset by default: every turn runs at `effort`. Set it (`medium`) only
+   * after a staging measurement shows the turn stays within today's latency.
+   */
+  openQuestionEffort?: AiEffort | null;
 }
 
 /** What the ingest needs to write a turn: the switch and the debounce. */

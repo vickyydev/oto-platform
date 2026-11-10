@@ -25,6 +25,7 @@ import { divertTarget } from './actions';
 import { conversationEventOf } from './book-date';
 import { aiStateOf } from './ai-turns';
 import { handoverNoticesOf } from './handover-notice';
+import { openQuestionsOf } from './open-question';
 import {
   INBOX_READ,
   activeAssignmentsOf,
@@ -474,6 +475,8 @@ export async function conversationDetail(
     event: await conversationEventOf(db, viewer.operatorId, conv),
     // SCRUM-823: who the assistant's hand-overs told (the pill's "manager notified", "escalated to GM").
     handoverNotices: await handoverNoticesOf(db, viewer.operatorId, conv.id),
+    // SCRUM-831: what the assistant asked and how it read each reply, under the asking line.
+    openQuestions: await openQuestionsOf(db, viewer.operatorId, conv.id),
   };
 }
 

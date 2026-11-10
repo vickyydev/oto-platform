@@ -58,6 +58,9 @@ export * from './parties';
 // The Unified Inbox (S2-19 I1): its own schema, keyed on the tenancy and the
 // files it names and on nothing else of ours.
 export * from './inbox';
+// The customer assistant's open questions (SCRUM-831): keyed on the inbox's
+// conversation, its turns and its messages.
+export * from './inbox-open-question';
 // The internal assistant's ask-log (SCRUM-591): its own schema, keyed on the
 // tenancy and nothing else of ours.
 export * from './assistant';

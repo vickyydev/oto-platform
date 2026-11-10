@@ -22,6 +22,7 @@ import {
   type AiHandoverPlan,
   type AiIntent,
   type AiReplyLanguage,
+  type AiEffort,
   type AppliedReview,
   type AssistantClient,
   type AssistantOutcome,
@@ -76,6 +77,16 @@ import { aiEligibility, dueAiMessageIds, type IneligibleReason } from './ai-turn
 import { callingCodeOf } from './calling-code';
 import type { InboxChannels } from './channels';
 import { deliverHandoverNotices, queueHandoverNotices, type HandoverNoticeDeps } from './handover-notice';
+import {
+  commitOpenQuestions,
+  loadOpenQuestionMemory,
+  openQuestionEffort,
+  promptMemoryOf,
+  repeatRefusedAfterRethink,
+  repeatStage,
+  rethoughtForRepeat,
+  type OpenQuestionTurn,
+} from './open-question';
 import { routeConversation } from './router';
 import { sendAfterCommit } from './send';
 import { holdTurnForTranscript, messageText, voiceHold, voiceUnreadTurn } from './voice-notes';
@@ -517,6 +528,8 @@ interface TurnResult {
   askFirst?: { ruleId: string };
   /** SCRUM-824: a voice note in the burst is still being transcribed; the turn waits for it. */
   wait?: boolean;
+  /** SCRUM-831: the episode's open questions as this turn read them, and the repeat guard's trips (`open-question.ts`). */
+  openQuestion?: OpenQuestionTurn;
 }
 
 async function recordModelRun(
@@ -631,6 +644,8 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
   // SCRUM-696: the approved operator rules for this thread (both parks', and
   // its own park's). None: the prompt and the turn are exactly as before.
   const applicable = (knowledge.rules ?? []).filter((r) => r.branchId === null || r.branchId === conv.branchId);
+  // SCRUM-831: the episode's questions, each open one read against the reply after it.
+  const memory = await loadOpenQuestionMemory(db, conv, eligible.episodeStart, episode, burst, now);
   const promptInput: PromptInput = {
     knowledge: knowledge.knowledge,
     episode,
@@ -647,6 +662,7 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
       earlier: facts.earlier,
     },
     ...(applicable.length > 0 ? { rules: applicable } : {}),
+    memory: promptMemoryOf(memory),
   };
   // SCRUM-817: the customer's open lines, which the gate reads for a birthday thread's date.
   const openLines = burst.flatMap((m) => (m.text === null ? [] : [m.text]));
@@ -656,7 +672,8 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
   const client = deps.runtime.client;
   if (!client) return { conv, silence: 'NO_CLIENT', kbVersion: built.prompt.kbVersion, personaVersion: built.prompt.personaVersion };
 
-  const outcome = await askModel(db, client, turn, conv, built.prompt);
+  const effort = openQuestionEffort(cfg.openQuestionEffort, memory);
+  const outcome = await askModel(db, client, turn, conv, built.prompt, effort);
 
   const base: TurnResult = {
     model: outcome.model ?? client.model,
@@ -687,10 +704,22 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
     verdict.action === 'silent' && verdict.reason === 'INTENT_SILENT'
       ? await quietBeforeBurst(db, conv, episode, turn.triggerMessageId, eligible.episodeStart, turn.id)
       : undefined;
+  // SCRUM-831: the repeat guard, the last net — a reply asking again what the
+  // customer answered is decided once more with the fact, else handed over.
   const decided: TurnResult = {
     ...base,
-    decision: outcome.decision,
-    verdict,
+    ...(await repeatStage({
+      db,
+      turn,
+      conv,
+      memory,
+      promptInput,
+      first: { ...base, decision: outcome.decision, verdict },
+      ask: (prompt) => askModel(db, client, turn, conv, prompt, effort),
+      gate: (decision, grounding) => applyGates({ decision, grounding, episode: facts.state, openLines }),
+      askFirst: fired !== null,
+      now,
+    })),
     ...(quietBefore === undefined ? {} : { quietBefore }),
     ...(fired ? { askFirst: { ruleId: fired.ruleId } } : {}),
   };
@@ -717,11 +746,19 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
 }
 
 /** One model call for a turn, recorded as its ops run. The client never throws; a throw is classified, never logged. */
-async function askModel(db: Db, client: AssistantClient, turn: TurnRow, conv: ConversationRow, prompt: BuiltPrompt): Promise<AssistantOutcome> {
+async function askModel(
+  db: Db,
+  client: AssistantClient,
+  turn: TurnRow,
+  conv: ConversationRow,
+  prompt: BuiltPrompt,
+  // SCRUM-831: an open-question turn's configured effort; absent, the client's own.
+  effort?: AiEffort,
+): Promise<AssistantOutcome> {
   const startedAt = new Date();
   let outcome: AssistantOutcome;
   try {
-    outcome = await client.decide({ prompt });
+    outcome = await client.decide({ prompt, ...(effort ? { effort } : {}) });
   } catch (err) {
     outcome = {
       ok: false,
@@ -864,7 +901,8 @@ async function rethinkTurn(a: {
     review: { kind: 'not_mixed' },
     rethink: { ...rethink, rounds: round ? [...rethink.rounds, round] : rethink.rounds },
   });
-  if (a.turn.reason === RETHINK_MARK) return unclear(first);
+  // SCRUM-831: a turn the repeat guard already decided again is never decided a third time.
+  if (a.turn.reason === RETHINK_MARK || rethoughtForRepeat(first.openQuestion)) return unclear(first);
   // No longer this claim's (a person acted, or the lease was lost): the commit finds it so and writes nothing.
   if (!(await markRethink(a.db, a.turn, a.now))) return first;
   const built = buildPrompt({ ...a.promptInput, rethink: { reading: topic.reading, suggestedIntent: topic.suggestedIntent } });
@@ -882,6 +920,8 @@ async function rethinkTurn(a: {
   const second: TurnResult = { ...spent, decision: outcome.decision, verdict };
   // Silence the customer asked for nothing of is no answer to a rethought question.
   if (verdict.action === 'silent' && !WITHHELD_REPLY_REASONS.has(verdict.reason)) return unclear(second, roundOf(verdict, null));
+  // SCRUM-831: the second round asks again what the customer answered: counted, and the unclear hand-over.
+  if (await repeatRefusedAfterRethink(a.db, a.turn, a.conv, outcome.decision, verdict, first.openQuestion)) return unclear(second, roundOf(verdict, null));
   const reviewed = await reviewStage(a.db, a.deps, a.turn, a.conv, a.account, a.episode, second);
   const sent = withReview(second, reviewed);
   if (reviewed.state.kind === 'wrong_topic') return unclear(sent, roundOf(verdict, 'wrong_topic'));
@@ -1847,6 +1887,8 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
           event(conv, 'ai_silent', { turnId: turn.id, reason: silentReason, intent: v?.intent ?? null, ...(rethink ? { rethink } : {}) }, at),
         );
         if (spam) await handleByAi(tx, conv, turn.id, at, 'SPAM');
+        // SCRUM-831: the answers this burst gave are kept, whatever the turn said.
+        await commitOpenQuestions(tx, { conv, turnId: turn.id, openQuestion: r.openQuestion, decision: r.decision, verdict: v, handover: false, lines: [], at });
         await closeTurn(tx, turn, conv, 'silent', silentReason, r, at, [], records);
         return 'silent';
       }
@@ -1882,6 +1924,17 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       };
       const messageIds = await writeLines(tx, conv, v.language, items, at, random, pacing);
       const routing = await executeRouting(tx, classified, plan, at);
+      // SCRUM-831: the answers read are kept; the questions this reply asks are recorded on their lines.
+      await commitOpenQuestions(tx, {
+        conv,
+        turnId: turn.id,
+        openQuestion: r.openQuestion,
+        decision: r.decision,
+        verdict: v,
+        handover: handover !== null,
+        lines: items.map((l, i) => ({ id: messageIds[i]!, body: l.body })),
+        at,
+      });
 
       if (replied && v.action === 'answer') {
         await tx.insert(inboxEvent).values(

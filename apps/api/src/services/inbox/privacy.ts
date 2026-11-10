@@ -8,6 +8,7 @@ import { audit } from '../audit';
 import type { FileStorage } from '../files';
 import { withTx, type Exec, type Tx } from '../tx';
 import { cancelAiForThread } from './ai-turns';
+import { eraseOpenQuestionAnswers } from './open-question';
 
 /** The examples sourced from these threads (or a message in them): soft links, so matched by value. */
 function sourcedFrom(operatorId: string, conversationIds: string[]): SQL {
@@ -443,6 +444,8 @@ export async function eraseContact(tx: Tx, storage: FileStorage | null, input: E
 
   // 0b. The curated examples copied from their threads (R6).
   const examplesDeleted = await eraseExamples(tx, operatorId, convIds, now);
+  // 0c. SCRUM-831: the answers the assistant read from their replies go with the words.
+  await eraseOpenQuestionAnswers(tx, operatorId, convIds, now);
 
   // 1. The words and the media, every message in every thread of theirs.
   const redacted = await redactThreadMessages(tx, storage, operatorId, convIds, contactIds, now);
@@ -713,6 +716,8 @@ export async function purgeConversations(db: Db, days: number | null, deps: Purg
     for (const [operatorId, rows] of byOperator) {
       const ids = rows.map((r) => r.id);
       const r = await redactThreadMessages(tx, deps.storage, operatorId, ids, [], deps.now);
+      // SCRUM-831: the answers read from the purged words go with them.
+      await eraseOpenQuestionAnswers(tx, operatorId, ids, deps.now);
       await tx
         .update(s.conversation)
         .set({ lastMessagePreview: null, aiSummary: null, updatedAt: deps.now })

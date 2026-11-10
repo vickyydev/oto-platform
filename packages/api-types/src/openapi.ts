@@ -35039,6 +35039,21 @@ export interface paths {
                                 gmNotNotifiedWhy: "no_contact" | "ping_logged_only" | "failed" | null;
                                 pickedUpAt: string | null;
                             }[];
+                            openQuestions?: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                slot: "date" | "time" | "park" | "kids_count" | "adults_count" | "guests_count" | "child_age" | "child_name" | "package" | "residency" | "other";
+                                /** @enum {string} */
+                                state: "open" | "answered" | "withdrawn";
+                                /** Format: uuid */
+                                askedMessageId: string;
+                                askedAt: string;
+                                answer: string | null;
+                                /** Format: uuid */
+                                answeredMessageId: string | null;
+                                closedAt: string | null;
+                            }[];
                         };
                     };
                 };

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ImpersonationBannerSchema } from './impersonation';
+import { InboxOpenQuestionSchema } from './inbox-open-question';
 
 /**
  * THE UNIFIED INBOX'S RULES AND READ SHAPES (S2-19 I2b, SCRUM-581).
@@ -499,6 +500,14 @@ export const InboxConversationDetailSchema = InboxConversationRowSchema.extend({
    * nothing of it.
    */
   handoverNotices: z.array(InboxHandoverNoticeSchema).optional(),
+  /**
+   * SCRUM-831: what the assistant asked the customer this thread, oldest
+   * first, and what it read each reply as — shown under the line that asked
+   * it ("asked: the child's age · answered 8"), so staff see what the
+   * assistant believes. Always sent; optional so a reader built before it
+   * (and every fixture of the detail) still holds.
+   */
+  openQuestions: z.array(InboxOpenQuestionSchema).optional(),
 });
 export type InboxConversationDetail = z.infer<typeof InboxConversationDetailSchema>;
 
