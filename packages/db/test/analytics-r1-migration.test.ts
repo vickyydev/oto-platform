@@ -171,7 +171,7 @@ describe('migration 0064 — analytics round 1', () => {
       stdio: 'pipe',
     });
     expect(await one<number>(`select count(*)::int from drizzle.__drizzle_migrations`)).toBe(before);
-  });
+  }, 120_000); // a drizzle-kit child process needs more than the default 5 s on a loaded runner
 
   it('builds the tables the plan names, with their keys', async () => {
     const cols = async (table: string) =>

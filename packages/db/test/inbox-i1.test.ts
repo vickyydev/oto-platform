@@ -141,7 +141,7 @@ describe('0078_inbox_schema — structure (I1)', () => {
         stdio: 'pipe',
       }),
     ).not.toThrow();
-  });
+  }, 120_000); // a drizzle-kit child process: on a loaded CI runner it needs more than the default 5 s (red on 11 Nov 2026)
 
   it('is a schema this package owns: OWNED_SCHEMAS and the drizzle schemaFilter both name it', () => {
     expect(OWNED_SCHEMAS).toContain('inbox');

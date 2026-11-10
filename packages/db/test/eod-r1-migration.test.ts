@@ -120,7 +120,7 @@ describe('migration 0052 — the End of Day', () => {
         stdio: 'pipe',
       }),
     ).not.toThrow();
-  });
+  }, 120_000); // a drizzle-kit child process needs more than the default 5 s on a loaded runner
 
   it('one closed day per branch and business date', async () => {
     const p = await park();
