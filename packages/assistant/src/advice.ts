@@ -17,14 +17,27 @@
  * threshold (`scripts/birthday-advice-measure.ts` counts both over the real
  * chats):
  *
- *   advice       asking us to recommend, suggest or advise; asking which one
- *                (branch, package, option); asking what is better, best or
- *                suitable; asking what we think or whether they should.
+ *   advice       asking us to recommend, suggest or advise; asking for a
+ *                CHOICE (which one is better, which should we take, which one
+ *                for us — never "which branch is open on Monday?"); asking
+ *                what is better, best or suitable for them; asking what we
+ *                think or whether they should.
  *   possibility  "can we…", "is it possible to…", "можно…", "ได้ไหม" — the
  *                owner's own examples. A line that names a day, a date or a
  *                time is the party's details, not advice ("Можно в субботу в
  *                2 часа дня?" stays SCRUM-817's `birthday_details`), so the
- *                possibility tier never fires on one.
+ *                possibility tier never fires on one. "ได้ไหม" and "можно" are
+ *                also the ordinary way to ask a yes/no FACT in Thai and
+ *                Russian ("Можно оплатить картой?", "จ่ายบัตรได้ไหมคะ"), so
+ *                this tier never withholds an answer the model grounded in a
+ *                fact of the knowledge (`FACT_IN_KB`): only an ungrounded one
+ *                is overruled. A polite opener ("May I ask…", "Можно
+ *                узнать…") is not a possibility question at all.
+ *
+ * Beside the opener (owner D1, 28 Oct, the playbook's first rule) the advice
+ * never drops it: a burst that holds `birthday_party` and an advice part keeps
+ * the opener's answer, and the birthday manager's closing line follows it
+ * (`openerBesideAdvice`, `adviceAfterOpener`).
  *
  * Pure: no clock, no database, no model.
  */
@@ -62,23 +75,42 @@ const ASK_TO_RECOMMEND: readonly RegExp[] = [
 ];
 
 /**
- * Asking which one: a branch, a package, an option, a room… Singular only:
- * "which packages do you have?" asks for the brochure, not for a choice.
+ * Asking for a CHOICE: which one is better or best, which one should we take,
+ * which one would you pick, which one suits us. Never a plain "which" fact:
+ * "Which branch is open on Monday?", "Which one has the bigger party room?"
+ * and "which packages do you have?" ask the brochure, not for a choice.
  */
+const WHICH = String.raw`which(?:\s+\p{L}+){0,3}?`;
 const ASK_WHICH: readonly RegExp[] = [
-  words([String.raw`which\s+(?:one|branch|park|package|option|location|place|room|theme|menu|is\s+better|would\s+be)`]),
   words([
-    String.raw`как(?:ой|ая|ое|ие|ую)\s+(?:лучше|выбрать|филиал|парк|пакет|вариант|зал|тем[ау]|меню)`,
+    String.raw`${WHICH}(?:\s+(?:is|are|would\s+be|will\s+be)|['’]s)\s+(?:better|best|ideal|more\s+suitable|most\s+suitable|right\s+for)`,
+    String.raw`${WHICH}\s+(?:should|shall)\s+(?:we|i)`,
+    String.raw`${WHICH}\s+(?:would|do)\s+you\s+(?:choose|pick|take|go\s+for|prefer)`,
+    String.raw`${WHICH}\s+(?:suits|fits)\s+(?:us|our|me|my)`,
+    String.raw`which\s+one\s+(?:is\s+)?for\s+(?:us|our|me|my)`,
+  ]),
+  words([
+    String.raw`как(?:ой|ая|ое|ие|ую)(?:\s+\p{L}+){0,2}?\s+(?:лучше|выбрать|посоветуете|порекомендуете|подойд\p{L}*|подходит)`,
     String.raw`что\s+лучше`,
     String.raw`где\s+лучше`,
-    String.raw`что\s+(?:вы\s+)?выбрать`,
+    String.raw`что\s+(?:вы\s+|нам\s+|мне\s+)?выбрать`,
   ]),
-  /(?:ไหนดี|แบบไหน|อันไหน|สาขาไหน|แพ็[กค]เกจไหน|แพคเกจไหน|โซนไหน|ห้องไหน)/u,
+  /(?:ไหนดี|(?:แบบ|อัน|สาขา|แพ็[กค]เกจ|แพคเกจ|โซน|ห้อง)ไหน(?:ดี|เหมาะ|คุ้ม))/u,
 ];
 
-/** What is better, best or suitable — counted only on a line that asks (a question mark or a question word). */
+/**
+ * What is better, best or suitable FOR THEM, or the better option — counted
+ * only on a line that asks (a question mark or a question word). Never "the
+ * best time to arrive": a best that is not a choice is a fact.
+ */
 const BETTER: readonly RegExp[] = [
-  words(['better', String.raw`best(?!\s+(?:regards|wishes))`, 'ideal', 'suitable', String.raw`worth\s+it`]),
+  words([
+    String.raw`(?:better|best|ideal|suitable|more\s+suitable)\s+for`,
+    String.raw`(?:better|best|ideal)\s+(?:option|choice|package|branch|park|place|deal|idea|one)`,
+    String.raw`(?:what|which)(?:['’]s|\s+is|\s+would\s+be)\s+(?:better|best|ideal)(?=\s*(?:[?？.!,]|$))`,
+    String.raw`(?:is|would)\s+(?:it|that|this)\s+(?:be\s+)?(?:better|best|ideal|suitable|a\s+good\s+idea)`,
+    String.raw`worth\s+it`,
+  ]),
   words(['лучше', 'лучший', 'лучшая', 'лучшее', 'лучшие', String.raw`подойд\p{L}*`, String.raw`подходит`, String.raw`подходящ\p{L}*`, String.raw`стоит\s+ли`]),
   /(?:ดีกว่า|ดีที่สุด|เหมาะ|คุ้ม)/u,
 ];
@@ -109,6 +141,21 @@ const POSSIBILITY: readonly RegExp[] = [
   /(?:ได้ไหม|ได้มั้ย|ได้มั๊ย|ได้ไม๊|ได้หรือไม่|ได้หรือเปล่า|ได้รึเปล่า|ได้ป่าว|ได้ปะ|เป็นไปได้)/u,
 ];
 
+/**
+ * A polite opener, not a possibility question: "May I ask what time you
+ * close?", "Can I see the menu?", "Можно узнать, во сколько вы закрываетесь?".
+ * Taken out of the line before the possibility tier reads it, so "May I ask,
+ * can we bring our own cake?" still asks.
+ */
+const POLITE: readonly RegExp[] = [
+  new RegExp(
+    `${W}(?:can|could|may)\\s+(?:i|we)\\s+(?:please\\s+)?(?:ask|know|find\\s+out|check|see|confirm)${E}`,
+    'giu',
+  ),
+  new RegExp(`${W}(?:можно|могу\\s+ли\\s+я|могу\\s+ли)\\s+(?:узнать|спросить|уточнить|посмотреть|получить)${E}`, 'giu'),
+];
+const withoutPoliteOpeners = (line: string) => POLITE.reduce((t, p) => t.replace(p, ' '), line);
+
 /** A line that asks: a question mark, or a question word in one of the three languages. */
 const QUESTION: readonly RegExp[] = [
   /[?？]/u,
@@ -131,7 +178,7 @@ export function adviceAskIn(lines: readonly string[]): AdviceAsk | null {
     const line = raw.normalize('NFC');
     if (any(ASK_TO_RECOMMEND, line) || any(ASK_WHICH, line) || any(ASK_OPINION, line)) return 'advice';
     if (any(BETTER, line) && any(QUESTION, line)) return 'advice';
-    if (any(POSSIBILITY, line)) possible = true;
+    if (any(POSSIBILITY, withoutPoliteOpeners(line))) possible = true;
   }
   return possible ? 'possibility' : null;
 }
@@ -162,15 +209,32 @@ function outranks(intent: AiIntent): boolean {
 }
 
 /**
+ * The model answered from a fact of the knowledge: it says so
+ * (`FACT_IN_KB`) and cites a source the prompt offered. The possibility tier
+ * never withholds such an answer: "Can I pay by card?" answered from the
+ * knowledge is a brochure fact, not a choice.
+ */
+function answeredFromKnowledge(input: GateInput): boolean {
+  const d = input.decision;
+  return d.action === 'answer' && d.reason === 'FACT_IN_KB' && d.grounding.some((key) => input.grounding.has(key));
+}
+
+/**
  * The decision the gate reads instead of the model's, or null to read the
  * model's (applied after SCRUM-817's date rule). In a birthday thread
  * (`birthdayThreadOf`), a burst with a part labelled `birthday_details` or
- * `faq` whose lines ask for advice (`asksBirthdayAdvice`) becomes a
- * hand-over: those labels become `birthday_advice`, the model's words go
- * nowhere, and nothing else of the burst is answered beside it. A burst the
- * model already labelled `birthday_advice` keeps its labels; a burst with a
- * silent or a person-first part keeps the model's verdict; any other thread
- * is never touched.
+ * `faq` whose lines ask for advice (`asksBirthdayAdvice`) has those labels
+ * read as `birthday_advice`. Only "can we…" (the possibility tier) on a faq
+ * part the model answered from the knowledge is left to the model: a
+ * grounded fact is answered.
+ *
+ * Without the opener in the burst, the advice is a hand-over: the model's
+ * words go nowhere, and nothing else of the burst is answered beside it.
+ * Beside the opener (`birthday_party`), the model's answer is kept for the
+ * opener's sake (`openerBesideAdvice` then sends it, and the birthday
+ * manager's line after it). A burst the model already labelled
+ * `birthday_advice` keeps its labels; a burst with a silent or a person-first
+ * part keeps the model's verdict; any other thread is never touched.
  */
 export function birthdayAdviceOverrule(input: GateInput): AiDecision | null {
   const d = input.decision;
@@ -179,13 +243,60 @@ export function birthdayAdviceOverrule(input: GateInput): AiDecision | null {
   if (labelled.includes('birthday_advice')) return null;
   if (labelled.some(outranks)) return null;
   if (!labelled.some((i) => BIRTHDAY_ADVICE_OVERRULED.has(i))) return null;
-  if (asksBirthdayAdvice(input.openLines ?? []) === null) return null;
+  const ask = asksBirthdayAdvice(input.openLines ?? []);
+  if (ask === null) return null;
+  if (ask === 'possibility' && labelled.includes('faq') && answeredFromKnowledge(input)) return null;
   const parts: AiIntent[] = [];
   for (const i of labelled) {
     const part: AiIntent = BIRTHDAY_ADVICE_OVERRULED.has(i) ? 'birthday_advice' : i;
     if (!parts.includes(part)) parts.push(part);
   }
-  return { ...d, intent: parts[0]!, intents: parts, action: 'handover', bubbles: [], sendBrochure: false, askBranch: false };
+  if (parts.includes('birthday_party')) return { ...d, intent: parts[0]!, intents: parts };
+  return adviceAlone({ ...d, intent: parts[0]!, intents: parts });
+}
+
+/** The advice handed over alone: the model's words go nowhere, and nothing else of the burst is answered. */
+export function adviceAlone(d: AiDecision): AiDecision {
+  return { ...d, action: 'handover', bubbles: [], sendBrochure: false, askBranch: false };
+}
+
+/**
+ * The opener's part of a burst that holds the opener (`birthday_party`) and
+ * an advice part (`birthday_advice`, the model's label or the net's), for the
+ * gate to answer; null for any other burst. Owner D1 (28 Oct) is the
+ * playbook's first rule: the date-and-park question goes out, and the advice
+ * is the birthday manager's after it (`adviceAfterOpener`). Only when the
+ * model answered: its own hand-over or silence goes the usual way, and a
+ * silent or a person-first part keeps its own verdict.
+ */
+export function openerBesideAdvice(d: AiDecision): AiDecision | null {
+  const parts = intentPartsOf(d);
+  if (!parts.includes('birthday_party') || !parts.includes('birthday_advice')) return null;
+  if (d.action !== 'answer' || parts.some(outranks)) return null;
+  const rest = parts.filter((i) => i !== 'birthday_advice');
+  return { ...d, intent: rest[0]!, intents: rest };
+}
+
+/**
+ * The opener's answer with the advice after it: the answer's words, then the
+ * birthday manager's closing line (the hand-over the burst already makes, or
+ * Birthdays & Events), the advice part back among the intents so the engine
+ * tells the manager. Null when the gate did not answer the opener (a guard,
+ * the cap, an unsure model): the caller then hands the advice over alone,
+ * never in silence.
+ */
+export function adviceAfterOpener(v: GateVerdict, labelled: readonly AiIntent[]): GateVerdict | null {
+  if (v.action !== 'answer') return null;
+  const intents = labelled.filter((i) => i === 'birthday_advice' || v.intents.includes(i));
+  const thenHandover = v.thenHandover ?? BIRTHDAYS_PLAN;
+  return {
+    ...v,
+    intents,
+    thenHandover,
+    sendBrochure: v.thenHandover ? v.sendBrochure : BIRTHDAYS_PLAN.brochure,
+    askBranch: false,
+    mayAutoHandle: false,
+  };
 }
 
 const isBirthdaysPlan = (p: { templateKey: string; route: string; brochure: boolean }) =>

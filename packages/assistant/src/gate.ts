@@ -38,7 +38,7 @@
  */
 
 import { mentionsPartyDate, mentionsPartyTime } from '@oto/shared';
-import { adviceOverruledVerdict, birthdayAdviceOverrule } from './advice';
+import { adviceAfterOpener, adviceAlone, adviceOverruledVerdict, birthdayAdviceOverrule, openerBesideAdvice } from './advice';
 import {
   AI_REPLY_LANGUAGES,
   type AiDecision,
@@ -290,8 +290,18 @@ const isBirthdaysPlan = (p: AiHandoverPlan) =>
 export function applyGates(input: GateInput): GateVerdict {
   const overruled = birthdayDateOverrule(input);
   // SCRUM-823: then an advice question the model labelled details or faq in a
-  // birthday thread is `birthday_advice`, handed over alone (advice.ts).
+  // birthday thread is `birthday_advice` (advice.ts): beside the opener, the
+  // opener is answered and the birthday manager's line follows; otherwise it
+  // is handed over alone. A guard on the opener's words never makes it silence.
   const advice = birthdayAdviceOverrule(overruled === null ? input : { ...input, decision: overruled });
+  const read = advice ?? overruled ?? input.decision;
+  const opener = openerBesideAdvice(read);
+  if (opener !== null) {
+    return (
+      adviceAfterOpener(gate({ ...input, decision: opener }), intentPartsOf(read)) ??
+      adviceOverruledVerdict(gate({ ...input, decision: adviceAlone({ ...read, intent: 'birthday_advice' }) }))
+    );
+  }
   if (advice !== null) return adviceOverruledVerdict(gate({ ...input, decision: advice }));
   if (overruled === null) return gate(input);
   const v = gate({ ...input, decision: overruled });

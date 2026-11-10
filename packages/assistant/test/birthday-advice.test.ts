@@ -28,13 +28,15 @@ import { context, decision, episode, fixtureKnowledge, NOW } from './support';
  * to… — is handed to a person at once, with the birthday manager's closing
  * line. Two layers, as SCRUM-817's date rule:
  *
- *   1. the model labels it `birthday_advice` (a hand-over that stands alone);
+ *   1. the model labels it `birthday_advice` (a hand-over that stands alone,
+ *      except after the opener: the opener is answered, the line follows);
  *   2. the gate's word list, in Thai, English and Russian, overrules an advice
  *      question the model labelled `birthday_details` or `faq` in a birthday
- *      thread to `birthday_advice`.
+ *      thread to `birthday_advice`. "Can we…" (the possibility tier) never
+ *      withholds a faq answer the model grounded in the knowledge.
  *
- * A plain fact question is still answered, the opener is still asked, and a
- * thread that is not a birthday one is untouched.
+ * A plain fact question is still answered, the opener is still asked (alone
+ * or beside the advice), and a thread that is not a birthday one is untouched.
  */
 
 const knowledge = fixtureKnowledge();
@@ -166,6 +168,41 @@ describe('SCRUM-823: the word list (three languages, two tiers)', () => {
     }
   });
 
+  it('a fact asked as "which", "best" or politely is not advice (review, 10 Nov)', () => {
+    for (const line of [
+      'Which branch is open on Monday?',
+      'Which one has the bigger party room?',
+      'What is the best time to arrive?',
+      'Какой филиал открыт в понедельник?',
+      'สาขาไหนเปิดวันจันทร์คะ',
+      'May I ask what time you close?',
+      'Can I see the menu?',
+      'Можно узнать, во сколько вы закрываетесь?',
+    ]) {
+      expect(adviceAskIn([line]), line).toBeNull();
+    }
+    // A choice still is, and a polite opener never hides one.
+    for (const line of ['Which one is better for us?', 'Which package should we take?', 'Which one would you pick?', 'Какой зал лучше выбрать?', 'ห้องไหนดีคะ']) {
+      expect(adviceAskIn([line]), line).toBe('advice');
+    }
+    expect(adviceAskIn(['May I ask, can we bring our own cake?'])).toBe('possibility');
+  });
+
+  it('a yes/no fact in "can I", "можно" or "ได้ไหม", answered from the knowledge in a birthday thread, is answered, never handed over', () => {
+    const facts: Record<'en' | 'ru' | 'th', readonly string[]> = {
+      en: ['Can I pay by card?', 'May I ask what time you close?', 'Can I see the menu?'],
+      ru: ['Можно оплатить картой?', 'Можно узнать, во сколько вы закрываетесь?'],
+      th: ['จอดรถได้ไหมคะ', 'จ่ายบัตรได้ไหมคะ'],
+    };
+    for (const lang of ['en', 'ru', 'th'] as const) {
+      for (const line of facts[lang]) {
+        const v = gate({ ...FAQ_ANSWER, language: lang }, BIRTHDAYS, [line]);
+        expect(v.action, line).toBe('answer');
+        expect(v.intents, line).toEqual(['faq']);
+      }
+    }
+  });
+
   it('a "can we" that names a day, a date or a time is the party’s details, never advice (SCRUM-817 stays)', () => {
     for (const line of ['Can we do Saturday at 2 pm?', 'Можно в субботу в 2 часа дня?', 'เสาร์นี้บ่ายสองได้ไหมคะ']) {
       expect(adviceAskIn([line]), line).toBe('possibility');
@@ -195,8 +232,21 @@ describe('SCRUM-823: the gate’s safety net in a birthday thread', () => {
       expect(v).toMatchObject({ ...ADVICE_HANDOVER, language: lang });
     });
 
-    it(`"is it possible…" (${lang}) labelled faq is handed over too`, () => {
-      expect(gate({ ...FAQ_ANSWER, language: lang }, BIRTHDAYS, [POSSIBLE[lang]])).toMatchObject(ADVICE_HANDOVER);
+    it(`"is it possible…" (${lang}) labelled faq with no fact of the knowledge behind it is handed over too`, () => {
+      const ungrounded: Partial<AiDecision>[] = [
+        { grounding: [], reason: 'CLEAR_INTENT' },
+        { grounding: ['faq.food-outside'], reason: 'FACT_MISSING' },
+        { grounding: ['faq.nowhere'], reason: 'FACT_IN_KB' },
+      ];
+      for (const u of ungrounded) {
+        expect(gate({ ...FAQ_ANSWER, ...u, language: lang }, BIRTHDAYS, [POSSIBLE[lang]]), JSON.stringify(u)).toMatchObject(ADVICE_HANDOVER);
+      }
+    });
+
+    it(`"is it possible…" (${lang}) labelled faq and answered from a fact of the knowledge is answered`, () => {
+      const v = gate({ ...FAQ_ANSWER, language: lang }, BIRTHDAYS, [POSSIBLE[lang]]);
+      expect(v.action).toBe('answer');
+      expect(v.intents).toEqual(['faq']);
     });
 
     it(`a plain fact question (${lang}) is still answered in a birthday thread`, () => {
@@ -270,6 +320,62 @@ describe('SCRUM-823: the gate’s safety net in a birthday thread', () => {
     if (complaint.action === 'answer') expect(complaint.thenHandover).toEqual(GM_PLAN);
     const care = gate({ intent: 'drop_off_care', intents: ['drop_off_care', 'faq'], action: 'handover' }, BIRTHDAYS, ['How is my son? Can we pick him up early?']);
     expect(care.action).toBe('silent_handover');
+  });
+
+  it('advice beside the opener: the opener is answered, the birthday manager’s line follows, the advice part kept (en, ru, th)', () => {
+    const bursts: Array<{ language: 'en' | 'ru' | 'th'; line: string; bubbles: string[] }> = [
+      {
+        language: 'en',
+        line: "Hi! We'd like a birthday party for our son. Which branch do you recommend?",
+        bubbles: ["Amazing, thank you! We'd love to organize a party for you 🎈", 'What date are you thinking of, roughly how many people, and which branch?'],
+      },
+      {
+        language: 'ru',
+        line: 'Здравствуйте! Хотим отметить день рождения сына. Какой филиал вы посоветуете?',
+        bubbles: ['Замечательно, спасибо! Мы с радостью организуем для вас праздник 🎈', 'Какую дату вы рассматриваете, сколько примерно будет гостей и какой филиал вам удобен?'],
+      },
+      {
+        language: 'th',
+        line: 'สวัสดีค่ะ อยากจัดงานวันเกิดให้ลูกค่ะ แนะนำสาขาไหนคะ',
+        bubbles: ['ยินดีมากเลยค่ะ เรายินดีจัดปาร์ตี้ให้นะคะ 🎈', 'สนใจจัดช่วงไหน ประมาณกี่ท่าน และสาขาไหนคะ'],
+      },
+    ];
+    for (const b of bursts) {
+      // The net's reading: the model labelled the advice faq.
+      const net = gate({ language: b.language, intent: 'birthday_party', intents: ['birthday_party', 'faq'], bubbles: b.bubbles, reason: 'CLEAR_INTENT' }, BIRTHDAYS, [b.line]);
+      expect(net, b.line).toMatchObject({ action: 'answer', intent: 'birthday_party', bubbles: b.bubbles, thenHandover: BIRTHDAYS_PLAN, mayAutoHandle: false });
+      expect(net.intents, b.line).toEqual(['birthday_party', 'birthday_advice']);
+      // The model's own reading: the same.
+      const own = gate({ language: b.language, intent: 'birthday_party', intents: ['birthday_party', 'birthday_advice'], bubbles: b.bubbles, reason: 'CLEAR_INTENT' }, BIRTHDAYS, [b.line]);
+      expect(own, b.line).toMatchObject({ action: 'answer', bubbles: b.bubbles, thenHandover: BIRTHDAYS_PLAN });
+      expect(own.intents, b.line).toEqual(['birthday_party', 'birthday_advice']);
+    }
+  });
+
+  it('a plain fact beside the opener, answered from the knowledge, is answered with it; nothing is handed over', () => {
+    const v = gate(
+      {
+        intent: 'birthday_party',
+        intents: ['birthday_party', 'faq'],
+        grounding: ['faq.food-outside'],
+        reason: 'FACT_IN_KB',
+        bubbles: ["Amazing, thank you! We'd love to organize a party for you 🎈", 'What date are you thinking of, roughly how many people, and which branch?'],
+      },
+      BIRTHDAYS,
+      ["Hi! We'd like a birthday party for our son. Can I pay by card?"],
+    );
+    expect(v).toMatchObject({ action: 'answer', intent: 'birthday_party', thenHandover: null });
+    expect(v.intents).toEqual(['birthday_party', 'faq']);
+  });
+
+  it('the opener’s words failing a guard beside the advice: the advice is handed over alone, never silence', () => {
+    const v = gate(
+      { intent: 'birthday_party', intents: ['birthday_party', 'faq'], bubbles: ['We can do 50% off for 30 kids!'], reason: 'CLEAR_INTENT' },
+      BIRTHDAYS,
+      ["Hi! We'd like a birthday party. Which branch do you recommend?"],
+    );
+    expect(v).toMatchObject(ADVICE_HANDOVER);
+    expect(v.intents).toEqual(['birthday_advice', 'birthday_party']);
   });
 
   it('no open lines (an older caller): the safety net never fires', () => {
