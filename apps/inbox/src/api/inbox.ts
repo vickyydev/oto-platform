@@ -229,7 +229,9 @@ export const inboxApi = {
   simulateInbound: (body: SimulatedInbound) =>
     api.post<ApiResponse<'/inbox/simulator/inbound', 'post'>>(
       '/inbox/simulator/inbound',
-      { channelAccountId: body.channelAccountId, from: body.from, name: body.name, text: body.text, hint: body.hint },
+      // The voice note rides along (SCRUM-824): without it the api refuses a
+      // press with no words, and a press with words would drop the audio.
+      { channelAccountId: body.channelAccountId, from: body.from, name: body.name, text: body.text, hint: body.hint, voice: body.voice },
       { idempotencyKey: idemKey() },
     ),
 

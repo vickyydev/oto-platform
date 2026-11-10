@@ -9,9 +9,10 @@
 // FICTIONAL TEST DATA: every transcript is made-up "ZZ TEST" words.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ConversationRow, InboxEvent, InboxMe, Message } from '@/api/inbox';
 import { MessageBubble, VOICE_NOTE_NAME } from '@/components/MessageBubble';
+import { inboxApi } from '@/api/inbox';
 import { voiceContentTypeOf } from '@/components/Simulator';
 import { bookDateDraft, chatLinesOf, customerTextOf, messageWordsOf, parseBeoFromConversation } from '@/lib/beo';
 import {
@@ -218,5 +219,24 @@ describe('the simulator’s voice-note upload (voiceContentTypeOf)', () => {
     expect(voiceContentTypeOf('note.m4a', 'video/mp4')).toBe('audio/mp4');
     expect(voiceContentTypeOf('note.MP3', '')).toBe('audio/mpeg');
     expect(voiceContentTypeOf('photo.jpg', 'image/jpeg')).toBeNull();
+  });
+});
+
+describe('the simulator’s press carries the voice note to the api', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('simulateInbound sends the uploaded voice note beside the words (found on staging: it was left out, so a voice-only press was refused)', async () => {
+    const calls: Array<{ url: string; body: unknown }> = [];
+    vi.stubGlobal('fetch', async (url: string, init: { body?: string }) => {
+      calls.push({ url, body: JSON.parse(init.body ?? 'null') });
+      return new Response(JSON.stringify({ status: 'processed' }), { status: 200, headers: { 'content-type': 'application/json' } });
+    });
+    const voice = { contentType: 'audio/wav', dataBase64: 'UklGRg==' };
+    await inboxApi.simulateInbound({ channelAccountId: AUDIO, from: '+66800000000', voice });
+    expect(calls).toHaveLength(1);
+    const sent = calls[0]!;
+    expect(sent.url).toBe('/api/inbox/simulator/inbound');
+    expect(sent.body).toMatchObject({ channelAccountId: AUDIO, from: '+66800000000', voice });
+    expect((sent.body as { text?: unknown }).text).toBeUndefined();
   });
 });
