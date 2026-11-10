@@ -73,6 +73,15 @@ export const branch = core.table(
     partySlipsStationId: uuid('party_slips_station_id').references((): AnyPgColumn => station.id, {
       onDelete: 'set null',
     }),
+    /**
+     * SCRUM-823 — who a Birthdays & Events hand-over tells at this park: the
+     * birthday manager on duty (an OTO App notification and a WhatsApp or
+     * Telegram ping), and the GM, told once when nobody picks the thread up
+     * within fifteen minutes. Null until the park names them in the Console's
+     * branch settings: the hand-over is then recorded "nobody to tell".
+     */
+    birthdayManagerContact: jsonb('birthday_manager_contact').$type<BranchNoticeContact>(),
+    gmContact: jsonb('gm_contact').$type<BranchNoticeContact>(),
     ...timestamps,
     ...archivedAt,
   },
@@ -80,8 +89,24 @@ export const branch = core.table(
     index('branch_operator_idx').on(t.operatorId),
     uniqueIndex('branch_code_unique').on(t.operatorId, t.code),
     index('branch_party_slips_station_idx').on(t.partySlipsStationId),
+    check(
+      'branch_birthday_manager_contact_check',
+      sql`${t.birthdayManagerContact} is null or jsonb_typeof(${t.birthdayManagerContact}) = 'object'`,
+    ),
+    check('branch_gm_contact_check', sql`${t.gmContact} is null or jsonb_typeof(${t.gmContact}) = 'object'`),
   ],
 );
+
+/** SCRUM-823 — a person a hand-over notice goes to (`core.branch` contact settings). */
+export interface BranchNoticeContact {
+  /** Who, as staff read it. */
+  name: string | null;
+  /** The OTO App user the in-app notification goes to. */
+  appUserId: string | null;
+  /** E.164: the number the WhatsApp or Telegram ping goes to. */
+  phone: string | null;
+  channel: 'whatsapp' | 'telegram';
+}
 
 export const department = core.table(
   'department',

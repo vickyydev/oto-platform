@@ -1502,3 +1502,101 @@ export const aiRule = inbox.table(
     ),
   ],
 );
+
+// --- handover_notification (SCRUM-823, `0111_inbox_handover_notification`) ---
+
+/** Where a hand-over notice goes: the OTO App's notifications, or a ping to a phone. */
+export const HANDOVER_NOTICE_CHANNELS = ['app', 'whatsapp', 'telegram'] as const;
+export type HandoverNoticeChannel = (typeof HANDOVER_NOTICE_CHANNELS)[number];
+/** The first notice to the birthday manager on duty, or the one escalation to the GM. */
+export const HANDOVER_NOTICE_KINDS = ['notice', 'escalation'] as const;
+export type HandoverNoticeKind = (typeof HANDOVER_NOTICE_KINDS)[number];
+/**
+ * `pending` until a sender takes it; `sent` once the app or the notice sender
+ * took it; `failed` when it refused for good; `skipped` when there was nobody
+ * to tell (no contact set for the park) — kept so the escalation still runs.
+ */
+export const HANDOVER_NOTICE_STATES = ['pending', 'sent', 'failed', 'skipped'] as const;
+export type HandoverNoticeState = (typeof HANDOVER_NOTICE_STATES)[number];
+
+/**
+ * SCRUM-823 (owner, 10 Nov 2026): a hand-over to Birthdays & Events tells a
+ * person. One row per notice: the birthday manager on duty at the thread's
+ * park (or at every park when the thread has none), through the OTO App and
+ * through a WhatsApp or Telegram ping to the manager's phone; and, when nobody
+ * has picked the thread up within fifteen minutes, ONE escalation to the GM's
+ * contact (`job:inbox.handover_escalation`). The assistant turn that handed
+ * the thread over keys the set, so a replayed commit writes nothing twice.
+ *
+ * No customer text and no full phone number: `target` is the OTO App user id
+ * or the number masked to its last four digits; the sender reads the number
+ * from the park's setting when it sends.
+ */
+export const handoverNotification = inbox.table(
+  'handover_notification',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, tenantFk()),
+    conversationId: uuid('conversation_id').notNull(),
+    /** The assistant turn whose hand-over this notice is for. */
+    turnId: uuid('turn_id').notNull(),
+    /** The park whose contact is told; null when nobody could be named (no contact anywhere). */
+    branchId: uuid('branch_id').references(() => branch.id, { onDelete: 'restrict' }),
+    /** The category the thread was handed to. */
+    destination: text('destination').$type<InboxCategory>().notNull(),
+    /** The intent that owned the hand-over (`birthday_advice`, `birthday_details`…). */
+    intent: text('intent'),
+    kind: text('kind').$type<HandoverNoticeKind>().notNull(),
+    channel: text('channel').$type<HandoverNoticeChannel>().notNull(),
+    /** An OTO App user id, or a phone masked to its last four digits; null with nobody to tell. */
+    target: text('target'),
+    state: text('state').$type<HandoverNoticeState>().notNull().default('pending'),
+    /** Why a notice was skipped or failed: one upper-case word. */
+    errorCode: text('error_code'),
+    attempts: integer('attempts').notNull().default(0),
+    sentAt: timestamp('sent_at', { withTimezone: true, mode: 'date' }),
+    /** On a notice: when the hand-over was escalated to the GM. */
+    escalatedAt: timestamp('escalated_at', { withTimezone: true, mode: 'date' }),
+    /** On a notice: when the sweep saw a person take the thread (a staff reply, a person's assignment, handled). */
+    pickedUpAt: timestamp('picked_up_at', { withTimezone: true, mode: 'date' }),
+    ...timestamps,
+  },
+  (t) => [
+    foreignKey({
+      columns: [t.operatorId, t.conversationId],
+      foreignColumns: [conversation.operatorId, conversation.id],
+      name: 'handover_notification_conversation_fk',
+    }).onDelete('restrict'),
+    foreignKey({
+      columns: [t.operatorId, t.turnId],
+      foreignColumns: [aiTurn.operatorId, aiTurn.id],
+      name: 'handover_notification_turn_fk',
+    }).onDelete('restrict'),
+    /** One notice per hand-over, kind, channel and park: a replayed commit or sweep writes nothing twice. */
+    uniqueIndex('handover_notification_once')
+      .on(t.operatorId, t.turnId, t.kind, t.channel, sql`coalesce(${t.branchId}, ${NO_BRANCH})`),
+    index('handover_notification_conversation_idx').on(t.operatorId, t.conversationId),
+    index('handover_notification_turn_idx').on(t.operatorId, t.turnId),
+    index('handover_notification_branch_idx').on(t.branchId),
+    /** The senders' sweep: what is still to send. */
+    index('handover_notification_pending_idx')
+      .on(t.createdAt)
+      .where(sql`state = 'pending'`),
+    /** The escalation sweep: notices nobody has picked up or escalated yet. */
+    index('handover_notification_open_idx')
+      .on(t.createdAt)
+      .where(sql`kind = 'notice' and escalated_at is null and picked_up_at is null`),
+    check('handover_notification_kind_check', sql`${t.kind} in (${inList(HANDOVER_NOTICE_KINDS)})`),
+    check('handover_notification_channel_check', sql`${t.channel} in (${inList(HANDOVER_NOTICE_CHANNELS)})`),
+    check('handover_notification_state_check', sql`${t.state} in (${inList(HANDOVER_NOTICE_STATES)})`),
+    check('handover_notification_destination_check', sql`${t.destination} in (${inList(INBOX_CATEGORIES)})`),
+    check('handover_notification_intent_check', sql`${t.intent} is null or ${t.intent} ~ ${INTENT_WORD}`),
+    check('handover_notification_error_check', sql`${t.errorCode} is null or ${t.errorCode} ~ ${REASON_WORD}`),
+    check('handover_notification_target_check', sql`${t.target} is null or char_length(${t.target}) <= 80`),
+    /** Sent always says when. */
+    check('handover_notification_sent_check', sql`${t.state} <> 'sent' or ${t.sentAt} is not null`),
+    check('handover_notification_attempts_check', sql`${t.attempts} >= 0`),
+  ],
+);
