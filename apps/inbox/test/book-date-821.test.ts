@@ -358,3 +358,20 @@ describe('the model unavailable: the pattern reading stands', () => {
     expect(shown).not.toContain('two ways');
   });
 });
+
+describe('while the model reads, and once it has read', () => {
+  it('the fields the model fills say "reading…" while the read is in flight, and nothing afterwards', () => {
+    const pattern = draftOf('en', ENGLISH_TYPOS);
+    const waiting = dialog(pattern, null, true);
+    expect(waiting).toContain('Reading the whole chat');
+    expect((waiting.match(/placeholder="reading…"/g) ?? []).length).toBe(4);
+    const settled = dialog(pattern, null, false);
+    expect(settled).not.toContain('placeholder="reading…"');
+    expect(settled).not.toContain('Read the whole chat');
+  });
+  it('a model answer shows "Read the whole chat"; an unavailable one shows nothing', () => {
+    const pattern = draftOf('en', ENGLISH_TYPOS);
+    expect(dialog(pattern, answer({}), false)).toContain('Read the whole chat');
+    expect(dialog(pattern, UNAVAILABLE, false)).not.toContain('Read the whole chat');
+  });
+});

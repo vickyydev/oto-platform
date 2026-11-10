@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Calendar, Clock3, Hash, Loader2, MapPin, Phone, Users, Wand2, type LucideIcon } from 'lucide-react';
+import { Calendar, Check, Clock3, Hash, Loader2, MapPin, Phone, Users, Wand2, type LucideIcon } from 'lucide-react';
 import { Dialog } from '@/components/Dialog';
 import { Refusal } from '@/components/confirms';
 import type { BookDateProposal } from '@/api/inbox';
@@ -274,8 +274,13 @@ export function BookDateDialog({
           <Wand2 className="h-3 w-3" /> Read from the chat
         </span>
         {reading && (
-          <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+          <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400" data-testid="book-date-reading">
             <Loader2 className="h-3 w-3 animate-spin" /> Reading the whole chat…
+          </span>
+        )}
+        {!reading && proposal?.model === 'ai' && (
+          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-300" data-testid="book-date-read">
+            <Check className="h-3 w-3" /> Read the whole chat
           </span>
         )}
       </div>
@@ -319,10 +324,10 @@ export function BookDateDialog({
           </select>
         </Field>
         <Field icon={Hash} label="# of kids" hint={hint('kids')}>
-          <input inputMode="numeric" value={draft.kids} onChange={(e) => set('kids', e.target.value)} placeholder="0" aria-label="Kids" className={INPUT} />
+          <input inputMode="numeric" value={draft.kids} onChange={(e) => set('kids', e.target.value)} placeholder={reading ? 'reading…' : '0'} aria-label="Kids" className={INPUT} />
         </Field>
         <Field icon={Hash} label="# of adults" hint={hint('adults')}>
-          <input inputMode="numeric" value={draft.adults} onChange={(e) => set('adults', e.target.value)} placeholder="0" aria-label="Adults" className={INPUT} />
+          <input inputMode="numeric" value={draft.adults} onChange={(e) => set('adults', e.target.value)} placeholder={reading ? 'reading…' : '0'} aria-label="Adults" className={INPUT} />
         </Field>
         <Field icon={Users} label="Booking name">
           <input value={draft.contactName} onChange={(e) => set('contactName', e.target.value)} aria-label="Booking name" className={INPUT} />
@@ -331,10 +336,10 @@ export function BookDateDialog({
           <input value={draft.phone} onChange={(e) => set('phone', e.target.value)} placeholder="+66…" aria-label="Phone" className={INPUT} />
         </Field>
         <Field icon={Users} label="Child's name" hint={hint('childName')}>
-          <input value={draft.childName} onChange={(e) => set('childName', e.target.value)} placeholder="If the chat says it" aria-label="Child's name" className={INPUT} />
+          <input value={draft.childName} onChange={(e) => set('childName', e.target.value)} placeholder={reading ? 'reading…' : 'If the chat says it'} aria-label="Child's name" className={INPUT} />
         </Field>
         <Field icon={Hash} label="Turning (age)" hint={hint('childAge')}>
-          <input inputMode="numeric" value={draft.childAge} onChange={(e) => set('childAge', e.target.value)} placeholder="—" aria-label="Turning age" className={INPUT} />
+          <input inputMode="numeric" value={draft.childAge} onChange={(e) => set('childAge', e.target.value)} placeholder={reading ? 'reading…' : '—'} aria-label="Turning age" className={INPUT} />
         </Field>
       </div>
       {(problem ?? error) && <Refusal text={(problem ?? error)!} />}

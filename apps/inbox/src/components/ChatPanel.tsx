@@ -196,32 +196,33 @@ export function ChatPanel({
     setBookError(null);
   }, [conv.id]);
 
-  // SCRUM-821: Book Date opens with the pattern reading, then asks the model to
-  // read the whole chat; whatever it answers (or fails to) belongs to that one
-  // opening. A failure says nothing: the pattern reading stands.
-  const [bookReading, setBookReading] = useState<{ eventId: string; answer: BookDateProposal | null; reading: boolean } | null>(null);
-  const bookingEventId = booking?.eventId ?? null;
-  const bookingConversationId = booking?.conversationId ?? null;
+  // SCRUM-821: the model reads the whole chat for Book Date. The read starts as
+  // soon as a Birthdays & Events conversation opens, and again whenever its
+  // newest message changes, so the dialog is complete when it appears rather
+  // than three seconds later; one answer per (conversation, newest message).
+  // A failure says nothing: the pattern reading stands.
+  const newestMessageId = thread.messages.length > 0 ? thread.messages[thread.messages.length - 1]!.id : null;
+  const [bookReading, setBookReading] = useState<{ convId: string; newestMessageId: string | null; answer: BookDateProposal | null; reading: boolean } | null>(null);
   useEffect(() => {
-    if (!bookingEventId || !bookingConversationId) {
+    if (conv.category !== 'birthdays' || !live) {
       setBookReading(null);
       return;
     }
     let gone = false;
-    setBookReading({ eventId: bookingEventId, answer: null, reading: true });
-    inboxApi.bookDateProposal(bookingConversationId).then(
+    setBookReading((s) => (s && s.convId === conv.id && s.newestMessageId === newestMessageId ? s : { convId: conv.id, newestMessageId, answer: null, reading: true }));
+    inboxApi.bookDateProposal(conv.id).then(
       (answer) => {
-        if (!gone) setBookReading({ eventId: bookingEventId, answer, reading: false });
+        if (!gone) setBookReading({ convId: conv.id, newestMessageId, answer, reading: false });
       },
       () => {
-        if (!gone) setBookReading({ eventId: bookingEventId, answer: null, reading: false });
+        if (!gone) setBookReading({ convId: conv.id, newestMessageId, answer: null, reading: false });
       },
     );
     return () => {
       gone = true;
     };
-  }, [bookingEventId, bookingConversationId]);
-  const bookProposal = bookReading && bookReading.eventId === bookingEventId ? bookReading : null;
+  }, [conv.id, conv.category, live, newestMessageId]);
+  const bookProposal = bookReading && bookReading.convId === conv.id ? bookReading : null;
 
   // SCRUM-590 A3: the assistant's pause on this thread (§A.3 kill switch 3),
   // for whoever acts on it; and "Correct the assistant" for anyone who may write.
