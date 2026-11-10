@@ -37,7 +37,9 @@ describe('SCRUM-660 review: the message never travels in an address', () => {
   });
 
   it('pin: the OTO App takes no message from the request; it reads the platform with the person\'s session', () => {
-    expect(aiRoutes).toContain('const InboxFillBodySchema = z.object({ existingData: ExistingDataSchema });');
+    // SCRUM-826: the body also carries the press's purpose, a word ("fill" | "fetch"), never a message.
+    expect(aiRoutes).toContain('const InboxFillBodySchema = z.object({ existingData: ExistingDataSchema, purpose: z.enum(["fill", "fetch"]).optional() });');
+    expect(aiRoutes).not.toMatch(/InboxFillBodySchema = z\.object\(\{[^}]*(text|message|body):/);
     expect(aiRoutes).toContain('deps.inboxConfirmation(req, event.inboxConversationId)');
     // The pick names the event, and the app refuses a conversation that names another one.
     expect(InboxBeoConfirmationSchema.shape.eventId).toBeDefined();
