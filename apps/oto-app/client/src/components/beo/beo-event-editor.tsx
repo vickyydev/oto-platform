@@ -719,6 +719,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
 
   // SCRUM-822: the party's money is the till's. The Billing section, the
   // Party Details box and the header read these figures; none is worked out here.
+  // Read live: afresh when the BEO opens or the window comes back, and every minute while it is open.
   const tillBilling = useTillBilling(eventId);
   const tillFigures = tillFiguresOf(tillBilling.data);
   const canManageBilling = !readOnly && ["global_admin", "operator_admin", "admin", "manager"].includes(user?.role ?? "");

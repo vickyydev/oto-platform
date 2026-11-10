@@ -33,12 +33,30 @@ import { BeoBillingModule } from "./beo-billing-module";
 /** The query every screen shares, so one "Refresh from the till" refreshes them all. */
 export const tillBillingKey = (eventId: string) => ["/api/events", eventId, "beo", "till-billing"] as const;
 
-export function useTillBilling(eventId: string, options: { refetchInterval?: number } = {}) {
-  return useQuery<TillBillingReading>({
+/** How often an open BEO screen asks the till again: once a minute. */
+export const TILL_BILLING_LIVE_MS = 60_000;
+
+/**
+ * The till's figures are read live, never kept: the app's queries default to
+ * never going stale and never refetching (lib/queryClient.ts), which left a
+ * BEO open, or reopened within the cache's life, showing a quote the till had
+ * already settled. So: stale at once, read afresh whenever a screen showing
+ * them opens or the window comes back, and every minute while one is open
+ * (`refetchInterval: false` for a screen inside another that already polls).
+ */
+export function tillBillingQueryOptions(eventId: string, options: { refetchInterval?: number | false } = {}) {
+  return {
     queryKey: tillBillingKey(eventId),
     enabled: !!eventId,
-    ...(options.refetchInterval ? { refetchInterval: options.refetchInterval } : {}),
-  });
+    staleTime: 0,
+    refetchOnMount: "always" as const,
+    refetchOnWindowFocus: true,
+    refetchInterval: options.refetchInterval === undefined ? TILL_BILLING_LIVE_MS : options.refetchInterval,
+  };
+}
+
+export function useTillBilling(eventId: string, options: { refetchInterval?: number | false } = {}) {
+  return useQuery<TillBillingReading>(tillBillingQueryOptions(eventId, options));
 }
 
 /** "Read 14:05" — when the figures were read from the till. */
@@ -113,6 +131,7 @@ export function PartyDetailsTillTiles({
   const problem = figures ? null : tillProblemOf(reading);
   const missing = figures ? null : loading && !reading ? "Asking the till…" : (problem?.headline ?? TILL_NOT_REACHABLE);
   const owed = figures ? figures.outstandingSatang > 0 : false;
+  const readAt = figures ? readAtOf(reading) : null;
   return (
     <div className="space-y-2" data-testid="party-details-till">
       <div className="grid grid-cols-3 gap-3">
@@ -150,6 +169,11 @@ export function PartyDetailsTillTiles({
       {problem?.detail && (
         <p className="text-xs text-muted-foreground" data-testid="text-party-details-till-problem">
           {problem.detail}
+        </p>
+      )}
+      {readAt && (
+        <p className="text-xs text-muted-foreground" data-testid="text-party-details-read-at">
+          {figures?.kind === "sale" ? "Settled at the till" : "The till's quote"}, read {readAt}.
         </p>
       )}
       {depositUnsaved && (
@@ -323,7 +347,8 @@ export function BeoBillingSection({
   onBillingChange: (billing: Partial<BeoEventBilling>) => Promise<unknown> | void;
   isManager: boolean;
 }) {
-  const till = useTillBilling(eventId);
+  // The editor around it reads the till every minute; this one reads afresh when the section opens.
+  const till = useTillBilling(eventId, { refetchInterval: false });
   const deposit = useBufferedDeposit(billing, onBillingChange);
   return (
     <div className="space-y-4" data-testid="section-billing">

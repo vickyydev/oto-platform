@@ -10,7 +10,8 @@
 //     Quote PDF; after it, the sale's receipt, its lines and its payments;
 //   - the Party Details box's tiles: Total and Outstanding from the till, the
 //     deposit between them the BEO's own (SCRUM-813), a deposit not saved yet
-//     said;
+//     said, and when the figures were read; every screen reads them live
+//     (stale at once, afresh on open and focus, every minute while open);
 //   - the Day-of view's POS section. SCRUM-833 pinned: a party whose package
 //     snapshot holds 1,690,000 SATANG showed "฿1,690,000" for a ฿16,900
 //     package; it reads ฿16,900 now, from the till, and the snapshot's figure
@@ -184,6 +185,34 @@ await check("the Day-of POS section once settled: the sale's receipt and figures
   assert.equal(empty, "", "nothing for the POS and nothing from the till: no section");
 });
 
+await check("the till's figures are read live: stale at once, afresh on every open and window focus, every minute while open", async () => {
+  const { TILL_BILLING_LIVE_MS, tillBillingKey, tillBillingQueryOptions } = await import("../client/src/components/beo/beo-till-billing");
+  const live = tillBillingQueryOptions("e822");
+  assert.deepEqual(live, {
+    queryKey: tillBillingKey("e822"),
+    enabled: true,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchInterval: 60_000,
+  }, "the editor, the Day-of view and the view-only page: the defaults");
+  assert.equal(TILL_BILLING_LIVE_MS, 60_000);
+  assert.equal(tillBillingQueryOptions("e822", { refetchInterval: false }).refetchInterval, false, "the Billing section, inside the editor that polls");
+  assert.equal(tillBillingQueryOptions("e822", { refetchInterval: false }).refetchOnMount, "always", "it still reads afresh when it opens");
+  assert.equal(tillBillingQueryOptions("").enabled, false);
+});
+
+await check("the Party Details tiles say when the till's figures were read, and that a settled party's are the sale's", () => {
+  const deposit = React.createElement("span", null, "3000");
+  const quote = render(React.createElement(PartyDetailsTillTiles, { reading: QUOTE, deposit }));
+  assert.equal(textOf(quote, "text-party-details-read-at"), "The till's quote, read 15:00.");
+  const sale = render(React.createElement(PartyDetailsTillTiles, { reading: SALE, deposit }));
+  assert.equal(textOf(sale, "text-party-details-read-at"), "Settled at the till, read 15:00.");
+  assert.equal(textOf(sale, "text-outstanding-balance"), "฿0");
+  const down = render(React.createElement(PartyDetailsTillTiles, { reading: DOWN, deposit }));
+  assert.equal(textOf(down, "text-party-details-read-at"), null, "no figures, no read time");
+});
+
 // ─── The billing module's deposit, sent once (lib/beo-deposit-buffer.ts) ─────
 //
 // The module calls onBillingChange on every keystroke of Deposit Paid; the
@@ -302,4 +331,4 @@ await check("the party's billing writes share one queue: one scope per party", (
 });
 
 console.log(`till-billing-ui.check: ${checks} checks passed`);
-process.exit(checks === 12 ? 0 : 1);
+process.exit(checks === 14 ? 0 : 1);

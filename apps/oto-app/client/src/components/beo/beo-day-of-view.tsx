@@ -279,7 +279,7 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
   const canEdit = !!user && user.role !== "staff";
   const [posExpanded, setPosExpanded] = useState(false);
   // SCRUM-822: the party's money, read from the till; kept live through the day as the BEO itself is.
-  const tillBilling = useTillBilling(eventId, { refetchInterval: 60_000 });
+  const tillBilling = useTillBilling(eventId); // read afresh on open and every minute (TILL_BILLING_LIVE_MS)
   const [setupExpanded, setSetupExpanded] = useState(false);
   const [kitchenExpanded, setKitchenExpanded] = useState(false);
   const [barExpanded, setBarExpanded] = useState(false);
