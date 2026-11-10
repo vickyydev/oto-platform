@@ -1,17 +1,21 @@
 import { describe, expect, it } from 'vitest';
+import { adviceOpenerOn } from '../src/advice';
 import {
   PARK_QUESTION,
   PART_JOIN,
+  asksOnlyThePark,
   composeMessage,
   composeTurn,
   dependsOnPark,
+  guessesOnePark,
+  parkTopicsOf,
   parksDiffer,
   sameSentence,
   sentencesOf,
 } from '../src/compose';
 import type { AiDecision } from '../src/decision';
-import { applyGates, type EpisodeQuestion, type EpisodeState, type GateVerdict } from '../src/gate';
-import { GM_PLAN, OWN_PARK_QUESTION_INTENTS, PARK_FIRST_INTENTS } from '../src/intents';
+import { applyGates, type EpisodeQuestion, type EpisodeState, type GateInput, type GateVerdict } from '../src/gate';
+import { BIRTHDAYS_PLAN, GM_PLAN, OWN_PARK_QUESTION_INTENTS, PARK_FIRST_INTENTS, topicsOfIntents } from '../src/intents';
 import { EN_PERSONA, RU_PERSONA, TH_PERSONA } from '../src/persona';
 import { buildKnowledge, type BranchFacts, type KbEntryInput, type OpeningHours } from '../src/prompt';
 import { askedSlotsOf, readSlotAnswers } from '../src/slots';
@@ -26,13 +30,20 @@ import { decision, episode } from './support';
  * thread's park was set, and a second bubble repeated the location and added
  * the parking.
  *
- *   1. ONE MESSAGE PER TURN: a reply's parts are one bubble; the closing or
- *      hand-over line the playbook keeps separate follows on its own.
- *   2. PARK FIRST: a park-dependent answer in a thread with no park asks
- *      "Which branch…?" ALONE, recorded for the memory (slot park), unless
- *      the customer named the park; "Central" is read as the answer.
- *   3. NO REPETITION: once the park is known, nothing already sent is sent
- *      again.
+ *   1. ONE MESSAGE PER TURN: the parts of an answer on one topic are one
+ *      bubble; an answer on several topics keeps a bubble per part; the
+ *      closing or hand-over line the playbook keeps separate follows on its
+ *      own. Nothing a part says is lost: a sentence said again is dropped
+ *      only between parts, never with a number, never a row of a list.
+ *   2. PARK FIRST: on the owner's pattern (the model asked which park beside
+ *      a park-dependent answer, or answered for one park nobody named), the
+ *      park question ALONE, recorded for the memory (slot park), unless the
+ *      family named the park this episode; "Central" is read as the answer.
+ *      An overview of both parks that asks nothing goes as written; a burst
+ *      with another question keeps every answer.
+ *   3. NO REPETITION: once the family gave the park, what was said about the
+ *      park while it was being resolved is not said again, unless they ask
+ *      about it again.
  *
  * THE EXPECTATION is the reply the owner saved through "Correct the
  * assistant" on staging (10 Nov 2026, 08:44 UTC, intent directions_parking,
@@ -122,6 +133,7 @@ const PARK_KB: KbEntryInput[] = [
   row('pb.parking', 'parking', 'ru', 'Есть парковка?', 'Парковка бесплатная в обоих торговых центрах.'),
   row('pb.hours', 'hours_note', 'en', 'When are you open?', 'Both branches are open 10:00 to 20:00, 7 days a week.'),
   row('pb.cafe', 'faq', 'en', 'Do you have a café?', 'Yes, we have a café with meals and snacks at both parks.'),
+  row('pb.socks', 'socks', 'en', 'Do we need socks?', 'Grip socks are required on the play floor for kids and adults; you can buy them at reception.'),
 ];
 
 const sameHours = buildKnowledge({ kb: PARK_KB, branches: parks(), examples: [] });
@@ -129,6 +141,7 @@ const sameHours = buildKnowledge({ kb: PARK_KB, branches: parks(), examples: [] 
 const otherHours = buildKnowledge({ kb: PARK_KB.filter((e) => e.key !== 'pb.hours'), branches: parks('21:00'), examples: [] });
 
 const GENERAL: Partial<EpisodeState> = { threadCategory: 'general', earlierIntents: [] };
+const BIRTHDAYS: Partial<EpisodeState> = { threadCategory: 'birthdays', earlierIntents: [] };
 const TODAY = '2026-11-10';
 
 const gate = (d: Partial<AiDecision>, e: Partial<EpisodeState>, lines: readonly string[], knowledge = sameHours): GateVerdict =>
@@ -138,6 +151,29 @@ const answer = (v: GateVerdict) => {
   if (v.action !== 'answer') throw new Error(`expected an answer, got ${v.action} ${v.reason}`);
   return v;
 };
+
+type Answer = Extract<GateVerdict, { action: 'answer' }>;
+
+/** An answer verdict as the gate passes it to `composeTurn`, for the composition alone (no guard runs here). */
+const verdict = (o: Partial<Answer>): Answer => ({
+  action: 'answer',
+  reason: 'OK',
+  intent: 'faq',
+  intents: ['faq'],
+  language: 'en',
+  bubbles: [],
+  groundingKeys: [],
+  sendBrochure: false,
+  askBranch: false,
+  branchNamed: null,
+  thenHandover: null,
+  mayAutoHandle: false,
+  languageOffer: null,
+  ...o,
+});
+
+const compose = (v: Answer, e: Partial<EpisodeState> = GENERAL, lines: readonly string[] = [], d: Partial<AiDecision> = {}) =>
+  answer(composeTurn(v, { decision: decision(d), grounding: sameHours.grounding, episode: episode(e), openLines: lines }));
 
 /** One space between words: the one message read as the owner's one paragraph. */
 const oneParagraph = (s: string) => s.replace(/\s+/gu, ' ').trim();
@@ -168,7 +204,7 @@ describe('SCRUM-832: the owner’s case — park first, then one message with th
       );
       expect(v.bubbles).toEqual([PARK_QUESTION[lang]]);
       expect(v).toMatchObject({ intent: 'directions_parking', askBranch: true, askedSlots: ['park'], thenHandover: null, mayAutoHandle: false, branchNamed: null });
-      expect(v.composition).toEqual({ parkFirst: true, bubbles: 2, duplicates: 0, repeats: 0 });
+      expect(v.composition).toEqual({ parkFirst: true, bubbles: 2, joined: true, duplicates: 0, repeats: 0, parkQuestions: 0 });
       // The memory records the slot from the line itself too.
       expect(askedSlotsOf(v.askedSlots, v.bubbles)).toEqual(['park']);
     });
@@ -176,7 +212,14 @@ describe('SCRUM-832: the owner’s case — park first, then one message with th
     it(`${lang}: "${SAYS_CENTRAL[lang]}" is the answer; the next reply is ONE bubble with the directions and the parking, once`, () => {
       const questions = parkAnswered(SAYS_CENTRAL[lang]);
       expect(questions[0]).toMatchObject({ state: 'answered', answer: 'central' });
-      const episodeAfter: Partial<EpisodeState> = { ...GENERAL, aiAnswers: 1, aiAnswersLast10Min: 1, questions, aiLines: [PARK_QUESTION[lang]] };
+      const episodeAfter: Partial<EpisodeState> = {
+        ...GENERAL,
+        aiAnswers: 1,
+        aiAnswersLast10Min: 1,
+        questions,
+        parkAnsweredNow: true,
+        parkLines: [PARK_QUESTION[lang]],
+      };
       const reply = {
         language: lang,
         intent: 'directions_parking' as const,
@@ -209,13 +252,13 @@ describe('SCRUM-832: the owner’s case — park first, then one message with th
           branchNamed: 'central',
           reason: 'FACT_IN_KB',
         },
-        { ...GENERAL, questions: parkAnswered('Central') },
+        { ...GENERAL, questions: parkAnswered('Central'), parkAnsweredNow: true },
         ['Central'],
       ),
     );
     expect(v.bubbles).toHaveLength(1);
     expect(oneParagraph(v.bubbles[0]!)).toBe(OWNER_SAVED_REPLY);
-    expect(v.composition).toMatchObject({ parkFirst: false, bubbles: 2, duplicates: 1 });
+    expect(v.composition).toMatchObject({ parkFirst: false, bubbles: 2, joined: true, duplicates: 1 });
   });
 
   it('staging’s own second turn after its first: the repeated location is dropped, the directions and the parking stay', () => {
@@ -226,7 +269,7 @@ describe('SCRUM-832: the owner’s case — park first, then one message with th
     const v = answer(
       gate(
         { intent: 'directions_parking', grounding: ['pb.address-central', 'pb.directions-central', 'pb.parking'], bubbles: staging, branchNamed: 'central', reason: 'FACT_IN_KB' },
-        { ...GENERAL, aiAnswers: 1, aiAnswersLast10Min: 1, aiLines: BOTH_PARKS.en },
+        { ...GENERAL, aiAnswers: 1, aiAnswersLast10Min: 1, questions: parkAnswered('Central'), parkAnsweredNow: true, parkLines: BOTH_PARKS.en },
         ['Central'],
       ),
     );
@@ -236,8 +279,8 @@ describe('SCRUM-832: the owner’s case — park first, then one message with th
   });
 });
 
-describe('SCRUM-832: park first, only where the answer depends on the park', () => {
-  it('a message naming the park is answered at once, in one bubble', () => {
+describe('SCRUM-832: park first, only on the owner’s pattern', () => {
+  it('a message naming the park is answered at once, in one bubble, and the park is set', () => {
     for (const [lang, line] of [
       ['en', 'How do we find you at Central Floresta?'],
       ['th', 'ไปสาขาเซ็นทรัลยังไงคะ'],
@@ -253,26 +296,67 @@ describe('SCRUM-832: park first, only where the answer depends on the park', () 
       );
       expect(v.bubbles, line).toEqual([CENTRAL_REPLY[lang].join(PART_JOIN)]);
       expect(v.askBranch, line).toBe(false);
+      expect(v.branchNamed, line).toBe('central');
     }
   });
 
-  it('hours with no park: answered at once when both parks keep the same hours; the park question when they differ', () => {
+  it('an overview of both parks that asks nothing goes as written: where are your branches, a branch in Patong, the closest to Kata', () => {
+    const overview = BOTH_PARKS.en[0];
+    for (const line of ['Where are your branches?', 'Do you have a branch in Patong?', 'Which of your parks is closest to Kata?']) {
+      const v = answer(gate({ intent: 'address', grounding: ['pb.address-central', 'pb.address-chalong'], bubbles: [overview], reason: 'FACT_IN_KB' }, GENERAL, [line]));
+      expect(v.bubbles, line).toEqual([overview]);
+      expect(v.askBranch, line).toBe(false);
+      expect(v.askedSlots, line).toBeUndefined();
+      expect(v.composition, line).toBeUndefined();
+    }
+    // Two bubbles of an overview: one message, nothing asked.
+    const two = answer(
+      gate(
+        { intent: 'address', grounding: ['pb.address-central', 'pb.address-chalong'], bubbles: [overview, 'Robinson Chalong is the closer one to Kata 😊'], reason: 'FACT_IN_KB' },
+        GENERAL,
+        ['Which of your parks is closest to Kata?'],
+      ),
+    );
+    expect(two.bubbles).toEqual([`${overview}${PART_JOIN}Robinson Chalong is the closer one to Kata 😊`]);
+  });
+
+  it('"Which one is closer to Patong?" after the park question: answered, and the park question is never asked here again', () => {
+    const waiting: Partial<EpisodeState> = { ...GENERAL, aiAnswers: 1, aiAnswersLast10Min: 1, questions: [{ slot: 'park', state: 'open', answer: null }] };
+    const comparison = 'Central Floresta is the closer one to Patong 😊';
+    const v = answer(gate({ intent: 'address', grounding: ['pb.address-central', 'pb.address-chalong'], bubbles: [comparison], reason: 'FACT_IN_KB' }, waiting, ['Which one is closer to Patong?']));
+    expect(v.bubbles).toEqual([comparison]);
+    // The model asks again beside it: its own reply goes, the comparison kept (the repeat guard counts the asks).
+    const again = answer(
+      gate(
+        { intent: 'address', grounding: ['pb.address-central', 'pb.address-chalong'], bubbles: [comparison, EN_PERSONA.branchQuestion], askBranch: true, askedSlots: ['park'], reason: 'FACT_IN_KB' },
+        waiting,
+        ['Which one is closer to Patong?'],
+      ),
+    );
+    expect(again.bubbles).toEqual([`${comparison}${PART_JOIN}${EN_PERSONA.branchQuestion}`]);
+    expect(again.composition?.parkFirst).toBe(false);
+  });
+
+  it('hours with no park: answered at once when both parks keep the same hours; the park question when they differ and the model asks', () => {
     const same = answer(
       gate({ intent: 'hours', grounding: ['fact.hours.central', 'fact.hours.chalong'], bubbles: ["We're open every day 10:00–20:00 at both parks 😊"], reason: 'FACT_IN_KB' }, GENERAL, ['What time do you open?']),
     );
     expect(same.bubbles).toEqual(["We're open every day 10:00–20:00 at both parks 😊"]);
     expect(parksDiffer('hours', sameHours.grounding)).toBe(false);
-
-    const differ = answer(
-      gate(
-        { intent: 'hours', grounding: ['fact.hours.central', 'fact.hours.chalong'], bubbles: ['Central Floresta is open 10:00–20:00 and Robinson Chalong 10:00–21:00 😊'], reason: 'FACT_IN_KB' },
-        GENERAL,
-        ['What time do you close?'],
-        otherHours,
-      ),
-    );
-    expect(differ).toMatchObject({ bubbles: [PARK_QUESTION.en], askBranch: true, askedSlots: ['park'] });
     expect(parksDiffer('hours', otherHours.grounding)).toBe(true);
+
+    // Both parks' hours told, nothing asked: an overview, as written.
+    const both = 'Central Floresta is open 10:00–20:00 and Robinson Chalong 10:00–21:00 😊';
+    const overview = answer(gate({ intent: 'hours', grounding: ['fact.hours.central', 'fact.hours.chalong'], bubbles: [both], reason: 'FACT_IN_KB' }, GENERAL, ['What time do you close?'], otherHours));
+    expect(overview.bubbles).toEqual([both]);
+    // The model asks which park beside them: the park question alone.
+    const asked = gate(
+      { intent: 'hours', grounding: ['fact.hours.central', 'fact.hours.chalong'], bubbles: [both, EN_PERSONA.branchQuestion], askBranch: true, reason: 'FACT_IN_KB' },
+      GENERAL,
+      ['What time do you close?'],
+      otherHours,
+    );
+    expect(asked).toMatchObject({ bubbles: [PARK_QUESTION.en], askBranch: true, askedSlots: ['park'] });
     // The same question, the park named: Robinson Chalong's hours at once.
     const named = answer(
       gate(
@@ -285,38 +369,65 @@ describe('SCRUM-832: park first, only where the answer depends on the park', () 
     expect(named.bubbles).toEqual(['Robinson Chalong is open every day 10:00–21:00 😊']);
   });
 
-  it('parking, free at both malls, is answered at once; the address and the way in are not', () => {
+  it('parking, free at both malls, is answered at once; a guess at one park nobody named is the park question', () => {
     const parking = answer(gate({ intent: 'directions_parking', grounding: ['pb.parking'], bubbles: ['Yes! Parking is free at both malls 😊'], reason: 'FACT_IN_KB' }, GENERAL, ['Is there parking?']));
     expect(parking.bubbles).toEqual(['Yes! Parking is free at both malls 😊']);
     expect(dependsOnPark({ intents: ['directions_parking'], groundingKeys: ['pb.parking'] }, sameHours.grounding)).toBe(false);
     expect(dependsOnPark({ intents: ['address'], groundingKeys: ['fact.address.central', 'fact.address.chalong'] }, sameHours.grounding)).toBe(true);
     expect(dependsOnPark({ intents: ['directions_parking'], groundingKeys: ['pb.directions-central'] }, sameHours.grounding)).toBe(true);
+    expect(guessesOnePark({ groundingKeys: ['pb.directions-central', 'pb.parking'] }, sameHours.grounding)).toBe(true);
+    expect(guessesOnePark({ groundingKeys: ['pb.address-central', 'pb.address-chalong'] }, sameHours.grounding)).toBe(false);
+    expect(guessesOnePark({ groundingKeys: ['pb.parking'] }, sameHours.grounding)).toBe(false);
     // A guess at one park, the family having named none: the question.
     const guess = gate({ intent: 'directions_parking', grounding: ['pb.directions-central'], bubbles: ['Take the escalator down toward the aquarium 😊'], reason: 'FACT_IN_KB' }, GENERAL, ['Where are you?']);
-    expect(guess).toMatchObject({ action: 'answer', bubbles: [PARK_QUESTION.en] });
+    expect(guess).toMatchObject({ action: 'answer', bubbles: [PARK_QUESTION.en], askedSlots: ['park'] });
+  });
+
+  it('a park the family named in an earlier message is never asked: the answer for that park, and the thread’s park set', () => {
+    const chalong = ['We are in Robinson Chalong on the 3rd floor, opposite the cinema.', 'Take the escalator up, then the second escalator by the food court to the 3rd floor.'];
+    const earlier: Partial<EpisodeState> = { ...GENERAL, aiAnswers: 1, aiAnswersLast10Min: 1, customerLines: ['Is Robinson Chalong open on Sundays?', 'How do we find you?'] };
+    const v = answer(gate({ intent: 'directions_parking', grounding: ['pb.address-chalong', 'pb.directions-chalong'], bubbles: chalong, reason: 'FACT_IN_KB' }, earlier, ['How do we find you?']));
+    expect(v.bubbles).toEqual([chalong.join(PART_JOIN)]);
+    expect(v).toMatchObject({ branchNamed: 'chalong', askBranch: false });
+    expect(v.askedSlots).toBeUndefined();
+    // The model asks which park beside it all the same: the park is known, so the question goes and the answer stays.
+    const asked = answer(
+      gate(
+        { intent: 'directions_parking', grounding: ['pb.address-chalong', 'pb.directions-chalong'], bubbles: [...chalong, EN_PERSONA.branchQuestion], askBranch: true, askedSlots: ['park'], reason: 'FACT_IN_KB' },
+        earlier,
+        ['How do we find you?'],
+      ),
+    );
+    expect(asked).toMatchObject({ bubbles: [chalong.join(PART_JOIN)], branchNamed: 'chalong', askBranch: false, askedSlots: [] });
+    // The same burst with no earlier message naming a park: a guess at Chalong, so the question.
+    expect(gate({ intent: 'directions_parking', grounding: ['pb.address-chalong', 'pb.directions-chalong'], bubbles: chalong, reason: 'FACT_IN_KB' }, GENERAL, ['How do we find you?'])).toMatchObject({
+      bubbles: [PARK_QUESTION.en],
+    });
   });
 
   it('never: a thread with a park, a park already answered, both parks named, a birthday, the price question, a hand-over to follow', () => {
-    const where = { intent: 'directions_parking' as const, grounding: ['pb.address-central', 'pb.address-chalong'], bubbles: BOTH_PARKS.en, reason: 'FACT_IN_KB' as const };
+    const where = { intent: 'directions_parking' as const, grounding: ['pb.address-central', 'pb.address-chalong'], bubbles: BOTH_PARKS.en, askBranch: true, reason: 'FACT_IN_KB' as const };
     const message = [BOTH_PARKS.en.join(PART_JOIN)];
-    expect(gate(where, { ...GENERAL, threadHasBranch: true }, ['How to find you?'])).toMatchObject({ bubbles: message });
-    expect(gate(where, { ...GENERAL, questions: parkAnswered('Central') }, ['How to find you?'])).toMatchObject({ bubbles: message });
+    // The park is known: the reply goes, its park question dropped.
+    expect(gate(where, { ...GENERAL, threadHasBranch: true }, ['How to find you?'])).toMatchObject({ bubbles: [BOTH_PARKS.en[0]], askBranch: false });
+    expect(gate(where, { ...GENERAL, questions: parkAnswered('Central') }, ['How to find you?'])).toMatchObject({ bubbles: [BOTH_PARKS.en[0]] });
+    // Both parks named: a choice, answered as written.
     expect(gate(where, GENERAL, ['Which is closer to Kata, Central or Chalong?'])).toMatchObject({ bubbles: message });
     // A birthday thread asks the park in its own combined question.
     expect(gate(where, { threadCategory: 'birthdays', earlierIntents: [] }, ['How to find you?'])).toMatchObject({ bubbles: message });
     expect(gate(where, { ...GENERAL, earlierIntents: ['birthday_party'] }, ['How to find you?'])).toMatchObject({ bubbles: message });
-    // The price conversation asks the branch and the residency together, before the prices (the playbook).
+    // The price conversation asks the branch and the residency together, before the prices (the playbook): two topics, a bubble each.
     const price = gate(
       { ...where, intent: 'directions_parking', intents: ['directions_parking', 'ticket_prices'], grounding: ['pb.address-central', 'pb.address-chalong', 'fact.prices.central'], bubbles: [BOTH_PARKS.en[0], EN_PERSONA.branchResidencyQuestion] },
       GENERAL,
       ['Where are you and how much is it?'],
     );
-    expect(price).toMatchObject({ action: 'answer', bubbles: [[BOTH_PARKS.en[0], EN_PERSONA.branchResidencyQuestion].join(PART_JOIN)] });
-    // A colleague takes over after the answer: the colleague asks.
+    expect(price).toMatchObject({ action: 'answer', bubbles: [BOTH_PARKS.en[0], EN_PERSONA.branchResidencyQuestion] });
+    // A colleague takes over after the answer: the colleague asks; two topics, a bubble each.
     const job = answer(
       gate({ ...where, intents: ['directions_parking', 'job_request'], bubbles: [BOTH_PARKS.en[0], "We're always looking for great people!"] }, GENERAL, ['Where are you? Also, are you hiring?']),
     );
-    expect(job).toMatchObject({ thenHandover: GM_PLAN, bubbles: [`${BOTH_PARKS.en[0]}${PART_JOIN}We're always looking for great people!`] });
+    expect(job).toMatchObject({ thenHandover: GM_PLAN, bubbles: [BOTH_PARKS.en[0], "We're always looking for great people!"] });
     expect(job.askedSlots).toBeUndefined();
   });
 
@@ -324,24 +435,56 @@ describe('SCRUM-832: park first, only where the answer depends on the park', () 
     expect([...PARK_FIRST_INTENTS].sort()).toEqual(['address', 'directions_parking', 'hours']);
     expect(OWN_PARK_QUESTION_INTENTS.has('ticket_prices')).toBe(true);
     expect(OWN_PARK_QUESTION_INTENTS.has('birthday_party')).toBe(true);
+    for (const i of OWN_PARK_QUESTION_INTENTS) expect(PARK_FIRST_INTENTS.has(i)).toBe(false);
     expect(PARK_QUESTION).toEqual({ en: EN_PERSONA.branchQuestion, th: TH_PERSONA.branchQuestion, ru: RU_PERSONA.branchQuestion });
-    for (const q of Object.values(PARK_QUESTION)) expect(askedSlotsOf([], [q])).toEqual(['park']);
+    for (const q of Object.values(PARK_QUESTION)) {
+      expect(askedSlotsOf([], [q])).toEqual(['park']);
+      expect(asksOnlyThePark(q)).toBe(true);
+    }
+    // The birthday's combined question asks more than the park: never dropped as the park question.
+    expect(asksOnlyThePark('What date are you thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong?')).toBe(false);
   });
 });
 
-describe('SCRUM-832: one message per turn — a hand-over keeps its one bubble', () => {
+describe('SCRUM-832: a burst with another question keeps every answer', () => {
+  const where = { grounding: ['pb.address-central', 'pb.address-chalong'], askBranch: true, askedSlots: ['park'] as AiDecision['askedSlots'], reason: 'FACT_IN_KB' as const };
+  const cases: Array<{ line: string; intents: AiDecision['intents']; key: string; bubble: string }> = [
+    { line: 'Do you have a café? And where are you?', intents: ['faq', 'directions_parking'], key: 'pb.cafe', bubble: 'Yes, we have a café with meals and snacks at both parks 😊' },
+    { line: 'Do we need socks? where are you located', intents: ['socks', 'address'], key: 'pb.socks', bubble: 'Yes, grip socks are required on the play floor, and you can buy them at reception 😊' },
+    { line: 'Where are you? And do we need socks?', intents: ['address', 'socks'], key: 'pb.socks', bubble: 'Yes, grip socks are required on the play floor, and you can buy them at reception 😊' },
+  ];
+
+  for (const c of cases) {
+    it(`"${c.line}" in a general thread with no park: the other answer stays, beside the model’s own park question`, () => {
+      const bubbles = c.intents![0] === 'address' ? [BOTH_PARKS.en[0], c.bubble, EN_PERSONA.branchQuestion] : [c.bubble, BOTH_PARKS.en[0], EN_PERSONA.branchQuestion];
+      const v = answer(gate({ ...where, intent: c.intents![0]!, intents: c.intents, grounding: [...where.grounding, c.key], bubbles }, GENERAL, [c.line]));
+      // Several topics: a bubble per part, every answer, the park asked by the model's own words.
+      expect(v.bubbles).toEqual(bubbles);
+      expect(v.bubbles).toContain(c.bubble);
+      expect(v).toMatchObject({ askBranch: true });
+      expect(v.composition).toBeUndefined();
+    });
+  }
+});
+
+describe('SCRUM-832: one message per turn — on one topic', () => {
+  it('a reply on several topics keeps a bubble per part (test night W2); one topic is one message; a greeting is no topic', () => {
+    expect(topicsOfIntents(['directions_parking', 'faq'])).toEqual(['where', 'faq']);
+    expect(topicsOfIntents(['address', 'directions_parking'])).toEqual(['where']);
+    expect(topicsOfIntents(['greeting', 'socks'])).toEqual(['socks']);
+    expect(topicsOfIntents(['greeting'])).toEqual(['greeting']);
+    expect(topicsOfIntents(['birthday_party', 'birthday_advice'])).toEqual(['birthday']);
+    const parts = ['Parking is free at both malls 😊', 'Outside food isn’t allowed, but our café has meals and snacks.'];
+    expect(compose(verdict({ intent: 'directions_parking', intents: ['directions_parking', 'faq'], bubbles: parts })).bubbles).toEqual(parts);
+    const one = compose(verdict({ intent: 'directions_parking', intents: ['greeting', 'directions_parking'], bubbles: ['Hi there! 😊', parts[0]!] }));
+    expect(one.bubbles).toEqual([`Hi there! 😊${PART_JOIN}${parts[0]}`]);
+    expect(one.composition).toMatchObject({ joined: true, bubbles: 2 });
+  });
+
   it('a complaint’s apology stays one bubble, the GM’s closing line follows on its own', () => {
     const v = answer(gate({ intent: 'complaint_onsite', action: 'handover', bubbles: ["We're so sorry to hear about your visit today."], reason: 'NEEDS_PERSON' }, GENERAL, ['Your staff were rude.']));
     expect(v).toMatchObject({ bubbles: ["We're so sorry to hear about your visit today."], thenHandover: GM_PLAN });
     expect(v.composition).toBeUndefined();
-  });
-
-  it('a hand-over with no words of its own, and a template line that is already one message, are left as they are', () => {
-    const handover = gate({ intent: 'birthday_details', action: 'handover', bubbles: [], reason: 'NEEDS_PERSON' }, GENERAL, ['14 November, 12 kids']);
-    expect(handover).toMatchObject({ action: 'handover', holdingBubbles: [] });
-    // SCRUM-823's opener beside an advice hand-over sends ONE template line: a hand-over verdict, untouched here.
-    const opener: GateVerdict = { ...(handover as Extract<GateVerdict, { action: 'handover' }>), holdingBubbles: ['one message'] };
-    expect(composeTurn(opener, { decision: decision({}), grounding: sameHours.grounding, episode: episode(GENERAL) })).toBe(opener);
   });
 
   it('answer parts and the birthday opener are one bubble each turn; a single bubble is returned as it was', () => {
@@ -361,55 +504,240 @@ describe('SCRUM-832: one message per turn — a hand-over keeps its one bubble',
   });
 });
 
-describe('SCRUM-832: nothing said twice once the park is known', () => {
-  const said = ["We're on the basement floor of Central Floresta, opposite the aquarium. It's the side with the luxury brands, not Festival."];
+describe('SCRUM-832: a hand-over passes as it is — SCRUM-823’s opener is the turn’s one message', () => {
+  const C2 = 'We would like to book a birthday party for our son. Which package would you recommend?';
+  const c2: Partial<AiDecision> = { intent: 'birthday_advice', intents: ['birthday_advice', 'birthday_party'], action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] };
 
-  it('a sentence already sent is dropped from a later message; the rest goes', () => {
-    const m = composeMessage(["We're open every day 10:00–20:00 😊", "We're on the basement floor of Central Floresta, opposite the aquarium."], { said, openLines: ['What time do you close?'] });
-    expect(m).toEqual({ text: "We're open every day 10:00–20:00 😊", parts: ["We're open every day 10:00–20:00 😊"], duplicates: 0, repeats: 1 });
-  });
-
-  it('a family asking again gets the answer again; a reply of nothing but repeats goes as it is (never silence)', () => {
-    const again = composeMessage(["We're on the basement floor of Central Floresta, opposite the aquarium.", 'See you soon at OTO!'], { said, openLines: ['Sorry, which floor are you on?'] });
-    expect(again.repeats).toBe(0);
-    const only = composeMessage(["We're on the basement floor of Central Floresta, opposite the aquarium 😊"], { said, openLines: ['ok'] });
-    expect(only).toEqual({
-      text: "We're on the basement floor of Central Floresta, opposite the aquarium 😊",
-      parts: ["We're on the basement floor of Central Floresta, opposite the aquarium 😊"],
-      duplicates: 0,
-      repeats: 0,
+  for (const [what, e] of [
+    ['a Birthdays & Events thread', BIRTHDAYS],
+    ['a general thread with no park', GENERAL],
+  ] as const) {
+    it(`C2 (a party and advice) in ${what}: the real adviceOpenerOn marks the hand-over, and composeTurn leaves it untouched`, () => {
+      const input: GateInput = { decision: decision(c2), grounding: sameHours.grounding, episode: episode(e), openLines: [C2] };
+      const v = applyGates(input);
+      expect(v).toMatchObject({ action: 'handover', plan: BIRTHDAYS_PLAN, adviceOpener: 'full', holdingBubbles: [] });
+      expect(v.intents).toContain('birthday_advice');
+      // The opener's one message is the template's (the engine's), never a bubble of the verdict: nothing to compose.
+      expect(composeTurn(v, input)).toBe(v);
+      // The gate's own order: the opener read on the gated verdict, then the turn composed.
+      const read = adviceOpenerOn(v, input);
+      expect(composeTurn(read, input)).toBe(read);
     });
+  }
+
+  it('a hand-over with no words of its own is left as it is', () => {
+    const handover = gate({ intent: 'birthday_details', action: 'handover', bubbles: [], reason: 'NEEDS_PERSON' }, GENERAL, ['14 November, 12 kids']);
+    expect(handover).toMatchObject({ action: 'handover', holdingBubbles: [] });
+    const withWords: GateVerdict = { ...(handover as Extract<GateVerdict, { action: 'handover' }>), holdingBubbles: ['one message'] };
+    expect(composeTurn(withWords, { decision: decision({}), grounding: sameHours.grounding, episode: episode(GENERAL) })).toBe(withWords);
+  });
+});
+
+describe('SCRUM-832: the park question asked once — a park the model asks for while it is known is dropped', () => {
+  const directions = [CENTRAL_REPLY.en[0], EN_PERSONA.branchQuestion];
+  const asking = { intent: 'directions_parking' as const, grounding: ['pb.address-central', 'pb.directions-central'], bubbles: directions, askBranch: true, askedSlots: ['park'] as AiDecision['askedSlots'], reason: 'FACT_IN_KB' as const };
+
+  it('"How do we find you at Central?" (the park read): the directions go, the park question does not', () => {
+    const v = answer(gate({ ...asking, branchNamed: 'central' }, GENERAL, ['How do we find you at Central?']));
+    expect(v.bubbles).toEqual([CENTRAL_REPLY.en[0]]);
+    expect(v).toMatchObject({ askBranch: false, askedSlots: [], branchNamed: 'central' });
+    expect(v.composition).toMatchObject({ parkQuestions: 1 });
+    expect(askedSlotsOf(v.askedSlots, v.bubbles)).toEqual([]);
   });
 
-  it('only once the park is known: with no park nothing is dropped as a repeat', () => {
+  it('a thread with its park: the same', () => {
+    const v = answer(gate(asking, { ...GENERAL, threadHasBranch: true }, ['How do we find you?']));
+    expect(v.bubbles).toEqual([CENTRAL_REPLY.en[0]]);
+    expect(v).toMatchObject({ askBranch: false, askedSlots: [] });
+  });
+
+  it('only the question: the model’s answer goes as written, never an empty message', () => {
+    const v = answer(gate({ ...asking, bubbles: [EN_PERSONA.branchQuestion] }, { ...GENERAL, threadHasBranch: true }, ['How do we find you?']));
+    expect(v.bubbles).toEqual([EN_PERSONA.branchQuestion]);
+  });
+
+  it('a part of several lines keeps its line breaks when the question is cut out of it', () => {
+    const part = 'Take the escalator down toward the aquarium.\nParking is free at both malls. Which branch are you thinking of, Central Floresta or Robinson Chalong?';
+    const v = compose(verdict({ intent: 'directions_parking', intents: ['directions_parking'], bubbles: [part] }), { ...GENERAL, threadHasBranch: true });
+    expect(v.bubbles).toEqual(['Take the escalator down toward the aquarium.\nParking is free at both malls.']);
+  });
+});
+
+describe('SCRUM-832: nothing about the park said twice once the family gave it — unless they ask again', () => {
+  // The episode after "Central": the park question, then the reply that answered it.
+  const TURN2 = "We're on the basement floor of Central Floresta, opposite the aquarium. It's the side with the luxury brands, not Festival.\n\nParking is free at both malls.";
+  const later: Partial<EpisodeState> = {
+    ...GENERAL,
+    threadHasBranch: true,
+    aiAnswers: 2,
+    aiAnswersLast10Min: 2,
+    questions: parkAnswered('Central'),
+    parkAnsweredNow: false,
+    parkLines: [PARK_QUESTION.en, TURN2],
+  };
+  const LOCATION = "We're on the basement floor of Central Floresta, opposite the aquarium.";
+
+  it('a later turn on another topic: the location already given is dropped, the rest goes', () => {
+    const v = answer(
+      gate({ intent: 'hours', grounding: ['pb.hours'], bubbles: ["We're open every day 10:00 to 20:00 😊", LOCATION], reason: 'FACT_IN_KB' }, later, ['What time do you close?']),
+    );
+    expect(v.bubbles).toEqual(["We're open every day 10:00 to 20:00 😊"]);
+    expect(v.composition).toMatchObject({ repeats: 1 });
+  });
+
+  it('"Sorry, where is Central again?": the location again', () => {
+    const v = answer(gate({ intent: 'address', grounding: ['pb.address-central'], bubbles: [LOCATION, 'See you soon at OTO!'], reason: 'FACT_IN_KB' }, later, ['Sorry, where is Central again?']));
+    expect(v.bubbles).toEqual([`${LOCATION}${PART_JOIN}See you soon at OTO!`]);
+    expect(v.composition).toMatchObject({ repeats: 0 });
+  });
+
+  it('"We are lost in the mall, help!": the location and the way in again', () => {
+    const bubbles = [`No worries! ${LOCATION}`, 'Please follow the signs for the Aquarium or Oto.'];
+    const v = answer(gate({ intent: 'directions_parking', grounding: ['pb.address-central', 'pb.directions-central'], bubbles, reason: 'FACT_IN_KB' }, later, ['We are lost in the mall, help!']));
+    expect(v.bubbles).toEqual([bubbles.join(PART_JOIN)]);
+    expect(v.composition).toMatchObject({ repeats: 0 });
+  });
+
+  it('"Where do we leave the car?": the parking again', () => {
+    const bubbles = ['Parking is free at both malls.', 'Just follow the signs to the car park when you arrive 😊'];
+    const v = answer(gate({ intent: 'directions_parking', grounding: ['pb.parking'], bubbles, reason: 'FACT_IN_KB' }, later, ['Where do we leave the car?']));
+    expect(v.bubbles).toEqual([bubbles.join(PART_JOIN)]);
+    expect(v.composition).toMatchObject({ repeats: 0 });
+  });
+
+  it('a park’s own number, no park question ever asked: nothing is dropped as a repeat', () => {
+    const own: Partial<EpisodeState> = { ...GENERAL, threadHasBranch: true, aiAnswers: 1, aiAnswersLast10Min: 1 };
+    const v = answer(gate({ intent: 'hours', grounding: ['pb.hours'], bubbles: ["We're open every day 10:00 to 20:00 😊", LOCATION], reason: 'FACT_IN_KB' }, own, ['What time do you close?']));
+    expect(v.bubbles).toEqual([`We're open every day 10:00 to 20:00 😊${PART_JOIN}${LOCATION}`]);
+  });
+
+  it('only once the family gave the park: with no park nothing is dropped as a repeat', () => {
     const v = answer(
       gate(
-        { intent: 'faq', grounding: ['pb.cafe'], bubbles: ['Yes, we have a café 😊', "We're on the basement floor of Central Floresta, opposite the aquarium."], reason: 'FACT_IN_KB' },
-        { ...GENERAL, aiLines: said },
+        { intent: 'faq', grounding: ['pb.cafe'], bubbles: ['Yes, we have a café 😊', LOCATION], reason: 'FACT_IN_KB' },
+        { ...GENERAL, parkLines: [LOCATION] },
         ['Do you have a café?'],
       ),
     );
-    expect(v.bubbles).toEqual([`Yes, we have a café 😊${PART_JOIN}We're on the basement floor of Central Floresta, opposite the aquarium.`]);
+    expect(v.bubbles).toEqual([`Yes, we have a café 😊${PART_JOIN}${LOCATION}`]);
   });
 
-  it('a question is never dropped as a repeat (the repeat guard owns those)', () => {
-    const m = composeMessage(['Parking is free at both malls, and the escalator is right by Tops.', EN_PERSONA.branchQuestion], { said: [EN_PERSONA.branchQuestion] });
-    expect(m.text).toContain(EN_PERSONA.branchQuestion);
+  it('what a sentence is about is read from the knowledge: the location, the way in, the parking; a sign-off is about nothing', () => {
+    expect(parkTopicsOf(LOCATION, sameHours.grounding)).toContain('address_note');
+    expect(parkTopicsOf('Please follow the signs for the Aquarium or Oto.', sameHours.grounding)).toContain('directions');
+    expect(parkTopicsOf('Parking is free at both malls.', sameHours.grounding)).toEqual(['parking']);
+    expect(parkTopicsOf('See you soon at OTO!', sameHours.grounding)).toEqual([]);
+    expect(parkTopicsOf('See you at Central Floresta!', sameHours.grounding)).toEqual([]);
+    expect(parkTopicsOf('จอดรถฟรีที่ห้างทั้งสองแห่งค่ะ', sameHours.grounding)).toEqual(['parking']);
+  });
+
+  it('a reply of nothing but repeats goes as it is (never silence); a question is never dropped as a repeat', () => {
+    const only = composeMessage([`${LOCATION} 😊`], { said: [TURN2], keepRepeat: () => false });
+    expect(only).toEqual({ bubbles: [`${LOCATION} 😊`], parts: [`${LOCATION} 😊`], duplicates: 0, repeats: 0, parkQuestions: 0 });
+    const asks = composeMessage(['Take the escalator right by Tops down to the aquarium.', EN_PERSONA.branchQuestion], { said: [EN_PERSONA.branchQuestion], keepRepeat: () => false });
+    expect(asks.bubbles[0]).toContain(EN_PERSONA.branchQuestion);
+  });
+});
+
+describe('SCRUM-832: nothing a part says is lost (en, th, ru)', () => {
+  const unchanged = (parts: readonly string[], what: string) => {
+    const m = composeMessage(parts);
+    expect(m.parts, what).toEqual(parts.map((p) => p.trim()));
+    expect(m.bubbles, what).toEqual([parts.map((p) => p.trim()).join(PART_JOIN)]);
+    expect(m.duplicates, what).toBe(0);
+  };
+
+  it('a price table in one bubble keeps every row and its line breaks', () => {
+    const tables = [
+      'Weekday: kids 350 baht. Adults 150 baht.\nWeekend: kids 450 baht. Adults 150 baht.',
+      'ราคาวันธรรมดา เด็ก 350 บาท ผู้ใหญ่ 150 บาทค่ะ\nราคาวันหยุด เด็ก 450 บาท ผู้ใหญ่ 150 บาทค่ะ',
+      'Будни: дети 350 бат. Взрослые 150 бат.\nВыходные: дети 450 бат. Взрослые 150 бат.',
+    ];
+    for (const t of tables) {
+      unchanged([t], t);
+      // As the gate passes it: one bubble, nothing to change, returned as it is.
+      const v = verdict({ intent: 'ticket_prices', intents: ['ticket_prices'], bubbles: [t] });
+      expect(composeTurn(v, { decision: decision({}), grounding: sameHours.grounding, episode: episode(GENERAL), openLines: [] }), t).toBe(v);
+    }
+    // The same rows in two bubbles: both, in one message.
+    unchanged(['Weekday: kids 350 baht. Adults 150 baht.', 'Weekend: kids 450 baht. Adults 150 baht.'], 'two bubbles');
+  });
+
+  it('two packages with the same inclusion: each keeps it', () => {
+    const packages: Array<[string, string]> = [
+      ['Package A (1,990 baht): 10 kids, 2 hours.\nIncludes a cake and decorations.', 'Package B (2,990 baht): 15 kids, 3 hours.\nIncludes a cake and decorations.'],
+      ['Package A (1,990 baht): 10 kids, 2 hours. Includes a cake and decorations.', 'Package B (2,990 baht): 15 kids, 3 hours. Includes a cake and decorations.'],
+      ['แพ็กเกจ A (1,990 บาท): เด็ก 10 คน 2 ชั่วโมงค่ะ\nรวมเค้กและการตกแต่งค่ะ', 'แพ็กเกจ B (2,990 บาท): เด็ก 15 คน 3 ชั่วโมงค่ะ\nรวมเค้กและการตกแต่งค่ะ'],
+      ['Пакет A (1 990 бат): 10 детей, 2 часа.\nВключены торт и украшения.', 'Пакет B (2 990 бат): 15 детей, 3 часа.\nВключены торт и украшения.'],
+    ];
+    for (const p of packages) unchanged(p, p[1]);
+    unchanged([packages[0]!.join('\n')], 'one bubble, both packages');
+  });
+
+  it('two parks with the same adult price, or the same words: each park keeps them', () => {
+    unchanged(['Central Floresta: kids 450 baht. Adults pay 150 baht.', 'Robinson Chalong: kids 390 baht. Adults pay 150 baht.'], 'en');
+    unchanged(['Central Floresta: เด็ก 450 บาท ผู้ใหญ่ 150 บาทค่ะ', 'Robinson Chalong: เด็ก 390 บาท ผู้ใหญ่ 150 บาทค่ะ'], 'th');
+    unchanged(['Central Floresta: дети 450 бат. Взрослые 150 бат.', 'Robinson Chalong: дети 390 бат. Взрослые 150 бат.'], 'ru');
+    unchanged(['Central Floresta is on the basement floor. Grip socks are sold at reception.', 'Robinson Chalong is on the third floor. Grip socks are sold at reception.'], 'no number');
+  });
+
+  it('a list under each heading keeps its identical lines (per park, per day)', () => {
+    unchanged(['Central Floresta\nSocks: 40 baht\nKids under 2: free\n\nRobinson Chalong\nSocks: 40 baht\nKids under 2: free'], 'per park, one bubble');
+    unchanged(['Weekdays\nKids under 2: free\nSocks: 40 baht', 'Weekends\nKids under 2: free\nSocks: 40 baht'], 'per day, two bubbles');
+    unchanged(['Central Floresta\nGrip socks are sold at reception.', 'Robinson Chalong\nGrip socks are sold at reception.'], 'per park, no number');
+  });
+
+  it('long sentences one word apart are two facts: weekdays and weekends, the restaurant and reception, adults and babies', () => {
+    const pairs: Array<[string, string]> = [
+      ['Adults enter free with every child ticket on weekdays at both parks.', 'Adults enter free with every child ticket on weekends at both parks.'],
+      ['Kids under two play free with a paying adult on weekdays only.', 'Kids under two play free with a paying adult on weekends only.'],
+      ['Grip socks are required for everyone, and you can buy them at the restaurant.', 'Grip socks are required for everyone, and you can buy them at reception.'],
+      ['The soft play area is for children and adults together, all day long.', 'The soft play area is for children and babies together, all day long.'],
+    ];
+    for (const [a, b] of pairs) {
+      expect(sameSentence(b, a), b).toBe(false);
+      expect(sameSentence(a, b), a).toBe(false);
+      unchanged([a, b], b);
+    }
+  });
+
+  it('a Thai polite particle stays with its clause', () => {
+    unchanged(['ยินดีต้อนรับ ค่ะ', 'จอดรถฟรี ค่ะ'], 'th particle');
+    unchanged(['เปิดทุกวันค่ะ', 'จอดรถฟรีค่ะ'], 'th particle, no space');
+  });
+
+  it('a sentence one part says again after another is dropped, never inside one part; a part keeps its words around it', () => {
+    const m = composeMessage([
+      "Easy! We're on the basement floor of Central Floresta, opposite the aquarium.",
+      "Please follow the signs for the Aquarium or Oto. We're on the basement floor of Central Floresta, opposite the aquarium. Parking is free by the way.",
+    ]);
+    expect(m.parts[1]).toBe('Please follow the signs for the Aquarium or Oto. Parking is free by the way.');
+    expect(m.duplicates).toBe(1);
+    // The same sentence twice inside one part: the part as written.
+    const inside = "We're on the basement floor of Central Floresta, opposite the aquarium. Follow the signs. We're on the basement floor of Central Floresta, opposite the aquarium.";
+    expect(composeMessage([inside]).bubbles).toEqual([inside]);
+    // Under twelve letters, even word for word: kept.
+    expect(composeMessage(['Easy! See you.', 'Easy! Parking is free.']).duplicates).toBe(0);
   });
 });
 
 describe('SCRUM-832: the sentence reader', () => {
-  it('splits English, Russian and Thai sentences, never a Latin name inside Thai', () => {
+  it('splits English, Russian and Thai sentences, a Thai line at its clauses only, never a Latin name inside Thai', () => {
     expect(sentencesOf(BOTH_PARKS.en[0])).toEqual([
       'Hi!',
       "We've got two parks in Phuket 😊",
       'One is at Central Floresta on the basement floor, opposite the aquarium, and the other is at Robinson Chalong on the 3rd floor, opposite the cinema.',
     ]);
     expect(sentencesOf(CENTRAL_REPLY.ru[0])).toHaveLength(3);
-    expect(sentencesOf(CENTRAL_REPLY.th[0])).toEqual(['ง่ายมากค่ะ!', 'เราอยู่ชั้นใต้ดินของ Central Floresta ตรงข้ามอควาเรียมค่ะ', 'ฝั่งที่มีแบรนด์หรู', 'ไม่ใช่ฝั่ง Festival นะคะ']);
+    expect(sentencesOf(CENTRAL_REPLY.th[0])).toEqual(['ง่ายมากค่ะ!', 'เราอยู่ชั้นใต้ดินของ Central Floresta ตรงข้ามอควาเรียมค่ะ', 'ฝั่งที่มีแบรนด์หรู ไม่ใช่ฝั่ง Festival นะคะ']);
+    // A row of a Thai price table is one clause, never its phrases.
+    expect(sentencesOf('ราคาวันธรรมดา เด็ก 350 บาท ผู้ใหญ่ 150 บาทค่ะ\nราคาวันหยุด เด็ก 450 บาท ผู้ใหญ่ 150 บาทค่ะ')).toEqual([
+      'ราคาวันธรรมดา เด็ก 350 บาท ผู้ใหญ่ 150 บาทค่ะ',
+      'ราคาวันหยุด เด็ก 450 บาท ผู้ใหญ่ 150 บาทค่ะ',
+    ]);
   });
 
-  it('reads a near repeat, never one with a number or a park of its own', () => {
+  it('reads a near repeat, never one with a number, a park or a word of its own', () => {
     expect(sameSentence("We're on the basement floor of Central Floresta, opposite the aquarium.", sentencesOf(BOTH_PARKS.en[0])[2]!)).toBe(true);
     expect(sameSentence('Robinson Chalong is on the 3rd floor, opposite the cinema.', 'Central Floresta is on the basement floor, opposite the aquarium.')).toBe(false);
     expect(sameSentence('We are open 10:00–21:00 every day.', 'We are open 10:00–20:00 every day.')).toBe(false);

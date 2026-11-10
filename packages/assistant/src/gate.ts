@@ -136,12 +136,17 @@ export interface EpisodeState extends BirthdayThreadFacts {
    */
   customerLines?: readonly string[];
   /**
-   * SCRUM-832: every line the assistant sent this episode, as written, oldest
-   * first. Once the park is known, what was said about the park while it was
-   * being resolved is not sent again (compose.ts `composeTurn`). Absent:
-   * nothing was sent.
+   * SCRUM-832: what the assistant said while the park was being resolved —
+   * once the family answered the park question this episode, its lines up to
+   * that answer and the reply that answered it (every line it sent, when the
+   * answer is in this burst), as written, oldest first. What they say about
+   * the park is not said again (compose.ts `repeatRule`). Absent or empty: no
+   * park question was answered this episode, and nothing is dropped as a
+   * repeat.
    */
-  aiLines?: readonly string[];
+  parkLines?: readonly string[];
+  /** SCRUM-832: the family's answer to the park question is in this burst (the memory read it this turn). */
+  parkAnsweredNow?: boolean;
 }
 
 /**

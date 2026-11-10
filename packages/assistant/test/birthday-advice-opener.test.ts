@@ -11,6 +11,7 @@ import {
   openerAskedBefore,
   type AdviceOpener,
 } from '../src/advice';
+import { PART_JOIN } from '../src/compose';
 import type { AiDecision } from '../src/decision';
 import { applyGates, type EpisodeQuestion, type EpisodeState, type GateVerdict } from '../src/gate';
 import { BIRTHDAYS_PLAN, INTENT_SLOTS } from '../src/intents';
@@ -292,9 +293,11 @@ describe('SCRUM-823: every other turn is as it was', () => {
 
   it('the overrule path keeps the model’s own opener: an answer, the birthday manager’s line after it, no template opener', () => {
     const bubbles = ["Amazing, thank you! We'd love to organize a party for you 🎈", 'What date are you thinking of, roughly how many people, and which branch?'];
+    // SCRUM-832, one message per turn: the opener's two parts (one topic, the birthday) go as ONE message, the parts kept for the review.
+    const message = [bubbles.join(PART_JOIN)];
     for (const intents of [['birthday_party', 'faq'], ['birthday_party', 'birthday_advice']] as const) {
       const v = gate({ intent: 'birthday_party', intents: [...intents], bubbles, reason: 'CLEAR_INTENT' }, BIRTHDAYS, [GAP.en.c2]);
-      expect(v, intents.join()).toMatchObject({ action: 'answer', intent: 'birthday_party', bubbles, thenHandover: BIRTHDAYS_PLAN });
+      expect(v, intents.join()).toMatchObject({ action: 'answer', intent: 'birthday_party', bubbles: message, parts: bubbles, thenHandover: BIRTHDAYS_PLAN });
       expect(v.intents, intents.join()).toEqual(['birthday_party', 'birthday_advice']);
       expect('adviceOpener' in v, intents.join()).toBe(false);
     }

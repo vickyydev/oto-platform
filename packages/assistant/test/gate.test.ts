@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { PART_JOIN } from '../src/compose';
 import { applyGates, EPISODE_ANSWER_CAP, EPISODE_WINDOW_CAP } from '../src/gate';
 import { BIRTHDAYS_PLAN, GM_PLAN, INTENT_TABLE, intentPartsOf, resolvePlan, UNCLEAR_GM_PLAN } from '../src/intents';
 import { decision, episode, fixtureKnowledge } from './support';
@@ -326,8 +325,7 @@ describe('a burst with several parts (test night 2026-10-21, D1a, W2)', () => {
       thenHandover: null,
       sendBrochure: false,
     });
-    // SCRUM-832: one message per turn — every part, in order, a blank line between them.
-    expect(v.action === 'answer' && v.bubbles).toEqual([parking.join(PART_JOIN)]);
+    expect(v.action === 'answer' && v.bubbles).toEqual(parking);
   });
 
   it('a decision without `intents` (recorded before they existed) is its one intent', () => {

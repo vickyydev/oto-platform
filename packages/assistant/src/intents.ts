@@ -571,18 +571,61 @@ export const AGE_SLOT_INTENTS: ReadonlySet<AiIntent> = new Set<AiIntent>(
  * SCRUM-832 (owner, 10 Nov 2026: "How to find you guys?" got both parks'
  * locations and then "which park?"): the intents whose answer can depend on
  * the park — where a park is, how to find it inside the mall and where to
- * park, and the opening hours. In a general thread with no park, a reply to
- * one of them is the park question alone (compose.ts `parkFirst`), but only
- * where the knowledge says the parks' answers DIFFER: the topics the reply
- * cites are compared park by park (`parksDiffer`). Both parks open 10:00 to
- * 20:00 and both malls park free today, so "what time do you open?" and "is
- * there parking?" are answered at once, while "how do we find you?" is not.
+ * park, and the opening hours. In a general thread with no park, a reply on
+ * these alone (a greeting or a thank-you aside) is the park question alone
+ * (compose.ts `parkFirst`) only on the owner's pattern — the model asked
+ * which park next to such an answer, or answered for one park the family
+ * never named — and only where the knowledge says the parks' answers DIFFER:
+ * the topics the reply cites are compared park by park (`parksDiffer`). Both
+ * parks open 10:00 to 20:00 and both malls park free today, so "what time do
+ * you open?" and "is there parking?" are answered at once, while "how do we
+ * find you?" is not. A reply that tells both parks and asks nothing (where
+ * are your branches, which is closest to Kata) is an overview, answered as
+ * written.
  */
 export const PARK_FIRST_INTENTS: ReadonlySet<AiIntent> = new Set<AiIntent>(['address', 'directions_parking', 'hours']);
 
 /**
+ * SCRUM-832: the parts that are no topic of their own — a greeting, a
+ * thank-you — beside an answer. They never make a reply "several topics", and
+ * they never keep the park question from a park-dependent answer.
+ */
+export const ASIDE_INTENTS: ReadonlySet<AiIntent> = new Set<AiIntent>(['greeting', 'thanks_closing']);
+
+/**
+ * SCRUM-832, ONE MESSAGE PER TURN: the topic a part is on, where several
+ * intents share one — where a park is and how to find it, the prices and a
+ * price objection, the birthday's parts, the Golden Ticket, drop-off, a
+ * complaint. Any other intent is a topic of its own. The parts of an answer on
+ * ONE topic are composed into one bubble (compose.ts `composeTurn`); an answer
+ * on several keeps a bubble per part, as the prompt asks (`MULTI_PART_RULE`,
+ * the test-night W2 ruling).
+ */
+export const INTENT_TOPIC: Readonly<Partial<Record<AiIntent, string>>> = {
+  address: 'where',
+  directions_parking: 'where',
+  ticket_prices: 'prices',
+  discount_negotiation: 'prices',
+  discount_insist: 'prices',
+  ...Object.fromEntries([...BIRTHDAY_INTENTS].map((i) => [i, 'birthday'])),
+  special_tickets: 'special_tickets',
+  special_tickets_buy: 'special_tickets',
+  drop_off_service: 'drop_off',
+  drop_off_care: 'drop_off',
+  complaint_onsite: 'complaint',
+  complaint_online: 'complaint',
+};
+
+/** The topics a reply's parts are on, in order, an aside left out (`INTENT_TOPIC`); a reply of asides alone is on theirs. */
+export function topicsOfIntents(intents: readonly AiIntent[]): string[] {
+  const topical = intents.filter((i) => !ASIDE_INTENTS.has(i));
+  return [...new Set((topical.length > 0 ? topical : intents).map((i) => INTENT_TOPIC[i] ?? i))];
+}
+
+/**
  * The flows that ask the park inside their own one question, which the
- * park-first question never replaces (the playbook first): the price
+ * park-first question never replaces (the playbook first; none of them is a
+ * `PARK_FIRST_INTENTS` part, so a reply holding one is never park-first): the price
  * conversation's branch-and-residency question, asked before the prices
  * (`PRICING_RULE`), and the birthday's combined question (dates, roughly how
  * many people, which branch).
