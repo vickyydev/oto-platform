@@ -154,4 +154,4 @@ Review page (screens and decision boxes): https://claude.ai/artifact/MRK5VbmoMKs
 | 8 Adults start from the kids' choice | SCRUM-829 | updated proposal (layout); the owner says approved in chat (10 Nov 22:40), the page shows no decision — confirming |
 | 9 First message decides the queue | SCRUM-830 | the owner says approved in chat (10 Nov 22:40), the page shows no decision — confirming |
 | 10 Never ask twice | SCRUM-831 | APPROVED — LANDED cd9e42bf1, proved, the "table for 8?" reader fix landed in 9b2bd8bc1 and re-checked; DEPLOYED 11 Nov 00:20 |
-| 11 One message per turn, park first | SCRUM-832 | APPROVED 10 Nov 22:35 — LANDED ba3f25bb4 + the bare-park-question fix 4af68aafc, proved and re-checked 11 Nov; TESTING, Deployed on CI green; four decisions on the ticket |
+| 11 One message per turn, park first | SCRUM-832 | APPROVED 10 Nov 22:35 — LANDED ba3f25bb4 + the bare-park-question fix 4af68aafc, proved and re-checked 11 Nov; DEPLOYED 11 Nov 01:38; four decisions on the ticket |
