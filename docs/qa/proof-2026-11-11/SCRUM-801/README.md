@@ -19,6 +19,8 @@ Local checks observed on 11 November:
   phone and desktop page offered no sale to resume. A deliberately refused
   void retained the order and its message. Both sessions read back 401 after
   sign-out. The database was removed by the runner.
+- The standard seven-journey till smoke also passed against the built app;
+  its disposable database was removed.
 - Measured at 375 px: the payment column and its controls stay within the
   viewport, with no horizontal clipping. The two local PNGs were opened and
   inspected; they show the top of the payment screen and the lower actions.

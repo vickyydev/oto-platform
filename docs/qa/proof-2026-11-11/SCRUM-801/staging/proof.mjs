@@ -88,6 +88,7 @@ try {
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
   await page.getByRole('button', { name: 'Customer is ready', exact: true }).click();
   for (const digit of '898010001') await page.getByRole('button', { name: digit, exact: true }).last().click();
+  await page.getByPlaceholder('e.g. Mama, John').fill('ZZ TEST SCRUM-801');
   await page.getByTestId('input-done').click();
   const writing = page.waitForResponse(r => new URL(r.url()).pathname === '/api/sales' && r.request().method() === 'POST');
   await page.getByRole('button', { name: /^Pay ฿/ }).click();
@@ -111,7 +112,7 @@ try {
   const shot = async filename => {
     for (const close of await page.locator('[toast-close]').all()) await close.click();
     await page.screenshot({ path: resolve(out, filename), animations: 'disabled',
-      mask: [page.locator('header'), page.locator('input[type="password"]'), page.locator('input[type="tel"]')] });
+      mask: [page.getByLabel('Lock screen').locator('..'), page.locator('input[type="password"]'), page.locator('input[type="tel"]')] });
   };
   await panel.getByRole('heading', { name: 'Amount Due' }).scrollIntoViewIfNeeded();
   await shot('s800-payment-375.png');
@@ -142,32 +143,43 @@ try {
   // A Playwright error can contain filled input values. Keep only its kind.
   receipt.failure = { kind: error.name }; save();
 } finally {
-  if (page) {
+  const cleanup = async (kind, action) => {
+    try { await action(); } catch (error) {
+      failure = true;
+      receipt.cleanup.push({ kind, failed: true, errorKind: error.name });
+    } finally { save(); }
+  };
+  if (page) await cleanup('staff-session', async () => {
     const signedOut = await page.request.post('/api/auth/sign-out');
     const after = await page.request.get('/api/me');
     receipt.cleanup.push({ kind: 'staff-session', signOut: signedOut.status(), readback: after.status() });
     if (after.status() !== 401) failure = true;
-  }
-  if (saleId) {
+  });
+  let saleCleared = !saleId;
+  if (saleId) await cleanup('sale', async () => {
     const read = await call('GET', `/sales/${saleId}`);
     assert.equal(read.body.sale.stationId, station.id, 'cleanup only own sale');
     if (read.body.sale.status === 'tendering') await call('POST', `/sales/${saleId}/void`, { reason: 'ZZ TEST SCRUM-801 proof cleanup' });
     const final = await call('GET', `/sales/${saleId}`);
     receipt.cleanup.push({ kind: 'sale', id: saleId, status: final.body.sale.status });
-    if (final.body.sale.status !== 'voided') failure = true;
-  }
-  if (station) {
+    saleCleared = final.body.sale.status === 'voided';
+    if (!saleCleared) failure = true;
+  });
+  if (station) await cleanup('station', async () => {
+    assert.ok(saleCleared, 'keep the till available if its sale still needs resolution');
     assert.ok(station.name.startsWith('ZZ TEST SCRUM-801 '));
     const archived = await call('DELETE', `/stations/${station.id}`);
     const after = await call('GET', `/stations/${station.id}`);
     const archivedFlag = !!(after.body?.station?.archivedAt ?? after.body?.archivedAt ?? after.body?.station?.archived);
     receipt.cleanup.push({ kind: 'station', id: station.id, status: archived.status, archived: archivedFlag });
     if (!archivedFlag) failure = true;
-  }
-  const signOut = await admin.post('/api/auth/sign-out');
-  const after = await admin.get('/api/me');
-  receipt.cleanup.push({ kind: 'admin-session', signOut: signOut.status(), readback: after.status() });
-  if (after.status() !== 401) failure = true;
+  });
+  await cleanup('admin-session', async () => {
+    const signOut = await admin.post('/api/auth/sign-out');
+    const after = await admin.get('/api/me');
+    receipt.cleanup.push({ kind: 'admin-session', signOut: signOut.status(), readback: after.status() });
+    if (after.status() !== 401) failure = true;
+  });
   await browser?.close(); await admin.dispose();
   receipt.finishedAt = new Date().toISOString(); receipt.passed = !failure; save();
 }
