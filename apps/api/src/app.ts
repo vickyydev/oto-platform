@@ -43,6 +43,7 @@ import { inboxWebhookRoutes } from './routes/inbox-webhooks';
 import { inboxSimulatorRoutes } from './routes/inbox-simulator';
 import { buildInboxChannels, type InboxChannels } from './services/inbox/channels';
 import { buildInboxAiRuntime, type InboxAiRuntime } from './services/inbox/ai-runtime';
+import { buildTranscriptionRuntime, type TranscriptionRuntime } from './services/inbox/transcription';
 import { buildInternalAiRuntime, type InternalAiRuntime } from './services/assistant/runtime';
 import { saleTierRoutes } from './routes/sale-tier';
 import { catalogRoutes } from './routes/catalog';
@@ -119,6 +120,12 @@ declare module 'fastify' {
     inboxChannels: InboxChannels;
     /** SCRUM-590 — the customer assistant's switch, debounce and model client (tests swap the client). */
     inboxAi: InboxAiRuntime;
+    /**
+     * SCRUM-824 — voice-note transcription: the ingest files a voice note
+     * `pending` only while this has an adapter (else `off` at once), and
+     * `job:inbox.transcribe` asks the same adapter (tests swap in a fake).
+     */
+    inboxTranscription: TranscriptionRuntime;
     /** SCRUM-591 — the internal assistant's switch, caps and model client (tests swap the client). */
     internalAi: InternalAiRuntime;
   }
@@ -234,6 +241,10 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // debounce per delivery, `job:inbox.ai` its client. A test replaces the
   // client with a fake; under NODE_ENV=test there is never a real one.
   app.decorate('inboxAi', buildInboxAiRuntime(opts.env, app.log));
+  // SCRUM-824 — voice-note transcription, one runtime for the ingest (pending
+  // or off, per delivery) and `job:inbox.transcribe`. Always off under
+  // NODE_ENV=test until a suite injects a fake adapter.
+  app.decorate('inboxTranscription', buildTranscriptionRuntime(opts.env, app.log));
   // SCRUM-591 — the internal assistant: `POST /assistant/asks` reads its switch,
   // caps and client per ask. Under NODE_ENV=test there is never a real client.
   app.decorate('internalAi', buildInternalAiRuntime(opts.env, app.log));

@@ -17,10 +17,12 @@ import {
 /**
  * A CUSTOMER'S VOICE NOTE, READ LIKE TYPED TEXT (SCRUM-824 part a).
  *
- * THE FLOW. A voice note is `pending` from the moment the ingest files it
- * (`ingest.ts`), and its audio is stored after the delivery commits
- * (`media.ts`; one that cannot be stored is settled there: `too_long` over the
- * size limit, else `failed`). `job:inbox.transcribe`, every fifteen seconds,
+ * THE FLOW. With a transcription provider configured (`app.inboxTranscription`,
+ * the runtime this job asks), a voice note is `pending` from the moment the
+ * ingest files it (`ingest.ts`); with none it is `off` there at once, and
+ * nothing waits for it. Its audio is stored after the delivery commits
+ * (`media.ts`; a pending one that cannot be stored is settled there:
+ * `too_long` over the size limit, else `failed`). `job:inbox.transcribe`, every fifteen seconds,
  * claims a batch of pending notes under a lease (as the send job claims its
  * rows), reads each one's audio back from storage, and asks the transcription
  * boundary (`transcription.ts`). Then, in one transaction with its audit row:
@@ -30,8 +32,13 @@ import {
  *     provider down) → asked again in 15 s, then in 60 s: the first ask and
  *     two retries, then `failed`; one it cannot help (a refused file, a
  *     format no provider takes, nothing heard) → `failed` at once;
- *   - no provider configured → `off`, "not transcribed", as before.
- * A note whose audio never arrived is `failed` two minutes after it did.
+ *   - no provider configured → `off`, "not transcribed", as before (the
+ *     ingest already filed it so; this sweep is the safety net for a note
+ *     filed pending before a provider was switched off).
+ * A note whose audio never arrived is `failed` two minutes after the note
+ * reached us: the deadline the ingest wrote in `transcript_next_attempt_at`,
+ * on our clock — never the message's `created_at`, the provider's timestamp,
+ * which a redelivery leaves minutes old.
  * Every provider call is an `ops_run` (`adapter:inbox.transcription`): ids,
  * the outcome word, latency, the length and the language — never the words.
  *
@@ -44,7 +51,8 @@ import {
  * burst holding a note still `pending` makes no model call and no reply — the
  * turn goes back to `pending` for ten seconds (`holdTurnForTranscript`) and is
  * decided on the transcript once it lands. A note that could not be read
- * (`failed`, `too_long`, or still pending five minutes on) hands the thread
+ * (`failed`, `too_long`, or still pending five minutes after the turn was
+ * born — our clock, not the provider's) hands the thread
  * to a person with the playbook's warm holding line, the turn's reason
  * `VOICE_UNREAD` ("voice note could not be read" on the staff side). A note
  * that is `off` is what it was before: no words, a person's to pick up.
@@ -63,9 +71,16 @@ export const TRANSCRIBE_MAX_ATTEMPTS = 3;
 export const TRANSCRIBE_LEASE_MS = 3 * 60_000;
 /** When a retry is due after the first and the second failed ask. */
 export const TRANSCRIBE_RETRY_MS: readonly number[] = [15_000, 60_000];
-/** A pending note whose audio never arrived is given up this long after it did. */
+/**
+ * A pending note whose audio never arrived is given up this long after the
+ * note reached us (the ingest writes the deadline in `transcript_next_attempt_at`).
+ */
 export const VOICE_MEDIA_GRACE_MS = 2 * 60_000;
-/** The assistant waits at most this long for a transcript, from the note's arrival. */
+/**
+ * The assistant waits at most this long for a transcript, from the note's
+ * arrival as our clock saw it: the later of its own time and the turn's birth
+ * (`voiceHold`).
+ */
 export const VOICE_WAIT_MAX_MS = 5 * 60_000;
 /** A waiting turn is looked at again this often. */
 export const VOICE_WAIT_STEP_MS = 10_000;
@@ -96,15 +111,23 @@ export function messageText(m: { body: string | null; transcript?: string | null
  * What the customer's open burst says of the assistant's turn: `wait` while a
  * voice note in it is still being transcribed; `unread` when one could not be
  * read (or is still pending past `VOICE_WAIT_MAX_MS`); null otherwise.
+ *
+ * The wait is counted on OUR clock: from the later of the note's own time and
+ * `turnBornAt` (the turn's `first_seen_at`, written when the burst's first
+ * bubble reached us). A message's `at` is the provider's timestamp, which a
+ * redelivered webhook leaves minutes old: counted from it alone, a late note
+ * would be "unread" before anyone tried to read it.
  */
 export function voiceHold(
   burst: ReadonlyArray<{ at: Date; voice?: MessageTranscriptStatus | null }>,
   now: Date,
+  turnBornAt: Date,
 ): 'wait' | 'unread' | null {
   let unread = false;
   for (const m of burst) {
     if (m.voice === 'pending') {
-      if (now.getTime() - m.at.getTime() < VOICE_WAIT_MAX_MS) return 'wait';
+      const since = Math.max(m.at.getTime(), turnBornAt.getTime());
+      if (now.getTime() - since < VOICE_WAIT_MAX_MS) return 'wait';
       unread = true;
     } else if (m.voice === 'failed' || m.voice === 'too_long') {
       unread = true;
@@ -368,6 +391,8 @@ export async function runInboxTranscribeJob(db: Db, deps: TranscribeDeps, now: D
   const at = now.toISOString();
 
   // No provider: every pending note is "not transcribed", as before SCRUM-824.
+  // The ingest already files a note `off` when there is none; this is the
+  // safety net for one filed pending before the provider was switched off.
   if (!deps.runtime.adapter) {
     const pending = await db
       .select({ id: message.id, operatorId: message.operatorId, conversationId: message.conversationId, audioFileId: message.audioFileId })
@@ -386,7 +411,9 @@ export async function runInboxTranscribeJob(db: Db, deps: TranscribeDeps, now: D
     return sweep;
   }
 
-  // Given up: audio that never arrived, and a last attempt whose lease ran out.
+  // Given up: audio that never arrived by the deadline the ingest set (two
+  // minutes after the note reached us, on our clock: never `created_at`, the
+  // provider's timestamp), and a last attempt whose lease ran out.
   const stale = await db
     .select({
       id: message.id,
@@ -400,7 +427,7 @@ export async function runInboxTranscribeJob(db: Db, deps: TranscribeDeps, now: D
       and(
         eq(message.transcriptStatus, 'pending'),
         isNull(message.redactedAt),
-        sql`((${message.audioFileId} is null and ${message.createdAt} <= ${new Date(now.getTime() - VOICE_MEDIA_GRACE_MS).toISOString()}::timestamptz)
+        sql`((${message.audioFileId} is null and ${message.transcriptNextAttemptAt} <= ${at}::timestamptz)
           or (${message.transcriptAttempts} >= ${TRANSCRIBE_MAX_ATTEMPTS} and ${message.transcriptNextAttemptAt} <= ${at}::timestamptz))`,
       ),
     )

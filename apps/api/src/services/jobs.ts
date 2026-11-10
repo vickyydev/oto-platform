@@ -254,7 +254,9 @@ export interface JobDeps {
   inboxAi?: InboxAiRuntime;
   /**
    * SCRUM-824: the voice-note transcription runtime `job:inbox.transcribe`
-   * asks. Absent, one is built from the env (always `off` under tests).
+   * asks — the api's `app.inboxTranscription`, the one its ingest files a
+   * note `pending` or `off` by. Absent, one is built from the env (always
+   * `off` under tests).
    */
   inboxTranscription?: TranscriptionRuntime;
   /** Tests inject a capturing sender; the configured destination stays private. */
@@ -1286,6 +1288,8 @@ export interface JobRunnerOptions {
   inboxChannels?: InboxChannels;
   /** The api's assistant runtime, for `job:inbox.ai` (`JobDeps.inboxAi`). */
   inboxAi?: InboxAiRuntime;
+  /** The api's transcription runtime, the one its ingest files voice notes by (`JobDeps.inboxTranscription`). */
+  inboxTranscription?: TranscriptionRuntime;
 }
 
 export function processRoles(env: Env): string[] {
@@ -1310,6 +1314,7 @@ export function createJobRunner(opts: JobRunnerOptions): JobRunner {
       fileStorage: opts.fileStorage ?? null,
       ...(opts.inboxChannels ? { inboxChannels: opts.inboxChannels } : {}),
       ...(opts.inboxAi ? { inboxAi: opts.inboxAi } : {}),
+      ...(opts.inboxTranscription ? { inboxTranscription: opts.inboxTranscription } : {}),
     });
   const enabled = processRoles(env).includes('jobs');
 

@@ -92,7 +92,14 @@ export function inboxWebhookRoutes(app: App): Promise<void> {
       const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body === undefined ? '' : JSON.stringify(req.body));
       const result = await ingestDelivery(
         app.db,
-        { channels: app.inboxChannels, log: req.log, storage: app.fileStorage, ai: scheduleOf(app.inboxAi) },
+        {
+          channels: app.inboxChannels,
+          log: req.log,
+          storage: app.fileStorage,
+          ai: scheduleOf(app.inboxAi),
+          // SCRUM-824: a voice note is filed pending only while a provider can transcribe it.
+          transcribe: app.inboxTranscription.adapter !== null,
+        },
         {
           channelAccountId: req.params.channelAccountId,
           webhook: {

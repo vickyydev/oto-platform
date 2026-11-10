@@ -310,16 +310,27 @@ describe('the one reading of a message’s words (messageText)', () => {
 describe('the assistant’s wait (voiceHold)', () => {
   const now = new Date('2026-11-10T08:00:00.000Z');
   const ago = (ms: number) => new Date(now.getTime() - ms);
+  // A turn born long ago: each note's own time is the later one, and decides.
+  const longAgo = ago(VOICE_WAIT_MAX_MS * 4);
   it('waits while a note is pending; a note nobody could read is a person’s; off and done are as any line', () => {
-    expect(voiceHold([{ at: ago(30_000), voice: 'pending' }], now)).toBe('wait');
-    expect(voiceHold([{ at: ago(VOICE_WAIT_MAX_MS + 1), voice: 'pending' }], now)).toBe('unread');
-    expect(voiceHold([{ at: ago(1000), voice: 'failed' }], now)).toBe('unread');
-    expect(voiceHold([{ at: ago(1000), voice: 'too_long' }], now)).toBe('unread');
-    expect(voiceHold([{ at: ago(1000), voice: 'off' }], now)).toBeNull();
-    expect(voiceHold([{ at: ago(1000), voice: 'done' }, { at: ago(500), voice: null }], now)).toBeNull();
+    expect(voiceHold([{ at: ago(30_000), voice: 'pending' }], now, longAgo)).toBe('wait');
+    expect(voiceHold([{ at: ago(VOICE_WAIT_MAX_MS + 1), voice: 'pending' }], now, longAgo)).toBe('unread');
+    expect(voiceHold([{ at: ago(1000), voice: 'failed' }], now, longAgo)).toBe('unread');
+    expect(voiceHold([{ at: ago(1000), voice: 'too_long' }], now, longAgo)).toBe('unread');
+    expect(voiceHold([{ at: ago(1000), voice: 'off' }], now, longAgo)).toBeNull();
+    expect(voiceHold([{ at: ago(1000), voice: 'done' }, { at: ago(500), voice: null }], now, longAgo)).toBeNull();
     // A failed note beside one still pending: wait for the second before handing over.
-    expect(voiceHold([{ at: ago(2000), voice: 'failed' }, { at: ago(1000), voice: 'pending' }], now)).toBe('wait');
-    expect(voiceHold([], now)).toBeNull();
+    expect(voiceHold([{ at: ago(2000), voice: 'failed' }, { at: ago(1000), voice: 'pending' }], now, longAgo)).toBe('wait');
+    expect(voiceHold([], now, longAgo)).toBeNull();
+  });
+
+  it('counts the wait on our clock: a note the provider stamped ten minutes ago, in a turn born 20 s ago, still waits', () => {
+    // A redelivered webhook: the provider's timestamp is old, the turn is new.
+    const redelivered = [{ at: ago(10 * 60_000), voice: 'pending' as const }];
+    expect(voiceHold(redelivered, now, ago(20_000))).toBe('wait');
+    expect(voiceHold(redelivered, now, ago(VOICE_WAIT_MAX_MS - 1))).toBe('wait');
+    // Five minutes after the turn was born, it is a person's.
+    expect(voiceHold(redelivered, now, ago(VOICE_WAIT_MAX_MS + 1))).toBe('unread');
   });
 });
 

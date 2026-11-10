@@ -55,8 +55,10 @@ export function inboxSimulatorRoutes(app: App): Promise<void> {
     channels: app.inboxChannels,
     log,
     ai: scheduleOf(app.inboxAi),
-    // SCRUM-824: a played voice note's audio is stored as the real webhook stores it.
+    // SCRUM-824: a played voice note's audio is stored, and the note filed
+    // pending or off, as the real webhook stores and files it.
     storage: app.fileStorage,
+    transcribe: app.inboxTranscription.adapter !== null,
   });
 
   app.post(

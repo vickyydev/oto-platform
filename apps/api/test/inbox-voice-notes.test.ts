@@ -2,7 +2,7 @@ import { and, asc, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { FakeBookDateReader } from '@oto/assistant';
 import { schema as s } from '@oto/db';
-import type { SimulatedInbound } from '@oto/messaging';
+import { ChannelError, type SimulatedInbound } from '@oto/messaging';
 import type { FileStorage } from '../src/services/files';
 import {
   FakeTranscriber,
@@ -13,6 +13,7 @@ import {
   INBOX_TRANSCRIBE_JOB,
   TRANSCRIBE_RETRY_MS,
   TRANSCRIPT_PENDING,
+  VOICE_MEDIA_GRACE_MS,
   VOICE_UNREAD,
   VOICE_WAIT_STEP_MS,
   runInboxTranscribeJob,
@@ -50,8 +51,12 @@ import { NO_LEAKS, sentinelLeaks } from './inbox-sentinel';
  *   - a provider that keeps failing is asked twice more, then the note is
  *     `failed`, and the assistant hands the thread to a person with the warm
  *     holding line (`VOICE_UNREAD`); a note too long is never sent, likewise;
- *   - no provider: `off`, and the assistant leaves it for a person as before;
+ *   - no provider: the ingest files the note `off` at once (also when its
+ *     audio cannot be fetched), and the assistant leaves it for a person as
+ *     before, never waiting; the job's off sweep is only a safety net;
  *   - audio that cannot be stored is settled at once; an erased note is never sent;
+ *   - a note the provider stamped minutes ago (a redelivered webhook) is
+ *     waited for, and its audio given its grace, from when it reached us;
  *   - Book Date's whole-chat read and the BEO fill's conversation read the
  *     transcript, marked `[voice note] …`;
  *   - the simulator plays an uploaded voice note through the real webhook.
@@ -130,34 +135,62 @@ function job(runtime: TranscriptionRuntime, at = new Date()) {
   return runInboxTranscribeJob(w.ctx.db, { runtime, storage: store, log: w.ctx.app.log }, at);
 }
 
+/**
+ * The api's own transcription runtime (`app.inboxTranscription`), the one the
+ * ingest files a voice note `pending` or `off` by: on with a fake adapter (it
+ * is never asked: each test hands the job its own), or off as a deployment
+ * with no provider. Off under NODE_ENV=test until a suite turns it on.
+ */
+function provider(on: boolean): void {
+  const runtime = w.ctx.app.inboxTranscription;
+  runtime.adapter = on ? new FakeTranscriber() : null;
+  runtime.provider = on ? 'fake' : 'off';
+}
+
 let salt = 0;
 
-/** A customer's voice note through the real webhook; answers its thread and its message. */
-async function voiceIn(
+/** A customer's voice note posted to the real webhook; the response is awaited by the caller. */
+async function playVoice(
   accountId: string,
   bytes: Uint8Array,
-  opts: { from?: string; hint?: SimulatedInbound['hint'] } = {},
-): Promise<{ conv: string; messageId: string }> {
+  opts: { from?: string; hint?: SimulatedInbound['hint']; at?: Date } = {},
+) {
   const channel = await sim(w, accountId);
   const played = channel.inbound({
     from: opts.from ?? nextPhone(),
     name: 'ZZ TEST Voice Guest',
     voice: { bytes, contentType: VOICE_TYPE },
     ...(opts.hint ? { hint: opts.hint } : {}),
+    ...(opts.at ? { at: opts.at } : {}),
   });
-  const res = await w.ctx.app.inject({
+  const posted = w.ctx.app.inject({
     method: 'POST',
     url: `/webhooks/inbox/${accountId}`,
     headers: played.webhook.headers as Record<string, string>,
     payload: played.webhook.rawBody as string,
   });
-  expect(res.json().outcome).toBe('processed');
+  return { externalMessageId: played.externalMessageId, posted };
+}
+
+/** The message a played delivery filed, with its thread. */
+async function filedAs(accountId: string, externalMessageId: string): Promise<{ conv: string; messageId: string }> {
   const [m] = await w.ctx.db
     .select({ id: s.message.id, conversationId: s.message.conversationId })
     .from(s.message)
-    .where(and(eq(s.message.channelAccountId, accountId), eq(s.message.externalMessageId, played.externalMessageId)))
+    .where(and(eq(s.message.channelAccountId, accountId), eq(s.message.externalMessageId, externalMessageId)))
     .limit(1);
   return { conv: m!.conversationId, messageId: m!.id };
+}
+
+/** A customer's voice note through the real webhook; answers its thread and its message. */
+async function voiceIn(
+  accountId: string,
+  bytes: Uint8Array,
+  opts: { from?: string; hint?: SimulatedInbound['hint']; at?: Date } = {},
+): Promise<{ conv: string; messageId: string }> {
+  const { externalMessageId, posted } = await playVoice(accountId, bytes, opts);
+  expect((await posted).json().outcome).toBe('processed');
+  return filedAs(accountId, externalMessageId);
 }
 
 async function note(id: string) {
@@ -186,6 +219,9 @@ async function closingUnclear() {
 beforeAll(async () => {
   w = await aiWorld();
   (w.ctx.app as unknown as { fileStorage: FileStorage | null }).fileStorage = store;
+  // A provider configured: the ingest files voice notes pending (a test switches it off where it says so).
+  expect(w.ctx.app.inboxTranscription).toMatchObject({ provider: 'off', adapter: null });
+  provider(true);
   live = await simAccount(w, { branchId: w.central });
   quiet = await simAccount(w, { branchId: w.central, aiMode: 'off', defaultCategory: 'birthdays' });
   [, gmCookie] = await staff(w, '+66810082401', 'ZZ TEST Voice GM', 'inbox_manager', { scopeType: 'operator', scopeId: w.oto });
@@ -381,15 +417,154 @@ describe('a note that cannot be read is a person’s', () => {
 });
 
 describe('no provider configured: as before', () => {
-  it('the note is "off", and the assistant leaves it for a person (NO_TEXT, no model call)', async () => {
+  /** The turn never waited for a transcript: no hold, no wait audit row. */
+  async function neverHeld(conv: string): Promise<void> {
+    for (const turn of await turnsOf(w, conv)) {
+      expect(turn.reason).not.toBe(TRANSCRIPT_PENDING);
+      const waits = await w.ctx.db
+        .select()
+        .from(s.auditLog)
+        .where(and(eq(s.auditLog.action, 'inbox.ai.turn.wait'), eq(s.auditLog.entityId, turn.id)));
+      expect(waits).toHaveLength(0);
+    }
+  }
+
+  it('the ingest files the note "off" at once; the assistant leaves it for a person (NO_TEXT, no model call), never waiting, with no transcribe tick first', async () => {
+    await drain();
+    provider(false);
+    let filed: { conv: string; messageId: string };
+    try {
+      filed = await voiceIn(live, opusNote(5, ++salt));
+    } finally {
+      provider(true);
+    }
+    const { conv, messageId } = filed;
+    const row = await note(messageId);
+    expect(row).toMatchObject({ transcriptStatus: 'off', transcript: null, transcriptNextAttemptAt: null });
+    expect(row.audioFileId).not.toBeNull();
+    // The assistant's tick before any transcribe tick: decided at once.
+    const calls = w.fake.requests.length;
+    expect((await tick(w, later(25_000)))).toMatchObject({ silent: 1, waiting: 0, handedOver: 0 });
+    expect(w.fake.requests.length).toBe(calls);
+    expect((await turnsOf(w, conv))[0]).toMatchObject({ state: 'silent', reason: 'NO_TEXT' });
+    expect(await aiLines(w, conv)).toHaveLength(0);
+    await neverHeld(conv);
+    // Nothing is left for the job to mark.
+    expect(await job(runtimeOf(null))).toMatchObject({ off: 0 });
+  });
+
+  it('the audio cannot be fetched: still "off", never "could not be read"; silent with NO_TEXT, no closing line, never held', async () => {
+    await drain();
+    const channel = await sim(w, live);
+    const fetchMedia = channel.fetchMedia;
+    channel.fetchMedia = () => Promise.reject(new ChannelError('MEDIA_NOT_FOUND', 'ZZ TEST the provider lost the audio'));
+    provider(false);
+    let filed: { conv: string; messageId: string };
+    try {
+      filed = await voiceIn(live, opusNote(4, ++salt));
+    } finally {
+      provider(true);
+      channel.fetchMedia = fetchMedia;
+    }
+    const { conv, messageId } = filed;
+    expect(await note(messageId)).toMatchObject({ transcriptStatus: 'off', audioFileId: null, transcript: null });
+    // The media failure is on record; no transcription outcome is written for a note nobody tried to read.
+    const [media] = await w.ctx.db
+      .select()
+      .from(s.opsRun)
+      .where(and(eq(s.opsRun.name, 'adapter:inbox.media'), sql`${s.opsRun.detail}->>'messageId' = ${messageId}`))
+      .limit(1);
+    expect(media).toMatchObject({ outcome: 'failed' });
+    expect(media!.detail).toMatchObject({ kind: 'audio', reason: 'MEDIA_NOT_FOUND' });
+    const settled = await w.ctx.db
+      .select()
+      .from(s.auditLog)
+      .where(and(eq(s.auditLog.action, 'inbox.message.transcribe'), eq(s.auditLog.entityId, messageId)));
+    expect(settled).toHaveLength(0);
+
+    const calls = w.fake.requests.length;
+    expect((await tick(w, later(25_000)))).toMatchObject({ silent: 1, waiting: 0, handedOver: 0 });
+    expect(w.fake.requests.length).toBe(calls);
+    expect((await turnsOf(w, conv))[0]).toMatchObject({ state: 'silent', reason: 'NO_TEXT' });
+    // No closing line to the family, no hand-over.
+    expect(await aiLines(w, conv)).toHaveLength(0);
+    expect((await eventsOf(w, conv)).some((e) => e.kind === 'ai_handover')).toBe(false);
+    await neverHeld(conv);
+    // Staff read "not transcribed", not "could not be read".
+    const page = await call<{ messages: Array<Record<string, unknown>> }>(w, gmCookie, 'GET', `/inbox/conversations/${conv}/messages`);
+    expect(page.body.messages.find((m) => m.id === messageId)).toMatchObject({ transcriptStatus: 'off', audioFileId: null });
+  });
+
+  it('the job’s off sweep is the safety net: a note filed pending before the provider was switched off is "off"', async () => {
     await drain();
     const { conv, messageId } = await voiceIn(live, opusNote(5, ++salt));
+    expect((await note(messageId)).transcriptStatus).toBe('pending');
     expect(await job(runtimeOf(null))).toMatchObject({ off: 1 });
     expect(await note(messageId)).toMatchObject({ transcriptStatus: 'off', transcript: null });
     const calls = w.fake.requests.length;
     expect((await tick(w, later(25_000))).silent).toBe(1);
     expect(w.fake.requests.length).toBe(calls);
     expect((await turnsOf(w, conv))[0]).toMatchObject({ state: 'silent', reason: 'NO_TEXT' });
+  });
+});
+
+describe('a redelivered webhook: the waits run from when the note reached us, not the provider’s timestamp', () => {
+  it('a note stamped ten minutes ago: its audio keeps its grace while it is fetched, the turn waits, and it is transcribed and answered', async () => {
+    await drain();
+    // The store holds the audio back until the job has looked once.
+    const put = store.put;
+    let reached!: () => void;
+    const atPut = new Promise<void>((resolve) => (reached = resolve));
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    store.put = async (objectKey, bytes, contentType) => {
+      reached();
+      await gate;
+      return put(objectKey, bytes, contentType);
+    };
+    const stamped = new Date(Date.now() - 10 * 60_000);
+    const words = `ZZ TEST late but heard ${WORDS_SENTINEL}`;
+    const fake = new FakeTranscriber().next({ ok: true, text: words, language: 'english', durationSeconds: 5 });
+    let played: Awaited<ReturnType<typeof playVoice>>;
+    try {
+      played = await playVoice(live, opusNote(5, ++salt), { at: stamped });
+      await atPut;
+      // In, and its audio on its way: the message carries the provider's old time,
+      // its audio's deadline is two minutes from now.
+      const { messageId } = await filedAs(live, played.externalMessageId);
+      const waiting = await note(messageId);
+      expect(waiting).toMatchObject({ transcriptStatus: 'pending', audioFileId: null });
+      expect(waiting.createdAt.getTime()).toBeLessThanOrEqual(Date.now() - 9 * 60_000);
+      expect(waiting.transcriptNextAttemptAt!.getTime()).toBeGreaterThan(Date.now() + VOICE_MEDIA_GRACE_MS - 60_000);
+      // A transcribe tick now neither gives it up (MEDIA_MISSING) nor claims it.
+      expect(await job(runtimeOf(fake))).toMatchObject({ due: 0, givenUp: 0, failed: 0 });
+      expect((await note(messageId)).transcriptStatus).toBe('pending');
+    } finally {
+      release();
+      store.put = put;
+    }
+    expect((await played.posted).json().outcome).toBe('processed');
+    const { conv, messageId } = await filedAs(live, played.externalMessageId);
+    // Stored: claimable at once.
+    const stored = await note(messageId);
+    expect(stored).toMatchObject({ transcriptStatus: 'pending', transcriptNextAttemptAt: null });
+    expect(stored.audioFileId).not.toBeNull();
+
+    // The turn falls due: it waits for the transcript, not "unread" because the provider's clock is old.
+    const calls = w.fake.requests.length;
+    expect(await tick(w, later(25_000))).toMatchObject({ waiting: 1, handedOver: 0, silent: 0, answered: 0 });
+    expect(w.fake.requests.length).toBe(calls);
+    expect((await turnsOf(w, conv))[0]).toMatchObject({ state: 'pending', reason: TRANSCRIPT_PENDING });
+    expect(await aiLines(w, conv)).toHaveLength(0);
+
+    expect(await job(runtimeOf(fake))).toMatchObject({ due: 1, done: 1 });
+    expect(await note(messageId)).toMatchObject({ transcriptStatus: 'done', transcript: words, transcriptLanguage: 'en' });
+
+    w.fake.push({ kind: 'decision', decision: decision() });
+    expect((await tick(w, later(40_000))).answered).toBe(1);
+    expect(w.fake.requests.at(-1)!.prompt.messages[0].content).toContain(`[voice note] ${words}`);
+    expect((await turnsOf(w, conv))[0]).toMatchObject({ state: 'answered', reason: 'OK' });
+    expect(await sentinelLeaks(w.ctx.db, WORDS_SENTINEL, w.logLines)).toEqual(NO_LEAKS);
   });
 });
 

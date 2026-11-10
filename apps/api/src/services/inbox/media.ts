@@ -38,11 +38,12 @@ import { INBOX_READ, holdsAnywhere, loadVisibleConversation, viewerScopeOf } fro
  * caption and without the file. Fetching again later is not built: the
  * provider's media id is on the delivery's receipt for a person to replay.
  *
- * A VOICE NOTE (SCRUM-824) is `pending` its transcript from the ingest on;
- * stored, it waits for `job:inbox.transcribe` (`voice-notes.ts`). One whose
- * audio cannot be stored is settled here at once — `too_long` over the size
- * limit, `failed` otherwise — so the assistant stops waiting and a person
- * takes it.
+ * A VOICE NOTE (SCRUM-824) is `pending` its transcript from the ingest on
+ * while a transcription provider is configured (`off` at once when none is,
+ * and nothing here changes that); stored, it waits for `job:inbox.transcribe`
+ * (`voice-notes.ts`), claimable at once. A pending one whose audio cannot be
+ * stored is settled here at once — `too_long` over the size limit, `failed`
+ * otherwise — so the assistant stops waiting and a person takes it.
  */
 
 /** One media object of a new inbound message, waiting for the commit. */
@@ -169,8 +170,10 @@ export async function storeInboundMedia(
               audioFree
                 ? {
                     audioFileId: fileId,
-                    // SCRUM-824: the voice note waits for `job:inbox.transcribe` (the ingest already said so).
+                    // SCRUM-824: the voice note waits for `job:inbox.transcribe` (the ingest already said so),
+                    // claimable now: the deadline the ingest set for its audio is met.
                     transcriptStatus: sql`coalesce(${message.transcriptStatus}, 'pending')`,
+                    transcriptNextAttemptAt: null,
                     updatedAt: new Date(),
                   }
                 : { mediaFileIds: sql`array_append(${message.mediaFileIds}, ${fileId}::uuid)`, updatedAt: new Date() },

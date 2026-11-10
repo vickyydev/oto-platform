@@ -52,6 +52,8 @@ export interface SimulatorDeps {
   ai?: InboxAiSchedule;
   /** Where a played voice note's audio is stored, as the real webhook stores it (SCRUM-824). */
   storage?: FileStorage | null;
+  /** A transcription provider is configured: a played voice note is filed pending, else off (`IngestDeps.transcribe`). */
+  transcribe?: boolean;
 }
 
 export interface DriveCtx {
@@ -126,6 +128,7 @@ export async function simulateInbound(
       ...(deps.now ? { now: deps.now } : {}),
       ...(deps.ai ? { ai: deps.ai } : {}),
       ...(deps.storage !== undefined ? { storage: deps.storage } : {}),
+      ...(deps.transcribe !== undefined ? { transcribe: deps.transcribe } : {}),
     },
     { channelAccountId: account.id, webhook: played.webhook, requestId: ctx.requestId, actorAccountId: ctx.actorAccountId },
   );

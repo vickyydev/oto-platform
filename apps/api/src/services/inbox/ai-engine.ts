@@ -603,7 +603,7 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
   const episode = await loadEpisode(db, conv, eligible.episodeStart);
   const burst = burstOf(episode, turn.triggerMessageId);
   // SCRUM-824: a voice note still being transcribed holds the turn; one nobody could read is a person's.
-  const voice = voiceHold(burst, now);
+  const voice = voiceHold(burst, now, turn.firstSeenAt);
   if (voice === 'wait') return { conv, wait: true };
   if (voice === 'unread') return { conv, ...voiceUnreadTurn(conv) };
   // X8: a voice note, an image or a sticker with no words is a person's to pick up.

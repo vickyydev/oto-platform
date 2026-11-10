@@ -36,6 +36,7 @@ import { reopenAuditBefore, reopenPatch, reopenedPayload } from './status';
 import { sendAfterCommit } from './send';
 import type { InboxAiSchedule } from './ai-runtime';
 import { aiEligibility, scheduleAiTurn } from './ai-turns';
+import { VOICE_MEDIA_GRACE_MS } from './voice-notes';
 
 /**
  * THE INBOX INGEST (S2-19 I2d, SCRUM-583; plan
@@ -132,6 +133,13 @@ export interface IngestDeps {
   storage?: FileStorage | null;
   /** The assistant's switch and debounce (`app.inboxAi`); absent writes no turn (step 7a). */
   ai?: InboxAiSchedule;
+  /**
+   * SCRUM-824: true while a transcription provider is configured
+   * (`app.inboxTranscription` has an adapter — the one `job:inbox.transcribe`
+   * asks): a voice note is then filed `pending`. Absent or false, it is filed
+   * `off` at once — not transcribed, as before — so nothing waits for it.
+   */
+  transcribe?: boolean;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -306,7 +314,8 @@ export async function ingestDelivery(db: Exec, deps: IngestDeps, input: IngestIn
         db,
         { requestId: input.requestId ?? undefined, operatorId, branchId, actorAccountId: input.actorAccountId ?? null, log: deps.log },
         'inbox.webhook.receive',
-        (tx) => receive(tx, { account, channel, deliveryId, input, now: now(), media, ai: deps.ai ?? null }),
+        (tx) =>
+          receive(tx, { account, channel, deliveryId, input, now: now(), media, ai: deps.ai ?? null, transcribe: deps.transcribe === true }),
       );
     } catch (err) {
       // The work rolled back. The delivery is kept, with its error, so it is
@@ -364,6 +373,8 @@ interface ReceiveCtx {
   /** The media of the new messages, fetched after the commit (`media.ts`). */
   media: PendingMedia[];
   ai: InboxAiSchedule | null;
+  /** SCRUM-824: a transcription provider is configured (`IngestDeps.transcribe`). */
+  transcribe: boolean;
 }
 
 /** Steps 2 to 9, inside the delivery's one transaction. */
@@ -621,10 +632,17 @@ async function receiveMessage(
       bodyLanguage: hintLanguage,
       externalMessageId: event.externalMessageId,
       source: 'channel',
-      // SCRUM-824: a voice note is pending its transcript from the moment it
-      // lands, so the assistant's turn (written below, in this transaction)
-      // waits for it even before the audio is fetched after the commit.
-      ...(event.media.some((r) => r.kind === 'audio') ? { transcriptStatus: 'pending' as const } : {}),
+      // SCRUM-824: with a transcription provider, a voice note is pending its
+      // transcript from the moment it lands, so the assistant's turn (written
+      // below, in this transaction) waits for it even before the audio is
+      // fetched after the commit; its audio is due by our clock's grace (the
+      // provider's timestamp can be minutes old on a redelivery). Without
+      // one it is `off` at once: not transcribed, as before, nothing waits.
+      ...(event.media.some((r) => r.kind === 'audio')
+        ? c.transcribe
+          ? { transcriptStatus: 'pending' as const, transcriptNextAttemptAt: new Date(c.now.getTime() + VOICE_MEDIA_GRACE_MS) }
+          : { transcriptStatus: 'off' as const }
+        : {}),
       createdAt: at,
     })
     .onConflictDoNothing()
