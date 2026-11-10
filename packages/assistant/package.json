@@ -14,7 +14,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "tool-loop:check": "tsx scripts/tool-loop-check.ts",
-    "advice:measure": "tsx scripts/birthday-advice-measure.ts"
+    "advice:measure": "tsx scripts/birthday-advice-measure.ts",
+    "repeat:measure": "tsx scripts/repeat-measure.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.129.0",
