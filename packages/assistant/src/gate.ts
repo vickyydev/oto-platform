@@ -38,7 +38,7 @@
  */
 
 import { mentionsPartyDate, mentionsPartyTime, type InboxOpenQuestionState } from '@oto/shared';
-import { adviceAfterOpener, adviceAlone, adviceOverruledVerdict, birthdayAdviceOverrule, openerBesideAdvice } from './advice';
+import { adviceAfterOpener, adviceAlone, adviceOpenerOn, adviceOverruledVerdict, birthdayAdviceOverrule, openerBesideAdvice } from './advice';
 import {
   AI_REPLY_LANGUAGES,
   type AiDecision,
@@ -108,6 +108,13 @@ export interface EpisodeState extends BirthdayThreadFacts {
   contactCountryCode?: string | null;
   /** SCRUM-220 playbook: the language offer was already made this episode (an answer verdict's `languageOffer`). */
   languageOffered?: boolean;
+  /**
+   * SCRUM-831's memory, as this turn read it: every question the assistant
+   * asked this episode and what became of it. SCRUM-823 reads it for the
+   * opener beside an advice hand-over (a date or park question already put:
+   * the opener is not asked again). Absent: no question was asked.
+   */
+  questions?: readonly EpisodeQuestion[];
 }
 
 /**
@@ -188,6 +195,16 @@ export type GateVerdict =
        */
       droppedHoldingRule?: string;
       branchNamed: AiBranchKey | null;
+      /**
+       * SCRUM-823 (staging, 10 Nov): a birthday advice hand-over that answers
+       * a party request nobody has asked the basics of yet (advice.ts
+       * `adviceOpenerOn`). The engine sends the `opener_birthday_advice`
+       * template — the playbook's opener question and the birthday manager's
+       * warm line, ONE message — in place of the closing line alone, and
+       * records the opener's slots as asked. Where that template is not
+       * usable in the language, the closing line goes as before.
+       */
+      adviceOpener?: true;
     }
   | { action: 'silent'; reason: AiOutcomeReason; rule?: string; intent: AiIntent | null; intents: AiIntent[] }
   | {
@@ -288,8 +305,16 @@ const isBirthdaysPlan = (p: AiHandoverPlan) =>
  * our care or lost and found (the silent hand-over), and a person-first part
  * (a complaint with its one apology, a refund, an upset message, a request
  * for a person), which goes to its own team as it would in any thread.
+ *
+ * SCRUM-823, last: a birthday advice hand-over that answers a party request
+ * whose basics nobody asked yet carries the opener (`adviceOpenerOn`).
  */
 export function applyGates(input: GateInput): GateVerdict {
+  return adviceOpenerOn(gatedVerdict(input), input);
+}
+
+/** `applyGates` before the opener beside an advice hand-over is read. */
+function gatedVerdict(input: GateInput): GateVerdict {
   const overruled = birthdayDateOverrule(input);
   // SCRUM-823: then an advice question the model labelled details or faq in a
   // birthday thread is `birthday_advice` (advice.ts): beside the opener, the

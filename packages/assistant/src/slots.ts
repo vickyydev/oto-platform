@@ -278,6 +278,22 @@ function unitOf(text: string, n: NumberFound): Unit {
   return BEFORE.find(([, re]) => re.test(before))?.[0] ?? said;
 }
 
+/**
+ * SCRUM-823: the text names a headcount — kids, adults or people counted
+ * ("a party of 12 kids", "для 10 детей", "เด็ก 12 คน", "we will be 20", "for
+ * 15 guests"), never an age ("our 5 year old"), a time, a price or a choice.
+ * Read without a "today": a caller that also asks for a date reads the date
+ * on its own (`@oto/shared` `mentionsPartyDate`).
+ */
+export function headcountNamedIn(text: string): boolean {
+  const plain = asciiDigits(text.normalize('NFC'));
+  return numbersIn(plain).some((n) => {
+    if (n.weak) return false;
+    const unit = unitOf(plain, n);
+    return unit === 'kids' || unit === 'adults' || unit === 'people';
+  });
+}
+
 /** The text with its date and time phrases blanked out (same length), so "on the 14th" or "at 2 pm" is no count and no age. */
 function withoutDatesAndTimes(text: string, today: string): string {
   let out = text;
