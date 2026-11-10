@@ -49,7 +49,9 @@
 //     with no event, keeps the free-text review;
 //   - SCRUM-787: a cake the conversation times without saying whose it is is
 //     proposed with no type, the review says so, and approving it writes the
-//     time and notes and keeps the BEO's own cake type.
+//     time and notes and keeps the BEO's own cake type; when that type is No
+//     cake the review says so and what to choose to keep the time, and the
+//     editor's Cake block shows the time and notes under No Cake.
 //
 // Run from apps/oto-app:
 //   DATABASE_URL=<migrated scratch> TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/beo-catalogue-fill.check.ts
@@ -82,6 +84,7 @@ const { resolveSetMenuLines } = await import("../server/lib/setMenuResolve");
 const { db, pool: appDbPool } = await import("../server/db");
 const { initialReviewState, approveBodyOf, undecidedLines, fillBeyondApproval } = await import("../client/src/lib/beo-ai-review");
 const { BeoAiReviewBody } = await import("../client/src/components/beo/beo-ai-review");
+const { CakeUnderNoCake } = await import("../client/src/components/beo/beo-cake-under-no-cake");
 type InboxRead = Awaited<ReturnType<typeof import("../server/lib/inboxConfirmation").readInboxConfirmation>>;
 type AiCompleteOptions = import("../server/lib/anthropic").AiCompleteOptions;
 type BeoAiReview = import("../shared/beoAiFill").BeoAiReview;
@@ -903,8 +906,38 @@ try {
     const html = renderToStaticMarkup(React.createElement(BeoAiReviewBody, { review, state, onChange: () => undefined }));
     assert.ok(html.includes('data-testid="text-ai-review-cake-not-said"'), "the cake line says who brings it is not said");
     assert.ok(html.includes('value="16:00"'), "with its time");
+    assert.ok(html.includes("the BEO keeps its own cake type."), "a BEO whose type the review is not told: the plain words");
+
+    // The BEO says No cake (every new BEO's type): the review says so, and what to choose to keep the time.
+    const onNone = renderToStaticMarkup(React.createElement(BeoAiReviewBody, { review, state, onChange: () => undefined, bookedCakeMode: "NONE" }));
+    assert.ok(
+      onNone.includes("Not said who brings the cake, and the BEO says No cake: choose the park&#x27;s or the family&#x27;s cake here to keep the 16:00 cake time."),
+      "the No cake the BEO keeps is said, with what to choose",
+    );
+    const onOwn = renderToStaticMarkup(React.createElement(BeoAiReviewBody, { review, state, onChange: () => undefined, bookedCakeMode: "EXTERNAL" }));
+    assert.ok(onOwn.includes("Not said who brings the cake: the BEO keeps its own cake type (the family&#x27;s own cake)."));
+    // Approving it onto that No cake BEO keeps No cake (the owner's default) and writes the time and notes...
+    await q("insert into beo_kitchen_plans (event_id, cake_mode) values ($1, 'NONE')", [ev.junk]);
+    const ontoNone = await approve(ev.junk, approveBodyOf(review, state, { conversationId: null, messageId: null }));
+    assert.equal(ontoNone.status, 200, JSON.stringify(ontoNone.body));
+    const [kept] = await q("select cake_mode, cake_time, cake_notes from beo_kitchen_plans where event_id = $1", [ev.junk]);
+    assert.deepEqual(kept, { cake_mode: "NONE", cake_time: "16:00", cake_notes: "торт" });
+    // ...which the editor's Cake block shows under No Cake, never out of sight.
+    const block = renderToStaticMarkup(
+      React.createElement(CakeUnderNoCake, { cakeMode: kept!.cake_mode, cakeTime: kept!.cake_time, cakeNotes: kept!.cake_notes, onClear: () => undefined }),
+    );
+    assert.ok(block.includes("No Cake is chosen: choose Our Cake or Own Cake to keep the 16:00 cake time."), block);
+    assert.ok(block.includes('data-testid="text-cake-under-no-cake-time">16:00<'), "the time");
+    assert.ok(block.includes('data-testid="text-cake-under-no-cake-notes">торт<'), "the notes");
+    assert.equal(
+      renderToStaticMarkup(React.createElement(CakeUnderNoCake, { cakeMode: "INTERNAL", cakeTime: "16:00", cakeNotes: "", onClear: () => undefined })),
+      "",
+      "under a cake type the block of before shows them",
+    );
+    assert.equal(renderToStaticMarkup(React.createElement(CakeUnderNoCake, { cakeMode: "NONE", cakeTime: "", cakeNotes: " ", onClear: () => undefined })), "");
+
     // The BEO already has the family's own cake: approving a cake with no type keeps that type and writes the time and notes.
-    await q("insert into beo_kitchen_plans (event_id, cake_mode, cake_time) values ($1, 'EXTERNAL', '15:00')", [ev.junk]);
+    await q("update beo_kitchen_plans set cake_mode = 'EXTERNAL', cake_time = '15:00', cake_notes = null where event_id = $1", [ev.junk]);
     const body = approveBodyOf(review, state, { conversationId: null, messageId: null });
     assert.deepEqual(body.cake, { mode: null, notes: "торт", time: "16:00" });
     const res = await approve(ev.junk, body);

@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { AlertCircle, CalendarDays, CheckCircle2, ClipboardPaste, Gift, Loader2, MessageSquare, Music, Sparkles, Trash2, Utensils, Wallet } from "lucide-react";
 import { BEO_AI_MENUS, beoAiMatchLabel, beoAiSourceLabel, type BeoAiApproveBody, type BeoAiCakeMode, type BeoAiMenu, type BeoAiReview } from "@shared/beoAiFill";
 import { dayLabel } from "@/lib/beo-ai-date";
+import { aiReviewCakeNotSaidNote } from "@/lib/beo-ai-preview";
 import {
   APPROVAL_LEAVES,
   APPROVAL_WRITES,
@@ -146,10 +147,13 @@ export function BeoAiReviewBody({
   review,
   state,
   onChange,
+  bookedCakeMode,
 }: {
   review: BeoAiReview;
   state: BeoAiReviewState;
   onChange: (next: BeoAiReviewState) => void;
+  /** SCRUM-787: the BEO's own cake type, which a cake whose type the chat does not say keeps. */
+  bookedCakeMode?: string | null;
 }) {
   const set = (patch: Partial<BeoAiReviewState>) => onChange({ ...state, ...patch });
   const pkg = packageOf(review, state.packageId.value);
@@ -425,7 +429,7 @@ export function BeoAiReviewBody({
           </select>
           {state.cake && !state.cake.value.mode && (
             <span className="text-xs text-amber-700 dark:text-amber-300" data-testid="text-ai-review-cake-not-said">
-              Not said who brings the cake: the BEO keeps its own cake type.
+              {aiReviewCakeNotSaidNote(state.cake.value, bookedCakeMode)}
             </span>
           )}
           {state.cake && (
@@ -561,6 +565,7 @@ export function BeoAiReviewDialog({
   eventId,
   pending,
   bookedDate,
+  bookedCakeMode,
   onClose,
   onFallback,
   onApproved,
@@ -569,6 +574,8 @@ export function BeoAiReviewDialog({
   pending: BeoAiPending | null;
   /** SCRUM-814: the date the form holds, beside the one the confirmation names. */
   bookedDate: string | null;
+  /** SCRUM-787: the cake type the form holds, which a cake whose type is not said keeps. */
+  bookedCakeMode?: string | null;
   onClose: () => void;
   onFallback: (pending: BeoAiPending) => void;
   /**
@@ -663,7 +670,7 @@ export function BeoAiReviewDialog({
               {pasted ? "— a field you change is marked as changed here." : "— the family's are defaults for you to check."}
             </p>
           </div>
-          <BeoAiReviewBody review={review} state={state} onChange={setState} />
+          <BeoAiReviewBody review={review} state={state} onChange={setState} bookedCakeMode={bookedCakeMode} />
           {review.finalMessage && (
             <p className="text-xs text-muted-foreground" data-testid="text-ai-review-final-message">
               Approve and create also puts the team's confirmation, word for word, in Final Message to Parent.

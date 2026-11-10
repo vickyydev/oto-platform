@@ -31,7 +31,8 @@
 //     before those keys existed still gets them asked, and the answer's date
 //     still reaches the review.
 //   - SCRUM-787: a cake time with no word of whose cake it is: the answer may
-//     say NOT_SAID (or give no type), the preview's cake line says "not said",
+//     say NOT_SAID (or give no type), the preview's cake line says "not said"
+//     (and, when the form's type is No Cake, what to choose to keep the time),
 //     Load into Editor applies the time and notes and leaves the form's cake
 //     type; the catalogue review proposes the cake with no type and the
 //     approval sends none; an empty Party Details box is not shown.
@@ -69,7 +70,7 @@ import {
   type BeoCatalogue,
 } from "../server/lib/beoCatalogueFill";
 import { aiFillDateLine, dayLabel } from "../client/src/lib/beo-ai-date";
-import { aiFillCakeApply, aiFillCakeLine, aiFillPartyDetailsShown } from "../client/src/lib/beo-ai-preview";
+import { aiFillCakeApply, aiFillCakeLine, aiFillCakeNotSaidNote, aiFillPartyDetailsShown, aiReviewCakeNotSaidNote, cakeUnderNoCakeNote } from "../client/src/lib/beo-ai-preview";
 import { approveBodyOf, initialReviewState } from "../client/src/lib/beo-ai-review";
 import { BeoAiApproveBodySchema } from "../shared/beoAiFill";
 
@@ -701,6 +702,35 @@ try {
     assert.equal(aiFillCakeLine({ cakeMode: "NONE" }), null);
     assert.deepEqual(aiFillCakeApply({ cakeMode: "NONE", cakeTime: "15:30" }), {});
     assert.equal(aiFillCakeLine({}), null, "no cake named: no line");
+    // The form's cake type is No Cake (every new BEO's): the preview says so and what to choose to keep the time;
+    // Load into Editor writes the time and notes and leaves No Cake, and the editor's Cake block then shows them
+    // under No Cake with the same words, never out of sight.
+    const notSaid = aiFillCakeLine(run.value.kitchenPlan);
+    assert.equal(aiFillCakeNotSaidNote(notSaid, "NONE"), "not said — the BEO says No Cake: choose Our Cake or Own Cake to keep the 15:30 cake time");
+    assert.equal(aiFillCakeNotSaidNote(notSaid, "EXTERNAL"), "not said — the form's cake type stays as it is (Own Cake)");
+    assert.equal(aiFillCakeNotSaidNote(notSaid, "INTERNAL"), "not said — the form's cake type stays as it is (Our Cake)");
+    assert.equal(aiFillCakeNotSaidNote(notSaid, undefined), "not said — the form's cake type stays as it is");
+    assert.equal(
+      aiFillCakeNotSaidNote(aiFillCakeLine({ cakeMode: "NOT_SAID", cakeNotes: "Торт" }), "NONE"),
+      "not said — the BEO says No Cake: choose Our Cake or Own Cake to keep the cake notes",
+    );
+    assert.equal(aiFillCakeNotSaidNote(aiFillCakeLine({ cakeMode: "EXTERNAL", cakeTime: "15:30" }), "NONE"), null, "a type the message says: no note");
+    const form = { mode: "NONE", time: "", notes: "" };
+    const loaded = aiFillCakeApply(run.value.kitchenPlan);
+    const onForm = { mode: loaded.mode ?? form.mode, time: loaded.time ?? form.time, notes: loaded.notes ?? form.notes };
+    assert.deepEqual(onForm, { mode: "NONE", time: "15:30", notes: "Торт" }, "Load leaves No Cake and writes the time and notes");
+    assert.equal(cakeUnderNoCakeNote(onForm.mode, onForm.time, onForm.notes), "No Cake is chosen: choose Our Cake or Own Cake to keep the 15:30 cake time.");
+    assert.equal(cakeUnderNoCakeNote("NONE", "", "Торт"), "No Cake is chosen: choose Our Cake or Own Cake to keep the cake notes.");
+    assert.equal(cakeUnderNoCakeNote("INTERNAL", "15:30", "Торт"), null, "under a cake type the Cake block shows them as before");
+    assert.equal(cakeUnderNoCakeNote("NONE", "", " "), null, "nothing under No Cake: nothing shown");
+    // The catalogue review's words, given the BEO's own type.
+    assert.equal(
+      aiReviewCakeNotSaidNote({ mode: null, time: "15:30", notes: null }, "NONE"),
+      "Not said who brings the cake, and the BEO says No cake: choose the park's or the family's cake here to keep the 15:30 cake time.",
+    );
+    assert.equal(aiReviewCakeNotSaidNote({ mode: null, time: "15:30" }, "INTERNAL"), "Not said who brings the cake: the BEO keeps its own cake type (the park's cake).");
+    assert.equal(aiReviewCakeNotSaidNote({ mode: null, time: "15:30" }, null), "Not said who brings the cake: the BEO keeps its own cake type.");
+    assert.equal(aiReviewCakeNotSaidNote({ mode: "INTERNAL", time: "15:30" }, "NONE"), null);
     // A value that is no cake type is still refused, as before.
     assert.equal(BeoFillSchema.safeParse({ kitchenPlan: { cakeMode: "MAYBE" } }).success, false);
     // An empty Party Details box is not shown.

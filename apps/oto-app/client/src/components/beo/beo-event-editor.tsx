@@ -75,7 +75,8 @@ import {
 } from "lucide-react";
 import { BeoTimelineEditor } from "./beo-timeline-editor";
 import { BeoAiReviewDialog, type BeoAiPending } from "./beo-ai-review";
-import { aiFillCakeApply, aiFillCakeLine, aiFillPartyDetailsShown } from "@/lib/beo-ai-preview";
+import { aiFillCakeApply, aiFillCakeLine, aiFillCakeNotSaidNote, aiFillPartyDetailsShown } from "@/lib/beo-ai-preview";
+import { CakeUnderNoCake } from "./beo-cake-under-no-cake";
 import { APPROVAL_WRITES } from "@/lib/beo-ai-review";
 import { BeoPackageModule } from "./beo-package-module";
 import { BeoParentExperienceModule } from "./beo-parent-experience-module";
@@ -1556,6 +1557,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const aiFillDate = aiFillDateLine(aiFillParsed, eventData.eventDate);
   // SCRUM-787: the cake as the AI Fill read it, its type "not said" when the message does not say whose cake.
   const aiFillCake = aiFillCakeLine(aiFillParsed?.kitchenPlan);
+  // SCRUM-787: beside it, the form's own type that stays, and what to choose when that type is No Cake.
+  const aiFillCakeNote = aiFillCakeNotSaidNote(aiFillCake, cakeMode);
 
   return (
     <div className="flex flex-col h-full">
@@ -3130,6 +3133,14 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                           </Button>
                         ))}
                       </div>
+                      {/* SCRUM-787: a cake time or notes held under No Cake stays in sight, with what to choose to keep it. */}
+                      <CakeUnderNoCake
+                        cakeMode={cakeMode}
+                        cakeTime={cakeTime}
+                        cakeNotes={cakeNotes}
+                        onClear={() => { setCakeTime(""); setCakeNotes(""); }}
+                        disabled={readOnly}
+                      />
                       {cakeMode !== "NONE" && (
                         <div className="space-y-2 mt-2">
                           <div className="flex gap-2 items-center flex-wrap">
@@ -3696,7 +3707,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                         <span className="text-muted-foreground w-28 shrink-0">Cake type:</span>
                         {aiFillCake.notSaid ? (
                           <span className="text-amber-700 dark:text-amber-300" data-testid="text-ai-fill-cake-not-said">
-                            not said — the form's cake type stays as it is
+                            {aiFillCakeNote}
                           </span>
                         ) : (
                           <span className="font-medium">{aiFillCake.type}</span>
@@ -3815,6 +3826,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
         eventId={eventId}
         pending={aiReview}
         bookedDate={eventData.eventDate || null}
+        bookedCakeMode={cakeMode}
         onClose={() => setAiReview(null)}
         onFallback={(pending) => {
           setAiReview(null);
