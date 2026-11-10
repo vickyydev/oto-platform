@@ -702,7 +702,8 @@ describe('the guards (§D.4)', () => {
         .update(s.setting)
         .set({ value: { schemaVersion: 1, overrides: { internal: {}, inbox: { firstBubbleMs: 1_000, bubbleGapMs: 1_000 } }, rates: [] } })
         .where(and(eq(s.setting.operatorId, w.oto), eq(s.setting.key, 'assistant_settings')));
-      // SCRUM-832: an answer is one message, so the gap is read between it and the closing line after it.
+      // SCRUM-832: an answer on ONE topic is one message, so these bubbles are on two (socks, and a job
+      // enquiry the GM takes): a bubble per part, the gaps between them read as before, the closing line after.
       const conv = await customer(w, central, nextPhone(), 'quick question, do I need socks? and are you hiring?');
       w.fake.push({
         kind: 'decision',
@@ -716,13 +717,13 @@ describe('the guards (§D.4)', () => {
       const t0 = later(25_000);
       expect((await tick(w, t0)).handedOver).toBe(1);
       const lines = await aiLines(w, conv.id);
-      expect(lines).toHaveLength(2);
-      expect(lines[1]!.templateId).not.toBeNull();
+      expect(lines).toHaveLength(4);
+      expect(lines[3]!.templateId).not.toBeNull();
       const delays = lines.map((l) => l.nextAttemptAt!.getTime() - t0.getTime());
       // No jitter in this world (random = 0.5): the saved 1 s ceiling, not the native 20 s.
       expect(delays[0]).toBe(1_000);
-      expect(delays[1]! - delays[0]!).toBeGreaterThan(0);
       expect(delays[1]! - delays[0]!).toBeLessThanOrEqual(1_000);
+      expect(delays[2]! - delays[1]!).toBeLessThanOrEqual(1_000);
     } finally {
       await w.ctx.db.delete(s.setting).where(and(eq(s.setting.operatorId, w.oto), eq(s.setting.key, 'assistant_settings')));
     }
@@ -938,7 +939,8 @@ describe('the environment (§D.6)', () => {
     const saved = cfg.pacing;
     cfg.pacing = { firstBubbleMaxMs: 1_000, bubbleGapMaxMs: 1_000 };
     try {
-      // SCRUM-832: an answer is one message, so the gap is read between it and the closing line after it.
+      // SCRUM-832: an answer on ONE topic is one message, so these bubbles are on two (socks, and a job
+      // enquiry the GM takes): a bubble per part, the gaps between them read as before, the closing line after.
       const conv = await customer(w, central, nextPhone(), 'quick question, do I need socks? and are you hiring?');
       w.fake.push({
         kind: 'decision',
@@ -952,13 +954,13 @@ describe('the environment (§D.6)', () => {
       const t0 = later(25_000);
       expect((await tick(w, t0)).handedOver).toBe(1);
       const lines = await aiLines(w, conv.id);
-      expect(lines).toHaveLength(2);
-      expect(lines[1]!.templateId).not.toBeNull();
+      expect(lines).toHaveLength(4);
+      expect(lines[3]!.templateId).not.toBeNull();
       const delays = lines.map((l) => l.nextAttemptAt!.getTime() - t0.getTime());
       // No jitter in this world (random = 0.5): the first bubble's typing time is the 1 s ceiling.
       expect(delays[0]).toBe(1_000);
-      expect(delays[1]! - delays[0]!).toBeGreaterThan(0);
       expect(delays[1]! - delays[0]!).toBeLessThanOrEqual(1_000);
+      expect(delays[2]! - delays[1]!).toBeLessThanOrEqual(1_000);
     } finally {
       cfg.pacing = saved;
     }
@@ -990,9 +992,8 @@ describe('several questions at once (test night 2026-10-21, D1a, W2)', () => {
     expect((await tick(w, later(25_000))).answered).toBe(1);
     const [turn] = await turnsOf(w, conv.id);
     expect(turn).toMatchObject({ state: 'answered', reason: 'OK', intent: 'directions_parking', action: 'answer' });
-    // Each part answered, in order, as one message (SCRUM-832).
     const lines = await aiLines(w, conv.id);
-    expect(lines.map((l) => l.body)).toEqual([bubbles.join(PART_JOIN)]);
+    expect(lines.map((l) => l.body)).toEqual(bubbles);
     expect(lines.every((l) => l.providerStatus === 'queued')).toBe(true);
     const events = await eventsOf(w, conv.id);
     expect(events.find((e) => e.kind === 'classified')!.payload).toMatchObject({ intent: 'directions_parking', intents: ['directions_parking', 'faq'] });
@@ -1029,7 +1030,7 @@ describe('several questions at once (test night 2026-10-21, D1a, W2)', () => {
     });
     expect((await tick(w, later(25_000))).answered).toBe(1);
     expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'answered', reason: 'OK', intent: 'hours', action: 'answer' });
-    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([`${hours}${PART_JOIN}${ask}`]);
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([hours, ask]);
     expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'general', teamId: reception.id });
     expect((await eventsOf(w, conv.id)).find((e) => e.kind === 'ai_replied')!.payload).toMatchObject({
       intents: ['hours', 'birthday_party'],
@@ -1046,9 +1047,9 @@ describe('several questions at once (test night 2026-10-21, D1a, W2)', () => {
     expect((await tick(w, later(25_000))).handedOver).toBe(1);
     expect((await turnsOf(w, conv.id))[1]).toMatchObject({ state: 'handed_over', reason: 'OK', intent: 'socks', action: 'answer' });
     const lines = await aiLines(w, conv.id);
-    expect(lines).toHaveLength(3);
-    expect(lines[1]).toMatchObject({ body: socks, mediaFileIds: [] });
-    expect(lines[2]).toMatchObject({ body: holding.body, templateId: holding.id, mediaFileIds: [] });
+    expect(lines).toHaveLength(4);
+    expect(lines[2]).toMatchObject({ body: socks, mediaFileIds: [] });
+    expect(lines[3]).toMatchObject({ body: holding.body, templateId: holding.id, mediaFileIds: [] });
     expect(lines.some((l) => l.mediaFileIds.includes(fileId))).toBe(false);
     for (const l of lines) expect(l.body ?? '').not.toMatch(/20th|twentieth|฿|baht/i);
     const birthdays = await teamOf(w, 'birthdays');

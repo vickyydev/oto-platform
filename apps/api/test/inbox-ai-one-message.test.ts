@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { EN_PERSONA, PART_JOIN, TH_PERSONA, type AiDecision } from '@oto/assistant';
 import { schema as s } from '@oto/db';
@@ -77,6 +77,7 @@ beforeAll(async () => {
   await entry('pb.directions-chalong', 'directions', 'How do I find you at Chalong?', 'Take the escalator up, then the second escalator by the food court to the 3rd floor, opposite the cinema.');
   await entry('pb.parking', 'parking', 'Is there parking?', 'Parking is free at both malls.');
   await entry('pb.hours', 'hours_note', 'When are you open?', 'Both branches are open 10:00 to 20:00, 7 days a week.');
+  await kb(w, approver, { key: 'pb.socks', topic: 'socks', language: 'en', question: 'Do we need socks?', body: 'Grip socks are required on the play floor; you can buy them at reception.' });
 }, 300_000);
 
 afterAll(async () => {
@@ -191,9 +192,43 @@ describe('SCRUM-832: the owner’s case through the engine', () => {
       }),
     );
     expect(third.lines.map((l) => l.body)).toEqual(["We're open every day 10:00 to 20:00 😊"]);
-    expect((await repliedPayloads(convId)).at(-1)).toMatchObject({ composition: { parkFirst: false, bubbles: 2, repeats: 1 } });
+    expect((await repliedPayloads(convId)).at(-1)).toMatchObject({ composition: { parkFirst: false, bubbles: 2, joined: true, repeats: 1 } });
+
+    // Turn 4: the family asks where it is again: the location again, nothing dropped.
+    const fourth = await say(
+      phone,
+      'Sorry, where is Central again?',
+      decision({ intent: 'address', grounding: ['pb.address-central'], bubbles: ["We're on the basement floor of Central Floresta, opposite the aquarium. See you soon!"], reason: 'FACT_IN_KB' }),
+    );
+    expect(fourth.lines.map((l) => l.body)).toEqual(["We're on the basement floor of Central Floresta, opposite the aquarium. See you soon!"]);
     // Every turn of the episode was one message.
-    expect((await turnsOf(w, convId)).map((t) => t.messageIds.length)).toEqual([1, 1, 1]);
+    expect((await turnsOf(w, convId)).map((t) => t.messageIds.length)).toEqual([1, 1, 1, 1]);
+  }, 60_000);
+
+  it('"Where are you? And do we need socks?" with no park: every answer goes, a bubble per topic, the model’s own park question recorded', async () => {
+    await drain();
+    const phone = nextPhone();
+    const socks = 'Yes, grip socks are required on the play floor, and you can buy them at reception 😊';
+    const t = await say(
+      phone,
+      'Where are you? And do we need socks?',
+      decision({
+        intent: 'address',
+        intents: ['address', 'socks'],
+        grounding: ['pb.address-central', 'pb.address-chalong', 'pb.socks'],
+        bubbles: [BOTH_PARKS[0]!, socks, EN_PERSONA.branchQuestion],
+        askBranch: true,
+        askedSlots: ['park'],
+        reason: 'FACT_IN_KB',
+      }),
+    );
+    expect(t.sweep.answered).toBe(1);
+    expect(t.lines.map((l) => l.body)).toEqual([BOTH_PARKS[0], socks, EN_PERSONA.branchQuestion]);
+    const [asked] = await questionsOf(t.conv.id);
+    expect(asked).toMatchObject({ slot: 'park', state: 'open', askedMessageId: t.lines[2]!.id });
+    const [replied] = await repliedPayloads(t.conv.id);
+    expect(replied).toMatchObject({ intents: ['address', 'socks'], askBranch: true });
+    expect(replied!.composition).toBeUndefined();
   }, 60_000);
 
   it('the model leaves the park unnamed: the family’s answer to the park question still sets it', async () => {
@@ -219,6 +254,34 @@ describe('SCRUM-832: the owner’s case through the engine', () => {
     expect(second.lines.map((l) => l.body)).toEqual([parts.join(PART_JOIN)]);
     expect((await questionsOf(first.conv.id))[0]).toMatchObject({ slot: 'park', state: 'answered', answer: 'central' });
     expect((await conversationRow(w, first.conv.id)).branchId).toBe(w.central);
+  }, 60_000);
+
+  it('SCRUM-823’s opener beside an advice hand-over is the turn’s one message: exactly one line, the opener template', async () => {
+    await drain();
+    const phone = nextPhone();
+    const t = await say(
+      phone,
+      'We would like to book a birthday party for our son. Which package would you recommend?',
+      decision({ intent: 'birthday_advice', intents: ['birthday_advice', 'birthday_party'], action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }),
+    );
+    expect(t.sweep.handedOver).toBe(1);
+    const [row] = await w.ctx.db
+      .select()
+      .from(s.template)
+      .where(
+        and(
+          eq(s.template.operatorId, w.oto),
+          eq(s.template.key, 'opener_birthday_advice'),
+          eq(s.template.language, 'en'),
+          isNull(s.template.channel),
+          isNull(s.template.branchId),
+          isNull(s.template.archivedAt),
+        ),
+      )
+      .limit(1);
+    expect(row).toBeDefined();
+    expect(t.lines.map((l) => ({ body: l.body, templateId: l.templateId }))).toEqual([{ body: row!.body, templateId: row!.id }]);
+    expect((await turnsOf(w, t.conv.id)).map((x) => x.messageIds.length)).toEqual([1]);
   }, 60_000);
 
   it('a thread whose first line names the park is answered at once, in one message', async () => {

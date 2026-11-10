@@ -91,6 +91,7 @@ import {
   repeatRefusedAfterRethink,
   repeatStage,
   rethoughtForRepeat,
+  type OpenQuestionMemory,
   type OpenQuestionTurn,
 } from './open-question';
 import { routeConversation } from './router';
@@ -382,6 +383,32 @@ function burstOf(episode: readonly EpisodeRow[], triggerMessageId: string): Epis
 /** SCRUM-823 review: every line the customer wrote this episode, oldest first, as the gate reads them (`EpisodeState.customerLines`). */
 function customerLinesOf(episode: readonly EpisodeRow[]): string[] {
   return episode.flatMap((m) => (m.from === 'customer' && m.text !== null ? [m.text] : []));
+}
+
+/**
+ * SCRUM-832: what the assistant said while the park was being resolved, as
+ * the gate reads it (`EpisodeState.parkLines`, `parkAnsweredNow`). The
+ * latest park question the family answered this episode: answered in this
+ * burst (the memory read it this turn), every line the assistant sent this
+ * episode; answered earlier, its lines up to the family's answer and the
+ * reply that answered it. None when no park question was answered: nothing
+ * is dropped as a repeat.
+ */
+function parkResolutionOf(
+  episode: readonly EpisodeRow[],
+  memory: OpenQuestionMemory,
+): { parkLines: string[]; parkAnsweredNow: boolean } {
+  const ai = (rows: readonly EpisodeRow[]) => rows.flatMap((m) => (m.from === 'ai' && m.text !== null ? [m.text] : []));
+  const answer = [...memory.questions].reverse().find((q) => q.slot === 'park' && q.state === 'answered' && q.answeredMessageId !== null);
+  if (!answer) return { parkLines: [], parkAnsweredNow: false };
+  if (memory.fills.some((f) => f.id === answer.id)) return { parkLines: ai(episode), parkAnsweredNow: true };
+  const at = episode.findIndex((m) => m.id === answer.answeredMessageId);
+  if (at < 0) return { parkLines: [], parkAnsweredNow: false };
+  // The rest of the family's burst, then the reply that answered it, up to their next line.
+  let end = at + 1;
+  while (end < episode.length && episode[end]!.from === 'customer') end += 1;
+  while (end < episode.length && episode[end]!.from !== 'customer') end += 1;
+  return { parkLines: ai(episode.slice(0, end)), parkAnsweredNow: false };
 }
 
 /**
@@ -725,14 +752,14 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
   // is asked once — and every line the family wrote this episode, so it never
   // asks a date, a headcount or a park they gave in an earlier message.
   // SCRUM-832: the park question reads the same (a park the family gave is
-  // never asked again, and sets the thread's park), and the assistant's own
-  // lines this episode (once the park is known, what was said about it while
-  // it was being resolved is not said again).
+  // never asked again, and sets the thread's park), and what the assistant
+  // said while the park was being resolved (once the family gave it, what was
+  // said about the park is not said again).
   const episodeState: EpisodeState = {
     ...facts.state,
     questions: memory.questions,
     customerLines: customerLinesOf(episode),
-    aiLines: episode.flatMap((m) => (m.from === 'ai' && m.text !== null ? [m.text] : [])),
+    ...parkResolutionOf(episode, memory),
   };
   const promptInput: PromptInput = {
     knowledge: knowledge.knowledge,
@@ -1491,7 +1518,12 @@ async function composeReply(exec: Exec, conv: ConversationRow, account: AccountR
   // answer included (the nanny on Central's own number is the desk's).
   const replied = v.action === 'answer' && !handover?.silenced;
   // SCRUM-832: the one message's parts, each its own item for the review; `oneMessage` joins what survives.
-  const lines: OutLine[] = replied ? (v.parts ?? v.bubbles).map((b) => ({ body: b, origin: 'model', templateKey: null, part: true })) : [];
+  // An answer on several topics keeps a bubble per part: its bubbles are lines of their own.
+  const lines: OutLine[] = !replied
+    ? []
+    : v.parts
+      ? v.parts.map((b) => ({ body: b, origin: 'model', templateKey: null, part: true }))
+      : v.bubbles.map((b) => ({ body: b, origin: 'model', templateKey: null }));
   let brochure: string[] = [];
   let holding: HoldingLine = NO_LINE;
   if (handover && !handover.silenced) {
