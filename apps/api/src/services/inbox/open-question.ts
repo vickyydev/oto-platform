@@ -63,6 +63,11 @@ import type { Exec, Tx } from '../tx';
  *      thread). Live numbers only: a shadow reply was never asked.
  *   4. THE INBOX (`openQuestionsOf`): the thread shows under the asking line
  *      what the assistant believes ("asked: the child's age · answered 8").
+ *   5. THE READ WHILE A PERSON HAS THE THREAD (`commitReadAnswers`, SCRUM-823
+ *      review): after a hand-over or a person's action no turn runs, so the
+ *      customer's reply is read when it lands (and when a turn is cancelled
+ *      for that hold) — the memory's fills and withdrawals only, nothing
+ *      asked or sent.
  *
  * NOTHING LOGS TEXT. Audit rows carry slots, kinds, counts and ids — never an
  * answer: an audit row is never erased, and an answer is the customer's.
@@ -507,12 +512,83 @@ export interface OpenQuestionCommit {
   withdrawn: AiAskedSlot[];
 }
 
+/** A thread's open-question rows, as one commit writes them. */
+const scopeOf = (conv: { id: string; operatorId: string }) =>
+  and(eq(conversationOpenQuestion.operatorId, conv.operatorId), eq(conversationOpenQuestion.conversationId, conv.id));
+
+/**
+ * The answers a memory read are kept (an open question's, or one a person
+ * took over: the customer's reply to them says it), and the questions it
+ * found withdrawn (their line never left, or a person wrote after them) are
+ * withdrawn. Into `done`, slots only.
+ */
+async function keepRead(
+  tx: Tx,
+  conv: { id: string; operatorId: string },
+  memory: OpenQuestionMemory | undefined,
+  at: Date,
+  done: OpenQuestionCommit,
+): Promise<void> {
+  // A question a person took over is answered too when the customer's reply to them says it.
+  const notAnswered = inArray(conversationOpenQuestion.state, ['open', 'withdrawn']);
+  for (const f of memory?.fills ?? []) {
+    const rows = await tx
+      .update(conversationOpenQuestion)
+      .set({ state: 'answered', answer: f.answer, answeredMessageId: f.answeredMessageId, closedAt: at, updatedAt: at })
+      .where(and(scopeOf(conv), eq(conversationOpenQuestion.id, f.id), notAnswered))
+      .returning({ id: conversationOpenQuestion.id });
+    if (rows.length > 0) done.answered.push(f.slot);
+  }
+  const gone = (memory?.withdrawals ?? []).map((w) => w.id);
+  if (gone.length > 0) await withdrawOpen(tx, conv, inArray(conversationOpenQuestion.id, gone), at, done);
+}
+
+/** The thread's OPEN questions that match `where` are withdrawn (a person has the thread, or the slot is asked again). */
+async function withdrawOpen(
+  tx: Tx,
+  conv: { id: string; operatorId: string },
+  where: ReturnType<typeof and>,
+  at: Date,
+  done: OpenQuestionCommit,
+): Promise<void> {
+  const rows = await tx
+    .update(conversationOpenQuestion)
+    .set({ state: 'withdrawn', closedAt: at, updatedAt: at })
+    .where(and(scopeOf(conv), eq(conversationOpenQuestion.state, 'open'), where))
+    .returning({ slot: conversationOpenQuestion.slot });
+  done.withdrawn.push(...rows.map((r) => r.slot));
+}
+
+/** One audit row when a commit changed anything: slots and the turn, never an answer. */
+async function auditCommit(
+  tx: Tx,
+  conv: { id: string; operatorId: string; branchId: string | null },
+  turnId: string | null,
+  done: OpenQuestionCommit,
+): Promise<void> {
+  if (done.asked.length + done.answered.length + done.withdrawn.length === 0) return;
+  await audit.record(tx, {
+    actorAccountId: null,
+    action: 'inbox.ai.open_question',
+    entityType: 'inbox.conversation',
+    entityId: conv.id,
+    operatorId: conv.operatorId,
+    branchId: conv.branchId,
+    requestId: null,
+    after: { turnId, ...done },
+  });
+}
+
 /**
  * Under the thread lock, on a live number: the answers this turn read are
  * kept (an open question's, or one a person took over), a hand-over
  * withdraws every question still open (a person has the
  * thread), and the questions the sent reply asks are recorded, each on the
  * line that asked it — an older open row of the same slot withdrawn first.
+ * A hand-over's own line that asks (SCRUM-823: the opener beside a birthday
+ * advice hand-over) records its questions as a person's from the start:
+ * withdrawn at the hand-over, and read against the family's reply all the
+ * same (`loadOpenQuestionMemory`, `commitReadAnswers`).
  * One audit row when anything changed, slots only.
  */
 export async function commitOpenQuestions(
@@ -539,44 +615,29 @@ export async function commitOpenQuestions(
   },
 ): Promise<OpenQuestionCommit> {
   const done: OpenQuestionCommit = { asked: [], answered: [], withdrawn: [] };
-  const memory = a.openQuestion?.memory;
-  const scope = and(eq(conversationOpenQuestion.operatorId, a.conv.operatorId), eq(conversationOpenQuestion.conversationId, a.conv.id));
-  const stillOpen = eq(conversationOpenQuestion.state, 'open');
-  // A question a person took over is answered too when the customer's reply to them says it.
-  const notAnswered = inArray(conversationOpenQuestion.state, ['open', 'withdrawn']);
-
-  for (const f of memory?.fills ?? []) {
-    const rows = await tx
-      .update(conversationOpenQuestion)
-      .set({ state: 'answered', answer: f.answer, answeredMessageId: f.answeredMessageId, closedAt: a.at, updatedAt: a.at })
-      .where(and(scope, eq(conversationOpenQuestion.id, f.id), notAnswered))
-      .returning({ id: conversationOpenQuestion.id });
-    if (rows.length > 0) done.answered.push(f.slot);
-  }
-  const withdraw = async (where: ReturnType<typeof and>) => {
-    const rows = await tx
-      .update(conversationOpenQuestion)
-      .set({ state: 'withdrawn', closedAt: a.at, updatedAt: a.at })
-      .where(and(scope, stillOpen, where))
-      .returning({ slot: conversationOpenQuestion.slot });
-    done.withdrawn.push(...rows.map((r) => r.slot));
-  };
-  const gone = (memory?.withdrawals ?? []).map((w) => w.id);
-  if (gone.length > 0) await withdraw(inArray(conversationOpenQuestion.id, gone));
+  await keepRead(tx, a.conv, a.openQuestion?.memory, a.at, done);
+  const withdraw = (where: ReturnType<typeof and>) => withdrawOpen(tx, a.conv, where, a.at, done);
   if (a.handover) await withdraw(sql`true`);
 
-  /** One question asked on its line: the older open row of the slot withdrawn first. */
-  const ask = async (slot: AiAskedSlot, lineId: string) => {
+  /**
+   * One question asked on its line: the older open row of the slot withdrawn
+   * first. `open` on a reply after which the assistant keeps the thread; on a
+   * hand-over's own line `withdrawn` at once, as the hand-over withdraws every
+   * other (SCRUM-831: a hand-over leaves nothing open — a person has the
+   * thread), and still read against the family's reply.
+   */
+  const ask = async (slot: AiAskedSlot, lineId: string, state: 'open' | 'withdrawn') => {
     await withdraw(eq(conversationOpenQuestion.slot, slot));
     await tx.insert(conversationOpenQuestion).values({
       id: newId(),
       operatorId: a.conv.operatorId,
       conversationId: a.conv.id,
       slot,
-      state: 'open',
+      state,
       turnId: a.turnId,
       askedMessageId: lineId,
       askedAt: a.at,
+      closedAt: state === 'withdrawn' ? a.at : null,
       createdAt: a.at,
       updatedAt: a.at,
     });
@@ -590,27 +651,61 @@ export async function commitOpenQuestions(
       const line =
         sent.find((l) => slotsAskedIn([l.body]).includes(slot)) ?? [...sent].reverse().find((l) => questionsIn([l.body]).length > 0) ?? sent.at(-1);
       if (!line) continue;
-      await ask(slot, line.id);
+      await ask(slot, line.id, 'open');
     }
   }
-  // SCRUM-823: the opener beside a birthday advice hand-over asks the party's basics on its own line.
+  // SCRUM-823: the opener beside a birthday advice hand-over asks the party's
+  // basics on its own line — a person's questions from the start.
   if (a.handover && a.handoverAsked && a.lines.some((l) => l.id === a.handoverAsked!.lineId)) {
-    for (const slot of a.handoverAsked.slots) if (slot !== 'other') await ask(slot, a.handoverAsked.lineId);
+    for (const slot of a.handoverAsked.slots) if (slot !== 'other') await ask(slot, a.handoverAsked.lineId, 'withdrawn');
   }
 
-  if (done.asked.length + done.answered.length + done.withdrawn.length > 0) {
-    await audit.record(tx, {
-      actorAccountId: null,
-      action: 'inbox.ai.open_question',
-      entityType: 'inbox.conversation',
-      entityId: a.conv.id,
-      operatorId: a.conv.operatorId,
-      branchId: a.conv.branchId,
-      requestId: null,
-      after: { turnId: a.turnId, ...done },
-    });
-  }
+  await auditCommit(tx, a.conv, a.turnId, done);
   return done;
+}
+
+/**
+ * SCRUM-823 review: THE FAMILY'S REPLY WHILE A PERSON HAS THE THREAD. After a
+ * hand-over, or once a person has spoken or acted, the assistant stands back
+ * (`ai-turns.ts` `aiEligibility`: `HANDED_OVER`, `STAFF_ACTED`) and the
+ * ingest schedules no turn, so no turn's memory would read the reply: the
+ * inbox would show the opener's questions — or any the assistant asked before
+ * a person took the thread — as never answered, for good. The engine reads it
+ * here instead (`ai-engine.ts` `readAnswersWhileStoodBack`), when the
+ * customer writes, or when a turn is cancelled for one of those holds: the
+ * memory over the episode and the burst (`loadOpenQuestionMemory`), and only
+ * its fills and withdrawals are kept. No prompt, no model, nothing asked,
+ * nothing sent; the hold stands. One audit row when anything changed, slots
+ * only (`turnId` null when no turn was there to read it).
+ */
+export async function commitReadAnswers(
+  tx: Tx,
+  a: { conv: { id: string; operatorId: string; branchId: string | null }; turnId: string | null; memory: OpenQuestionMemory; at: Date },
+): Promise<OpenQuestionCommit> {
+  const done: OpenQuestionCommit = { asked: [], answered: [], withdrawn: [] };
+  await keepRead(tx, a.conv, a.memory, a.at, done);
+  await auditCommit(tx, a.conv, a.turnId, done);
+  return done;
+}
+
+/**
+ * A question of this episode still to be answered (open, or one a person took
+ * over): the one cheap read before the stood-back read loads the episode.
+ * Most threads have none.
+ */
+export async function hasUnansweredQuestions(db: Exec, conv: { id: string; operatorId: string }, episodeStart: Date): Promise<boolean> {
+  const [row] = await db
+    .select({ id: conversationOpenQuestion.id })
+    .from(conversationOpenQuestion)
+    .where(
+      and(
+        scopeOf(conv),
+        gte(conversationOpenQuestion.askedAt, episodeStart),
+        inArray(conversationOpenQuestion.state, ['open', 'withdrawn']),
+      ),
+    )
+    .limit(1);
+  return row !== undefined;
 }
 
 // --- 4. The inbox, and the erasure ---------------------------------------------------------

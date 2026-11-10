@@ -76,12 +76,14 @@ import {
   silentIntentsOf,
 } from './ai-destination';
 import { loadTurnKnowledge, type TurnKnowledge } from './ai-knowledge';
-import { aiEligibility, dueAiMessageIds, type IneligibleReason } from './ai-turns';
+import { aiEligibility, dueAiMessageIds, episodeStartOf, type IneligibleReason } from './ai-turns';
 import { callingCodeOf } from './calling-code';
 import type { InboxChannels } from './channels';
 import { deliverHandoverNotices, queueHandoverNotices, type HandoverNoticeDeps } from './handover-notice';
 import {
   commitOpenQuestions,
+  commitReadAnswers,
+  hasUnansweredQuestions,
   loadOpenQuestionMemory,
   openQuestionEffort,
   promptMemoryOf,
@@ -379,6 +381,70 @@ function burstOf(episode: readonly EpisodeRow[], triggerMessageId: string): Epis
 /** SCRUM-823 review: every line the customer wrote this episode, oldest first, as the gate reads them (`EpisodeState.customerLines`). */
 function customerLinesOf(episode: readonly EpisodeRow[]): string[] {
   return episode.flatMap((m) => (m.from === 'customer' && m.text !== null ? [m.text] : []));
+}
+
+/**
+ * The holds under which a PERSON has the thread (`aiEligibility`): a hand-over
+ * the assistant made, or a person who spoke or acted. The assistant stands
+ * back, and its questions are still read against the customer's replies
+ * (SCRUM-831: "a person took the thread", `loadOpenQuestionMemory`).
+ */
+const STOOD_BACK: ReadonlySet<string> = new Set<IneligibleReason>(['HANDED_OVER', 'STAFF_ACTED']);
+
+/**
+ * SCRUM-823 review: the customer's reply read against the episode's questions
+ * while a person has the thread (`reason` one of `STOOD_BACK`; any other is a
+ * no-op). Under the caller's lock: the memory over the episode and the burst
+ * the trigger opens, its fills and withdrawals kept (`commitReadAnswers`).
+ * Nothing is asked, decided or sent, and no model is called.
+ */
+async function readWhileStoodBack(
+  tx: Tx,
+  conv: ConversationRow,
+  reason: string,
+  triggerMessageId: string,
+  turnId: string | null,
+  at: Date,
+): Promise<void> {
+  if (!STOOD_BACK.has(reason)) return;
+  const episodeStart = episodeStartOf(conv);
+  if (await hasUnansweredQuestions(tx, conv, episodeStart)) await readEpisodeAnswers(tx, conv, episodeStart, triggerMessageId, turnId, at);
+}
+
+/** The memory over the episode and the trigger's burst; its fills and withdrawals kept. */
+async function readEpisodeAnswers(
+  tx: Tx,
+  conv: ConversationRow,
+  episodeStart: Date,
+  triggerMessageId: string,
+  turnId: string | null,
+  at: Date,
+): Promise<void> {
+  const episode = await loadEpisode(tx, conv, episodeStart);
+  const memory = await loadOpenQuestionMemory(tx, conv, episodeStart, episode, burstOf(episode, triggerMessageId), at);
+  await commitReadAnswers(tx, { conv, turnId, memory, at });
+}
+
+/**
+ * SCRUM-823 review, the ingest's step 7b (`ingest.ts`): a customer line on a
+ * thread the assistant has stood back from — the opener's hand-over, any
+ * hand-over, a person's reply — is read against the episode's questions as it
+ * lands, since no turn will run to read it. The family's "14 December, about
+ * 15 kids, Central" after the opener then reads "answered" for the birthday
+ * manager, and the hand-over stands. A thread with no question waiting costs
+ * one indexed read; one the assistant may answer is left to its turn.
+ */
+export async function readAnswersWhileStoodBack(
+  tx: Tx,
+  conv: ConversationRow,
+  triggerMessageId: string,
+  at: Date,
+): Promise<void> {
+  if (!(await hasUnansweredQuestions(tx, conv, episodeStartOf(conv)))) return;
+  const eligible = await aiEligibility(tx, conv);
+  if (!eligible.ok && STOOD_BACK.has(eligible.reason)) {
+    await readEpisodeAnswers(tx, conv, eligible.episodeStart, triggerMessageId, null, at);
+  }
 }
 
 /**
@@ -1806,6 +1872,10 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
         return 'cancelled';
       }
       if (r.cancel) {
+        // SCRUM-823 review: a person has the thread (a hand-over, a person's
+        // action): nothing is said, and the burst is still read against the
+        // episode's questions.
+        await readWhileStoodBack(tx, conv, r.cancel, turn.triggerMessageId, turn.id, at);
         await closeTurn(tx, turn, conv, 'cancelled', r.cancel, r, at);
         return 'cancelled';
       }
@@ -1826,6 +1896,7 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       }
       const eligible = await aiEligibility(tx, conv);
       if (!eligible.ok) {
+        await readWhileStoodBack(tx, conv, eligible.reason, turn.triggerMessageId, turn.id, at);
         await closeTurn(tx, turn, conv, 'cancelled', eligible.reason satisfies IneligibleReason, r, at);
         return 'cancelled';
       }

@@ -35,6 +35,7 @@ import { routeConversation } from './router';
 import { reopenAuditBefore, reopenPatch, reopenedPayload } from './status';
 import { sendAfterCommit } from './send';
 import type { InboxAiSchedule } from './ai-runtime';
+import { readAnswersWhileStoodBack } from './ai-engine';
 import { aiEligibility, scheduleAiTurn } from './ai-turns';
 import { VOICE_MEDIA_GRACE_MS } from './voice-notes';
 
@@ -744,13 +745,23 @@ async function receiveMessage(
   if (queued) result.outOfHours.push(queued);
 
   // 7a. The assistant's turn, after the reopen and the routing, so the turn
-  // is born seeing the thread as it now stands.
+  // is born seeing the thread as it now stands (read once, for 7a and 7b).
+  let read: { row: typeof conversation.$inferSelect | undefined } | null = null;
+  const currentThread = async () => {
+    read ??= {
+      row: (
+        await tx
+          .select()
+          .from(conversation)
+          .where(and(eq(conversation.operatorId, operatorId), eq(conversation.id, thread.id)))
+          .limit(1)
+      )[0],
+    };
+    return read.row;
+  };
+  let scheduled = false;
   if (await aiTurnDue(tx, c)) {
-    const [current] = await tx
-      .select()
-      .from(conversation)
-      .where(and(eq(conversation.operatorId, operatorId), eq(conversation.id, thread.id)))
-      .limit(1);
+    const current = await currentThread();
     if (current && (await aiEligibility(tx, current)).ok) {
       await scheduleAiTurn(tx, c.ai!, {
         operatorId,
@@ -761,7 +772,16 @@ async function receiveMessage(
         now: c.now,
         requestId: c.input.requestId ?? null,
       });
+      scheduled = true;
     }
+  }
+  // 7b. SCRUM-823 review: no turn will read this line, and a person has the
+  // thread (a hand-over, a person's reply): it is read against the
+  // assistant's questions as it lands — the opener's date, headcount and park
+  // read "answered" for the birthday manager. Nothing is said.
+  if (!scheduled && c.ai?.enabled) {
+    const current = await currentThread();
+    if (current) await readAnswersWhileStoodBack(tx, current, messageId, c.now);
   }
 }
 
