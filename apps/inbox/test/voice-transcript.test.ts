@@ -2,16 +2,18 @@
 // the audio with a small "transcribed · Thai" label, "Transcribing…" while it
 // is pending, and why not when it could not be read, was too long, or no
 // provider is configured (data-testid voice-transcript); the hand-over pill a
-// note nobody could read makes; and the simulator's audio-file reading. Node,
-// no DOM: the bubble is rendered to markup with react-dom/server.
+// note nobody could read makes; Book Date's pattern reading of a transcribed
+// note, like the same typed line; and the simulator's audio-file reading.
+// Node, no DOM: the bubble is rendered to markup with react-dom/server.
 //
 // FICTIONAL TEST DATA: every transcript is made-up "ZZ TEST" words.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import type { InboxEvent, InboxMe, Message } from '@/api/inbox';
+import type { ConversationRow, InboxEvent, InboxMe, Message } from '@/api/inbox';
 import { MessageBubble, VOICE_NOTE_NAME } from '@/components/MessageBubble';
 import { voiceContentTypeOf } from '@/components/Simulator';
+import { bookDateDraft, chatLinesOf, customerTextOf, messageWordsOf, parseBeoFromConversation } from '@/lib/beo';
 import {
   VOICE_TRANSCRIPT_TEXT,
   attachmentsOf,
@@ -144,6 +146,69 @@ describe('the hand-over a voice note nobody could read makes', () => {
     // Any other hand-over reads as before.
     expect(eventText(ev({ intent: 'birthday_party', reason: 'OK', reroutedTeamId: null }), { me })).toBe('AI handed over to the team · birthday party');
   });
+});
+
+describe('Book Date reads a transcribed voice note like the same typed line (parseBeoFromConversation)', () => {
+  const TODAY = '2026-11-10'; // a Tuesday; 21 and 28 November are Saturdays
+  const conv: Pick<ConversationRow, 'contact' | 'language' | 'branchId' | 'intent'> = {
+    contact: {
+      id: '0192f0a0-1234-7abc-8def-0123456789ac',
+      channel: 'whatsapp',
+      handle: '+66812345678',
+      displayName: 'ZZ TEST Olga',
+      phone: '+66812345678',
+      language: 'en',
+      erased: false,
+    },
+    language: 'en',
+    branchId: null,
+    intent: 'birthday party',
+  };
+  const SAID = 'ZZ TEST a party on Saturday 21 November at 2 pm for 15 kids, with an animator and a cake, she turns 6 years';
+  const typed = (body: string) => msg({ audioFileId: null, transcriptStatus: null, body });
+  const spoken = (transcript: string) => msg({ transcriptStatus: 'done', transcript, transcriptLanguage: 'en' });
+  const read = (messages: Message[]) => parseBeoFromConversation(conv, messages, TODAY);
+
+  it('the words, marked as spoken as the model reads them; none until transcribed, none once erased', () => {
+    expect(messageWordsOf(spoken(SAID))).toBe(`[voice note] ${SAID}`);
+    expect(messageWordsOf(msg({ body: 'ZZ TEST see my note', transcriptStatus: 'done', transcript: ' ZZ TEST 12 kids ' }))).toBe(
+      'ZZ TEST see my note\n[voice note] ZZ TEST 12 kids',
+    );
+    expect(messageWordsOf(typed('ZZ TEST typed'))).toBe('ZZ TEST typed');
+    expect(messageWordsOf(msg())).toBeNull();
+    expect(messageWordsOf(msg({ transcriptStatus: 'failed', transcript: 'ZZ TEST stray' }))).toBeNull();
+    expect(messageWordsOf(msg({ redacted: true, transcriptStatus: 'done', transcript: 'ZZ TEST erased' }))).toBeNull();
+    expect(customerTextOf([spoken(SAID)])).toContain('15 kids');
+    expect(chatLinesOf([spoken(SAID)])).toEqual([{ text: `[voice note] ${SAID}`, team: false, at: '2026-11-10T08:00:00.000Z' }]);
+  });
+
+  it('kids, date, time, animator, cake and age: the same as the typed line', () => {
+    const fromTyped = read([typed(SAID)]);
+    expect(fromTyped).toMatchObject({ numKids: '15', eventTime: '14:00', eventDateBy: 'customer', animator: true, cake: true, age: '6' });
+    expect(read([spoken(SAID)])).toEqual(fromTyped);
+    const draft = bookDateDraft(read([spoken(SAID)]), TODAY, null);
+    expect(draft).toEqual(bookDateDraft(fromTyped, TODAY, null));
+    expect(draft).toMatchObject({ date: '2026-11-21', kids: '15', startTime: '14:00', childAge: '6' });
+  });
+
+  it('a later voice note moves the date as a later typed line does', () => {
+    const before = typed('ZZ TEST party on 21 November for 10 kids please');
+    const moved = 'ZZ TEST can we make it 28 November instead';
+    const asTyped = read([before, typed(moved)]);
+    expect(resolvedDate(asTyped)).toBe('2026-11-28');
+    expect(read([before, spoken(moved)])).toEqual(asTyped);
+  });
+
+  it('a voice note not yet transcribed, or one nobody could read, adds nothing', () => {
+    const before = typed('ZZ TEST party on 21 November for 10 kids please');
+    const asBefore = read([before]);
+    expect(read([before, msg()])).toEqual(asBefore);
+    expect(read([before, msg({ transcriptStatus: 'failed' })])).toEqual(asBefore);
+  });
+
+  function resolvedDate(data: ReturnType<typeof read>): string {
+    return bookDateDraft(data, TODAY, null).date;
+  }
 });
 
 describe('the simulator’s voice-note upload (voiceContentTypeOf)', () => {

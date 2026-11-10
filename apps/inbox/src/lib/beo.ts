@@ -64,26 +64,51 @@ const ANIMATOR = /(animator|аниматор|นักแสดง|นัก)/i;
 const CAKE = /(cake|торт|เค้ก|🎂)/i;
 const AGE = /(\d{1,2})\s*(лет|years|year|ปี|ขวบ)/i;
 
-/** The customer's own lines, in order, as the prototype joined them. */
-export function customerTextOf(messages: readonly Pick<Message, 'authorKind' | 'body'>[]): string {
-  return messages
-    .filter((m) => m.authorKind === 'customer' && typeof m.body === 'string')
-    .map((m) => m.body as string)
-    .join(' \n ');
+/** A message's words as the reading needs them: its body, and a voice note's transcript (SCRUM-824). */
+type WordsOf = Pick<Message, 'body' | 'transcript' | 'transcriptStatus' | 'redacted'>;
+
+/** How a transcript is marked where the chat is read: the api's `messageText` mark (`voice-notes.ts`). */
+export const VOICE_NOTE_MARK = '[voice note]';
+
+/**
+ * A message's words, a voice note's read like typed text (SCRUM-824), as the
+ * api's `messageText` gives them to the model: the body, and a transcribed
+ * (`done`) voice note's words marked `[voice note] …`, never an erased one's;
+ * both on two lines when it has both; null when it has neither. A typed body
+ * is read exactly as before.
+ */
+export function messageWordsOf(m: WordsOf): string | null {
+  const body = typeof m.body === 'string' ? m.body : null;
+  const spoken = !m.redacted && m.transcriptStatus === 'done' && m.transcript ? m.transcript.trim() : '';
+  if (!spoken) return body;
+  const heard = `${VOICE_NOTE_MARK} ${spoken}`;
+  return body !== null && body.trim() !== '' ? `${body}\n${heard}` : heard;
 }
 
 /** A loaded message as the reading needs it; when it was written, when the caller has it. */
-type ChatMessage = Pick<Message, 'authorKind' | 'body'> & Partial<Pick<Message, 'createdAt'>>;
+type ChatMessage = Pick<Message, 'authorKind'> & WordsOf & Partial<Pick<Message, 'createdAt'>>;
+
+/** The customer's own lines, in order, as the prototype joined them; a voice note's words among them. */
+export function customerTextOf(messages: readonly ChatMessage[]): string {
+  return messages
+    .filter((m) => m.authorKind === 'customer')
+    .map(messageWordsOf)
+    .filter((text): text is string => text !== null)
+    .join(' \n ');
+}
 
 /**
  * The chat's lines the date and time are read from, in order: the customer's
  * and the team's people's (not the assistant's or a system notice), each with
- * its text and when it was written (a date in it is counted from that day).
+ * its text — a voice note's words as typed text — and when it was written (a
+ * date in it is counted from that day).
  */
 export function chatLinesOf(messages: readonly ChatMessage[]): PartyChatLine[] {
-  return messages
-    .filter((m) => (m.authorKind === 'customer' || m.authorKind === 'staff') && typeof m.body === 'string')
-    .map((m) => ({ text: m.body as string, team: m.authorKind === 'staff', ...(m.createdAt ? { at: m.createdAt } : {}) }));
+  return messages.flatMap((m) => {
+    if (m.authorKind !== 'customer' && m.authorKind !== 'staff') return [];
+    const text = messageWordsOf(m);
+    return text === null ? [] : [{ text, team: m.authorKind === 'staff', ...(m.createdAt ? { at: m.createdAt } : {}) }];
+  });
 }
 
 /**
