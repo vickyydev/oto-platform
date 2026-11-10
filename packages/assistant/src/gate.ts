@@ -34,6 +34,7 @@
  * on it (with no birthday part beside it) is overruled to `birthday_details`:
  * the model's words, written for a walk-in question, never go, and the
  * Birthday & events team takes it with the birthday manager's closing line.
+ * A silent or a person-first part anywhere in the burst keeps its own verdict.
  */
 
 import { mentionsPartyDate, mentionsPartyTime } from '@oto/shared';
@@ -232,20 +233,36 @@ export function namesPartyDayOrTime(lines: readonly string[]): boolean {
 }
 
 /**
+ * A part the party never outranks: a silent hand-over (a child in our care,
+ * lost and found) or a person-first hand-over (a complaint, a refund, an
+ * upset message, a request for a person), whose holding line stands alone.
+ */
+function outranksTheParty(intent: AiIntent): boolean {
+  const rule = INTENT_TABLE[intent];
+  return rule.action === 'silent_handover' || (rule.action === 'handover' && !rule.answerAlongside);
+}
+
+/**
  * SCRUM-817: the decision the gate reads instead of the model's, or null to
  * read the model's. In a birthday thread (`birthdayThreadOf`), a burst that
  * names a day, a date or a time, labelled hours, faq, greeting or address
  * with no birthday part beside it, is the party's: those labels become
  * `birthday_details`. Its words were written for a walk-in question, so none
  * go, and the decision is a hand-over. A burst the model already read as a
- * birthday one keeps its labels: the date is that part's. Any other thread
- * is never touched.
+ * birthday one keeps its labels: the date is that part's. A burst with a
+ * silent or a person-first part, wherever it sits, keeps the model's
+ * verdict. Any other thread is never touched.
  */
 export function birthdayDateOverrule(input: GateInput): AiDecision | null {
   const d = input.decision;
   if (birthdayThreadOf(input.episode) === null) return null;
   const labelled = intentPartsOf(d);
   if (labelled.some((i) => BIRTHDAY_INTENTS.has(i))) return null;
+  // A silent hand-over or a person-first part, wherever it sits: the model's
+  // verdict stands. The gate's own rules already keep the other parts'
+  // answers off such a reply (at most one guard-checked lead line rides, the
+  // complaint's apology) and keep its route.
+  if (labelled.some(outranksTheParty)) return null;
   if (!labelled.some((i) => BIRTHDAY_DATE_OVERRULED.has(i))) return null;
   if (!namesPartyDayOrTime(input.openLines ?? [])) return null;
   const parts: AiIntent[] = [];
@@ -264,8 +281,10 @@ const isBirthdaysPlan = (p: AiHandoverPlan) =>
  * thread's date the model read as a walk-in question is decided as the
  * party's (`birthdayDateOverrule`), and the Birthday & events hand-over it
  * becomes says why (`OVERRULED_BIRTHDAY`, rule `birthday_date`). A part that
- * outranks it — a child in our care, a complaint as the primary — keeps its
- * own verdict.
+ * outranks it keeps its own verdict wherever it sits in the burst: a child in
+ * our care or lost and found (the silent hand-over), and a person-first part
+ * (a complaint with its one apology, a refund, an upset message, a request
+ * for a person), which goes to its own team as it would in any thread.
  */
 export function applyGates(input: GateInput): GateVerdict {
   const overruled = birthdayDateOverrule(input);

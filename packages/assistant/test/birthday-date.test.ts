@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { AI_OUTCOME_REASONS, type AiDecision } from '../src/decision';
 import { BIRTHDAY_DATE_RULE, applyGates, birthdayDateOverrule, namesPartyDayOrTime, type EpisodeState } from '../src/gate';
-import { BIRTHDAY_DATE_OVERRULED, BIRTHDAYS_PLAN, BRANCH_PLAN, birthdayThreadOf } from '../src/intents';
+import { BIRTHDAY_DATE_OVERRULED, BIRTHDAYS_PLAN, BRANCH_PLAN, GM_PLAN, birthdayThreadOf } from '../src/intents';
 import { BIRTHDAY_THREAD_LINES, STATIC_SYSTEM_TEXT, buildPrompt } from '../src/prompt';
 import { PLAYBOOK_LINES } from '../src/persona';
 import { context, decision, episode, fixtureKnowledge, NOW } from './support';
@@ -20,7 +20,8 @@ import { context, decision, episode, fixtureKnowledge, NOW } from './support';
  *      such a message to birthday_details: the Birthday & events team and
  *      the birthday manager's closing line, the model's words dropped.
  *
- * A thread that is not a birthday one is untouched.
+ * A thread that is not a birthday one is untouched, and so is a burst with a
+ * silent or a person-first part, wherever it sits.
  */
 
 const knowledge = fixtureKnowledge();
@@ -174,6 +175,78 @@ describe('SCRUM-817: the gate reads a birthday thread’s date as the party’s'
       `${EN} And how is my son doing?`,
     ]);
     expect(v).toMatchObject({ action: 'silent_handover', intent: 'drop_off_care', plan: BRANCH_PLAN });
+  });
+
+  describe('a person-first part keeps its own verdict wherever it sits (persona: a complaint, a refund, an upset message or a request for a person stands alone)', () => {
+    const DISASTER = 'Hi, the party last Saturday was a disaster';
+    const APOLOGY_EN = "I'm so sorry to hear that, thank you for telling us 🙏";
+    const APOLOGY_RU = 'Нам очень жаль это слышать, спасибо, что написали нам 🙏';
+    const PERSON_FIRST = ['complaint_onsite', 'complaint_online', 'refund_request', 'human_requested', 'emotional_or_unclear'] as const;
+    const WALK_IN = { hours: ['fact.hours.central'], faq: ['faq.food-outside'], greeting: [], address: ['fact.address.central'] } as const;
+
+    it.each([
+      ['complaint first', ['complaint_onsite', 'greeting']],
+      ['greeting first', ['greeting', 'complaint_onsite']],
+    ] as const)('a complaint beside a greeting, naming a past day (%s): the one apology, then the GM closing line and the GM queue', (_, intents) => {
+      // The reader counts a past day too, so without the person-first check the overrule would fire.
+      expect(namesPartyDayOrTime([DISASTER])).toBe(true);
+      const d: Partial<AiDecision> = { intent: intents[0], intents: [...intents], action: 'handover', bubbles: [APOLOGY_EN], reason: 'CLEAR_INTENT' };
+      expect(birthdayDateOverrule({ decision: decision(d), grounding: knowledge.grounding, episode: episode(BIRTHDAYS), openLines: [DISASTER] })).toBeNull();
+      expect(gate(d, BIRTHDAYS, [DISASTER])).toMatchObject({
+        action: 'answer',
+        reason: 'OK',
+        intent: intents[0],
+        intents: [...intents],
+        bubbles: [APOLOGY_EN],
+        thenHandover: GM_PLAN,
+      });
+    });
+
+    it.each([
+      ['ru', [RU, 'В прошлый раз персонал был с нами груб.'], APOLOGY_RU],
+      ['en', [EN, 'Last time the staff were rude to us.'], APOLOGY_EN],
+    ] as const)('%s: the party’s day with a complaint labelled after hours: the apology, then the GM closing line, never the birthday team', (lang, lines, apology) => {
+      const v = gate(
+        { language: lang, intent: 'hours', intents: ['hours', 'complaint_onsite'], grounding: ['fact.hours.central'], bubbles: [apology] },
+        BIRTHDAYS,
+        lines,
+      );
+      expect(v).toMatchObject({ action: 'answer', reason: 'OK', intent: 'hours', language: lang, bubbles: [apology], thenHandover: GM_PLAN });
+    });
+
+    it('the party’s day with a refund labelled after hours: the GM hand-over, the closing line alone', () => {
+      const v = gate(
+        { intent: 'hours', intents: ['hours', 'refund_request'], grounding: ['fact.hours.central'], bubbles: ['One moment please.'] },
+        BIRTHDAYS,
+        [EN, 'And can we get a refund for last time?'],
+      );
+      expect(v).toMatchObject({ action: 'handover', reason: 'OVERRULED_HANDOVER', plan: GM_PLAN, holdingBubbles: [] });
+    });
+
+    it('every walk-in label beside every person-first part, in either order: the verdict a general thread gets, never the birthday overrule', () => {
+      for (const [walkIn, grounding] of Object.entries(WALK_IN) as [keyof typeof WALK_IN, readonly string[]][]) {
+        for (const personFirst of PERSON_FIRST) {
+          for (const intents of [
+            [walkIn, personFirst],
+            [personFirst, walkIn],
+          ]) {
+            const d = { intent: intents[0]!, intents, grounding: [...grounding], bubbles: ['One moment please.'] };
+            const label = intents.join('+');
+            expect(birthdayDateOverrule({ decision: decision(d), grounding: knowledge.grounding, episode: episode(BIRTHDAYS), openLines: [EN] }), label).toBeNull();
+            const v = gate(d, BIRTHDAYS, [EN]);
+            expect(v, label).toEqual(gate(d, GENERAL, [EN]));
+            expect(v, label).not.toMatchObject({ reason: 'OVERRULED_BIRTHDAY' });
+          }
+        }
+      }
+    });
+
+    it('a silent hand-over part (a child in our care, lost and found) is never overruled either', () => {
+      for (const quiet of ['drop_off_care', 'lost_item'] as const) {
+        const d = decision({ intent: 'hours', intents: ['hours', quiet], grounding: ['fact.hours.central'] });
+        expect(birthdayDateOverrule({ decision: d, grounding: knowledge.grounding, episode: episode(BIRTHDAYS), openLines: [EN] }), quiet).toBeNull();
+      }
+    });
   });
 
   it('without the open lines the rule never fires (a caller that does not pass them gates as before)', () => {
