@@ -144,14 +144,14 @@ Review page (screens and decision boxes): https://claude.ai/artifact/MRK5VbmoMKs
 
 | Item | Ticket | State |
 |---|---|---|
-| 0 Money in one place | SCRUM-822 | held: integrate and sync the till's billing into the BEO over the API, remove nothing |
-| 1 Advice questions to a person, notified | SCRUM-823 | APPROVED; the date-and-park opener stays |
-| 2 Voice | SCRUM-824 | APPROVED; voice notes transcribed first, dictation next |
+| 0 Money in one place | SCRUM-822 | held: integrate and sync the till's billing into the BEO over the API, remove nothing. Meanwhile SCRUM-833 (the Day-of POS section shows the package's satang price as baht) stops a wrong number being shown |
+| 1 Advice questions to a person, notified | SCRUM-823 | APPROVED; the date-and-park opener stays — BUILDING on lane/handover823-20261110 (10 Nov evening) |
+| 2 Voice | SCRUM-824 | APPROVED; voice notes transcribed first, dictation next — part (a) BUILDING on lane/voice824-20261110; the speech provider and its key are the owner's choice |
 | 3 Deposit QR and set-menu link | SCRUM-825 | updated proposal: driven from the BEO, posted by the assistant; awaiting approval |
 | 4 (and 6) Fetch from chat | SCRUM-826 | updated proposal: one refresh button in Book Date and the BEO, warning, accept-or-decline; awaiting approval |
 | 5 BEO pre-filled in one pass | SCRUM-827 | no decision yet |
-| 7 BEO-only menu items | SCRUM-828 | APPROVED; any BEO creator; price or free / included / alternate |
+| 7 BEO-only menu items | SCRUM-828 | APPROVED; any BEO creator; price or free / included / alternate — BUILDING on lane/menuitem828-20261110 |
 | 8 Adults start from the kids' choice | SCRUM-829 | updated proposal (layout); awaiting approval |
 | 9 First message decides the queue | SCRUM-830 | no decision yet |
-| 10 Never ask twice | SCRUM-831 | APPROVED; the memory first, the guard last |
+| 10 Never ask twice | SCRUM-831 | APPROVED; the memory first, the guard last — BUILDING on lane/memory831-20261110 |
 | 11 One message per turn, park first | SCRUM-832 | updated proposal; awaiting approval |
