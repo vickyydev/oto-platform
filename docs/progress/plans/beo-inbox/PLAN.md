@@ -120,3 +120,20 @@ lines were read from the code and from staging on 10 November._
 Billing section over the API and the deposit QR) → 7 (BEO-only items) → 1
 (hand-over and notifications) → 2 (voice). Each lands through the release slot
 with a ZZ TEST staging proof inside its Jira comment.
+
+## 9. The first message decides the queue (owner's screenshot, 10 November)
+
+- **Today.** A new conversation is routed inside the transaction that creates
+  it, before any AI runs: the category is the simulator's hint or the channel
+  account's default category (the Demo Instagram account defaults to general,
+  so "Hello I want to book a Birthday Party" went to Reception · Central
+  Floresta). The assistant's turn, seconds later, labelled birthday_party and
+  re-routed the untouched thread to Birthdays & Events (the pill's "1 more").
+  A thread the AI does not answer is never corrected.
+- **Proposal.** Classify from the first message at ingest, before routing: a
+  deterministic reader over the text in Thai, English and Russian (birthday
+  words, party, package, cake; camps and school groups to Birthdays & Events;
+  refunds and complaints to GM; otherwise the channel default), the pill saying
+  "from the message". The assistant stays the second opinion. Before shipping,
+  run the reader over the first messages of the 249 exported real chats and
+  compare with the queue each belonged to; fix the misses it shows.
