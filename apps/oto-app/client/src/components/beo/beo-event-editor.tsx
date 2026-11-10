@@ -1375,9 +1375,17 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
         const err = await res.json();
         throw new Error(err.message || "Failed to parse BEO text");
       }
-      const parsed = await res.json();
+      const { review, ...parsed } = await res.json();
       // A pasted message: whatever the inbox gave before, this is what was read now.
-      openAiFillPreview(parsed, null);
+      // SCRUM-818: matched to the park's catalogue, it opens the same review in edit
+      // mode as Create BEO's conversation; without a park or a catalogue, the preview of before.
+      if (review) {
+        setShowAiFill(false);
+        setAiFillSource(null);
+        setAiReview({ review, fill: parsed, source: null });
+      } else {
+        openAiFillPreview(parsed, null);
+      }
     } catch (err: any) {
       setAiFillError(err.message || "Failed to parse BEO text");
     } finally {

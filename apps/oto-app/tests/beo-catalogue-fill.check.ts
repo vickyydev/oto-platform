@@ -41,7 +41,12 @@
 //   - the review renders its source marks, matches, prices, the date beside
 //     the booked one and the notInMenu line waiting for a decision;
 //   - a park with no catalogue and a platform with no transcript read the
-//     ruling message alone, as SCRUM-660 did.
+//     ruling message alone, as SCRUM-660 did;
+//   - SCRUM-818: a message pasted into AI Fill is matched to the catalogue the
+//     same way (the Floresta package, Margherita, the Zombie game), read as a
+//     one-line conversation of the team's; it opens the same review and
+//     approves through the same route; a park with no catalogue, or a paste
+//     with no event, keeps the free-text review.
 //
 // Run from apps/oto-app:
 //   DATABASE_URL=<migrated scratch> TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/beo-catalogue-fill.check.ts
@@ -93,7 +98,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 15;
+const CHECKS = 16;
 
 const run = randomUUID().slice(0, 8);
 const tenantA = randomUUID();
@@ -114,7 +119,7 @@ const cat = {
   zombie: randomUUID(),
   otherPackage: randomUUID(), // park group B's: never matched for A
 };
-const KEYS = ["ru", "th", "en", "junk", "refused", "b", "noTranscript", "multi", "parent"] as const;
+const KEYS = ["ru", "th", "en", "junk", "refused", "b", "noTranscript", "multi", "parent", "paste"] as const;
 type Key = (typeof KEYS)[number];
 const ev = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
 const conv = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
@@ -233,8 +238,26 @@ const MULTI_ANSWER = {
   },
 };
 
+/**
+ * SCRUM-818: a Russian confirmation pasted into AI Fill, naming the Floresta
+ * package, the Margherita pizza and the Zombie game. On purpose the stub calls
+ * the package the family's: a pasted message is the team's, whatever it says.
+ */
+const PASTE_TEXT = "Подтверждаем: день рождения Пети 21 ноября в 15:00, пакет Флореста, 10 детей и 4 взрослых. Пицца Маргарита. Зомби-игра 4 000 бат. PASTE-818";
+const PASTE_ANSWER = {
+  summary: "ZZ paste",
+  event: { title: "ZZ paste party", childName: "Петя", numChildren: 10, numAdults: 4, startTime: "15:00", eventDate: "2026-11-21", eventDateText: "21 ноября", activities: "Зомби-игра" },
+  catalogue: {
+    package: { templateId: cat.floresta, said: "пакет Флореста", line: 1, source: "family" },
+    setMenu: { templateId: cat.setMenu, line: 1, choices: [{ itemId: PIZZA, option: "margherita", said: "Пицца Маргарита", line: 1 }] },
+    entertainment: [{ templateId: cat.zombie, said: "Зомби-игра", quantity: 1, chatPrice: "4 000", line: 1 }],
+    event: { childName: { value: "Петя", line: 1 }, numChildren: { value: 10, line: 1 }, numAdults: { value: 4, line: 1 }, startTime: { value: "15:00", line: 1 } },
+  },
+};
+
 /** Which stub conversation a model call reads, by words its ruling message holds (both reads carry it). */
-function conversationOf(user: string): "ru" | "th" | "en" | "junk" | "multi" | null {
+function conversationOf(user: string): "ru" | "th" | "en" | "junk" | "multi" | "paste" | null {
+  if (user.includes("PASTE-818")) return "paste";
   if (user.includes("JUNK-815")) return "junk";
   if (user.includes("MULTI-815")) return "multi";
   if (user.includes(CONVERSATIONS.ru[3]!.text)) return "ru";
@@ -250,7 +273,8 @@ const ai = {
     modelCalls.push(call);
     const which = conversationOf(call.user);
     if (!which) return JSON.stringify({ summary: "ZZ plain", event: { childName: "Plain" } });
-    const { catalogue, ...form } = which === "junk" ? JUNK_ANSWER : which === "multi" ? MULTI_ANSWER : answerFor(which);
+    const { catalogue, ...form } =
+      which === "junk" ? JUNK_ANSWER : which === "multi" ? MULTI_ANSWER : which === "paste" ? PASTE_ANSWER : answerFor(which);
     // The conversation's read answers the catalogue only; the form's read answers the form
     // (and, handed the catalogue with no conversation, the catalogue too).
     if (call.system.includes("THE CONVERSATION")) return JSON.stringify({ catalogue });
@@ -773,6 +797,94 @@ try {
     assert.ok(call.system.includes("\n- event.eventDate: ") && call.system.includes("\n- catalogue.package.templateId: "));
     assert.equal(plain.body.review.transcript.lines, 1);
     assert.deepEqual(plain.body.review.proposal.entertainment.find((e: any) => e.templateId === cat.face)?.from, { source: "team", at: at(3), line: null });
+  });
+
+  await check("pastedTextMatchesTheCatalogue", async () => {
+    // SCRUM-818: AI Fill's pasted message, on an event at a park with a catalogue.
+    const before = modelCalls.length;
+    const res = await post("/api/ai/parse-beo", { text: PASTE_TEXT, existingData: { event: { title: "ZZ TEST" } }, eventId: ev.paste });
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const calls = modelCalls.slice(before);
+    assert.equal(calls.length, 2, "two reads, as the inbox's: the form's and the one-line conversation's");
+    const conversationCall = calls.find((c) => c.system.includes("THE CONVERSATION"))!;
+    const formCall = calls.find((c) => !c.system.includes("THE CONVERSATION"))!;
+    assert.ok(conversationCall && formCall, "one read of each");
+    // The pasted text is the conversation's one line: the team's ruling line, on the park's clock.
+    assert.match(conversationCall.user, /#1 \[team, RULING\] \d{4}-\d{2}-\d{2} \d{2}:\d{2}: Подтверждаем: день рождения Пети/);
+    assert.ok(!conversationCall.user.includes("#2 ["), "one line");
+    for (const piece of ["THE PARK'S CATALOGUE", cat.floresta, cat.setMenu, PIZZA, cat.zombie, '"CF-24"', '"catalogue": {']) {
+      assert.ok(conversationCall.system.includes(piece), `the pasted read carries ${piece}`);
+    }
+    assert.ok(conversationCall.system.lastIndexOf("Today at ZZ TEST Central Floresta is ") > conversationCall.system.indexOf("THE PARK'S CATALOGUE"));
+    assert.ok(formCall.user.endsWith(PASTE_TEXT), "the form's own fields read the pasted text, as before");
+    assert.ok(!formCall.system.includes("THE PARK'S CATALOGUE"));
+    // The same review the inbox's conversation opens.
+    const { review, ...pastedFill } = res.body as { review: BeoAiReview } & Record<string, any>;
+    assert.ok(review, "a review");
+    assert.equal(review.origin, "pasted");
+    assert.deepEqual(review.transcript, { lines: 1, cut: false });
+    assert.equal(review.finalMessage, null, "Final Message to Parent stays the person's to fill from a pasted text");
+    assert.equal(review.ruling.source, "team");
+    assert.equal(review.ruling.line, 1);
+    const team = review.ruling;
+    const p = review.proposal;
+    assert.deepEqual(p.package, { templateId: cat.floresta, said: "пакет Флореста", chatPrice: null, from: team }, "the Floresta package, the team's whatever the model says");
+    assert.deepEqual(p.setMenu?.templateId, cat.setMenu, "the package's set menu");
+    assert.deepEqual(p.setMenu?.choices, [{ itemId: PIZZA, option: "Margherita", said: "Пицца Маргарита", from: team }], "Margherita, spelt as the menu lists it");
+    assert.deepEqual(p.entertainment.map((e) => [e.templateId, e.name, e.said, e.chatPrice, e.notInCatalogue, e.from]), [
+      [cat.zombie, "Zombie game", "Зомби-игра", 4000, false, team],
+    ], "the Zombie game, the chat's price beside the catalogue's");
+    assert.deepEqual(p.event.numChildren, { value: 10, from: team });
+    const froms = [p.package!.from, p.setMenu!.from, ...p.setMenu!.choices.map((c) => c.from), ...p.entertainment.map((e) => e.from), ...Object.values(p.event).map((f) => f!.from)];
+    assert.ok(froms.every((f) => f.source === "team"), "every value of a pasted message is the team's");
+    assert.deepEqual(review.catalogue.packages.map((x) => x.id), [cat.floresta], "the event's park's catalogue");
+    // The free-text fill still rides beside it, for Load into Editor instead and the rest after approval.
+    assert.equal(pastedFill.event.childName, "Петя");
+    assert.ok(!("catalogue" in pastedFill), "the catalogue section is read apart from the free-text fill");
+    await nothingWritten(ev.paste);
+    const [row] = await q("select summary_text, metadata_json from activity_log where activity_type = 'beo_ai_fill' and metadata_json like $1", [`%${ev.paste}%`]);
+    assert.equal(row?.summary_text, `AI Fill read a pasted message for the BEO of "ZZ TEST 815 paste"`);
+    const meta = JSON.parse(row!.metadata_json);
+    assert.equal(meta.source, "pasted");
+    assert.deepEqual(meta.catalogue, { package: true, addOns: 0, setMenu: true, choices: 1, menuLines: 0, notInMenu: 0, entertainment: 1, notInCatalogue: 0 });
+    assert.ok(!row!.metadata_json.includes("Петя") && !row!.metadata_json.includes("Зомби"), "none of the pasted words in the activity row");
+
+    // The review in edit mode: the team's marks, the matches, the chat's price beside the catalogue's.
+    const state = initialReviewState(review, { fill: pastedFill, bookedDate: BOOKED });
+    const html = renderToStaticMarkup(React.createElement(BeoAiReviewBody, { review, state, onChange: () => undefined }));
+    assert.ok(html.includes("Пицца Маргарита → Margherita (CF-24)"), "the pizza reads chat → catalogue (code)");
+    assert.ok(html.includes("Zombie game") && html.includes("Catalogue ฿4,000") && html.includes("Chat ฿4,000"), "the Zombie game at the catalogue's price, the chat's beside it");
+    assert.ok(html.includes("Catalogue ฿16,900 / ฿20,900"), "the package's day prices");
+    assert.ok(html.includes('data-source="team"') && !html.includes('data-source="family"'), "every mark is the team's");
+    assert.equal(undecidedLines(state), 0, "nothing waits for a decision");
+
+    // "Approve and create" through the same route as the inbox's review.
+    const body = approveBodyOf(review, state, { conversationId: null, messageId: null });
+    assert.ok(body.sources.length > 0 && body.sources.every((s) => s.source === "team"));
+    const approved = await approve(ev.paste, body);
+    assert.equal(approved.status, 200, JSON.stringify(approved.body));
+    const rows = await beoRows(ev.paste);
+    assert.equal(rows.snapshot.template_id, cat.floresta);
+    assert.deepEqual(rows.selection.selections, [{ groupId: PIZZA, chosenOptions: ["Margherita"] }]);
+    assert.deepEqual(rows.entertainment.map((e) => [e.template_id, e.name, e.price]), [[cat.zombie, "Zombie game", 400000]], "the catalogue's price, never the chat's");
+    assert.equal(rows.event.num_children, 10);
+    assert.equal(rows.event.internal_staff_notes, null, "Final Message to Parent is not written from a pasted text");
+    const approvedMeta = rows.activity.map((r) => JSON.parse(r.metadata_json)).find((m) => m.step === "approved");
+    assert.equal(approvedMeta?.source, "pasted");
+
+    // The free-text review stays where there is nothing to match to: a park with no catalogue, or no event.
+    for (const [what, payload, as] of [
+      ["a park with no catalogue", { text: PASTE_TEXT, eventId: ev.b }, "b"],
+      ["no event", { text: PASTE_TEXT }, "manager"],
+    ] as const) {
+      const at0 = modelCalls.length;
+      const plain = await post("/api/ai/parse-beo", payload, as);
+      assert.equal(plain.status, 200, `${what}: ${JSON.stringify(plain.body)}`);
+      assert.equal(plain.body.review, undefined, `${what}: no review`);
+      assert.equal(modelCalls.length, at0 + 1, `${what}: one read, as before`);
+      assert.ok(!modelCalls[at0]!.system.includes("THE PARK'S CATALOGUE") && !modelCalls[at0]!.system.includes("THE CONVERSATION"));
+      assert.equal(plain.body.event.childName, "Петя");
+    }
   });
 
   await check("theTeamWinsForEveryList", async () => {

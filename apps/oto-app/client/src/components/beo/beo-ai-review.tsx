@@ -589,6 +589,8 @@ export function BeoAiReviewDialog({
   const { review, source } = pending;
   const undecided = undecidedLines(state);
   const rest = fillBeyondApproval(pending.fill);
+  // SCRUM-818: a message pasted into AI Fill, read as one line of the team's.
+  const pasted = review.origin === "pasted";
 
   const approve = async () => {
     setApproving(true);
@@ -618,7 +620,7 @@ export function BeoAiReviewDialog({
     } catch {
       // The BEO is saved; a read that failed catches up on the next one.
     }
-    toast({ title: "BEO created from the conversation", description: `Saved: ${APPROVAL_WRITES}.` });
+    toast({ title: `BEO created from the ${pasted ? "pasted message" : "conversation"}`, description: `Saved: ${APPROVAL_WRITES}.` });
     setApproving(false);
     onApproved(fillBeyondApproval(pending.fill, body.otherLines), pending);
   };
@@ -636,19 +638,25 @@ export function BeoAiReviewDialog({
           <div className="border rounded-lg p-3 space-y-1 text-xs text-muted-foreground" data-testid="ai-review-conversation">
             <div className="flex items-center gap-2 text-sm font-medium text-foreground">
               <MessageSquare className="h-4 w-4" />
-              Read from the whole conversation
+              {pasted ? "Read from the pasted message" : "Read from the whole conversation"}
             </div>
-            <p>
-              {`${review.transcript.lines} message${review.transcript.lines === 1 ? "" : "s"} read${review.transcript.cut ? " (older ones were left out)" : ""}${
-                source ? `; the team's confirmation${source.authorName ? ` from ${source.authorName}` : ""} wins where the family and the team both speak.` : "."
-              }`}
-            </p>
+            {pasted ? (
+              <p data-testid="text-ai-review-pasted">
+                The pasted message is read as the team's confirmation and matched to the park's catalogue.
+              </p>
+            ) : (
+              <p>
+                {`${review.transcript.lines} message${review.transcript.lines === 1 ? "" : "s"} read${review.transcript.cut ? " (older ones were left out)" : ""}${
+                  source ? `; the team's confirmation${source.authorName ? ` from ${source.authorName}` : ""} wins where the family and the team both speak.` : "."
+                }`}
+              </p>
+            )}
             <p className="flex items-center gap-1.5 flex-wrap">
-              Every field is the family's or the team's:
+              {pasted ? "Every field it fills is the team's:" : "Every field is the family's or the team's:"}
               <SourceMark field={{ from: { source: "team" }, changed: false }} />
-              <SourceMark field={{ from: { source: "family" }, changed: false }} />
+              {!pasted && <SourceMark field={{ from: { source: "family" }, changed: false }} />}
               <SourceMark field={{ from: null, changed: true }} />
-              — the family's are defaults for you to check.
+              {pasted ? "— a field you change is marked as changed here." : "— the family's are defaults for you to check."}
             </p>
           </div>
           <BeoAiReviewBody review={review} state={state} onChange={setState} />
@@ -659,7 +667,7 @@ export function BeoAiReviewDialog({
           )}
           <p className="text-xs text-muted-foreground" data-testid="text-ai-review-leaves">
             {rest
-              ? `Approve and create writes ${APPROVAL_WRITES}. It does not write ${APPROVAL_LEAVES}: what the team's confirmation says of those opens next, to load into the editor as before and save.`
+              ? `Approve and create writes ${APPROVAL_WRITES}. It does not write ${APPROVAL_LEAVES}: what the ${pasted ? "pasted message" : "team's confirmation"} says of those opens next, to load into the editor as before and save.`
               : `Approve and create writes ${APPROVAL_WRITES}.`}
           </p>
         </div>

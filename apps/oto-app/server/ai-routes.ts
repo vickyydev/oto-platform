@@ -478,9 +478,52 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
         if (!event) return res.status(404).json({ message: "Event not found" });
       }
 
-      const { run, proposals } = await runBeoFill(deps, req, { text, existingData, event, source: { kind: "pasted" } });
+      // SCRUM-818: a pasted message is matched to the park's catalogue as the inbox's
+      // conversation is: the pasted text is a one-line conversation, the team's ruling
+      // line, so every value it gives is the team's. An event with no park, or a park
+      // whose catalogue is empty (or could not be read), reads the text alone and opens
+      // the free-text review of before.
+      const catalogue =
+        event?.branchId
+          ? await deps.catalogue(event).catch((error: unknown) => {
+              log().warn({ err: (error as Error)?.message ?? String(error), eventId: event!.id }, "the park's catalogue was not read for the pasted AI fill");
+              return emptyCatalogue();
+            })
+          : null;
+      const matched = event && catalogue && !catalogueIsEmpty(catalogue) ? catalogue : null;
+      const place = await deps.parkPlace(req, event);
+      const pastedAt = deps.now().toISOString();
+      const rendered = matched ? renderTranscript([], { id: "pasted", body: text, at: pastedAt }, place.timeZone) : null;
+      const conversation = rendered ? { text: rendered.text, refs: rendered.refs, cut: rendered.cut } : null;
+      const rulingFrom: BeoAiFrom = { source: "team", at: pastedAt, line: conversation ? 1 : null };
+      const { run, proposals, proposal } = await runBeoFill(deps, req, {
+        text,
+        existingData,
+        event,
+        source: { kind: "pasted" },
+        conversation,
+        catalogue: matched,
+        fallbackFrom: rulingFrom,
+        place,
+      });
       if (!run.ok) return res.status(run.status).json({ message: run.message, reason: run.reason });
-      res.json({ ...run.value, proposals });
+      // The same review the inbox's conversation opens; Final Message to Parent is the
+      // person's own to fill from a pasted text, as it always was.
+      const review: BeoAiReview | null =
+        proposal && event && matched
+          ? {
+              origin: "pasted",
+              proposal,
+              catalogue: matched,
+              finalMessage: null,
+              ruling: rulingFrom,
+              transcript: { lines: 1, cut: false },
+              replaces: await sectionsHeld(db, event.id),
+              parentSelection: await parentSelectionOf(db, event.id),
+            }
+          : null;
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ...run.value, proposals, ...(review ? { review } : {}) });
     } catch (error: any) {
       log().warn({ err: error?.message ?? String(error) }, "the AI BEO parse failed");
       next(error);
@@ -558,6 +601,7 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
       // SCRUM-815: the proposed BEO for the review in edit mode; nothing is written until it is approved.
       const review: BeoAiReview | null = proposal
         ? {
+            origin: "inbox",
             proposal,
             catalogue,
             finalMessage: fillsFinalMessage ? message.body : null,

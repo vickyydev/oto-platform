@@ -172,8 +172,13 @@ export interface BeoAiSetMenuChoices {
   choices: Array<{ itemId: string; options: string[] }>;
 }
 
-/** What the inbox fill answers beside the free-text fill when the park has a catalogue. */
+/** What the inbox fill (or a pasted message's, SCRUM-818) answers beside the free-text fill when the park has a catalogue. */
 export interface BeoAiReview {
+  /**
+   * What was read: the inbox's conversation (Create BEO), or a message pasted
+   * into AI Fill (SCRUM-818), read as a one-line conversation, the team's.
+   */
+  origin: "inbox" | "pasted";
   proposal: BeoAiProposal;
   catalogue: BeoAiCatalogueView;
   /** The ruling message, which Approve and create puts in Final Message to Parent while the form's is empty. */
