@@ -78,3 +78,80 @@ just after midnight, so its default 11:00 slip time was not due yet.
 - **The other tills:** Reception Till 1, Till 1 (Pi), Till 2 (test) and FWBooth1 were not touched.
 
 All figures, ids and statuses are in receipt.json. Money there is in satang.
+
+## Re-run, 10 November 2026
+
+Run on Tuesday 10 November 2026, from 18:11 to 18:15 Bangkok time. It proves the two things that did not pass on 9 November,
+now that SCRUM-812 (the api's calls to the OTO App accepted again) and SCRUM-813 (one deposit, wherever the BEO or the event
+entered it) are live.
+
+**Live on staging**, read with `scripts/agent/render.mjs deploys` before (18:11) and after (18:15), the same both times:
+
+| Service | Live commit |
+|---|---|
+| oto-api-staging | df2334e8 |
+| oto-pos-web-staging | df2334e8 |
+| oto-console-staging | df2334e8 |
+| oto-app-staging | 608e3c0b |
+
+Nothing was deployed or restarted during the run.
+
+**The set-up.** This run used one ZZ TEST party and one ZZ TEST till.
+
+- **The party:** "ZZ TEST 804 re-run" was created in the OTO App at Central Floresta. It is dated 10 November, 19:00–21:00,
+  with 2 children and 2 adults. That is the till's today: it is a weekday, and the business day starts at 05:00.
+- **The deposit:** 1,000 was set only through the BEO billing route (`PUT /api/events/:id/beo/billing`, 201). The event's
+  Prepayment field was not written by this run. It read empty before the deposit was set, and 1,000 afterwards, because the app
+  now copies the billing figure there itself.
+- **The package:** "Birthday package, Central Floresta" was applied (201). No add-ons, set menu or bar plan were chosen.
+- **The till:** "ZZ TEST SCRUM-804 till" (receipt prefix Z804Y) was set up on Virtual box 1. It used the simulated kids band
+  printer, adult band printer and Receipt Printer 1. The reception account signed it in.
+- **Socks:** the Regular Socks shelf was at 0, so 2 ZZ TEST pairs were added first.
+- **Slips:** the branch has no party-slips station, so no slip printed anywhere.
+
+Real names and the account avatar are covered in every picture.
+
+| Check | Result | Value | Picture |
+|---|---|---|---|
+| A deposit set only in the BEO billing reaches the till | Pass | The party plan reads a deposit of 1,000. The Settle form shows Package (weekday) 16,900, Socks · 2 free 0, Total 16,900, **Deposit paid −1,000** and Balance 15,900 | 804-rr-01-settle-form-deposit-from-billing |
+| Pay the balance in cash, full amount, one tap | Pass | "Settled, receipt Z804Y-000001". The sale was paid by the deposit (1,000) and cash (15,900), 16,900 in all. 2 kids bands, 2 adult bands and the receipt printed on Virtual box 1 | 804-rr-02-paid-settled-receipt |
+| Party page: settled, write-back not refused | Pass | The button reads "Settled, receipt Z804Y-000001". There is no Refused or Pending chip, and the line reads "Last edited by (masked) · 10 Nov, 18:13". The api reports the write-back as synced | 804-rr-03-party-page-writeback-accepted |
+| The OTO App's billing holds the sale | Pass | The billing's pos_order_ref is 01a1c529-b91f-7d6f-85b1-dc432ff071be, the id of the settlement sale, receipt Z804Y-000001. The app's event page shows it as "POS Ref" | 804-rr-04-app-beo-billing-pos-reference |
+| The till's party read (`GET /api/parties/:id`) | Pass | 200, with a settlement: state settled, receipt Z804Y-000001, 16,900 paid, deposit 1,000, 2 children and 2 adults. The plan also reads the sale back from the app (posSaleId is that sale's id) | none |
+| Socks back at 0 | Pass | 2 pairs before the sale, 0 after it. The sale took 2 | 804-rr-05-socks-shelf-back-at-0 |
+
+**The write-back, in words.** The till paid the balance at 18:13:33. In the same moment, the api told the OTO App which sale
+settled the party, and the app accepted it first time. The app's billing now holds that sale. The party page shows no
+warning. The Failures page was not needed, so nothing was retried.
+
+### Notes
+
+- **What the app holds.** The app keeps the settlement sale's id in pos_order_ref, not the receipt number, as built in
+  SCRUM-803. That id is the sale whose receipt is Z804Y-000001.
+- **A wrong total in the OTO App.** On the event page (Day-of Execution, POS), the app shows Total ฿1,690,000 and Outstanding
+  ฿1,689,000 for a ฿16,900 package, as picture 804-rr-04 shows. The package price is stored in satang, but this section
+  shows it as baht (`beo-day-of-view.tsx`, the POS total read from the package snapshot's base price). The till and the sale
+  are right. This is outside SCRUM-804.
+- **The party bill after settling.** The party bill on the till reads Total ฿0 and Deposit paid −฿0, the same as on 9 November.
+  The package and its deposit belong to the settlement sale.
+- **Masking.** The word "display" in "Hide customer display" is covered in pictures 01 and 02. That masking is stricter than
+  needed; nothing is missing from the pictures.
+
+### Clean-up, read back
+
+- **The till:** it was signed out (/me 401). Its printers were unassigned (0 devices), and it was archived.
+- **The sale:** the paid sale Z804Y-000001 stays on record. It was not voided.
+- **The party:** the ZZ TEST party was deleted in the OTO App (204). The event and its package snapshot now answer 404, and
+  the till's `GET /api/parties/:id` answers 404 NOT_FOUND. No "ZZ TEST 804" event is left at Central Floresta.
+- **Socks:** the Regular Socks shelf reads 0.
+- **The branch:** the party-slips station is still none. The run only read it.
+- **The other tills:** Reception Till 1, Till 1 (Pi), Till 2 (test) and FWBooth1 were not touched.
+- **Sessions:**
+  - The till, the Console and the admin api session were signed out, and /me answers 401 for each.
+  - The launcher sign-out answered 200.
+  - The OTO App's /api/user still answered 200 when it was read straight after the launcher sign-out. The app reuses its last
+    "platform session alive" answer for up to 10 seconds, and the read fell inside that window. The app's session depends on
+    the launcher session, which had ended, so the app signs it out at its next call. The browser that held its cookie was
+    closed straight after, so this session was not read back as 401.
+
+The figures, routes, statuses and ids are in receipt.json under `rerun_2026_11_10`. Money there is in satang.

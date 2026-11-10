@@ -879,5 +879,668 @@
     "status": 200,
     "meAfter": 401,
     "at": "2026-11-09T17:14:04.230Z"
+  },
+  "rerun_2026_11_10": {
+    "unit": "SCRUM-804 re-run: the settlement write-back accepted, the deposit read from the BEO billing",
+    "ranAt": {
+      "start": "2026-11-10T11:11:55.044Z",
+      "end": "2026-11-10T11:15:01.534Z",
+      "timezoneShown": "Asia/Bangkok"
+    },
+    "liveCommits": {
+      "oto-api-staging": "df2334e8",
+      "oto-pos-web-staging": "df2334e8",
+      "oto-console-staging": "df2334e8",
+      "oto-app-staging": "608e3c0b"
+    },
+    "deploysBefore": [
+      "== oto-api-staging",
+      "dep-dbpeo25g1s2s73cbel40 live           df2334e8 2026-11-10T10:08:30.646287Z",
+      "== oto-pos-web-staging",
+      "dep-dbpeo25g1s2s73cbem30 live           df2334e8 2026-11-10T10:06:52.973839Z",
+      "== oto-console-staging",
+      "dep-dbpeo25g1s2s73cbema0 live           df2334e8 2026-11-10T10:04:47.559798Z",
+      "== oto-app-staging",
+      "dep-dbpcagu417fc739h23ug live           608e3c0b 2026-11-10T07:20:32.713848Z",
+      "2026-11-10T11:11:49.203Z"
+    ],
+    "deploysAfter": [
+      "== oto-api-staging",
+      "dep-dbpeo25g1s2s73cbel40 live           df2334e8 2026-11-10T10:08:30.646287Z",
+      "== oto-pos-web-staging",
+      "dep-dbpeo25g1s2s73cbem30 live           df2334e8 2026-11-10T10:06:52.973839Z",
+      "== oto-console-staging",
+      "dep-dbpeo25g1s2s73cbema0 live           df2334e8 2026-11-10T10:04:47.559798Z",
+      "== oto-app-staging",
+      "dep-dbpcagu417fc739h23ug live           608e3c0b 2026-11-10T07:20:32.713848Z",
+      "2026-11-10T11:15:11.696Z"
+    ],
+    "browser": "Chromium 153.0.8010.12",
+    "viewport": {
+      "width": 1440,
+      "height": 900,
+      "colorScheme": "light",
+      "locale": "en-GB",
+      "timezoneId": "Asia/Bangkok"
+    },
+    "branch": {
+      "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "code": "hkt-central",
+      "otoAppBranchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+      "businessDayStart": "05:00",
+      "partySlipsStationId": null
+    },
+    "till": {
+      "id": "01a1c528-8785-71c5-abf0-70fd50a5aa62",
+      "name": "ZZ TEST SCRUM-804 till",
+      "prefix": "Z804Y",
+      "box": "Virtual box 1",
+      "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "devicesAtCreate": [
+        "adult_band:Band Printer (adults)",
+        "kids_band:Band Printer (kids)",
+        "receipt:Receipt Printer 1"
+      ],
+      "signedInAs": "the staging reception account"
+    },
+    "party": {
+      "id": "df8fcb56-4d1a-47f0-971a-8733f12381ec",
+      "title": "ZZ TEST 804 re-run",
+      "date": "2026-11-10",
+      "startTime": "19:00",
+      "endTime": "21:00",
+      "children": 2,
+      "adults": 2,
+      "create": {
+        "route": "POST /api/admin/events",
+        "status": 201
+      }
+    },
+    "deposit": {
+      "setOnlyThrough": "PUT /api/events/df8fcb56-4d1a-47f0-971a-8733f12381ec/beo/billing",
+      "request": {
+        "depositRequired": true,
+        "depositAmount": 1000,
+        "depositPaid": true,
+        "depositPaidAmount": 1000
+      },
+      "status": 201,
+      "eventPrepaymentBefore": null,
+      "billingRead": {
+        "status": 200,
+        "depositPaid": true,
+        "depositPaidAmount": 1000,
+        "posOrderRef": null,
+        "partyDetailsPrepaymentReceived": 1000
+      },
+      "eventPrepaymentAfter": 1000,
+      "eventPrepaymentNote": "never written by this run; the app copied the billing figure to it itself (SCRUM-813 one deposit)",
+      "tillPlanDepositSatang": 100000
+    },
+    "package": {
+      "route": "POST /api/beo/events/df8fcb56-4d1a-47f0-971a-8733f12381ec/package-snapshot",
+      "status": 201,
+      "packageName": "Birthday package, Central Floresta",
+      "slipsTime": "11:00:00",
+      "addOnsChosen": 0
+    },
+    "plan": {
+      "status": 200,
+      "planStatus": "ready",
+      "depositSatang": 100000,
+      "priceWeekdaySatang": 1690000,
+      "kidsIncluded": 10,
+      "adultsIncluded": 4
+    },
+    "settleForm": {
+      "depositLine": "Deposit paid −฿1,000",
+      "balanceLine": "Balance ฿15,900",
+      "packageWeekdaySatang": 1690000,
+      "socksFree": 2,
+      "totalSatang": 1690000,
+      "depositSatang": 100000,
+      "balanceSatang": 1590000,
+      "ticked": 0
+    },
+    "settle": {
+      "confirmLabel": "Confirm · ฿15,900 to pay",
+      "settleRoute": [
+        {
+          "at": "2026-11-10T11:13:28.558Z",
+          "method": "POST",
+          "path": "/api/parties/df8fcb56-4d1a-47f0-971a-8733f12381ec/settle",
+          "status": 200
+        }
+      ],
+      "payRoute": [
+        {
+          "at": "2026-11-10T11:13:33.540Z",
+          "method": "POST",
+          "path": "/api/sales/01a1c529-b91f-7d6f-85b1-dc432ff071be/finalise",
+          "status": 200
+        }
+      ],
+      "receiptOnScreen": "Z804Y-000001",
+      "saleId": "01a1c529-b91f-7d6f-85b1-dc432ff071be",
+      "confirmedAt": "2026-11-10T11:13:28.559Z",
+      "paidAt": "2026-11-10T11:13:33.018Z"
+    },
+    "sale": {
+      "id": "01a1c529-b91f-7d6f-85b1-dc432ff071be",
+      "receipt": "Z804Y-000001",
+      "status": "finalised",
+      "totals": {
+        "subtotalSatang": 1690000,
+        "manualDiscountSatang": 0,
+        "promoDiscountSatang": 0,
+        "discountSatang": 0,
+        "netSatang": 1579439,
+        "serviceChargeSatang": 0,
+        "taxInclusiveSatang": 110561,
+        "taxExclusiveSatang": 0,
+        "grossSatang": 1690000,
+        "unappliedDiscountSatang": 0,
+        "refundedSatang": 0
+      },
+      "lines": [
+        {
+          "kind": "addon",
+          "label": "Birthday package, Central Floresta",
+          "quantity": 1,
+          "unitSatang": 1690000,
+          "grossSatang": 1690000
+        },
+        {
+          "kind": "addon",
+          "label": "Kids' table reserved for 3 hours",
+          "quantity": 1,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "addon",
+          "label": "Special birthday set menu",
+          "quantity": 1,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "addon",
+          "label": "Interactive birthday animation program, 30 minutes",
+          "quantity": 1,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "addon",
+          "label": "Ice-cream cake with candles and birthday song",
+          "quantity": 1,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "addon",
+          "label": "Entry for 4 accompanying adults",
+          "quantity": 1,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "addon",
+          "label": "Socks for all children",
+          "quantity": 1,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "kids",
+          "label": "Children (in the package)",
+          "quantity": 2,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "adults_free",
+          "label": "Adults (in the package)",
+          "quantity": 2,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "socks",
+          "label": "Regular Socks (free)",
+          "quantity": 2,
+          "unitSatang": 0,
+          "grossSatang": 0
+        }
+      ],
+      "payments": [
+        {
+          "method": "other",
+          "status": "approved",
+          "amount": 100000,
+          "at": "2026-11-10T11:13:28.854Z"
+        },
+        {
+          "method": "cash",
+          "status": "approved",
+          "amount": 1590000,
+          "at": "2026-11-10T11:13:33.662Z"
+        }
+      ],
+      "bands": [
+        {
+          "kind": "kid",
+          "status": "active"
+        },
+        {
+          "kind": "kid",
+          "status": "active"
+        },
+        {
+          "kind": "adult",
+          "status": "active"
+        },
+        {
+          "kind": "adult",
+          "status": "active"
+        }
+      ],
+      "printJobs": [
+        {
+          "kind": "adult_wristband",
+          "status": "printed",
+          "device": "Band Printer (adults)",
+          "role": "adult_band"
+        },
+        {
+          "kind": "adult_wristband",
+          "status": "printed",
+          "device": "Band Printer (adults)",
+          "role": "adult_band"
+        },
+        {
+          "kind": "kids_wristband",
+          "status": "printed",
+          "device": "Band Printer (kids)",
+          "role": "kids_band"
+        },
+        {
+          "kind": "kids_wristband",
+          "status": "printed",
+          "device": "Band Printer (kids)",
+          "role": "kids_band"
+        },
+        {
+          "kind": "receipt",
+          "status": "printed",
+          "device": "Receipt Printer 1",
+          "role": "receipt"
+        }
+      ],
+      "stockMovements": [
+        {
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "kind": "sale",
+          "quantity": -2,
+          "levelAfter": 0,
+          "reason": null
+        }
+      ],
+      "credits": null
+    },
+    "writeBack": {
+      "tillPartyRead": {
+        "route": "GET /api/parties/df8fcb56-4d1a-47f0-971a-8733f12381ec?branchId=…",
+        "status": 200,
+        "settlement": {
+          "id": "01a1c529-b91e-7bb3-8a1b-8c702a624ca3",
+          "saleId": "01a1c529-b91f-7d6f-85b1-dc432ff071be",
+          "state": "settled",
+          "receiptNumber": "Z804Y-000001",
+          "grossSatang": 1690000,
+          "paidSatang": 1690000,
+          "outstandingSatang": 0,
+          "depositSatang": 100000,
+          "kids": 2,
+          "adults": 2,
+          "createdAt": "2026-11-10T11:13:28.824Z",
+          "settledAt": "2026-11-10T11:13:33.663Z",
+          "writeBack": "synced"
+        },
+        "editSync": null,
+        "planSettlement": {
+          "depositSatang": 100000,
+          "posSaleId": "01a1c529-b91f-7d6f-85b1-dc432ff071be"
+        }
+      },
+      "appBilling": {
+        "route": "GET /api/events/df8fcb56-4d1a-47f0-971a-8733f12381ec/beo/billing",
+        "status": 200,
+        "posOrderRef": "01a1c529-b91f-7d6f-85b1-dc432ff071be",
+        "depositPaid": true,
+        "depositPaidAmount": 1000
+      },
+      "posOrderRefIsTheSettlementSale": true,
+      "saleOfThatRef": {
+        "id": "01a1c529-b91f-7d6f-85b1-dc432ff071be",
+        "receipt": "Z804Y-000001",
+        "status": "finalised"
+      },
+      "tillPlanPosSaleIdIsTheSale": true,
+      "appDayOfView": {
+        "page": "/core/events/:id, Day-of Execution, POS section",
+        "posRefShown": "01a1c529-b91f-7d6f-85b1-dc432ff071be",
+        "refIsTheSale": true,
+        "totalShown": "฿1,690,000 (the package price in satang shown as baht; see the README note)"
+      },
+      "failuresRetry": "not needed: the write-back was accepted first time"
+    },
+    "socks": {
+      "before": 0,
+      "adjustment": {
+        "delta": 2,
+        "status": 200,
+        "route": "POST /api/branches/:branchId/stock/adjustments",
+        "reason": "ZZ TEST SCRUM-804 re-run: 2 pairs in for the party settlement"
+      },
+      "afterAdjustment": 2,
+      "saleMovement": [
+        {
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "kind": "sale",
+          "quantity": -2,
+          "levelAfter": 0,
+          "reason": null
+        }
+      ],
+      "afterSale": 0
+    },
+    "checks": [
+      {
+        "check": "deposit set only in the BEO billing reaches the Settle form",
+        "result": "Pass",
+        "value": "Deposit paid −฿1,000",
+        "image": "804-rr-01-settle-form-deposit-from-billing.png"
+      },
+      {
+        "check": "balance paid in cash, full amount, one tap; settled",
+        "result": "Pass",
+        "value": "Settled, receipt Z804Y-000001; cash 1590000 satang + deposit 100000 = 1690000",
+        "image": "804-rr-02-paid-settled-receipt.png"
+      },
+      {
+        "check": "party page: settled, write-back not refused",
+        "result": "Pass",
+        "value": "button \"Settled, receipt Z804Y-000001\"; settlement.writeBack synced; editSync null; no Refused or Pending chip",
+        "image": "804-rr-03-party-page-writeback-accepted.png"
+      },
+      {
+        "check": "OTO App billing pos_order_ref is the settlement sale",
+        "result": "Pass",
+        "value": "posOrderRef 01a1c529-b91f-7d6f-85b1-dc432ff071be = sale 01a1c529-b91f-7d6f-85b1-dc432ff071be (receipt Z804Y-000001)",
+        "image": "804-rr-04-app-beo-billing-pos-reference.png"
+      },
+      {
+        "check": "GET /api/parties/:id settlement present",
+        "result": "Pass",
+        "value": "200, state settled, receipt Z804Y-000001",
+        "image": null
+      },
+      {
+        "check": "socks shelf at 0 after the sale took 2",
+        "result": "Pass",
+        "value": "2 -> 0",
+        "image": "804-rr-05-socks-shelf-back-at-0.png"
+      }
+    ],
+    "images": [
+      {
+        "file": "docs/qa/proof-2026-11-09/SCRUM-804/staging/804-rr-01-settle-form-deposit-from-billing.png",
+        "at": "2026-11-10T11:13:18.911Z",
+        "page": "T",
+        "url": "https://oto-pos-web-staging.onrender.com/parties",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "shows": "Settle party form at 2 children, 2 adults: package, socks, total, Deposit paid -1,000 (set only in the BEO billing), balance",
+        "masked": {
+          "names": {
+            "occurrences": 1,
+            "boxes": 1
+          },
+          "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+        }
+      },
+      {
+        "file": "docs/qa/proof-2026-11-09/SCRUM-804/staging/804-rr-02-paid-settled-receipt.png",
+        "at": "2026-11-10T11:13:38.251Z",
+        "page": "T",
+        "url": "https://oto-pos-web-staging.onrender.com/parties",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "shows": "The settle screen after the cash payment: Party settled, Settled, receipt <number>",
+        "masked": {
+          "names": {
+            "occurrences": 2,
+            "boxes": 2
+          },
+          "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+        }
+      },
+      {
+        "file": "docs/qa/proof-2026-11-09/SCRUM-804/staging/804-rr-03-party-page-writeback-accepted.png",
+        "at": "2026-11-10T11:14:05.320Z",
+        "page": "T",
+        "url": "https://oto-pos-web-staging.onrender.com/parties",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "shows": "Till party page after the settlement: Settled, receipt Z804Y-000001; no Refused or Pending chip (the OTO App took the write-back)",
+        "masked": {
+          "names": {
+            "occurrences": 2,
+            "boxes": 2
+          },
+          "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+        }
+      },
+      {
+        "file": "docs/qa/proof-2026-11-09/SCRUM-804/staging/804-rr-04-app-beo-billing-pos-reference.png",
+        "at": "2026-11-10T11:14:18.757Z",
+        "page": "APP",
+        "url": "https://oto-app-staging.onrender.com/core/events/df8fcb56-4d1a-47f0-971a-8733f12381ec",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "shows": "OTO App, the ZZ TEST event page, Day-of Execution, POS section: POS Ref equals the settlement sale (receipt in the till)",
+        "masked": {
+          "names": {
+            "occurrences": 0,
+            "boxes": 0
+          },
+          "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+        }
+      },
+      {
+        "file": "docs/qa/proof-2026-11-09/SCRUM-804/staging/804-rr-05-socks-shelf-back-at-0.png",
+        "at": "2026-11-10T11:14:45.041Z",
+        "page": "CON",
+        "url": "https://oto-console-staging.onrender.com/catalogue/inventory",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "shows": "Console Inventory, Central Floresta: Regular Socks after the settlement took the 2 ZZ TEST pairs (card reads \"Regular Socks Add-on  Default Out Adjust\")",
+        "masked": {
+          "names": {
+            "occurrences": 1,
+            "boxes": 1
+          },
+          "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+        }
+      }
+    ],
+    "writes": [
+      {
+        "at": "2026-11-10T11:12:09.638Z",
+        "by": "admin api",
+        "what": "POST /branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+        "status": 200,
+        "request": null
+      },
+      {
+        "at": "2026-11-10T11:12:20.578Z",
+        "by": "till (reception)",
+        "what": "POST /auth/sign-in + station pick",
+        "status": null,
+        "request": null
+      },
+      {
+        "at": "2026-11-10T11:12:44.933Z",
+        "by": "Console (admin)",
+        "what": "Regular Socks Adjust +2",
+        "status": null,
+        "request": null
+      },
+      {
+        "at": "2026-11-10T11:12:52.590Z",
+        "by": "OTO App (admin)",
+        "what": "PUT /api/events/df8fcb56-4d1a-47f0-971a-8733f12381ec/beo/billing",
+        "status": 201,
+        "request": {
+          "depositRequired": true,
+          "depositAmount": 1000,
+          "depositPaid": true,
+          "depositPaidAmount": 1000
+        }
+      },
+      {
+        "at": "2026-11-10T11:12:57.640Z",
+        "by": "OTO App (admin)",
+        "what": "POST /api/beo/events/df8fcb56-4d1a-47f0-971a-8733f12381ec/package-snapshot",
+        "status": 201,
+        "request": {
+          "templateId": "391b269d-159a-4039-89a2-51ac132da747"
+        }
+      }
+    ],
+    "cleanup": {
+      "actions": [
+        {
+          "at": "2026-11-10T11:14:53.256Z",
+          "what": "till sign-out (reception, its own session route)",
+          "status": 200,
+          "code": null
+        },
+        {
+          "at": "2026-11-10T11:14:53.454Z",
+          "what": "unassign printers on ZZ TEST SCRUM-804 till",
+          "status": 200,
+          "code": null
+        },
+        {
+          "at": "2026-11-10T11:14:53.546Z",
+          "what": "archive station ZZ TEST SCRUM-804 till",
+          "status": 200,
+          "code": null
+        },
+        {
+          "at": "2026-11-10T11:14:54.033Z",
+          "what": "OTO App DELETE /api/admin/events/df8fcb56-4d1a-47f0-971a-8733f12381ec (ZZ TEST 804 re-run)",
+          "status": 204,
+          "code": null,
+          "body": null
+        }
+      ],
+      "branchReadBack": {
+        "partySlipsStationId": null
+      },
+      "tillMeAfterSignOut": 401,
+      "tillReadBack": {
+        "id": "01a1c528-8785-71c5-abf0-70fd50a5aa62",
+        "name": "ZZ TEST SCRUM-804 till",
+        "prefix": "Z804Y",
+        "archived": true,
+        "devices": 0
+      },
+      "salesAfter": [
+        {
+          "id": "01a1c529-b91f-7d6f-85b1-dc432ff071be",
+          "receipt": "Z804Y-000001",
+          "status": "finalised",
+          "gross": 1690000
+        }
+      ],
+      "untouched": [
+        {
+          "name": "FWBooth1",
+          "archived": false,
+          "devices": 1
+        },
+        {
+          "name": "Reception Till 1",
+          "archived": false,
+          "devices": 7
+        },
+        {
+          "name": "Till 1 (Pi)",
+          "archived": false,
+          "devices": 4
+        },
+        {
+          "name": "Till 2 (test)",
+          "archived": false,
+          "devices": 4
+        }
+      ],
+      "parties": [
+        {
+          "key": "party1",
+          "id": "df8fcb56-4d1a-47f0-971a-8733f12381ec",
+          "title": "ZZ TEST 804 re-run",
+          "billingBefore": {
+            "status": 200,
+            "posOrderRef": "01a1c529-b91f-7d6f-85b1-dc432ff071be"
+          },
+          "delete": 204,
+          "readBack": {
+            "event": 404,
+            "snapshot": 404,
+            "tillParty": 404,
+            "tillPartyCode": "NOT_FOUND"
+          }
+        }
+      ],
+      "zzTestLeft": [],
+      "socksAfter": 0
+    },
+    "signOuts": {
+      "till": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "console": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "adminApi": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "launcher": {
+        "signOut": 200,
+        "meAfter": "not read"
+      },
+      "otoApp": {
+        "userAfter": 200,
+        "note": "read straight after the launcher sign-out, inside the 10-second window in which the app reuses its last \"platform session alive\" answer; the app session ends at its next call after that. The headless browser holding its cookie was then closed, so it was not read again. /api/logout was not called."
+      }
+    }
   }
 }
