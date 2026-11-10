@@ -1,0 +1,620 @@
+{
+  "unit": "SCRUM-824 (a)",
+  "what": "Customer voice notes transcribed — staging proof with NO transcription provider configured (the owner has not chosen one): the provider-off behaviour",
+  "liveCommit": "405230df010f8e72a5e6d8bce859f209ef650180",
+  "liveAtBriefStart": {
+    "note": "when the brief arrived the api was still deploying 405230df (build in progress; df2334e8 live); it went live at 2026-11-10T13:03:43Z. The inbox was already live on 405230df.",
+    "oto-api-staging": "df2334e8 live, 405230df build_in_progress",
+    "oto-inbox-staging": "405230df live",
+    "oto-console-staging": "df2334e8 live"
+  },
+  "liveBefore": {
+    "at": "2026-11-10T13:08:12.376Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbphaigm7kps73auiaqg",
+        "status": "live",
+        "sha": "405230df010f8e72a5e6d8bce859f209ef650180",
+        "finishedAt": "2026-11-10T13:03:43.082566Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbphaj7f3r2c7385hm00",
+        "status": "live",
+        "sha": "405230df010f8e72a5e6d8bce859f209ef650180",
+        "finishedAt": "2026-11-10T13:00:47.044321Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dbpeo25g1s2s73cbema0",
+        "status": "live",
+        "sha": "df2334e85c957f2e3147ddc14ad6bbf5208dce9b",
+        "finishedAt": "2026-11-10T10:04:47.559798Z"
+      }
+    ],
+    "apiAndInboxLiveOnSha": true
+  },
+  "liveAfter": {
+    "at": "2026-11-10T13:14:10.175Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbphaigm7kps73auiaqg",
+        "status": "live",
+        "sha": "405230df010f8e72a5e6d8bce859f209ef650180",
+        "finishedAt": "2026-11-10T13:03:43.082566Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbphaj7f3r2c7385hm00",
+        "status": "live",
+        "sha": "405230df010f8e72a5e6d8bce859f209ef650180",
+        "finishedAt": "2026-11-10T13:00:47.044321Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dbpeo25g1s2s73cbema0",
+        "status": "live",
+        "sha": "df2334e85c957f2e3147ddc14ad6bbf5208dce9b",
+        "finishedAt": "2026-11-10T10:04:47.559798Z"
+      }
+    ],
+    "apiAndInboxLiveOnSha": true
+  },
+  "run": {
+    "startedAt": "2026-11-10T13:08:05.841Z",
+    "endedAt": "2026-11-10T13:14:18.149Z",
+    "browser": "Chromium 153.0.8010.12 headless, 1440×900, light, en-GB, Asia/Bangkok"
+  },
+  "actor": "the staging administrator through the launcher (owner view in the inbox); name, avatar and initials masked in every picture, never kept",
+  "channel": {
+    "account": "Demo WhatsApp · Central Floresta (simulator)",
+    "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+    "aiMode": {
+      "at": "2026-11-10T13:08:29.815Z",
+      "route": "GET /api/inbox/ai/channel-accounts",
+      "status": 200,
+      "account": {
+        "id": "01a156bb-6778-72b0-8237-6028f8874503",
+        "displayName": "Demo WhatsApp · Central Floresta",
+        "channel": "whatsapp",
+        "aiMode": "live"
+      },
+      "keys": [
+        "id",
+        "channel",
+        "provider",
+        "displayName",
+        "branchId",
+        "status",
+        "canReply",
+        "aiMode"
+      ]
+    },
+    "sender": "a ZZ TEST simulator number (not kept here); nothing reaches a real phone"
+  },
+  "audio": "a 3-second synthetic 440 Hz tone, 16 kHz mono 16-bit WAV, 96,044 bytes, generated for this run: no voice, no words",
+  "checks": [
+    {
+      "check": "api and inbox live on 405230df before and after the run",
+      "pass": true,
+      "value": "api 405230df0, inbox 405230df0"
+    },
+    {
+      "check": "assistant live on Demo WhatsApp · Central Floresta",
+      "pass": true,
+      "value": "aiMode live"
+    },
+    {
+      "check": "voice note sent from the Simulator dialog (Message empty, WAV attached)",
+      "pass": false,
+      "value": "400 VALIDATION: a message carries words or a voice note (the dialog's request carried no voice)"
+    },
+    {
+      "check": "voice note sent with the simulator route, same session (the brief's fallback)",
+      "pass": true,
+      "value": "200 processed, 1 new conversation"
+    },
+    {
+      "check": "voice note stored (audio file on the message)",
+      "pass": true,
+      "value": "audioFileId present, body null"
+    },
+    {
+      "check": "\"Transcribing…\" seen before the job's tick (picture 01, not required)",
+      "pass": null,
+      "value": "not seen, by design: the api read 1.2 s after the send (2026-11-10T13:10:00.432Z), before the job’s next tick, already said transcriptStatus off; the bubble’s first look read \"Voice note — not transcribed\" (data-state off); no picture 01"
+    },
+    {
+      "check": "bubble reads \"Voice note — not transcribed\"",
+      "pass": true,
+      "value": "data-state off, \"Voice note — not transcribed\""
+    },
+    {
+      "check": "pill \"AI left this one for the team\"",
+      "pass": true,
+      "value": "shown"
+    },
+    {
+      "check": "voice note plays: Open pressed once, the audio element loaded",
+      "pass": true,
+      "value": "files route 200 audio/wav; loadedmetadata, readyState 4, 3 s, played muted 0.6 s"
+    },
+    {
+      "check": "typed ZZ TEST line in the same thread still answered",
+      "pass": true,
+      "value": "sent 200 into the same conversation; ai_replied, intent hours, reply sent"
+    },
+    {
+      "check": "Console › Health: job:inbox.transcribe present and running",
+      "pass": true,
+      "value": "\"job:inbox.transcribe ok 1s / every 15s last ran 10 Nov, 20:13\"; lastRunAt 2026-11-10T13:13:19.907Z then 2026-11-10T13:13:34.966Z"
+    },
+    {
+      "check": "job:inbox.transcribe last run detail off ≥ 1",
+      "pass": false,
+      "value": "not met, by the build's design: with no provider the ingest files a voice note \"off\" the moment it lands, so the job never sees it (its count for this note is 0). The job register (Console › Health, GET /api/platform/jobs, GET /api/ops/health) shows status, outcome and time only, not the run's counts"
+    },
+    {
+      "check": "api read: transcriptStatus off, transcript null, transcriptLanguage null",
+      "pass": true,
+      "value": "{\"transcriptStatus\":\"off\",\"transcript\":null,\"transcriptLanguage\":null}"
+    },
+    {
+      "check": "api read: the voice note's turn reason NO_TEXT",
+      "pass": true,
+      "value": "ai_silent, turn 01a1c594-6495-70a1-a2e4-f4c8376c425a, reason NO_TEXT"
+    },
+    {
+      "check": "clean-up: conversation marked handled, read back",
+      "pass": true,
+      "value": "handle 200; read back 200 handled"
+    },
+    {
+      "check": "clean-up: signed out of the inbox, the Console and the launcher, read back 401",
+      "pass": true,
+      "value": "inbox 401, console 401, launcher 401"
+    }
+  ],
+  "conversationId": "01a1c594-6485-7c1a-be99-f782e45a2ea6",
+  "voiceNote": {
+    "uiAttempt": {
+      "by": "customer",
+      "what": "voice",
+      "kind": "voice note: a 3-second synthetic 440 Hz tone (16 kHz mono 16-bit WAV, 96,044 bytes; no voice, no words)",
+      "text": null,
+      "at": "2026-11-10T13:09:15.657Z",
+      "path": "the inbox UI: Settings > Simulator · test only > A customer writes > Send as the customer (its own POST /api/inbox/simulator/inbound)",
+      "formState": {
+        "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+        "message": "(empty)",
+        "language": "en",
+        "fileChosen": "zz-test-824-tone.wav"
+      },
+      "requestSent": {
+        "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+        "text": null,
+        "voice": null,
+        "hint": {
+          "language": "en"
+        }
+      },
+      "status": 400,
+      "outcome": null,
+      "messages": null,
+      "conversationsCreated": null,
+      "reopened": null,
+      "conversationIds": null,
+      "error": {
+        "code": "VALIDATION",
+        "message": "Request does not match the schema",
+        "details": [
+          {
+            "keyword": "custom",
+            "instancePath": "/",
+            "schemaPath": "#//custom",
+            "params": {
+              "issue": {
+                "code": "custom",
+                "message": "a message carries words or a voice note",
+                "path": []
+              }
+            },
+            "message": "a message carries words or a voice note"
+          }
+        ]
+      },
+      "dialogSaid": null,
+      "finding": "apps/inbox/src/api/inbox.ts simulateInbound builds the request body field by field and leaves out voice, so the dialog sends the file to no one; with Message empty the api refuses it (400) and nothing is created"
+    },
+    "sent": {
+      "by": "customer",
+      "what": "voice",
+      "kind": "voice note: a 3-second synthetic 440 Hz tone (16 kHz mono 16-bit WAV, 96,044 bytes; no voice, no words)",
+      "text": null,
+      "at": "2026-11-10T13:09:59.188Z",
+      "path": "the simulator route through the same signed-in inbox session (POST /api/inbox/simulator/inbound), the brief's documented fallback: the dialog drops the voice file",
+      "requestSent": {
+        "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+        "text": null,
+        "voice": {
+          "contentType": "audio/wav",
+          "bytes": 96044
+        },
+        "hint": {
+          "language": "en"
+        }
+      },
+      "status": 200,
+      "outcome": "processed",
+      "messages": 1,
+      "conversationsCreated": 1,
+      "reopened": 0,
+      "conversationIds": [
+        "01a1c594-6485-7c1a-be99-f782e45a2ea6"
+      ],
+      "error": null
+    },
+    "message": {
+      "id": "01a1c594-6487-7b28-8866-5d0b22423c8a",
+      "direction": "inbound",
+      "authorKind": "customer",
+      "source": "channel",
+      "createdAt": "2026-11-10T13:09:59.000Z",
+      "providerStatus": null,
+      "body": null,
+      "audioFileId": "01a1c594-649e-7c91-a5ad-a4eb6d4c1e67",
+      "mediaFileIds": [],
+      "transcriptStatus": "off",
+      "transcript": null,
+      "transcriptLanguage": null,
+      "redacted": false
+    },
+    "firstApiRead": {
+      "at": "2026-11-10T13:10:00.432Z",
+      "secondsAfterSend": 1.244,
+      "transcriptStatus": "off",
+      "transcript": null
+    },
+    "firstLook": {
+      "at": "2026-11-10T13:10:09.842Z",
+      "state": "off",
+      "text": "Voice note — not transcribed"
+    },
+    "bubble": {
+      "state": "off",
+      "text": "Voice note — not transcribed",
+      "pill": "AI left this one for the team"
+    },
+    "turn": {
+      "kind": "ai_silent",
+      "createdAt": "2026-11-10T13:10:04.948Z",
+      "actorKind": "ai",
+      "turnId": "01a1c594-6495-70a1-a2e4-f4c8376c425a",
+      "reason": "NO_TEXT",
+      "intent": null
+    },
+    "played": {
+      "at": "2026-11-10T13:10:37.977Z",
+      "press": "Open (aria-label \"Open Voice note\") in the voice note bubble",
+      "filesRoute": {
+        "route": "GET /api/files/:id/url",
+        "status": 200,
+        "contentType": "audio/wav",
+        "urlGiven": true
+      },
+      "audioElement": {
+        "event": "loadedmetadata",
+        "readyState": 4,
+        "networkState": 1,
+        "durationSeconds": 3,
+        "error": null,
+        "controls": true,
+        "played": true,
+        "currentTime": 0.6,
+        "sourceHost": "….r2.cloudflarestorage.com"
+      },
+      "loaded": true
+    }
+  },
+  "typedLine": {
+    "sent": {
+      "by": "customer",
+      "what": "typed",
+      "kind": "typed line",
+      "text": "what time do you open tomorrow?",
+      "at": "2026-11-10T13:10:43.943Z",
+      "path": "the inbox UI: Settings > Simulator · test only > A customer writes > Send as the customer (its own POST /api/inbox/simulator/inbound)",
+      "formState": {
+        "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+        "message": "what time do you open tomorrow?",
+        "language": "en",
+        "fileChosen": null
+      },
+      "requestSent": {
+        "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+        "text": "what time do you open tomorrow?",
+        "voice": null,
+        "hint": {
+          "language": "en"
+        }
+      },
+      "status": 200,
+      "outcome": "processed",
+      "messages": 1,
+      "conversationsCreated": 0,
+      "reopened": 0,
+      "conversationIds": [
+        "01a1c594-6485-7c1a-be99-f782e45a2ea6"
+      ],
+      "error": null,
+      "dialogSaid": "Received into the existing conversation."
+    },
+    "message": {
+      "id": "01a1c595-14fb-7712-9ca7-fc712d838307",
+      "direction": "inbound",
+      "authorKind": "customer",
+      "source": "channel",
+      "createdAt": "2026-11-10T13:10:44.000Z",
+      "providerStatus": null,
+      "body": "what time do you open tomorrow?",
+      "audioFileId": null,
+      "mediaFileIds": [],
+      "transcriptStatus": null,
+      "transcript": null,
+      "transcriptLanguage": null,
+      "redacted": false
+    },
+    "assistantReply": {
+      "id": "01a1c595-396c-7c49-8179-9267dafc98b3",
+      "authorKind": "ai",
+      "providerStatus": "sent",
+      "createdAt": "2026-11-10T13:10:53.538Z",
+      "body": "(the assistant's own line, 60 characters: left out)"
+    },
+    "turn": {
+      "kind": "ai_replied",
+      "createdAt": "2026-11-10T13:10:53.538Z",
+      "actorKind": "ai",
+      "turnId": "01a1c595-1506-7159-ac68-ddef4a68a9b9",
+      "reason": null,
+      "intent": "hours"
+    }
+  },
+  "apiRead": {
+    "conversation": {
+      "route": "GET /api/inbox/conversations/:id",
+      "status": 200,
+      "state": "active",
+      "category": "general",
+      "language": "en",
+      "aiMode": "live",
+      "aiPaused": false,
+      "handledAt": null
+    },
+    "messagesRoute": {
+      "route": "GET /api/inbox/conversations/:id/messages",
+      "status": 200
+    },
+    "messages": [
+      {
+        "id": "01a1c594-6487-7b28-8866-5d0b22423c8a",
+        "direction": "inbound",
+        "authorKind": "customer",
+        "source": "channel",
+        "createdAt": "2026-11-10T13:09:59.000Z",
+        "providerStatus": null,
+        "body": null,
+        "audioFileId": "01a1c594-649e-7c91-a5ad-a4eb6d4c1e67",
+        "mediaFileIds": [],
+        "transcriptStatus": "off",
+        "transcript": null,
+        "transcriptLanguage": null,
+        "redacted": false
+      },
+      {
+        "id": "01a1c595-14fb-7712-9ca7-fc712d838307",
+        "direction": "inbound",
+        "authorKind": "customer",
+        "source": "channel",
+        "createdAt": "2026-11-10T13:10:44.000Z",
+        "providerStatus": null,
+        "body": "what time do you open tomorrow?",
+        "audioFileId": null,
+        "mediaFileIds": [],
+        "transcriptStatus": null,
+        "transcript": null,
+        "transcriptLanguage": null,
+        "redacted": false
+      },
+      {
+        "id": "01a1c595-396c-7c49-8179-9267dafc98b3",
+        "direction": "outbound",
+        "authorKind": "ai",
+        "source": "channel",
+        "createdAt": "2026-11-10T13:10:53.538Z",
+        "providerStatus": "sent",
+        "body": "(the assistant's own line, 60 characters: left out)",
+        "audioFileId": null,
+        "mediaFileIds": [],
+        "transcriptStatus": null,
+        "transcript": null,
+        "transcriptLanguage": null,
+        "redacted": false
+      }
+    ],
+    "aiPills": [
+      {
+        "kind": "ai_silent",
+        "createdAt": "2026-11-10T13:10:04.948Z",
+        "actorKind": "ai",
+        "turnId": "01a1c594-6495-70a1-a2e4-f4c8376c425a",
+        "reason": "NO_TEXT",
+        "intent": null
+      },
+      {
+        "kind": "ai_replied",
+        "createdAt": "2026-11-10T13:10:53.538Z",
+        "actorKind": "ai",
+        "turnId": "01a1c595-1506-7159-ac68-ddef4a68a9b9",
+        "reason": null,
+        "intent": "hours"
+      }
+    ],
+    "otherPills": [
+      "routed",
+      "assigned",
+      "classified"
+    ],
+    "at": "2026-11-10T13:14:06.313Z"
+  },
+  "health": {
+    "first": {
+      "at": "2026-11-10T13:13:23.860Z",
+      "platformJobs": {
+        "route": "GET /api/platform/jobs",
+        "status": 200,
+        "row": {
+          "name": "job:inbox.transcribe",
+          "status": "ok",
+          "lastRunAt": "2026-11-10T13:13:19.907Z",
+          "lastOutcome": "ok",
+          "expectedEverySeconds": 15,
+          "ageSeconds": 4,
+          "lastError": null,
+          "waitingOn": []
+        }
+      },
+      "opsHealth": {
+        "route": "GET /api/ops/health",
+        "status": 200,
+        "row": {
+          "name": "job:inbox.transcribe",
+          "status": "ok",
+          "lastRunAt": "2026-11-10T13:13:19.907Z",
+          "lastOutcome": "ok",
+          "expectedEverySeconds": 15,
+          "ageSeconds": 4,
+          "lastError": null,
+          "waitingOn": []
+        }
+      }
+    },
+    "second": {
+      "at": "2026-11-10T13:13:45.180Z",
+      "platformJobs": {
+        "route": "GET /api/platform/jobs",
+        "status": 200,
+        "row": {
+          "name": "job:inbox.transcribe",
+          "status": "ok",
+          "lastRunAt": "2026-11-10T13:13:34.966Z",
+          "lastOutcome": "ok",
+          "expectedEverySeconds": 15,
+          "ageSeconds": 10,
+          "lastError": null,
+          "waitingOn": []
+        }
+      },
+      "opsHealth": {
+        "route": "GET /api/ops/health",
+        "status": 200,
+        "row": {
+          "name": "job:inbox.transcribe",
+          "status": "ok",
+          "lastRunAt": "2026-11-10T13:13:34.966Z",
+          "lastOutcome": "ok",
+          "expectedEverySeconds": 15,
+          "ageSeconds": 10,
+          "lastError": null,
+          "waitingOn": []
+        }
+      }
+    },
+    "ticked": true,
+    "consoleRow": "job:inbox.transcribe ok 1s / every 15s last ran 10 Nov, 20:13",
+    "picture": "824-st-04-health-transcribe-job-off.png"
+  },
+  "cleanup": {
+    "at": "2026-11-10T13:14:06.397Z",
+    "conversations": {
+      "voice": {
+        "id": "01a1c594-6485-7c1a-be99-f782e45a2ea6",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T13:14:07.170Z"
+        }
+      }
+    }
+  },
+  "signOut": {
+    "at": "2026-11-10T13:14:18.149Z",
+    "signOut": {
+      "inbox": {
+        "route": "POST /api/auth/sign-out (inbox)",
+        "status": 200
+      },
+      "console": {
+        "route": "POST /api/auth/sign-out (Console)",
+        "status": 200
+      },
+      "launcher": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      }
+    },
+    "readBack": {
+      "inbox": {
+        "route": "GET /api/inbox/me (inbox)",
+        "status": 401
+      },
+      "console": {
+        "route": "GET /api/me (Console)",
+        "status": 401
+      },
+      "launcher": {
+        "route": "GET /api/me (launcher)",
+        "status": 401
+      }
+    }
+  },
+  "notDone": [
+    "No setting read or changed; nothing deployed; no transcription provider switched on; no real phone; no other conversation touched"
+  ],
+  "pictures": [
+    {
+      "file": "824-st-01-voice-bubble-transcribing.png",
+      "taken": false,
+      "why": "never shown: with no provider the note is \"not transcribed\" from the moment it lands"
+    },
+    {
+      "file": "824-st-02-voice-bubble-not-transcribed.png",
+      "at": "2026-11-10T13:10:24.333Z",
+      "shows": "the voice note bubble reading Voice note — not transcribed, and the pill AI left this one for the team",
+      "namesMasked": 30,
+      "masks": 1
+    },
+    {
+      "file": "824-st-03-typed-line-still-answered.png",
+      "at": "2026-11-10T13:13:15.670Z",
+      "shows": "the typed ZZ TEST line in the same thread and the assistant's normal reply after it",
+      "namesMasked": 30,
+      "masks": 1
+    },
+    {
+      "file": "824-st-04-health-transcribe-job-off.png",
+      "at": "2026-11-10T13:13:54.693Z",
+      "shows": "Console > Health: the job register row for job:inbox.transcribe (outlined)",
+      "namesMasked": 0,
+      "masks": 0
+    }
+  ]
+}
