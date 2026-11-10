@@ -296,9 +296,11 @@ function unitOf(text: string, n: NumberFound, asking: boolean): Unit {
  */
 export function headcountNamedIn(text: string): boolean {
   const plain = asciiDigits(text.normalize('NFC'));
+  // The same reading as an answer's: "table for 8?" names no headcount.
+  const asking = asksSomething(text);
   return numbersIn(plain).some((n) => {
     if (n.weak) return false;
-    const unit = unitOf(plain, n);
+    const unit = unitOf(plain, n, asking);
     return unit === 'kids' || unit === 'adults' || unit === 'people';
   });
 }
