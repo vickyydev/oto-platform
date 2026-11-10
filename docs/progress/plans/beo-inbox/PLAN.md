@@ -152,6 +152,6 @@ Review page (screens and decision boxes): https://claude.ai/artifact/MRK5VbmoMKs
 | 5 BEO pre-filled in one pass | SCRUM-827 | APPROVED on the page 11 Nov 04:50 — queued behind 829's landing (the same BEO editor files) |
 | 7 BEO-only menu items | SCRUM-828 | APPROVED — LANDED a3d87300a, proved, DEPLOYED |
 | 8 Adults start from the kids' choice | SCRUM-829 | LANDED fcd1a08b3 (11 Nov 05:51, app migration 0048); five services deploying; the proof running; the MONEY decision on the ticket — Deployed held |
-| 9 First message decides the queue | SCRUM-830 | APPROVED on the page 11 Nov 04:51 — BUILDING on lane/routing830-20261111 from 05:05 (Fable workflow; the corpus measure in the build) |
+| 9 First message decides the queue | SCRUM-830 | APPROVED on the page 11 Nov 04:51 — BUILT, reviewed and fixed (two commits, 06:20); land-prep running; the corpus has no queue label (the proxy: 12 of 17 party chats caught by the first line, 12/12 corroborated); five decisions on the ticket |
 | 10 Never ask twice | SCRUM-831 | APPROVED (the page 11 Nov 04:51: "never let the assistant trip; smart and efficient") — DEPLOYED 11 Nov 00:20 |
 | 11 One message per turn, park first | SCRUM-832 | APPROVED 10 Nov 22:35 — LANDED ba3f25bb4 + the bare-park-question fix 4af68aafc, proved and re-checked 11 Nov; DEPLOYED 11 Nov 01:38; four decisions on the ticket |
