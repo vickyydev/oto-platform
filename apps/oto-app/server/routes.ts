@@ -207,6 +207,7 @@ import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql }
 import { generateInstanceForDefinition } from "./core/taskGeneration";
 import { personFence, fenceAllows, fenceRows, EMPLOYEE_DENIED } from "./core/personScope";
 import { resolveSelfEmployeeId } from "./core/selfEmployee";
+import { dayOf, sameDeposit, wholeBahtOf, writePartyDeposit } from "./lib/partyDeposit";
 import { requestedChecklistAssignees, setChecklistAssignees, withChecklistAssignees } from "./core/checklistAssignees";
 import { canReachChecklistTemplate, checklistCopyBranchRefusal, checklistCopyRequest, checklistEditChangesOriginal, checklistTemplateBranches, createChecklistCopies, createPreparedChecklistTemplates, loadChecklistCopySource, planBranchCopies, prepareChecklistTemplates, type PreparedChecklistTemplates } from "./core/checklistCopies";
 
@@ -18287,6 +18288,16 @@ OTO Company Limited`,
       };
       
       const event = await storage.updateStudioEvent(id, eventData);
+      // SCRUM-813: the event's Prepayment is the party's one deposit: a change of it
+      // here is the BEO's deposit too (its billing's deposit paid and Party Details),
+      // where the BEO keeps a billing row. A form saved with the deposit unchanged
+      // writes nothing more, so a deposit only the BEO holds is never cleared by it.
+      const prepaymentNamed = "prepaymentAmount" in req.body || "prepaymentDate" in req.body;
+      const after = { amountThb: wholeBahtOf(event?.prepaymentAmount), date: dayOf(event?.prepaymentDate) };
+      const before = { amountThb: wholeBahtOf(existingEvent.prepaymentAmount), date: dayOf(existingEvent.prepaymentDate) };
+      if (event && prepaymentNamed && !sameDeposit(after, before)) {
+        await writePartyDeposit(db, { eventId: id, deposit: after, now: new Date(), event: false, billing: "existing" });
+      }
       res.json(event);
     } catch (error) {
       next(error);

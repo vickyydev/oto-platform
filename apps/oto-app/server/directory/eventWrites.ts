@@ -721,6 +721,44 @@ async function recordPosSaleId(tx: PoolClient, eventId: string, posSaleId: strin
 }
 
 /**
+ * ONE DEPOSIT (SCRUM-813, server/lib/partyDeposit.ts): a till's edit of the
+ * party's deposit is the BEO's deposit too. Once the event's prepayment holds
+ * the till's figure, the BEO billing (where the BEO keeps one) takes the same:
+ * its deposit paid and Party Details' prepayment received and date, Party
+ * Details' other keys kept. A party the BEO never opened has no billing row,
+ * and `otoapp_v.event_packages` reads the event's prepayment for it.
+ */
+async function mirrorDepositToBilling(tx: PoolClient, eventId: string) {
+  await tx.query(
+    `with d as (
+       select e.id,
+              case when e.prepayment_amount > 0 then e.prepayment_amount end as amount,
+              case
+                when e.prepayment_amount > 0 and e.prepayment_date ~ '^\\d{4}-\\d{2}-\\d{2}$' and pg_input_is_valid(e.prepayment_date, 'date')
+                  then e.prepayment_date
+              end as day
+         from core_events e
+        where e.id = $1
+     )
+     update beo_event_billing b
+        set deposit_paid = d.amount is not null,
+            deposit_paid_amount = d.amount,
+            deposit_paid_at = case when d.day is not null then d.day::date::timestamp end,
+            add_ons = (case when jsonb_typeof(b.add_ons) = 'object' then b.add_ons else '{}'::jsonb end)
+              || jsonb_build_object(
+                   'partyDetails',
+                   ((case when jsonb_typeof(b.add_ons -> 'partyDetails') = 'object' then b.add_ons -> 'partyDetails' else '{}'::jsonb end) - 'depositDate')
+                     || jsonb_build_object('prepaymentReceived', coalesce(d.amount, 0))
+                     || (case when d.day is not null then jsonb_build_object('depositDate', d.day) else '{}'::jsonb end)
+                 ),
+            updated_at = now() at time zone 'UTC'
+       from d
+      where b.event_id = d.id`,
+    [eventId],
+  );
+}
+
+/**
  * Change a party's own fields, as a till edited them (`updateParty`).
  *
  * ORDER, NOT A STORED ID. An edit sets values, so sending it twice sets the
@@ -816,6 +854,7 @@ export async function editPartyEvent(
     sets.push(`updated_at = ($${params.length}::timestamptz at time zone 'UTC')`);
     await tx.query(`update core_events set ${sets.join(", ")} where id = $1 and tenant_id = $2`, params);
     if (posSaleId !== undefined) await recordPosSaleId(tx, event.id, posSaleId);
+    if (keys.includes("prepaymentAmountThb") || keys.includes("prepaymentDate")) await mirrorDepositToBilling(tx, event.id);
 
     return { ok: true, status: 200, body: await editAnswer(tx, event, input, keys, current.same) };
   });

@@ -22,7 +22,11 @@
 //      per party with a package, in the contract's shape, its satang the
 //      stored satang; the till's settlement sale (`posSaleId` on the directory
 //      party edit) lands in `beo_event_billing.pos_order_ref` and reads back
-//      from the view;
+//      from the view; ONE DEPOSIT (SCRUM-813, migration 0045): a deposit
+//      entered in the BEO billing reaches the view in satang and is the
+//      event's Prepayment and Party Details' too; the BEO's Save, the Events
+//      page and a till's edit keep the one figure; a prepayment-only event
+//      and rows saved before the rule still read;
 //   4. Generate from BEO bills the package's satang as the whole baht a
 //      billing line holds (SCRUM-806): a 5,000 THB add-on bills 5,000; an
 //      add-on switched off or at quantity 0 bills nothing, and one at 2 bills
@@ -748,6 +752,120 @@ try {
     const res = await edit(fresh, { posSaleId: `ZZ-${run}-000003` }, new Date().toISOString());
     assert.equal(res.status, 200, show(res));
     assert.equal(await saleOf(fresh), `ZZ-${run}-000003`);
+  });
+
+  // ── 3b. one deposit (SCRUM-813) ───────────────────────────────────────────
+
+  await check("a deposit entered in the BEO billing reaches the till's view, the event's Prepayment and Party Details; every writer keeps one figure (SCRUM-813)", async () => {
+    const depositOf = async (eventId: string) =>
+      (await q<{ settlement: { deposit_satang: number | null } }>("select settlement from otoapp_v.event_packages where event_id = $1", [eventId]))[0]
+        .settlement.deposit_satang;
+    const homes = async (eventId: string) => {
+      const [ev] = await q<{ prepayment_amount: number | null; prepayment_date: string | null }>(
+        "select prepayment_amount, prepayment_date from core_events where id = $1", [eventId]);
+      const [bl] = await q<{ deposit_paid: boolean; deposit_paid_amount: number | null; paid_on: string | null; pd: Record<string, unknown> | null }>(
+        "select deposit_paid, deposit_paid_amount, deposit_paid_at::date::text as paid_on, add_ons -> 'partyDetails' as pd from beo_event_billing where event_id = $1",
+        [eventId]);
+      const beo = await call("GET", `/api/events/${eventId}/beo`, { cookie });
+      assert.equal(beo.status, 200, show(beo));
+      return {
+        view: await depositOf(eventId),
+        event: [ev!.prepayment_amount, ev!.prepayment_date],
+        billing: bl ? [bl.deposit_paid, bl.deposit_paid_amount, bl.paid_on] : null,
+        partyDetails: bl?.pd ? [bl.pd.prepaymentReceived, bl.pd.depositDate ?? null] : null,
+        beoShows: beo.body.partyDetails ? [beo.body.partyDetails.prepaymentReceived, beo.body.partyDetails.depositDate ?? null] : null,
+        eventsView: (await q<{ d: number | null }>("select deposit_satang::integer as d from otoapp_v.events where id = $1", [eventId]))[0]?.d ?? null,
+      };
+    };
+    const party813 = await birthday(A, { prepayment_amount: null });
+    const applied = await call("POST", `/api/beo/events/${party813}/package-snapshot`, { cookie, body: { templateId: packageId } });
+    assert.equal(applied.status, 201, show(applied));
+    assert.equal(await depositOf(party813), null, "no deposit anywhere yet");
+
+    // 1. The BEO billing's deposit paid, 3,000 THB on 1 March: the till's view reads it in satang, and it is the event's and Party Details' too.
+    const billed = await call("PUT", `/api/events/${party813}/beo/billing`, {
+      cookie, body: { depositRequired: true, depositAmount: 3000, depositPaid: true, depositPaidAmount: 3000, depositPaidAt: "2099-03-01T00:00:00.000Z" },
+    });
+    assert.ok(billed.status === 200 || billed.status === 201, show(billed));
+    assert.deepEqual(await homes(party813), {
+      view: 300_000, event: [3000, "2099-03-01"], billing: [true, 3000, "2099-03-01"], partyDetails: [3000, "2099-03-01"],
+      beoShows: [3000, "2099-03-01"], eventsView: 300_000,
+    });
+
+    // 2. The BEO's own Save with Party Details' prepayment changed to 4,000 THB: one figure again.
+    const beo = (await call("GET", `/api/events/${party813}/beo`, { cookie })).body;
+    const saved = await call("PUT", `/api/events/${party813}/beo`, {
+      cookie, body: { billing: {}, partyDetails: { ...beo.partyDetails, packageName: "ZZ TEST", prepaymentReceived: 4000, depositDate: "2099-03-05" } },
+    });
+    assert.equal(saved.status, 200, show(saved));
+    assert.deepEqual(await homes(party813), {
+      view: 400_000, event: [4000, "2099-03-05"], billing: [true, 4000, "2099-03-05"], partyDetails: [4000, "2099-03-05"],
+      beoShows: [4000, "2099-03-05"], eventsView: 400_000,
+    });
+
+    // 3. The Events page's Prepayment changed to 4,500 THB: the BEO's deposit takes it.
+    const patched = await call("PATCH", `/api/admin/events/${party813}`, { cookie, body: { prepaymentAmount: 4500, prepaymentDate: "2099-03-06" } });
+    assert.equal(patched.status, 200, show(patched));
+    assert.deepEqual(await homes(party813), {
+      view: 450_000, event: [4500, "2099-03-06"], billing: [true, 4500, "2099-03-06"], partyDetails: [4500, "2099-03-06"],
+      beoShows: [4500, "2099-03-06"], eventsView: 450_000,
+    });
+    // An Events page Save that leaves the Prepayment as it was writes nothing to the BEO.
+    const unchanged = await call("PATCH", `/api/admin/events/${party813}`, { cookie, body: { prepaymentAmount: 4500, prepaymentDate: "2099-03-06", decoration: "ZZ TEST" } });
+    assert.equal(unchanged.status, 200, show(unchanged));
+    assert.equal(await depositOf(party813), 450_000);
+
+    // 4. A till's party edit of the deposit, 5,000 THB: the BEO's billing and Party Details take it.
+    const tillEdit = await edit(party813, { prepaymentAmountThb: 5000, prepaymentDate: "2099-03-07" }, new Date(Date.now() + 5_000).toISOString());
+    assert.equal(tillEdit.status, 200, show(tillEdit));
+    assert.deepEqual(await homes(party813), {
+      view: 500_000, event: [5000, "2099-03-07"], billing: [true, 5000, "2099-03-07"], partyDetails: [5000, "2099-03-07"],
+      beoShows: [5000, "2099-03-07"], eventsView: 500_000,
+    });
+
+    // 5. A BEO Save that leaves the deposit as the BEO showed it writes nothing more, and keeps Party Details' other keys.
+    const again = (await call("GET", `/api/events/${party813}/beo`, { cookie })).body;
+    const keep = await call("PUT", `/api/events/${party813}/beo`, { cookie, body: { billing: {}, partyDetails: { ...again.partyDetails, notes: "ZZ TEST note" } } });
+    assert.equal(keep.status, 200, show(keep));
+    assert.equal((await homes(party813)).view, 500_000);
+    const pd = (await q<{ pd: Record<string, unknown> }>("select add_ons -> 'partyDetails' as pd from beo_event_billing where event_id = $1", [party813]))[0]!.pd;
+    assert.equal(pd.notes, "ZZ TEST note");
+
+    // 6. Cleared in the BEO: no deposit anywhere, the till reads none.
+    const cleared = await call("PUT", `/api/events/${party813}/beo`, { cookie, body: { billing: {}, partyDetails: { ...again.partyDetails, prepaymentReceived: 0, depositDate: "" } } });
+    assert.equal(cleared.status, 200, show(cleared));
+    const none = await homes(party813);
+    assert.deepEqual([none.view, none.event, none.billing], [null, [null, null], [false, null, null]]);
+  });
+
+  await check("a prepayment-only event still reads its prepayment; a deposit only the BEO kept before the rule is read too (SCRUM-813)", async () => {
+    // The event's own Prepayment, 2,500 THB, no billing row: the view reads it, and the BEO's read shows it.
+    const prepaid = await birthday(A, { prepayment_amount: 2500 });
+    await call("POST", `/api/beo/events/${prepaid}/package-snapshot`, { cookie, body: { templateId: packageId } });
+    const view = async (eventId: string) =>
+      (await q<{ settlement: { deposit_satang: number | null } }>("select settlement from otoapp_v.event_packages where event_id = $1", [eventId]))[0]
+        .settlement.deposit_satang;
+    assert.equal(await view(prepaid), 250_000);
+    const read = (await call("GET", `/api/events/${prepaid}/beo`, { cookie })).body;
+    assert.equal(read.partyDetails?.prepaymentReceived, 2500, "the BEO shows the event's prepayment");
+    // A BEO Save with that same figure leaves the event's prepayment as it was.
+    const save = await call("PUT", `/api/events/${prepaid}/beo`, { cookie, body: { billing: {}, partyDetails: { ...read.partyDetails } } });
+    assert.equal(save.status, 200, show(save));
+    assert.equal((await q<{ p: number }>("select prepayment_amount as p from core_events where id = $1", [prepaid]))[0]!.p, 2500);
+    assert.equal(await view(prepaid), 250_000);
+
+    // Rows saved before the rule: a billing deposit paid with no prepayment, and Party Details alone (a numeric string).
+    const paidOnly = await birthday(A, { prepayment_amount: null });
+    await call("POST", `/api/beo/events/${paidOnly}/package-snapshot`, { cookie, body: { templateId: packageId } });
+    await q("insert into beo_event_billing (event_id, deposit_paid, deposit_paid_amount) values ($1, true, 3000)", [paidOnly]);
+    assert.equal(await view(paidOnly), 300_000, "the billing's deposit paid, in satang");
+    const detailsOnly = await birthday(A, { prepayment_amount: 1000 });
+    await call("POST", `/api/beo/events/${detailsOnly}/package-snapshot`, { cookie, body: { templateId: packageId } });
+    await q(`insert into beo_event_billing (event_id, add_ons) values ($1, '{"partyDetails": {"prepaymentReceived": "1500"}}'::jsonb)`, [detailsOnly]);
+    assert.equal(await view(detailsOnly), 150_000, "Party Details' prepayment before the event's");
+    // An odd value is skipped, never fatal to the read.
+    await q(`update beo_event_billing set add_ons = '{"partyDetails": {"prepaymentReceived": "about 1500"}}'::jsonb where event_id = $1`, [detailsOnly]);
+    assert.equal(await view(detailsOnly), 100_000, "the event's prepayment then");
   });
 
   // ── 4. Generate from BEO bills the package in baht (SCRUM-806) ───────────

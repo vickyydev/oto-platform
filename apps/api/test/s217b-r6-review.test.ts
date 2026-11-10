@@ -502,7 +502,9 @@ describe('A. fences and seams', () => {
       // timeline generator is exported for the AI fill's approval; where the BEO's documents live is unchanged.
       // SCRUM-808: Generate from BEO also bills the package's own price for the party's day and its extra
       // children and adults (shared/partyPackageTotal.ts); where the BEO's documents live is unchanged.
-      'beo-routes.ts': 'ab9cd423e9d8d74d100c601b4ac020b20b90baad08ceda8f148cc0372663ab03',
+      // SCRUM-813: the billing route and the BEO's Save write the party's one deposit (server/lib/partyDeposit.ts) and the
+      // BEO's read shows it; where the BEO's documents live is unchanged.
+      'beo-routes.ts': 'cf0befa0946cc0825b7db717f616391b19c368713f9ee8e1303dd811e1aa32d3',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);

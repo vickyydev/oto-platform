@@ -37,6 +37,7 @@ import crypto from "crypto";
 import { eq, and, asc, desc, sql, inArray } from "drizzle-orm";
 import { generateBeoPdf, type BeoPdfData } from "./pdf";
 import { partyPackageTotal } from "@shared/partyPackageTotal";
+import { currentDeposit, depositOfBillingColumns, depositOfPartyDetails, sameDeposit, writePartyDeposit } from "./lib/partyDeposit";
 import { OBJECT_STORAGE } from "./config/env";
 import { uploadToObjectStorage } from "./file-storage";
 import { s3PresignedGet } from "./storage/s3Storage";
@@ -874,7 +875,18 @@ export function registerBeoRoutes(app: Express) {
       }
       
       const billingAddOns = (billing as any)?.addOns;
-      const partyDetails = billingAddOns?.partyDetails || null;
+      const storedPartyDetails = billingAddOns?.partyDetails || null;
+      // SCRUM-813: Party Details shows the party's one deposit, wherever it was
+      // entered (the billing's deposit paid, Party Details, the event's own
+      // Prepayment), in the order the till's view reads it.
+      const deposit = currentDeposit(billing, event);
+      const partyDetails = deposit.amountThb > 0
+        ? {
+            ...(storedPartyDetails || {}),
+            prepaymentReceived: deposit.amountThb,
+            ...(deposit.date ? { depositDate: deposit.date } : {}),
+          }
+        : storedPartyDetails;
 
       const beoTasks = await db.select().from(tasks)
         .where(and(
@@ -1242,18 +1254,42 @@ export function registerBeoRoutes(app: Express) {
       
       const [existing] = await db.select().from(beoEventBilling)
         .where(eq(beoEventBilling.eventId, eventId));
-      
-      if (existing) {
-        const [updated] = await db.update(beoEventBilling)
-          .set({ ...req.body, eventId, updatedAt: new Date() })
-          .where(eq(beoEventBilling.eventId, eventId))
-          .returning();
-        return res.json(updated);
-      }
-      
-      const parsed = insertBeoEventBillingSchema.parse({ ...req.body, eventId });
-      const [created] = await db.insert(beoEventBilling).values(parsed).returning();
-      res.status(201).json(created);
+      const body = { ...((req.body ?? {}) as Record<string, unknown>) };
+      // The day paid arrives as the billing module sends it ("2099-03-01T00:00:00.000Z"), as the BEO's Save reads it.
+      if (typeof body.depositPaidAt === "string") body.depositPaidAt = body.depositPaidAt ? new Date(body.depositPaidAt) : null;
+      const namesDeposit = ["depositPaid", "depositPaidAmount", "depositPaidAt"].some((k) => k in body);
+
+      // SCRUM-813: a deposit paid written here is the party's one deposit: the
+      // event's Prepayment and Party Details take the same figure, in the same
+      // transaction, so the till, the Events page and the BEO all read it.
+      const written = await db.transaction(async (tx) => {
+        let row: typeof beoEventBilling.$inferSelect;
+        let status = 200;
+        if (existing) {
+          [row] = await tx.update(beoEventBilling)
+            .set({ ...body, eventId, updatedAt: new Date() })
+            .where(eq(beoEventBilling.eventId, eventId))
+            .returning();
+        } else {
+          const parsed = insertBeoEventBillingSchema.parse({ ...body, eventId });
+          [row] = await tx.insert(beoEventBilling).values(parsed).returning();
+          status = 201;
+        }
+        if (namesDeposit) {
+          const [ev] = await tx.select({ prepaymentAmount: coreEvents.prepaymentAmount, prepaymentDate: coreEvents.prepaymentDate })
+            .from(coreEvents).where(eq(coreEvents.id, eventId));
+          const was = currentDeposit(existing, ev);
+          const paid = depositOfBillingColumns(row);
+          // A write that names no day keeps the day the deposit already has.
+          const deposit = "depositPaidAt" in body ? paid : { ...paid, date: paid.date ?? was.date };
+          if (!sameDeposit(deposit, was)) {
+            await writePartyDeposit(tx, { eventId, deposit, now: new Date(), userId: user.id });
+            [row] = await tx.select().from(beoEventBilling).where(eq(beoEventBilling.eventId, eventId));
+          }
+        }
+        return { row, status };
+      });
+      res.status(written.status).json(written.row);
     } catch (error) {
       next(error);
     }
@@ -1658,6 +1694,22 @@ export function registerBeoRoutes(app: Express) {
         } else if (Object.keys(billingData).length > 0) {
           await db.insert(beoEventBilling)
             .values({ ...billingData, eventId } as any);
+        }
+
+        // SCRUM-813: the deposit the BEO now says, when it is not the party's
+        // one deposit already (the figure its read showed), is written to every
+        // place the app keeps it: the event's Prepayment (the till's and the
+        // Events page's) and the billing's deposit paid. A Save that leaves the
+        // deposit as it was writes nothing more.
+        const was = currentDeposit(existingBilling, existingEvent);
+        const namesPaid = billing && ["depositPaid", "depositPaidAmount", "depositPaidAt"].some((k) => k in billingData);
+        const said = partyDetails !== undefined && partyDetails !== null
+          ? depositOfPartyDetails(partyDetails)
+          : namesPaid
+            ? depositOfBillingColumns({ ...(existingBilling ?? {}), ...billingData })
+            : null;
+        if (said && !sameDeposit(said, was)) {
+          await writePartyDeposit(db, { eventId, deposit: said, now: new Date(), userId: user.id });
         }
       }
 

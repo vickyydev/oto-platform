@@ -16,6 +16,7 @@ import type { db as appDb } from "../db";
 import type { ActivityLogInput } from "../storage";
 import { loadBeoCatalogue, type BeoCatalogue } from "./beoCatalogueFill";
 import { applyPackageSnapshot, type DbExecutor } from "./packageSnapshot";
+import { writePartyDeposit } from "./partyDeposit";
 import { resolveSetMenuLines, type SetMenuChoice } from "./setMenuResolve";
 
 /**
@@ -41,9 +42,10 @@ import { resolveSetMenuLines, type SetMenuChoice } from "./setMenuResolve";
  *     working; a new set menu resets the link, as Reset Selections does;
  *   - the bar plan's lines; the entertainment selections, from the
  *     entertainment menu at its prices;
- *   - the deposit, where the chat names one: in billing, and where the BEO
+ *   - the deposit, where the chat names one: in billing, where the BEO
  *     itself reads it (Party Details' prepayment and its date: the editor,
- *     the day-of view, the view-only page and the PDF);
+ *     the day-of view, the view-only page and the PDF) and, received, the
+ *     event's own Prepayment the till reads (SCRUM-813's one deposit);
  *   - one `beo_ai_fill` activity row naming the sources and the catalogue
  *     items matched (never the chat's words).
  * A section the reviewed BEO says nothing about is left as it is; one it
@@ -364,26 +366,22 @@ export async function approveBeoAiFill(
       written.entertainment = body.entertainment.length;
     }
 
-    // The deposit, where the chat names one: billing's columns, and Party Details'
-    // prepayment and its date, which the BEO's editor, badge, outstanding balance,
-    // day-of view, view-only page and PDF read. Party Details' other keys are kept.
+    // The deposit, where the chat names one. Received, it is the party's one
+    // deposit (SCRUM-813, server/lib/partyDeposit.ts): billing's deposit paid,
+    // Party Details' prepayment and its date (which the BEO's editor, badge,
+    // outstanding balance, day-of view, view-only page and PDF read; its other
+    // keys kept) and the event's own Prepayment (which the till and the Events
+    // page read). Asked and not yet received, it is billing's deposit required.
     if (body.deposit) {
       const d = body.deposit;
-      const [billing] = await tx.select({ id: beoEventBilling.id, addOns: beoEventBilling.addOns }).from(beoEventBilling).where(eq(beoEventBilling.eventId, event.id));
-      const addOns = asCollection(billing?.addOns);
-      const partyDetails = asCollection(addOns.partyDetails);
-      const nextAddOns = d.paid
-        ? { ...addOns, partyDetails: { ...partyDetails, prepaymentReceived: d.amount, ...(d.date ? { depositDate: d.date } : {}) } }
-        : null;
-      const values = {
-        ...(d.paid
-          ? { depositPaid: true, depositPaidAmount: d.amount, depositPaidAt: d.date ? new Date(`${d.date}T00:00:00.000Z`) : null }
-          : { depositRequired: true, depositAmount: d.amount }),
-        ...(nextAddOns ? { addOns: nextAddOns } : {}),
-        updatedAt: input.now,
-      };
-      if (billing) await tx.update(beoEventBilling).set(values).where(eq(beoEventBilling.id, billing.id));
-      else await tx.insert(beoEventBilling).values({ eventId: event.id, ...values });
+      if (d.paid) {
+        await writePartyDeposit(tx, { eventId: event.id, deposit: { amountThb: d.amount, date: d.date }, now: input.now, userId: input.userId });
+      } else {
+        const [billing] = await tx.select({ id: beoEventBilling.id }).from(beoEventBilling).where(eq(beoEventBilling.eventId, event.id));
+        const values = { depositRequired: true, depositAmount: d.amount, updatedAt: input.now };
+        if (billing) await tx.update(beoEventBilling).set(values).where(eq(beoEventBilling.id, billing.id));
+        else await tx.insert(beoEventBilling).values({ eventId: event.id, ...values });
+      }
       written.deposit = true;
     }
 
