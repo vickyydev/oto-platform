@@ -162,7 +162,8 @@ export interface BeoAiProposal {
     startTime?: BeoAiSourced<string>;
     endTime?: BeoAiSourced<string>;
   };
-  cake: { mode: BeoAiCakeMode; notes: string | null; time: string | null; from: BeoAiFrom } | null;
+  /** SCRUM-787: `mode` null is a cake the chat times or describes without saying who brings it ("not said"). */
+  cake: { mode: BeoAiCakeMode | null; notes: string | null; time: string | null; from: BeoAiFrom } | null;
   deposit: { amount: number; paid: boolean; date: string | null; from: BeoAiFrom } | null;
 }
 
@@ -283,7 +284,8 @@ export const BeoAiApproveBodySchema = z
       .strict(),
     cake: z
       .object({
-        mode: z.enum(BEO_AI_CAKE_MODES),
+        /** SCRUM-787: null leaves the BEO's cake type as it is ("not said"); the time and notes are still written. */
+        mode: z.enum(BEO_AI_CAKE_MODES).nullable(),
         notes: z.string().max(1000).nullable(),
         time: z.string().regex(TIME).nullable(),
       })

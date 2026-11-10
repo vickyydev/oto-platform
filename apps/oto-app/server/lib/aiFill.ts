@@ -92,7 +92,7 @@ Parsing rules:
 - Resolve every relative or year-less date against today's date, given at the end of this prompt: the party's date without a year is its next occurrence on or after today; a deposit or payment already received is on or before today
 - The party's date (event.eventDate) comes only from the new text, never from the existing event data: give it with event.eventDateText, the message's own words for that date; when the message names no date, give null for both
 - If the same information appears more than once, use the latest confirmed version
-- Cake mode must be one of: INTERNAL (venue provides the cake), EXTERNAL (guest brings their own cake), NONE (no cake)
+- Cake mode must be one of: INTERNAL (venue provides the cake), EXTERNAL (guest brings their own cake), NONE (no cake), or NOT_SAID when the message gives a cake time or cake details but does not say who brings the cake. Never guess who brings it
 - Menu items included in the package have included: true; extras have included: false, with their price when the message gives one
 - Team: give a person or a role only when the message itself names them (for example "Host: Nok" or "our animator team"), written as the message writes the name itself: leave out a role word, a title or "the" before it ("Host: Nok" is "Nok", "พิธีกร พี่นก" is "พี่นก", "the Event Department" is "Event Department"). Never choose a person yourself
 
@@ -131,7 +131,7 @@ export const BUILT_IN_BEO_PARSING_OUTPUT_FORMAT = `Parse the message and return 
     "adultsMenu": [
       { "itemName": "Item name", "quantity": 1, "notes": "", "included": true, "price": 0 }
     ],
-    "cakeMode": "INTERNAL | EXTERNAL | NONE",
+    "cakeMode": "INTERNAL | EXTERNAL | NONE | NOT_SAID",
     "cakeNotes": "Cake description or notes",
     "cakeTime": "HH:MM when cake is served",
     "cakeIncluded": true,
@@ -445,9 +445,11 @@ export const BeoFillSchema = z.object({
   kitchenPlan: section({
     kidsMenu: list(MenuLineSchema),
     adultsMenu: list(MenuLineSchema),
+    // SCRUM-787: NOT_SAID is a cake the message times or describes without saying who brings it;
+    // the form's cake type is then left as it was, never guessed.
     cakeMode: z.preprocess(
-      (v) => (blank(v) ? undefined : typeof v === "string" ? v.trim().toUpperCase() : v),
-      z.enum(["INTERNAL", "EXTERNAL", "NONE"]).optional(),
+      (v) => (blank(v) ? undefined : typeof v === "string" ? v.trim().toUpperCase().replace(/[\s-]+/g, "_") : v),
+      z.enum(["INTERNAL", "EXTERNAL", "NONE", "NOT_SAID"]).optional(),
     ),
     cakeNotes: optText(1000),
     cakeTime: optTime,

@@ -75,6 +75,7 @@ import {
 } from "lucide-react";
 import { BeoTimelineEditor } from "./beo-timeline-editor";
 import { BeoAiReviewDialog, type BeoAiPending } from "./beo-ai-review";
+import { aiFillCakeApply, aiFillCakeLine, aiFillPartyDetailsShown } from "@/lib/beo-ai-preview";
 import { APPROVAL_WRITES } from "@/lib/beo-ai-review";
 import { BeoPackageModule } from "./beo-package-module";
 import { BeoParentExperienceModule } from "./beo-parent-experience-module";
@@ -1487,14 +1488,15 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
           price: m.price || 0,
         })));
       }
-      if (kp.cakeMode && kp.cakeMode !== "NONE") {
-        setCakeMode(kp.cakeMode);
-        if (kp.cakeNotes) setCakeNotes(kp.cakeNotes);
-        if (kp.cakeTime) setCakeTime(kp.cakeTime);
-        setCakeIncluded(kp.cakeIncluded !== false);
-        setCakePrice(kp.cakePrice || 0);
-        if (kp.cakeQuantity !== undefined) setCakeQuantity(kp.cakeQuantity);
-      }
+      // SCRUM-787: the cake's time and notes as the message gives them; its type only when the
+      // message says whose cake it is, so a type it does not say leaves the form's as it was.
+      const cake = aiFillCakeApply(kp);
+      if (cake.mode) setCakeMode(cake.mode);
+      if (cake.notes) setCakeNotes(cake.notes);
+      if (cake.time) setCakeTime(cake.time);
+      if (cake.included !== undefined) setCakeIncluded(cake.included);
+      if (cake.price !== undefined) setCakePrice(cake.price);
+      if (cake.quantity !== undefined) setCakeQuantity(cake.quantity);
     }
 
     if (p.partyDetails) {
@@ -1552,6 +1554,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
 
   // SCRUM-814: the date the AI Fill read, beside the date the form holds.
   const aiFillDate = aiFillDateLine(aiFillParsed, eventData.eventDate);
+  // SCRUM-787: the cake as the AI Fill read it, its type "not said" when the message does not say whose cake.
+  const aiFillCake = aiFillCakeLine(aiFillParsed?.kitchenPlan);
 
   return (
     <div className="flex flex-col h-full">
@@ -3686,12 +3690,26 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                         </ul>
                       </div>
                     )}
-                    <AiFillRow label="Cake" value={aiFillParsed.kitchenPlan.cakeMode && aiFillParsed.kitchenPlan.cakeMode !== "NONE" ? `${aiFillParsed.kitchenPlan.cakeMode} — ${aiFillParsed.kitchenPlan.cakeNotes || ""}` : null} />
-                    <AiFillRow label="Cake Time" value={aiFillParsed.kitchenPlan.cakeTime} />
+                    {/* SCRUM-787: the cake type always shows beside a cake time, "not said" when the message does not say whose cake it is. */}
+                    {aiFillCake && (
+                      <div className="flex gap-2 text-sm" data-testid="ai-fill-cake-type">
+                        <span className="text-muted-foreground w-28 shrink-0">Cake type:</span>
+                        {aiFillCake.notSaid ? (
+                          <span className="text-amber-700 dark:text-amber-300" data-testid="text-ai-fill-cake-not-said">
+                            not said — the form's cake type stays as it is
+                          </span>
+                        ) : (
+                          <span className="font-medium">{aiFillCake.type}</span>
+                        )}
+                      </div>
+                    )}
+                    <AiFillRow label="Cake notes" value={aiFillCake?.notes ?? null} />
+                    <AiFillRow label="Cake Time" value={aiFillCake?.time ?? null} />
                   </AiFillSection>
                 )}
 
-                {aiFillParsed?.partyDetails && (
+                {/* SCRUM-787: no empty Party Details box. */}
+                {aiFillPartyDetailsShown(aiFillParsed?.partyDetails) && (
                   <AiFillSection title="Party Details" icon={<Gift className="h-4 w-4" />}>
                     <AiFillRow label="POS" value={aiFillParsed.partyDetails.packageName} />
                     <AiFillRow label="Base Price" value={aiFillParsed.partyDetails.packageBasePrice ? `${aiFillParsed.partyDetails.packageBasePrice.toLocaleString()}฿` : null} />

@@ -88,7 +88,8 @@ export interface BeoAiReviewState {
   numAdults: Reviewed<number> | null;
   startTime: Reviewed<string> | null;
   endTime: Reviewed<string> | null;
-  cake: Reviewed<{ mode: BeoAiCakeMode; notes: string; time: string }> | null;
+  /** SCRUM-787: `mode` null is a cake whose type the chat does not say: the BEO keeps its own. */
+  cake: Reviewed<{ mode: BeoAiCakeMode | null; notes: string; time: string }> | null;
   deposit: Reviewed<{ amount: number; paid: boolean; date: string }> | null;
   /** SCRUM-814: the date the confirmation names beside the booked one; null when it names none. */
   date: AiFillDateLine | null;
@@ -358,13 +359,15 @@ export function approveBodyOf(
   }
   if (review.finalMessage) event.internalStaffNotes = review.finalMessage;
 
-  const cake = state.cake
+  const cakeDraft = state.cake
     ? {
         mode: state.cake.value.mode,
         notes: state.cake.value.notes.trim() || null,
         time: /^([01]\d|2[0-3]):[0-5]\d$/.test(state.cake.value.time) ? state.cake.value.time : null,
       }
     : null;
+  // SCRUM-787: a cake whose type is not said is sent for its time and notes only; with neither, nothing.
+  const cake = cakeDraft && (cakeDraft.mode || cakeDraft.notes || cakeDraft.time) ? cakeDraft : null;
   if (cake) note("cake", state.cake);
 
   const deposit =

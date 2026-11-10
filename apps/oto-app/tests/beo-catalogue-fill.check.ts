@@ -46,7 +46,10 @@
 //     same way (the Floresta package, Margherita, the Zombie game), read as a
 //     one-line conversation of the team's; it opens the same review and
 //     approves through the same route; a park with no catalogue, or a paste
-//     with no event, keeps the free-text review.
+//     with no event, keeps the free-text review;
+//   - SCRUM-787: a cake the conversation times without saying whose it is is
+//     proposed with no type, the review says so, and approving it writes the
+//     time and notes and keeps the BEO's own cake type.
 //
 // Run from apps/oto-app:
 //   DATABASE_URL=<migrated scratch> TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/beo-catalogue-fill.check.ts
@@ -98,7 +101,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 16;
+const CHECKS = 17;
 
 const run = randomUUID().slice(0, 8);
 const tenantA = randomUUID();
@@ -885,6 +888,33 @@ try {
       assert.ok(!modelCalls[at0]!.system.includes("THE PARK'S CATALOGUE") && !modelCalls[at0]!.system.includes("THE CONVERSATION"));
       assert.equal(plain.body.event.childName, "Петя");
     }
+  });
+
+  await check("aCakeWithNoOwnerKeepsTheBeosCakeType", async () => {
+    // SCRUM-787: the conversation times the cake but never says whose it is.
+    const catalogue = await loadBeoCatalogue(db, { tenantId: tenantA, branchId: park });
+    const proposal = resolveCatalogueAnswer({ cake: { mode: "NOT_SAID", notes: "торт", time: "16:00", line: 4 } }, catalogue, REFS);
+    assert.deepEqual(proposal.cake, { mode: null, notes: "торт", time: "16:00", from: { source: "team", at: at(3), line: 4 } });
+    const review: BeoAiReview = {
+      origin: "inbox", proposal, catalogue, finalMessage: null, ruling: { source: "team", at: at(3), line: 4 }, transcript: { lines: 4, cut: false },
+      replaces: [], parentSelection: null,
+    };
+    const state = initialReviewState(review);
+    const html = renderToStaticMarkup(React.createElement(BeoAiReviewBody, { review, state, onChange: () => undefined }));
+    assert.ok(html.includes('data-testid="text-ai-review-cake-not-said"'), "the cake line says who brings it is not said");
+    assert.ok(html.includes('value="16:00"'), "with its time");
+    // The BEO already has the family's own cake: approving a cake with no type keeps that type and writes the time and notes.
+    await q("insert into beo_kitchen_plans (event_id, cake_mode, cake_time) values ($1, 'EXTERNAL', '15:00')", [ev.junk]);
+    const body = approveBodyOf(review, state, { conversationId: null, messageId: null });
+    assert.deepEqual(body.cake, { mode: null, notes: "торт", time: "16:00" });
+    const res = await approve(ev.junk, body);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const [plan] = await q("select cake_mode, cake_time, cake_notes from beo_kitchen_plans where event_id = $1", [ev.junk]);
+    assert.deepEqual(plan, { cake_mode: "EXTERNAL", cake_time: "16:00", cake_notes: "торт" });
+    // A type the reviewer chooses is written, as before.
+    const chosen = approveBodyOf(review, { ...state, cake: { value: { mode: "INTERNAL", notes: "торт", time: "16:00" }, from: null, changed: true } }, { conversationId: null, messageId: null });
+    assert.equal((await approve(ev.junk, chosen)).status, 200);
+    assert.equal((await q("select cake_mode from beo_kitchen_plans where event_id = $1", [ev.junk]))[0]!.cake_mode, "INTERNAL");
   });
 
   await check("theTeamWinsForEveryList", async () => {

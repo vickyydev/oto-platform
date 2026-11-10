@@ -300,7 +300,8 @@ export async function approveBeoAiFill(
         setMenuTemplateId,
         menus: nextMenus,
         simplifiedMenus: { kids, adults },
-        ...(body.cake ? { cakeMode: body.cake.mode, cakeNotes: body.cake.notes, cakeTime: body.cake.time } : {}),
+        // SCRUM-787: a cake whose type the chat does not say keeps the BEO's own type.
+        ...(body.cake ? { ...(body.cake.mode ? { cakeMode: body.cake.mode } : {}), cakeNotes: body.cake.notes, cakeTime: body.cake.time } : {}),
         updatedAt: input.now,
       };
       if (plan) await tx.update(beoKitchenPlans).set(values).where(eq(beoKitchenPlans.id, plan.id));

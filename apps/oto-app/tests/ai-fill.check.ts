@@ -30,6 +30,11 @@
 //     the catalogue section with its ids and sources), so a format saved
 //     before those keys existed still gets them asked, and the answer's date
 //     still reaches the review.
+//   - SCRUM-787: a cake time with no word of whose cake it is: the answer may
+//     say NOT_SAID (or give no type), the preview's cake line says "not said",
+//     Load into Editor applies the time and notes and leaves the form's cake
+//     type; the catalogue review proposes the cake with no type and the
+//     approval sends none; an empty Party Details box is not shown.
 import assert from "node:assert/strict";
 import { z } from "zod";
 import {
@@ -64,6 +69,9 @@ import {
   type BeoCatalogue,
 } from "../server/lib/beoCatalogueFill";
 import { aiFillDateLine, dayLabel } from "../client/src/lib/beo-ai-date";
+import { aiFillCakeApply, aiFillCakeLine, aiFillPartyDetailsShown } from "../client/src/lib/beo-ai-preview";
+import { approveBodyOf, initialReviewState } from "../client/src/lib/beo-ai-review";
+import { BeoAiApproveBodySchema } from "../shared/beoAiFill";
 
 const results: Record<string, boolean> = {};
 const failures: Record<string, string> = {};
@@ -664,9 +672,61 @@ try {
     await beoRun(deps(builtIn.complete));
     assert.ok(builtIn.calls[0]!.system.includes(`${BUILT_IN_BEO_PARSING_OUTPUT_FORMAT}${requiredFieldsBlock(BeoFillSchema)}\n\nReturn ONLY`));
   });
+  await check("aCakeTimeWithNoOwnerLeavesTheCakeType", async () => {
+    // SCRUM-787: "the cake at 15:30" says when, not whose cake it is.
+    const message = "Подтверждаем день рождения Маши 21 марта в 14:00. Торт в 15:30. 15 детей.";
+    const model = stubModel(() => JSON.stringify({ kitchenPlan: { cakeTime: "15.30", cakeNotes: "Торт" }, partyDetails: {} }));
+    const run = await beoRun(deps(model.complete), message);
+    assert.equal(run.ok, true, JSON.stringify(run.ok ? null : run.reason));
+    const system = model.calls[0]!.system;
+    // The prompt lets the answer say so, and never guess it.
+    assert.ok(BUILT_IN_BEO_PARSING_ADVICE.includes("NOT_SAID when the message gives a cake time or cake details but does not say who brings the cake. Never guess who brings it"));
+    assert.ok(BUILT_IN_BEO_PARSING_OUTPUT_FORMAT.includes('"cakeMode": "INTERNAL | EXTERNAL | NONE | NOT_SAID"'));
+    assert.ok(system.includes('\n- kitchenPlan.cakeMode: one of "INTERNAL", "EXTERNAL", "NONE", "NOT_SAID"'), "the fields the app requires name NOT_SAID");
+    assert.ok(BEO_CATALOGUE_OUTPUT_FORMAT.includes('"mode": "INTERNAL | EXTERNAL | NONE | NOT_SAID"'));
+    assert.ok(beoCatalogueSystemBlock(CATALOGUE, { conversation: true }).includes("The cake's \"mode\" is NOT_SAID when the conversation gives a cake time"));
+    if (!run.ok) return;
+    // No type in the answer: the preview's cake line says "not said", and Load into Editor leaves the form's type.
+    assert.equal(run.value.kitchenPlan?.cakeMode, undefined);
+    assert.deepEqual(aiFillCakeLine(run.value.kitchenPlan), { type: null, notSaid: true, notes: "Торт", time: "15:30" });
+    assert.deepEqual(aiFillCakeApply(run.value.kitchenPlan), { notes: "Торт", time: "15:30" }, "the time and notes; no type, price or quantity");
+    // NOT_SAID in the answer reads the same.
+    const said = BeoFillSchema.parse({ kitchenPlan: { cakeMode: "not said", cakeTime: "15:30" } });
+    assert.equal(said.kitchenPlan?.cakeMode, "NOT_SAID");
+    assert.deepEqual(aiFillCakeLine(said.kitchenPlan), { type: null, notSaid: true, notes: null, time: "15:30" });
+    assert.deepEqual(aiFillCakeApply(said.kitchenPlan), { time: "15:30" });
+    // A type the message does say is shown and applied, as before; "No cake" alone is no line.
+    assert.deepEqual(aiFillCakeLine({ cakeMode: "EXTERNAL", cakeTime: "15:30" }), { type: "The family's own cake", notSaid: false, notes: null, time: "15:30" });
+    assert.deepEqual(aiFillCakeApply({ cakeMode: "EXTERNAL", cakeTime: "15:30", cakePrice: 200 }), { mode: "EXTERNAL", time: "15:30", included: true, price: 200 });
+    assert.equal(aiFillCakeLine({ cakeMode: "NONE" }), null);
+    assert.deepEqual(aiFillCakeApply({ cakeMode: "NONE", cakeTime: "15:30" }), {});
+    assert.equal(aiFillCakeLine({}), null, "no cake named: no line");
+    // A value that is no cake type is still refused, as before.
+    assert.equal(BeoFillSchema.safeParse({ kitchenPlan: { cakeMode: "MAYBE" } }).success, false);
+    // An empty Party Details box is not shown.
+    assert.equal(aiFillPartyDetailsShown(run.value.partyDetails), false, "the answer's empty Party Details");
+    assert.equal(aiFillPartyDetailsShown({ prepaymentReceived: 0, items: [], notes: " " }), false);
+    assert.equal(aiFillPartyDetailsShown(undefined), false);
+    assert.equal(aiFillPartyDetailsShown({ packageName: "Floresta" }), true);
+    assert.equal(aiFillPartyDetailsShown({ prepaymentReceived: 5000 }), true);
+    // The catalogue review: a cake with a time and no owner is proposed with no type; the approval sends no type.
+    const ruling = { source: "team" as const, at: null, line: null };
+    const proposal = resolveCatalogueAnswer({ cake: { mode: "NOT_SAID", time: "15:30", line: 1 } }, CATALOGUE, [], ruling);
+    assert.deepEqual(proposal.cake, { mode: null, notes: null, time: "15:30", from: ruling });
+    assert.deepEqual(resolveCatalogueAnswer({ cake: { time: "15.30" } }, CATALOGUE, [], ruling).cake?.mode, null, "no mode at all: the same");
+    assert.equal(resolveCatalogueAnswer({ cake: { mode: "internal" } }, CATALOGUE, [], ruling).cake?.mode, "INTERNAL");
+    assert.equal(resolveCatalogueAnswer({ cake: { line: 1 } }, CATALOGUE, [], ruling).cake, null, "nothing of a cake: no cake");
+    const review = {
+      origin: "pasted" as const, proposal, catalogue: CATALOGUE, finalMessage: null, ruling, transcript: { lines: 1, cut: false }, replaces: [], parentSelection: null,
+    };
+    const state = initialReviewState(review);
+    assert.deepEqual(state.cake?.value, { mode: null, notes: "", time: "15:30" });
+    assert.deepEqual(approveBodyOf(review, state, { conversationId: null, messageId: null }).cake, { mode: null, notes: null, time: "15:30" });
+    assert.equal(BeoAiApproveBodySchema.shape.cake.safeParse({ mode: null, notes: null, time: "15:30" }).success, true);
+  });
 } finally {
   // Nothing to clean: no database, no network.
 }
 
 console.log(JSON.stringify({ results, failures }, null, 2));
-if (Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 13) process.exit(1);
+if (Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 14) process.exit(1);

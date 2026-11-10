@@ -349,7 +349,7 @@ export const BEO_CATALOGUE_OUTPUT_FORMAT = `"catalogue": {
     "startTime": { "value": "HH:MM", "line": 0, "source": "team | family" },
     "endTime": { "value": "HH:MM", "line": 0, "source": "team | family" }
   },
-  "cake": { "mode": "INTERNAL | EXTERNAL | NONE", "notes": "the conversation's words", "time": "HH:MM", "line": 0, "source": "team | family" },
+  "cake": { "mode": "INTERNAL | EXTERNAL | NONE | NOT_SAID", "notes": "the conversation's words", "time": "HH:MM", "line": 0, "source": "team | family" },
   "deposit": { "amount": 0, "paid": true, "date": "YYYY-MM-DD", "line": 0, "source": "team | family" }
 }`;
 
@@ -376,6 +376,7 @@ Matching to the catalogue:
 - Keep the conversation's own wording and language in "said" and "itemName". Do not translate
 - Every entry carries "line": the number of the conversation line it comes from (for what the team confirmed, the team's line), and "source": "team" when that line is the team's, "family" when it is the family's
 - A deposit is "paid": true only when the conversation says it was received
+- The cake's "mode" is NOT_SAID when the conversation gives a cake time or cake details but does not say whether the park or the family brings the cake: never guess it
 
 Add this key at the top level of the JSON object, leaving out any entry the conversation does not speak to:
 ${BEO_CATALOGUE_OUTPUT_FORMAT}`
@@ -450,7 +451,11 @@ const SourcedText = z.object({ value: optStr(200), ...ref });
 const SourcedCount = z.object({ value: optInt(0), ...ref });
 const SourcedTime = z.object({ value: optTime, ...ref });
 const CakeAnswer = z.object({
-  mode: z.preprocess((v) => (typeof v === "string" ? v.trim().toUpperCase() : undefined), z.enum(BEO_AI_CAKE_MODES).optional()),
+  // SCRUM-787: NOT_SAID (who brings the cake is not said) is read as no type at all.
+  mode: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toUpperCase().replace(/[\s-]+/g, "_") : undefined),
+    z.enum(["INTERNAL", "EXTERNAL", "NONE", "NOT_SAID"] as const satisfies readonly [...typeof BEO_AI_CAKE_MODES, "NOT_SAID"]).optional(),
+  ),
   notes: optStr(1000).describe("the conversation's own words for the cake"),
   time: optTime,
   ...ref,
@@ -671,8 +676,13 @@ export function resolveCatalogueAnswer(
     if (v?.value) proposal.event[key] = { value: v.value, from: fromOf(v) };
   }
 
+  // SCRUM-787: a cake the conversation times or describes without saying who brings it
+  // is proposed with no type ("not said"): the BEO's cake type is left as it is.
   const cake = readOne(CakeAnswer, answer.cake);
-  if (cake?.mode) proposal.cake = { mode: cake.mode, notes: cake.notes ?? null, time: cake.time ?? null, from: fromOf(cake) };
+  const cakeMode = cake?.mode && cake.mode !== "NOT_SAID" ? cake.mode : null;
+  if (cake && (cakeMode || cake.time || cake.notes)) {
+    proposal.cake = { mode: cakeMode, notes: cake.notes ?? null, time: cake.time ?? null, from: fromOf(cake) };
+  }
 
   const deposit = readOne(DepositAnswer, answer.deposit);
   if (deposit && deposit.amount !== undefined && deposit.amount > 0) {

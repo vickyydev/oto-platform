@@ -410,13 +410,12 @@ export function BeoAiReviewBody({
           <select
             className={SELECT}
             value={state.cake?.value.mode ?? ""}
-            onChange={(e) =>
-              set({
-                cake: e.target.value
-                  ? edited(state.cake, { notes: "", time: "", ...state.cake?.value, mode: e.target.value as BeoAiCakeMode })
-                  : null,
-              })
-            }
+            onChange={(e) => {
+              const mode = (e.target.value || null) as BeoAiCakeMode | null;
+              // SCRUM-787: "Not said" keeps the cake's time and notes, with the BEO's own type.
+              const keep = state.cake && (state.cake.value.time || state.cake.value.notes);
+              set({ cake: mode || keep ? edited(state.cake, { notes: "", time: "", ...state.cake?.value, mode }) : null });
+            }}
             data-testid="select-ai-review-cake"
           >
             <option value="">Not said</option>
@@ -424,6 +423,11 @@ export function BeoAiReviewBody({
               <option key={m} value={m}>{CAKE_LABEL[m]}</option>
             ))}
           </select>
+          {state.cake && !state.cake.value.mode && (
+            <span className="text-xs text-amber-700 dark:text-amber-300" data-testid="text-ai-review-cake-not-said">
+              Not said who brings the cake: the BEO keeps its own cake type.
+            </span>
+          )}
           {state.cake && (
             <>
               <Input
