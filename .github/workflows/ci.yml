@@ -890,11 +890,14 @@ jobs:
       # is now (a later line winning the counts and the cake) with the chat's
       # newest line marked; the activity row names the press and carries no
       # text; the diff lists a typed value as a change to accept, never
-      # overwrites it, never empties a field, offers whose cake only when said;
-      # a declined change is held back until the chat moves; nothing written.
-      # Then the dialog under jsdom: the warning first, the list with accept
-      # and decline per row and for all, Apply landing only the accepted,
-      # the declined remembered and said on the next fetch, a failed read.
+      # overwrites it, never empties a field, offers whose cake only when said,
+      # never a deposit only asked for as received; what the chat says of the
+      # package, set menu, food and entertainment that the BEO lacks is listed
+      # to read, never swallowed; a declined change is held back until the
+      # chat moves; nothing written. Then the dialog under jsdom: the warning
+      # first, the list with accept and decline per row and for all, Apply
+      # landing only the accepted, the declined remembered and said on the
+      # next fetch, a failed read, the catalogue section listed without accept.
       - name: The app's fetch-from-chat checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/fetch-from-chat.check.ts

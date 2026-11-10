@@ -76,7 +76,7 @@ import {
 import { BeoTimelineEditor } from "./beo-timeline-editor";
 import { BeoAiReviewDialog, type BeoAiPending } from "./beo-ai-review";
 import { BeoFetchFromChatDialog } from "./beo-fetch-from-chat";
-import { NO_DECLINED, type DeclinedChanges, type FetchAnswer, type FetchFormValues } from "@/lib/beo-fetch-from-chat";
+import { NO_DECLINED, type DeclinedChanges, type FetchAnswer, type FetchFormValues, type FetchHeldCatalogue } from "@/lib/beo-fetch-from-chat";
 import { aiFillCakeApply, aiFillCakeLine, aiFillCakeNotSaidNote, aiFillPartyDetailsShown } from "@/lib/beo-ai-preview";
 import { CakeUnderNoCake } from "./beo-cake-under-no-cake";
 import { APPROVAL_WRITES } from "@/lib/beo-ai-review";
@@ -1413,13 +1413,30 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   /**
    * SCRUM-826: the conversation read again, as it is now, through the same
    * fill as Create BEO's (the server reads it as this person); the answer is
-   * diffed against the form in the dialog and nothing lands but what is accepted.
+   * diffed against the form in the dialog and nothing lands but what is
+   * accepted. The catalogue section the BEO holds — the applied package and
+   * the entertainment selections (saved in their own sections, not by this
+   * form's Save), the set menu and the food lines as the form holds them — is
+   * read with it, so the dialog can list what the chat says there too.
    */
   const readChatForFetch = async (): Promise<FetchAnswer> => {
-    const res = await apiRequest("POST", `/api/events/${eventId}/beo/ai-fill/inbox`, { existingData: buildAiFillExistingData(), purpose: "fetch" });
+    const [res, snapshotRes, selectionsRes] = await Promise.all([
+      apiRequest("POST", `/api/events/${eventId}/beo/ai-fill/inbox`, { existingData: buildAiFillExistingData(), purpose: "fetch" }),
+      apiRequest("GET", `/api/beo/events/${eventId}/package-snapshot`),
+      apiRequest("GET", `/api/beo/events/${eventId}/entertainment-selections`),
+    ]);
     const body = await res.json();
     if (!body?.fill) throw new Error("The conversation could not be read: the answer could not be read.");
-    return { fill: body.fill, review: body.review ?? null, chatMark: body.chat?.newestMessageId ?? body.source?.messageId ?? null };
+    const snapshot = (await snapshotRes.json()) as { templateId?: string | null; packageName?: string; items?: Array<{ label?: string }> } | null;
+    const selections = (await selectionsRes.json()) as Array<{ templateId?: string | null; name?: string }>;
+    const held: FetchHeldCatalogue = {
+      package: snapshot ? { templateId: snapshot.templateId ?? null, name: snapshot.packageName ?? "" } : null,
+      packageItems: (snapshot?.items ?? []).map((i) => i.label ?? "").filter(Boolean),
+      setMenuTemplateId: setMenuTemplateId || null,
+      menuLines: [...kidsMenu, ...adultsMenu, ...barItems].map((m) => ({ itemName: m.itemName, quantity: m.quantity, productCode: m.productCode ?? null, groupId: m.groupId ?? null })),
+      entertainment: (Array.isArray(selections) ? selections : []).map((s) => ({ templateId: s.templateId ?? null, name: s.name ?? "" })),
+    };
+    return { fill: body.fill, review: body.review ?? null, chatMark: body.chat?.newestMessageId ?? body.source?.messageId ?? null, held };
   };
 
   /** SCRUM-826: the accepted changes into the form, as any edit — unsaved until Save. */

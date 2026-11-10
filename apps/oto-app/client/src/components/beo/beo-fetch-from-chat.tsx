@@ -6,14 +6,18 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
   applyFetchChanges,
+  CATALOGUE_CHANGES_LINE,
+  catalogueChangesCount,
   changeKey,
   changesCount,
+  fetchCatalogueChangesOf,
   fetchChangesOf,
   nothingNewLine,
   offeredChanges,
   rememberDeclined,
   type DeclinedChanges,
   type FetchAnswer,
+  type FetchCatalogueChange,
   type FetchChange,
   type FetchFormValues,
 } from "@/lib/beo-fetch-from-chat";
@@ -29,14 +33,20 @@ import { SourceMark } from "./beo-ai-review";
  * (accept all, decline all). Apply puts the accepted ones in the form,
  * unsaved until the form's own Save; the declined ones are remembered so the
  * same change is not offered again until the chat changes; a row left
- * undecided is neither. A fetch that finds nothing new says so. The rules
- * are `lib/beo-fetch-from-chat.ts`'s.
+ * undecided is neither. What the chat says of the package, the set menu, the
+ * food and the entertainment is listed too, to read: those are chosen in
+ * their own sections, never applied here. A fetch that finds nothing new
+ * anywhere says so. The rules are `lib/beo-fetch-from-chat.ts`'s.
  */
 
 export const FETCH_WARNING =
   "This reads the conversation again, as it is now, and may change details typed in this form. Every change is listed first: nothing is changed until you accept it, and what you accept is saved only when you press Save.";
 
-type Step = { kind: "warn" } | { kind: "reading" } | { kind: "error"; message: string } | { kind: "review"; changes: FetchChange[]; held: number; chatMark: string | null };
+type Step =
+  | { kind: "warn" }
+  | { kind: "reading" }
+  | { kind: "error"; message: string }
+  | { kind: "review"; changes: FetchChange[]; catalogue: FetchCatalogueChange[]; held: number; chatMark: string | null };
 type Decision = "accept" | "decline";
 
 export function BeoFetchFromChatDialog({
@@ -80,10 +90,12 @@ export function BeoFetchFromChatDialog({
       setStep({ kind: "error", message });
       return;
     }
-    const all = fetchChangesOf(answer, form());
+    const now = form();
+    const all = fetchChangesOf(answer, now);
     const { offered, held } = offeredChanges(all, declined, answer.chatMark);
+    const catalogue = fetchCatalogueChangesOf(answer.review, answer.held, now);
     setDecisions({});
-    setStep({ kind: "review", changes: offered, held, chatMark: answer.chatMark });
+    setStep({ kind: "review", changes: offered, catalogue, held, chatMark: answer.chatMark });
   };
 
   const decideAll = (decision: Decision) => {
@@ -110,6 +122,7 @@ export function BeoFetchFromChatDialog({
 
   const busy = step.kind === "reading";
   const accepted = step.kind === "review" ? step.changes.filter((c) => decisions[changeKey(c)] === "accept").length : 0;
+  const nothingNew = step.kind === "review" && step.changes.length === 0 && step.catalogue.length === 0;
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
@@ -122,7 +135,7 @@ export function BeoFetchFromChatDialog({
           <DialogDescription>
             {step.kind === "review" && step.changes.length > 0
               ? "What the chat says now, beside what this form holds. Accept what should change; a declined change is not offered again until the chat changes."
-              : "The conversation this birthday was booked from, read again as it is now."}
+              : "The conversation this birthday was booked from, read again as it is now: the details typed in this form to accept or decline, and what the chat says of the package, menu and entertainment to read."}
           </DialogDescription>
         </DialogHeader>
 
@@ -149,29 +162,39 @@ export function BeoFetchFromChatDialog({
           </p>
         )}
 
-        {step.kind === "review" && step.changes.length === 0 && (
+        {nothingNew && (
           <p className="text-sm text-muted-foreground" data-testid="text-fetch-same">
-            {nothingNewLine(step.held)}
+            {nothingNewLine(step.kind === "review" ? step.held : 0)}
           </p>
         )}
 
-        {step.kind === "review" && step.changes.length > 0 && (
+        {step.kind === "review" && step.changes.length === 0 && step.catalogue.length > 0 && (
+          <p className="text-sm text-muted-foreground" data-testid="text-fetch-no-field">
+            {step.held === 0
+              ? "No detail typed in this form reads differently in the chat."
+              : `No detail typed in this form reads differently in the chat. ${step.held} change${step.held === 1 ? "" : "s"} you declined earlier ${step.held === 1 ? "is" : "are"} not offered again until the chat changes.`}
+          </p>
+        )}
+
+        {step.kind === "review" && (step.changes.length > 0 || step.catalogue.length > 0) && (
           <div className="flex-1 min-h-0 flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <span className="text-sm font-medium" data-testid="text-fetch-count">
-                {changesCount(step.changes.length)}
-              </span>
-              <span className="inline-flex gap-1">
-                <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => decideAll("accept")} data-testid="button-fetch-accept-all">
-                  <Check className="h-3.5 w-3.5 mr-1" />
-                  Accept all
-                </Button>
-                <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => decideAll("decline")} data-testid="button-fetch-decline-all">
-                  <X className="h-3.5 w-3.5 mr-1" />
-                  Decline all
-                </Button>
-              </span>
-            </div>
+            {step.changes.length > 0 && (
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-sm font-medium" data-testid="text-fetch-count">
+                  {changesCount(step.changes.length)}
+                </span>
+                <span className="inline-flex gap-1">
+                  <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => decideAll("accept")} data-testid="button-fetch-accept-all">
+                    <Check className="h-3.5 w-3.5 mr-1" />
+                    Accept all
+                  </Button>
+                  <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => decideAll("decline")} data-testid="button-fetch-decline-all">
+                    <X className="h-3.5 w-3.5 mr-1" />
+                    Decline all
+                  </Button>
+                </span>
+              </div>
+            )}
             <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
               {step.changes.map((c) => {
                 const key = changeKey(c);
@@ -220,8 +243,34 @@ export function BeoFetchFromChatDialog({
                   </div>
                 );
               })}
+              {/* The catalogue section: what the chat says there, to read — a fetch applies none of it. */}
+              {step.catalogue.length > 0 && (
+                <div className={cn("space-y-1.5", step.changes.length > 0 && "pt-2")} data-testid="fetch-catalogue">
+                  <p className="text-sm font-medium" data-testid="text-fetch-catalogue-count">
+                    {catalogueChangesCount(step.catalogue.length)}
+                  </p>
+                  {step.catalogue.map((c, i) => (
+                    <div
+                      key={`${c.section}-${i}`}
+                      className="flex items-center gap-2 text-sm flex-wrap rounded-md border border-dashed p-2"
+                      data-testid={`fetch-catalogue-${c.section}`}
+                    >
+                      <span className="text-muted-foreground w-28 shrink-0">{c.label}:</span>
+                      <span className="flex-1 min-w-[10rem] flex items-center gap-1.5 flex-wrap">
+                        <span className="line-through text-muted-foreground" data-testid="text-fetch-was">{c.was}</span>
+                        <span aria-hidden="true">→</span>
+                        <span className="font-medium" data-testid="text-fetch-now">{c.now}</span>
+                        <SourceMark field={{ from: c.from, changed: false }} />
+                      </span>
+                    </div>
+                  ))}
+                  <p className="text-xs text-muted-foreground" data-testid="text-fetch-catalogue-line">
+                    {CATALOGUE_CHANGES_LINE}
+                  </p>
+                </div>
+              )}
             </div>
-            {step.held > 0 && (
+            {step.changes.length > 0 && step.held > 0 && (
               <p className="text-xs text-muted-foreground" data-testid="text-fetch-held">
                 {`${step.held} change${step.held === 1 ? "" : "s"} you declined earlier ${step.held === 1 ? "is" : "are"} not offered again until the chat changes.`}
               </p>
@@ -253,6 +302,7 @@ export function BeoFetchFromChatDialog({
             </>
           )}
           {step.kind === "review" && step.changes.length === 0 && (
+            // Nothing to accept: a catalogue change, when listed, is read here and chosen in its section.
             <Button type="button" variant="outline" onClick={onClose} data-testid="button-fetch-cancel">
               Close
             </Button>

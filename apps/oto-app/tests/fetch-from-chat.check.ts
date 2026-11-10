@@ -19,6 +19,9 @@
 //     nothing and no field is ever offered emptied; the date as one row;
 //     whose cake only when said; "no cake" never over a cake; a deposit the
 //     chat only asks for is never offered as received;
+//   - the catalogue section: a package, add-on, set menu or choice, food line,
+//     entertainment or free line the chat names that the BEO lacks is LISTED
+//     (never swallowed), to read; what the BEO holds is not;
 //   - a declined change is held back on the same chat and offered again once
 //     the chat's newest line moves; the accepted ones are a patch of the form.
 //
@@ -45,8 +48,10 @@ const { registerAIRoutes } = await import("../server/ai-routes");
 const { pool: appDbPool } = await import("../server/db");
 const {
   applyFetchChanges,
+  catalogueChangesCount,
   changeKey,
   changesCount,
+  fetchCatalogueChangesOf,
   fetchChangesOf,
   nothingNewLine,
   NO_DECLINED,
@@ -54,6 +59,8 @@ const {
   rememberDeclined,
 } = await import("../client/src/lib/beo-fetch-from-chat");
 type FetchFormValues = import("../client/src/lib/beo-fetch-from-chat").FetchFormValues;
+type FetchHeldCatalogue = import("../client/src/lib/beo-fetch-from-chat").FetchHeldCatalogue;
+type BeoAiReview = import("../shared/beoAiFill").BeoAiReview;
 type InboxRead = Awaited<ReturnType<typeof import("../server/lib/inboxConfirmation").readInboxConfirmation>>;
 type AiCompleteOptions = import("../server/lib/anthropic").AiCompleteOptions;
 type ActivityLogInput = import("../server/storage").ActivityLogInput;
@@ -339,6 +346,92 @@ try {
     // A chat that names no deposit at all: the fill's prepayment (received by name) still counts.
     const fillOnly = fetchChangesOf({ fill: { partyDetails: { prepaymentReceived: 5000 } }, review: { ...fetched.review, proposal: { ...fetched.review.proposal, deposit: null } } }, form);
     assert.deepEqual(fillOnly.map((c) => c.field), ["prepaymentReceived"]);
+  });
+
+  await check("the catalogue section: a package, add-on, set menu, choice, food line, entertainment and free line the chat names that the BEO lacks are listed, never swallowed; what it holds is not", () => {
+    const pkg = CATALOGUE.packages[0]!;
+    const addOn = "a1a1a1a1-0000-4000-8000-000000000001";
+    const setMenu = "b2b2b2b2-0000-4000-8000-000000000002";
+    const group = "c3c3c3c3-0000-4000-8000-000000000003";
+    const magician = "d4d4d4d4-0000-4000-8000-000000000004";
+    const family = { source: "family" as const, at: null, line: 3 };
+    const team = { source: "team" as const, at: null, line: 4 };
+    const review: BeoAiReview = {
+      ...fetched.review,
+      catalogue: {
+        packages: [{ ...pkg, lines: [{ id: addOn, label: "Extra hour", category: "time", included: false, qtyDefault: 1, unitLabel: null, unitPrice: 150000, priceIsFrom: false }] }],
+        setMenus: [{ id: setMenu, name: "ZZ TEST Kids set", items: [{ id: group, type: "choice_group", label: "Main", options: ["Chicken nuggets", "Fish fingers"], allowMultiple: false, productCode: null, optionProductCodes: {}, qty: null }] }],
+        entertainment: [{ id: magician, name: "ZZ TEST Magician", category: null, durationMinutes: 30, price: 350000, unit: null, priceIsFrom: false }],
+        food: [{ code: "PZ-MARG", names: ["Margherita"] }],
+      },
+      proposal: {
+        ...fetched.review.proposal,
+        package: { templateId: pkg.id, said: "Floresta", chatPrice: null, from: team },
+        addOns: [{ lineId: addOn, quantity: 1, said: "one more hour", chatPrice: null, from: family }],
+        setMenu: { templateId: setMenu, from: team, choices: [{ itemId: group, option: "Fish fingers", said: "fish fingers please", from: family }] },
+        menuLines: [
+          { menu: "adults", itemName: "margherita pizza", quantity: 2, productCode: "PZ-MARG", matchedName: "Margherita", notInMenu: false, chatPrice: null, from: family },
+          { menu: "bar", itemName: "Som tam", quantity: 3, productCode: null, matchedName: null, notInMenu: true, chatPrice: null, from: family },
+        ],
+        entertainment: [{ templateId: magician, name: "ZZ TEST Magician", said: "a magician", quantity: 1, chatPrice: null, notInCatalogue: false, from: team }],
+        otherLines: [{ text: "a piñata", chatPrice: null, from: family }],
+      },
+    };
+    const none: FetchHeldCatalogue = { package: null, packageItems: [], setMenuTemplateId: null, menuLines: [], entertainment: [] };
+    const listed = fetchCatalogueChangesOf(review, none, FORM);
+    assert.deepEqual(
+      listed.map((c) => [c.section, c.label, c.was, c.now, c.from?.source]),
+      [
+        ["package", "Package", "—", "ZZ TEST Floresta", "team"],
+        ["addOn", "Add-on", "—", "Extra hour", "family"],
+        ["setMenu", "Set menu", "—", "ZZ TEST Kids set", "team"],
+        ["choice", "Set menu · Main", "—", "Fish fingers", "family"],
+        ["food", "Adults menu", "—", "Margherita × 2", "family"],
+        ["food", "Bar", "—", "Som tam × 3 (not on the menu)", "family"],
+        ["entertainment", "Entertainment", "—", "ZZ TEST Magician", "team"],
+        ["other", "Also asked", "—", "a piñata", "family"],
+      ],
+    );
+    assert.equal(catalogueChangesCount(listed.length), "8 changes to the package, menu or entertainment");
+    assert.equal(catalogueChangesCount(1), "1 change to the package, menu or entertainment");
+    // The BEO holds all of it (as an approval left it): nothing is listed.
+    const all: FetchHeldCatalogue = {
+      package: { templateId: pkg.id, name: "ZZ TEST Floresta" },
+      packageItems: ["Extra hour"],
+      setMenuTemplateId: setMenu,
+      menuLines: [
+        { itemName: "Fish fingers", quantity: 1, productCode: null, groupId: group },
+        { itemName: "Margherita", quantity: 2, productCode: "pz-marg", groupId: null },
+        { itemName: "som tam", quantity: 3, productCode: null, groupId: null },
+      ],
+      entertainment: [{ templateId: magician, name: "ZZ TEST Magician" }],
+    };
+    assert.deepEqual(fetchCatalogueChangesOf(review, all, { specialRequests: "No nuts.\na piñata" }), []);
+    // The BEO holds another package, another set menu, the other choice and the pizza at another quantity: each a row with what it holds.
+    const other: FetchHeldCatalogue = {
+      ...all,
+      package: { templateId: randomUUID(), name: "ZZ TEST Jungle" },
+      packageItems: [],
+      setMenuTemplateId: randomUUID(),
+      menuLines: [
+        { itemName: "Chicken nuggets", quantity: 1, productCode: null, groupId: group },
+        { itemName: "Margherita", quantity: 1, productCode: "PZ-MARG", groupId: null },
+        { itemName: "Som tam", quantity: 3, productCode: null, groupId: null },
+      ],
+    };
+    assert.deepEqual(
+      fetchCatalogueChangesOf(review, other, { specialRequests: "a piñata" }).map((c) => [c.section, c.was, c.now]),
+      [
+        ["package", "ZZ TEST Jungle", "ZZ TEST Floresta"],
+        ["addOn", "—", "Extra hour"],
+        ["setMenu", "another set menu", "ZZ TEST Kids set"],
+        ["choice", "Chicken nuggets", "Fish fingers"],
+        ["food", "Margherita", "Margherita × 2"],
+      ],
+    );
+    // No catalogue read (an older platform, no review): nothing to list; the whole chat's own proposal names nothing: nothing either.
+    assert.deepEqual(fetchCatalogueChangesOf(null, none, FORM), []);
+    assert.deepEqual(fetchCatalogueChangesOf(fetched.review, none, FORM), []);
   });
 
   await check("nothing is written by a fetch: no BEO row for the event", async () => {

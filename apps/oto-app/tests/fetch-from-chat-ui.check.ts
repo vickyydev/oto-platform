@@ -16,7 +16,10 @@
 //      are held back and said so; once the chat's newest line moves they are
 //      offered again;
 //   4. a fetch that finds nothing new says so; a read that fails says why and
-//      offers to try again; Cancel applies and remembers nothing.
+//      offers to try again; Cancel applies and remembers nothing;
+//   5. what the chat says of the package, set menu, food and entertainment
+//      that the BEO lacks is listed to read, with no accept or decline and a
+//      line saying where it is chosen; it is never called "the same".
 //
 // Run from apps/oto-app:
 //   TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/fetch-from-chat-ui.check.ts
@@ -83,24 +86,26 @@ const { React, act, createRoot, BeoFetchFromChatDialog, FETCH_WARNING, NO_DECLIN
 type FetchFormValues = import("../client/src/lib/beo-fetch-from-chat").FetchFormValues;
 type DeclinedChanges = import("../client/src/lib/beo-fetch-from-chat").DeclinedChanges;
 type FetchAnswer = import("../client/src/lib/beo-fetch-from-chat").FetchAnswer;
+type ProposedEntertainment = import("../shared/beoAiFill").BeoAiProposal["entertainment"];
 
 // ─── The chat's reading, as the server answers it ───────────────────────────
 
 const LINE_4 = "44444444-4444-4444-8444-444444444444";
 const LINE_5 = "55555555-5555-4555-8555-555555555555";
+const MAGICIAN = "d4d4d4d4-0000-4000-8000-000000000004";
 const from = (line: number) => ({ source: "team" as const, at: `2026-11-02T0${line}:00:00.000Z`, line });
-/** 6 adults and the cake at 16:00, the team's lines 4; the rest as booked. */
-const answerAt = (chatMark: string, adults = 6, cakeTime = "16:00"): FetchAnswer => ({
+/** 6 adults and the cake at 16:00, the team's lines 4; the rest as booked; the BEO holds no catalogue section. */
+const answerAt = (chatMark: string, adults = 6, cakeTime = "16:00", entertainment: ProposedEntertainment = []): FetchAnswer => ({
   fill: { event: { title: "ZZ TEST Emma 826", numChildren: 12, numAdults: 4, startTime: "14:00", eventDate: "2026-11-21" }, kitchenPlan: { cakeTime: "15:30" } },
   review: {
     origin: "inbox",
     proposal: {
-      package: null, addOns: [], setMenu: null, menuLines: [], entertainment: [], otherLines: [],
+      package: null, addOns: [], setMenu: null, menuLines: [], entertainment, otherLines: [],
       event: { numChildren: { value: 12, from: from(2) }, numAdults: { value: adults, from: from(4) }, startTime: { value: "14:00", from: from(2) } },
       cake: { mode: null, notes: null, time: cakeTime, from: from(4) },
       deposit: null,
     },
-    catalogue: { packages: [], setMenus: [], entertainment: [], food: [] },
+    catalogue: { packages: [], setMenus: [], entertainment: [{ id: MAGICIAN, name: "ZZ TEST Magician", category: null, durationMinutes: 30, price: 350000, unit: null, priceIsFrom: false }], food: [] },
     finalMessage: null,
     ruling: from(2),
     transcript: { lines: 4, cut: false },
@@ -108,7 +113,10 @@ const answerAt = (chatMark: string, adults = 6, cakeTime = "16:00"): FetchAnswer
     parentSelection: null,
   },
   chatMark,
+  held: { package: null, packageItems: [], setMenuTemplateId: null, menuLines: [], entertainment: [] },
 });
+/** "please add the magician", the team's line 5: an entertainment line the BEO lacks. */
+const WITH_MAGICIAN: ProposedEntertainment = [{ templateId: MAGICIAN, name: "ZZ TEST Magician", said: "the magician", quantity: 1, chatPrice: null, notInCatalogue: false, from: from(5) }];
 
 /** The form as the person left it: 5 adults typed over the booked 4. */
 const current: FetchFormValues = {
@@ -282,14 +290,59 @@ await check("a read that fails says why and offers to try again; nothing new at 
   assert.deepEqual(applied, []);
 });
 
+await check("the chat names a magician the BEO lacks: listed to read beside the adults, with no accept or decline, and where it is chosen; alone, it is never called the same", async () => {
+  // "6 adults and please add the magician": the adults a change to accept, the magician a catalogue change to read.
+  answer = () => Promise.resolve(answerAt(LINE_5, 9, "16:00", WITH_MAGICIAN));
+  await openDialog();
+  await click("button-fetch-read");
+  assert.equal(text("text-fetch-count"), "1 change from the chat");
+  assert.ok(row("numAdults"));
+  assert.equal(text("text-fetch-catalogue-count"), "1 change to the package, menu or entertainment");
+  const magician = required("fetch-catalogue-entertainment");
+  assert.equal(text("text-fetch-was", magician), "—");
+  assert.equal(text("text-fetch-now", magician), "ZZ TEST Magician");
+  assert.equal(text("ai-review-source", magician), "from the team");
+  assert.equal(byTestId("button-fetch-accept", magician), null, "nothing to accept: it is read here, chosen in its section");
+  assert.equal(byTestId("button-fetch-decline", magician), null);
+  assert.match(text("text-fetch-catalogue-line") ?? "", /not applied here/);
+  assert.equal(byTestId("text-fetch-same"), null);
+  await click("button-fetch-accept-all");
+  await click("button-fetch-apply");
+  assert.deepEqual(applied, [{ numAdults: 9 }], "Accept all takes the field changes only");
+  assert.equal(closed, 1);
+
+  // The chat's only new line is the magician: no field differs, and the dialog says so rather than "reads the same".
+  await openDialog();
+  await click("button-fetch-read");
+  assert.equal(byTestId("text-fetch-count"), null);
+  assert.equal(byTestId("text-fetch-same"), null, "a catalogue change is never swallowed as the same");
+  assert.equal(text("text-fetch-no-field"), "No detail typed in this form reads differently in the chat.");
+  assert.ok(required("fetch-catalogue-entertainment"));
+  assert.equal(byTestId("button-fetch-apply"), null);
+  await click("button-fetch-cancel");
+  assert.deepEqual(applied, []);
+  assert.deepEqual(remembered, []);
+
+  // The BEO holds the magician (chosen in its section): nothing listed, and now the chat reads the same.
+  const held = answerAt(LINE_5, 9, "16:00", WITH_MAGICIAN);
+  held.held = { ...held.held, entertainment: [{ templateId: MAGICIAN, name: "ZZ TEST Magician" }] };
+  answer = () => Promise.resolve(held);
+  await openDialog();
+  await click("button-fetch-read");
+  assert.equal(byTestId("fetch-catalogue"), null);
+  assert.equal(text("text-fetch-same"), "The chat reads the same as the form.");
+  await click("button-fetch-cancel");
+});
+
 await check("the editor mounts the dialog with its own form, read, memory and apply, behind a Fetch from chat button shown for a BEO from the inbox", () => {
   const editor = readFileSync(APP + "client/src/components/beo/beo-event-editor.tsx", "utf8");
   assert.match(editor, /data-testid="button-fetch-from-chat"/);
   assert.match(editor, /beoData\.inboxConversationId && \(\s*<Button[\s\S]*?Fetch from chat/);
   assert.match(editor, /<BeoFetchFromChatDialog[\s\S]*?form=\{fetchFormValues\}[\s\S]*?read=\{readChatForFetch\}[\s\S]*?declined=\{fetchDeclined\}[\s\S]*?onDeclined=\{setFetchDeclined\}[\s\S]*?onApply=\{applyFetched\}/);
   assert.match(editor, /purpose: "fetch"/, "the read asks the inbox fill as a fetch");
+  assert.match(editor, /readChatForFetch = async[\s\S]*?package-snapshot[\s\S]*?entertainment-selections[\s\S]*?held/, "the catalogue section the BEO holds is read with the chat");
 });
 
 await act(async () => { root.unmount(); });
 console.log(`fetch-from-chat-ui.check: ${checks} checks passed`);
-process.exit(checks === 8 ? 0 : 1);
+process.exit(checks === 9 ? 0 : 1);

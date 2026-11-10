@@ -1,4 +1,4 @@
-import type { BeoAiFrom, BeoAiReview } from "@shared/beoAiFill";
+import type { BeoAiFrom, BeoAiMenu, BeoAiReview } from "@shared/beoAiFill";
 import { aiFillDateLine, dayLabel } from "./beo-ai-date";
 import { AI_FILL_CAKE_TYPE } from "./beo-ai-preview";
 import { thb } from "./beo-ai-review";
@@ -20,9 +20,14 @@ import { thb } from "./beo-ai-review";
  * from the WHOLE conversation with each value's source. The diff takes the
  * counts, the times, the child, the cake and the deposit from that proposal
  * (the whole chat, a later line winning) and the rest of the form's own text
- * fields from the fill; it covers the fields the form types — never the
- * package, the set menu, the entertainment or a food list, which Create BEO's
- * review and approval write. Pure, so the app's check holds it.
+ * fields from the fill; those are the fields the form types, and the only
+ * ones a fetch applies. The catalogue section — the package and its add-ons,
+ * the set menu and its choices, the food lines, the entertainment, a line the
+ * catalogue lacks — is what Create BEO's review and approval write: a fetch
+ * LISTS what the chat says there against what the BEO holds
+ * (`fetchCatalogueChangesOf`), to read, and applies none of it, so the list
+ * is every change the chat brings and "reads the same" is true when said.
+ * Pure, so the app's check holds it.
  */
 
 /** What the form holds now, in the fields a fetch knows. */
@@ -69,12 +74,46 @@ export interface FetchChange {
   said: string | null;
 }
 
+/**
+ * The catalogue section the BEO holds — the applied package (its snapshot)
+ * and the labels of its lines, the kitchen plan's set menu, the kitchen
+ * plan's and the bar's lines, the entertainment selections — read by the
+ * editor when the chat is, so the fetch can list what the chat says there.
+ */
+export interface FetchHeldCatalogue {
+  /** The applied package, by its template and name; null when none. */
+  package: { templateId: string | null; name: string } | null;
+  /** The applied package's lines' labels, its add-ons among them. */
+  packageItems: string[];
+  setMenuTemplateId: string | null;
+  /** The kitchen plan's and the bar's lines; a set menu's chosen option carries its group's id. */
+  menuLines: Array<{ itemName: string; quantity: number; productCode: string | null; groupId: string | null }>;
+  entertainment: Array<{ templateId: string | null; name: string }>;
+}
+
 /** What the fill answered, as the dialog reads it. */
 export interface FetchAnswer {
   fill: unknown;
   review: BeoAiReview | null;
   /** The chat's newest line when it was read; the declined memory is keyed by it. */
   chatMark: string | null;
+  /** The catalogue section as the BEO holds it at the read. */
+  held: FetchHeldCatalogue;
+}
+
+/**
+ * A change the chat brings to the catalogue section, listed to read: the
+ * fetch applies none of these (the package, set menu, food and entertainment
+ * are chosen in their own sections, or through AI Fill's review).
+ */
+export interface FetchCatalogueChange {
+  section: "package" | "addOn" | "setMenu" | "choice" | "food" | "entertainment" | "other";
+  label: string;
+  /** What the BEO holds, as a person reads it ("—" when nothing). */
+  was: string;
+  /** What the chat says. */
+  now: string;
+  from: BeoAiFrom | null;
 }
 
 export const FETCH_LABELS: Record<FetchField, string> = {
@@ -217,6 +256,81 @@ export function fetchChangesOf(answer: Pick<FetchAnswer, "fill" | "review">, for
 
   return changes.sort((a, b) => FIELD_ORDER.indexOf(a.field) - FIELD_ORDER.indexOf(b.field));
 }
+
+const sameName = (a: string, b: string) => a.normalize("NFC").trim().toLowerCase() === b.normalize("NFC").trim().toLowerCase();
+const withQty = (name: string, quantity: number) => (quantity > 1 ? `${name} × ${quantity}` : name);
+const MENU_LABEL: Record<BeoAiMenu, string> = { kids: "Kids menu", adults: "Adults menu", bar: "Bar" };
+
+/**
+ * Every change the chat brings to the catalogue section, against what the
+ * BEO holds: a package other than the applied one, an add-on its lines lack,
+ * another set menu or a choice not chosen, a food or drink line the lists
+ * lack (or hold at another quantity), entertainment not selected, and a line
+ * the catalogue lacks that Special Requests does not carry (the approval
+ * keeps those there). Listed to read; nothing here is applied by a fetch.
+ */
+export function fetchCatalogueChangesOf(review: BeoAiReview | null, held: FetchHeldCatalogue, form: Pick<FetchFormValues, "specialRequests">): FetchCatalogueChange[] {
+  if (!review) return [];
+  const p = review.proposal;
+  const cat = review.catalogue;
+  const changes: FetchCatalogueChange[] = [];
+  const list = (section: FetchCatalogueChange["section"], label: string, was: string, now: string, from: BeoAiFrom | null) =>
+    changes.push({ section, label, was, now, from });
+  const known = (names: string[], name: string) => names.some((n) => sameName(n, name));
+
+  if (p.package) {
+    const pkg = cat.packages.find((x) => x.id === p.package!.templateId);
+    const name = pkg?.name ?? p.package.said ?? "another package";
+    const applied = held.package && (held.package.templateId === p.package.templateId || sameName(held.package.name, name));
+    if (!applied) list("package", "Package", held.package?.name ?? NONE, name, p.package.from);
+    for (const a of p.addOns) {
+      const label = pkg?.lines.find((l) => l.id === a.lineId)?.label ?? a.said;
+      if (a.quantity > 0 && label && !known(held.packageItems, label)) list("addOn", "Add-on", NONE, withQty(label, a.quantity), a.from);
+    }
+  }
+
+  if (p.setMenu) {
+    const menu = cat.setMenus.find((m) => m.id === p.setMenu!.templateId);
+    if (held.setMenuTemplateId !== p.setMenu.templateId) {
+      const was = held.setMenuTemplateId ? (cat.setMenus.find((m) => m.id === held.setMenuTemplateId)?.name ?? "another set menu") : NONE;
+      list("setMenu", "Set menu", was, menu?.name ?? "another set menu", p.setMenu.from);
+    }
+    for (const c of p.setMenu.choices) {
+      const chosen = held.menuLines.filter((l) => l.groupId === c.itemId).map((l) => l.itemName);
+      if (known(chosen, c.option)) continue;
+      const group = menu?.items.find((i) => i.id === c.itemId);
+      list("choice", group ? `Set menu · ${group.label}` : "Set menu choice", chosen.length > 0 ? chosen.join(", ") : NONE, c.option, c.from);
+    }
+  }
+
+  for (const l of p.menuLines) {
+    const name = l.matchedName ?? l.itemName;
+    const line = held.menuLines.find(
+      (h) => (l.productCode && h.productCode && h.productCode.toUpperCase() === l.productCode.toUpperCase()) || sameName(h.itemName, name) || sameName(h.itemName, l.itemName),
+    );
+    if (line && line.quantity === l.quantity) continue;
+    const now = withQty(name, l.quantity) + (l.notInMenu ? " (not on the menu)" : "");
+    list("food", MENU_LABEL[l.menu], line ? withQty(line.itemName, line.quantity) : NONE, now, l.from);
+  }
+
+  for (const e of p.entertainment) {
+    if (held.entertainment.some((h) => (e.templateId && h.templateId === e.templateId) || sameName(h.name, e.name))) continue;
+    list("entertainment", "Entertainment", NONE, withQty(e.name, e.quantity) + (e.notInCatalogue ? " (not on the menu)" : ""), e.from);
+  }
+
+  for (const o of p.otherLines) {
+    if (!form.specialRequests.normalize("NFC").toLowerCase().includes(o.text.normalize("NFC").trim().toLowerCase())) list("other", "Also asked", NONE, o.text, o.from);
+  }
+
+  return changes;
+}
+
+/** "2 changes to the package, menu or entertainment", "1 change to the package, menu or entertainment". */
+export const catalogueChangesCount = (n: number) => `${n} change${n === 1 ? "" : "s"} to the package, menu or entertainment`;
+
+/** The standing line under the catalogue changes: what a fetch does with them. */
+export const CATALOGUE_CHANGES_LINE =
+  "Listed to read, not applied here: the package, set menu, food and entertainment are chosen in their own sections, or by pasting the line into AI Fill.";
 
 /** A change's identity for the memory: the field and the value the chat gives it. */
 export const changeKey = (change: Pick<FetchChange, "field" | "value">): string => `${change.field}=${String(change.value)}`;
