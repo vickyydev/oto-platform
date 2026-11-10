@@ -108,6 +108,10 @@ export const AI_OUTCOME_REASONS = [
   // park's price source.
   'GUARD_PARK',
   'OVERRULED_HANDOVER',
+  // SCRUM-817: in a birthday thread, a message naming a day, a date or a
+  // time the model labelled hours, faq, greeting or address: the gate read it
+  // as the party's (`birthday_details`) and handed it to the Birthday & events team.
+  'OVERRULED_BIRTHDAY',
   'IDENTITY_SECOND_ASK',
   'CAP_EPISODE',
   // the prompt (§C.4)

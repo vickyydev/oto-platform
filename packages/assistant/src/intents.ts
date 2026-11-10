@@ -412,6 +412,34 @@ export const BIRTHDAY_INTENTS: ReadonlySet<AiIntent> = new Set<AiIntent>([
   'birthday_cake',
 ]);
 
+/**
+ * SCRUM-817 (staging, 10 Nov): in a Birthdays & Events conversation the
+ * family wrote "Можно в субботу в 2 часа дня?" and the model read it as a
+ * walk-in question — "бронировать не нужно" and the opening hours. In a
+ * birthday thread a day, a date or a time is the party's. These are the
+ * labels that take such a message out of the birthday flow; the gate
+ * overrules them to `birthday_details` (gate.ts `applyGates`).
+ */
+export const BIRTHDAY_DATE_OVERRULED: ReadonlySet<AiIntent> = new Set<AiIntent>(['hours', 'faq', 'greeting', 'address']);
+
+/** What makes a thread a birthday one (SCRUM-817): its category, or the episode's earlier replies. */
+export interface BirthdayThreadFacts {
+  /** The thread's inbox category; `birthdays` is a Birthdays & Events conversation. */
+  threadCategory?: InboxCategoryKey | null;
+  /** Every intent this episode's earlier replies were labelled with. */
+  earlierIntents?: readonly AiIntent[];
+}
+
+/**
+ * SCRUM-817: the thread is a birthday one — a Birthdays & Events
+ * conversation (`category`), or one whose earlier replies this episode were
+ * about a birthday party (`earlier`); null for any other thread.
+ */
+export function birthdayThreadOf(t: BirthdayThreadFacts): 'category' | 'earlier' | null {
+  if (t.threadCategory === 'birthdays') return 'category';
+  return (t.earlierIntents ?? []).some((i) => BIRTHDAY_INTENTS.has(i)) ? 'earlier' : null;
+}
+
 /** Parts whose answer is checked for the "safer" framing (the playbook: the whole park is safe). */
 export const CARE_SERVICE_INTENTS: ReadonlySet<AiIntent> = new Set<AiIntent>(['nanny_booking', 'drop_off_service']);
 

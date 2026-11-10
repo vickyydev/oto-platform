@@ -27,8 +27,16 @@
  *   - another language is answered in English; the one language offer is
  *     checked against the contact's calling code and the episode;
  *   - unclear goes to the branch when it is known, else to the GM.
+ *
+ * SCRUM-817: in a birthday thread — a Birthdays & Events conversation, or
+ * one whose earlier replies were about a party — a message that names a day,
+ * a date or a time is the party's. A label of hours, faq, greeting or address
+ * on it (with no birthday part beside it) is overruled to `birthday_details`:
+ * the model's words, written for a walk-in question, never go, and the
+ * Birthday & events team takes it with the birthday manager's closing line.
  */
 
+import { mentionsPartyDate, mentionsPartyTime } from '@oto/shared';
 import {
   AI_REPLY_LANGUAGES,
   type AiDecision,
@@ -48,18 +56,22 @@ import {
   type GuardResult,
 } from './guards';
 import {
+  BIRTHDAY_DATE_OVERRULED,
   BIRTHDAY_INTENTS,
+  BIRTHDAYS_PLAN,
   BY_BRANCH,
   CAP_HANDOVER,
   CARE_SERVICE_INTENTS,
   IDENTITY_SECOND_ASK,
   INTENT_TABLE,
+  birthdayThreadOf,
   intentPartsOf,
   resolvePlan,
   type AiGroundingTopic,
   type AiHandoverPlan,
   type AiIntent,
   type AiPlanRef,
+  type BirthdayThreadFacts,
 } from './intents';
 import type { AiBranchKey } from './decision';
 
@@ -70,8 +82,12 @@ export interface GroundingSource {
   text: string;
 }
 
-/** What the gate knows about the episode so far (A2 counts these from its rows). */
-export interface EpisodeState {
+/**
+ * What the gate knows about the episode so far (A2 counts these from its
+ * rows). SCRUM-817: the thread's category and the earlier replies' intents
+ * (`BirthdayThreadFacts`) say whether it is a birthday thread; absent, it is not.
+ */
+export interface EpisodeState extends BirthdayThreadFacts {
   /** AI answers already sent in this episode. */
   aiAnswers: number;
   /** AI answers sent in the last ten minutes. */
@@ -144,9 +160,12 @@ export type GateVerdict =
     }
   | {
       action: 'handover';
-      /** Why it is a handover: the table, an overruled answer, the cap, or the model's own call. */
+      /**
+       * Why it is a handover: the table, an overruled answer, the cap, the
+       * model's own call, or (SCRUM-817) a birthday thread's date read as the party's.
+       */
       reason:
-        'OK' | 'OVERRULED_HANDOVER' | 'MODEL_HANDOVER' | 'IDENTITY_SECOND_ASK' | 'CAP_EPISODE';
+        'OK' | 'OVERRULED_HANDOVER' | 'OVERRULED_BIRTHDAY' | 'MODEL_HANDOVER' | 'IDENTITY_SECOND_ASK' | 'CAP_EPISODE';
       intent: AiIntent;
       intents: AiIntent[];
       language: AiReplyLanguage;
@@ -192,6 +211,68 @@ export interface GateInput {
   /** Every source the prompt offered, by key (from `buildPrompt`). */
   grounding: ReadonlyMap<string, GroundingSource>;
   episode: EpisodeState;
+  /**
+   * SCRUM-817: the customer's open lines this turn answers (its burst), as
+   * written. Read only for the birthday thread's date rule; absent, it never fires.
+   */
+  openLines?: readonly string[];
+}
+
+/** The rule word an overruled birthday date records (the turn's audit `gate`, the hand-over pill's `rule`). */
+export const BIRTHDAY_DATE_RULE = 'birthday_date';
+
+/**
+ * SCRUM-817: the lines name a day, a date or a time, in Thai, English or
+ * Russian — read by the same reader as the inbox's Book Date (SCRUM-814,
+ * `@oto/shared` chat-dates): a date or a weekday ("в субботу", "Saturday",
+ * "เสาร์นี้"), or a clock time ("в 2 часа дня", "2 pm", "บ่ายสอง").
+ */
+export function namesPartyDayOrTime(lines: readonly string[]): boolean {
+  return lines.some((t) => mentionsPartyDate(t) || mentionsPartyTime(t));
+}
+
+/**
+ * SCRUM-817: the decision the gate reads instead of the model's, or null to
+ * read the model's. In a birthday thread (`birthdayThreadOf`), a burst that
+ * names a day, a date or a time, labelled hours, faq, greeting or address
+ * with no birthday part beside it, is the party's: those labels become
+ * `birthday_details`. Its words were written for a walk-in question, so none
+ * go, and the decision is a hand-over. A burst the model already read as a
+ * birthday one keeps its labels: the date is that part's. Any other thread
+ * is never touched.
+ */
+export function birthdayDateOverrule(input: GateInput): AiDecision | null {
+  const d = input.decision;
+  if (birthdayThreadOf(input.episode) === null) return null;
+  const labelled = intentPartsOf(d);
+  if (labelled.some((i) => BIRTHDAY_INTENTS.has(i))) return null;
+  if (!labelled.some((i) => BIRTHDAY_DATE_OVERRULED.has(i))) return null;
+  if (!namesPartyDayOrTime(input.openLines ?? [])) return null;
+  const parts: AiIntent[] = [];
+  for (const i of labelled) {
+    const part: AiIntent = BIRTHDAY_DATE_OVERRULED.has(i) ? 'birthday_details' : i;
+    if (!parts.includes(part)) parts.push(part);
+  }
+  return { ...d, intent: parts[0]!, intents: parts, action: 'handover', bubbles: [], sendBrochure: false, askBranch: false };
+}
+
+const isBirthdaysPlan = (p: AiHandoverPlan) =>
+  p.templateKey === BIRTHDAYS_PLAN.templateKey && p.route === BIRTHDAYS_PLAN.route && p.brochure === BIRTHDAYS_PLAN.brochure;
+
+/**
+ * The server's verdict on the model's decision. SCRUM-817 first: a birthday
+ * thread's date the model read as a walk-in question is decided as the
+ * party's (`birthdayDateOverrule`), and the Birthday & events hand-over it
+ * becomes says why (`OVERRULED_BIRTHDAY`, rule `birthday_date`). A part that
+ * outranks it — a child in our care, a complaint as the primary — keeps its
+ * own verdict.
+ */
+export function applyGates(input: GateInput): GateVerdict {
+  const overruled = birthdayDateOverrule(input);
+  if (overruled === null) return gate(input);
+  const v = gate({ ...input, decision: overruled });
+  if (v.action !== 'handover' || !isBirthdaysPlan(v.plan)) return v;
+  return { ...v, reason: 'OVERRULED_BIRTHDAY', holdingBubbles: [], droppedHoldingRule: BIRTHDAY_DATE_RULE };
 }
 
 function isReplyLanguage(lang: string): lang is AiReplyLanguage {
@@ -282,7 +363,7 @@ function partOf(intent: AiIntent, episode: EpisodeState): Part | null {
   return { intent, kind: 'answer', rule };
 }
 
-export function applyGates({ decision: d, grounding, episode }: GateInput): GateVerdict {
+function gate({ decision: d, grounding, episode }: GateInput): GateVerdict {
   const labelled = intentPartsOf(d);
   const primary = labelled[0]!;
   const silent = (reason: AiOutcomeReason, rule?: string): GateVerdict =>

@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import {
+  AI_INTENTS,
   AI_REPLY_LANGUAGES,
   BY_BRANCH,
   REVIEW_THREAD_LINES,
@@ -268,6 +269,8 @@ async function recentCalls(db: Exec, operatorId: string, now: Date, n: number): 
 
 const isOutage = (reason: string | null) => (OUTAGE_REASONS as readonly string[]).includes(reason ?? '');
 
+const isAiIntent = (word: string): word is AiIntent => (AI_INTENTS as readonly string[]).includes(word);
+
 /** §D.4 guard 5: five consecutive provider failures pause the assistant for ten minutes. */
 async function circuitOpen(db: Exec, operatorId: string, now: Date): Promise<boolean> {
   const calls = await recentCalls(db, operatorId, now, CIRCUIT_FAILURES);
@@ -421,7 +424,7 @@ async function episodeFacts(
     );
   const tenAgo = now.getTime() - 10 * 60_000;
   const identityAnswered = answered.some((t) => t.intent === 'identity_question');
-  type Payload = { askBranch?: unknown; brochureFileIds?: unknown; languageOffer?: unknown; askFirstRuleId?: unknown };
+  type Payload = { askBranch?: unknown; brochureFileIds?: unknown; languageOffer?: unknown; askFirstRuleId?: unknown; intents?: unknown };
   const payloadOf = (e: (typeof events)[number]) => (e.payload ?? {}) as Payload;
   // What reached the customer: the live replies and hand-overs only.
   const payloads = events.filter((e) => e.kind !== 'ai_shadow').map(payloadOf);
@@ -429,6 +432,18 @@ async function episodeFacts(
   // shadow mode does not put the same question to every turn of an episode.
   const askedFirst = events.some((e) => typeof payloadOf(e).askFirstRuleId === 'string');
   const languageOffered = payloads.some((p) => p.languageOffer === 'ru' || p.languageOffer === 'th');
+  // SCRUM-817: every intent the episode's earlier turns were labelled with —
+  // each answered turn's, and every part its pills name (a shadow turn's too:
+  // it is the model's reading of the thread, whatever reached the customer).
+  const earlierIntents: AiIntent[] = [];
+  const addIntent = (i: unknown) => {
+    if (typeof i === 'string' && isAiIntent(i) && !earlierIntents.includes(i)) earlierIntents.push(i);
+  };
+  for (const t of answered) addIntent(t.intent);
+  for (const e of events) {
+    const parts = payloadOf(e).intents;
+    if (Array.isArray(parts)) parts.forEach(addIntent);
+  }
   return {
     state: {
       aiAnswers: answered.length,
@@ -437,6 +452,9 @@ async function episodeFacts(
       threadHasBranch: conv.branchId !== null,
       contactCountryCode,
       languageOffered,
+      // SCRUM-817: a birthday thread's date is the party's (the gate's birthday rule).
+      threadCategory: conv.category,
+      earlierIntents,
     },
     earlier: {
       answered: answered.length,
@@ -593,12 +611,19 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
     context: {
       now,
       threadBranch: conv.branchId ? (knowledge.keyOfBranch.get(conv.branchId) ?? null) : null,
+      // SCRUM-817: the model is told the conversation's category; a birthday
+      // thread (Birthdays & Events, or a party asked about earlier) is told
+      // that a day, a date or a time in it is the party's.
+      threadCategory: conv.category,
+      earlierIntents: facts.state.earlierIntents ?? [],
       priceModeToday: knowledge.priceModeToday,
       contactCountryCode,
       earlier: facts.earlier,
     },
     ...(applicable.length > 0 ? { rules: applicable } : {}),
   };
+  // SCRUM-817: the customer's open lines, which the gate reads for a birthday thread's date.
+  const openLines = burst.flatMap((m) => (m.text === null ? [] : [m.text]));
   const built = buildPrompt(promptInput);
   if (!built.ok) return { conv, silence: built.reason, kbVersion: knowledge.knowledge.version, knowledge };
 
@@ -616,7 +641,7 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
     knowledge,
   };
   if (!outcome.ok) return { ...base, conv, silence: outcome.reason };
-  const gated = applyGates({ decision: outcome.decision, grounding: built.prompt.grounding, episode: facts.state });
+  const gated = applyGates({ decision: outcome.decision, grounding: built.prompt.grounding, episode: facts.state, openLines });
   // SCRUM-696: an approved rule's ask-first question, enforced here and never
   // trusted to the model. Only when a rule with a question applies; it
   // replaces the gate's verdict only when it fires (`askFirstOf`).
@@ -658,6 +683,7 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
     client,
     promptInput,
     episodeState: facts.state,
+    openLines,
     first,
     topic: reviewed.state,
     now,
@@ -790,6 +816,8 @@ async function rethinkTurn(a: {
   client: AssistantClient;
   promptInput: PromptInput;
   episodeState: EpisodeState;
+  /** SCRUM-817: the burst's lines, for the gate's birthday-date rule on the second round too. */
+  openLines: readonly string[];
   first: TurnResult & { conv: ConversationRow };
   topic: Extract<ReviewState, { kind: 'wrong_topic' }>;
   now: Date;
@@ -823,7 +851,7 @@ async function rethinkTurn(a: {
     latencyMs: (first.latencyMs ?? 0) + Math.max(0, Math.round(outcome.latencyMs)),
   };
   if (!outcome.ok) return unclear(spent, { intent: null, action: null, reason: outcome.reason, topic: null });
-  const verdict = applyGates({ decision: outcome.decision, grounding: built.prompt.grounding, episode: a.episodeState });
+  const verdict = applyGates({ decision: outcome.decision, grounding: built.prompt.grounding, episode: a.episodeState, openLines: a.openLines });
   // The first round's spam reading (`quietBefore`) is never read again: a second silence is the unclear line below.
   const second: TurnResult = { ...spent, decision: outcome.decision, verdict };
   // Silence the customer asked for nothing of is no answer to a rethought question.
