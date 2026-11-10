@@ -966,6 +966,28 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/party-menu-item-ui.check.ts
+      # SCRUM-829: the kids' menu is the main selection; the adults mirror it —
+      # the stored shape (no adults' list with the switch off, their own list
+      # and adultsDiffer with it on, a BEO saved before opening on only when
+      # its two lists differ, the day-of view's write keeping the switch); both
+      # AI prompts telling the model the adults eat the kids' menu unless the
+      # message says otherwise, a stub model's one list and its adults' own
+      # dish, an approval turning the switch on only for an adults' line; the
+      # till's plan view (migration 0048) reading a party of before exactly as
+      # 0047, an unchanged copy of a coded line reaching the till once, the
+      # adults' changes marked; the BEO PDF's one food list with the marks.
+      # Then the editor under jsdom: the adults' tab pre-filled with the kids'
+      # items and no option list, the switch copying the list for editing, one
+      # line changed for the adults only, Save sending the lists as the switch
+      # says, a BEO of before opening as its lists stand.
+      - name: The app's kitchen adults checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/kitchen-adults.check.ts
+      - name: The app's kitchen adults form check
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/kitchen-adults-ui.check.ts
       # SCRUM-822: a party's money in the BEO, read from the till — satang
       # shown as baht one way only (SCRUM-833), the client asking with the
       # provision key and never a session, the till's figures answered for a

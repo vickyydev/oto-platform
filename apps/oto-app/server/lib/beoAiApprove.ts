@@ -294,7 +294,10 @@ export async function approveBeoAiFill(
       written.kitchenLines = kidsExtra.length + adultsExtra.length;
       written.freeKitchenLines = kitchenLines.filter((l) => !l.productCode).length;
 
-      const nextMenus = { ...menus, kids, adults };
+      // SCRUM-829: the adults eat the kids' menu unless the chat said otherwise. A line the
+      // review marks for the adults is theirs alone, so the BEO opens with "Different for
+      // adults" on; with none, the switch stays as the BEO holds it (shared/kitchenAdults.ts).
+      const nextMenus = { ...menus, kids, adults, ...(adultsExtra.length > 0 ? { adultsDiffer: true } : {}) };
       const values = {
         setMenuEnabled,
         setMenuTemplateId,

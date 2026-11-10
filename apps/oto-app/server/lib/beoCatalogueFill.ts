@@ -379,6 +379,7 @@ Matching to the catalogue:
 - An add-on is one of the chosen package's lines whose "included" is false; a line the package includes is not an add-on
 - A set-menu choice names a choice group ("itemId") of the chosen set menu and one of its "options", written exactly as listed there
 - A dish or drink beyond the set menu is a menu line: "productCode" is the code from "food" it is, else null with "notInMenu": true. "menu" is "kids", "adults" or "bar" (drinks)
+- The adults eat what the kids eat unless the conversation says otherwise: a dish is "kids" even when the whole party eats it, and "adults" only when the conversation says it is for the adults instead of, or beside, the kids' dishes. Never give the same dish as a "kids" line and an "adults" line
 - Never invent an item, a quantity or a price, and never price or total anything: "chatPrice" is only a price the conversation itself names for that item, in baht as written; otherwise leave it out
 - Keep the conversation's own wording and language in "said" and "itemName". Do not translate
 - Every entry carries "line": the number of the conversation line it comes from (for what the team confirmed, the team's line), and "source": "team" when that line is the team's, "family" when it is the family's
@@ -445,7 +446,10 @@ const ChoiceAnswer = z.object({
 const MenuLineAnswer = z.object({
   productCode: catalogueId('a food code from the catalogue\'s "food"', 64),
   itemName: optStr(300).describe("the conversation's own words for the dish or drink"),
-  menu: z.preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase() : undefined), z.enum(BEO_AI_MENUS).optional()),
+  menu: z.preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase() : undefined), z.enum(BEO_AI_MENUS).optional()).describe(
+    // SCRUM-829: the adults eat the kids' menu unless the conversation says otherwise.
+    'one of "kids", "adults", "bar": "kids" for every dish the party eats, "adults" only for a dish the conversation says is the adults\' own, "bar" for a drink',
+  ),
   quantity: optInt(1),
   notInMenu: z.preprocess((v) => (typeof v === "boolean" ? v : undefined), z.boolean().optional()).describe(
     "true or false: true when no food code fits",

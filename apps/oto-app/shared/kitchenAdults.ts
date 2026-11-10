@@ -1,0 +1,132 @@
+/**
+ * THE KIDS' MENU IS THE MAIN SELECTION; THE ADULTS MIRROR IT (SCRUM-829).
+ *
+ * The kitchen plan keeps two food lists, `menus.kids` and `menus.adults`.
+ * Until now they were independent: the adults' list opened empty with its own
+ * option list, and staff typed the adults' food a second time. The owner's
+ * rule: the adults eat what was chosen for the kids, and the adults' section
+ * starts from that. A "Different for adults" switch is the one exception.
+ *
+ * What is stored, in the same `menus` object every reader already reads:
+ *
+ *   - `kids`          the food list, as before;
+ *   - `adults`        the adults' OWN list while the switch is on (a copy of
+ *                     the kids' list, changed by staff); `[]` while it is off,
+ *                     because the adults' list IS the kids' list then;
+ *   - `adultsDiffer`  the switch, `true` / `false`, written by the editor's
+ *                     Save. A BEO saved before this has no key.
+ *
+ * How a saved BEO opens (`adultsDifferOf`): the switch is ON when it was saved
+ * on, or — for a BEO with no key — when the adults' list holds lines and is
+ * not line for line the kids' list. An empty adults' list, or one equal to
+ * the kids', opens with the switch OFF: the adults eat the kids' menu.
+ *
+ * How the adults' changes are marked on ONE food list (`kitchenAdultsMarks`):
+ * beside each kids' line, "kids only" when the adults' list has no line of
+ * that name, "kids N · adults M" when it has one in another count, "adults:
+ * <note>" when only its note differs; after the kids' lines, each adults'
+ * line with no kids' line of its name, marked "adults only". The BEO PDF
+ * prints these; the till's kitchen slip prints the same words from what the
+ * plan view hands it (migration 0048, packages/shared/src/party-slips.ts).
+ *
+ * The till's charges do not move: the plan view emits an adults' line only
+ * when it is not an unchanged copy of a kids' line, so a coded item copied
+ * for the adults is charged once, as a one-list BEO is charged today.
+ */
+
+/** A kitchen plan line as every list holds it; only these fields matter here. */
+export interface KitchenLineLike {
+  id?: string;
+  itemName?: string;
+  quantity?: number;
+  notes?: string;
+  productCode?: string;
+  source?: string;
+  [key: string]: unknown;
+}
+
+/** What the adults' section says while the switch is off. */
+export const ADULTS_SAME_AS_KIDS = "Same as the kids' menu";
+/** The marks on the one food list. The till's slip uses the same words. */
+export const KIDS_ONLY_MARK = "kids only";
+export const ADULTS_ONLY_MARK = "adults only";
+
+export const kitchenLinesOf = (value: unknown): KitchenLineLike[] =>
+  Array.isArray(value) ? (value.filter((l) => l && typeof l === "object" && !Array.isArray(l)) as KitchenLineLike[]) : [];
+
+/** A dish's name as the kitchen reads it: case and spacing aside. */
+export const foldDishName = (name: unknown): string =>
+  typeof name === "string" ? name.normalize("NFC").trim().toLowerCase().replace(/\s+/g, " ") : "";
+
+const qtyOf = (line: KitchenLineLike): number => {
+  const q = typeof line.quantity === "number" && Number.isFinite(line.quantity) ? Math.round(line.quantity) : 1;
+  return q > 0 ? q : 1;
+};
+const noteOf = (line: KitchenLineLike): string => (typeof line.notes === "string" ? line.notes.trim() : "");
+const codeOf = (line: KitchenLineLike): string => (typeof line.productCode === "string" ? line.productCode.trim() : "");
+
+/** The same dish, in the same count, with the same note and the same till code: an unchanged copy. */
+export function sameKitchenLine(a: KitchenLineLike, b: KitchenLineLike): boolean {
+  return foldDishName(a.itemName) === foldDishName(b.itemName) && qtyOf(a) === qtyOf(b) && noteOf(a) === noteOf(b) && codeOf(a) === codeOf(b);
+}
+
+/** Line for line the same list (the ids aside). */
+export function kitchenListsEqual(kids: unknown, adults: unknown): boolean {
+  const k = kitchenLinesOf(kids);
+  const a = kitchenLinesOf(adults);
+  return k.length === a.length && k.every((line, i) => sameKitchenLine(line, a[i]!));
+}
+
+/**
+ * Whether the adults' list is the adults' own (the switch ON): saved on, or —
+ * with no key saved — holding lines that are not the kids' list.
+ */
+export function adultsDifferOf(menus: unknown): boolean {
+  const m = menus && typeof menus === "object" && !Array.isArray(menus) ? (menus as Record<string, unknown>) : {};
+  if (m.adultsDiffer === true) return true;
+  const adults = kitchenLinesOf(m.adults);
+  if (adults.length === 0) return false;
+  return !kitchenListsEqual(m.kids, adults);
+}
+
+/** One kids' line's mark, or null when the adults eat it as it is. */
+export type AdultsMark = string | null;
+
+export interface KitchenAdultsMarks {
+  /** By the kids' line's place: its mark. */
+  marks: AdultsMark[];
+  /** The adults' lines no kids' line shares a name with, in the adults' list's order. */
+  adultsOnly: KitchenLineLike[];
+}
+
+/** "kids N · adults M": the two counts beside a dish both eat in different numbers. */
+export const adultsCountMark = (kidsQty: number, adultsQty: number): string => `kids ${kidsQty} · adults ${adultsQty}`;
+
+/**
+ * The adults' changes against the kids' list. With the switch off there are
+ * none. Each kids' line takes the first adults' line of its name not taken by
+ * an earlier kids' line.
+ */
+export function kitchenAdultsMarks(kids: unknown, adults: unknown, adultsDiffer: boolean): KitchenAdultsMarks {
+  const k = kitchenLinesOf(kids);
+  const a = kitchenLinesOf(adults);
+  if (!adultsDiffer) return { marks: k.map(() => null), adultsOnly: [] };
+  const taken = new Set<number>();
+  const marks = k.map((line) => {
+    const name = foldDishName(line.itemName);
+    const at = a.findIndex((other, i) => !taken.has(i) && foldDishName(other.itemName) === name);
+    if (at < 0) return KIDS_ONLY_MARK;
+    taken.add(at);
+    const match = a[at]!;
+    if (qtyOf(line) !== qtyOf(match)) return adultsCountMark(qtyOf(line), qtyOf(match));
+    if (noteOf(line) !== noteOf(match)) return noteOf(match) ? `adults: ${noteOf(match)}` : null;
+    return null;
+  });
+  return { marks, adultsOnly: a.filter((_, i) => !taken.has(i)) };
+}
+
+/** The list the adults eat: their own while the switch is on, else the kids'. */
+export function adultsListOf(menus: unknown): KitchenLineLike[] {
+  const m = menus && typeof menus === "object" && !Array.isArray(menus) ? (menus as Record<string, unknown>) : {};
+  return adultsDifferOf(m) ? kitchenLinesOf(m.adults) : kitchenLinesOf(m.kids);
+}

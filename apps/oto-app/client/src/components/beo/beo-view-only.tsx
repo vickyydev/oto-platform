@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import type { BeoEventWithDetails, BeoTimelineItem } from "@shared/schema";
 import { bahtOfSatang, tillFiguresOf } from "@shared/tillBilling";
+import { ADULTS_SAME_AS_KIDS, adultsDifferOf } from "@shared/kitchenAdults";
 import { BeoPackageModule } from "./beo-package-module";
 import { TillMoneyRows, useTillBilling } from "./beo-till-billing";
 
@@ -386,6 +387,8 @@ export function BeoViewOnly({ eventId, showHeader = true }: BeoViewOnlyProps) {
   // still provide simplifiedMenus, so use it only when the canonical bucket is absent.
   const kidsMenu = kitchenPlan?.menus?.kids ?? kitchenPlan?.simplifiedMenus?.kids ?? [];
   const adultsMenu = kitchenPlan?.menus?.adults ?? kitchenPlan?.simplifiedMenus?.adults ?? [];
+  // SCRUM-829: the adults eat the kids' menu unless "Different for adults" is on; only then is their list their own.
+  const adultsDiffer = adultsDifferOf({ kids: kidsMenu, adults: adultsMenu, adultsDiffer: (kitchenPlan?.menus as any)?.adultsDiffer });
   const hasKitchen = kitchenPlan && (kitchenPlan.foodRequired || kidsMenu.length > 0 || adultsMenu.length > 0 || (kitchenPlan.cakeMode && kitchenPlan.cakeMode !== "NONE") || (kitchenPlan as any).setMenuEnabled);
   const barItems: any[] = barPlan?.items || [];
   const hasBar = !!(barPlan?.serviceTime || barItems.length > 0);
@@ -665,7 +668,10 @@ export function BeoViewOnly({ eventId, showHeader = true }: BeoViewOnlyProps) {
                           template={template}
                         />
                       )}
-                      {(adultsMenu.length > 0 || (setMenuEnabled && (adultsHasSetItems || defaultSetMenuBucket === "adults"))) && (
+                      {!adultsDiffer && kidsMenu.length > 0 && (
+                        <p className="text-xs text-muted-foreground italic" data-testid="text-view-adults-same-as-kids">Adults' Menu: {ADULTS_SAME_AS_KIDS.toLowerCase()}</p>
+                      )}
+                      {adultsDiffer && (adultsMenu.length > 0 || (setMenuEnabled && (adultsHasSetItems || defaultSetMenuBucket === "adults"))) && (
                         <KitchenMenuBucket
                           title="Adults' Menu"
                           menuItems={adultsMenu}

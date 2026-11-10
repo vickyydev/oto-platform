@@ -245,9 +245,10 @@ await check("the BEO editor offers it on both food lists, never read-only, and k
   assert.match(editor, /data-testid="button-add-party-menu-item-adults"/);
   assert.equal((editor.match(/\{!readOnly && \(\s*<div className="flex gap-2 pt-1">\s*<button[^>]*?\s*type="button"[\s\S]*?onClick=\{\(\) => setNewItemMenu\("(kids|adults)"\)\}/g) ?? []).length, 2);
   assert.match(editor, /<PartyMenuItemDialog[\s\S]*?onCreated=\{\(line\) => addPartyMenuLine\(newItemMenu \?\? "kids", line\)\}/);
-  // A reload maps the line's code back on; the Save sends the lists as they are.
+  // A reload maps the line's code back on; the Save sends the lists as they are
+  // (SCRUM-829: the adults' list as the "Different for adults" switch says).
   assert.match(editor, /typeof m\.productCode === "string" && m\.productCode\.trim\(\) \? \{ productCode: m\.productCode\.trim\(\) \} : \{\}/);
-  assert.match(editor, /menus: \{ kids: kidsMenu, adults: adultsMenu, kidsFoodTime, adultsFoodTime \}/);
+  assert.match(editor, /menus: \{ kids: kidsMenu, adults: adultsDiffer \? adultsMenu : \[\], adultsDiffer, kidsFoodTime, adultsFoodTime \}/);
 });
 
 await act(async () => { root.unmount(); });

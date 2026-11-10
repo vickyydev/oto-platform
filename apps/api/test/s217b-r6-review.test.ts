@@ -498,7 +498,10 @@ describe('A. fences and seams', () => {
       // SCRUM-822: the BEO PDF's POS section prints the till's total, deposit and outstanding
       // (server/lib/beoPdfMoney.ts), not Party Details' typed prices added up, and its HTML is
       // exported for a check (beoPdfHtml); where the BEO's documents live is unchanged.
-      'pdf.ts': '07bea76883dee9e195fd150630d9a20bf09ab2191a6d9abced2f3970ba7933b0',
+      // SCRUM-829: the BEO PDF prints ONE food list — the kids' menu with the adults' changes
+      // marked beside it and their own dishes after (shared/kitchenAdults.ts), never a second
+      // Adults Menu table; where the BEO's documents live is unchanged.
+      'pdf.ts': 'e8de2d8cf863aec7b85f9d6c3ac2590dec96a530fb20e5f38947db90e5bbffa1',
       // SCRUM-803 / SCRUM-806: Generate from BEO bills the package in baht and only the add-ons a party bought; where the BEO's documents live is unchanged.
       // SCRUM-769: the BEO's staff list leaves out a login whose employment has ended (onStaff); where documents live is unchanged.
       // SCRUM-815: the parent link's set-menu lines are resolved by server/lib/setMenuResolve.ts (moved, not changed) and the
@@ -509,7 +512,9 @@ describe('A. fences and seams', () => {
       // BEO's read shows it; where the BEO's documents live is unchanged.
       // SCRUM-822: the BEO PDF route reads the till's figures for the party (readingFor, as the
       // BEO's screens do) and hands them to the PDF; where the BEO's documents live is unchanged.
-      'beo-routes.ts': '5471e73f60420465eb0a31fe1f7b42d877315938a72ccd03bc351bb1015ee760',
+      // SCRUM-829: the BEO's Save keeps the kitchen plan's "Different for adults" switch
+      // (menus.adultsDiffer) when the editor sends it; where the BEO's documents live is unchanged.
+      'beo-routes.ts': 'ba2d4bb33cf7fe450113f9d51d5816e410a4e357e4015e6b623e6af304d874d2',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);

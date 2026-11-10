@@ -323,6 +323,13 @@
       "when": 1794309858706,
       "tag": "0047_otoapp_v_event_packages_party_menu",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1794338418244,
+      "tag": "0048_otoapp_v_event_packages_adults_mirror",
+      "breakpoints": true
     }
   ]
 }

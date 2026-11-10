@@ -87,6 +87,7 @@ import { BeoBillingSection, PartyDetailsTillTiles, tillBillingKey, useTillBillin
 import { beoBillingMutationScope } from "@/lib/beo-deposit-buffer";
 import { bahtOfSatang, tillFiguresOf } from "@shared/tillBilling";
 import type { PartyMenuLine } from "@shared/partyMenuItem";
+import { ADULTS_SAME_AS_KIDS, adultsDifferOf, kitchenListsEqual } from "@shared/kitchenAdults";
 import { ONE_OFF_EVENT_COLOR_OPTIONS } from "@/lib/event-types";
 import { aiFillDateLine, dayLabel } from "@/lib/beo-ai-date";
 import AssignmentSearchBar, { type AssignmentValue } from "@/components/core/AssignmentSearchBar";
@@ -612,6 +613,9 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const [kitchenRequired, setKitchenRequired] = useState(true);
   const [kidsMenu, setKidsMenu] = useState<MenuLine[]>([]);
   const [adultsMenu, setAdultsMenu] = useState<MenuLine[]>([]);
+  // SCRUM-829: "Different for adults". Off, the adults eat the kids' menu and adultsMenu is
+  // not shown or saved; on, adultsMenu is the adults' own list, started as a copy of the kids'.
+  const [adultsDiffer, setAdultsDiffer] = useState(false);
   const [barItems, setBarItems] = useState<MenuLine[]>([]);
   const [barServiceTime, setBarServiceTime] = useState("");
   const [showBarTimePicker, setShowBarTimePicker] = useState(false);
@@ -946,6 +950,13 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
           if (!Array.isArray(menus?.kids) && Array.isArray(kp.simplifiedMenus.kids)) setKidsMenu(kp.simplifiedMenus.kids.map((m: any) => ({ ...m, price: m.price || 0, source: m.source, groupId: m.groupId })));
           if (!Array.isArray(menus?.adults) && Array.isArray(kp.simplifiedMenus.adults)) setAdultsMenu(kp.simplifiedMenus.adults.map((m: any) => ({ ...m, price: m.price || 0, source: m.source, groupId: m.groupId })));
         }
+        // SCRUM-829: the switch as saved; a BEO saved before it opens on only when its adults'
+        // list holds lines that are not the kids' list, off when it is empty or the same.
+        setAdultsDiffer(adultsDifferOf({
+          kids: Array.isArray(menus?.kids) ? menus.kids : kp.simplifiedMenus?.kids,
+          adults: Array.isArray(menus?.adults) ? menus.adults : kp.simplifiedMenus?.adults,
+          adultsDiffer: menus?.adultsDiffer,
+        }));
       }
 
       const bp = (beoData as any).barPlan;
@@ -1023,7 +1034,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
           setMenuEnabled,
           setMenuTemplateId: setMenuTemplateId || null,
           setMenuSelectionSubmittedAt: beoData?.kitchenPlan?.setMenuSelectionStatus?.submittedAt ?? null,
-          menus: { kids: kidsMenu, adults: adultsMenu, kidsFoodTime, adultsFoodTime },
+          // SCRUM-829: with the switch off the adults' list IS the kids' list, so none is saved for them.
+          menus: { kids: kidsMenu, adults: adultsDiffer ? adultsMenu : [], adultsDiffer, kidsFoodTime, adultsFoodTime },
           serviceSchedule: [],
         },
         barPlan: {
@@ -1129,13 +1141,14 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   };
 
   const kitchenTotal = useMemo(() => {
-    const allMenuItems = [...kidsMenu, ...adultsMenu];
+    // SCRUM-829: the adults' list counts only while it is the adults' own.
+    const allMenuItems = [...kidsMenu, ...(adultsDiffer ? adultsMenu : [])];
     const extrasTotal = allMenuItems
       .filter(i => i.source !== 'set_menu')
       .reduce((sum, i) => sum + (i.price || 0), 0);
     const cakeExtra = cakeMode !== "NONE" && !cakeIncluded ? (cakePrice || 0) : 0;
     return extrasTotal + cakeExtra;
-  }, [kidsMenu, adultsMenu, cakeMode, cakeIncluded, cakePrice]);
+  }, [kidsMenu, adultsMenu, adultsDiffer, cakeMode, cakeIncluded, cakePrice]);
 
   // SCRUM-822: the party's total and what is outstanding are the till's
   // (tillFigures above), never Party Details' base price and extras added up here.
@@ -1230,7 +1243,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
         return setupTasks.length > 0 ? (setupTasks.every(t => t.itemLabel.trim()) ? "complete" : "warning") : "incomplete";
       case "kitchen-plan":
         if (!kitchenRequired) return "pending";
-        return (kidsMenu.length > 0 || adultsMenu.length > 0) ? "complete" : "incomplete";
+        return (kidsMenu.length > 0 || (adultsDiffer && adultsMenu.length > 0)) ? "complete" : "incomplete";
       case "timeline":
         return (beoData?.timeline?.length || 0) > 0 ? "complete" : "incomplete";
       default:
@@ -1331,7 +1344,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     },
     kitchenPlan: {
       kidsMenu: kidsMenu.map(m => ({ itemName: m.itemName, quantity: m.quantity, notes: m.notes, included: m.included, price: m.price })),
-      adultsMenu: adultsMenu.map(m => ({ itemName: m.itemName, quantity: m.quantity, notes: m.notes, included: m.included, price: m.price })),
+      // SCRUM-829: the adults' own list only; with the switch off they eat the kids' list above.
+      adultsMenu: (adultsDiffer ? adultsMenu : []).map(m => ({ itemName: m.itemName, quantity: m.quantity, notes: m.notes, included: m.included, price: m.price })),
       cakeMode,
       cakeNotes,
       cakeTime,
@@ -1610,6 +1624,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
         })));
       }
       if (kp.adultsMenu?.length > 0) {
+        // SCRUM-829: the message said the adults eat something different: their own list, the switch on.
         setAdultsMenu(kp.adultsMenu.map((m: any) => ({
           id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           itemName: m.itemName || "",
@@ -1618,6 +1633,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
           included: m.included !== false,
           price: m.price || 0,
         })));
+        setAdultsDiffer(true);
       }
       // SCRUM-787: the cake's time and notes as the message gives them; its type only when the
       // message says whose cake it is, so a type it does not say leaves the form's as it was.
@@ -2806,7 +2822,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                             onClick={() => setMenuTab("adults")}
                             data-testid="button-menu-tab-adults"
                           >
-                            Adults Menu ({adultsMenu.length})
+                            Adults Menu ({adultsDiffer ? adultsMenu.length : kidsMenu.length})
                           </Button>
                         </div>
                         <div className="flex items-center gap-2 ml-auto">
@@ -3156,128 +3172,131 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                           );
                         }
 
-                        // Adults menu: keep Set Menu selections grouped here when the
-                        // event uses an adults-only menu bucket.
-                        const selectedTemplate = setMenuTemplates.find((template) => template.id === setMenuTemplateId);
-                        const setMenuItems = currentMenu.filter((item) => item.source === "set_menu");
-                        const additionalItems = setMenuEnabled
-                          ? currentMenu.filter((item) => item.source !== "set_menu")
-                          : currentMenu;
-                        const hasResolved = setMenuSelection?.isSubmitted === true;
+                        // SCRUM-829: the adults' section starts from the kids' menu. With "Different
+                        // for adults" off it IS the kids' list (shown as such, no option list of its
+                        // own and nothing to type); on, it is the adults' own list, started as a copy
+                        // of the kids' and changed here.
+                        const switchAdults = (on: boolean) => {
+                          if (on) {
+                            setAdultsMenu(kidsMenu.map((line, index) => ({ ...line, id: `menu_${Date.now()}_${index}_${Math.random().toString(36).slice(2, 6)}` })));
+                            setAdultsDiffer(true);
+                            return;
+                          }
+                          if (
+                            adultsMenu.length > 0 &&
+                            !kitchenListsEqual(kidsMenu, adultsMenu) &&
+                            !window.confirm("Turning this off makes the adults' menu the kids' menu again: the adults' own changes are dropped. Continue?")
+                          ) {
+                            return;
+                          }
+                          setAdultsMenu([]);
+                          setAdultsDiffer(false);
+                        };
 
                         return (
                           <div className="space-y-3">
-                            {setMenuEnabled && selectedTemplate && (
-                              <div className="border-2 border-emerald-500/40 rounded-lg overflow-hidden">
-                                <div className="bg-emerald-500/15 px-3 py-1.5 flex items-center gap-2">
-                                  <ListChecks className="h-3.5 w-3.5 text-emerald-600" />
-                                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">Set Menu</span>
-                                  <Badge variant="outline" className="text-[10px] px-1.5 bg-emerald-500/10 text-emerald-600 border-emerald-500/30">{selectedTemplate.name}</Badge>
-                                  {hasResolved ? (
-                                    <Badge className="text-[10px] px-1.5 bg-emerald-500 text-white ml-auto">Selections received</Badge>
-                                  ) : setMenuSelection ? (
-                                    <Badge variant="outline" className="text-[10px] px-1.5 ml-auto text-amber-600 border-amber-500/30 bg-amber-500/10">Awaiting parent</Badge>
-                                  ) : null}
-                                </div>
-                                <SetMenuChoiceGroups
-                                  template={selectedTemplate}
-                                  resolvedItems={setMenuItems}
-                                  hasResolved={hasResolved}
-                                />
-                                {hasResolved && setMenuItems.length > 0 && (
-                                  <div className="p-3 space-y-1.5">
-                                    <p className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wide">Resolved items (editable)</p>
-                                    {setMenuItems.map((item, index) => {
-                                      const absoluteIndex = currentMenu.findIndex((menuItem) => menuItem === item);
-                                      return (
-                                        <MenuLineItemRow
-                                          key={item.id}
-                                          item={item}
-                                          idx={absoluteIndex >= 0 ? absoluteIndex : index}
-                                          menuItems={currentMenu}
-                                          setMenuItems={setCurrentMenu}
-                                          menuTab="adults"
-                                        />
-                                      );
-                                    })}
-                                  </div>
-                                )}
+                            <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/30">
+                              <Switch
+                                checked={adultsDiffer}
+                                onCheckedChange={switchAdults}
+                                disabled={readOnly}
+                                data-testid="switch-adults-differ"
+                              />
+                              <div>
+                                <Label className="text-sm font-medium">Different for adults</Label>
+                                <p className="text-xs text-muted-foreground">Off: the adults eat what was chosen for the kids. On: start from the kids' menu and change it for the adults.</p>
                               </div>
-                            )}
+                            </div>
 
-                            {setMenuEnabled && (
-                              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Additional Items</Label>
-                            )}
-                            {additionalItems.length === 0 ? (
-                              <div
-                                className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md cursor-pointer hover:bg-accent/30 hover:border-border transition-colors"
-                                onClick={() => {
-                                  setCurrentMenu([{
-                                    id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-                                    itemName: "",
-                                    quantity: 1,
-                                    notes: "",
-                                    included: true,
-                                    price: 0,
-                                    source: setMenuEnabled ? "additional" : undefined,
-                                  }]);
-                                  setTimeout(() => {
-                                    const el = document.querySelector(`[data-testid="input-menu-name-adults-0"]`) as HTMLElement;
-                                    if (el) el.click();
-                                  }, 50);
-                                }}
-                                data-testid="button-add-first-menu-adults"
-                              >
-                                Click here to add first item
+                            {!adultsDiffer ? (
+                              <div className="space-y-1" data-testid="adults-menu-mirror">
+                                <p className="text-xs text-muted-foreground italic" data-testid="text-adults-same-as-kids">{ADULTS_SAME_AS_KIDS}</p>
+                                {kidsMenu.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md">Nothing on the kids' menu yet</p>
+                                ) : (
+                                  kidsMenu.map((item, index) => (
+                                    <div key={item.id} className="flex items-center gap-2 text-sm py-0.5" data-testid={`adults-mirror-item-${index}`}>
+                                      <span className="w-6 text-center text-xs font-medium shrink-0">{item.quantity}</span>
+                                      <span className="text-xs">{item.itemName}</span>
+                                      {item.notes?.trim() && <span className="text-xs text-muted-foreground shrink-0">{item.notes.trim()}</span>}
+                                      {item.productCode && (
+                                        <span className="text-[10px] font-mono text-muted-foreground shrink-0" title="On the till as a party-only item">{item.productCode}</span>
+                                      )}
+                                    </div>
+                                  ))
+                                )}
                               </div>
                             ) : (
                               <>
-                                {additionalItems.map((item, index) => {
-                                  const absoluteIndex = currentMenu.findIndex((menuItem) => menuItem === item);
-                                  return (
-                                    <MenuLineItemRow
-                                      key={item.id}
-                                      item={item}
-                                      idx={absoluteIndex >= 0 ? absoluteIndex : index}
-                                      menuItems={currentMenu}
-                                      setMenuItems={setCurrentMenu}
-                                      menuTab="adults"
-                                    />
-                                  );
-                                })}
+                                {currentMenu.length === 0 ? (
+                                  <div
+                                    className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md cursor-pointer hover:bg-accent/30 hover:border-border transition-colors"
+                                    onClick={() => {
+                                      setCurrentMenu([{
+                                        id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                                        itemName: "",
+                                        quantity: 1,
+                                        notes: "",
+                                        included: true,
+                                        price: 0,
+                                        source: setMenuEnabled ? "additional" : undefined,
+                                      }]);
+                                      setTimeout(() => {
+                                        const el = document.querySelector(`[data-testid="input-menu-name-adults-0"]`) as HTMLElement;
+                                        if (el) el.click();
+                                      }, 50);
+                                    }}
+                                    data-testid="button-add-first-menu-adults"
+                                  >
+                                    Click here to add first item
+                                  </div>
+                                ) : (
+                                  <>
+                                    {currentMenu.map((item, index) => (
+                                      <MenuLineItemRow
+                                        key={item.id}
+                                        item={item}
+                                        idx={index}
+                                        menuItems={currentMenu}
+                                        setMenuItems={setCurrentMenu}
+                                        menuTab="adults"
+                                      />
+                                    ))}
+                                  </>
+                                )}
+                                <div className={`flex gap-2 pt-1 ${currentMenu.length === 0 ? "hidden" : ""}`}>
+                                  <button
+                                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 hover:bg-amber-500/25 transition-colors"
+                                    onClick={() => {
+                                      setCurrentMenu([...currentMenu, {
+                                        id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                                        itemName: "",
+                                        quantity: 1,
+                                        notes: "",
+                                        included: false,
+                                        price: 0,
+                                        source: setMenuEnabled ? "additional" : undefined,
+                                      }]);
+                                    }}
+                                    data-testid="button-add-menu-extra-adults"
+                                  >
+                                    + EXTRA
+                                  </button>
+                                </div>
+                                {!readOnly && (
+                                  <div className="flex gap-2 pt-1">
+                                    <button
+                                      type="button"
+                                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-violet-500/15 text-violet-600 border-violet-500/30 dark:text-violet-400 hover:bg-violet-500/25 transition-colors"
+                                      onClick={() => setNewItemMenu("adults")}
+                                      title="An item the till's menu does not have yet: it is added to the till for this party only"
+                                      data-testid="button-add-party-menu-item-adults"
+                                    >
+                                      + NEW ITEM (not in the menu)
+                                    </button>
+                                  </div>
+                                )}
                               </>
-                            )}
-                            <div className={`flex gap-2 pt-1 ${additionalItems.length === 0 ? "hidden" : ""}`}>
-                              <button
-                                className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 hover:bg-amber-500/25 transition-colors"
-                                onClick={() => {
-                                  setCurrentMenu([...currentMenu, {
-                                    id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-                                    itemName: "",
-                                    quantity: 1,
-                                    notes: "",
-                                    included: false,
-                                    price: 0,
-                                    source: setMenuEnabled ? "additional" : undefined,
-                                  }]);
-                                }}
-                                data-testid="button-add-menu-extra-adults"
-                              >
-                                + EXTRA
-                              </button>
-                            </div>
-                            {!readOnly && (
-                              <div className="flex gap-2 pt-1">
-                                <button
-                                  type="button"
-                                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-violet-500/15 text-violet-600 border-violet-500/30 dark:text-violet-400 hover:bg-violet-500/25 transition-colors"
-                                  onClick={() => setNewItemMenu("adults")}
-                                  title="An item the till's menu does not have yet: it is added to the till for this party only"
-                                  data-testid="button-add-party-menu-item-adults"
-                                >
-                                  + NEW ITEM (not in the menu)
-                                </button>
-                              </div>
                             )}
                           </div>
                         );

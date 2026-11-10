@@ -1615,6 +1615,9 @@ export function registerBeoRoutes(app: Express) {
             // simplifiedMenus remains a compatibility fallback for old clients.
             kids: kp.menus?.kids ?? kp.simplifiedMenus?.kids ?? [],
             adults: kp.menus?.adults ?? kp.simplifiedMenus?.adults ?? [],
+            // SCRUM-829: "Different for adults", as the editor's switch stands; an editor
+            // from before the switch sends none and the plan keeps none (shared/kitchenAdults.ts).
+            ...(typeof kp.menus?.adultsDiffer === "boolean" ? { adultsDiffer: kp.menus.adultsDiffer } : {}),
             cakePrice: kp.cakePrice || 0,
             cakeIncluded: kp.cakeIncluded !== false,
             kidsFoodTime: kp.menus?.kidsFoodTime || "",

@@ -6,6 +6,7 @@ import { Readable } from "stream";
 import { getFileFromObjectStorage } from "./file-storage";
 import { formatParkSignedDate } from "./timezone-utils";
 import { tillFiguresOf, type TillBillingReading } from "@shared/tillBilling";
+import { ADULTS_ONLY_MARK, ADULTS_SAME_AS_KIDS, adultsDifferOf, kitchenAdultsMarks } from "@shared/kitchenAdults";
 import { beoPdfTillMoneyHtml } from "./lib/beoPdfMoney";
 
 // Resolve a stored branch logo before Chromium renders. Remote object storage
@@ -504,8 +505,10 @@ export interface BeoPdfData {
   kitchenPlan?: {
     required?: boolean;
     menus?: {
-      kids?: { quantity: number; itemName: string; notes?: string; price?: number; included?: boolean; source?: string }[];
-      adults?: { quantity: number; itemName: string; notes?: string; price?: number; included?: boolean; source?: string }[];
+      kids?: { quantity: number; itemName: string; notes?: string; price?: number; included?: boolean; source?: string; productCode?: string }[];
+      adults?: { quantity: number; itemName: string; notes?: string; price?: number; included?: boolean; source?: string; productCode?: string }[];
+      /** SCRUM-829: "Different for adults"; absent on a BEO saved before the switch (shared/kitchenAdults.ts). */
+      adultsDiffer?: boolean;
       kidsFoodTime?: string;
       adultsFoodTime?: string;
     };
@@ -643,24 +646,50 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     </div>
   ` : '';
 
-  const menuItemRow = (item: { quantity: number; itemName: string; notes?: string; price?: number; included?: boolean; source?: string }) => {
+  // SCRUM-829: the adults' change beside a line of the one food list, in the kitchen's words.
+  const adultsMarkHtml = (mark: string | null | undefined) =>
+    mark ? ` <span class="item-note" style="color:#92400e;font-weight:600;">— ${s(mark)}</span>` : '';
+
+  const menuItemRow = (item: { quantity: number; itemName: string; notes?: string; price?: number; included?: boolean; source?: string }, mark: string | null = null) => {
     const isSet = item.source === 'set_menu';
     const badge = isSet
       ? '<span class="incl-badge" style="background:#dbeafe;color:#1e40af;border-color:#93c5fd;">SET</span>'
       : `<span class="extra-badge">EXTRA</span>${item.price ? ` <span class="price">${formatCurrency(item.price)}</span>` : ''}`;
     return `<tr>
       <td class="qty">${item.quantity}x</td>
-      <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">(${s(item.notes)})</span>` : ''}</td>
+      <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">(${s(item.notes)})</span>` : ''}${adultsMarkHtml(mark)}</td>
       <td class="price-col">${badge}</td>
     </tr>`;
   };
 
   const kp = data.kitchenPlan;
 
+  // SCRUM-829: ONE food list. The kids' menu is the main selection; the adults eat it unless
+  // "Different for adults" is on, and then their changes are marked beside the kids' lines
+  // ("kids only", "kids N · adults M", "adults: <note>") and their own dishes listed after,
+  // marked "adults only" — never a second list.
+  const pdfKids = kp?.simplifiedMenus?.kids || kp?.menus?.kids || [];
+  const pdfAdultsDiffer = !!kp && adultsDifferOf({ kids: pdfKids, adults: kp.menus?.adults, adultsDiffer: kp.menus?.adultsDiffer });
+  const pdfAdults = kitchenAdultsMarks(pdfKids, kp?.menus?.adults ?? [], pdfAdultsDiffer);
+  const adultsMarkOf = (item: unknown) => {
+    const at = (pdfKids as unknown[]).indexOf(item);
+    return at >= 0 ? pdfAdults.marks[at] ?? null : null;
+  };
+  const adultsOnlyRows = pdfAdults.adultsOnly.length > 0
+    ? `<table class="menu-table">
+        ${pdfAdults.adultsOnly.map((item: any) => menuItemRow({ quantity: item.quantity ?? 1, itemName: item.itemName ?? '', notes: item.notes, price: item.price, included: item.included, source: item.source }, ADULTS_ONLY_MARK)).join('')}
+       </table>`
+    : '';
+  const adultsLineHtml = kp && kp.required !== false && (pdfKids.length > 0 || kp.setMenuEnabled || pdfAdultsDiffer)
+    ? `<p style="font-size:10px;color:#6b7280;margin:4px 0 0;" data-adults="${pdfAdultsDiffer ? 'differ' : 'same'}">Adults: ${
+        pdfAdultsDiffer ? 'different for adults — their changes are marked above' : s(ADULTS_SAME_AS_KIDS.toLowerCase())
+      }${kp.menus?.adultsFoodTime ? ` &mdash; Service: ${s(kp.menus.adultsFoodTime)}` : ''}</p>`
+    : '';
+
   const kidsMenuHtml = (() => {
     if (!kp) return '';
     const isSetMenuMode = kp.setMenuEnabled;
-    const rawKids = kp.simplifiedMenus?.kids || kp.menus?.kids || [];
+    const rawKids = pdfKids;
     const kidsFoodTime = kp.menus?.kidsFoodTime;
     if (!rawKids.length && !isSetMenuMode) return '';
 
@@ -688,7 +717,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
           ${setMenuItems.length > 0
             ? `<table class="menu-table" style="margin:0;">
                 ${setMenuItems.map((item: any) => `<tr>
-                  <td>${s(item.itemName)}${item.notes ? ` (${s(item.notes)})` : ''}</td>
+                  <td>${s(item.itemName)}${item.notes ? ` (${s(item.notes)})` : ''}${adultsMarkHtml(adultsMarkOf(item))}</td>
                   <td class="price-col"><span class="incl-badge" style="background:#dbeafe;color:#1e40af;border-color:#93c5fd;">SET</span></td>
                 </tr>`).join('')}
                </table>`
@@ -706,7 +735,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
                  : `<span class="extra-badge">EXTRA</span>${item.price ? ` <span class="price">${formatCurrency(item.price)}</span>` : ''}`;
                return `<tr>
                  <td class="qty">${item.quantity}x</td>
-                 <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">(${s(item.notes)})</span>` : ''}</td>
+                 <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">(${s(item.notes)})</span>` : ''}${adultsMarkHtml(adultsMarkOf(item))}</td>
                  <td class="price-col">${badge}</td>
                </tr>`;
              }).join('')}
@@ -723,7 +752,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     return `
       <h3>Kids Menu${kidsFoodTime ? ` <span style="font-weight:normal;font-size:11px;color:#666;">&mdash; Service: ${s(kidsFoodTime)}</span>` : ''}</h3>
       <table class="menu-table">
-        ${rawKids.map(menuItemRow).join('')}
+        ${rawKids.map((item) => menuItemRow(item, adultsMarkOf(item))).join('')}
       </table>`;
   })();
 
@@ -734,12 +763,9 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
 
       ${kidsMenuHtml}
 
-      ${kp.menus?.adults?.length ? `
-        <h3>Adults Menu${kp.menus.adultsFoodTime ? ` <span style="font-weight:normal;font-size:11px;color:#666;">&mdash; Service: ${s(kp.menus.adultsFoodTime)}</span>` : ''}</h3>
-        <table class="menu-table">
-          ${kp.menus.adults.map(menuItemRow).join('')}
-        </table>
-      ` : ''}
+      ${adultsOnlyRows}
+
+      ${adultsLineHtml}
 
       ${kp.cakeMode && kp.cakeMode !== 'NONE' ? `
         <h3>Cake</h3>
