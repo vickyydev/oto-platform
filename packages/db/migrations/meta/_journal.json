@@ -799,6 +799,13 @@
       "when": 1794309900000,
       "tag": "0113_product_beo_only",
       "breakpoints": true
+    },
+    {
+      "idx": 114,
+      "version": "7",
+      "when": 1794320978574,
+      "tag": "0114_inbox_advice_opener",
+      "breakpoints": true
     }
   ]
 }

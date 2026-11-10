@@ -790,9 +790,10 @@ describe('the viewer and the templates', () => {
   it('templates: the active rows, optionally one language', async () => {
     const all = await get<{ templates: Array<{ key: string; language: string; needsTranslation: boolean }> }>('bdayTh', '/inbox/templates');
     expect(all.status).toBe(200);
-    // Fifteen keys (handover_general joined with SCRUM-590, follow_up with the SCRUM-220 test night, the three
-    // closing lines and the unclear line with the SCRUM-220 playbook, the booking line with SCRUM-677) in three languages.
-    expect(all.body.templates).toHaveLength(45);
+    // Sixteen keys (handover_general joined with SCRUM-590, follow_up with the SCRUM-220 test night, the three
+    // closing lines and the unclear line with the SCRUM-220 playbook, the booking line with SCRUM-677, the
+    // opener beside a birthday advice hand-over with SCRUM-823) in three languages.
+    expect(all.body.templates).toHaveLength(48);
     expect(all.body.templates.filter((t) => t.key.startsWith('closing_')).map((t) => `${t.key}:${t.language}`).sort()).toEqual([
       'closing_birthday:en',
       'closing_birthday:ru',
@@ -811,8 +812,9 @@ describe('the viewer and the templates', () => {
       'closing_unclear:th',
     ]);
     expect(all.body.templates.filter((t) => t.key === 'follow_up').map((t) => t.language).sort()).toEqual(['en', 'ru', 'th']);
+    expect(all.body.templates.filter((t) => t.key === 'opener_birthday_advice').map((t) => t.language).sort()).toEqual(['en', 'ru', 'th']);
     const th = await get<{ templates: Array<{ key: string; language: string; needsTranslation: boolean }> }>('bdayTh', '/inbox/templates?language=th');
-    expect(th.body.templates).toHaveLength(15);
+    expect(th.body.templates).toHaveLength(16);
     // Thai in its own words since the test night: nothing waits for a translator but the booking line (SCRUM-677).
     expect(th.body.templates.every((t) => t.language === 'th')).toBe(true);
     expect(th.body.templates.filter((t) => t.needsTranslation).map((t) => t.key)).toEqual(['closing_booking']);
@@ -822,7 +824,7 @@ describe('the viewer and the templates', () => {
       .from(s.template)
       .where(and(eq(s.template.operatorId, oto), eq(s.template.key, 'welcome'), eq(s.template.language, 'ru')));
     await ctx.db.update(s.template).set({ archivedAt: new Date() }).where(inArray(s.template.id, [one!.id]));
-    expect((await get<{ templates: unknown[] }>('bdayTh', '/inbox/templates')).body.templates).toHaveLength(44);
+    expect((await get<{ templates: unknown[] }>('bdayTh', '/inbox/templates')).body.templates).toHaveLength(47);
   });
 });
 

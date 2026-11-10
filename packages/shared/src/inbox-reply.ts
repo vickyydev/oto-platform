@@ -41,6 +41,10 @@ import { InboxChannelSchema, InboxMessageSchema, InboxTemplateSchema } from './i
  * `closing_unclear`, the unclear line that wins over the destination's.
  * `closing_booking` (SCRUM-677, `0095_inbox_booking_closing`) is a plan's own
  * line: after a nanny answer, why Central Floresta will write.
+ * `opener_birthday_advice` (SCRUM-823, `0114_inbox_advice_opener`) is a
+ * birthday advice hand-over's one message when nobody asked the party's
+ * basics yet: the playbook's opener question, then the birthday manager's
+ * warm line.
  */
 export const INBOX_TEMPLATE_KEY_NAMES = [
   'welcome',
@@ -58,6 +62,7 @@ export const INBOX_TEMPLATE_KEY_NAMES = [
   'closing_branch',
   'closing_unclear',
   'closing_booking',
+  'opener_birthday_advice',
 ] as const;
 export type InboxTemplateKeyName = (typeof INBOX_TEMPLATE_KEY_NAMES)[number];
 

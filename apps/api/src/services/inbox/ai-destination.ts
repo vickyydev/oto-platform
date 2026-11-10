@@ -85,6 +85,27 @@ export const CLOSING_KEY_OF: Readonly<Record<InboxCategory, InboxTemplateKey | n
  */
 export const PLAN_CLOSING_KEYS: ReadonlySet<InboxTemplateKey> = new Set<InboxTemplateKey>(['closing_booking', 'closing_unclear']);
 
+/**
+ * SCRUM-823 (staging, 10 Nov): the line a birthday advice hand-over sends when
+ * the gate marked it `adviceOpener` (`@oto/assistant` `adviceOpenerOn`): the
+ * playbook's opener question and the birthday manager's warm line, ONE
+ * message. Tried first, and only on a hand-over that ends in Birthdays &
+ * Events; where it is not usable in the language (missing, inactive, archived
+ * or untranslated) the ladder goes on to `closing_birthday` as before. Never
+ * a fallback for any other hand-over.
+ */
+export const ADVICE_OPENER_KEY = 'opener_birthday_advice' satisfies InboxTemplateKey;
+
+/**
+ * The closing keys a hand-over tries once the opener is read: the opener's
+ * own line first when the verdict carries it and the thread ends in Birthdays
+ * & Events, then the hand-over's usual ladder (`closingKeysOf`).
+ */
+export function closingKeysWithOpener(opener: boolean, h: ClosingHandover, destination: InboxCategory): InboxTemplateKey[] {
+  const keys = closingKeysOf(h, destination);
+  return opener && destination === 'birthdays' && !h.branchLine ? [ADVICE_OPENER_KEY, ...keys] : keys;
+}
+
 /** What the closing ladder reads of a hand-over (`ai-engine.ts` `Handover`). */
 export interface ClosingHandover {
   plan: AiHandoverPlan;

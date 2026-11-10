@@ -35699,7 +35699,7 @@ export interface paths {
                         /** Format: uuid */
                         id?: string;
                         /** @enum {string} */
-                        key: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours" | "handover_general" | "follow_up" | "closing_birthday" | "closing_gm" | "closing_branch" | "closing_unclear" | "closing_booking";
+                        key: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours" | "handover_general" | "follow_up" | "closing_birthday" | "closing_gm" | "closing_branch" | "closing_unclear" | "closing_booking" | "opener_birthday_advice";
                         language: string;
                         /** @enum {string|null} */
                         channel?: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform" | null;
@@ -36772,7 +36772,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    key?: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours" | "handover_general" | "follow_up" | "closing_birthday" | "closing_gm" | "closing_branch" | "closing_unclear" | "closing_booking";
+                    key?: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours" | "handover_general" | "follow_up" | "closing_birthday" | "closing_gm" | "closing_branch" | "closing_unclear" | "closing_booking" | "opener_birthday_advice";
                     language?: string;
                     archived?: "true" | "false";
                 };

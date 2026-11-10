@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import {
+  ADVICE_OPENER_SLOTS,
   AI_INTENTS,
   AI_REPLY_LANGUAGES,
   BY_BRANCH,
@@ -8,6 +9,7 @@ import {
   applyGates,
   applyReview,
   askFirstOf,
+  askedSlotsOf,
   intentPartsOf,
   isMixedOrigin,
   joinReviewed,
@@ -17,6 +19,7 @@ import {
   reviewItemsOf,
   reviewWithDeadline,
   scheduleBubbles,
+  type AiAskedSlot,
   type AiBranchKey,
   type AiDecision,
   type AiHandoverPlan,
@@ -63,9 +66,10 @@ import { withTx, type Exec, type Tx } from '../tx';
 import { assistantSettingOverridesOf } from '../assistant-settings';
 import type { InboxAiRuntime } from './ai-runtime';
 import {
+  ADVICE_OPENER_KEY,
   PLAN_CLOSING_KEYS,
   WITHHELD_REPLY_REASONS,
-  closingKeysOf,
+  closingKeysWithOpener,
   destinationOf,
   isUnclearHandover,
   planOwner,
@@ -646,6 +650,8 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
   const applicable = (knowledge.rules ?? []).filter((r) => r.branchId === null || r.branchId === conv.branchId);
   // SCRUM-831: the episode's questions, each open one read against the reply after it.
   const memory = await loadOpenQuestionMemory(db, conv, eligible.episodeStart, episode, burst, now);
+  // SCRUM-823: the gate reads them too — the opener beside an advice hand-over is asked once.
+  const episodeState: EpisodeState = { ...facts.state, questions: memory.questions };
   const promptInput: PromptInput = {
     knowledge: knowledge.knowledge,
     episode,
@@ -684,7 +690,7 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
     knowledge,
   };
   if (!outcome.ok) return { ...base, conv, silence: outcome.reason };
-  const gated = applyGates({ decision: outcome.decision, grounding: built.prompt.grounding, episode: facts.state, openLines });
+  const gated = applyGates({ decision: outcome.decision, grounding: built.prompt.grounding, episode: episodeState, openLines });
   // SCRUM-696: an approved rule's ask-first question, enforced here and never
   // trusted to the model. Only when a rule with a question applies; it
   // replaces the gate's verdict only when it fires (`askFirstOf`).
@@ -716,7 +722,7 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
       promptInput,
       first: { ...base, decision: outcome.decision, verdict },
       ask: (prompt) => askModel(db, client, turn, conv, prompt, effort),
-      gate: (decision, grounding) => applyGates({ decision, grounding, episode: facts.state, openLines }),
+      gate: (decision, grounding) => applyGates({ decision, grounding, episode: episodeState, openLines }),
       askFirst: fired !== null,
       now,
     })),
@@ -737,7 +743,7 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
     episode,
     client,
     promptInput,
-    episodeState: facts.state,
+    episodeState,
     openLines,
     first,
     topic: reviewed.state,
@@ -1388,11 +1394,15 @@ async function composeReply(exec: Exec, conv: ConversationRow, account: AccountR
   let holding: HoldingLine = NO_LINE;
   if (handover && !handover.silenced) {
     if (handover.plan.brochure) brochure = await brochureFiles(exec, conv, account, v.language);
+    // SCRUM-823: a birthday advice hand-over the gate marked sends the opener
+    // and the birthday manager's warm line as one message, when its template
+    // is usable here; else the closing line, as before.
+    const opener = v.action === 'handover' && v.adviceOpener === true;
     holding = await closingLine(
       exec,
       conv,
       account,
-      closingKeysOf(handover, routing.category),
+      closingKeysWithOpener(opener, handover, routing.category),
       handover.plan,
       v.language,
       v.action === 'handover' ? v.holdingBubbles : [],
@@ -1405,6 +1415,26 @@ async function composeReply(exec: Exec, conv: ConversationRow, account: AccountR
     );
   }
   return { ...none, routing, replied, brochure, holding, lines };
+}
+
+/**
+ * SCRUM-823: the opener's line, when the hand-over sent it (the
+ * `opener_birthday_advice` template carried the holding line): the line it
+ * went out on and the slots it asks — the playbook's three, and anything else
+ * its words ask (an edited template) — for the open-question memory
+ * (SCRUM-831), so the family's reply is read as the answer. Null when the
+ * closing line went instead, or the line asks nothing.
+ */
+function openerAsked(
+  holding: HoldingLine,
+  items: readonly LineItem[],
+  messageIds: readonly string[],
+): { lineId: string; slots: AiAskedSlot[] } | null {
+  if (holding.templateKey !== ADVICE_OPENER_KEY || holding.templateId === null) return null;
+  const at = items.findIndex((l) => l.templateId === holding.templateId && l.body);
+  if (at < 0 || messageIds[at] === undefined) return null;
+  const slots = askedSlotsOf(ADVICE_OPENER_SLOTS, [items[at]!.body!]);
+  return slots.length > 0 ? { lineId: messageIds[at]!, slots } : null;
 }
 
 /** What the decide phase's review left for the commit. */
@@ -1933,6 +1963,7 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
         verdict: v,
         handover: handover !== null,
         lines: items.map((l, i) => ({ id: messageIds[i]!, body: l.body })),
+        handoverAsked: openerAsked(holding, items, messageIds),
         at,
       });
 

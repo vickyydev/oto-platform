@@ -172,6 +172,11 @@ export type RoutingPrimaryKind = (typeof ROUTING_PRIMARY_KINDS)[number];
  * (SCRUM-677, `0095_inbox_booking_closing`) is a PLAN's own line, not a
  * destination's: after a nanny answer it says why Central Floresta will
  * write — to confirm the booking — where the branch line only said "shortly".
+ * `opener_birthday_advice` (SCRUM-823, `0114_inbox_advice_opener`) is the
+ * birthday advice hand-over's ONE message when the family asked for a party
+ * and nobody has asked the basics yet: the playbook's opener question (the
+ * date, roughly how many people, which park), then the birthday manager's
+ * warm line.
  */
 export const INBOX_TEMPLATE_KEYS = [
   'welcome',
@@ -189,6 +194,7 @@ export const INBOX_TEMPLATE_KEYS = [
   'closing_branch',
   'closing_unclear',
   'closing_booking',
+  'opener_birthday_advice',
 ] as const;
 export type InboxTemplateKey = (typeof INBOX_TEMPLATE_KEYS)[number];
 

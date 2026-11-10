@@ -528,6 +528,13 @@ export async function commitOpenQuestions(
     handover: boolean;
     /** The lines the turn wrote, in order, with the ids `writeLines` gave them. */
     lines: ReadonlyArray<{ id: string; body: string | null }>;
+    /**
+     * SCRUM-823: a hand-over whose own line asks (the opener beside a birthday
+     * advice hand-over): the slots it asks and the line it went out on.
+     * Recorded open after the hand-over withdraws the rest, so the family's
+     * reply is read as their answer. Absent or null: a hand-over asks nothing.
+     */
+    handoverAsked?: { lineId: string; slots: readonly AiAskedSlot[] } | null;
     at: Date;
   },
 ): Promise<OpenQuestionCommit> {
@@ -558,6 +565,24 @@ export async function commitOpenQuestions(
   if (gone.length > 0) await withdraw(inArray(conversationOpenQuestion.id, gone));
   if (a.handover) await withdraw(sql`true`);
 
+  /** One question asked on its line: the older open row of the slot withdrawn first. */
+  const ask = async (slot: AiAskedSlot, lineId: string) => {
+    await withdraw(eq(conversationOpenQuestion.slot, slot));
+    await tx.insert(conversationOpenQuestion).values({
+      id: newId(),
+      operatorId: a.conv.operatorId,
+      conversationId: a.conv.id,
+      slot,
+      state: 'open',
+      turnId: a.turnId,
+      askedMessageId: lineId,
+      askedAt: a.at,
+      createdAt: a.at,
+      updatedAt: a.at,
+    });
+    done.asked.push(slot);
+  };
+
   const v = a.verdict;
   if (!a.handover && v?.action === 'answer' && a.decision) {
     const sent = a.lines.filter((l): l is { id: string; body: string } => l.body !== null && l.body.trim() !== '');
@@ -565,21 +590,12 @@ export async function commitOpenQuestions(
       const line =
         sent.find((l) => slotsAskedIn([l.body]).includes(slot)) ?? [...sent].reverse().find((l) => questionsIn([l.body]).length > 0) ?? sent.at(-1);
       if (!line) continue;
-      await withdraw(eq(conversationOpenQuestion.slot, slot));
-      await tx.insert(conversationOpenQuestion).values({
-        id: newId(),
-        operatorId: a.conv.operatorId,
-        conversationId: a.conv.id,
-        slot,
-        state: 'open',
-        turnId: a.turnId,
-        askedMessageId: line.id,
-        askedAt: a.at,
-        createdAt: a.at,
-        updatedAt: a.at,
-      });
-      done.asked.push(slot);
+      await ask(slot, line.id);
     }
+  }
+  // SCRUM-823: the opener beside a birthday advice hand-over asks the party's basics on its own line.
+  if (a.handover && a.handoverAsked && a.lines.some((l) => l.id === a.handoverAsked!.lineId)) {
+    for (const slot of a.handoverAsked.slots) if (slot !== 'other') await ask(slot, a.handoverAsked.lineId);
   }
 
   if (done.asked.length + done.answered.length + done.withdrawn.length > 0) {

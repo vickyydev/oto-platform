@@ -284,7 +284,7 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
     ]);
   });
 
-  it('lays the fifteen templates in EN, TH and RU, each language in its own words but for a key waiting for its translator', async () => {
+  it('lays the sixteen templates in EN, TH and RU, each language in its own words but for a key waiting for its translator', async () => {
     const templates = await db.select().from(s.template).where(eq(s.template.operatorId, oto));
     expect(templates).toHaveLength(INBOX_TEMPLATE_KEYS.length * 3);
     expect(new Set(templates.map((t) => t.key))).toEqual(new Set(INBOX_TEMPLATE_KEYS));
@@ -329,6 +329,11 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
     expect(en('closing_unclear')).toBe('Thanks for your message! A team member will be with you shortly.');
     // SCRUM-677: a nanny answer's line says why Central Floresta will write.
     expect(en('closing_booking')).toBe('Our Central Floresta team will message you to confirm the booking 😊');
+    // SCRUM-823: the opener beside a birthday advice hand-over, then the birthday manager's warm line, one message.
+    expect(en('opener_birthday_advice')).toBe(
+      "Amazing, thank you! We'd love to organize a party for you 🎈 What date are you thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong? Our birthday manager will be with you shortly.",
+    );
+    expect(en('closing_birthday').endsWith('Our birthday manager will be with you shortly.')).toBe(true);
     // The follow-up is the one line that is not a holding line, and the only one with a placeholder.
     expect(INBOX_TEMPLATE_BODIES.follow_up).toContain('{{name}}');
     expect(INBOX_TEMPLATE_KEYS.filter((k) => INBOX_TEMPLATE_BODIES[k].includes('{{'))).toEqual(['follow_up']);

@@ -91673,7 +91673,8 @@
                       "closing_gm",
                       "closing_branch",
                       "closing_unclear",
-                      "closing_booking"
+                      "closing_booking",
+                      "opener_birthday_advice"
                     ]
                   },
                   "language": {
@@ -94191,7 +94192,8 @@
                 "closing_gm",
                 "closing_branch",
                 "closing_unclear",
-                "closing_booking"
+                "closing_booking",
+                "opener_birthday_advice"
               ]
             },
             "in": "query",
