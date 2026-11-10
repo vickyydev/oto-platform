@@ -148,7 +148,7 @@ Review page (screens and decision boxes): https://claude.ai/artifact/MRK5VbmoMKs
 | 1 Advice questions to a person, notified | SCRUM-823 | APPROVED; the date-and-park opener stays — LANDED a80ca2630, proved for the rule (Testing); the opener-on-model-handover gap building on lane/opener823b-20261110; the bell half waits on the owner's key script |
 | 2 Voice | SCRUM-824 | APPROVED; part (a) LANDED 405230df0, proved with the provider off (Testing); the speech provider, its key and PDPA are the owner's choice; part (b) later |
 | 3 Deposit QR and set-menu link | SCRUM-825 | updated proposal: driven from the BEO, posted by the assistant; the owner says approved in chat (10 Nov 22:40), the page shows no decision — confirming |
-| 4 (and 6) Fetch from chat | SCRUM-826 | taken as APPROVED on the owner's chat line of 10 Nov 22:40 (the page's store holds no decision) — BUILT, reviewed and fixed on lane/fetch826-20261111 (five commits, 03:20); land-prep running; three decisions on the ticket |
+| 4 (and 6) Fetch from chat | SCRUM-826 | taken as APPROVED on the owner's chat line of 10 Nov 22:40 (the page's store holds no decision) — LANDED 820c3fa4c (11 Nov 03:35, six commits); the inbox and the app deploying; the proof running; three decisions on the ticket |
 | 5 BEO pre-filled in one pass | SCRUM-827 | the owner says approved in chat (10 Nov 22:40), the page shows no decision — confirming |
 | 7 BEO-only menu items | SCRUM-828 | APPROVED — LANDED a3d87300a, proved, DEPLOYED |
 | 8 Adults start from the kids' choice | SCRUM-829 | taken as APPROVED on the owner's chat line of 10 Nov 22:40 (the page's store holds no decision) — BUILDING on lane/adults829-20261111 from 11 Nov 02:00 (Fable workflow); the portions question on the ticket |
