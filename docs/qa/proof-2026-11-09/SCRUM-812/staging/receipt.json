@@ -1,0 +1,302 @@
+{
+  "unit": "SCRUM-812",
+  "what": "The api -> OTO App calls accepted again after the directory clients were re-issued: Book Date saves the party in the OTO App; the presence job on Console > Health",
+  "liveBefore": {
+    "at": "2026-11-10T06:43:49.615Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbpbkolbedkc7389puh0",
+        "status": "live",
+        "sha": "17d16c9d26a86bf8a610d6fbc6fe90a16f62bffe",
+        "finishedAt": "2026-11-10T06:37:18.936374Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbpb4j7avr4c73egmlcg",
+        "status": "live",
+        "sha": "17d16c9d26a86bf8a610d6fbc6fe90a16f62bffe",
+        "finishedAt": "2026-11-10T05:58:32.908929Z"
+      },
+      {
+        "name": "oto-app-staging",
+        "deployId": "dep-dbp488942hec73d2ekig",
+        "status": "live",
+        "sha": "8b3e36741279a52e87a1fb8723077f02eba0a096",
+        "finishedAt": "2026-11-09T22:09:45.908855Z"
+      }
+    ],
+    "allAsBriefed": false
+  },
+  "liveAfter": {
+    "at": "2026-11-10T06:53:15.033Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbpbt9gm7kps73aftv70",
+        "status": "update_in_progress",
+        "sha": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbpb4j7avr4c73egmlcg",
+        "status": "live",
+        "sha": "17d16c9d26a86bf8a610d6fbc6fe90a16f62bffe",
+        "finishedAt": "2026-11-10T05:58:32.908929Z"
+      },
+      {
+        "name": "oto-app-staging",
+        "deployId": "dep-dbpbt90m7kps73afttsg",
+        "status": "live",
+        "sha": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6",
+        "finishedAt": "2026-11-10T06:53:09.62373Z"
+      }
+    ],
+    "allAsBriefed": false
+  },
+  "liveNote": "The whole chain ran on oto-api-staging 17d16c9d, oto-inbox-staging 17d16c9d and oto-app-staging 8b3e3674. A deploy of 608e3c0b (not started by this run) went live on oto-app-staging at 06:53:09Z, after the clean-up and before the sign-out; oto-api-staging was updating to it at 06:53:15Z.",
+  "startedAt": "2026-11-10T06:43:41.995Z",
+  "browser": "Chromium 153.0.8010.12",
+  "actor": "the staging administrator through the launcher, in the inbox as the team member (name masked in every picture)",
+  "conversation": {
+    "conversationId": "01a1c433-61bf-7ee9-9a71-406bbdc8adf6",
+    "channel": "Demo WhatsApp · Central Floresta (simulator channel, nothing reaches a phone)",
+    "turns": [
+      {
+        "by": "customer",
+        "text": "Здравствуйте! Хотим отметить день рождения сына Миши, ему 6 лет, 10 детей и 4 взрослых.",
+        "at": "2026-11-10T06:44:24.151Z",
+        "route": "POST /api/inbox/simulator/inbound",
+        "status": 200,
+        "newConversation": true,
+        "assistantReplies": [
+          "Здравствуйте! Как здорово, спасибо вам! С радостью организуем праздник для Миши 🎈",
+          "Подскажите, какую дату вы рассматриваете и какой филиал вам удобнее, Central Floresta или Robinson Chalong?"
+        ],
+        "assistantPills": [
+          {
+            "kind": "ai_replied",
+            "intents": [
+              "birthday_party"
+            ],
+            "destination": null,
+            "closingKey": null
+          }
+        ]
+      },
+      {
+        "by": "customer",
+        "text": "Можно 21 ноября в 14:00?",
+        "at": "2026-11-10T06:44:48.502Z",
+        "route": "POST /api/inbox/simulator/inbound",
+        "status": 200,
+        "newConversation": false,
+        "assistantReplies": [
+          "Большое спасибо! Наш менеджер по праздникам скоро свяжется с вами."
+        ],
+        "assistantPills": [
+          {
+            "kind": "ai_handover",
+            "intents": [
+              "birthday_details"
+            ],
+            "destination": "birthdays",
+            "closingKey": "closing_birthday"
+          }
+        ]
+      },
+      {
+        "by": "team",
+        "text": "Подтверждаем день рождения Миши 21 ноября в 14:00, 10 детей, 4 взрослых. Пакет Birthday package Central Floresta: пицца Маргарита, куриный шницель, картофель фри, вафли, фруктовые шпажки, кувшины сока. Торт-мороженое от парка в 15:30. Аниматор: Zombie game. Депозит 3000 бат получен 9 ноября.",
+        "at": "2026-11-10T06:45:00.378Z",
+        "route": "the inbox composer (POST /api/inbox/conversations/:id/messages)",
+        "status": 200,
+        "authorKind": "staff",
+        "providerStatus": "sent"
+      },
+      {
+        "by": "customer",
+        "text": "Отлично, спасибо!",
+        "at": "2026-11-10T06:45:08.949Z",
+        "route": "POST /api/inbox/simulator/inbound",
+        "status": 200,
+        "newConversation": false,
+        "assistantReplies": [],
+        "assistantPills": []
+      }
+    ]
+  },
+  "bookDate": {
+    "firstValues": {
+      "title": "Book Date — ZZ TEST 812 RU birthday",
+      "date": "2026-11-21",
+      "dateHint": "21 ноября",
+      "startTime": "14:00",
+      "startTimeHint": "в 14:00",
+      "park": "Central Floresta",
+      "kids": "10",
+      "adults": "",
+      "childName": "",
+      "childAge": "6",
+      "bookingNameIsZzTest": true
+    },
+    "save": {
+      "route": "POST /api/inbox/conversations/:id/book-date (the dialog's Book date)",
+      "status": 200,
+      "error": null,
+      "event": {
+        "id": "01a1c436-7d4d-7706-bf9b-68610192b2df",
+        "title": "Birthday · ZZ TEST 812 RU birthday",
+        "date": "2026-11-21",
+        "startTime": "14:00",
+        "statusName": "Tentative",
+        "branchName": "Oto Play Park, Central Floresta",
+        "archived": false,
+        "kids": 10
+      }
+    },
+    "noteAfterSave": "Event: 21 Nov 2026 at Central Floresta · tentative in the Events calendar",
+    "eventChip": "Event: 21 Nov 2026 at Central Floresta",
+    "eventChipTitle": "Birthday · ZZ TEST 812 RU birthday · Tentative in the Events calendar. Opens it in the OTO App.",
+    "buttonsAfter": [
+      "Date Booked",
+      "Create BEO"
+    ],
+    "conversationEventRead": {
+      "status": "tentative",
+      "statusName": "Tentative",
+      "date": "2026-11-21",
+      "startTime": "14:00",
+      "kids": 10,
+      "adults": null,
+      "beoPath": "/studio/events/kanban?beo=01a1c436-7d4d-7706-bf9b-68610192b2df"
+    }
+  },
+  "presenceJob": {
+    "before": {
+      "status": 200,
+      "row": {
+        "name": "job:otoapp.presence",
+        "status": "warn",
+        "lastRunAt": "2026-11-10T04:11:37.891Z",
+        "lastOutcome": "failed",
+        "expectedEverySeconds": 21600,
+        "ageSeconds": 9149,
+        "lastError": "OTO App presence batch: park group 681b18d1-4c75-415d-9271-5fe3afc30993: OTOAPP_INVALID_DIRECTORY_KEY: The key is not one this app issued, or it has been revoked. park group 6b21b917-8196-4097-a647-d68b65e25316: OTOAPP_NIGHT_JOB_UNKEYED: the OTO App holds staff there, but this deployment holds no jobs:run key for it (OTOAPP_JOBS_KEYS), so nothing runs its night; add the key and redeploy the api, which reads the keys only when it starts",
+        "waitingOn": []
+      }
+    },
+    "after": {
+      "status": 200,
+      "row": {
+        "name": "job:otoapp.presence",
+        "status": "warn",
+        "lastRunAt": "2026-11-10T04:11:37.891Z",
+        "lastOutcome": "failed",
+        "expectedEverySeconds": 21600,
+        "ageSeconds": 9631,
+        "lastError": "OTO App presence batch: park group 681b18d1-4c75-415d-9271-5fe3afc30993: OTOAPP_INVALID_DIRECTORY_KEY: The key is not one this app issued, or it has been revoked. park group 6b21b917-8196-4097-a647-d68b65e25316: OTOAPP_NIGHT_JOB_UNKEYED: the OTO App holds staff there, but this deployment holds no jobs:run key for it (OTOAPP_JOBS_KEYS), so nothing runs its night; add the key and redeploy the api, which reads the keys only when it starts",
+        "waitingOn": []
+      }
+    },
+    "consoleRow": "job:otoapp.presence failed 2h 40m / every 6h",
+    "consoleAlerts": [
+      "warning job:otoapp.presence has failed 4 times in a row (OTOAPP_INVALID_DIRECTORY_KEY) ×519 open since 10 Nov, 05:12 Acknowledge job:otoapp.presence",
+      "warning job:otoapp.presence has not succeeded since 2026-11-09T03:31:04.712Z (55211s past its deadline) ×917 open since 9 Nov, 22:31 Acknowledge job:otoapp.presence"
+    ],
+    "verdict": "Not proven by the job: its last run was 04:11Z (11:11 Bangkok), before the keys were re-issued and the api restarted (06:37Z); it runs every 6 hours, next due about 10:11Z (17:11 Bangkok). It was not run by hand (the test control repairs presence data in the OTO App, a write this run was not asked to make). The api -> OTO App write itself was accepted: Book Date 200 and the party read back through GET /api/parties/:id 200."
+  },
+  "cleanup": {
+    "at": "2026-11-10T06:52:56.104Z",
+    "event": {
+      "id": "01a1c436-7d4d-7706-bf9b-68610192b2df",
+      "delete": {
+        "route": "DELETE /api/admin/events/:id",
+        "status": 204,
+        "error": null
+      },
+      "readBack": {
+        "event": 404,
+        "beo": 404,
+        "packageSnapshot": 404,
+        "zzTestLeftAtCentralFloresta": []
+      }
+    },
+    "partyAfter": {
+      "route": "GET /api/parties/:id",
+      "status": 404,
+      "code": "NOT_FOUND"
+    },
+    "conversations": {
+      "ru": {
+        "id": "01a1c433-61bf-7ee9-9a71-406bbdc8adf6",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T06:52:57.585Z",
+          "event": {
+            "id": "01a1c436-7d4d-7706-bf9b-68610192b2df",
+            "archived": false,
+            "statusName": "Tentative"
+          }
+        }
+      }
+    }
+  },
+  "signOut": {
+    "at": "2026-11-10T06:53:20.259Z",
+    "inboxContext": {
+      "inboxSignOut": 200,
+      "beoTabAppLogout": 200,
+      "consoleSignOut": 200,
+      "launcherSignOut": 200,
+      "inboxMeAfter": 401,
+      "appUserAfter": 401,
+      "consoleMeAfter": 401,
+      "launcherMeAfter": 401
+    },
+    "appContext": {
+      "appLogout": 200,
+      "launcherSignOut": 200,
+      "appUserAfter": 401,
+      "launcherMeAfter": 401
+    }
+  },
+  "pictures": [
+    {
+      "file": "812-st-01-ru-chat-before-book-date.png",
+      "shows": "The ZZ TEST conversation (ru) as the team member reads it, before Book Date",
+      "namesMasked": 44
+    },
+    {
+      "file": "812-st-02-ru-book-date-21-nov-14-00-10-kids.png",
+      "shows": "Book Date opened on the ZZ TEST conversation: its first values, before Save",
+      "namesMasked": 0
+    },
+    {
+      "file": "812-st-03-ru-book-date-saved-event-chip.png",
+      "shows": "After Book date: the note \"tentative in the Events calendar\", Date Booked and the event chip",
+      "namesMasked": 1
+    },
+    {
+      "file": "812-st-04-ru-chat-end-team-confirmation-event-chip.png",
+      "shows": "The ZZ TEST conversation scrolled to its end: the team's confirmation and the family's thanks, with the event chip after Book date",
+      "namesMasked": 45
+    },
+    {
+      "file": "812-st-05-console-health-otoapp-presence.png",
+      "shows": "Console > Health (after): the job:otoapp.presence row",
+      "namesMasked": 11
+    },
+    {
+      "file": "812-st-06-console-health-job-register-presence.png",
+      "shows": "Console > Health: the job register row for job:otoapp.presence",
+      "namesMasked": 0
+    }
+  ]
+}
