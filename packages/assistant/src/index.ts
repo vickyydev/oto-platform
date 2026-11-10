@@ -21,6 +21,10 @@
  *                 proposes, the table and the guards dispose.
  *   advice.ts     SCRUM-823: the birthday advice question's safety net, a
  *                 word list in three languages the gate overrules with.
+ *   compose.ts    SCRUM-832: the turn's one message, the gate's last step:
+ *                 the park question alone where the answer depends on a
+ *                 park nobody named, the bubbles composed into one, nothing
+ *                 said twice once the park is known.
  *   persona/      the voice per language and the absolute prohibitions.
  *   prompt.ts     block 1 (static), block 2 (knowledge, cached), the episode
  *                 below the breakpoint; the KB size refusal.
@@ -60,6 +64,8 @@ export * from './decision';
 export * from './guards';
 export * from './gate';
 export * from './advice';
+// SCRUM-832: the turn's one message (park first, one bubble, nothing said twice).
+export * from './compose';
 // SCRUM-831: the slot reader (what a reply asks, what an answer says).
 export * from './slots';
 export * from './persona';

@@ -562,3 +562,29 @@ export const INTENT_SLOTS: Readonly<Record<AiIntent, readonly AiAskedSlot[]>> = 
 export const AGE_SLOT_INTENTS: ReadonlySet<AiIntent> = new Set<AiIntent>(
   AI_INTENTS.filter((i) => INTENT_SLOTS[i].includes('child_age')),
 );
+
+// ---------------------------------------------------------------------------
+// SCRUM-832: the answers that depend on the park
+// ---------------------------------------------------------------------------
+
+/**
+ * SCRUM-832 (owner, 10 Nov 2026: "How to find you guys?" got both parks'
+ * locations and then "which park?"): the intents whose answer can depend on
+ * the park — where a park is, how to find it inside the mall and where to
+ * park, and the opening hours. In a general thread with no park, a reply to
+ * one of them is the park question alone (compose.ts `parkFirst`), but only
+ * where the knowledge says the parks' answers DIFFER: the topics the reply
+ * cites are compared park by park (`parksDiffer`). Both parks open 10:00 to
+ * 20:00 and both malls park free today, so "what time do you open?" and "is
+ * there parking?" are answered at once, while "how do we find you?" is not.
+ */
+export const PARK_FIRST_INTENTS: ReadonlySet<AiIntent> = new Set<AiIntent>(['address', 'directions_parking', 'hours']);
+
+/**
+ * The flows that ask the park inside their own one question, which the
+ * park-first question never replaces (the playbook first): the price
+ * conversation's branch-and-residency question, asked before the prices
+ * (`PRICING_RULE`), and the birthday's combined question (dates, roughly how
+ * many people, which branch).
+ */
+export const OWN_PARK_QUESTION_INTENTS: ReadonlySet<AiIntent> = new Set<AiIntent>(['ticket_prices', ...BIRTHDAY_INTENTS]);

@@ -47,6 +47,7 @@ import {
   openerBesideAdvice,
   type AdviceOpener,
 } from './advice';
+import { composeTurn, parkAnswerRead, type TurnComposition } from './compose';
 import {
   AI_REPLY_LANGUAGES,
   type AiDecision,
@@ -120,17 +121,27 @@ export interface EpisodeState extends BirthdayThreadFacts {
    * SCRUM-831's memory, as this turn read it: every question the assistant
    * asked this episode and what became of it. SCRUM-823 reads it for the
    * opener beside an advice hand-over (a date or park question already put:
-   * the opener is not asked again). Absent: no question was asked.
+   * the opener is not asked again); SCRUM-832 reads the park question's
+   * answer there (a park the family already gave is never asked again, and
+   * their "Central" sets the thread's park). Absent: no question was asked.
    */
   questions?: readonly EpisodeQuestion[];
   /**
    * SCRUM-823 review: every line the customer wrote this episode, as written
    * (a voice note's transcript included), oldest first — the burst's too. The
    * opener beside an advice hand-over reads it, so a date, a headcount or a
-   * park said in an earlier message is never asked again. Absent: only the
-   * burst (`GateInput.openLines`) is read.
+   * park said in an earlier message is never asked again; SCRUM-832's park
+   * question reads it the same way. Absent: only the burst
+   * (`GateInput.openLines`) is read.
    */
   customerLines?: readonly string[];
+  /**
+   * SCRUM-832: every line the assistant sent this episode, as written, oldest
+   * first. Once the park is known, what was said about the park while it was
+   * being resolved is not sent again (compose.ts `composeTurn`). Absent:
+   * nothing was sent.
+   */
+  aiLines?: readonly string[];
 }
 
 /**
@@ -184,6 +195,24 @@ export type GateVerdict =
        * turn's `EpisodeState.languageOffered` refuses a second one.
        */
       languageOffer: 'ru' | 'th' | null;
+      /**
+       * SCRUM-832: what the server's own line asks (the park-first question:
+       * `['park']`). The memory records these on the line in place of the
+       * model's declaration, which was written for words that never go.
+       * Absent: the model's declaration and the bubbles' own questions.
+       */
+      askedSlots?: AiAskedSlot[];
+      /**
+       * SCRUM-832: the parts `bubbles[0]` joins, in order (each as the model
+       * wrote it, less a sentence said twice). The engine shows them to the
+       * coherence reviewer one by one (SCRUM-677: it may still drop the
+       * model's own sign-off before the closing line) and sends the parts that
+       * survive side by side as ONE message. Absent: the one bubble is its
+       * own part.
+       */
+      parts?: string[];
+      /** SCRUM-832: how the turn's one message was composed (compose.ts), as counts and words for the turn's pill. */
+      composition?: TurnComposition;
     }
   | {
       action: 'handover';
@@ -324,14 +353,22 @@ const isBirthdaysPlan = (p: AiHandoverPlan) =>
  * (a complaint with its one apology, a refund, an upset message, a request
  * for a person), which goes to its own team as it would in any thread.
  *
- * SCRUM-823, last: a birthday advice hand-over that answers a party request
+ * SCRUM-823, then: a birthday advice hand-over that answers a party request
  * whose basics nobody asked yet carries the opener (`adviceOpenerOn`).
+ *
+ * SCRUM-832, last: the turn's ONE message (compose.ts `composeTurn`) — the
+ * park question alone where the answer depends on a park nobody named, the
+ * reply's bubbles on one topic composed into one, and nothing said twice once
+ * the park is known. A hand-over (the opener's one message included) passes
+ * it as it is. First, the family's answer to the park question is read as the
+ * park they named (`parkAnswerRead`).
  */
 export function applyGates(input: GateInput): GateVerdict {
-  return adviceOpenerOn(gatedVerdict(input), input);
+  const read = parkAnswerRead(input);
+  return composeTurn(adviceOpenerOn(gatedVerdict(read), read), read);
 }
 
-/** `applyGates` before the opener beside an advice hand-over is read. */
+/** `applyGates` before the opener beside an advice hand-over is read and the turn's one message is composed. */
 function gatedVerdict(input: GateInput): GateVerdict {
   const overruled = birthdayDateOverrule(input);
   // SCRUM-823: then an advice question the model labelled details or faq in a

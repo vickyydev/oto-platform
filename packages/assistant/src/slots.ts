@@ -332,9 +332,14 @@ const PARK_WORDS: Record<AiBranchKey, RegExp> = {
   chalong: /chalong|robinson|чалонг\p{L}*|робинсон\p{L}*|ฉลอง|โรบินสัน/iu,
 };
 
+/** Every park a text names (SCRUM-832: "Central or Chalong, which is closer?" names both). */
+export function parksNamedIn(text: string): AiBranchKey[] {
+  return (Object.keys(PARK_WORDS) as AiBranchKey[]).filter((k) => PARK_WORDS[k].test(text));
+}
+
 /** The park a text names, or null (none, or both). */
 export function parkNamedIn(text: string): AiBranchKey | null {
-  const named = (Object.keys(PARK_WORDS) as AiBranchKey[]).filter((k) => PARK_WORDS[k].test(text));
+  const named = parksNamedIn(text);
   return named.length === 1 ? named[0]! : null;
 }
 

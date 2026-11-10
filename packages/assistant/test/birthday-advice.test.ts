@@ -6,6 +6,7 @@ import {
   asksBirthdayAdvice,
   birthdayAdviceOverrule,
 } from '../src/advice';
+import { PART_JOIN } from '../src/compose';
 import type { AiDecision } from '../src/decision';
 import { BIRTHDAY_DATE_RULE, applyGates, type EpisodeState } from '../src/gate';
 import {
@@ -341,13 +342,15 @@ describe('SCRUM-823: the gate’s safety net in a birthday thread', () => {
       },
     ];
     for (const b of bursts) {
+      // SCRUM-832: one message per turn — the opener's two parts in one bubble; the birthday manager's line follows on its own.
+      const message = [b.bubbles.join(PART_JOIN)];
       // The net's reading: the model labelled the advice faq.
       const net = gate({ language: b.language, intent: 'birthday_party', intents: ['birthday_party', 'faq'], bubbles: b.bubbles, reason: 'CLEAR_INTENT' }, BIRTHDAYS, [b.line]);
-      expect(net, b.line).toMatchObject({ action: 'answer', intent: 'birthday_party', bubbles: b.bubbles, thenHandover: BIRTHDAYS_PLAN, mayAutoHandle: false });
+      expect(net, b.line).toMatchObject({ action: 'answer', intent: 'birthday_party', bubbles: message, thenHandover: BIRTHDAYS_PLAN, mayAutoHandle: false });
       expect(net.intents, b.line).toEqual(['birthday_party', 'birthday_advice']);
       // The model's own reading: the same.
       const own = gate({ language: b.language, intent: 'birthday_party', intents: ['birthday_party', 'birthday_advice'], bubbles: b.bubbles, reason: 'CLEAR_INTENT' }, BIRTHDAYS, [b.line]);
-      expect(own, b.line).toMatchObject({ action: 'answer', bubbles: b.bubbles, thenHandover: BIRTHDAYS_PLAN });
+      expect(own, b.line).toMatchObject({ action: 'answer', bubbles: message, thenHandover: BIRTHDAYS_PLAN });
       expect(own.intents, b.line).toEqual(['birthday_party', 'birthday_advice']);
     }
   });
