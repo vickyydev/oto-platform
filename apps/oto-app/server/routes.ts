@@ -207,7 +207,7 @@ import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql }
 import { generateInstanceForDefinition } from "./core/taskGeneration";
 import { personFence, fenceAllows, fenceRows, EMPLOYEE_DENIED } from "./core/personScope";
 import { resolveSelfEmployeeId } from "./core/selfEmployee";
-import { dayOf, sameDeposit, wholeBahtOf, writePartyDeposit } from "./lib/partyDeposit";
+import { currentDeposit, dayOf, sameDeposit, wholeBahtOf, writePartyDeposit } from "./lib/partyDeposit";
 import { requestedChecklistAssignees, setChecklistAssignees, withChecklistAssignees } from "./core/checklistAssignees";
 import { canReachChecklistTemplate, checklistCopyBranchRefusal, checklistCopyRequest, checklistEditChangesOriginal, checklistTemplateBranches, createChecklistCopies, createPreparedChecklistTemplates, loadChecklistCopySource, planBranchCopies, prepareChecklistTemplates, type PreparedChecklistTemplates } from "./core/checklistCopies";
 
@@ -18163,8 +18163,17 @@ OTO Company Limited`,
           timeline: timelineEventIds.has(event.id),
         } : undefined;
 
+        // SCRUM-813: on a party the BEO keeps a billing row for, the form's
+        // Prepayment, the card's deposit and the month's deposits collected all
+        // read the party's one deposit, in the order the BEO and the till read
+        // it, so a party saved before the rule shows one figure here too (and
+        // a form saved with it makes the event's own Prepayment that figure).
+        const deposit = billing ? currentDeposit(billing, event) : null;
+        const oneDeposit = deposit && deposit.amountThb > 0 ? deposit : null;
+
         return {
           ...event,
+          ...(oneDeposit ? { prepaymentAmount: oneDeposit.amountThb, prepaymentDate: oneDeposit.date } : {}),
           // Keep the existing field for other admin-event consumers while
           // exposing the role-aware list for the Studio calendar.
           partyHostName: assignedHostsMap.get(event.id)?.find(host => host.role === "host")?.name || undefined,
@@ -18172,15 +18181,15 @@ OTO Company Limited`,
           billing: billing || lineItemTotalsMap.has(event.id) || bookingTotalPaidMap.has(event.id) ? {
             depositRequired: billing?.depositRequired,
             depositAmount: billing?.depositAmount,
-            depositPaid: billing?.depositPaid,
-            depositPaidAmount: billing?.depositPaidAmount,
+            depositPaid: deposit ? !!oneDeposit : billing?.depositPaid,
+            depositPaidAmount: deposit ? (oneDeposit?.amountThb ?? null) : billing?.depositPaidAmount,
             depositPaidAt: billing?.depositPaidAt,
             depositPaymentMethod: billing?.depositPaymentMethod,
             totalCalculated: lineItemTotalsMap.get(event.id) || billing?.totalCalculated || 0,
             packagePrice: billing?.packagePrice,
             totalAmountPaid: bookingTotalPaidMap.get(event.id) || 0,
-            prepaymentReceived: Number((billing as any)?.addOns?.partyDetails?.prepaymentReceived) || 0,
-            depositDate: (billing as any)?.addOns?.partyDetails?.depositDate || null,
+            prepaymentReceived: deposit ? (oneDeposit?.amountThb ?? 0) : 0,
+            depositDate: deposit ? (oneDeposit?.date ?? null) : null,
           } : undefined,
           sectionProgress,
         };

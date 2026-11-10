@@ -26,7 +26,10 @@
 //      entered in the BEO billing reaches the view in satang and is the
 //      event's Prepayment and Party Details' too; the BEO's Save, the Events
 //      page and a till's edit keep the one figure; a prepayment-only event
-//      and rows saved before the rule still read;
+//      and rows saved before the rule still read, the till's party page
+//      (otoapp_v.events), its settle quote, the BEO and the Events page all
+//      showing one figure for them (Party Details first); a till's edit of
+//      the deposit's day or amount alone keeps the other half it showed;
 //   4. Generate from BEO bills the package's satang as the whole baht a
 //      billing line holds (SCRUM-806): a 5,000 THB add-on bills 5,000; an
 //      add-on switched off or at quantity 0 bills nothing, and one at 2 bills
@@ -855,17 +858,96 @@ try {
     assert.equal(await view(prepaid), 250_000);
 
     // Rows saved before the rule: a billing deposit paid with no prepayment, and Party Details alone (a numeric string).
+    // Every reader shows one figure for them: the till's party page (otoapp_v.events), its settle quote
+    // (otoapp_v.event_packages) and the BEO's read.
+    const readers = async (eventId: string) => {
+      const [ev] = await q<{ d: number | null; day_on: string | null }>(
+        "select deposit_satang::integer as d, deposit_date as day_on from otoapp_v.events where id = $1", [eventId]);
+      const beo = await call("GET", `/api/events/${eventId}/beo`, { cookie });
+      assert.equal(beo.status, 200, show(beo));
+      return {
+        partyPage: ev!.d,
+        settle: await view(eventId),
+        beo: beo.body.partyDetails?.prepaymentReceived ?? null,
+        day: ev!.day_on,
+        beoDay: beo.body.partyDetails?.depositDate ?? null,
+      };
+    };
     const paidOnly = await birthday(A, { prepayment_amount: null });
     await call("POST", `/api/beo/events/${paidOnly}/package-snapshot`, { cookie, body: { templateId: packageId } });
-    await q("insert into beo_event_billing (event_id, deposit_paid, deposit_paid_amount) values ($1, true, 3000)", [paidOnly]);
+    await q("insert into beo_event_billing (event_id, deposit_paid, deposit_paid_amount, deposit_paid_at) values ($1, true, 3000, '2099-02-10')", [paidOnly]);
     assert.equal(await view(paidOnly), 300_000, "the billing's deposit paid, in satang");
+    assert.deepEqual(await readers(paidOnly), { partyPage: 300_000, settle: 300_000, beo: 3000, day: "2099-02-10", beoDay: "2099-02-10" });
     const detailsOnly = await birthday(A, { prepayment_amount: 1000 });
     await call("POST", `/api/beo/events/${detailsOnly}/package-snapshot`, { cookie, body: { templateId: packageId } });
     await q(`insert into beo_event_billing (event_id, add_ons) values ($1, '{"partyDetails": {"prepaymentReceived": "1500"}}'::jsonb)`, [detailsOnly]);
     assert.equal(await view(detailsOnly), 150_000, "Party Details' prepayment before the event's");
+    assert.deepEqual(await readers(detailsOnly), { partyPage: 150_000, settle: 150_000, beo: 1500, day: null, beoDay: null });
     // An odd value is skipped, never fatal to the read.
     await q(`update beo_event_billing set add_ons = '{"partyDetails": {"prepaymentReceived": "about 1500"}}'::jsonb where event_id = $1`, [detailsOnly]);
     assert.equal(await view(detailsOnly), 100_000, "the event's prepayment then");
+    assert.deepEqual(await readers(detailsOnly), { partyPage: 100_000, settle: 100_000, beo: 1000, day: null, beoDay: null });
+
+    // A row whose three places disagree, as an approval of before and a later Party Details edit left it:
+    // the event's Prepayment 1,000 on 1 Feb, the billing's deposit paid 3,000 on 10 Feb, Party Details 4,000
+    // on 20 Feb. Party Details is what the BEO showed and staff typed last: every reader shows it.
+    const split = await birthday(A, { prepayment_amount: 1000 });
+    await q("update core_events set prepayment_date = '2099-02-01' where id = $1", [split]);
+    await call("POST", `/api/beo/events/${split}/package-snapshot`, { cookie, body: { templateId: packageId } });
+    await q(
+      `insert into beo_event_billing (event_id, deposit_paid, deposit_paid_amount, deposit_paid_at, add_ons)
+       values ($1, true, 3000, '2099-02-10', '{"partyDetails": {"prepaymentReceived": 4000, "depositDate": "2099-02-20", "notes": "ZZ TEST"}}'::jsonb)`,
+      [split],
+    );
+    assert.deepEqual(await readers(split), { partyPage: 400_000, settle: 400_000, beo: 4000, day: "2099-02-20", beoDay: "2099-02-20" });
+    // The Events page reads it too: the form's Prepayment, the card's deposit and the month's deposits collected.
+    const list = await call("GET", `/api/admin/events?range=all&branchId=${A.branch}`, { cookie });
+    assert.equal(list.status, 200, show(list));
+    const listed = (list.body as Array<Record<string, any>>).find((e) => e.id === split); // eslint-disable-line @typescript-eslint/no-explicit-any -- a JSON answer
+    assert.ok(listed, "the party is listed");
+    assert.deepEqual(
+      [listed.prepaymentAmount, listed.prepaymentDate, listed.billing?.prepaymentReceived, listed.billing?.depositDate, listed.billing?.depositPaid, listed.billing?.depositPaidAmount],
+      [4000, "2099-02-20", 4000, "2099-02-20", true, 4000],
+    );
+    // An Events page Save of that form makes the event's own Prepayment the one figure, and the BEO keeps it.
+    const formSave = await call("PATCH", `/api/admin/events/${split}`, { cookie, body: { prepaymentAmount: 4000, prepaymentDate: "2099-02-20" } });
+    assert.equal(formSave.status, 200, show(formSave));
+    assert.deepEqual(
+      (await q("select prepayment_amount, prepayment_date from core_events where id = $1", [split]))[0],
+      { prepayment_amount: 4000, prepayment_date: "2099-02-20" },
+    );
+    assert.deepEqual(await readers(split), { partyPage: 400_000, settle: 400_000, beo: 4000, day: "2099-02-20", beoDay: "2099-02-20" });
+
+    // A till's edit of the deposit's day alone keeps the amount the till showed, on a row whose
+    // event Prepayment still holds another figure; and of its amount alone, the day it showed.
+    const tillSplit = await birthday(A, { prepayment_amount: 1000 });
+    await call("POST", `/api/beo/events/${tillSplit}/package-snapshot`, { cookie, body: { templateId: packageId } });
+    await q(
+      `insert into beo_event_billing (event_id, add_ons) values ($1, '{"partyDetails": {"prepaymentReceived": 4000, "depositDate": "2099-02-20"}}'::jsonb)`,
+      [tillSplit],
+    );
+    const dayOnly = await edit(tillSplit, { prepaymentDate: "2099-02-25" }, new Date(Date.now() + 10_000).toISOString());
+    assert.equal(dayOnly.status, 200, show(dayOnly));
+    assert.deepEqual(await readers(tillSplit), { partyPage: 400_000, settle: 400_000, beo: 4000, day: "2099-02-25", beoDay: "2099-02-25" });
+    assert.deepEqual(
+      (await q("select prepayment_amount, prepayment_date from core_events where id = $1", [tillSplit]))[0],
+      { prepayment_amount: 4000, prepayment_date: "2099-02-25" },
+    );
+    const tillAmount = await birthday(A, { prepayment_amount: 1000 });
+    await q("update core_events set prepayment_date = '2099-02-01' where id = $1", [tillAmount]);
+    await call("POST", `/api/beo/events/${tillAmount}/package-snapshot`, { cookie, body: { templateId: packageId } });
+    await q(
+      `insert into beo_event_billing (event_id, add_ons) values ($1, '{"partyDetails": {"prepaymentReceived": 4000, "depositDate": "2099-02-20"}}'::jsonb)`,
+      [tillAmount],
+    );
+    assert.deepEqual(await readers(tillAmount), { partyPage: 400_000, settle: 400_000, beo: 4000, day: "2099-02-20", beoDay: "2099-02-20" });
+    const amountOnly = await edit(tillAmount, { prepaymentAmountThb: 4200 }, new Date(Date.now() + 10_000).toISOString());
+    assert.equal(amountOnly.status, 200, show(amountOnly));
+    assert.deepEqual(await readers(tillAmount), { partyPage: 420_000, settle: 420_000, beo: 4200, day: "2099-02-20", beoDay: "2099-02-20" });
+    assert.deepEqual(
+      (await q("select prepayment_amount, prepayment_date from core_events where id = $1", [tillAmount]))[0],
+      { prepayment_amount: 4200, prepayment_date: "2099-02-20" },
+    );
   });
 
   // ── 4. Generate from BEO bills the package in baht (SCRUM-806) ───────────

@@ -850,6 +850,24 @@ export async function editPartyEvent(
       }
       set(EDIT_COLUMNS[key], typeof value === "string" ? value.trim() : value);
     }
+    // SCRUM-813: an edit of one half of the deposit (only its amount, or only
+    // its day: the till sends what changed) keeps the other half as the till
+    // showed it, the party's one deposit as `otoapp_v.events` reads it (0045),
+    // so a party saved before the one-deposit rule, whose BEO holds another
+    // figure than the event's own Prepayment, keeps the BEO's figure or day.
+    const namesAmount = keys.includes("prepaymentAmountThb");
+    const namesDay = keys.includes("prepaymentDate");
+    if (namesAmount !== namesDay) {
+      const { rows: shown } = await tx.query<{ amount: number | null; day: string | null }>(
+        `select (deposit_satang / 100)::integer as amount, deposit_date as day
+           from otoapp_v.events
+          where id = $1 and tenant_id = $2`,
+        [event.id, event.tenantId],
+      );
+      const was = shown[0];
+      if (was && !namesAmount && was.amount !== null && was.amount > 0) set("prepayment_amount", was.amount);
+      if (was && !namesDay && was.day !== null) set("prepayment_date", was.day);
+    }
     params.push(input.editedAt);
     sets.push(`updated_at = ($${params.length}::timestamptz at time zone 'UTC')`);
     await tx.query(`update core_events set ${sets.join(", ")} where id = $1 and tenant_id = $2`, params);

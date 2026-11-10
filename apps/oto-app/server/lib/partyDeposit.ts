@@ -22,9 +22,18 @@ import type { DbExecutor } from "./packageSnapshot";
  * three (`writePartyDeposit`): the BEO's billing route, the BEO's Save, the AI
  * fill's approval, the Events page's Prepayment and a till's party edit
  * (server/directory/eventWrites.ts, in its own SQL). So there is no second
- * home: whichever screen is used last, every reader shows its figure. The
- * view reads the BEO's figure first, then the event's (migration 0045), so a
- * party saved before this rule still reads what staff entered in the BEO.
+ * home: whichever screen is used last, every reader shows its figure.
+ *
+ * A party saved before this rule may still hold different figures in the
+ * three places. Nothing rewrites them; every reader reads them in ONE order
+ * instead (`currentDeposit` here, and migration 0045's `otoapp_v.events`,
+ * which `otoapp_v.event_packages` reads in turn), so the BEO, the Events page,
+ * the till's party page and its settle quote show the same deposit:
+ *   1. Party Details' "Prepayment received": what the BEO editor, its PDF,
+ *      the day-of view and the Events page's card showed, and what staff
+ *      typed in the BEO before this rule;
+ *   2. else the BEO billing's deposit paid;
+ *   3. else the event's own Prepayment.
  *
  * Money is WHOLE BAHT in all three, as the columns hold it; the view turns
  * it into satang. A deposit of 0 is no deposit: the event's prepayment is
@@ -70,23 +79,24 @@ export const sameDeposit = (a: PartyDeposit, b: PartyDeposit) => a.amountThb ===
 
 /**
  * The party's one deposit as the app reads it, in the order migration 0045's
- * view reads it: the BEO billing's deposit paid, else Party Details'
- * prepayment received, else the event's own prepayment; none is 0.
+ * `otoapp_v.events` reads it: Party Details' prepayment received, else the BEO
+ * billing's deposit paid, else the event's own prepayment; none is 0. A BEO
+ * figure whose own place keeps no day takes the day the other BEO place keeps,
+ * else the event's (a billing's day only while it says paid); the event's own
+ * prepayment keeps its own day, as the view has always read it.
  */
 export function currentDeposit(
   billing: { depositPaid?: unknown; depositPaidAmount?: unknown; depositPaidAt?: unknown; addOns?: unknown } | null | undefined,
   event: { prepaymentAmount?: unknown; prepaymentDate?: unknown } | null | undefined,
 ): PartyDeposit {
-  const partyDetails = asRecord(asRecord(billing?.addOns).partyDetails);
-  const candidates = [
-    billing ? depositOfBillingColumns(billing) : null,
-    depositOfPartyDetails(partyDetails),
-    event ? { amountThb: wholeBahtOf(event.prepaymentAmount), date: dayOf(event.prepaymentDate) } : null,
-  ];
-  const found = candidates.find((d): d is PartyDeposit => !!d && d.amountThb > 0);
-  if (!found) return { amountThb: 0, date: null };
-  // A deposit whose own place keeps no day takes the day another place keeps.
-  return found.date ? found : { ...found, date: dayOf(partyDetails.depositDate) ?? (event ? dayOf(event.prepaymentDate) : null) };
+  const none: PartyDeposit = { amountThb: 0, date: null };
+  const details = depositOfPartyDetails(asRecord(asRecord(billing?.addOns).partyDetails));
+  const paid = billing && billing.depositPaid === true ? depositOfBillingColumns(billing) : none;
+  const own = event ? { amountThb: wholeBahtOf(event.prepaymentAmount), date: dayOf(event.prepaymentDate) } : none;
+  if (details.amountThb > 0) return { amountThb: details.amountThb, date: details.date ?? paid.date ?? own.date };
+  if (paid.amountThb > 0) return { amountThb: paid.amountThb, date: paid.date ?? details.date ?? own.date };
+  if (own.amountThb > 0) return own;
+  return none;
 }
 
 /**

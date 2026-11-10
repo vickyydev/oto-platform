@@ -1,29 +1,128 @@
--- ONE DEPOSIT (SCRUM-813): otoapp_v.event_packages, as migration 0042 made
--- it, with the settlement's deposit read where the BEO keeps it.
+-- ONE DEPOSIT (SCRUM-813): the party's received deposit, read in one order by
+-- every view the till reads it from.
 --
--- 0042 read the party's deposit from the event's own Prepayment
--- (core_events.prepayment_amount) only, so a deposit entered in the BEO
--- (its billing's deposit paid, or Party Details' "Prepayment received", both
--- in beo_event_billing) never reached the till. From here the app keeps one
+-- 0004's otoapp_v.events (the till's party page, its bill, and the "before"
+-- of a till's edit) and 0042's otoapp_v.event_packages (the settle quote)
+-- read the party's deposit from the event's own Prepayment
+-- (core_events.prepayment_amount) only, so a deposit entered in the BEO (its
+-- billing's deposit paid, or Party Details' "Prepayment received", both in
+-- beo_event_billing) never reached the till. From here the app keeps one
 -- figure: every writer of a received deposit (the BEO's billing route, the
--- BEO's Save, the AI fill's approval, the event's own Prepayment and a
--- till's party edit) writes the same amount and date to all three places
--- (server/lib/partyDeposit.ts). This view reads them in that order, so a
--- party saved before that rule still reads the deposit staff entered:
+-- BEO's Save, the AI fill's approval, the event's own Prepayment and a till's
+-- party edit) writes the same amount and date to all three places
+-- (server/lib/partyDeposit.ts).
 --
---   1. the BEO billing's deposit paid (deposit_paid, deposit_paid_amount);
---   2. else Party Details' prepayment received (add_ons.partyDetails
---      .prepaymentReceived), a number or a numeric string, rounded (cast
---      only once it reads as a number, so an odd value is skipped, never fatal);
---   3. else the event's prepayment.
+-- A party saved before that rule may hold different figures in the three
+-- places. Nothing here rewrites them (no data is written by this migration).
+-- Instead otoapp_v.events reads the three in ONE order, the order the app's
+-- own readers use (currentDeposit in server/lib/partyDeposit.ts: the BEO,
+-- the Events page), and otoapp_v.event_packages reads otoapp_v.events'
+-- figure, so the party page and the settle quote can never disagree:
+--
+--   1. Party Details' prepayment received (add_ons.partyDetails
+--      .prepaymentReceived), a number or a numeric string, rounded (cast only
+--      once it reads as a number, so an odd value is skipped, never fatal):
+--      what the BEO editor, its PDF, the day-of view and the Events page's
+--      card showed, and what staff typed in the BEO before the rule;
+--   2. else the BEO billing's deposit paid (deposit_paid, deposit_paid_amount);
+--   3. else the event's prepayment, exactly as 0004 read it.
+--
+-- deposit_date is the day the same place keeps (Party Details' depositDate,
+-- the billing's deposit_paid_at while it says paid), else the other BEO
+-- place's day, else the event's valid prepayment day; with no BEO figure it
+-- is the event's prepayment_date, exactly as 0004 read it.
 --
 -- All three are WHOLE BAHT, so the one figure is multiplied by 100 into
--- satang, as 0042 converted the prepayment. A deposit that is 0 or unset in
--- the BEO falls through to the next; no deposit anywhere stays null.
+-- satang, as 0004 converted the prepayment. A deposit that is 0 or unset in
+-- the BEO falls through to the next.
 --
--- Nothing else changes: the same columns, in the same order, of the same
--- types (CREATE OR REPLACE keeps the view and its grants), every other
--- expression as 0042 wrote it. Expand-only.
+-- Nothing else changes: each view keeps the same columns, in the same order,
+-- of the same types (CREATE OR REPLACE keeps the views, their grants and the
+-- views built on otoapp_v.events), every other expression as 0004 and 0042
+-- wrote it; packages/db declares both unchanged. beo_event_billing is unique
+-- per event, so its join adds no row. Expand-only.
+CREATE OR REPLACE VIEW otoapp_v.events AS
+SELECT
+  e.id,
+  e.tenant_id,
+  e.branch_id AS otoapp_branch_id,
+  CASE
+    WHEN b.core_branch_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      THEN b.core_branch_id::uuid
+  END AS branch_id,
+  CASE e.event_type
+    WHEN 'camp' THEN 'camp'
+    WHEN 'birthday' THEN 'party'
+    WHEN 'private_event' THEN 'party'
+    WHEN 'school_group' THEN 'party'
+    ELSE 'event'
+  END AS type,
+  e.event_type::text AS app_event_type,
+  e.title,
+  e.status,
+  e.is_archived AS archived,
+  e.event_date AS start_date,
+  CASE WHEN e.event_type = 'camp' THEN e.camp_end_date ELSE e.event_date END AS end_date,
+  CASE
+    WHEN e.event_type = 'camp' AND jsonb_typeof(e.camp_cancelled_days) = 'array'
+      THEN ARRAY(SELECT jsonb_array_elements_text(e.camp_cancelled_days))
+    ELSE '{}'::text[]
+  END AS cancelled_days,
+  e.start_time,
+  e.end_time,
+  e.location_text AS location,
+  e.num_children AS expected_kids,
+  e.num_adults AS expected_adults,
+  e.entry_price_weekday_thb::bigint * 100 AS entry_price_weekday_satang,
+  e.entry_price_weekend_thb::bigint * 100 AS entry_price_weekend_satang,
+  e.child_name,
+  e.kid_turning_age,
+  e.booking_name,
+  e.parent_name,
+  e.whatsapp_phone_e164 AS parent_phone,
+  e.activities,
+  e.decoration,
+  e.total_value::bigint * 100 AS total_value_satang,
+  (CASE
+    WHEN d.details_thb IS NOT NULL THEN d.details_thb
+    WHEN d.paid_thb IS NOT NULL THEN d.paid_thb
+    ELSE e.prepayment_amount
+  END)::bigint * 100 AS deposit_satang,
+  CASE
+    WHEN d.details_thb IS NOT NULL THEN COALESCE(d.details_day, d.paid_day, d.own_day)
+    WHEN d.paid_thb IS NOT NULL THEN COALESCE(d.paid_day, d.details_day, d.own_day)
+    ELSE e.prepayment_date
+  END AS deposit_date,
+  e.created_at AT TIME ZONE 'UTC' AS created_at,
+  e.updated_at AT TIME ZONE 'UTC' AS updated_at
+FROM core_events e
+JOIN branches b ON b.id = e.branch_id AND b.tenant_id = e.tenant_id
+LEFT JOIN beo_event_billing bl ON bl.event_id = e.id
+CROSS JOIN LATERAL (
+  SELECT
+    CASE
+      WHEN jsonb_typeof(bl.add_ons) = 'object'
+       AND (bl.add_ons -> 'partyDetails' ->> 'prepaymentReceived') ~ '^\s*[0-9]{1,9}(\.[0-9]+)?\s*$'
+        THEN NULLIF(round((bl.add_ons -> 'partyDetails' ->> 'prepaymentReceived')::numeric)::integer, 0)
+    END AS details_thb,
+    CASE
+      WHEN jsonb_typeof(bl.add_ons) = 'object'
+       AND jsonb_typeof(bl.add_ons -> 'partyDetails' -> 'depositDate') = 'string'
+       AND substr(btrim(bl.add_ons -> 'partyDetails' ->> 'depositDate'), 1, 10) ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+        THEN substr(btrim(bl.add_ons -> 'partyDetails' ->> 'depositDate'), 1, 10)
+    END AS details_day,
+    CASE WHEN bl.deposit_paid AND bl.deposit_paid_amount > 0 THEN bl.deposit_paid_amount END AS paid_thb,
+    CASE WHEN bl.deposit_paid THEN bl.deposit_paid_at::date::text END AS paid_day,
+    CASE
+      WHEN substr(btrim(e.prepayment_date), 1, 10) ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+        THEN substr(btrim(e.prepayment_date), 1, 10)
+    END AS own_day
+) d
+WHERE b.core_branch_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+--> statement-breakpoint
+
+-- otoapp_v.event_packages, as 0042 made it, its settlement's deposit the one
+-- otoapp_v.events reads (the view already joins it as ev).
 CREATE OR REPLACE VIEW otoapp_v.event_packages AS
 SELECT
   e.id::varchar AS event_id,
@@ -151,15 +250,8 @@ SELECT
     'slips_time', to_char(COALESCE(s.slips_time, time '11:00'), 'HH24:MI')
   ) AS kitchen,
   jsonb_build_object(
-    'deposit_satang', COALESCE(
-      CASE WHEN bl.deposit_paid AND bl.deposit_paid_amount > 0 THEN bl.deposit_paid_amount END,
-      CASE
-        WHEN jsonb_typeof(bl.add_ons) = 'object'
-         AND (bl.add_ons -> 'partyDetails' ->> 'prepaymentReceived') ~ '^\s*[0-9]{1,9}(\.[0-9]+)?\s*$'
-          THEN NULLIF(round((bl.add_ons -> 'partyDetails' ->> 'prepaymentReceived')::numeric)::integer, 0)
-      END,
-      e.prepayment_amount
-    )::bigint * 100,
+    -- The party's one deposit, as otoapp_v.events reads it above.
+    'deposit_satang', ev.deposit_satang,
     'pos_sale_id', NULLIF(btrim(bl.pos_order_ref), '')
   ) AS settlement
 FROM core_events e
