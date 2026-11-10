@@ -1,14 +1,20 @@
+// @vitest-environment jsdom
+//
 // SCRUM-826 — "Fetch from chat" in Book Date: the dialog is open and the chat
 // has moved on; a press reads the chat again (the SCRUM-821 model read, as it
 // is now) and fills ONLY the fields the person has not typed in — a typed
 // field stays, and the line under the button says what was filled and what
 // was kept. A pending choice on an untouched field is settled by the fresh
-// reading; an answer the model could not give changes nothing. Node, no DOM:
-// the fetch as the pure function the dialog calls, and the dialog rendered
-// with react-dom/server.
-import { createElement } from 'react';
+// reading; an answer the model could not give changes nothing. The fetch as
+// the pure function the dialog calls, and the dialog rendered with
+// react-dom/server; then, in a DOM (the panel keeps the dialog mounted across
+// birthday conversations), a fetch whose answer lands after the dialog was
+// closed and opened again changes nothing — the first family's reading never
+// fills the second family's Book Date.
+import { act, createElement } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { BookDateProposal } from '@/api/inbox';
 import { BookDateDialog, readDraft } from '@/components/BookDateDialog';
 import {
@@ -207,6 +213,112 @@ describe('Fetch from chat fills the fields the person has not touched', () => {
   it('the fetched answer counts as merged, so the dialog’s own merge of it afterwards changes nothing more', () => {
     const fetched = fetchBookDateProposal(opened(), LATER_READ, BRANCH_IDS);
     expect(mergeBookDateProposal(fetched, LATER_READ, BRANCH_IDS)).toBe(fetched);
+  });
+});
+
+describe('a fetch answered after the dialog was closed and opened again changes nothing', () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  let root: Root | null = null;
+  let host: HTMLElement | null = null;
+  beforeEach(() => {
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+  });
+  afterEach(async () => {
+    if (root) await act(async () => root!.unmount());
+    root = null;
+    host?.remove();
+    host = null;
+  });
+
+  function deferred<T>() {
+    let resolve!: (value: T) => void;
+    const promise = new Promise<T>((res) => {
+      resolve = res;
+    });
+    return { promise, resolve };
+  }
+  const settle = async () => {
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+  };
+  /** The dialog as the panel mounts it: one element, re-rendered open or closed with the conversation's own draft and read. */
+  const render = (props: { open: boolean; initial: BookDateDraft; proposal: BookDateProposal | null; onFetch: () => Promise<BookDateProposal> }) =>
+    act(async () => {
+      root!.render(
+        createElement(BookDateDialog, {
+          open: props.open,
+          customer: props.open ? 'ZZ TEST family' : 'ZZ TEST nobody',
+          initial: props.initial,
+          branches: BRANCHES,
+          busy: false,
+          error: null,
+          thenOpensBeo: false,
+          onCancel: () => undefined,
+          onSave: () => undefined,
+          proposal: props.proposal,
+          reading: false,
+          onFetch: props.onFetch,
+        }),
+      );
+    });
+  const field = (label: string) => document.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;
+  const click = (testId: string) =>
+    act(async () => {
+      document.querySelector<HTMLButtonElement>(`[data-testid="${testId}"]`)!.click();
+    });
+
+  it('the first family’s reading, answered once the second family’s Book Date is open, fills none of its fields and says nothing', async () => {
+    // Olga's conversation: the dialog open on her pattern reading; Fetch pressed, the model still reading.
+    const olga = deferred<BookDateProposal>();
+    await render({ open: true, initial: PATTERN, proposal: FIRST_READ, onFetch: () => olga.promise });
+    expect(field('Kids').value).toBe('12');
+    await click('button-fetch-from-chat');
+    expect(document.querySelector('[data-testid="button-fetch-from-chat"]')?.textContent).toContain('Fetching from the chat…');
+
+    // Cancel, then another family's conversation: a blank Book Date for Nok, nothing read yet.
+    const NOK: BookDateDraft = { ...PATTERN, date: '', dateFrom: '', startTime: '', timeFrom: '', kids: '', adults: '', contactName: 'ZZ TEST Nok', phone: '+66899990000', childName: '', childAge: '' };
+    const nok = deferred<BookDateProposal>();
+    await render({ open: false, initial: PATTERN, proposal: FIRST_READ, onFetch: () => olga.promise });
+    await render({ open: true, initial: NOK, proposal: null, onFetch: () => nok.promise });
+    expect(field('Kids').value).toBe('');
+    expect(field("Child's name").value).toBe('');
+    expect(document.querySelector('[data-testid="button-fetch-from-chat"]')?.textContent).toBe('Fetch from chat');
+
+    // Olga's reading lands now: 15 kids, 6 adults, Emma, 3pm. Nok's dialog takes none of it.
+    olga.resolve(LATER_READ);
+    await settle();
+    expect(field('Kids').value).toBe('');
+    expect(field('Adults').value).toBe('');
+    expect(field("Child's name").value).toBe('');
+    expect(field('Date').value).toBe('');
+    expect(document.querySelector('[data-testid="book-date-fetched"]')).toBeNull();
+    expect(document.body.textContent).not.toContain('now 15 kids');
+
+    // Nok's own fetch, pressed here, is taken as before.
+    await click('button-fetch-from-chat');
+    nok.resolve(answer({ kids: family(8, '8 kids'), childName: family('Nam', 'Nam') }));
+    await settle();
+    expect(field('Kids').value).toBe('8');
+    expect(field("Child's name").value).toBe('Nam');
+    expect(document.querySelector('[data-testid="book-date-fetched"]')?.textContent).toBe("Filled from the chat: number of kids, child's name.");
+  });
+
+  it('the same conversation closed and opened again: a fetch answered in between is dropped too, and the fresh opening is as the panel gives it', async () => {
+    const first = deferred<BookDateProposal>();
+    await render({ open: true, initial: PATTERN, proposal: FIRST_READ, onFetch: () => first.promise });
+    await click('button-fetch-from-chat');
+    await render({ open: false, initial: PATTERN, proposal: FIRST_READ, onFetch: () => first.promise });
+    await render({ open: true, initial: PATTERN, proposal: FIRST_READ, onFetch: () => first.promise });
+    first.resolve(LATER_READ);
+    await settle();
+    expect(field('Kids').value).toBe('12');
+    expect(field('Adults').value).toBe('4');
+    expect(field('Start time').value).toBe('14:00');
+    expect(document.querySelector('[data-testid="book-date-fetched"]')).toBeNull();
+    expect(document.querySelector('[data-testid="button-fetch-from-chat"]')?.textContent).toBe('Fetch from chat');
   });
 });
 

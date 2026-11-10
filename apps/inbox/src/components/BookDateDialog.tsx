@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Calendar, Check, Clock3, Hash, Loader2, MapPin, Phone, RefreshCw, Users, Wand2, type LucideIcon } from 'lucide-react';
 import { Dialog } from '@/components/Dialog';
 import { Refusal } from '@/components/confirms';
@@ -216,8 +216,14 @@ export function BookDateDialog({
   const [state, setState] = useState<BookDateState>(() => mergeBookDateProposal(freshBookDate(initial), proposal, branchIds));
   const [problem, setProblem] = useState<string | null>(null);
   const [fetching, setFetching] = useState(false);
+  // Which opening of the dialog this is: the panel keeps it mounted across
+  // birthday conversations, so a fetch's answer is taken only by the opening
+  // that asked for it (a Cancel and another family's Book Date in between
+  // would otherwise take the first family's reading).
+  const opening = useRef(0);
   // A fresh reading each time it opens (another conversation, newer lines).
   useEffect(() => {
+    opening.current += 1;
     if (open) {
       setState(mergeBookDateProposal(freshBookDate(initial), proposal, branchIds));
       setProblem(null);
@@ -233,6 +239,7 @@ export function BookDateDialog({
   // SCRUM-826: the chat read again, as it is now, into the untouched fields.
   const fetchFromChat = async () => {
     if (!onFetch || fetching) return;
+    const asked = opening.current;
     setFetching(true);
     let answer: BookDateProposal | null = null;
     try {
@@ -240,6 +247,9 @@ export function BookDateDialog({
     } catch {
       answer = null;
     }
+    // Closed, or opened again (for another conversation, perhaps) while the
+    // chat was read: that answer is not this opening's, and changes nothing.
+    if (opening.current !== asked) return;
     // The fields as they are at the answer: what the person typed meanwhile is theirs too.
     setState((s) => fetchBookDateProposal(s, answer, branchIds));
     setFetching(false);
