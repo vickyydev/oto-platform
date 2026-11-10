@@ -9,6 +9,7 @@ import {
 import {
   BEO_AI_CAKE_MODES,
   BEO_AI_MENUS,
+  laterLineWins,
   type BeoAiCatalogueView,
   type BeoAiFood,
   type BeoAiFrom,
@@ -320,18 +321,24 @@ export function catalogueForModel(c: BeoAiCatalogueView): unknown {
 }
 
 /**
- * The rules for reading a whole conversation: who wins, what the family's
- * values are, and that the conversation is read only into the `catalogue`
- * key (every entry names its line, so its source is known). The form's own
- * fields are read apart, from the ruling message alone, as before.
+ * The rules for reading a whole conversation: which line wins, what the
+ * family's values are, and that the conversation is read only into the
+ * `catalogue` key (every entry names its line, so its source is known). The
+ * form's own fields are read apart, from the ruling message alone, as before.
+ *
+ * SCRUM-826: ONE rule for which line wins, the same `laterLineWins` applies
+ * in code wherever the model names the same thing twice — the latest line,
+ * whoever wrote it. The earlier wording said both "the team's confirmation
+ * wins" and "a later line wins", which contradict when the family corrects
+ * something after the confirmation, and the model read it either way from
+ * one press to the next.
  */
 export const BEO_CONVERSATION_RULES = `
 
 THE CONVERSATION
 The new text is not one message: it is the whole conversation between the family and the park's team, oldest line first. Each line starts with its number, who wrote it ([family] is the customer, [team] is a person on the park's team) and its local time at the park. The line marked RULING is the team's final confirmation.
-- The team's confirmation wins: where the RULING line (or another team line confirming or changing what the family asked) and a family line speak about the same thing, use the team's value
-- The family's values are the defaults: what the family asked for that no team line confirms or changes is still given, as the family's
-- A later line correcting an earlier one wins
+- The latest line wins, whoever wrote it: where two lines speak about the same thing, give the value of the later line, with that line's number. The team's confirmation (the RULING line, or another team line) wins over every family line BEFORE it; a family line AFTER the confirmation that corrects or declines something is the current value, given as the family's
+- The family's values are the defaults: what the family asked for that no later line changes is still given, as the family's
 - Answer ONLY the "catalogue" key described below and leave every other key of the structure above out: the form's other fields are read apart, from the RULING line alone`;
 
 /** The format of the `catalogue` key the model adds to its answer. */
@@ -511,16 +518,6 @@ function readMany<T>(schema: z.ZodType<T, z.ZodTypeDef, unknown>, raw: unknown, 
 const fold = (s: string) => s.normalize("NFC").trim().toLowerCase().replace(/\s+/g, " ");
 
 /**
- * Whether `next` replaces `was` for the same item: the team's confirmation
- * wins over the family's whatever the order; between two of the team's (or
- * two of the family's), the later line wins.
- */
-export function laterOrTeamWins(next: BeoAiFrom, was: BeoAiFrom): boolean {
-  if (next.source !== was.source) return next.source === "team";
-  return (next.line ?? 0) >= (was.line ?? 0);
-}
-
-/**
  * The model's `catalogue` section, checked against the catalogue it was
  * handed: ids it does not hold, options a group does not list and codes the
  * food list lacks become free lines in the conversation's own words. Every
@@ -529,7 +526,10 @@ export function laterOrTeamWins(next: BeoAiFrom, was: BeoAiFrom): boolean {
  * conversation, a line we do not hold (or none) is the family's — a default
  * for staff to check — unless every line read is the team's. The same item
  * named twice (an add-on, a set-menu choice, a dish, an entertainment) is one
- * entry: the team's over the family's, else the later line's.
+ * entry: the later line's, whoever wrote it (`laterLineWins`, SCRUM-826 —
+ * the rule the prompt states). The event's counts and times, the cake and
+ * the deposit are one entry each: the model gives the line that rules them
+ * under the same rule, and its author is the source.
  */
 export function resolveCatalogueAnswer(
   raw: unknown,
@@ -548,11 +548,11 @@ export function resolveCatalogueAnswer(
     if (allTeam) return refs.length === 1 ? { source: "team", at: refs[0]!.at, line: refs[0]!.line } : { source: "team", at: null, line: null };
     return { source: "family", at: null, line: null };
   };
-  /** Puts `entry` in `list`, or in place of the same item there when it wins. */
+  /** Puts `entry` in `list`, or in place of the same item there when its line is the later. */
   const merge = <T extends { from: BeoAiFrom }>(list: T[], entry: T, same: (x: T) => boolean) => {
     const at = list.findIndex(same);
     if (at < 0) list.push(entry);
-    else if (laterOrTeamWins(entry.from, list[at]!.from)) list[at] = entry;
+    else if (laterLineWins(entry.from, list[at]!.from)) list[at] = entry;
   };
   const proposal: BeoAiProposal = {
     package: null,
@@ -615,7 +615,7 @@ export function resolveCatalogueAnswer(
         }
         continue;
       }
-      // A group of one choice holds one option (the team's, else the later line's);
+      // A group of one choice holds one option (the later line's, whoever wrote it);
       // a group of several holds each option once, its source the same way.
       const entry = { itemId: group.id, option, said: c.said ?? null, from: cFrom };
       merge(chosen, entry, (x) => x.itemId === group.id && (!group.allowMultiple || x.option === option));

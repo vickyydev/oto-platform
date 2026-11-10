@@ -18,8 +18,8 @@
 //   - the proposal's ids are the catalogue's; each value's source is the
 //     author of the line it came from, never the model's claim (a line the
 //     transcript does not hold is the family's, a default to check); the same
-//     add-on, dish, entertainment or choice named by the family and the team
-//     is the team's; a dish the catalogue lacks is a notInMenu line; an id
+//     add-on, dish, entertainment or choice named twice is the later line's,
+//     whoever wrote it (SCRUM-826); a dish the catalogue lacks is a notInMenu line; an id
 //     the catalogue does not hold is a free line; the chat's price rides
 //     beside the catalogue's;
 //   - nothing is written by the fill;
@@ -79,6 +79,7 @@ process.env.LOG_LEVEL ??= "info";
 const { registerAIRoutes } = await import("../server/ai-routes");
 const { registerBeoRoutes } = await import("../server/beo-routes");
 const { renderTranscript, resolveCatalogueAnswer, loadBeoCatalogue } = await import("../server/lib/beoCatalogueFill");
+const { laterLineWins } = await import("../shared/beoAiFill");
 const { REQUIRED_FIELDS_HEADING } = await import("../server/lib/aiFill");
 const { resolveSetMenuLines } = await import("../server/lib/setMenuResolve");
 const { db, pool: appDbPool } = await import("../server/db");
@@ -493,7 +494,9 @@ try {
       assert.ok(conversationCall.user.includes(`#2 [team] 2026-11-03 14:07: `), `${lang}: line 2 is the team's`);
       assert.ok(conversationCall.user.includes(`#4 [team, RULING] 2026-11-03 14:21: ${CONVERSATIONS[lang][3]!.text}`), `${lang}: the ruling line`);
       // Its rules, the catalogue with its ids, codes and prices in baht, and only the catalogue key asked for.
-      for (const piece of ["THE CONVERSATION", "The team's confirmation wins", "The family's values are the defaults", 'Answer ONLY the "catalogue" key', "THE PARK'S CATALOGUE", cat.floresta, cat.reservedTable, cat.setMenu, PIZZA, cat.bubble, '"CF-24"', '"priceWeekday":16900', '"catalogue": {', "Never invent an item", "never price or total anything"]) {
+      // SCRUM-826: one rule for which line wins — the latest, whoever wrote it — stated once.
+      assert.ok(!conversationCall.system.includes("The team's confirmation wins") && !conversationCall.system.includes("A later line correcting an earlier one wins"), `${lang}: the two old rules that contradicted are gone`);
+      for (const piece of ["THE CONVERSATION", "The latest line wins, whoever wrote it", "a family line AFTER the confirmation that corrects or declines something is the current value", "The family's values are the defaults", 'Answer ONLY the "catalogue" key', "THE PARK'S CATALOGUE", cat.floresta, cat.reservedTable, cat.setMenu, PIZZA, cat.bubble, '"CF-24"', '"priceWeekday":16900', '"catalogue": {', "Never invent an item", "never price or total anything"]) {
         assert.ok(conversationCall.system.includes(piece), `${lang}: the conversation's prompt carries ${piece}`);
       }
       // SCRUM-814's today ends the prompt, after the catalogue.
@@ -950,9 +953,11 @@ try {
     assert.equal((await q("select cake_mode from beo_kitchen_plans where event_id = $1", [ev.junk]))[0]!.cake_mode, "INTERNAL");
   });
 
-  await check("theTeamWinsForEveryList", async () => {
-    // The same add-on, dish, entertainment and set-menu choice named by the family and by the
-    // team: the team's value and source, whichever line came first; two of the team's: the later.
+  await check("theLaterLineWinsForEveryList", async () => {
+    // SCRUM-826: the same add-on, dish, entertainment and set-menu choice named twice: the LATER
+    // line's value and source, whoever wrote it — the team's confirmation over the family's earlier
+    // lines, a family line after the team's over it; two of the team's: the later. (Before this
+    // ticket the team's won whatever the order; the balloons and the pizza below pin the change.)
     const catalogue = await loadBeoCatalogue(db, { tenantId: tenantA, branchId: park });
     const p = resolveCatalogueAnswer(
       {
@@ -986,21 +991,30 @@ try {
       catalogue,
       REFS,
     );
-    const team = (line: number) => ({ source: "team", at: at(line - 1), line });
-    const family = (line: number) => ({ source: "family", at: at(line - 1), line });
+    const team = (line: number) => ({ source: "team" as const, at: at(line - 1), line });
+    const family = (line: number) => ({ source: "family" as const, at: at(line - 1), line });
     assert.deepEqual(p.addOns.map((a) => [a.lineId, a.quantity, a.said, a.from]), [
       [cat.reservedTable, 1, "one table confirmed", team(4)],
-      [cat.balloons, 1, "balloons as agreed", team(2)],
-    ], "an add-on: the team's quantity and source, before or after the family's");
-    assert.deepEqual(p.setMenu?.choices.map((c) => [c.itemId, c.option, c.from]), [[PIZZA, "Margherita", team(2)]], "a choice: the team's over a later family line");
+      [cat.balloons, 3, "three balloon sets", family(3)],
+    ], "an add-on: the team's line 4 over the family's line 1; the family's line 3 over the team's line 2");
+    assert.deepEqual(p.setMenu?.choices.map((c) => [c.itemId, c.option, c.from]), [[PIZZA, "Hawaiian", family(3)]], "a choice: the family's later line over the team's earlier one");
     assert.deepEqual(p.menuLines.map((l) => [l.menu, l.productCode, l.quantity, l.itemName, l.from]), [
       ["kids", "CF-11", 1, "fries", team(4)],
       ["adults", "CF-11", 1, "fries for the adults", family(3)],
-    ], "a dish: one line per list, the team's");
+    ], "a dish: one line per list, the later line's");
     assert.deepEqual(p.entertainment.map((e) => [e.templateId, e.quantity, e.said, e.from]), [
       [cat.bubble, 1, "bubble show", team(2)],
       [cat.zombie, 2, "zombie game twice", team(4)],
-    ], "entertainment: the team's; of two team lines, the later");
+    ], "entertainment: the team's later line; of two team lines, the later");
+    // The rule itself: the later line wins whoever wrote it; the same line (or none) goes to the team's, else the reading given last.
+    assert.equal(laterLineWins(family(3), team(2)), true);
+    assert.equal(laterLineWins(team(2), family(3)), false);
+    assert.equal(laterLineWins(team(4), family(3)), true);
+    assert.equal(laterLineWins({ source: "family", at: null, line: null }, team(2)), false, "a reading naming no line never beats one that does");
+    assert.equal(laterLineWins(team(2), { source: "family", at: null, line: null }), true);
+    assert.equal(laterLineWins({ source: "team", at: null, line: null }, { source: "family", at: null, line: null }), true, "neither names a line: the team's");
+    assert.equal(laterLineWins({ source: "family", at: null, line: null }, { source: "team", at: null, line: null }), false);
+    assert.equal(laterLineWins(family(3), family(3)), true, "the same line twice: the reading given last");
   });
 
   await check("sourcesAreTheLinesNeverTheModel", async () => {

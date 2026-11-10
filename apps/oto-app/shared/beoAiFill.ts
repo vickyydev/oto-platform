@@ -7,9 +7,11 @@ import { z } from "zod";
  * The owner's decisions (10 November 2026): the BEO is filled automatically
  * from the conversation and shown in EDIT mode; staff approve it, and nothing
  * is created before they do. The family's values are the form's defaults; the
- * team's confirmation overrides them where it speaks; every filled field
- * says where it came from. Prices: the chat's price beside the catalogue's;
- * the catalogue's is never overwritten.
+ * latest line wins where two lines speak about the same thing, whoever wrote
+ * it (`laterLineWins`, SCRUM-826): the team's confirmation overrides the
+ * family's earlier lines, and a family line after it that corrects it is the
+ * current value. Every filled field says where it came from. Prices: the
+ * chat's price beside the catalogue's; the catalogue's is never overwritten.
  *
  *   - `BeoAiCatalogueView` — the park's catalogue as the review shows it: the
  *     packages (with their included lines and add-ons), the set menus (their
@@ -35,6 +37,21 @@ export interface BeoAiFrom {
 export interface BeoAiSourced<T> {
   value: T;
   from: BeoAiFrom;
+}
+
+/**
+ * SCRUM-826 — the one rule for which of two readings of the same thing wins,
+ * the same the conversation prompt states: the LATER line wins, whoever wrote
+ * it. The team's confirmation wins over the family's earlier lines; a family
+ * line after it that corrects it is the current value. On the same line (or
+ * neither naming one) the team's wins, else the reading given last.
+ */
+export function laterLineWins(next: BeoAiFrom, was: BeoAiFrom): boolean {
+  const nextLine = next.line ?? 0;
+  const wasLine = was.line ?? 0;
+  if (nextLine !== wasLine) return nextLine > wasLine;
+  if (next.source !== was.source) return next.source === "team";
+  return true;
 }
 
 /** Which kitchen list (or the bar) a food or drink line goes to. */

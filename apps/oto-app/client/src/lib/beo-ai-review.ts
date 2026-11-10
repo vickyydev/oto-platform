@@ -1,11 +1,12 @@
-import type {
-  BeoAiApproveBody,
-  BeoAiCakeMode,
-  BeoAiFrom,
-  BeoAiMenu,
-  BeoAiPackage,
-  BeoAiReview,
-  BeoAiSetMenuItem,
+import {
+  laterLineWins,
+  type BeoAiApproveBody,
+  type BeoAiCakeMode,
+  type BeoAiFrom,
+  type BeoAiMenu,
+  type BeoAiPackage,
+  type BeoAiReview,
+  type BeoAiSetMenuItem,
 } from "@shared/beoAiFill";
 import { aiFillDateLine, type AiFillDateLine } from "./beo-ai-date";
 
@@ -15,8 +16,9 @@ import { aiFillDateLine, type AiFillDateLine } from "./beo-ai-date";
  * Create BEO's AI Fill proposes the BEO from the whole conversation, matched
  * to the park's catalogue (`BeoAiReview`). The review shows it as the BEO's
  * own sections, editable: every field starts at the proposal (the family's
- * values as defaults, the team's confirmation where it spoke) and carries its
- * source; a field the reviewer changes is theirs ("changed here"). A line the
+ * values as defaults, the later line winning where two spoke — the team's
+ * confirmation over the family's earlier lines) and carries its source; a
+ * field the reviewer changes is theirs ("changed here"). A line the
  * catalogue lacks waits for a decision (keep it as a free line, or leave it
  * out) before "Approve and create" can be pressed; nothing is written before
  * it is. The date the confirmation names sits beside the booked one and is
@@ -159,11 +161,10 @@ export function initialReviewState(review: BeoAiReview, opts: { fill?: unknown; 
   };
 }
 
-/** Of two sources for one group, the one its mark shows: the team's, else the later line's. */
+/** Of two sources for one group, the one its mark shows: the later line's, whoever wrote it (`laterLineWins`, SCRUM-826). */
 function laterFrom(a: BeoAiFrom | null, b: BeoAiFrom): BeoAiFrom {
   if (!a) return b;
-  if (a.source !== b.source) return a.source === "team" ? a : b;
-  return (b.line ?? 0) >= (a.line ?? 0) ? b : a;
+  return laterLineWins(b, a) ? b : a;
 }
 
 /** What Approve and create writes, in the words the review says it. */
