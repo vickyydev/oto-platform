@@ -64,8 +64,13 @@ const ParseBeoBodySchema = z.object({
   eventId: z.string().max(64).nullish(),
 });
 
-/** Create BEO's AI Fill: only the form's state; the message is read on the platform, never sent here. */
-const InboxFillBodySchema = z.object({ existingData: ExistingDataSchema });
+/**
+ * Create BEO's AI Fill: only the form's state; the message is read on the
+ * platform, never sent here. `purpose` (SCRUM-826) says which press asked —
+ * Create BEO's fill, or the open form's "Fetch from chat" — for the activity row.
+ */
+const InboxFillBodySchema = z.object({ existingData: ExistingDataSchema, purpose: z.enum(["fill", "fetch"]).optional() });
+export type BeoFillPurpose = "fill" | "fetch";
 
 /** The event a BEO fill is for, as the BEO editor's own read fences it. */
 export interface BeoFillEvent {
@@ -259,6 +264,8 @@ export async function runBeoFill(
     fallbackFrom?: BeoAiFrom;
     /** SCRUM-814: the park, when the caller has already read it. */
     place?: ParkPlace;
+    /** SCRUM-826: "fetch" when the open form's Fetch from chat asked; the activity row says so. */
+    purpose?: BeoFillPurpose;
   },
 ): Promise<{ run: AiRun<BeoFill>; proposals: TeamProposals; proposal: BeoAiProposal | null }> {
   // SCRUM-814: the park's today ends the prompt, so a year-less or relative date reads against it.
@@ -305,8 +312,9 @@ export async function runBeoFill(
   }
   const proposals =
     run.ok && input.event ? proposeTeam(run.value, await deps.teamCandidates(input.event)) : NO_TEAM_PROPOSALS;
+  const purpose: BeoFillPurpose = input.purpose ?? "fill";
   log().info(
-    { ...runLogFields(run.facts), source: input.source.kind, eventId: input.event?.id ?? null, team: proposalCounts(proposals) },
+    { ...runLogFields(run.facts), source: input.source.kind, purpose, eventId: input.event?.id ?? null, team: proposalCounts(proposals) },
     "ai fill run",
   );
   try {
@@ -317,17 +325,20 @@ export async function runBeoFill(
           : "the inbox confirmation message"
         : "a pasted message";
     const on = input.event ? ` for the BEO of "${input.event.title}"` : "";
+    // SCRUM-826: the row names the press — Create BEO's fill, or Fetch from chat on the open form.
+    const who = purpose === "fetch" ? "Fetch from chat" : "AI Fill";
     await deps.recordActivity({
       tenantId: input.event?.tenantId ?? req.userWithAccess?.tenantId ?? null,
       branchId: input.event?.branchId ?? null,
       activityType: "beo_ai_fill",
       createdBy: req.user?.id ?? null,
       summaryText: run.ok
-        ? `AI Fill read ${from}${on}`
-        : `AI Fill could not fill${on} from ${from} (${run.reason.replace(/_/g, " ")})`,
+        ? `${who} read ${from}${on}`
+        : `${who} could not fill${on} from ${from} (${run.reason.replace(/_/g, " ")})`,
       metadataJson: JSON.stringify({
         eventId: input.event?.id ?? null,
         source: input.source.kind,
+        purpose,
         ...(input.source.kind === "inbox"
           ? { inboxConversationId: input.source.conversationId, inboxMessageId: input.source.messageId }
           : {}),
@@ -540,6 +551,12 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
    * reviews it and presses Load into Editor, which fills the form and, as AI
    * Fill always has, writes the answer's timeline lines at once; every other
    * field waits for the form's own Save.
+   *
+   * SCRUM-826 — the open form's "Fetch from chat" asks here too, with
+   * `purpose: "fetch"`: the same read of the conversation as it is now, the
+   * answer diffed against the form by the client and nothing applied but what
+   * the person accepts. The activity row names the press; `chat` in the answer
+   * marks the chat's newest line.
    */
   app.post("/api/events/:eventId/beo/ai-fill/inbox", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     const refuse = (reason: InboxFillRefusal, eventId: string | null) => {
@@ -550,6 +567,7 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
       const body = InboxFillBodySchema.safeParse(req.body ?? {});
       if (!body.success) return res.status(400).json({ message: "Send the form's data as an object." });
       const existingData = body.data.existingData ?? undefined;
+      const purpose: BeoFillPurpose = body.data.purpose ?? "fill";
       const event = await deps.loadEvent(req, req.params.eventId!);
       if (!event) return res.status(404).json({ message: "Event not found" });
       if (!event.inboxConversationId) return refuse("not_from_inbox", event.id);
@@ -593,6 +611,7 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
         catalogue,
         fallbackFrom: rulingFrom,
         place,
+        purpose,
       });
       if (!run.ok) return res.status(run.status).json({ message: run.message, reason: run.reason });
       // Final Message to Parent: this very message while the form's is empty;
@@ -622,6 +641,10 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
           createdAt: message.createdAt,
           fillsFinalMessage,
         },
+        // SCRUM-826: where the chat stood when it was read — its newest line — so a Fetch from
+        // chat knows whether the chat has changed since the last one (declined changes are
+        // remembered until it does); a platform answering no transcript marks the ruling message.
+        chat: { newestMessageId: transcript.at(-1)?.id ?? message.id, lines: transcript.length || 1 },
         fill: { ...fill, proposals },
         ...(review ? { review } : {}),
       });

@@ -75,6 +75,8 @@ import {
 } from "lucide-react";
 import { BeoTimelineEditor } from "./beo-timeline-editor";
 import { BeoAiReviewDialog, type BeoAiPending } from "./beo-ai-review";
+import { BeoFetchFromChatDialog } from "./beo-fetch-from-chat";
+import { NO_DECLINED, type DeclinedChanges, type FetchAnswer, type FetchFormValues } from "@/lib/beo-fetch-from-chat";
 import { aiFillCakeApply, aiFillCakeLine, aiFillCakeNotSaidNote, aiFillPartyDetailsShown } from "@/lib/beo-ai-preview";
 import { CakeUnderNoCake } from "./beo-cake-under-no-cake";
 import { APPROVAL_WRITES } from "@/lib/beo-ai-review";
@@ -658,6 +660,9 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const [aiReview, setAiReview] = useState<BeoAiPending | null>(null);
   // SCRUM-815: the preview is showing what an approval left (the rest of the same fill).
   const [aiFillAfterApproval, setAiFillAfterApproval] = useState(false);
+  // SCRUM-826: "Fetch from chat" — its dialog, and the changes declined on it (held until the chat changes).
+  const [fetchOpen, setFetchOpen] = useState(false);
+  const [fetchDeclined, setFetchDeclined] = useState<DeclinedChanges>(NO_DECLINED);
   const responsibleSearchRef = useRef<HTMLInputElement>(null);
 
   const { data: entertainmentItems = [] } = useQuery<any[]>({
@@ -1380,6 +1385,63 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     }
   };
 
+  /** SCRUM-826: what the form holds now, in the fields Fetch from chat compares. */
+  const fetchFormValues = (): FetchFormValues => ({
+    title: eventData.title ?? "",
+    childName: eventData.childName ?? "",
+    bookingName: eventData.bookingName ?? "",
+    numChildren: typeof eventData.numChildren === "number" ? eventData.numChildren : null,
+    numAdults: typeof eventData.numAdults === "number" ? eventData.numAdults : null,
+    startTime: eventData.startTime ?? "",
+    endTime: eventData.endTime ?? "",
+    eventDate: eventData.eventDate ?? "",
+    locationText,
+    specialRequests: eventData.specialRequests ?? "",
+    activities: eventData.activities ?? "",
+    decoration: eventData.decoration ?? "",
+    setupReadyBy,
+    setupResponsible,
+    cakeMode,
+    cakeNotes,
+    cakeTime,
+    prepaymentReceived,
+    depositDate,
+    packageName,
+    packageNotes,
+  });
+
+  /**
+   * SCRUM-826: the conversation read again, as it is now, through the same
+   * fill as Create BEO's (the server reads it as this person); the answer is
+   * diffed against the form in the dialog and nothing lands but what is accepted.
+   */
+  const readChatForFetch = async (): Promise<FetchAnswer> => {
+    const res = await apiRequest("POST", `/api/events/${eventId}/beo/ai-fill/inbox`, { existingData: buildAiFillExistingData(), purpose: "fetch" });
+    const body = await res.json();
+    if (!body?.fill) throw new Error("The conversation could not be read: the answer could not be read.");
+    return { fill: body.fill, review: body.review ?? null, chatMark: body.chat?.newestMessageId ?? body.source?.messageId ?? null };
+  };
+
+  /** SCRUM-826: the accepted changes into the form, as any edit — unsaved until Save. */
+  const applyFetched = (patch: Partial<FetchFormValues>) => {
+    const { locationText: loc, setupReadyBy: ready, setupResponsible: who, cakeMode: mode, cakeNotes: notes, cakeTime: at, prepaymentReceived: paid, depositDate: on, packageName: pkg, packageNotes: posNotes, ...event } = patch;
+    if (Object.keys(event).length > 0) setEventData((prev) => ({ ...prev, ...event }));
+    if (loc !== undefined) setLocationText(loc);
+    if (ready !== undefined) setSetupReadyBy(ready);
+    if (who !== undefined) {
+      setSetupResponsible(who);
+      setSetupResponsibleId(null);
+      setSetupResponsibleType(null);
+    }
+    if (mode !== undefined) setCakeMode(mode);
+    if (notes !== undefined) setCakeNotes(notes);
+    if (at !== undefined) setCakeTime(at);
+    if (paid !== undefined) setPrepaymentReceived(paid);
+    if (on !== undefined) setDepositDate(on);
+    if (pkg !== undefined) setPackageName(pkg);
+    if (posNotes !== undefined) setPackageNotes(posNotes);
+  };
+
   // SCRUM-660: once the form holds the event (the effect above filled it), Create BEO's AI Fill runs once.
   useEffect(() => {
     if (autoFill !== "inbox" || readOnly || autoFillTaken.current || !beoData) return;
@@ -1705,6 +1767,20 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
               >
                 <Sparkles className="h-4 w-4 mr-1" />
                 AI Fill
+              </Button>
+            )}
+            {/* SCRUM-826: the conversation read again, its changes listed to accept or decline. */}
+            {!readOnly && beoData.inboxConversationId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFetchOpen(true)}
+                disabled={aiFillInboxRunning}
+                title="Read the conversation again and review what changed"
+                data-testid="button-fetch-from-chat"
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Fetch from chat
               </Button>
             )}
             <Button
@@ -3916,6 +3992,17 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
             setAiFillAfterApproval(true);
           }
         }}
+      />
+
+      {/* SCRUM-826: Fetch from chat — the warning, the read, every change listed to accept or decline. */}
+      <BeoFetchFromChatDialog
+        open={fetchOpen}
+        onClose={() => setFetchOpen(false)}
+        form={fetchFormValues}
+        read={readChatForFetch}
+        declined={fetchDeclined}
+        onDeclined={setFetchDeclined}
+        onApply={applyFetched}
       />
 
       {/* SCRUM-828: a new item the till's menu does not have yet */}
