@@ -828,6 +828,9 @@ export interface MenuItem {
   inventoryItemId?: string;
   // See TicketType.translations — same display-only seam.
   translations?: Partial<Record<SupportedLang, { name: string; description?: string }>>;
+  // SCRUM-828 — made by the BEO and sold only inside a party: kept off the
+  // till's selling grids and F&B menu. Omitted = an ordinary menu item.
+  beoOnly?: boolean;
 }
 
 export interface SelectedModifier {

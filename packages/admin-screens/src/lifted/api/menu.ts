@@ -63,7 +63,7 @@ export type ApiProduct = Pick<MenuRead['products'][number],
   'prepStationOverride' | 'taxCategoryOverride' | 'translations' | 'sku' | 'stockItemId' | 'sortOrder' | 'active' |
   'archivedAt' | 'linkedModifierGroupIds'> & Partial<Pick<MenuRead['products'][number],
   'branchId' | 'effectiveWeekendSatang' | 'effectivePrepStation' | 'effectiveTaxCategory' | 'variants' | 'stockLinks' |
-  'stockShareItemId'>>;
+  'stockShareItemId' | 'beoOnly'>>;
 
 
 /** S2-14b — one size's stock item at the branch (`ProductStockLink` in `@oto/shared`). */
@@ -209,6 +209,13 @@ export function createMenuCatalogueApi(api: AdminApi, ports?: MenuHydrationPort)
 const menuApi = {
   /** Everything the admin catalogue screens read, in one round trip. */
   load: (branchId: string) => api.get<ApiResponse<'/branches/{branchId}/menu', 'get'>>(`/branches/${branchId}/menu`),
+  /**
+   * SCRUM-828 — the same, with the items the BEO made (sold only inside a
+   * party), which the till's read leaves out: what the Console's menu lists,
+   * each marked "BEO only".
+   */
+  loadWithBeoOnly: (branchId: string) =>
+    api.get<ApiResponse<'/branches/{branchId}/menu', 'get'>>(`/branches/${branchId}/menu?includeBeoOnly=true`),
 
   createCategory: (body: Partial<ApiMenuCategory> & { name: string }) =>
     api.post<ApiResponse<'/menu/categories', 'post'>>('/menu/categories', body, { idempotencyKey: idemKey() }),
@@ -507,6 +514,8 @@ function apiProductToMenuItem(p: ApiProduct, inline: ApiModifierGroup[]): MenuIt
     ...(p.taxCategoryOverride ? { taxCategoryOverride: p.taxCategoryOverride } : {}),
     ...stockKeyOf(p),
     ...(p.translations ? { translations: p.translations } : {}),
+    // SCRUM-828 — the "BEO only" badge and switch.
+    ...(p.beoOnly ? { beoOnly: true } : {}),
   };
 }
 
@@ -540,6 +549,9 @@ function menuItemToApiBody(item: MenuItem): ApiProductBody {
     // array is sent rather than left out: it is how the last shared group is
     // unlinked, and the route reads an absent field as "leave the links alone".
     modifierGroupIds: item.linkedModifierGroupIds ?? [],
+    // SCRUM-828 — sent only when the item says, so an edit from a screen that
+    // never read the flag leaves it as the platform holds it.
+    ...(item.beoOnly !== undefined ? { beoOnly: item.beoOnly } : {}),
   };
 }
 

@@ -81,7 +81,8 @@ export function MenuCatalogue({ page }: { page: Page }) {
     try {
       const menu = createMenuApi(working.api);
       const [answer, discountAnswer, stock] = await Promise.all([
-        menu.menuApi.load(parkId),
+        // SCRUM-828 — with the items the BEO made, which the till's read leaves out.
+        menu.menuApi.loadWithBeoOnly(parkId),
         page === 'categories' ? menu.menuApi.discounts() : Promise.resolve(null),
         page === 'merch' && can('pos:stock:read', parkId) ? working.run(() => readMenuStock(parkId)) : Promise.resolve(null),
       ]);

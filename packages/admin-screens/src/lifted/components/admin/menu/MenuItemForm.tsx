@@ -81,6 +81,8 @@ interface FormState {
   // Whether this item is stock-tracked (links to an InventoryItem). Variant sizes
   // are managed in the Inventory panel — this toggle just creates/removes the link.
   trackStock: boolean;
+  // SCRUM-828 — sold only inside a party: off the till's grids and F&B menu.
+  beoOnly: boolean;
 }
 
 interface GroupErrors {
@@ -107,6 +109,7 @@ const blankState = (defaultCategory: string): FormState => ({
   groups: [],
   linkedGroupIds: [],
   trackStock: false,
+  beoOnly: false,
 });
 
 const fromItem = (m: MenuItem): FormState => ({
@@ -132,6 +135,7 @@ const fromItem = (m: MenuItem): FormState => ({
   })),
   linkedGroupIds: m.linkedModifierGroupIds ?? [],
   trackStock: !!m.inventoryItemId,
+  beoOnly: !!m.beoOnly,
 });
 
 export function MenuItemForm(props: MenuItemFormProps) {
@@ -392,6 +396,8 @@ export function MenuItemFormWithPorts({ open, item, onClose, onSave, ports }: Me
       // off inventoryItemId) sees the true current state on edit.
       ...(item?.inventoryItemId ? { inventoryItemId: item.inventoryItemId } : {}),
       ...(item?.translations !== undefined ? { translations: item.translations } : {}),
+      // SCRUM-828 — only when it is or was on, so an ordinary item's save never names it.
+      ...(form.beoOnly || item?.beoOnly ? { beoOnly: form.beoOnly } : {}),
     };
   };
 
@@ -582,6 +588,23 @@ export function MenuItemFormWithPorts({ open, item, onClose, onSave, ports }: Me
               checked={form.trackStock}
               onCheckedChange={(v) => setField('trackStock', v)}
               aria-label="Track stock"
+            />
+          </label>
+
+          {/* SCRUM-828 — an item the BEO made is sold only inside a party. */}
+          <label className="flex items-center justify-between gap-3 rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-4">
+            <span className="min-w-0">
+              <span className="font-medium text-sm">BEO only</span>
+              <p className="text-xs text-foreground/40">
+                Sold only inside a party: kept off the till&apos;s selling grids
+                and F&amp;B menu. A party&apos;s plan and its kitchen and bar
+                slips still find it by its code.
+              </p>
+            </span>
+            <Switch
+              checked={form.beoOnly}
+              onCheckedChange={(v) => setField('beoOnly', v)}
+              aria-label="BEO only"
             />
           </label>
 
