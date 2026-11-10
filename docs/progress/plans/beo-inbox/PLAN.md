@@ -145,13 +145,13 @@ Review page (screens and decision boxes): https://claude.ai/artifact/MRK5VbmoMKs
 | Item | Ticket | State |
 |---|---|---|
 | 0 Money in one place | SCRUM-822 | APPROVED 10 Nov 22:30: integrate and mount the till's billing into the BEO over the API, remove nothing; a quote PDF before the party too — LANDED d14ba1c65 (11 Nov 01:48, fixes SCRUM-833); PROVED 02:07–02:18, all eleven steps; DEPLOYED with 833 at 03:14 (CI 42885379157); four decisions + three small follow-ups on the ticket |
-| 1 Advice questions to a person, notified | SCRUM-823 | APPROVED; the date-and-park opener stays — LANDED a80ca2630, proved for the rule (Testing); the opener-on-model-handover gap building on lane/opener823b-20261110; the bell half waits on the owner's key script |
-| 2 Voice | SCRUM-824 | APPROVED; part (a) LANDED 405230df0, proved with the provider off (Testing); the speech provider, its key and PDPA are the owner's choice; part (b) later |
-| 3 Deposit QR and set-menu link | SCRUM-825 | updated proposal: driven from the BEO, posted by the assistant; the owner says approved in chat (10 Nov 22:40), the page shows no decision — confirming |
+| 1 Advice questions to a person, notified | SCRUM-823 | APPROVED on the page 11 Nov 04:50 ("still asks the date and park opener; careful with advice questions, delegate to staff") — LANDED a80ca2630 + the opener follow-up 9b2bd8bc1, proved (Testing); the bell half waits on the owner's key script |
+| 2 Voice | SCRUM-824 | APPROVED on the page 11 Nov 04:50 ("yes both a and then b"); part (a) LANDED 405230df0, proved with the provider off (Testing); the owner chose OpenAI — the non-secret settings are on oto-api-staging, the key follows; then the three-language proof → Deployed; part (b) its own ticket after |
+| 3 Deposit QR and set-menu link | SCRUM-825 | the page holds the owner's flow question (10 Nov) and my updated proposal (from the BEO, posted by the assistant, the 2C2P sandbox first); NO decision pressed — waits on the owner's sandbox go |
 | 4 (and 6) Fetch from chat | SCRUM-826 | taken as APPROVED on the owner's chat line of 10 Nov 22:40 (the page's store holds no decision) — LANDED 820c3fa4c (11 Nov 03:35); proof 03:50–04:04: Book Date Pass, the BEO fetch FAILED (the reading flips) — fix lane fetch826b running; CI pin fixed ba104804d; three decisions on the ticket |
-| 5 BEO pre-filled in one pass | SCRUM-827 | the owner says approved in chat (10 Nov 22:40), the page shows no decision — confirming |
+| 5 BEO pre-filled in one pass | SCRUM-827 | APPROVED on the page 11 Nov 04:50 — queued behind 829's landing (the same BEO editor files) |
 | 7 BEO-only menu items | SCRUM-828 | APPROVED — LANDED a3d87300a, proved, DEPLOYED |
 | 8 Adults start from the kids' choice | SCRUM-829 | taken as APPROVED on the owner's chat line of 10 Nov 22:40 (the page's store holds no decision) — BUILT, reviewed and fixed (four commits, app migration 0048); land-prep running 04:20; the MONEY decision (adults' portions on the till) on the ticket — Deployed held until answered |
-| 9 First message decides the queue | SCRUM-830 | the owner says approved in chat (10 Nov 22:40), the page shows no decision — confirming |
-| 10 Never ask twice | SCRUM-831 | APPROVED — LANDED cd9e42bf1, proved, the "table for 8?" reader fix landed in 9b2bd8bc1 and re-checked; DEPLOYED 11 Nov 00:20 |
+| 9 First message decides the queue | SCRUM-830 | APPROVED on the page 11 Nov 04:51 — BUILDING on lane/routing830-20261111 from 05:05 (Fable workflow; the corpus measure in the build) |
+| 10 Never ask twice | SCRUM-831 | APPROVED (the page 11 Nov 04:51: "never let the assistant trip; smart and efficient") — DEPLOYED 11 Nov 00:20 |
 | 11 One message per turn, park first | SCRUM-832 | APPROVED 10 Nov 22:35 — LANDED ba3f25bb4 + the bare-park-question fix 4af68aafc, proved and re-checked 11 Nov; DEPLOYED 11 Nov 01:38; four decisions on the ticket |
