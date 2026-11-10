@@ -1,13 +1,23 @@
 import { useState } from 'react';
-import { AlertTriangle, Ban, Bot, Check, CheckCheck, Clock3, ExternalLink, EyeOff, Languages, Loader2, Paperclip, PenLine } from 'lucide-react';
+import { AlertTriangle, Ban, Bot, Check, CheckCheck, Clock3, ExternalLink, EyeOff, Languages, Loader2, Mic, Paperclip, PenLine } from 'lucide-react';
 import { ApiError } from '@/api/client';
 import { filesApi } from '@/api/files';
 import type { InboxMe, Message } from '@/api/inbox';
 import { ChipView } from '@/components/atoms';
-import { SHADOW_LABEL, bubbleTime, langLabel, personChip, type Attachment } from '@/lib/view';
+import {
+  SHADOW_LABEL,
+  bubbleTime,
+  langLabel,
+  personChip,
+  voiceTranscriptOf,
+  type Attachment,
+  type VoiceTranscriptView,
+} from '@/lib/view';
 
 /** An attachment with no name known: the row carries ids only until the api names its media. */
 export const ATTACHMENT_FALLBACK_NAME = 'Attachment';
+/** A message's audio, named (SCRUM-824). */
+export const VOICE_NOTE_NAME = 'Voice note';
 
 /**
  * One attachment on a bubble (customer-AI test night, W7: the brochure showed
@@ -24,6 +34,8 @@ export function AttachmentChip({ attachment: a, muted }: { attachment: Attachmen
   const [error, setError] = useState<string | null>(null);
   const name = a.name ?? ATTACHMENT_FALLBACK_NAME;
   const image = opened !== null && (opened.contentType ?? '').startsWith('image/');
+  // SCRUM-824: a voice note plays where it is, once opened.
+  const audio = opened !== null && (opened.contentType ?? '').startsWith('audio/');
 
   const open = async () => {
     setBusy(true);
@@ -69,7 +81,41 @@ export function AttachmentChip({ attachment: a, muted }: { attachment: Attachmen
           <img src={opened.url} alt={name} className="max-h-48 max-w-full rounded-lg ring-1 ring-slate-200 dark:ring-slate-700" />
         </a>
       )}
+      {audio && opened && <audio controls preload="none" src={opened.url} className="h-8 w-full max-w-[260px]" />}
       {error && <span className="text-[11px] text-rose-600 dark:text-rose-400">{error}</span>}
+    </div>
+  );
+}
+
+/**
+ * The words under a customer's voice note (SCRUM-824): the transcript with a
+ * small "transcribed · Thai" label; "Transcribing…" while it is pending; why
+ * not when it could not be read, was too long, or no provider is configured.
+ */
+export function VoiceTranscript({ view }: { view: VoiceTranscriptView }) {
+  const muted = 'text-[11.5px] italic text-slate-500 dark:text-slate-400';
+  return (
+    <div
+      data-testid="voice-transcript"
+      data-state={view.state}
+      className="mt-1.5 border-t border-slate-100 dark:border-slate-800 pt-1.5"
+    >
+      {view.state === 'done' ? (
+        <>
+          <span className="mb-0.5 flex items-center gap-1 text-[10px] uppercase tracking-wide text-slate-400">
+            <Mic className="h-3 w-3" /> {view.label}
+          </span>
+          <span className="text-[13px]">{view.text}</span>
+        </>
+      ) : view.state === 'pending' ? (
+        <span className={`inline-flex items-center gap-1 ${muted}`}>
+          <Loader2 className="h-3 w-3 animate-spin" /> {view.label}
+        </span>
+      ) : (
+        <span className={`inline-flex items-center gap-1 ${muted}`}>
+          <Mic className="h-3 w-3" /> {view.label}
+        </span>
+      )}
     </div>
   );
 }
@@ -159,6 +205,8 @@ export function MessageBubble({
   const isAi = m.authorKind === 'ai';
   const isSystem = m.authorKind === 'system';
   const withdrawn = m.providerStatus === 'withdrawn' || withdrawnNote !== undefined;
+  // SCRUM-824: a customer's voice note shows its words under the audio.
+  const voice = isCustomer ? voiceTranscriptOf(m) : null;
 
   const bubble = isCustomer
     ? 'rounded-tl-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 ring-1 ring-slate-200 dark:ring-slate-700'
@@ -196,7 +244,7 @@ export function MessageBubble({
             withdrawn ? <s className="decoration-slate-400">{m.body}</s> : m.body
           ) : m.redacted ? (
             <span className="italic opacity-70">Removed at the customer’s request</span>
-          ) : attachments.length === 0 ? (
+          ) : attachments.length === 0 && !voice ? (
             <span className="italic opacity-70">No text</span>
           ) : null}
           {m.translatedBody && (
@@ -208,8 +256,13 @@ export function MessageBubble({
             </div>
           )}
           {attachments.map((a) => (
-            <AttachmentChip key={a.fileId} attachment={a} muted={withdrawn} />
+            <AttachmentChip
+              key={a.fileId}
+              attachment={a.fileId === m.audioFileId && a.name === null ? { ...a, name: VOICE_NOTE_NAME } : a}
+              muted={withdrawn}
+            />
           ))}
+          {voice && <VoiceTranscript view={voice} />}
           <div className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${meta}`}>
             <span>{bubbleTime(m.sentAt ?? m.createdAt, now)}</span>
             {m.direction === 'outbound' && <Ticks status={m.providerStatus} />}

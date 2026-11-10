@@ -109,6 +109,57 @@ export function langLabel(code: string | null | undefined): string {
   return code ? code.toUpperCase() : '—';
 }
 
+/** A transcript's language by name (SCRUM-824): Thai, Russian, English; any other code as written. */
+export function transcriptLanguageName(code: string | null | undefined): string | null {
+  if (!code) return null;
+  const named = LANGUAGE_OPTIONS.find(([v]) => v === code.toLowerCase());
+  return named ? named[1] : code.toUpperCase();
+}
+
+/** What staff read under a voice note (SCRUM-824), by where its transcription stands. */
+export type VoiceTranscriptView =
+  | { state: 'pending'; label: string }
+  | { state: 'done'; label: string; text: string }
+  | { state: 'failed' | 'too_long' | 'off'; label: string };
+
+export const VOICE_TRANSCRIPT_TEXT = {
+  pending: 'Transcribing…',
+  failed: 'Voice note could not be read',
+  tooLong: 'Voice note too long to transcribe',
+  off: 'Voice note — not transcribed',
+} as const;
+
+/**
+ * The words under a customer's voice note, or null for a message that has
+ * none to show (no voice note, or erased): the transcript with "transcribed ·
+ * Thai"; "Transcribing…" while it is pending; why not when it could not be
+ * read, was too long, or no provider is configured (and for a note from
+ * before transcription existed).
+ */
+export function voiceTranscriptOf(
+  m: Pick<Message, 'audioFileId' | 'transcript' | 'transcriptStatus' | 'transcriptLanguage' | 'redacted'>,
+): VoiceTranscriptView | null {
+  if (m.redacted) return null;
+  const status = m.transcriptStatus ?? (m.audioFileId ? 'off' : null);
+  switch (status) {
+    case null:
+      return null;
+    case 'pending':
+      return { state: 'pending', label: VOICE_TRANSCRIPT_TEXT.pending };
+    case 'done': {
+      if (!m.transcript) return { state: 'failed', label: VOICE_TRANSCRIPT_TEXT.failed };
+      const language = transcriptLanguageName(m.transcriptLanguage);
+      return { state: 'done', label: language ? `transcribed · ${language}` : 'transcribed', text: m.transcript };
+    }
+    case 'failed':
+      return { state: 'failed', label: VOICE_TRANSCRIPT_TEXT.failed };
+    case 'too_long':
+      return { state: 'too_long', label: VOICE_TRANSCRIPT_TEXT.tooLong };
+    case 'off':
+      return { state: 'off', label: VOICE_TRANSCRIPT_TEXT.off };
+  }
+}
+
 export const TAB_LABEL: Record<InboxTab, string> = INBOX_TAB_LABELS;
 
 // --- People, teams and chips -------------------------------------------------------
@@ -494,7 +545,8 @@ export function eventText(e: InboxEvent, ctx: PillContext): string | null {
     // (`ai-engine.ts`, `ai-turns.ts`), never a body.
     case 'ai_handover': {
       const team = teamName(ctx, p.reroutedTeamId);
-      const intent = str(p.intent);
+      // SCRUM-824: a voice note nobody could read carries no intent worth naming.
+      const intent = p.reason === 'VOICE_UNREAD' ? null : str(p.intent);
       const notes = turnNotes(p);
       return `AI handed over to ${team ?? 'the team'}${intent ? ` · ${intentWords(intent)}` : ''}${notes.map((n) => ` · ${n}`).join('')}`;
     }
@@ -533,6 +585,8 @@ function rethought(p: Record<string, unknown>): boolean {
  */
 function turnNotes(p: Record<string, unknown>): string[] {
   const notes: string[] = [];
+  // SCRUM-824: the hand-over a voice note nobody could read makes.
+  if (p.reason === 'VOICE_UNREAD') notes.push('voice note could not be read');
   if (rethought(p)) notes.push('re-read the message');
   const c = p.coherence !== null && typeof p.coherence === 'object' ? (p.coherence as Record<string, unknown>) : null;
   const dropped = c?.state === 'reviewed' && Array.isArray(c.dropped) ? c.dropped.length : 0;

@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
-import { CheckCheck, FlaskConical, Loader2, PlayCircle, Send } from 'lucide-react';
+import { CheckCheck, FlaskConical, Loader2, Mic, PlayCircle, Send } from 'lucide-react';
 import { ApiError } from '@/api/client';
 import { inboxApi, type InboxMe, type SimulatedInbound, type SimulatorAccount } from '@/api/inbox';
 import { Eyebrow } from '@/components/atoms';
@@ -15,6 +15,39 @@ const PRIMARY_BUTTON =
 type Category = NonNullable<NonNullable<SimulatedInbound['hint']>['category']>;
 
 const accountLabel = (a: SimulatorAccount) => `${a.displayName} · ${CHANNEL_LABEL[a.channel]}`;
+
+/** SCRUM-824: the largest voice note the simulator plays (the api's own limit). */
+export const SIMULATOR_VOICE_MAX_BYTES = 1024 * 1024;
+
+const AUDIO_BY_EXTENSION: Record<string, string> = {
+  ogg: 'audio/ogg',
+  opus: 'audio/ogg',
+  oga: 'audio/ogg',
+  mp3: 'audio/mpeg',
+  m4a: 'audio/mp4',
+  mp4: 'audio/mp4',
+  wav: 'audio/wav',
+  webm: 'audio/webm',
+  amr: 'audio/amr',
+  aac: 'audio/aac',
+  flac: 'audio/flac',
+};
+
+/** A file's audio type: the browser's when it says audio, else read from its extension; null when it is no audio. */
+export function voiceContentTypeOf(name: string, browserType: string): string | null {
+  if (browserType.startsWith('audio/')) return browserType;
+  const ext = name.toLowerCase().split('.').pop() ?? '';
+  return AUDIO_BY_EXTENSION[ext] ?? null;
+}
+
+function readAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).replace(/^data:[^,]*,/, ''));
+    reader.onerror = () => reject(reader.error ?? new Error('unreadable'));
+    reader.readAsDataURL(file);
+  });
+}
 
 function said(err: unknown, fallback: string): string {
   return err instanceof ApiError ? err.message : fallback;
@@ -52,6 +85,23 @@ export function SimulatorBody({
   const [text, setText] = useState('');
   const [category, setCategory] = useState<Category | ''>('');
   const [language, setLanguage] = useState('');
+  // SCRUM-824: an uploaded voice note, played as WhatsApp's voice message.
+  const [voice, setVoice] = useState<{ name: string; contentType: string; dataBase64: string } | null>(null);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+
+  const pickVoice = async (file: File | undefined) => {
+    setVoiceError(null);
+    setVoice(null);
+    if (!file) return;
+    const contentType = voiceContentTypeOf(file.name, file.type);
+    if (!contentType) return setVoiceError('Choose an audio file (ogg, opus, mp3, m4a, wav or webm).');
+    if (file.size === 0 || file.size > SIMULATOR_VOICE_MAX_BYTES) return setVoiceError('A voice note here is at most 1 MB.');
+    try {
+      setVoice({ name: file.name, contentType, dataBase64: await readAsBase64(file) });
+    } catch {
+      setVoiceError('The file could not be read.');
+    }
+  };
 
   const account = accounts.find((a) => a.id === accountId) ?? accounts[0] ?? null;
 
@@ -94,11 +144,13 @@ export function SimulatorBody({
           channelAccountId: account.id,
           from: from.trim(),
           name: name.trim() || undefined,
-          text,
+          text: text.trim() ? text : undefined,
+          voice: voice ? { contentType: voice.contentType, dataBase64: voice.dataBase64 } : undefined,
           hint,
         });
         await onChanged();
         setText('');
+        setVoice(null);
         return r.conversationsCreated > 0
           ? 'Received: a new conversation, routed.'
           : r.reopened > 0
@@ -181,8 +233,23 @@ export function SimulatorBody({
               <Field label="Message" wide>
                 <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} className={`${FIELD} resize-y`} />
               </Field>
+              <Field label="Voice note (optional): an audio file, played as a WhatsApp voice message" wide>
+                <input
+                  type="file"
+                  accept="audio/*,.ogg,.opus,.oga,.mp3,.m4a,.wav,.webm"
+                  data-testid="simulator-voice"
+                  onChange={(e) => void pickVoice(e.target.files?.[0])}
+                  className={FIELD}
+                />
+                {voice && (
+                  <span className="inline-flex items-center gap-1 text-[11.5px] font-normal text-slate-600 dark:text-slate-300">
+                    <Mic className="h-3 w-3" /> {voice.name}
+                  </span>
+                )}
+                {voiceError && <span className="text-[11.5px] font-normal text-rose-600 dark:text-rose-400">{voiceError}</span>}
+              </Field>
               <div className="sm:col-span-2">
-                <button type="submit" disabled={busy !== null || !text.trim() || !from.trim()} className={PRIMARY_BUTTON}>
+                <button type="submit" disabled={busy !== null || (!text.trim() && !voice) || !from.trim()} className={PRIMARY_BUTTON}>
                   {busy === 'inbound' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                   Send as the customer
                 </button>
