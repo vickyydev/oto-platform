@@ -57,8 +57,8 @@ were inspected. Both tickets read Deployed with the pictures attached;
 owner acceptance remains outstanding. The slot was released after proof.
 
 No inbox/BEO source, migration, setting, real payment, park till or device
-was changed. SCRUM-801 and SCRUM-800 move to Testing with the inspected
-staging pictures. Units 2–8 are unstarted.
+was changed. SCRUM-801 and SCRUM-800 are Deployed, never Done.
+The following units were unstarted at this closeout.
 
 The later planner release fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3 now
 runs on both till services. It descends from the proved source and leaves
