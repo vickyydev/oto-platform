@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Archive,
   ArrowLeft,
@@ -38,9 +38,11 @@ import { CorrectAssistant, type CorrectionTarget } from '@/components/CorrectAss
 import { PrimaryMoveConfirm, TeamMoveConfirm, type PendingPrimaryMove, type PendingTeamMove } from '@/components/confirms';
 import { DetailsDialog, type DetailsActions } from '@/components/dialogs';
 import { MessageBubble, ShadowBubble } from '@/components/MessageBubble';
+import { OpenQuestionLine } from '@/components/OpenQuestionLine';
 import { SlotPicker } from '@/components/SlotPicker';
 import { PendingControl } from '@/components/writes';
 import { sourceLabel } from '@/lib/inboxes';
+import { openQuestionsByMessage } from '@/lib/open-question';
 import { bookDateDraft, eventChipLabel, parseBeoFromConversation } from '@/lib/beo';
 import {
   BOOK_DATE_NOT_YOURS_REASON,
@@ -405,6 +407,8 @@ export function ChatPanel({
   );
   // The files the thread's events name (the brochure), for the bubbles' attachments.
   const fileNames = useMemo(() => attachmentNames(thread.detail?.events ?? []), [thread.detail]);
+  // SCRUM-831: what the assistant asked and how it read each reply, by the line that asked.
+  const asked = useMemo(() => openQuestionsByMessage(thread.detail?.openQuestions), [thread.detail]);
 
   // Open at the newest line, and follow new ones as they arrive — but not when
   // an older page was just put above what the reader is looking at.
@@ -944,15 +948,17 @@ export function ChatPanel({
                 )}
               </div>
             ) : (
-              <MessageBubble
-                key={it.message.id}
-                m={it.message}
-                me={me}
-                now={now}
-                withdrawnNote={withdrawn.get(it.message.id)}
-                attachments={attachmentsOf(it.message, fileNames)}
-                onCorrect={mayCorrect ? () => setCorrecting({ messageId: it.message.id }) : undefined}
-              />
+              <Fragment key={it.message.id}>
+                <MessageBubble
+                  m={it.message}
+                  me={me}
+                  now={now}
+                  withdrawnNote={withdrawn.get(it.message.id)}
+                  attachments={attachmentsOf(it.message, fileNames)}
+                  onCorrect={mayCorrect ? () => setCorrecting({ messageId: it.message.id }) : undefined}
+                />
+                <OpenQuestionLine questions={asked.get(it.message.id) ?? []} />
+              </Fragment>
             ),
           )}
           {conv.status === 'handled' && (
