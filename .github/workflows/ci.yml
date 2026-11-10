@@ -942,6 +942,24 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/party-menu-item-ui.check.ts
+      # SCRUM-822: a party's money in the BEO, read from the till — satang
+      # shown as baht one way only (SCRUM-833), the client asking with the
+      # provision key and never a session, the till's figures answered for a
+      # linked party and a reason (never a figure) without the till, another
+      # park group's party not found, and the Quote PDF of the till's quote
+      # (rendered by the runner's Chrome); then the screens rendered: the
+      # Billing section's "From the till", the Party Details tiles and the
+      # Day-of POS section, each the till's figures or "Till not reachable".
+      - name: The app's till billing checks
+        if: steps.changes.outputs.app == 'true'
+        env:
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
+        run: npx tsx tests/till-billing.check.ts
+      - name: The app's till billing screens check
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/till-billing-ui.check.ts
       # SCRUM-567: the company payroll's R2 (migrations 0021-0022) — two park
       # groups' separate paying config, rule sets and profiles; every route
       # refused to manager and staff, writes to anyone below admin, HR-data

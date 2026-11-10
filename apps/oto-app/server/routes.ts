@@ -153,6 +153,7 @@ import {
 
 import { registerBeoRoutes } from "./beo-routes";
 import { registerPartyMenuRoutes } from "./party-menu-routes";
+import { registerPartyBillingRoutes } from "./party-billing-routes";
 import dataAdminRouter from "./data-admin/router";
 import { registerBirthdayPackageRoutes } from "./birthday-package-routes";
 import { registerAuthOtpRoutes } from "./auth-otp-routes";
@@ -936,6 +937,8 @@ export async function registerRoutes(
   registerBeoRoutes(app);
   // SCRUM-828: a new menu item added from the BEO's food lines, made a BEO-only till product.
   registerPartyMenuRoutes(app);
+  // SCRUM-822: a party's money in the BEO, read from the till; and its Quote PDF.
+  registerPartyBillingRoutes(app);
 
   // Birthday Package & Entertainment Template routes
   registerBirthdayPackageRoutes(app);

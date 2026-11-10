@@ -53,6 +53,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 import type { BeoEventWithDetails, BeoTimelineItem } from "@shared/schema";
+import { DayOfPosSection, type DayOfPartyDetails } from "./beo-day-of-pos";
+import { useTillBilling } from "./beo-till-billing";
 
 interface BeoDayOfViewProps {
   eventId: string;
@@ -276,6 +278,8 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
   const { user } = useAuth();
   const canEdit = !!user && user.role !== "staff";
   const [posExpanded, setPosExpanded] = useState(false);
+  // SCRUM-822: the party's money, read from the till; kept live through the day as the BEO itself is.
+  const tillBilling = useTillBilling(eventId, { refetchInterval: 60_000 });
   const [setupExpanded, setSetupExpanded] = useState(false);
   const [kitchenExpanded, setKitchenExpanded] = useState(false);
   const [barExpanded, setBarExpanded] = useState(false);
@@ -1042,145 +1046,24 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
             const packageSnapshotData = beoData.packageSnapshot;
             const billingData = beoData.billing;
             const posLineItems = beoData.lineItems || [];
-            const posPartyDetails = partyDetails as { packageName?: string; packageBasePrice?: number; items?: Array<{ id: string; description: string; type: "included" | "extra"; price: number; notes: string }>; prepaymentReceived?: number; depositDate?: string; notes?: string } | null;
-            const hasPosData = !!packageSnapshotData || posLineItems.length > 0 || billingData?.packagePrice != null || !!posPartyDetails?.packageName || (posPartyDetails?.items && posPartyDetails.items.length > 0);
-
+            const posPartyDetails = partyDetails as DayOfPartyDetails | null;
+            const hasPosData = !!packageSnapshotData || posLineItems.length > 0 || billingData?.packagePrice != null || !!posPartyDetails?.packageName || (!!posPartyDetails?.items && posPartyDetails.items.length > 0);
+            // SCRUM-822 / SCRUM-833: the POS section's money is the till's (DayOfPosSection), never worked out here.
             const posPackageName = packageSnapshotData?.packageName || posPartyDetails?.packageName || null;
-            const partyDetailsItems = posPartyDetails?.items || [];
-            const includedItems = partyDetailsItems.filter(item => item.type === "included");
-            const extraItems = partyDetailsItems.filter(item => item.type === "extra");
-            const extrasTotal = extraItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
-            const packageBasePrice = Number(posPartyDetails?.packageBasePrice) || 0;
-            const partyDetailsTotal = partyDetailsItems.length > 0 || posPartyDetails?.packageBasePrice != null
-              ? extrasTotal + packageBasePrice
-              : null;
-            const lineItemsTotal = posLineItems.length > 0
-              ? posLineItems.reduce((sum, li) => sum + (li.qty * li.unitPriceIncVat), 0)
-              : null;
-            const posPrice = billingData?.packagePrice ?? packageSnapshotData?.basePrice ?? lineItemsTotal ?? partyDetailsTotal;
-            const depositPaid = Number(posPartyDetails?.prepaymentReceived) || 0;
-            const outstanding = posPrice != null ? Number(posPrice) - depositPaid : null;
 
             return (
               <div className="space-y-3">
-                {hasPosData && (
-                  <div
-                    className="rounded-lg border border-border/50 bg-card overflow-hidden"
-                    style={{ borderLeft: "4px solid #7c3aed" }}
-                    data-testid="section-pos"
-                  >
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      className="w-full flex items-center justify-between p-3 text-left cursor-pointer"
-                      onClick={() => setPosExpanded(!posExpanded)}
-                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPosExpanded(!posExpanded); } }}
-                      data-testid="button-toggle-pos"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Gift className="h-5 w-5 text-purple-500 shrink-0" />
-                        <span className="font-semibold text-base shrink-0">POS</span>
-                        {posPrice != null && (
-                          <Badge variant="outline" className="text-xs shrink-0" data-testid="text-pos-price">
-                            ฿{Number(posPrice).toLocaleString()}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <DoneToggle prefix="💰 POS Setup:" label="Mark Done" />
-                        <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${posExpanded ? "rotate-180" : ""}`} />
-                      </div>
-                    </div>
-                    {posExpanded && (
-                      <div className="px-3 pb-3 space-y-3" data-testid="content-pos">
-                        {posPackageName && (
-                          <div className="flex items-center justify-between">
-                            <Badge variant="outline" className="text-xs font-medium" data-testid="badge-pos-package">
-                              {posPackageName}
-                            </Badge>
-                            {packageBasePrice > 0 && (
-                              <span className="text-sm font-mono tabular-nums shrink-0 ml-2">฿{packageBasePrice.toLocaleString()}</span>
-                            )}
-                          </div>
-                        )}
-
-                        {partyDetailsItems.length > 0 && (
-                          <div className="space-y-1" data-testid="list-pos-items">
-                            {includedItems.length > 0 && (
-                              <div className="space-y-0.5">
-                                <span className="text-[10px] text-emerald-500 font-semibold uppercase tracking-wider">Included</span>
-                                {includedItems.map((item, idx) => (
-                                  <div key={item.id || `incl-${idx}`} className="flex items-center gap-2 text-sm py-0.5 pl-1" data-testid={`row-pos-item-incl-${idx}`}>
-                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                                    <span className="text-muted-foreground">{item.description}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            {extraItems.length > 0 && (
-                              <div className="space-y-0.5 pt-1">
-                                <span className="text-[10px] text-amber-500 font-semibold uppercase tracking-wider">Extras</span>
-                                {extraItems.map((item, idx) => (
-                                  <div key={item.id || `extra-${idx}`} className="flex items-center justify-between text-sm py-0.5 pl-1" data-testid={`row-pos-item-extra-${idx}`}>
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                                      <span className="truncate">{item.description}</span>
-                                    </div>
-                                    {item.price > 0 && (
-                                      <span className="text-sm font-mono tabular-nums shrink-0 ml-2">฿{Number(item.price).toLocaleString()}</span>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {(posPrice != null || depositPaid > 0) && (
-                          <div className="border-t border-border/50 pt-2 space-y-1">
-                            {posPrice != null && (
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-muted-foreground">Total</span>
-                                <span className="font-semibold">฿{Number(posPrice).toLocaleString()}</span>
-                              </div>
-                            )}
-                            {depositPaid > 0 && (
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-muted-foreground">Deposit paid{posPartyDetails?.depositDate ? ` (${posPartyDetails.depositDate})` : ""}</span>
-                                <span className="text-emerald-500 font-medium">-฿{depositPaid.toLocaleString()}</span>
-                              </div>
-                            )}
-                            {outstanding != null && depositPaid > 0 && (
-                              <div className="flex items-center justify-between text-sm font-semibold pt-0.5 border-t border-dashed border-border/50">
-                                <span>Outstanding</span>
-                                <span className={outstanding > 0 ? "text-amber-500" : "text-emerald-500"} data-testid="text-pos-outstanding">
-                                  ฿{outstanding.toLocaleString()}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {billingData?.posOrderRef && (
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>POS Ref:</span>
-                            <span className="font-mono">{billingData.posOrderRef}</span>
-                          </div>
-                        )}
-
-                        {posPartyDetails?.notes && (
-                          <div className="text-xs text-muted-foreground italic border-t border-border/50 pt-2" data-testid="text-pos-notes">
-                            {posPartyDetails.notes}
-                          </div>
-                        )}
-
-                        {!posPackageName && posPrice == null && partyDetailsItems.length === 0 && (
-                          <p className="text-sm text-muted-foreground">No POS details available</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+                <DayOfPosSection
+                  packageName={posPackageName}
+                  partyDetails={posPartyDetails}
+                  posOrderRef={billingData?.posOrderRef ?? null}
+                  hasPosData={hasPosData}
+                  reading={tillBilling.data}
+                  loading={tillBilling.isLoading}
+                  expanded={posExpanded}
+                  onToggle={() => setPosExpanded(!posExpanded)}
+                  doneToggle={<DoneToggle prefix="💰 POS Setup:" label="Mark Done" />}
+                />
 
                 <div
                   className="rounded-lg border border-border/50 bg-card overflow-hidden"

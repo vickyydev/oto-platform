@@ -81,6 +81,8 @@ import { APPROVAL_WRITES } from "@/lib/beo-ai-review";
 import { BeoPackageModule } from "./beo-package-module";
 import { BeoParentExperienceModule } from "./beo-parent-experience-module";
 import { PartyMenuItemDialog } from "./beo-party-menu-item";
+import { BeoBillingSection, PartyDetailsTillTiles, tillBillingKey, useTillBilling } from "./beo-till-billing";
+import { bahtOfSatang, tillFiguresOf } from "@shared/tillBilling";
 import type { PartyMenuLine } from "@shared/partyMenuItem";
 import { ONE_OFF_EVENT_COLOR_OPTIONS } from "@/lib/event-types";
 import { aiFillDateLine, dayLabel } from "@/lib/beo-ai-date";
@@ -744,6 +746,44 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     refetchOnWindowFocus: true,
   });
 
+  // SCRUM-822: the party's money is the till's. The Billing section, the
+  // Party Details box and the header read these figures; none is worked out here.
+  const tillBilling = useTillBilling(eventId);
+  const tillFigures = tillFiguresOf(tillBilling.data);
+  const canManageBilling = !readOnly && ["global_admin", "operator_admin", "admin", "manager"].includes(user?.role ?? "");
+  const billingKey = ["/api/events", eventId, "beo", "billing"] as const;
+  const { data: billingRow = null } = useQuery<BeoEventBilling | null>({ queryKey: billingKey, enabled: !!eventId });
+  /** The newest press of the billing module: an older answer arriving late never overwrites a newer one. */
+  const billingPress = useRef(0);
+  const billingMutation = useMutation({
+    mutationFn: async ({ patch }: { patch: Partial<BeoEventBilling>; press: number }) => {
+      const res = await apiRequest("PUT", `/api/events/${eventId}/beo/billing`, patch);
+      return (await res.json()) as BeoEventBilling;
+    },
+    onMutate: ({ patch }) => {
+      queryClient.setQueryData<BeoEventBilling | null>(billingKey, (was) => (was ? { ...was, ...patch } : was));
+    },
+    onSuccess: (row, { patch, press }) => {
+      if (press !== billingPress.current) return;
+      queryClient.setQueryData(billingKey, row);
+      if ("depositPaidAmount" in patch || "depositPaid" in patch || "depositPaidAt" in patch) {
+        // SCRUM-813: one deposit. Party Details shows what the billing just wrote, so a later Save keeps it.
+        setPrepaymentReceived(row.depositPaid ? (row.depositPaidAmount ?? 0) : 0);
+        const paidAt: unknown = row.depositPaidAt;
+        setDepositDate(typeof paidAt === "string" ? paidAt.slice(0, 10) : paidAt instanceof Date ? paidAt.toISOString().slice(0, 10) : "");
+      }
+      void queryClient.invalidateQueries({ queryKey: tillBillingKey(eventId) });
+    },
+    onError: (error: Error) => {
+      toast({ title: "The billing was not saved", description: error.message, variant: "destructive" });
+      void queryClient.invalidateQueries({ queryKey: billingKey });
+    },
+  });
+  const changeBilling = (patch: Partial<BeoEventBilling>) => {
+    billingPress.current += 1;
+    billingMutation.mutate({ patch, press: billingPress.current });
+  };
+
   const { data: branches } = useQuery<Branch[]>({
     queryKey: ["/api/branches"],
   });
@@ -1107,13 +1147,6 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     }]);
   };
 
-  const packageTotal = useMemo(() => {
-    const extrasTotal = packageItems
-      .filter(i => i.type === "extra")
-      .reduce((sum, i) => sum + (i.price || 0), 0);
-    return packageBasePrice + extrasTotal;
-  }, [packageBasePrice, packageItems]);
-
   const kitchenTotal = useMemo(() => {
     const allMenuItems = [...kidsMenu, ...adultsMenu];
     const extrasTotal = allMenuItems
@@ -1123,7 +1156,10 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     return extrasTotal + cakeExtra;
   }, [kidsMenu, adultsMenu, cakeMode, cakeIncluded, cakePrice]);
 
-  const outstandingBalance = packageTotal - prepaymentReceived;
+  // SCRUM-822: the party's total and what is outstanding are the till's
+  // (tillFigures above), never Party Details' base price and extras added up here.
+  /** The deposit typed in Party Details and not saved yet: the till reads the saved one. */
+  const depositUnsaved = !!tillFigures && tillFigures.kind === "quote" && Math.round(prepaymentReceived * 100) !== tillFigures.depositSatang;
 
   const getBeoTaskStatus = (prefix: string) => {
     const task = beoTasks.find((t: any) => t.title?.startsWith(prefix));
@@ -1643,22 +1679,23 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                   From the inbox
                 </Badge>
               ) : null}
-              {packageTotal > 0 && (
+              {/* SCRUM-822: from the till's figures, never the app's own. */}
+              {tillFigures && tillFigures.expectedSatang > 0 && (
                 <Badge
-                  variant={prepaymentReceived <= 0 ? "destructive" : outstandingBalance > 0 ? "outline" : "default"}
+                  variant={tillFigures.depositSatang <= 0 && tillFigures.outstandingSatang > 0 ? "destructive" : tillFigures.outstandingSatang > 0 ? "outline" : "default"}
                   className={cn(
                     "text-xs font-mono",
-                    prepaymentReceived <= 0 && "bg-red-500",
-                    prepaymentReceived > 0 && outstandingBalance > 0 && "border-orange-500 text-orange-600 dark:text-orange-400",
-                    outstandingBalance <= 0 && "bg-green-600",
+                    tillFigures.depositSatang <= 0 && tillFigures.outstandingSatang > 0 && "bg-red-500",
+                    tillFigures.depositSatang > 0 && tillFigures.outstandingSatang > 0 && "border-orange-500 text-orange-600 dark:text-orange-400",
+                    tillFigures.outstandingSatang <= 0 && "bg-green-600",
                   )}
                   data-testid="badge-payment-status"
                 >
-                  {prepaymentReceived <= 0
-                    ? "No Deposit"
-                    : outstandingBalance > 0
-                      ? `${outstandingBalance.toLocaleString()}฿ Due`
-                      : "Paid"}
+                  {tillFigures.outstandingSatang <= 0
+                    ? "Paid"
+                    : tillFigures.depositSatang <= 0
+                      ? "No Deposit"
+                      : `${bahtOfSatang(tillFigures.outstandingSatang)} Due`}
                 </Badge>
               )}
             </div>
@@ -2246,9 +2283,9 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                 {packageName && (
                   <Badge variant="secondary" className="ml-1 text-xs">{packageName}</Badge>
                 )}
-                {packageTotal > 0 && (
-                  <Badge variant="outline" className="ml-1 text-xs font-mono">
-                    {packageTotal.toLocaleString()}฿
+                {tillFigures && tillFigures.expectedSatang > 0 && (
+                  <Badge variant="outline" className="ml-1 text-xs font-mono" data-testid="badge-party-details-total">
+                    {bahtOfSatang(tillFigures.expectedSatang)}
                   </Badge>
                 )}
                 <BeoTaskBadge prefix="💰 POS Setup:" label="Mark POS Done" />
@@ -2327,50 +2364,32 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
 
                 <Separator />
 
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1 p-3 rounded-md bg-primary/5 border">
-                    <Label className="text-xs text-muted-foreground">Total</Label>
-                    <p className="text-lg font-bold font-mono" data-testid="text-package-total">
-                      {packageTotal.toLocaleString()}฿
-                    </p>
-                  </div>
-                  <div className="space-y-1 p-3 rounded-md border">
-                    <Label className="text-xs text-muted-foreground">Deposit</Label>
-                    <EditableText
-                      type="number"
-                      className="font-mono text-lg font-bold"
-                      value={String(prepaymentReceived || "")}
-                      onChange={(v) => setPrepaymentReceived(Number(v) || 0)}
-                      placeholder="0"
-                      data-testid="input-prepayment"
-                    />
-                    <DatePicker
-                      value={depositDate}
-                      onChange={setDepositDate}
-                      placeholder="Deposit date"
-                      className="h-7 text-xs"
-                      data-testid="datepicker-deposit-date"
-                    />
-                  </div>
-                  <div className={cn(
-                    "space-y-1 p-3 rounded-md border",
-                    prepaymentReceived <= 0 && packageTotal > 0 && "bg-red-500/10 border-red-500/30",
-                    prepaymentReceived > 0 && outstandingBalance > 0 && "bg-orange-500/10 border-orange-500/30",
-                    outstandingBalance <= 0 && packageTotal > 0 && "bg-green-500/10 border-green-500/30",
-                  )}>
-                    <Label className="text-xs text-muted-foreground">Outstanding</Label>
-                    <p className={cn(
-                      "text-lg font-bold font-mono",
-                      prepaymentReceived <= 0 && packageTotal > 0 && "text-red-600 dark:text-red-400",
-                      prepaymentReceived > 0 && outstandingBalance > 0 && "text-orange-600 dark:text-orange-400",
-                      outstandingBalance <= 0 && packageTotal > 0 && "text-green-600 dark:text-green-400",
-                    )} data-testid="text-outstanding-balance">
-                      {prepaymentReceived <= 0 && packageTotal > 0
-                        ? "No Deposit"
-                        : `${outstandingBalance.toLocaleString()}฿`}
-                    </p>
-                  </div>
-                </div>
+                {/* SCRUM-822: Total and Outstanding are the till's; the deposit stays the BEO's one figure (SCRUM-813). */}
+                <PartyDetailsTillTiles
+                  reading={tillBilling.data}
+                  loading={tillBilling.isLoading}
+                  depositUnsaved={depositUnsaved}
+                  deposit={
+                    <>
+                      <Label className="text-xs text-muted-foreground">Deposit</Label>
+                      <EditableText
+                        type="number"
+                        className="font-mono text-lg font-bold"
+                        value={String(prepaymentReceived || "")}
+                        onChange={(v) => setPrepaymentReceived(Number(v) || 0)}
+                        placeholder="0"
+                        data-testid="input-prepayment"
+                      />
+                      <DatePicker
+                        value={depositDate}
+                        onChange={setDepositDate}
+                        placeholder="Deposit date"
+                        className="h-7 text-xs"
+                        data-testid="datepicker-deposit-date"
+                      />
+                    </>
+                  }
+                />
 
                 <Separator />
 
@@ -2385,6 +2404,29 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                   />
                 </div>
               </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* SCRUM-822: Billing — the till's figures on top, the app's own billing module kept whole below. */}
+          <AccordionItem value="billing" className="border rounded-lg border-l-4 border-l-emerald-500 bg-emerald-500/5">
+            <AccordionTrigger className="px-4 hover:no-underline" data-testid="accordion-billing">
+              <div className="flex items-center gap-2 w-full">
+                <DollarSign className="h-4 w-4 text-emerald-500" />
+                <span>Billing</span>
+                {tillFigures && (
+                  <Badge variant="outline" className="ml-1 text-xs font-mono" data-testid="badge-billing-outstanding">
+                    {tillFigures.outstandingSatang > 0 ? `${bahtOfSatang(tillFigures.outstandingSatang)} outstanding` : "Paid"}
+                  </Badge>
+                )}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-4 pb-4">
+              <BeoBillingSection
+                eventId={eventId}
+                billing={billingRow}
+                onBillingChange={changeBilling}
+                isManager={canManageBilling}
+              />
             </AccordionContent>
           </AccordionItem>
 
