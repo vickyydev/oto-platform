@@ -784,5 +784,1020 @@
       "meAfter": 401,
       "at": "2026-11-09T14:14:03.984Z"
     }
+  },
+  "recheckOpen": {
+    "unit": "SCRUM-771 — re-run in opening hours: the display.offline warning on Health, its clearing, and a revoked display's alert",
+    "liveCommit": "8b3e36741279a52e87a1fb8723077f02eba0a096",
+    "deploysLive": {
+      "before": "8b3e3674 on oto-api-staging, oto-pos-web-staging, oto-pos-staging, oto-console-staging (read 04:16Z)",
+      "after": "the same four still live at 8b3e3674 (read 04:32Z)"
+    },
+    "pos": "https://oto-pos-web-staging.onrender.com",
+    "console": "https://oto-console-staging.onrender.com",
+    "browser": "Chromium 153.0.8010.12",
+    "startedAt": "2026-11-10T04:21:02.886Z",
+    "finishedAt": "2026-11-10T04:30:46.935Z",
+    "park": {
+      "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "branch": "Oto Play Park, Central Floresta",
+      "timezone": "Asia/Bangkok",
+      "weekday": "tue",
+      "nowLocal": "11:21",
+      "todayHours": {
+        "open": "10:00",
+        "close": "20:00"
+      },
+      "openingHoursSet": true,
+      "openNow": true,
+      "apiHealthSaysOpeningHours": "open",
+      "openingHoursChanged": false
+    },
+    "fixture": {
+      "box": {
+        "id": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+        "name": "Virtual box 1"
+      },
+      "till": {
+        "id": "01a1c3b0-5c46-7752-b546-1f6692a87e17",
+        "name": "ZZ TEST SCRUM-771b till",
+        "prefix": "Z771B",
+        "ready": true,
+        "devices": [
+          "adult_band:Band Printer (adults)",
+          "kids_band:Band Printer (kids)",
+          "receipt:Receipt Printer 1"
+        ],
+        "screenAtCreate": null
+      },
+      "display": {
+        "credentialId": "01a1c3b0-a670-7d7e-9ebd-cd204de36122",
+        "name": "ZZ TEST 771b display",
+        "pairedAt": "2026-11-10T04:21:36.339Z",
+        "station": "ZZ TEST SCRUM-771b till"
+      },
+      "secondTill": {
+        "id": "01a1c3b0-5c9e-7494-a838-cf28ffcada63",
+        "name": "ZZ TEST SCRUM-771c till",
+        "prefix": "Z771C",
+        "ready": true,
+        "devices": [],
+        "screenAtCreate": null
+      },
+      "secondDisplay": {
+        "credentialId": "01a1c3b0-e6a0-7ab2-a0d8-4f0b88f5e1d2",
+        "name": "ZZ TEST 771c display",
+        "pairedAt": "2026-11-10T04:21:52.774Z",
+        "station": "ZZ TEST SCRUM-771c till"
+      },
+      "whyTwoTills": "a station holds one live display (DISPLAY_STATION_OCCUPIED), so the second display for the revoke check needed its own ZZ TEST till; it had no printers and nobody signed in to it",
+      "tillSignedInAt": "2026-11-10T04:21:35.581Z",
+      "signedInAs": "the staging reception account (name withheld)",
+      "console": "the staging administrator on the Console sign-in (name withheld)"
+    },
+    "created": [
+      {
+        "kind": "station",
+        "id": "01a1c3b0-5c46-7752-b546-1f6692a87e17",
+        "name": "ZZ TEST SCRUM-771b till",
+        "box": "Virtual box 1",
+        "prefix": "Z771B",
+        "at": "2026-11-10T04:21:17.356Z"
+      },
+      {
+        "kind": "station",
+        "id": "01a1c3b0-5c9e-7494-a838-cf28ffcada63",
+        "name": "ZZ TEST SCRUM-771c till",
+        "box": "Virtual box 1",
+        "prefix": "Z771C",
+        "at": "2026-11-10T04:21:17.450Z"
+      },
+      {
+        "kind": "display-credential",
+        "id": "01a1c3b0-a670-7d7e-9ebd-cd204de36122",
+        "name": "ZZ TEST 771b display",
+        "station": "ZZ TEST SCRUM-771b till",
+        "at": "2026-11-10T04:21:36.339Z"
+      },
+      {
+        "kind": "display-credential",
+        "id": "01a1c3b0-e6a0-7ab2-a0d8-4f0b88f5e1d2",
+        "name": "ZZ TEST 771c display",
+        "station": "ZZ TEST SCRUM-771c till",
+        "at": "2026-11-10T04:21:52.774Z"
+      }
+    ],
+    "adminWrites": [
+      {
+        "at": "2026-11-10T04:21:17.356Z",
+        "by": "admin api",
+        "what": "POST /branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+        "status": 200,
+        "result": {
+          "stationId": "01a1c3b0-5c46-7752-b546-1f6692a87e17",
+          "name": "ZZ TEST SCRUM-771b till",
+          "prefix": "Z771B",
+          "box": "Virtual box 1",
+          "devices": [
+            "adult_band:Band Printer (adults)",
+            "kids_band:Band Printer (kids)",
+            "receipt:Receipt Printer 1"
+          ]
+        }
+      },
+      {
+        "at": "2026-11-10T04:21:17.450Z",
+        "by": "admin api",
+        "what": "POST /branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+        "status": 200,
+        "result": {
+          "stationId": "01a1c3b0-5c9e-7494-a838-cf28ffcada63",
+          "name": "ZZ TEST SCRUM-771c till",
+          "prefix": "Z771C",
+          "box": "Virtual box 1",
+          "devices": []
+        }
+      },
+      {
+        "at": "2026-11-10T04:21:36.339Z",
+        "by": "admin api",
+        "what": "POST /stations/01a1c3b0-5c46-7752-b546-1f6692a87e17/displays/claim (the display page's own pairing code)",
+        "status": 200,
+        "result": {
+          "credentialId": "01a1c3b0-a670-7d7e-9ebd-cd204de36122",
+          "name": "ZZ TEST 771b display"
+        }
+      },
+      {
+        "at": "2026-11-10T04:21:52.774Z",
+        "by": "admin api",
+        "what": "POST /stations/01a1c3b0-5c9e-7494-a838-cf28ffcada63/displays/claim (the display page's own pairing code)",
+        "status": 200,
+        "result": {
+          "credentialId": "01a1c3b0-e6a0-7ab2-a0d8-4f0b88f5e1d2",
+          "name": "ZZ TEST 771c display"
+        }
+      },
+      {
+        "at": "2026-11-10T04:29:21.521Z",
+        "by": "admin api",
+        "what": "POST /credentials/01a1c3b0-e6a0-7ab2-a0d8-4f0b88f5e1d2/revoke (ZZ TEST 771c display)",
+        "status": 200
+      }
+    ],
+    "pageWritesByPath": {
+      "till PUT /api/me/session/station": 1,
+      "till POST /api/me/station/heartbeat": 10,
+      "display 771b POST /api/display/pairing": 1,
+      "till POST /api/box/v1/station/:id/lease": 1,
+      "till POST /api/box/v1/station/:id/intents": 1,
+      "display 771c POST /api/display/pairing": 1,
+      "till POST /api/box/v1/station/:id/lease/renew": 3,
+      "till POST /api/auth/lock": 1,
+      "display 771b (reopened) POST /api/display/pairing": 1,
+      "display 771b (reopened) POST /api/display/pairing/expire": 1
+    },
+    "results": {
+      "tillSignIn": {
+        "at": "2026-11-10T04:21:35.581Z",
+        "me": 200,
+        "meStationMatches": false,
+        "firstHeartbeat": {
+          "at": "2026-11-10T04:21:35.491Z",
+          "method": "POST",
+          "path": "/api/me/station/heartbeat",
+          "status": 200
+        },
+        "screen": {
+          "state": "online",
+          "lastSeenAt": "2026-11-10T04:21:35.536Z",
+          "lastSeenAgeSeconds": 0,
+          "offlineAfterSeconds": 180,
+          "scannerLastUsedAt": null,
+          "scannerLastUsedAgeSeconds": null
+        }
+      },
+      "pairing": {
+        "b": {
+          "at": "2026-11-10T04:21:36.339Z",
+          "claim": 200,
+          "display": {
+            "credentialId": "01a1c3b0-a670-7d7e-9ebd-cd204de36122",
+            "name": "ZZ TEST 771b display",
+            "pairedAt": "2026-11-10T04:21:36.339Z",
+            "station": "ZZ TEST SCRUM-771b till"
+          },
+          "displayPageShows": "ZZ TEST SCRUM-771b till · ZZ TEST 771b display LANGUAGE Choose your language 请选择您的语言 · เลือกภาษาของคุณ · Выберите язык · Choisissez votre langue English Continue in English 中文 使用中文继续 ไทย ดำเนินการต่อเ",
+          "api": {
+            "id": "01a1c3b0-a670-7d7e-9ebd-cd204de36122",
+            "label": "ZZ TEST 771b display",
+            "kind": "display",
+            "stationId": "01a1c3b0-5c46-7752-b546-1f6692a87e17",
+            "pairedAt": "2026-11-10T04:21:36.496Z",
+            "lastSeenAt": "2026-11-10T04:21:43.628Z",
+            "revokedAt": null,
+            "presence": {
+              "state": "online",
+              "lastSeenAt": "2026-11-10T04:21:43.628Z",
+              "lastSeenAgeSeconds": 1,
+              "offlineAfterSeconds": 180,
+              "box": null
+            }
+          }
+        },
+        "c": {
+          "at": "2026-11-10T04:21:52.774Z",
+          "claim": 200,
+          "display": {
+            "credentialId": "01a1c3b0-e6a0-7ab2-a0d8-4f0b88f5e1d2",
+            "name": "ZZ TEST 771c display",
+            "pairedAt": "2026-11-10T04:21:52.774Z",
+            "station": "ZZ TEST SCRUM-771c till"
+          },
+          "displayPageShows": "Welcome to OTO Park Please follow the staff screen. ZZ TEST SCRUM-771c till · ZZ TEST 771c display",
+          "api": {
+            "id": "01a1c3b0-e6a0-7ab2-a0d8-4f0b88f5e1d2",
+            "label": "ZZ TEST 771c display",
+            "kind": "display",
+            "stationId": "01a1c3b0-5c9e-7494-a838-cf28ffcada63",
+            "pairedAt": "2026-11-10T04:21:52.928Z",
+            "lastSeenAt": "2026-11-10T04:22:00.065Z",
+            "revokedAt": null,
+            "presence": {
+              "state": "online",
+              "lastSeenAt": "2026-11-10T04:22:00.065Z",
+              "lastSeenAgeSeconds": 1,
+              "offlineAfterSeconds": 180,
+              "box": null
+            }
+          }
+        }
+      },
+      "10 display online": {
+        "at": "2026-11-10T04:22:24.192Z",
+        "pass": true,
+        "expect": "Online",
+        "pageText": "ZZ TEST 771b display Customer display Online on ZZ TEST SCRUM-771b till Snapshot Send test intent Open Box refusal log Revoke Paired 10 Nov, 11:21, last seen just now. Online · seen 2s ago Last seen 10 Nov, 11:22 (just now). No rejected protected call recorded.",
+        "apiRead": {
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+          "query": "?includeRevoked=true",
+          "status": 200,
+          "at": "2026-11-10T04:22:20.838Z",
+          "zzDisplay": {
+            "id": "01a1c3b0-a670-7d7e-9ebd-cd204de36122",
+            "label": "ZZ TEST 771b display",
+            "kind": "display",
+            "stationId": "01a1c3b0-5c46-7752-b546-1f6692a87e17",
+            "pairedAt": "2026-11-10T04:21:36.496Z",
+            "lastSeenAt": "2026-11-10T04:22:18.628Z",
+            "revokedAt": null,
+            "presence": {
+              "state": "online",
+              "lastSeenAt": "2026-11-10T04:22:18.628Z",
+              "lastSeenAgeSeconds": 2,
+              "offlineAfterSeconds": 180,
+              "box": null
+            }
+          },
+          "otherDisplays": [
+            {
+              "id": "01a18b8d-019e-7041-a709-f508c2d5038b",
+              "label": "(withheld)",
+              "kind": "display",
+              "stationId": "01a185c1-a729-79ae-93f6-91d0e2985c25",
+              "pairedAt": "2026-10-30T06:43:56.446Z",
+              "lastSeenAt": "2026-11-10T04:19:36.341Z",
+              "revokedAt": null,
+              "presence": {
+                "state": "online",
+                "lastSeenAt": "2026-11-10T04:19:36.341Z",
+                "lastSeenAgeSeconds": 164,
+                "offlineAfterSeconds": 180,
+                "box": {
+                  "id": "01a185aa-a041-70bd-9391-baf7bdb8d7b5",
+                  "name": "HKT till box (Pi 5)"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "quietFrom": {
+        "b": {
+          "closedAt": "2026-11-10T04:22:32.193Z",
+          "lastDisplayWrite": {
+            "at": "2026-11-10T04:21:36.297Z",
+            "method": "POST",
+            "path": "/api/display/pairing",
+            "status": 200
+          },
+          "storageKeptInMemory": [
+            {
+              "origin": "https://oto-pos-web-staging.onrender.com",
+              "localStorageKeys": [
+                "oto.display.credential",
+                "oto.display.language"
+              ]
+            }
+          ]
+        },
+        "c": {
+          "closedAt": "2026-11-10T04:22:32.196Z",
+          "lastDisplayWrite": {
+            "at": "2026-11-10T04:21:52.736Z",
+            "method": "POST",
+            "path": "/api/display/pairing",
+            "status": 200
+          },
+          "storageKeptInMemory": null
+        },
+        "tillStaysOpen": true
+      },
+      "11 display offline": {
+        "at": "2026-11-10T04:26:17.062Z",
+        "pass": true,
+        "expect": "Offline",
+        "pageText": "ZZ TEST 771b display Customer display Offline on ZZ TEST SCRUM-771b till Snapshot Send test intent Open Box refusal log Revoke Paired 10 Nov, 11:21, last seen 3m ago. Offline · last seen 3m ago — quiet for longer than 3m Last seen 10 Nov, 11:22 (3m ago). No rejected protected call recorded.",
+        "apiRead": {
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+          "query": "?includeRevoked=true",
+          "status": 200,
+          "at": "2026-11-10T04:26:13.827Z",
+          "zzDisplay": {
+            "id": "01a1c3b0-a670-7d7e-9ebd-cd204de36122",
+            "label": "ZZ TEST 771b display",
+            "kind": "display",
+            "stationId": "01a1c3b0-5c46-7752-b546-1f6692a87e17",
+            "pairedAt": "2026-11-10T04:21:36.496Z",
+            "lastSeenAt": "2026-11-10T04:22:28.629Z",
+            "revokedAt": null,
+            "presence": {
+              "state": "offline",
+              "lastSeenAt": "2026-11-10T04:22:28.629Z",
+              "lastSeenAgeSeconds": 225,
+              "offlineAfterSeconds": 180,
+              "box": null
+            }
+          },
+          "otherDisplays": [
+            {
+              "id": "01a18b8d-019e-7041-a709-f508c2d5038b",
+              "label": "(withheld)",
+              "kind": "display",
+              "stationId": "01a185c1-a729-79ae-93f6-91d0e2985c25",
+              "pairedAt": "2026-10-30T06:43:56.446Z",
+              "lastSeenAt": "2026-11-10T04:19:36.341Z",
+              "revokedAt": null,
+              "presence": {
+                "state": "via_box",
+                "lastSeenAt": "2026-11-10T04:19:36.341Z",
+                "lastSeenAgeSeconds": 397,
+                "offlineAfterSeconds": 180,
+                "box": {
+                  "id": "01a185aa-a041-70bd-9391-baf7bdb8d7b5",
+                  "name": "HKT till box (Pi 5)"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "12 the warning raised": {
+        "startedAt": "2026-11-10T04:26:23.501Z",
+        "want": "open",
+        "key": "display.offline:01a1c3b0-a670-7d7e-9ebd-cd204de36122",
+        "met": true,
+        "polls": [
+          {
+            "at": "2026-11-10T04:26:29.651Z",
+            "watchdogAgeSeconds": 48,
+            "park": "open",
+            "found": true,
+            "sameKeyOpen": 1,
+            "alert": {
+              "id": "01a1c3b0-adc8-7e49-b5db-8df2d33b90b0",
+              "key": "display.offline:01a1c3b0-a670-7d7e-9ebd-cd204de36122",
+              "severity": "warning",
+              "title": "ZZ TEST 771b display (customer display at ZZ TEST SCRUM-771b till) at Oto Play Park, Central Floresta has not called for 3 minutes while the park is open — the customer at that till cannot see the order",
+              "detail": "ZZ TEST 771b display (customer display at ZZ TEST SCRUM-771b till) · recovered and broke again 1×",
+              "openedAt": "2026-11-10T04:21:38.375Z",
+              "resolvedAt": null,
+              "acknowledgedAt": null,
+              "count": 2
+            }
+          }
+        ],
+        "picture": {
+          "at": "2026-11-10T04:26:35.324Z",
+          "watchdogAgeSeconds": 54,
+          "generatedAt": "2026-11-10T04:26:32.292Z",
+          "park": {
+            "openingHoursNow": "open"
+          },
+          "openAlertsTotal": 41,
+          "alertsHeading": "36 open alerts",
+          "zzTestAlerts": [
+            {
+              "id": "01a1c3b0-adc8-7e49-b5db-8df2d33b90b0",
+              "key": "display.offline:01a1c3b0-a670-7d7e-9ebd-cd204de36122",
+              "severity": "warning",
+              "title": "ZZ TEST 771b display (customer display at ZZ TEST SCRUM-771b till) at Oto Play Park, Central Floresta has not called for 3 minutes while the park is open — the customer at that till cannot see the order",
+              "detail": "ZZ TEST 771b display (customer display at ZZ TEST SCRUM-771b till) · recovered and broke again 1×",
+              "openedAt": "2026-11-10T04:21:38.375Z",
+              "resolvedAt": null,
+              "acknowledgedAt": null,
+              "count": 2
+            },
+            {
+              "id": "01a1c3b4-574f-752d-9a2c-393edd8f3376",
+              "key": "display.offline:01a1c3b0-e6a0-7ab2-a0d8-4f0b88f5e1d2",
+              "severity": "warning",
+              "title": "ZZ TEST 771c display (customer display at ZZ TEST SCRUM-771c till) at Oto Play Park, Central Floresta has not called for 3 minutes while the park is open — the customer at that till cannot see the order",
+              "detail": "ZZ TEST 771c display (customer display at ZZ TEST SCRUM-771c till)",
+              "openedAt": "2026-11-10T04:25:38.382Z",
+              "resolvedAt": null,
+              "acknowledgedAt": null,
+              "count": 1
+            }
+          ],
+          "anyDisplayAlerts": [
+            {
+              "id": "01a1c3b0-adc8-7e49-b5db-8df2d33b90b0",
+              "key": "display.offline:01a1c3b0-a670-7d7e-9ebd-cd204de36122",
+              "severity": "warning",
+              "openedAt": "2026-11-10T04:21:38.375Z",
+              "resolvedAt": null,
+              "count": 2,
+              "zz": true
+            },
+            {
+              "id": "01a1c3b4-574f-752d-9a2c-393edd8f3376",
+              "key": "display.offline:01a1c3b0-e6a0-7ab2-a0d8-4f0b88f5e1d2",
+              "severity": "warning",
+              "openedAt": "2026-11-10T04:25:38.382Z",
+              "resolvedAt": null,
+              "count": 1,
+              "zz": true
+            }
+          ],
+          "zzRowsOnPage": 2
+        }
+      },
+      "dedupe across watchdog runs": {
+        "at": "2026-11-10T04:27:55.554Z",
+        "watchdogAgeSeconds": 14,
+        "generatedAt": "2026-11-10T04:27:52.726Z",
+        "park": {
+          "openingHoursNow": "open"
+        },
+        "openAlertsTotal": 42,
+        "alertsHeading": "37 open alerts",
+        "zzTestAlerts": [
+          {
+            "id": "01a1c3b0-adc8-7e49-b5db-8df2d33b90b0",
+            "key": "display.offline:01a1c3b0-a670-7d7e-9ebd-cd204de36122",
+            "severity": "warning",
+            "title": "ZZ TEST 771b display (customer display at ZZ TEST SCRUM-771b till) at Oto Play Park, Central Floresta has not called for 5 minutes while the park is open — the customer at that till cannot see the order",
+            "detail": "ZZ TEST 771b display (customer display at ZZ TEST SCRUM-771b till) · recovered and broke again 1×",
+            "openedAt": "2026-11-10T04:21:38.375Z",
+            "resolvedAt": null,
+            "acknowledgedAt": null,
+            "count": 4
+          },
+          {
+            "id": "01a1c3b4-574f-752d-9a2c-393edd8f3376",
+            "key": "display.offline:01a1c3b0-e6a0-7ab2-a0d8-4f0b88f5e1d2",
+            "severity": "warning",
+            "title": "ZZ TEST 771c display (customer display at ZZ TEST SCRUM-771c till) at Oto Play Park, Central Floresta has not called for 5 minutes while the park is open — the customer at that till cannot see the order",
+            "detail": "ZZ TEST 771c display (customer display at ZZ TEST SCRUM-771c till)",
+            "openedAt": "2026-11-10T04:25:38.382Z",
+            "resolvedAt": null,
+            "acknowledgedAt": null,
+            "count": 3
+          }
+        ],
+        "anyDisplayAlerts": [
+          {
+            "id": "01a1c3b0-adc8-7e49-b5db-8df2d33b90b0",
+            "key": "display.offline:01a1c3b0-a670-7d7e-9ebd-cd204de36122",
+            "severity": "warning",
+            "openedAt": "2026-11-10T04:21:38.375Z",
+            "resolvedAt": null,
+            "count": 4,
+            "zz": true
+          },
+          {
+            "id": "01a1c3b4-574f-752d-9a2c-393edd8f3376",
+            "key": "display.offline:01a1c3b0-e6a0-7ab2-a0d8-4f0b88f5e1d2",
+            "severity": "warning",
+            "openedAt": "2026-11-10T04:25:38.382Z",
+            "resolvedAt": null,
+            "count": 3,
+            "zz": true
+          }
+        ],
+        "zzRowsOnPage": 2,
+        "reading": "One open row per display key across the watchdog runs at 04:25:38, 04:26:4x and 04:27:4x: the 771c alert kept id 01a1c3b4-574f-752d-9a2c-393edd8f3376 and went from count 1 to 3; the 771b alert kept id 01a1c3b0-adc8-7e49-b5db-8df2d33b90b0 (count 2 to 4). Never a second alert for the same display."
+      },
+      "reopened": {
+        "at": "2026-11-10T04:28:03.727Z",
+        "sameCredentialResumed": true,
+        "displayPageShows": "ZZ TEST SCRUM-771b till · ZZ TEST 771b display LANGUAGE Choose your language 请选择您的语言 · เลือกภาษาของคุณ · Выберите язык · Choisissez votre langue English Continu",
+        "api": {
+          "id": "01a1c3b0-a670-7d7e-9ebd-cd204de36122",
+          "label": "ZZ TEST 771b display",
+          "kind": "display",
+          "stationId": "01a1c3b0-5c46-7752-b546-1f6692a87e17",
+          "pairedAt": "2026-11-10T04:21:36.496Z",
+          "lastSeenAt": "2026-11-10T04:28:09.697Z",
+          "revokedAt": null,
+          "presence": {
+            "state": "online",
+            "lastSeenAt": "2026-11-10T04:28:09.697Z",
+            "lastSeenAgeSeconds": 3,
+            "offlineAfterSeconds": 180,
+            "box": null
+          }
+        }
+      },
+      "13 display online again": {
+        "at": "2026-11-10T04:28:18.128Z",
+        "pass": true,
+        "expect": "Online",
+        "pageText": "ZZ TEST 771b display Customer display Online on ZZ TEST SCRUM-771b till Snapshot Send test intent Open Box refusal log Revoke Paired 10 Nov, 11:21, last seen just now. Online · seen 5s ago Last seen 10 Nov, 11:28 (just now). No rejected protected call recorded.",
+        "apiRead": {
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+          "query": "?includeRevoked=true",
+          "status": 200,
+          "at": "2026-11-10T04:28:14.810Z",
+          "zzDisplay": {
+            "id": "01a1c3b0-a670-7d7e-9ebd-cd204de36122",
+            "label": "ZZ TEST 771b display",
+            "kind": "display",
+            "stationId": "01a1c3b0-5c46-7752-b546-1f6692a87e17",
+            "pairedAt": "2026-11-10T04:21:36.496Z",
+            "lastSeenAt": "2026-11-10T04:28:09.697Z",
+            "revokedAt": null,
+            "presence": {
+              "state": "online",
+              "lastSeenAt": "2026-11-10T04:28:09.697Z",
+              "lastSeenAgeSeconds": 5,
+              "offlineAfterSeconds": 180,
+              "box": null
+            }
+          },
+          "otherDisplays": [
+            {
+              "id": "01a18b8d-019e-7041-a709-f508c2d5038b",
+              "label": "(withheld)",
+              "kind": "display",
+              "stationId": "01a185c1-a729-79ae-93f6-91d0e2985c25",
+              "pairedAt": "2026-10-30T06:43:56.446Z",
+              "lastSeenAt": "2026-11-10T04:19:36.341Z",
+              "revokedAt": null,
+              "presence": {
+                "state": "via_box",
+                "lastSeenAt": "2026-11-10T04:19:36.341Z",
+                "lastSeenAgeSeconds": 518,
+                "offlineAfterSeconds": 180,
+                "box": {
+                  "id": "01a185aa-a041-70bd-9391-baf7bdb8d7b5",
+                  "name": "HKT till box (Pi 5)"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "14 the warning cleared": {
+        "startedAt": "2026-11-10T04:28:24.534Z",
+        "want": "gone",
+        "key": "display.offline:01a1c3b0-a670-7d7e-9ebd-cd204de36122",
+        "met": true,
+        "polls": [
+          {
+            "at": "2026-11-10T04:28:29.692Z",
+            "watchdogAgeSeconds": 48,
+            "park": "open",
+            "found": true,
+            "sameKeyOpen": 1,
+            "alert": {
+              "id": "01a1c3b0-adc8-7e49-b5db-8df2d33b90b0",
+              "key": "display.offline:01a1c3b0-a670-7d7e-9ebd-cd204de36122",
+              "severity": "warning",
+              "title": "ZZ TEST 771b display (customer display at ZZ TEST SCRUM-771b till) at Oto Play Park, Central Floresta has not called for 5 minutes while the park is open — the customer at that till cannot see the order",
+              "detail": "ZZ TEST 771b display (customer display at ZZ TEST SCRUM-771b till) · recovered and broke again 1×",
+              "openedAt": "2026-11-10T04:21:38.375Z",
+              "resolvedAt": null,
+              "acknowledgedAt": null,
+              "count": 4
+            }
+          },
+          {
+            "at": "2026-11-10T04:29:04.879Z",
+            "watchdogAgeSeconds": 23,
+            "park": "open",
+            "found": false,
+            "sameKeyOpen": 0,
+            "alert": null
+          }
+        ],
+        "picture": {
+          "at": "2026-11-10T04:29:10.043Z",
+          "watchdogAgeSeconds": 29,
+          "generatedAt": "2026-11-10T04:29:07.160Z",
+          "park": {
+            "openingHoursNow": "open"
+          },
+          "openAlertsTotal": 41,
+          "alertsHeading": "36 open alerts",
+          "zzTestAlerts": [
+            {
+              "id": "01a1c3b4-574f-752d-9a2c-393edd8f3376",
+              "key": "display.offline:01a1c3b0-e6a0-7ab2-a0d8-4f0b88f5e1d2",
+              "severity": "warning",
+              "title": "ZZ TEST 771c display (customer display at ZZ TEST SCRUM-771c till) at Oto Play Park, Central Floresta has not called for 6 minutes while the park is open — the customer at that till cannot see the order",
+              "detail": "ZZ TEST 771c display (customer display at ZZ TEST SCRUM-771c till)",
+              "openedAt": "2026-11-10T04:25:38.382Z",
+              "resolvedAt": null,
+              "acknowledgedAt": null,
+              "count": 4
+            }
+          ],
+          "anyDisplayAlerts": [
+            {
+              "id": "01a1c3b4-574f-752d-9a2c-393edd8f3376",
+              "key": "display.offline:01a1c3b0-e6a0-7ab2-a0d8-4f0b88f5e1d2",
+              "severity": "warning",
+              "openedAt": "2026-11-10T04:25:38.382Z",
+              "resolvedAt": null,
+              "count": 4,
+              "zz": true
+            }
+          ],
+          "zzRowsOnPage": 1
+        }
+      },
+      "revokeWhileOpen": {
+        "at": "2026-11-10T04:29:21.521Z",
+        "status": 200,
+        "code": null,
+        "api": {
+          "id": "01a1c3b0-e6a0-7ab2-a0d8-4f0b88f5e1d2",
+          "label": "ZZ TEST 771c display",
+          "kind": "display",
+          "stationId": "01a1c3b0-5c9e-7494-a838-cf28ffcada63",
+          "pairedAt": "2026-11-10T04:21:52.928Z",
+          "lastSeenAt": "2026-11-10T04:22:30.066Z",
+          "revokedAt": "2026-11-10T04:29:21.754Z",
+          "presence": null
+        }
+      },
+      "15 the revoked display's warning closed": {
+        "startedAt": "2026-11-10T04:29:21.830Z",
+        "want": "gone",
+        "key": "display.offline:01a1c3b0-e6a0-7ab2-a0d8-4f0b88f5e1d2",
+        "met": true,
+        "polls": [
+          {
+            "at": "2026-11-10T04:29:27.514Z",
+            "watchdogAgeSeconds": 46,
+            "park": "open",
+            "found": true,
+            "sameKeyOpen": 1,
+            "alert": {
+              "id": "01a1c3b4-574f-752d-9a2c-393edd8f3376",
+              "key": "display.offline:01a1c3b0-e6a0-7ab2-a0d8-4f0b88f5e1d2",
+              "severity": "warning",
+              "title": "ZZ TEST 771c display (customer display at ZZ TEST SCRUM-771c till) at Oto Play Park, Central Floresta has not called for 6 minutes while the park is open — the customer at that till cannot see the order",
+              "detail": "ZZ TEST 771c display (customer display at ZZ TEST SCRUM-771c till)",
+              "openedAt": "2026-11-10T04:25:38.382Z",
+              "resolvedAt": null,
+              "acknowledgedAt": null,
+              "count": 4
+            }
+          },
+          {
+            "at": "2026-11-10T04:30:02.678Z",
+            "watchdogAgeSeconds": 21,
+            "park": "open",
+            "found": false,
+            "sameKeyOpen": 0,
+            "alert": null
+          }
+        ],
+        "picture": {
+          "at": "2026-11-10T04:30:08.339Z",
+          "watchdogAgeSeconds": 27,
+          "generatedAt": "2026-11-10T04:30:05.445Z",
+          "park": {
+            "openingHoursNow": "open"
+          },
+          "openAlertsTotal": 40,
+          "alertsHeading": "35 open alerts",
+          "zzTestAlerts": [],
+          "anyDisplayAlerts": [],
+          "zzRowsOnPage": 0
+        }
+      },
+      "16 Pi till card, read only": {
+        "pageText": "PI1 TILL Till 1 (Pi) 4 devices assigned · config v4 Ready for selling Till screen offline · last seen 13h ago Scanner last used 13h ago. A scanner plugged into the iPad types like a keyboard, so the last code it typed is the only sign of it. Open to all staff — it is in the picker of everybody signed in at Oto Play Park, Central Floresta, and they take it by pressing it. on HKT till box (Pi 5) Edit →",
+        "api": {
+          "id": "01a185c1-a729-79ae-93f6-91d0e2985c25",
+          "name": "Till 1 (Pi)",
+          "kind": "till",
+          "boxId": "01a185aa-a041-70bd-9391-baf7bdb8d7b5",
+          "archived": false,
+          "screen": {
+            "state": "offline",
+            "lastSeenAt": "2026-11-09T15:17:01.590Z",
+            "lastSeenAgeSeconds": 47155,
+            "offlineAfterSeconds": 180,
+            "scannerLastUsedAt": "2026-11-09T14:25:28.919Z",
+            "scannerLastUsedAgeSeconds": 50247
+          }
+        },
+        "note": "Health at the same time says HKT till box (Pi 5) has not called home for 20 hours while the park is open (a critical alert of the park's own, not touched)."
+      }
+    },
+    "resolvedReasonNotReadable": "GET /ops/health lists open alerts only and no route returns alert.resolved_reason for an operator's alert, so \"cleared\" is read as the alert leaving the open list on the next watchdog run. The code sets the reason: recovered with \"<display> at <park> is calling again\" (screen-presence.ts evaluateDisplay), and \"no longer paired\" for a revoked display (displayConditions).",
+    "findingPairingRace": {
+      "what": "The 771b warning was first raised 2 seconds after pairing, before the display had called once.",
+      "evidence": {
+        "pairedAt": "2026-11-10T04:21:36.339Z",
+        "credentialPairedAt": "2026-11-10T04:21:36.496Z",
+        "firstCallLastSeenAt": "2026-11-10T04:21:43.628Z",
+        "alertId": "01a1c3b0-adc8-7e49-b5db-8df2d33b90b0",
+        "alertOpenedAt": "2026-11-10T04:21:38.375Z",
+        "healthDetailAt1125": "ZZ TEST 771b display (customer display at ZZ TEST SCRUM-771b till) · recovered and broke again 1×"
+      },
+      "why": "claimDisplay (display.ts) sets pairedAt but not lastSeenAt; screenPresence treats a null lastSeenAt as offline; evaluateDisplay raises it while the park is open (\"has not called since it was paired\"). A watchdog run that lands between the claim and the display's first call (here 04:21:36.5 to 04:21:43.6) raises it, delivers it as opened, and the next run closes it as recovered.",
+      "consequence": "The genuine outage at 04:25:38 came inside ALERT_FLAP_WINDOW_S (300 s) of that close, so raiseAlert reopened the same row as a flap (Health: \"recovered and broke again 1×\"), and by the code (raiseAlert, the watchdog open in jobs.ts) a reopen is not delivered: Health showed it, nobody was told. Deliveries are not readable from the api; this part is from the code. The 771c display (claimed at 04:21:52.9, first call 04:22:00, no watchdog run in between) is the clean case: raised once at 04:25:38, delivered as a new alert."
+    },
+    "images": [
+      {
+        "file": "docs/qa/proof-2026-11-09/SCRUM-771/staging/771-st-10-devices-paired-display-online-open-hours.png",
+        "at": "2026-11-10T04:22:24.979Z",
+        "page": "CON",
+        "url": "https://oto-console-staging.onrender.com/devices",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "shows": "Re-run in opening hours (Tue 11:22 Bangkok, park open 10:00-20:00): Console > Devices > Paired screens, the ZZ TEST 771b display on ZZ TEST SCRUM-771b till (Virtual box 1) reads Online just after pairing. Other displays' labels and signed-in names are masked."
+      },
+      {
+        "file": "docs/qa/proof-2026-11-09/SCRUM-771/staging/771-st-16-devices-pi-till-card-open-hours.png",
+        "at": "2026-11-10T04:23:00.792Z",
+        "page": "CON",
+        "url": "https://oto-console-staging.onrender.com/devices",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "shows": "Read only, in opening hours (Tue 11:22 Bangkok): Console > Devices > Stations filtered to Till 1 (Pi), on HKT till box (Pi 5). The card reads \"Till screen offline · last seen 13h ago\" and \"Scanner last used 13h ago\": the platform has not heard the Pi till's screen since 22:17 last night. Nothing of the park's was touched; signed-in names are masked."
+      },
+      {
+        "file": "docs/qa/proof-2026-11-09/SCRUM-771/staging/771-st-11-devices-paired-display-offline-open-hours.png",
+        "at": "2026-11-10T04:26:17.963Z",
+        "page": "CON",
+        "url": "https://oto-console-staging.onrender.com/devices",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "shows": "3.5 minutes after both ZZ TEST displays' browsers were closed, in opening hours: Console > Devices > Paired screens, the ZZ TEST 771b display (and the 771c display) read Offline, quiet for longer than 3 minutes. The park's display on Till 1 (Pi) has its label masked."
+      },
+      {
+        "file": "docs/qa/proof-2026-11-09/SCRUM-771/staging/771-st-12-health-display-offline-alert-open.png",
+        "at": "2026-11-10T04:26:36.198Z",
+        "page": "CON",
+        "url": "https://oto-console-staging.onrender.com/watch/health",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "shows": "Console > Health in opening hours: the open warning raised by the watchdog for the quiet ZZ TEST 771b display (its alert key display.offline:<credential id>), in the lane's own words. The 771c display's alert, raised the same way, is beside it. Who took any alert is masked."
+      },
+      {
+        "file": "docs/qa/proof-2026-11-09/SCRUM-771/staging/771-st-13-devices-paired-display-online-again-open-hours.png",
+        "at": "2026-11-10T04:28:18.916Z",
+        "page": "CON",
+        "url": "https://oto-console-staging.onrender.com/devices",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "shows": "The ZZ TEST 771b display page opened again in a new browser with the same stored pairing (no re-pairing): Console > Devices > Paired screens reads Online again. The 771c display, still closed, reads Offline. The park's display label is masked."
+      },
+      {
+        "file": "docs/qa/proof-2026-11-09/SCRUM-771/staging/771-st-14-health-display-alert-cleared.png",
+        "at": "2026-11-10T04:29:10.896Z",
+        "page": "CON",
+        "url": "https://oto-console-staging.onrender.com/watch/health",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "shows": "Console > Health after the ZZ TEST 771b display called again: its warning is no longer among the open alerts (the watchdog closed it; the api does not show a closed alert's reason, which the code sets to recovered with the words \"... is calling again\"). The 771c display, still quiet, keeps its open warning. Who took any alert is masked."
+      },
+      {
+        "file": "docs/qa/proof-2026-11-09/SCRUM-771/staging/771-st-15-health-revoked-display-alert-closed.png",
+        "at": "2026-11-10T04:30:09.149Z",
+        "page": "CON",
+        "url": "https://oto-console-staging.onrender.com/watch/health",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "shows": "Console > Health after the ZZ TEST 771c display was revoked while its warning stood open: the next watchdog run closed it, so neither ZZ TEST display has an open alert (the code closes a revoked display's alert as \"no longer paired\"; the api does not show a closed alert's reason). Who took any alert is masked."
+      }
+    ],
+    "pageErrors": [],
+    "cleanup": {
+      "actions": [
+        {
+          "at": "2026-11-10T04:30:38.238Z",
+          "what": "revoke the ZZ TEST 771b display",
+          "status": 200,
+          "code": null
+        },
+        {
+          "at": "2026-11-10T04:30:42.899Z",
+          "what": "the display page (D2) after the revoke, then its new pairing code expired",
+          "shown": "Set up this display In the Console, open Devices, choose Pair a display, and enter this code for the station. •••••• This code expires at 11:40. Expire code now",
+          "after": "Set up this display In the Console, open Devices, choose Pair a display, and enter this code for the station. This code has expired. Create a new code when you are ready to pair this display. New code"
+        },
+        {
+          "at": "2026-11-10T04:30:43.044Z",
+          "what": "till sign-out (its own session route)",
+          "status": 200,
+          "code": null
+        },
+        {
+          "at": "2026-11-10T04:30:43.209Z",
+          "what": "unassign printers on ZZ TEST SCRUM-771b till",
+          "status": 200,
+          "code": null
+        },
+        {
+          "at": "2026-11-10T04:30:43.319Z",
+          "what": "archive station ZZ TEST SCRUM-771b till",
+          "status": 200,
+          "code": null
+        },
+        {
+          "at": "2026-11-10T04:30:43.450Z",
+          "what": "archive station ZZ TEST SCRUM-771c till",
+          "status": 200,
+          "code": null
+        },
+        {
+          "at": "2026-11-10T04:30:46.483Z",
+          "what": "Console sign-out (its own session route)",
+          "status": 200,
+          "code": null
+        }
+      ],
+      "startedAt": "2026-11-10T04:30:37.926Z",
+      "salesOnTheTills": {
+        "ZZ TEST SCRUM-771b till": [],
+        "ZZ TEST SCRUM-771c till": []
+      },
+      "tillMeAfterSignOut": 401,
+      "readBack": {
+        "at": "2026-11-10T04:30:45.765Z",
+        "tills": [
+          {
+            "id": "01a1c3b0-5c46-7752-b546-1f6692a87e17",
+            "name": "ZZ TEST SCRUM-771b till",
+            "archived": true,
+            "archivedAt": null,
+            "devices": 0,
+            "screen": null
+          },
+          {
+            "id": "01a1c3b0-5c9e-7494-a838-cf28ffcada63",
+            "name": "ZZ TEST SCRUM-771c till",
+            "archived": true,
+            "archivedAt": null,
+            "devices": 0,
+            "screen": null
+          }
+        ],
+        "displays": [
+          {
+            "id": "01a1c3b0-a670-7d7e-9ebd-cd204de36122",
+            "label": "ZZ TEST 771b display",
+            "kind": "display",
+            "stationId": "01a1c3b0-5c46-7752-b546-1f6692a87e17",
+            "pairedAt": "2026-11-10T04:21:36.496Z",
+            "lastSeenAt": "2026-11-10T04:30:34.713Z",
+            "revokedAt": "2026-11-10T04:30:38.313Z",
+            "presence": null,
+            "revokedReason": "ZZ TEST SCRUM-771 re-run clean-up"
+          },
+          {
+            "id": "01a1c3b0-e6a0-7ab2-a0d8-4f0b88f5e1d2",
+            "label": "ZZ TEST 771c display",
+            "kind": "display",
+            "stationId": "01a1c3b0-5c9e-7494-a838-cf28ffcada63",
+            "pairedAt": "2026-11-10T04:21:52.928Z",
+            "lastSeenAt": "2026-11-10T04:22:30.066Z",
+            "revokedAt": "2026-11-10T04:29:21.754Z",
+            "presence": null,
+            "revokedReason": "ZZ TEST SCRUM-771 re-run: revoked while its alert is open"
+          }
+        ],
+        "liveCredentialsOnTheTills": [],
+        "salesAfter": {
+          "ZZ TEST SCRUM-771b till": [],
+          "ZZ TEST SCRUM-771c till": []
+        },
+        "healthStatus": 200,
+        "healthZzTestAlerts": [],
+        "healthDisplayAlertsOpen": [],
+        "untouched": [
+          {
+            "id": "01a0be8c-89c4-7ef7-a0e7-22ca6a797f47",
+            "name": "FWBooth1",
+            "kind": "booth",
+            "boxId": "01a0e704-2721-70eb-a677-5bcdf62b3d34",
+            "archived": false,
+            "screen": null,
+            "devices": 1
+          },
+          {
+            "id": "01a0bbdc-8cd7-7208-8e05-84eaf2963a9a",
+            "name": "Reception Till 1",
+            "kind": "till",
+            "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+            "archived": false,
+            "screen": {
+              "state": "offline",
+              "lastSeenAt": null,
+              "lastSeenAgeSeconds": null,
+              "offlineAfterSeconds": 180,
+              "scannerLastUsedAt": null,
+              "scannerLastUsedAgeSeconds": null
+            },
+            "devices": 7
+          },
+          {
+            "id": "01a185c1-a729-79ae-93f6-91d0e2985c25",
+            "name": "Till 1 (Pi)",
+            "kind": "till",
+            "boxId": "01a185aa-a041-70bd-9391-baf7bdb8d7b5",
+            "archived": false,
+            "screen": {
+              "state": "offline",
+              "lastSeenAt": "2026-11-09T15:17:01.590Z",
+              "lastSeenAgeSeconds": 47624,
+              "offlineAfterSeconds": 180,
+              "scannerLastUsedAt": "2026-11-09T14:25:28.919Z",
+              "scannerLastUsedAgeSeconds": 50717
+            },
+            "devices": 4
+          },
+          {
+            "id": "01a18602-5f0b-72ca-bcc3-671ff14e9284",
+            "name": "Till 2 (test)",
+            "kind": "till",
+            "boxId": "01a185aa-a041-70bd-9391-baf7bdb8d7b5",
+            "archived": false,
+            "screen": {
+              "state": "offline",
+              "lastSeenAt": null,
+              "lastSeenAgeSeconds": null,
+              "offlineAfterSeconds": 180,
+              "scannerLastUsedAt": null,
+              "scannerLastUsedAgeSeconds": null
+            },
+            "devices": 4
+          }
+        ]
+      },
+      "consoleMeAfterSignOut": 401,
+      "finishedAt": "2026-11-10T04:30:46.935Z",
+      "finalHealth": {
+        "at": "2026-11-10T04:31:55.218Z",
+        "status": 200,
+        "watchdogAgeSeconds": 17,
+        "generatedAt": "2026-11-10T04:31:55.264Z",
+        "openAlerts": 38,
+        "zzTestOpen": [],
+        "displayAlertsOpen": 0
+      }
+    },
+    "adminApiSession": {
+      "signIn": {
+        "status": 200,
+        "at": "2026-11-10T04:21:04.592Z"
+      },
+      "signOut": {
+        "status": 200,
+        "meAfter": 401,
+        "at": "2026-11-10T04:31:59.609Z"
+      }
+    }
   }
 }
