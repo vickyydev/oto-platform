@@ -131,6 +131,8 @@ function msg(body: string, authorKind: Message['authorKind'] = 'customer'): Mess
     mediaFileIds: [],
     audioFileId: null,
     transcript: null,
+    transcriptStatus: null,
+    transcriptLanguage: null,
     templateId: null,
     providerStatus: null,
     source: 'channel',

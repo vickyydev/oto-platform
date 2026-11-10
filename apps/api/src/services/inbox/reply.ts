@@ -328,6 +328,8 @@ export async function messageView(db: Exec, operatorId: string, messageId: strin
       mediaFileIds: m.mediaFileIds,
       audioFileId: m.audioFileId,
       transcript: m.transcript,
+      transcriptStatus: m.transcriptStatus,
+      transcriptLanguage: m.transcriptLanguage,
       templateId: m.templateId,
       providerStatus: m.providerStatus,
       source: m.source,

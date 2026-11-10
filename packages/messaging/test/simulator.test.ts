@@ -128,6 +128,22 @@ describe('the round trip: a customer message in', () => {
     });
   });
 
+  it('plays a voice note (SCRUM-824): WhatsApp’s audio message, marked voice, fetched back as the bytes played', async () => {
+    const s = sim();
+    // Synthetic bytes, never a recording of anyone.
+    const bytes = Uint8Array.from(Buffer.from('OggS-synthetic-voice-note-bytes', 'latin1'));
+    const [e] = s.parseWebhook(
+      s.inbound({ from: '66800000004', voice: { bytes, contentType: 'audio/ogg; codecs=opus' } }).webhook,
+    );
+    expect(e).toMatchObject({
+      type: 'audio',
+      media: [{ kind: 'audio', providerMediaId: 'SIMMEDIA.r1.000001', mimeType: 'audio/ogg; codecs=opus', voice: true }],
+    });
+    const media = await s.fetchMedia({ providerMediaId: 'SIMMEDIA.r1.000001' });
+    expect(media.contentType).toBe('audio/ogg; codecs=opus');
+    expect([...media.bytes]).toEqual([...bytes]);
+  });
+
   it('plays a scenario as one delivery per message, in order', () => {
     const s = sim();
     const played = s.scenario([

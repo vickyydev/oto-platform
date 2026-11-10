@@ -519,6 +519,8 @@ export async function conversationMessages(
       mediaFileIds: m.mediaFileIds,
       audioFileId: m.audioFileId,
       transcript: m.transcript,
+      transcriptStatus: m.transcriptStatus,
+      transcriptLanguage: m.transcriptLanguage,
       templateId: m.templateId,
       providerStatus: m.providerStatus,
       source: m.source,

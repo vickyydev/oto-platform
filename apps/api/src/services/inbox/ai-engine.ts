@@ -51,6 +51,7 @@ import {
   type InboxCategory,
   type InboxTeamKey,
   type InboxTemplateKey,
+  type MessageTranscriptStatus,
 } from '@oto/db';
 import { isoDateInTz, newId, renderTemplate } from '@oto/shared';
 import type { FastifyBaseLogger } from 'fastify';
@@ -76,6 +77,7 @@ import { callingCodeOf } from './calling-code';
 import type { InboxChannels } from './channels';
 import { routeConversation } from './router';
 import { sendAfterCommit } from './send';
+import { holdTurnForTranscript, messageText, voiceHold, voiceUnreadTurn } from './voice-notes';
 
 /**
  * THE TURN ENGINE: `job:inbox.ai` (SCRUM-590, round A2 lane a; plan
@@ -183,12 +185,14 @@ export interface AiSweep extends Record<string, unknown> {
   errors: number;
   givenUp: number;
   aiMessagesSent: number;
+  /** SCRUM-824: turns handed back to wait for a voice note's transcript. */
+  waiting: number;
 }
 
 type TurnRow = typeof aiTurn.$inferSelect;
 type ConversationRow = typeof conversation.$inferSelect;
 type AccountRow = typeof channelAccount.$inferSelect;
-type Final = 'answered' | 'handed_over' | 'silent' | 'shadowed' | 'cancelled' | 'superseded' | 'skipped';
+type Final = 'answered' | 'handed_over' | 'silent' | 'shadowed' | 'cancelled' | 'superseded' | 'skipped' | 'waiting';
 
 /** A database or SDK error's class name, never its message (which can echo values). */
 function errorName(err: unknown): string {
@@ -282,7 +286,7 @@ async function circuitOpen(db: Exec, operatorId: string, now: Date): Promise<boo
 }
 
 /** A line of the episode as the engine reads it: the prompt's shape, and the row's id (the burst's anchor). */
-type EpisodeRow = EpisodeMessage & { id: string };
+type EpisodeRow = EpisodeMessage & { id: string; voice: MessageTranscriptStatus | null };
 
 /**
  * The episode as data for the prompt: its messages by the time each was
@@ -296,7 +300,14 @@ type EpisodeRow = EpisodeMessage & { id: string };
  */
 async function loadEpisode(db: Exec, conv: ConversationRow, episodeStart: Date): Promise<EpisodeRow[]> {
   const rows = await db
-    .select({ id: message.id, authorKind: message.authorKind, body: message.body, createdAt: message.createdAt })
+    .select({
+      id: message.id,
+      authorKind: message.authorKind,
+      body: message.body,
+      transcript: message.transcript,
+      transcriptStatus: message.transcriptStatus,
+      createdAt: message.createdAt,
+    })
     .from(message)
     .where(
       and(
@@ -315,7 +326,9 @@ async function loadEpisode(db: Exec, conv: ConversationRow, episodeStart: Date):
     id: r.id,
     from: r.authorKind,
     at: r.createdAt,
-    text: r.body !== null && r.body.trim() !== '' ? r.body : null,
+    // SCRUM-824: a voice note's transcript is its text, marked as spoken (`messageText`).
+    text: messageText(r),
+    voice: r.transcriptStatus,
   }));
 }
 
@@ -495,6 +508,8 @@ interface TurnResult {
   turnReason?: string;
   /** SCRUM-696: an operator rule's ask-first question is the turn's reply. */
   askFirst?: { ruleId: string };
+  /** SCRUM-824: a voice note in the burst is still being transcribed; the turn waits for it. */
+  wait?: boolean;
 }
 
 async function recordModelRun(
@@ -587,6 +602,10 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
 
   const episode = await loadEpisode(db, conv, eligible.episodeStart);
   const burst = burstOf(episode, turn.triggerMessageId);
+  // SCRUM-824: a voice note still being transcribed holds the turn; one nobody could read is a person's.
+  const voice = voiceHold(burst, now);
+  if (voice === 'wait') return { conv, wait: true };
+  if (voice === 'unread') return { conv, ...voiceUnreadTurn(conv) };
   // X8: a voice note, an image or a sticker with no words is a person's to pick up.
   if (burst.length === 0 || burst.every((m) => m.text === null)) return { conv, silence: 'NO_TEXT' };
 
@@ -1526,7 +1545,7 @@ async function closeTurn(
   tx: Tx,
   turn: TurnRow,
   conv: ConversationRow | undefined,
-  state: Exclude<Final, 'skipped'>,
+  state: Exclude<Final, 'skipped' | 'waiting'>,
   reason: string,
   r: TurnResult,
   at: Date,
@@ -1745,6 +1764,10 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       if (newer?.newer) {
         await closeTurn(tx, turn, conv, 'superseded', 'SUPERSEDED', r, at);
         return 'superseded';
+      }
+      if (r.wait) {
+        await holdTurnForTranscript(tx, turn, conv, at);
+        return 'waiting';
       }
 
       const gated = r.verdict;
@@ -1989,6 +2012,7 @@ export async function runInboxAiJob(db: Db, deps: AiEngineDeps, now: Date): Prom
     errors: 0,
     givenUp: 0,
     aiMessagesSent: 0,
+    waiting: 0,
   };
   const count = (f: Final) => {
     if (f === 'answered') sweep.answered += 1;
@@ -1997,6 +2021,7 @@ export async function runInboxAiJob(db: Db, deps: AiEngineDeps, now: Date): Prom
     else if (f === 'shadowed') sweep.shadowed += 1;
     else if (f === 'cancelled') sweep.cancelled += 1;
     else if (f === 'superseded') sweep.superseded += 1;
+    else if (f === 'waiting') sweep.waiting += 1;
     else sweep.skipped += 1;
   };
 

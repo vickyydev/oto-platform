@@ -865,6 +865,69 @@ const EnvSchema = z.object({
   INTERNAL_AI_CONCURRENT_PER_PERSON: z.coerce.number().int().min(1).max(100).default(2),
   INTERNAL_AI_CONCURRENT_PER_OPERATOR: z.coerce.number().int().min(1).max(1000).default(20),
   INTERNAL_AI_OTOAPP_TOOLS: z.enum(['true', 'false']).default('false'),
+
+  /**
+   * THE INBOX'S VOICE NOTES, TRANSCRIBED (SCRUM-824). `job:inbox.transcribe`
+   * turns a customer's voice note into text, which the assistant, Book Date's
+   * reading and the BEO fill then read like typed words, and staff see under
+   * the audio. OFF unless a provider is named here: off, a voice note stays
+   * audio, shows "Voice note — not transcribed", and the assistant leaves it
+   * for a person, as before. Read in one place, `services/inbox/transcription.ts`.
+   *
+   *  - `TRANSCRIPTION_PROVIDER` — `off` (the default) or `openai-compatible`:
+   *    any service that takes OpenAI's `POST /v1/audio/transcriptions`
+   *    request (OpenAI's `whisper-1` and `gpt-4o-transcribe`, and the
+   *    providers that speak the same request).
+   *  - `TRANSCRIPTION_API_URL` — that endpoint, whole; empty means OpenAI's
+   *    own. https, or http to this machine only.
+   *  - `TRANSCRIPTION_API_KEY` — **Secret.** Sent as the bearer token and
+   *    nowhere else; never logged. The provider on without it refuses the boot.
+   *  - `TRANSCRIPTION_MODEL` — the provider's model id (default `whisper-1`,
+   *    which also answers the language it heard).
+   *  - `TRANSCRIPTION_MAX_SECONDS` — a longer note is never sent: it is marked
+   *    "too long to transcribe" and left for a person (default 180).
+   */
+  TRANSCRIPTION_PROVIDER: z.preprocess(
+    // Blank (the .env.example line copied as-is) means the default, off.
+    value => typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z.enum(['off', 'openai-compatible']).default('off'),
+  ),
+  TRANSCRIPTION_API_URL: z
+    .string()
+    .trim()
+    .default('')
+    .superRefine((value, ctx) => {
+      if (!value) return;
+      let url: URL;
+      try {
+        url = new URL(value);
+      } catch {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'TRANSCRIPTION_API_URL: not a URL' });
+        return;
+      }
+      const local = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+      if (url.protocol !== 'https:' && !(url.protocol === 'http:' && local)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'TRANSCRIPTION_API_URL: https only (http to localhost) — the audio and the key travel on it',
+        });
+      }
+      if (url.username || url.password) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'TRANSCRIPTION_API_URL: the key goes in TRANSCRIPTION_API_KEY, never in the URL' });
+      }
+    }),
+  TRANSCRIPTION_API_KEY: z.string().default(''),
+  TRANSCRIPTION_MODEL: z.preprocess(
+    value => typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z
+      .string()
+      .regex(/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,79}$/, 'a model id, one word')
+      .default('whisper-1'),
+  ),
+  TRANSCRIPTION_MAX_SECONDS: z.preprocess(
+    value => typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z.coerce.number().int().min(5).max(1800).default(180),
+  ),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -1142,6 +1205,13 @@ export function assertProductionSafe(env: Env): void {
       'INTERNAL_AI_ENABLED is true but ANTHROPIC_API_KEY is not set — the internal assistant has no model to ask',
     );
   }
+  // SCRUM-824: a transcription provider named with nothing to call it with
+  // would fail every voice note while the setting says it is on. Named, never its value.
+  if (env.TRANSCRIPTION_PROVIDER === 'openai-compatible' && !(env.TRANSCRIPTION_API_KEY ?? '').trim()) {
+    problems.push(
+      'TRANSCRIPTION_PROVIDER is openai-compatible but TRANSCRIPTION_API_KEY is not set — no voice note could be transcribed',
+    );
+  }
 
   if (problems.length) {
     throw new Error(
@@ -1185,6 +1255,10 @@ export function loadEnv(overrides: Partial<Record<keyof Env, string>> = {}): Env
     // And the internal assistant (SCRUM-591), for the same reason.
     if (overrides.INTERNAL_AI_ENABLED === undefined) raw.INTERNAL_AI_ENABLED = 'false';
     if (overrides.INTERNAL_AI_OTOAPP_TOOLS === undefined) raw.INTERNAL_AI_OTOAPP_TOOLS = 'false';
+    // And voice-note transcription (SCRUM-824): a key in `.env` must never let
+    // `pnpm test` send a real recording anywhere. The suites inject a fake.
+    if (overrides.TRANSCRIPTION_PROVIDER === undefined) raw.TRANSCRIPTION_PROVIDER = 'off';
+    if (overrides.TRANSCRIPTION_API_KEY === undefined) raw.TRANSCRIPTION_API_KEY = '';
     // A developer's destination must never turn a test into a real message.
     // Registration tests opt in explicitly and inject a capturing sender.
     if (overrides.CONSOLE_DIGEST_ENABLED === undefined) raw.CONSOLE_DIGEST_ENABLED = 'false';

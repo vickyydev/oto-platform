@@ -239,6 +239,8 @@ function msg(over: Partial<Message> & Pick<Message, 'id' | 'createdAt'>): Messag
     mediaFileIds: [],
     audioFileId: null,
     transcript: null,
+    transcriptStatus: null,
+    transcriptLanguage: null,
     templateId: null,
     providerStatus: null,
     source: 'channel',

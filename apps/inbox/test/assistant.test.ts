@@ -62,6 +62,8 @@ function msg(over: Partial<Message>): Message {
     mediaFileIds: [],
     audioFileId: null,
     transcript: null,
+    transcriptStatus: null,
+    transcriptLanguage: null,
     templateId: null,
     providerStatus: null,
     source: 'channel',

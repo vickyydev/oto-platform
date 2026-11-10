@@ -35,6 +35,8 @@ import { buildInboxChannels, type InboxChannels } from './inbox/channels';
 import { INBOX_SEND_INTERVAL_S, INBOX_SEND_JOB, runInboxSendJob } from './inbox/send';
 import { INBOX_AI_INTERVAL_S, INBOX_AI_JOB, runInboxAiJob } from './inbox/ai-engine';
 import { buildInboxAiRuntime, type InboxAiRuntime } from './inbox/ai-runtime';
+import { buildTranscriptionRuntime, type TranscriptionRuntime } from './inbox/transcription';
+import { INBOX_TRANSCRIBE_INTERVAL_S, INBOX_TRANSCRIBE_JOB, runInboxTranscribeJob } from './inbox/voice-notes';
 import { flagPendingPayments, gatewayFor, pollPendingAttempts } from './payments/gateway';
 import { PRINT_RETENTION_DAYS, purgeOldPrintJobs } from './print';
 import { HELD_SALES_MIDNIGHT_JOB, runHeldSalesMidnight } from './sale-holds';
@@ -250,6 +252,11 @@ export interface JobDeps {
    * the one `job:inbox.ai` asks. Absent, one is built from the env.
    */
   inboxAi?: InboxAiRuntime;
+  /**
+   * SCRUM-824: the voice-note transcription runtime `job:inbox.transcribe`
+   * asks. Absent, one is built from the env (always `off` under tests).
+   */
+  inboxTranscription?: TranscriptionRuntime;
   /** Tests inject a capturing sender; the configured destination stays private. */
   consoleDigestSender?: DigestSender;
 }
@@ -1025,6 +1032,27 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
       }),
     },
     /**
+     * `job:inbox.transcribe` — A CUSTOMER'S VOICE NOTES, TRANSCRIBED (SCRUM-824;
+     * `services/inbox/voice-notes.ts`).
+     *
+     * Every fifteen seconds: a batch of pending voice notes claimed under a
+     * lease, each read back from storage and sent to the transcription
+     * provider; the words written to the message, or the note marked too long
+     * or could not be read (the first ask and two retries). With no provider
+     * configured each note is marked not transcribed, as before. Counts only
+     * in the run's detail; never the words.
+     */
+    {
+      name: INBOX_TRANSCRIBE_JOB,
+      description:
+        "Transcribes customers' voice notes in the Inbox so the assistant, Book Date and the BEO fill read them like typed words; marks the ones too long or unreadable for a person, and every one not transcribed while no provider is configured",
+      intervalSeconds: INBOX_TRANSCRIBE_INTERVAL_S,
+      graceSeconds: 300,
+      run: async ({ db, log, now }) => ({
+        detail: await runInboxTranscribeJob(db, { runtime: inboxTranscriptionOf(deps), storage: deps.fileStorage ?? null, log }, now),
+      }),
+    },
+    /**
      * `job:assistant.purge` — THE ASK-LOG'S RETENTION (SCRUM-591; plan
      * docs/progress/plans/internal-assistant-build/PLAN.md §D.3, owner G4).
      *
@@ -1074,6 +1102,18 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
 
 /** SCRUM-643: how often spent switches are reverted and alerted on (reads already ignore them). */
 export const SUITE_CONTROL_EXPIRY_INTERVAL_S = 60;
+
+/** SCRUM-824: the transcription runtime the runner was given; otherwise one built from the env, once. */
+const ownTranscription = new WeakMap<JobDeps, TranscriptionRuntime>();
+function inboxTranscriptionOf(deps: JobDeps): TranscriptionRuntime {
+  if (deps.inboxTranscription) return deps.inboxTranscription;
+  let built = ownTranscription.get(deps);
+  if (!built) {
+    built = buildTranscriptionRuntime(deps.env, deps.log);
+    ownTranscription.set(deps, built);
+  }
+  return built;
+}
 
 /** The routes' assistant runtime when the runner was given it; otherwise one built from the env, once. */
 const ownInboxAi = new WeakMap<JobDeps, InboxAiRuntime>();

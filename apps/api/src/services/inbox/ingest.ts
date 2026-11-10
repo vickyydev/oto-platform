@@ -621,6 +621,10 @@ async function receiveMessage(
       bodyLanguage: hintLanguage,
       externalMessageId: event.externalMessageId,
       source: 'channel',
+      // SCRUM-824: a voice note is pending its transcript from the moment it
+      // lands, so the assistant's turn (written below, in this transaction)
+      // waits for it even before the audio is fetched after the commit.
+      ...(event.media.some((r) => r.kind === 'audio') ? { transcriptStatus: 'pending' as const } : {}),
       createdAt: at,
     })
     .onConflictDoNothing()

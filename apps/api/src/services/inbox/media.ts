@@ -37,6 +37,12 @@ import { INBOX_READ, holdsAnywhere, loadVisibleConversation, viewerScopeOf } fro
  * the reason's word only) on the Failures page; the message stays, with its
  * caption and without the file. Fetching again later is not built: the
  * provider's media id is on the delivery's receipt for a person to replay.
+ *
+ * A VOICE NOTE (SCRUM-824) is `pending` its transcript from the ingest on;
+ * stored, it waits for `job:inbox.transcribe` (`voice-notes.ts`). One whose
+ * audio cannot be stored is settled here at once — `too_long` over the size
+ * limit, `failed` otherwise — so the assistant stops waiting and a person
+ * takes it.
  */
 
 /** One media object of a new inbound message, waiting for the commit. */
@@ -89,6 +95,8 @@ export async function storeInboundMedia(
     const startedAt = new Date();
     const fail = async (reason: string) => {
       failed += 1;
+      // SCRUM-824: a voice note with no audio behind it can never be transcribed.
+      if (p.ref.kind === 'audio') await settleUnstoredVoice(db, p, reason, ctx, deps.log);
       try {
         await recordRun(db, {
           kind: 'adapter',
@@ -159,7 +167,12 @@ export async function storeInboundMedia(
             .update(message)
             .set(
               audioFree
-                ? { audioFileId: fileId, updatedAt: new Date() }
+                ? {
+                    audioFileId: fileId,
+                    // SCRUM-824: the voice note waits for `job:inbox.transcribe` (the ingest already said so).
+                    transcriptStatus: sql`coalesce(${message.transcriptStatus}, 'pending')`,
+                    updatedAt: new Date(),
+                  }
                 : { mediaFileIds: sql`array_append(${message.mediaFileIds}, ${fileId}::uuid)`, updatedAt: new Date() },
             )
             .where(and(eq(message.operatorId, p.operatorId), eq(message.id, p.messageId)));
@@ -199,6 +212,58 @@ export async function storeInboundMedia(
     }
   }
   return { stored, failed };
+}
+
+/**
+ * SCRUM-824: a voice note whose audio could not be stored is settled at once —
+ * `too_long` when it was over the inbox's size limit, `failed` (could not be
+ * read) otherwise — so the assistant stops waiting for it and a person takes
+ * it. Only a note still `pending` with no audio is touched. Never throws: the
+ * media failure is already on the Failures page.
+ */
+async function settleUnstoredVoice(
+  db: Db,
+  p: PendingMedia,
+  reason: string,
+  ctx: { requestId?: string | null },
+  log: FastifyBaseLogger | undefined,
+): Promise<void> {
+  const status = reason === 'MEDIA_TOO_LARGE' ? ('too_long' as const) : ('failed' as const);
+  try {
+    await withTx(
+      db,
+      { requestId: ctx.requestId ?? undefined, operatorId: p.operatorId, branchId: p.branchId, ...(log ? { log } : {}) },
+      'inbox.message.transcribe',
+      async (tx) => {
+        const settled = await tx
+          .update(message)
+          .set({ transcriptStatus: status, transcriptNextAttemptAt: null, updatedAt: new Date() })
+          .where(
+            and(
+              eq(message.operatorId, p.operatorId),
+              eq(message.id, p.messageId),
+              eq(message.transcriptStatus, 'pending'),
+              isNull(message.audioFileId),
+            ),
+          )
+          .returning({ id: message.id });
+        if (settled.length === 0) return;
+        await audit.record(tx, {
+          actorAccountId: null,
+          action: 'inbox.message.transcribe',
+          entityType: 'inbox.message',
+          entityId: p.messageId,
+          operatorId: p.operatorId,
+          branchId: p.branchId,
+          requestId: ctx.requestId ?? null,
+          before: { transcriptStatus: 'pending' },
+          after: { messageId: p.messageId, conversationId: p.conversationId, transcriptStatus: status, reason },
+        });
+      },
+    );
+  } catch (err) {
+    log?.error({ err, messageId: p.messageId }, 'an unstored voice note could not be settled');
+  }
 }
 
 /**

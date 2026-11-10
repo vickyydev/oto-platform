@@ -44,6 +44,12 @@ export interface FileStorage {
    * (S2-19 I2g, `services/inbox/privacy.ts`).
    */
   remove(objectKey: string): Promise<void>;
+  /**
+   * Read an object's bytes back (SCRUM-824: `job:inbox.transcribe` sends a
+   * stored voice note to the transcription provider). Optional: a store
+   * without it leaves voice notes untranscribed, marked as could not be read.
+   */
+  get?(objectKey: string): Promise<Buffer>;
   /** Boot and test probe — deliberately never on the request path. */
   probe(): Promise<StorageProbe>;
 }
@@ -132,6 +138,12 @@ export function buildFileStorage(env: Env): FileStorage {
         await client.putObject(bucket, objectKey, bytes, bytes.length, { 'Content-Type': contentType });
       }),
     remove: (objectKey) => bounded(() => client.removeObject(bucket, objectKey)),
+    get: (objectKey) =>
+      bounded(async () => {
+        const chunks: Buffer[] = [];
+        for await (const chunk of await client.getObject(bucket, objectKey)) chunks.push(Buffer.from(chunk as Uint8Array));
+        return Buffer.concat(chunks);
+      }),
     async probe() {
       try {
         return (await bounded(() => client.bucketExists(bucket)))

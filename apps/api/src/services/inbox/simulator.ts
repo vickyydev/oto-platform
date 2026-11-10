@@ -25,6 +25,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import { errors } from '../../lib/errors';
 import { audit } from '../audit';
 import type { InboxChannels } from './channels';
+import type { FileStorage } from '../files';
 import type { InboxAiSchedule } from './ai-runtime';
 import { channelRow, ingestDelivery, type IngestResult } from './ingest';
 
@@ -49,6 +50,8 @@ export interface SimulatorDeps {
   now?: () => Date;
   /** The assistant's switch and debounce: a played message schedules a turn as a real one does (SCRUM-590). */
   ai?: InboxAiSchedule;
+  /** Where a played voice note's audio is stored, as the real webhook stores it (SCRUM-824). */
+  storage?: FileStorage | null;
 }
 
 export interface DriveCtx {
@@ -94,7 +97,10 @@ export interface SimulatedPress {
   /** The pretend sender: digits, country code first (a WhatsApp id). */
   from: string;
   name?: string;
+  /** The words; may be empty when the press carries a voice note. */
   text: string;
+  /** A voice note the tester uploaded (SCRUM-824): played as WhatsApp's voice message. */
+  voice?: { bytes: Uint8Array; contentType: string };
   hint?: { category?: InboxCategory; intent?: string; language?: string; branchId?: string };
 }
 
@@ -108,7 +114,8 @@ export async function simulateInbound(
   const played = sim.inbound({
     from: press.from,
     ...(press.name ? { name: press.name } : {}),
-    text: press.text,
+    ...(press.text ? { text: press.text } : {}),
+    ...(press.voice ? { voice: press.voice } : {}),
     ...(press.hint ? { hint: press.hint } : {}),
   });
   const result = await ingestDelivery(
@@ -118,6 +125,7 @@ export async function simulateInbound(
       ...(deps.log ? { log: deps.log } : {}),
       ...(deps.now ? { now: deps.now } : {}),
       ...(deps.ai ? { ai: deps.ai } : {}),
+      ...(deps.storage !== undefined ? { storage: deps.storage } : {}),
     },
     { channelAccountId: account.id, webhook: played.webhook, requestId: ctx.requestId, actorAccountId: ctx.actorAccountId },
   );

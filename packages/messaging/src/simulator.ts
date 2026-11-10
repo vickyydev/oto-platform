@@ -94,6 +94,12 @@ export interface SimulatedInbound {
   text?: string;
   /** An image with an optional caption; it resolves to the bundled fixture. */
   image?: { caption?: string };
+  /**
+   * A voice note (SCRUM-824): the audio a tester uploaded, played as
+   * WhatsApp's `audio` message with `voice: true`. Its bytes are this
+   * process's, for `fetchMedia`, and are never stored here beyond that.
+   */
+  voice?: { bytes: Uint8Array; contentType: string };
   replyTo?: string;
   hint?: ClassificationHint;
   at?: Date;
@@ -138,6 +144,8 @@ export class SimulatorChannel implements MessagingChannel {
   private outboundSeq = 0;
   private mediaSeq = 0;
   private readonly media = new Set<string>();
+  /** The voice notes played, by their minted media id (SCRUM-824). */
+  private readonly voices = new Map<string, { bytes: Uint8Array; contentType: string }>();
   private readonly sends: SimulatedSend[] = [];
   private scheduled: RawWebhook[] = [];
   private readonly refusals: { refusal: SendRefusal; providerCode: string | null }[] = [];
@@ -166,8 +174,8 @@ export class SimulatorChannel implements MessagingChannel {
     if (!/^\d{6,15}$/.test(input.from)) {
       throw new Error('a simulated sender is a WhatsApp id: 6 to 15 digits, country code first');
     }
-    if (!input.text && !input.image)
-      throw new Error('a simulated message carries text or an image');
+    if (!input.text && !input.image && !input.voice)
+      throw new Error('a simulated message carries text or an image, or a voice note');
     const id = `wamid.SIM.${this.runId}.IN.${pad(++this.inboundSeq)}`;
     const at = input.at ?? this.now();
     const message: Record<string, unknown> = {
@@ -175,7 +183,17 @@ export class SimulatorChannel implements MessagingChannel {
       id,
       timestamp: String(Math.floor(at.getTime() / 1000)),
     };
-    if (input.image) {
+    if (input.voice) {
+      const mediaId = `SIMMEDIA.${this.runId}.${pad(++this.mediaSeq)}`;
+      this.voices.set(mediaId, { bytes: input.voice.bytes.slice(), contentType: input.voice.contentType });
+      message['type'] = 'audio';
+      message['audio'] = {
+        id: mediaId,
+        mime_type: input.voice.contentType,
+        sha256: createHash('sha256').update(input.voice.bytes).digest('base64'),
+        voice: true,
+      };
+    } else if (input.image) {
       const mediaId = `SIMMEDIA.${this.runId}.${pad(++this.mediaSeq)}`;
       this.media.add(mediaId);
       const caption = input.image.caption ?? input.text;
@@ -348,6 +366,8 @@ export class SimulatorChannel implements MessagingChannel {
   }
 
   fetchMedia(ref: Pick<MediaRef, 'providerMediaId'> & Partial<MediaRef>): Promise<FetchedMedia> {
+    const voice = this.voices.get(ref.providerMediaId);
+    if (voice) return Promise.resolve({ contentType: voice.contentType, bytes: voice.bytes.slice() });
     if (!this.media.has(ref.providerMediaId)) {
       return Promise.reject(
         new ChannelError('MEDIA_NOT_FOUND', 'the simulator minted no such media id'),

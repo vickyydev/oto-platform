@@ -20694,7 +20694,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Play one pretend customer message into a simulator channel account: signed with this deployment's simulator secret and sent through the real inbox webhook handler (verify, receipt, dedupe, contact, thread, routing, out-of-hours). Simulator only (INBOX_SIMULATOR=on). */
+        /** @description Play one pretend customer message into a simulator channel account: signed with this deployment's simulator secret and sent through the real inbox webhook handler (verify, receipt, dedupe, contact, thread, routing, out-of-hours). With `voice` (SCRUM-824) the message is a WhatsApp voice note carrying the uploaded audio (base64, at most 1 MB), stored and transcribed as a real one is; `text` may then be left out. Simulator only (INBOX_SIMULATOR=on). */
         post: {
             parameters: {
                 query?: never;
@@ -20709,7 +20709,11 @@ export interface paths {
                         channelAccountId: string;
                         from: string;
                         name?: string;
-                        text: string;
+                        text?: string;
+                        voice?: {
+                            contentType: string;
+                            dataBase64: string;
+                        };
                         hint?: {
                             /** @enum {string} */
                             category?: "birthdays" | "general" | "marketing" | "gm";
@@ -35052,6 +35056,9 @@ export interface paths {
                                 /** Format: uuid */
                                 audioFileId: string | null;
                                 transcript: string | null;
+                                /** @enum {string|null} */
+                                transcriptStatus: "pending" | "done" | "failed" | "too_long" | "off" | null;
+                                transcriptLanguage: string | null;
                                 /** Format: uuid */
                                 templateId: string | null;
                                 /** @enum {string|null} */
@@ -35124,6 +35131,9 @@ export interface paths {
                                 /** Format: uuid */
                                 audioFileId: string | null;
                                 transcript: string | null;
+                                /** @enum {string|null} */
+                                transcriptStatus: "pending" | "done" | "failed" | "too_long" | "off" | null;
+                                transcriptLanguage: string | null;
                                 /** Format: uuid */
                                 templateId: string | null;
                                 /** @enum {string|null} */

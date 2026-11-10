@@ -470,6 +470,17 @@ export const InboxMessagesQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(INBOX_PAGE_MAX).default(INBOX_PAGE_DEFAULT),
 });
 
+/**
+ * Where a customer's voice note's transcription stands (SCRUM-824): `pending`
+ * while it is being transcribed (the assistant waits for it), `done` when
+ * `transcript` holds its words, `failed` when it could not be read (a person
+ * takes it), `too_long` when it was over the limits and never sent, `off`
+ * when no transcription provider is configured. Null on every message that
+ * carries no voice note, and on the voice notes from before SCRUM-824.
+ */
+export const INBOX_TRANSCRIPT_STATUSES = ['pending', 'done', 'failed', 'too_long', 'off'] as const;
+export type InboxTranscriptStatus = (typeof INBOX_TRANSCRIPT_STATUSES)[number];
+
 export const InboxMessageSchema = z.object({
   id: Uuid,
   direction: z.enum(['inbound', 'outbound']),
@@ -484,7 +495,12 @@ export const InboxMessageSchema = z.object({
   /** File ids; a signed URL comes from the files api after the conversation check. */
   mediaFileIds: z.array(Uuid),
   audioFileId: Uuid.nullable(),
+  /** A voice note's words (SCRUM-824); null until it is transcribed, and once redacted. */
   transcript: z.string().nullable(),
+  /** Where the voice note's transcription stands (`INBOX_TRANSCRIPT_STATUSES`); null without a voice note. */
+  transcriptStatus: z.enum(INBOX_TRANSCRIPT_STATUSES).nullable(),
+  /** The language it was heard in, an ISO 639-1 code (`th`, `ru`, `en`); null until it is transcribed. */
+  transcriptLanguage: z.string().nullable(),
   templateId: Uuid.nullable(),
   /**
    * The delivery state of an outbound message; null on an inbound one.

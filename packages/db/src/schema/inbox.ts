@@ -129,6 +129,20 @@ export type MessageCheckStatus = (typeof MESSAGE_CHECK_STATUSES)[number];
 export const MESSAGE_SOURCES = ['channel', 'checkin.contact', 'booking.confirmation'] as const;
 export type MessageSource = (typeof MESSAGE_SOURCES)[number];
 
+/**
+ * A customer's voice note, transcribed (SCRUM-824, `0113_inbox_voice_transcript`):
+ *   - `pending`  the note arrived and `job:inbox.transcribe` has it to do;
+ *   - `done`     `transcript` holds its words and `transcript_language` its language;
+ *   - `failed`   it could not be read (the provider refused it twice over, a
+ *                format no provider takes, nothing heard, the audio never stored);
+ *   - `too_long` over the size or the length limit, so never sent;
+ *   - `off`      no transcription provider is configured here.
+ * Null on every message that carries no voice note, and on the voice notes
+ * that arrived before this release.
+ */
+export const MESSAGE_TRANSCRIPT_STATUSES = ['pending', 'done', 'failed', 'too_long', 'off'] as const;
+export type MessageTranscriptStatus = (typeof MESSAGE_TRANSCRIPT_STATUSES)[number];
+
 export const ASSIGNMENT_SLOTS = ['primary', 'support'] as const;
 export type AssignmentSlot = (typeof ASSIGNMENT_SLOTS)[number];
 export const ASSIGNEE_KINDS = ['account', 'team', 'ai'] as const;
@@ -743,6 +757,16 @@ export const message = inbox.table(
     mediaFileIds: uuid('media_file_ids').array().notNull().default(sql`'{}'::uuid[]`),
     audioFileId: uuid('audio_file_id').references(() => fileObject.id, { onDelete: 'restrict' }),
     transcript: text('transcript'),
+    /**
+     * SCRUM-824: where a voice note's transcription stands (`MESSAGE_TRANSCRIPT_STATUSES`),
+     * the language it was heard in (an ISO 639-1 code), and the transcription
+     * job's ledger — how many times the provider has been asked, and when the
+     * job may ask again (a claim sets it a lease ahead, as the send job's).
+     */
+    transcriptStatus: text('transcript_status').$type<MessageTranscriptStatus>(),
+    transcriptLanguage: text('transcript_language'),
+    transcriptAttempts: integer('transcript_attempts').notNull().default(0),
+    transcriptNextAttemptAt: timestamp('transcript_next_attempt_at', { withTimezone: true, mode: 'date' }),
     templateId: uuid('template_id'),
     externalMessageId: text('external_message_id'),
     /** Delivery state of an outbound message; null on an inbound one. */
@@ -799,6 +823,10 @@ export const message = inbox.table(
     index('message_send_queue_idx')
       .on(t.nextAttemptAt)
       .where(sql`provider_status = 'queued'`),
+    /** The transcription job's sweep (SCRUM-824): pending voice notes, by when they are next due. */
+    index('message_transcript_queue_idx')
+      .on(t.transcriptNextAttemptAt)
+      .where(sql`transcript_status = 'pending'`),
     /** What a mirror looks for before it writes the same notice twice. */
     index('message_source_idx')
       .on(t.operatorId, t.source, t.sourceId)
@@ -810,6 +838,16 @@ export const message = inbox.table(
       sql`${t.providerStatus} is null or ${t.providerStatus} in (${inList(MESSAGE_CHECK_STATUSES)})`,
     ),
     check('message_source_check', sql`${t.source} in (${inList(MESSAGE_SOURCES)})`),
+    check(
+      'message_transcript_status_check',
+      sql`${t.transcriptStatus} is null or ${t.transcriptStatus} in (${inList(MESSAGE_TRANSCRIPT_STATUSES)})`,
+    ),
+    /** A language code, never prose. */
+    check(
+      'message_transcript_language_check',
+      sql`${t.transcriptLanguage} is null or ${t.transcriptLanguage} ~ '^[a-z]{2,3}$'`,
+    ),
+    check('message_transcript_attempts_check', sql`${t.transcriptAttempts} >= 0`),
     /** The customer is the only one who writes in; everyone else writes out. */
     check('message_direction_author_check', sql`(${t.direction} = 'inbound') = (${t.authorKind} = 'customer')`),
     /** A staff message names its author. */

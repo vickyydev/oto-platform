@@ -8,6 +8,7 @@ import {
 } from '@oto/shared';
 import { errors } from '../../lib/errors';
 import { loadVisibleConversation, type InboxViewer } from './read-visibility';
+import { messageText } from './voice-notes';
 
 /**
  * THE MESSAGE A BIRTHDAY'S BEO IS FILLED FROM (SCRUM-660).
@@ -41,8 +42,8 @@ import { loadVisibleConversation, type InboxViewer } from './read-visibility';
  *   - the family's (author `customer`, inbound), or a person on the team's on
  *     the channel, by the same rule as the confirmation above (outbound,
  *     `source` channel, a delivery state, not refused by the channel);
- *   - not erased (`redacted_at` null) and has text (its body, or a voice
- *     note's transcript when it has no body).
+ *   - not erased (`redacted_at` null) and has text: its body, and a voice
+ *     note's transcript marked `[voice note] …` (SCRUM-824, `messageText`).
  * The assistant's lines, system notices and mirrored notices never are.
  * Bounded: the newest `BEO_TRANSCRIPT_LIMIT` such lines, and none older than
  * `BEO_TRANSCRIPT_DAYS` days before the newest of them (the conversation's
@@ -145,15 +146,13 @@ export async function beoTranscriptOf(
   if (!newest) return { transcript: [], transcriptCut: false };
   const since = newest.getTime() - BEO_TRANSCRIPT_DAYS * DAY_MS;
   const inBounds = rows.slice(0, BEO_TRANSCRIPT_LIMIT).filter((m) => m.createdAt.getTime() >= since);
-  const transcript = inBounds.reverse().map((m) => {
-    const body = typeof m.body === 'string' && m.body.trim() ? m.body : null;
-    return {
-      id: m.id,
-      author: m.authorKind === 'customer' ? ('customer' as const) : ('staff' as const),
-      at: (m.sentAt ?? m.createdAt).toISOString(),
-      text: body ?? (m.transcript as string),
-    };
-  });
+  const transcript = inBounds.reverse().map((m) => ({
+    id: m.id,
+    author: m.authorKind === 'customer' ? ('customer' as const) : ('staff' as const),
+    at: (m.sentAt ?? m.createdAt).toISOString(),
+    // SCRUM-824: a voice note's transcript, marked `[voice note] …` so the model knows it was spoken.
+    text: messageText(m) as string,
+  }));
   return { transcript, transcriptCut: rows.length > transcript.length };
 }
 

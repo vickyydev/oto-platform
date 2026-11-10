@@ -114,6 +114,8 @@ function msg(id: string, createdAt: string, over: Partial<Message> = {}): Messag
     mediaFileIds: [],
     audioFileId: null,
     transcript: null,
+    transcriptStatus: null,
+    transcriptLanguage: null,
     templateId: null,
     providerStatus: null,
     source: 'channel',

@@ -402,7 +402,8 @@ describe('SCRUM-815: the conversation the fill reads (transcript)', () => {
       expect(all).not.toContain(gone);
     }
     expect(res.body.transcript.map((l) => l.id).slice(1)).toEqual([kept, voice]);
-    expect(res.body.transcript.at(-1)).toMatchObject({ author: 'customer', text: 'VOICE-TRANSCRIPT-815 pizza please' });
+    // SCRUM-824: marked as spoken, so the fill's model knows it was a voice note.
+    expect(res.body.transcript.at(-1)).toMatchObject({ author: 'customer', text: '[voice note] VOICE-TRANSCRIPT-815 pizza please' });
   });
 
   it(`is bounded: the newest ${BEO_TRANSCRIPT_LIMIT} lines, none older than ${BEO_TRANSCRIPT_DAYS} days before the newest`, async () => {

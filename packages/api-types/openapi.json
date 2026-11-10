@@ -49495,7 +49495,7 @@
     },
     "/inbox/simulator/inbound": {
       "post": {
-        "description": "Play one pretend customer message into a simulator channel account: signed with this deployment's simulator secret and sent through the real inbox webhook handler (verify, receipt, dedupe, contact, thread, routing, out-of-hours). Simulator only (INBOX_SIMULATOR=on).",
+        "description": "Play one pretend customer message into a simulator channel account: signed with this deployment's simulator secret and sent through the real inbox webhook handler (verify, receipt, dedupe, contact, thread, routing, out-of-hours). With `voice` (SCRUM-824) the message is a WhatsApp voice note carrying the uploaded audio (base64, at most 1 MB), stored and transcribed as a real one is; `text` may then be left out. Simulator only (INBOX_SIMULATOR=on).",
         "requestBody": {
           "required": true,
           "content": {
@@ -49520,6 +49520,25 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 4096
+                  },
+                  "voice": {
+                    "type": "object",
+                    "properties": {
+                      "contentType": {
+                        "type": "string",
+                        "pattern": "^audio\\/[A-Za-z0-9.+-]+(;[ -~]{0,80})?$"
+                      },
+                      "dataBase64": {
+                        "type": "string",
+                        "minLength": 4,
+                        "maxLength": 1398104
+                      }
+                    },
+                    "required": [
+                      "contentType",
+                      "dataBase64"
+                    ],
+                    "additionalProperties": false
                   },
                   "hint": {
                     "type": "object",
@@ -49552,8 +49571,7 @@
                 },
                 "required": [
                   "channelAccountId",
-                  "from",
-                  "text"
+                  "from"
                 ],
                 "additionalProperties": false
               }
@@ -89926,6 +89944,21 @@
                             "type": "string",
                             "nullable": true
                           },
+                          "transcriptStatus": {
+                            "type": "string",
+                            "enum": [
+                              "pending",
+                              "done",
+                              "failed",
+                              "too_long",
+                              "off"
+                            ],
+                            "nullable": true
+                          },
+                          "transcriptLanguage": {
+                            "type": "string",
+                            "nullable": true
+                          },
                           "templateId": {
                             "type": "string",
                             "format": "uuid",
@@ -89984,6 +90017,8 @@
                           "mediaFileIds",
                           "audioFileId",
                           "transcript",
+                          "transcriptStatus",
+                          "transcriptLanguage",
                           "templateId",
                           "providerStatus",
                           "source",
@@ -90136,6 +90171,21 @@
                           "type": "string",
                           "nullable": true
                         },
+                        "transcriptStatus": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "done",
+                            "failed",
+                            "too_long",
+                            "off"
+                          ],
+                          "nullable": true
+                        },
+                        "transcriptLanguage": {
+                          "type": "string",
+                          "nullable": true
+                        },
                         "templateId": {
                           "type": "string",
                           "format": "uuid",
@@ -90194,6 +90244,8 @@
                         "mediaFileIds",
                         "audioFileId",
                         "transcript",
+                        "transcriptStatus",
+                        "transcriptLanguage",
                         "templateId",
                         "providerStatus",
                         "source",

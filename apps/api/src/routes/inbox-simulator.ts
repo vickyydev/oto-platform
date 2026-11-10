@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { INBOX_CATEGORIES } from '@oto/db';
 import type { App } from '../app';
+import { errors } from '../lib/errors';
 import { scheduleOf } from '../services/inbox/ai-runtime';
 import {
   playDemoScenario,
@@ -43,37 +44,56 @@ const ingestAnswer = z.object({
   conversationIds: z.array(z.string()),
 });
 
+/** SCRUM-824: the largest voice note the simulator plays (1 MB: a few minutes of a phone's voice recording). */
+export const SIMULATOR_VOICE_MAX_BYTES = 1024 * 1024;
+const SIMULATOR_VOICE_BASE64_MAX = Math.ceil(SIMULATOR_VOICE_MAX_BYTES / 3) * 4;
+const SIMULATOR_BODY_LIMIT = SIMULATOR_VOICE_BASE64_MAX + 64 * 1024;
+
 export function inboxSimulatorRoutes(app: App): Promise<void> {
   const deps = (log: SimulatorDeps['log']): SimulatorDeps => ({
     db: app.db,
     channels: app.inboxChannels,
     log,
     ai: scheduleOf(app.inboxAi),
+    // SCRUM-824: a played voice note's audio is stored as the real webhook stores it.
+    storage: app.fileStorage,
   });
 
   app.post(
     '/inbox/simulator/inbound',
     {
       config: { permission: 'inbox:channel:manage' },
+      // SCRUM-824: room for a short voice note, base64 in the JSON.
+      bodyLimit: SIMULATOR_BODY_LIMIT,
       schema: {
         description:
-          "Play one pretend customer message into a simulator channel account: signed with this deployment's simulator secret and sent through the real inbox webhook handler (verify, receipt, dedupe, contact, thread, routing, out-of-hours). Simulator only (INBOX_SIMULATOR=on).",
-        body: z.object({
-          channelAccountId: z.string().uuid(),
-          /** A WhatsApp id: the phone's digits, country code first. */
-          from: z.string().regex(/^\d{6,15}$/),
-          name: z.string().trim().min(1).max(80).optional(),
-          text: z.string().min(1).max(4096),
-          /** The classification the router takes in place of the AI. */
-          hint: z
-            .object({
-              category: z.enum(INBOX_CATEGORIES).optional(),
-              intent: z.string().max(120).optional(),
-              language: z.string().min(2).max(8).optional(),
-              branchId: z.string().uuid().optional(),
-            })
-            .optional(),
-        }),
+          "Play one pretend customer message into a simulator channel account: signed with this deployment's simulator secret and sent through the real inbox webhook handler (verify, receipt, dedupe, contact, thread, routing, out-of-hours). With `voice` (SCRUM-824) the message is a WhatsApp voice note carrying the uploaded audio (base64, at most 1 MB), stored and transcribed as a real one is; `text` may then be left out. Simulator only (INBOX_SIMULATOR=on).",
+        body: z
+          .object({
+            channelAccountId: z.string().uuid(),
+            /** A WhatsApp id: the phone's digits, country code first. */
+            from: z.string().regex(/^\d{6,15}$/),
+            name: z.string().trim().min(1).max(80).optional(),
+            /** The words; required unless the press carries a voice note. */
+            text: z.string().min(1).max(4096).optional(),
+            /** A voice note the tester uploaded (SCRUM-824): its audio type and its bytes, base64. */
+            voice: z
+              .object({
+                contentType: z.string().regex(/^audio\/[A-Za-z0-9.+-]+(;[ -~]{0,80})?$/, 'an audio content type'),
+                dataBase64: z.string().min(4).max(SIMULATOR_VOICE_BASE64_MAX),
+              })
+              .optional(),
+            /** The classification the router takes in place of the AI. */
+            hint: z
+              .object({
+                category: z.enum(INBOX_CATEGORIES).optional(),
+                intent: z.string().max(120).optional(),
+                language: z.string().min(2).max(8).optional(),
+                branchId: z.string().uuid().optional(),
+              })
+              .optional(),
+          })
+          .refine((b) => b.text !== undefined || b.voice !== undefined, { message: 'a message carries words or a voice note' }),
         response: { 200: ingestAnswer.extend({ externalMessageId: z.string() }) },
       },
     },
@@ -84,9 +104,14 @@ export function inboxSimulatorRoutes(app: App): Promise<void> {
       // At the BRANCH of the account pressed, once it is found in the caller's operator.
       const { account } = await simulatorAccount(d, auth.operatorId, req.body.channelAccountId);
       await req.requirePermission('inbox:channel:manage', account.branchId ? { branchId: account.branchId } : {});
+      const voice = req.body.voice ? Buffer.from(req.body.voice.dataBase64, 'base64') : null;
+      if (voice && (voice.length === 0 || voice.length > SIMULATOR_VOICE_MAX_BYTES)) {
+        throw errors.badRequest(`A simulated voice note is 1 to ${SIMULATOR_VOICE_MAX_BYTES} bytes`);
+      }
       const { externalMessageId, result } = await simulateInbound(d, ctx, account.id, {
         from: req.body.from,
-        text: req.body.text,
+        text: req.body.text ?? '',
+        ...(voice && req.body.voice ? { voice: { bytes: new Uint8Array(voice), contentType: req.body.voice.contentType } } : {}),
         ...(req.body.name ? { name: req.body.name } : {}),
         ...(req.body.hint ? { hint: req.body.hint } : {}),
       });
