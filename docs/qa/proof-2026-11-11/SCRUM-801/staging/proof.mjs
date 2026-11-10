@@ -1,5 +1,7 @@
 /* global getComputedStyle */
-// Run only while Unit 1 owns the landing/proof slot, on its green source SHA.
+// Run only while Unit 1 owns the landing/proof slot. Deployed always waits for
+// green landed-SHA CI. While it runs, a green byte-identical candidate may
+// authorize the screen proof, as the plan watches main CI in the background.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -17,13 +19,26 @@ const { chromium, request, expect } = createRequire(resolve(root, 'apps/pos/pack
 const sha = process.argv[2];
 assert.match(sha ?? '', /^[a-f0-9]{40}$/, 'a full source SHA is required');
 const runs = JSON.parse(execFileSync('gh', ['run', 'list', '--commit', sha, '--workflow', 'CI', '--json', 'databaseId,headSha,status,conclusion'], { cwd: root, encoding: 'utf8' }));
-const ci = runs.find(run => run.headSha === sha && run.status === 'completed' && run.conclusion === 'success');
-assert.ok(ci, 'the exact source CI must be green');
+const ci = runs.find(run => run.headSha === sha);
+assert.ok(ci, 'the exact source CI must exist');
+let candidateGate = null;
+if (ci.status !== 'completed' || ci.conclusion !== 'success') {
+  assert.ok(['queued', 'in_progress'].includes(ci.status), 'a failed source CI stops proof');
+  const candidate = process.argv[3];
+  assert.match(candidate ?? '', /^[a-f0-9]{40}$/, 'pending main CI needs a green identical candidate');
+  const differences = execFileSync('git', ['diff', '--name-only', candidate, sha], { cwd: root, encoding: 'utf8' }).trim().split('\n').filter(Boolean);
+  assert.ok(differences.every(path => path.startsWith('docs/')), 'candidate runtime, tests and workflow must be identical');
+  const candidateRuns = JSON.parse(execFileSync('gh', ['run', 'list', '--commit', candidate, '--workflow', 'CI', '--json', 'databaseId,headSha,status,conclusion'], { cwd: root, encoding: 'utf8' }));
+  const green = candidateRuns.find(run => run.headSha === candidate && run.status === 'completed' && run.conclusion === 'success');
+  assert.ok(green, 'the exact identical candidate CI must be green');
+  candidateGate = { sha: candidate, ci: green.databaseId, runtimeIdentical: true };
+}
 const out = import.meta.dirname;
 const pos = 'https://oto-pos-web-staging.onrender.com';
-const receipt = { unit: ['SCRUM-801', 'SCRUM-800'], sha, ci: ci.databaseId, startedAt: new Date().toISOString(), deployments: {}, requests: [], created: [], checks: {}, cleanup: [] };
+const receipt = { unit: ['SCRUM-801', 'SCRUM-800'], sha, ci: ci.databaseId, ciAtStart: { status: ci.status, conclusion: ci.conclusion }, candidateGate, startedAt: new Date().toISOString(), deployments: {}, requests: [], created: [], checks: {}, cleanup: [] };
 mkdirSync(out, { recursive: true });
 const save = () => writeFileSync(resolve(out, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n');
+const phase = name => { receipt.phase = name; save(); };
 
 async function deployments() {
   const answer = {};
@@ -52,8 +67,10 @@ const call = async (method, path, data) => {
   return { status: res.status(), body: await res.json().catch(() => null) };
 };
 try {
+  phase('admin sign-in');
   const auth = await admin.post('/api/auth/sign-in', { data: { phone: need('STAGING_ADMIN_PHONE'), password: need('STAGING_ADMIN_PASSWORD') } });
   assert.equal(auth.status(), 200, 'admin sign-in');
+  phase('fixture lookup');
   const branches = (await call('GET', '/branches')).body;
   const branch = (branches.branches ?? branches).find(b => /Central Floresta/.test(b.name));
   assert.ok(branch, 'proof park found');
@@ -64,6 +81,7 @@ try {
   const prefix = Array.from({ length: 99 }, (_, i) => `Z801${String(i + 1).padStart(2, '0')}`).find(p => !stations.some(s => s.codePrefix === p));
   assert.ok(prefix, 'an unused prefix including archived tills');
   const name = `ZZ TEST SCRUM-801 phone ${Date.now()}`;
+  phase('create own till');
   const made = await call('POST', `/branches/${branch.id}/stations`, { name, kind: 'till', boxId: box.id, codePrefix: prefix,
     accessScope: 'all_staff', paymentRouting: { card: 'manual', qr: 'none' }, capabilities: [], devices: [] });
   assert.ok([200, 201].includes(made.status), 'own test till created');
@@ -71,8 +89,9 @@ try {
   assert.equal(station.name, name);
   receipt.created.push({ kind: 'station', id: station.id }); save();
 
+  phase('phone sign-in');
   browser = await chromium.launch({ channel: 'msedge' });
-  const ctx = await browser.newContext({ viewport: { width: 375, height: 812 }, timezoneId: 'Asia/Bangkok' });
+  const ctx = await browser.newContext({ baseURL: pos, viewport: { width: 375, height: 812 }, timezoneId: 'Asia/Bangkok' });
   ctx.setDefaultTimeout(30000);
   page = await ctx.newPage();
   await page.goto(pos);
@@ -81,15 +100,18 @@ try {
   await page.locator('input[type="password"]').first().fill(need('STAGING_RECEPTION_PASSWORD'));
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await page.getByRole('button', { name, exact: false }).first().click();
+  phase('phone order');
   await page.getByRole('heading', { name: 'Tourist', exact: true }).click();
   await page.getByText('1 Hour Play', { exact: true }).click();
   await page.getByRole('button', { name: 'Add one Kids', exact: true }).click();
   await page.getByRole('button', { name: 'Add one Adults', exact: true }).click();
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  phase('customer details');
   await page.getByRole('button', { name: 'Customer is ready', exact: true }).click();
   for (const digit of '898010001') await page.getByRole('button', { name: digit, exact: true }).last().click();
   await page.getByPlaceholder('e.g. Mama, John').fill('ZZ TEST SCRUM-801');
   await page.getByTestId('input-done').click();
+  phase('prepare payment');
   const writing = page.waitForResponse(r => new URL(r.url()).pathname === '/api/sales' && r.request().method() === 'POST');
   await page.getByRole('button', { name: /^Pay ฿/ }).click();
   const written = await writing;
@@ -101,8 +123,11 @@ try {
   receipt.created.push({ kind: 'sale', id: saleId });
   receipt.requests.push({ method: 'POST', path: '/sales', status: written.status(), id: saleId }); save();
   await page.getByRole('heading', { name: 'Cash', exact: true }).click();
+  phase('payment width');
   const panel = page.getByTestId('payment-step');
   await expect.poll(() => panel.evaluate(el => Number(getComputedStyle(el).opacity))).toBe(1);
+  await expect(panel.getByRole('button', { name: 'Confirm Payment Received', exact: true })).toBeEnabled();
+  await expect(panel.getByRole('heading', { name: 'PromptPay', exact: true })).toBeVisible();
   const sizes = await panel.evaluate(el => [el, ...el.querySelectorAll('button,input,h2,h3')].map(node => {
     const b = node.getBoundingClientRect();
     return { element: node.tagName, left: b.left, right: b.right, width: b.width, scroll: node.scrollWidth, client: node.clientWidth };
@@ -114,10 +139,12 @@ try {
     await page.screenshot({ path: resolve(out, filename), animations: 'disabled',
       mask: [page.getByLabel('Lock screen').locator('..'), page.locator('input[type="password"]'), page.locator('input[type="tel"]')] });
   };
+  phase('payment screenshots');
   await panel.getByRole('heading', { name: 'Amount Due' }).scrollIntoViewIfNeeded();
   await shot('s800-payment-375.png');
   await panel.getByRole('button', { name: 'Confirm Payment Received', exact: true }).scrollIntoViewIfNeeded();
   await shot('s800-confirm-375.png');
+  phase('native cancellation');
   await panel.getByRole('button', { name: 'Back', exact: true }).click();
   const cancelling = page.waitForResponse(r => new URL(r.url()).pathname === `/api/sales/${saleId}/void`);
   await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
@@ -127,10 +154,12 @@ try {
   const read = await call('GET', `/sales/${saleId}`);
   assert.equal(read.body.sale.status, 'voided');
   receipt.checks.cancel = { saleId, status: read.body.sale.status }; save();
+  phase('phone reload');
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Tourist', exact: true })).toBeVisible();
   await expect(page.getByTestId('payment-step')).toHaveCount(0);
   await shot('s801-reloaded-phone.png');
+  phase('counter reload');
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.reload();
   await expect(page.getByText('Membership Check', { exact: true })).toBeVisible();

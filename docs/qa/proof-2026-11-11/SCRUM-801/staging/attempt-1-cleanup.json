@@ -1,0 +1,14 @@
+{
+  "job": "job-dbpprh0n74is738m37bg",
+  "status": "succeeded",
+  "repairJob": "job-dbppqprl550s738hupi0",
+  "repairJobOutcome": "signOut completed; its final token-count query failed because the harness selected a nonexistent id column",
+  "readback": {
+    "cleanup": "SCRUM-801 attempt 1 readback",
+    "sessionId": "01a1c79d-5cf9-7ffb-8fb3-f432a0996fce",
+    "revokedAt": "2026-11-10T22:41:39.096Z",
+    "reason": "sign_out",
+    "activeShiftTokens": 0,
+    "stationArchived": true
+  }
+}

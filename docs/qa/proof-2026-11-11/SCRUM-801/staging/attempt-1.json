@@ -1,0 +1,227 @@
+{
+  "unit": [
+    "SCRUM-801",
+    "SCRUM-800"
+  ],
+  "sha": "3f0bc5ddd04ccd609d901d540955ce74de09c1ae",
+  "ci": 42915618825,
+  "ciAtStart": {
+    "status": "in_progress",
+    "conclusion": ""
+  },
+  "candidateGate": {
+    "sha": "589fe3968e33607a09e113d9872063c228dcb359",
+    "ci": 42909977358,
+    "runtimeIdentical": true
+  },
+  "startedAt": "2026-11-10T22:38:55.855Z",
+  "deployments": {
+    "oto-pos-staging": {
+      "id": "dep-dbppnbbl550s738hj5bg",
+      "status": "live",
+      "sha": "3f0bc5ddd04ccd609d901d540955ce74de09c1ae"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbppnbjl550s738hj6i0",
+      "status": "live",
+      "sha": "3f0bc5ddd04ccd609d901d540955ce74de09c1ae"
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/sales",
+      "status": 200,
+      "id": "01a1c79d-6428-774d-bf57-eb5adf9690e6"
+    },
+    {
+      "method": "POST",
+      "path": "/sales/01a1c79d-6428-774d-bf57-eb5adf9690e6/void",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1c79d-6428-774d-bf57-eb5adf9690e6",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1c79d-6428-774d-bf57-eb5adf9690e6",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1c79d-6428-774d-bf57-eb5adf9690e6",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/01a1c79d-54b4-7957-b194-508660394806",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/01a1c79d-54b4-7957-b194-508660394806",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1c79d-54b4-7957-b194-508660394806"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1c79d-6428-774d-bf57-eb5adf9690e6"
+    }
+  ],
+  "checks": {
+    "paymentWidth": {
+      "viewport": 375,
+      "sizes": [
+        {
+          "element": "DIV",
+          "left": 16,
+          "right": 359,
+          "width": 343,
+          "scroll": 343,
+          "client": 343
+        },
+        {
+          "element": "H2",
+          "left": 16,
+          "right": 359,
+          "width": 343,
+          "scroll": 343,
+          "client": 343
+        },
+        {
+          "element": "H3",
+          "left": 16,
+          "right": 359,
+          "width": 343,
+          "scroll": 343,
+          "client": 343
+        },
+        {
+          "element": "H3",
+          "left": 76.21875,
+          "right": 121.28125,
+          "width": 45.0625,
+          "scroll": 45,
+          "client": 45
+        },
+        {
+          "element": "H3",
+          "left": 255.234375,
+          "right": 297.25,
+          "width": 42.015625,
+          "scroll": 42,
+          "client": 42
+        },
+        {
+          "element": "H3",
+          "left": 50.53125,
+          "right": 146.953125,
+          "width": 96.421875,
+          "scroll": 96,
+          "client": 96
+        },
+        {
+          "element": "BUTTON",
+          "left": 16,
+          "right": 181.5,
+          "width": 165.5,
+          "scroll": 164,
+          "client": 164
+        },
+        {
+          "element": "INPUT",
+          "left": 193.5,
+          "right": 359,
+          "width": 165.5,
+          "scroll": 140,
+          "client": 140
+        },
+        {
+          "element": "BUTTON",
+          "left": 16,
+          "right": 181.5,
+          "width": 165.5,
+          "scroll": 164,
+          "client": 164
+        },
+        {
+          "element": "BUTTON",
+          "left": 16,
+          "right": 359,
+          "width": 343,
+          "scroll": 341,
+          "client": 341
+        },
+        {
+          "element": "BUTTON",
+          "left": 16,
+          "right": 359,
+          "width": 343,
+          "scroll": 341,
+          "client": 341
+        }
+      ]
+    },
+    "cancel": {
+      "saleId": "01a1c79d-6428-774d-bf57-eb5adf9690e6",
+      "status": "voided"
+    },
+    "reload": {
+      "phoneEmpty": true,
+      "counterNoResume": true
+    }
+  },
+  "cleanup": [
+    {
+      "kind": "staff-session",
+      "failed": true,
+      "errorKind": "TypeError"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1c79d-6428-774d-bf57-eb5adf9690e6",
+      "status": "voided"
+    },
+    {
+      "kind": "station",
+      "id": "01a1c79d-54b4-7957-b194-508660394806",
+      "status": 200,
+      "archived": true
+    },
+    {
+      "kind": "admin-session",
+      "signOut": 200,
+      "readback": 401
+    }
+  ],
+  "phase": "counter reload",
+  "finishedAt": "2026-11-10T22:39:08.659Z",
+  "passed": false
+}
