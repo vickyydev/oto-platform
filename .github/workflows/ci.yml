@@ -973,9 +973,11 @@ jobs:
       # AI prompts telling the model the adults eat the kids' menu unless the
       # message says otherwise, a stub model's one list and its adults' own
       # dish, an approval turning the switch on only for an adults' line; the
-      # till's plan view (migration 0048) reading a party of before exactly as
-      # 0047, an unchanged copy of a coded line reaching the till once, the
-      # adults' changes marked; the BEO PDF's one food list with the marks.
+      # till's plan view (migration 0048) reading the switch as the editor
+      # does, a coded line copied for the adults reaching the till once
+      # whatever its note (their note carried on the one line), an uncoded
+      # dish in another count beside the kids', the set menu kept in step for
+      # the adults' own list; the BEO PDF's one food list with the marks.
       # Then the editor under jsdom: the adults' tab pre-filled with the kids'
       # items and no option list, the switch copying the list for editing, one
       # line changed for the adults only, Save sending the lists as the switch
@@ -988,6 +990,14 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/kitchen-adults-ui.check.ts
+      # The day-of view reads and writes the same two lists: the adults' tab
+      # mirrors the kids' with the switch off, the switch writes the copy and
+      # the key at once, and a BEO of before opens as its lists stand.
+      - name: The app's kitchen adults day-of check
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/kitchen-adults-day-of-ui.check.ts
       # SCRUM-822: a party's money in the BEO, read from the till — satang
       # shown as baht one way only (SCRUM-833), the client asking with the
       # provision key and never a session, the till's figures answered for a

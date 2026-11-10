@@ -53,6 +53,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import type { BeoEventWithDetails, BeoTimelineItem } from "@shared/schema";
+import { ADULTS_SAME_AS_KIDS, adultsDifferOf, kitchenListsEqual } from "@shared/kitchenAdults";
 import { DayOfPosSection, type DayOfPartyDetails } from "./beo-day-of-pos";
 import { useTillBilling } from "./beo-till-billing";
 
@@ -294,6 +295,9 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
   const [menuTab, setMenuTab] = useState<"kids" | "adults">("kids");
   const [localKidsMenu, setLocalKidsMenu] = useState<KitchenMenuLine[]>([]);
   const [localAdultsMenu, setLocalAdultsMenu] = useState<KitchenMenuLine[]>([]);
+  // SCRUM-829: "Different for adults", as the BEO editor keeps it. Off, the adults eat the
+  // kids' menu and the adults' list is not shown or written; on, it is the adults' own list.
+  const [localAdultsDiffer, setLocalAdultsDiffer] = useState(false);
   const [localKidsFoodTime, setLocalKidsFoodTime] = useState("");
   const [localAdultsFoodTime, setLocalAdultsFoodTime] = useState("");
   const [setMenuEnabled, setSetMenuEnabled] = useState(false);
@@ -421,9 +425,13 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
       : null;
     const hasNewParentResponse = submissionKey !== null && appliedSetMenuSubmissionRef.current !== submissionKey;
     if (kitchenInitRef.current && !hasNewParentResponse) return;
-    const menus = kp.menus as { kids?: KitchenMenuLine[]; adults?: KitchenMenuLine[]; kidsFoodTime?: string; adultsFoodTime?: string; cakeIncluded?: boolean } | null;
+    const menus = kp.menus as { kids?: KitchenMenuLine[]; adults?: KitchenMenuLine[]; adultsDiffer?: boolean; kidsFoodTime?: string; adultsFoodTime?: string; cakeIncluded?: boolean } | null;
+    // SCRUM-829: the switch as saved; a BEO saved before it is on only when its adults' list
+    // holds lines that are not the kids' (shared/kitchenAdults.ts).
+    const differ = adultsDifferOf(menus);
     setLocalKidsMenu(menus?.kids || []);
-    setLocalAdultsMenu(menus?.adults || []);
+    setLocalAdultsMenu(differ ? menus?.adults || [] : []);
+    setLocalAdultsDiffer(differ);
     setLocalKidsFoodTime(menus?.kidsFoodTime || "");
     setLocalAdultsFoodTime(menus?.adultsFoodTime || "");
     setSetMenuEnabled(kp.setMenuEnabled ?? false);
@@ -435,14 +443,19 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
   const buildMenusPayload = (overrides: {
     kids?: KitchenMenuLine[];
     adults?: KitchenMenuLine[];
+    adultsDiffer?: boolean;
     kidsFoodTime?: string;
     adultsFoodTime?: string;
   } = {}) => {
     const existingMenus = ((beoData as any)?.kitchenPlan?.menus ?? {}) as Record<string, unknown>;
+    // SCRUM-829: the lists as the switch says — with it off the adults' list IS the kids', so
+    // none is written for them (as the editor's Save writes it).
+    const adultsDiffer = overrides.adultsDiffer ?? localAdultsDiffer;
     return {
       ...existingMenus,
       kids: overrides.kids ?? localKidsMenu,
-      adults: overrides.adults ?? localAdultsMenu,
+      adults: adultsDiffer ? overrides.adults ?? localAdultsMenu : [],
+      adultsDiffer,
       kidsFoodTime: overrides.kidsFoodTime ?? localKidsFoodTime,
       adultsFoodTime: overrides.adultsFoodTime ?? localAdultsFoodTime,
     };
@@ -453,9 +466,33 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
     kitchenPlanMutation.mutate({ menus: buildMenusPayload({ kids: newKids }) });
   };
 
+  // SCRUM-829: a line of the adults' own is written with the switch on, never beside it off.
   const saveAdultsMenu = (newAdults: KitchenMenuLine[]) => {
     setLocalAdultsMenu(newAdults);
-    kitchenPlanMutation.mutate({ menus: buildMenusPayload({ adults: newAdults }) });
+    setLocalAdultsDiffer(true);
+    kitchenPlanMutation.mutate({ menus: buildMenusPayload({ adults: newAdults, adultsDiffer: true }) });
+  };
+
+  // SCRUM-829: the switch, as the editor's. On: the adults' list starts as a copy of the kids'
+  // (ids of its own) and is written at once; off: the adults' changes are dropped, asked first.
+  const switchAdultsDiffer = (on: boolean) => {
+    if (on) {
+      const copy = localKidsMenu.map((line, index) => ({ ...line, id: `menu_${Date.now()}_${index}_${Math.random().toString(36).slice(2, 6)}` }));
+      setLocalAdultsMenu(copy);
+      setLocalAdultsDiffer(true);
+      kitchenPlanMutation.mutate({ menus: buildMenusPayload({ adults: copy, adultsDiffer: true }) });
+      return;
+    }
+    if (
+      localAdultsMenu.length > 0 &&
+      !kitchenListsEqual(localKidsMenu, localAdultsMenu) &&
+      !window.confirm("Turning this off makes the adults' menu the kids' menu again: the adults' own changes are dropped. Continue?")
+    ) {
+      return;
+    }
+    setLocalAdultsMenu([]);
+    setLocalAdultsDiffer(false);
+    kitchenPlanMutation.mutate({ menus: buildMenusPayload({ adults: [], adultsDiffer: false }) });
   };
 
   const onMutationError = (error: Error) => {
@@ -1430,7 +1467,7 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
                                   onClick={() => setMenuTab("adults")}
                                   data-testid="button-menu-tab-adults"
                                 >
-                                  Adults Menu ({localAdultsMenu.length})
+                                  Adults Menu ({localAdultsDiffer ? localAdultsMenu.length : localKidsMenu.length})
                                 </Button>
                               </div>
                               {canEdit ? (
@@ -1462,13 +1499,48 @@ export function BeoDayOfView({ eventId, onClose }: BeoDayOfViewProps) {
                               )}
                             </div>
 
+                            {/* SCRUM-829: the adults' section starts from the kids' menu; "Different for adults" is the one exception. */}
+                            {menuTab === "adults" && (canEdit || localAdultsDiffer) && (
+                              <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/30">
+                                <Switch
+                                  checked={localAdultsDiffer}
+                                  disabled={!canEdit}
+                                  onCheckedChange={switchAdultsDiffer}
+                                  data-testid="switch-adults-differ"
+                                />
+                                <div>
+                                  <Label className="text-sm font-medium">Different for adults</Label>
+                                  <p className="text-xs text-muted-foreground">Off: the adults eat what was chosen for the kids. On: start from the kids' menu and change it for the adults.</p>
+                                </div>
+                              </div>
+                            )}
+
                             {(() => {
                               const template = ((beoData as any).kitchenPlan?.setMenuTemplate || setMenuTemplates.find((item) => item.id === setMenuTemplateId)) as SetMenuTemplate | undefined;
-                              const activeMenu = menuTab === "kids" ? localKidsMenu : localAdultsMenu;
+                              // The adults' tab reads the kids' list while the switch is off.
+                              const activeMenu = menuTab === "kids" || !localAdultsDiffer ? localKidsMenu : localAdultsMenu;
                               return setMenuEnabled && template ? <DayOfSetMenuChoices template={template} menuItems={activeMenu} /> : null;
                             })()}
 
-                            {canEdit ? (
+                            {menuTab === "adults" && !localAdultsDiffer ? (
+                              <div className="space-y-1" data-testid="adults-menu-mirror">
+                                <p className="text-xs text-muted-foreground italic" data-testid="text-adults-same-as-kids">{ADULTS_SAME_AS_KIDS}</p>
+                                {localKidsMenu.filter((item) => item.source !== "set_menu").length === 0 ? (
+                                  <p className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md">Nothing on the kids' menu yet</p>
+                                ) : (
+                                  <ul className="space-y-0.5">
+                                    {localKidsMenu.filter((item) => item.source !== "set_menu").map((item, idx) => (
+                                      <li key={item.id} className="text-sm flex items-center gap-2" data-testid={`adults-mirror-item-${idx}`}>
+                                        <span className="w-6 text-center text-xs font-medium shrink-0">{item.quantity}</span>
+                                        <span>{item.itemName}</span>
+                                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-amber-500/10 text-amber-600 border-amber-500/30">EXTRA</Badge>
+                                        {item.notes && <span className="text-xs text-muted-foreground">({item.notes})</span>}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                            ) : canEdit ? (
                               <div className="space-y-1">
                                 {(menuTab === "kids" ? localKidsMenu : localAdultsMenu).filter((item) => item.source !== "set_menu").length === 0 ? (
                                   <div
