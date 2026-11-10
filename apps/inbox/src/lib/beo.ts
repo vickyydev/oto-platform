@@ -273,6 +273,16 @@ export interface FieldOption extends FieldSource {
   by: 'model' | 'pattern';
 }
 
+/** What a press of "Fetch from chat" did (SCRUM-826), for the line the dialog shows under it. */
+export interface BookDateFetch {
+  /** The model read the chat; false when it could not (nothing changed). */
+  read: boolean;
+  /** The fields filled or changed from the chat as it is now. */
+  filled: readonly ProposedField[];
+  /** The fields the person typed that the chat reads differently: kept as typed. */
+  kept: readonly ProposedField[];
+}
+
 export interface BookDateState {
   draft: BookDateDraft;
   /** The fields the person typed in or chose: a reading never changes them. */
@@ -285,11 +295,13 @@ export interface BookDateState {
   parkHint: FieldSource | null;
   /** The answer already merged, so the same one is never merged twice. */
   merged: BookDateProposal | null;
+  /** The last "Fetch from chat", or null before one (SCRUM-826). */
+  fetched: BookDateFetch | null;
 }
 
 /** The dialog's state as it opens: the pattern reading, nothing edited. */
 export function freshBookDate(draft: BookDateDraft): BookDateState {
-  return { draft, edited: [], sources: {}, choices: {}, parkHint: null, merged: null };
+  return { draft, edited: [], sources: {}, choices: {}, parkHint: null, merged: null, fetched: null };
 }
 
 const sameName = (a: string, b: string) => a.normalize('NFC').trim().toLowerCase() === b.normalize('NFC').trim().toLowerCase();
@@ -323,18 +335,11 @@ function withValue(draft: BookDateDraft, field: ProposedField, value: string, te
   return next;
 }
 
-/**
- * The model's answer merged into the dialog, by the rules above. `branchIds`
- * are the parks the person can choose in the dialog.
- */
-export function mergeBookDateProposal(
-  state: BookDateState,
-  answer: BookDateProposal | null,
-  branchIds: readonly string[],
-): BookDateState {
-  if (!answer || answer.model !== 'ai' || !answer.proposal || state.merged === answer) return state;
-  const p = answer.proposal;
-  const read: Record<ProposedField, { value: string; text: string; source: ChatSource } | null> = {
+type ModelReading = Record<ProposedField, { value: string; text: string; source: ChatSource } | null>;
+
+/** The model's answer as the dialog's fields: a park only when it is one the person can choose. */
+function modelReadingOf(p: NonNullable<BookDateProposal['proposal']>, branchIds: readonly string[]): ModelReading {
+  return {
     date: p.date && { value: p.date.value, text: p.date.text, source: p.date.source },
     startTime: p.startTime && { value: p.startTime.value, text: p.startTime.text, source: p.startTime.source },
     branchId:
@@ -346,6 +351,20 @@ export function mergeBookDateProposal(
     childName: p.childName && { value: p.childName.value, text: p.childName.text, source: p.childName.source },
     childAge: p.childAge && { value: String(p.childAge.value), text: p.childAge.text, source: p.childAge.source },
   };
+}
+
+/**
+ * The model's answer merged into the dialog, by the rules above. `branchIds`
+ * are the parks the person can choose in the dialog.
+ */
+export function mergeBookDateProposal(
+  state: BookDateState,
+  answer: BookDateProposal | null,
+  branchIds: readonly string[],
+): BookDateState {
+  if (!answer || answer.model !== 'ai' || !answer.proposal || state.merged === answer) return state;
+  const p = answer.proposal;
+  const read = modelReadingOf(p, branchIds);
   let draft = state.draft;
   const sources = { ...state.sources };
   const choices = { ...state.choices };
@@ -368,6 +387,65 @@ export function mergeBookDateProposal(
   const parkHint =
     p.branchHint && read.branchId === null ? { text: p.branchHint.text, source: p.branchHint.source } : state.parkHint;
   return { ...state, draft, sources, choices, parkHint, merged: answer };
+}
+
+// --- Fetch from chat (SCRUM-826) ---------------------------------------------------------
+
+/**
+ * "FETCH FROM CHAT" (SCRUM-826). The dialog is open; the chat has moved on (a
+ * new line with another headcount, a changed time). The person presses Fetch:
+ * the model reads the chat again as it is now (the same `book-date-proposal`
+ * read), and its answer fills ONLY the fields the person has not typed in or
+ * chosen — those take the chat's value as it stands now, with its words and
+ * whose line it was, a pending choice on them settled by the fresh reading. A
+ * field the person edited stays theirs — only the chat's words under it are
+ * refreshed, as SCRUM-821 shows them beside a typed value — and when the chat
+ * reads it differently the dialog says it was kept. The outcome (`fetched`)
+ * is what the line under the button says; an answer the model could not give
+ * changes nothing. Nothing is saved until Save, as before.
+ */
+export function fetchBookDateProposal(
+  state: BookDateState,
+  answer: BookDateProposal | null,
+  branchIds: readonly string[],
+): BookDateState {
+  if (!answer || answer.model !== 'ai' || !answer.proposal) {
+    return { ...state, fetched: { read: false, filled: [], kept: [] } };
+  }
+  const p = answer.proposal;
+  const read = modelReadingOf(p, branchIds);
+  let draft = state.draft;
+  const sources = { ...state.sources };
+  const choices = { ...state.choices };
+  const filled: ProposedField[] = [];
+  const kept: ProposedField[] = [];
+  for (const field of PROPOSED_FIELDS) {
+    const model = read[field];
+    if (!model) continue;
+    const current = draft[field].trim();
+    const same = current !== '' && agree(field, current, model.value);
+    // The chat's words as it stands now, under the field: beside a typed value they say what the chat reads.
+    sources[field] = { text: model.text, source: model.source };
+    if (state.edited.includes(field)) {
+      if (!same) kept.push(field);
+      continue;
+    }
+    if (!same || choices[field]) filled.push(field);
+    delete choices[field];
+    draft = withValue(draft, field, model.value, model.text);
+  }
+  const parkHint =
+    p.branchHint && read.branchId === null ? { text: p.branchHint.text, source: p.branchHint.source } : state.parkHint;
+  return { ...state, draft, sources, choices, parkHint, merged: answer, fetched: { read: true, filled, kept } };
+}
+
+/** The line under "Fetch from chat": what the press filled, what it kept, or that it could not read. */
+export function bookDateFetchLine(fetched: BookDateFetch): string {
+  if (!fetched.read) return 'The chat could not be read again; nothing changed.';
+  const names = (fields: readonly ProposedField[]) => fields.map((f) => PROPOSED_FIELD_LABELS[f]).join(', ');
+  const kept = fetched.kept.length > 0 ? ` · kept what you typed: ${names(fetched.kept)}` : '';
+  if (fetched.filled.length === 0) return `Nothing new in the chat${kept}.`;
+  return `Filled from the chat: ${names(fetched.filled)}${kept}.`;
 }
 
 /** The person typed in a field: it is theirs, and a choice on it is settled. */

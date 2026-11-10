@@ -332,6 +332,8 @@ export function ChatPanel({
     setBookError(null);
     setBooking({ conversationId: conv.id, eventId: newId(), thenBeo });
   };
+  // SCRUM-826: the dialog's "Fetch from chat" reads the conversation again, as the api holds it now.
+  const fetchBookDate = () => inboxApi.bookDateProposal(conv.id);
   // Book Date and Create BEO say why they are off: writes not switched on here
   // yet (as every other control), or not this person's to press.
   const bookOffReason = live ? BOOK_DATE_NOT_YOURS_REASON : WRITES_PENDING_REASON;
@@ -1026,6 +1028,7 @@ export function ChatPanel({
           onSave={(values) => void saveBooking(values)}
           proposal={bookProposal?.answer ?? null}
           reading={bookProposal?.reading ?? false}
+          onFetch={fetchBookDate}
         />
       )}
       <DetailsDialog

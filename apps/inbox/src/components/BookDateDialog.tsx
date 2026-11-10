@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Calendar, Check, Clock3, Hash, Loader2, MapPin, Phone, Users, Wand2, type LucideIcon } from 'lucide-react';
+import { Calendar, Check, Clock3, Hash, Loader2, MapPin, Phone, RefreshCw, Users, Wand2, type LucideIcon } from 'lucide-react';
 import { Dialog } from '@/components/Dialog';
 import { Refusal } from '@/components/confirms';
 import type { BookDateProposal } from '@/api/inbox';
 import {
+  bookDateFetchLine,
   countOf,
   editBookDate,
+  fetchBookDateProposal,
   freshBookDate,
   mergeBookDateProposal,
   pendingChoice,
@@ -19,6 +21,9 @@ import {
 
 const CANCEL =
   'rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-1.5 text-[13px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60';
+/** "Fetch from chat" (SCRUM-826): the Cancel button's language, at the header row's size. */
+const FETCH =
+  'inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60';
 const INPUT =
   'w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 px-2.5 py-1.5 text-[13px] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:border-slate-300 dark:focus:border-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/20';
 
@@ -178,6 +183,7 @@ export function BookDateDialog({
   onSave,
   proposal = null,
   reading = false,
+  onFetch,
 }: {
   open: boolean;
   /** The contact's name, for the title. */
@@ -199,15 +205,23 @@ export function BookDateDialog({
   proposal?: BookDateProposal | null;
   /** The model is still reading the chat. */
   reading?: boolean;
+  /**
+   * SCRUM-826: "Fetch from chat" — the model's reading of the chat as it is
+   * now (the same read as `proposal`), on a press. Fills only the fields the
+   * person has not typed in; a typed field stays. Without it, no button.
+   */
+  onFetch?: () => Promise<BookDateProposal>;
 }) {
   const branchIds = useMemo(() => branches.map((b) => b.value), [branches]);
   const [state, setState] = useState<BookDateState>(() => mergeBookDateProposal(freshBookDate(initial), proposal, branchIds));
   const [problem, setProblem] = useState<string | null>(null);
+  const [fetching, setFetching] = useState(false);
   // A fresh reading each time it opens (another conversation, newer lines).
   useEffect(() => {
     if (open) {
       setState(mergeBookDateProposal(freshBookDate(initial), proposal, branchIds));
       setProblem(null);
+      setFetching(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -216,6 +230,20 @@ export function BookDateDialog({
     if (open && proposal) setState((s) => mergeBookDateProposal(s, proposal, branchIds));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [proposal]);
+  // SCRUM-826: the chat read again, as it is now, into the untouched fields.
+  const fetchFromChat = async () => {
+    if (!onFetch || fetching) return;
+    setFetching(true);
+    let answer: BookDateProposal | null = null;
+    try {
+      answer = await onFetch();
+    } catch {
+      answer = null;
+    }
+    // The fields as they are at the answer: what the person typed meanwhile is theirs too.
+    setState((s) => fetchBookDateProposal(s, answer, branchIds));
+    setFetching(false);
+  };
   const draft = state.draft;
   const set = <K extends keyof BookDateDraft>(k: K, v: BookDateDraft[K]) => setState((s) => editBookDate(s, k, v));
   const pick = (field: ProposedField, option: FieldOption) => setState((s) => pickBookDateChoice(s, field, option));
@@ -281,6 +309,24 @@ export function BookDateDialog({
         {!reading && proposal?.model === 'ai' && (
           <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-300" data-testid="book-date-read">
             <Check className="h-3 w-3" /> Read the whole chat
+          </span>
+        )}
+        {onFetch && (
+          <button
+            type="button"
+            onClick={() => void fetchFromChat()}
+            disabled={busy || reading || fetching}
+            className={FETCH}
+            title="Read the chat again as it is now. What you typed here stays."
+            data-testid="button-fetch-from-chat"
+          >
+            {fetching ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+            {fetching ? 'Fetching from the chat…' : 'Fetch from chat'}
+          </button>
+        )}
+        {onFetch && !fetching && state.fetched && (
+          <span className={HINT} data-testid="book-date-fetched">
+            {bookDateFetchLine(state.fetched)}
           </span>
         )}
       </div>
