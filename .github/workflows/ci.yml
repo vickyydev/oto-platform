@@ -925,6 +925,23 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/beo-package-total-ui.check.ts
+      # SCRUM-828: a new menu item added from the BEO's food lines — the
+      # platform asked with the provision key and the press as its
+      # Idempotency-Key, the line written with the till's code (a retry is the
+      # same line), every refusal said in words with nothing written, staff, another
+      # park group and an unlinked park refused before the platform is asked,
+      # the BEO's Save keeping the code, and otoapp_v.event_packages (migration
+      # 0047) naming it; then the form under jsdom: nothing asked until it
+      # reads, one ask per press, a refusal said with no line handed over, the
+      # retry the same press.
+      - name: The app's party menu item checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/party-menu-item.check.ts
+      - name: The app's party menu item form check
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/party-menu-item-ui.check.ts
       # SCRUM-567: the company payroll's R2 (migrations 0021-0022) — two park
       # groups' separate paying config, rule sets and profiles; every route
       # refused to manager and staff, writes to anyone below admin, HR-data

@@ -80,6 +80,8 @@ import { CakeUnderNoCake } from "./beo-cake-under-no-cake";
 import { APPROVAL_WRITES } from "@/lib/beo-ai-review";
 import { BeoPackageModule } from "./beo-package-module";
 import { BeoParentExperienceModule } from "./beo-parent-experience-module";
+import { PartyMenuItemDialog } from "./beo-party-menu-item";
+import type { PartyMenuLine } from "@shared/partyMenuItem";
 import { ONE_OFF_EVENT_COLOR_OPTIONS } from "@/lib/event-types";
 import { aiFillDateLine, dayLabel } from "@/lib/beo-ai-date";
 import AssignmentSearchBar, { type AssignmentValue } from "@/components/core/AssignmentSearchBar";
@@ -170,6 +172,8 @@ type MenuLine = {
   price: number;
   source?: "set_menu" | "additional";
   groupId?: string;
+  /** SCRUM-828: the till product a new item was made as; what the till's plan and slips find it by. */
+  productCode?: string;
 };
 
 /** `qty` and `note` are the set menu's own (SCRUM-803); an older item has neither. */
@@ -526,6 +530,15 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab }: {
         {item.source === "set_menu" && item.notes?.trim() && (
           <span className="text-xs text-muted-foreground shrink-0">{item.notes.trim()}</span>
         )}
+        {item.productCode && (
+          <span
+            className="text-[10px] font-mono text-muted-foreground shrink-0"
+            title="On the till as a party-only item"
+            data-testid={`text-menu-code-${menuTab}-${idx}`}
+          >
+            {item.productCode}
+          </span>
+        )}
         </div>
         {!item.notes && (
           <button
@@ -628,6 +641,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const [showBarTimePicker, setShowBarTimePicker] = useState(false);
   const [tempBarTime, setTempBarTime] = useState("12:00");
   const [menuTab, setMenuTab] = useState<"kids" | "adults">("kids");
+  // SCRUM-828: the food list a "New item" is being made for; null while its dialog is closed.
+  const [newItemMenu, setNewItemMenu] = useState<"kids" | "adults" | null>(null);
   const [setMenuEnabled, setSetMenuEnabled] = useState(false);
   const [setMenuTemplateId, setSetMenuTemplateId] = useState<string>("");
   const [showParentLinkDialog, setShowParentLinkDialog] = useState(false);
@@ -896,6 +911,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
             price: m.price || 0,
             source: m.source,
             groupId: m.groupId,
+            // SCRUM-828: a new item's till code rides with its line through every Save.
+            ...(typeof m.productCode === "string" && m.productCode.trim() ? { productCode: m.productCode.trim() } : {}),
           });
           if (Array.isArray(menus.kids)) setKidsMenu(menus.kids.map(mapMenu));
           if (Array.isArray(menus.adults)) setAdultsMenu(menus.adults.map(mapMenu));
@@ -1040,6 +1057,28 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     } finally {
       setIsSaving(false);
     }
+  };
+
+  /**
+   * SCRUM-828: a new item the server has already written to the kitchen plan
+   * with its till code. It joins the list on screen as written (the same id,
+   * so a retried press replaces its own line), and the next Save keeps it.
+   */
+  const addPartyMenuLine = (menu: "kids" | "adults", line: PartyMenuLine) => {
+    const setMenu = menu === "adults" ? setAdultsMenu : setKidsMenu;
+    const shown: MenuLine = {
+      id: line.id,
+      itemName: line.itemName,
+      quantity: line.quantity,
+      notes: line.notes,
+      included: line.included,
+      price: line.price,
+      productCode: line.productCode,
+      ...(line.source ? { source: line.source } : {}),
+    };
+    setMenu((prev) => (prev.some((m) => m.id === shown.id) ? prev.map((m) => (m.id === shown.id ? shown : m)) : [...prev, shown]));
+    setMenuTab(menu);
+    toast({ title: "New item added", description: `${line.itemName} is on the till as ${line.productCode}, for this party only.` });
   };
 
   const addSetupTask = () => {
@@ -2993,6 +3032,19 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                           + EXTRA
                                         </button>
                                       </div>
+                                      {!readOnly && (
+                                        <div className="flex gap-2 pt-1">
+                                          <button
+                                            type="button"
+                                            className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-violet-500/15 text-violet-600 border-violet-500/30 dark:text-violet-400 hover:bg-violet-500/25 transition-colors"
+                                            onClick={() => setNewItemMenu("kids")}
+                                            title="An item the till's menu does not have yet: it is added to the till for this party only"
+                                            data-testid="button-add-party-menu-item-kids"
+                                          >
+                                            + NEW ITEM (not in the menu)
+                                          </button>
+                                        </div>
+                                      )}
                                     </>
                                   );
                                 })()}
@@ -3111,6 +3163,19 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                 + EXTRA
                               </button>
                             </div>
+                            {!readOnly && (
+                              <div className="flex gap-2 pt-1">
+                                <button
+                                  type="button"
+                                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full border cursor-pointer bg-violet-500/15 text-violet-600 border-violet-500/30 dark:text-violet-400 hover:bg-violet-500/25 transition-colors"
+                                  onClick={() => setNewItemMenu("adults")}
+                                  title="An item the till's menu does not have yet: it is added to the till for this party only"
+                                  data-testid="button-add-party-menu-item-adults"
+                                >
+                                  + NEW ITEM (not in the menu)
+                                </button>
+                              </div>
+                            )}
                           </div>
                         );
                       })()}
@@ -3841,6 +3906,15 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
             setAiFillAfterApproval(true);
           }
         }}
+      />
+
+      {/* SCRUM-828: a new item the till's menu does not have yet */}
+      <PartyMenuItemDialog
+        eventId={eventId}
+        menu={newItemMenu ?? "kids"}
+        open={newItemMenu !== null}
+        onClose={() => setNewItemMenu(null)}
+        onCreated={(line) => addPartyMenuLine(newItemMenu ?? "kids", line)}
       />
 
       {/* Parent Link Dialog */}

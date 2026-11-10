@@ -152,6 +152,7 @@ import {
 // Helper to parse object storage path
 
 import { registerBeoRoutes } from "./beo-routes";
+import { registerPartyMenuRoutes } from "./party-menu-routes";
 import dataAdminRouter from "./data-admin/router";
 import { registerBirthdayPackageRoutes } from "./birthday-package-routes";
 import { registerAuthOtpRoutes } from "./auth-otp-routes";
@@ -933,6 +934,8 @@ export async function registerRoutes(
 
   // BEO (Banquet Event Order) routes
   registerBeoRoutes(app);
+  // SCRUM-828: a new menu item added from the BEO's food lines, made a BEO-only till product.
+  registerPartyMenuRoutes(app);
 
   // Birthday Package & Entertainment Template routes
   registerBirthdayPackageRoutes(app);

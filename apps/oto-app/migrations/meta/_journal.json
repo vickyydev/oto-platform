@@ -316,6 +316,13 @@
       "when": 1794309450385,
       "tag": "0046_inbox_handover_notification",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1794309858706,
+      "tag": "0047_otoapp_v_event_packages_party_menu",
+      "breakpoints": true
     }
   ]
 }
