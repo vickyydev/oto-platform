@@ -144,7 +144,7 @@ Review page (screens and decision boxes): https://claude.ai/artifact/MRK5VbmoMKs
 
 | Item | Ticket | State |
 |---|---|---|
-| 0 Money in one place | SCRUM-822 | APPROVED 10 Nov 22:30: integrate and mount the till's billing into the BEO over the API, remove nothing; a quote PDF before the party too — LANDED d14ba1c65 (11 Nov 01:48, fixes SCRUM-833); PROVED 02:07–02:18, all eleven steps; TESTING with 833; CI flake fixed eaf9ad0c5; four decisions + three small follow-ups on the ticket |
+| 0 Money in one place | SCRUM-822 | APPROVED 10 Nov 22:30: integrate and mount the till's billing into the BEO over the API, remove nothing; a quote PDF before the party too — LANDED d14ba1c65 (11 Nov 01:48, fixes SCRUM-833); PROVED 02:07–02:18, all eleven steps; DEPLOYED with 833 at 03:14 (CI 42885379157); four decisions + three small follow-ups on the ticket |
 | 1 Advice questions to a person, notified | SCRUM-823 | APPROVED; the date-and-park opener stays — LANDED a80ca2630, proved for the rule (Testing); the opener-on-model-handover gap building on lane/opener823b-20261110; the bell half waits on the owner's key script |
 | 2 Voice | SCRUM-824 | APPROVED; part (a) LANDED 405230df0, proved with the provider off (Testing); the speech provider, its key and PDPA are the owner's choice; part (b) later |
 | 3 Deposit QR and set-menu link | SCRUM-825 | updated proposal: driven from the BEO, posted by the assistant; the owner says approved in chat (10 Nov 22:40), the page shows no decision — confirming |
