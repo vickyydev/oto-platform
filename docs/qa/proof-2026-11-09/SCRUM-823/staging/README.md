@@ -135,3 +135,71 @@ opener and leave the advice to the gate.
 
 `receipt.json` holds every route, status and id, the turns' intents and reasons, the `handoverNotices`
 reads, the audit rows, the warning lines and the notice rows. It holds no name, number or key.
+
+## Part 1b, the opener follow-up (10 November, late)
+
+Run on 10 November 2026, 22:58-23:04 Bangkok (15:58:24-16:03:56 UTC), on commit
+`9b2bd8bc1edfea5eefacdafa50b02770de783ebf`. It re-checks the two Fail rows above (steps 4 and 4b) after the
+fixes that keep the opener beside an advice hand-over, as one message.
+
+| Service | When the wait began (15:53:48 UTC) | Live before the checks | Live after |
+|---|---|---|---|
+| oto-api-staging | `dep-dbpjdn3bc2fs73bntn00`, `a3d87300`; `9b2bd8bc` building | `dep-dbpjrmbrjlhs7384fksg`, `9b2bd8bc` (15:57 UTC) | the same |
+| oto-inbox-staging | `dep-dbpjdnjbc2fs73bntpi0`, `a3d87300`; `9b2bd8bc` building | `dep-dbpjrmlg1s2s738kluu0`, `9b2bd8bc` (15:53 UTC) | the same |
+| oto-console-staging | `dep-dbpjdnbbc2fs73bnto60`, `a3d87300` | the same (these fixes hold no Console code) | the same |
+
+The two `9b2bd8bc` deploys were started by the push, not by this run. The set-up was as in part 1:
+
+- the headless Chromium 153 at 1440×900, light, en-GB, Asia/Bangkok;
+- the staging administrator through the launcher (owner view);
+- one new ZZ TEST number per thread on "Demo WhatsApp · Central Floresta", each line through
+  Settings › Simulator · test only with the Category hint "Birthdays & Events";
+- the assistant live (`aiMode: live`).
+
+No hand-over contact has been set on the branch since part 1's clean-up, so every pill reads "manager not
+notified (no contact)", as expected. Nothing reached a phone.
+
+The account's number belongs to Central Floresta, so the thread's park is known. The opener therefore came
+as the variant without the park question (`opener_birthday_advice_park_known`).
+
+| Step | Check | Result | Value | Picture |
+|---|---|---|---|---|
+| 0 | api and inbox live on `9b2bd8bc` before and after | Pass | see the table above | |
+| 0 | Assistant live on Demo WhatsApp · Central Floresta | Pass | `aiMode: live` | |
+| 1 | Inbox › Settings › Templates: `opener_birthday_advice` in EN, TH and RU, none flagged for translation | Pass | `GET /api/inbox/templates/manage` 200. The section "opener birthday advice" holds EN, RU and TH. Each is "Every channel · Every park · No approval needed" and active, with no "English source, to translate" chip (`needsTranslation: false`). The section "opener birthday advice park known" holds the same three languages, also unflagged. EN reads: "Amazing, thank you! We'd love to organize a party for you 🎈 What date are you thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong? Our birthday manager will be with you shortly." | `fu-01-templates-opener.png` |
+| 2 | Thread C2 "We would like to book a birthday party for our son. Which package would you recommend? (ZZ TEST)": ONE assistant bubble, the opener question and the warm line | Pass | after 12.2 s: `ai_handover`, intents `["birthday_advice"]`, reason `OK`, closing key `opener_birthday_advice_park_known`. One line: "Amazing, thank you! We'd love to organize a party for you 🎈 What date are you thinking of, and roughly how many people? Our birthday manager will be with you shortly." The park question was left out. | `fu-02-c2-opener-one-bubble.png` |
+| 2 | Thread C2's pill | Pass | "AI handed over to the team · birthday advice · manager not notified (no contact)" | `fu-02-c2-opener-one-bubble.png` |
+| 2 | Thread C2: the asked lines under the bubble | Pass | "asked: the date · not answered" and "asked: how many people · not answered" (both recorded withdrawn at the hand-over). There is no park line. | `fu-02-c2-opener-one-bubble.png` |
+| 3 | Thread C "We want a birthday party for our daughter. What would you suggest? (ZZ TEST)": the same single bubble | Pass | after 12.2 s: `ai_handover`, `["birthday_advice"]`, `OK`, `opener_birthday_advice_park_known`. The same one line, word for word. The pill and the two "not answered" lines are as in C2. | `fu-03-c-opener-one-bubble.png` |
+| 4 | Thread A "Hi! Which branch would you recommend for a party of 12 kids? (ZZ TEST)": the warm line only | Pass | after 13.5 s: `ai_handover`, `["birthday_advice"]`, `OK`, closing key `closing_birthday`. One line: "Thank you so much! Our birthday manager will be with you shortly." No opener and no asked lines (`openQuestions` empty). The pill reads "… · birthday advice · manager not notified (no contact)". | `fu-04-a-warm-line-only.png` |
+| 5 | Thread C: Resume, then "14 December, about 15 kids, Central Floresta" | Pass | `POST …/ai-resume` 200 (`aiState: ready`). The turn handed the details to the team (`ai_handover`, `["birthday_details"]`, `OK`, `closing_birthday`) with "Thank you so much! Our birthday manager will be with you shortly." It did not ask the date or the people again. The lines now read "asked: the date · answered 2026-12-14" and "asked: how many people · answered 15 kids". | `fu-05-c-answered-no-repeat.png` |
+| 6 | Thread E (SCRUM-831's fault): "table for 8?" is no headcount, "about 10 kids" is | Pass | After "table for 8?" the line reads "asked: how many people · not answered". After "about 10 kids" it reads "answered 10 kids", with no Resume. Details in the SCRUM-831 README, "Re-check after the reader fix". | `fu-06-e-table-for-8-not-counted.png`, `fu-06b-e-about-10-kids-answered.png` |
+| 7 | SCRUM-828's flag: `includeBeoOnly=false` means no | Pass | see the SCRUM-828 README, "Re-check: the flag read" | |
+| — | Audit for C2, C, A and E | Pass | `inbox.ai.repeat_guard`: 0 rows in every thread, and 0 across the operator since the run began. `inbox.ai.open_question`: C2 asked `date, guests_count`. C asked `date, guests_count`, then answered both. A has none. E is as in the SCRUM-831 section. | |
+
+Notes for the owner:
+
+- **The warm line twice in thread C.** The family got "Our birthday manager will be with you shortly." at
+  the end of the opener bubble. They got it again as the closing line after they answered, because the
+  Resume let the assistant take that turn. This is the same repeat as SCRUM-831's A3b.
+- **The model's own opener still asks the park.** On this same account, thread E's opener came from the
+  model, not from the advice path: "What date(s) are you thinking of, roughly how many people, and which
+  branch, Central Floresta or Robinson Chalong?". These fixes did not change that path. The SCRUM-831 run
+  saw the same.
+- **The advice opener's audit row.** Its `inbox.ai.open_question` row lists the two slots under `asked`
+  with `withdrawn: []`. The questions themselves read withdrawn from the start, as the conversation's
+  `openQuestions` show. Only the audit row's wording differs.
+- Step 5 pressed Resume, as the brief asked. Thread E shows that, with the reader fix, the reply would also
+  have been read without it.
+
+Clean-up, read back:
+
+- The four ZZ TEST conversations (C2, C, A, E) were marked handled with
+  `POST /api/inbox/conversations/:id/handle`. Each answered 200 and reads back `handled`.
+- Signed out of the inbox, the Console and the launcher (200 each). Afterwards `/api/inbox/me`, the
+  Console's `/api/me` and the launcher's `/api/me` each answer 401.
+- The one extra action was the Resume on thread C. No other conversation, setting or key was read or
+  changed.
+
+`receipt.json` → `recheck_2026_11_10` holds the routes, statuses, ids, turn intents, the assistant's lines
+and the `openQuestions` after every turn. It holds no name, number or key.

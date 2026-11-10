@@ -1447,5 +1447,178 @@
         "note": "real names covered by solid boxes; phone and password fields and toasts masked"
       }
     }
-  ]
+  ],
+  "recheck_2026_11_10": {
+    "ranUtc": {
+      "start": "2026-11-10T15:58:24.159Z",
+      "end": "2026-11-10T16:03:56.222Z"
+    },
+    "commit": "9b2bd8bc1edfea5eefacdafa50b02770de783ebf",
+    "browser": "Chromium 153.0.8010.12 (headless), 1440×900, light, en-GB, Asia/Bangkok",
+    "liveWaitStart": {
+      "at": "2026-11-10T15:53:48Z",
+      "note": "when the wait began: the api and the inbox were still live on a3d87300; the 9b2bd8bc deploys were building (started by the push, not by this run)",
+      "services": [
+        {
+          "name": "oto-api-staging",
+          "live": "dep-dbpjdn3bc2fs73bntn00",
+          "sha": "a3d87300",
+          "building": "dep-dbpjrmbrjlhs7384fksg"
+        },
+        {
+          "name": "oto-inbox-staging",
+          "live": "dep-dbpjdnjbc2fs73bntpi0",
+          "sha": "a3d87300",
+          "building": "dep-dbpjrmlg1s2s738kluu0"
+        }
+      ]
+    },
+    "live": {
+      "before": {
+        "at": "2026-11-10T15:58:24.159Z",
+        "services": [
+          {
+            "name": "oto-api-staging",
+            "deployId": "dep-dbpjrmbrjlhs7384fksg",
+            "status": "live",
+            "sha": "9b2bd8bc1edfea5eefacdafa50b02770de783ebf",
+            "finishedAt": "2026-11-10T15:57:23.547419Z"
+          },
+          {
+            "name": "oto-inbox-staging",
+            "deployId": "dep-dbpjrmlg1s2s738kluu0",
+            "status": "live",
+            "sha": "9b2bd8bc1edfea5eefacdafa50b02770de783ebf",
+            "finishedAt": "2026-11-10T15:53:59.192227Z"
+          },
+          {
+            "name": "oto-console-staging",
+            "deployId": "dep-dbpjdnbbc2fs73bnto60",
+            "status": "live",
+            "sha": "a3d87300ad15cf8dd873700269a8656b32ce8d30",
+            "finishedAt": "2026-11-10T15:24:18.456604Z"
+          }
+        ]
+      },
+      "after": {
+        "at": "2026-11-10T16:03:52.444Z",
+        "services": [
+          {
+            "name": "oto-api-staging",
+            "deployId": "dep-dbpjrmbrjlhs7384fksg",
+            "status": "live",
+            "sha": "9b2bd8bc1edfea5eefacdafa50b02770de783ebf",
+            "finishedAt": "2026-11-10T15:57:23.547419Z"
+          },
+          {
+            "name": "oto-inbox-staging",
+            "deployId": "dep-dbpjrmlg1s2s738kluu0",
+            "status": "live",
+            "sha": "9b2bd8bc1edfea5eefacdafa50b02770de783ebf",
+            "finishedAt": "2026-11-10T15:53:59.192227Z"
+          },
+          {
+            "name": "oto-console-staging",
+            "deployId": "dep-dbpjdnbbc2fs73bnto60",
+            "status": "live",
+            "sha": "a3d87300ad15cf8dd873700269a8656b32ce8d30",
+            "finishedAt": "2026-11-10T15:24:18.456604Z"
+          }
+        ]
+      }
+    },
+    "what": "SCRUM-828 re-check: the includeBeoOnly flag read as a boolean (7227c7927); as the staging administrator through the Console session",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "at": "2026-11-10T16:03:21.040Z",
+    "reads": [
+      {
+        "route": "GET /api/branches/:id/menu",
+        "status": 200,
+        "products": 174,
+        "beoOnlyTrue": 0,
+        "beoOnlyTrueArchived": 0,
+        "beoOnlyIds": [],
+        "error": null
+      },
+      {
+        "route": "GET /api/branches/:id/menu?includeBeoOnly=false",
+        "status": 200,
+        "products": 174,
+        "beoOnlyTrue": 0,
+        "beoOnlyTrueArchived": 0,
+        "beoOnlyIds": [],
+        "error": null
+      },
+      {
+        "route": "GET /api/branches/:id/menu?includeBeoOnly=true",
+        "status": 200,
+        "products": 174,
+        "beoOnlyTrue": 0,
+        "beoOnlyTrueArchived": 0,
+        "beoOnlyIds": [],
+        "error": null
+      },
+      {
+        "route": "GET /api/branches/:id/menu?includeBeoOnly=0",
+        "status": 200,
+        "products": 174,
+        "beoOnlyTrue": 0,
+        "beoOnlyTrueArchived": 0,
+        "beoOnlyIds": [],
+        "error": null
+      },
+      {
+        "route": "GET /api/branches/:id/menu?includeBeoOnly=false&includeArchived=true",
+        "status": 200,
+        "products": 246,
+        "beoOnlyTrue": 0,
+        "beoOnlyTrueArchived": 0,
+        "beoOnlyIds": [],
+        "error": null
+      },
+      {
+        "route": "GET /api/branches/:id/menu?includeBeoOnly=true&includeArchived=true",
+        "status": 200,
+        "products": 248,
+        "beoOnlyTrue": 2,
+        "beoOnlyTrueArchived": 2,
+        "beoOnlyIds": [
+          "01a0bbdc-8c41-71dd-b193-1fa77e6dd628",
+          "01a0bbdc-8c41-7406-92ee-093f1caea076"
+        ],
+        "error": null
+      }
+    ],
+    "signOut": {
+      "at": "2026-11-10T16:03:56.222Z",
+      "signOut": {
+        "inbox": {
+          "route": "POST /api/auth/sign-out (inbox)",
+          "status": 200
+        },
+        "console": {
+          "route": "POST /api/auth/sign-out (Console)",
+          "status": 200
+        },
+        "launcher": {
+          "route": "POST /api/auth/sign-out (launcher)",
+          "status": 200
+        }
+      },
+      "readBack": {
+        "inbox": {
+          "route": "GET /api/inbox/me (inbox)",
+          "status": 401
+        },
+        "console": {
+          "route": "GET /api/me (Console)",
+          "status": 401
+        },
+        "launcher": {
+          "route": "GET /api/me (launcher)",
+          "status": 401
+        }
+      }
+    }
+  }
 }

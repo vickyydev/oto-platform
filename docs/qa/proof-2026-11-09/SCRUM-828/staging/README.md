@@ -137,3 +137,7 @@ Picture 07 shows the party page's slips block, not the documents: there is no pa
   - Admin API: sign-out 200, then /me 401.
 
 The routes, statuses, ids and figures are in receipt.json. Money there is in satang.
+
+## Re-check: the flag read
+
+Pass, on 10 November 2026 at 23:03 Bangkok, on `9b2bd8bc1` (api `dep-dbpjrmbrjlhs7384fksg`), reading Central Floresta's `GET /api/branches/:id/menu` through the administrator's Console session. No BEO-only product is live, so the plain read, `?includeBeoOnly=false`, `=0` and `=true` each answer 200 with 174 products and none BEO-only. With `includeArchived=true`, `includeBeoOnly=false` answers 246 products with 0 BEO-only, and `includeBeoOnly=true` answers 248, adding this run's two archived ZZ TEST BEO-only items (`beoOnly: true`): `false` now reads as no (`receipt.json` → `recheck_2026_11_10`).

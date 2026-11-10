@@ -1884,5 +1884,590 @@
       }
     }
   },
-  "notTouched": "No other conversation, setting or key was read or changed. Nothing was sent to a phone: the simulator account is internal, and no hand-over contact was set (the pill read \"manager not notified (no contact)\")."
+  "notTouched": "No other conversation, setting or key was read or changed. Nothing was sent to a phone: the simulator account is internal, and no hand-over contact was set (the pill read \"manager not notified (no contact)\").",
+  "recheck_2026_11_10": {
+    "ranUtc": {
+      "start": "2026-11-10T15:58:24.159Z",
+      "end": "2026-11-10T16:03:56.222Z"
+    },
+    "commit": "9b2bd8bc1edfea5eefacdafa50b02770de783ebf",
+    "browser": "Chromium 153.0.8010.12 (headless), 1440×900, light, en-GB, Asia/Bangkok",
+    "liveWaitStart": {
+      "at": "2026-11-10T15:53:48Z",
+      "note": "when the wait began: the api and the inbox were still live on a3d87300; the 9b2bd8bc deploys were building (started by the push, not by this run)",
+      "services": [
+        {
+          "name": "oto-api-staging",
+          "live": "dep-dbpjdn3bc2fs73bntn00",
+          "sha": "a3d87300",
+          "building": "dep-dbpjrmbrjlhs7384fksg"
+        },
+        {
+          "name": "oto-inbox-staging",
+          "live": "dep-dbpjdnjbc2fs73bntpi0",
+          "sha": "a3d87300",
+          "building": "dep-dbpjrmlg1s2s738kluu0"
+        }
+      ]
+    },
+    "live": {
+      "before": {
+        "at": "2026-11-10T15:58:24.159Z",
+        "services": [
+          {
+            "name": "oto-api-staging",
+            "deployId": "dep-dbpjrmbrjlhs7384fksg",
+            "status": "live",
+            "sha": "9b2bd8bc1edfea5eefacdafa50b02770de783ebf",
+            "finishedAt": "2026-11-10T15:57:23.547419Z"
+          },
+          {
+            "name": "oto-inbox-staging",
+            "deployId": "dep-dbpjrmlg1s2s738kluu0",
+            "status": "live",
+            "sha": "9b2bd8bc1edfea5eefacdafa50b02770de783ebf",
+            "finishedAt": "2026-11-10T15:53:59.192227Z"
+          },
+          {
+            "name": "oto-console-staging",
+            "deployId": "dep-dbpjdnbbc2fs73bnto60",
+            "status": "live",
+            "sha": "a3d87300ad15cf8dd873700269a8656b32ce8d30",
+            "finishedAt": "2026-11-10T15:24:18.456604Z"
+          }
+        ]
+      },
+      "after": {
+        "at": "2026-11-10T16:03:52.444Z",
+        "services": [
+          {
+            "name": "oto-api-staging",
+            "deployId": "dep-dbpjrmbrjlhs7384fksg",
+            "status": "live",
+            "sha": "9b2bd8bc1edfea5eefacdafa50b02770de783ebf",
+            "finishedAt": "2026-11-10T15:57:23.547419Z"
+          },
+          {
+            "name": "oto-inbox-staging",
+            "deployId": "dep-dbpjrmlg1s2s738kluu0",
+            "status": "live",
+            "sha": "9b2bd8bc1edfea5eefacdafa50b02770de783ebf",
+            "finishedAt": "2026-11-10T15:53:59.192227Z"
+          },
+          {
+            "name": "oto-console-staging",
+            "deployId": "dep-dbpjdnbbc2fs73bnto60",
+            "status": "live",
+            "sha": "a3d87300ad15cf8dd873700269a8656b32ce8d30",
+            "finishedAt": "2026-11-10T15:24:18.456604Z"
+          }
+        ]
+      }
+    },
+    "what": "SCRUM-831 re-check after the reader fix (fe7302742 \"table for 8?\" is no headcount; d60a35797 the reply read while a person has the thread)",
+    "threads": {
+      "E": {
+        "key": "E",
+        "expect": "the combined question; \"table for 8?\" is no headcount; \"about 10 kids\" is",
+        "sender": "its own ZZ TEST simulator number (not kept)",
+        "conversationId": "01a1c631-9536-75bb-a9c0-2c8244bde800",
+        "language": "en",
+        "categoryHint": "birthdays",
+        "lines": [
+          {
+            "n": 1,
+            "text": "Hi, we'd like a birthday party for our son (ZZ TEST)",
+            "sentAt": "2026-11-10T16:01:40.230Z",
+            "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+            "status": 200,
+            "outcome": "processed",
+            "conversationsCreated": 1,
+            "conversationIds": [
+              "01a1c631-9536-75bb-a9c0-2c8244bde800"
+            ],
+            "dialogSaid": "Received: a new conversation, routed.",
+            "after": {
+              "waitedMs": 12162,
+              "turnShown": true,
+              "aiTurns": [
+                {
+                  "kind": "ai_replied",
+                  "turnId": "01a1c631-9546-76e7-9951-4705f7a99017",
+                  "intent": "birthday_party",
+                  "intents": [
+                    "birthday_party"
+                  ],
+                  "reason": null,
+                  "rule": null,
+                  "closingKey": null
+                }
+              ],
+              "assistantLines": [
+                {
+                  "id": "01a1c631-b129-73f4-b04f-0979d22aa609",
+                  "createdAt": "2026-11-10T16:01:47.807Z",
+                  "providerStatus": "sent",
+                  "body": "Amazing, thank you! We'd love to organize a party for your son 🎈"
+                },
+                {
+                  "id": "01a1c631-b129-73f4-b04f-097a3047b19b",
+                  "createdAt": "2026-11-10T16:01:47.808Z",
+                  "providerStatus": "sent",
+                  "body": "What date(s) are you thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong?"
+                }
+              ],
+              "aiState": "ready",
+              "openQuestions": [
+                {
+                  "id": "01a1c631-b12d-74a8-b4fa-b54cdbb3321b",
+                  "slot": "date",
+                  "state": "open",
+                  "answer": null,
+                  "askedMessageId": "01a1c631-b129-73f4-b04f-097a3047b19b",
+                  "answeredMessageId": null,
+                  "closedAt": null
+                },
+                {
+                  "id": "01a1c631-b12e-789d-884f-d26156ed973d",
+                  "slot": "guests_count",
+                  "state": "open",
+                  "answer": null,
+                  "askedMessageId": "01a1c631-b129-73f4-b04f-097a3047b19b",
+                  "answeredMessageId": null,
+                  "closedAt": null
+                },
+                {
+                  "id": "01a1c631-b130-78bd-8fbf-4ab17778aa05",
+                  "slot": "park",
+                  "state": "open",
+                  "answer": null,
+                  "askedMessageId": "01a1c631-b129-73f4-b04f-097a3047b19b",
+                  "answeredMessageId": null,
+                  "closedAt": null
+                }
+              ]
+            }
+          },
+          {
+            "n": 2,
+            "text": "table for 8? (ZZ TEST)",
+            "sentAt": "2026-11-10T16:02:00.782Z",
+            "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+            "status": 200,
+            "outcome": "processed",
+            "conversationsCreated": 0,
+            "conversationIds": [
+              "01a1c631-9536-75bb-a9c0-2c8244bde800"
+            ],
+            "dialogSaid": "Received into the existing conversation.",
+            "after": {
+              "waitedMs": 12159,
+              "turnShown": true,
+              "aiTurns": [
+                {
+                  "kind": "ai_handover",
+                  "turnId": "01a1c631-e592-7a00-acc8-3ae19c0eebc8",
+                  "intent": "birthday_details",
+                  "intents": [
+                    "birthday_details"
+                  ],
+                  "reason": "OK",
+                  "rule": null,
+                  "closingKey": "closing_birthday"
+                }
+              ],
+              "assistantLines": [
+                {
+                  "id": "01a1c631-fc01-768c-8768-d28e37780bd6",
+                  "createdAt": "2026-11-10T16:02:06.966Z",
+                  "providerStatus": "sent",
+                  "body": "Thank you so much! Our birthday manager will be with you shortly."
+                }
+              ],
+              "aiState": "left_for_team",
+              "openQuestions": [
+                {
+                  "id": "01a1c631-b12d-74a8-b4fa-b54cdbb3321b",
+                  "slot": "date",
+                  "state": "withdrawn",
+                  "answer": null,
+                  "askedMessageId": "01a1c631-b129-73f4-b04f-097a3047b19b",
+                  "answeredMessageId": null,
+                  "closedAt": "2026-11-10T16:02:06.966Z"
+                },
+                {
+                  "id": "01a1c631-b12e-789d-884f-d26156ed973d",
+                  "slot": "guests_count",
+                  "state": "withdrawn",
+                  "answer": null,
+                  "askedMessageId": "01a1c631-b129-73f4-b04f-097a3047b19b",
+                  "answeredMessageId": null,
+                  "closedAt": "2026-11-10T16:02:06.966Z"
+                },
+                {
+                  "id": "01a1c631-b130-78bd-8fbf-4ab17778aa05",
+                  "slot": "park",
+                  "state": "withdrawn",
+                  "answer": null,
+                  "askedMessageId": "01a1c631-b129-73f4-b04f-097a3047b19b",
+                  "answeredMessageId": null,
+                  "closedAt": "2026-11-10T16:02:06.966Z"
+                }
+              ]
+            }
+          },
+          {
+            "n": 3,
+            "text": "about 10 kids",
+            "sentAt": "2026-11-10T16:02:37.632Z",
+            "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+            "status": 200,
+            "outcome": "processed",
+            "conversationsCreated": 0,
+            "conversationIds": [
+              "01a1c631-9536-75bb-a9c0-2c8244bde800"
+            ],
+            "dialogSaid": "Received into the existing conversation.",
+            "after": {
+              "waitedMs": 6488,
+              "turnShown": false,
+              "aiTurns": [],
+              "assistantLines": [],
+              "aiState": "left_for_team",
+              "openQuestions": [
+                {
+                  "id": "01a1c631-b12d-74a8-b4fa-b54cdbb3321b",
+                  "slot": "date",
+                  "state": "withdrawn",
+                  "answer": null,
+                  "askedMessageId": "01a1c631-b129-73f4-b04f-097a3047b19b",
+                  "answeredMessageId": null,
+                  "closedAt": "2026-11-10T16:02:06.966Z"
+                },
+                {
+                  "id": "01a1c631-b12e-789d-884f-d26156ed973d",
+                  "slot": "guests_count",
+                  "state": "answered",
+                  "answer": "10 kids",
+                  "askedMessageId": "01a1c631-b129-73f4-b04f-097a3047b19b",
+                  "answeredMessageId": "01a1c632-756c-7621-a15c-98a8bad366b4",
+                  "closedAt": "2026-11-10T16:02:38.053Z"
+                },
+                {
+                  "id": "01a1c631-b130-78bd-8fbf-4ab17778aa05",
+                  "slot": "park",
+                  "state": "withdrawn",
+                  "answer": null,
+                  "askedMessageId": "01a1c631-b129-73f4-b04f-097a3047b19b",
+                  "answeredMessageId": null,
+                  "closedAt": "2026-11-10T16:02:06.966Z"
+                }
+              ]
+            }
+          }
+        ],
+        "final": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "active",
+          "category": "birthdays",
+          "team": "Birthdays & Events",
+          "aiState": "left_for_team",
+          "openQuestions": [
+            {
+              "id": "01a1c631-b12d-74a8-b4fa-b54cdbb3321b",
+              "slot": "date",
+              "state": "withdrawn",
+              "answer": null,
+              "askedMessageId": "01a1c631-b129-73f4-b04f-097a3047b19b",
+              "answeredMessageId": null,
+              "closedAt": "2026-11-10T16:02:06.966Z"
+            },
+            {
+              "id": "01a1c631-b12e-789d-884f-d26156ed973d",
+              "slot": "guests_count",
+              "state": "answered",
+              "answer": "10 kids",
+              "askedMessageId": "01a1c631-b129-73f4-b04f-097a3047b19b",
+              "answeredMessageId": "01a1c632-756c-7621-a15c-98a8bad366b4",
+              "closedAt": "2026-11-10T16:02:38.053Z"
+            },
+            {
+              "id": "01a1c631-b130-78bd-8fbf-4ab17778aa05",
+              "slot": "park",
+              "state": "withdrawn",
+              "answer": null,
+              "askedMessageId": "01a1c631-b129-73f4-b04f-097a3047b19b",
+              "answeredMessageId": null,
+              "closedAt": "2026-11-10T16:02:06.966Z"
+            }
+          ],
+          "messagesRoute": {
+            "route": "GET /api/inbox/conversations/:id/messages",
+            "status": 200
+          },
+          "messages": [
+            {
+              "id": "01a1c631-9538-7b68-81c2-f28e5645f0de",
+              "authorKind": "customer",
+              "createdAt": "2026-11-10T16:01:40.000Z",
+              "providerStatus": null,
+              "body": "Hi, we'd like a birthday party for our son (ZZ TEST)"
+            },
+            {
+              "id": "01a1c631-b129-73f4-b04f-0979d22aa609",
+              "authorKind": "ai",
+              "createdAt": "2026-11-10T16:01:47.807Z",
+              "providerStatus": "sent",
+              "body": "Amazing, thank you! We'd love to organize a party for your son 🎈"
+            },
+            {
+              "id": "01a1c631-b129-73f4-b04f-097a3047b19b",
+              "authorKind": "ai",
+              "createdAt": "2026-11-10T16:01:47.808Z",
+              "providerStatus": "sent",
+              "body": "What date(s) are you thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong?"
+            },
+            {
+              "id": "01a1c631-e589-7733-9b10-40cc89600d04",
+              "authorKind": "customer",
+              "createdAt": "2026-11-10T16:02:01.000Z",
+              "providerStatus": null,
+              "body": "table for 8? (ZZ TEST)"
+            },
+            {
+              "id": "01a1c631-fc01-768c-8768-d28e37780bd6",
+              "authorKind": "ai",
+              "createdAt": "2026-11-10T16:02:06.966Z",
+              "providerStatus": "sent",
+              "body": "Thank you so much! Our birthday manager will be with you shortly."
+            },
+            {
+              "id": "01a1c632-756c-7621-a15c-98a8bad366b4",
+              "authorKind": "customer",
+              "createdAt": "2026-11-10T16:02:38.000Z",
+              "providerStatus": null,
+              "body": "about 10 kids"
+            }
+          ],
+          "aiPills": [
+            {
+              "kind": "ai_replied",
+              "createdAt": "2026-11-10T16:01:47.807Z",
+              "turnId": "01a1c631-9546-76e7-9951-4705f7a99017",
+              "intent": "birthday_party",
+              "intents": [
+                "birthday_party"
+              ],
+              "reason": null,
+              "rule": null,
+              "closingKey": null
+            },
+            {
+              "kind": "ai_handover",
+              "createdAt": "2026-11-10T16:02:06.966Z",
+              "turnId": "01a1c631-e592-7a00-acc8-3ae19c0eebc8",
+              "intent": "birthday_details",
+              "intents": [
+                "birthday_details"
+              ],
+              "reason": "OK",
+              "rule": null,
+              "closingKey": "closing_birthday"
+            }
+          ]
+        },
+        "audit": {
+          "repeatGuard": {
+            "route": "GET /api/audit?action=inbox.ai.repeat_guard&from=<run start>",
+            "status": 200,
+            "rowsForThisConversation": 0,
+            "rowsSinceRunStart": 0
+          },
+          "openQuestion": {
+            "route": "GET /api/audit?action=inbox.ai.open_question&entityType=inbox.conversation&entityId=:id",
+            "status": 200,
+            "rows": [
+              {
+                "id": "01a1c631-b131-7809-9bac-cf01d7d8b31b",
+                "createdAt": "2026-11-10T16:01:47.807Z",
+                "after": {
+                  "asked": [
+                    "date",
+                    "guests_count",
+                    "park"
+                  ],
+                  "turnId": "01a1c631-9546-76e7-9951-4705f7a99017",
+                  "answered": [],
+                  "withdrawn": []
+                }
+              },
+              {
+                "id": "01a1c631-fc04-70ed-ab9c-0a16b810a425",
+                "createdAt": "2026-11-10T16:02:06.966Z",
+                "after": {
+                  "asked": [],
+                  "turnId": "01a1c631-e592-7a00-acc8-3ae19c0eebc8",
+                  "answered": [],
+                  "withdrawn": [
+                    "date",
+                    "guests_count",
+                    "park"
+                  ]
+                }
+              },
+              {
+                "id": "01a1c632-757f-72cf-b08c-e7a433c6af52",
+                "createdAt": "2026-11-10T16:02:38.052Z",
+                "after": {
+                  "asked": [],
+                  "turnId": null,
+                  "answered": [
+                    "guests_count"
+                  ],
+                  "withdrawn": []
+                }
+              }
+            ]
+          },
+          "handover": {
+            "route": "GET /api/audit?action=inbox.ai.handover&entityType=inbox.conversation&entityId=:id",
+            "status": 200,
+            "rows": 1,
+            "entries": [
+              {
+                "id": "01a1c631-fc05-77bc-9a41-4800583897ae",
+                "createdAt": "2026-11-10T16:02:06.966Z",
+                "turnId": "01a1c631-e592-7a00-acc8-3ae19c0eebc8",
+                "intent": "birthday_details",
+                "closingKey": "closing_birthday"
+              }
+            ]
+          }
+        },
+        "picture": [
+          {
+            "file": "fu-06-e-table-for-8-not-counted.png",
+            "openQuestionLines": [
+              {
+                "slot": "date",
+                "state": "withdrawn",
+                "text": "asked: the date · not answered"
+              },
+              {
+                "slot": "guests_count",
+                "state": "withdrawn",
+                "text": "asked: how many people · not answered"
+              },
+              {
+                "slot": "park",
+                "state": "withdrawn",
+                "text": "asked: the park · not answered"
+              }
+            ],
+            "pillLines": [
+              "AI handed over · Resume",
+              "AI handed over to the team",
+              "AI handed over to the team · birthday details"
+            ]
+          },
+          {
+            "file": "fu-06b-e-about-10-kids-answered.png",
+            "openQuestionLines": [
+              {
+                "slot": "date",
+                "state": "withdrawn",
+                "text": "asked: the date · not answered"
+              },
+              {
+                "slot": "guests_count",
+                "state": "answered",
+                "text": "asked: how many people · answered 10 kids"
+              },
+              {
+                "slot": "park",
+                "state": "withdrawn",
+                "text": "asked: the park · not answered"
+              }
+            ],
+            "pillLines": [
+              "AI handed over · Resume",
+              "AI handed over to the team",
+              "AI handed over to the team · birthday details"
+            ]
+          }
+        ]
+      }
+    },
+    "pictures": [
+      {
+        "file": "fu-06-e-table-for-8-not-counted.png",
+        "shows": "Thread E: the model's combined question, then table for 8?: the how-many-people line reads not answered (no 8)",
+        "at": "2026-11-10T16:02:28.555Z",
+        "namesMasked": 43,
+        "regionMasks": 1,
+        "note": "staff names, avatar initials and phone-like numbers masked; the list of other conversations masked in the thread pictures",
+        "folder": "docs/qa/proof-2026-11-09/SCRUM-823/staging"
+      },
+      {
+        "file": "fu-06b-e-about-10-kids-answered.png",
+        "shows": "Thread E after about 10 kids (no Resume, no assistant line): the how-many-people line reads answered 10 kids",
+        "at": "2026-11-10T16:02:55.887Z",
+        "namesMasked": 43,
+        "regionMasks": 1,
+        "note": "staff names, avatar initials and phone-like numbers masked; the list of other conversations masked in the thread pictures",
+        "folder": "docs/qa/proof-2026-11-09/SCRUM-823/staging"
+      }
+    ],
+    "cleanup": {
+      "handled": {
+        "at": "2026-11-10T16:03:40.498Z",
+        "E": {
+          "id": "01a1c631-9536-75bb-a9c0-2c8244bde800",
+          "handle": {
+            "route": "POST /api/inbox/conversations/:id/handle",
+            "status": 200,
+            "error": null
+          },
+          "readBack": {
+            "route": "GET /api/inbox/conversations/:id",
+            "status": 200,
+            "state": "handled",
+            "handledAt": "2026-11-10T16:03:44.778Z"
+          }
+        }
+      },
+      "signOut": {
+        "at": "2026-11-10T16:03:56.222Z",
+        "signOut": {
+          "inbox": {
+            "route": "POST /api/auth/sign-out (inbox)",
+            "status": 200
+          },
+          "console": {
+            "route": "POST /api/auth/sign-out (Console)",
+            "status": 200
+          },
+          "launcher": {
+            "route": "POST /api/auth/sign-out (launcher)",
+            "status": 200
+          }
+        },
+        "readBack": {
+          "inbox": {
+            "route": "GET /api/inbox/me (inbox)",
+            "status": 401
+          },
+          "console": {
+            "route": "GET /api/me (Console)",
+            "status": 401
+          },
+          "launcher": {
+            "route": "GET /api/me (launcher)",
+            "status": 401
+          }
+        }
+      }
+    }
+  }
 }

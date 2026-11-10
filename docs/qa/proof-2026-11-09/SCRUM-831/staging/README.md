@@ -100,3 +100,25 @@ array after every turn, with ids.
 
 `receipt.json` holds every route, status and id, each turn's intents and reason, the assistant's lines,
 the `openQuestions` arrays after every turn, and the audit rows. It holds no name, number or key.
+
+## Re-check after the reader fix
+
+Run on 10 November 2026, 23:01-23:03 Bangkok, on commit `9b2bd8bc1edfea5eefacdafa50b02770de783ebf`.
+The api (`dep-dbpjrmbrjlhs7384fksg`) and the inbox (`dep-dbpjrmlg1s2s738kluu0`) were live on it before
+and after. The set-up was the same as above, on a new ZZ TEST thread E. This is check 6 of the SCRUM-823
+part 1b run, and its pictures are in `docs/qa/proof-2026-11-09/SCRUM-823/staging/`.
+
+| Step | Check | Result | Value | Picture |
+|---|---|---|---|---|
+| E1 | "Hi, we'd like a birthday party for our son (ZZ TEST)": the combined question | Pass | after 12.2 s: `ai_replied`, `birthday_party`. Two lines: "Amazing, thank you! We'd love to organize a party for your son 🎈" and "What date(s) are you thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong?". The date, guests and park entries are open ("waiting for the answer"). | |
+| E2 | "table for 8? (ZZ TEST)": the guests entry must not read answered 8 | Pass (was Fail in C2 above) | It reads **"asked: how many people · not answered"**. The model still labelled the line party basics and handed the thread over (`ai_handover`, `birthday_details`, `OK`) with "Thank you so much! Our birthday manager will be with you shortly." That hand-over withdrew the date and the park too, so they also read "not answered". Audit: withdrawn `date, guests_count, park`; nothing answered. | `fu-06-e-table-for-8-not-counted.png` |
+| E3 | "about 10 kids": the guests entry reads answered 10 kids | Pass (was Not reached in C3 above) | No Resume was needed. The thread stayed with the team (`aiState: left_for_team`), with no assistant turn and no assistant line. The line was read as it landed, within 6.5 s. The entries now read "asked: the date · not answered", **"asked: how many people · answered 10 kids"** and "asked: the park · not answered". Audit `inbox.ai.open_question`: answered `guests_count`, `turnId` null (no turn read it). | `fu-06b-e-about-10-kids-answered.png` |
+| E4 | Audit for thread E | Pass | `repeat_guard` 0 rows. `open_question` 3 rows: asked `date, guests_count, park`; then withdrawn all three; then answered `guests_count` | |
+
+Note for the owner: the reader no longer counts "table for 8?". The model, though, still reads that line as
+the party's details and hands the thread to the birthday team. So after asking about a table, the family
+gets the birthday manager's line.
+
+Clean-up: thread E was marked handled (200, reads back `handled`). The sessions were signed out as in the
+SCRUM-823 part 1b run, and each read back 401. `receipt.json` → `recheck_2026_11_10` holds thread E's routes,
+ids, turns and `openQuestions` after every line.
