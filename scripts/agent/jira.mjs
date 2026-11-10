@@ -37,6 +37,7 @@ const send = (method) => async (p, body) => {
 };
 export const jpost = send('POST');
 export const jput = send('PUT');
+export const jdelete = send('DELETE');
 
 export const statusOf = async (key) => {
   const j = await jget(`/rest/api/3/issue/${key}?fields=status,summary`);
