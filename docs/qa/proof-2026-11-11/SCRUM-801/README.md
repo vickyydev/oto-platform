@@ -1,8 +1,8 @@
 # SCRUM-801 / SCRUM-800 — phone payment
 
 Unit 1 landed on main at `3f0bc5ddd04ccd609d901d540955ce74de09c1ae`.
-Both `oto-pos-staging` and `oto-pos-web-staging` are live at that SHA. Main
-CI run 42915618825 is still running; the staging screen proof passed. The release
+Both `oto-pos-staging` and `oto-pos-web-staging` were live at that SHA during
+the passed staging proof. Main CI run 42915618825 passed all six jobs. The release
 worktree is `C:/oto-lanes/codex-phone-payment-ci-20261111`.
 
 The phone uses the counter's sale writer for all three order Cancel controls.
@@ -53,8 +53,14 @@ invocation gave Turbo an unsupported worker flag and started no tests; the
 corrected invocation uses its concurrency flag. None is counted as a pass.
 
 The staging proof passed through the real screens. All five final images
-were inspected. The slot is released; Deployed waits for main CI green.
+were inspected. Both tickets read Deployed with the pictures attached;
+owner acceptance remains outstanding. The slot was released after proof.
 
 No inbox/BEO source, migration, setting, real payment, park till or device
 was changed. SCRUM-801 and SCRUM-800 move to Testing with the inspected
 staging pictures. Units 2–8 are unstarted.
+
+The later planner release fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3 now
+runs on both till services. It descends from the proved source and leaves
+both phone files unchanged. See staging/deployments-after-ci.json; the
+planner owns its current SCRUM-829 proof slot.

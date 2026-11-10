@@ -7,7 +7,11 @@ were live at this SHA at the start and end; deployment IDs are in receipt.json.
 Main CI [42915618825](https://github.com/vickyydev/oto-platform/actions/runs/42915618825)
 was running during the proof. The full six-job candidate gate was green on
 `589fe3968e33607a09e113d9872063c228dcb359`; git diff verified runtime,
-tests and workflow were identical. Deployed waits for landed-SHA CI green.
+tests and workflow were identical. The landed-SHA run subsequently passed
+all six jobs; ci.json records the job/step results. The complete app
+typecheck output was byte-identical to the already-read candidate output
+(418/418 in 54 files); the workspace output was read whole, with no API
+compiler diagnostics. Both tickets then read Deployed with images attached.
 
 - A newly created ZZ TEST till on the online virtual box was used.
 - Phone at 375 x 812: Tourist, ticket, customer details, Pay, then Cash.

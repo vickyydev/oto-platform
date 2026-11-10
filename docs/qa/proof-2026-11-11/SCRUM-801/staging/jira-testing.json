@@ -1,0 +1,39 @@
+{
+  "checkedAt": "2026-11-10T22:49:23.822Z",
+  "tickets": [
+    {
+      "key": "SCRUM-800",
+      "status": "Testing",
+      "attachments": [
+        {
+          "id": "12979",
+          "name": "s800-confirm-375.png"
+        },
+        {
+          "id": "12978",
+          "name": "s800-payment-375.png"
+        }
+      ],
+      "proofCommentId": "13755"
+    },
+    {
+      "key": "SCRUM-801",
+      "status": "Testing",
+      "attachments": [
+        {
+          "id": "12981",
+          "name": "s801-reloaded-counter.png"
+        },
+        {
+          "id": "12980",
+          "name": "s801-reloaded-phone.png"
+        },
+        {
+          "id": "12982",
+          "name": "s801-void-readback.png"
+        }
+      ],
+      "proofCommentId": "13756"
+    }
+  ]
+}

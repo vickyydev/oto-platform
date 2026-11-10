@@ -1,0 +1,39 @@
+{
+  "checkedAt": "2026-11-10T23:03:21.548Z",
+  "sourceSha": "3f0bc5ddd04ccd609d901d540955ce74de09c1ae",
+  "ci": 42915618825,
+  "tickets": [
+    {
+      "key": "SCRUM-800",
+      "status": "Deployed",
+      "attachments": [
+        {
+          "id": "12979",
+          "name": "s800-confirm-375.png"
+        },
+        {
+          "id": "12978",
+          "name": "s800-payment-375.png"
+        }
+      ]
+    },
+    {
+      "key": "SCRUM-801",
+      "status": "Deployed",
+      "attachments": [
+        {
+          "id": "12981",
+          "name": "s801-reloaded-counter.png"
+        },
+        {
+          "id": "12980",
+          "name": "s801-reloaded-phone.png"
+        },
+        {
+          "id": "12982",
+          "name": "s801-void-readback.png"
+        }
+      ]
+    }
+  ]
+}

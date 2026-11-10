@@ -1,0 +1,17 @@
+{
+  "checkedAt": "2026-11-10T23:02:29.898Z",
+  "services": [
+    {
+      "name": "oto-pos-staging",
+      "id": "dep-dbppvogn74is738mhbp0",
+      "status": "live",
+      "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3"
+    },
+    {
+      "name": "oto-pos-web-staging",
+      "id": "dep-dbppvot6e07s73b4gaeg",
+      "status": "live",
+      "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3"
+    }
+  ]
+}
