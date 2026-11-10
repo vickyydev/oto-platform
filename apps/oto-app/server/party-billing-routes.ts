@@ -18,7 +18,8 @@ import { readTillBilling } from "./lib/tillBilling";
  *
  * The BEO's Billing section ("From the till"), its Party Details box, its
  * Day-of view and its view-only page read the first, and the BEO PDF the same
- * figures (`readingFor`); the Billing section's "Quote PDF" opens the second. Both ask the platform with this app's provisioning key
+ * figures (`readingFor`); the Billing section's "Quote PDF" opens the second.
+ * Both ask the platform with this app's provisioning key
  * (server/lib/tillBilling.ts) and work no figure out themselves: the till's
  * payments are the party's one ledger (the owner's ruling, 10 November).
  *
