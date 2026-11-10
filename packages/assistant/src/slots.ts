@@ -242,6 +242,13 @@ const AGE_CUE =
 /** A headcount: "we will be 8", "we are 12", "table for 8", "нас 8", "нас будет 8", "เรามา 8". */
 const HEADCOUNT_CUE =
   /(?:(?<![a-z])(?:we(?:['’]re| are| will be|['’]ll be| would be)?|us|of us|party of|for)|(?<!\p{L})(?:нас|мы|на)(?:\s+(?:будет|будем))?|เรา(?:มา|ไป|มี)?(?:กัน)?(?:ประมาณ)?)\s*$/iu;
+/**
+ * "for 8" / "на 8" alone is a headcount only in a line that answers. In a
+ * line that asks something it names what is asked about ("table for 8?",
+ * "столик на 8?" — staging, 10 Nov 2026, read as 8 guests), and the
+ * customer's real answer follows later.
+ */
+const WEAK_HEADCOUNT_CUE = /(?:(?<![a-z])for|(?<!\p{L})на)\s*$/iu;
 /** A choice, a time or a place, not a count or an age: "package 3", "option 2", "at 8", "from 3", "grade 3", "в 8", "с 3 до 5", "ห้องที่ 3", "ป.3". */
 const CHOICE_OR_TIME_CUE =
   /(?:(?<![a-z])(?:at|from|to|till|until|by|before|after|between|package|option|grade|year|class|table|number|level)|(?<!\p{L})(?:в|к|с|до|после|пакет\p{L}*|вариант\p{L}*|класс\p{L}*|номер\p{L}*|столик\p{L}*)|ห้อง(?:ที่)?|ที่|ป\.|แพ็[กค]เกจ(?:ที่)?|แพคเกจ(?:ที่)?|ตัวเลือก(?:ที่)?|ตอน|เวลา|โต๊ะ(?:ที่)?)\s*$/iu;
@@ -269,12 +276,14 @@ const BARE_CUE =
 const BARE_ANSWER_WORDS = 8;
 const BARE_ANSWER_CHARS = 60;
 
-function unitOf(text: string, n: NumberFound): Unit {
+function unitOf(text: string, n: NumberFound, asking: boolean): Unit {
   const after = text.slice(n.end);
   const said = AFTER.find(([, re]) => re.test(after))?.[0] ?? null;
   // "เด็ก 12 คน": the people word after the number counts the kids named before it.
   if (said !== null && said !== 'people') return said;
   const before = text.slice(Math.max(0, n.start - 16), n.start);
+  // "table for 8?": a thing asked about, not the headcount, when the line asks.
+  if (asking && said === null && WEAK_HEADCOUNT_CUE.test(before)) return 'other';
   return BEFORE.find(([, re]) => re.test(before))?.[0] ?? said;
 }
 
@@ -378,9 +387,10 @@ export function readSlotAnswers(asked: readonly Slot[], reply: string, today: st
   if (text === '') return out;
   const slots = asked.filter((s) => s !== 'other');
   const plain = asciiDigits(withoutDatesAndTimes(text, today));
-  const counted = numbersIn(plain).map((n) => ({ ...n, unit: unitOf(plain, n) }));
+  const asking = asksSomething(text);
+  const counted = numbersIn(plain).map((n) => ({ ...n, unit: unitOf(plain, n, asking) }));
   const bareAllowed = (s: Slot) => opts.bare === undefined || opts.bare.includes(s);
-  const bareReply = !asksSomething(text) && !BARE_CUE.test(plain) && wordCount(plain) <= BARE_ANSWER_WORDS && [...text].length <= BARE_ANSWER_CHARS;
+  const bareReply = !asking && !BARE_CUE.test(plain) && wordCount(plain) <= BARE_ANSWER_WORDS && [...text].length <= BARE_ANSWER_CHARS;
   const numericBare = slots.filter((s) => NUMERIC.has(s) && bareAllowed(s));
   const bareSlot = bareReply && numericBare.length === 1 ? numericBare[0]! : null;
   const bareNumbers = counted.filter((n) => n.unit === null && !n.weak);

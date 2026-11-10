@@ -107,6 +107,18 @@ describe('the slot reader: the reply read as the answer to the question it follo
     expect(readSlotAnswers(['guests_count'], 'нас будет 8', TODAY)).toEqual({ guests_count: '8' });
   });
 
+  it('"table for 8?" asks about a table and answers no headcount; "for 8" in an answer still does (staging, 10 Nov)', () => {
+    for (const reply of ['table for 8? (ZZ TEST)', 'Do you have a table for 8?', 'столик на 8?']) {
+      expect(readSlotAnswers(['date', 'guests_count', 'park'], reply, TODAY), reply).toEqual({});
+    }
+    expect(readSlotAnswers(['guests_count'], 'a party for 8', TODAY)).toEqual({ guests_count: '8' });
+    expect(readSlotAnswers(['guests_count'], 'на 8 человек', TODAY)).toEqual({ guests_count: '8' });
+    // A line that asks and still names what it counts answers: the unit wins over the question.
+    expect(readSlotAnswers(['guests_count'], 'Can we come with 8 kids?', TODAY)).toEqual({ guests_count: '8 kids' });
+    expect(readSlotAnswers(['guests_count'], "We'll be 8, is that ok?", TODAY)).toEqual({ guests_count: '8' });
+    expect(readSlotAnswers(['guests_count'], 'а на 8 человек столик есть?', TODAY)).toEqual({ guests_count: '8' });
+  });
+
   it('a child named with a number is an age, never a count; a time range is no count (the review probes)', () => {
     for (const reply of ['my daughter is 8', 'she turns 6', 'from 3 to 5 pm']) {
       expect(readSlotAnswers(['kids_count'], reply, TODAY), reply).toEqual({});
