@@ -1,0 +1,1451 @@
+{
+  "unit": "SCRUM-828 a new menu item from the BEO, BEO-only on the till: staging proof",
+  "ran": {
+    "from": "2026-11-10T15:04:45.528Z",
+    "to": "2026-11-10T15:14:37.845Z",
+    "timezone": "Asia/Bangkok",
+    "businessDay": "2026-11-10",
+    "browser": "Chromium 153.0.8010.12",
+    "viewport": "1440x900, light, en-GB"
+  },
+  "code": "a3d87300ad15cf8dd873700269a8656b32ce8d30",
+  "liveBefore": {
+    "oto-api-staging": {
+      "deploy": "dep-dbpj01gm7kps73b30gl0",
+      "state": "live",
+      "commit": "a3d87300",
+      "finishedAt": "2026-11-10T14:58:08.456155Z"
+    },
+    "oto-app-staging": {
+      "deploy": "dep-dbpj020m7kps73b30id0",
+      "state": "live",
+      "commit": "a3d87300",
+      "finishedAt": "2026-11-10T14:56:22.389703Z"
+    },
+    "oto-console-staging": {
+      "deploy": "dep-dbpj02gm7kps73b30k30",
+      "state": "live",
+      "commit": "a3d87300",
+      "finishedAt": "2026-11-10T14:55:05.632791Z"
+    },
+    "oto-pos-web-staging": {
+      "deploy": "dep-dbpj02om7kps73b30kog",
+      "state": "live",
+      "commit": "a3d87300",
+      "finishedAt": "2026-11-10T14:56:53.597907Z"
+    }
+  },
+  "liveAfter": {
+    "oto-api-staging": {
+      "deploy": "dep-dbpj01gm7kps73b30gl0",
+      "state": "live",
+      "commit": "a3d87300",
+      "finishedAt": "2026-11-10T14:58:08.456155Z"
+    },
+    "oto-app-staging": {
+      "deploy": "dep-dbpj020m7kps73b30id0",
+      "state": "live",
+      "commit": "a3d87300",
+      "finishedAt": "2026-11-10T14:56:22.389703Z"
+    },
+    "oto-console-staging": {
+      "deploy": "dep-dbpj02gm7kps73b30k30",
+      "state": "live",
+      "commit": "a3d87300",
+      "finishedAt": "2026-11-10T14:55:05.632791Z"
+    },
+    "oto-pos-web-staging": {
+      "deploy": "dep-dbpj02om7kps73b30kog",
+      "state": "live",
+      "commit": "a3d87300",
+      "finishedAt": "2026-11-10T14:56:53.597907Z"
+    }
+  },
+  "money": "satang",
+  "baseline": {
+    "partyMenuCategory": [],
+    "beoOnlyProducts": [],
+    "branchPartySlipsStationId": null,
+    "socksTotal": 0
+  },
+  "party": {
+    "eventId": "322682d7-4c3c-4aee-a1a1-67022e13271a",
+    "title": "ZZ TEST 828 party",
+    "date": "2026-11-10",
+    "children": 2,
+    "adults": 2,
+    "create": {
+      "route": "POST /api/admin/events",
+      "status": 201
+    },
+    "package": {
+      "route": "POST /api/beo/events/:id/package-snapshot",
+      "status": 201,
+      "packageName": "Birthday package, Central Floresta",
+      "slipsTime": "11:00:00",
+      "setMenuTemplateId": "0b1db99d-296a-4418-abb8-9d6071a367c4"
+    }
+  },
+  "beoNewItems": {
+    "cake": {
+      "asked": {
+        "menu": "kids",
+        "name": "ZZ TEST unicorn cake",
+        "station": "kitchen",
+        "price": null,
+        "free": true
+      },
+      "route": "POST /api/events/:eventId/beo/party-menu-items",
+      "status": 200,
+      "productId": "01a0bbdc-8c41-7406-92ee-093f1caea076",
+      "productCode": "PARTY-1CAEA076",
+      "replayed": false,
+      "lineWritten": {
+        "id": "party_32b4c97d-7710-42ba-b55a-30587292bd19",
+        "itemName": "ZZ TEST unicorn cake",
+        "quantity": 1,
+        "included": true,
+        "price": 0,
+        "productCode": "PARTY-1CAEA076",
+        "source": "additional"
+      },
+      "toast": "New item added ZZ TEST unicorn cake is on the till as PARTY-1CAEA076, for this party only.",
+      "lineOnScreen": "EXTRA 1 ZZ TEST unicorn cake PARTY-1CAEA076",
+      "tabsAfter": [
+        "Kids Menu (1)",
+        "Adults Menu (0)"
+      ]
+    },
+    "tea": {
+      "asked": {
+        "menu": "adults",
+        "name": "ZZ TEST bubble tea",
+        "station": "bar",
+        "price": 125,
+        "free": false
+      },
+      "route": "POST /api/events/:eventId/beo/party-menu-items",
+      "status": 200,
+      "productId": "01a0bbdc-8c41-71dd-b193-1fa77e6dd628",
+      "productCode": "PARTY-7E6DD628",
+      "replayed": false,
+      "lineWritten": {
+        "id": "party_48bdf6ee-4e5c-46c7-aae2-c221fe6feb78",
+        "itemName": "ZZ TEST bubble tea",
+        "quantity": 1,
+        "included": false,
+        "price": 125,
+        "productCode": "PARTY-7E6DD628",
+        "source": "additional"
+      },
+      "toast": "New item added ZZ TEST bubble tea is on the till as PARTY-7E6DD628, for this party only.",
+      "lineOnScreen": "EXTRA 1 ZZ TEST bubble tea PARTY-7E6DD628",
+      "tabsAfter": [
+        "Kids Menu (1)",
+        "Adults Menu (1)"
+      ]
+    }
+  },
+  "beoSave": {
+    "route": "PUT /api/events/:eventId/beo",
+    "status": 200,
+    "toasts": [
+      "BEO data saved successfully"
+    ],
+    "afterReload": {
+      "kids": [
+        {
+          "text": "EXTRA 1 ZZ TEST unicorn cake PARTY-1CAEA076",
+          "code": "PARTY-1CAEA076"
+        }
+      ],
+      "adults": [
+        {
+          "text": "EXTRA 1 ZZ TEST bubble tea PARTY-7E6DD628",
+          "code": "PARTY-7E6DD628"
+        }
+      ]
+    },
+    "kitchenPlanRead": {
+      "route": "GET /api/events/:eventId/beo/kitchen-plan",
+      "status": 200,
+      "setMenuEnabled": true,
+      "foodRequired": true,
+      "kids": [
+        {
+          "id": "party_32b4c97d-7710-42ba-b55a-30587292bd19",
+          "itemName": "ZZ TEST unicorn cake",
+          "quantity": 1,
+          "included": true,
+          "price": 0,
+          "productCode": "PARTY-1CAEA076",
+          "source": "additional"
+        }
+      ],
+      "adults": [
+        {
+          "id": "party_48bdf6ee-4e5c-46c7-aae2-c221fe6feb78",
+          "itemName": "ZZ TEST bubble tea",
+          "quantity": 1,
+          "included": false,
+          "price": 125,
+          "productCode": "PARTY-7E6DD628",
+          "source": "additional"
+        }
+      ]
+    }
+  },
+  "console": {
+    "category": {
+      "id": "01a1c5ff-44b3-7199-a1bd-10f76e0138a4",
+      "code": "PARTY-MENU",
+      "name": "Party menu",
+      "parentId": null,
+      "taxableCategory": "fnb",
+      "defaultPrepStation": "kitchen",
+      "sortOrder": 38
+    },
+    "products": [
+      {
+        "id": "01a0bbdc-8c41-71dd-b193-1fa77e6dd628",
+        "code": "PARTY-7E6DD628",
+        "name": "ZZ TEST bubble tea",
+        "kind": "menu",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "categoryId": "01a1c5ff-44b3-7199-a1bd-10f76e0138a4",
+        "inPartyMenu": true,
+        "priceSatang": 12500,
+        "effectiveWeekendSatang": 12500,
+        "prepStationOverride": "bar",
+        "effectivePrepStation": "bar",
+        "effectiveTaxCategory": "fnb",
+        "beoOnly": true,
+        "active": true,
+        "archivedAt": null
+      },
+      {
+        "id": "01a0bbdc-8c41-7406-92ee-093f1caea076",
+        "code": "PARTY-1CAEA076",
+        "name": "ZZ TEST unicorn cake",
+        "kind": "menu",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "categoryId": "01a1c5ff-44b3-7199-a1bd-10f76e0138a4",
+        "inPartyMenu": true,
+        "priceSatang": 0,
+        "effectiveWeekendSatang": 0,
+        "prepStationOverride": "kitchen",
+        "effectivePrepStation": "kitchen",
+        "effectiveTaxCategory": "fnb",
+        "beoOnly": true,
+        "active": true,
+        "archivedAt": null
+      }
+    ],
+    "partyMenuSection": "PARTY MENU2 ZZ TEST bubble tea BEO only ฿125 ZZ TEST unicorn cake BEO only ฿0",
+    "beoOnlyBadges": 2,
+    "editForm": {
+      "item": "ZZ TEST bubble tea",
+      "beoOnlySwitch": "checked",
+      "ariaChecked": "true",
+      "closedWithoutSaving": true,
+      "writesWhileOpen": 0
+    }
+  },
+  "till": {
+    "station": {
+      "id": "01a1c601-44e2-729c-b7bb-0276c3c2b998",
+      "name": "ZZ TEST SCRUM-828 till",
+      "prefix": "Z828X",
+      "box": "Virtual box 1",
+      "devices": [
+        "adult_band:Band Printer (adults)",
+        "kids_band:Band Printer (kids)",
+        "receipt:Receipt Printer 1"
+      ]
+    },
+    "signedInAs": "the staging reception account",
+    "menuReads": {
+      "plain": {
+        "route": "GET /api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/menu",
+        "status": 200,
+        "products": 174,
+        "containsEither": false,
+        "beoOnlyAny": false,
+        "partyMenuCategoryListed": true,
+        "partyMenuCategoryItems": 0
+      },
+      "includeBeoOnlyTrue": {
+        "route": "GET /api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/menu?includeBeoOnly=true",
+        "status": 200,
+        "products": 176,
+        "found": [
+          {
+            "id": "01a0bbdc-8c41-71dd-b193-1fa77e6dd628",
+            "code": "PARTY-7E6DD628",
+            "beoOnly": true,
+            "priceSatang": 12500
+          },
+          {
+            "id": "01a0bbdc-8c41-7406-92ee-093f1caea076",
+            "code": "PARTY-1CAEA076",
+            "beoOnly": true,
+            "priceSatang": 0
+          }
+        ]
+      },
+      "includeBeoOnlyFalse": {
+        "route": "GET /api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/menu?includeBeoOnly=false",
+        "status": 200,
+        "found": [
+          {
+            "id": "01a0bbdc-8c41-71dd-b193-1fa77e6dd628",
+            "code": "PARTY-7E6DD628",
+            "beoOnly": true,
+            "priceSatang": 12500
+          },
+          {
+            "id": "01a0bbdc-8c41-7406-92ee-093f1caea076",
+            "code": "PARTY-1CAEA076",
+            "beoOnly": true,
+            "priceSatang": 0
+          }
+        ],
+        "note": "the query value is coerced to true: \"false\" still includes the BEO-only items (the till never sends it)"
+      }
+    },
+    "fnbGrid": {
+      "tabs": [
+        "Breakfast",
+        "Sides",
+        "Sharing",
+        "Soup",
+        "Salads",
+        "Pasta",
+        "Pizza",
+        "Mains",
+        "Asian Food",
+        "Kids",
+        "Desserts",
+        "Coffee",
+        "Iced Coffee",
+        "Chocolate",
+        "Soda",
+        "Smoothies",
+        "Juice",
+        "Tea pot",
+        "Soft drinks",
+        "Kids juice",
+        "Wine",
+        "Beer",
+        "Specials",
+        "Free Drinks Menu"
+      ],
+      "partyMenuTab": false,
+      "itemFoundInAnyTab": false,
+      "search": {
+        "ZZ TEST": {
+          "noDishes": true,
+          "mentions": []
+        },
+        "unicorn": {
+          "noDishes": true,
+          "mentions": []
+        },
+        "bubble tea": {
+          "noDishes": true,
+          "mentions": []
+        },
+        "PARTY-": {
+          "noDishes": true,
+          "mentions": []
+        }
+      },
+      "writesOnContinueAsGuest": []
+    },
+    "partyRead": {
+      "route": "GET /api/parties/:id?branchId=…",
+      "status": 200,
+      "planStatus": "ready",
+      "setMenu": [
+        {
+          "productCode": null,
+          "name": "Pizza",
+          "qty": null,
+          "choiceGroup": "Pizza",
+          "chosenOption": null
+        },
+        {
+          "productCode": null,
+          "name": "Hot dish",
+          "qty": null,
+          "choiceGroup": "Hot dish",
+          "chosenOption": null
+        },
+        {
+          "productCode": "CF-11",
+          "name": "French fries",
+          "qty": null,
+          "choiceGroup": null,
+          "chosenOption": null
+        },
+        {
+          "productCode": null,
+          "name": "Waffles or pancakes",
+          "qty": null,
+          "choiceGroup": "Waffles or pancakes",
+          "chosenOption": null
+        },
+        {
+          "productCode": "CF-43",
+          "name": "Fried rice",
+          "qty": null,
+          "choiceGroup": "Fried rice",
+          "chosenOption": null
+        },
+        {
+          "productCode": "CF-53",
+          "name": "Veggie sticks",
+          "qty": null,
+          "choiceGroup": null,
+          "chosenOption": null
+        },
+        {
+          "productCode": null,
+          "name": "Fruit skewers",
+          "qty": null,
+          "choiceGroup": null,
+          "chosenOption": null
+        },
+        {
+          "productCode": null,
+          "name": "Drinks pitcher",
+          "qty": null,
+          "choiceGroup": "Drinks pitcher",
+          "chosenOption": null
+        },
+        {
+          "productCode": "PARTY-1CAEA076",
+          "name": "ZZ TEST unicorn cake",
+          "qty": 1,
+          "choiceGroup": null,
+          "chosenOption": null
+        },
+        {
+          "productCode": "PARTY-7E6DD628",
+          "name": "ZZ TEST bubble tea",
+          "qty": 1,
+          "choiceGroup": null,
+          "chosenOption": null
+        }
+      ],
+      "barItems": [],
+      "codesInPlan": [
+        {
+          "code": "PARTY-1CAEA076",
+          "lines": [
+            {
+              "name": "ZZ TEST unicorn cake",
+              "qty": 1
+            }
+          ]
+        },
+        {
+          "code": "PARTY-7E6DD628",
+          "lines": [
+            {
+              "name": "ZZ TEST bubble tea",
+              "qty": 1
+            }
+          ]
+        }
+      ]
+    },
+    "partyPage": {
+      "headerButtons": [
+        "Settle party",
+        "Add F&B to party",
+        "Fully paid",
+        "Print party slips now"
+      ],
+      "kitchenPlanCard": "Kitchen plan Package Birthday package, Central Floresta Ready 20 min before Slips print 11:00 Pizza Hot dish French fries Waffles or pancakes Fried rice Veggie sticks Fruit skewers Drinks pitcher ZZ TEST unicorn cake ×1 ZZ TEST bubble tea ×1 Included: Kids' table reserved for 3 hours · Special birthday set menu · Interactive birthday animation program, 30 minutes · Ice-cream cake with candles and birthday song · Entry for 4 accompanying adults · Socks for all children",
+      "codesDrawnOnPage": 0
+    }
+  },
+  "settlement": {
+    "preview": [
+      {
+        "route": "/api/parties/:id/settle/preview",
+        "method": "POST",
+        "status": 200,
+        "totalSatang": 1702500,
+        "lines": [
+          {
+            "role": "package",
+            "label": "Birthday package, Central Floresta",
+            "quantity": 1,
+            "unitSatang": 1690000,
+            "totalSatang": 1690000
+          },
+          {
+            "role": "included",
+            "label": "Kids' table reserved for 3 hours",
+            "quantity": 1,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "included",
+            "label": "Special birthday set menu",
+            "quantity": 1,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "included",
+            "label": "Interactive birthday animation program, 30 minutes",
+            "quantity": 1,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "included",
+            "label": "Ice-cream cake with candles and birthday song",
+            "quantity": 1,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "included",
+            "label": "Entry for 4 accompanying adults",
+            "quantity": 1,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "included",
+            "label": "Socks for all children",
+            "quantity": 1,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "guests",
+            "label": "Children (in the package)",
+            "quantity": 2,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "guests",
+            "label": "Adults (in the package)",
+            "quantity": 2,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "socks",
+            "label": "Regular Socks (free)",
+            "quantity": 2,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "included",
+            "label": "ZZ TEST unicorn cake",
+            "quantity": 1,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "add_on",
+            "label": "ZZ TEST bubble tea",
+            "quantity": 1,
+            "unitSatang": 12500,
+            "totalSatang": 12500
+          }
+        ]
+      }
+    ],
+    "form": {
+      "packageLine": "Birthday package, Central Floresta · weekday 1690000",
+      "socks": "2 free, 0",
+      "addOns": "Add-ons ฿125",
+      "total": "Total ฿17,025",
+      "deposit": "Deposit paid −฿0",
+      "balance": "Balance ฿17,025",
+      "itemNamedOnForm": false
+    },
+    "confirm": [
+      {
+        "method": "POST",
+        "route": "/api/parties/:id/settle",
+        "status": 200
+      }
+    ],
+    "pay": [
+      {
+        "method": "POST",
+        "route": "/api/sales/01a1c604-7a87-74ed-a1ff-237f512bb7c2/finalise",
+        "status": 200
+      }
+    ],
+    "screen": "Party settled ZZ TEST 828 party 2 2 Hide customer display Settled, receipt Z828X-000001 The receipt, a band for every child and adult are printing. Done Thank you!",
+    "sale": {
+      "id": "01a1c604-7a87-74ed-a1ff-237f512bb7c2",
+      "receipt": "Z828X-000001",
+      "status": "finalised",
+      "totals": {
+        "subtotalSatang": 1702500,
+        "manualDiscountSatang": 0,
+        "promoDiscountSatang": 0,
+        "discountSatang": 0,
+        "netSatang": 1591121,
+        "serviceChargeSatang": 0,
+        "taxInclusiveSatang": 111379,
+        "taxExclusiveSatang": 0,
+        "grossSatang": 1702500,
+        "unappliedDiscountSatang": 0,
+        "refundedSatang": 0
+      },
+      "lines": [
+        {
+          "kind": "addon",
+          "label": "Birthday package, Central Floresta",
+          "quantity": 1,
+          "unitSatang": 1690000,
+          "grossSatang": 1690000
+        },
+        {
+          "kind": "addon",
+          "label": "Kids' table reserved for 3 hours",
+          "quantity": 1,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "addon",
+          "label": "Special birthday set menu",
+          "quantity": 1,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "addon",
+          "label": "Interactive birthday animation program, 30 minutes",
+          "quantity": 1,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "addon",
+          "label": "Ice-cream cake with candles and birthday song",
+          "quantity": 1,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "addon",
+          "label": "Entry for 4 accompanying adults",
+          "quantity": 1,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "addon",
+          "label": "Socks for all children",
+          "quantity": 1,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "kids",
+          "label": "Children (in the package)",
+          "quantity": 2,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "adults_free",
+          "label": "Adults (in the package)",
+          "quantity": 2,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "socks",
+          "label": "Regular Socks (free)",
+          "quantity": 2,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "addon",
+          "label": "ZZ TEST unicorn cake",
+          "quantity": 1,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "addon",
+          "label": "ZZ TEST bubble tea",
+          "quantity": 1,
+          "unitSatang": 12500,
+          "grossSatang": 12500
+        }
+      ],
+      "payments": [
+        {
+          "method": "cash",
+          "status": "approved",
+          "amount": 1702500,
+          "at": "2026-11-10T15:12:30.281Z"
+        }
+      ],
+      "printJobs": [
+        {
+          "id": "01a1c604-90bf-7105-8e8f-f1abc81497ea",
+          "kind": "adult_wristband",
+          "status": "printed",
+          "device": "Band Printer (adults)",
+          "role": "adult_band"
+        },
+        {
+          "id": "01a1c604-90b9-7d5c-8e0a-8fac68b692b7",
+          "kind": "adult_wristband",
+          "status": "printed",
+          "device": "Band Printer (adults)",
+          "role": "adult_band"
+        },
+        {
+          "id": "01a1c604-90b5-7131-bc03-22b41d2f07b9",
+          "kind": "kids_wristband",
+          "status": "printed",
+          "device": "Band Printer (kids)",
+          "role": "kids_band"
+        },
+        {
+          "id": "01a1c604-90b1-74a8-b3a7-2b4759b0d480",
+          "kind": "kids_wristband",
+          "status": "printed",
+          "device": "Band Printer (kids)",
+          "role": "kids_band"
+        },
+        {
+          "id": "01a1c604-90ac-752b-a0d2-7505246596cb",
+          "kind": "receipt",
+          "status": "printed",
+          "device": "Receipt Printer 1",
+          "role": "receipt"
+        }
+      ],
+      "stockMovements": [
+        {
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "kind": "sale",
+          "quantity": -2,
+          "levelAfter": 0,
+          "reason": null
+        }
+      ]
+    },
+    "readBack": {
+      "at": "2026-11-10T15:14:35.797Z",
+      "tillParty": {
+        "route": "GET /api/parties/322682d7-4c3c-4aee-a1a1-67022e13271a?branchId=…",
+        "status": 200,
+        "settlement": {
+          "id": "01a1c604-7a87-74ed-a1ff-237e0b8fcd39",
+          "saleId": "01a1c604-7a87-74ed-a1ff-237f512bb7c2",
+          "state": "settled",
+          "receiptNumber": "Z828X-000001",
+          "grossSatang": 1702500,
+          "paidSatang": 1702500,
+          "outstandingSatang": 0,
+          "depositSatang": 0,
+          "kids": 2,
+          "adults": 2,
+          "createdAt": "2026-11-10T15:12:25.395Z",
+          "settledAt": "2026-11-10T15:12:30.282Z",
+          "writeBack": "synced"
+        },
+        "editSync": null,
+        "planSettlement": {
+          "depositSatang": 0,
+          "posSaleId": "01a1c604-7a87-74ed-a1ff-237f512bb7c2"
+        }
+      },
+      "appBilling": {
+        "route": "GET /api/events/322682d7-4c3c-4aee-a1a1-67022e13271a/beo/billing",
+        "status": 200,
+        "posOrderRef": "01a1c604-7a87-74ed-a1ff-237f512bb7c2",
+        "depositPaid": false,
+        "depositPaidAmount": null
+      },
+      "saleId": "01a1c604-7a87-74ed-a1ff-237f512bb7c2",
+      "saleReceipt": "Z828X-000001",
+      "saleStatus": "finalised",
+      "posOrderRefIsTheSale": true,
+      "planPosSaleIdIsTheSale": true
+    }
+  },
+  "socks": {
+    "before": 0,
+    "adjustment": {
+      "delta": 2,
+      "reason": "ZZ TEST SCRUM-828: 2 pairs in for the party settlement",
+      "net": [
+        {
+          "method": "POST",
+          "route": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/adjustments",
+          "status": 200
+        }
+      ]
+    },
+    "afterAdjustment": 2,
+    "afterSale": 0,
+    "finalReadBack": 0
+  },
+  "slips": {
+    "branchSlipsStation": null,
+    "recordsBeforePress": [
+      {
+        "station": "kitchen",
+        "run": 1,
+        "trigger": "schedule",
+        "status": "no_printer",
+        "at": "22:05"
+      },
+      {
+        "station": "bar",
+        "run": 1,
+        "trigger": "schedule",
+        "status": "nothing_to_print",
+        "at": "22:05"
+      }
+    ],
+    "press": {
+      "route": "POST /api/parties/:id/slips/print",
+      "status": 200,
+      "printed": [
+        {
+          "station": "kitchen",
+          "run": 2,
+          "trigger": "reprint",
+          "status": "no_printer",
+          "at": "22:13",
+          "printJobId": null
+        },
+        {
+          "station": "bar",
+          "run": 2,
+          "trigger": "reprint",
+          "status": "no_printer",
+          "at": "22:13",
+          "printJobId": null
+        }
+      ],
+      "replayed": false,
+      "stationNamed": null
+    },
+    "recordsAfterPress": [
+      {
+        "station": "kitchen",
+        "run": 2,
+        "trigger": "reprint",
+        "status": "no_printer",
+        "at": "22:13",
+        "printJobId": null
+      },
+      {
+        "station": "bar",
+        "run": 2,
+        "trigger": "reprint",
+        "status": "no_printer",
+        "at": "22:13",
+        "printJobId": null
+      },
+      {
+        "station": "kitchen",
+        "run": 1,
+        "trigger": "schedule",
+        "status": "no_printer",
+        "at": "22:05",
+        "printJobId": null
+      },
+      {
+        "station": "bar",
+        "run": 1,
+        "trigger": "schedule",
+        "status": "nothing_to_print",
+        "at": "22:05",
+        "printJobId": null
+      }
+    ],
+    "blockAfter": "Kitchen & bar slips Slip time 11:00 Kitchen slip No printer named for this park Bar slip No printer named for this park Print party slips now",
+    "prepStationByCode": {
+      "PARTY-7E6DD628": "bar",
+      "PARTY-1CAEA076": "kitchen",
+      "CF-11": "kitchen",
+      "CF-43": "kitchen",
+      "CF-53": "kitchen"
+    },
+    "composedDocuments": {
+      "how": "composePartySlips (packages/shared/src/party-slips.ts), the function the api run calls, given the plan read straight after the press and each code's prep station from the menu read; no route returns a stored slip document when nothing was queued to a printer",
+      "kitchen": {
+        "title": "Kitchen",
+        "heading": "Birthday party",
+        "orderRef": "ZZ TEST 828 party",
+        "time": "22:13",
+        "details": [
+          "Children: 2"
+        ],
+        "readyBy": null,
+        "readyByNote": "No kids' food time in the OTO App",
+        "lines": [
+          {
+            "name": "Pizza",
+            "note": "Choice not made in the OTO App"
+          },
+          {
+            "name": "Hot dish",
+            "note": "Choice not made in the OTO App"
+          },
+          {
+            "name": "French fries"
+          },
+          {
+            "name": "Waffles or pancakes",
+            "note": "Choice not made in the OTO App"
+          },
+          {
+            "name": "Fried rice",
+            "note": "Choice not made in the OTO App"
+          },
+          {
+            "name": "Veggie sticks"
+          },
+          {
+            "name": "Fruit skewers"
+          },
+          {
+            "name": "Drinks pitcher",
+            "note": "Choice not made in the OTO App"
+          },
+          {
+            "qty": 1,
+            "name": "ZZ TEST unicorn cake"
+          }
+        ]
+      },
+      "bar": {
+        "title": "Bar",
+        "heading": "Birthday party",
+        "orderRef": "ZZ TEST 828 party",
+        "time": "22:13",
+        "details": [
+          "Children: 2"
+        ],
+        "readyBy": null,
+        "readyByNote": "No kids' food time in the OTO App",
+        "lines": [
+          {
+            "qty": 1,
+            "name": "ZZ TEST bubble tea"
+          }
+        ]
+      }
+    }
+  },
+  "failurePath": "not run",
+  "cleanup": {
+    "actions": [
+      {
+        "at": "2026-11-10T15:14:16.718Z",
+        "what": "Console Menu › Delete ZZ TEST unicorn cake (PARTY-1CAEA076)",
+        "dialog": "Delete menu item? “ZZ TEST unicorn cake” will be removed and no longer available in the F&B order station. Cancel Delete",
+        "net": [
+          {
+            "method": "DELETE",
+            "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/menu/products/01a0bbdc-8c41-7406-92ee-093f1caea076",
+            "status": 200
+          }
+        ]
+      },
+      {
+        "at": "2026-11-10T15:14:20.869Z",
+        "what": "Console Menu › Delete ZZ TEST bubble tea (PARTY-7E6DD628)",
+        "dialog": "Delete menu item? “ZZ TEST bubble tea” will be removed and no longer available in the F&B order station. Cancel Delete",
+        "net": [
+          {
+            "method": "DELETE",
+            "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/menu/products/01a0bbdc-8c41-71dd-b193-1fa77e6dd628",
+            "status": 200
+          }
+        ]
+      },
+      {
+        "at": "2026-11-10T15:14:36.455Z",
+        "what": "till sign-out (reception, its own session route)",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-10T15:14:36.635Z",
+        "what": "unassign printers on ZZ TEST SCRUM-828 till",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-10T15:14:36.746Z",
+        "what": "archive station ZZ TEST SCRUM-828 till",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-10T15:14:37.140Z",
+        "what": "OTO App DELETE /api/admin/events/322682d7-4c3c-4aee-a1a1-67022e13271a (ZZ TEST 828 party)",
+        "status": 204,
+        "code": null,
+        "body": null
+      }
+    ],
+    "productsReadBack": [
+      {
+        "id": "01a0bbdc-8c41-7406-92ee-093f1caea076",
+        "code": "PARTY-1CAEA076",
+        "archived": true,
+        "archivedAt": "2026-11-10T15:14:13.126Z",
+        "beoOnly": true
+      },
+      {
+        "id": "01a0bbdc-8c41-71dd-b193-1fa77e6dd628",
+        "code": "PARTY-7E6DD628",
+        "archived": true,
+        "archivedAt": "2026-11-10T15:14:17.955Z",
+        "beoOnly": true
+      }
+    ],
+    "liveBeoOnlyAfter": 0,
+    "partyMenuCategory": {
+      "id": "01a1c5ff-44b3-7199-a1bd-10f76e0138a4",
+      "archived": false,
+      "liveItems": 0,
+      "note": "made by this run (the operator had none); left in place, empty"
+    },
+    "till": {
+      "id": "01a1c601-44e2-729c-b7bb-0276c3c2b998",
+      "name": "ZZ TEST SCRUM-828 till",
+      "prefix": "Z828X",
+      "archived": true,
+      "devices": 0
+    },
+    "tillMeAfterSignOut": 401,
+    "salesOnTheTill": [
+      {
+        "id": "01a1c604-7a87-74ed-a1ff-237f512bb7c2",
+        "receipt": "Z828X-000001",
+        "status": "finalised",
+        "gross": 1702500
+      }
+    ],
+    "party": [
+      {
+        "key": "party1",
+        "id": "322682d7-4c3c-4aee-a1a1-67022e13271a",
+        "title": "ZZ TEST 828 party",
+        "billingBefore": {
+          "status": 200,
+          "posOrderRef": "01a1c604-7a87-74ed-a1ff-237f512bb7c2"
+        },
+        "delete": 204,
+        "readBack": {
+          "event": 404,
+          "snapshot": 404,
+          "tillParty": 404,
+          "tillPartyCode": "NOT_FOUND"
+        }
+      }
+    ],
+    "zzTest828EventsLeft": [],
+    "branchReadBack": {
+      "partySlipsStationId": null
+    },
+    "otherTills": [
+      {
+        "name": "FWBooth1",
+        "archived": false,
+        "devices": 1
+      },
+      {
+        "name": "Reception Till 1",
+        "archived": false,
+        "devices": 7
+      },
+      {
+        "name": "Till 1 (Pi)",
+        "archived": false,
+        "devices": 4
+      },
+      {
+        "name": "Till 2 (test)",
+        "archived": false,
+        "devices": 4
+      }
+    ],
+    "signOuts": {
+      "at": "2026-11-10T15:14:53.530Z",
+      "consoleMeBefore": 200,
+      "consoleSignOut": 200,
+      "consoleMeAfter": 401,
+      "appUserBefore": 200,
+      "appLogout": 200,
+      "launcherSignOut": 200,
+      "appUserAfter": 401,
+      "launcherMeAfter": 401,
+      "tillMeAfter": 401,
+      "adminApi": {
+        "status": 200,
+        "meAfter": 401,
+        "at": "2026-11-10T15:14:53.745Z"
+      }
+    }
+  },
+  "writes": [
+    {
+      "at": "2026-11-10T15:05:16.552Z",
+      "by": "launcher",
+      "what": "POST /api/auth/sign-in + POST /api/auth/handoff (oto_app)"
+    },
+    {
+      "at": "2026-11-10T15:05:17.206Z",
+      "by": "OTO App (admin)",
+      "what": "POST /api/admin/events",
+      "status": 201,
+      "request": {
+        "eventType": "birthday",
+        "title": "ZZ TEST 828 party",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "eventDate": "2026-11-10",
+        "startTime": "19:00",
+        "endTime": "21:00",
+        "durationMinutes": 120,
+        "numChildren": 2,
+        "numAdults": 2,
+        "status": "upcoming"
+      }
+    },
+    {
+      "at": "2026-11-10T15:05:17.326Z",
+      "by": "OTO App (admin)",
+      "what": "POST /api/beo/events/322682d7-4c3c-4aee-a1a1-67022e13271a/package-snapshot",
+      "status": 201,
+      "request": {
+        "templateId": "391b269d-159a-4039-89a2-51ac132da747"
+      }
+    },
+    {
+      "at": "2026-11-10T15:06:42.377Z",
+      "by": "OTO App (admin), BEO New item",
+      "what": "POST /api/events/:eventId/beo/party-menu-items",
+      "status": 200,
+      "request": {
+        "menu": "kids",
+        "name": "ZZ TEST unicorn cake",
+        "station": "kitchen",
+        "price": null,
+        "free": true
+      }
+    },
+    {
+      "at": "2026-11-10T15:07:33.263Z",
+      "by": "OTO App (admin), BEO New item",
+      "what": "POST /api/events/:eventId/beo/party-menu-items",
+      "status": 200,
+      "request": {
+        "menu": "adults",
+        "name": "ZZ TEST bubble tea",
+        "station": "bar",
+        "price": 125,
+        "free": false
+      }
+    },
+    {
+      "at": "2026-11-10T15:07:50.419Z",
+      "by": "OTO App (admin)",
+      "what": "BEO Save, PUT /api/events/:eventId/beo",
+      "status": 200
+    },
+    {
+      "at": "2026-11-10T15:08:53.694Z",
+      "by": "admin api",
+      "what": "POST /branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200,
+      "result": {
+        "stationId": "01a1c601-44e2-729c-b7bb-0276c3c2b998",
+        "name": "ZZ TEST SCRUM-828 till",
+        "prefix": "Z828X",
+        "box": "Virtual box 1",
+        "devices": [
+          "adult_band:Band Printer (adults)",
+          "kids_band:Band Printer (kids)",
+          "receipt:Receipt Printer 1"
+        ]
+      }
+    },
+    {
+      "at": "2026-11-10T15:08:57.935Z",
+      "by": "till (reception)",
+      "what": "POST /auth/sign-in + station pick",
+      "station": "ZZ TEST SCRUM-828 till"
+    },
+    {
+      "at": "2026-11-10T15:11:53.752Z",
+      "by": "Console (admin)",
+      "what": "Regular Socks Adjust +2",
+      "purpose": "before",
+      "reason": "ZZ TEST SCRUM-828: 2 pairs in for the party settlement",
+      "net": [
+        {
+          "at": "2026-11-10T15:11:48.719Z",
+          "method": "POST",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/adjustments",
+          "status": 200,
+          "request": null,
+          "response": null
+        }
+      ]
+    },
+    {
+      "at": "2026-11-10T15:13:19.226Z",
+      "by": "till (reception)",
+      "what": "Print party slips now, POST /api/parties/:id/slips/print",
+      "status": 200
+    },
+    {
+      "at": "2026-11-10T15:14:16.718Z",
+      "by": "Console (admin)",
+      "what": "archive product PARTY-1CAEA076",
+      "net": [
+        {
+          "method": "DELETE",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/menu/products/01a0bbdc-8c41-7406-92ee-093f1caea076",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "at": "2026-11-10T15:14:20.869Z",
+      "by": "Console (admin)",
+      "what": "archive product PARTY-7E6DD628",
+      "net": [
+        {
+          "method": "DELETE",
+          "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/menu/products/01a0bbdc-8c41-71dd-b193-1fa77e6dd628",
+          "status": 200
+        }
+      ]
+    }
+  ],
+  "images": [
+    {
+      "file": "828-st-01-beo-new-item-dialog.png",
+      "at": "2026-11-10T15:06:42.374Z",
+      "page": "APP",
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "OTO App, the ZZ TEST party's BEO, Kitchen Plan, Kids menu: the New item dialog filled (ZZ TEST unicorn cake, Made at Kitchen, Free / included / alternate item ticked), before Add to the till and the BEO",
+      "masked": {
+        "names": {
+          "occurrences": 9,
+          "boxes": 9
+        },
+        "note": "the events board behind the BEO sheet hidden (customer names); the signed-in user's names covered by solid boxes",
+        "note2": "the magenta boxes on the sheet were drawn over the hidden events board beneath it; they hide nothing in the sheet"
+      }
+    },
+    {
+      "file": "828-st-02-beo-line-with-code.png",
+      "at": "2026-11-10T15:06:44.105Z",
+      "page": "APP",
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The Kids menu after the press: the line ZZ TEST unicorn cake with its PARTY- code, and the toast naming the code",
+      "masked": {
+        "names": {
+          "occurrences": 9,
+          "boxes": 9
+        },
+        "note": "the events board behind the BEO sheet hidden (customer names); the signed-in user's names covered by solid boxes",
+        "note2": "the magenta boxes on the sheet were drawn over the hidden events board beneath it; they hide nothing in the sheet"
+      }
+    },
+    {
+      "file": "828-st-02b-beo-after-save-reload.png",
+      "at": "2026-11-10T15:08:01.260Z",
+      "page": "APP",
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "OTO App, the ZZ TEST party's BEO after Save and a reload, Kitchen Plan, Adults menu: ZZ TEST bubble tea with its PARTY- code (the Kids tab reads 1 line, the unicorn cake)",
+      "masked": {
+        "names": {
+          "occurrences": 0,
+          "boxes": 0
+        },
+        "note": "the events board behind the BEO sheet hidden (customer names); the signed-in user's names covered by solid boxes"
+      }
+    },
+    {
+      "file": "828-st-03-console-party-menu-beo-only.png",
+      "at": "2026-11-10T15:08:33.995Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/menu",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Console › Catalogue › Menu, park Central Floresta: the Party menu section, ZZ TEST unicorn cake at ฿0 and ZZ TEST bubble tea at ฿125, each with the BEO only badge",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "828-st-03b-console-item-beo-only-switch.png",
+      "at": "2026-11-10T15:08:36.513Z",
+      "page": "CON",
+      "url": "https://oto-console-staging.onrender.com/catalogue/menu",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Console, ZZ TEST bubble tea opened for editing: the BEO only switch is on (the form was closed without saving)",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "828-st-04-till-fnb-grid-no-party-menu.png",
+      "at": "2026-11-10T15:10:53.108Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/order-station",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Till F&B at Central Floresta (ZZ TEST SCRUM-828 till): the category tabs (Breakfast, Sides, Sharing, Soup, Salads, Pasta, Pizza, Mains, Asian Food, Kids, Desserts, Coffee, Iced Coffee, Chocolate, Soda, Smoothies, Juice, Tea pot, Soft drinks, Kids juice, Wine, Beer, Specials, Free Drinks Menu), no Party menu tab",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "828-st-04b-till-fnb-search-zz-test.png",
+      "at": "2026-11-10T15:10:54.901Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/order-station",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Till F&B, dish search \"ZZ TEST\": No dishes match (neither BEO-only item is sold here)",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "828-st-05-till-party-plan-items.png",
+      "at": "2026-11-10T15:11:27.470Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/parties",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Till party page (ZZ TEST 828 party), Kitchen plan: the set menu ends with ZZ TEST unicorn cake ×1 and ZZ TEST bubble tea ×1, the lines the plan carries with codes PARTY-1CAEA076 and PARTY-7E6DD628",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "828-st-06-settle-form-priced-item.png",
+      "at": "2026-11-10T15:12:09.342Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/parties",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Settle party form at 2 children, 2 adults: the package, socks, and the add-ons with ZZ TEST bubble tea 1 × ฿125; total and balance",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "828-st-06b-paid-settled-receipt.png",
+      "at": "2026-11-10T15:12:34.746Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/parties",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The settle screen after the cash payment: Party settled, Settled, receipt <number>",
+      "masked": {
+        "names": {
+          "occurrences": 2,
+          "boxes": 2
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "828-st-07-slips-block-no-printer.png",
+      "at": "2026-11-10T15:13:23.897Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/parties",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Till party page, Kitchen & bar slips after Print party slips now: both slips read \"No printer named for this park\" (the branch names no slips station); before the bubble tea existed the bar slip read \"Nothing to print\"",
+      "masked": {
+        "names": {
+          "occurrences": 2,
+          "boxes": 2
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    }
+  ]
+}
