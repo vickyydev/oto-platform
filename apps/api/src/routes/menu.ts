@@ -23,6 +23,7 @@ import {
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { nullableResponseEnumTransform } from '../lib/nullable-response-enum';
+import { queryFlag } from '../lib/query-flag';
 import { audit } from '../services/audit';
 import {
   assertCategoryCodeFree,
@@ -256,9 +257,9 @@ export async function menuRoutes(app: App): Promise<void> {
           'The branch menu: categories, items and the modifier library. The items the BEO made (sold only inside a party) are left out unless includeBeoOnly is set: the till sells from this read, the Console menu asks for them.',
         params: BranchParams,
         querystring: z.object({
-          includeArchived: z.coerce.boolean().default(false),
+          includeArchived: queryFlag().default(false),
           /** SCRUM-828 — the BEO-only items too (the Console's menu); the till never asks. */
-          includeBeoOnly: z.coerce.boolean().default(false),
+          includeBeoOnly: queryFlag().default(false),
         }),
         response: { 200: MenuResponseSchema },
       },
@@ -812,7 +813,7 @@ export async function menuRoutes(app: App): Promise<void> {
         description:
           'Discount code definitions, each with `usedCount`: the finalised sales that carried the code since the ' +
           'definition was created — the count its usage limit is held to.',
-        querystring: z.object({ includeArchived: z.coerce.boolean().default(false) }),
+        querystring: z.object({ includeArchived: queryFlag().default(false) }),
         response: { 200: DiscountListResponseSchema },
       },
     },

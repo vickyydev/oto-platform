@@ -392,6 +392,10 @@ describe('what it makes', () => {
     expect(consoleRead.products.find((p) => p.id === cake.productId)).toMatchObject({ code: cake.code, beoOnly: true });
     expect(consoleRead.products.find((p) => p.id === tea.productId)).toMatchObject({ code: tea.code, beoOnly: true });
 
+    // "?includeBeoOnly=false" means no (found on staging: a present flag read as yes whatever it said).
+    const saidNo = await tillMenu(admin, '?includeBeoOnly=false');
+    expect(saidNo.products.some((p) => p.id === cake.productId || p.id === tea.productId)).toBe(false);
+
     const flip = (beoOnly: boolean) =>
       ctx.app.inject({
         method: 'PATCH',
