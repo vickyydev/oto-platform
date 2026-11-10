@@ -1,0 +1,1650 @@
+{
+  "unit": "SCRUM-822 the party's money in one place: the OTO App's BEO reads the till — staging proof (SCRUM-833 fixed with it)",
+  "ran": {
+    "from": "2026-11-10T19:07:28.552Z",
+    "to": "2026-11-10T19:18:02.658Z",
+    "timezone": "Asia/Bangkok",
+    "browser": "Chromium 153.0.8010.12",
+    "viewport": "1440×900 (the Billing, POS and Day-of pictures taller: 1440×1200 / 1440×1600 / 1440×1100), light, en-GB"
+  },
+  "code": "d14ba1c65321a3710064145132d1b4c33b5eec42",
+  "liveBefore": {
+    "oto-api-staging": {
+      "deploy": "dep-dbpmedrl550s73dplf70",
+      "state": "live",
+      "commit": "d14ba1c6",
+      "finishedAt": "2026-11-10T18:53:35.762044Z"
+    },
+    "oto-app-staging": {
+      "deploy": "dep-dbpmeeetlv9c73dofkl0",
+      "state": "live",
+      "commit": "d14ba1c6",
+      "finishedAt": "2026-11-10T18:51:54.535027Z"
+    },
+    "oto-pos-staging": {
+      "deploy": "dep-dbpmeesipgvc7385uuhg",
+      "state": "live",
+      "commit": "d14ba1c6",
+      "finishedAt": "2026-11-10T18:50:28.592288Z"
+    },
+    "oto-pos-web-staging": {
+      "deploy": "dep-dbpmef59fdbs73fbom0g",
+      "state": "live",
+      "commit": "d14ba1c6",
+      "finishedAt": "2026-11-10T18:52:27.344009Z"
+    },
+    "oto-console-staging": {
+      "deploy": "dep-dbpmeflg1s2s73dv4v90",
+      "state": "live",
+      "commit": "d14ba1c6",
+      "finishedAt": "2026-11-10T18:50:27.79886Z"
+    }
+  },
+  "liveAfter": {
+    "oto-api-staging": {
+      "deploy": "dep-dbpmedrl550s73dplf70",
+      "state": "live",
+      "commit": "d14ba1c6",
+      "finishedAt": "2026-11-10T18:53:35.762044Z"
+    },
+    "oto-app-staging": {
+      "deploy": "dep-dbpmeeetlv9c73dofkl0",
+      "state": "live",
+      "commit": "d14ba1c6",
+      "finishedAt": "2026-11-10T18:51:54.535027Z"
+    },
+    "oto-pos-staging": {
+      "deploy": "dep-dbpmeesipgvc7385uuhg",
+      "state": "live",
+      "commit": "d14ba1c6",
+      "finishedAt": "2026-11-10T18:50:28.592288Z"
+    },
+    "oto-pos-web-staging": {
+      "deploy": "dep-dbpmef59fdbs73fbom0g",
+      "state": "live",
+      "commit": "d14ba1c6",
+      "finishedAt": "2026-11-10T18:52:27.344009Z"
+    },
+    "oto-console-staging": {
+      "deploy": "dep-dbpmeflg1s2s73dv4v90",
+      "state": "live",
+      "commit": "d14ba1c6",
+      "finishedAt": "2026-11-10T18:50:27.79886Z"
+    }
+  },
+  "money": "satang unless written with ฿",
+  "baseline": {
+    "socksShelfTotal": 0,
+    "liveZzTestStationsBefore": 3
+  },
+  "party": {
+    "eventId": "f9be4cae-adc1-495b-9900-9c258cf9cc41",
+    "title": "ZZ TEST 822 Floresta",
+    "date": "2026-11-18",
+    "time": "13:00–16:00",
+    "children": 10,
+    "adults": 4,
+    "appBranchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+    "create": {
+      "route": "POST /api/admin/events",
+      "status": 201
+    },
+    "package": {
+      "route": "POST /api/beo/events/:eventId/package-snapshot",
+      "status": 201,
+      "packageName": "Birthday package, Central Floresta",
+      "setMenuTemplateId": "0b1db99d-296a-4418-abb8-9d6071a367c4",
+      "snapshotBasePriceField": 1690000,
+      "note": "the snapshot's base price field is SATANG (1690000 = ฿16,900): the figure SCRUM-833 printed as baht"
+    },
+    "tillBillingRightAfterThePackage": {
+      "status": 200,
+      "reading": "ok",
+      "state": "quote",
+      "total": 1690000,
+      "deposit": 0,
+      "balance": 1690000,
+      "lines": [
+        [
+          "Birthday package, Central Floresta",
+          1,
+          1690000
+        ],
+        [
+          "Kids' table reserved for 3 hours",
+          1,
+          0
+        ],
+        [
+          "Special birthday set menu",
+          1,
+          0
+        ],
+        [
+          "Interactive birthday animation program, 30 minutes",
+          1,
+          0
+        ],
+        [
+          "Ice-cream cake with candles and birthday song",
+          1,
+          0
+        ],
+        [
+          "Entry for 4 accompanying adults",
+          1,
+          0
+        ],
+        [
+          "Socks for all children",
+          1,
+          0
+        ],
+        [
+          "Children (in the package)",
+          10,
+          0
+        ],
+        [
+          "Adults (in the package)",
+          4,
+          0
+        ],
+        [
+          "Regular Socks (free)",
+          10,
+          0
+        ]
+      ],
+      "message": null
+    }
+  },
+  "step1_beoOpen": {
+    "packageSectionHeader": "Birthday package, Central Floresta · Applied",
+    "headerBadgeBeforeDeposit": "No Deposit",
+    "kitchenTabs": [
+      "Kids Menu (0)",
+      "Adults Menu (0)"
+    ]
+  },
+  "step2_newItem": {
+    "asked": {
+      "menu": "adults",
+      "name": "ZZ TEST 822 bubble tea",
+      "station": "bar",
+      "price": 125,
+      "free": false
+    },
+    "route": "POST /api/events/:eventId/beo/party-menu-items",
+    "status": 200,
+    "productId": "01a0bbdc-8c41-70d5-8b9b-456fb73d36cc",
+    "productCode": "PARTY-B73D36CC",
+    "line": {
+      "id": "party_d6ef9191-417b-4c6f-a7e1-ae4a7c04c5b2",
+      "itemName": "ZZ TEST 822 bubble tea",
+      "quantity": 1,
+      "included": false,
+      "price": 125,
+      "productCode": "PARTY-B73D36CC",
+      "source": "additional"
+    },
+    "toast": "New item added ZZ TEST 822 bubble tea is on the till as PARTY-B73D36CC, for this party only.",
+    "save": {
+      "route": "PUT /api/events/:eventId/beo",
+      "status": 200,
+      "toasts": [
+        "BEO data saved successfully"
+      ],
+      "afterReload": [
+        {
+          "text": "EXTRA 1 ZZ TEST 822 bubble tea PARTY-B73D36CC",
+          "code": "PARTY-B73D36CC"
+        }
+      ],
+      "kitchenPlanRead": [
+        {
+          "id": "party_d6ef9191-417b-4c6f-a7e1-ae4a7c04c5b2",
+          "itemName": "ZZ TEST 822 bubble tea",
+          "quantity": 1,
+          "included": false,
+          "price": 125,
+          "productCode": "PARTY-B73D36CC",
+          "source": "additional"
+        }
+      ]
+    }
+  },
+  "step3_depositAndRefresh": {
+    "panelBeforeTheDeposit": "From the till Quote Refresh from the till Expected total ฿17,025 Deposit paid ฿0 Outstanding ฿17,025 What the party comes to Birthday package, Central Floresta ฿16,900 Kids' table reserved for 3 hours Included Special birthday set menu Included Interactive birthday animation program, 30 minutes Included Ice-cream cake with candles and birthday song Included Entry for 4 accompanying adults Included Socks for all children Included Children (in the package) × 10 Included Adults (in the package) × 4 Included Regular Socks (free) × 10 Included ZZ TEST 822 bubble tea ฿125 The till's figures, read 02:09. Nothing here is typed twice. Quote PDF",
+    "sectionBadgeBefore": "Billing ฿17,025 outstanding",
+    "depositWrite": {
+      "route": "PUT /api/events/:eventId/beo/billing",
+      "status": 200,
+      "writes": 1,
+      "requests": [
+        {
+          "status": 200,
+          "depositPaidAmount": 3000,
+          "depositPaid": true,
+          "keys": [
+            "depositPaidAmount",
+            "depositPaid"
+          ]
+        }
+      ],
+      "fieldAfter": "03000"
+    },
+    "refresh": {
+      "route": "GET /api/events/:eventId/beo/till-billing",
+      "status": 200,
+      "reading": "ok",
+      "state": "quote",
+      "readAt": "2026-11-10T19:09:24.429Z",
+      "quote": {
+        "rateMode": "weekday",
+        "packageName": "Birthday package, Central Floresta",
+        "packageSatang": 1690000,
+        "totalSatang": 1702500,
+        "depositSatang": 300000,
+        "balanceSatang": 1402500,
+        "creditSatang": 0,
+        "lines": [
+          {
+            "role": "package",
+            "label": "Birthday package, Central Floresta",
+            "quantity": 1,
+            "unitSatang": 1690000,
+            "totalSatang": 1690000
+          },
+          {
+            "role": "included",
+            "label": "Kids' table reserved for 3 hours",
+            "quantity": 1,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "included",
+            "label": "Special birthday set menu",
+            "quantity": 1,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "included",
+            "label": "Interactive birthday animation program, 30 minutes",
+            "quantity": 1,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "included",
+            "label": "Ice-cream cake with candles and birthday song",
+            "quantity": 1,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "included",
+            "label": "Entry for 4 accompanying adults",
+            "quantity": 1,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "included",
+            "label": "Socks for all children",
+            "quantity": 1,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "guests",
+            "label": "Children (in the package)",
+            "quantity": 10,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "guests",
+            "label": "Adults (in the package)",
+            "quantity": 4,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "socks",
+            "label": "Regular Socks (free)",
+            "quantity": 10,
+            "unitSatang": 0,
+            "totalSatang": 0
+          },
+          {
+            "role": "add_on",
+            "label": "ZZ TEST 822 bubble tea",
+            "quantity": 1,
+            "unitSatang": 12500,
+            "totalSatang": 12500
+          }
+        ]
+      },
+      "party": {
+        "date": "2026-11-18",
+        "startTime": "13:00",
+        "endTime": "16:00",
+        "kids": 10,
+        "adults": 4,
+        "packageName": "Birthday package, Central Floresta"
+      }
+    }
+  },
+  "step4_fromTheTill": {
+    "badgeQuote": "Quote",
+    "badgeSale": null,
+    "expected": "฿17,025",
+    "deposit": "฿3,000",
+    "outstanding": "฿14,025",
+    "lines": [
+      "Birthday package, Central Floresta ฿16,900",
+      "Kids' table reserved for 3 hours Included",
+      "Special birthday set menu Included",
+      "Interactive birthday animation program, 30 minutes Included",
+      "Ice-cream cake with candles and birthday song Included",
+      "Entry for 4 accompanying adults Included",
+      "Socks for all children Included",
+      "Children (in the package) × 10 Included",
+      "Adults (in the package) × 4 Included",
+      "Regular Socks (free) × 10 Included",
+      "ZZ TEST 822 bubble tea ฿125"
+    ],
+    "quotePdfHref": "/api/events/:eventId/beo/quote.pdf",
+    "readLine": "The till's figures, read 02:09.",
+    "invoiceRowsHeading": "The app's own invoice rows Kept for the staff who use them. What the party pays is the till's, above; the deposit paid here is the party's one deposit and the till reads it.",
+    "receipt": null,
+    "payments": [],
+    "quotePdfButtons": 1,
+    "sectionBadge": "Billing ฿14,025 outstanding",
+    "headerBadge": "฿14,025 Due",
+    "moduleDepositField": "03000"
+  },
+  "step5_partyDetails": {
+    "tiles": {
+      "totalLabel": "Total · from the till",
+      "total": "฿17,025",
+      "depositInput": "3,000",
+      "depositDate": "Deposit date",
+      "outstanding": "฿14,025",
+      "readAt": "The till's quote, read 02:10.",
+      "unsavedNote": null,
+      "text": "Total · from the till ฿17,025 Deposit 3,000 Deposit date Outstanding ฿14,025 The till's quote, read 02:10."
+    },
+    "badges": {
+      "partyDetailsTotal": "฿17,025",
+      "billingOutstanding": "฿14,025 outstanding",
+      "headerPayment": "฿14,025 Due"
+    },
+    "noPriceInput": {
+      "packagePriceInputs": 0,
+      "linesNote": "What the POS team should know is included or extra. The prices are the till's."
+    },
+    "header": {
+      "header": "฿14,025 Due",
+      "posBadge": "฿17,025",
+      "billingBadge": "฿14,025 outstanding",
+      "shot": {
+        "file": "C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/docs/qa/proof-2026-11-09/SCRUM-822/staging/05b-beo-header-due-badge.png",
+        "covered": {
+          "occurrences": 0,
+          "boxes": 0
+        }
+      }
+    }
+  },
+  "step6_dayOf": {
+    "tillRead": {
+      "status": 200,
+      "reading": "ok",
+      "state": "quote",
+      "message": null
+    },
+    "title": "ZZ TEST 822 Floresta",
+    "posSection": 1,
+    "headerBadge": {
+      "price": "฿17,025",
+      "notSettled": null,
+      "unreachable": null
+    },
+    "package": {
+      "badge": "Birthday package, Central Floresta",
+      "price": "฿16,900"
+    },
+    "tillLinesHeading": "THE TILL'S QUOTE",
+    "tillLines": [
+      "Birthday package, Central Floresta ฿16,900",
+      "Kids' table reserved for 3 hours Included",
+      "Special birthday set menu Included",
+      "Interactive birthday animation program, 30 minutes Included",
+      "Ice-cream cake with candles and birthday song Included",
+      "Entry for 4 accompanying adults Included",
+      "Socks for all children Included",
+      "Children (in the package) × 10 Included",
+      "Adults (in the package) × 4 Included",
+      "Regular Socks (free) × 10 Included",
+      "ZZ TEST 822 bubble tea ฿125"
+    ],
+    "moneyRows": {
+      "expected": "฿17,025",
+      "deposit": "฿3,000",
+      "outstanding": "฿14,025",
+      "unavailable": null
+    },
+    "hasOldFigure1690000": false
+  },
+  "step7_quotePdf": {
+    "pressed": {
+      "popup": "",
+      "download": {
+        "suggested": "Quote_ZZ_TEST_822_Floresta_2026-11-18.pdf",
+        "url": "https://oto-app-staging.onrender.com/api/events/f9be4cae-adc1-495b-9900-9c258cf9cc41/beo/quote.pdf"
+      }
+    },
+    "href": "/api/events/:eventId/beo/quote.pdf",
+    "route": "GET /api/events/:eventId/beo/quote.pdf",
+    "status": 200,
+    "contentType": "application/pdf",
+    "contentDisposition": "inline; filename=\"Quote_ZZ_TEST_822_Floresta_2026-11-18.pdf\"",
+    "file": "quote-ZZ-TEST-822-Floresta-2026-11-18.pdf",
+    "bytes": 69192,
+    "pages": 2,
+    "text": "Oto Play Park, Central Floresta 199 Moo 4, Vichitsongkram Road, Wichit, Muang, Phuket 83000, Thailand Party quote Issued 11/11/2026 · OTO, Oto Play Park, Central Floresta Party ZZ TEST 822 Floresta Date Wednesday 18 November 2026 Time 13:00 – 16:00 Guests 10 children, 4 adults Package Birthday package, Central Floresta (weekday price) What the party comes to Item Qty Amount Birthday package, Central Floresta 1 ฿16,900 Kids' table reserved for 3 hours 1 Included Special birthday set menu 1 Included Interactive birthday animation program, 30 minutes 1 Included Ice-cream cake with candles and birthday song 1 Included Entry for 4 accompanying adults 1 Included Socks for all children 1 Included Children (in the package) 10 Included Adults (in the package) 4 Included Regular Socks (free) 10 Included ZZ TEST 822 bubble tea 1 ฿125 Total ฿17,025 Deposit paid -฿3,000 Balance to pay ฿14,025 -- 1 of 2 -- This quote is valid on the date it was issued: the figures are the park's for the party's day as they stand today, for the guests shown. The final bill is settled at the till on the day, for the guests who come and anything added on the day. -- 2 of 2 --"
+  },
+  "step8_till": {
+    "station": {
+      "id": "01a1c6db-f7b4-7c3b-808e-21d497ef166a",
+      "name": "ZZ TEST SCRUM-822 till",
+      "prefix": "Z822X",
+      "box": "Virtual box 1",
+      "devices": [
+        "adult_band:Band Printer (adults)",
+        "kids_band:Band Printer (kids)",
+        "receipt:Receipt Printer 1"
+      ]
+    },
+    "signedInAs": "the staging reception account",
+    "socksIn": {
+      "reason": "ZZ TEST SCRUM-822: 10 pairs in for the party settlement",
+      "delta": 10,
+      "before": 0,
+      "after": 10,
+      "net": [
+        {
+          "method": "POST",
+          "route": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/adjustments",
+          "status": 200
+        }
+      ]
+    },
+    "partyRead": {
+      "route": "GET /api/parties/:id?branchId=…",
+      "status": 200,
+      "planStatus": "ready",
+      "packageName": "Birthday package, Central Floresta",
+      "counts": {
+        "kidsExpected": 10,
+        "adultsExpected": 4
+      },
+      "deposit": 300000,
+      "setMenuLines": 9,
+      "addOns": [],
+      "settlement": null
+    },
+    "eventsDayShown": "Wednesday, 18 Nov 2026",
+    "headerButtons": [
+      "Settle party",
+      "Add F&B to party",
+      "Fully paid",
+      "Print party slips now"
+    ],
+    "settleForm": {
+      "countsOpened": {
+        "children": 10,
+        "adults": 4,
+        "socksGiven": 10
+      },
+      "countsSet": {
+        "children": 10,
+        "adults": 4,
+        "socksGiven": 10
+      },
+      "packageLine": "Birthday package, Central Floresta · weekday ฿16,900",
+      "socks": "Socks · 10 free ฿0",
+      "addOns": "Add-ons ฿125",
+      "total": "Total ฿17,025",
+      "deposit": "Deposit paid −฿3,000",
+      "balance": "Balance ฿14,025",
+      "teaNamedOnForm": false,
+      "preview": [
+        {
+          "method": "POST",
+          "path": "/api/parties/:id/settle/preview",
+          "status": 200,
+          "total": 1702500,
+          "deposit": 300000,
+          "balance": 1402500,
+          "lines": [
+            {
+              "role": "package",
+              "label": "Birthday package, Central Floresta",
+              "quantity": 1,
+              "unitSatang": 1690000,
+              "totalSatang": 1690000
+            },
+            {
+              "role": "included",
+              "label": "Kids' table reserved for 3 hours",
+              "quantity": 1,
+              "unitSatang": 0,
+              "totalSatang": 0
+            },
+            {
+              "role": "included",
+              "label": "Special birthday set menu",
+              "quantity": 1,
+              "unitSatang": 0,
+              "totalSatang": 0
+            },
+            {
+              "role": "included",
+              "label": "Interactive birthday animation program, 30 minutes",
+              "quantity": 1,
+              "unitSatang": 0,
+              "totalSatang": 0
+            },
+            {
+              "role": "included",
+              "label": "Ice-cream cake with candles and birthday song",
+              "quantity": 1,
+              "unitSatang": 0,
+              "totalSatang": 0
+            },
+            {
+              "role": "included",
+              "label": "Entry for 4 accompanying adults",
+              "quantity": 1,
+              "unitSatang": 0,
+              "totalSatang": 0
+            },
+            {
+              "role": "included",
+              "label": "Socks for all children",
+              "quantity": 1,
+              "unitSatang": 0,
+              "totalSatang": 0
+            },
+            {
+              "role": "guests",
+              "label": "Children (in the package)",
+              "quantity": 10,
+              "unitSatang": 0,
+              "totalSatang": 0
+            },
+            {
+              "role": "guests",
+              "label": "Adults (in the package)",
+              "quantity": 4,
+              "unitSatang": 0,
+              "totalSatang": 0
+            },
+            {
+              "role": "socks",
+              "label": "Regular Socks (free)",
+              "quantity": 10,
+              "unitSatang": 0,
+              "totalSatang": 0
+            },
+            {
+              "role": "add_on",
+              "label": "ZZ TEST 822 bubble tea",
+              "quantity": 1,
+              "unitSatang": 12500,
+              "totalSatang": 12500
+            }
+          ],
+          "keys": [
+            "quote"
+          ]
+        }
+      ]
+    },
+    "confirm": {
+      "label": "Confirm · ฿14,025 to pay",
+      "at": "2026-11-10T19:14:18.893Z",
+      "net": [
+        {
+          "method": "POST",
+          "route": "/api/parties/:eventId/settle",
+          "status": 200
+        }
+      ]
+    },
+    "pay": {
+      "at": "2026-11-10T19:14:23.388Z",
+      "net": [
+        {
+          "method": "POST",
+          "route": "/api/sales/:saleId/finalise",
+          "status": 200
+        }
+      ],
+      "screen": "Party settled ZZ TEST 822 Floresta 10 4 Hide customer display Settled, receipt Z822X-000001 The receipt, a band for every child and adult are printing. Done Thank you!",
+      "receiptOnScreen": "Z822X-000001"
+    },
+    "sale": {
+      "id": "01a1c6e1-f1ba-7b3a-8916-08ae5cf722e4",
+      "receipt": "Z822X-000001",
+      "status": "finalised",
+      "totals": {
+        "subtotalSatang": 1702500,
+        "manualDiscountSatang": 0,
+        "promoDiscountSatang": 0,
+        "discountSatang": 0,
+        "netSatang": 1591121,
+        "serviceChargeSatang": 0,
+        "taxInclusiveSatang": 111379,
+        "taxExclusiveSatang": 0,
+        "grossSatang": 1702500,
+        "unappliedDiscountSatang": 0,
+        "refundedSatang": 0
+      },
+      "lines": [
+        {
+          "kind": "addon",
+          "label": "Birthday package, Central Floresta",
+          "quantity": 1,
+          "unitSatang": 1690000,
+          "grossSatang": 1690000
+        },
+        {
+          "kind": "addon",
+          "label": "Kids' table reserved for 3 hours",
+          "quantity": 1,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "addon",
+          "label": "Special birthday set menu",
+          "quantity": 1,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "addon",
+          "label": "Interactive birthday animation program, 30 minutes",
+          "quantity": 1,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "addon",
+          "label": "Ice-cream cake with candles and birthday song",
+          "quantity": 1,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "addon",
+          "label": "Entry for 4 accompanying adults",
+          "quantity": 1,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "addon",
+          "label": "Socks for all children",
+          "quantity": 1,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "kids",
+          "label": "Children (in the package)",
+          "quantity": 10,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "adults_free",
+          "label": "Adults (in the package)",
+          "quantity": 4,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "socks",
+          "label": "Regular Socks (free)",
+          "quantity": 10,
+          "unitSatang": 0,
+          "grossSatang": 0
+        },
+        {
+          "kind": "addon",
+          "label": "ZZ TEST 822 bubble tea",
+          "quantity": 1,
+          "unitSatang": 12500,
+          "grossSatang": 12500
+        }
+      ],
+      "payments": [
+        {
+          "method": "other",
+          "status": "approved",
+          "amount": 300000,
+          "at": "2026-11-10T19:14:19.596Z"
+        },
+        {
+          "method": "cash",
+          "status": "approved",
+          "amount": 1402500,
+          "at": "2026-11-10T19:14:24.409Z"
+        }
+      ],
+      "stockMovements": [
+        {
+          "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+          "kind": "sale",
+          "quantity": -10,
+          "levelAfter": 0,
+          "reason": null
+        }
+      ],
+      "socksAfterSale": 0
+    }
+  },
+  "step9_afterSettle": {
+    "billing": {
+      "badgeQuote": null,
+      "badgeSale": "Settled",
+      "expected": "฿17,025",
+      "deposit": "฿3,000",
+      "outstanding": "฿0",
+      "lines": [
+        "Birthday package, Central Floresta ฿16,900",
+        "Kids' table reserved for 3 hours Included",
+        "Special birthday set menu Included",
+        "Interactive birthday animation program, 30 minutes Included",
+        "Ice-cream cake with candles and birthday song Included",
+        "Entry for 4 accompanying adults Included",
+        "Socks for all children Included",
+        "Children (in the package) × 10 Included",
+        "Adults (in the package) × 4 Included",
+        "Regular Socks (free) × 10 Included",
+        "ZZ TEST 822 bubble tea ฿125"
+      ],
+      "quotePdfHref": "",
+      "readLine": "The till's figures, read 02:14.",
+      "invoiceRowsHeading": "The app's own invoice rows Kept for the staff who use them. What the party pays is the till's, above; the deposit paid here is the party's one deposit and the till reads it.",
+      "receipt": "Receipt Z822X-000001 · ZZ TEST SCRUM-822 till Settled 11 Nov 2026, 02:14",
+      "payments": [
+        "Deposit paid in advance ฿3,000",
+        "Cash ฿14,025"
+      ],
+      "quotePdfButtons": 0,
+      "sectionBadge": "Billing Paid",
+      "headerBadge": "Paid",
+      "moduleDepositField": "3000"
+    },
+    "refresh": {
+      "route": "GET /api/events/:eventId/beo/till-billing",
+      "status": 200,
+      "reading": "ok",
+      "state": "sale",
+      "readAt": "2026-11-10T19:14:55.233Z"
+    },
+    "partyDetails": {
+      "tiles": {
+        "totalLabel": "Total · from the till",
+        "total": "฿17,025",
+        "depositInput": "3,000",
+        "depositDate": "Deposit date",
+        "outstanding": "฿0",
+        "readAt": "Settled at the till, read 02:14.",
+        "unsavedNote": null,
+        "text": "Total · from the till ฿17,025 Deposit 3,000 Deposit date Outstanding ฿0 Settled at the till, read 02:14."
+      },
+      "badges": {
+        "partyDetailsTotal": "฿17,025",
+        "billingOutstanding": "Paid",
+        "headerPayment": "Paid"
+      }
+    },
+    "header": {
+      "header": "Paid",
+      "posBadge": "฿17,025",
+      "billingBadge": "Paid",
+      "shot": {
+        "file": "C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/docs/qa/proof-2026-11-09/SCRUM-822/staging/10b-beo-header-paid-after-settle.png",
+        "covered": {
+          "occurrences": 0,
+          "boxes": 0
+        }
+      }
+    },
+    "dayOf": {
+      "tillRead": {
+        "status": 200,
+        "reading": "ok",
+        "state": "sale",
+        "message": null
+      },
+      "title": "ZZ TEST 822 Floresta",
+      "posSection": 1,
+      "headerBadge": {
+        "price": "฿17,025",
+        "notSettled": null,
+        "unreachable": null
+      },
+      "package": {
+        "badge": "Birthday package, Central Floresta",
+        "price": "฿16,900"
+      },
+      "tillLinesHeading": "THE TILL'S SALE · RECEIPT Z822X-000001",
+      "tillLines": [
+        "Birthday package, Central Floresta ฿16,900",
+        "Kids' table reserved for 3 hours Included",
+        "Special birthday set menu Included",
+        "Interactive birthday animation program, 30 minutes Included",
+        "Ice-cream cake with candles and birthday song Included",
+        "Entry for 4 accompanying adults Included",
+        "Socks for all children Included",
+        "Children (in the package) × 10 Included",
+        "Adults (in the package) × 4 Included",
+        "Regular Socks (free) × 10 Included",
+        "ZZ TEST 822 bubble tea ฿125"
+      ],
+      "moneyRows": {
+        "expected": "฿17,025",
+        "deposit": "฿3,000",
+        "outstanding": "฿0",
+        "unavailable": null
+      },
+      "hasOldFigure1690000": false
+    },
+    "readBack": {
+      "at": "2026-11-10T19:15:27.563Z",
+      "tillParty": {
+        "route": "GET /api/parties/:id?branchId=…",
+        "status": 200,
+        "settlement": {
+          "id": "01a1c6e1-f1ba-7b3a-8916-08ad5289dba9",
+          "saleId": "01a1c6e1-f1ba-7b3a-8916-08ae5cf722e4",
+          "state": "settled",
+          "receiptNumber": "Z822X-000001",
+          "grossSatang": 1702500,
+          "paidSatang": 1702500,
+          "outstandingSatang": 0,
+          "depositSatang": 300000,
+          "kids": 10,
+          "adults": 4,
+          "createdAt": "2026-11-10T19:14:19.573Z",
+          "settledAt": "2026-11-10T19:14:24.410Z",
+          "writeBack": "synced"
+        },
+        "planSettlement": {
+          "depositSatang": 300000,
+          "posSaleId": "01a1c6e1-f1ba-7b3a-8916-08ae5cf722e4"
+        }
+      },
+      "appTillBilling": {
+        "route": "GET /api/events/:eventId/beo/till-billing",
+        "status": 200,
+        "reading": "ok",
+        "state": "sale",
+        "readAt": "2026-11-10T19:15:28.656Z",
+        "sale": {
+          "saleId": "01a1c6e1-f1ba-7b3a-8916-08ae5cf722e4",
+          "settlementId": "01a1c6e1-f1ba-7b3a-8916-08ad5289dba9",
+          "state": "settled",
+          "receiptNumber": "Z822X-000001",
+          "grossSatang": 1702500,
+          "paidSatang": 1702500,
+          "depositSatang": 300000,
+          "outstandingSatang": 0,
+          "kids": 10,
+          "adults": 4,
+          "settledAt": "2026-11-10T19:14:24.410Z",
+          "stationName": "ZZ TEST SCRUM-822 till",
+          "lines": [
+            {
+              "role": "package",
+              "label": "Birthday package, Central Floresta",
+              "quantity": 1,
+              "unitSatang": 1690000,
+              "totalSatang": 1690000
+            },
+            {
+              "role": "included",
+              "label": "Kids' table reserved for 3 hours",
+              "quantity": 1,
+              "unitSatang": 0,
+              "totalSatang": 0
+            },
+            {
+              "role": "included",
+              "label": "Special birthday set menu",
+              "quantity": 1,
+              "unitSatang": 0,
+              "totalSatang": 0
+            },
+            {
+              "role": "included",
+              "label": "Interactive birthday animation program, 30 minutes",
+              "quantity": 1,
+              "unitSatang": 0,
+              "totalSatang": 0
+            },
+            {
+              "role": "included",
+              "label": "Ice-cream cake with candles and birthday song",
+              "quantity": 1,
+              "unitSatang": 0,
+              "totalSatang": 0
+            },
+            {
+              "role": "included",
+              "label": "Entry for 4 accompanying adults",
+              "quantity": 1,
+              "unitSatang": 0,
+              "totalSatang": 0
+            },
+            {
+              "role": "included",
+              "label": "Socks for all children",
+              "quantity": 1,
+              "unitSatang": 0,
+              "totalSatang": 0
+            },
+            {
+              "role": "guests",
+              "label": "Children (in the package)",
+              "quantity": 10,
+              "unitSatang": 0,
+              "totalSatang": 0
+            },
+            {
+              "role": "guests",
+              "label": "Adults (in the package)",
+              "quantity": 4,
+              "unitSatang": 0,
+              "totalSatang": 0
+            },
+            {
+              "role": "socks",
+              "label": "Regular Socks (free)",
+              "quantity": 10,
+              "unitSatang": 0,
+              "totalSatang": 0
+            },
+            {
+              "role": "add_on",
+              "label": "ZZ TEST 822 bubble tea",
+              "quantity": 1,
+              "unitSatang": 12500,
+              "totalSatang": 12500
+            }
+          ],
+          "payments": [
+            {
+              "label": "Deposit paid in advance",
+              "methodCode": "deposit_paid_in_advance",
+              "amountSatang": 300000,
+              "deposit": true
+            },
+            {
+              "label": "Cash",
+              "methodCode": "cash",
+              "amountSatang": 1402500,
+              "deposit": false
+            }
+          ]
+        }
+      },
+      "appBillingRow": {
+        "route": "GET /api/events/:eventId/beo/billing",
+        "status": 200,
+        "posOrderRef": "01a1c6e1-f1ba-7b3a-8916-08ae5cf722e4",
+        "depositPaid": true,
+        "depositPaidAmount": 3000
+      },
+      "quotePdfAfter": {
+        "route": "GET /api/events/:eventId/beo/quote.pdf",
+        "status": 409,
+        "code": "PARTY_SETTLED",
+        "message": "This party is settled at the till: its receipt is the record, not a quote."
+      },
+      "saleId": "01a1c6e1-f1ba-7b3a-8916-08ae5cf722e4",
+      "posOrderRefIsTheSale": true
+    }
+  },
+  "step10_notAParty": {
+    "event": {
+      "id": "099500a3-cb33-4df8-921a-0a709e1d3f04",
+      "title": "ZZ TEST 822 workshop",
+      "eventType": "workshop",
+      "eventDate": "2026-11-18",
+      "made": true
+    },
+    "tillBilling": {
+      "route": "GET /api/events/:eventId/beo/till-billing",
+      "status": 200,
+      "reading": "not_a_party",
+      "message": "The till settles birthdays, private events and school groups, so it holds no money for this event."
+    },
+    "quotePdf": {
+      "route": "GET /api/events/:eventId/beo/quote.pdf",
+      "status": 409,
+      "code": "NOT_A_PARTY",
+      "message": "Not settled at the till: The till settles birthdays, private events and school groups, so it holds no money for this event. No quote was made."
+    },
+    "billingPanel": {
+      "unavailable": "Not settled at the till The till settles birthdays, private events and school groups, so it holds no money for this event.",
+      "quotePdfButton": 0,
+      "text": "From the till Refresh from the till Not settled at the till The till settles birthdays, private events and school groups, so it holds no money for this event."
+    },
+    "tiles": {
+      "total": "Not settled at the till",
+      "outstanding": "Not settled at the till",
+      "problem": "The till settles birthdays, private events and school groups, so it holds no money for this event."
+    },
+    "badges": {
+      "billing": null,
+      "header": null
+    },
+    "sheetSaysTillNotReachable": false,
+    "sheetSaysNotSettledAtTheTill": true,
+    "dayOf": {
+      "tillRead": {
+        "status": 200,
+        "reading": "not_a_party",
+        "message": "The till settles birthdays, private events and school groups, so it holds no money for this event."
+      },
+      "title": "ZZ TEST 822 workshop",
+      "posSection": 0,
+      "headerBadge": null,
+      "package": null,
+      "tillLinesHeading": null,
+      "tillLines": null,
+      "moneyRows": null,
+      "hasOldFigure1690000": null
+    }
+  },
+  "step11_beoPdf": {
+    "route": "GET /api/events/:eventId/beo/pdf",
+    "status": 200,
+    "contentType": "application/pdf",
+    "file": "beo-ZZ-TEST-822-Floresta-2026-11-18.pdf",
+    "bytes": 79126,
+    "pages": 1,
+    "text": "ZZ TEST 822 Floresta 18 November '26 • 13:00 – 16:00 UPCOMING Oto Play Park, Central Floresta 199 Moo 4, Vichitsongkram Road, Wichit, Muang, Phuket 83000, Thailand EVENT DETAILS Date: 18 November '26 Time: 13:00 – 16:00 Children: 10 Adults: 4 PARTY HOST POS: BIRTHDAY PACKAGE, CENTRAL FLORESTA Total (from the till): ฿17,025 Deposit paid: ฿3,000 Outstanding: ฿0 Receipt: Z822X-000001 SETUP PLAN KITCHEN PLAN Kids Menu SET MENU Birthday set menu, Central Floresta Awaiting parent selections No selections yet — parent link sent Adults Menu 1x ZZ TEST 822 bubble tea EXTRA 125฿ TIMELINE TIME ACTIVITY 13:00 Guests arrive Generated 11/11/2026 • Banquet Event Order -- 1 of 1 --",
+    "carriesOldWords": false,
+    "downloadButton": {
+      "route": "GET /api/events/:eventId/beo/pdf (Download PDF button)",
+      "status": 302,
+      "contentType": "text/plain; charset=utf-8",
+      "download": null
+    }
+  },
+  "cleanup": {
+    "actions": [
+      {
+        "at": "2026-11-10T19:18:01.369Z",
+        "what": "till sign-out (reception, its own session route)",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-10T19:18:01.546Z",
+        "what": "unassign printers on ZZ TEST SCRUM-822 till",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-10T19:18:01.637Z",
+        "what": "archive station ZZ TEST SCRUM-822 till",
+        "status": 200,
+        "code": null
+      }
+    ],
+    "till": {
+      "id": "01a1c6db-f7b4-7c3b-808e-21d497ef166a",
+      "name": "ZZ TEST SCRUM-822 till",
+      "prefix": "Z822X",
+      "archived": true,
+      "devices": 0
+    },
+    "tillMeAfterSignOut": 401,
+    "salesOnTheTill": [
+      {
+        "id": "01a1c6e1-f1ba-7b3a-8916-08ae5cf722e4",
+        "receipt": "Z822X-000001",
+        "status": "finalised",
+        "gross": 1702500
+      }
+    ],
+    "events": [
+      {
+        "id": "f9be4cae-adc1-495b-9900-9c258cf9cc41",
+        "title": "ZZ TEST 822 Floresta",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive {archived:true}",
+          "status": 200,
+          "err": null
+        },
+        "readBack": {
+          "status": 200,
+          "isArchived": true
+        }
+      },
+      {
+        "id": "099500a3-cb33-4df8-921a-0a709e1d3f04",
+        "title": "ZZ TEST 822 workshop",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive {archived:true}",
+          "status": 200,
+          "err": null
+        },
+        "readBack": {
+          "status": 200,
+          "isArchived": true
+        }
+      }
+    ],
+    "socksReadBack": 0,
+    "otherTills": [
+      {
+        "name": "FWBooth1",
+        "archived": false,
+        "devices": 1
+      },
+      {
+        "name": "Reception Till 1",
+        "archived": false,
+        "devices": 7
+      },
+      {
+        "name": "Till 1 (Pi)",
+        "archived": false,
+        "devices": 4
+      },
+      {
+        "name": "Till 2 (test)",
+        "archived": false,
+        "devices": 4
+      }
+    ],
+    "signOuts": {
+      "at": "2026-11-10T19:18:06.338Z",
+      "consoleMeBefore": 200,
+      "consoleSignOut": 200,
+      "consoleMeAfter": 401,
+      "appUserBefore": 200,
+      "appLogout": 200,
+      "launcherSignOut": 200,
+      "appUserAfter": 401,
+      "launcherMeAfter": 401,
+      "tillMeAfter": 401,
+      "adminApi": {
+        "status": 200,
+        "meAfter": 401,
+        "at": "2026-11-10T19:18:06.531Z"
+      }
+    }
+  },
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1c6db-f7b4-7c3b-808e-21d497ef166a",
+      "name": "ZZ TEST SCRUM-822 till",
+      "box": "Virtual box 1",
+      "prefix": "Z822X",
+      "at": "2026-11-10T19:07:46.116Z"
+    },
+    {
+      "kind": "oto-app event",
+      "id": "f9be4cae-adc1-495b-9900-9c258cf9cc41",
+      "title": "ZZ TEST 822 Floresta",
+      "at": "2026-11-10T19:07:52.312Z"
+    },
+    {
+      "kind": "BEO-only till product",
+      "id": "01a0bbdc-8c41-70d5-8b9b-456fb73d36cc",
+      "code": "PARTY-B73D36CC",
+      "name": "ZZ TEST 822 bubble tea",
+      "at": "2026-11-10T19:08:53.170Z"
+    },
+    {
+      "kind": "stock-adjustment",
+      "purpose": "before",
+      "stockItemId": "01a0fa0b-8a6f-7a87-97f4-c118e0be28ff",
+      "delta": 10,
+      "reason": "ZZ TEST SCRUM-822: 10 pairs in for the party settlement",
+      "at": "2026-11-10T19:13:23.906Z",
+      "reverse": true
+    },
+    {
+      "kind": "oto-app event",
+      "id": "099500a3-cb33-4df8-921a-0a709e1d3f04",
+      "title": "ZZ TEST 822 workshop",
+      "at": "2026-11-10T19:15:39.675Z"
+    }
+  ],
+  "writes": [
+    {
+      "at": "2026-11-10T19:07:46.116Z",
+      "by": "admin (the Console's station route)",
+      "what": "POST /branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200,
+      "request": null,
+      "writes": null
+    },
+    {
+      "at": "2026-11-10T19:07:51.690Z",
+      "by": "launcher",
+      "what": "POST /api/auth/sign-in + POST /api/auth/handoff (oto_app)",
+      "status": null,
+      "request": null,
+      "writes": null
+    },
+    {
+      "at": "2026-11-10T19:07:52.312Z",
+      "by": "OTO App (admin)",
+      "what": "POST /api/admin/events",
+      "status": 201,
+      "request": {
+        "eventType": "birthday",
+        "title": "ZZ TEST 822 Floresta",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "eventDate": "2026-11-18",
+        "startTime": "13:00",
+        "endTime": "16:00",
+        "durationMinutes": 180,
+        "numChildren": 10,
+        "numAdults": 4,
+        "status": "upcoming"
+      },
+      "writes": null
+    },
+    {
+      "at": "2026-11-10T19:07:52.424Z",
+      "by": "OTO App (admin)",
+      "what": "POST /api/beo/events/:eventId/package-snapshot",
+      "status": 201,
+      "request": {
+        "templateId": "391b269d-159a-4039-89a2-51ac132da747"
+      },
+      "writes": null
+    },
+    {
+      "at": "2026-11-10T19:08:53.170Z",
+      "by": "OTO App (admin), BEO New item",
+      "what": "POST /api/events/:eventId/beo/party-menu-items",
+      "status": 200,
+      "request": {
+        "menu": "adults",
+        "name": "ZZ TEST 822 bubble tea",
+        "station": "bar",
+        "price": 125,
+        "free": false
+      },
+      "writes": null
+    },
+    {
+      "at": "2026-11-10T19:09:00.475Z",
+      "by": "OTO App (admin)",
+      "what": "BEO Save, PUT /api/events/:eventId/beo",
+      "status": 200,
+      "request": null,
+      "writes": null
+    },
+    {
+      "at": "2026-11-10T19:09:23.463Z",
+      "by": "OTO App (admin), Billing › Deposit Paid",
+      "what": "PUT /api/events/:eventId/beo/billing",
+      "status": 200,
+      "request": {
+        "depositPaidAmount": 3000
+      },
+      "writes": 1
+    },
+    {
+      "at": "2026-11-10T19:13:23.906Z",
+      "by": "Console (admin)",
+      "what": "Regular Socks Adjust +10",
+      "status": null,
+      "request": null,
+      "writes": null
+    },
+    {
+      "at": "2026-11-10T19:13:33.357Z",
+      "by": "till (reception)",
+      "what": "POST /auth/sign-in + station pick",
+      "status": null,
+      "request": null,
+      "writes": null
+    },
+    {
+      "at": "2026-11-10T19:15:39.675Z",
+      "by": "OTO App (admin)",
+      "what": "POST /api/admin/events",
+      "status": 201,
+      "request": {
+        "eventType": "workshop",
+        "title": "ZZ TEST 822 workshop",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "eventDate": "2026-11-18",
+        "startTime": "10:00",
+        "endTime": "12:00",
+        "durationMinutes": 120,
+        "status": "upcoming"
+      },
+      "writes": null
+    }
+  ],
+  "pageErrors": [],
+  "images": [
+    {
+      "file": "01-beo-birthday-package-applied.png",
+      "at": "2026-11-10T19:08:37.721Z",
+      "page": "APP",
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "OTO App, the BEO of ZZ TEST 822 Floresta (Wed 18 Nov 2026, 13:00, 10 children / 4 adults): the Birthday Package section with Birthday package, Central Floresta applied",
+      "masked": {
+        "names": {
+          "occurrences": 0,
+          "boxes": 0
+        },
+        "note": "the events board behind the BEO sheet hidden (customer names); the signed-in user's names covered by solid boxes"
+      }
+    },
+    {
+      "file": "02-beo-new-item-bubble-tea.png",
+      "at": "2026-11-10T19:08:54.853Z",
+      "page": "APP",
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "OTO App, the BEO's Kitchen Plan, Adults menu: ZZ TEST 822 bubble tea (bar, ฿125) added with New item, on the till with its PARTY- code (the toast kept)",
+      "masked": {
+        "names": {
+          "occurrences": 0,
+          "boxes": 0
+        },
+        "note": "the events board behind the BEO sheet hidden (customer names); the signed-in user's names covered by solid boxes"
+      }
+    },
+    {
+      "file": "04-billing-from-the-till-quote.png",
+      "at": "2026-11-10T19:09:56.596Z",
+      "page": "APP",
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "viewport": {
+        "width": 1440,
+        "height": 1600
+      },
+      "shows": "OTO App, the BEO's Billing section before the party is settled: From the till with the Quote badge, Expected total, Deposit paid ฿3,000, Outstanding, the breakdown (the package line, the included lines, the ฿125 bubble tea), the Quote PDF button, then The app's own invoice rows heading the billing module with Deposit Paid 3000",
+      "masked": {
+        "names": {
+          "occurrences": 0,
+          "boxes": 0
+        },
+        "note": "the events board behind the BEO sheet hidden (customer names); the signed-in user's names covered by solid boxes"
+      }
+    },
+    {
+      "file": "05-party-details-tiles-and-badges.png",
+      "at": "2026-11-10T19:10:30.998Z",
+      "page": "APP",
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "viewport": {
+        "width": 1440,
+        "height": 1200
+      },
+      "shows": "OTO App, the BEO's POS (Party Details) section: Total · from the till ฿17,025, the Deposit input 3000 between, Outstanding ฿14,025, \"The till's quote, read HH:MM\"; the section badge ฿17,025, the Billing badge ฿14,025 outstanding and the header's ฿14,025 Due badge",
+      "masked": {
+        "names": {
+          "occurrences": 0,
+          "boxes": 0
+        },
+        "note": "the events board behind the BEO sheet hidden (customer names); the signed-in user's names covered by solid boxes"
+      }
+    },
+    {
+      "file": "05b-beo-header-due-badge.png",
+      "at": "2026-11-10T19:10:52.865Z",
+      "page": "APP",
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "OTO App, the BEO's header: ZZ TEST 822 Floresta with the ฿14,025 Due badge; below it the POS section badge ฿17,025 and the Billing badge ฿14,025 outstanding, all the till's figures",
+      "masked": {
+        "names": {
+          "occurrences": 0,
+          "boxes": 0
+        },
+        "note": "the events board behind the BEO sheet hidden (customer names); the signed-in user's names covered by solid boxes"
+      }
+    },
+    {
+      "file": "07-quote-pdf-page-1.png",
+      "at": "2026-11-10T19:11:46.470Z",
+      "page": "PDF",
+      "url": "GET /api/events/:eventId/beo/quote.pdf",
+      "viewport": {
+        "width": 954,
+        "height": 1348
+      },
+      "shows": "The Quote PDF from the Billing section's Quote PDF button (GET /api/events/:id/beo/quote.pdf), page 1: the park header, Party quote, the party's date, time and guests, the package and its weekday rate, every line, Total ฿17,025, Deposit paid -฿3,000, Balance to pay ฿14,025, the validity note",
+      "masked": {
+        "note": "the PDF names no person; drawn by pdf.js from the saved file, page 1"
+      }
+    },
+    {
+      "file": "07b-quote-pdf-page-2-validity-note.png",
+      "at": "2026-11-10T19:12:03.136Z",
+      "page": "PDF",
+      "url": "GET /api/events/:eventId/beo/quote.pdf",
+      "viewport": {
+        "width": 954,
+        "height": 1348
+      },
+      "shows": "The Quote PDF, page 2: the validity note alone (it spills over from page 1)",
+      "masked": {
+        "note": "the PDF names no person; drawn by pdf.js from the saved file, page 2"
+      }
+    },
+    {
+      "file": "06-day-of-pos-section-quote.png",
+      "at": "2026-11-10T19:12:48.687Z",
+      "page": "APP",
+      "url": "https://oto-app-staging.onrender.com/core/events/:eventId",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "shows": "OTO App, the party's Day-of Execution view (/core/events/<id>), the POS section opened: the header badge ฿17,025, the package Birthday package, Central Floresta at ฿16,900 (never ฿1,690,000: SCRUM-833), The till's quote lines, Expected total ฿17,025 / Deposit paid ฿3,000 / Outstanding ฿14,025",
+      "masked": {
+        "names": {
+          "occurrences": 0,
+          "boxes": 0
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "08a-till-party-page.png",
+      "at": "2026-11-10T19:13:51.730Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/parties",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The ZZ TEST till (Central Floresta), Events on Wed 18 Nov 2026: the ZZ TEST 822 Floresta party page with its plan and the Settle party button",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "08-till-settle-preview.png",
+      "at": "2026-11-10T19:14:09.216Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/parties",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The ZZ TEST till, Settle party form at 10 children / 4 adults: the package at the weekday price, the socks, the add-ons (the ฿125 bubble tea), Total, Deposit paid and Balance — the same figures the app showed",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "09-till-settled-receipt.png",
+      "at": "2026-11-10T19:14:28.728Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/parties",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The settle screen after the cash payment: Party settled, Settled, receipt <number>",
+      "masked": {
+        "names": {
+          "occurrences": 2,
+          "boxes": 2
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "10-billing-from-the-till-settled.png",
+      "at": "2026-11-10T19:14:57.408Z",
+      "page": "APP",
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "viewport": {
+        "width": 1440,
+        "height": 1600
+      },
+      "shows": "OTO App, the BEO's Billing section after the settle, Refresh from the till pressed: the Settled badge, Total ฿17,025, Deposit paid ฿3,000, Outstanding ฿0, receipt Z822X-000001 at ZZ TEST SCRUM-822 till with the settled time, The sale's lines, Payments (Deposit paid in advance ฿3,000, Cash ฿14,025); no Quote PDF button; the app's own invoice rows beneath",
+      "masked": {
+        "names": {
+          "occurrences": 0,
+          "boxes": 0
+        },
+        "note": "the events board behind the BEO sheet hidden (customer names); the signed-in user's names covered by solid boxes"
+      }
+    },
+    {
+      "file": "10b-beo-header-paid-after-settle.png",
+      "at": "2026-11-10T19:15:13.922Z",
+      "page": "APP",
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "OTO App, the BEO's header after the settle: the Paid badge; the POS section badge ฿17,025 and the Billing badge Paid",
+      "masked": {
+        "names": {
+          "occurrences": 0,
+          "boxes": 0
+        },
+        "note": "the events board behind the BEO sheet hidden (customer names); the signed-in user's names covered by solid boxes"
+      }
+    },
+    {
+      "file": "11-day-of-pos-section-settled.png",
+      "at": "2026-11-10T19:15:27.504Z",
+      "page": "APP",
+      "url": "https://oto-app-staging.onrender.com/core/events/:eventId",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "shows": "OTO App, the party's Day-of Execution view after the settle: the POS badge ฿17,025, the package ฿16,900, \"The till's sale · receipt Z822X-000001\" lines, Total ฿17,025 / Deposit paid ฿3,000 / Outstanding ฿0",
+      "masked": {
+        "names": {
+          "occurrences": 0,
+          "boxes": 0
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "12-workshop-not-settled-at-the-till.png",
+      "at": "2026-11-10T19:15:50.515Z",
+      "page": "APP",
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "viewport": {
+        "width": 1440,
+        "height": 1200
+      },
+      "shows": "OTO App, a ZZ TEST workshop's BEO: the POS section's tiles and the Billing section's From the till panel say Not settled at the till (never Till not reachable), no figure, no Quote PDF button",
+      "masked": {
+        "names": {
+          "occurrences": 0,
+          "boxes": 0
+        },
+        "note": "the events board behind the BEO sheet hidden (customer names); the signed-in user's names covered by solid boxes"
+      }
+    },
+    {
+      "file": "12b-workshop-day-of-view.png",
+      "at": "2026-11-10T19:16:04.957Z",
+      "page": "APP",
+      "url": "https://oto-app-staging.onrender.com/core/events/:eventId",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "shows": "OTO App, the ZZ TEST workshop's Day-of Execution view: nothing for the POS and nothing from the till, so no POS section (by design); no Till not reachable anywhere",
+      "masked": {
+        "names": {
+          "occurrences": 0,
+          "boxes": 0
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "13-beo-pdf-page-1.png",
+      "at": "2026-11-10T19:16:19.794Z",
+      "page": "PDF",
+      "url": "GET /api/events/:eventId/beo/pdf",
+      "viewport": {
+        "width": 954,
+        "height": 1348
+      },
+      "shows": "The BEO PDF of the party (Print / Download PDF, GET /api/events/:id/beo/pdf), page 1: the POS section carries the till's figures (Total from the till ฿17,025, Deposit paid ฿3,000, Outstanding ฿0, Receipt Z822X-000001) and none of POS Total / Base Price / Outstanding Balance",
+      "masked": {
+        "note": "the PDF names no person; drawn by pdf.js from the saved file, page 1"
+      }
+    }
+  ]
+}
