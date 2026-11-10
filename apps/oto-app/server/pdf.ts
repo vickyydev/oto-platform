@@ -5,6 +5,8 @@ import DOMPurify from "isomorphic-dompurify";
 import { Readable } from "stream";
 import { getFileFromObjectStorage } from "./file-storage";
 import { formatParkSignedDate } from "./timezone-utils";
+import { tillFiguresOf, type TillBillingReading } from "@shared/tillBilling";
+import { beoPdfTillMoneyHtml } from "./lib/beoPdfMoney";
 
 // Resolve a stored branch logo before Chromium renders. Remote object storage
 // is the normal deployment path; the local file is kept for older dev uploads.
@@ -534,6 +536,8 @@ export interface BeoPdfData {
     depositDate?: string;
     notes?: string;
   };
+  /** SCRUM-822: the party's money as the till answered it when the PDF was made, or why it did not. */
+  till?: TillBillingReading;
   timeline?: {
     time: string;
     description: string;
@@ -543,7 +547,8 @@ export interface BeoPdfData {
   branchLogoUrl?: string;
 }
 
-export async function generateBeoPdf(data: BeoPdfData): Promise<Buffer> {
+/** The BEO PDF as HTML, before Chromium prints it: what the page says, for a check to read. */
+export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
   const formatCurrency = (amount: number) => `${amount.toLocaleString()}฿`;
   const s = (str: string) => DOMPurify.sanitize(str);
 
@@ -572,19 +577,19 @@ export async function generateBeoPdf(data: BeoPdfData): Promise<Buffer> {
     </div>
   ` : '';
 
+  // SCRUM-822: the POS section's money is the till's (server/lib/beoPdfMoney.ts), as on the BEO's
+  // screens; Party Details' lines are printed as written, with no price and no sum of the app's own.
   const packageHtml = (() => {
     const pd = data.partyDetails;
-    if (!pd) return '';
-    const includedItems = pd.items?.filter(i => i.type === "included") || [];
-    const extraItems = pd.items?.filter(i => i.type === "extra") || [];
-    const extrasTotal = extraItems.reduce((sum, i) => sum + (i.price || 0), 0);
-    const packageTotal = (pd.packageBasePrice || 0) + extrasTotal;
-    const outstandingBalance = packageTotal - (pd.prepaymentReceived || 0);
+    const till = tillFiguresOf(data.till);
+    if (!pd && !till) return '';
+    const includedItems = pd?.items?.filter(i => i.type === "included") || [];
+    const extraItems = pd?.items?.filter(i => i.type === "extra") || [];
+    const packageName = pd?.packageName || till?.packageName;
 
     return `
       <div class="section">
-        <h2>POS${pd.packageName ? `: ${s(pd.packageName)}` : ''}</h2>
-        ${pd.packageBasePrice ? `<div class="info-item" style="margin-bottom: 6px;"><span class="info-label">Base Price:</span><span class="info-value" style="font-weight: 700;">${formatCurrency(pd.packageBasePrice)}</span></div>` : ''}
+        <h2>POS${packageName ? `: ${s(packageName)}` : ''}</h2>
         ${includedItems.length ? `
           <h3>Included</h3>
           <table class="menu-table">
@@ -599,17 +604,12 @@ export async function generateBeoPdf(data: BeoPdfData): Promise<Buffer> {
           <table class="menu-table">
             ${extraItems.map(item => `<tr>
               <td>${s(item.label || item.description)}${item.notes ? ` <span class="item-note">(${s(item.notes)})</span>` : ''}</td>
-              <td class="price-col"><span class="extra-badge">EXTRA</span> <span class="price">${formatCurrency(item.price)}</span></td>
+              <td class="price-col"><span class="extra-badge">EXTRA</span></td>
             </tr>`).join('')}
           </table>
         ` : ''}
-        <table class="info-table" style="margin-top: 8px;">
-          <tr><td style="font-weight: 600;">POS Total:</td><td style="font-weight: 700;">${formatCurrency(packageTotal)}</td></tr>
-          ${pd.prepaymentReceived ? `<tr><td>Prepayment Received:</td><td style="color: #38a169;">-${formatCurrency(pd.prepaymentReceived)}</td></tr>` : ''}
-          ${pd.depositDate ? `<tr><td>Deposit Date:</td><td>${s(pd.depositDate)}</td></tr>` : ''}
-          ${pd.prepaymentReceived ? `<tr><td style="font-weight: 600;">Outstanding Balance:</td><td style="font-weight: 700; ${outstandingBalance > 0 ? 'color: #e53e3e;' : 'color: #38a169;'}">${formatCurrency(outstandingBalance)}</td></tr>` : ''}
-        </table>
-        ${pd.notes ? `<p class="notes">${s(pd.notes)}</p>` : ''}
+        ${beoPdfTillMoneyHtml(data.till, pd?.depositDate)}
+        ${pd?.notes ? `<p class="notes">${s(pd.notes)}</p>` : ''}
       </div>
     `;
   })();
@@ -930,7 +930,11 @@ export async function generateBeoPdf(data: BeoPdfData): Promise<Buffer> {
   </div>
 </body>
 </html>`;
+  return html;
+}
 
+export async function generateBeoPdf(data: BeoPdfData): Promise<Buffer> {
+  const html = await beoPdfHtml(data);
   const browser = await puppeteer.launch({
     headless: true,
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || "/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium",

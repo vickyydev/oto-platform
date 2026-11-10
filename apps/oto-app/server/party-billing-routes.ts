@@ -16,9 +16,9 @@ import { readTillBilling } from "./lib/tillBilling";
  *   GET /api/events/:eventId/beo/till-billing   the till's figures, or why there are none
  *   GET /api/events/:eventId/beo/quote.pdf      the Quote PDF of those figures
  *
- * The BEO's Billing section ("From the till"), its Party Details box and its
- * Day-of view read the first; the Billing section's "Quote PDF" opens the
- * second. Both ask the platform with this app's provisioning key
+ * The BEO's Billing section ("From the till"), its Party Details box, its
+ * Day-of view and its view-only page read the first, and the BEO PDF the same
+ * figures (`readingFor`); the Billing section's "Quote PDF" opens the second. Both ask the platform with this app's provisioning key
  * (server/lib/tillBilling.ts) and work no figure out themselves: the till's
  * payments are the party's one ledger (the owner's ruling, 10 November).
  *
@@ -52,7 +52,7 @@ async function eventFor(req: Request): Promise<EventRow | null> {
 }
 
 /** The party's park: its link to the till, and its header for the Quote PDF. */
-async function parkOf(event: EventRow) {
+async function parkOf(event: Pick<EventRow, "tenantId" | "branchId">) {
   if (!event.branchId) return null;
   const [park] = await db
     .select({ name: branches.name, address: branches.address, logoUrl: branches.logoUrl, coreBranchId: branches.coreBranchId })
@@ -61,8 +61,12 @@ async function parkOf(event: EventRow) {
   return park ?? null;
 }
 
-/** The till's figures for the event, or why there are none. */
-async function readingFor(event: EventRow, requestId?: string): Promise<TillBillingReading> {
+/**
+ * The till's figures for the event, or why there are none. The BEO PDF reads
+ * them here too (beo-routes.ts, `/beo/pdf`), so the printed BEO says what the
+ * screens say. The caller has already checked the event is the user's to see.
+ */
+export async function readingFor(event: Pick<EventRow, "id" | "tenantId" | "branchId">, requestId?: string): Promise<TillBillingReading> {
   const park = await parkOf(event);
   const linked = park?.coreBranchId?.trim().toLowerCase() ?? "";
   if (!UUID.test(linked)) return { status: "not_linked", message: TILL_PARK_NOT_LINKED };

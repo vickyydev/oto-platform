@@ -24,8 +24,10 @@ import { BeoBillingModule } from "./beo-billing-module";
  * One place for the money: the till's payments are the ledger, and every
  * screen of the BEO that shows a party's money reads the same figures from it
  * (shared/tillBilling.ts) — the Billing section's "From the till" panel, the
- * Party Details box, the Day-of view's POS section. None of them adds anything
- * up; when the till cannot be reached they say "Till not reachable".
+ * Party Details box, the Day-of view's POS section, the view-only page's Party
+ * Details (and, on paper, the BEO PDF: server/lib/beoPdfMoney.ts). None of
+ * them adds anything up; when the till cannot be reached they say "Till not
+ * reachable".
  */
 
 /** The query every screen shares, so one "Refresh from the till" refreshes them all. */

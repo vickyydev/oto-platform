@@ -947,8 +947,10 @@ jobs:
       # provision key and never a session, the till's figures answered for a
       # linked party and a reason (never a figure) without the till, another
       # park group's party not found, and the Quote PDF of the till's quote
-      # (rendered by the runner's Chrome), and the billing's Deposit Paid sent
-      # once and in order against the real route; then the screens rendered:
+      # (rendered by the runner's Chrome), the BEO PDF's POS section printing
+      # the till's figures and never Party Details' typed sum, and the billing's
+      # Deposit Paid sent once and in order against the real route; then the
+      # screens rendered:
       # the Billing section's "From the till", the Party Details tiles and the
       # Day-of POS section, each the till's figures or "Till not reachable",
       # and the deposit's keystrokes held to one write.

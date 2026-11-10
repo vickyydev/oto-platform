@@ -36,6 +36,7 @@ import {
 import crypto from "crypto";
 import { eq, and, asc, desc, sql, inArray } from "drizzle-orm";
 import { generateBeoPdf, type BeoPdfData } from "./pdf";
+import { readingFor } from "./party-billing-routes";
 import { partyPackageTotal } from "@shared/partyPackageTotal";
 import { currentDeposit, depositOfBillingColumns, depositOfPartyDetails, sameDeposit, writePartyDeposit } from "./lib/partyDeposit";
 import { OBJECT_STORAGE } from "./config/env";
@@ -2676,6 +2677,8 @@ export function registerBeoRoutes(app: Express) {
           depositDate: partyDetails.depositDate || undefined,
           notes: partyDetails.notes || undefined,
         } : undefined,
+        // SCRUM-822: the POS section prints the till's figures (or why there are none), as the BEO's screens show them.
+        till: await readingFor(event, req.requestId),
         timeline: timeline.map(t => ({
           time: offsetToTime(t.offsetFromStartMinutes),
           description: t.label,

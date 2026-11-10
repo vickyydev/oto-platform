@@ -21,6 +21,10 @@
 //     the balance and a validity note under the park's name; the PDF is made
 //     for a party with a quote, refused for one settled, one the till cannot
 //     price, or when the till is not reachable;
+//   - the BEO PDF's POS section prints the till's total, deposit and
+//     outstanding, never Party Details' typed base price and extras added up,
+//     and "Till not reachable" with no figure without the till; the PDF route
+//     asks the till when it is made and still prints without it;
 //   - the billing module's Deposit Paid against the real billing route: the
 //     party's writes run in one queue, so 300, 3000, 300, 3000 sent together
 //     end at ฿3,000 (sent all at once they could end at ฿300); clearing the
@@ -54,6 +58,7 @@ process.env.OBJECT_STORAGE ??= "local";
 process.env.DEPLOY_ENV ??= "local";
 process.env.LOG_LEVEL ??= "warn";
 const { QUOTE_VALIDITY_NOTE, partyQuoteContent, quoteDayOf } = await import("../server/lib/partyQuote");
+const { beoPdfHtml } = await import("../server/pdf");
 const { readTillBilling } = await import("../server/lib/tillBilling");
 const { DepositBuffer, beoBillingMutationScope } = await import("../client/src/lib/beo-deposit-buffer");
 const { MutationObserver, QueryClient } = await import("@tanstack/react-query");
@@ -159,6 +164,59 @@ await check("the Quote PDF's content: the till's lines, ฿17,025, the deposit, 
   const odd = quoteAnswer(randomUUID());
   odd.party.title = "<script>alert(1)</script>";
   assert.ok(!partyQuoteContent(TillBillingSchema.parse(odd), new Date())!.includes("<script>"), "the party's name is escaped");
+});
+
+/**
+ * The BEO PDF of the quoted party, its Party Details as staff typed them
+ * before: a base price of 16,900 and a ฿500 extra (a typed sum of 17,400,
+ * 14,400 outstanding after the ฿3,000 deposit) — none of which is the till's.
+ */
+const beoPdfOf = (till: TillBillingReading | undefined) =>
+  beoPdfHtml({
+    eventTitle: "ZZ TEST Floresta party 822",
+    eventDate: "2026-11-18",
+    startTime: "13:00",
+    status: "upcoming",
+    partyDetails: {
+      packageName: "ZZ TEST Floresta Birthday",
+      packageBasePrice: 16_900,
+      items: [
+        { label: "Kids' table", type: "included", price: 0 },
+        { label: "Bubble show", type: "extra", price: 500 },
+      ],
+      prepaymentReceived: 3_000,
+      depositDate: "2026-11-01",
+    },
+    till,
+  });
+/** The printed POS section alone. */
+const posSection = (html: string) => {
+  const at = html.indexOf("<h2>POS");
+  return at < 0 ? "" : html.slice(at, html.indexOf("</div>", at));
+};
+
+await check("the BEO PDF's POS section prints the till's ฿17,025 / ฿3,000 / ฿14,025, never Party Details' typed sum", async () => {
+  const pos = posSection(await beoPdfOf(ok(quoteAnswer(randomUUID()))));
+  assert.ok(pos, "the section is printed");
+  for (const words of ["Expected total (from the till):", "฿17,025", "Deposit paid:", "฿3,000", "Deposit Date:", "2026-11-01", "Outstanding:", "฿14,025", "Bubble show", "EXTRA"]) {
+    assert.ok(pos.includes(words), `the POS section says ${words}`);
+  }
+  for (const typed of ["POS Total", "Base Price", "Outstanding Balance", "Prepayment Received", "17,400", "14,400", "16,900", "500฿", "-3,000"]) {
+    assert.ok(!pos.includes(typed), `the POS section never prints ${typed}`);
+  }
+  const settled = posSection(await beoPdfOf(ok(saleAnswer(randomUUID()))));
+  assert.ok(settled.includes("Total (from the till):") && settled.includes("฿17,025") && settled.includes("Receipt:") && settled.includes("T1-000822"));
+  assert.match(settled, /Outstanding:<\/td><td[^>]*>฿0</);
+});
+
+await check("the BEO PDF without the till: 'Till not reachable' and no figure; a party the till cannot price says so; no Party Details and no till, no section", async () => {
+  const down = posSection(await beoPdfOf({ status: "not_reachable", message: "The till did not answer." }));
+  assert.ok(down.includes("Till not reachable"));
+  assert.ok(!down.includes("฿") && !/\d{1,3},\d{3}/.test(down), `no figure: ${down}`);
+  const none = posSection(await beoPdfOf(ok(noQuoteAnswer(randomUUID()))));
+  assert.ok(none.includes("No quote from the till") && !none.includes("฿"));
+  const bare = await beoPdfHtml({ eventTitle: "ZZ TEST bare", eventDate: "2026-11-18", startTime: "13:00", status: "upcoming", till: { status: "not_linked", message: "x" } });
+  assert.equal(posSection(bare), "", "nothing to say about a party with no Party Details and no till figures");
 });
 
 // ─── The stand-in platform ────────────────────────────────────────────────────
@@ -435,6 +493,22 @@ try {
     assert.equal((await get(keyed, `/api/events/${partyB}/beo/quote.pdf`, manager)).status, 404);
   });
 
+  await check("the BEO PDF asks the till for the party's money when it is made, and is still made when the till does not answer", async () => {
+    const before = asked.length;
+    const pdf = await get(keyed, `/api/events/${quoted}/beo/pdf`, staff);
+    assert.equal(pdf.status, 200, pdf.bytes.toString("utf8").slice(0, 300));
+    assert.equal(pdf.type, "application/pdf");
+    assert.equal(pdf.bytes.subarray(0, 5).toString("latin1"), "%PDF-");
+    assert.equal(asked.length, before + 1, "the till was asked once");
+    assert.equal(asked.at(-1)!.url, `/otoapp/parties/${quoted}/billing`);
+    assert.equal(asked.at(-1)!.headers.authorization, "Bearer zz-822-key");
+    reply = hangUp;
+    const down = await get(keyed, `/api/events/${quoted}/beo/pdf`, staff);
+    reply = answer;
+    assert.equal(down.status, 200, "the BEO is printed without the money");
+    assert.equal(down.bytes.subarray(0, 5).toString("latin1"), "%PDF-");
+  });
+
   // ─── The billing module's deposit, against the real billing route ─────────
   //
   // The Deposit Paid field is the party's one deposit (SCRUM-813), the figure
@@ -520,4 +594,4 @@ try {
   platform.close();
   await pool.end();
 }
-process.exit(checks === 13 ? 0 : 1);
+process.exit(checks === 16 ? 0 : 1);

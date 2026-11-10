@@ -17,8 +17,9 @@ import { z } from "zod";
  *     taken (the deposit among them), its totals, when and at which till.
  *
  * Every screen that shows a party's money — the Billing section's "From the
- * till" panel, the Party Details box, the Day-of view's POS section and the
- * Quote PDF — reads the same three figures from here (`tillFiguresOf`). Money
+ * till" panel, the Party Details box, the Day-of view's POS section, the
+ * view-only page, the BEO PDF and the Quote PDF — reads the same three figures
+ * from here (`tillFiguresOf`). Money
  * arrives in SATANG and is shown in baht by `bahtOfSatang` only: a package
  * snapshot's satang read as baht printed ฿1,690,000 for a ฿16,900 package
  * (SCRUM-833). When the till cannot be reached the screens say so ("Till not

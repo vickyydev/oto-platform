@@ -32,7 +32,9 @@ import {
   Download,
 } from "lucide-react";
 import type { BeoEventWithDetails, BeoTimelineItem } from "@shared/schema";
+import { bahtOfSatang, tillFiguresOf } from "@shared/tillBilling";
 import { BeoPackageModule } from "./beo-package-module";
+import { TillMoneyRows, useTillBilling } from "./beo-till-billing";
 
 interface BeoViewOnlyProps {
   eventId: string;
@@ -265,6 +267,10 @@ export function BeoViewOnly({ eventId, showHeader = true }: BeoViewOnlyProps) {
     },
   });
 
+  // SCRUM-822: the party's money is the till's, as in the editor, the Day-of view and the BEO PDF.
+  const tillBilling = useTillBilling(eventId);
+  const tillFigures = tillFiguresOf(tillBilling.data);
+
   const beoTasks = ((beoData as any)?.beoTasks || []) as any[];
 
   const getBeoTaskStatus = (prefix: string) => {
@@ -366,12 +372,8 @@ export function BeoViewOnly({ eventId, showHeader = true }: BeoViewOnlyProps) {
     return `${hour12}:${mins.toString().padStart(2, "0")} ${ampm}`;
   };
 
-  const packageBasePrice = partyDetails?.packageBasePrice || 0;
+  // Party Details' lines are descriptive; nothing typed in them is added up (SCRUM-822).
   const packageItems = partyDetails?.items || [];
-  const extrasTotal = packageItems.filter((i: any) => i.type === "extra").reduce((s: number, i: any) => s + (Number(i.price) || 0), 0);
-  const packageTotal = packageBasePrice + extrasTotal;
-  const prepaymentReceived = partyDetails?.prepaymentReceived || 0;
-  const outstandingBalance = packageTotal - prepaymentReceived;
 
   const hasPartyHost = partyHost && (partyHost.assignedEmployeeId || partyHost.assignedUserId || partyHost.assignedRoleId || partyHost.resolvedUserName || partyHost.assignedEmployeeName);
   const hasEntertainment = entertainment && (entertainment.entertainmentRequired || entertainment.vendorName || entertainment.assignedUserId);
@@ -810,12 +812,12 @@ export function BeoViewOnly({ eventId, showHeader = true }: BeoViewOnlyProps) {
               <div className="flex items-center gap-2 w-full">
                 <CreditCard className="h-4 w-4 text-green-500" />
                 <span className="font-medium">Party Details</span>
-                {outstandingBalance > 0 && (
-                  <Badge variant="destructive" className="ml-2">
-                    ฿{outstandingBalance.toLocaleString()} outstanding
+                {tillFigures && tillFigures.outstandingSatang > 0 && (
+                  <Badge variant="destructive" className="ml-2" data-testid="badge-view-outstanding">
+                    {bahtOfSatang(tillFigures.outstandingSatang)} outstanding
                   </Badge>
                 )}
-                {outstandingBalance <= 0 && prepaymentReceived > 0 && (
+                {tillFigures && tillFigures.outstandingSatang <= 0 && tillFigures.expectedSatang > 0 && (
                   <Badge variant="default" className="ml-2 bg-emerald-500">Paid</Badge>
                 )}
                 <BeoTaskBadge prefix="💰 POS Setup:" label="Mark POS Done" />
@@ -827,9 +829,6 @@ export function BeoViewOnly({ eventId, showHeader = true }: BeoViewOnlyProps) {
                   <div>
                     <p className="text-xs text-muted-foreground font-medium">POS</p>
                     <p className="text-sm font-semibold">{partyDetails.packageName}</p>
-                    {packageBasePrice > 0 && (
-                      <p className="text-xs text-muted-foreground">Base price: ฿{packageBasePrice.toLocaleString()}</p>
-                    )}
                   </div>
                 )}
 
@@ -843,42 +842,16 @@ export function BeoViewOnly({ eventId, showHeader = true }: BeoViewOnlyProps) {
                             {item.type === "included" ? "INCL" : "EXTRA"}
                           </Badge>
                         </div>
-                        {item.type === "extra" && item.price > 0 && (
-                          <span className="font-mono text-sm">฿{Number(item.price).toLocaleString()}</span>
-                        )}
                       </div>
                     ))}
-
-                    <div className="pt-2 mt-2 border-t space-y-1">
-                      {extrasTotal > 0 && (
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Extras subtotal</span>
-                          <span className="font-mono">฿{extrasTotal.toLocaleString()}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between text-sm font-semibold">
-                        <span>POS Total</span>
-                        <span className="font-mono">฿{packageTotal.toLocaleString()}</span>
-                      </div>
-                    </div>
                   </div>
                 )}
 
-                <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
-                  {prepaymentReceived > 0 && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Prepayment Received</p>
-                      <p className="text-sm font-medium text-green-600">฿{prepaymentReceived.toLocaleString()}</p>
-                      {partyDetails.depositDate && (
-                        <p className="text-xs text-muted-foreground">on {partyDetails.depositDate}</p>
-                      )}
-                    </div>
-                  )}
-                  {outstandingBalance > 0 && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Outstanding Balance</p>
-                      <p className="text-sm font-medium text-destructive">฿{outstandingBalance.toLocaleString()}</p>
-                    </div>
+                {/* SCRUM-822: the till's figures, or "Till not reachable" — never a sum of what was typed. */}
+                <div className="space-y-1" data-testid="view-party-money">
+                  <TillMoneyRows reading={tillBilling.data} loading={tillBilling.isLoading} />
+                  {tillFigures && tillFigures.depositSatang > 0 && partyDetails.depositDate && (
+                    <p className="text-xs text-muted-foreground">Deposit paid on {partyDetails.depositDate}</p>
                   )}
                 </div>
 

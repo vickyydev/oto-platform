@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { EditableText, type EditableTextHandle } from "@/components/ui/editable-text";
+import { EditableText } from "@/components/ui/editable-text";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
@@ -316,10 +316,14 @@ function AiFillRow({ label, value }: { label: string; value: any }) {
   );
 }
 
+/**
+ * One of Party Details' lines: what the POS team should know is included or
+ * extra. It carries no price (SCRUM-822): what a party is charged is the
+ * till's, read in the Billing section, so no price is typed here a second time.
+ */
 function PackageLineItemRow({ item, idx, packageItems, setPackageItems }: {
   item: PackageLineItem; idx: number; packageItems: PackageLineItem[]; setPackageItems: (items: PackageLineItem[]) => void;
 }) {
-  const priceRef = useRef<EditableTextHandle>(null);
   return (
     <div className="border rounded-md px-3 py-2 space-y-1.5" data-testid={`package-item-row-${idx}`}>
       <div className="flex items-center gap-2">
@@ -347,11 +351,6 @@ function PackageLineItemRow({ item, idx, packageItems, setPackageItems }: {
             updated[idx] = { ...item, description: v };
             setPackageItems(updated);
           }}
-          onTab={() => {
-            if (item.type === "extra") {
-              priceRef.current?.focus();
-            }
-          }}
           onEnter={() => {
             const newItem: PackageLineItem = {
               id: `pi_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -370,35 +369,6 @@ function PackageLineItemRow({ item, idx, packageItems, setPackageItems }: {
           }}
           placeholder="e.g., 25 Extra Adults, Bubble Show, Neon Disco Party..."
           data-testid={`input-package-item-${idx}`}
-        />
-        <EditableText
-          ref={priceRef}
-          type="number"
-          className={`w-28 text-sm font-mono shrink-0 ${item.type === "included" ? "invisible" : ""}`}
-          value={String(item.price || "")}
-          onChange={(v) => {
-            const updated = [...packageItems];
-            updated[idx] = { ...item, price: Number(v) || 0 };
-            setPackageItems(updated);
-          }}
-          onEnter={() => {
-            const newItem: PackageLineItem = {
-              id: `pi_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-              description: "",
-              type: item.type,
-              price: 0,
-              notes: "",
-            };
-            const updated = [...packageItems];
-            updated.splice(idx + 1, 0, newItem);
-            setPackageItems(updated);
-            setTimeout(() => {
-              const el = document.querySelector(`[data-testid="input-package-item-${idx + 1}"]`) as HTMLElement;
-              if (el) el.click();
-            }, 50);
-          }}
-          placeholder="Price ฿"
-          data-testid={`input-package-item-price-${idx}`}
         />
         <Button
           variant="ghost"
@@ -624,6 +594,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const [eventData, setEventData] = useState<Partial<Event>>({});
   const [partyHost, setPartyHost] = useState<Partial<BeoPartyHostAssignment>>({});
   const [packageName, setPackageName] = useState("");
+  // SCRUM-822: kept as saved (no input types it any more): the till prices the party.
   const [packageBasePrice, setPackageBasePrice] = useState<number>(0);
   const [packageItems, setPackageItems] = useState<PackageLineItem[]>([]);
   const [prepaymentReceived, setPrepaymentReceived] = useState<number>(0);
@@ -687,7 +658,6 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const [aiReview, setAiReview] = useState<BeoAiPending | null>(null);
   // SCRUM-815: the preview is showing what an approval left (the rest of the same fill).
   const [aiFillAfterApproval, setAiFillAfterApproval] = useState(false);
-  const packagePriceRef = useRef<EditableTextHandle>(null);
   const responsibleSearchRef = useRef<HTMLInputElement>(null);
 
   const { data: entertainmentItems = [] } = useQuery<any[]>({
@@ -2298,6 +2268,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
             </AccordionTrigger>
             <AccordionContent className={`px-4 pb-4 ${readOnly ? "opacity-75 cursor-not-allowed" : ""}`}>
               <div className="space-y-4">
+                {/* SCRUM-822: no price is typed here: the package's price for the party's day and every
+                    charge are the till's (the tiles below and the Billing section). */}
                 <div className="flex items-end gap-3">
                   <div className="flex-1 space-y-1">
                     <Label className="text-xs text-muted-foreground">POS Name</Label>
@@ -2305,20 +2277,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                       value={packageName}
                       onChange={setPackageName}
                       placeholder="e.g., Platinum POS"
-                      onTab={() => packagePriceRef.current?.focus()}
                       data-testid="input-package-name"
-                    />
-                  </div>
-                  <div className="space-y-1 w-36">
-                    <Label className="text-xs text-muted-foreground">Base Price (฿)</Label>
-                    <EditableText
-                      ref={packagePriceRef}
-                      type="number"
-                      className="w-full font-mono"
-                      value={String(packageBasePrice || "")}
-                      onChange={(v) => setPackageBasePrice(Number(v) || 0)}
-                      placeholder="0"
-                      data-testid="input-package-base-price"
                     />
                   </div>
                 </div>
@@ -2327,6 +2286,9 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Line Items</Label>
+                  <p className="text-xs text-muted-foreground" data-testid="text-party-details-lines-note">
+                    What the POS team should know is included or extra. The prices are the till's.
+                  </p>
 
                   {packageItems.length === 0 ? (
                     <div
