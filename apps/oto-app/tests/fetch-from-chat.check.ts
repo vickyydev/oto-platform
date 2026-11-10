@@ -17,7 +17,8 @@
 //     what the form holds, what the chat says, whose line — a typed value is
 //     OFFERED, never overwritten; a value the chat does not give changes
 //     nothing and no field is ever offered emptied; the date as one row;
-//     whose cake only when said; "no cake" never over a cake;
+//     whose cake only when said; "no cake" never over a cake; a deposit the
+//     chat only asks for is never offered as received;
 //   - a declined change is held back on the same chat and offered again once
 //     the chat's newest line moves; the accepted ones are a patch of the form.
 //
@@ -320,6 +321,24 @@ try {
     assert.deepEqual(own.map((c) => [c.field, c.was, c.now, c.value, c.from?.source]), [["cakeMode", "No cake", "The park's cake", "INTERNAL", "family"]]);
     const over = fetchChangesOf({ fill: {}, review: review("INTERNAL") }, { ...FORM, numAdults: 6 });
     assert.deepEqual(over.map((c) => [c.field, c.was, c.now]), [["cakeMode", "The family's own cake", "The park's cake"]], "said as the park's: offered over the family's own, never applied");
+  });
+
+  await check("a deposit the chat only asks for is never offered as received: paid false offers no deposit row, not even its date; paid true does", () => {
+    const review = (paid: boolean) => ({ ...fetched.review, proposal: { ...fetched.review.proposal, deposit: { amount: 5000, paid, date: "2026-11-05", from: { source: "team", at: null, line: 2 } } } });
+    const form = { ...FORM, numAdults: 6, cakeTime: "16:00", prepaymentReceived: 0, depositDate: "" };
+    const asked = fetchChangesOf({ fill: { partyDetails: { prepaymentReceived: 5000, depositDate: "2026-11-05" } }, review: review(false) }, form);
+    assert.deepEqual(asked, [], "asked for, not received: nothing from the whole chat's read, nor from the fill's");
+    const received = fetchChangesOf({ fill: {}, review: review(true) }, form);
+    assert.deepEqual(
+      received.map((c) => [c.field, c.was, c.now, c.value]),
+      [
+        ["prepaymentReceived", "—", "฿5,000", 5000],
+        ["depositDate", "—", "Thu 5 Nov 2026", "2026-11-05"],
+      ],
+    );
+    // A chat that names no deposit at all: the fill's prepayment (received by name) still counts.
+    const fillOnly = fetchChangesOf({ fill: { partyDetails: { prepaymentReceived: 5000 } }, review: { ...fetched.review, proposal: { ...fetched.review.proposal, deposit: null } } }, form);
+    assert.deepEqual(fillOnly.map((c) => c.field), ["prepaymentReceived"]);
   });
 
   await check("nothing is written by a fetch: no BEO row for the event", async () => {

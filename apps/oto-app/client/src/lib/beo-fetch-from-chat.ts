@@ -197,8 +197,14 @@ export function fetchChangesOf(answer: Pick<FetchAnswer, "fill" | "review">, for
   // Party Details: the POS package's name, the deposit and its day, the notes.
   const packageName = str(party.packageName);
   if (packageName && !sameText(form.packageName, packageName)) offer("packageName", shownText(form.packageName), packageName, packageName, ruling);
+  // The deposit the form holds is the one RECEIVED. The whole chat's reading
+  // says whether it was: a deposit only asked for ("please transfer 5,000")
+  // is billing's deposit required, which this fetch does not cover, so it
+  // offers nothing — never the asked-for amount as received.
   const deposit = proposal?.deposit
-    ? { amount: proposal.deposit.amount, date: day(proposal.deposit.date), from: proposal.deposit.from }
+    ? proposal.deposit.paid
+      ? { amount: proposal.deposit.amount, date: day(proposal.deposit.date), from: proposal.deposit.from }
+      : { amount: null, date: null, from: proposal.deposit.from }
     : { amount: num(party.prepaymentReceived), date: day(party.depositDate), from: ruling };
   if (deposit.amount !== null && deposit.amount > 0 && deposit.amount !== form.prepaymentReceived) {
     offer("prepaymentReceived", form.prepaymentReceived > 0 ? thb(form.prepaymentReceived) : NONE, thb(deposit.amount), deposit.amount, deposit.from);
