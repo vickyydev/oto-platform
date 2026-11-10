@@ -335,7 +335,9 @@ export function StationDrawer({
           <Field
             label="Code prefix"
             hint={
-              !isBooth ? (
+              kind === 'till' || kind === 'kiosk' ? (
+                'Leads every band code and receipt number. Use a prefix no other till at this park has used, including archived tills.'
+              ) : !isBooth ? (
                 'Leads every band code and receipt number this station mints. Two live stations cannot share one.'
               ) : prefixMissing ? (
                 <span style={{ color: 'hsl(var(--status-down))' }}>{prefixMissing}</span>

@@ -39,6 +39,16 @@ const failed = (over: Partial<Extract<SaleWriteState, { kind: 'failed' }>> = {})
 });
 
 describe('the sale panel after a refused money press', () => {
+  it('SCRUM-809: a receipt-prefix refusal names the Console repair, without generic retry advice', () => {
+    const out = html(failed({ code: 'RECEIPT_PREFIX_IN_USE',
+      message: 'Receipt prefix Z809 is already in use at this park.' }));
+    expect(out).toContain('Receipt prefix Z809 is already in use');
+    expect(out).toContain('receipt prefix in the Console');
+    expect(out).toContain('return to the order and confirm the payment again');
+    expect(out).not.toContain('Trying again will not help');
+    expect(out).not.toContain('>Try again<');
+  });
+
   it('resolved HIGH: an unanswered box cash press stays uncertain in the heading and actual connection message', () => {
     // Neither heading nor connection message claims a lost reply took nothing.
     const out = html(failed({ cause: 'connection', retryable: true, code: undefined,

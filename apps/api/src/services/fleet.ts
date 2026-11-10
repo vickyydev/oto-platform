@@ -8,6 +8,7 @@ import {
   device,
   deviceCredential,
   employee,
+  receiptSeries,
   session as sessionTable,
   station,
   stationDevice,
@@ -477,6 +478,35 @@ async function assertBoothCodePrefixFree(
       },
     );
   }
+}
+
+/** SCRUM-809: retiring or renaming a till does not free its receipt numbers. */
+async function assertReceiptPrefixFree(
+  tx: Exec,
+  input: { operatorId: string; branchId: string; kind: StationKind; codePrefix: string | null; exceptStationId?: string },
+): Promise<void> {
+  if (!input.codePrefix || (input.kind !== 'till' && input.kind !== 'kiosk')) return;
+  // Serialize competing assignments, including a winner archived before the
+  // next save. The live-only unique index cannot protect that case.
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`receipt-prefix:${input.branchId}:${input.codePrefix}`}, 0))`);
+  const [assigned] = await tx.select({ id: station.id, name: station.name }).from(station).where(and(
+    eq(station.operatorId, input.operatorId), eq(station.branchId, input.branchId),
+    inArray(station.kind, ['till', 'kiosk']), eq(station.codePrefix, input.codePrefix),
+    input.exceptStationId ? ne(station.id, input.exceptStationId) : undefined,
+  )).orderBy(asc(station.id)).limit(1);
+  // A till may have changed its prefix since issuing the earlier receipts.
+  // Its immutable series still identifies the station that used that prefix.
+  const [issued] = assigned ? [] : await tx.select({ id: station.id, name: station.name })
+    .from(receiptSeries).innerJoin(station, eq(station.id, receiptSeries.stationId)).where(and(
+      eq(receiptSeries.operatorId, input.operatorId), eq(receiptSeries.branchId, input.branchId),
+      eq(station.operatorId, input.operatorId), eq(station.branchId, input.branchId),
+      eq(receiptSeries.series, input.codePrefix),
+      input.exceptStationId ? ne(receiptSeries.stationId, input.exceptStationId) : undefined,
+    )).orderBy(asc(station.id)).limit(1);
+  const other = assigned ?? issued;
+  if (other) throw new AppError(409, 'STATION_CODE_PREFIX_TAKEN',
+    `Receipt prefix ${input.codePrefix} was already used by ${other.name} at this park. Choose a different prefix; archiving a till does not free its receipt numbers.`,
+    { field: 'codePrefix', stationId: other.id, stationName: other.name });
 }
 
 // --- Loading a row, scoped, before anybody is allowed to touch it -----------
@@ -1281,6 +1311,9 @@ export async function createStation(
   try {
     return await withTx(db, ctx, 'station.create', async (tx) => {
       await lockActiveOrganisation(tx, actor.operatorId, branchId);
+      await assertReceiptPrefixFree(tx, {
+        operatorId: actor.operatorId, branchId, kind: input.kind, codePrefix: input.codePrefix ?? null,
+      });
       await tx.insert(station).values({
         id,
         operatorId: actor.operatorId,
@@ -1375,6 +1408,11 @@ export async function updateStation(
 
   try {
     return await withTx(db, ctx, 'station.update', async (tx) => {
+      await assertReceiptPrefixFree(tx, {
+        operatorId: actor.operatorId, branchId: before.branchId, kind: patch.kind ?? before.kind,
+        codePrefix: patch.codePrefix === undefined ? before.codePrefix : patch.codePrefix,
+        exceptStationId: before.id,
+      });
       const set: Partial<typeof station.$inferInsert> = {};
       if (patch.name !== undefined) set.name = patch.name;
       if (patch.kind !== undefined) set.kind = patch.kind;
