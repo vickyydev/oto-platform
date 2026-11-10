@@ -1,0 +1,1385 @@
+{
+  "unit": "SCRUM-823",
+  "what": "In Birthdays & Events, advice and choice questions go to a person at once, who is notified — staging proof, part 1: the rule (the OTO App bell waits on the platform key's notifications:write permission)",
+  "liveCommit": "a80ca26308b3965e721f409aa413387bb386750d",
+  "liveBefore": {
+    "at": "2026-11-10T13:48:03.548Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbphti5g1s2s738g02og",
+        "status": "live",
+        "sha": "a80ca26308b3965e721f409aa413387bb386750d",
+        "finishedAt": "2026-11-10T13:44:27.624568Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbphtj6tlv9c73fkk6q0",
+        "status": "live",
+        "sha": "a80ca26308b3965e721f409aa413387bb386750d",
+        "finishedAt": "2026-11-10T13:41:27.149325Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dbphtjetlv9c73fkk86g",
+        "status": "live",
+        "sha": "a80ca26308b3965e721f409aa413387bb386750d",
+        "finishedAt": "2026-11-10T13:41:34.108799Z"
+      },
+      {
+        "name": "oto-app-staging",
+        "deployId": "dep-dbphtim1egvs73c63dsg",
+        "status": "live",
+        "sha": "a80ca26308b3965e721f409aa413387bb386750d",
+        "finishedAt": "2026-11-10T13:43:18.556061Z"
+      }
+    ],
+    "allLiveOnSha": true
+  },
+  "liveAfter": {
+    "at": "2026-11-10T14:13:05.070Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbpiaup42hec73djol2g",
+        "status": "live",
+        "sha": "a80ca26308b3965e721f409aa413387bb386750d",
+        "finishedAt": "2026-11-10T14:12:58.636512Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbpiaup42hec73djom50",
+        "status": "live",
+        "sha": "a80ca26308b3965e721f409aa413387bb386750d",
+        "finishedAt": "2026-11-10T14:09:57.586842Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dbpiaup42hec73djom1g",
+        "status": "live",
+        "sha": "a80ca26308b3965e721f409aa413387bb386750d",
+        "finishedAt": "2026-11-10T14:09:57.618434Z"
+      },
+      {
+        "name": "oto-app-staging",
+        "deployId": "dep-dbphtim1egvs73c63dsg",
+        "status": "live",
+        "sha": "a80ca26308b3965e721f409aa413387bb386750d",
+        "finishedAt": "2026-11-10T13:43:18.556061Z"
+      }
+    ],
+    "allLiveOnSha": true
+  },
+  "run": {
+    "startedAt": "2026-11-10T13:47:56.091Z",
+    "endedAt": "2026-11-10T14:10:57.679Z",
+    "browser": "Chromium 153.0.8010.12 headless, 1440×900, light, en-GB, Asia/Bangkok"
+  },
+  "actor": "the staging administrator through the launcher (owner view in the inbox, administrator in the Console); names, avatars and initials masked in every picture, never kept",
+  "channel": {
+    "account": "Demo WhatsApp · Central Floresta (simulator)",
+    "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+    "aiMode": "live",
+    "senders": "five ZZ TEST simulator numbers, one per thread (not kept here); nothing reaches a real phone"
+  },
+  "branchContacts": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "before": {
+      "birthdayManagerContact": null,
+      "gmContact": null
+    },
+    "set": {
+      "form": {
+        "birthdayManager": {
+          "name": "ZZ TEST Birthday Manager",
+          "appUserIdFilled": true,
+          "phoneFilled": true,
+          "channel": "whatsapp"
+        },
+        "gm": {
+          "name": "ZZ TEST GM",
+          "appUserIdFilled": true,
+          "phoneFilled": true,
+          "channel": "telegram"
+        }
+      },
+      "save": {
+        "route": "PATCH /api/branches/:id",
+        "status": 200,
+        "branchIdMatches": true,
+        "sent": {
+          "keys": [
+            "birthdayManagerContact",
+            "gmContact"
+          ],
+          "birthdayManagerContact": "a contact",
+          "gmContact": "a contact"
+        },
+        "error": null
+      },
+      "readBackAsAdministrator": {
+        "route": "GET /api/branches",
+        "status": 200,
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "birthdayManagerContact": {
+          "name": "ZZ TEST Birthday Manager",
+          "appUserId": "00000000-0000-4000-8000-000000000823 (the made-up id entered)",
+          "phone": "+66*****0823",
+          "phoneIsE164": true,
+          "phoneIsTheOneEntered": true,
+          "channel": "whatsapp"
+        },
+        "gmContact": {
+          "name": "ZZ TEST GM",
+          "appUserId": "00000000-0000-4000-8000-000000000824 (the made-up id entered)",
+          "phone": "+66*****0824",
+          "phoneIsE164": true,
+          "phoneIsTheOneEntered": true,
+          "channel": "telegram"
+        },
+        "otherBranchesWithAContact": 0
+      }
+    },
+    "note": "both OTO App user ids are made up (00000000-0000-4000-8000-000000000823 and …0824; no such user) so that a bell row is written and tried for each; the phones are ZZ TEST numbers, shown here masked",
+    "leakCheckAsReception": {
+      "at": "2026-11-10T13:49:31.572Z",
+      "actor": "the staging reception account (its own context)",
+      "signIn": {
+        "route": "POST /api/auth/sign-in (launcher)",
+        "status": 200,
+        "error": null
+      },
+      "holds": {
+        "admin:branch:read": true,
+        "admin:branch:update": false
+      },
+      "branches": {
+        "route": "GET /api/branches",
+        "status": 200,
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "birthdayManagerContact": null,
+        "gmContact": null,
+        "otherBranchesWithAContact": 0
+      },
+      "signOut": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200,
+        "readBack": {
+          "route": "GET /api/me (launcher)",
+          "status": 401
+        }
+      }
+    },
+    "cleared": {
+      "save": {
+        "route": "PATCH /api/branches/:id",
+        "status": 200,
+        "branchIdMatches": true,
+        "sent": {
+          "keys": [
+            "birthdayManagerContact",
+            "gmContact"
+          ],
+          "birthdayManagerContact": null,
+          "gmContact": null
+        },
+        "error": null
+      },
+      "readBack": {
+        "route": "GET /api/branches",
+        "status": 200,
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "birthdayManagerContact": null,
+        "gmContact": null,
+        "otherBranchesWithAContact": 0
+      }
+    }
+  },
+  "checks": [
+    {
+      "step": 0,
+      "check": "api, inbox, Console and OTO App live on a80ca263 before and after the run",
+      "pass": true,
+      "value": "oto-api a80ca2630 live, oto-inbox a80ca2630 live, oto-console a80ca2630 live, oto-app a80ca2630 live"
+    },
+    {
+      "step": 0,
+      "check": "assistant live on Demo WhatsApp · Central Floresta",
+      "pass": true,
+      "value": "aiMode live"
+    },
+    {
+      "step": 1,
+      "check": "Console › Branches › Central Floresta › Edit: both contacts filled and saved",
+      "pass": true,
+      "value": "PATCH /api/branches/:id 200, both contacts sent",
+      "picture": "823-st-01-branch-contacts.png"
+    },
+    {
+      "step": 1,
+      "check": "GET /api/branches as the administrator: both contacts present, phone in E.164",
+      "pass": true,
+      "value": "birthday manager: ZZ TEST Birthday Manager, +66*****0823 (E.164), whatsapp; GM: ZZ TEST GM, +66*****0824 (E.164), telegram"
+    },
+    {
+      "step": 1,
+      "check": "leak check: GET /api/branches as the reception account shows neither contact",
+      "pass": true,
+      "value": "200; birthdayManagerContact null, gmContact null (reception holds admin:branch:read true, admin:branch:update false); signed out, read back 401"
+    },
+    {
+      "step": 2,
+      "check": "thread A: the family gets only the birthday team's closing line",
+      "pass": true,
+      "value": "1 assistant line, \"Thank you so much! Our birthday manager will be with you shortly.\" (closing_birthday); no recommendation, no branch named"
+    },
+    {
+      "step": 2,
+      "check": "thread A: in the Birthdays & Events queue, turn intent birthday_advice",
+      "pass": true,
+      "value": "category birthdays, team Birthdays & Events; ai_handover intents [\"birthday_advice\"], reason OK, rule null"
+    },
+    {
+      "step": 2,
+      "check": "thread A: the pill says birthday advice and manager not notified",
+      "pass": true,
+      "value": "AI handed over to the team — manager not notified (sending failed) | AI handed over to the team · birthday advice · manager not notified (sending failed)",
+      "picture": "823-st-02-advice-handed-over.png"
+    },
+    {
+      "step": 3,
+      "check": "thread B: a plain fact (parking) in a birthday thread is answered, not handed over",
+      "pass": true,
+      "value": "ai_replied, intent directions_parking; reply \"Yes! Parking is free at Central Floresta 😊\" (sent); no hand-over, no notice",
+      "picture": "823-st-03-fact-still-answered.png"
+    },
+    {
+      "step": 4,
+      "check": "thread C: handed over to Birthdays & Events with birthday advice",
+      "pass": true,
+      "value": "ai_handover intents [\"birthday_advice\"], reason OK; manager not notified (sending failed)",
+      "picture": "823-st-04-opener-not-sent-advice-handed-over.png"
+    },
+    {
+      "step": 4,
+      "check": "thread C: the date-and-park opener goes out beside the hand-over",
+      "pass": false,
+      "value": "not sent: the model read the message as advice only (intents [\"birthday_advice\"], no birthday_party), so there was no opener to keep; the family got only \"Thank you so much! Our birthday manager will be with you shortly.\"",
+      "picture": "823-st-04-opener-not-sent-advice-handed-over.png"
+    },
+    {
+      "step": "4b",
+      "check": "extra (not in the brief) thread C2: a party request and an advice question in one line keeps the opener",
+      "pass": false,
+      "value": "not sent: the model read both parts (intents [\"birthday_advice\",\"birthday_party\"]) but handed over itself (reason OK, rule null); the server keeps the opener only when the model ANSWERED (openerBesideAdvice, packages/assistant/src/advice.ts), so only \"Thank you so much! Our birthday manager will be with you shortly.\" went",
+      "picture": "823-st-04b-extra-party-and-advice-opener-not-sent.png"
+    },
+    {
+      "step": 5,
+      "check": "thread D (Russian): only the birthday team's closing line, in Russian; handed over with birthday advice",
+      "pass": true,
+      "value": "\"Большое спасибо! Наш менеджер по праздникам скоро свяжется с вами.\" (closing_birthday); intents [\"birthday_advice\"]; manager not notified (sending failed)",
+      "picture": "823-st-05-ru-advice-handed-over.png"
+    },
+    {
+      "step": 6,
+      "check": "thread A notice rows: the bell (app) failed on the key's missing permission",
+      "pass": true,
+      "value": "api warning at 2026-11-10T13:50:30.581267354Z: channel app, code OTOAPP_SCOPE_REQUIRED; row: notice app: failed OTOAPP_SCOPE_REQUIRED",
+      "expected": true
+    },
+    {
+      "step": 6,
+      "check": "thread A notice rows: the phone ping (WhatsApp) skipped, only logged",
+      "pass": true,
+      "value": "row: notice whatsapp: skipped PING_NOT_LIVE",
+      "expected": true
+    },
+    {
+      "step": 6,
+      "check": "thread A: the pill says manager not notified, with the reason",
+      "pass": true,
+      "value": "handoverNotices: notNotified true, notNotifiedWhy failed → \"manager not notified (sending failed)\"",
+      "expected": true
+    },
+    {
+      "step": 6,
+      "check": "Console › Health: job:inbox.handover_escalation present and running",
+      "pass": true,
+      "value": "\"job:inbox.handover_escalation ok 46s / every 1m last ran 10 Nov, 20:53\"; ticked 2026-11-10T13:55:25.855Z → 2026-11-10T13:56:25.860Z",
+      "picture": "823-st-06-health-escalation-job.png"
+    },
+    {
+      "step": 7,
+      "check": "thread A after 16 minutes untouched: escalated once (audit inbox.handover.escalate)",
+      "pass": true,
+      "value": "2026-11-10T14:06:25.881Z; notices before: [{\"state\":\"failed\",\"channel\":\"app\"},{\"state\":\"skipped\",\"channel\":\"whatsapp\"}]; escalations written: [\"app pending\",\"telegram pending\"]"
+    },
+    {
+      "step": 7,
+      "check": "thread A escalation rows: app failed, Telegram skipped PING_NOT_LIVE",
+      "pass": true,
+      "value": "escalation app: failed OTOAPP_SCOPE_REQUIRED; escalation telegram: skipped PING_NOT_LIVE",
+      "expected": true
+    },
+    {
+      "step": 7,
+      "check": "thread A: the pill says the GM was not notified, with the reason",
+      "pass": true,
+      "value": "handoverNotices: gmNotNotified true, gmNotNotifiedWhy failed, pickedUpAt null; pill: AI handed over to the team — manager not notified (sending failed), GM not notified (sending failed) | AI handed over to the team · birthday advice · manager not notified (sending failed) · GM not notified (sending failed)",
+      "picture": "823-st-07-escalation-after-15-min.png",
+      "expected": true
+    },
+    {
+      "step": "7b",
+      "check": "extra: a hand-over a person handled within 15 minutes is stamped picked up and never escalates (thread C2, handled at clean-up)",
+      "pass": true,
+      "value": "read 2026-11-10T14:10:45.355Z: pickedUpAt 2026-11-10T14:07:48.500Z, gmNotNotified false; rows: notice app: failed OTOAPP_SCOPE_REQUIRED; notice whatsapp: skipped PING_NOT_LIVE, no escalation row"
+    },
+    {
+      "step": "clean-up",
+      "check": "the five ZZ TEST conversations marked handled, read back",
+      "pass": true,
+      "value": "A 200 → handled, B 200 → handled, C 200 → handled, D 200 → handled, C2 200 → handled"
+    },
+    {
+      "step": "clean-up",
+      "check": "branch contacts cleared, GET /api/branches reads null for both",
+      "pass": true,
+      "value": "PATCH 200; read back birthdayManagerContact null, gmContact null"
+    },
+    {
+      "step": "clean-up",
+      "check": "signed out of the inbox, the Console and the launcher, read back 401",
+      "pass": true,
+      "value": "inbox 401, console 401, launcher 401"
+    }
+  ],
+  "threads": {
+    "A": {
+      "conversationId": "01a1c5b9-5802-7288-b4dd-531f3d964365",
+      "sent": {
+        "text": "Hi! Which branch would you recommend for a party of 12 kids? (ZZ TEST)",
+        "language": "en",
+        "categoryHint": "birthdays",
+        "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+        "status": 200,
+        "conversationsCreated": 1,
+        "at": "2026-11-10T13:50:20.349Z",
+        "requestHint": {
+          "category": "birthdays",
+          "language": "en"
+        }
+      },
+      "conversation": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "birthdays",
+        "teamName": "Birthdays & Events",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "en",
+        "aiMode": "live",
+        "aiPaused": false,
+        "handledAt": null
+      },
+      "assistantLines": [
+        {
+          "id": "01a1c5b9-7dab-7769-9e24-50ade7889f61",
+          "at": "2026-11-10T13:50:30.290Z",
+          "providerStatus": "sent",
+          "body": "Thank you so much! Our birthday manager will be with you shortly."
+        }
+      ],
+      "turns": [
+        {
+          "kind": "ai_handover",
+          "createdAt": "2026-11-10T13:50:30.290Z",
+          "actorKind": "ai",
+          "turnId": "01a1c5b9-5814-7222-aee7-83eca9069a8c",
+          "intent": "birthday_advice",
+          "intents": [
+            "birthday_advice"
+          ],
+          "reason": "OK",
+          "rule": null,
+          "destination": "birthdays",
+          "templateKey": "closing_birthday",
+          "closingKey": "closing_birthday",
+          "holdingLine": "template",
+          "silent": false,
+          "messageIds": 1,
+          "branchSet": null,
+          "thenHandover": null,
+          "gate": null
+        }
+      ],
+      "handoverNotices": [
+        {
+          "turnId": "01a1c5b9-5814-7222-aee7-83eca9069a8c",
+          "destination": "birthdays",
+          "notifiedAt": null,
+          "notNotified": true,
+          "notNotifiedWhy": "failed",
+          "escalatedAt": null,
+          "gmNotNotified": true,
+          "gmNotNotifiedWhy": "failed",
+          "pickedUpAt": null
+        }
+      ],
+      "pillLines": [
+        "AI handed over · Resume",
+        "AI handed over to the team — manager not notified (sending failed)",
+        "AI handed over to the team · birthday advice · manager not notified (sending failed)"
+      ],
+      "noticeRows": [
+        {
+          "turn_id": "01a1c5b9-5814-7222-aee7-83eca9069a8c",
+          "kind": "notice",
+          "channel": "app",
+          "state": "failed",
+          "error_code": "OTOAPP_SCOPE_REQUIRED",
+          "attempts": 1,
+          "created_at": "2026-11-10T13:50:30.290Z",
+          "sent_at": null,
+          "escalated_at": "2026-11-10T14:06:25.874Z",
+          "picked_up_at": null
+        },
+        {
+          "turn_id": "01a1c5b9-5814-7222-aee7-83eca9069a8c",
+          "kind": "notice",
+          "channel": "whatsapp",
+          "state": "skipped",
+          "error_code": "PING_NOT_LIVE",
+          "attempts": 1,
+          "created_at": "2026-11-10T13:50:30.290Z",
+          "sent_at": null,
+          "escalated_at": "2026-11-10T14:06:25.874Z",
+          "picked_up_at": null
+        },
+        {
+          "turn_id": "01a1c5b9-5814-7222-aee7-83eca9069a8c",
+          "kind": "escalation",
+          "channel": "app",
+          "state": "failed",
+          "error_code": "OTOAPP_SCOPE_REQUIRED",
+          "attempts": 1,
+          "created_at": "2026-11-10T14:06:25.874Z",
+          "sent_at": null,
+          "escalated_at": null,
+          "picked_up_at": null
+        },
+        {
+          "turn_id": "01a1c5b9-5814-7222-aee7-83eca9069a8c",
+          "kind": "escalation",
+          "channel": "telegram",
+          "state": "skipped",
+          "error_code": "PING_NOT_LIVE",
+          "attempts": 1,
+          "created_at": "2026-11-10T14:06:25.874Z",
+          "sent_at": null,
+          "escalated_at": null,
+          "picked_up_at": null
+        }
+      ]
+    },
+    "B": {
+      "conversationId": "01a1c5b9-79af-7694-8b46-6ae1ab868b7d",
+      "sent": {
+        "text": "Do you have parking at Central Floresta? (ZZ TEST)",
+        "language": "en",
+        "categoryHint": "birthdays",
+        "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+        "status": 200,
+        "conversationsCreated": 1,
+        "at": "2026-11-10T13:50:29.024Z",
+        "requestHint": {
+          "category": "birthdays",
+          "language": "en"
+        }
+      },
+      "conversation": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "birthdays",
+        "teamName": "Birthdays & Events",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "en",
+        "aiMode": "live",
+        "aiPaused": false,
+        "handledAt": null
+      },
+      "assistantLines": [
+        {
+          "id": "01a1c5b9-9e9b-7093-b72a-e571b4b2405a",
+          "at": "2026-11-10T13:50:38.738Z",
+          "providerStatus": "sent",
+          "body": "Yes! Parking is free at Central Floresta 😊"
+        }
+      ],
+      "turns": [
+        {
+          "kind": "ai_replied",
+          "createdAt": "2026-11-10T13:50:38.738Z",
+          "actorKind": "ai",
+          "turnId": "01a1c5b9-79c0-777f-94e1-a6908e66e533",
+          "intent": "directions_parking",
+          "intents": [
+            "directions_parking"
+          ],
+          "reason": null,
+          "rule": null,
+          "destination": null,
+          "templateKey": null,
+          "closingKey": null,
+          "holdingLine": null,
+          "silent": null,
+          "messageIds": 1,
+          "branchSet": null,
+          "thenHandover": null,
+          "gate": null
+        }
+      ],
+      "handoverNotices": [],
+      "pillLines": [],
+      "noticeRows": []
+    },
+    "C": {
+      "conversationId": "01a1c5ba-38b4-7838-bac6-ecb212a24e9b",
+      "sent": {
+        "text": "We want a birthday party for our daughter. What would you suggest? (ZZ TEST)",
+        "language": "en",
+        "categoryHint": "birthdays",
+        "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+        "status": 200,
+        "conversationsCreated": 1,
+        "at": "2026-11-10T13:51:17.889Z",
+        "requestHint": {
+          "category": "birthdays",
+          "language": "en"
+        }
+      },
+      "conversation": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "birthdays",
+        "teamName": "Birthdays & Events",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "en",
+        "aiMode": "live",
+        "aiPaused": false,
+        "handledAt": null
+      },
+      "assistantLines": [
+        {
+          "id": "01a1c5ba-4e19-70cc-b96b-3a056b505e5f",
+          "at": "2026-11-10T13:51:23.661Z",
+          "providerStatus": "sent",
+          "body": "Thank you so much! Our birthday manager will be with you shortly."
+        }
+      ],
+      "turns": [
+        {
+          "kind": "ai_handover",
+          "createdAt": "2026-11-10T13:51:23.661Z",
+          "actorKind": "ai",
+          "turnId": "01a1c5ba-38c8-74a0-8a30-78c7dac86605",
+          "intent": "birthday_advice",
+          "intents": [
+            "birthday_advice"
+          ],
+          "reason": "OK",
+          "rule": null,
+          "destination": "birthdays",
+          "templateKey": "closing_birthday",
+          "closingKey": "closing_birthday",
+          "holdingLine": "template",
+          "silent": false,
+          "messageIds": 1,
+          "branchSet": null,
+          "thenHandover": null,
+          "gate": null
+        }
+      ],
+      "handoverNotices": [
+        {
+          "turnId": "01a1c5ba-38c8-74a0-8a30-78c7dac86605",
+          "destination": "birthdays",
+          "notifiedAt": null,
+          "notNotified": true,
+          "notNotifiedWhy": "failed",
+          "escalatedAt": null,
+          "gmNotNotified": true,
+          "gmNotNotifiedWhy": "failed",
+          "pickedUpAt": null
+        }
+      ],
+      "pillLines": [
+        "AI handed over · Resume",
+        "AI handed over to the team — manager not notified (sending failed)",
+        "AI handed over to the team · birthday advice · manager not notified (sending failed)"
+      ],
+      "noticeRows": [
+        {
+          "turn_id": "01a1c5ba-38c8-74a0-8a30-78c7dac86605",
+          "kind": "notice",
+          "channel": "app",
+          "state": "failed",
+          "error_code": "OTOAPP_SCOPE_REQUIRED",
+          "attempts": 1,
+          "created_at": "2026-11-10T13:51:23.661Z",
+          "sent_at": null,
+          "escalated_at": "2026-11-10T14:06:25.874Z",
+          "picked_up_at": null
+        },
+        {
+          "turn_id": "01a1c5ba-38c8-74a0-8a30-78c7dac86605",
+          "kind": "notice",
+          "channel": "whatsapp",
+          "state": "skipped",
+          "error_code": "PING_NOT_LIVE",
+          "attempts": 1,
+          "created_at": "2026-11-10T13:51:23.661Z",
+          "sent_at": null,
+          "escalated_at": "2026-11-10T14:06:25.874Z",
+          "picked_up_at": null
+        },
+        {
+          "turn_id": "01a1c5ba-38c8-74a0-8a30-78c7dac86605",
+          "kind": "escalation",
+          "channel": "app",
+          "state": "failed",
+          "error_code": "OTOAPP_SCOPE_REQUIRED",
+          "attempts": 1,
+          "created_at": "2026-11-10T14:06:25.874Z",
+          "sent_at": null,
+          "escalated_at": null,
+          "picked_up_at": null
+        },
+        {
+          "turn_id": "01a1c5ba-38c8-74a0-8a30-78c7dac86605",
+          "kind": "escalation",
+          "channel": "telegram",
+          "state": "skipped",
+          "error_code": "PING_NOT_LIVE",
+          "attempts": 1,
+          "created_at": "2026-11-10T14:06:25.874Z",
+          "sent_at": null,
+          "escalated_at": null,
+          "picked_up_at": null
+        }
+      ]
+    },
+    "C2_extra": {
+      "conversationId": "01a1c5bd-a301-7eb8-abb4-1582e4baa8c9",
+      "sent": {
+        "text": "Hello! We would like to book a birthday party for our son. Which package would you recommend? (ZZ TEST)",
+        "language": "en",
+        "categoryHint": "birthdays",
+        "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+        "status": 200,
+        "conversationsCreated": 1,
+        "at": "2026-11-10T13:55:01.702Z",
+        "requestHint": {
+          "category": "birthdays",
+          "language": "en"
+        }
+      },
+      "conversation": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "birthdays",
+        "teamName": "Birthdays & Events",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "en",
+        "aiMode": "live",
+        "aiPaused": false,
+        "handledAt": null
+      },
+      "assistantLines": [
+        {
+          "id": "01a1c5bd-bf9c-7d47-919d-d2f1908a7260",
+          "at": "2026-11-10T13:55:09.327Z",
+          "providerStatus": "sent",
+          "body": "Thank you so much! Our birthday manager will be with you shortly."
+        }
+      ],
+      "turns": [
+        {
+          "kind": "ai_handover",
+          "createdAt": "2026-11-10T13:55:09.327Z",
+          "actorKind": "ai",
+          "turnId": "01a1c5bd-a31c-77ba-b568-6c384d40c2af",
+          "intent": "birthday_advice",
+          "intents": [
+            "birthday_advice",
+            "birthday_party"
+          ],
+          "reason": "OK",
+          "rule": null,
+          "destination": "birthdays",
+          "templateKey": "closing_birthday",
+          "closingKey": "closing_birthday",
+          "holdingLine": "template",
+          "silent": false,
+          "messageIds": 1,
+          "branchSet": null,
+          "thenHandover": null,
+          "gate": null
+        }
+      ],
+      "handoverNotices": [
+        {
+          "turnId": "01a1c5bd-a31c-77ba-b568-6c384d40c2af",
+          "destination": "birthdays",
+          "notifiedAt": null,
+          "notNotified": true,
+          "notNotifiedWhy": "failed",
+          "escalatedAt": null,
+          "gmNotNotified": false,
+          "gmNotNotifiedWhy": null,
+          "pickedUpAt": null
+        }
+      ],
+      "pillLines": [
+        "AI handed over · Resume",
+        "AI handed over to the team — manager not notified (sending failed)",
+        "AI handed over to the team · birthday advice · manager not notified (sending failed)"
+      ],
+      "noticeRows": [
+        {
+          "turn_id": "01a1c5bd-a31c-77ba-b568-6c384d40c2af",
+          "kind": "notice",
+          "channel": "app",
+          "state": "failed",
+          "error_code": "OTOAPP_SCOPE_REQUIRED",
+          "attempts": 1,
+          "created_at": "2026-11-10T13:55:09.327Z",
+          "sent_at": null,
+          "escalated_at": null,
+          "picked_up_at": "2026-11-10T14:07:48.500Z"
+        },
+        {
+          "turn_id": "01a1c5bd-a31c-77ba-b568-6c384d40c2af",
+          "kind": "notice",
+          "channel": "whatsapp",
+          "state": "skipped",
+          "error_code": "PING_NOT_LIVE",
+          "attempts": 1,
+          "created_at": "2026-11-10T13:55:09.327Z",
+          "sent_at": null,
+          "escalated_at": null,
+          "picked_up_at": "2026-11-10T14:07:48.500Z"
+        }
+      ]
+    },
+    "D": {
+      "conversationId": "01a1c5ba-444c-7df7-8b5a-6b9bd6ed98a0",
+      "sent": {
+        "text": "Посоветуйте, какой филиал лучше для 10 детей? (ZZ TEST)",
+        "language": "ru",
+        "categoryHint": "birthdays",
+        "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+        "status": 200,
+        "conversationsCreated": 1,
+        "at": "2026-11-10T13:51:20.829Z",
+        "requestHint": {
+          "category": "birthdays",
+          "language": "ru"
+        }
+      },
+      "conversation": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "birthdays",
+        "teamName": "Birthdays & Events",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "ru",
+        "aiMode": "live",
+        "aiPaused": false,
+        "handledAt": null
+      },
+      "assistantLines": [
+        {
+          "id": "01a1c5ba-5daf-7d23-8ca7-d1009e01c85d",
+          "at": "2026-11-10T13:51:27.652Z",
+          "providerStatus": "sent",
+          "body": "Большое спасибо! Наш менеджер по праздникам скоро свяжется с вами."
+        }
+      ],
+      "turns": [
+        {
+          "kind": "ai_handover",
+          "createdAt": "2026-11-10T13:51:27.652Z",
+          "actorKind": "ai",
+          "turnId": "01a1c5ba-445b-7091-b7a6-52b21868d49f",
+          "intent": "birthday_advice",
+          "intents": [
+            "birthday_advice"
+          ],
+          "reason": "OK",
+          "rule": null,
+          "destination": "birthdays",
+          "templateKey": "closing_birthday",
+          "closingKey": "closing_birthday",
+          "holdingLine": "template",
+          "silent": false,
+          "messageIds": 1,
+          "branchSet": null,
+          "thenHandover": null,
+          "gate": null
+        }
+      ],
+      "handoverNotices": [
+        {
+          "turnId": "01a1c5ba-445b-7091-b7a6-52b21868d49f",
+          "destination": "birthdays",
+          "notifiedAt": null,
+          "notNotified": true,
+          "notNotifiedWhy": "failed",
+          "escalatedAt": null,
+          "gmNotNotified": true,
+          "gmNotNotifiedWhy": "failed",
+          "pickedUpAt": null
+        }
+      ],
+      "pillLines": [
+        "AI handed over · Resume",
+        "AI handed over to the team — manager not notified (sending failed)",
+        "AI handed over to the team · birthday advice · manager not notified (sending failed)"
+      ],
+      "noticeRows": [
+        {
+          "turn_id": "01a1c5ba-445b-7091-b7a6-52b21868d49f",
+          "kind": "notice",
+          "channel": "app",
+          "state": "failed",
+          "error_code": "OTOAPP_SCOPE_REQUIRED",
+          "attempts": 1,
+          "created_at": "2026-11-10T13:51:27.652Z",
+          "sent_at": null,
+          "escalated_at": "2026-11-10T14:07:25.875Z",
+          "picked_up_at": null
+        },
+        {
+          "turn_id": "01a1c5ba-445b-7091-b7a6-52b21868d49f",
+          "kind": "notice",
+          "channel": "whatsapp",
+          "state": "skipped",
+          "error_code": "PING_NOT_LIVE",
+          "attempts": 1,
+          "created_at": "2026-11-10T13:51:27.652Z",
+          "sent_at": null,
+          "escalated_at": "2026-11-10T14:07:25.875Z",
+          "picked_up_at": null
+        },
+        {
+          "turn_id": "01a1c5ba-445b-7091-b7a6-52b21868d49f",
+          "kind": "escalation",
+          "channel": "app",
+          "state": "failed",
+          "error_code": "OTOAPP_SCOPE_REQUIRED",
+          "attempts": 1,
+          "created_at": "2026-11-10T14:07:25.875Z",
+          "sent_at": null,
+          "escalated_at": null,
+          "picked_up_at": null
+        },
+        {
+          "turn_id": "01a1c5ba-445b-7091-b7a6-52b21868d49f",
+          "kind": "escalation",
+          "channel": "telegram",
+          "state": "skipped",
+          "error_code": "PING_NOT_LIVE",
+          "attempts": 1,
+          "created_at": "2026-11-10T14:07:25.875Z",
+          "sent_at": null,
+          "escalated_at": null,
+          "picked_up_at": null
+        }
+      ]
+    }
+  },
+  "noticesThreadA": {
+    "atStep6": {
+      "at": "2026-11-10T13:52:29.212Z",
+      "handoverNotices": [
+        {
+          "turnId": "01a1c5b9-5814-7222-aee7-83eca9069a8c",
+          "destination": "birthdays",
+          "notifiedAt": null,
+          "notNotified": true,
+          "notNotifiedWhy": "failed",
+          "escalatedAt": null,
+          "gmNotNotified": false,
+          "gmNotNotifiedWhy": null,
+          "pickedUpAt": null
+        }
+      ],
+      "audit": {
+        "route": "GET /api/audit?entityType=inbox.conversation&entityId=:id",
+        "status": 200,
+        "masked": false,
+        "entries": [
+          {
+            "action": "inbox.conversation.read",
+            "createdAt": "2026-11-10T13:50:44.553Z",
+            "actorAccountId": "a person"
+          },
+          {
+            "action": "inbox.ai.handover",
+            "createdAt": "2026-11-10T13:50:30.291Z",
+            "actorAccountId": null,
+            "before": {
+              "teamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+              "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+              "category": "birthdays"
+            },
+            "after": {
+              "intent": "birthday_advice",
+              "silent": false,
+              "turnId": "01a1c5b9-5814-7222-aee7-83eca9069a8c",
+              "branchId": null,
+              "closingKey": "closing_birthday",
+              "destination": "birthdays",
+              "holdingLine": "template",
+              "templateKey": "closing_birthday",
+              "reroutedTeamId": null,
+              "brochureFileIds": []
+            }
+          },
+          {
+            "action": "inbox.conversation.create",
+            "createdAt": "2026-11-10T13:50:20.667Z",
+            "actorAccountId": null
+          }
+        ]
+      },
+      "apiWarnings": {
+        "route": "Render GET /v1/logs (oto-api-staging, text filter)",
+        "lines": [
+          {
+            "at": "2026-11-10T13:50:30.581267354Z",
+            "noticeId": "01a1c5b9-7db3-7ea5-a4bb-ee11f53d7cdc",
+            "channel": "app",
+            "code": "OTOAPP_SCOPE_REQUIRED"
+          },
+          {
+            "at": "2026-11-10T13:51:23.757361115Z",
+            "noticeId": "01a1c5ba-4e1e-7484-bd75-e33eed71e080",
+            "channel": "app",
+            "code": "OTOAPP_SCOPE_REQUIRED"
+          },
+          {
+            "at": "2026-11-10T13:51:27.713306433Z",
+            "noticeId": "01a1c5ba-5db4-7e38-9a17-d7e42c2af399",
+            "channel": "app",
+            "code": "OTOAPP_SCOPE_REQUIRED"
+          }
+        ],
+        "error": null,
+        "status": 200
+      }
+    },
+    "after16Minutes": {
+      "at": "2026-11-10T14:07:08.807Z",
+      "handoverNotices": [
+        {
+          "turnId": "01a1c5b9-5814-7222-aee7-83eca9069a8c",
+          "destination": "birthdays",
+          "notifiedAt": null,
+          "notNotified": true,
+          "notNotifiedWhy": "failed",
+          "escalatedAt": null,
+          "gmNotNotified": true,
+          "gmNotNotifiedWhy": "failed",
+          "pickedUpAt": null
+        }
+      ],
+      "audit": {
+        "route": "GET /api/audit?entityType=inbox.conversation&entityId=:id",
+        "status": 200,
+        "masked": false,
+        "entries": [
+          {
+            "action": "inbox.handover.escalate",
+            "createdAt": "2026-11-10T14:06:25.881Z",
+            "actorAccountId": null,
+            "before": {
+              "turnId": "01a1c5b9-5814-7222-aee7-83eca9069a8c",
+              "notified": [
+                {
+                  "state": "failed",
+                  "channel": "app"
+                },
+                {
+                  "state": "skipped",
+                  "channel": "whatsapp"
+                }
+              ]
+            },
+            "after": {
+              "turnId": "01a1c5b9-5814-7222-aee7-83eca9069a8c",
+              "written": 2,
+              "escalatedAt": "2026-11-10T14:06:25.874Z",
+              "escalations": [
+                {
+                  "state": "pending",
+                  "channel": "app",
+                  "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+                },
+                {
+                  "state": "pending",
+                  "channel": "telegram",
+                  "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+                }
+              ]
+            }
+          },
+          {
+            "action": "inbox.conversation.read",
+            "createdAt": "2026-11-10T13:50:44.553Z",
+            "actorAccountId": "a person"
+          },
+          {
+            "action": "inbox.ai.handover",
+            "createdAt": "2026-11-10T13:50:30.291Z",
+            "actorAccountId": null,
+            "before": {
+              "teamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+              "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+              "category": "birthdays"
+            },
+            "after": {
+              "intent": "birthday_advice",
+              "silent": false,
+              "turnId": "01a1c5b9-5814-7222-aee7-83eca9069a8c",
+              "branchId": null,
+              "closingKey": "closing_birthday",
+              "destination": "birthdays",
+              "holdingLine": "template",
+              "templateKey": "closing_birthday",
+              "reroutedTeamId": null,
+              "brochureFileIds": []
+            }
+          },
+          {
+            "action": "inbox.conversation.create",
+            "createdAt": "2026-11-10T13:50:20.667Z",
+            "actorAccountId": null
+          }
+        ]
+      },
+      "apiWarnings": {
+        "route": "Render GET /v1/logs (oto-api-staging, text filter)",
+        "lines": [
+          {
+            "at": "2026-11-10T13:50:30.581267354Z",
+            "noticeId": "01a1c5b9-7db3-7ea5-a4bb-ee11f53d7cdc",
+            "channel": "app",
+            "code": "OTOAPP_SCOPE_REQUIRED"
+          },
+          {
+            "at": "2026-11-10T13:51:23.757361115Z",
+            "noticeId": "01a1c5ba-4e1e-7484-bd75-e33eed71e080",
+            "channel": "app",
+            "code": "OTOAPP_SCOPE_REQUIRED"
+          },
+          {
+            "at": "2026-11-10T13:51:27.713306433Z",
+            "noticeId": "01a1c5ba-5db4-7e38-9a17-d7e42c2af399",
+            "channel": "app",
+            "code": "OTOAPP_SCOPE_REQUIRED"
+          },
+          {
+            "at": "2026-11-10T13:55:09.454762199Z",
+            "noticeId": "01a1c5bd-bfa2-79ed-8214-cdf86e195bdf",
+            "channel": "app",
+            "code": "OTOAPP_SCOPE_REQUIRED"
+          },
+          {
+            "at": "2026-11-10T14:06:26.038006906Z",
+            "noticeId": "01a1c5c8-1261-7fa4-bc8d-00549433b23e",
+            "channel": "app",
+            "code": "OTOAPP_SCOPE_REQUIRED"
+          },
+          {
+            "at": "2026-11-10T14:06:26.096847661Z",
+            "noticeId": "01a1c5c8-1270-70be-973d-6a182d2062d8",
+            "channel": "app",
+            "code": "OTOAPP_SCOPE_REQUIRED"
+          }
+        ],
+        "error": null,
+        "status": 200
+      }
+    }
+  },
+  "noticeRowsRead": {
+    "at": "2026-11-10T14:12:31.827Z",
+    "how": "a read-only SELECT run as a Render one-off job on oto-api-staging (scripts/agent/render.mjs job), the target column left out",
+    "job": "job job-dbpic108v5cc73eblsjg succeeded",
+    "count": "COUNT 14",
+    "error": null
+  },
+  "health": {
+    "first": {
+      "at": "2026-11-10T13:53:46.817Z",
+      "platformJobs": {
+        "route": "GET /api/platform/jobs",
+        "status": 200,
+        "row": {
+          "name": "job:inbox.handover_escalation",
+          "status": "ok",
+          "lastRunAt": "2026-11-10T13:53:25.890Z",
+          "lastOutcome": "ok",
+          "expectedEverySeconds": 60,
+          "ageSeconds": 20,
+          "lastError": null,
+          "waitingOn": []
+        }
+      },
+      "opsHealth": {
+        "route": "GET /api/ops/health",
+        "status": 200,
+        "row": {
+          "name": "job:inbox.handover_escalation",
+          "status": "ok",
+          "lastRunAt": "2026-11-10T13:53:25.890Z",
+          "lastOutcome": "ok",
+          "expectedEverySeconds": 60,
+          "ageSeconds": 21,
+          "lastError": null,
+          "waitingOn": []
+        }
+      }
+    },
+    "second": {
+      "at": "2026-11-10T13:54:08.073Z",
+      "platformJobs": {
+        "route": "GET /api/platform/jobs",
+        "status": 200,
+        "row": {
+          "name": "job:inbox.handover_escalation",
+          "status": "ok",
+          "lastRunAt": "2026-11-10T13:53:25.890Z",
+          "lastOutcome": "ok",
+          "expectedEverySeconds": 60,
+          "ageSeconds": 42,
+          "lastError": null,
+          "waitingOn": []
+        }
+      },
+      "opsHealth": {
+        "route": "GET /api/ops/health",
+        "status": 200,
+        "row": {
+          "name": "job:inbox.handover_escalation",
+          "status": "ok",
+          "lastRunAt": "2026-11-10T13:53:25.890Z",
+          "lastOutcome": "ok",
+          "expectedEverySeconds": 60,
+          "ageSeconds": 42,
+          "lastError": null,
+          "waitingOn": []
+        }
+      }
+    },
+    "consoleRow": "job:inbox.handover_escalation ok 46s / every 1m last ran 10 Nov, 20:53",
+    "picture": "823-st-06-health-escalation-job.png",
+    "tick": {
+      "first": {
+        "name": "job:inbox.handover_escalation",
+        "status": "ok",
+        "lastRunAt": "2026-11-10T13:55:25.855Z",
+        "lastOutcome": "ok",
+        "expectedEverySeconds": 60,
+        "ageSeconds": 37,
+        "lastError": null,
+        "waitingOn": []
+      },
+      "second": {
+        "name": "job:inbox.handover_escalation",
+        "status": "ok",
+        "lastRunAt": "2026-11-10T13:56:25.860Z",
+        "lastOutcome": "ok",
+        "expectedEverySeconds": 60,
+        "ageSeconds": 43,
+        "lastError": null,
+        "waitingOn": []
+      },
+      "ticked": true
+    }
+  },
+  "cleanup": {
+    "at": "2026-11-10T14:07:43.173Z",
+    "conversations": {
+      "A": {
+        "id": "01a1c5b9-5802-7288-b4dd-531f3d964365",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T14:07:44.022Z"
+        }
+      },
+      "B": {
+        "id": "01a1c5b9-79af-7694-8b46-6ae1ab868b7d",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T14:07:45.055Z"
+        }
+      },
+      "C": {
+        "id": "01a1c5ba-38b4-7838-bac6-ecb212a24e9b",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T14:07:46.431Z"
+        }
+      },
+      "D": {
+        "id": "01a1c5ba-444c-7df7-8b5a-6b9bd6ed98a0",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T14:07:47.489Z"
+        }
+      },
+      "C2": {
+        "id": "01a1c5bd-a301-7eb8-abb4-1582e4baa8c9",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T14:07:48.500Z"
+        }
+      }
+    }
+  },
+  "signOut": {
+    "at": "2026-11-10T14:10:57.679Z",
+    "signOut": {
+      "inbox": {
+        "route": "POST /api/auth/sign-out (inbox)",
+        "status": 200
+      },
+      "console": {
+        "route": "POST /api/auth/sign-out (Console)",
+        "status": 200
+      },
+      "launcher": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      }
+    },
+    "readBack": {
+      "inbox": {
+        "route": "GET /api/inbox/me (inbox)",
+        "status": 401
+      },
+      "console": {
+        "route": "GET /api/me (Console)",
+        "status": 401
+      },
+      "launcher": {
+        "route": "GET /api/me (launcher)",
+        "status": 401
+      }
+    }
+  },
+  "notDone": [
+    "No deploy, no restart, no environment setting read or changed; the OTO App key was not touched; no real phone; no other conversation or branch touched"
+  ],
+  "pictures": [
+    {
+      "file": "823-st-01-branch-contacts.png",
+      "at": "2026-11-10T13:49:21.017Z",
+      "shows": "Console › Branches › Central Floresta › Edit branch: \"Birthday manager on duty\" and \"GM contact\" filled with the ZZ TEST people (outlined; the phone fields painted over), before Save branch",
+      "namesMasked": 1,
+      "masks": 0
+    },
+    {
+      "file": "823-st-02-advice-handed-over.png",
+      "at": "2026-11-10T13:51:27.372Z",
+      "shows": "Thread A (Birthdays & Events, English): the advice question, the birthday team's closing line only, and the hand-over pill (opened) with birthday advice and manager not notified (sending failed)",
+      "namesMasked": 43,
+      "masks": 1
+    },
+    {
+      "file": "823-st-03-fact-still-answered.png",
+      "at": "2026-11-10T13:52:01.535Z",
+      "shows": "Thread B (Birthdays & Events, English): a plain fact (parking) answered by the assistant, not handed over",
+      "namesMasked": 43,
+      "masks": 1
+    },
+    {
+      "file": "823-st-04-opener-not-sent-advice-handed-over.png",
+      "at": "2026-11-10T13:52:14.055Z",
+      "shows": "Thread C (Birthdays & Events, English): party wish plus advice question; the assistant read it as advice only and sent the birthday team's closing line, no date-and-park opener; the hand-over pill (opened) with birthday advice and manager not notified",
+      "namesMasked": 43,
+      "masks": 1
+    },
+    {
+      "file": "823-st-05-ru-advice-handed-over.png",
+      "at": "2026-11-10T13:52:19.455Z",
+      "shows": "Thread D (Birthdays & Events, Russian): the advice question, the birthday team's closing line in Russian only, the hand-over pill (opened) with birthday advice and manager not notified",
+      "namesMasked": 43,
+      "masks": 1
+    },
+    {
+      "file": "823-st-06-health-escalation-job.png",
+      "at": "2026-11-10T13:54:16.208Z",
+      "shows": "Console › Health: the job register row for job:inbox.handover_escalation (outlined)",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "823-st-04b-extra-party-and-advice-opener-not-sent.png",
+      "at": "2026-11-10T13:55:45.951Z",
+      "shows": "Extra thread C2 (not in the brief; Birthdays & Events, English): a party request and an advice question in one line, read as both birthday_party and birthday_advice; still only the closing line, no date-and-park opener; the hand-over pill (opened) with manager not notified",
+      "namesMasked": 44,
+      "masks": 1
+    },
+    {
+      "file": "823-st-07-escalation-after-15-min.png",
+      "at": "2026-11-10T14:07:20.802Z",
+      "shows": "Thread A after 16 minutes untouched: the hand-over pill (opened) now also says GM not notified (sending failed)",
+      "namesMasked": 44,
+      "masks": 1
+    }
+  ]
+}
