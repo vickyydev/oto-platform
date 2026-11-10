@@ -606,10 +606,11 @@ async function receiveMessage(
       }
     }
     // The language the rules are picked by: the hint's, the contact's, and —
-    // where neither says — the language of the cue that decided the queue
-    // (test night D2: the language the customer wrote in routes the thread;
-    // a Thai birthday opener seats the Thai birthday rule's people). English
-    // only when nothing says anything.
+    // where neither says — the reading's: the language the customer WROTE in
+    // (the line's script, else the cue's; a Thai line with the Latin word
+    // "package" is Thai), so test night D2 holds at ingest — a Thai birthday
+    // opener seats the Thai birthday rule's people. English only when nothing
+    // says anything.
     const language = hintLanguage ?? person.language ?? (decided.source === 'message' ? decided.cueLanguage : null) ?? 'en';
     // The CHANNEL ACCOUNT'S branch first (a park's own number belongs to that
     // park); the hint's only for an operator-wide account, and only when the

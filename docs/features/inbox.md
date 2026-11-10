@@ -130,11 +130,15 @@ fixed rule: they are parked with Birthdays & Events and a manager decides.
 - The first message decides the queue (SCRUM-830, owner 11 Nov 2026): a
   new conversation's category is read from its first customer message
   before any AI runs — a birthday, party, package, cake, camp or school
-  group goes to Birthdays & Events, a refund or complaint to the GM (a
+  group (a school word only as a group coming: never the park's own day
+  care, nor a child who merely is at kindergarten) goes to Birthdays &
+  Events, a refund or complaint — including the everyday phrasings, "not
+  happy with the party", "poor service", "ห่วย", "плохо" — to the GM (a
   complaint cue wins), anything else to the channel's default — by a
   deterministic Thai/English/Russian reader (`@oto/assistant`
-  `firstMessageCategory`). Where nothing else says the language, the cue's
-  language picks the rule. The simulator's hint still wins; the assistant
+  `firstMessageCategory`). Where nothing else says the language, the
+  reading's does: the language the customer wrote in (the line's script,
+  else the cue's). The simulator's hint still wins; the assistant
   stays the second opinion (its own re-route after its turn is unchanged).
   The routing pill says "from the message"; only the first message is read
   (a thread that opens on a greeting keeps the default until the assistant

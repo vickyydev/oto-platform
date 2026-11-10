@@ -77,9 +77,9 @@ export interface RouteInput {
   reroute?: RerouteBy;
   /**
    * SCRUM-830: how a NEW conversation's category was decided — the
-   * simulator's hint, the first message's words (with the cue's key and
-   * language, never the text), or the channel account's default. Recorded on
-   * the `routed` pill; absent on a re-route.
+   * simulator's hint, the first message's words (with the cue's key and the
+   * reading's language, never the text), or the channel account's default.
+   * Recorded on the `routed` pill; absent on a re-route.
    */
   decided?: CategoryDecision;
 }
@@ -87,6 +87,7 @@ export interface RouteInput {
 export type CategoryDecision =
   | { source: 'hint' }
   | { source: 'default' }
+  /** `cueLanguage`: the reading's language — the line's script (Thai, Cyrillic), else the cue's. */
   | { source: 'message'; cue: string; cueLanguage: string };
 
 export type RerouteBy =

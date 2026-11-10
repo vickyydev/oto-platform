@@ -482,7 +482,7 @@ describe('the first message decides the queue (SCRUM-830)', () => {
     expect((await routedPill(hinted.id)).payload).toMatchObject({ source: 'hint' });
   });
 
-  it('a Thai and a Russian birthday line are read too, and where nothing else says it the cue’s language picks the rule', async () => {
+  it('a Thai and a Russian birthday line are read too, and where nothing else says it the reading’s language picks the rule', async () => {
     // A real WhatsApp line carries no hint at all: the Thai cue files the thread as Thai, and the
     // TH birthday rule's people seat it from the first message (test night D2, now at ingest).
     await play(ids.caWide, { from: '66810006008', text: 'สวัสดีค่ะ อยากจัดวันเกิดให้ลูกชายค่ะ' });
@@ -493,6 +493,14 @@ describe('the first message decides the queue (SCRUM-830)', () => {
       [people.bdayTh, 'system'],
       [people.bdayThBackup, 'system'],
     ]);
+
+    // A Thai line with a Latin loanword is still Thai: the line's script names the language, not
+    // the cue's list, so the TH rule's people are seated and the assistant has nothing to re-seat.
+    await play(ids.caWide, { from: '66810006012', text: 'สวัสดีค่ะ มี package วันเกิดไหมคะ' });
+    const mixed = (await threadOf(ids.caWide, '66810006012'))!;
+    expect(mixed).toMatchObject({ category: 'birthdays', language: 'th', teamId: await teamId('birthdays') });
+    expect((await routedPill(mixed.id)).payload).toMatchObject({ source: 'message', cue: 'birthday', cueLanguage: 'th', language: 'th' });
+    expect((await ownersOf(mixed.id)).map((o) => o.accountId)).toEqual([people.bdayTh, people.bdayThBackup]);
 
     await play(ids.caWide, { from: '66810006009', text: 'Хотим отметить день рождения сына у вас' });
     const ru = (await threadOf(ids.caWide, '66810006009'))!;

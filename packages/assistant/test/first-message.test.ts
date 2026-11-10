@@ -8,7 +8,8 @@ import { FIRST_MESSAGE_CUE_KEYS, firstMessageCategory } from '../src/first-messa
  * school group goes to Birthdays & Events; a refund or a complaint goes to
  * the GM; a greeting or a plain question says nothing (null), and the
  * channel's default stands. A complaint cue wins over a birthday cue in the
- * same line. The reading names the cue's key and language, never the words.
+ * same line. The reading names the cue's key and the customer's language
+ * (the line's script, else the cue's), never the words.
  */
 
 const category = (text: string) => firstMessageCategory(text)?.category ?? null;
@@ -31,6 +32,12 @@ describe('birthday words → Birthdays & Events', () => {
     expect(firstMessageCategory('We are a school group of 30, can we visit on Tuesday?')).toEqual({ category: 'birthdays', cue: 'school_group', language: 'en' });
     expect(category('Our kindergarten would like a field trip')).toBe('birthdays');
     expect(category('Do you have a group rate for 25 children?')).toBe('birthdays');
+    // A school, a kindergarten or a nursery as a GROUP coming.
+    expect(category('Can we book a kindergarten visit for 20 kids?')).toBe('birthdays');
+    expect(category('A preschool outing on Friday, 18 children')).toBe('birthdays');
+    expect(category('Our nursery class would like to come on Thursday')).toBe('birthdays');
+    expect(category('We are 3 teachers from our school in Patong, 40 students')).toBe('birthdays');
+    expect(category('Is there a discount for 30 students?')).toBe('birthdays');
   });
 
   it('a birthday QUESTION about prices or hours alone is still a birthday', () => {
@@ -47,6 +54,11 @@ describe('birthday words → Birthdays & Events', () => {
     expect(firstMessageCategory('เอาเค้กมาเองได้ไหมคะ')).toEqual({ category: 'birthdays', cue: 'cake', language: 'th' });
     expect(firstMessageCategory('มีแคมป์ปิดเทอมไหมคะ')).toEqual({ category: 'birthdays', cue: 'camp', language: 'th' });
     expect(firstMessageCategory('โรงเรียนจะพาเด็กมาทัศนศึกษา 40 คน')).toEqual({ category: 'birthdays', cue: 'school_group', language: 'th' });
+    // A school or a kindergarten as a GROUP coming: beside the bringing of children, a count, a group.
+    expect(category('ทางโรงเรียนอยากพานักเรียน 30 คนมาเล่นค่ะ')).toBe('birthdays');
+    expect(category('อนุบาลจะพาน้องๆ มา 25 คนค่ะ')).toBe('birthdays');
+    expect(category('นักเรียน 25 คน มาเป็นหมู่คณะ')).toBe('birthdays');
+    expect(category('คณะครูและนักเรียนจะมาเยี่ยมชมค่ะ')).toBe('birthdays');
   });
 
   it('Russian: день рождения, ДР, праздник, пакет, торт, лагерь, экскурсия', () => {
@@ -58,6 +70,22 @@ describe('birthday words → Birthdays & Events', () => {
     expect(firstMessageCategory('Есть ли у вас лагерь на каникулах?')).toEqual({ category: 'birthdays', cue: 'camp', language: 'ru' });
     expect(firstMessageCategory('Хотим привести группу из детского сада, 20 детей')).toEqual({ category: 'birthdays', cue: 'school_group', language: 'ru' });
     expect(category('Днём рождения занимаетесь?')).toBe('birthdays');
+    // A kindergarten or a school as a GROUP coming; "праздник" as a celebration.
+    expect(category('Мы детский сад, хотим привести 20 детей')).toBe('birthdays');
+    expect(category('Школьная экскурсия, 30 детей — есть скидка?')).toBe('birthdays');
+    expect(category('Групповое посещение, 15 детей')).toBe('birthdays');
+    expect(category('Делаете ли вы детские праздники?')).toBe('birthdays');
+    expect(category('Празднуем 7 лет сына, какие пакеты?')).toBe('birthdays');
+  });
+
+  it('the language is the customer’s: a Thai or a Cyrillic line with a Latin loanword stays Thai or Russian, its own cue first', () => {
+    // SCRUM-830 review: the EN cue "package" in a Thai line filed the thread as English and seated the
+    // EN rule's people; the line's script names the language, and the Thai cue names the reading.
+    expect(firstMessageCategory('สวัสดีค่ะ มี package วันเกิดไหมคะ')).toEqual({ category: 'birthdays', cue: 'birthday', language: 'th' });
+    expect(firstMessageCategory('ขอดู package หน่อยค่ะ')).toEqual({ category: 'birthdays', cue: 'package', language: 'th' });
+    expect(firstMessageCategory('Здравствуйте! Хотим party для сына, 10 детей')).toEqual({ category: 'birthdays', cue: 'party', language: 'ru' });
+    expect(firstMessageCategory('ขอเงินคืนค่ะ staff were rude')).toEqual({ category: 'gm', cue: 'refund', language: 'th' });
+    expect(firstMessageCategory('Can I bring my own cake?')).toEqual({ category: 'birthdays', cue: 'cake', language: 'en' });
   });
 });
 
@@ -100,6 +128,31 @@ describe('a refund or a complaint → the GM', () => {
     expect(category('Хотим вернуть деньги за день рождения, персонал хамил')).toBe('gm');
     expect(category('Праздник был ужасный')).toBe('gm');
   });
+
+  it('a complaint ABOUT a party in everyday words is the GM’s, not the events team’s', () => {
+    // SCRUM-830 review: the GM list held only refund / complain / rude / injury / terrible / scam /
+    // compensation, so these fell through to the party word in the same line.
+    expect(firstMessageCategory('We were not happy with the party last Saturday')).toEqual({ category: 'gm', cue: 'complaint', language: 'en' });
+    expect(firstMessageCategory('Very bad service at our birthday party')).toEqual({ category: 'gm', cue: 'bad_experience', language: 'en' });
+    expect(category('Poor service at the party, cake arrived late')).toBe('gm');
+    expect(category('The party was a disaster, nobody showed up to host')).toBe('gm');
+    expect(category('The party room was dirty and the staff ignored us')).toBe('gm');
+    expect(category('Unhappy with how the party went')).toBe('gm');
+    expect(category('The party host was unprofessional')).toBe('gm');
+    expect(category('The party was a waste of money')).toBe('gm');
+    expect(category('Bad experience at your party')).toBe('gm');
+    expect(category('Not satisfied with the birthday package we paid for')).toBe('gm');
+    expect(category('Dissatisfied with the package')).toBe('gm');
+    expect(firstMessageCategory('บริการห่วยมาก ปาร์ตี้เมื่อวาน')).toEqual({ category: 'gm', cue: 'bad_experience', language: 'th' });
+    expect(category('ปาร์ตี้เมื่อวานไม่โอเคเลย')).toBe('gm');
+    expect(category('จัดงานวันเกิดเมื่อวานไม่ดีเลย')).toBe('gm');
+    expect(category('แพ็กเกจไม่คุ้มเลยค่ะ')).toBe('gm');
+    expect(category('ปาร์ตี้แย่เลยค่ะ')).toBe('gm');
+    expect(firstMessageCategory('Праздник прошёл плохо, аниматор не пришёл')).toEqual({ category: 'gm', cue: 'bad_experience', language: 'ru' });
+    expect(category('Нам не понравился день рождения')).toBe('gm');
+    expect(category('Никогда больше не придём на ваш праздник')).toBe('gm');
+    expect(category('Безобразно организованный праздник')).toBe('gm');
+  });
 });
 
 describe('nothing to read → null, the channel’s default stands', () => {
@@ -135,6 +188,38 @@ describe('nothing to read → null, the channel’s default stands', () => {
     expect(firstMessageCategory('Грубо говоря, нас будет 10')).toBeNull();
     expect(firstMessageCategory('Сколько стоит билет, носки и др.?')).toBeNull();
     expect(firstMessageCategory('Какой адрес?')).toBeNull();
+  });
+
+  it('no false positive on the park’s own child care, a child who IS at school, or a bare school word', () => {
+    // SCRUM-830 review: day care, a nursery and a kindergarten are the park's own nanny / drop-off
+    // service (Central reception's) or a child's age bracket, not a school group; a school word
+    // counts only as a group coming. A misroute at ingest is sticky (the assistant re-routes only
+    // toward a hand-over destination), so these stay with reception.
+    expect(firstMessageCategory('Hi, do you have a daycare / drop-off service for a 3 year old?')).toBeNull();
+    expect(firstMessageCategory('Is there day care where I can leave my kid for 2 hours?')).toBeNull();
+    expect(firstMessageCategory('Is there a day care / drop off service while we shop?')).toBeNull();
+    expect(firstMessageCategory('Do you have daycare for a 3 year old?')).toBeNull();
+    expect(firstMessageCategory('Do you have a nursery room for feeding the baby?')).toBeNull();
+    expect(firstMessageCategory('Do you have a nursery for toddlers?')).toBeNull();
+    expect(firstMessageCategory('My daughter is in kindergarten, is the park ok for her age?')).toBeNull();
+    expect(firstMessageCategory('Suitable for preschool kids?')).toBeNull();
+    expect(firstMessageCategory('เลิกโรงเรียนแล้วพาลูกมาเล่นได้ถึงกี่โมงคะ')).toBeNull();
+    expect(firstMessageCategory('หลังเลิกโรงเรียนพาลูกมาได้ไหมคะ')).toBeNull();
+    expect(firstMessageCategory('ลูกอายุ 3 ขวบ อยู่อนุบาล 1 เล่นได้ไหมคะ')).toBeNull();
+    expect(firstMessageCategory('ลูกอยู่อนุบาล 2 เข้าเล่นได้ไหมคะ')).toBeNull();
+    expect(firstMessageCategory('ลูกเป็นนักเรียนอนุบาล 1 เข้าเล่นได้ไหมคะ')).toBeNull();
+    expect(firstMessageCategory('Есть скидка для школьников?')).toBeNull();
+    expect(firstMessageCategory('Мы небольшой группой, 3 семьи — есть скидка?')).toBeNull();
+    expect(firstMessageCategory('Есть ли у вас группа в телеграме?')).toBeNull();
+    expect(firstMessageCategory('Ребёнок ходит в детский сад, ему 4, можно к вам?')).toBeNull();
+  });
+
+  it('no false positive on the public holidays, a plastic bag, or "I speak … badly"', () => {
+    expect(firstMessageCategory('Вы работаете в праздники?')).toBeNull();
+    expect(firstMessageCategory('Работаете ли вы в праздничные дни?')).toBeNull();
+    expect(firstMessageCategory('Можно взять пакет для обуви?')).toBeNull();
+    expect(firstMessageCategory('Я плохо говорю по-тайски, можно по-английски?')).toBeNull();
+    expect(firstMessageCategory('Неплохо бы узнать цены')).toBeNull();
   });
 
   it('a cue stays a cue at a boundary with punctuation, case and NFC-decomposed text', () => {
