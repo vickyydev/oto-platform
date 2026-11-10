@@ -24,6 +24,7 @@ import type { Tx } from '../tx';
 import { divertTarget } from './actions';
 import { conversationEventOf } from './book-date';
 import { aiStateOf } from './ai-turns';
+import { handoverNoticesOf } from './handover-notice';
 import {
   INBOX_READ,
   activeAssignmentsOf,
@@ -471,6 +472,8 @@ export async function conversationDetail(
     aiPausedAt: iso(conv.aiPausedAt),
     aiPausedByAccountId: conv.aiPausedByAccountId,
     event: await conversationEventOf(db, viewer.operatorId, conv),
+    // SCRUM-823: who the assistant's hand-overs told (the pill's "manager notified", "escalated to GM").
+    handoverNotices: await handoverNoticesOf(db, viewer.operatorId, conv.id),
   };
 }
 

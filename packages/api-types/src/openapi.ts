@@ -2661,6 +2661,20 @@ export interface paths {
                                 archived: boolean;
                                 /** Format: uuid */
                                 partySlipsStationId: string | null;
+                                birthdayManagerContact: {
+                                    name: string | null;
+                                    appUserId: string | null;
+                                    phone: string | null;
+                                    /** @enum {string} */
+                                    channel: "whatsapp" | "telegram";
+                                } | null;
+                                gmContact: {
+                                    name: string | null;
+                                    appUserId: string | null;
+                                    phone: string | null;
+                                    /** @enum {string} */
+                                    channel: "whatsapp" | "telegram";
+                                } | null;
                             }[];
                         };
                     };
@@ -2873,7 +2887,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Update or archive a branch. SCRUM-805 — `partySlipsStationId` names the station whose kitchen and bar printers receive the party slips (one of this branch's live stations), or null to name none; refused 400 STATION_NOT_AT_BRANCH for any other station. */
+        /** @description Update or archive a branch. SCRUM-805 — `partySlipsStationId` names the station whose kitchen and bar printers receive the party slips (one of this branch's live stations), or null to name none; refused 400 STATION_NOT_AT_BRANCH for any other station. SCRUM-823 — `birthdayManagerContact` and `gmContact` name who an inbox Birthdays & Events hand-over tells (an OTO App user and a phone, E.164 once saved); a phone that is not a number is refused 400 PHONE_INVALID, and a contact with neither is cleared. */
         patch: {
             parameters: {
                 query?: never;
@@ -2925,6 +2939,20 @@ export interface paths {
                         businessDayStart?: string;
                         /** Format: uuid */
                         partySlipsStationId?: string | null;
+                        birthdayManagerContact?: {
+                            name: string | null;
+                            appUserId: string | null;
+                            phone: string | null;
+                            /** @enum {string} */
+                            channel: "whatsapp" | "telegram";
+                        } | null;
+                        gmContact?: {
+                            name: string | null;
+                            appUserId: string | null;
+                            phone: string | null;
+                            /** @enum {string} */
+                            channel: "whatsapp" | "telegram";
+                        } | null;
                     };
                 };
             };
@@ -34996,6 +35024,16 @@ export interface paths {
                                 bookedByAccountId: string | null;
                                 beoPath: string;
                             } | null;
+                            handoverNotices?: {
+                                /** Format: uuid */
+                                turnId: string;
+                                /** @enum {string} */
+                                destination: "birthdays" | "general" | "marketing" | "gm";
+                                notifiedAt: string | null;
+                                notNotified: boolean;
+                                escalatedAt: string | null;
+                                pickedUpAt: string | null;
+                            }[];
                         };
                     };
                 };

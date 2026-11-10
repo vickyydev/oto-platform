@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { eq, sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
+import type { Logger } from 'pino';
 import { opsExpectation, opsLast, type AlertSeverity, type Db } from '@oto/db';
 import type { Env } from '../env';
 import { purgeExpiredIdempotencyKeys } from '../plugins/idempotency';
@@ -21,7 +22,8 @@ import { purgeExpiredThrottles } from './throttle';
 import { OCCUPANCY_JOB, runOccupancyJob } from './occupancy';
 import { PARTY_SLIPS_JOB, runPartySlipsJob } from './party-slips';
 import { JobFailedError } from './job-failure';
-import { buildOtoAppJobsClient } from './otoapp-directory';
+import { buildOtoAppDirectory, buildOtoAppJobsClient } from './otoapp-directory';
+import { buildNoticeSender } from './sms';
 import { OTOAPP_EMPLOYEE_SYNC_JOB, runOtoAppEmployeeSync } from './otoapp-employee-sync';
 import {
   OTOAPP_ATTENTION_JOB,
@@ -34,6 +36,12 @@ import {
 import { buildInboxChannels, type InboxChannels } from './inbox/channels';
 import { INBOX_SEND_INTERVAL_S, INBOX_SEND_JOB, runInboxSendJob } from './inbox/send';
 import { INBOX_AI_INTERVAL_S, INBOX_AI_JOB, runInboxAiJob } from './inbox/ai-engine';
+import {
+  HANDOVER_ESCALATION_INTERVAL_S,
+  HANDOVER_ESCALATION_JOB,
+  runHandoverEscalationJob,
+  type HandoverNoticeDeps,
+} from './inbox/handover-notice';
 import { buildInboxAiRuntime, type InboxAiRuntime } from './inbox/ai-runtime';
 import { buildTranscriptionRuntime, type TranscriptionRuntime } from './inbox/transcription';
 import { INBOX_TRANSCRIBE_INTERVAL_S, INBOX_TRANSCRIBE_JOB, runInboxTranscribeJob } from './inbox/voice-notes';
@@ -261,6 +269,14 @@ export interface JobDeps {
   inboxTranscription?: TranscriptionRuntime;
   /** Tests inject a capturing sender; the configured destination stays private. */
   consoleDigestSender?: DigestSender;
+  /**
+   * SCRUM-823: the OTO App's bell and the notice sender an inbox hand-over
+   * tells a person through. Absent, both are built from the env: the
+   * directory from `OTOAPP_DIRECTORY_URL` and `OTOAPP_DIRECTORY_KEY`, the
+   * sender `buildNoticeSender` (a log line, never a message, outside a real
+   * adapter). Tests inject a capturing pair.
+   */
+  handoverNotices?: HandoverNoticeDeps;
 }
 
 const consoleDigestConfigured = (env: Env): boolean =>
@@ -1030,7 +1046,11 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
       intervalSeconds: INBOX_AI_INTERVAL_S,
       graceSeconds: 120,
       run: async ({ db, log, now }) => ({
-        detail: await runInboxAiJob(db, { runtime: inboxAiOf(deps), channels: inboxChannelsOf(deps), storage: deps.fileStorage ?? null, log }, now),
+        detail: await runInboxAiJob(
+          db,
+          { runtime: inboxAiOf(deps), channels: inboxChannelsOf(deps), storage: deps.fileStorage ?? null, log, notices: handoverNoticesOf(deps) },
+          now,
+        ),
       }),
     },
     /**
@@ -1053,6 +1073,25 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
       run: async ({ db, log, now }) => ({
         detail: await runInboxTranscribeJob(db, { runtime: inboxTranscriptionOf(deps), storage: deps.fileStorage ?? null, log }, now),
       }),
+    },
+    /**
+     * `job:inbox.handover_escalation` — A HAND-OVER TELLS A PERSON (SCRUM-823;
+     * `services/inbox/handover-notice.ts`).
+     *
+     * Every minute: the hand-over notices still to send go (the birthday
+     * manager on duty, through the OTO App's bell and a WhatsApp or Telegram
+     * ping that the notice sender logs on staging); then every Birthdays &
+     * Events hand-over nobody has picked up fifteen minutes after it — no
+     * staff reply, no assignment by a person, not handled by a person — is
+     * escalated ONCE to the park's GM contact. Counts only in the detail.
+     */
+    {
+      name: HANDOVER_ESCALATION_JOB,
+      description:
+        "Sends the inbox's hand-over notices to the birthday manager on duty, and tells the GM once when nobody has picked up a Birthdays & Events hand-over within fifteen minutes",
+      intervalSeconds: HANDOVER_ESCALATION_INTERVAL_S,
+      graceSeconds: 300,
+      run: async ({ db, now }) => ({ detail: await runHandoverEscalationJob(db, handoverNoticesOf(deps), now) }),
     },
     /**
      * `job:assistant.purge` — THE ASK-LOG'S RETENTION (SCRUM-591; plan
@@ -1125,6 +1164,22 @@ function inboxAiOf(deps: JobDeps): InboxAiRuntime {
   if (!built) {
     built = buildInboxAiRuntime(deps.env);
     ownInboxAi.set(deps, built);
+  }
+  return built;
+}
+
+/** SCRUM-823: the injected bell and sender, or one pair built from the env, once. */
+const ownHandoverNotices = new WeakMap<JobDeps, HandoverNoticeDeps>();
+function handoverNoticesOf(deps: JobDeps): HandoverNoticeDeps {
+  if (deps.handoverNotices) return deps.handoverNotices;
+  let built = ownHandoverNotices.get(deps);
+  if (!built) {
+    built = {
+      directory: buildOtoAppDirectory(deps.env, deps.log),
+      sender: buildNoticeSender(deps.log as unknown as Logger),
+      log: deps.log,
+    };
+    ownHandoverNotices.set(deps, built);
   }
   return built;
 }

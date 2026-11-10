@@ -75,6 +75,7 @@ import { loadTurnKnowledge, type TurnKnowledge } from './ai-knowledge';
 import { aiEligibility, dueAiMessageIds, type IneligibleReason } from './ai-turns';
 import { callingCodeOf } from './calling-code';
 import type { InboxChannels } from './channels';
+import { deliverHandoverNotices, queueHandoverNotices, type HandoverNoticeDeps } from './handover-notice';
 import { routeConversation } from './router';
 import { sendAfterCommit } from './send';
 import { holdTurnForTranscript, messageText, voiceHold, voiceUnreadTurn } from './voice-notes';
@@ -171,6 +172,12 @@ export interface AiEngineDeps {
   log?: FastifyBaseLogger;
   /** The commit's clock; tests pin it. */
   now?: () => Date;
+  /**
+   * SCRUM-823: the bell and the notice sender a Birthdays & Events hand-over
+   * tells the birthday manager through, sent at the end of each tick. Absent,
+   * the notices wait for `job:inbox.handover_escalation`.
+   */
+  notices?: HandoverNoticeDeps;
 }
 
 export interface AiSweep extends Record<string, unknown> {
@@ -1941,6 +1948,16 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
             branchId: routing.branchSet,
           },
         });
+        // SCRUM-823: a Birthdays & Events hand-over tells the birthday manager on duty (handover-notice.ts).
+        await queueHandoverNotices(tx, {
+          operatorId: conv.operatorId,
+          conversationId: conv.id,
+          turnId: turn.id,
+          branchId: plan.move?.branchId ?? routing.branchSet ?? conv.branchId,
+          destination: plan.category,
+          intent: handover.owner ?? v.intent,
+          at,
+        });
       }
 
       // X7 / owner G4 default: a closing on an episode no person touched is handled by the assistant.
@@ -2061,6 +2078,13 @@ export async function runInboxAiJob(db: Db, deps: AiEngineDeps, now: Date): Prom
       sweep.errors += 1;
       deps.log?.error({ turnId: id, error: errorName(err) }, 'an assistant turn failed; its lease decides what happens next');
     }
+  }
+
+  // SCRUM-823: the hand-over notices this tick queued go now; a failure waits for the escalation sweep.
+  if (deps.notices) {
+    await deliverHandoverNotices(db, deps.notices, now).catch((err: unknown) => {
+      deps.log?.error({ error: errorName(err) }, 'inbox hand-over notices could not be sent; the escalation sweep retries');
+    });
   }
 
   // §B.6: the AI lines whose typing time is over leave now, through the one send path.

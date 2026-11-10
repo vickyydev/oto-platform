@@ -197,9 +197,38 @@ export interface DirectoryInboxEventAnswer {
   replayed: boolean;
 }
 
+/**
+ * SCRUM-823 — a notice in a person's OTO App bell, as the app's directory takes
+ * it (`notificationBodySchema`, the app's notificationRoutes.ts): the id the
+ * platform minted (a retry is a replay there), the app user, and words that
+ * name no customer. The app keeps it as a `notifications` row of type
+ * `inbox_handover` pointing at the conversation.
+ */
+export interface DirectoryNotificationBody {
+  id: string;
+  recipientUserId: string;
+  title: string;
+  body: string;
+  referenceType: 'inbox_conversation';
+  referenceId: string;
+}
+
+/** What the app answers with (`NotificationAnswer`, the app's notificationRoutes.ts). */
+export interface DirectoryNotificationAnswer {
+  notification: { id: string; recipientUserId: string; type: 'inbox_handover'; createdAt: string };
+  replayed: boolean;
+}
+
 export interface OtoAppDirectory {
   /** Whether this deployment has a directory to call at all. */
   readonly configured: boolean;
+  /**
+   * SCRUM-823 — put an inbox hand-over notice in a person's bell:
+   * `POST /api/directory/notifications`, under a key carrying
+   * `notifications:write`. Optional so a directory built before it (a test's
+   * stub) still types; one without it is answered "not configured".
+   */
+  notify?(body: DirectoryNotificationBody): Promise<DirectoryOutcome<DirectoryNotificationAnswer>>;
   /**
    * SCRUM-775 — make a tentative birthday from the inbox's Book Date:
    * `POST /api/directory/events`. The body carries the event's own id, so a
@@ -481,6 +510,18 @@ export function buildOtoAppDirectory(
 
   return {
     configured,
+    notify(body) {
+      return post(
+        '/api/directory/notifications',
+        body,
+        (answer): answer is DirectoryNotificationAnswer => {
+          const n = (answer as Partial<DirectoryNotificationAnswer> | null)?.notification;
+          return !!n?.id && n.id.toLowerCase() === body.id.toLowerCase();
+        },
+        'The OTO App answered without the notification',
+        'This deployment has no OTO App directory configured, so no notification was put in the bell',
+      );
+    },
     createInboxEvent(body) {
       return post(
         '/api/directory/events',

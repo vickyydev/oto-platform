@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { and, asc, eq, inArray, isNull, type SQL } from 'drizzle-orm';
-import { branch, station } from '@oto/db';
+import { branch, station, type BranchNoticeContact } from '@oto/db';
 import type { App } from '../app';
 import { AppError, errors } from '../lib/errors';
 import { audit } from '../services/audit';
@@ -17,7 +17,8 @@ import { gateEventsForBand, GATE_EVENTS_LIMIT } from '../services/gate-events';
 import { liveOccupancy } from '../services/occupancy';
 import { createMissingTemplates } from '../services/print';
 import { opCtx, withTx } from '../services/tx';
-import { GATE_EVENT_KINDS, LiveOccupancyViewSchema } from '@oto/shared';
+import { GATE_EVENT_KINDS, LiveOccupancyViewSchema, normalizePhone } from '@oto/shared';
+import { contactOf } from '../services/inbox/handover-notice';
 import { assertArchiveAllowed, lockActiveOrganisation, lockBranchForArchive } from '../services/organisation-archive';
 
 /** SCRUM-674 — one band's gate journal at one park. */
@@ -38,6 +39,25 @@ const OpeningHoursSchema = z.object({
   mon: HoursDaySchema, tue: HoursDaySchema, wed: HoursDaySchema, thu: HoursDaySchema,
   fri: HoursDaySchema, sat: HoursDaySchema, sun: HoursDaySchema,
 }).strict().nullable();
+/**
+ * SCRUM-823 — who an inbox hand-over notice goes to at this park: the
+ * birthday manager on duty, or the GM. The OTO App user the bell notice is
+ * addressed to, and the number the WhatsApp or Telegram ping goes to (E.164
+ * once saved). Either may be left out; with neither the setting is cleared.
+ */
+const NoticeContactSchema = z
+  .object({
+    name: z.string().trim().max(120).nullable(),
+    appUserId: z
+      .string()
+      .trim()
+      .max(64)
+      .regex(/^[A-Za-z0-9-]*$/, 'an OTO App user id')
+      .nullable(),
+    phone: z.string().trim().max(32).nullable(),
+    channel: z.enum(['whatsapp', 'telegram']),
+  })
+  .strict();
 const BusinessDayStartSchema = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/, 'HH:MM or HH:MM:SS');
 const AppSyncStatusSchema = z.enum(['PENDING', 'SUCCESS', 'FAILED', 'APP_ONLY']).nullable();
 const AppMapResultSchema = z.object({
@@ -71,6 +91,17 @@ const AppReconcileSchema = z.object({
   writes: z.number().int().nonnegative(),
 });
 
+/** A contact as the editor sent it, as the column keeps it: the phone in E.164, empty fields as null. */
+function noticeContactToStore(c: z.infer<typeof NoticeContactSchema> | null): BranchNoticeContact | null {
+  if (c === null) return null;
+  const phoneRaw = c.phone?.trim() ? c.phone.trim() : null;
+  const phone = phoneRaw ? normalizePhone(phoneRaw) : null;
+  if (phoneRaw && !phone) throw new AppError(400, 'PHONE_INVALID', 'Enter the phone as a full number, for example +66 81 234 5678');
+  const appUserId = c.appUserId?.trim() ? c.appUserId.trim() : null;
+  if (!appUserId && !phone) return null;
+  return { name: c.name?.trim() ? c.name.trim() : null, appUserId, phone, channel: c.channel };
+}
+
 /** SCRUM-27 — branches (with timezone) under the caller's operator. */
 export async function branchRoutes(app: App): Promise<void> {
   app.get(
@@ -88,6 +119,9 @@ export async function branchRoutes(app: App): Promise<void> {
           openingHours: z.unknown().nullable(), businessDayStart: z.string(), archived: z.boolean(),
           /** SCRUM-805 — the station whose kitchen and bar printers receive party slips; null until the park names one. */
           partySlipsStationId: z.string().uuid().nullable(),
+          /** SCRUM-823 — who a Birthdays & Events hand-over tells here; null until the park names them. */
+          birthdayManagerContact: NoticeContactSchema.nullable(),
+          gmContact: NoticeContactSchema.nullable(),
         })) }) },
       },
     },
@@ -125,6 +159,8 @@ export async function branchRoutes(app: App): Promise<void> {
           country: b.country,
           archived: b.archivedAt !== null,
           partySlipsStationId: b.partySlipsStationId,
+          birthdayManagerContact: contactOf(b.birthdayManagerContact),
+          gmContact: contactOf(b.gmContact),
         })),
       };
     },
@@ -300,7 +336,9 @@ export async function branchRoutes(app: App): Promise<void> {
         description:
           'Update or archive a branch. SCRUM-805 — `partySlipsStationId` names the station whose kitchen and bar ' +
           'printers receive the party slips (one of this branch\'s live stations), or null to name none; refused 400 ' +
-          'STATION_NOT_AT_BRANCH for any other station.',
+          'STATION_NOT_AT_BRANCH for any other station. SCRUM-823 — `birthdayManagerContact` and `gmContact` name who an ' +
+          'inbox Birthdays & Events hand-over tells (an OTO App user and a phone, E.164 once saved); a phone that is ' +
+          'not a number is refused 400 PHONE_INVALID, and a contact with neither is cleared.',
         params: z.object({ id: z.string().uuid() }),
         body: z
           .object({
@@ -313,6 +351,8 @@ export async function branchRoutes(app: App): Promise<void> {
             openingHours: OpeningHoursSchema.optional(),
             businessDayStart: BusinessDayStartSchema.optional(),
             partySlipsStationId: z.string().uuid().nullable().optional(),
+            birthdayManagerContact: NoticeContactSchema.nullable().optional(),
+            gmContact: NoticeContactSchema.nullable().optional(),
           })
           .strict(),
         response: { 200: z.object({
@@ -329,8 +369,11 @@ export async function branchRoutes(app: App): Promise<void> {
         .where(and(eq(branch.id, req.params.id), eq(branch.operatorId, auth.operatorId)))
         .limit(1);
       if (!before) throw errors.notFound('Branch not found');
-      const { archived, confirmName, ...rest } = req.body;
+      const { archived, confirmName, birthdayManagerContact, gmContact, ...rest } = req.body;
       const patch: Partial<typeof branch.$inferInsert> = { ...rest };
+      // SCRUM-823 — the notice contacts, the phone in E.164; a contact naming nobody is cleared.
+      if (birthdayManagerContact !== undefined) patch.birthdayManagerContact = noticeContactToStore(birthdayManagerContact);
+      if (gmContact !== undefined) patch.gmContact = noticeContactToStore(gmContact);
       if (archived !== undefined) patch.archivedAt = archived ? new Date() : null;
       if (rest.partySlipsStationId) {
         // SCRUM-805 — only a live station standing in this park prints its party slips.

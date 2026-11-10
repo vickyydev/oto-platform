@@ -424,6 +424,22 @@ export type InboxConversationEvent = z.infer<typeof InboxConversationEventSchema
 export const beoPathOf = (eventId: string, opts: { aiFill?: boolean } = {}): string =>
   `/studio/events/kanban?beo=${eventId}${opts.aiFill ? '&fill=inbox' : ''}`;
 
+/** SCRUM-823 — one assistant hand-over's notices, as the thread's pill reads them. */
+export const InboxHandoverNoticeSchema = z.object({
+  /** The assistant turn that handed the thread over (the `ai_handover` pill's `turnId`). */
+  turnId: Uuid,
+  destination: InboxCategorySchema,
+  /** When the birthday manager on duty was first told (the bell or the ping); null when nobody was. */
+  notifiedAt: Iso.nullable(),
+  /** Nobody to tell (no contact named for the park), or every notice failed. */
+  notNotified: z.boolean(),
+  /** When the GM was told because nobody had picked the thread up within fifteen minutes. */
+  escalatedAt: Iso.nullable(),
+  /** When a person took the thread (a reply, an assignment, handled), as the sweep saw it. */
+  pickedUpAt: Iso.nullable(),
+});
+export type InboxHandoverNotice = z.infer<typeof InboxHandoverNoticeSchema>;
+
 export const InboxConversationDetailSchema = InboxConversationRowSchema.extend({
   teamName: z.string().nullable(),
   firstResponseAt: Iso.nullable(),
@@ -461,6 +477,16 @@ export const InboxConversationDetailSchema = InboxConversationRowSchema.extend({
    * as it was booked. Null until a date is booked.
    */
   event: InboxConversationEventSchema.nullable(),
+  /**
+   * SCRUM-823: who each of the assistant's hand-overs on this thread told, one
+   * entry per hand-over, oldest first: when the birthday manager on duty was
+   * notified (null with nobody to tell, `notNotified`), when the GM was told
+   * because nobody picked it up in fifteen minutes, and when a person took it.
+   * Empty for a thread whose hand-overs told nobody (any but Birthdays & Events).
+   * Optional: an api from before SCRUM-823 sends none, and the pill then says
+   * nothing of it.
+   */
+  handoverNotices: z.array(InboxHandoverNoticeSchema).optional(),
 });
 export type InboxConversationDetail = z.infer<typeof InboxConversationDetailSchema>;
 

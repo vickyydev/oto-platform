@@ -4900,6 +4900,78 @@
                             "type": "string",
                             "format": "uuid",
                             "nullable": true
+                          },
+                          "birthdayManagerContact": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "maxLength": 120,
+                                "nullable": true
+                              },
+                              "appUserId": {
+                                "type": "string",
+                                "maxLength": 64,
+                                "pattern": "^[A-Za-z0-9-]*$",
+                                "nullable": true
+                              },
+                              "phone": {
+                                "type": "string",
+                                "maxLength": 32,
+                                "nullable": true
+                              },
+                              "channel": {
+                                "type": "string",
+                                "enum": [
+                                  "whatsapp",
+                                  "telegram"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "appUserId",
+                              "phone",
+                              "channel"
+                            ],
+                            "additionalProperties": false,
+                            "nullable": true
+                          },
+                          "gmContact": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "maxLength": 120,
+                                "nullable": true
+                              },
+                              "appUserId": {
+                                "type": "string",
+                                "maxLength": 64,
+                                "pattern": "^[A-Za-z0-9-]*$",
+                                "nullable": true
+                              },
+                              "phone": {
+                                "type": "string",
+                                "maxLength": 32,
+                                "nullable": true
+                              },
+                              "channel": {
+                                "type": "string",
+                                "enum": [
+                                  "whatsapp",
+                                  "telegram"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "appUserId",
+                              "phone",
+                              "channel"
+                            ],
+                            "additionalProperties": false,
+                            "nullable": true
                           }
                         },
                         "required": [
@@ -4911,7 +4983,9 @@
                           "country",
                           "businessDayStart",
                           "archived",
-                          "partySlipsStationId"
+                          "partySlipsStationId",
+                          "birthdayManagerContact",
+                          "gmContact"
                         ],
                         "additionalProperties": false
                       }
@@ -5387,7 +5461,7 @@
     },
     "/branches/{id}": {
       "patch": {
-        "description": "Update or archive a branch. SCRUM-805 — `partySlipsStationId` names the station whose kitchen and bar printers receive the party slips (one of this branch's live stations), or null to name none; refused 400 STATION_NOT_AT_BRANCH for any other station.",
+        "description": "Update or archive a branch. SCRUM-805 — `partySlipsStationId` names the station whose kitchen and bar printers receive the party slips (one of this branch's live stations), or null to name none; refused 400 STATION_NOT_AT_BRANCH for any other station. SCRUM-823 — `birthdayManagerContact` and `gmContact` name who an inbox Birthdays & Events hand-over tells (an OTO App user and a phone, E.164 once saved); a phone that is not a number is refused 400 PHONE_INVALID, and a contact with neither is cleared.",
         "requestBody": {
           "required": true,
           "content": {
@@ -5561,6 +5635,78 @@
                   "partySlipsStationId": {
                     "type": "string",
                     "format": "uuid",
+                    "nullable": true
+                  },
+                  "birthdayManagerContact": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 120,
+                        "nullable": true
+                      },
+                      "appUserId": {
+                        "type": "string",
+                        "maxLength": 64,
+                        "pattern": "^[A-Za-z0-9-]*$",
+                        "nullable": true
+                      },
+                      "phone": {
+                        "type": "string",
+                        "maxLength": 32,
+                        "nullable": true
+                      },
+                      "channel": {
+                        "type": "string",
+                        "enum": [
+                          "whatsapp",
+                          "telegram"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "appUserId",
+                      "phone",
+                      "channel"
+                    ],
+                    "additionalProperties": false,
+                    "nullable": true
+                  },
+                  "gmContact": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 120,
+                        "nullable": true
+                      },
+                      "appUserId": {
+                        "type": "string",
+                        "maxLength": 64,
+                        "pattern": "^[A-Za-z0-9-]*$",
+                        "nullable": true
+                      },
+                      "phone": {
+                        "type": "string",
+                        "maxLength": 32,
+                        "nullable": true
+                      },
+                      "channel": {
+                        "type": "string",
+                        "enum": [
+                          "whatsapp",
+                          "telegram"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "appUserId",
+                      "phone",
+                      "channel"
+                    ],
+                    "additionalProperties": false,
                     "nullable": true
                   }
                 },
@@ -89791,6 +89937,51 @@
                       ],
                       "additionalProperties": false,
                       "nullable": true
+                    },
+                    "handoverNotices": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "turnId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "destination": {
+                            "type": "string",
+                            "enum": [
+                              "birthdays",
+                              "general",
+                              "marketing",
+                              "gm"
+                            ]
+                          },
+                          "notifiedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "notNotified": {
+                            "type": "boolean"
+                          },
+                          "escalatedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "pickedUpAt": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "turnId",
+                          "destination",
+                          "notifiedAt",
+                          "notNotified",
+                          "escalatedAt",
+                          "pickedUpAt"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
