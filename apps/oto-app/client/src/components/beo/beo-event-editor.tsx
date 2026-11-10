@@ -2176,6 +2176,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                   eventId={eventId}
                   readOnly={readOnly}
                   section="package"
+                  party={{ eventDate: eventData.eventDate ?? null, numChildren: eventData.numChildren ?? null, numAdults: eventData.numAdults ?? null }}
                   onPackageApplied={({ setMenuTemplateId: packageSetMenuId }) => {
                     // The package's set menu starts the kitchen plan's, as the
                     // server did; a set menu already chosen here stays.

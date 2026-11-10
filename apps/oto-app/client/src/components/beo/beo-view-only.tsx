@@ -506,7 +506,12 @@ export function BeoViewOnly({ eventId, showHeader = true }: BeoViewOnlyProps) {
               </div>
             </AccordionTrigger>
             <AccordionContent className="pb-4">
-              <BeoPackageModule eventId={eventId} readOnly section="package" />
+              <BeoPackageModule
+                eventId={eventId}
+                readOnly
+                section="package"
+                party={{ eventDate: beoData.eventDate ?? null, numChildren: beoData.numChildren ?? null, numAdults: beoData.numAdults ?? null }}
+              />
             </AccordionContent>
           </AccordionItem>
         )}

@@ -908,6 +908,16 @@ jobs:
       - name: The app's birthday package checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/birthday-packages.check.ts
+      # SCRUM-808: the BEO package module's total breakdown, rendered: the
+      # package's own price for the party's day, the extra children and adults
+      # at its own extra prices, the add-ons bought, a weekday and a weekend
+      # party with extras; an extra the package prices none for is said, never
+      # priced. No database.
+      - name: The app's package total checks
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/beo-package-total-ui.check.ts
       # SCRUM-567: the company payroll's R2 (migrations 0021-0022) — two park
       # groups' separate paying config, rule sets and profiles; every route
       # refused to manager and staff, writes to anyone below admin, HR-data

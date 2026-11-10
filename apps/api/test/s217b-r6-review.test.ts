@@ -500,7 +500,9 @@ describe('A. fences and seams', () => {
       // SCRUM-769: the BEO's staff list leaves out a login whose employment has ended (onStaff); where documents live is unchanged.
       // SCRUM-815: the parent link's set-menu lines are resolved by server/lib/setMenuResolve.ts (moved, not changed) and the
       // timeline generator is exported for the AI fill's approval; where the BEO's documents live is unchanged.
-      'beo-routes.ts': 'b20c0de26813cecb03194fa473da66e201a8e3b865b24f4e96dc6fca98b24d23',
+      // SCRUM-808: Generate from BEO also bills the package's own price for the party's day and its extra
+      // children and adults (shared/partyPackageTotal.ts); where the BEO's documents live is unchanged.
+      'beo-routes.ts': 'ab9cd423e9d8d74d100c601b4ac020b20b90baad08ceda8f148cc0372663ab03',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);

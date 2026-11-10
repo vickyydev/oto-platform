@@ -26,7 +26,10 @@
 //   4. Generate from BEO bills the package's satang as the whole baht a
 //      billing line holds (SCRUM-806): a 5,000 THB add-on bills 5,000; an
 //      add-on switched off or at quantity 0 bills nothing, and one at 2 bills
-//      two, as the view reads the party's add-ons;
+//      two, as the view reads the party's add-ons; the package's own price
+//      for the party's day and its extra children and adults bill too, and
+//      the BEO package module's total reads the same (SCRUM-808): a weekday
+//      and a weekend party with extras;
 //   5. script/seed-birthday-packages.mjs on rows shaped as staging holds them
 //      (the two Floresta templates, facts in descriptions, the park named
 //      "Oto Play Park, Central Floresta "): the dry run writes nothing, the
@@ -47,6 +50,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { generateDirectoryKey, hashDirectoryKey } from "../server/directory/clientAuth";
+import { partyPackageTotal, partyPackageTotalLines } from "../shared/partyPackageTotal";
 
 const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -765,11 +769,16 @@ try {
     assert.equal(price["Add-on: Upgrade or customize your activity program"], 1_000);
     assert.equal(price["Package: Ice-cream cake with candles and birthday song"], 0);
     assert.equal(price[`Entertainment: ZZ TEST Crio show ${run}`], 6_500);
+    // SCRUM-808: the package's own price for the party's day (14 March 2099 is a Saturday) and the
+    // 2 children and 1 adult beyond its included 10 and 4, at its own weekend prices, in baht.
+    assert.equal(price[`Package: ZZ TEST Floresta ${run} (Saturday, weekend price)`], 20_900);
+    assert.equal(price["Package: extra children"], 1_500);
+    assert.equal(price["Package: extra adults"], 500);
     // What the billing screen totals (qty x unit price of every line not included).
     const total = lines.body
       .filter((l: { isIncluded: boolean }) => !l.isIncluded)
       .reduce((sum: number, l: { qty: number; unitPriceIncVat: number }) => sum + l.qty * l.unitPriceIncVat, 0);
-    assert.equal(total, 5_000 + 1_000 + 6_500);
+    assert.equal(total, 20_900 + 2 * 1_500 + 500 + 5_000 + 1_000 + 6_500);
   });
 
   await check("an add-on switched off or at quantity 0 adds nothing to the billing; a quantity bills that many", async () => {
@@ -795,10 +804,12 @@ try {
     const billedTotal = (lines: Array<{ qty: number; unitPriceIncVat: number; isIncluded: boolean }>) =>
       lines.filter((l) => !l.isIncluded).reduce((sum, l) => sum + l.qty * l.unitPriceIncVat, 0);
 
+    // SCRUM-808: the package's own Saturday price and its 2 extra children and 1 extra adult bill whatever add-ons are bought.
+    const packageOnly = 20_900 + 2 * 1_500 + 500;
     const none = await generate();
     assert.deepEqual(none.filter((l) => l.name.startsWith("Add-on:")), [], "nothing the party did not buy");
     assert.ok(none.some((l) => l.name === "Package: Ice-cream cake with candles and birthday song"), "the included lines stay");
-    assert.equal(billedTotal(none), 0);
+    assert.equal(billedTotal(none), packageOnly, "no add-on: the package and its extras alone");
 
     await setItem(table, { qty: 2 });
     const two = await generate();
@@ -806,13 +817,89 @@ try {
       two.filter((l) => l.name.startsWith("Add-on:")).map((l) => [l.name, l.qty, l.unitPriceIncVat]),
       [["Add-on: Reserved table for adults, up to 10 adults", 2, 5_000]],
     );
-    assert.equal(billedTotal(two), 10_000);
+    assert.equal(billedTotal(two), packageOnly + 10_000);
     // The billing and the view agree on what the party bought.
     const addOns = (await q<{ add_ons: Array<{ name: string; qty: number }> }>(
       "select add_ons from otoapp_v.event_packages where event_id = $1",
       [billed],
     ))[0].add_ons;
     assert.deepEqual(addOns.map((a) => [a.name, a.qty]), [["Reserved table for adults, up to 10 adults", 2]]);
+  });
+
+  await check("the package total of a weekday and a weekend party with extras, the same in the BEO module and the billing (SCRUM-808)", async () => {
+    const baht = (satang: number) => `฿${(satang / 100).toLocaleString("en", { minimumFractionDigits: 2 })}`;
+    const cases = [
+      // 16 March 2099 is a Monday: 12 children and 5 adults, 2 and 1 beyond the package's 10 and 4.
+      { date: "2099-03-16", kids: 12, adults: 5, day: "Monday", mode: "weekday", pkg: 1_690_000, child: 130_000, adult: 35_000 },
+      // 14 March 2099 is a Saturday: 13 children and 6 adults, 3 and 2 beyond.
+      { date: "2099-03-14", kids: 13, adults: 6, day: "Saturday", mode: "weekend", pkg: 2_090_000, child: 150_000, adult: 50_000 },
+    ] as const;
+    for (const c of cases) {
+      const eventId = await birthday(A, { event_date: c.date, num_children: c.kids, num_adults: c.adults });
+      const applied = await call("POST", `/api/beo/events/${eventId}/package-snapshot`, { cookie, body: { templateId: packageId } });
+      assert.equal(applied.status, 201, show(applied));
+      const itemOf = (prefix: string) => applied.body.items.find((i: { label: string }) => i.label.startsWith(prefix)).id as string;
+      for (const [itemId, body] of [[itemOf("Reserved table"), { qty: 1 }], [itemOf("Upgrade"), { billable: false }]] as const) {
+        const res = await call("PATCH", `/api/beo/events/${eventId}/package-snapshot/items/${itemId}`, { cookie, body });
+        assert.equal(res.status, 200, show(res));
+      }
+      // The module's reading of the party's snapshot, as the BEO shows it.
+      const snapshot = (await call("GET", `/api/beo/events/${eventId}/package-snapshot`, { cookie })).body;
+      const reading = partyPackageTotal(snapshot, { eventDate: c.date, numChildren: c.kids, numAdults: c.adults });
+      const extraKids = c.kids - 10;
+      const extraAdults = c.adults - 4;
+      const expected = c.pkg + extraKids * c.child + extraAdults * c.adult + 500_000;
+      assert.equal(reading.mode, c.mode, c.date);
+      assert.equal(reading.packageSatang, c.pkg, `${c.date}: the package's own ${c.mode} price`);
+      assert.deepEqual([reading.extraChildren, reading.extraChildUnitSatang, reading.extraAdults, reading.extraAdultUnitSatang], [extraKids, c.child, extraAdults, c.adult]);
+      assert.equal(reading.addOnsSatang, 500_000, "the reserved table bought, the upgrade switched off");
+      assert.equal(reading.totalSatang, expected, `${c.date}: never ฿0 for a package priced by day`);
+      // The breakdown the module shows above its total.
+      assert.deepEqual(partyPackageTotalLines(reading, baht).map((l) => [l.label, l.satang]), [
+        [`Package price for ${c.day} (${c.mode})`, c.pkg],
+        [`Extra children: ${extraKids} children × ${baht(c.child)}`, extraKids * c.child],
+        [`Extra adults: ${extraAdults} ${extraAdults === 1 ? "adult" : "adults"} × ${baht(c.adult)}`, extraAdults * c.adult],
+        ["Add-ons", 500_000],
+      ]);
+      // Generate from BEO bills the same: the package's lines add up to the module's total.
+      const gen = await call("POST", `/api/events/${eventId}/line-items/generate-from-beo`, { cookie, body: { mode: "replace" } });
+      assert.equal(gen.status, 201, show(gen));
+      const lines = (await call("GET", `/api/events/${eventId}/line-items`, { cookie })).body as Array<{
+        name: string; qty: number; unitPriceIncVat: number; isIncluded: boolean; sourceType: string;
+      }>;
+      const byName = Object.fromEntries(lines.map((l) => [l.name, [l.qty, l.unitPriceIncVat]]));
+      assert.deepEqual(byName[`Package: ZZ TEST Floresta ${run} (${c.day}, ${c.mode} price)`], [1, c.pkg / 100]);
+      assert.deepEqual(byName["Package: extra children"], [extraKids, c.child / 100]);
+      assert.deepEqual(byName["Package: extra adults"], [extraAdults, c.adult / 100]);
+      const packageBilled = lines
+        .filter((l) => l.sourceType === "package" && !l.isIncluded)
+        .reduce((sum, l) => sum + l.qty * l.unitPriceIncVat, 0);
+      assert.equal(packageBilled * 100, reading.totalSatang, `${c.date}: the billing and the module agree`);
+    }
+    // Within the included counts, no extra line; a package with one price charges it on any day.
+    const within = partyPackageTotal(
+      {
+        basePrice: 1_090_000, priceWeekday: null, priceWeekend: null, kidsIncluded: 10, adultsIncluded: 10,
+        extraChildWeekday: null, extraChildWeekend: null, extraAdultWeekday: null, extraAdultWeekend: null,
+        items: [{ label: "Cake", included: true, billable: false, qty: 1, unitPrice: 0 }],
+      },
+      { eventDate: "2099-03-14", numChildren: 8, numAdults: 3 },
+    );
+    assert.deepEqual([within.packageSatang, within.extraChildren, within.extraAdults, within.totalSatang], [1_090_000, 0, 0, 1_090_000]);
+    assert.deepEqual(partyPackageTotalLines(within, baht).map((l) => l.key), ["package"]);
+    // An extra the package prices none for is counted and said, never priced; no date reads the weekday.
+    const unpriced = partyPackageTotal(
+      {
+        basePrice: 1_090_000, priceWeekday: null, priceWeekend: null, kidsIncluded: 10, adultsIncluded: 4,
+        extraChildWeekday: null, extraChildWeekend: null, extraAdultWeekday: null, extraAdultWeekend: null, items: [],
+      },
+      { eventDate: null, numChildren: 11, numAdults: 4 },
+    );
+    assert.equal(unpriced.totalSatang, 1_090_000);
+    assert.deepEqual(partyPackageTotalLines(unpriced, baht).map((l) => l.label), [
+      "Package price (weekday: the party has no date yet)",
+      "Extra children: 1 child (the package sets no extra-child price for a weekday)",
+    ]);
   });
 
   // ── 5. the repo seed, on rows shaped as staging holds them ───────────────

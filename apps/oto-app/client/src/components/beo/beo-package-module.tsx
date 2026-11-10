@@ -33,6 +33,7 @@ import {
   Check,
   RefreshCw,
 } from "lucide-react";
+import { partyPackageTotal, partyPackageTotalLines, type PartyForPricing } from "@shared/partyPackageTotal";
 
 interface BeoPackageModuleProps {
   eventId: string;
@@ -40,6 +41,11 @@ interface BeoPackageModuleProps {
   section?: "package" | "entertainment" | "all";
   /** Told the package's own set menu when one is applied, so the kitchen plan can start from it. */
   onPackageApplied?: (applied: { setMenuTemplateId: string | null }) => void;
+  /**
+   * SCRUM-808: the party's date and counts as the form holds them, which the
+   * package total reads (the day's price, the extra children and adults).
+   */
+  party?: PartyForPricing;
 }
 
 interface PackageTemplate {
@@ -149,7 +155,29 @@ function packageFacts(snapshot: PackageSnapshot): string[] {
   return facts;
 }
 
-export function BeoPackageModule({ eventId, readOnly, section = "all", onPackageApplied }: BeoPackageModuleProps) {
+/**
+ * SCRUM-808: the package total's breakdown (the package price for the party's
+ * day, the extra children, the extra adults, the add-ons) and its total.
+ */
+export function PackageTotalBreakdown({ reading }: { reading: ReturnType<typeof partyPackageTotal> }) {
+  return (
+    <div className="space-y-1 pt-2 border-t" data-testid="package-total-breakdown">
+      {partyPackageTotalLines(reading, formatPrice).map((line) => (
+        <div key={line.key} className="flex justify-between gap-2 text-xs text-muted-foreground" data-testid={`text-package-total-${line.key}`}>
+          <span>{line.label}</span>
+          <span>{formatPrice(line.satang)}</span>
+        </div>
+      ))}
+      <div className="flex justify-end pt-1">
+        <span className="text-sm font-medium" data-testid="text-package-total">
+          Package Total: {formatPrice(reading.totalSatang)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export function BeoPackageModule({ eventId, readOnly, section = "all", onPackageApplied, party }: BeoPackageModuleProps) {
   const { toast } = useToast();
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [showEntertainmentDialog, setShowEntertainmentDialog] = useState(false);
@@ -271,12 +299,21 @@ export function BeoPackageModule({ eventId, readOnly, section = "all", onPackage
     [addonItems]
   );
 
-  const packageTotal = useMemo(() => {
-    if (!snapshot?.items) return 0;
-    return snapshot.items
-      .filter((item) => item.billable)
-      .reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
-  }, [snapshot]);
+  // SCRUM-808: the package's price for the party's day, the extras beyond its
+  // included counts at its own extra prices, and the add-ons bought; the
+  // included lines are 0-baht by design (shared/partyPackageTotal.ts, which
+  // Generate from BEO reads the same way).
+  const packageReading = useMemo(
+    () =>
+      snapshot
+        ? partyPackageTotal(
+            { ...snapshot, items: snapshot.items ?? [] },
+            { eventDate: party?.eventDate ?? null, numChildren: party?.numChildren ?? null, numAdults: party?.numAdults ?? null },
+          )
+        : null,
+    [snapshot, party?.eventDate, party?.numChildren, party?.numAdults],
+  );
+  const packageTotal = packageReading?.totalSatang ?? 0;
 
   const entertainmentTotal = useMemo(() => {
     return entertainmentSelections
@@ -523,7 +560,7 @@ export function BeoPackageModule({ eventId, readOnly, section = "all", onPackage
                   ))}
                   <div className="flex justify-end pt-1">
                     <span className="text-xs text-muted-foreground" data-testid="text-included-subtotal">
-                      Subtotal: {formatPrice(includedTotal)}
+                      {includedTotal === 0 ? "Included in the package price" : `Subtotal: ${formatPrice(includedTotal)}`}
                     </span>
                   </div>
                 </div>
@@ -618,12 +655,11 @@ export function BeoPackageModule({ eventId, readOnly, section = "all", onPackage
                 </div>
               )}
 
-              <div className="flex justify-end pt-2 border-t">
-                <span className="text-sm font-medium" data-testid="text-package-total">
-                  Package Total: {formatPrice(packageTotal)}
-                </span>
-              </div>
             </div>
+          )}
+
+          {packageReading && (
+            <PackageTotalBreakdown reading={packageReading} />
           )}
         </div>
       )}

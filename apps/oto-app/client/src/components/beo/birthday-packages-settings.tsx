@@ -983,7 +983,13 @@ export function BirthdayPackagesSettings() {
                         <span className="text-sm font-medium" data-testid="text-included-total">
                           THB {formatPrice(includedTotal)}
                         </span>
-                        {basePriceSatang > 0 && priceDiff !== 0 && (
+                        {/* SCRUM-808: 0-baht included lines are what the package price covers, not money left unallocated. */}
+                        {includedTotal === 0 && (
+                          <p className="text-xs text-muted-foreground" data-testid="text-included-in-price">
+                            Included in the package price
+                          </p>
+                        )}
+                        {basePriceSatang > 0 && includedTotal !== 0 && priceDiff !== 0 && (
                           <p className={`text-xs ${priceDiff > 0 ? "text-amber-600 dark:text-amber-400" : "text-destructive"}`}
                             data-testid="text-price-diff"
                           >
