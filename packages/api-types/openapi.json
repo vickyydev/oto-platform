@@ -61581,6 +61581,13 @@
                               "note": {
                                 "type": "string",
                                 "nullable": true
+                              },
+                              "audience": {
+                                "type": "string",
+                                "enum": [
+                                  "kids",
+                                  "adults"
+                                ]
                               }
                             },
                             "required": [

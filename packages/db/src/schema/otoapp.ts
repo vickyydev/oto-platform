@@ -1342,6 +1342,12 @@ export interface OtoAppEventPackageSetMenuLine {
   choice_group: string | null;
   chosen_option: string | null;
   note: string | null;
+  /**
+   * SCRUM-829 (app migration 0048): only on a party whose BEO has "Different
+   * for adults" on — `kids` on a line the adults do not get, `adults` on a
+   * line of the adults' own. Absent otherwise.
+   */
+  audience?: 'kids' | 'adults';
 }
 
 export interface OtoAppEventPackageBarItem {

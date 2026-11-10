@@ -151,6 +151,16 @@ export const PartyPlanEntertainmentSchema = z.object({
 });
 export type PartyPlanEntertainment = z.infer<typeof PartyPlanEntertainmentSchema>;
 
+/**
+ * SCRUM-829: who a line is for when the BEO's adults' menu differs from the
+ * kids' — `kids` on a line the adults do not get, `adults` on a line of the
+ * adults' own (instead of, beside, or in another count than the kids').
+ * Absent on every line of a party whose adults eat the kids' menu, and on
+ * every party saved before the switch (the view, app migration 0048).
+ */
+export const PARTY_MENU_AUDIENCES = ['kids', 'adults'] as const;
+export type PartyMenuAudience = (typeof PARTY_MENU_AUDIENCES)[number];
+
 export const PartyPlanMenuItemSchema = z.object({
   productCode: z.string().nullable(),
   name: z.string(),
@@ -159,6 +169,7 @@ export const PartyPlanMenuItemSchema = z.object({
   choiceGroup: z.string().nullable(),
   chosenOption: z.string().nullable(),
   note: z.string().nullable(),
+  audience: z.enum(PARTY_MENU_AUDIENCES).optional(),
 });
 export type PartyPlanMenuItem = z.infer<typeof PartyPlanMenuItemSchema>;
 

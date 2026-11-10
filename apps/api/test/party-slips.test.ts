@@ -13,7 +13,9 @@ import {
   stationDevice,
 } from '@oto/db';
 import {
+  PARTY_ADULTS_ONLY,
   PARTY_CHOICE_NOT_MADE,
+  PARTY_KIDS_ONLY,
   PARTY_NO_KIDS_FOOD_TIME,
   PartyDetailWithSlipsAnswerSchema,
   PartySlipsPrintAnswerSchema,
@@ -22,6 +24,7 @@ import {
   composePartySlips,
   newId,
   parseDayStart,
+  partyCountsMark,
   partyReadyBy,
   partySlipsTime,
   type PartyDetailWithSlipsAnswer,
@@ -343,6 +346,61 @@ describe('the slip, composed from the plan', () => {
     expect(slips).toEqual({ kitchen: null, bar: null });
     expect(compose(plan({ barItems: [] }), null).kitchen?.details).toEqual(['Children: 10']);
   });
+
+  // SCRUM-829: the BEO's adults' menu mirrors the kids' unless "Different for
+  // adults" is on; then the view marks the lines, and the slip stays ONE list.
+  it('one food list with the adults’ changes marked: kids only, the two counts beside a shared dish, an adults’ note, adults only', () => {
+    const slips = compose(
+      plan({
+        setMenu: [
+          // The set menu's pizza: the adults' list dropped it.
+          { productCode: 'CF-24', name: 'Pizza', qty: 3, choiceGroup: 'Pizza', chosenOption: 'Margherita', note: null, audience: 'kids' },
+          // The fries: an unchanged copy for the adults, so the view sends no adults' line and nothing is marked.
+          { productCode: 'CF-11', name: 'French fries', qty: 2, choiceGroup: null, chosenOption: null, note: null },
+          { productCode: null, name: 'Fruit skewers', qty: 2, choiceGroup: null, chosenOption: null, note: null },
+          { productCode: 'CF-66-1', name: 'Kids juice', qty: 10, choiceGroup: null, chosenOption: null, note: null },
+          // The adults' own: the skewers in another count, a note on the juice, pasta of their own (no code).
+          { productCode: null, name: 'fruit skewers', qty: 4, choiceGroup: null, chosenOption: null, note: null, audience: 'adults' },
+          { productCode: 'CF-66-1', name: 'Kids juice', qty: 10, choiceGroup: null, chosenOption: null, note: 'no ice', audience: 'adults' },
+          { productCode: null, name: 'Pasta', qty: 4, choiceGroup: null, chosenOption: null, note: 'al dente', audience: 'adults' },
+        ],
+        barItems: [],
+      }),
+    );
+    expect(slips.kitchen?.lines).toEqual([
+      { qty: 3, name: 'Margherita', note: PARTY_KIDS_ONLY },
+      { qty: 2, name: 'French fries' },
+      { name: 'Fruit skewers', note: partyCountsMark(2, 4) },
+      { qty: 4, name: 'Pasta', note: `${PARTY_ADULTS_ONLY} · al dente` },
+    ]);
+    expect(partyCountsMark(2, 4)).toBe('kids 2 · adults 4');
+    expect(slips.bar?.lines).toEqual([{ qty: 10, name: 'Kids juice', note: 'adults: no ice' }]);
+    expect(PARTY_KIDS_ONLY).toBe('kids only');
+    expect(PARTY_ADULTS_ONLY).toBe('adults only');
+  });
+
+  it('an adults’ line folds only into a line on its own station; a split choice with no count takes the adults’ count alone', () => {
+    const slips = compose(
+      plan({
+        setMenu: [
+          { productCode: 'CF-24', name: 'Pizza', qty: null, choiceGroup: 'Pizza', chosenOption: 'Margherita', note: null },
+          { productCode: 'CF-27', name: 'Pizza', qty: null, choiceGroup: 'Pizza', chosenOption: 'Hawaiian', note: null },
+          { productCode: null, name: 'Margherita', qty: 2, choiceGroup: null, chosenOption: null, note: null, audience: 'adults' },
+          // A bar drink of the adults' own: on the bar slip, marked.
+          { productCode: 'CF-66-1', name: 'Kids juice', qty: 2, choiceGroup: null, chosenOption: null, note: null, audience: 'adults' },
+        ],
+        barItems: [],
+      }),
+    );
+    expect(slips.kitchen?.lines).toEqual([{ name: 'Margherita', note: partyCountsMark(null, 2) }, { name: 'Hawaiian' }]);
+    expect(slips.bar?.lines).toEqual([{ qty: 2, name: 'Kids juice', note: PARTY_ADULTS_ONLY }]);
+    // A plan from before the switch carries no audience and prints as it always did.
+    expect(compose(plan()).kitchen?.lines).toEqual([
+      { qty: 3, name: 'Margherita' },
+      { qty: 2, name: 'French fries' },
+      { qty: 2, name: 'Fruit skewers' },
+    ]);
+  });
 });
 
 // =============================================================================
@@ -450,6 +508,44 @@ describe('job:parties.slips — at the slip time, once', () => {
       .from(auditLog)
       .where(and(eq(auditLog.action, 'party.slips_print'), eq(auditLog.entityId, id)));
     expect(audited?.after).toMatchObject({ run: 1, trigger: 'schedule', partyDate: T, stationId: t1.id });
+  });
+
+  it('SCRUM-829: a party whose adults’ menu differs prints one kitchen slip with the adults’ changes marked, read through the app’s view (0048)', async () => {
+    const id = await appParty({ id: newId(), title: "Fah's 7th", date: T });
+    // The BEO as the editor saves it with "Different for adults" on: the kids' list holds the
+    // set menu's resolved lines, the team's own skewers and a coded juice; the adults' list is
+    // its copy with the pizza dropped, the skewers in another count and pasta of their own.
+    const kids = [
+      { id: 'set_pizza', itemName: 'Margherita', quantity: 3, notes: '(Pizza)', included: true, price: 0, source: 'set_menu', groupId: 'g-pizza' },
+      { id: 'set_fries', itemName: 'French fries', quantity: 2, notes: '', included: true, price: 0, source: 'set_menu', groupId: 'i-fries' },
+      { id: 'k1', itemName: 'Fruit skewers', quantity: 2, notes: '', included: true, price: 0, source: 'additional' },
+      { id: 'k2', itemName: 'Kids juice', quantity: 10, notes: '', included: true, price: 0, source: 'additional', productCode: 'CF-66-1' },
+    ];
+    const adults = [
+      { id: 'a1', itemName: 'French fries', quantity: 2, notes: '', included: true, price: 0, source: 'set_menu', groupId: 'i-fries' },
+      { id: 'a2', itemName: 'Fruit skewers', quantity: 4, notes: '', included: true, price: 0, source: 'additional' },
+      { id: 'a3', itemName: 'Kids juice', quantity: 10, notes: '', included: true, price: 0, source: 'additional', productCode: 'CF-66-1' },
+      { id: 'a4', itemName: 'Pasta', quantity: 4, notes: '', included: false, price: 0, source: 'additional' },
+    ];
+    await ctx.db.execute(sql`
+      update otoapp.beo_kitchen_plans
+      set menus = ${JSON.stringify({ kidsFoodTime: '14:00', kids, adults, adultsDiffer: true })}::jsonb
+      where event_id = ${id}`);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '11:01'));
+    const rows = await slipsOf(id);
+    expect((rows[0]!.document as PartySlipDocument).lines).toEqual([
+      // The set menu's own lines: the pizza the adults do not get, marked; the fries an unchanged copy.
+      { qty: 3, name: 'Margherita', note: PARTY_KIDS_ONLY },
+      { qty: 2, name: 'French fries' },
+      // The adults' skewers in another count fold into the set menu's line of that name.
+      { name: 'Fruit skewers', note: partyCountsMark(2, 4) },
+      { qty: 4, name: 'Pasta', note: PARTY_ADULTS_ONLY },
+    ]);
+    // The coded juice copied unchanged for the adults reaches the bar once (and the till charges it once).
+    expect((rows[1]!.document as PartySlipDocument).lines).toEqual([
+      { qty: 10, name: 'Kids juice' },
+      { qty: 2, name: 'Juice pitcher' },
+    ]);
   });
 
   it('prints once and not twice: a second tick, and two ticks at once, make no second run', async () => {

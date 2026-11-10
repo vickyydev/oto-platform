@@ -32,6 +32,16 @@ import { PREP_TICKET_TITLE, PRINT_JOB_STATUSES, type PrintingPrepStation } from 
  *     its ready offset (§5). When the kitchen plan has no kids' food time the
  *     slip prints no READY BY time, only that the OTO App has none: which time
  *     the kitchen works to then is a question for the owner, not a rule here.
+ *   - ONE food list, the adults' changes marked (SCRUM-829). The BEO's adults'
+ *     menu mirrors the kids' unless its "Different for adults" switch is on;
+ *     then the plan marks the lines (`audience`, app migration 0048): a line
+ *     the adults do not get prints "kids only"; an adults' line of a name the
+ *     slip already lists prints no second line but "kids N · adults M" beside
+ *     the first (the counts are each side's own; their sum is what the till
+ *     charges), or "adults: <note>" when only its note differs; an adults'
+ *     line of a new name prints marked "adults only". The slip prints no
+ *     separate totals: how the adults' portions are counted is the owner's
+ *     open point, and these two counts are the simplest honest reading of it.
  */
 
 /** The two slips, kitchen first: the prep stations that print (`print.ts`). */
@@ -55,6 +65,16 @@ export const PARTY_NO_KIDS_FOOD_TIME = "No kids' food time in the OTO App";
 
 /** What the slip says under an open choice group. */
 export const PARTY_CHOICE_NOT_MADE = 'Choice not made in the OTO App';
+
+/** SCRUM-829: the adults' changes, marked on the one food list (the BEO PDF prints the same words). */
+export const PARTY_KIDS_ONLY = 'kids only';
+export const PARTY_ADULTS_ONLY = 'adults only';
+/** "kids N · adults M": a dish both eat, in different counts. */
+export const partyCountsMark = (kidsQty: number | null, adultsQty: number): string =>
+  kidsQty === null ? `adults ${adultsQty}` : `kids ${kidsQty} · adults ${adultsQty}`;
+
+/** A dish's name as the kitchen reads it: case and spacing aside. */
+const foldName = (name: string): string => name.normalize('NFC').trim().toLowerCase().replace(/\s+/g, ' ');
 
 /** Minutes past midnight of an "HH:MM" (or "HH:MM:SS") clock, or null. */
 export function clockMinutes(value: string | null | undefined): number | null {
@@ -127,27 +147,59 @@ export interface PartySlipInput {
   printedAt: string;
 }
 
+/** A slip line with the marks a note is built from, before the note is joined. */
+interface SlipLineDraft {
+  qty: number | null;
+  name: string;
+  notes: string[];
+}
+
+const draftToLine = (d: SlipLineDraft): PartySlipLine => ({
+  ...(d.qty === null ? {} : { qty: d.qty }),
+  name: d.name,
+  ...(d.notes.length ? { note: d.notes.join(' · ') } : {}),
+});
+
 /**
  * The party's two slips; null for a station the plan has nothing for. Lines
- * keep the plan's order: the set menu, then the bar plan.
+ * keep the plan's order: the set menu, then the bar plan. An adults' line
+ * (SCRUM-829) of a name the station's slip already lists folds into that
+ * line, as the file's header says; one of a new name is its own line.
  */
 export function composePartySlips(input: PartySlipInput): Record<PartySlipStation, PartySlipDocument | null> {
-  const lines: Record<PartySlipStation, PartySlipLine[]> = { kitchen: [], bar: [] };
+  const drafts: Record<PartySlipStation, SlipLineDraft[]> = { kitchen: [], bar: [] };
   for (const item of input.plan.setMenu) {
     const station = item.productCode ? (input.prepStationOf(item.productCode) ?? 'kitchen') : 'kitchen';
     if (station === 'none') continue;
     const name = (item.chosenOption ?? item.name).trim();
     if (!name) continue;
+    const note = item.note?.trim() || null;
+    if (item.audience === 'adults') {
+      const held = drafts[station].find((d) => foldName(d.name) === foldName(name) && !d.notes.includes(PARTY_ADULTS_ONLY));
+      if (held) {
+        const adultsQty = item.qty ?? 1;
+        if (held.qty !== adultsQty) {
+          held.notes.push(partyCountsMark(held.qty, adultsQty));
+          held.qty = null;
+        } else if (note) {
+          held.notes.push(`adults: ${note}`);
+        }
+        continue;
+      }
+      drafts[station].push({ qty: item.qty, name, notes: [PARTY_ADULTS_ONLY, ...(note ? [note] : [])] });
+      continue;
+    }
     const notes = [
       item.choiceGroup && !item.chosenOption ? PARTY_CHOICE_NOT_MADE : null,
-      item.note?.trim() || null,
+      note,
+      item.audience === 'kids' ? PARTY_KIDS_ONLY : null,
     ].filter((n): n is string => !!n);
-    lines[station].push({
-      ...(item.qty === null ? {} : { qty: item.qty }),
-      name,
-      ...(notes.length ? { note: notes.join(' · ') } : {}),
-    });
+    drafts[station].push({ qty: item.qty, name, notes });
   }
+  const lines: Record<PartySlipStation, PartySlipLine[]> = {
+    kitchen: drafts.kitchen.map(draftToLine),
+    bar: drafts.bar.map(draftToLine),
+  };
   for (const item of input.plan.barItems) {
     const name = item.name.trim();
     if (name) lines.bar.push({ qty: item.qty, name });

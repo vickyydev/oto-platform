@@ -478,7 +478,8 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
             {plan.setMenu.map((m, i) => (
               <InfoRow
                 key={`${m.productCode ?? m.name}-${i}`}
-                label={`${m.name}${m.chosenOption ? ` · ${m.chosenOption}` : ''}`}
+                // SCRUM-829: a line the BEO marks as the kids' only or the adults' own says so (the slip prints the same words).
+                label={`${m.name}${m.chosenOption ? ` · ${m.chosenOption}` : ''}${m.audience === 'kids' ? ' · kids only' : m.audience === 'adults' ? ' · adults' : ''}`}
                 value={m.qty === null ? '' : `×${m.qty}`}
               />
             ))}

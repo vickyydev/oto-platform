@@ -25303,6 +25303,8 @@ export interface paths {
                                     choiceGroup: string | null;
                                     chosenOption: string | null;
                                     note: string | null;
+                                    /** @enum {string} */
+                                    audience?: "kids" | "adults";
                                 }[];
                                 barItems: {
                                     productCode: string | null;

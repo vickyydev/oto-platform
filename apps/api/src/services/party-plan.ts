@@ -120,6 +120,8 @@ export function partyPlanOfRow(row: SeamEventPackage): PartyPlan | null {
         choiceGroup: text(m.choice_group),
         chosenOption: text(m.chosen_option),
         note: text(m.note),
+        // SCRUM-829: only where the view marks a line; a plan from before carries none.
+        ...(m.audience === 'kids' || m.audience === 'adults' ? { audience: m.audience } : {}),
       })),
     barItems: list(row.barItems)
       .map(rec)
