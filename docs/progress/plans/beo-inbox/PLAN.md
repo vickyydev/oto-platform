@@ -137,3 +137,21 @@ with a ZZ TEST staging proof inside its Jira comment.
   "from the message". The assistant stays the second opinion. Before shipping,
   run the reader over the first messages of the 249 exported real chats and
   compare with the queue each belonged to; fix the misses it shows.
+
+## Decisions so far (10 November 2026, from the owner's review page)
+
+Review page (screens and decision boxes): https://claude.ai/artifact/MRK5VbmoMKsjaV3UQbTCKS
+
+| Item | Ticket | State |
+|---|---|---|
+| 0 Money in one place | SCRUM-822 | held: integrate and sync the till's billing into the BEO over the API, remove nothing |
+| 1 Advice questions to a person, notified | SCRUM-823 | APPROVED; the date-and-park opener stays |
+| 2 Voice | SCRUM-824 | APPROVED; voice notes transcribed first, dictation next |
+| 3 Deposit QR and set-menu link | SCRUM-825 | updated proposal: driven from the BEO, posted by the assistant; awaiting approval |
+| 4 (and 6) Fetch from chat | SCRUM-826 | updated proposal: one refresh button in Book Date and the BEO, warning, accept-or-decline; awaiting approval |
+| 5 BEO pre-filled in one pass | SCRUM-827 | no decision yet |
+| 7 BEO-only menu items | SCRUM-828 | APPROVED; any BEO creator; price or free / included / alternate |
+| 8 Adults start from the kids' choice | SCRUM-829 | updated proposal (layout); awaiting approval |
+| 9 First message decides the queue | SCRUM-830 | no decision yet |
+| 10 Never ask twice | SCRUM-831 | APPROVED; the memory first, the guard last |
+| 11 One message per turn, park first | SCRUM-832 | updated proposal; awaiting approval |
