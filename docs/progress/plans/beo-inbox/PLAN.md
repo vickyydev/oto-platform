@@ -144,14 +144,14 @@ Review page (screens and decision boxes): https://claude.ai/artifact/MRK5VbmoMKs
 
 | Item | Ticket | State |
 |---|---|---|
-| 0 Money in one place | SCRUM-822 | held: integrate and sync the till's billing into the BEO over the API, remove nothing. Meanwhile SCRUM-833 (the Day-of POS section shows the package's satang price as baht) stops a wrong number being shown |
-| 1 Advice questions to a person, notified | SCRUM-823 | APPROVED; the date-and-park opener stays — BUILDING on lane/handover823-20261110 (10 Nov evening) |
-| 2 Voice | SCRUM-824 | APPROVED; voice notes transcribed first, dictation next — part (a) BUILDING on lane/voice824-20261110; the speech provider and its key are the owner's choice |
-| 3 Deposit QR and set-menu link | SCRUM-825 | updated proposal: driven from the BEO, posted by the assistant; awaiting approval |
-| 4 (and 6) Fetch from chat | SCRUM-826 | updated proposal: one refresh button in Book Date and the BEO, warning, accept-or-decline; awaiting approval |
-| 5 BEO pre-filled in one pass | SCRUM-827 | no decision yet |
-| 7 BEO-only menu items | SCRUM-828 | APPROVED; any BEO creator; price or free / included / alternate — BUILDING on lane/menuitem828-20261110 |
-| 8 Adults start from the kids' choice | SCRUM-829 | updated proposal (layout); awaiting approval |
-| 9 First message decides the queue | SCRUM-830 | no decision yet |
-| 10 Never ask twice | SCRUM-831 | APPROVED; the memory first, the guard last — BUILDING on lane/memory831-20261110 |
-| 11 One message per turn, park first | SCRUM-832 | updated proposal; awaiting approval |
+| 0 Money in one place | SCRUM-822 | APPROVED 10 Nov 22:30: integrate and mount the till's billing into the BEO over the API, remove nothing; a quote PDF before the party too — BUILDING on lane/money822-20261110 (fixes SCRUM-833 with it) |
+| 1 Advice questions to a person, notified | SCRUM-823 | APPROVED; the date-and-park opener stays — LANDED a80ca2630, proved for the rule (Testing); the opener-on-model-handover gap building on lane/opener823b-20261110; the bell half waits on the owner's key script |
+| 2 Voice | SCRUM-824 | APPROVED; part (a) LANDED 405230df0, proved with the provider off (Testing); the speech provider, its key and PDPA are the owner's choice; part (b) later |
+| 3 Deposit QR and set-menu link | SCRUM-825 | updated proposal: driven from the BEO, posted by the assistant; the owner says approved in chat (10 Nov 22:40), the page shows no decision — confirming |
+| 4 (and 6) Fetch from chat | SCRUM-826 | updated proposal: one refresh button in Book Date and the BEO, warning, accept-or-decline; the owner says approved in chat (10 Nov 22:40), the page shows no decision — confirming |
+| 5 BEO pre-filled in one pass | SCRUM-827 | the owner says approved in chat (10 Nov 22:40), the page shows no decision — confirming |
+| 7 BEO-only menu items | SCRUM-828 | APPROVED — LANDED a3d87300a, proved, DEPLOYED |
+| 8 Adults start from the kids' choice | SCRUM-829 | updated proposal (layout); the owner says approved in chat (10 Nov 22:40), the page shows no decision — confirming |
+| 9 First message decides the queue | SCRUM-830 | the owner says approved in chat (10 Nov 22:40), the page shows no decision — confirming |
+| 10 Never ask twice | SCRUM-831 | APPROVED — LANDED cd9e42bf1, proved (Testing); the "table for 8?" reader fix on lane/reader831b-20261110 |
+| 11 One message per turn, park first | SCRUM-832 | APPROVED 10 Nov 22:35 — BUILDING on lane/onemsg832-20261110 |
