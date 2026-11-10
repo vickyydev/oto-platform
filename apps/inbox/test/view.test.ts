@@ -671,6 +671,12 @@ describe('the timeline', () => {
     expect(eventText(event({ payload: { teamId: T_BIRTHDAYS, language: 'ru' } }), ctx)).toBe(
       'Language: RU · Routed to Birthdays & Events',
     );
+    // SCRUM-830: the first message decided the queue; a hint or the default says nothing more.
+    expect(eventText(event({ payload: { teamId: T_BIRTHDAYS, language: 'en', source: 'message', cue: 'birthday' } }), ctx)).toBe(
+      'Language: EN · Routed to Birthdays & Events · from the message',
+    );
+    expect(eventText(event({ payload: { teamId: T_CENTRAL, language: 'en', source: 'default' } }), ctx)).toBe('Language: EN · Routed to Reception · Central');
+    expect(eventText(event({ payload: { teamId: T_BIRTHDAYS, source: 'hint' } }), ctx)).toBe('Routed to Birthdays & Events');
     expect(eventText(event({ kind: 'assigned', payload: { slot: 'primary', accountId: ALINA } }), ctx)).toBe(
       'Assigned Alina as primary',
     );

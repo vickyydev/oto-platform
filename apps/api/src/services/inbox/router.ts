@@ -19,10 +19,15 @@ import type { Exec } from '../tx';
  * Runs once, on a NEW conversation, inside the transaction that created it:
  *
  *  1. CLASSIFY — done by the caller (the ingest): the simulator's hint when
- *     there is one, the channel account's `default_category` otherwise; the
- *     branch is THE CHANNEL ACCOUNT'S FIRST (a park's own number belongs to
- *     that park — I1's note: a general conversation with no branch matches
- *     no reception rule), then the hint's.
+ *     there is one; else, since SCRUM-830, what the FIRST MESSAGE says
+ *     (`@oto/assistant` `firstMessageCategory`: a birthday, a party, a camp
+ *     or a school group → birthdays; a refund or a complaint → gm); else the
+ *     channel account's `default_category`. The decision rides the `routed`
+ *     pill as `source` (`hint` / `message` / `default`) with the cue's key —
+ *     never the text — so the inbox can say "from the message". The branch
+ *     is THE CHANNEL ACCOUNT'S FIRST (a park's own number belongs to that
+ *     park — I1's note: a general conversation with no branch matches no
+ *     reception rule), then the hint's.
  *  2. PICK THE RULE — the highest-priority active `routing_rule` for the
  *     category whose language and branch match, where null means any. On a
  *     tie the more specific rule wins (a named language, a named branch).
@@ -70,7 +75,19 @@ export interface RouteInput {
    * the assistant as the actor. Absent `by` is a person, as before.
    */
   reroute?: RerouteBy;
+  /**
+   * SCRUM-830: how a NEW conversation's category was decided — the
+   * simulator's hint, the first message's words (with the cue's key and
+   * language, never the text), or the channel account's default. Recorded on
+   * the `routed` pill; absent on a re-route.
+   */
+  decided?: CategoryDecision;
 }
+
+export type CategoryDecision =
+  | { source: 'hint' }
+  | { source: 'default' }
+  | { source: 'message'; cue: string; cueLanguage: string };
 
 export type RerouteBy =
   | { teamId: string; reason: 'move'; by?: 'account'; actorAccountId: string }
@@ -243,6 +260,9 @@ export async function routeConversation(tx: Exec, input: RouteInput): Promise<Ro
         language: input.language,
         branchId: input.branchId,
         fallback,
+        // SCRUM-830: the pill says "from the message" when the first message decided.
+        ...(input.decided ? { source: input.decided.source } : {}),
+        ...(input.decided?.source === 'message' ? { cue: input.decided.cue, cueLanguage: input.decided.cueLanguage } : {}),
       },
       createdAt: input.at,
     },

@@ -112,7 +112,7 @@ async function ownersOf(conversationId: string) {
     .orderBy(s.assignment.slotIndex);
 }
 
-async function teamId(key: 'birthdays' | 'marketing' | 'reception', branchId: string | null = null, operatorId = oto) {
+async function teamId(key: 'birthdays' | 'gm' | 'marketing' | 'reception', branchId: string | null = null, operatorId = oto) {
   const [row] = await ctx.db
     .select({ id: s.team.id })
     .from(s.team)
@@ -401,6 +401,121 @@ describe('routing a new conversation (I2d)', () => {
     expect(pickRule([any, atCentral], { category: 'general', language: 'th', branchId: 'c' })!.id).toBe('central');
     expect(pickRule([any, atCentral], { category: 'general', language: 'th', branchId: null })!.id).toBe('any');
     expect(pickRule([atCentral], { category: 'general', language: 'th', branchId: null })).toBeNull();
+  });
+});
+
+describe('the first message decides the queue (SCRUM-830)', () => {
+  const routedPill = async (conversationId: string) => {
+    const [pill] = await ctx.db
+      .select()
+      .from(s.inboxEvent)
+      .where(and(eq(s.inboxEvent.conversationId, conversationId), eq(s.inboxEvent.kind, 'routed')));
+    return pill!;
+  };
+  const classifyAudits = (conversationId: string) =>
+    ctx.db
+      .select()
+      .from(s.auditLog)
+      .where(and(eq(s.auditLog.action, 'inbox.conversation.classify'), eq(s.auditLog.entityId, conversationId)));
+
+  it('a birthday first line on a general number lands in Birthdays & Events at once, the pill saying so, with no hint and before any AI', async () => {
+    // The operator-wide Instagram number defaults to general; nothing hints.
+    await play(ids.caWide, { from: '66810006001', text: `I want to book a birthday party ${SENTINEL}` });
+    const conv = (await threadOf(ids.caWide, '66810006001'))!;
+    expect(conv).toMatchObject({ category: 'birthdays', teamId: await teamId('birthdays') });
+    expect(conv.lastRoutedAt).not.toBeNull();
+    // Routed by the router, not the assistant: the seats are the system's.
+    const owners = await ownersOf(conv.id);
+    expect(owners.length).toBeGreaterThan(0);
+    expect(owners.every((o) => o.assignedByKind === 'system' && o.reason === 'auto')).toBe(true);
+    const pill = await routedPill(conv.id);
+    expect(pill.actorKind).toBe('system');
+    expect(pill.payload).toMatchObject({ category: 'birthdays', source: 'message', cue: 'birthday', cueLanguage: 'en' });
+    // The classification's own audit row: the cue's key, never the words.
+    const audits = await classifyAudits(conv.id);
+    expect(audits).toHaveLength(1);
+    expect(audits[0]!.after).toMatchObject({ category: 'birthdays', source: 'message', cue: 'birthday', cueLanguage: 'en' });
+    const [created] = await ctx.db
+      .select()
+      .from(s.auditLog)
+      .where(and(eq(s.auditLog.action, 'inbox.conversation.create'), eq(s.auditLog.entityId, conv.id)));
+    expect(created!.after).toMatchObject({ category: 'birthdays', categorySource: 'message' });
+    expect(await sentinelLeaks(ctx.db, SENTINEL)).toEqual(NO_LEAKS);
+  });
+
+  it('a complaint or a refund lands with the GM; a complaint cue wins over a birthday word', async () => {
+    await play(ids.caWide, { from: '66810006002', text: 'I want a refund, the staff were rude' });
+    const refund = (await threadOf(ids.caWide, '66810006002'))!;
+    expect(refund).toMatchObject({ category: 'gm', teamId: await teamId('gm') });
+    expect((await routedPill(refund.id)).payload).toMatchObject({ source: 'message', cue: 'refund', cueLanguage: 'en' });
+
+    await play(ids.caCentral, { from: '66810006003', text: 'The birthday party yesterday was terrible, your staff were rude' });
+    const complaint = (await threadOf(ids.caCentral, '+66810006003'))!;
+    expect(complaint).toMatchObject({ category: 'gm', teamId: await teamId('gm') });
+    expect((await routedPill(complaint.id)).payload).toMatchObject({ source: 'message', cue: 'rude' });
+  });
+
+  it('a plain question keeps the channel’s default, with no classification row', async () => {
+    await play(ids.caWide, { from: '66810006004', text: 'What time do you open?' });
+    const wide = (await threadOf(ids.caWide, '66810006004'))!;
+    expect(wide.category).toBe('general');
+    expect((await routedPill(wide.id)).payload).toMatchObject({ source: 'default' });
+    expect((await routedPill(wide.id)).payload).not.toHaveProperty('cue');
+    expect(await classifyAudits(wide.id)).toHaveLength(0);
+
+    await play(ids.caCentral, { from: '66810006005', text: 'hello' });
+    const park = (await threadOf(ids.caCentral, '+66810006005'))!;
+    expect(park).toMatchObject({ category: 'general', branchId: central, teamId: await teamId('reception', central) });
+    expect((await routedPill(park.id)).payload).toMatchObject({ source: 'default' });
+  });
+
+  it('a simulator hint wins over the message: the tester’s instrument', async () => {
+    await play(ids.caWide, { from: '66810006006', text: 'I want to book a birthday party', hint: { category: 'general' } });
+    const pinned = (await threadOf(ids.caWide, '66810006006'))!;
+    expect(pinned.category).toBe('general');
+    expect((await routedPill(pinned.id)).payload).toMatchObject({ source: 'hint' });
+    expect(await classifyAudits(pinned.id)).toHaveLength(0);
+
+    await play(ids.caWide, { from: '66810006007', text: 'What time do you open?', hint: { category: 'birthdays', language: 'en' } });
+    const hinted = (await threadOf(ids.caWide, '66810006007'))!;
+    expect(hinted).toMatchObject({ category: 'birthdays', teamId: await teamId('birthdays') });
+    expect((await routedPill(hinted.id)).payload).toMatchObject({ source: 'hint' });
+  });
+
+  it('a Thai and a Russian birthday line are read too, and where nothing else says it the cue’s language picks the rule', async () => {
+    // A real WhatsApp line carries no hint at all: the Thai cue files the thread as Thai, and the
+    // TH birthday rule's people seat it from the first message (test night D2, now at ingest).
+    await play(ids.caWide, { from: '66810006008', text: 'สวัสดีค่ะ อยากจัดวันเกิดให้ลูกชายค่ะ' });
+    const th = (await threadOf(ids.caWide, '66810006008'))!;
+    expect(th).toMatchObject({ category: 'birthdays', language: 'th', teamId: await teamId('birthdays') });
+    expect((await routedPill(th.id)).payload).toMatchObject({ source: 'message', cue: 'birthday', cueLanguage: 'th', language: 'th' });
+    expect((await ownersOf(th.id)).map((o) => [o.accountId, o.assignedByKind])).toEqual([
+      [people.bdayTh, 'system'],
+      [people.bdayThBackup, 'system'],
+    ]);
+
+    await play(ids.caWide, { from: '66810006009', text: 'Хотим отметить день рождения сына у вас' });
+    const ru = (await threadOf(ids.caWide, '66810006009'))!;
+    expect(ru).toMatchObject({ category: 'birthdays', language: 'ru', teamId: await teamId('birthdays') });
+    expect((await routedPill(ru.id)).payload).toMatchObject({ source: 'message', cue: 'birthday', cueLanguage: 'ru' });
+
+    // A language hint still outranks the cue's language: an English-filed thread takes the EN rule's people.
+    await play(ids.caWide, { from: '66810006011', text: 'สวัสดีค่ะ อยากจัดวันเกิดให้ลูกชายค่ะ', hint: { language: 'en' } });
+    const filedEn = (await threadOf(ids.caWide, '66810006011'))!;
+    expect(filedEn).toMatchObject({ category: 'birthdays', language: 'en' });
+    expect((await ownersOf(filedEn.id)).map((o) => o.accountId)).toEqual([people.bdayEn, people.bdayEnBackup]);
+  });
+
+  it('only the FIRST message decides: a later birthday line never re-routes a thread that opened on a greeting', async () => {
+    await play(ids.caWide, { from: '66810006010', text: 'Hi there!' });
+    const opened = (await threadOf(ids.caWide, '66810006010'))!;
+    expect(opened.category).toBe('general');
+    await play(ids.caWide, { from: '66810006010', text: 'I want to book a birthday party' });
+    const after = (await threadOf(ids.caWide, '66810006010'))!;
+    expect(after.id).toBe(opened.id);
+    expect(after).toMatchObject({ category: 'general', teamId: opened.teamId });
+    const pills = await ctx.db.select().from(s.inboxEvent).where(and(eq(s.inboxEvent.conversationId, opened.id), eq(s.inboxEvent.kind, 'routed')));
+    expect(pills).toHaveLength(1);
   });
 });
 

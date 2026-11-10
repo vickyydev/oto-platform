@@ -3,7 +3,7 @@ import { and, asc, eq, isNull } from 'drizzle-orm';
 import { expect } from 'vitest';
 import { FakeAssistantClient, type AiDecision } from '@oto/assistant';
 import { schema as s, type AiMode } from '@oto/db';
-import type { SimulatorChannel } from '@oto/messaging';
+import type { ClassificationHint, SimulatorChannel } from '@oto/messaging';
 import { newId } from '@oto/shared';
 import { SESSION_COOKIE, hashToken, newSessionToken } from '../src/plugins/session';
 import type { FileStorage } from '../src/services/files';
@@ -141,20 +141,32 @@ export function nextPhone(): string {
 }
 
 /**
+ * SCRUM-830: the simulator's hint that keeps a thread on its number's default
+ * queue although its first line would route it elsewhere — the tester's
+ * instrument, which the ingest honours over the first-message reader. The
+ * suites that cover the assistant's OWN re-route (its second opinion after
+ * its turn, unchanged by SCRUM-830) open their threads with it, so the move
+ * they assert is still the assistant's; a thread that opens on a greeting and
+ * says "birthday" later lands the same way in production.
+ */
+export const ON_DEFAULT_QUEUE = { hint: { category: 'general' as const } };
+
+/**
  * A customer writes in through the real webhook; answers their thread on that
  * account. `at` is the provider's stamp on the line (whole seconds, as a
  * provider sends it): a test stamps a line earlier than the moment it arrives
- * to play a webhook that was in flight.
+ * to play a webhook that was in flight. `hint` is the simulator's
+ * classification hint (`ON_DEFAULT_QUEUE` pins the number's default category).
  */
 export async function customer(
   w: AiWorld,
   accountId: string,
   from: string,
   text: string | { image: true },
-  opts: { at?: Date } = {},
+  opts: { at?: Date; hint?: ClassificationHint } = {},
 ) {
   const channel = await sim(w, accountId);
-  const stamp = opts.at ? { at: opts.at } : {};
+  const stamp = { ...(opts.at ? { at: opts.at } : {}), ...(opts.hint ? { hint: opts.hint } : {}) };
   const played = channel.inbound(
     typeof text === 'string' ? { from, name: 'AI Test Guest', text, ...stamp } : { from, name: 'AI Test Guest', image: {}, ...stamp },
   );

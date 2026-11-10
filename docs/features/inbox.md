@@ -127,6 +127,18 @@ fixed rule: they are parked with Birthdays & Events and a manager decides.
   birthday backup, the GM on every marketing and complaint chat). Fixed
   pairs; the owner can reassign anywhere. Once a birthday's branch is
   confirmed, the birthday manager who hosts at that branch is added.
+- The first message decides the queue (SCRUM-830, owner 11 Nov 2026): a
+  new conversation's category is read from its first customer message
+  before any AI runs — a birthday, party, package, cake, camp or school
+  group goes to Birthdays & Events, a refund or complaint to the GM (a
+  complaint cue wins), anything else to the channel's default — by a
+  deterministic Thai/English/Russian reader (`@oto/assistant`
+  `firstMessageCategory`). Where nothing else says the language, the cue's
+  language picks the rule. The simulator's hint still wins; the assistant
+  stays the second opinion (its own re-route after its turn is unchanged).
+  The routing pill says "from the message"; only the first message is read
+  (a thread that opens on a greeting keeps the default until the assistant
+  moves it).
 - Divert: when the primary is off they tap "Divert" and the backup becomes
   primary. No schedule, no calendar, no ON/OFF toggles — this replaces the
   May addendum's availability toggles, weekly CSV / Excel schedule upload and

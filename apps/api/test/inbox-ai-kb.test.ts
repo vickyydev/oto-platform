@@ -23,6 +23,7 @@ import { loadTurnKnowledge } from '../src/services/inbox/ai-knowledge';
 import { CATEGORY_DEFAULT_INTENT } from '../src/services/inbox/ai-settings';
 import { ADMIN, signInAs, teardownAll } from './helpers';
 import {
+  ON_DEFAULT_QUEUE,
   SENTINEL,
   aiLines,
   aiWorld,
@@ -399,7 +400,8 @@ describe('"Correct the assistant" and the examples queue (§E, §D.5)', () => {
   it('the dialog’s default topic is the thread’s category: accepted on a thread the assistant never classified, as the category’s default intent (SCRUM-220 test night, R7)', async () => {
     // A number with the assistant off: the thread has no turn and no intent, only a category.
     const offLine = await simAccount(w, { branchId: w.central, aiMode: 'off' });
-    const conv = await customer(w, offLine, nextPhone(), 'Do you do birthday parties?');
+    // SCRUM-830 would file this opener under Birthdays at ingest; the hint keeps the general category this check reads.
+    const conv = await customer(w, offLine, nextPhone(), 'Do you do birthday parties?', ON_DEFAULT_QUEUE);
     expect(await turnsOf(w, conv.id)).toHaveLength(0);
     expect(conv.intent).toBeNull();
     expect(conv.category).toBe('general');

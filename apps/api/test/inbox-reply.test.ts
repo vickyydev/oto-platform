@@ -3,7 +3,7 @@ import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { INBOX_TEMPLATE_KEYS, schema as s } from '@oto/db';
 import { INBOX_TEMPLATE_AWAITING_TRANSLATION } from '@oto/db/seed';
-import type { RawWebhook, SimulatorChannel } from '@oto/messaging';
+import type { ClassificationHint, RawWebhook, SimulatorChannel } from '@oto/messaging';
 import {
   INBOX_TEMPLATE_KEY_NAMES,
   newId,
@@ -169,9 +169,15 @@ async function deliver(webhook: RawWebhook): Promise<string> {
   return (res.json() as { outcome: string }).outcome;
 }
 
-/** A customer writes in on the central simulator number; answers their thread. */
-async function customer(from: string, text: string, name = 'Reply Test Guest') {
-  const played = (await sim()).inbound({ from, name, text });
+/**
+ * A customer writes in on the central simulator number; answers their thread.
+ * `hint` is the simulator's classification hint: since SCRUM-830 a birthday
+ * opener lands in Birthdays & Events, out of the reception agent's sight, so
+ * the checks whose words only happen to mention one pin the general queue.
+ */
+const ON_DEFAULT_QUEUE: ClassificationHint = { category: 'general' };
+async function customer(from: string, text: string, name = 'Reply Test Guest', hint?: ClassificationHint) {
+  const played = (await sim()).inbound({ from, name, text, ...(hint ? { hint } : {}) });
   expect(await deliver(played.webhook)).toBe('processed');
   const [row] = await ctx.db
     .select({ conv: s.conversation })
@@ -357,7 +363,7 @@ describe('a reply inside the 24-hour window (I2f)', () => {
 
 describe('outside the 24-hour window (I2f)', () => {
   it('free text is refused in plain words with the templates that qualify; a template is then accepted', async () => {
-    const conv = await customer('66810007201', 'Birthday party prices?');
+    const conv = await customer('66810007201', 'Birthday party prices?', undefined, ON_DEFAULT_QUEUE);
     const longAgo = new Date(Date.now() - 25 * 3_600_000);
     await ctx.db.update(s.conversation).set({ lastCustomerMessageAt: longAgo }).where(eq(s.conversation.id, conv.id));
 
@@ -604,7 +610,7 @@ describe('the send job (I2f)', () => {
   });
 
   it('a terminal refusal is marked failed and shown on the timeline as an event — ids and the word, never the words', async () => {
-    const conv = await customer('66810007403', 'Can I bring a cake?');
+    const conv = await customer('66810007403', 'Can I bring a cake?', undefined, ON_DEFAULT_QUEUE);
     (await sim()).refuseNext('REJECTED', '131026');
     const res = await reply('agent', conv.id, { text: `Yes, of course ${SENTINEL}` });
     expect(res.status).toBe(200);

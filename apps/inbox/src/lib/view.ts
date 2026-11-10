@@ -522,7 +522,10 @@ export function eventText(e: InboxEvent, ctx: PillContext): string | null {
     case 'routed': {
       const lang = str(p.language);
       const team = teamName(ctx, p.teamId) ?? 'the team';
-      return `${lang ? `Language: ${langLabel(lang)} · ` : ''}Routed to ${team}`;
+      // SCRUM-830: the first message decided the queue (the api's `source`);
+      // the assistant's later move still says "1 more" beside it.
+      const fromMessage = p.source === 'message' ? ' · from the message' : '';
+      return `${lang ? `Language: ${langLabel(lang)} · ` : ''}Routed to ${team}${fromMessage}`;
     }
     case 'assigned':
     case 'released':

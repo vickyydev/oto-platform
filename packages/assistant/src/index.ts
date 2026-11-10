@@ -25,6 +25,9 @@
  *                 the park question alone where the answer depends on a
  *                 park nobody named, the bubbles composed into one, nothing
  *                 said twice once the park is known.
+ *   first-message.ts  SCRUM-830: the first message decides the inbox queue
+ *                 — a deterministic th/en/ru reader the ingest runs before
+ *                 any model (birthdays, the GM, or the channel's default).
  *   persona/      the voice per language and the absolute prohibitions.
  *   prompt.ts     block 1 (static), block 2 (knowledge, cached), the episode
  *                 below the breakpoint; the KB size refusal.
@@ -68,6 +71,8 @@ export * from './advice';
 export * from './compose';
 // SCRUM-831: the slot reader (what a reply asks, what an answer says).
 export * from './slots';
+// SCRUM-830: the first message decides the inbox queue (a deterministic reader, before any model).
+export * from './first-message';
 export * from './persona';
 export * from './prompt';
 export * from './pacing';

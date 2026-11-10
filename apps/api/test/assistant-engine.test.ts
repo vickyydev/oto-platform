@@ -51,7 +51,7 @@ import {
   type AskWorld,
 } from './assistant-support';
 import { BRANCH_MANAGER, RECEPTION, signInAs, teardownAll } from './helpers';
-import { customer, nextPhone, simAccount, teamOf } from './inbox-ai-support';
+import { ON_DEFAULT_QUEUE, customer, nextPhone, simAccount, teamOf } from './inbox-ai-support';
 
 /**
  * SCRUM-591 — THE INTERNAL ASSISTANT'S ENGINE, round I2 (plan
@@ -1191,7 +1191,8 @@ describe('the test night (SCRUM-591, 2026-10-21; plan "Test night 2026-10-21")',
   it('W6: "which team has the most open conversations" — the dashboard tool answers it by team, as the Inbox route counts for the asker', async () => {
     const aw = asAiWorld(w);
     const account = await simAccount(aw, { branchId: w.central, aiMode: 'off' });
-    await customer(aw, account, nextPhone(), 'ZZ is the party room free on Sunday?');
+    // SCRUM-830 would file a party opener under Birthdays; the hint keeps both threads general, as the count below reads.
+    await customer(aw, account, nextPhone(), 'ZZ is the party room free on Sunday?', ON_DEFAULT_QUEUE);
     await customer(aw, account, nextPhone(), 'ZZ do you have parking?');
     const gm = await staff(w, 'ZZ Hana GM', 'inbox_manager', { scopeType: 'operator', scopeId: w.oto });
     const direct = await call<{ byCategory: { birthdays: number; general: number; marketing: number; gm: number }; unanswered: number; active: number }>(

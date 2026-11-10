@@ -22,6 +22,7 @@ import {
   type MessagingChannel,
   type RawWebhook,
 } from '@oto/messaging';
+import { firstMessageCategory } from '@oto/assistant';
 import { newId, normalizePhone } from '@oto/shared';
 import type { FastifyBaseLogger } from 'fastify';
 import { audit } from '../audit';
@@ -31,7 +32,7 @@ import type { ChannelAccountRow, InboxChannels } from './channels';
 import type { FileStorage } from '../files';
 import { closedSince, isOpenAt, readOpeningHours } from './hours';
 import { storeInboundMedia, type PendingMedia } from './media';
-import { routeConversation } from './router';
+import { routeConversation, type CategoryDecision } from './router';
 import { reopenAuditBefore, reopenPatch, reopenedPayload } from './status';
 import { sendAfterCommit } from './send';
 import type { InboxAiSchedule } from './ai-runtime';
@@ -67,7 +68,14 @@ import { VOICE_MEDIA_GRACE_MS } from './voice-notes';
  *   5. A message on a HANDLED thread REOPENS it (`reopened`, actor the
  *      customer; IT Brief: "returns only when the customer writes again").
  *      Its owners stay as they were.
- *   6. A NEW thread is ROUTED (`router.ts`).
+ *   6. A NEW thread is ROUTED (`router.ts`). Its category (SCRUM-830): the
+ *      simulator's hint when given; else what the FIRST MESSAGE says, read
+ *      deterministically before any model (`@oto/assistant`
+ *      `firstMessageCategory`) — a birthday, a party, a camp or a school
+ *      group to Birthdays & Events, a refund or a complaint to the GM; else
+ *      the channel account's default. The `routed` pill carries the source
+ *      and the cue's key, and an `inbox.conversation.classify` audit row
+ *      says the same. The assistant's own re-route after its turn stays.
  *   7. OUT OF HOURS: when the channel account has opening hours and the
  *      delivery arrives outside them, the `out_of_hours` template is queued
  *      as the reply, at most once per closed period per thread, and sent
@@ -578,9 +586,31 @@ async function receiveMessage(
     )[0];
   let thread = await findThread();
   let created = false;
+  // SCRUM-830: how a new thread's category is decided — the simulator's hint
+  // (the tester's instrument) wins; else the first message's own words, read
+  // before any model (`firstMessageCategory`: a birthday, a party, a camp or
+  // a school group → Birthdays & Events; a refund or a complaint → the GM);
+  // else the channel account's default. The assistant stays the second
+  // opinion: its own re-route after its turn is unchanged.
+  let decided: CategoryDecision = { source: 'default' };
   if (!thread) {
-    const category: InboxCategory = event.hint?.category ?? account.defaultCategory;
-    const language = hintLanguage ?? person.language ?? 'en';
+    let category: InboxCategory = account.defaultCategory;
+    if (event.hint?.category) {
+      category = event.hint.category;
+      decided = { source: 'hint' };
+    } else {
+      const read = firstMessageCategory(event.text);
+      if (read) {
+        category = read.category;
+        decided = { source: 'message', cue: read.cue, cueLanguage: read.language };
+      }
+    }
+    // The language the rules are picked by: the hint's, the contact's, and —
+    // where neither says — the language of the cue that decided the queue
+    // (test night D2: the language the customer wrote in routes the thread;
+    // a Thai birthday opener seats the Thai birthday rule's people). English
+    // only when nothing says anything.
+    const language = hintLanguage ?? person.language ?? (decided.source === 'message' ? decided.cueLanguage : null) ?? 'en';
     // The CHANNEL ACCOUNT'S branch first (a park's own number belongs to that
     // park); the hint's only for an operator-wide account, and only when the
     // hint names a live branch of THIS operator.
@@ -712,6 +742,9 @@ async function receiveMessage(
       language: thread.language ?? 'en',
       branchId: thread.branchId,
       at,
+      // A mirrored notice thread routed on its first customer message keeps
+      // the category it was created with: nothing decided it here.
+      ...(created ? { decided } : {}),
     });
     await audit.record(tx, {
       actorAccountId: null,
@@ -725,6 +758,7 @@ async function receiveMessage(
         contactId: person.id,
         channelAccountId: account.id,
         category: thread.category,
+        ...(created ? { categorySource: decided.source } : {}),
         language: thread.language,
         branchId: thread.branchId,
         teamId: routed.teamId,
@@ -739,6 +773,20 @@ async function receiveMessage(
         })),
       },
     });
+    // SCRUM-830: the classification itself, on its own audit row — the cue's
+    // key and language, never the words.
+    if (created && decided.source === 'message') {
+      await audit.record(tx, {
+        actorAccountId: null,
+        action: 'inbox.conversation.classify',
+        entityType: 'inbox.conversation',
+        entityId: thread.id,
+        operatorId,
+        branchId: thread.branchId,
+        requestId: c.input.requestId ?? null,
+        after: { messageId, category: thread.category, source: 'message', cue: decided.cue, cueLanguage: decided.cueLanguage },
+      });
+    }
   }
 
   const queued = await queueOutOfHours(tx, c, thread.id, person.language ?? hintLanguage ?? thread.language);

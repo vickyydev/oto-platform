@@ -12,6 +12,7 @@ import { buildInboxAiRuntime } from '../src/services/inbox/ai-runtime';
 import { buildDefaultJobs } from '../src/services/jobs';
 import { ADMIN, signInAs, teardownAll } from './helpers';
 import {
+  ON_DEFAULT_QUEUE,
   SENTINEL,
   activeSlots,
   aiLines,
@@ -346,7 +347,9 @@ describe('a handover (§B.5, §C.5)', () => {
     const holding = await closingTemplate('closing_birthday');
 
     const phone = nextPhone();
-    const conv = await customer(w, central, phone, `a birthday party for my son please ${SENTINEL}`);
+    // SCRUM-830 would route this opener to Birthdays at ingest; the hint keeps
+    // it with Reception so the move asserted below is the assistant's own.
+    const conv = await customer(w, central, phone, `a birthday party for my son please ${SENTINEL}`, ON_DEFAULT_QUEUE);
     const reception = await teamOf(w, 'reception', w.central);
     expect(conv.teamId).toBe(reception.id);
     w.fake.push({ kind: 'decision', decision: decision({ intent: 'birthday_party', reason: 'CLEAR_INTENT', bubbles: [PARTY_OPEN, PARTY_ASK] }) });
@@ -398,7 +401,7 @@ describe('a handover (§B.5, §C.5)', () => {
     await drain();
     const fileId = await attachBrochure('inbox/templates/brochure-request.pdf');
     const holding = await closingTemplate('closing_birthday');
-    const conv = await customer(w, central, nextPhone(), `can you send me your birthday packages? ${SENTINEL}`);
+    const conv = await customer(w, central, nextPhone(), `can you send me your birthday packages? ${SENTINEL}`, ON_DEFAULT_QUEUE);
     const bubble = 'Of course! Here are our birthday packages 🎂';
     w.fake.push({ kind: 'decision', decision: decision({ intent: 'birthday_brochure', reason: 'CLEAR_INTENT', sendBrochure: true, bubbles: [bubble] }) });
     expect((await tick(w, later(25_000))).handedOver).toBe(1);
@@ -1021,7 +1024,7 @@ describe('several questions at once (test night 2026-10-21, D1a, W2)', () => {
 
     // Turn one (owner D1): the hours part answered, the party part asked about — no hand-over yet.
     const phone = nextPhone();
-    const conv = await customer(w, central, phone, `what are your hours and can I book a party for the 20th? ${SENTINEL}`);
+    const conv = await customer(w, central, phone, `what are your hours and can I book a party for the 20th? ${SENTINEL}`, ON_DEFAULT_QUEUE);
     const hours = `We're open every day 10:00–20:00 😊 ${SENTINEL}`;
     const ask = "And we'd love to organize a party for you! Roughly how many people, and which branch, Central Floresta or Robinson Chalong?";
     w.fake.push({
@@ -1105,7 +1108,9 @@ describe('the language the customer wrote in routes the hand-over (test night 20
     await seat('en', enPerson);
 
     // A simulator WhatsApp message carries no language hint: the thread is filed as English.
-    const conv = await customer(w, central, nextPhone(), `สวัสดีค่ะ อยากจัดวันเกิดให้ลูกชายครบ 6 ขวบค่ะ เด็กประมาณ 12 คน ราคาเท่าไหร่คะ ${SENTINEL}`);
+    // (SCRUM-830 would read this opener's Thai cue and seat the TH rule at ingest — `inbox-ingest.test.ts`;
+    // the hint keeps it with Reception, filed as English, so the re-seat below is the assistant's own.)
+    const conv = await customer(w, central, nextPhone(), `สวัสดีค่ะ อยากจัดวันเกิดให้ลูกชายครบ 6 ขวบค่ะ เด็กประมาณ 12 คน ราคาเท่าไหร่คะ ${SENTINEL}`, ON_DEFAULT_QUEUE);
     expect(conv.language).toBe('en');
     // The basics are in (a son turning six, about twelve children): the playbook's hand-over turn.
     w.fake.push({ kind: 'decision', decision: decision({ language: 'th', intent: 'birthday_details', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }) });

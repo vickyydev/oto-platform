@@ -9,6 +9,7 @@ import { knowledgeWithTierPrices, loadTurnKnowledge, packageFact, priceFactText,
 import { callingCodeOf } from '../src/services/inbox/calling-code';
 import { teardownAll } from './helpers';
 import {
+  ON_DEFAULT_QUEUE,
   SENTINEL,
   activeSlots,
   aiLines,
@@ -879,7 +880,9 @@ describe('spam tidy', () => {
   it('spam after a question the assistant left to a person is not tidied: the question still waits', async () => {
     await drain();
     const phone = nextPhone();
-    const conv = await customer(w, central, phone, 'can I bring my own cake?');
+    // SCRUM-830 would file a cake opener under Birthdays, where SCRUM-823 reads "can I…" as advice;
+    // the hint keeps the general thread this spam-tidy check is about.
+    const conv = await customer(w, central, phone, 'can I bring my own cake?', ON_DEFAULT_QUEUE);
     // The model left the question to a person (its own silence: since item D an
     // UNSURE model on a main channel sends the unclear line and hands over instead).
     w.fake.push({ kind: 'decision', decision: decision({ intent: 'faq', action: 'silent', certainty: 'unsure', reason: 'UNCLEAR', bubbles: [] }) });
@@ -972,7 +975,8 @@ describe('a reply the gate withholds is never dead air on a main channel (owner 
       [wide, gm, 'gm'],
     ] as const) {
       await drain();
-      const conv = await customer(w, number, nextPhone(), 'can I bring my own cake?');
+      // SCRUM-830 would file a cake opener under Birthdays; the hint keeps the general thread this check is about.
+      const conv = await customer(w, number, nextPhone(), 'can I bring my own cake?', ON_DEFAULT_QUEUE);
       w.fake.push({ kind: 'decision', decision: unsure() });
       expect((await tick(w, later(25_000))).handedOver, category).toBe(1);
       expect((await aiLines(w, conv.id)).map((l) => l.body), category).toEqual([UNCLEAR_LINE]);

@@ -1535,7 +1535,12 @@ export async function judgeThread(
     const dest = await teamIdOf(w, expect.team);
     if (t.conv.teamId !== dest || t.conv.category !== expect.team) fails.push(`thread not moved to ${name}`);
     const slots = await w.ctx.db.select().from(s.assignment).where(and(eq(s.assignment.conversationId, conversationId), isNull(s.assignment.releasedAt)));
-    if (slots.length === 0 || slots.some((a) => a.assignedByKind !== 'ai')) fails.push(`${name} seats not assigned by the assistant`);
+    // SCRUM-830: a first line that names its matter is routed there at ingest, by the router
+    // (`routed` pill `source: 'message'`); the assistant then has nothing to move. Either the
+    // assistant's seats or the router's from the first message satisfy the expectation.
+    const fromMessage = t.events.some((e) => e.kind === 'routed' && (e.payload as { source?: unknown }).source === 'message');
+    const allowed = fromMessage ? ['ai', 'system'] : ['ai'];
+    if (slots.length === 0 || slots.some((a) => !allowed.includes(a.assignedByKind))) fails.push(`${name} seats not assigned by the assistant`);
   } else if (t.conv.teamId !== startTeamId) {
     fails.push('thread moved off its starting team');
   }

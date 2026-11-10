@@ -4,6 +4,7 @@ import { BIRTHDAY_THREAD_LINES, type BuiltPrompt, type TurnContext } from '@oto/
 import { schema as s } from '@oto/db';
 import { teardownAll } from './helpers';
 import {
+  ON_DEFAULT_QUEUE,
   aiLines,
   aiWorld,
   conversationRow,
@@ -164,7 +165,9 @@ describe('SCRUM-817: a day, a date or a time in a birthday thread is the party�
     seen.contexts.length = 0;
     seen.users.length = 0;
     const phone = nextPhone();
-    const conv = await customer(w, general, phone, 'Хотим отметить день рождения сына у вас');
+    // SCRUM-830 would route this opener to Birthdays at ingest; the hint keeps the thread general,
+    // which is what this scenario (a birthday reply EARLIER in a general thread) is about.
+    const conv = await customer(w, general, phone, 'Хотим отметить день рождения сына у вас', ON_DEFAULT_QUEUE);
     const ask = 'Как здорово, спасибо! Будем рады организовать праздник. Сколько примерно будет гостей и в каком парке, Central Floresta или Robinson Chalong?';
     w.fake.push({ kind: 'decision', decision: decision({ language: 'ru', intent: 'birthday_party', reason: 'CLEAR_INTENT', bubbles: [ask] }) });
     expect((await tick(w, later(25_000))).answered).toBe(1);
