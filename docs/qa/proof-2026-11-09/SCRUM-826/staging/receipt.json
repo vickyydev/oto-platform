@@ -1,0 +1,2494 @@
+{
+  "unit": "SCRUM-826 — Refresh in Book Date: \"Fetch from chat\" in the inbox's Book Date dialog and on the OTO App's BEO form",
+  "ranAt": {
+    "startedAt": "2026-11-10T20:49:56.557Z",
+    "endedAt": "2026-11-10T21:04:28.994Z",
+    "timezoneNote": "ISO times are UTC; Bangkok is UTC+7 (03:50–04:04 on 11 November 2026)"
+  },
+  "where": {
+    "inbox": "https://oto-inbox-staging.onrender.com",
+    "app": "https://oto-app-staging.onrender.com",
+    "launcher": "https://oto-launcher-staging.onrender.com",
+    "browser": "Chromium 153.0.8010.12"
+  },
+  "liveBefore": {
+    "at": "2026-11-10T20:50:10.344Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbpnlerrjlhs73bsbgeg",
+        "status": "live",
+        "sha": "eaf9ad0c54957c2722b486d26054e49e9bd88dc5",
+        "finishedAt": "2026-11-10T20:17:05.991135Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbpo03nf3r2c738oslag",
+        "status": "live",
+        "sha": "820c3fa4c73e1201b3d6e27f1396603c52205f02",
+        "finishedAt": "2026-11-10T20:36:19.702047Z"
+      },
+      {
+        "name": "oto-app-staging",
+        "deployId": "dep-dbpo03vf3r2c738osm10",
+        "status": "live",
+        "sha": "820c3fa4c73e1201b3d6e27f1396603c52205f02",
+        "finishedAt": "2026-11-10T20:38:18.150601Z"
+      }
+    ],
+    "inboxAndAppLiveOnSha": true
+  },
+  "liveAfter": {
+    "at": "2026-11-10T21:04:20.775Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbpnlerrjlhs73bsbgeg",
+        "status": "live",
+        "sha": "eaf9ad0c54957c2722b486d26054e49e9bd88dc5",
+        "finishedAt": "2026-11-10T20:17:05.991135Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbpo03nf3r2c738oslag",
+        "status": "live",
+        "sha": "820c3fa4c73e1201b3d6e27f1396603c52205f02",
+        "finishedAt": "2026-11-10T20:36:19.702047Z"
+      },
+      {
+        "name": "oto-app-staging",
+        "deployId": "dep-dbpo03vf3r2c738osm10",
+        "status": "live",
+        "sha": "820c3fa4c73e1201b3d6e27f1396603c52205f02",
+        "finishedAt": "2026-11-10T20:38:18.150601Z"
+      }
+    ],
+    "inboxAndAppLiveOnSha": true
+  },
+  "who": {
+    "signedInAs": "the staging administrator, through the launcher (names never recorded)",
+    "inboxRoles": [
+      "owner"
+    ],
+    "inboxCapabilities": {
+      "writes": true,
+      "dashboard": true,
+      "assign": true,
+      "move": true,
+      "reopen": true,
+      "templates": true,
+      "kb": true,
+      "ai": true
+    },
+    "appRole": "global_admin"
+  },
+  "assistant": {
+    "at": "2026-11-10T20:50:18.132Z",
+    "route": "GET /api/inbox/ai/channel-accounts",
+    "status": 200,
+    "account": {
+      "id": "01a156bb-6778-72b0-8237-6028f8874503",
+      "displayName": "Demo WhatsApp · Central Floresta",
+      "channel": "whatsapp",
+      "aiMode": "live"
+    },
+    "keys": [
+      "id",
+      "channel",
+      "provider",
+      "displayName",
+      "branchId",
+      "status",
+      "canReply",
+      "aiMode"
+    ]
+  },
+  "thread": {
+    "conversationId": "01a1c739-f54e-751b-ac5f-1d20612c6bf6",
+    "from": "a ZZ TEST simulator number",
+    "name": "ZZ TEST 826 family",
+    "language": "en",
+    "categoryHint": "birthdays",
+    "simulatorAccount": "Demo WhatsApp · Central Floresta (simulator)",
+    "lines": [
+      {
+        "n": 1,
+        "by": "customer",
+        "text": "Hi! A party for ZZ Test Child turning 7, 12 kids and 4 adults, Saturday 21 November at 2pm (ZZ TEST)",
+        "at": "2026-11-10T20:50:26.123Z",
+        "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+        "status": 200,
+        "outcome": "processed",
+        "conversationsCreated": 1,
+        "dialogSaid": "Received: a new conversation, routed."
+      },
+      {
+        "n": 2,
+        "by": "customer",
+        "text": "now 15 kids and 6 adults, let's start at 3pm (ZZ TEST)",
+        "at": "2026-11-10T20:53:14.138Z",
+        "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+        "status": 200,
+        "outcome": "processed",
+        "conversationsCreated": 0,
+        "dialogSaid": "Received into the existing conversation."
+      },
+      {
+        "n": 3,
+        "by": "team",
+        "text": "Confirmed: ZZ Test Child's 7th birthday party on Saturday 21 November 2026 at 15:00, 15 kids and 5 adults, Birthday package Central Floresta, the park's cake at 15:30. (ZZ TEST)",
+        "at": "2026-11-10T20:56:54.659Z",
+        "path": "the inbox composer (POST /api/inbox/conversations/:id/messages)",
+        "status": 200,
+        "messageId": "01a1c73f-ddaa-7ab4-821c-fa50c4d1c1ee",
+        "providerStatus": "sent",
+        "authorKind": "staff"
+      },
+      {
+        "n": 4,
+        "by": "customer",
+        "text": "ok, 6 adults and the cake at 16:00 (ZZ TEST)",
+        "at": "2026-11-10T20:58:38.892Z",
+        "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+        "status": 200,
+        "outcome": "processed",
+        "conversationsCreated": 0,
+        "dialogSaid": "Received into the existing conversation."
+      },
+      {
+        "n": 5,
+        "by": "customer",
+        "text": "great, see you then! (ZZ TEST)",
+        "at": "2026-11-10T21:01:24.965Z",
+        "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+        "status": 200,
+        "outcome": "processed",
+        "conversationsCreated": 0,
+        "dialogSaid": "Received into the existing conversation."
+      },
+      {
+        "n": 6,
+        "by": "customer",
+        "text": "actually no cake, thanks (ZZ TEST)",
+        "at": "2026-11-10T21:01:50.385Z",
+        "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+        "status": 200,
+        "outcome": "processed",
+        "conversationsCreated": 0,
+        "dialogSaid": "Received into the existing conversation."
+      }
+    ],
+    "assistantTurnAfterOpener": {
+      "intents": [
+        {
+          "kind": "ai_handover",
+          "intent": "birthday_details",
+          "reason": "OK",
+          "closingKey": "closing_birthday"
+        }
+      ],
+      "assistantLines": [
+        "Thank you so much! Our birthday manager will be with you shortly."
+      ],
+      "aiState": "left_for_team"
+    }
+  },
+  "partA_bookDate": {
+    "step1_open": {
+      "at": "2026-11-10T20:50:53.535Z",
+      "buttonsBefore": [
+        "Book Date",
+        "Create BEO"
+      ],
+      "proposalRoute": {
+        "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+        "status": 200
+      },
+      "readWaitedMs": 5433,
+      "dialog": {
+        "title": "Book Date — ZZ TEST 826 family",
+        "fields": {
+          "date": {
+            "value": "2026-11-21",
+            "hint": "The chat says “Saturday 21 November”from the family"
+          },
+          "startTime": {
+            "value": "14:00",
+            "hint": "The chat says “at 2pm”from the family"
+          },
+          "park": {
+            "value": "Central Floresta",
+            "hint": null
+          },
+          "kids": {
+            "value": "12",
+            "hint": "The chat says “12 kids”from the family"
+          },
+          "adults": {
+            "value": "4",
+            "hint": "The chat says “4 adults”from the family"
+          },
+          "bookingName": {
+            "value": "ZZ TEST 826 family",
+            "hint": null
+          },
+          "phone": {
+            "value": "[number]",
+            "hint": null
+          },
+          "childName": {
+            "value": "ZZ Test Child",
+            "hint": "The chat says “ZZ Test Child”from the family"
+          },
+          "childAge": {
+            "value": "7",
+            "hint": "Turning (age) The chat says “turning 7”from the family"
+          }
+        },
+        "header": {
+          "reading": false,
+          "read": true,
+          "readLine": "Read the whole chat",
+          "fetchButton": "Fetch from chat",
+          "fetchButtonEnabled": true,
+          "fetchButtonTitle": "Read the chat again as it is now. What you typed here stays.",
+          "fetchedLine": null
+        },
+        "footer": [
+          "Cancel",
+          "Book date"
+        ]
+      },
+      "picture": "01-book-date-read-from-chat.png"
+    },
+    "step2_typedAdults": [
+      {
+        "at": "2026-11-10T20:53:11.957Z",
+        "field": "adults",
+        "typed": "5",
+        "now": {
+          "value": "5",
+          "hint": "The chat says “4 adults”from the family"
+        }
+      }
+    ],
+    "step2_fetch": {
+      "at": "2026-11-10T20:53:15.074Z",
+      "tag": "fetch1",
+      "before": {
+        "title": "Book Date — ZZ TEST 826 family",
+        "fields": {
+          "date": {
+            "value": "2026-11-21",
+            "hint": "The chat says “Saturday 21 November”from the family"
+          },
+          "startTime": {
+            "value": "14:00",
+            "hint": "The chat says “at 2pm”from the family"
+          },
+          "park": {
+            "value": "Central Floresta",
+            "hint": null
+          },
+          "kids": {
+            "value": "12",
+            "hint": "The chat says “12 kids”from the family"
+          },
+          "adults": {
+            "value": "5",
+            "hint": "The chat says “4 adults”from the family"
+          },
+          "bookingName": {
+            "value": "ZZ TEST 826 family",
+            "hint": null
+          },
+          "phone": {
+            "value": "[number]",
+            "hint": null
+          },
+          "childName": {
+            "value": "ZZ Test Child",
+            "hint": "The chat says “ZZ Test Child”from the family"
+          },
+          "childAge": {
+            "value": "7",
+            "hint": "Turning (age) The chat says “turning 7”from the family"
+          }
+        },
+        "header": {
+          "reading": false,
+          "read": true,
+          "readLine": "Read the whole chat",
+          "fetchButton": "Fetch from chat",
+          "fetchButtonEnabled": true,
+          "fetchButtonTitle": "Read the chat again as it is now. What you typed here stays.",
+          "fetchedLine": null
+        },
+        "footer": [
+          "Cancel",
+          "Book date"
+        ]
+      },
+      "whileReading": "Fetching from the chat…",
+      "whileReadingDisabled": true,
+      "route": {
+        "route": "GET /api/inbox/conversations/:id/book-date-proposal (the dialog's Fetch from chat)",
+        "status": 200,
+        "seconds": 3.3
+      },
+      "answer": {
+        "model": "ai",
+        "proposalKeys": [
+          "date",
+          "startTime",
+          "kids",
+          "adults",
+          "childName",
+          "childAge",
+          "branchHint"
+        ],
+        "kids": {
+          "value": 15,
+          "text": "15 kids",
+          "source": "family",
+          "messageId": "01a1c73c-85c0-7480-b079-c336903ad546"
+        },
+        "adults": {
+          "value": 6,
+          "text": "6 adults",
+          "source": "family",
+          "messageId": "01a1c73c-85c0-7480-b079-c336903ad546"
+        },
+        "startTime": {
+          "value": "15:00",
+          "text": "start at 3pm",
+          "source": "family",
+          "messageId": "01a1c73c-85c0-7480-b079-c336903ad546"
+        },
+        "date": {
+          "value": "2026-11-21",
+          "text": "Saturday 21 November",
+          "source": "family",
+          "messageId": "01a1c739-f54f-79e3-814a-ad0fa89b2729"
+        },
+        "childAge": {
+          "value": 7,
+          "text": "turning 7",
+          "source": "family",
+          "messageId": "01a1c739-f54f-79e3-814a-ad0fa89b2729"
+        },
+        "childNameIsZz": true
+      },
+      "after": {
+        "title": "Book Date — ZZ TEST 826 family",
+        "fields": {
+          "date": {
+            "value": "2026-11-21",
+            "hint": "The chat says “Saturday 21 November”from the family"
+          },
+          "startTime": {
+            "value": "15:00",
+            "hint": "The chat says “start at 3pm”from the family"
+          },
+          "park": {
+            "value": "Central Floresta",
+            "hint": null
+          },
+          "kids": {
+            "value": "15",
+            "hint": "The chat says “15 kids”from the family"
+          },
+          "adults": {
+            "value": "5",
+            "hint": "The chat says “6 adults”from the family"
+          },
+          "bookingName": {
+            "value": "ZZ TEST 826 family",
+            "hint": null
+          },
+          "phone": {
+            "value": "[number]",
+            "hint": null
+          },
+          "childName": {
+            "value": "ZZ Test Child",
+            "hint": "The chat says “ZZ Test Child”from the family"
+          },
+          "childAge": {
+            "value": "7",
+            "hint": "Turning (age) The chat says “turning 7”from the family"
+          }
+        },
+        "header": {
+          "reading": false,
+          "read": true,
+          "readLine": "Read the whole chat",
+          "fetchButton": "Fetch from chat",
+          "fetchButtonEnabled": true,
+          "fetchButtonTitle": "Read the chat again as it is now. What you typed here stays.",
+          "fetchedLine": "Filled from the chat: start time, number of kids · kept what you typed: number of adults."
+        },
+        "footer": [
+          "Cancel",
+          "Book date"
+        ]
+      },
+      "picture": "02-book-date-fetch-filled-kept-adults.png"
+    },
+    "step3_fetchAgain": {
+      "at": "2026-11-10T20:54:56.855Z",
+      "tag": "fetch2",
+      "before": {
+        "title": "Book Date — ZZ TEST 826 family",
+        "fields": {
+          "date": {
+            "value": "2026-11-21",
+            "hint": "The chat says “Saturday 21 November”from the family"
+          },
+          "startTime": {
+            "value": "15:00",
+            "hint": "The chat says “start at 3pm”from the family"
+          },
+          "park": {
+            "value": "Central Floresta",
+            "hint": null
+          },
+          "kids": {
+            "value": "15",
+            "hint": "The chat says “15 kids”from the family"
+          },
+          "adults": {
+            "value": "5",
+            "hint": "The chat says “6 adults”from the family"
+          },
+          "bookingName": {
+            "value": "ZZ TEST 826 family",
+            "hint": null
+          },
+          "phone": {
+            "value": "[number]",
+            "hint": null
+          },
+          "childName": {
+            "value": "ZZ Test Child",
+            "hint": "The chat says “ZZ Test Child”from the family"
+          },
+          "childAge": {
+            "value": "7",
+            "hint": "Turning (age) The chat says “turning 7”from the family"
+          }
+        },
+        "header": {
+          "reading": false,
+          "read": true,
+          "readLine": "Read the whole chat",
+          "fetchButton": "Fetch from chat",
+          "fetchButtonEnabled": true,
+          "fetchButtonTitle": "Read the chat again as it is now. What you typed here stays.",
+          "fetchedLine": "Filled from the chat: start time, number of kids · kept what you typed: number of adults."
+        },
+        "footer": [
+          "Cancel",
+          "Book date"
+        ]
+      },
+      "whileReading": "Fetching from the chat…",
+      "whileReadingDisabled": true,
+      "route": {
+        "route": "GET /api/inbox/conversations/:id/book-date-proposal (the dialog's Fetch from chat)",
+        "status": 200,
+        "seconds": 3.4
+      },
+      "answer": {
+        "model": "ai",
+        "proposalKeys": [
+          "date",
+          "startTime",
+          "kids",
+          "adults",
+          "childName",
+          "childAge",
+          "branchHint"
+        ],
+        "kids": {
+          "value": 15,
+          "text": "15 kids",
+          "source": "family",
+          "messageId": "01a1c73c-85c0-7480-b079-c336903ad546"
+        },
+        "adults": {
+          "value": 6,
+          "text": "6 adults",
+          "source": "family",
+          "messageId": "01a1c73c-85c0-7480-b079-c336903ad546"
+        },
+        "startTime": {
+          "value": "15:00",
+          "text": "start at 3pm",
+          "source": "family",
+          "messageId": "01a1c73c-85c0-7480-b079-c336903ad546"
+        },
+        "date": {
+          "value": "2026-11-21",
+          "text": "Saturday 21 November",
+          "source": "family",
+          "messageId": "01a1c739-f54f-79e3-814a-ad0fa89b2729"
+        },
+        "childAge": {
+          "value": 7,
+          "text": "turning 7",
+          "source": "family",
+          "messageId": "01a1c739-f54f-79e3-814a-ad0fa89b2729"
+        },
+        "childNameIsZz": true
+      },
+      "after": {
+        "title": "Book Date — ZZ TEST 826 family",
+        "fields": {
+          "date": {
+            "value": "2026-11-21",
+            "hint": "The chat says “Saturday 21 November”from the family"
+          },
+          "startTime": {
+            "value": "15:00",
+            "hint": "The chat says “start at 3pm”from the family"
+          },
+          "park": {
+            "value": "Central Floresta",
+            "hint": null
+          },
+          "kids": {
+            "value": "15",
+            "hint": "The chat says “15 kids”from the family"
+          },
+          "adults": {
+            "value": "5",
+            "hint": "The chat says “6 adults”from the family"
+          },
+          "bookingName": {
+            "value": "ZZ TEST 826 family",
+            "hint": null
+          },
+          "phone": {
+            "value": "[number]",
+            "hint": null
+          },
+          "childName": {
+            "value": "ZZ Test Child",
+            "hint": "The chat says “ZZ Test Child”from the family"
+          },
+          "childAge": {
+            "value": "7",
+            "hint": "Turning (age) The chat says “turning 7”from the family"
+          }
+        },
+        "header": {
+          "reading": false,
+          "read": true,
+          "readLine": "Read the whole chat",
+          "fetchButton": "Fetch from chat",
+          "fetchButtonEnabled": true,
+          "fetchButtonTitle": "Read the chat again as it is now. What you typed here stays.",
+          "fetchedLine": "Nothing new in the chat · kept what you typed: number of adults."
+        },
+        "footer": [
+          "Cancel",
+          "Book date"
+        ]
+      },
+      "picture": "03-book-date-fetch-nothing-new.png"
+    },
+    "step3_bookDate": {
+      "at": "2026-11-10T20:56:07.696Z",
+      "valuesAtSave": {
+        "title": "Book Date — ZZ TEST 826 family",
+        "fields": {
+          "date": {
+            "value": "2026-11-21",
+            "hint": "The chat says “Saturday 21 November”from the family"
+          },
+          "startTime": {
+            "value": "15:00",
+            "hint": "The chat says “start at 3pm”from the family"
+          },
+          "park": {
+            "value": "Central Floresta",
+            "hint": null
+          },
+          "kids": {
+            "value": "15",
+            "hint": "The chat says “15 kids”from the family"
+          },
+          "adults": {
+            "value": "5",
+            "hint": "The chat says “6 adults”from the family"
+          },
+          "bookingName": {
+            "value": "ZZ TEST 826 family",
+            "hint": null
+          },
+          "phone": {
+            "value": "[number]",
+            "hint": null
+          },
+          "childName": {
+            "value": "ZZ Test Child",
+            "hint": "The chat says “ZZ Test Child”from the family"
+          },
+          "childAge": {
+            "value": "7",
+            "hint": "Turning (age) The chat says “turning 7”from the family"
+          }
+        },
+        "header": {
+          "reading": false,
+          "read": true,
+          "readLine": "Read the whole chat",
+          "fetchButton": "Fetch from chat",
+          "fetchButtonEnabled": true,
+          "fetchButtonTitle": "Read the chat again as it is now. What you typed here stays.",
+          "fetchedLine": "Nothing new in the chat · kept what you typed: number of adults."
+        },
+        "footer": [
+          "Cancel",
+          "Book date"
+        ]
+      },
+      "save": {
+        "route": "POST /api/inbox/conversations/:id/book-date (the dialog's Book date)",
+        "status": 200,
+        "sent": {
+          "date": "2026-11-21",
+          "startTime": "15:00",
+          "kids": 15,
+          "adults": 5,
+          "childName": "ZZ Test Child",
+          "childAge": 7,
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "hasId": true
+        },
+        "error": null,
+        "event": {
+          "id": "01a1c73a-5e1a-74ef-ada8-26b187cca18c",
+          "title": "ZZ Test Child's 7th Birthday",
+          "date": "2026-11-21",
+          "startTime": "15:00",
+          "statusName": "Tentative",
+          "branchName": "Oto Play Park, Central Floresta",
+          "kids": 15,
+          "adults": 5
+        }
+      },
+      "note": "Event: 21 Nov 2026 at Central Floresta · tentative in the Events calendar",
+      "chip": "Event: 21 Nov 2026 at Central Floresta",
+      "buttons": [
+        "Date Booked",
+        "Create BEO"
+      ],
+      "convEvent": {
+        "id": "01a1c73a-5e1a-74ef-ada8-26b187cca18c",
+        "title": "ZZ Test Child's 7th Birthday",
+        "date": "2026-11-21",
+        "startTime": "15:00",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "status": "tentative",
+        "kids": 15,
+        "adults": 5,
+        "beoPath": "/studio/events/kanban?beo=01a1c73a-5e1a-74ef-ada8-26b187cca18c"
+      },
+      "picture": "04-date-booked.png"
+    }
+  },
+  "howTheBeoWasCreated": {
+    "teamConfirmation": {
+      "n": 3,
+      "by": "team",
+      "text": "Confirmed: ZZ Test Child's 7th birthday party on Saturday 21 November 2026 at 15:00, 15 kids and 5 adults, Birthday package Central Floresta, the park's cake at 15:30. (ZZ TEST)",
+      "at": "2026-11-10T20:56:54.659Z",
+      "path": "the inbox composer (POST /api/inbox/conversations/:id/messages)",
+      "status": 200,
+      "messageId": "01a1c73f-ddaa-7ab4-821c-fa50c4d1c1ee",
+      "providerStatus": "sent",
+      "authorKind": "staff",
+      "error": null
+    },
+    "createBeo": {
+      "at": "2026-11-10T20:57:08.325Z",
+      "conversationId": "01a1c739-f54e-751b-ac5f-1d20612c6bf6",
+      "eventId": "01a1c73a-5e1a-74ef-ada8-26b187cca18c",
+      "openBeo": {
+        "route": "POST /api/inbox/conversations/:id/open-beo",
+        "status": 200,
+        "aiFillAsked": true
+      },
+      "appHandoff": {
+        "route": "POST /api/auth/handoff (OTO App)",
+        "status": 200
+      },
+      "landed": {
+        "origin": "https://oto-app-staging.onrender.com",
+        "path": "/studio/events/kanban",
+        "beoParam": null,
+        "fillParam": null
+      },
+      "aiFill": {
+        "route": "POST /api/events/:id/beo/ai-fill/inbox",
+        "purpose": "(none: Create BEO's fill)",
+        "status": 200,
+        "seconds": 9.2,
+        "error": null,
+        "hasReview": true,
+        "hasFill": true,
+        "chat": {
+          "newestMessageId": "01a1c73f-ddaa-7ab4-821c-fa50c4d1c1ee",
+          "lines": 3
+        },
+        "sourceIsTeamConfirmation": true,
+        "review": {
+          "transcript": {
+            "lines": 3,
+            "cut": false
+          },
+          "counts": {
+            "numChildren": {
+              "value": 15,
+              "from": {
+                "source": "team",
+                "at": "2026-11-10T20:56:55.232Z",
+                "line": 3
+              }
+            },
+            "numAdults": {
+              "value": 5,
+              "from": {
+                "source": "team",
+                "at": "2026-11-10T20:56:55.232Z",
+                "line": 3
+              }
+            },
+            "startTime": {
+              "value": "15:00",
+              "from": {
+                "source": "team",
+                "at": "2026-11-10T20:56:55.232Z",
+                "line": 3
+              }
+            }
+          },
+          "cake": {
+            "mode": "INTERNAL",
+            "notes": "the park's cake",
+            "time": "15:30",
+            "from": {
+              "source": "team",
+              "at": "2026-11-10T20:56:55.232Z",
+              "line": 3
+            }
+          },
+          "package": {
+            "templateId": "391b269d-159a-4039-89a2-51ac132da747",
+            "said": "Birthday package Central Floresta"
+          },
+          "deposit": null,
+          "otherLines": 0
+        }
+      },
+      "reviewUndecided": [],
+      "approveEnabled": true,
+      "approve": {
+        "route": "POST /api/events/:id/beo/ai-fill/approve",
+        "status": 200,
+        "written": {
+          "event": true,
+          "package": true,
+          "addOns": 0,
+          "setMenu": true,
+          "choices": 0,
+          "kitchenLines": 0,
+          "freeKitchenLines": 0,
+          "cake": true
+        }
+      },
+      "restOpened": true,
+      "restTitle": "AI Fill — Review & Confirm",
+      "restClosedWithoutLoading": true
+    },
+    "eventBeforeCreateBeo": {
+      "at": "2026-11-10T20:57:05.637Z",
+      "event": {
+        "route": "GET /api/admin/events/:id",
+        "status": 200,
+        "title": "ZZ Test Child's 7th Birthday",
+        "eventDate": "2026-11-21",
+        "startTime": "15:00",
+        "numChildren": 15,
+        "numAdults": 5,
+        "childNameIsZz": true,
+        "updatedAt": "2026-11-10T20:56:39.139Z",
+        "inboxConversationId": "01a1c739-f54e-751b-ac5f-1d20612c6bf6",
+        "archivedAt": null
+      },
+      "beo": {
+        "route": "GET /api/events/:id/beo",
+        "status": 200,
+        "numAdults": 5,
+        "updatedAt": "2026-11-10T20:56:39.139Z",
+        "inboxConversationId": "01a1c739-f54e-751b-ac5f-1d20612c6bf6"
+      },
+      "kitchenPlan": {
+        "route": "GET /api/events/:id/beo/kitchen-plan",
+        "status": 200,
+        "cakeMode": null,
+        "cakeTime": null,
+        "updatedAt": null
+      }
+    }
+  },
+  "partB_beoForm": {
+    "step4": {
+      "at": "2026-11-10T20:57:53.412Z",
+      "before": {
+        "header": {
+          "aiFill": "AI Fill",
+          "fetchFromChat": "Fetch from chat",
+          "fetchFromChatTitle": "Read the conversation again and review what changed",
+          "fetchFromChatEnabled": true,
+          "fetchBesideAiFill": true
+        },
+        "eventInfo": {
+          "title": "ZZ Test Child's 7th Birthday",
+          "childName": "ZZ Test Child",
+          "numChildren": "15",
+          "numAdults": "5",
+          "startTime": null,
+          "endTime": null
+        },
+        "cake": {
+          "chosen": "internal",
+          "modes": {
+            "none": "outline",
+            "internal": "default",
+            "external": "outline"
+          },
+          "time": "15:30",
+          "setTimeButton": false
+        }
+      },
+      "picture": "05-beo-header-fetch-beside-ai-fill.png",
+      "typedAdults": "7",
+      "after": {
+        "header": {
+          "aiFill": "AI Fill",
+          "fetchFromChat": "Fetch from chat",
+          "fetchFromChatTitle": "Read the conversation again and review what changed",
+          "fetchFromChatEnabled": true,
+          "fetchBesideAiFill": true
+        },
+        "eventInfo": {
+          "title": "ZZ Test Child's 7th Birthday",
+          "childName": "ZZ Test Child",
+          "numChildren": "15",
+          "numAdults": "7",
+          "startTime": null,
+          "endTime": null
+        },
+        "cake": {
+          "chosen": "internal",
+          "modes": {
+            "none": "outline",
+            "internal": "default",
+            "external": "outline"
+          },
+          "time": "15:30",
+          "setTimeButton": false
+        }
+      }
+    },
+    "step5_fetch": {
+      "at": "2026-11-10T20:58:39.863Z",
+      "tag": "fetch1",
+      "formBefore": {
+        "numAdults": "7",
+        "cake": {
+          "chosen": "internal",
+          "time": "15:30"
+        }
+      },
+      "warning": {
+        "title": "Fetch from chat",
+        "description": "The conversation this birthday was booked from, read again as it is now: the details typed in this form to accept or decline, and what the chat says of the package, menu and entertainment to read.",
+        "box": "This reads the conversation again, as it is now, and may change details typed in this form. Every change is listed first: nothing is changed until you accept it, and what you accept is saved only when you press Save.",
+        "buttons": [
+          "Cancel",
+          "Read the chat",
+          "Close"
+        ]
+      },
+      "readingLine": "Reading the whole conversation…",
+      "route": {
+        "route": "POST /api/events/:id/beo/ai-fill/inbox",
+        "purpose": "fetch",
+        "status": 200,
+        "seconds": 12.6,
+        "error": null
+      },
+      "chat": {
+        "newestMessageId": "01a1c741-7a69-7bf4-bdc3-6d7ff1b7d22d",
+        "lines": 4
+      },
+      "wholeChatReading": {
+        "numAdults": {
+          "value": 6,
+          "from": {
+            "source": "family",
+            "at": "2026-11-10T20:58:39.000Z",
+            "line": 4
+          }
+        },
+        "numChildren": {
+          "value": 15,
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "startTime": {
+          "value": "15:00",
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "cake": {
+          "mode": "INTERNAL",
+          "notes": "the park's cake",
+          "time": "16:00",
+          "from": {
+            "source": "family",
+            "at": "2026-11-10T20:58:39.000Z",
+            "line": 4
+          }
+        },
+        "deposit": null
+      },
+      "lines": {
+        "description": "What the chat says now, beside what this form holds. Accept what should change; a declined change is not offered again until the chat changes.",
+        "count": [
+          "3 changes from the chat"
+        ],
+        "same": [],
+        "noField": [],
+        "held": [],
+        "error": [],
+        "catalogueCount": [],
+        "catalogueLine": []
+      },
+      "rows": [
+        {
+          "field": "numAdults",
+          "label": "Adults:",
+          "was": "7",
+          "now": "6",
+          "said": null,
+          "source": "family",
+          "sourceLabel": "from the family",
+          "decision": "undecided"
+        },
+        {
+          "field": "cakeTime",
+          "label": "Cake time:",
+          "was": "15:30",
+          "now": "16:00",
+          "said": null,
+          "source": "family",
+          "sourceLabel": "from the family",
+          "decision": "undecided"
+        },
+        {
+          "field": "packageName",
+          "label": "POS package:",
+          "was": "—",
+          "now": "Birthday package Central Floresta",
+          "said": null,
+          "source": "team",
+          "sourceLabel": "from the team",
+          "decision": "undecided"
+        }
+      ],
+      "catalogueRows": [],
+      "footerButtons": [
+        "Accept all",
+        "Decline all",
+        "Cancel",
+        "Done",
+        "Close"
+      ],
+      "decisions": [
+        {
+          "field": "cakeTime",
+          "decision": "accept",
+          "pressed": true,
+          "rowDecision": "accept"
+        },
+        {
+          "field": "numAdults",
+          "decision": "decline",
+          "pressed": true,
+          "rowDecision": "decline"
+        }
+      ],
+      "rowsAfterDecisions": [
+        [
+          "numAdults",
+          "decline"
+        ],
+        [
+          "cakeTime",
+          "accept"
+        ],
+        [
+          "packageName",
+          "undecided"
+        ]
+      ],
+      "applyButton": "Apply 1 accepted",
+      "action": "apply",
+      "toast": "1 change taken from the chat Save the BEO to keep them.",
+      "dialogClosed": true,
+      "formAfter": {
+        "numAdults": "7",
+        "cake": {
+          "chosen": "internal",
+          "time": "16:00"
+        }
+      },
+      "pictures": [
+        "06-beo-fetch-warning.png",
+        "07-beo-fetch-changes-listed.png"
+      ]
+    },
+    "step5_save": {
+      "at": "2026-11-10T20:59:20.574Z",
+      "formAtSave": {
+        "numAdults": "7",
+        "cakeTime": "16:00"
+      },
+      "save": {
+        "route": "PUT /api/events/:eventId/beo",
+        "status": 200
+      },
+      "toasts": [
+        "BEO data saved successfully"
+      ],
+      "formAfterReload": {
+        "numAdults": "7",
+        "cake": {
+          "chosen": "internal",
+          "modes": {
+            "none": "outline",
+            "internal": "default",
+            "external": "outline"
+          },
+          "time": "16:00",
+          "setTimeButton": false
+        }
+      },
+      "api": {
+        "at": "2026-11-10T20:59:29.131Z",
+        "event": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "title": "ZZ Test Child's 7th Birthday",
+          "eventDate": "2026-11-21",
+          "startTime": "15:00",
+          "numChildren": 15,
+          "numAdults": 7,
+          "childNameIsZz": true,
+          "updatedAt": "2026-11-10T20:59:21.773Z",
+          "inboxConversationId": "01a1c739-f54e-751b-ac5f-1d20612c6bf6",
+          "archivedAt": null
+        },
+        "beo": {
+          "route": "GET /api/events/:id/beo",
+          "status": 200,
+          "numAdults": 7,
+          "updatedAt": "2026-11-10T20:59:21.773Z",
+          "inboxConversationId": "01a1c739-f54e-751b-ac5f-1d20612c6bf6"
+        },
+        "kitchenPlan": {
+          "route": "GET /api/events/:id/beo/kitchen-plan",
+          "status": 200,
+          "cakeMode": "INTERNAL",
+          "cakeTime": "16:00",
+          "updatedAt": "2026-11-10T20:59:21.788Z"
+        }
+      }
+    },
+    "step6a_fetchNoNewLine": {
+      "at": "2026-11-10T20:59:37.151Z",
+      "tag": "fetch2-no-new-line",
+      "formBefore": {
+        "numAdults": "7",
+        "cake": {
+          "chosen": "internal",
+          "time": "16:00"
+        }
+      },
+      "warning": {
+        "title": "Fetch from chat",
+        "description": "The conversation this birthday was booked from, read again as it is now: the details typed in this form to accept or decline, and what the chat says of the package, menu and entertainment to read.",
+        "box": "This reads the conversation again, as it is now, and may change details typed in this form. Every change is listed first: nothing is changed until you accept it, and what you accept is saved only when you press Save.",
+        "buttons": [
+          "Cancel",
+          "Read the chat",
+          "Close"
+        ]
+      },
+      "readingLine": "Reading the whole conversation…",
+      "route": {
+        "route": "POST /api/events/:id/beo/ai-fill/inbox",
+        "purpose": "fetch",
+        "status": 200,
+        "seconds": 10.8,
+        "error": null
+      },
+      "chat": {
+        "newestMessageId": "01a1c741-7a69-7bf4-bdc3-6d7ff1b7d22d",
+        "lines": 4
+      },
+      "wholeChatReading": {
+        "numAdults": {
+          "value": 5,
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "numChildren": {
+          "value": 15,
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "startTime": {
+          "value": "15:00",
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "cake": {
+          "mode": "INTERNAL",
+          "notes": "the park's cake",
+          "time": "15:30",
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "deposit": null
+      },
+      "lines": {
+        "description": "What the chat says now, beside what this form holds. Accept what should change; a declined change is not offered again until the chat changes.",
+        "count": [
+          "3 changes from the chat"
+        ],
+        "same": [],
+        "noField": [],
+        "held": [],
+        "error": [],
+        "catalogueCount": [],
+        "catalogueLine": []
+      },
+      "rows": [
+        {
+          "field": "numAdults",
+          "label": "Adults:",
+          "was": "7",
+          "now": "5",
+          "said": null,
+          "source": "team",
+          "sourceLabel": "from the team",
+          "decision": "undecided"
+        },
+        {
+          "field": "cakeTime",
+          "label": "Cake time:",
+          "was": "16:00",
+          "now": "15:30",
+          "said": null,
+          "source": "team",
+          "sourceLabel": "from the team",
+          "decision": "undecided"
+        },
+        {
+          "field": "packageName",
+          "label": "POS package:",
+          "was": "—",
+          "now": "Birthday package Central Floresta",
+          "said": null,
+          "source": "team",
+          "sourceLabel": "from the team",
+          "decision": "undecided"
+        }
+      ],
+      "catalogueRows": [],
+      "footerButtons": [
+        "Accept all",
+        "Decline all",
+        "Cancel",
+        "Done",
+        "Close"
+      ],
+      "decisions": [
+        {
+          "field": "packageName",
+          "decision": "accept",
+          "pressed": true,
+          "rowDecision": "accept"
+        }
+      ],
+      "rowsAfterDecisions": [
+        [
+          "numAdults",
+          "undecided"
+        ],
+        [
+          "cakeTime",
+          "undecided"
+        ],
+        [
+          "packageName",
+          "accept"
+        ]
+      ],
+      "applyButton": "Apply 1 accepted",
+      "action": "apply",
+      "toast": "1 change taken from the chat Save the BEO to keep them.",
+      "dialogClosed": true,
+      "formAfter": {
+        "numAdults": "7",
+        "cake": {
+          "chosen": "internal",
+          "time": "16:00"
+        }
+      },
+      "pictures": [
+        "08-beo-fetch-no-new-line-reading-flipped.png"
+      ]
+    },
+    "step6a_fetchNoNewLineAgain": {
+      "at": "2026-11-10T21:00:58.545Z",
+      "tag": "fetch3-no-new-line",
+      "formBefore": {
+        "numAdults": "7",
+        "cake": {
+          "chosen": "internal",
+          "time": "16:00"
+        }
+      },
+      "warning": {
+        "title": "Fetch from chat",
+        "description": "The conversation this birthday was booked from, read again as it is now: the details typed in this form to accept or decline, and what the chat says of the package, menu and entertainment to read.",
+        "box": "This reads the conversation again, as it is now, and may change details typed in this form. Every change is listed first: nothing is changed until you accept it, and what you accept is saved only when you press Save.",
+        "buttons": [
+          "Cancel",
+          "Read the chat",
+          "Close"
+        ]
+      },
+      "readingLine": "Reading the whole conversation…",
+      "route": {
+        "route": "POST /api/events/:id/beo/ai-fill/inbox",
+        "purpose": "fetch",
+        "status": 200,
+        "seconds": 9.7,
+        "error": null
+      },
+      "chat": {
+        "newestMessageId": "01a1c741-7a69-7bf4-bdc3-6d7ff1b7d22d",
+        "lines": 4
+      },
+      "wholeChatReading": {
+        "numAdults": {
+          "value": 5,
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "numChildren": {
+          "value": 15,
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "startTime": {
+          "value": "15:00",
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "cake": {
+          "mode": "INTERNAL",
+          "notes": "the park's cake",
+          "time": "15:30",
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "deposit": null
+      },
+      "lines": {
+        "description": "What the chat says now, beside what this form holds. Accept what should change; a declined change is not offered again until the chat changes.",
+        "count": [
+          "2 changes from the chat"
+        ],
+        "same": [],
+        "noField": [],
+        "held": [],
+        "error": [],
+        "catalogueCount": [],
+        "catalogueLine": []
+      },
+      "rows": [
+        {
+          "field": "numAdults",
+          "label": "Adults:",
+          "was": "7",
+          "now": "5",
+          "said": null,
+          "source": "team",
+          "sourceLabel": "from the team",
+          "decision": "undecided"
+        },
+        {
+          "field": "cakeTime",
+          "label": "Cake time:",
+          "was": "16:00",
+          "now": "15:30",
+          "said": null,
+          "source": "team",
+          "sourceLabel": "from the team",
+          "decision": "undecided"
+        }
+      ],
+      "catalogueRows": [],
+      "footerButtons": [
+        "Accept all",
+        "Decline all",
+        "Cancel",
+        "Done",
+        "Close"
+      ],
+      "decisions": [],
+      "rowsAfterDecisions": [
+        [
+          "numAdults",
+          "undecided"
+        ],
+        [
+          "cakeTime",
+          "undecided"
+        ]
+      ],
+      "applyButton": "Done",
+      "action": "cancel",
+      "toast": null,
+      "dialogClosed": true,
+      "formAfter": {
+        "numAdults": "7",
+        "cake": {
+          "chosen": "internal",
+          "time": "16:00"
+        }
+      },
+      "pictures": []
+    },
+    "step6b_fetchAfterNewLine": {
+      "at": "2026-11-10T21:01:25.882Z",
+      "tag": "fetch4-after-new-line",
+      "formBefore": {
+        "numAdults": "7",
+        "cake": {
+          "chosen": "internal",
+          "time": "16:00"
+        }
+      },
+      "warning": {
+        "title": "Fetch from chat",
+        "description": "The conversation this birthday was booked from, read again as it is now: the details typed in this form to accept or decline, and what the chat says of the package, menu and entertainment to read.",
+        "box": "This reads the conversation again, as it is now, and may change details typed in this form. Every change is listed first: nothing is changed until you accept it, and what you accept is saved only when you press Save.",
+        "buttons": [
+          "Cancel",
+          "Read the chat",
+          "Close"
+        ]
+      },
+      "readingLine": "Reading the whole conversation…",
+      "route": {
+        "route": "POST /api/events/:id/beo/ai-fill/inbox",
+        "purpose": "fetch",
+        "status": 200,
+        "seconds": 12.1,
+        "error": null
+      },
+      "chat": {
+        "newestMessageId": "01a1c744-0321-7417-a704-a7352e5d52cc",
+        "lines": 5
+      },
+      "wholeChatReading": {
+        "numAdults": {
+          "value": 5,
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "numChildren": {
+          "value": 15,
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "startTime": {
+          "value": "15:00",
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "cake": {
+          "mode": "INTERNAL",
+          "notes": "the park's cake",
+          "time": "15:30",
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "deposit": null
+      },
+      "lines": {
+        "description": "What the chat says now, beside what this form holds. Accept what should change; a declined change is not offered again until the chat changes.",
+        "count": [
+          "2 changes from the chat"
+        ],
+        "same": [],
+        "noField": [],
+        "held": [],
+        "error": [],
+        "catalogueCount": [],
+        "catalogueLine": []
+      },
+      "rows": [
+        {
+          "field": "numAdults",
+          "label": "Adults:",
+          "was": "7",
+          "now": "5",
+          "said": null,
+          "source": "team",
+          "sourceLabel": "from the team",
+          "decision": "undecided"
+        },
+        {
+          "field": "cakeTime",
+          "label": "Cake time:",
+          "was": "16:00",
+          "now": "15:30",
+          "said": null,
+          "source": "team",
+          "sourceLabel": "from the team",
+          "decision": "undecided"
+        }
+      ],
+      "catalogueRows": [],
+      "footerButtons": [
+        "Accept all",
+        "Decline all",
+        "Cancel",
+        "Done",
+        "Close"
+      ],
+      "decisions": [],
+      "rowsAfterDecisions": [
+        [
+          "numAdults",
+          "undecided"
+        ],
+        [
+          "cakeTime",
+          "undecided"
+        ]
+      ],
+      "applyButton": "Done",
+      "action": "cancel",
+      "toast": null,
+      "dialogClosed": true,
+      "formAfter": {
+        "numAdults": "7",
+        "cake": {
+          "chosen": "internal",
+          "time": "16:00"
+        }
+      },
+      "pictures": [
+        "09-beo-fetch-after-new-line.png"
+      ]
+    },
+    "step7_fetchAfterNoCakeLine": {
+      "at": "2026-11-10T21:01:51.288Z",
+      "tag": "fetch5-no-cake",
+      "formBefore": {
+        "numAdults": "7",
+        "cake": {
+          "chosen": "internal",
+          "time": "16:00"
+        }
+      },
+      "warning": {
+        "title": "Fetch from chat",
+        "description": "The conversation this birthday was booked from, read again as it is now: the details typed in this form to accept or decline, and what the chat says of the package, menu and entertainment to read.",
+        "box": "This reads the conversation again, as it is now, and may change details typed in this form. Every change is listed first: nothing is changed until you accept it, and what you accept is saved only when you press Save.",
+        "buttons": [
+          "Cancel",
+          "Read the chat",
+          "Close"
+        ]
+      },
+      "readingLine": "Reading the whole conversation…",
+      "route": {
+        "route": "POST /api/events/:id/beo/ai-fill/inbox",
+        "purpose": "fetch",
+        "status": 200,
+        "seconds": 14.7,
+        "error": null
+      },
+      "chat": {
+        "newestMessageId": "01a1c744-6676-75f1-b08e-a5bd461a4431",
+        "lines": 6
+      },
+      "wholeChatReading": {
+        "numAdults": {
+          "value": 5,
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "numChildren": {
+          "value": 15,
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "startTime": {
+          "value": "15:00",
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "cake": {
+          "mode": "INTERNAL",
+          "notes": "the park's cake",
+          "time": "15:30",
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "deposit": null
+      },
+      "lines": {
+        "description": "What the chat says now, beside what this form holds. Accept what should change; a declined change is not offered again until the chat changes.",
+        "count": [
+          "2 changes from the chat"
+        ],
+        "same": [],
+        "noField": [],
+        "held": [],
+        "error": [],
+        "catalogueCount": [],
+        "catalogueLine": []
+      },
+      "rows": [
+        {
+          "field": "numAdults",
+          "label": "Adults:",
+          "was": "7",
+          "now": "5",
+          "said": null,
+          "source": "team",
+          "sourceLabel": "from the team",
+          "decision": "undecided"
+        },
+        {
+          "field": "cakeTime",
+          "label": "Cake time:",
+          "was": "16:00",
+          "now": "15:30",
+          "said": null,
+          "source": "team",
+          "sourceLabel": "from the team",
+          "decision": "undecided"
+        }
+      ],
+      "catalogueRows": [],
+      "footerButtons": [
+        "Accept all",
+        "Decline all",
+        "Cancel",
+        "Done",
+        "Close"
+      ],
+      "decisions": [
+        {
+          "field": "cakeMode",
+          "decision": "decline",
+          "pressed": false,
+          "note": "no such row"
+        }
+      ],
+      "rowsAfterDecisions": [
+        [
+          "numAdults",
+          "undecided"
+        ],
+        [
+          "cakeTime",
+          "undecided"
+        ]
+      ],
+      "applyButton": "Done",
+      "action": "apply",
+      "toast": "Nothing changed No change was accepted.",
+      "dialogClosed": true,
+      "formAfter": {
+        "numAdults": "7",
+        "cake": {
+          "chosen": "internal",
+          "time": "16:00"
+        }
+      },
+      "pictures": [
+        "10-beo-fetch-after-no-cake-line-no-cake-row.png"
+      ]
+    },
+    "step7_fetchAfterNoCakeLineAgain": {
+      "at": "2026-11-10T21:02:27.523Z",
+      "tag": "fetch6-no-cake-again",
+      "formBefore": {
+        "numAdults": "7",
+        "cake": {
+          "chosen": "internal",
+          "time": "16:00"
+        }
+      },
+      "warning": {
+        "title": "Fetch from chat",
+        "description": "The conversation this birthday was booked from, read again as it is now: the details typed in this form to accept or decline, and what the chat says of the package, menu and entertainment to read.",
+        "box": "This reads the conversation again, as it is now, and may change details typed in this form. Every change is listed first: nothing is changed until you accept it, and what you accept is saved only when you press Save.",
+        "buttons": [
+          "Cancel",
+          "Read the chat",
+          "Close"
+        ]
+      },
+      "readingLine": "Reading the whole conversation…",
+      "route": {
+        "route": "POST /api/events/:id/beo/ai-fill/inbox",
+        "purpose": "fetch",
+        "status": 200,
+        "seconds": 9.7,
+        "error": null
+      },
+      "chat": {
+        "newestMessageId": "01a1c744-6676-75f1-b08e-a5bd461a4431",
+        "lines": 6
+      },
+      "wholeChatReading": {
+        "numAdults": {
+          "value": 6,
+          "from": {
+            "source": "family",
+            "at": "2026-11-10T20:58:39.000Z",
+            "line": 4
+          }
+        },
+        "numChildren": {
+          "value": 15,
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "startTime": {
+          "value": "15:00",
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "cake": {
+          "mode": "NONE",
+          "notes": "actually no cake, thanks",
+          "time": null,
+          "from": {
+            "source": "family",
+            "at": "2026-11-10T21:01:51.000Z",
+            "line": 6
+          }
+        },
+        "deposit": null
+      },
+      "lines": {
+        "description": "What the chat says now, beside what this form holds. Accept what should change; a declined change is not offered again until the chat changes.",
+        "count": [
+          "2 changes from the chat"
+        ],
+        "same": [],
+        "noField": [],
+        "held": [],
+        "error": [],
+        "catalogueCount": [],
+        "catalogueLine": []
+      },
+      "rows": [
+        {
+          "field": "numAdults",
+          "label": "Adults:",
+          "was": "7",
+          "now": "6",
+          "said": null,
+          "source": "family",
+          "sourceLabel": "from the family",
+          "decision": "undecided"
+        },
+        {
+          "field": "cakeMode",
+          "label": "Cake:",
+          "was": "The park's cake",
+          "now": "No cake",
+          "said": null,
+          "source": "family",
+          "sourceLabel": "from the family",
+          "decision": "undecided"
+        }
+      ],
+      "catalogueRows": [],
+      "footerButtons": [
+        "Accept all",
+        "Decline all",
+        "Cancel",
+        "Done",
+        "Close"
+      ],
+      "decisions": [],
+      "rowsAfterDecisions": [
+        [
+          "numAdults",
+          "undecided"
+        ],
+        [
+          "cakeMode",
+          "undecided"
+        ]
+      ],
+      "applyButton": "Done",
+      "action": "cancel",
+      "toast": null,
+      "dialogClosed": true,
+      "formAfter": {
+        "numAdults": "7",
+        "cake": {
+          "chosen": "internal",
+          "time": "16:00"
+        }
+      },
+      "pictures": []
+    },
+    "step7_fetchAfterNoCakeLineThird": {
+      "at": "2026-11-10T21:03:49.732Z",
+      "tag": "fetch7-no-cake-third",
+      "formBefore": {
+        "numAdults": "7",
+        "cake": {
+          "chosen": "internal",
+          "time": "16:00"
+        }
+      },
+      "warning": {
+        "title": "Fetch from chat",
+        "description": "The conversation this birthday was booked from, read again as it is now: the details typed in this form to accept or decline, and what the chat says of the package, menu and entertainment to read.",
+        "box": "This reads the conversation again, as it is now, and may change details typed in this form. Every change is listed first: nothing is changed until you accept it, and what you accept is saved only when you press Save.",
+        "buttons": [
+          "Cancel",
+          "Read the chat",
+          "Close"
+        ]
+      },
+      "readingLine": "Reading the whole conversation…",
+      "route": {
+        "route": "POST /api/events/:id/beo/ai-fill/inbox",
+        "purpose": "fetch",
+        "status": 200,
+        "seconds": 10.8,
+        "error": null
+      },
+      "chat": {
+        "newestMessageId": "01a1c744-6676-75f1-b08e-a5bd461a4431",
+        "lines": 6
+      },
+      "wholeChatReading": {
+        "numAdults": {
+          "value": 6,
+          "from": {
+            "source": "family",
+            "at": "2026-11-10T20:58:39.000Z",
+            "line": 4
+          }
+        },
+        "numChildren": {
+          "value": 15,
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "startTime": {
+          "value": "15:00",
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T20:56:55.232Z",
+            "line": 3
+          }
+        },
+        "cake": {
+          "mode": "NONE",
+          "notes": "actually no cake, thanks",
+          "time": null,
+          "from": {
+            "source": "family",
+            "at": "2026-11-10T21:01:51.000Z",
+            "line": 6
+          }
+        },
+        "deposit": null
+      },
+      "lines": {
+        "description": "What the chat says now, beside what this form holds. Accept what should change; a declined change is not offered again until the chat changes.",
+        "count": [
+          "3 changes from the chat"
+        ],
+        "same": [],
+        "noField": [],
+        "held": [],
+        "error": [],
+        "catalogueCount": [],
+        "catalogueLine": []
+      },
+      "rows": [
+        {
+          "field": "numAdults",
+          "label": "Adults:",
+          "was": "7",
+          "now": "6",
+          "said": null,
+          "source": "family",
+          "sourceLabel": "from the family",
+          "decision": "undecided"
+        },
+        {
+          "field": "cakeMode",
+          "label": "Cake:",
+          "was": "The park's cake",
+          "now": "No cake",
+          "said": null,
+          "source": "family",
+          "sourceLabel": "from the family",
+          "decision": "undecided"
+        },
+        {
+          "field": "packageName",
+          "label": "POS package:",
+          "was": "—",
+          "now": "Birthday package Central Floresta",
+          "said": null,
+          "source": "team",
+          "sourceLabel": "from the team",
+          "decision": "undecided"
+        }
+      ],
+      "catalogueRows": [],
+      "footerButtons": [
+        "Accept all",
+        "Decline all",
+        "Cancel",
+        "Done",
+        "Close"
+      ],
+      "decisions": [
+        {
+          "field": "cakeMode",
+          "decision": "decline",
+          "pressed": true,
+          "rowDecision": "decline"
+        }
+      ],
+      "rowsAfterDecisions": [
+        [
+          "numAdults",
+          "undecided"
+        ],
+        [
+          "cakeMode",
+          "decline"
+        ],
+        [
+          "packageName",
+          "undecided"
+        ]
+      ],
+      "applyButton": "Done",
+      "action": "cancel",
+      "toast": null,
+      "dialogClosed": true,
+      "formAfter": {
+        "numAdults": "7",
+        "cake": {
+          "chosen": "internal",
+          "time": "16:00"
+        }
+      },
+      "pictures": [
+        "12-beo-fetch-same-chat-read-again.png"
+      ]
+    },
+    "step8_activityLog": {
+      "api": {
+        "route": "GET /api/activity-logs?branchId=<park>&types=beo_ai_fill&search=Fetch from chat",
+        "status": 200,
+        "totalCount": 6,
+        "rows": [
+          {
+            "id": "5d5f2cd6-64bc-4454-8049-a7f3f4812bae",
+            "createdAt": "2026-11-10T21:02:38.890Z",
+            "activityType": "beo_ai_fill",
+            "summaryText": "Fetch from chat read the inbox conversation for the BEO of \"ZZ Test Child's 7th Birthday\"",
+            "forThisEvent": true,
+            "purpose": "fetch",
+            "source": "inbox",
+            "metaKeys": [
+              "eventId",
+              "source",
+              "purpose",
+              "inboxConversationId",
+              "inboxMessageId",
+              "outcome",
+              "model",
+              "promptFrom",
+              "inputChars",
+              "sections",
+              "team",
+              "transcriptLines",
+              "transcriptCut",
+              "catalogueRead",
+              "catalogue"
+            ],
+            "carriesChatText": false
+          },
+          {
+            "id": "793894a7-ee67-47a4-a43c-97d6d34466bd",
+            "createdAt": "2026-11-10T21:02:07.616Z",
+            "activityType": "beo_ai_fill",
+            "summaryText": "Fetch from chat read the inbox conversation for the BEO of \"ZZ Test Child's 7th Birthday\"",
+            "forThisEvent": true,
+            "purpose": "fetch",
+            "source": "inbox",
+            "metaKeys": [
+              "eventId",
+              "source",
+              "purpose",
+              "inboxConversationId",
+              "inboxMessageId",
+              "outcome",
+              "model",
+              "promptFrom",
+              "inputChars",
+              "sections",
+              "team",
+              "transcriptLines",
+              "transcriptCut",
+              "catalogueRead",
+              "catalogue"
+            ],
+            "carriesChatText": false
+          },
+          {
+            "id": "fa697b8c-66bb-4ca3-84db-131d91c1c8fd",
+            "createdAt": "2026-11-10T21:01:39.572Z",
+            "activityType": "beo_ai_fill",
+            "summaryText": "Fetch from chat read the inbox conversation for the BEO of \"ZZ Test Child's 7th Birthday\"",
+            "forThisEvent": true,
+            "purpose": "fetch",
+            "source": "inbox",
+            "metaKeys": [
+              "eventId",
+              "source",
+              "purpose",
+              "inboxConversationId",
+              "inboxMessageId",
+              "outcome",
+              "model",
+              "promptFrom",
+              "inputChars",
+              "sections",
+              "team",
+              "transcriptLines",
+              "transcriptCut",
+              "catalogueRead",
+              "catalogue"
+            ],
+            "carriesChatText": false
+          },
+          {
+            "id": "4e3225c8-098b-40ad-977b-ef1593d2b7f8",
+            "createdAt": "2026-11-10T21:01:09.878Z",
+            "activityType": "beo_ai_fill",
+            "summaryText": "Fetch from chat read the inbox conversation for the BEO of \"ZZ Test Child's 7th Birthday\"",
+            "forThisEvent": true,
+            "purpose": "fetch",
+            "source": "inbox",
+            "metaKeys": [
+              "eventId",
+              "source",
+              "purpose",
+              "inboxConversationId",
+              "inboxMessageId",
+              "outcome",
+              "model",
+              "promptFrom",
+              "inputChars",
+              "sections",
+              "team",
+              "transcriptLines",
+              "transcriptCut",
+              "catalogueRead",
+              "catalogue"
+            ],
+            "carriesChatText": false
+          },
+          {
+            "id": "38be989c-f5b0-4ef3-99cf-88133b8612a5",
+            "createdAt": "2026-11-10T20:59:49.628Z",
+            "activityType": "beo_ai_fill",
+            "summaryText": "Fetch from chat read the inbox conversation for the BEO of \"ZZ Test Child's 7th Birthday\"",
+            "forThisEvent": true,
+            "purpose": "fetch",
+            "source": "inbox",
+            "metaKeys": [
+              "eventId",
+              "source",
+              "purpose",
+              "inboxConversationId",
+              "inboxMessageId",
+              "outcome",
+              "model",
+              "promptFrom",
+              "inputChars",
+              "sections",
+              "team",
+              "transcriptLines",
+              "transcriptCut",
+              "catalogueRead",
+              "catalogue"
+            ],
+            "carriesChatText": false
+          },
+          {
+            "id": "8ad9ff4b-1f26-449a-9310-e1381893db1b",
+            "createdAt": "2026-11-10T20:58:54.533Z",
+            "activityType": "beo_ai_fill",
+            "summaryText": "Fetch from chat read the inbox conversation for the BEO of \"ZZ Test Child's 7th Birthday\"",
+            "forThisEvent": true,
+            "purpose": "fetch",
+            "source": "inbox",
+            "metaKeys": [
+              "eventId",
+              "source",
+              "purpose",
+              "inboxConversationId",
+              "inboxMessageId",
+              "outcome",
+              "model",
+              "promptFrom",
+              "inputChars",
+              "sections",
+              "team",
+              "transcriptLines",
+              "transcriptCut",
+              "catalogueRead",
+              "catalogue"
+            ],
+            "carriesChatText": false
+          }
+        ],
+        "rowsForThisEvent": 6,
+        "fillRowsForThisEvent": 6
+      },
+      "rowShape": {
+        "rowId": "5d5f2cd6-64bc-4454-8049-a7f3f4812bae",
+        "summaryText": "Fetch from chat read the inbox conversation for the BEO of \"ZZ Test Child's 7th Birthday\"",
+        "metaShape": {
+          "eventId": "string(36)",
+          "source": "string(5)",
+          "purpose": "string(5)",
+          "inboxConversationId": "string(36)",
+          "inboxMessageId": "string(36)",
+          "outcome": "string(6)",
+          "model": "string(13)",
+          "promptFrom": {
+            "advice": "string(7)",
+            "outputFormat": "string(7)",
+            "model": "string(8)",
+            "requiredFields": "string(8)"
+          },
+          "inputChars": "number",
+          "sections": "array(5)",
+          "team": {
+            "named": "number",
+            "matched": "number"
+          },
+          "transcriptLines": "number",
+          "transcriptCut": "boolean",
+          "catalogueRead": {
+            "outcome": "string(6)",
+            "inputChars": "number",
+            "model": "string(13)"
+          },
+          "catalogue": {
+            "package": "boolean",
+            "addOns": "number",
+            "setMenu": "boolean",
+            "choices": "number",
+            "menuLines": "number",
+            "notInMenu": "number",
+            "entertainment": "number",
+            "notInCatalogue": "number"
+          }
+        },
+        "chatWordsInMetadata": [],
+        "otherFields": {
+          "id": "string(36)",
+          "branchId": "string(36)",
+          "employeeId": "null",
+          "contractInstanceId": "null",
+          "attentionItemId": "null",
+          "templateId": "null",
+          "activityType": "string(11)",
+          "createdBy": "string(36)",
+          "createdAt": "string(24)",
+          "tenantId": "string(36)"
+        }
+      },
+      "page": {
+        "url": "https://oto-app-staging.onrender.com/activity-logbook",
+        "title": "Activity Logbook",
+        "searched": "Fetch from chat",
+        "rowsShown": 6,
+        "rowTexts": [
+          "BEO AI Fill Oto Play Park, Central Floresta Fetch from chat read the inbox conversation for the BEO of \"ZZ Test Child's 7th Birthday\" 11-11-2026 less than a minute ago",
+          "BEO AI Fill Oto Play Park, Central Floresta Fetch from chat read the inbox conversation for the BEO of \"ZZ Test Child's 7th Birthday\" [number] minute ago",
+          "BEO AI Fill Oto Play Park, Central Floresta Fetch from chat read the inbox conversation for the BEO of \"ZZ Test Child's 7th Birthday\" [number] minute ago",
+          "BEO AI Fill Oto Play Park, Central Floresta Fetch from chat read the inbox conversation for the BEO of \"ZZ Test Child's 7th Birthday\" [number] minutes ago",
+          "BEO AI Fill Oto Play Park, Central Floresta Fetch from chat read the inbox conversation for the BEO of \"ZZ Test Child's 7th Birthday\" [number] minutes ago",
+          "BEO AI Fill Oto Play Park, Central Floresta Fetch from chat read the inbox conversation for the BEO of \"ZZ Test Child's 7th Birthday\" [number] minutes ago"
+        ]
+      },
+      "picture": "11-activity-log-fetch-from-chat-rows.png"
+    },
+    "step9_nothingWrittenWithoutSave": {
+      "afterFetches": {
+        "at": "2026-11-10T21:02:58.753Z",
+        "event": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "title": "ZZ Test Child's 7th Birthday",
+          "eventDate": "2026-11-21",
+          "startTime": "15:00",
+          "numChildren": 15,
+          "numAdults": 7,
+          "childNameIsZz": true,
+          "updatedAt": "2026-11-10T20:59:21.773Z",
+          "inboxConversationId": "01a1c739-f54e-751b-ac5f-1d20612c6bf6",
+          "archivedAt": null
+        },
+        "beo": {
+          "route": "GET /api/events/:id/beo",
+          "status": 200,
+          "numAdults": 7,
+          "updatedAt": "2026-11-10T20:59:21.773Z",
+          "inboxConversationId": "01a1c739-f54e-751b-ac5f-1d20612c6bf6"
+        },
+        "kitchenPlan": {
+          "route": "GET /api/events/:id/beo/kitchen-plan",
+          "status": 200,
+          "cakeMode": "INTERNAL",
+          "cakeTime": "16:00",
+          "updatedAt": "2026-11-10T20:59:21.788Z"
+        },
+        "formAfterReload": {
+          "header": {
+            "aiFill": "AI Fill",
+            "fetchFromChat": "Fetch from chat",
+            "fetchFromChatTitle": "Read the conversation again and review what changed",
+            "fetchFromChatEnabled": true,
+            "fetchBesideAiFill": true
+          },
+          "eventInfo": {
+            "title": "ZZ Test Child's 7th Birthday",
+            "childName": "ZZ Test Child",
+            "numChildren": "15",
+            "numAdults": "7",
+            "startTime": null,
+            "endTime": null
+          },
+          "cake": {
+            "chosen": "internal",
+            "modes": {
+              "none": "outline",
+              "internal": "default",
+              "external": "outline"
+            },
+            "time": "16:00",
+            "setTimeButton": false
+          }
+        }
+      },
+      "final": {
+        "at": "2026-11-10T21:04:16.685Z",
+        "event": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "title": "ZZ Test Child's 7th Birthday",
+          "eventDate": "2026-11-21",
+          "startTime": "15:00",
+          "numChildren": 15,
+          "numAdults": 7,
+          "childNameIsZz": true,
+          "updatedAt": "2026-11-10T20:59:21.773Z",
+          "inboxConversationId": "01a1c739-f54e-751b-ac5f-1d20612c6bf6",
+          "archivedAt": null
+        },
+        "beo": {
+          "route": "GET /api/events/:id/beo",
+          "status": 200,
+          "numAdults": 7,
+          "updatedAt": "2026-11-10T20:59:21.773Z",
+          "inboxConversationId": "01a1c739-f54e-751b-ac5f-1d20612c6bf6"
+        },
+        "kitchenPlan": {
+          "route": "GET /api/events/:id/beo/kitchen-plan",
+          "status": 200,
+          "cakeMode": "INTERNAL",
+          "cakeTime": "16:00",
+          "updatedAt": "2026-11-10T20:59:21.788Z"
+        }
+      },
+      "note": "the event and the kitchen plan last changed at the step-5 Save (20:59:21Z); six fetches after it changed nothing; the form reloaded reads Adults 7, cake 16:00"
+    }
+  },
+  "images": [
+    {
+      "file": "01-book-date-read-from-chat.png",
+      "at": "2026-11-10T20:52:00.426Z",
+      "shows": "Book Date opened on the ZZ TEST thread: the dialog as it read the chat (date, time, kids, adults, child, age), before anything is typed",
+      "namesMasked": 41,
+      "masks": 1
+    },
+    {
+      "file": "02-book-date-fetch-filled-kept-adults.png",
+      "at": "2026-11-10T20:54:49.691Z",
+      "shows": "Book Date after Fetch from chat (fetch1)",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "03-book-date-fetch-nothing-new.png",
+      "at": "2026-11-10T20:56:01.656Z",
+      "shows": "Book Date after Fetch from chat (fetch2)",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "04-date-booked.png",
+      "at": "2026-11-10T20:56:41.480Z",
+      "shows": "After Book date: the note \"tentative in the Events calendar\", Date Booked and Create BEO",
+      "namesMasked": 1,
+      "masks": 1
+    },
+    {
+      "file": "05-beo-header-fetch-beside-ai-fill.png",
+      "at": "2026-11-10T20:58:25.690Z",
+      "shows": "The BEO editor header of the ZZ TEST party booked from the inbox: \"Fetch from chat\" beside AI Fill",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "06-beo-fetch-warning.png",
+      "at": "2026-11-10T20:58:41.056Z",
+      "shows": "Fetch from chat on the BEO form: the warning first, with Cancel and Read the chat",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "07-beo-fetch-changes-listed.png",
+      "at": "2026-11-10T20:58:55.485Z",
+      "shows": "Fetch from chat on the BEO form (fetch1): what the chat brings, row by row",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "08-beo-fetch-no-new-line-reading-flipped.png",
+      "at": "2026-11-10T20:59:50.318Z",
+      "shows": "Fetch from chat on the BEO form (fetch2-no-new-line): what the chat brings, row by row",
+      "namesMasked": 11,
+      "masks": 0
+    },
+    {
+      "file": "09-beo-fetch-after-new-line.png",
+      "at": "2026-11-10T21:01:39.942Z",
+      "shows": "Fetch from chat on the BEO form (fetch4-after-new-line): what the chat brings, row by row",
+      "namesMasked": 2,
+      "masks": 0
+    },
+    {
+      "file": "10-beo-fetch-after-no-cake-line-no-cake-row.png",
+      "at": "2026-11-10T21:02:08.007Z",
+      "shows": "Fetch from chat on the BEO form (fetch5-no-cake): what the chat brings, row by row",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "11-activity-log-fetch-from-chat-rows.png",
+      "at": "2026-11-10T21:03:09.698Z",
+      "shows": "Admin › Activity log for the park, searched \"Fetch from chat\": one row per press, \"Fetch from chat read the inbox conversation for the BEO of …\" (no chat text)",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "12-beo-fetch-same-chat-read-again.png",
+      "at": "2026-11-10T21:04:02.822Z",
+      "shows": "Fetch from chat on the BEO form (fetch7-no-cake-third): what the chat brings, row by row",
+      "namesMasked": 11,
+      "masks": 0
+    }
+  ],
+  "cleanup": {
+    "at": "2026-11-10T21:04:16.765Z",
+    "event": {
+      "id": "01a1c73a-5e1a-74ef-ada8-26b187cca18c",
+      "title": "ZZ Test Child's 7th Birthday",
+      "archive": {
+        "route": "POST /api/admin/events/:id/archive",
+        "status": 200,
+        "archivedAt": "2026-11-10T21:04:17.738Z",
+        "isArchived": true,
+        "error": null
+      },
+      "readBack": {
+        "route": "GET /api/admin/events/:id",
+        "status": 200,
+        "archivedAt": "2026-11-10T21:04:17.738Z",
+        "isArchived": true
+      },
+      "zzTestLiveAtCentralFloresta": []
+    },
+    "conversations": {
+      "F": {
+        "id": "01a1c739-f54e-751b-ac5f-1d20612c6bf6",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T21:04:18.314Z",
+          "event": {
+            "id": "01a1c73a-5e1a-74ef-ada8-26b187cca18c",
+            "archived": true,
+            "statusName": "Tentative"
+          }
+        }
+      }
+    }
+  },
+  "signOut": {
+    "at": "2026-11-10T21:04:28.994Z",
+    "inboxContext": {
+      "inboxSignOut": {
+        "route": "POST /api/auth/sign-out (inbox)",
+        "status": 200
+      },
+      "beoTabAppLogout": {
+        "route": "POST /api/logout (OTO App, the BEO tab)",
+        "status": 200
+      },
+      "launcherSignOut": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      },
+      "readBack": {
+        "inboxMe": 401,
+        "appUser": 401,
+        "launcherMe": 401
+      }
+    },
+    "appContext": {
+      "appLogout": {
+        "route": "POST /api/logout (OTO App)",
+        "status": 200
+      },
+      "launcherSignOut": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      },
+      "readBack": {
+        "appUser": 401,
+        "launcherMe": 401
+      }
+    }
+  }
+}
