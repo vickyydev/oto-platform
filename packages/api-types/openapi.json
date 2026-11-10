@@ -13776,7 +13776,7 @@
     },
     "/branches/{branchId}/menu": {
       "get": {
-        "description": "The branch menu: categories, items and the modifier library",
+        "description": "The branch menu: categories, items and the modifier library. The items the BEO made (sold only inside a party) are left out unless includeBeoOnly is set: the till sells from this read, the Console menu asks for them.",
         "parameters": [
           {
             "schema": {
@@ -13785,6 +13785,15 @@
             },
             "in": "query",
             "name": "includeArchived",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "in": "query",
+            "name": "includeBeoOnly",
             "required": false
           },
           {
@@ -14182,6 +14191,9 @@
                           "active": {
                             "type": "boolean"
                           },
+                          "beoOnly": {
+                            "type": "boolean"
+                          },
                           "translations": {
                             "type": "object",
                             "additionalProperties": {
@@ -14258,6 +14270,7 @@
                           "stockItemId",
                           "sortOrder",
                           "active",
+                          "beoOnly",
                           "translations",
                           "archivedAt",
                           "linkedModifierGroupIds",
@@ -14719,6 +14732,9 @@
                     "type": "string",
                     "format": "uuid",
                     "nullable": true
+                  },
+                  "beoOnly": {
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -14947,6 +14963,9 @@
                     "type": "string",
                     "format": "uuid",
                     "nullable": true
+                  },
+                  "beoOnly": {
+                    "type": "boolean"
                   }
                 },
                 "additionalProperties": false
@@ -16230,6 +16249,112 @@
                     "categoriesCreated",
                     "categoriesUpdated",
                     "categoriesArchived"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/otoapp/party-menu/products": {
+      "post": {
+        "description": "OTO App server only (provisioning key): a new menu item added from the BEO, made a till product of the party's branch in the operator's Party menu category and marked BEO-only — never on the till's selling grids or its F&B menu, found by its code by the party's plan and its kitchen and bar slips. Idempotent on the Idempotency-Key the app sends: the same key and body answer the same product, a different body is refused 409.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "branchId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "station": {
+                    "type": "string",
+                    "enum": [
+                      "kitchen",
+                      "bar"
+                    ]
+                  },
+                  "priceSatang": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10000000,
+                    "nullable": true
+                  },
+                  "free": {
+                    "type": "boolean"
+                  },
+                  "source": {
+                    "type": "object",
+                    "properties": {
+                      "eventId": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                      },
+                      "lineLabel": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      }
+                    },
+                    "required": [
+                      "eventId",
+                      "lineLabel"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "branchId",
+                  "name",
+                  "station",
+                  "priceSatang",
+                  "free",
+                  "source"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "productId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "categoryId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "replayed": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "productId",
+                    "code",
+                    "categoryId",
+                    "replayed"
                   ],
                   "additionalProperties": false
                 }

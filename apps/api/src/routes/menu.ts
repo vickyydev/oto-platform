@@ -120,6 +120,8 @@ const MenuResponseSchema = z.object({
       id: z.string(), label: z.string(), sku: z.string().nullish(), barcode: z.string().nullish(),
     }).passthrough()),
     stockItemId: z.string().uuid().nullable(), sortOrder: z.number().int(), active: z.boolean(),
+    /** SCRUM-828 — made by the BEO, sold only inside a party. Only in an `includeBeoOnly` read. */
+    beoOnly: z.boolean(),
     translations: MenuReadTranslationsSchema.nullable(), archivedAt: MenuTimestampSchema.nullable(),
     linkedModifierGroupIds: z.array(z.string().uuid()),
     stockLinks: z.array(z.object({ variantId: z.string().nullable(), stockItemId: z.string().uuid() }).passthrough()),
@@ -250,9 +252,14 @@ export async function menuRoutes(app: App): Promise<void> {
       config: { permission: 'catalog:menu:read', target: { branchId: 'params.branchId' },
         swaggerTransform: nullableResponseEnumTransform('menu') },
       schema: {
-        description: 'The branch menu: categories, items and the modifier library',
+        description:
+          'The branch menu: categories, items and the modifier library. The items the BEO made (sold only inside a party) are left out unless includeBeoOnly is set: the till sells from this read, the Console menu asks for them.',
         params: BranchParams,
-        querystring: z.object({ includeArchived: z.coerce.boolean().default(false) }),
+        querystring: z.object({
+          includeArchived: z.coerce.boolean().default(false),
+          /** SCRUM-828 — the BEO-only items too (the Console's menu); the till never asks. */
+          includeBeoOnly: z.coerce.boolean().default(false),
+        }),
         response: { 200: MenuResponseSchema },
       },
     },
@@ -263,6 +270,7 @@ export async function menuRoutes(app: App): Promise<void> {
         operatorId: auth.operatorId,
         branchId: req.params.branchId,
         includeArchived: req.query.includeArchived,
+        excludeBeoOnly: !req.query.includeBeoOnly,
       });
       const menu = presentMenu(snapshot);
       // S2-14b — each item's stock links at THIS branch, both ways: the item
@@ -480,6 +488,7 @@ export async function menuRoutes(app: App): Promise<void> {
           variants,
           sortOrder: body.sortOrder,
           active: body.active,
+          beoOnly: body.beoOnly ?? false,
         });
         if (body.modifierGroupIds) {
           await setItemModifierGroups(tx, auth.operatorId, id, body.modifierGroupIds);
@@ -588,6 +597,8 @@ export async function menuRoutes(app: App): Promise<void> {
             ...(variants !== null ? { variants } : {}),
             ...(body.sortOrder !== undefined ? { sortOrder: body.sortOrder } : {}),
             ...(body.active !== undefined ? { active: body.active } : {}),
+            // SCRUM-828 — the Console's "BEO only" switch.
+            ...(body.beoOnly !== undefined ? { beoOnly: body.beoOnly } : {}),
           })
           .where(eq(product.id, before.id))
           .returning();

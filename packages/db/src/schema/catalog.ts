@@ -331,6 +331,16 @@ export const product = pos.table(
     sortOrder: integer('sort_order').notNull().default(0),
     /** False = withdrawn from the sell surface but still on the menu and in past orders. */
     active: boolean('active').notNull().default(true),
+    /**
+     * SCRUM-828 — a product the BEO created, sold only inside a party: the
+     * special cake or the dish one family asked for, added from the OTO App's
+     * BEO form into the "Party menu" category. Never on the till's selling
+     * grids or its F&B menu (`GET /branches/:branchId/menu` leaves it out
+     * unless the Console asks for it); the party's plan and its kitchen and
+     * bar slips find it by its code like any other item. The Console shows it
+     * as "BEO only" and can turn the flag off.
+     */
+    beoOnly: boolean('beo_only').notNull().default(false),
     ...timestamps,
     ...archivedAt,
   },

@@ -1,0 +1,13 @@
+-- SCRUM-828 (a new menu item added from the BEO, sold only inside a party) -
+-- expand-only: one new column with a constant default. Nothing existing is
+-- rewritten or dropped, and a release that does not know it never reads it.
+--
+--   pos.product.beo_only   boolean, not null, default false
+--       true on a product the OTO App's BEO form created in the "Party menu"
+--       category (a special cake, a dish one family asked for). The till's
+--       menu read leaves such a product out of its selling grids and its F&B
+--       menu; the party's plan and its kitchen and bar slips still find it by
+--       its code. Every existing product reads false, so every till sells
+--       exactly what it sold before. PostgreSQL adds a column with a constant
+--       default without rewriting the table.
+ALTER TABLE "pos"."product" ADD COLUMN "beo_only" boolean DEFAULT false NOT NULL;

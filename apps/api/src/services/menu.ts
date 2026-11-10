@@ -333,6 +333,12 @@ export interface MenuReadOptions {
   /** Items for this branch, plus any that belong to no branch in particular. */
   branchId: string;
   includeArchived?: boolean;
+  /**
+   * SCRUM-828 — leave out the products the BEO made (`beo_only`): the till's
+   * read, whose selling grids and F&B menu never show them. The Console's menu
+   * asks for them, and the export and import read them as any other row.
+   */
+  excludeBeoOnly?: boolean;
 }
 
 export interface MenuSnapshot {
@@ -365,13 +371,14 @@ export async function readMenu(db: Db, opts: MenuReadOptions): Promise<MenuSnaps
     .orderBy(asc(productCategory.sortOrder), asc(productCategory.name));
 
   const branchScope = or(eq(product.branchId, opts.branchId), isNull(product.branchId));
+  const sold = opts.excludeBeoOnly ? eq(product.beoOnly, false) : undefined;
   const items = await db
     .select()
     .from(product)
     .where(
       opts.includeArchived
-        ? and(eq(product.operatorId, opts.operatorId), branchScope)
-        : and(eq(product.operatorId, opts.operatorId), branchScope, isNull(product.archivedAt)),
+        ? and(eq(product.operatorId, opts.operatorId), branchScope, sold)
+        : and(eq(product.operatorId, opts.operatorId), branchScope, isNull(product.archivedAt), sold),
     )
     .orderBy(asc(product.sortOrder), asc(product.name));
 
@@ -485,6 +492,8 @@ export function presentMenu(snapshot: MenuSnapshot) {
       stockItemId: i.stockItemId,
       sortOrder: i.sortOrder,
       active: i.active,
+      /** SCRUM-828 — made by the BEO and sold only inside a party ("BEO only" in the Console). */
+      beoOnly: i.beoOnly,
       translations: i.translations,
       archivedAt: i.archivedAt,
       /** The shared library groups this item asks, in order (`lib/menu.ts:120-136`). */

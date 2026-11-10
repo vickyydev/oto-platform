@@ -117,6 +117,12 @@ const MACHINE_CALLERS: Array<{ prefix: string; exact?: boolean; except?: string;
       "the OTO App outbox pump (server/lib/platformLifecycle.ts, SCRUM-769), posting a restrict event's ID the same way when a leaver's login goes to pay only",
   },
   {
+    prefix: '/otoapp/party-menu/products',
+    exact: true,
+    caller:
+      "the OTO App's server (server/lib/partyMenuItem.ts, SCRUM-828), when staff add a new item from the BEO's food lines, with the operator-bound provision key and the press's Idempotency-Key",
+  },
+  {
     prefix: '/console/deploy-events',
     exact: true,
     caller:

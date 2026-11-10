@@ -852,6 +852,15 @@ const OUTSIDE_THE_REPLAY_STORE = [
   'POST /kiosk/pairing/expire [credential:kiosk-pairing]',
   'POST /me/staff-token [secretResponse]',
   /**
+   * SCRUM-828 — the OTO App's SERVER making a BEO-only till product for a new
+   * item added from the BEO. Its principal is a service key, not a session,
+   * so the replay store cannot own its key; the service honours the
+   * Idempotency-Key itself: the product's id is derived from the operator and
+   * the key, so the same press is the same product, and a different body under
+   * the key is refused 409 against the digest its creation's audit row holds.
+   */
+  'POST /otoapp/party-menu/products [credential:otoapp-provision]',
+  /**
    * S2-10a — what the card terminal did, reported by the box that drove it.
    *
    * On this list for the same reason `POST /box/v1/print-jobs/:id/result` is:

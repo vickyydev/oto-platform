@@ -152,6 +152,8 @@ describe('SCRUM-621 catalogue response contracts', () => {
         linkedModifierGroupIds: [groupId], stockLinks: [],
         // SCRUM-799 — the shelf an item takes stock from; this add-on takes from none.
         stockShareItemId: null,
+        // SCRUM-828 — made by the BEO and sold only inside a party; this add-on is not.
+        beoOnly: false,
       });
     };
     await assertMenu();

@@ -6881,11 +6881,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The branch menu: categories, items and the modifier library */
+        /** @description The branch menu: categories, items and the modifier library. The items the BEO made (sold only inside a party) are left out unless includeBeoOnly is set: the till sells from this read, the Console menu asks for them. */
         get: {
             parameters: {
                 query?: {
                     includeArchived?: boolean;
+                    includeBeoOnly?: boolean;
                 };
                 header?: never;
                 path: {
@@ -7010,6 +7011,7 @@ export interface paths {
                                 stockItemId: string | null;
                                 sortOrder: number;
                                 active: boolean;
+                                beoOnly: boolean;
                                 translations: {
                                     [key: string]: {
                                         name?: string;
@@ -7259,6 +7261,7 @@ export interface paths {
                         }[];
                         /** Format: uuid */
                         stockShareItemId?: string | null;
+                        beoOnly?: boolean;
                     };
                 };
             };
@@ -7378,6 +7381,7 @@ export interface paths {
                         }[];
                         /** Format: uuid */
                         stockShareItemId?: string | null;
+                        beoOnly?: boolean;
                     };
                 };
             };
@@ -7958,6 +7962,65 @@ export interface paths {
                             categoriesCreated: number;
                             categoriesUpdated: number;
                             categoriesArchived: number;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/otoapp/party-menu/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description OTO App server only (provisioning key): a new menu item added from the BEO, made a till product of the party's branch in the operator's Party menu category and marked BEO-only — never on the till's selling grids or its F&B menu, found by its code by the party's plan and its kitchen and bar slips. Idempotent on the Idempotency-Key the app sends: the same key and body answer the same product, a different body is refused 409. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        branchId: string;
+                        name: string;
+                        /** @enum {string} */
+                        station: "kitchen" | "bar";
+                        priceSatang: number | null;
+                        free: boolean;
+                        source: {
+                            eventId: string;
+                            lineLabel: string;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            productId: string;
+                            code: string;
+                            /** Format: uuid */
+                            categoryId: string;
+                            replayed: boolean;
                         };
                     };
                 };

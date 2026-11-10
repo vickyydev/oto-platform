@@ -86,5 +86,6 @@ export * from './ui-preferences';
 export * from './station-readiness';
 export * from './screen-presence';
 export * from './party-slips';
+export * from './party-menu';
 
 export { trustedBoxBridgeOrigin } from './box-bridge-origin';

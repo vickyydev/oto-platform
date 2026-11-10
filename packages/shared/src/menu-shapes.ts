@@ -160,6 +160,12 @@ export const MenuItemBodySchema = z.object({
    * cannot also take another's.
    */
   stockShareItemId: z.string().uuid().nullable().optional(),
+  /**
+   * SCRUM-828 — sold only inside a party: an item the BEO created, kept off
+   * the till's selling grids and its F&B menu. Absent leaves it as it is (a
+   * new item is not BEO-only); the Console's item form turns it off or on.
+   */
+  beoOnly: z.boolean().optional(),
 });
 export type MenuItemBody = z.infer<typeof MenuItemBodySchema>;
 
