@@ -46,13 +46,22 @@ describe('migration 0113', () => {
     expect(statements).toEqual(['ALTER TABLE "pos"."product" ADD COLUMN "beo_only" boolean DEFAULT false NOT NULL;']);
   });
 
-  it('comes after 0109 in the journal, later than it', () => {
+  /**
+   * Drizzle's migrator applies a migration only when its journal time is
+   * later than the last one applied, so a time earlier than the entry before
+   * it is skipped on a database that already holds that entry. Compared with
+   * whichever entry comes immediately before it, not a fixed one: another
+   * change's migration may land ahead of this one, and this one's time must
+   * then still be the later.
+   */
+  it('comes after 0109 in the journal, later than the entry immediately before it', () => {
     const journal = JSON.parse(readFileSync(join(MIGRATIONS, 'meta', '_journal.json'), 'utf8')) as {
       entries: Array<{ idx: number; when: number; tag: string }>;
     };
     const at = journal.entries.findIndex((e) => e.tag === '0113_product_beo_only');
-    const before = journal.entries.find((e) => e.tag === '0109_party_slips')!;
-    expect(at).toBeGreaterThan(journal.entries.indexOf(before));
-    expect(journal.entries[at]!.when).toBeGreaterThan(before.when);
+    const slips = journal.entries.find((e) => e.tag === '0109_party_slips')!;
+    expect(at).toBeGreaterThan(journal.entries.indexOf(slips));
+    const before = journal.entries[at - 1]!;
+    expect(journal.entries[at]!.when, `after ${before.tag}`).toBeGreaterThan(before.when);
   });
 });
