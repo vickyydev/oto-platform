@@ -14,10 +14,11 @@
  *   - the routing rules for the IT Brief's defaults, every person BLANK
  *     (`primary_kind = 'team'`, owner Q20), plus one catch-all per team so
  *     routing can never leave a conversation unowned;
- *   - the sixteen template keys (`handover_general` joined with SCRUM-590,
+ *   - the seventeen template keys (`handover_general` joined with SCRUM-590,
  *     `follow_up` with the SCRUM-220 test night, four `closing_*` lines
  *     with the SCRUM-220 playbook, `closing_booking` with SCRUM-677,
- *     `opener_birthday_advice` with SCRUM-823) in
+ *     `opener_birthday_advice` and `opener_birthday_advice_park_known` with
+ *     SCRUM-823) in
  *     English, Thai and Russian, each language in its own words but for a
  *     key still waiting for its translator — and the one UPDATE this file
  *     makes: a TH or RU row that still carries the English source marked
@@ -175,6 +176,11 @@ export const INBOX_TEMPLATE_BODIES: Record<InboxTemplateKey, string> = {
   // asked on it, so the family's reply is read as their answer.
   opener_birthday_advice:
     "Amazing, thank you! We'd love to organize a party for you 🎈 What date are you thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong? Our birthday manager will be with you shortly.",
+  // The same message where the park is already known — the family named one,
+  // or the thread has its park — so the park is never asked again: the date
+  // and roughly how many people, then the warm line.
+  opener_birthday_advice_park_known:
+    "Amazing, thank you! We'd love to organize a party for you 🎈 What date are you thinking of, and roughly how many people? Our birthday manager will be with you shortly.",
 };
 
 /**
@@ -225,6 +231,8 @@ export const INBOX_TEMPLATE_TRANSLATIONS: Record<TranslatedLanguage, Record<Tran
     closing_unclear: 'ขอบคุณสำหรับข้อความนะคะ ทีมงานของเราจะมาดูแลคุณในอีกไม่นานค่ะ',
     opener_birthday_advice:
       'ยินดีมากเลยค่ะ เรายินดีจัดปาร์ตี้ให้นะคะ 🎈 สนใจจัดวันไหน ประมาณกี่ท่าน และสะดวกสาขาไหนคะ Central Floresta หรือ Robinson Chalong ผู้จัดการฝ่ายงานวันเกิดของเราจะมาดูแลคุณในอีกไม่นานค่ะ',
+    opener_birthday_advice_park_known:
+      'ยินดีมากเลยค่ะ เรายินดีจัดปาร์ตี้ให้นะคะ 🎈 สนใจจัดวันไหน และประมาณกี่ท่านคะ ผู้จัดการฝ่ายงานวันเกิดของเราจะมาดูแลคุณในอีกไม่นานค่ะ',
   },
   ru: {
     welcome: 'Здравствуйте! 👋 Добро пожаловать в OTO Play Park. Чем мы можем вам помочь?',
@@ -248,6 +256,8 @@ export const INBOX_TEMPLATE_TRANSLATIONS: Record<TranslatedLanguage, Record<Tran
     closing_unclear: 'Спасибо за сообщение! Сотрудник нашей команды скоро свяжется с вами.',
     opener_birthday_advice:
       'Замечательно, спасибо! Мы с радостью организуем для вас праздник 🎈 Какую дату вы рассматриваете, примерно сколько будет гостей и какой филиал вам удобнее — Central Floresta или Robinson Chalong? Наш менеджер по праздникам скоро свяжется с вами.',
+    opener_birthday_advice_park_known:
+      'Замечательно, спасибо! Мы с радостью организуем для вас праздник 🎈 Какую дату вы рассматриваете и примерно сколько будет гостей? Наш менеджер по праздникам скоро свяжется с вами.',
   },
 };
 

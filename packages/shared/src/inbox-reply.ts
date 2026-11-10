@@ -44,7 +44,8 @@ import { InboxChannelSchema, InboxMessageSchema, InboxTemplateSchema } from './i
  * `opener_birthday_advice` (SCRUM-823, `0114_inbox_advice_opener`) is a
  * birthday advice hand-over's one message when nobody asked the party's
  * basics yet: the playbook's opener question, then the birthday manager's
- * warm line.
+ * warm line; `opener_birthday_advice_park_known` is that message where the
+ * park is already known (the date and roughly how many people only).
  */
 export const INBOX_TEMPLATE_KEY_NAMES = [
   'welcome',
@@ -63,6 +64,7 @@ export const INBOX_TEMPLATE_KEY_NAMES = [
   'closing_unclear',
   'closing_booking',
   'opener_birthday_advice',
+  'opener_birthday_advice_park_known',
 ] as const;
 export type InboxTemplateKeyName = (typeof INBOX_TEMPLATE_KEY_NAMES)[number];
 

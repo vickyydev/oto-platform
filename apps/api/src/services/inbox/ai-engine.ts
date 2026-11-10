@@ -1,6 +1,5 @@
 import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import {
-  ADVICE_OPENER_SLOTS,
   AI_INTENTS,
   AI_REPLY_LANGUAGES,
   BY_BRANCH,
@@ -66,9 +65,9 @@ import { withTx, type Exec, type Tx } from '../tx';
 import { assistantSettingOverridesOf } from '../assistant-settings';
 import type { InboxAiRuntime } from './ai-runtime';
 import {
-  ADVICE_OPENER_KEY,
   PLAN_CLOSING_KEYS,
   WITHHELD_REPLY_REASONS,
+  adviceOpenerSlotsOf,
   closingKeysWithOpener,
   destinationOf,
   isUnclearHandover,
@@ -377,6 +376,11 @@ function burstOf(episode: readonly EpisodeRow[], triggerMessageId: string): Epis
   return episode.slice(burstStart(episode, triggerMessageId)).filter((m) => m.from === 'customer');
 }
 
+/** SCRUM-823 review: every line the customer wrote this episode, oldest first, as the gate reads them (`EpisodeState.customerLines`). */
+function customerLinesOf(episode: readonly EpisodeRow[]): string[] {
+  return episode.flatMap((m) => (m.from === 'customer' && m.text !== null ? [m.text] : []));
+}
+
 /**
  * Nothing earlier in the episode waits for a person (SCRUM-220 spam tidy): no
  * customer line before the burst that the assistant did not answer — a line
@@ -650,8 +654,10 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
   const applicable = (knowledge.rules ?? []).filter((r) => r.branchId === null || r.branchId === conv.branchId);
   // SCRUM-831: the episode's questions, each open one read against the reply after it.
   const memory = await loadOpenQuestionMemory(db, conv, eligible.episodeStart, episode, burst, now);
-  // SCRUM-823: the gate reads them too — the opener beside an advice hand-over is asked once.
-  const episodeState: EpisodeState = { ...facts.state, questions: memory.questions };
+  // SCRUM-823: the gate reads them too — the opener beside an advice hand-over
+  // is asked once — and every line the family wrote this episode, so it never
+  // asks a date, a headcount or a park they gave in an earlier message.
+  const episodeState: EpisodeState = { ...facts.state, questions: memory.questions, customerLines: customerLinesOf(episode) };
   const promptInput: PromptInput = {
     knowledge: knowledge.knowledge,
     episode,
@@ -1394,10 +1400,11 @@ async function composeReply(exec: Exec, conv: ConversationRow, account: AccountR
   let holding: HoldingLine = NO_LINE;
   if (handover && !handover.silenced) {
     if (handover.plan.brochure) brochure = await brochureFiles(exec, conv, account, v.language);
-    // SCRUM-823: a birthday advice hand-over the gate marked sends the opener
-    // and the birthday manager's warm line as one message, when its template
-    // is usable here; else the closing line, as before.
-    const opener = v.action === 'handover' && v.adviceOpener === true;
+    // SCRUM-823: a birthday advice hand-over the gate marked sends its opener
+    // (the whole one, or the one without the park) and the birthday manager's
+    // warm line as one message, when its template is usable here; else the
+    // closing line, as before.
+    const opener = v.action === 'handover' ? (v.adviceOpener ?? null) : null;
     holding = await closingLine(
       exec,
       conv,
@@ -1418,22 +1425,24 @@ async function composeReply(exec: Exec, conv: ConversationRow, account: AccountR
 }
 
 /**
- * SCRUM-823: the opener's line, when the hand-over sent it (the
- * `opener_birthday_advice` template carried the holding line): the line it
- * went out on and the slots it asks — the playbook's three, and anything else
- * its words ask (an edited template) — for the open-question memory
- * (SCRUM-831), so the family's reply is read as the answer. Null when the
- * closing line went instead, or the line asks nothing.
+ * SCRUM-823: the opener's line, when the hand-over sent it (an opener
+ * template — `opener_birthday_advice`, or `opener_birthday_advice_park_known`
+ * — carried the holding line): the line it went out on and the slots it asks
+ * — that opener's own, and anything else its words ask (an edited template) —
+ * for the open-question memory (SCRUM-831), so the family's reply is read as
+ * the answer. Null when the closing line went instead, or the line asks
+ * nothing.
  */
 function openerAsked(
   holding: HoldingLine,
   items: readonly LineItem[],
   messageIds: readonly string[],
 ): { lineId: string; slots: AiAskedSlot[] } | null {
-  if (holding.templateKey !== ADVICE_OPENER_KEY || holding.templateId === null) return null;
+  const declared = adviceOpenerSlotsOf(holding.templateKey);
+  if (declared === null || holding.templateId === null) return null;
   const at = items.findIndex((l) => l.templateId === holding.templateId && l.body);
   if (at < 0 || messageIds[at] === undefined) return null;
-  const slots = askedSlotsOf(ADVICE_OPENER_SLOTS, [items[at]!.body!]);
+  const slots = askedSlotsOf(declared, [items[at]!.body!]);
   return slots.length > 0 ? { lineId: messageIds[at]!, slots } : null;
 }
 

@@ -91674,7 +91674,8 @@
                       "closing_branch",
                       "closing_unclear",
                       "closing_booking",
-                      "opener_birthday_advice"
+                      "opener_birthday_advice",
+                      "opener_birthday_advice_park_known"
                     ]
                   },
                   "language": {
@@ -94193,7 +94194,8 @@
                 "closing_branch",
                 "closing_unclear",
                 "closing_booking",
-                "opener_birthday_advice"
+                "opener_birthday_advice",
+                "opener_birthday_advice_park_known"
               ]
             },
             "in": "query",

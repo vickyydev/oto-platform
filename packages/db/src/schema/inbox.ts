@@ -176,7 +176,9 @@ export type RoutingPrimaryKind = (typeof ROUTING_PRIMARY_KINDS)[number];
  * birthday advice hand-over's ONE message when the family asked for a party
  * and nobody has asked the basics yet: the playbook's opener question (the
  * date, roughly how many people, which park), then the birthday manager's
- * warm line.
+ * warm line; `opener_birthday_advice_park_known` (the same migration) is that
+ * message where the park is already known, so it asks the date and roughly
+ * how many people only.
  */
 export const INBOX_TEMPLATE_KEYS = [
   'welcome',
@@ -195,6 +197,7 @@ export const INBOX_TEMPLATE_KEYS = [
   'closing_unclear',
   'closing_booking',
   'opener_birthday_advice',
+  'opener_birthday_advice_park_known',
 ] as const;
 export type InboxTemplateKey = (typeof INBOX_TEMPLATE_KEYS)[number];
 

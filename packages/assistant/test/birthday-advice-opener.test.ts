@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
   ADVICE_OPENER_SLOTS,
+  ADVICE_OPENER_SLOTS_OF,
   BIRTHDAY_ADVICE_RULE,
   adviceOpenerOn,
   asksForParty,
+  namesOnePark,
   namesPartyBasics,
+  namesPartyDayOrCount,
   openerAskedBefore,
+  type AdviceOpener,
 } from '../src/advice';
 import type { AiDecision } from '../src/decision';
 import { applyGates, type EpisodeQuestion, type EpisodeState, type GateVerdict } from '../src/gate';
@@ -71,12 +75,12 @@ const GAP: Record<'en' | 'ru' | 'th', { c: string; c2: string }> = {
 const STAGING_A = 'Which branch would you recommend for a party of 12 kids?';
 const STAGING_D = 'Посоветуйте, какой филиал лучше для 10 детей?';
 
-const expectOpener = (v: GateVerdict, what: string) => {
+const expectOpener = (v: GateVerdict, what: string, opener: AdviceOpener = 'full') => {
   expect(v.action, what).toBe('handover');
   if (v.action !== 'handover') return;
   expect(v.plan, what).toEqual(BIRTHDAYS_PLAN);
   expect(v.intents, what).toContain('birthday_advice');
-  expect(v.adviceOpener, what).toBe(true);
+  expect(v.adviceOpener, what).toBe(opener);
 };
 
 const expectWarmLineOnly = (v: GateVerdict, what: string) => {
@@ -176,24 +180,38 @@ describe('SCRUM-823: the opener is asked once, and never over what the family sa
     expectOpener(gate(handedOverAsAdvice('en', false), { ...BIRTHDAYS, earlierIntents: ['greeting'], aiAnswers: 1 }, [GAP.en.c]), 'after a greeting');
   });
 
-  it('a burst that already says a date, a day, a headcount or the park: the warm line alone (one fixed line cannot skip it)', () => {
+  it('a burst that already says a date, a day or a headcount: the warm line alone (one fixed line cannot skip it)', () => {
     for (const line of [
       'We want a birthday party for our daughter on 5 December. What would you suggest?',
       'We want a birthday party for our daughter this Saturday. What would you suggest?',
       'We want a birthday party for our daughter tomorrow. What would you suggest?',
       'We want a birthday party for about 15 kids. What would you suggest?',
-      'We want a birthday party at Central Floresta. Which package would you recommend?',
       'Хотим отметить день рождения в субботу. Что посоветуете?',
       'Хотим день рождения на 20 человек. Что посоветуете?',
       'อยากจัดวันเกิดพรุ่งนี้ค่ะ แนะนำอะไรดีคะ',
-      'อยากจัดวันเกิดที่ Central ค่ะ แนะนำแพ็กเกจไหนคะ',
       'อยากจัดวันเกิด เด็ก 12 คนค่ะ แนะนำอะไรดีคะ',
     ]) {
       expect(namesPartyBasics([line]), line).toBe(true);
+      expect(namesPartyDayOrCount([line]), line).toBe(true);
       expectWarmLineOnly(gate(handedOverAsAdvice('en', true), BIRTHDAYS, [line]), line);
     }
+  });
+
+  it('a burst that names the park: the opener without the park, never the park asked again', () => {
+    for (const line of [
+      'We want a birthday party at Central Floresta. Which package would you recommend?',
+      'อยากจัดวันเกิดที่ Central ค่ะ แนะนำแพ็กเกจไหนคะ',
+      'Хотим день рождения в Robinson Chalong. Что посоветуете?',
+    ]) {
+      expect(namesPartyBasics([line]), line).toBe(true);
+      expect(namesPartyDayOrCount([line]), line).toBe(false);
+      expect(namesOnePark([line]), line).toBe(true);
+      expectOpener(gate(handedOverAsAdvice('en', true), BIRTHDAYS, [line]), line, 'park_known');
+    }
     // The park the model read in the burst counts too.
-    expectWarmLineOnly(gate({ ...handedOverAsAdvice('en', true), branchNamed: 'chalong' }, BIRTHDAYS, [GAP.en.c2]), 'branchNamed');
+    expectOpener(gate({ ...handedOverAsAdvice('en', true), branchNamed: 'chalong' }, BIRTHDAYS, [GAP.en.c2]), 'branchNamed', 'park_known');
+    // Both parks named is a choice, not a park: the whole opener.
+    expect(namesOnePark(['Central Floresta or Robinson Chalong, which is better for a birthday party?'])).toBe(false);
   });
 
   it('the model read the basics in (birthday_details beside the advice): the warm line alone', () => {
@@ -206,6 +224,58 @@ describe('SCRUM-823: the opener is asked once, and never over what the family sa
       expect(asksForParty([line]), line).toBe(false);
       expectWarmLineOnly(gate(handedOverAsAdvice('en', false), BIRTHDAYS, [line]), line);
     }
+  });
+});
+
+describe('SCRUM-823 review: what the family said earlier in the episode, and the thread’s own park', () => {
+  /** The episode's customer lines, as the engine gives them: the earlier bursts, then this one. */
+  const said = (earlier: readonly string[], burst: string): Partial<EpisodeState> => ({ customerLines: [...earlier, burst] });
+
+  it('a park named in an earlier message: the opener without the park (the review probe: tickets at Central, then the party)', () => {
+    const earlier = ['How much are tickets at Central Floresta?'];
+    for (const withParty of [false, true]) {
+      const burst = withParty ? GAP.en.c2 : "We'd also like a birthday party for our son. What would you suggest?";
+      expectOpener(gate(handedOverAsAdvice('en', withParty), { ...GENERAL, ...said(earlier, burst) }, [burst]), burst, 'park_known');
+    }
+    // The routing set the thread's park off that question too: the same opener.
+    expectOpener(gate(handedOverAsAdvice('en', true), { ...GENERAL, threadHasBranch: true, ...said(earlier, GAP.en.c2) }, [GAP.en.c2]), 'and bound', 'park_known');
+  });
+
+  it('a date, a day or a headcount given in an earlier message: the warm line alone, nothing asked twice', () => {
+    for (const earlier of [
+      'Are you open on 14 December?',
+      'Do you open early this Saturday?',
+      'How much is it for 3 kids and 2 adults?',
+      'Вы работаете 14 декабря?',
+      'เสาร์นี้เปิดกี่โมงคะ',
+    ]) {
+      expect(namesPartyDayOrCount([earlier]), earlier).toBe(true);
+      expectWarmLineOnly(gate(handedOverAsAdvice('en', true), { ...GENERAL, ...said([earlier], GAP.en.c2) }, [GAP.en.c2]), earlier);
+      // On a thread with its own park too: the date or the count rules first.
+      expectWarmLineOnly(gate(handedOverAsAdvice('en', true), { ...BIRTHDAYS, threadHasBranch: true, ...said([earlier], GAP.en.c2) }, [GAP.en.c2]), earlier);
+    }
+  });
+
+  it('a thread with its own park (a park’s number) and nothing said: the opener without the park, in every language', () => {
+    for (const lang of ['en', 'ru', 'th'] as const) {
+      for (const withParty of [false, true]) {
+        const line = withParty ? GAP[lang].c2 : GAP[lang].c;
+        const v = gate(handedOverAsAdvice(lang, withParty), { ...BIRTHDAYS, threadHasBranch: true, ...said([], line) }, [line]);
+        expectOpener(v, line, 'park_known');
+        expect(v.action === 'handover' && v.language, line).toBe(lang);
+      }
+    }
+  });
+
+  it('earlier lines that say none of the basics change nothing: the whole opener on a thread with no park', () => {
+    const earlier = ['Hello!', 'Do you have parking?', 'วันนี้อยากสอบถามค่ะ'];
+    expectOpener(gate(handedOverAsAdvice('en', false), { ...BIRTHDAYS, ...said(earlier, GAP.en.c) }, [GAP.en.c]), 'nothing said');
+    expectOpener(gate(handedOverAsAdvice('en', true), { ...BIRTHDAYS, ...said(earlier, GAP.en.c2) }, [GAP.en.c2]), 'nothing said, party');
+  });
+
+  it('each opener asks its own slots: the park only where it is not known', () => {
+    expect(ADVICE_OPENER_SLOTS_OF.full).toEqual(ADVICE_OPENER_SLOTS);
+    expect(ADVICE_OPENER_SLOTS_OF.park_known).toEqual(['date', 'guests_count']);
   });
 });
 

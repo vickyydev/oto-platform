@@ -1,7 +1,11 @@
 import {
+  ADVICE_OPENERS,
+  ADVICE_OPENER_SLOTS_OF,
   BY_BRANCH,
   INTENT_TABLE,
   resolvePlan,
+  type AdviceOpener,
+  type AiAskedSlot,
   type AiHandoverPlan,
   type AiIntent,
   type AiPlanRef,
@@ -97,13 +101,38 @@ export const PLAN_CLOSING_KEYS: ReadonlySet<InboxTemplateKey> = new Set<InboxTem
 export const ADVICE_OPENER_KEY = 'opener_birthday_advice' satisfies InboxTemplateKey;
 
 /**
+ * The same message where the park is already known (the gate's `park_known`
+ * opener: the family named one, the model read one, or the thread has its
+ * park): the date and roughly how many people, then the warm line. Its own
+ * rung, never the whole opener's fallback: where it is not usable the ladder
+ * goes on to `closing_birthday`, so the park is never asked again.
+ */
+export const ADVICE_OPENER_PARK_KNOWN_KEY = 'opener_birthday_advice_park_known' satisfies InboxTemplateKey;
+
+/** Each opener's template (`@oto/assistant` `AdviceOpener`). */
+export const ADVICE_OPENER_KEYS: Readonly<Record<AdviceOpener, InboxTemplateKey>> = {
+  full: ADVICE_OPENER_KEY,
+  park_known: ADVICE_OPENER_PARK_KNOWN_KEY,
+};
+
+/**
+ * What an opener's line asks, by the template that carried it: the opener's
+ * slots (`ADVICE_OPENER_SLOTS_OF`), for the open-question memory (SCRUM-831).
+ * Null for any other template.
+ */
+export function adviceOpenerSlotsOf(key: InboxTemplateKey | null): readonly AiAskedSlot[] | null {
+  const opener = ADVICE_OPENERS.find((o) => ADVICE_OPENER_KEYS[o] === key);
+  return opener === undefined ? null : ADVICE_OPENER_SLOTS_OF[opener];
+}
+
+/**
  * The closing keys a hand-over tries once the opener is read: the opener's
- * own line first when the verdict carries it and the thread ends in Birthdays
+ * own line first when the verdict carries one and the thread ends in Birthdays
  * & Events, then the hand-over's usual ladder (`closingKeysOf`).
  */
-export function closingKeysWithOpener(opener: boolean, h: ClosingHandover, destination: InboxCategory): InboxTemplateKey[] {
+export function closingKeysWithOpener(opener: AdviceOpener | null, h: ClosingHandover, destination: InboxCategory): InboxTemplateKey[] {
   const keys = closingKeysOf(h, destination);
-  return opener && destination === 'birthdays' && !h.branchLine ? [ADVICE_OPENER_KEY, ...keys] : keys;
+  return opener !== null && destination === 'birthdays' && !h.branchLine ? [ADVICE_OPENER_KEYS[opener], ...keys] : keys;
 }
 
 /** What the closing ladder reads of a hand-over (`ai-engine.ts` `Handover`). */

@@ -1,8 +1,8 @@
 import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { ADVICE_OPENER_SLOTS, slotsAskedIn, type AiDecision } from '@oto/assistant';
-import { schema as s } from '@oto/db';
-import { ADVICE_OPENER_KEY } from '../src/services/inbox/ai-destination';
+import { ADVICE_OPENER_SLOTS, ADVICE_OPENER_SLOTS_OF, slotsAskedIn, type AdviceOpener, type AiDecision } from '@oto/assistant';
+import { schema as s, type InboxTemplateKey } from '@oto/db';
+import { ADVICE_OPENER_KEY, ADVICE_OPENER_KEYS, ADVICE_OPENER_PARK_KNOWN_KEY } from '../src/services/inbox/ai-destination';
 import { ADMIN, signInAs, teardownAll } from './helpers';
 import {
   aiLines,
@@ -31,14 +31,17 @@ import {
  * embedded database and the `FakeAssistantClient` scripted with the staging
  * readings:
  *
- *   - ONE message goes, the `opener_birthday_advice` template: the opener's
- *     question, then the birthday manager's warm line, in the thread's
- *     language — never two bubbles, never the model's words;
+ *   - ONE message goes, an opener template: the opener's question, then the
+ *     birthday manager's warm line, in the thread's language — never two
+ *     bubbles, never the model's words. The whole opener on a thread with no
+ *     park (`opener_birthday_advice`); on a park's own number, or once the
+ *     family named a park, the one without the park
+ *     (`opener_birthday_advice_park_known`);
  *   - the hand-over is recorded with `birthday_advice`, the thread is in the
  *     Birthdays & Events queue, and the manager's notice is queued;
- *   - the opener's slots (date, roughly how many people, which park) are
- *     recorded open on that line, so the family's reply is read as the
- *     answer once the assistant has the thread again;
+ *   - the opener's slots are recorded open on that line, so the family's
+ *     reply is read as the answer once the assistant has the thread again;
+ *   - a date or a headcount said in an earlier message: the warm line alone;
  *   - a second advice question after it gets the warm line alone;
  *   - an opener template that is not usable falls back to the warm line, and
  *     records nothing as asked.
@@ -47,8 +50,9 @@ import {
  */
 
 let w: AiWorld;
-let birthdays: string; // a Birthdays & Events number at Central, live
-let general: string; // a general number at Central, live
+let birthdays: string; // a Birthdays & Events main number with no park, live
+let birthdaysCentral: string; // a Birthdays & Events number of Central's (the staging simulator's shape), live
+let general: string; // a general main number with no park, live
 let adminCookie: string;
 let agentCookie: string;
 
@@ -65,8 +69,9 @@ beforeAll(async () => {
   w = await aiWorld();
   // Due at once: each tick decides the burst just written.
   w.ctx.app.inboxAi.config.debounceMs = 0;
-  birthdays = await simAccount(w, { branchId: w.central, defaultCategory: 'birthdays' });
-  general = await simAccount(w, { branchId: w.central });
+  birthdays = await simAccount(w, { branchId: null, defaultCategory: 'birthdays' });
+  birthdaysCentral = await simAccount(w, { branchId: w.central, defaultCategory: 'birthdays' });
+  general = await simAccount(w, { branchId: null });
   const birthdaysTeam = await teamOf(w, 'birthdays');
   [, agentCookie] = await staff(w, '+66810008234', 'ZZ TEST Opener Agent', 'inbox_agent', {
     scopeType: 'department',
@@ -98,7 +103,10 @@ async function turn(account: string, phone: string, text: string, d: AiDecision)
   return { conv, sweep };
 }
 
-async function templateRow(key: 'opener_birthday_advice' | 'closing_birthday', language: 'en' | 'ru' | 'th') {
+/** Past the whole second the last tick stamped its lines in: a provider stamps the next line after them. */
+const nextSecond = () => new Promise((done) => setTimeout(done, 1_700));
+
+async function templateRow(key: InboxTemplateKey, language: 'en' | 'ru' | 'th') {
   const [row] = await w.ctx.db
     .select()
     .from(s.template)
@@ -128,6 +136,16 @@ const questionsOf = (conversationId: string) =>
 const noticesOf = (conversationId: string) =>
   w.ctx.db.select().from(s.handoverNotification).where(eq(s.handoverNotification.conversationId, conversationId));
 
+/** The open-question audit rows of a thread, oldest first: slots and the turn, never an answer. */
+const questionAudits = async (conversationId: string) =>
+  (
+    await w.ctx.db
+      .select({ after: s.auditLog.after })
+      .from(s.auditLog)
+      .where(and(eq(s.auditLog.action, 'inbox.ai.open_question'), eq(s.auditLog.entityId, conversationId)))
+      .orderBy(asc(s.auditLog.createdAt))
+  ).map((r) => r.after as { turnId: string | null; asked: string[]; answered: string[]; withdrawn: string[] });
+
 /**
  * A person resumes the assistant on the thread. The tick that handed it over
  * ran half a second ahead (`turn`), so the hand-over is stamped then; the
@@ -142,54 +160,63 @@ async function resume(conversationId: string) {
 const handoverPayload = async (conversationId: string) =>
   (await eventsOf(w, conversationId)).filter((e) => e.kind === 'ai_handover').map((e) => e.payload as Record<string, unknown>);
 
-/** What the opener's hand-over leaves, whatever the language: one line, the hand-over, three open questions, a notice. */
-async function expectOpenerHandover(conversationId: string, language: 'en' | 'ru' | 'th', intents: string[]) {
-  const opener = await templateRow('opener_birthday_advice', language);
+/** What the opener's hand-over leaves, whatever the language: one line, the hand-over, its questions open on it, a notice. */
+async function expectOpenerHandover(conversationId: string, language: 'en' | 'ru' | 'th', intents: string[], opener: AdviceOpener = 'full') {
+  const key = ADVICE_OPENER_KEYS[opener];
+  const row = await templateRow(key, language);
   const lines = await aiLines(w, conversationId);
+  const line = lines.at(-1)!;
   // ONE message: the opener's question and the warm line, verbatim; nothing of the model's.
-  expect(lines.map((l) => ({ body: l.body, templateId: l.templateId, bodyLanguage: l.bodyLanguage }))).toEqual([
-    { body: opener.body, templateId: opener.id, bodyLanguage: language },
-  ]);
-  const [t] = await turnsOf(w, conversationId);
-  expect(t).toMatchObject({ state: 'handed_over', intent: 'birthday_advice', messageIds: [lines[0]!.id] });
+  expect({ body: line.body, templateId: line.templateId, bodyLanguage: line.bodyLanguage }).toEqual({
+    body: row.body,
+    templateId: row.id,
+    bodyLanguage: language,
+  });
+  const t = (await turnsOf(w, conversationId)).at(-1);
+  expect(t).toMatchObject({ state: 'handed_over', intent: 'birthday_advice', messageIds: [line.id] });
   // The hand-over is the one it was: birthday_advice, to Birthdays & Events, the opener's line its closing line.
-  expect(await handoverPayload(conversationId)).toEqual([
+  expect((await handoverPayload(conversationId)).at(-1)).toEqual(
     expect.objectContaining({
       intent: 'birthday_advice',
       intents,
       destination: 'birthdays',
       templateKey: 'closing_birthday',
-      closingKey: ADVICE_OPENER_KEY,
+      closingKey: key,
       holdingLine: 'template',
-      templateId: opener.id,
-      messageIds: [lines[0]!.id],
+      templateId: row.id,
+      messageIds: [line.id],
     }),
-  ]);
+  );
   const birthdaysTeam = await teamOf(w, 'birthdays');
   expect(await conversationRow(w, conversationId)).toMatchObject({ category: 'birthdays', teamId: birthdaysTeam.id });
-  // The opener's three basics asked on that line, open for the family's reply.
+  // The opener's basics asked on that line, open for the family's reply.
   const qs = await questionsOf(conversationId);
-  expect(qs.map((q) => q.slot).sort()).toEqual([...ADVICE_OPENER_SLOTS].sort());
-  expect(qs.every((q) => q.state === 'open' && q.askedMessageId === lines[0]!.id && q.turnId === t!.id && q.answer === null)).toBe(true);
+  const onLine = qs.filter((q) => q.askedMessageId === line.id);
+  expect(onLine.map((q) => q.slot).sort()).toEqual([...ADVICE_OPENER_SLOTS_OF[opener]].sort());
+  for (const q of onLine) expect(q).toMatchObject({ state: 'open', turnId: t!.id, answer: null, answeredMessageId: null });
   // The birthday manager's notice is queued, for the advice.
-  const notices = await noticesOf(conversationId);
+  const notices = (await noticesOf(conversationId)).filter((n) => n.turnId === t!.id);
   expect(notices.length).toBeGreaterThan(0);
-  expect(notices.every((n) => n.kind === 'notice' && n.intent === 'birthday_advice' && n.destination === 'birthdays' && n.turnId === t!.id)).toBe(true);
-  return { opener, line: lines[0]!, turn: t! };
+  expect(notices.every((n) => n.kind === 'notice' && n.intent === 'birthday_advice' && n.destination === 'birthdays')).toBe(true);
+  return { opener: row, line, turn: t! };
 }
 
 describe('SCRUM-823 staging: the opener goes with the advice hand-over, as one message', () => {
-  it('the opener template asks the three basics in every language, and ends with the birthday manager’s warm line', async () => {
+  it('each opener template asks its basics in every language, and ends with the birthday manager’s warm line', async () => {
     for (const language of ['en', 'ru', 'th'] as const) {
-      const opener = await templateRow('opener_birthday_advice', language);
       const closing = await templateRow('closing_birthday', language);
-      expect(slotsAskedIn([opener.body]), language).toEqual(expect.arrayContaining([...ADVICE_OPENER_SLOTS]));
-      expect(slotsAskedIn([opener.body]).filter((slot) => !ADVICE_OPENER_SLOTS.includes(slot)), language).toEqual([]);
       // The warm line is the birthday manager's, as the closing line says it.
       const warm = { en: 'Our birthday manager will be with you shortly.', ru: 'Наш менеджер по праздникам скоро свяжется с вами.', th: 'ผู้จัดการฝ่ายงานวันเกิดของเราจะมาดูแลคุณในอีกไม่นานค่ะ' }[language];
-      expect(opener.body.endsWith(warm), language).toBe(true);
       expect(closing.body.endsWith(warm), language).toBe(true);
+      for (const opener of ['full', 'park_known'] as const) {
+        const row = await templateRow(ADVICE_OPENER_KEYS[opener], language);
+        const slots = ADVICE_OPENER_SLOTS_OF[opener];
+        expect(slotsAskedIn([row.body]), `${opener}/${language}`).toEqual(expect.arrayContaining([...slots]));
+        expect(slotsAskedIn([row.body]).filter((slot) => !slots.includes(slot)), `${opener}/${language}`).toEqual([]);
+        expect(row.body.endsWith(warm), `${opener}/${language}`).toBe(true);
+      }
     }
+    expect(ADVICE_OPENER_KEYS).toEqual({ full: ADVICE_OPENER_KEY, park_known: ADVICE_OPENER_PARK_KNOWN_KEY });
   });
 
   it('C, labelled birthday_advice alone (en): one message with the opener and the warm line; handed over, three questions open, the notice queued', async () => {
@@ -212,11 +239,8 @@ describe('SCRUM-823 staging: the opener goes with the advice hand-over, as one m
     );
     expect(detail.body.handoverNotices).toHaveLength(1);
     // One audit row for the questions, slots only.
-    const [asked] = await w.ctx.db
-      .select({ after: s.auditLog.after })
-      .from(s.auditLog)
-      .where(and(eq(s.auditLog.action, 'inbox.ai.open_question'), eq(s.auditLog.entityId, conv.id)));
-    expect((asked!.after as { asked: string[] }).asked.sort()).toEqual([...ADVICE_OPENER_SLOTS].sort());
+    const [asked] = await questionAudits(conv.id);
+    expect(asked!.asked.sort()).toEqual([...ADVICE_OPENER_SLOTS].sort());
   });
 
   it('C2, the party labelled and handed over by the model itself (en): the same one message, both parts kept', async () => {
@@ -253,6 +277,51 @@ describe('SCRUM-823 staging: the opener goes with the advice hand-over, as one m
     expect(await handoverPayload(conv.id)).toEqual([expect.objectContaining({ intents: ['birthday_advice'], closingKey: 'closing_birthday' })]);
     expect(await questionsOf(conv.id)).toEqual([]);
     expect((await noticesOf(conv.id)).length).toBeGreaterThan(0);
+  });
+});
+
+describe('SCRUM-823 review: the park is never asked when it is known, and nothing said earlier is asked again', () => {
+  it('on a park’s own number (the staging simulator’s shape): the opener without the park, in each language', async () => {
+    for (const [language, text, d, intents] of [
+      ['en', C, adviceAlone(), ['birthday_advice']],
+      ['ru', 'Хотим устроить день рождения для дочки. Что вы посоветуете?', adviceAlone('ru'), ['birthday_advice']],
+      ['th', 'อยากจองปาร์ตี้วันเกิดให้ลูกชายค่ะ แนะนำแพ็กเกจไหนคะ', adviceWithParty('th'), ['birthday_advice', 'birthday_party']],
+    ] as const) {
+      await drain();
+      const { conv, sweep } = await turn(birthdaysCentral, nextPhone(), text, d);
+      expect(sweep.handedOver, language).toBe(1);
+      const { line } = await expectOpenerHandover(conv.id, language, [...intents], 'park_known');
+      expect(line.body, language).not.toMatch(/Central|Chalong|branch|สาขา|филиал/i);
+    }
+  });
+
+  it('a park named in an earlier message (tickets at Central, then the party): the opener without the park', async () => {
+    await drain();
+    const phone = nextPhone();
+    const first = await turn(general, phone, 'Hi! How much are tickets at Central Floresta?', decision());
+    expect(first.sweep.answered).toBe(1);
+    expect((await conversationRow(w, first.conv.id)).branchId).toBeNull();
+    await nextSecond();
+    const { sweep } = await turn(general, phone, "We'd also like a birthday party for our son. What would you suggest?", adviceWithParty());
+    expect(sweep.handedOver).toBe(1);
+    const { line } = await expectOpenerHandover(first.conv.id, 'en', ['birthday_advice', 'birthday_party'], 'park_known');
+    expect(line.body).not.toMatch(/which branch/i);
+  });
+
+  it('a date given in an earlier message: the warm line alone, the date never asked again', async () => {
+    await drain();
+    const phone = nextPhone();
+    const first = await turn(general, phone, 'Hi! Are you open on 14 December?', decision());
+    expect(first.sweep.answered).toBe(1);
+    await nextSecond();
+    const { sweep } = await turn(general, phone, C2, adviceWithParty());
+    expect(sweep.handedOver).toBe(1);
+    const closing = await templateRow('closing_birthday', 'en');
+    const lines = await aiLines(w, first.conv.id);
+    expect({ body: lines.at(-1)!.body, templateId: lines.at(-1)!.templateId }).toEqual({ body: closing.body, templateId: closing.id });
+    expect(lines.filter((l) => /What date are you thinking of/.test(l.body ?? ''))).toEqual([]);
+    expect((await handoverPayload(first.conv.id)).at(-1)).toMatchObject({ intents: ['birthday_advice', 'birthday_party'], closingKey: 'closing_birthday' });
+    expect((await questionsOf(first.conv.id)).filter((q) => q.askedMessageId === lines.at(-1)!.id)).toEqual([]);
   });
 });
 
@@ -315,6 +384,21 @@ describe('SCRUM-823: after the opener', () => {
       expect(await questionsOf(conv.id)).toEqual([]);
     } finally {
       await w.ctx.db.update(s.template).set({ active: true }).where(eq(s.template.id, opener.id));
+    }
+  });
+
+  it('the park-known opener switched off: the warm line goes alone, never the whole opener that asks the park', async () => {
+    await drain();
+    const parkKnown = await templateRow('opener_birthday_advice_park_known', 'en');
+    await w.ctx.db.update(s.template).set({ active: false }).where(eq(s.template.id, parkKnown.id));
+    try {
+      const { conv, sweep } = await turn(birthdaysCentral, nextPhone(), C, adviceAlone());
+      expect(sweep.handedOver).toBe(1);
+      const closing = await templateRow('closing_birthday', 'en');
+      expect((await aiLines(w, conv.id)).map((l) => ({ body: l.body, templateId: l.templateId }))).toEqual([{ body: closing.body, templateId: closing.id }]);
+      expect(await questionsOf(conv.id)).toEqual([]);
+    } finally {
+      await w.ctx.db.update(s.template).set({ active: true }).where(eq(s.template.id, parkKnown.id));
     }
   });
 });

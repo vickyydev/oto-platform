@@ -38,7 +38,15 @@
  */
 
 import { mentionsPartyDate, mentionsPartyTime, type InboxOpenQuestionState } from '@oto/shared';
-import { adviceAfterOpener, adviceAlone, adviceOpenerOn, adviceOverruledVerdict, birthdayAdviceOverrule, openerBesideAdvice } from './advice';
+import {
+  adviceAfterOpener,
+  adviceAlone,
+  adviceOpenerOn,
+  adviceOverruledVerdict,
+  birthdayAdviceOverrule,
+  openerBesideAdvice,
+  type AdviceOpener,
+} from './advice';
 import {
   AI_REPLY_LANGUAGES,
   type AiDecision,
@@ -115,6 +123,14 @@ export interface EpisodeState extends BirthdayThreadFacts {
    * the opener is not asked again). Absent: no question was asked.
    */
   questions?: readonly EpisodeQuestion[];
+  /**
+   * SCRUM-823 review: every line the customer wrote this episode, as written
+   * (a voice note's transcript included), oldest first — the burst's too. The
+   * opener beside an advice hand-over reads it, so a date, a headcount or a
+   * park said in an earlier message is never asked again. Absent: only the
+   * burst (`GateInput.openLines`) is read.
+   */
+  customerLines?: readonly string[];
 }
 
 /**
@@ -198,13 +214,15 @@ export type GateVerdict =
       /**
        * SCRUM-823 (staging, 10 Nov): a birthday advice hand-over that answers
        * a party request nobody has asked the basics of yet (advice.ts
-       * `adviceOpenerOn`). The engine sends the `opener_birthday_advice`
-       * template — the playbook's opener question and the birthday manager's
-       * warm line, ONE message — in place of the closing line alone, and
-       * records the opener's slots as asked. Where that template is not
-       * usable in the language, the closing line goes as before.
+       * `adviceOpenerOn`), and which opener: `full` (the date, roughly how
+       * many people, which park) or `park_known` (the park already known:
+       * the date and how many people). The engine sends that opener's
+       * template — its question and the birthday manager's warm line, ONE
+       * message — in place of the closing line alone, and records its slots
+       * as asked. Where that template is not usable in the language, the
+       * closing line goes as before.
        */
-      adviceOpener?: true;
+      adviceOpener?: AdviceOpener;
     }
   | { action: 'silent'; reason: AiOutcomeReason; rule?: string; intent: AiIntent | null; intents: AiIntent[] }
   | {

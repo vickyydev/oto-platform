@@ -48,8 +48,11 @@
  * a party request whose basics nobody has asked yet, the verdict says so
  * (`adviceOpener`, `adviceOpenerOn`) and the engine sends ONE message, the
  * `opener_birthday_advice` template: the playbook's opener question followed
- * by the birthday manager's warm line, in the thread's language. Nothing of
- * the model's goes, and the hand-over is the one it was.
+ * by the birthday manager's warm line, in the thread's language — or, where
+ * the park is already known, `opener_birthday_advice_park_known`, the same
+ * without the park. Nothing of the model's goes, and the hand-over is the one
+ * it was. What the family said in an earlier message of the episode counts as
+ * said: the opener never asks it again.
  *
  * Pure: no clock, no database, no model.
  */
@@ -332,12 +335,29 @@ export function adviceOverruledVerdict(v: GateVerdict): GateVerdict {
 // ---------------------------------------------------------------------------
 
 /**
- * What the playbook's opener asks (`PLAYBOOK_LINES` birthday_party): the
- * date, roughly how many people, and which park. The engine records them as
- * asked on the opener's line (SCRUM-831), so the family's reply is read as
- * their answer.
+ * Which opener a birthday advice hand-over carries (`adviceOpenerOn`): the
+ * playbook's whole question (`full`: the date, roughly how many people, which
+ * park), or the same question without the park (`park_known`) where the park
+ * is already known — the family named one this episode, the model read one,
+ * or the thread has its park (a park's own number, or a park the routing
+ * already set). Each is its own template (`opener_birthday_advice`,
+ * `opener_birthday_advice_park_known`).
  */
-export const ADVICE_OPENER_SLOTS: readonly AiAskedSlot[] = ['date', 'guests_count', 'park'];
+export const ADVICE_OPENERS = ['full', 'park_known'] as const;
+export type AdviceOpener = (typeof ADVICE_OPENERS)[number];
+
+/**
+ * What each opener asks (`PLAYBOOK_LINES` birthday_party, skipping a known
+ * park). The engine records them as asked on the opener's line (SCRUM-831),
+ * so the family's reply is read as their answer.
+ */
+export const ADVICE_OPENER_SLOTS_OF: Readonly<Record<AdviceOpener, readonly AiAskedSlot[]>> = {
+  full: ['date', 'guests_count', 'park'],
+  park_known: ['date', 'guests_count'],
+};
+
+/** What the playbook's whole opener asks: the date, roughly how many people, and which park. */
+export const ADVICE_OPENER_SLOTS: readonly AiAskedSlot[] = ADVICE_OPENER_SLOTS_OF.full;
 
 /** A question of these slots in the episode's memory means the opener was already put, whatever became of it. */
 const OPENER_ASKED_SLOTS: ReadonlySet<AiAskedSlot> = new Set<AiAskedSlot>(['date', 'park']);
@@ -376,17 +396,27 @@ const RELATIVE_DAY: readonly RegExp[] = [
 ];
 
 /**
- * The lines already say some of the party's basics: a day or a date, a
- * headcount, or one park. The opener is ONE fixed line that cannot skip what
- * they said (the playbook: "skipping what they already said"; owner,
- * SCRUM-831: never ask twice), so beside such a burst the birthday manager's
- * warm line goes alone and the manager takes it from there.
+ * The lines already say a day or a date, or a headcount. The opener is a
+ * fixed line that cannot skip either (the playbook: "skipping what they
+ * already said"; owner, SCRUM-831: never ask twice), so where the family said
+ * one — in this burst or earlier in the episode — the birthday manager's warm
+ * line goes alone and the manager takes it from there.
  */
-export function namesPartyBasics(lines: readonly string[]): boolean {
+export function namesPartyDayOrCount(lines: readonly string[]): boolean {
   return lines.some((raw) => {
     const t = raw.normalize('NFC');
-    return mentionsPartyDate(t) || any(RELATIVE_DAY, t) || headcountNamedIn(t) || parkNamedIn(t) !== null;
+    return mentionsPartyDate(t) || any(RELATIVE_DAY, t) || headcountNamedIn(t);
   });
+}
+
+/** The lines name one park (`parkNamedIn`); naming both is a choice, not a park. */
+export function namesOnePark(lines: readonly string[]): boolean {
+  return lines.some((raw) => parkNamedIn(raw.normalize('NFC')) !== null);
+}
+
+/** The lines already say some of the party's basics: a day or a date, a headcount, or one park. */
+export function namesPartyBasics(lines: readonly string[]): boolean {
+  return namesPartyDayOrCount(lines) || namesOnePark(lines);
 }
 
 /**
@@ -413,6 +443,15 @@ function partyRequest(labelled: readonly AiIntent[], input: GateInput): boolean 
 }
 
 /**
+ * Everything the family wrote this episode that the opener must not ask
+ * again: the episode's customer lines (`EpisodeState.customerLines`, earlier
+ * bursts included) and this burst's.
+ */
+function saidThisEpisode(input: GateInput): string[] {
+  return [...(input.episode.customerLines ?? []), ...(input.openLines ?? [])];
+}
+
+/**
  * SCRUM-823 (staging, 10 Nov): THE OPENER STAYS BESIDE AN ADVICE HAND-OVER.
  * A verdict that hands a birthday advice question to Birthdays & Events — the
  * model's own hand-over, its own `birthday_advice` label, or the safety net's
@@ -421,16 +460,23 @@ function partyRequest(labelled: readonly AiIntent[], input: GateInput): boolean 
  *   - the burst is a party request (`partyRequest`);
  *   - the opener was never put this episode (`openerAskedBefore`): a second
  *     advice question after it gets the warm line alone;
- *   - the burst names none of the opener's basics (`namesPartyBasics`, or the
- *     park the model read), and the model did not read the basics in
- *     (`birthday_details`).
+ *   - nothing the family wrote this episode — this burst or an earlier one —
+ *     says a day, a date or a headcount (`namesPartyDayOrCount`), and the
+ *     model did not read the basics in (`birthday_details`).
  *
- * The engine then sends ONE message, the `opener_birthday_advice` template
- * (the opener's question, then the birthday manager's warm line), records
- * the opener's slots as asked, and hands over exactly as the verdict says:
- * the intents keep `birthday_advice`, so the manager on duty is told. Any
- * other verdict — an answer (the overrule path keeps the model's own opener),
- * silence, a hand-over elsewhere, the episode cap's — is returned as it is.
+ * Which opener: the whole question (`full`), or, where the park is already
+ * known — one park named this episode (`namesOnePark`), the park the model
+ * read (`branchNamed`), or the thread's own park (`threadHasBranch`) — the
+ * question without the park (`park_known`). The family is never asked the
+ * park they named, and never asked the park of a thread that has one, as the
+ * gate's park question never is (`askBranch`).
+ *
+ * The engine then sends ONE message, that opener's template (its question,
+ * then the birthday manager's warm line), records its slots as asked, and
+ * hands over exactly as the verdict says: the intents keep `birthday_advice`,
+ * so the manager on duty is told. Any other verdict — an answer (the overrule
+ * path keeps the model's own opener), silence, a hand-over elsewhere, the
+ * episode cap's — is returned as it is.
  */
 export function adviceOpenerOn(v: GateVerdict, input: GateInput): GateVerdict {
   if (v.action !== 'handover' || v.reason === 'CAP_EPISODE') return v;
@@ -439,6 +485,8 @@ export function adviceOpenerOn(v: GateVerdict, input: GateInput): GateVerdict {
   if (labelled.includes('birthday_details')) return v;
   if (!partyRequest(labelled, input)) return v;
   if (openerAskedBefore(input.episode)) return v;
-  if (input.decision.branchNamed !== null || namesPartyBasics(input.openLines ?? [])) return v;
-  return { ...v, adviceOpener: true };
+  const said = saidThisEpisode(input);
+  if (namesPartyDayOrCount(said)) return v;
+  const parkKnown = input.decision.branchNamed !== null || input.episode.threadHasBranch || namesOnePark(said);
+  return { ...v, adviceOpener: parkKnown ? 'park_known' : 'full' };
 }
