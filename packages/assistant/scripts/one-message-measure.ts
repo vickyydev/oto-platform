@@ -17,22 +17,31 @@
  *   MULTI-BUBBLE TURNS  a business turn of two lines or more after the family
  *                       first wrote; "on one topic" when its lines name at
  *                       most one topic of the reader below (a line naming none —
- *                       "Hi!", "Thank you" — joins any). AFTER: each turn is
- *                       composed into one message (`composeMessage`), so the
- *                       family gets one bubble; counted too, the sentences a
- *                       turn said twice, which the composition drops.
+ *                       "Hi!", "Thank you" — joins any). AFTER: a turn on one
+ *                       topic is composed into one message (`composeMessage`),
+ *                       a turn on several keeps a bubble per line; counted
+ *                       too, the sentences a line said again after another
+ *                       line, which the composition drops, and the turns that
+ *                       would lose one.
  *   PARK BEFORE KNOWN   a business turn that tells where a park is or how to
  *                       find it (the location reader below), before the family
  *                       named a park in the chat. AFTER: in a general thread
- *                       with no park the assistant asks the park question
- *                       alone instead (`PARK_QUESTION`), so none goes; counted
- *                       too, the owner's exact pattern — the location and
- *                       "which park?" in the same turn.
- *   REPEATS             once the family named a park, a sentence of a business
- *                       turn the business had already sent in that chat
- *                       (`sameSentence`). AFTER: what the composition still
- *                       sends (a sentence the family asks about again, a
- *                       question, or a turn of nothing but repeats).
+ *                       with no park, a turn on the park alone (location,
+ *                       parking, hours) becomes the park question alone
+ *                       (`PARK_QUESTION`) on the owner's pattern — "which
+ *                       park?" beside it, or one park's location (one park
+ *                       named, or none) — unless a park question already
+ *                       waits for the family's answer; an overview naming both
+ *                       parks, or a turn with another topic, still goes.
+ *   REPEATS             once the family named a park after the business asked
+ *                       which one, a sentence of a business turn the business
+ *                       had already sent in that chat (`sameSentence`).
+ *                       AFTER: what the composition drops (`composeMessage`
+ *                       with the gate's repeat rule, the topic reader below
+ *                       standing in for the knowledge): a sentence about the
+ *                       park sent before the family's answer or in the reply
+ *                       to it, in that reply or a later turn on another topic,
+ *                       unless the family asks about it again.
  *
  * THE ASSUMPTION: the exports carry no thread park. Every chat is read as a
  * general thread with no park until the family names one, as the assistant
@@ -50,7 +59,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { PARK_QUESTION, composeMessage, sameSentence, sentencesOf } from '../src/compose';
-import { parksNamedIn, slotsAskedIn } from '../src/slots';
+import { parksNamedIn, questionsIn, slotsAskedIn } from '../src/slots';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
@@ -121,6 +130,17 @@ const TOPICS: ReadonlyArray<[string, RegExp]> = [
   ['socks_age', /socks|age|years? old|носк\p{L}*|возраст\p{L}*|лет(?![\p{L}])|ถุงเท้า|อายุ|ขวบ/iu],
 ];
 const topicsOf = (line: string) => TOPICS.filter(([, re]) => re.test(line)).map(([t]) => t);
+/** The park topics: the answer that can depend on the park. */
+const PARK_TOPICS = new Set(['location', 'parking', 'hours']);
+/** The park topics a sentence is about (the reader standing in for the knowledge the gate reads). */
+const parkTopicsOf = (s: string) => topicsOf(s).filter((t) => PARK_TOPICS.has(t));
+/** A family line's words of four letters or more, a park's name and a few common words left out. */
+const COMMON = new Set(['about', 'also', 'have', 'here', 'just', 'like', 'please', 'thank', 'thanks', 'that', 'there', 'they', 'this', 'what', 'when', 'where', 'which', 'will', 'with', 'would', 'your', 'guys', 'hello']);
+const wordsOf = (s: string) =>
+  s
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter((w) => w.length >= 4 && !COMMON.has(w) && parksNamedIn(w).length === 0);
 /** A family line asking where a park is or how to find it. */
 const ASKS_WHERE =
   /where (?:are|is) (?:you|the park|oto)|how (?:do|can) (?:i|we) (?:get|find|reach)|how to (?:get|find)|location|address|directions|где (?:вы|находит\p{L}*|парк)|как (?:вас )?(?:найти|добраться|проехать)|адрес|อยู่ที่ไหน|อยู่ตรงไหน|ไปยังไง|ไปทางไหน|ที่อยู่/iu;
@@ -162,7 +182,16 @@ async function main(): Promise<void> {
   const business = parser.guessBusiness(chats.map((c) => c.lines));
   if (!business) fail('no messages found in the exports');
 
-  const multi = { turns: 0, oneTopic: 0, severalTopics: 0, bubbles: 0, oneTopicBubbles: 0, duplicateSentences: 0, after: { bubbles: 0 } };
+  const multi = {
+    turns: 0,
+    oneTopic: 0,
+    severalTopics: 0,
+    bubbles: 0,
+    oneTopicBubbles: 0,
+    duplicateSentences: 0,
+    turnsLosingASentence: 0,
+    after: { bubbles: 0 },
+  };
   const park = {
     turns: 0,
     withParkQuestion: 0,
@@ -170,7 +199,7 @@ async function main(): Promise<void> {
     parkQuestionsAsked: 0,
     locationTurns: 0,
     familyAsksWhere: { noPark: 0, parkKnown: 0 },
-    after: { parkQuestionAlone: 0 },
+    after: { parkQuestionAlone: 0, overview: 0, otherTopicBeside: 0, parkQuestionWaiting: 0 },
   };
   const repeats = { sentences: 0, turns: 0, chats: new Set<string>(), after: { sentencesReaching: 0, dropped: 0 } };
   const multiChats = new Set<string>();
@@ -186,6 +215,12 @@ async function main(): Promise<void> {
     }
     let familyWrote = false;
     let parkKnown = false;
+    // The business asked which park and the family has not named one yet.
+    let parkAsked = false;
+    // What the business said while the park was being resolved (the gate's `parkLines`), once the family named it after the question.
+    let parkLines: string[] | null = null;
+    // The business turn that answers the family's park, still to come.
+    let answering = false;
     const sent: string[] = [];
     let lastFamily: string[] = [];
     for (const turn of turns) {
@@ -194,7 +229,14 @@ async function main(): Promise<void> {
         lastFamily = turn.lines;
         const named = turn.lines.some((l) => parksNamedIn(l).length > 0);
         if (turn.lines.some((l) => ASKS_WHERE.test(l))) park.familyAsksWhere[named || parkKnown ? 'parkKnown' : 'noPark'] += 1;
-        if (named) parkKnown = true;
+        if (named && parkAsked && parkLines === null) {
+          parkLines = [...sent];
+          answering = true;
+        }
+        if (named) {
+          parkKnown = true;
+          parkAsked = false;
+        }
         continue;
       }
       if (!familyWrote) {
@@ -203,7 +245,7 @@ async function main(): Promise<void> {
       }
       businessTurns += 1;
 
-      // Multi-bubble turns, and what one message makes of them.
+      // Multi-bubble turns, and what the message makes of them: one bubble on one topic, a bubble per line on several.
       if (turn.lines.length >= 2) {
         const topics = new Set(turn.lines.flatMap(topicsOf));
         multi.turns += 1;
@@ -215,36 +257,64 @@ async function main(): Promise<void> {
         } else {
           multi.severalTopics += 1;
         }
-        // After: the turn's lines as the gate composes the model's bubbles — one message.
-        const composed = composeMessage(turn.lines);
+        const composed = composeMessage(turn.lines, { join: topics.size <= 1 });
         multi.duplicateSentences += composed.duplicates;
-        multi.after.bubbles += composed.text.length > 0 ? 1 : 0;
+        if (composed.duplicates > 0) multi.turnsLosingASentence += 1;
+        multi.after.bubbles += composed.bubbles.length;
       }
 
       // A park-dependent answer before the family named a park.
       const tellsLocation = turn.lines.some((l) => LOCATION.test(l) && !askedPark(l));
+      const asksPark = turn.lines.some(askedPark);
       if (tellsLocation) park.locationTurns += 1;
-      if (turn.lines.some(askedPark)) park.parkQuestionsAsked += 1;
+      if (asksPark) park.parkQuestionsAsked += 1;
       if (!parkKnown && tellsLocation) {
         park.turns += 1;
         park.chats.add(chat.id);
-        if (turn.lines.some(askedPark)) park.withParkQuestion += 1;
-        park.after.parkQuestionAlone += 1;
+        if (asksPark) park.withParkQuestion += 1;
+        // After, as `parkFirst` reads the turn.
+        const told = turn.lines.filter((l) => !askedPark(l));
+        const parkOnly = told.every((l) => topicsOf(l).every((t) => PARK_TOPICS.has(t)));
+        const parksNamed = new Set(told.flatMap((l) => parksNamedIn(l)));
+        if (parkAsked) park.after.parkQuestionWaiting += 1;
+        else if (!parkOnly) park.after.otherTopicBeside += 1;
+        else if (asksPark || parksNamed.size <= 1) park.after.parkQuestionAlone += 1;
+        else park.after.overview += 1;
       }
+      if (!parkKnown && asksPark) parkAsked = true;
 
-      // Repeats once the park is known.
-      if (parkKnown && sent.length > 0) {
-        const saidBefore = sent.flatMap((l) => sentencesOf(l));
+      // Repeats once the family named the park after the business asked which one.
+      if (parkLines !== null && parkLines.length > 0) {
+        const saidBefore = parkLines.flatMap((l) => sentencesOf(l));
         const own = turn.lines.flatMap((l) => sentencesOf(l));
         const repeated = own.filter((s) => saidBefore.some((b) => sameSentence(s, b)));
         if (repeated.length > 0) {
           repeats.sentences += repeated.length;
           repeats.turns += 1;
           repeats.chats.add(chat.id);
-          const composed = composeMessage(turn.lines, { said: sent, openLines: lastFamily });
+          const asked = lastFamily.join('\n');
+          const askedTopics = new Set(lastFamily.flatMap(topicsOf));
+          if (lastFamily.some((l) => ASKS_WHERE.test(l))) askedTopics.add('location');
+          const askedWords = new Set(wordsOf(asked));
+          const namedNow = answering ? [] : parksNamedIn(asked);
+          const composed = composeMessage(turn.lines, {
+            join: new Set(turn.lines.flatMap(topicsOf)).size <= 1,
+            said: parkLines,
+            keepRepeat: (s) => {
+              const topics = parkTopicsOf(s);
+              if (topics.length === 0 || questionsIn([s]).length > 0) return true;
+              if (!answering && topics.some((t) => askedTopics.has(t))) return true;
+              if (parksNamedIn(s).some((p) => namedNow.includes(p))) return true;
+              return wordsOf(s).some((w) => askedWords.has(w));
+            },
+          });
           repeats.after.dropped += composed.repeats;
           repeats.after.sentencesReaching += repeated.length - composed.repeats;
         }
+      }
+      if (answering && parkLines !== null) {
+        parkLines.push(...turn.lines);
+        answering = false;
       }
       sent.push(...turn.lines);
     }
@@ -262,12 +332,22 @@ async function main(): Promise<void> {
         chats: multiChats.size,
         chatIds: [...multiChats],
       },
-      // Each of those turns composed: one bubble each (the closing line the playbook keeps apart is the engine's, not a staff line here).
-      after: { turns: multi.turns, bubbles: multi.after.bubbles, sentencesSaidTwiceDropped: multi.duplicateSentences },
+      // A turn on one topic composed into one bubble, a turn on several a bubble per line (the closing line the playbook keeps apart is the engine's, not a staff line here).
+      after: {
+        turns: multi.turns,
+        bubbles: multi.after.bubbles,
+        sentencesSaidTwiceDropped: multi.duplicateSentences,
+        turnsLosingASentence: multi.turnsLosingASentence,
+      },
     },
     parkDependentBeforeThePark: {
       before: { turns: park.turns, withTheParkQuestionBeside: park.withParkQuestion, chats: park.chats.size, chatIds: [...park.chats] },
-      after: { reachingTheFamily: park.turns - park.after.parkQuestionAlone, theParkQuestionAlone: park.after.parkQuestionAlone, parkQuestion: PARK_QUESTION.en },
+      after: {
+        theParkQuestionAlone: park.after.parkQuestionAlone,
+        reachingTheFamily: park.turns - park.after.parkQuestionAlone,
+        reaching: { overviewOfBothParks: park.after.overview, anotherTopicBeside: park.after.otherTopicBeside, aParkQuestionWaiting: park.after.parkQuestionWaiting },
+        parkQuestion: PARK_QUESTION.en,
+      },
       businessTurnsTellingALocation: park.locationTurns,
       familyTurnsAskingWhereOrHowToFindUs: park.familyAsksWhere,
       parkQuestionsTheBusinessAsked: park.parkQuestionsAsked,
