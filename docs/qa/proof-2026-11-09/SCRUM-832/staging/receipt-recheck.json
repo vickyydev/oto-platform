@@ -1,0 +1,999 @@
+{
+  "unit": "SCRUM-832 re-check after the bare-park-question fix (4af68aafc)",
+  "commit": "4af68aafc74aca4117c5c776b3888aaa651e49d6",
+  "runWindowUtc": {
+    "start": "2026-11-10T18:15:47.705Z",
+    "end": "2026-11-10T18:18:31.516Z"
+  },
+  "browser": "Chromium 153.0.8010.12 (headless), 1440×900, light, en-GB, Asia/Bangkok",
+  "liveBefore": {
+    "at": "2026-11-10T18:15:57.855Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbplq9143eds73c6plrg",
+        "status": "live",
+        "sha": "4af68aafc74aca4117c5c776b3888aaa651e49d6",
+        "finishedAt": "2026-11-10T18:15:08.157238Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbplq3h5efls73a5q3i0",
+        "status": "live",
+        "sha": "ba3f25bb432f756a8b20a84162bc589f306a2592",
+        "finishedAt": "2026-11-10T18:07:17.384414Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dbplq3h5efls73a5q3eg",
+        "status": "live",
+        "sha": "ba3f25bb432f756a8b20a84162bc589f306a2592",
+        "finishedAt": "2026-11-10T18:07:28.402415Z"
+      }
+    ],
+    "apiLiveOnSha": true
+  },
+  "liveAfter": {
+    "at": "2026-11-10T18:18:28.164Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbplq9143eds73c6plrg",
+        "status": "live",
+        "sha": "4af68aafc74aca4117c5c776b3888aaa651e49d6",
+        "finishedAt": "2026-11-10T18:15:08.157238Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbplq3h5efls73a5q3i0",
+        "status": "live",
+        "sha": "ba3f25bb432f756a8b20a84162bc589f306a2592",
+        "finishedAt": "2026-11-10T18:07:17.384414Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dbplq3h5efls73a5q3eg",
+        "status": "live",
+        "sha": "ba3f25bb432f756a8b20a84162bc589f306a2592",
+        "finishedAt": "2026-11-10T18:07:28.402415Z"
+      }
+    ],
+    "apiLiveOnSha": true
+  },
+  "viewer": {
+    "roles": [
+      "owner"
+    ],
+    "via": "the launcher, handed into the inbox and the Console (staging administrator)"
+  },
+  "assistant": {
+    "route": "GET /api/inbox/ai/channel-accounts",
+    "status": 200,
+    "account": {
+      "id": "01a156bb-6782-72d6-9106-b6e4816b6d73",
+      "displayName": "Demo Facebook",
+      "channel": "facebook",
+      "aiMode": "live"
+    }
+  },
+  "threads": {
+    "P2": {
+      "key": "P2",
+      "expect": "the park question alone (never the GM), recorded open; then \"Central\" gets the way in and the parking in ONE bubble, the park set by the AI, the memory answered",
+      "sender": "its own ZZ TEST simulator number (not kept)",
+      "conversationId": "01a1c6ac-b82e-760f-8081-16a954f23233",
+      "language": "en",
+      "categoryHint": "general",
+      "conversation": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "general",
+        "teamName": "Reception · Central Floresta",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "en",
+        "aiMode": "live",
+        "aiState": "ready",
+        "aiPaused": false,
+        "handledAt": null,
+        "openQuestionsPresent": true
+      },
+      "lines": [
+        {
+          "n": 1,
+          "text": "How to find you guys? (ZZ TEST)",
+          "sentAt": "2026-11-10T18:16:09.996Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo Facebook · Facebook",
+            "category": "General",
+            "language": "en",
+            "message": "How to find you guys? (ZZ TEST)"
+          },
+          "hint": {
+            "category": "general",
+            "language": "en"
+          },
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "conversationIds": [
+            "01a1c6ac-b82e-760f-8081-16a954f23233"
+          ],
+          "dialogSaid": "Received: a new conversation, routed.",
+          "after": {
+            "waitedMs": 12193,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_replied",
+                "turnId": "01a1c6ac-b83f-7be8-857d-490de4869a61",
+                "intent": "directions_parking",
+                "intents": [
+                  "directions_parking"
+                ],
+                "reason": null,
+                "rule": null,
+                "closingKey": null,
+                "rethink": null
+              }
+            ],
+            "assistantLines": [
+              {
+                "id": "01a1c6ac-d682-7b5d-ab9b-fac59bc57ff8",
+                "createdAt": "2026-11-10T18:16:18.295Z",
+                "providerStatus": "sent",
+                "body": "Which branch are you thinking of, Central Floresta or Robinson Chalong?"
+              }
+            ],
+            "assistantBubbles": 1,
+            "aiState": "ready",
+            "openQuestions": [
+              {
+                "id": "01a1c6ac-d687-7518-bd7d-1324076e32b0",
+                "slot": "park",
+                "state": "open",
+                "answer": null,
+                "askedMessageId": "01a1c6ac-d682-7b5d-ab9b-fac59bc57ff8",
+                "answeredMessageId": null,
+                "askedAt": "2026-11-10T18:16:18.295Z",
+                "closedAt": null
+              }
+            ]
+          }
+        },
+        {
+          "n": 2,
+          "text": "Central (ZZ TEST)",
+          "sentAt": "2026-11-10T18:16:44.054Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo Facebook · Facebook",
+            "category": "General",
+            "language": "en",
+            "message": "Central (ZZ TEST)"
+          },
+          "hint": {
+            "category": "general",
+            "language": "en"
+          },
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "conversationIds": [
+            "01a1c6ac-b82e-760f-8081-16a954f23233"
+          ],
+          "dialogSaid": "Received into the existing conversation.",
+          "after": {
+            "waitedMs": 12146,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_replied",
+                "turnId": "01a1c6ad-3d58-73e2-a7e0-320e1662d15e",
+                "intent": "directions_parking",
+                "intents": [
+                  "directions_parking"
+                ],
+                "reason": null,
+                "rule": null,
+                "closingKey": null,
+                "rethink": null
+              }
+            ],
+            "assistantLines": [
+              {
+                "id": "01a1c6ad-5915-7622-92a0-4a3b70e78624",
+                "createdAt": "2026-11-10T18:16:51.722Z",
+                "providerStatus": "sent",
+                "body": "We're in Central Floresta (the side with the luxury brands, not Festival), on the basement floor opposite the aquarium 😊\n\nFrom the ground floor with Tops supermarket, walk to the other side of Tops and take the escalator down toward the aquarium. Just follow the signs for Oto or the aquarium!\n\nAnd parking is free at the mall."
+              }
+            ],
+            "assistantBubbles": 1,
+            "aiState": "ready",
+            "openQuestions": [
+              {
+                "id": "01a1c6ac-d687-7518-bd7d-1324076e32b0",
+                "slot": "park",
+                "state": "answered",
+                "answer": "central",
+                "askedMessageId": "01a1c6ac-d682-7b5d-ab9b-fac59bc57ff8",
+                "answeredMessageId": "01a1c6ad-3d54-7138-a3d5-118da8df3d88",
+                "askedAt": "2026-11-10T18:16:18.295Z",
+                "closedAt": "2026-11-10T18:16:51.722Z"
+              }
+            ]
+          }
+        },
+        {
+          "n": 3,
+          "text": "What time do you close? (ZZ TEST)",
+          "sentAt": "2026-11-10T18:17:29.115Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo Facebook · Facebook",
+            "category": "General",
+            "language": "en",
+            "message": "What time do you close? (ZZ TEST)"
+          },
+          "hint": {
+            "category": "general",
+            "language": "en"
+          },
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "conversationIds": [
+            "01a1c6ac-b82e-760f-8081-16a954f23233"
+          ],
+          "dialogSaid": "Received into the existing conversation.",
+          "after": {
+            "waitedMs": 12128,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_replied",
+                "turnId": "01a1c6ad-ed49-756e-86f0-7b39d1a36c54",
+                "intent": "hours",
+                "intents": [
+                  "hours"
+                ],
+                "reason": null,
+                "rule": null,
+                "closingKey": null,
+                "rethink": null
+              }
+            ],
+            "assistantLines": [
+              {
+                "id": "01a1c6ae-0baf-7b74-bb25-a2b095c45e6f",
+                "createdAt": "2026-11-10T18:17:37.445Z",
+                "providerStatus": "sent",
+                "body": "We close at 20:00! Central Floresta is open every day 10:00–20:00 😊"
+              }
+            ],
+            "assistantBubbles": 1,
+            "aiState": "ready",
+            "openQuestions": [
+              {
+                "id": "01a1c6ac-d687-7518-bd7d-1324076e32b0",
+                "slot": "park",
+                "state": "answered",
+                "answer": "central",
+                "askedMessageId": "01a1c6ac-d682-7b5d-ab9b-fac59bc57ff8",
+                "answeredMessageId": "01a1c6ad-3d54-7138-a3d5-118da8df3d88",
+                "askedAt": "2026-11-10T18:16:18.295Z",
+                "closedAt": "2026-11-10T18:16:51.722Z"
+              }
+            ]
+          }
+        }
+      ],
+      "finalOpenQuestions": {
+        "route": "GET /api/inbox/conversations/:id → openQuestions",
+        "status": 200,
+        "openQuestions": [
+          {
+            "id": "01a1c6ac-d687-7518-bd7d-1324076e32b0",
+            "slot": "park",
+            "state": "answered",
+            "answer": "central",
+            "askedMessageId": "01a1c6ac-d682-7b5d-ab9b-fac59bc57ff8",
+            "answeredMessageId": "01a1c6ad-3d54-7138-a3d5-118da8df3d88",
+            "askedAt": "2026-11-10T18:16:18.295Z",
+            "closedAt": "2026-11-10T18:16:51.722Z"
+          }
+        ]
+      },
+      "finalMessages": {
+        "route": "GET /api/inbox/conversations/:id/messages",
+        "status": 200,
+        "messages": [
+          {
+            "id": "01a1c6ac-b830-713f-9632-ae47469f9851",
+            "direction": "inbound",
+            "authorKind": "customer",
+            "source": "channel",
+            "createdAt": "2026-11-10T18:16:10.000Z",
+            "providerStatus": null,
+            "body": "How to find you guys? (ZZ TEST)"
+          },
+          {
+            "id": "01a1c6ac-d682-7b5d-ab9b-fac59bc57ff8",
+            "direction": "outbound",
+            "authorKind": "ai",
+            "source": "channel",
+            "createdAt": "2026-11-10T18:16:18.295Z",
+            "providerStatus": "sent",
+            "body": "Which branch are you thinking of, Central Floresta or Robinson Chalong?"
+          },
+          {
+            "id": "01a1c6ad-3d54-7138-a3d5-118da8df3d88",
+            "direction": "inbound",
+            "authorKind": "customer",
+            "source": "channel",
+            "createdAt": "2026-11-10T18:16:44.000Z",
+            "providerStatus": null,
+            "body": "Central (ZZ TEST)"
+          },
+          {
+            "id": "01a1c6ad-5915-7622-92a0-4a3b70e78624",
+            "direction": "outbound",
+            "authorKind": "ai",
+            "source": "channel",
+            "createdAt": "2026-11-10T18:16:51.722Z",
+            "providerStatus": "sent",
+            "body": "We're in Central Floresta (the side with the luxury brands, not Festival), on the basement floor opposite the aquarium 😊\n\nFrom the ground floor with Tops supermarket, walk to the other side of Tops and take the escalator down toward the aquarium. Just follow the signs for Oto or the aquarium!\n\nAnd parking is free at the mall."
+          },
+          {
+            "id": "01a1c6ad-ed42-7a0d-9925-2eee7fbeb6ba",
+            "direction": "inbound",
+            "authorKind": "customer",
+            "source": "channel",
+            "createdAt": "2026-11-10T18:17:29.000Z",
+            "providerStatus": null,
+            "body": "What time do you close? (ZZ TEST)"
+          },
+          {
+            "id": "01a1c6ae-0baf-7b74-bb25-a2b095c45e6f",
+            "direction": "outbound",
+            "authorKind": "ai",
+            "source": "channel",
+            "createdAt": "2026-11-10T18:17:37.445Z",
+            "providerStatus": "sent",
+            "body": "We close at 20:00! Central Floresta is open every day 10:00–20:00 😊"
+          }
+        ]
+      },
+      "aiPills": [
+        {
+          "kind": "ai_replied",
+          "createdAt": "2026-11-10T18:16:18.295Z",
+          "actorKind": "ai",
+          "turnId": "01a1c6ac-b83f-7be8-857d-490de4869a61",
+          "intent": "directions_parking",
+          "intents": [
+            "directions_parking"
+          ],
+          "reason": null,
+          "rule": null,
+          "destination": null,
+          "templateKey": null,
+          "closingKey": null,
+          "holdingLine": null,
+          "silent": null,
+          "messageIds": [
+            "01a1c6ac-d682-7b5d-ab9b-fac59bc57ff8"
+          ],
+          "rethink": null,
+          "askBranch": true,
+          "askedSlots": null,
+          "composition": {
+            "joined": true,
+            "bubbles": 1,
+            "repeats": 0,
+            "parkFirst": true,
+            "duplicates": 0,
+            "parkQuestions": 0
+          },
+          "branchNamed": null
+        },
+        {
+          "kind": "ai_replied",
+          "createdAt": "2026-11-10T18:16:51.722Z",
+          "actorKind": "ai",
+          "turnId": "01a1c6ad-3d58-73e2-a7e0-320e1662d15e",
+          "intent": "directions_parking",
+          "intents": [
+            "directions_parking"
+          ],
+          "reason": null,
+          "rule": null,
+          "destination": null,
+          "templateKey": null,
+          "closingKey": null,
+          "holdingLine": null,
+          "silent": null,
+          "messageIds": [
+            "01a1c6ad-5915-7622-92a0-4a3b70e78624"
+          ],
+          "rethink": null,
+          "askBranch": false,
+          "askedSlots": null,
+          "composition": {
+            "joined": true,
+            "bubbles": 3,
+            "repeats": 0,
+            "parkFirst": false,
+            "duplicates": 0,
+            "parkQuestions": 0
+          },
+          "branchNamed": null
+        },
+        {
+          "kind": "ai_replied",
+          "createdAt": "2026-11-10T18:17:37.445Z",
+          "actorKind": "ai",
+          "turnId": "01a1c6ad-ed49-756e-86f0-7b39d1a36c54",
+          "intent": "hours",
+          "intents": [
+            "hours"
+          ],
+          "reason": null,
+          "rule": null,
+          "destination": null,
+          "templateKey": null,
+          "closingKey": null,
+          "holdingLine": null,
+          "silent": null,
+          "messageIds": [
+            "01a1c6ae-0baf-7b74-bb25-a2b095c45e6f"
+          ],
+          "rethink": null,
+          "askBranch": false,
+          "askedSlots": null,
+          "composition": null,
+          "branchNamed": null
+        }
+      ],
+      "otherPills": [
+        {
+          "kind": "routed",
+          "actorKind": "system",
+          "createdAt": "2026-11-10T18:16:10.000Z"
+        },
+        {
+          "kind": "assigned",
+          "actorKind": "system",
+          "createdAt": "2026-11-10T18:16:10.000Z"
+        },
+        {
+          "kind": "classified",
+          "actorKind": "ai",
+          "createdAt": "2026-11-10T18:16:18.295Z"
+        },
+        {
+          "kind": "classified",
+          "actorKind": "ai",
+          "createdAt": "2026-11-10T18:16:51.722Z"
+        },
+        {
+          "kind": "branch_set",
+          "actorKind": "ai",
+          "createdAt": "2026-11-10T18:16:51.722Z",
+          "branchId": null,
+          "byAi": true,
+          "payloadKeys": [
+            "byAi",
+            "toBranchId",
+            "fromBranchId"
+          ]
+        },
+        {
+          "kind": "classified",
+          "actorKind": "ai",
+          "createdAt": "2026-11-10T18:17:37.445Z"
+        }
+      ],
+      "audit": {
+        "at": "2026-11-10T18:18:20.497Z",
+        "repeatGuard": {
+          "route": "GET /api/audit?action=inbox.ai.repeat_guard&from=<run start>",
+          "status": 200,
+          "rowsSinceRunStart": 0,
+          "total": 0,
+          "rowsForThisConversation": 0,
+          "rows": [],
+          "error": null
+        },
+        "openQuestion": {
+          "route": "GET /api/audit?action=inbox.ai.open_question&entityType=inbox.conversation&entityId=:id",
+          "status": 200,
+          "rows": 2,
+          "entries": [
+            {
+              "id": "01a1c6ac-d688-781f-903a-2e5617fc4a47",
+              "createdAt": "2026-11-10T18:16:18.295Z",
+              "after": {
+                "asked": [
+                  "park"
+                ],
+                "turnId": "01a1c6ac-b83f-7be8-857d-490de4869a61",
+                "answered": [],
+                "withdrawn": []
+              }
+            },
+            {
+              "id": "01a1c6ad-591b-7a67-a870-a106fd2d2620",
+              "createdAt": "2026-11-10T18:16:51.722Z",
+              "after": {
+                "asked": [],
+                "turnId": "01a1c6ad-3d58-73e2-a7e0-320e1662d15e",
+                "answered": [
+                  "park"
+                ],
+                "withdrawn": []
+              }
+            }
+          ],
+          "error": null
+        },
+        "handover": {
+          "route": "GET /api/audit?action=inbox.ai.handover&entityType=inbox.conversation&entityId=:id",
+          "status": 200,
+          "rows": 0,
+          "entries": []
+        }
+      }
+    },
+    "R": {
+      "key": "R",
+      "expect": "the park question alone in Russian; then \"Централ\" gets the way in, in one bubble",
+      "sender": "its own ZZ TEST simulator number (not kept)",
+      "conversationId": "01a1c6ac-c70f-7d06-bb24-3012fa3f828a",
+      "language": "ru",
+      "categoryHint": "general",
+      "conversation": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "general",
+        "teamName": "Reception · Central Floresta",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "ru",
+        "aiMode": "live",
+        "aiState": "ready",
+        "aiPaused": false,
+        "handledAt": null,
+        "openQuestionsPresent": true
+      },
+      "lines": [
+        {
+          "n": 1,
+          "text": "Как вас найти? (ZZ TEST)",
+          "sentAt": "2026-11-10T18:16:13.796Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo Facebook · Facebook",
+            "category": "General",
+            "language": "ru",
+            "message": "Как вас найти? (ZZ TEST)"
+          },
+          "hint": {
+            "category": "general",
+            "language": "ru"
+          },
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "conversationIds": [
+            "01a1c6ac-c70f-7d06-bb24-3012fa3f828a"
+          ],
+          "dialogSaid": "Received: a new conversation, routed.",
+          "after": {
+            "waitedMs": 6709,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_replied",
+                "turnId": "01a1c6ac-c71c-7588-adf1-5d34de076a2f",
+                "intent": "directions_parking",
+                "intents": [
+                  "directions_parking"
+                ],
+                "reason": null,
+                "rule": null,
+                "closingKey": null,
+                "rethink": null
+              }
+            ],
+            "assistantLines": [
+              {
+                "id": "01a1c6ac-e6e6-71a2-b032-a03531965e37",
+                "createdAt": "2026-11-10T18:16:22.493Z",
+                "providerStatus": "sent",
+                "body": "Какой филиал вам удобнее, Central Floresta или Robinson Chalong?"
+              }
+            ],
+            "assistantBubbles": 1,
+            "aiState": "ready",
+            "openQuestions": [
+              {
+                "id": "01a1c6ac-e6e9-7d31-a78b-0a31b7243685",
+                "slot": "park",
+                "state": "open",
+                "answer": null,
+                "askedMessageId": "01a1c6ac-e6e6-71a2-b032-a03531965e37",
+                "answeredMessageId": null,
+                "askedAt": "2026-11-10T18:16:22.493Z",
+                "closedAt": null
+              }
+            ]
+          }
+        },
+        {
+          "n": 2,
+          "text": "Централ (ZZ TEST)",
+          "sentAt": "2026-11-10T18:16:47.006Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo Facebook · Facebook",
+            "category": "General",
+            "language": "ru",
+            "message": "Централ (ZZ TEST)"
+          },
+          "hint": {
+            "category": "general",
+            "language": "ru"
+          },
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "conversationIds": [
+            "01a1c6ac-c70f-7d06-bb24-3012fa3f828a"
+          ],
+          "dialogSaid": "Received into the existing conversation.",
+          "after": {
+            "waitedMs": 6110,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_replied",
+                "turnId": "01a1c6ad-48d2-7907-a69e-a77a601ef967",
+                "intent": "directions_parking",
+                "intents": [
+                  "directions_parking"
+                ],
+                "reason": null,
+                "rule": null,
+                "closingKey": null,
+                "rethink": null
+              }
+            ],
+            "assistantLines": [
+              {
+                "id": "01a1c6ad-70b9-7b50-bc11-6c5169b5ff23",
+                "createdAt": "2026-11-10T18:16:57.775Z",
+                "providerStatus": "sent",
+                "body": "Мы в Central Floresta (это часть Central с люксовыми брендами, не Festival), на цокольном этаже, напротив океанариума 😊\n\nС первого этажа, где супермаркет Tops, пройдите на другую сторону Tops и спуститесь на эскалаторе вниз, к океанариуму. Идите по указателям Oto или океанариума.\n\nПарковка в торговом центре бесплатная."
+              }
+            ],
+            "assistantBubbles": 1,
+            "aiState": "ready",
+            "openQuestions": [
+              {
+                "id": "01a1c6ac-e6e9-7d31-a78b-0a31b7243685",
+                "slot": "park",
+                "state": "answered",
+                "answer": "central",
+                "askedMessageId": "01a1c6ac-e6e6-71a2-b032-a03531965e37",
+                "answeredMessageId": "01a1c6ad-48cc-7a72-be83-7883e08517f9",
+                "askedAt": "2026-11-10T18:16:22.493Z",
+                "closedAt": "2026-11-10T18:16:57.775Z"
+              }
+            ]
+          }
+        }
+      ],
+      "finalOpenQuestions": {
+        "route": "GET /api/inbox/conversations/:id → openQuestions",
+        "status": 200,
+        "openQuestions": [
+          {
+            "id": "01a1c6ac-e6e9-7d31-a78b-0a31b7243685",
+            "slot": "park",
+            "state": "answered",
+            "answer": "central",
+            "askedMessageId": "01a1c6ac-e6e6-71a2-b032-a03531965e37",
+            "answeredMessageId": "01a1c6ad-48cc-7a72-be83-7883e08517f9",
+            "askedAt": "2026-11-10T18:16:22.493Z",
+            "closedAt": "2026-11-10T18:16:57.775Z"
+          }
+        ]
+      },
+      "finalMessages": {
+        "route": "GET /api/inbox/conversations/:id/messages",
+        "status": 200,
+        "messages": [
+          {
+            "id": "01a1c6ac-c710-76a1-adcd-8788043a18da",
+            "direction": "inbound",
+            "authorKind": "customer",
+            "source": "channel",
+            "createdAt": "2026-11-10T18:16:14.000Z",
+            "providerStatus": null,
+            "body": "Как вас найти? (ZZ TEST)"
+          },
+          {
+            "id": "01a1c6ac-e6e6-71a2-b032-a03531965e37",
+            "direction": "outbound",
+            "authorKind": "ai",
+            "source": "channel",
+            "createdAt": "2026-11-10T18:16:22.493Z",
+            "providerStatus": "sent",
+            "body": "Какой филиал вам удобнее, Central Floresta или Robinson Chalong?"
+          },
+          {
+            "id": "01a1c6ad-48cc-7a72-be83-7883e08517f9",
+            "direction": "inbound",
+            "authorKind": "customer",
+            "source": "channel",
+            "createdAt": "2026-11-10T18:16:47.000Z",
+            "providerStatus": null,
+            "body": "Централ (ZZ TEST)"
+          },
+          {
+            "id": "01a1c6ad-70b9-7b50-bc11-6c5169b5ff23",
+            "direction": "outbound",
+            "authorKind": "ai",
+            "source": "channel",
+            "createdAt": "2026-11-10T18:16:57.775Z",
+            "providerStatus": "sent",
+            "body": "Мы в Central Floresta (это часть Central с люксовыми брендами, не Festival), на цокольном этаже, напротив океанариума 😊\n\nС первого этажа, где супермаркет Tops, пройдите на другую сторону Tops и спуститесь на эскалаторе вниз, к океанариуму. Идите по указателям Oto или океанариума.\n\nПарковка в торговом центре бесплатная."
+          }
+        ]
+      },
+      "aiPills": [
+        {
+          "kind": "ai_replied",
+          "createdAt": "2026-11-10T18:16:22.493Z",
+          "actorKind": "ai",
+          "turnId": "01a1c6ac-c71c-7588-adf1-5d34de076a2f",
+          "intent": "directions_parking",
+          "intents": [
+            "directions_parking"
+          ],
+          "reason": null,
+          "rule": null,
+          "destination": null,
+          "templateKey": null,
+          "closingKey": null,
+          "holdingLine": null,
+          "silent": null,
+          "messageIds": [
+            "01a1c6ac-e6e6-71a2-b032-a03531965e37"
+          ],
+          "rethink": null,
+          "askBranch": true,
+          "askedSlots": null,
+          "composition": {
+            "joined": true,
+            "bubbles": 2,
+            "repeats": 0,
+            "parkFirst": true,
+            "duplicates": 0,
+            "parkQuestions": 0
+          },
+          "branchNamed": null
+        },
+        {
+          "kind": "ai_replied",
+          "createdAt": "2026-11-10T18:16:57.775Z",
+          "actorKind": "ai",
+          "turnId": "01a1c6ad-48d2-7907-a69e-a77a601ef967",
+          "intent": "directions_parking",
+          "intents": [
+            "directions_parking"
+          ],
+          "reason": null,
+          "rule": null,
+          "destination": null,
+          "templateKey": null,
+          "closingKey": null,
+          "holdingLine": null,
+          "silent": null,
+          "messageIds": [
+            "01a1c6ad-70b9-7b50-bc11-6c5169b5ff23"
+          ],
+          "rethink": null,
+          "askBranch": false,
+          "askedSlots": null,
+          "composition": {
+            "joined": true,
+            "bubbles": 3,
+            "repeats": 0,
+            "parkFirst": false,
+            "duplicates": 0,
+            "parkQuestions": 0
+          },
+          "branchNamed": null
+        }
+      ],
+      "otherPills": [
+        {
+          "kind": "routed",
+          "actorKind": "system",
+          "createdAt": "2026-11-10T18:16:14.000Z"
+        },
+        {
+          "kind": "assigned",
+          "actorKind": "system",
+          "createdAt": "2026-11-10T18:16:14.000Z"
+        },
+        {
+          "kind": "classified",
+          "actorKind": "ai",
+          "createdAt": "2026-11-10T18:16:22.493Z"
+        },
+        {
+          "kind": "classified",
+          "actorKind": "ai",
+          "createdAt": "2026-11-10T18:16:57.775Z"
+        },
+        {
+          "kind": "branch_set",
+          "actorKind": "ai",
+          "createdAt": "2026-11-10T18:16:57.775Z",
+          "branchId": null,
+          "byAi": true,
+          "payloadKeys": [
+            "byAi",
+            "toBranchId",
+            "fromBranchId"
+          ]
+        }
+      ],
+      "audit": {
+        "at": "2026-11-10T18:18:23.250Z",
+        "repeatGuard": {
+          "route": "GET /api/audit?action=inbox.ai.repeat_guard&from=<run start>",
+          "status": 200,
+          "rowsSinceRunStart": 0,
+          "total": 0,
+          "rowsForThisConversation": 0,
+          "rows": [],
+          "error": null
+        },
+        "openQuestion": {
+          "route": "GET /api/audit?action=inbox.ai.open_question&entityType=inbox.conversation&entityId=:id",
+          "status": 200,
+          "rows": 2,
+          "entries": [
+            {
+              "id": "01a1c6ac-e6ea-7ec7-ae4d-c220aa7f41e9",
+              "createdAt": "2026-11-10T18:16:22.493Z",
+              "after": {
+                "asked": [
+                  "park"
+                ],
+                "turnId": "01a1c6ac-c71c-7588-adf1-5d34de076a2f",
+                "answered": [],
+                "withdrawn": []
+              }
+            },
+            {
+              "id": "01a1c6ad-70bd-71f8-af5a-d29b9dda10a7",
+              "createdAt": "2026-11-10T18:16:57.775Z",
+              "after": {
+                "asked": [],
+                "turnId": "01a1c6ad-48d2-7907-a69e-a77a601ef967",
+                "answered": [
+                  "park"
+                ],
+                "withdrawn": []
+              }
+            }
+          ],
+          "error": null
+        },
+        "handover": {
+          "route": "GET /api/audit?action=inbox.ai.handover&entityType=inbox.conversation&entityId=:id",
+          "status": 200,
+          "rows": 0,
+          "entries": []
+        }
+      }
+    }
+  },
+  "pictures": [
+    {
+      "file": "05-rc-p2-park-first-then-central-one-bubble.png",
+      "shows": "RE-CHECK after the fix: How to find you guys? gets the park question ALONE (no hand-over), Central is read as the answer, the park set by the AI, the way in + parking in ONE bubble; then the hours without the location again",
+      "at": "2026-11-10T18:17:48.413Z",
+      "namesMasked": 29,
+      "regionMasks": 1,
+      "note": "list of other conversations masked; phone-like numbers and staff initials masked"
+    },
+    {
+      "file": "06-rc-r-russian-park-first-then-one-bubble.png",
+      "shows": "RE-CHECK, Russian: the park question alone, Централ read as the answer, the park set, one bubble",
+      "at": "2026-11-10T18:17:53.755Z",
+      "namesMasked": 29,
+      "regionMasks": 1,
+      "note": "list of other conversations masked; phone-like numbers and staff initials masked"
+    },
+    {
+      "file": "05a-rc-p2-park-question-alone.png",
+      "shows": "RE-CHECK after the fix, the start of the thread: How to find you guys? gets ONE bubble, the park question alone, no hand-over; the line under it reads asked: the park · answered Central Floresta",
+      "at": "2026-11-10T18:18:07.220Z",
+      "namesMasked": 29,
+      "regionMasks": 1,
+      "note": "list of other conversations masked; phone-like numbers and staff initials masked"
+    }
+  ],
+  "cleanup": {
+    "at": "2026-11-10T18:18:23.359Z",
+    "conversations": {
+      "P2": {
+        "id": "01a1c6ac-b82e-760f-8081-16a954f23233",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T18:18:24.391Z"
+        }
+      },
+      "R": {
+        "id": "01a1c6ac-c70f-7d06-bb24-3012fa3f828a",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T18:18:25.345Z"
+        }
+      }
+    }
+  },
+  "signOut": {
+    "at": "2026-11-10T18:18:31.516Z",
+    "signOut": {
+      "inbox": {
+        "route": "POST /api/auth/sign-out (inbox)",
+        "status": 200
+      },
+      "console": {
+        "route": "POST /api/auth/sign-out (Console)",
+        "status": 200
+      },
+      "launcher": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      }
+    },
+    "readBack": {
+      "inbox": {
+        "route": "GET /api/inbox/me (inbox)",
+        "status": 401
+      },
+      "console": {
+        "route": "GET /api/me (Console)",
+        "status": 401
+      },
+      "launcher": {
+        "route": "GET /api/me (launcher)",
+        "status": 401
+      }
+    }
+  },
+  "notTouched": "No other conversation, setting or key was read or changed. Nothing was sent to a phone or a page: the simulator account is internal."
+}

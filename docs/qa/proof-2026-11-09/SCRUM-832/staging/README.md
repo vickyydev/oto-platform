@@ -28,3 +28,17 @@ Fix (lane/parkask832b-20261111): `bareParkQuestion` in `packages/assistant/src/g
 ## Clean-up
 
 The four ZZ TEST threads marked handled through the inbox's own route; sessions signed out and read back (401). No other conversation, setting or key was read or changed. Nothing was sent to a phone or a page: the simulator account is internal.
+
+## Re-check after the fix (4af68aafc)
+
+**When:** 11 November 2026, 01:15–01:18 Bangkok (18:15–18:18 UTC); the api at `4af68aafc` (deploy `dep-dbplq9143eds73c6plrg`, live 18:15:08 UTC). The same harness, two fresh ZZ TEST threads on the Demo Facebook number (no park). **Record:** `receipt-recheck.json`.
+
+| Thread | Line | Got | Result |
+|---|---|---|---|
+| **P2** (en) | "How to find you guys?" | ONE bubble, "Which branch are you thinking of, Central Floresta or Robinson Chalong?" — the model's own single bare bubble (`composition.bubbles: 1, parkFirst: true`), no hand-over, the thread General; "asked: the park · waiting" | **Pass** (pictures 5a, 5) |
+| P2 | "Central" | read as the answer ("answered Central Floresta"); **branch set to Central Floresta by AI**, the thread at Reception · Central Floresta; ONE bubble of three parts (where, the way in from Tops, the free parking), `bubbles: 3, joined: true, repeats: 0` | **Pass** |
+| P2 | "What time do you close?" | "We close at 20:00! Central Floresta is open every day 10:00–20:00" — the hours, the location not repeated | **Pass** |
+| **R** (ru) | "Как вас найти?" | ONE bubble, the Russian park question alone (the model had written two bubbles: `bubbles: 2, parkFirst: true`) | **Pass** (picture 6) |
+| R | "Централ" | read as the answer; branch set to Central Floresta by AI; ONE bubble of three parts in Russian | **Pass** |
+
+Repeat guard: 0 rows. Open-question audit on each thread: `asked [park]` then `answered [park]`. The two threads marked handled through the inbox's own route; sessions signed out and read back (401).
