@@ -31,9 +31,9 @@ import { SourceMark } from "./beo-ai-review";
  * details), then the read, then the list — the field, what the form holds
  * and what the chat says, whose line it was — each accepted or declined
  * (accept all, decline all). Apply puts the accepted ones in the form,
- * unsaved until the form's own Save; the declined ones are remembered so the
- * same change is not offered again until the chat changes; a row left
- * undecided is neither. What the chat says of the package, the set menu, the
+ * unsaved until the form's own Save; the declined ones are remembered by
+ * FIELD, so that field is not offered again — whatever the chat reads for it
+ * — until the chat has a new line; a row left undecided is neither. What the chat says of the package, the set menu, the
  * food and the entertainment is listed too, to read: those are chosen in
  * their own sections, never applied here. A fetch that finds nothing new
  * anywhere says so. The rules are `lib/beo-fetch-from-chat.ts`'s.
@@ -107,7 +107,8 @@ export function BeoFetchFromChatDialog({
     const accepted = step.changes.filter((c) => decisions[changeKey(c)] === "accept");
     const refused = step.changes.filter((c) => decisions[changeKey(c)] === "decline");
     if (accepted.length > 0) onApply(applyFetchChanges(accepted), accepted);
-    if (refused.length > 0) onDeclined(rememberDeclined(declined, step.chatMark, refused));
+    // The memory: a declined field is held on this chat; an accepted one is let go of it.
+    if (refused.length > 0 || accepted.length > 0) onDeclined(rememberDeclined(declined, step.chatMark, refused, accepted));
     toast({
       title: accepted.length > 0 ? `${accepted.length} change${accepted.length === 1 ? "" : "s"} taken from the chat` : "Nothing changed",
       description:

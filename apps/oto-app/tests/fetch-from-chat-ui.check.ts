@@ -12,9 +12,10 @@
 //      chat says, whose line it was; each accepted or declined, accept all and
 //      decline all; a row left undecided is neither applied nor remembered;
 //   3. Apply puts only the accepted ones in the form (unsaved until Save) and
-//      remembers the declined ones: on the next fetch of the same chat they
-//      are held back and said so; once the chat's newest line moves they are
-//      offered again;
+//      remembers the declined ones BY FIELD (SCRUM-826): on the next fetch of
+//      the same chat that field is held back, whatever value the chat reads
+//      for it, and said so; once the chat's newest line moves it is offered
+//      again; an accepted field is let go of the memory;
 //   4. a fetch that finds nothing new says so; a read that fails says why and
 //      offers to try again; Cancel applies and remembers nothing;
 //   5. what the chat says of the package, set menu, food and entertainment
@@ -212,7 +213,7 @@ await check("one accepted, one declined, Apply: only the accepted lands in the f
   assert.deepEqual(applied, [{ numAdults: 6 }]);
   assert.equal(current.numAdults, 6);
   assert.equal(current.cakeTime, "15:30", "the declined change left the form alone");
-  assert.deepEqual(remembered, [{ chatMark: LINE_4, keys: ["cakeTime=16:00"] }]);
+  assert.deepEqual(remembered, [{ chatMark: LINE_4, fields: ["cakeTime"] }]);
   assert.equal(closed, 1);
   await render();
   assert.equal(byTestId("dialog-fetch-from-chat"), null, "closed");
@@ -242,7 +243,7 @@ await check("the chat's newest line moved: the declined change is offered again;
   await click("button-fetch-apply");
   assert.deepEqual(applied, [{ cakeTime: "16:00" }]);
   assert.equal(current.cakeTime, "16:00");
-  assert.deepEqual(remembered, [], "nothing declined this time");
+  assert.deepEqual(remembered, [{ chatMark: LINE_5, fields: [] }], "nothing declined this time: the memory moves to this chat, holding nothing");
 });
 
 await check("a row left undecided is neither applied nor remembered; Decline all remembers every row and applies none; Cancel does neither", async () => {
@@ -261,7 +262,7 @@ await check("a row left undecided is neither applied nor remembered; Decline all
   // The cake row is left undecided.
   await click("button-fetch-apply");
   assert.deepEqual(applied, [{ numAdults: 8 }]);
-  assert.deepEqual(remembered, [], "an undecided row is not remembered");
+  assert.deepEqual(remembered, [{ chatMark: LINE_5, fields: [] }], "an undecided row is not remembered");
   assert.equal(current.cakeTime, "16:00", "nor applied");
 
   await openDialog();
@@ -272,7 +273,20 @@ await check("a row left undecided is neither applied nor remembered; Decline all
   assert.equal(text("button-fetch-apply"), "Done");
   await click("button-fetch-apply");
   assert.deepEqual(applied, []);
-  assert.deepEqual(remembered, [{ chatMark: LINE_5, keys: ["cakeTime=17:00"] }]);
+  assert.deepEqual(remembered, [{ chatMark: LINE_5, fields: ["cakeTime"] }]);
+});
+
+await check("SCRUM-826: a declined field is held on the same chat whatever value the chat reads for it next", async () => {
+  // The cake time declined at 17:00; the same chat now reads 18:00 for it: still held, and said so.
+  answer = () => Promise.resolve(answerAt(LINE_5, 8, "18:00"));
+  await openDialog();
+  await click("button-fetch-read");
+  assert.equal(text("text-fetch-same"), "The chat reads the same as the form. 1 change you declined earlier is not offered again until the chat changes.");
+  assert.equal(byTestId("fetch-change-cakeTime"), null, "another value for the declined field slips nothing past the decline");
+  await click("button-fetch-cancel");
+  assert.deepEqual(applied, []);
+  assert.deepEqual(remembered, []);
+  assert.equal(current.cakeTime, "16:00");
 });
 
 await check("a read that fails says why and offers to try again; nothing new at all says so", async () => {
@@ -345,4 +359,4 @@ await check("the editor mounts the dialog with its own form, read, memory and ap
 
 await act(async () => { root.unmount(); });
 console.log(`fetch-from-chat-ui.check: ${checks} checks passed`);
-process.exit(checks === 9 ? 0 : 1);
+process.exit(checks === 10 ? 0 : 1);

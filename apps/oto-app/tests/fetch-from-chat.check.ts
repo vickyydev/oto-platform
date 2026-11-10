@@ -23,8 +23,20 @@
 //   - the catalogue section: a package, add-on, set menu or choice, food line,
 //     entertainment or free line the chat names that the BEO lacks is LISTED
 //     (never swallowed), to read; what the BEO holds is not;
-//   - a declined change is held back on the same chat and offered again once
-//     the chat's newest line moves; the accepted ones are a patch of the form.
+//   - a declined change is held back BY FIELD on the same chat — whatever value
+//     the chat reads for it next — and offered again once the chat's newest
+//     line moves; an accepted field is let go; the accepted ones are a patch
+//     of the form;
+//   - SCRUM-826 (the staging proof of 11 November): the latest line wins,
+//     whoever wrote it. The team confirms 5 adults and the park's cake at
+//     15:30, the family later writes 6 adults and the cake at 16:00: the
+//     proposal reads 6 and 16:00 from the family; "actually no cake" later:
+//     the cake NONE from the family. The mirror — the family asks 6, the team
+//     later confirms 5 — reads 5 from the team. The same chat read twice
+//     through the route gives byte-identical proposals (the fake model is
+//     deterministic: this pins the code path), so an unchanged chat reads
+//     the same as the form, and a value accepted and saved is never offered
+//     back.
 //
 // Run from apps/oto-app: DATABASE_URL=<migrated scratch> npx tsx tests/fetch-from-chat.check.ts
 import assert from "node:assert/strict";
@@ -96,10 +108,70 @@ const LINES = [
 ];
 const RULING = LINES[1]!;
 const message = { id: RULING.id, body: RULING.text, bodyLanguage: null, authorName: "ZZ TEST Manager", sentAt: RULING.at, createdAt: RULING.at };
-const inbox = new Map<string, InboxRead>([
-  [conv.chat, { ok: true, confirmation: { conversationId: conv.chat, eventId: ev.chat, message, scanned: 4, transcript: LINES, transcriptCut: false } }],
+
+// ─── SCRUM-826: the proof's chat, and its mirror ──────────────────────────────
+// The team confirms 5 adults and the park's cake at 15:30 (the ruling, line 3);
+// the family later writes 6 adults and the cake at 16:00 (line 4), then
+// "actually no cake" (line 6). The mirror: the family asks 6, the team LATER
+// confirms 5. The fake model below reads these the way the prompt's one rule
+// says — the latest line wins, whoever wrote it — and names each value's line;
+// the route and the resolver turn the line into its author.
+const proof = { conv: randomUUID(), event: randomUUID() };
+const mirror = { conv: randomUUID(), event: randomUUID() };
+const proofIds = [1, 2, 3, 4, 5, 6].map(() => randomUUID());
+const PROOF_LINES = [
+  { id: proofIds[0]!, author: "customer" as const, at: at(10), text: "Hi! A party for Emma, 21 November at 14:00, 4 adults please. PROOF-826" },
+  { id: proofIds[1]!, author: "customer" as const, at: at(11), text: "now 6 adults please. PROOF-826" },
+  { id: proofIds[2]!, author: "staff" as const, at: at(12), text: "Confirmed: Emma's party on 21 November at 14:00, 5 adults, the park's cake at 15:30. PROOF-826" },
+  { id: proofIds[3]!, author: "customer" as const, at: at(13), text: "ok, 6 adults and the cake at 16:00. PROOF-826" },
+  { id: proofIds[4]!, author: "customer" as const, at: at(14), text: "great, see you then! PROOF-826" },
+  { id: proofIds[5]!, author: "customer" as const, at: at(15), text: "actually no cake, thanks. PROOF-826" },
+];
+const PROOF_RULING = PROOF_LINES[2]!;
+/** How many of the proof's lines the chat holds at the moment: 4 at first, then all 6. */
+let proofLinesHeld = 4;
+const mirrorIds = [randomUUID(), randomUUID()];
+const MIRROR_LINES = [
+  { id: mirrorIds[0]!, author: "customer" as const, at: at(20), text: "Hi! A party for Emma, 21 November at 14:00, 6 adults please. MIRROR-826" },
+  { id: mirrorIds[1]!, author: "staff" as const, at: at(21), text: "Confirmed: Emma's party on 21 November at 14:00, 5 adults. MIRROR-826" },
+];
+const MIRROR_RULING = MIRROR_LINES[1]!;
+/**
+ * A reader that follows the prompt's rule to the letter: for each thing the
+ * conversation speaks about, the value and line of the LATEST line that
+ * speaks about it, whoever wrote it. Deterministic, so two reads of the same
+ * lines are the same bytes.
+ */
+function readLikeTheRule(lines: Array<{ text: string }>) {
+  let numAdults: { value: number; line: number } | undefined;
+  let cake: { mode?: string; time?: string; line: number } | undefined;
+  lines.forEach((l, i) => {
+    const line = i + 1;
+    const adults = /(\d+) adults/.exec(l.text);
+    if (adults) numAdults = { value: Number(adults[1]), line };
+    if (/no cake/.test(l.text)) cake = { mode: "NONE", line };
+    else {
+      const time = /cake at (\d{2}:\d{2})/.exec(l.text);
+      if (time) cake = { mode: /park's cake/.test(l.text) ? "INTERNAL" : cake?.mode, time: time[1], line };
+    }
+  });
+  return { catalogue: { ...(numAdults ? { event: { numAdults } } : {}), ...(cake ? { cake } : {}) } };
+}
+
+const inbox = new Map<string, () => InboxRead>([
+  [conv.chat, () => ({ ok: true, confirmation: { conversationId: conv.chat, eventId: ev.chat, message, scanned: 4, transcript: LINES, transcriptCut: false } })],
   // A platform older than SCRUM-815: no transcript.
-  [conv.bare, { ok: true, confirmation: { conversationId: conv.bare, eventId: ev.bare, message: { ...message, id: lineIds[1]! }, scanned: 1 } as never }],
+  [conv.bare, () => ({ ok: true, confirmation: { conversationId: conv.bare, eventId: ev.bare, message: { ...message, id: lineIds[1]! }, scanned: 1 } as never })],
+  // SCRUM-826: the proof's chat as it stands at the moment (4 lines, then 6), and its mirror.
+  [proof.conv, () => {
+    const transcript = PROOF_LINES.slice(0, proofLinesHeld);
+    const ruling = { id: PROOF_RULING.id, body: PROOF_RULING.text, bodyLanguage: null, authorName: "ZZ TEST Manager", sentAt: PROOF_RULING.at, createdAt: PROOF_RULING.at };
+    return { ok: true, confirmation: { conversationId: proof.conv, eventId: proof.event, message: ruling, scanned: transcript.length, transcript, transcriptCut: false } };
+  }],
+  [mirror.conv, () => {
+    const ruling = { id: MIRROR_RULING.id, body: MIRROR_RULING.text, bodyLanguage: null, authorName: "ZZ TEST Manager", sentAt: MIRROR_RULING.at, createdAt: MIRROR_RULING.at };
+    return { ok: true, confirmation: { conversationId: mirror.conv, eventId: mirror.event, message: ruling, scanned: 2, transcript: MIRROR_LINES, transcriptCut: false } };
+  }],
 ]);
 
 /** The ruling message read alone, the form as its baseline: the ruling's values, the rest carried forward. */
@@ -123,12 +195,17 @@ const CONVERSATION_ANSWER = {
     deposit: { amount: 5000, paid: true, date: "2026-11-02", line: 2, source: "team" },
   },
 };
+
 const modelCalls: AiCompleteOptions[] = [];
 const ai = {
   configured: () => true,
   complete: async (call: AiCompleteOptions) => {
     modelCalls.push(call);
-    if (call.system.includes("THE CONVERSATION")) return JSON.stringify(CONVERSATION_ANSWER);
+    if (call.system.includes("THE CONVERSATION")) {
+      if (call.user.includes("PROOF-826")) return JSON.stringify(readLikeTheRule(PROOF_LINES.slice(0, proofLinesHeld)));
+      if (call.user.includes("MIRROR-826")) return JSON.stringify(readLikeTheRule(MIRROR_LINES));
+      return JSON.stringify(CONVERSATION_ANSWER);
+    }
     return JSON.stringify(FORM_ANSWER);
   },
 };
@@ -154,14 +231,17 @@ registerAIRoutes(app, fakeAuth, {
   now: () => new Date("2026-11-10T03:05:00Z"),
   loadEvent: async (_req, eventId) => {
     const key = (Object.keys(ev) as Array<keyof typeof ev>).find((k) => ev[k] === eventId);
-    return key ? { id: eventId, tenantId: tenant, branchId: park, title: "ZZ TEST Emma 826", inboxConversationId: conv[key] } : null;
+    if (key) return { id: eventId, tenantId: tenant, branchId: park, title: "ZZ TEST Emma 826", inboxConversationId: conv[key] };
+    if (eventId === proof.event) return { id: eventId, tenantId: tenant, branchId: park, title: "ZZ TEST Emma 826", inboxConversationId: proof.conv };
+    if (eventId === mirror.event) return { id: eventId, tenantId: tenant, branchId: park, title: "ZZ TEST Emma 826", inboxConversationId: mirror.conv };
+    return null;
   },
   teamCandidates: async () => ({ employees: [], departments: [], hostSource: "employee" as const }),
   recordActivity: async (entry) => {
     activity.push(entry);
     return undefined;
   },
-  inboxConfirmation: async (_req, conversationId) => inbox.get(conversationId) ?? { ok: false, reason: "inbox_unreachable" },
+  inboxConfirmation: async (_req, conversationId) => inbox.get(conversationId)?.() ?? { ok: false, reason: "inbox_unreachable" },
   parkPlace: async () => ({ name: "ZZ TEST Park", timeZone: "Asia/Bangkok" }),
   catalogue: async () => CATALOGUE,
 });
@@ -269,23 +349,113 @@ try {
     assert.equal(nothingNewLine(2), "The chat reads the same as the form. 2 changes you declined earlier are not offered again until the chat changes.");
   });
 
-  await check("a declined change is held back on the same chat and offered again once its newest line moves; the memory unions on one chat", () => {
+  await check("a declined FIELD is held back on the same chat, whatever value the chat reads for it, and offered again once its newest line moves; the memory unions on one chat; an accepted field is let go", () => {
     const changes = fetchChangesOf({ fill: fetched.fill, review: fetched.review }, FORM);
     const mark = fetched.chat.newestMessageId as string;
     const declined = rememberDeclined(NO_DECLINED, mark, [changes[0]!]);
-    assert.deepEqual(declined, { chatMark: mark, keys: ["numAdults=6"] });
+    assert.deepEqual(declined, { chatMark: mark, fields: ["numAdults"] });
     const held = offeredChanges(changes, declined, mark);
-    assert.deepEqual(held.offered.map(changeKey), ["cakeTime=16:00"]);
+    assert.deepEqual(held.offered.map(changeKey), ["cakeTime"]);
     assert.equal(held.held, 1);
+    // SCRUM-826: another reading of the same field on the same chat (the proof's "Adults → 6"
+    // declined, then "Adults → 5" offered) is the same held field.
+    const another = offeredChanges([{ ...changes[0]!, value: 5, now: "5" }, changes[1]!], declined, mark);
+    assert.deepEqual(another.offered.map(changeKey), ["cakeTime"], "a different value for a declined field slips nothing past the decline");
+    assert.equal(another.held, 1);
     const moved = offeredChanges(changes, declined, randomUUID());
     assert.equal(moved.offered.length, 2, "the chat changed: offered again");
     assert.equal(moved.held, 0);
     const more = rememberDeclined(declined, mark, changes);
-    assert.deepEqual(more.keys, ["numAdults=6", "cakeTime=16:00"]);
+    assert.deepEqual(more.fields, ["numAdults", "cakeTime"]);
     const fresh = rememberDeclined(more, "another-line", [changes[1]!]);
-    assert.deepEqual(fresh, { chatMark: "another-line", keys: ["cakeTime=16:00"] }, "a new chat starts its own memory");
-    // A different value for the same field is a different change.
-    assert.equal(offeredChanges([{ ...changes[0]!, value: 7, now: "7" }], declined, mark).offered.length, 1);
+    assert.deepEqual(fresh, { chatMark: "another-line", fields: ["cakeTime"] }, "a new chat starts its own memory");
+    // An accepted field is let go of the memory; a decline and an accept on one press each count.
+    assert.deepEqual(rememberDeclined(more, mark, [], [changes[0]!]), { chatMark: mark, fields: ["cakeTime"] });
+    assert.deepEqual(rememberDeclined(declined, mark, [changes[1]!], [changes[0]!]), { chatMark: mark, fields: ["cakeTime"] });
+    assert.deepEqual(rememberDeclined(more, "another-line", [], [changes[0]!]), { chatMark: "another-line", fields: [] }, "accepted on a new chat: nothing held");
+  });
+
+  await check("SCRUM-826: the same chat read twice through the route gives byte-identical proposals and the same chat mark; an unchanged chat reads the same as the form", async () => {
+    const first = await fillOf(ev.chat, "fetch");
+    const second = await fillOf(ev.chat, "fetch");
+    assert.equal(first.status, 200);
+    assert.equal(second.status, 200);
+    assert.equal(JSON.stringify(first.body.review.proposal), JSON.stringify(second.body.review.proposal), "the proposal, byte for byte");
+    assert.equal(JSON.stringify(first.body.fill), JSON.stringify(second.body.fill), "the form's read, byte for byte");
+    assert.deepEqual(first.body.chat, second.body.chat);
+    // The form holds what the chat says: each press says the same.
+    const settled = { ...FORM, numAdults: 6, cakeTime: "16:00" };
+    assert.deepEqual(fetchChangesOf({ fill: first.body.fill, review: first.body.review }, settled), []);
+    assert.deepEqual(fetchChangesOf({ fill: second.body.fill, review: second.body.review }, settled), []);
+  });
+
+  await check("SCRUM-826: the team confirms 5 adults and the park's cake at 15:30, the family later writes 6 adults and the cake at 16:00 — the family's 6 and 16:00 win; the saved 16:00 is never offered back as 15:30", async () => {
+    proofLinesHeld = 4;
+    const r = await fillOf(proof.event, "fetch");
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    assert.deepEqual(r.body.chat, { newestMessageId: proofIds[3], lines: 4 });
+    assert.equal(r.body.source.messageId, PROOF_RULING.id, "the ruling message is still the team's confirmation");
+    const p = r.body.review.proposal;
+    assert.deepEqual(p.event.numAdults, { value: 6, from: { source: "family", at: at(13), line: 4 } }, "the adults: the family's line after the confirmation");
+    assert.deepEqual(p.cake, { mode: "INTERNAL", notes: null, time: "16:00", from: { source: "family", at: at(13), line: 4 } }, "the cake: the park's, at the family's later time");
+    assert.ok(modelCalls.at(-2)!.system.includes("The latest line wins, whoever wrote it") || modelCalls.at(-1)!.system.includes("The latest line wins, whoever wrote it"), "the conversation's prompt states the one rule");
+
+    // The form as the proof left it: 7 adults typed (unsaved), the park's cake at 15:30 from the approval.
+    const typed = { ...FORM, numAdults: 7, cakeMode: "INTERNAL", cakeTime: "15:30" };
+    const changes = fetchChangesOf({ fill: r.body.fill, review: r.body.review }, typed);
+    assert.deepEqual(
+      changes.map((c) => [c.field, c.was, c.now, c.value, c.from?.source, c.from?.line]),
+      [
+        ["numAdults", "7", "6", 6, "family", 4],
+        ["cakeTime", "15:30", "16:00", "16:00", "family", 4],
+      ],
+    );
+    // Cake time accepted and saved, the adults declined: the next press on the same chat
+    // offers nothing — not the adults (held by field) and never "16:00 → 15:30".
+    const declined = rememberDeclined(NO_DECLINED, r.body.chat.newestMessageId, [changes[0]!], [changes[1]!]);
+    assert.deepEqual(declined, { chatMark: proofIds[3], fields: ["numAdults"] });
+    const again = await fillOf(proof.event, "fetch");
+    assert.equal(JSON.stringify(again.body.review.proposal), JSON.stringify(p), "the same chat, the same bytes");
+    const saved = { ...typed, cakeTime: "16:00" };
+    const next = fetchChangesOf({ fill: again.body.fill, review: again.body.review }, saved);
+    assert.deepEqual(next.map((c) => [c.field, c.now]), [["numAdults", "6"]], "only the adults differ; the saved cake time is not offered back");
+    const offered = offeredChanges(next, declined, again.body.chat.newestMessageId);
+    assert.deepEqual(offered, { offered: [], held: 1 });
+    assert.equal(nothingNewLine(offered.held), "The chat reads the same as the form. 1 change you declined earlier is not offered again until the chat changes.");
+  });
+
+  await check("SCRUM-826: the family's \"actually no cake\" after the confirmation — the cake NONE from the family, offered as No cake over the park's, and the held adults offered again on the new line", async () => {
+    proofLinesHeld = 6;
+    const r = await fillOf(proof.event, "fetch");
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    assert.deepEqual(r.body.chat, { newestMessageId: proofIds[5], lines: 6 });
+    const p = r.body.review.proposal;
+    assert.deepEqual(p.cake, { mode: "NONE", notes: null, time: null, from: { source: "family", at: at(15), line: 6 } }, "no cake: the family's latest line");
+    assert.deepEqual(p.event.numAdults, { value: 6, from: { source: "family", at: at(13), line: 4 } }, "the adults as before: no later line changed them");
+    const saved = { ...FORM, numAdults: 7, cakeMode: "INTERNAL", cakeTime: "16:00" };
+    const changes = fetchChangesOf({ fill: r.body.fill, review: r.body.review }, saved);
+    assert.deepEqual(
+      changes.map((c) => [c.field, c.was, c.now, c.value, c.from?.source, c.from?.line]),
+      [
+        ["numAdults", "7", "6", 6, "family", 4],
+        ["cakeMode", "The park's cake", "No cake", "NONE", "family", 6],
+      ],
+      "the no-cake row on the FIRST press after the line, and no cake time row",
+    );
+    // The adults were held on the 4-line chat: the chat has a new line, so they are offered again.
+    const held = { chatMark: proofIds[3]!, fields: ["numAdults" as const] };
+    assert.deepEqual(offeredChanges(changes, held, r.body.chat.newestMessageId), { offered: changes, held: 0 });
+  });
+
+  await check("SCRUM-826, the mirror: the family asks for 6 adults, the team LATER confirms 5 — 5 from the team", async () => {
+    const r = await fillOf(mirror.event, "fetch");
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    assert.deepEqual(r.body.chat, { newestMessageId: mirrorIds[1], lines: 2 });
+    assert.equal(r.body.source.messageId, MIRROR_RULING.id);
+    assert.deepEqual(r.body.review.proposal.event.numAdults, { value: 5, from: { source: "team", at: at(21), line: 2 } });
+    assert.equal(r.body.review.proposal.cake, null, "no cake spoken of");
+    const changes = fetchChangesOf({ fill: r.body.fill, review: r.body.review }, { ...FORM, numAdults: 6 });
+    assert.deepEqual(changes.map((c) => [c.field, c.was, c.now, c.from?.source, c.from?.line]), [["numAdults", "6", "5", "team", 2]]);
   });
 
   await check("the fields the fill alone gives: the date as one row with the chat's words, the form's text fields, the setup, the POS box; a value the chat does not give leaves the field; nothing is offered emptied", () => {
@@ -448,11 +618,13 @@ try {
   });
 
   await check("nothing is written by a fetch: no BEO row for the event", async () => {
-    const { rows } = await appDbPool.query<{ n: string }>(
-      `select (select count(*) from beo_package_snapshots where event_id = $1) + (select count(*) from beo_kitchen_plans where event_id = $1) + (select count(*) from beo_event_billing where event_id = $1) as n`,
-      [ev.chat],
-    );
-    assert.equal(Number(rows[0]!.n), 0);
+    for (const eventId of [ev.chat, proof.event, mirror.event]) {
+      const { rows } = await appDbPool.query<{ n: string }>(
+        `select (select count(*) from beo_package_snapshots where event_id = $1) + (select count(*) from beo_kitchen_plans where event_id = $1) + (select count(*) from beo_event_billing where event_id = $1) as n`,
+        [eventId],
+      );
+      assert.equal(Number(rows[0]!.n), 0);
+    }
   });
 } finally {
   for (const s of servers) await new Promise<void>((resolve) => s.close(() => resolve()));

@@ -11,15 +11,16 @@ import { thb } from "./beo-ai-review";
  * rule: a Fetch warns first, reads the conversation again, and LISTS every
  * change it brings — the field, what the form holds now and what the chat
  * says — each accepted or declined; nothing typed is overwritten silently, a
- * declined change is not offered again until the chat changes, and what is
- * accepted lands in the form as any edit does, unsaved until Save.
+ * declined field is not offered again until the chat has a new line, and
+ * what is accepted lands in the form as any edit does, unsaved until Save.
  *
  * The read is the existing fill path (`POST …/beo/ai-fill/inbox`, with
  * `purpose: "fetch"`): the free-text fill of the ruling message with the form
  * as its baseline, and, with the park's catalogue, the catalogue proposal read
  * from the WHOLE conversation with each value's source. The diff takes the
  * counts, the times, the child, the cake and the deposit from that proposal
- * (the whole chat, a later line winning) and the rest of the form's own text
+ * (the whole chat as it is now: the latest line wins, whoever wrote it —
+ * `laterLineWins`) and the rest of the form's own text
  * fields from the fill; those are the fields the form types, and the only
  * ones a fetch applies. The catalogue section — the package and its add-ons,
  * the set menu and its choices, the food lines, the entertainment, a line the
@@ -344,28 +345,38 @@ export const catalogueChangesCount = (n: number) => `${n} change${n === 1 ? "" :
 export const CATALOGUE_CHANGES_LINE =
   "Listed to read, not applied here: the package, set menu, food and entertainment are chosen in their own sections, or by pasting the line into AI Fill.";
 
-/** A change's identity for the memory: the field and the value the chat gives it. */
-export const changeKey = (change: Pick<FetchChange, "field" | "value">): string => `${change.field}=${String(change.value)}`;
+/**
+ * A change's identity for the memory and the list: its FIELD. A fetch offers
+ * each field at most once, and a declined field is held back whatever value
+ * the chat gives it next (the proof of 11 November: "Adults → 6" declined,
+ * "Adults → 5" slipped through), until the chat has a new line.
+ */
+export const changeKey = (change: Pick<FetchChange, "field">): FetchField => change.field;
 
-/** The changes declined on a fetch, held until the chat changes (its newest line moves). */
+/** The fields declined on a fetch, held until the chat changes (its newest line moves). */
 export interface DeclinedChanges {
   chatMark: string | null;
-  keys: readonly string[];
+  fields: readonly FetchField[];
 }
-export const NO_DECLINED: DeclinedChanges = { chatMark: null, keys: [] };
+export const NO_DECLINED: DeclinedChanges = { chatMark: null, fields: [] };
 
-/** The changes to offer: those declined on the same chat are held back, and counted. */
+/** The changes to offer: the fields declined on the same chat are held back, and counted. */
 export function offeredChanges(changes: FetchChange[], declined: DeclinedChanges, chatMark: string | null): { offered: FetchChange[]; held: number } {
-  if (declined.keys.length === 0 || declined.chatMark !== chatMark) return { offered: changes, held: 0 };
-  const offered = changes.filter((c) => !declined.keys.includes(changeKey(c)));
+  if (declined.fields.length === 0 || declined.chatMark !== chatMark) return { offered: changes, held: 0 };
+  const offered = changes.filter((c) => !declined.fields.includes(c.field));
   return { offered, held: changes.length - offered.length };
 }
 
-/** The memory after a fetch: the declined changes added to the same chat's, or a new chat's on their own. */
-export function rememberDeclined(declined: DeclinedChanges, chatMark: string | null, changes: FetchChange[]): DeclinedChanges {
-  const keys = changes.map(changeKey);
-  if (declined.chatMark === chatMark) return { chatMark, keys: [...new Set([...declined.keys, ...keys])] };
-  return { chatMark, keys };
+/**
+ * The memory after a fetch: the declined fields added to the same chat's (a
+ * new chat's — the newest line moved — start on their own, so every field
+ * held before is offered again), and a field accepted this time let go.
+ */
+export function rememberDeclined(declined: DeclinedChanges, chatMark: string | null, refused: FetchChange[], accepted: FetchChange[] = []): DeclinedChanges {
+  const kept = declined.chatMark === chatMark ? declined.fields : [];
+  const taken = new Set(accepted.map(changeKey));
+  const fields = [...new Set([...kept, ...refused.map(changeKey)])].filter((f) => !taken.has(f));
+  return { chatMark, fields };
 }
 
 /** The accepted changes as a patch of the form. */
