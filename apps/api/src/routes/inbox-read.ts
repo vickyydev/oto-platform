@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   InboxActionRefusalSchema,
   InboxBeoConfirmationSchema,
+  InboxBookDateProposalSchema,
   InboxConversationDetailSchema,
   InboxConversationListQuerySchema,
   InboxConversationListSchema,
@@ -21,6 +22,7 @@ import { PermissionDeniedError } from '../plugins/session';
 import { opCtx, withTx } from '../services/tx';
 import { bannerOf, impersonationMarksOf } from '../services/impersonation';
 import { beoConfirmationOf } from '../services/inbox/beo-confirmation';
+import { BOOK_DATE_PROPOSAL_RATE, bookDateProposalOf } from '../services/inbox/book-date-proposal';
 import { holdsAnywhere, viewerScopeOf, type InboxViewer } from '../services/inbox/read-visibility';
 import {
   conversationDetail,
@@ -178,6 +180,37 @@ export async function inboxReadRoutes(app: App): Promise<void> {
     async (req) => {
       const { viewer } = await inboxCaller(req, 'inbox:conversation:read');
       return beoConfirmationOf(app.db, viewer, req.params.id);
+    },
+  );
+
+  app.get(
+    '/conversations/:id/book-date-proposal',
+    {
+      config: { dynamicPermission: true, rateLimit: { ...BOOK_DATE_PROPOSAL_RATE } },
+      schema: {
+        description:
+          "Book Date's values read from the whole chat by the model (SCRUM-821): the party's date, start time, kids, " +
+          "adults, the child's name and age, and the park when the chat names one (`branchHint`), each with the " +
+          "chat's own words (`text`), whose line it is (`source`: `family` or `team`; the team's confirmation wins " +
+          'where both speak) and the message (`messageId`). The lines are the BEO fill’s transcript (the family’s and ' +
+          "the team's received ones, never the assistant's, a system notice or an erased line; the newest 200 within " +
+          "60 days), read in Thai, English or Russian with their typos, against the park's today and zone. " +
+          "`model: 'unavailable'` with `proposal: null` when no model is configured here or it gave no usable answer: " +
+          "the dialog keeps its pattern reading. `patternReading` is the SCRUM-814 reader's date and time over the " +
+          'same lines, for comparison. A read: nothing is written or audited; 30 a minute per caller. 409 ' +
+          'NOT_A_BIRTHDAY outside Birthdays & Events; 404 when the caller cannot see the conversation. Needs ' +
+          'inbox:conversation:read.',
+        params: ConversationParams,
+        response: { 200: InboxBookDateProposalSchema, 409: InboxActionRefusalSchema },
+      },
+    },
+    async (req) => {
+      const { viewer } = await inboxCaller(req, 'inbox:conversation:read');
+      return bookDateProposalOf(
+        { db: app.db, reader: app.inboxAi.bookDateReader ?? null, log: req.log },
+        viewer,
+        req.params.id,
+      );
     },
   );
 

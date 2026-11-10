@@ -30,6 +30,10 @@
  *   review.ts     the coherence reviewer (SCRUM-677): operations only over
  *                 a composed reply, the server's hard rules over them, the
  *                 call within its deadline, fail-open.
+ *   book-date.ts  Book Date's reading of the chat (SCRUM-821): one
+ *                 structured call proposing the party's date, time, guests,
+ *                 child and park, each with its line; checked before use.
+ *                 `FakeBookDateReader` (fake.ts) scripts it.
  *
  * The internal assistant (Phase 3). The engine (I2) owns the routes, the
  * tool registry and adapters, caps, audit and the ask-log.
@@ -67,3 +71,4 @@ export * from './tool-loop';
 export * from './tool-loop-fake';
 export * from './operator-rules';
 export * from './persona/teach';
+export * from './book-date';

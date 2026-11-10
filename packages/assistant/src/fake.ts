@@ -20,6 +20,14 @@ import {
   type ModelReply,
   type TurnUsage,
 } from './client';
+import {
+  EMPTY_BOOK_DATE_READING,
+  interpretBookDateReply,
+  type BookDateOutcome,
+  type BookDateReader,
+  type BookDateReading,
+  type BookDateRequest,
+} from './book-date';
 import type { AiDecision } from './decision';
 import type { AiIntent } from './intents';
 import {
@@ -216,6 +224,59 @@ export class FakeCoherenceReviewer implements CoherenceReviewer {
     }
     const made = materialise(step, this.model);
     return 'reply' in made ? interpretReviewReply(made.reply, latency) : interpretError(made.error, latency);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Book Date's reader's fake (SCRUM-821)
+// ---------------------------------------------------------------------------
+
+/** A scripted reading of the chat, or any failure shape the decision's fake has. */
+export type FakeBookDateStep =
+  | { kind: 'reading'; reading: Partial<BookDateReading> }
+  /** Never answers: the caller's own deadline decides. */
+  | { kind: 'hang' }
+  | Exclude<FakeStep, { kind: 'decision' }>;
+
+export type FakeBookDateScriptEntry = FakeBookDateStep & {
+  during?: () => void | Promise<void>;
+  latencyMs?: number;
+};
+
+export class FakeBookDateReader implements BookDateReader {
+  readonly model: string;
+  /** Every request received, in order (held in memory only, never logged). */
+  readonly requests: BookDateRequest[] = [];
+  private readonly script: FakeBookDateScriptEntry[];
+
+  constructor(script: FakeBookDateScriptEntry[] = [], model: string = DEFAULT_MODEL) {
+    this.script = [...script];
+    this.model = model;
+  }
+
+  push(...steps: FakeBookDateScriptEntry[]): this {
+    this.script.push(...steps);
+    return this;
+  }
+
+  get remaining(): number {
+    return this.script.length;
+  }
+
+  /** Plays the next step through the real reply's interpretation. An exhausted script throws: a test-authoring error. */
+  async read(request: BookDateRequest): Promise<BookDateOutcome> {
+    this.requests.push(request);
+    const step = this.script.shift();
+    if (!step) throw new Error('FakeBookDateReader: the script has no step left for this call');
+    if (step.during) await step.during();
+    if (step.kind === 'hang') return new Promise<BookDateOutcome>(() => undefined);
+    const latency = step.latencyMs ?? 900;
+    if (step.kind === 'reading') {
+      const reading: BookDateReading = { ...EMPTY_BOOK_DATE_READING, ...step.reading };
+      return interpretBookDateReply(reply(this.model, 'end_turn', JSON.stringify(reading)), latency);
+    }
+    const made = materialise(step, this.model);
+    return 'reply' in made ? interpretBookDateReply(made.reply, latency) : interpretError(made.error, latency);
   }
 }
 

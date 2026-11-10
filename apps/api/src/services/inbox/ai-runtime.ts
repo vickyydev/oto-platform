@@ -1,10 +1,13 @@
 import {
   AnthropicAssistantClient,
+  AnthropicBookDateReader,
   AnthropicCoherenceReviewer,
+  BOOK_DATE_TIMEOUT_MS,
   AnthropicToolLoopClient,
   REVIEW_TIMEOUT_MS,
   type AiEffort,
   type AssistantClient,
+  type BookDateReader,
   type CoherenceReviewer,
   type PacingConfig,
   type RandomSource,
@@ -67,6 +70,13 @@ export interface InboxAiRuntime {
    * inject FakeToolLoopClient).
    */
   teacher?: ToolLoopClient | null;
+  /**
+   * SCRUM-821: Book Date's reading of the chat, same key/model/effort as
+   * `client`, within `BOOK_DATE_TIMEOUT_MS` at most; null when off (Book Date
+   * keeps the pattern reading) and ALWAYS null under NODE_ENV=test (suites
+   * inject FakeBookDateReader).
+   */
+  bookDateReader?: BookDateReader | null;
   /** Pacing's jitter source (§B.6); tests pin it. */
   random: RandomSource;
 }
@@ -91,6 +101,7 @@ export function buildInboxAiRuntime(env: Env, log?: FastifyBaseLogger): InboxAiR
   let client: AssistantClient | null = null;
   let reviewer: CoherenceReviewer | null = null;
   let teacher: ToolLoopClient | null = null;
+  let bookDateReader: BookDateReader | null = null;
   if (config.enabled && env.NODE_ENV !== 'test' && env.ANTHROPIC_API_KEY.trim()) {
     client = new AnthropicAssistantClient({
       apiKey: env.ANTHROPIC_API_KEY,
@@ -113,6 +124,13 @@ export function buildInboxAiRuntime(env: Env, log?: FastifyBaseLogger): InboxAiR
       effort: config.effort,
       timeoutMs: config.timeoutMs,
     });
+    bookDateReader = new AnthropicBookDateReader({
+      apiKey: env.ANTHROPIC_API_KEY,
+      baseURL: env.ANTHROPIC_BASE_URL.trim() || undefined,
+      model: config.model,
+      effort: config.effort,
+      timeoutMs: Math.min(config.timeoutMs, BOOK_DATE_TIMEOUT_MS),
+    });
   }
   if (config.enabled) {
     // The boot line the staging proof reads (§F.5 item 1): the model, never the key.
@@ -121,7 +139,7 @@ export function buildInboxAiRuntime(env: Env, log?: FastifyBaseLogger): InboxAiR
       'inbox assistant enabled',
     );
   }
-  return { config, client, reviewer, teacher, random: Math.random };
+  return { config, client, reviewer, teacher, bookDateReader, random: Math.random };
 }
 
 /** The ingest's view: the switch and the debounce only. */

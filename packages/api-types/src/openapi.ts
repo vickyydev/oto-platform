@@ -35272,6 +35272,133 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inbox/conversations/{id}/book-date-proposal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Book Date's values read from the whole chat by the model (SCRUM-821): the party's date, start time, kids, adults, the child's name and age, and the park when the chat names one (`branchHint`), each with the chat's own words (`text`), whose line it is (`source`: `family` or `team`; the team's confirmation wins where both speak) and the message (`messageId`). The lines are the BEO fill’s transcript (the family’s and the team's received ones, never the assistant's, a system notice or an erased line; the newest 200 within 60 days), read in Thai, English or Russian with their typos, against the park's today and zone. `model: 'unavailable'` with `proposal: null` when no model is configured here or it gave no usable answer: the dialog keeps its pattern reading. `patternReading` is the SCRUM-814 reader's date and time over the same lines, for comparison. A read: nothing is written or audited; 30 a minute per caller. 409 NOT_A_BIRTHDAY outside Birthdays & Events; 404 when the caller cannot see the conversation. Needs inbox:conversation:read. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            conversationId: string;
+                            /** @enum {string} */
+                            model: "ai" | "unavailable";
+                            proposal: {
+                                date: {
+                                    value: string;
+                                    text: string;
+                                    /** @enum {string} */
+                                    source: "team" | "family";
+                                    /** Format: uuid */
+                                    messageId: string;
+                                } | null;
+                                startTime: {
+                                    value: string;
+                                    text: string;
+                                    /** @enum {string} */
+                                    source: "team" | "family";
+                                    /** Format: uuid */
+                                    messageId: string;
+                                } | null;
+                                kids: {
+                                    value: number;
+                                    text: string;
+                                    /** @enum {string} */
+                                    source: "team" | "family";
+                                    /** Format: uuid */
+                                    messageId: string;
+                                } | null;
+                                adults: {
+                                    value: number;
+                                    text: string;
+                                    /** @enum {string} */
+                                    source: "team" | "family";
+                                    /** Format: uuid */
+                                    messageId: string;
+                                } | null;
+                                childName: {
+                                    value: string;
+                                    text: string;
+                                    /** @enum {string} */
+                                    source: "team" | "family";
+                                    /** Format: uuid */
+                                    messageId: string;
+                                } | null;
+                                childAge: {
+                                    value: number;
+                                    text: string;
+                                    /** @enum {string} */
+                                    source: "team" | "family";
+                                    /** Format: uuid */
+                                    messageId: string;
+                                } | null;
+                                branchHint: {
+                                    /** Format: uuid */
+                                    value: string | null;
+                                    text: string;
+                                    /** @enum {string} */
+                                    source: "team" | "family";
+                                    /** Format: uuid */
+                                    messageId: string;
+                                } | null;
+                            } | null;
+                            patternReading: {
+                                date: string | null;
+                                dateText: string;
+                                /** @enum {string|null} */
+                                source: "team" | "family" | null;
+                                startTime: string | null;
+                                timeText: string;
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                };
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inbox/conversations/{id}/read": {
         parameters: {
             query?: never;

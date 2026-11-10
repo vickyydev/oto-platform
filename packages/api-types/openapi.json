@@ -90544,6 +90544,363 @@
         }
       }
     },
+    "/inbox/conversations/{id}/book-date-proposal": {
+      "get": {
+        "description": "Book Date's values read from the whole chat by the model (SCRUM-821): the party's date, start time, kids, adults, the child's name and age, and the park when the chat names one (`branchHint`), each with the chat's own words (`text`), whose line it is (`source`: `family` or `team`; the team's confirmation wins where both speak) and the message (`messageId`). The lines are the BEO fill’s transcript (the family’s and the team's received ones, never the assistant's, a system notice or an erased line; the newest 200 within 60 days), read in Thai, English or Russian with their typos, against the park's today and zone. `model: 'unavailable'` with `proposal: null` when no model is configured here or it gave no usable answer: the dialog keeps its pattern reading. `patternReading` is the SCRUM-814 reader's date and time over the same lines, for comparison. A read: nothing is written or audited; 30 a minute per caller. 409 NOT_A_BIRTHDAY outside Birthdays & Events; 404 when the caller cannot see the conversation. Needs inbox:conversation:read.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversationId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "model": {
+                      "type": "string",
+                      "enum": [
+                        "ai",
+                        "unavailable"
+                      ]
+                    },
+                    "proposal": {
+                      "type": "object",
+                      "properties": {
+                        "date": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "string"
+                            },
+                            "text": {
+                              "type": "string"
+                            },
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "team",
+                                "family"
+                              ]
+                            },
+                            "messageId": {
+                              "type": "string",
+                              "format": "uuid"
+                            }
+                          },
+                          "required": [
+                            "value",
+                            "text",
+                            "source",
+                            "messageId"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "startTime": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "string",
+                              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                            },
+                            "text": {
+                              "type": "string"
+                            },
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "team",
+                                "family"
+                              ]
+                            },
+                            "messageId": {
+                              "type": "string",
+                              "format": "uuid"
+                            }
+                          },
+                          "required": [
+                            "value",
+                            "text",
+                            "source",
+                            "messageId"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "kids": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 1000
+                            },
+                            "text": {
+                              "type": "string"
+                            },
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "team",
+                                "family"
+                              ]
+                            },
+                            "messageId": {
+                              "type": "string",
+                              "format": "uuid"
+                            }
+                          },
+                          "required": [
+                            "value",
+                            "text",
+                            "source",
+                            "messageId"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "adults": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 1000
+                            },
+                            "text": {
+                              "type": "string"
+                            },
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "team",
+                                "family"
+                              ]
+                            },
+                            "messageId": {
+                              "type": "string",
+                              "format": "uuid"
+                            }
+                          },
+                          "required": [
+                            "value",
+                            "text",
+                            "source",
+                            "messageId"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "childName": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "text": {
+                              "type": "string"
+                            },
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "team",
+                                "family"
+                              ]
+                            },
+                            "messageId": {
+                              "type": "string",
+                              "format": "uuid"
+                            }
+                          },
+                          "required": [
+                            "value",
+                            "text",
+                            "source",
+                            "messageId"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "childAge": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 30
+                            },
+                            "text": {
+                              "type": "string"
+                            },
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "team",
+                                "family"
+                              ]
+                            },
+                            "messageId": {
+                              "type": "string",
+                              "format": "uuid"
+                            }
+                          },
+                          "required": [
+                            "value",
+                            "text",
+                            "source",
+                            "messageId"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "branchHint": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "string",
+                              "format": "uuid",
+                              "nullable": true
+                            },
+                            "text": {
+                              "type": "string"
+                            },
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "team",
+                                "family"
+                              ]
+                            },
+                            "messageId": {
+                              "type": "string",
+                              "format": "uuid"
+                            }
+                          },
+                          "required": [
+                            "value",
+                            "text",
+                            "source",
+                            "messageId"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "date",
+                        "startTime",
+                        "kids",
+                        "adults",
+                        "childName",
+                        "childAge",
+                        "branchHint"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "patternReading": {
+                      "type": "object",
+                      "properties": {
+                        "date": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "dateText": {
+                          "type": "string"
+                        },
+                        "source": {
+                          "type": "string",
+                          "enum": [
+                            "team",
+                            "family"
+                          ],
+                          "nullable": true
+                        },
+                        "startTime": {
+                          "type": "string",
+                          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                          "nullable": true
+                        },
+                        "timeText": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "date",
+                        "dateText",
+                        "source",
+                        "startTime",
+                        "timeText"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "conversationId",
+                    "model",
+                    "proposal",
+                    "patternReading"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/inbox/conversations/{id}/read": {
       "post": {
         "description": "Mark the conversation read up to a message (default: the newest) for the caller — the unread counts. The marker only moves forward. Writes the sampled read audit: one `inbox.conversation.read` row per account, conversation and Bangkok day, naming the category, team and branch, never a message body. 404 when the caller cannot see the conversation. Needs inbox:conversation:read.",

@@ -196,6 +196,62 @@ export const InboxBookDateResultSchema = z.object({
 });
 export type InboxBookDateResult = z.infer<typeof InboxBookDateResultSchema>;
 
+/** Whose line a proposed value came from: the family's (the customer) or a person on the team's. */
+export const INBOX_BOOK_DATE_SOURCES = ['team', 'family'] as const;
+export const InboxBookDateSourceSchema = z.enum(INBOX_BOOK_DATE_SOURCES);
+export type InboxBookDateSource = z.infer<typeof InboxBookDateSourceSchema>;
+
+/** One value the model read from the chat: the value, the chat's own words for it, and the line they are in. */
+function proposed<T extends z.ZodTypeAny>(value: T) {
+  return z
+    .object({
+      value,
+      /** The line's own words for it, as written ("12 kds", "sat 21 novmber"). */
+      text: z.string(),
+      source: InboxBookDateSourceSchema,
+      /** The message the words are in. */
+      messageId: Uuid,
+    })
+    .nullable();
+}
+
+/**
+ * `GET /inbox/conversations/{id}/book-date-proposal` (SCRUM-821) — Book
+ * Date's values read from the whole chat by the model: the party's date,
+ * start time, kids, adults, the child's name and age, and the park when the
+ * chat names one, each with the chat's words and its line (the team's
+ * confirmation winning where the family's line and the team's both speak).
+ * `model: 'unavailable'` (the model is not configured here, or did not give a
+ * usable answer) comes with `proposal: null`, and the dialog keeps the
+ * pattern reading. `patternReading` is the SCRUM-814 reader's date and time
+ * over the same lines, for comparison. A read: nothing is written.
+ */
+export const InboxBookDateProposalSchema = z.object({
+  conversationId: Uuid,
+  model: z.enum(['ai', 'unavailable']),
+  proposal: z
+    .object({
+      date: proposed(IsoDate),
+      startTime: proposed(ClockTime),
+      kids: proposed(z.number().int().min(0).max(1000)),
+      adults: proposed(z.number().int().min(0).max(1000)),
+      childName: proposed(z.string().min(1).max(80)),
+      childAge: proposed(z.number().int().min(0).max(30)),
+      /** The park the chat names: one of the operator's branches, or null when it names one that is not. */
+      branchHint: proposed(Uuid.nullable()),
+    })
+    .nullable(),
+  patternReading: z.object({
+    date: IsoDate.nullable(),
+    /** The chat's words for the date; empty when it names none. */
+    dateText: z.string(),
+    source: InboxBookDateSourceSchema.nullable(),
+    startTime: ClockTime.nullable(),
+    timeText: z.string(),
+  }),
+});
+export type InboxBookDateProposal = z.infer<typeof InboxBookDateProposalSchema>;
+
 
 /**
  * `POST /inbox/conversations/{id}/open-beo` — Create BEO on a conversation

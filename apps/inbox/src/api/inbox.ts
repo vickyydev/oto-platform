@@ -39,6 +39,7 @@ export type PrimaryAssignee = ApiBody<'/inbox/conversations/{id}/primary', 'put'
 export type SimulatedInbound = ApiBody<'/inbox/simulator/inbound', 'post'>;
 export type BookDateBody = ApiBody<'/inbox/conversations/{id}/book-date', 'post'>;
 export type BookDateResult = ApiResponse<'/inbox/conversations/{id}/book-date', 'post'>;
+export type BookDateProposal = ApiResponse<'/inbox/conversations/{id}/book-date-proposal', 'get'>;
 /** A conversation's event in the Events module (SCRUM-775), on its detail. */
 export type ConversationEvent = NonNullable<ConversationDetail['event']>;
 
@@ -128,6 +129,14 @@ export const inboxApi = {
     api.post<ApiResponse<'/inbox/conversations/{id}/book-date', 'post'>>(`${at(id)}/book-date`, body, {
       idempotencyKey: idemKey(),
     }),
+
+  /**
+   * Book Date's values read from the whole chat by the model (SCRUM-821), each
+   * with the chat's words and whose line it was. A read; `model: 'unavailable'`
+   * when there is no model here, and the dialog keeps its pattern reading.
+   */
+  bookDateProposal: (id: string) =>
+    api.get<ApiResponse<'/inbox/conversations/{id}/book-date-proposal', 'get'>>(`${at(id)}/book-date-proposal`),
 
   /**
    * Create BEO (SCRUM-775): a one-use hand-off into the OTO App landing on the
