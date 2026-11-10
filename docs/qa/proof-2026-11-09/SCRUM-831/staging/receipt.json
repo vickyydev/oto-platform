@@ -1,0 +1,1888 @@
+{
+  "unit": "SCRUM-831 never ask twice: staging proof",
+  "commit": "cd9e42bf1fe028117f0ba69acba0efbd30b02401",
+  "runWindowUtc": {
+    "start": "2026-11-10T14:39:43.617Z",
+    "end": "2026-11-10T14:51:11.679Z"
+  },
+  "browser": "Chromium 153.0.8010.12 (headless), 1440×900, light, en-GB, Asia/Bangkok",
+  "liveBefore": {
+    "at": "2026-11-10T14:39:49.924Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbpie1mgekts73a23ra0",
+        "status": "live",
+        "sha": "cd9e42bf1fe028117f0ba69acba0efbd30b02401",
+        "finishedAt": "2026-11-10T14:19:58.987869Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbpie1rbc2fs73a9surg",
+        "status": "live",
+        "sha": "cd9e42bf1fe028117f0ba69acba0efbd30b02401",
+        "finishedAt": "2026-11-10T14:16:35.285851Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dbpiaup42hec73djom1g",
+        "status": "live",
+        "sha": "a80ca26308b3965e721f409aa413387bb386750d",
+        "finishedAt": "2026-11-10T14:09:57.618434Z"
+      }
+    ],
+    "apiAndInboxLiveOnSha": true
+  },
+  "liveAfter": {
+    "at": "2026-11-10T14:51:08.480Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbpiqjp42hec73dkksq0",
+        "status": "live",
+        "sha": "cd9e42bf1fe028117f0ba69acba0efbd30b02401",
+        "finishedAt": "2026-11-10T14:46:51.717877Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbpiqjp42hec73dkktpg",
+        "status": "live",
+        "sha": "cd9e42bf1fe028117f0ba69acba0efbd30b02401",
+        "finishedAt": "2026-11-10T14:43:30.203921Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dbpiqk142hec73dkku70",
+        "status": "live",
+        "sha": "cd9e42bf1fe028117f0ba69acba0efbd30b02401",
+        "finishedAt": "2026-11-10T14:43:37.533471Z"
+      }
+    ],
+    "apiAndInboxLiveOnSha": true
+  },
+  "liveNote": "At 14:42:23 UTC a push to main started new deploys of the same code commit (cd9e42bf) on the api, the inbox and the Console (trigger new_commit; not started by this run). The inbox and the Console went live on it at 14:43:30 and 14:43:37 UTC, the api at 14:46:51 UTC. Thread A turns 1-2 and thread B turns 1-2 ran on the earlier api deploy, thread C turn 2 and the extra thread A turn on the new one; both deploys are the same commit.",
+  "viewer": {
+    "roles": [
+      "owner"
+    ],
+    "via": "the launcher, handed into the inbox and the Console (staging administrator)"
+  },
+  "assistant": {
+    "route": "GET /api/inbox/ai/channel-accounts",
+    "status": 200,
+    "account": {
+      "id": "01a156bb-6778-72b0-8237-6028f8874503",
+      "displayName": "Demo WhatsApp · Central Floresta",
+      "channel": "whatsapp",
+      "aiMode": "live"
+    }
+  },
+  "threads": {
+    "A": {
+      "key": "A",
+      "expect": "opener asks; answered lines; no re-ask",
+      "sender": "its own ZZ TEST simulator number (not kept)",
+      "conversationId": "01a1c5e7-21a6-79ed-a041-d68236446cd4",
+      "language": "en",
+      "categoryHint": "birthdays",
+      "conversation": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "birthdays",
+        "teamName": "Birthdays & Events",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "en",
+        "aiMode": "live",
+        "aiState": "left_for_team",
+        "aiPaused": false,
+        "handledAt": null,
+        "openQuestionsPresent": true
+      },
+      "lines": [
+        {
+          "n": 1,
+          "text": "Hi, we'd like a birthday party for our son (ZZ TEST)",
+          "sentAt": "2026-11-10T14:40:21.055Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "Birthdays & Events",
+            "language": "en",
+            "message": "Hi, we'd like a birthday party for our son (ZZ TEST)"
+          },
+          "hint": {
+            "category": "birthdays",
+            "language": "en"
+          },
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "conversationIds": [
+            "01a1c5e7-21a6-79ed-a041-d68236446cd4"
+          ],
+          "dialogSaid": "Received: a new conversation, routed.",
+          "after": {
+            "waitedMs": 18635,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_replied",
+                "turnId": "01a1c5e7-21b8-791e-9562-603ee624f429",
+                "intent": "birthday_party",
+                "intents": [
+                  "birthday_party"
+                ],
+                "reason": null,
+                "rule": null,
+                "closingKey": null,
+                "rethink": null
+              }
+            ],
+            "assistantLines": [
+              {
+                "id": "01a1c5e7-4d0d-7ec4-aa6b-0198be948869",
+                "createdAt": "2026-11-10T14:40:32.514Z",
+                "providerStatus": "sent",
+                "body": "Amazing, thank you! We'd love to organize a party for your son 🎈"
+              },
+              {
+                "id": "01a1c5e7-4d0d-7ec4-aa6b-0199ff5c0779",
+                "createdAt": "2026-11-10T14:40:32.515Z",
+                "providerStatus": "sent",
+                "body": "What date or dates are you thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong?"
+              }
+            ],
+            "aiState": "ready",
+            "openQuestions": [
+              {
+                "id": "01a1c5e7-4d14-7840-a656-3a98a31df27d",
+                "slot": "date",
+                "state": "open",
+                "answer": null,
+                "askedMessageId": "01a1c5e7-4d0d-7ec4-aa6b-0199ff5c0779",
+                "answeredMessageId": null,
+                "askedAt": "2026-11-10T14:40:32.514Z",
+                "closedAt": null
+              },
+              {
+                "id": "01a1c5e7-4d17-7606-a73e-949031f410e6",
+                "slot": "guests_count",
+                "state": "open",
+                "answer": null,
+                "askedMessageId": "01a1c5e7-4d0d-7ec4-aa6b-0199ff5c0779",
+                "answeredMessageId": null,
+                "askedAt": "2026-11-10T14:40:32.514Z",
+                "closedAt": null
+              },
+              {
+                "id": "01a1c5e7-4d18-72a5-95b4-3eb07d9985b3",
+                "slot": "park",
+                "state": "open",
+                "answer": null,
+                "askedMessageId": "01a1c5e7-4d0d-7ec4-aa6b-0199ff5c0779",
+                "answeredMessageId": null,
+                "askedAt": "2026-11-10T14:40:32.514Z",
+                "closedAt": null
+              }
+            ]
+          }
+        },
+        {
+          "n": 2,
+          "text": "14 November, about 15 kids, Central Floresta",
+          "sentAt": "2026-11-10T14:41:20.953Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "Birthdays & Events",
+            "language": "en",
+            "message": "14 November, about 15 kids, Central Floresta"
+          },
+          "hint": {
+            "category": "birthdays",
+            "language": "en"
+          },
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "conversationIds": [
+            "01a1c5e7-21a6-79ed-a041-d68236446cd4"
+          ],
+          "dialogSaid": "Received into the existing conversation.",
+          "after": {
+            "waitedMs": 18958,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_handover",
+                "turnId": "01a1c5e8-0b96-70e4-a52f-39fbb20d8d5c",
+                "intent": "birthday_details",
+                "intents": [
+                  "birthday_details"
+                ],
+                "reason": "OK",
+                "rule": null,
+                "closingKey": "closing_birthday",
+                "rethink": null
+              }
+            ],
+            "assistantLines": [
+              {
+                "id": "01a1c5e8-357a-70d3-84ef-58cd7cfe3b79",
+                "createdAt": "2026-11-10T14:41:32.014Z",
+                "providerStatus": "sent",
+                "body": "Thank you so much! Our birthday manager will be with you shortly."
+              }
+            ],
+            "aiState": "left_for_team",
+            "openQuestions": [
+              {
+                "id": "01a1c5e7-4d14-7840-a656-3a98a31df27d",
+                "slot": "date",
+                "state": "answered",
+                "answer": "2026-11-14",
+                "askedMessageId": "01a1c5e7-4d0d-7ec4-aa6b-0199ff5c0779",
+                "answeredMessageId": "01a1c5e8-0b8e-79aa-b42d-7122e8173d92",
+                "askedAt": "2026-11-10T14:40:32.514Z",
+                "closedAt": "2026-11-10T14:41:32.014Z"
+              },
+              {
+                "id": "01a1c5e7-4d17-7606-a73e-949031f410e6",
+                "slot": "guests_count",
+                "state": "answered",
+                "answer": "15 kids",
+                "askedMessageId": "01a1c5e7-4d0d-7ec4-aa6b-0199ff5c0779",
+                "answeredMessageId": "01a1c5e8-0b8e-79aa-b42d-7122e8173d92",
+                "askedAt": "2026-11-10T14:40:32.514Z",
+                "closedAt": "2026-11-10T14:41:32.014Z"
+              },
+              {
+                "id": "01a1c5e7-4d18-72a5-95b4-3eb07d9985b3",
+                "slot": "park",
+                "state": "answered",
+                "answer": "central",
+                "askedMessageId": "01a1c5e7-4d0d-7ec4-aa6b-0199ff5c0779",
+                "answeredMessageId": "01a1c5e8-0b8e-79aa-b42d-7122e8173d92",
+                "askedAt": "2026-11-10T14:40:32.514Z",
+                "closedAt": "2026-11-10T14:41:32.014Z"
+              }
+            ]
+          }
+        },
+        {
+          "n": 3,
+          "text": "what time slots do you have?",
+          "sentAt": "2026-11-10T14:42:08.640Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "Birthdays & Events",
+            "language": "en",
+            "message": "what time slots do you have?"
+          },
+          "hint": {
+            "category": "birthdays",
+            "language": "en"
+          },
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "conversationIds": [
+            "01a1c5e7-21a6-79ed-a041-d68236446cd4"
+          ],
+          "dialogSaid": "Received into the existing conversation.",
+          "after": {
+            "waitedMs": 63704,
+            "turnShown": false,
+            "aiTurns": [],
+            "assistantLines": [],
+            "aiState": "left_for_team",
+            "openQuestions": [
+              {
+                "id": "01a1c5e7-4d14-7840-a656-3a98a31df27d",
+                "slot": "date",
+                "state": "answered",
+                "answer": "2026-11-14",
+                "askedMessageId": "01a1c5e7-4d0d-7ec4-aa6b-0199ff5c0779",
+                "answeredMessageId": "01a1c5e8-0b8e-79aa-b42d-7122e8173d92",
+                "askedAt": "2026-11-10T14:40:32.514Z",
+                "closedAt": "2026-11-10T14:41:32.014Z"
+              },
+              {
+                "id": "01a1c5e7-4d17-7606-a73e-949031f410e6",
+                "slot": "guests_count",
+                "state": "answered",
+                "answer": "15 kids",
+                "askedMessageId": "01a1c5e7-4d0d-7ec4-aa6b-0199ff5c0779",
+                "answeredMessageId": "01a1c5e8-0b8e-79aa-b42d-7122e8173d92",
+                "askedAt": "2026-11-10T14:40:32.514Z",
+                "closedAt": "2026-11-10T14:41:32.014Z"
+              },
+              {
+                "id": "01a1c5e7-4d18-72a5-95b4-3eb07d9985b3",
+                "slot": "park",
+                "state": "answered",
+                "answer": "central",
+                "askedMessageId": "01a1c5e7-4d0d-7ec4-aa6b-0199ff5c0779",
+                "answeredMessageId": "01a1c5e8-0b8e-79aa-b42d-7122e8173d92",
+                "askedAt": "2026-11-10T14:40:32.514Z",
+                "closedAt": "2026-11-10T14:41:32.014Z"
+              }
+            ]
+          }
+        },
+        {
+          "n": 4,
+          "text": "can we bring our own cake?",
+          "sentAt": "2026-11-10T14:43:21.084Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "Birthdays & Events",
+            "language": "en",
+            "message": "can we bring our own cake?"
+          },
+          "hint": {
+            "category": "birthdays",
+            "language": "en"
+          },
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "conversationIds": [
+            "01a1c5e7-21a6-79ed-a041-d68236446cd4"
+          ],
+          "dialogSaid": "Received into the existing conversation.",
+          "after": {
+            "waitedMs": 63521,
+            "turnShown": false,
+            "aiTurns": [],
+            "assistantLines": [],
+            "aiState": "left_for_team",
+            "openQuestions": [
+              {
+                "id": "01a1c5e7-4d14-7840-a656-3a98a31df27d",
+                "slot": "date",
+                "state": "answered",
+                "answer": "2026-11-14",
+                "askedMessageId": "01a1c5e7-4d0d-7ec4-aa6b-0199ff5c0779",
+                "answeredMessageId": "01a1c5e8-0b8e-79aa-b42d-7122e8173d92",
+                "askedAt": "2026-11-10T14:40:32.514Z",
+                "closedAt": "2026-11-10T14:41:32.014Z"
+              },
+              {
+                "id": "01a1c5e7-4d17-7606-a73e-949031f410e6",
+                "slot": "guests_count",
+                "state": "answered",
+                "answer": "15 kids",
+                "askedMessageId": "01a1c5e7-4d0d-7ec4-aa6b-0199ff5c0779",
+                "answeredMessageId": "01a1c5e8-0b8e-79aa-b42d-7122e8173d92",
+                "askedAt": "2026-11-10T14:40:32.514Z",
+                "closedAt": "2026-11-10T14:41:32.014Z"
+              },
+              {
+                "id": "01a1c5e7-4d18-72a5-95b4-3eb07d9985b3",
+                "slot": "park",
+                "state": "answered",
+                "answer": "central",
+                "askedMessageId": "01a1c5e7-4d0d-7ec4-aa6b-0199ff5c0779",
+                "answeredMessageId": "01a1c5e8-0b8e-79aa-b42d-7122e8173d92",
+                "askedAt": "2026-11-10T14:40:32.514Z",
+                "closedAt": "2026-11-10T14:41:32.014Z"
+              }
+            ]
+          }
+        },
+        {
+          "n": 5,
+          "text": "Sorry, which time slots are free?",
+          "sentAt": "2026-11-10T14:50:06.059Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "Birthdays & Events",
+            "language": "en",
+            "message": "Sorry, which time slots are free?"
+          },
+          "hint": {
+            "category": "birthdays",
+            "language": "en"
+          },
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "conversationIds": [
+            "01a1c5e7-21a6-79ed-a041-d68236446cd4"
+          ],
+          "dialogSaid": "Received into the existing conversation.",
+          "after": {
+            "waitedMs": 12730,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_handover",
+                "turnId": "01a1c5f0-0eee-7d2d-ad24-8ba58ab5f5ac",
+                "intent": "birthday_advice",
+                "intents": [
+                  "birthday_advice",
+                  "birthday_cake"
+                ],
+                "reason": "OVERRULED_BIRTHDAY",
+                "rule": "birthday_advice",
+                "closingKey": "closing_birthday",
+                "rethink": null
+              }
+            ],
+            "assistantLines": [
+              {
+                "id": "01a1c5f0-2436-72c4-8230-d5cb1986054e",
+                "createdAt": "2026-11-10T14:50:11.882Z",
+                "providerStatus": "sent",
+                "body": "Thank you so much! Our birthday manager will be with you shortly."
+              }
+            ],
+            "aiState": "left_for_team",
+            "openQuestions": [
+              {
+                "id": "01a1c5e7-4d14-7840-a656-3a98a31df27d",
+                "slot": "date",
+                "state": "answered",
+                "answer": "2026-11-14",
+                "askedMessageId": "01a1c5e7-4d0d-7ec4-aa6b-0199ff5c0779",
+                "answeredMessageId": "01a1c5e8-0b8e-79aa-b42d-7122e8173d92",
+                "askedAt": "2026-11-10T14:40:32.514Z",
+                "closedAt": "2026-11-10T14:41:32.014Z"
+              },
+              {
+                "id": "01a1c5e7-4d17-7606-a73e-949031f410e6",
+                "slot": "guests_count",
+                "state": "answered",
+                "answer": "15 kids",
+                "askedMessageId": "01a1c5e7-4d0d-7ec4-aa6b-0199ff5c0779",
+                "answeredMessageId": "01a1c5e8-0b8e-79aa-b42d-7122e8173d92",
+                "askedAt": "2026-11-10T14:40:32.514Z",
+                "closedAt": "2026-11-10T14:41:32.014Z"
+              },
+              {
+                "id": "01a1c5e7-4d18-72a5-95b4-3eb07d9985b3",
+                "slot": "park",
+                "state": "answered",
+                "answer": "central",
+                "askedMessageId": "01a1c5e7-4d0d-7ec4-aa6b-0199ff5c0779",
+                "answeredMessageId": "01a1c5e8-0b8e-79aa-b42d-7122e8173d92",
+                "askedAt": "2026-11-10T14:40:32.514Z",
+                "closedAt": "2026-11-10T14:41:32.014Z"
+              }
+            ]
+          }
+        }
+      ],
+      "finalOpenQuestions": {
+        "route": "GET /api/inbox/conversations/:id → openQuestions",
+        "status": 200,
+        "openQuestions": [
+          {
+            "id": "01a1c5e7-4d14-7840-a656-3a98a31df27d",
+            "slot": "date",
+            "state": "answered",
+            "answer": "2026-11-14",
+            "askedMessageId": "01a1c5e7-4d0d-7ec4-aa6b-0199ff5c0779",
+            "answeredMessageId": "01a1c5e8-0b8e-79aa-b42d-7122e8173d92",
+            "askedAt": "2026-11-10T14:40:32.514Z",
+            "closedAt": "2026-11-10T14:41:32.014Z"
+          },
+          {
+            "id": "01a1c5e7-4d17-7606-a73e-949031f410e6",
+            "slot": "guests_count",
+            "state": "answered",
+            "answer": "15 kids",
+            "askedMessageId": "01a1c5e7-4d0d-7ec4-aa6b-0199ff5c0779",
+            "answeredMessageId": "01a1c5e8-0b8e-79aa-b42d-7122e8173d92",
+            "askedAt": "2026-11-10T14:40:32.514Z",
+            "closedAt": "2026-11-10T14:41:32.014Z"
+          },
+          {
+            "id": "01a1c5e7-4d18-72a5-95b4-3eb07d9985b3",
+            "slot": "park",
+            "state": "answered",
+            "answer": "central",
+            "askedMessageId": "01a1c5e7-4d0d-7ec4-aa6b-0199ff5c0779",
+            "answeredMessageId": "01a1c5e8-0b8e-79aa-b42d-7122e8173d92",
+            "askedAt": "2026-11-10T14:40:32.514Z",
+            "closedAt": "2026-11-10T14:41:32.014Z"
+          }
+        ]
+      },
+      "finalMessages": {
+        "route": "GET /api/inbox/conversations/:id/messages",
+        "status": 200,
+        "messages": [
+          {
+            "id": "01a1c5e7-21a8-71fa-9893-9ecaf5f5e7ae",
+            "direction": "inbound",
+            "authorKind": "customer",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:40:21.000Z",
+            "providerStatus": null,
+            "body": "Hi, we'd like a birthday party for our son (ZZ TEST)"
+          },
+          {
+            "id": "01a1c5e7-4d0d-7ec4-aa6b-0198be948869",
+            "direction": "outbound",
+            "authorKind": "ai",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:40:32.514Z",
+            "providerStatus": "sent",
+            "body": "Amazing, thank you! We'd love to organize a party for your son 🎈"
+          },
+          {
+            "id": "01a1c5e7-4d0d-7ec4-aa6b-0199ff5c0779",
+            "direction": "outbound",
+            "authorKind": "ai",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:40:32.515Z",
+            "providerStatus": "sent",
+            "body": "What date or dates are you thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong?"
+          },
+          {
+            "id": "01a1c5e8-0b8e-79aa-b42d-7122e8173d92",
+            "direction": "inbound",
+            "authorKind": "customer",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:41:21.000Z",
+            "providerStatus": null,
+            "body": "14 November, about 15 kids, Central Floresta"
+          },
+          {
+            "id": "01a1c5e8-357a-70d3-84ef-58cd7cfe3b79",
+            "direction": "outbound",
+            "authorKind": "ai",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:41:32.014Z",
+            "providerStatus": "sent",
+            "body": "Thank you so much! Our birthday manager will be with you shortly."
+          },
+          {
+            "id": "01a1c5e8-c5fc-706a-859e-5b4764f0a786",
+            "direction": "inbound",
+            "authorKind": "customer",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:42:09.000Z",
+            "providerStatus": null,
+            "body": "what time slots do you have?"
+          },
+          {
+            "id": "01a1c5e9-e0ed-74e0-9c7b-cc18137c7013",
+            "direction": "inbound",
+            "authorKind": "customer",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:43:21.000Z",
+            "providerStatus": null,
+            "body": "can we bring our own cake?"
+          },
+          {
+            "id": "01a1c5f0-0ee7-7e31-a900-fd40e40bb143",
+            "direction": "inbound",
+            "authorKind": "customer",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:50:06.000Z",
+            "providerStatus": null,
+            "body": "Sorry, which time slots are free?"
+          },
+          {
+            "id": "01a1c5f0-2436-72c4-8230-d5cb1986054e",
+            "direction": "outbound",
+            "authorKind": "ai",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:50:11.882Z",
+            "providerStatus": "sent",
+            "body": "Thank you so much! Our birthday manager will be with you shortly."
+          }
+        ]
+      },
+      "aiPills": [
+        {
+          "kind": "ai_replied",
+          "createdAt": "2026-11-10T14:40:32.514Z",
+          "actorKind": "ai",
+          "turnId": "01a1c5e7-21b8-791e-9562-603ee624f429",
+          "intent": "birthday_party",
+          "intents": [
+            "birthday_party"
+          ],
+          "reason": null,
+          "rule": null,
+          "destination": null,
+          "templateKey": null,
+          "closingKey": null,
+          "holdingLine": null,
+          "silent": null,
+          "messageIds": [
+            "01a1c5e7-4d0d-7ec4-aa6b-0198be948869",
+            "01a1c5e7-4d0d-7ec4-aa6b-0199ff5c0779"
+          ],
+          "rethink": null
+        },
+        {
+          "kind": "ai_handover",
+          "createdAt": "2026-11-10T14:41:32.014Z",
+          "actorKind": "ai",
+          "turnId": "01a1c5e8-0b96-70e4-a52f-39fbb20d8d5c",
+          "intent": "birthday_details",
+          "intents": [
+            "birthday_details"
+          ],
+          "reason": "OK",
+          "rule": null,
+          "destination": "birthdays",
+          "templateKey": "closing_birthday",
+          "closingKey": "closing_birthday",
+          "holdingLine": "template",
+          "silent": false,
+          "messageIds": [
+            "01a1c5e8-357a-70d3-84ef-58cd7cfe3b79"
+          ],
+          "rethink": null
+        },
+        {
+          "kind": "ai_resumed",
+          "createdAt": "2026-11-10T14:49:56.911Z",
+          "actorKind": "account",
+          "turnId": null,
+          "intent": null,
+          "intents": null,
+          "reason": null,
+          "rule": null,
+          "destination": null,
+          "templateKey": null,
+          "closingKey": null,
+          "holdingLine": null,
+          "silent": null,
+          "messageIds": null,
+          "rethink": null
+        },
+        {
+          "kind": "ai_handover",
+          "createdAt": "2026-11-10T14:50:11.882Z",
+          "actorKind": "ai",
+          "turnId": "01a1c5f0-0eee-7d2d-ad24-8ba58ab5f5ac",
+          "intent": "birthday_advice",
+          "intents": [
+            "birthday_advice",
+            "birthday_cake"
+          ],
+          "reason": "OVERRULED_BIRTHDAY",
+          "rule": "birthday_advice",
+          "destination": "birthdays",
+          "templateKey": "closing_birthday",
+          "closingKey": "closing_birthday",
+          "holdingLine": "template",
+          "silent": false,
+          "messageIds": [
+            "01a1c5f0-2436-72c4-8230-d5cb1986054e"
+          ],
+          "rethink": null
+        }
+      ],
+      "audit": {
+        "at": "2026-11-10T14:50:36.206Z",
+        "repeatGuard": {
+          "route": "GET /api/audit?action=inbox.ai.repeat_guard&from=<run start>",
+          "status": 200,
+          "rowsSinceRunStart": 0,
+          "total": 0,
+          "rowsForThisConversation": 0,
+          "rows": [],
+          "error": null
+        },
+        "openQuestion": {
+          "route": "GET /api/audit?action=inbox.ai.open_question&entityType=inbox.conversation&entityId=:id",
+          "status": 200,
+          "rows": 2,
+          "entries": [
+            {
+              "id": "01a1c5e7-4d19-7530-bd76-ebc3995061d2",
+              "createdAt": "2026-11-10T14:40:32.515Z",
+              "after": {
+                "asked": [
+                  "date",
+                  "guests_count",
+                  "park"
+                ],
+                "turnId": "01a1c5e7-21b8-791e-9562-603ee624f429",
+                "answered": [],
+                "withdrawn": []
+              }
+            },
+            {
+              "id": "01a1c5e8-3581-73fe-8b66-2d7ece192315",
+              "createdAt": "2026-11-10T14:41:32.015Z",
+              "after": {
+                "asked": [],
+                "turnId": "01a1c5e8-0b96-70e4-a52f-39fbb20d8d5c",
+                "answered": [
+                  "date",
+                  "guests_count",
+                  "park"
+                ],
+                "withdrawn": []
+              }
+            }
+          ],
+          "error": null
+        },
+        "handover": {
+          "route": "GET /api/audit?action=inbox.ai.handover&entityType=inbox.conversation&entityId=:id",
+          "status": 200,
+          "rows": 2,
+          "entries": [
+            {
+              "id": "01a1c5f0-243b-798c-b4c6-30bd932ce514",
+              "createdAt": "2026-11-10T14:50:11.883Z",
+              "turnId": "01a1c5f0-0eee-7d2d-ad24-8ba58ab5f5ac",
+              "intent": "birthday_advice",
+              "closingKey": "closing_birthday"
+            },
+            {
+              "id": "01a1c5e8-3583-704b-a041-cb9e93cbdb1d",
+              "createdAt": "2026-11-10T14:41:32.015Z",
+              "turnId": "01a1c5e8-0b96-70e4-a52f-39fbb20d8d5c",
+              "intent": "birthday_details",
+              "closingKey": "closing_birthday"
+            }
+          ]
+        }
+      },
+      "extra": {
+        "resume": {
+          "at": "2026-11-10T14:49:58.652Z",
+          "button": "AI handed over · Resume",
+          "route": "POST /api/inbox/conversations/:id/ai-resume",
+          "status": 200,
+          "aiPaused": false,
+          "aiStateAfter": "ready"
+        }
+      }
+    },
+    "B": {
+      "key": "B",
+      "expect": "Russian: answered lines, the age in words; no re-ask",
+      "sender": "its own ZZ TEST simulator number (not kept)",
+      "conversationId": "01a1c5eb-70ca-7d21-9204-d0aa6c753a79",
+      "language": "ru",
+      "categoryHint": "birthdays",
+      "conversation": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "birthdays",
+        "teamName": "Birthdays & Events",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "ru",
+        "aiMode": "live",
+        "aiState": "left_for_team",
+        "aiPaused": false,
+        "handledAt": null,
+        "openQuestionsPresent": true
+      },
+      "lines": [
+        {
+          "n": 1,
+          "text": "Хотим отметить день рождения сына (ZZ TEST)",
+          "sentAt": "2026-11-10T14:45:03.445Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "Birthdays & Events",
+            "language": "ru",
+            "message": "Хотим отметить день рождения сына (ZZ TEST)"
+          },
+          "hint": {
+            "category": "birthdays",
+            "language": "ru"
+          },
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "conversationIds": [
+            "01a1c5eb-70ca-7d21-9204-d0aa6c753a79"
+          ],
+          "dialogSaid": "Received: a new conversation, routed.",
+          "after": {
+            "waitedMs": 13209,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_replied",
+                "turnId": "01a1c5eb-70db-7d12-9e15-320b4aa76752",
+                "intent": "birthday_party",
+                "intents": [
+                  "birthday_party"
+                ],
+                "reason": null,
+                "rule": null,
+                "closingKey": null,
+                "rethink": null
+              }
+            ],
+            "assistantLines": [
+              {
+                "id": "01a1c5eb-8f30-7dd9-b16f-b6f0777645f7",
+                "createdAt": "2026-11-10T14:45:11.520Z",
+                "providerStatus": "sent",
+                "body": "Здравствуйте! Как здорово, спасибо, что выбрали нас! С радостью организуем праздник для вашего сына 🎈"
+              },
+              {
+                "id": "01a1c5eb-8f30-7dd9-b16f-b6f11f66a00a",
+                "createdAt": "2026-11-10T14:45:11.521Z",
+                "providerStatus": "sent",
+                "body": "Подскажите, какие даты вы рассматриваете, примерно сколько будет гостей и какой филиал вам удобнее, Central Floresta или Robinson Chalong?"
+              }
+            ],
+            "aiState": "ready",
+            "openQuestions": [
+              {
+                "id": "01a1c5eb-8f61-7bd9-bad6-6c633433624a",
+                "slot": "date",
+                "state": "open",
+                "answer": null,
+                "askedMessageId": "01a1c5eb-8f30-7dd9-b16f-b6f11f66a00a",
+                "answeredMessageId": null,
+                "askedAt": "2026-11-10T14:45:11.520Z",
+                "closedAt": null
+              },
+              {
+                "id": "01a1c5eb-8f6b-7f18-8e4a-1fc7622b88d4",
+                "slot": "guests_count",
+                "state": "open",
+                "answer": null,
+                "askedMessageId": "01a1c5eb-8f30-7dd9-b16f-b6f11f66a00a",
+                "answeredMessageId": null,
+                "askedAt": "2026-11-10T14:45:11.520Z",
+                "closedAt": null
+              },
+              {
+                "id": "01a1c5eb-8f7a-71d9-8c43-50c8fdeb2b6b",
+                "slot": "park",
+                "state": "open",
+                "answer": null,
+                "askedMessageId": "01a1c5eb-8f30-7dd9-b16f-b6f11f66a00a",
+                "answeredMessageId": null,
+                "askedAt": "2026-11-10T14:45:11.520Z",
+                "closedAt": null
+              }
+            ]
+          }
+        },
+        {
+          "n": 2,
+          "text": "21 ноября, человек 12, Central Floresta",
+          "sentAt": "2026-11-10T14:45:25.599Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "Birthdays & Events",
+            "language": "ru",
+            "message": "21 ноября, человек 12, Central Floresta"
+          },
+          "hint": {
+            "category": "birthdays",
+            "language": "ru"
+          },
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "conversationIds": [
+            "01a1c5eb-70ca-7d21-9204-d0aa6c753a79"
+          ],
+          "dialogSaid": "Received into the existing conversation.",
+          "after": {
+            "waitedMs": 19269,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_handover",
+                "turnId": "01a1c5eb-c75b-717d-afa0-f9f951886653",
+                "intent": "birthday_details",
+                "intents": [
+                  "birthday_details"
+                ],
+                "reason": "OK",
+                "rule": null,
+                "closingKey": "closing_birthday",
+                "rethink": null
+              }
+            ],
+            "assistantLines": [
+              {
+                "id": "01a1c5eb-ecfe-7edd-a8e0-808064a0f84b",
+                "createdAt": "2026-11-10T14:45:35.601Z",
+                "providerStatus": "sent",
+                "body": "Большое спасибо! Наш менеджер по праздникам скоро свяжется с вами."
+              }
+            ],
+            "aiState": "left_for_team",
+            "openQuestions": [
+              {
+                "id": "01a1c5eb-8f61-7bd9-bad6-6c633433624a",
+                "slot": "date",
+                "state": "answered",
+                "answer": "2026-11-21",
+                "askedMessageId": "01a1c5eb-8f30-7dd9-b16f-b6f11f66a00a",
+                "answeredMessageId": "01a1c5eb-c755-7952-bc62-ecf4b2a0291c",
+                "askedAt": "2026-11-10T14:45:11.520Z",
+                "closedAt": "2026-11-10T14:45:35.601Z"
+              },
+              {
+                "id": "01a1c5eb-8f6b-7f18-8e4a-1fc7622b88d4",
+                "slot": "guests_count",
+                "state": "answered",
+                "answer": "12",
+                "askedMessageId": "01a1c5eb-8f30-7dd9-b16f-b6f11f66a00a",
+                "answeredMessageId": "01a1c5eb-c755-7952-bc62-ecf4b2a0291c",
+                "askedAt": "2026-11-10T14:45:11.520Z",
+                "closedAt": "2026-11-10T14:45:35.601Z"
+              },
+              {
+                "id": "01a1c5eb-8f7a-71d9-8c43-50c8fdeb2b6b",
+                "slot": "park",
+                "state": "answered",
+                "answer": "central",
+                "askedMessageId": "01a1c5eb-8f30-7dd9-b16f-b6f11f66a00a",
+                "answeredMessageId": "01a1c5eb-c755-7952-bc62-ecf4b2a0291c",
+                "askedAt": "2026-11-10T14:45:11.520Z",
+                "closedAt": "2026-11-10T14:45:35.601Z"
+              }
+            ]
+          }
+        },
+        {
+          "n": 3,
+          "text": "Какое время у вас свободно?",
+          "sentAt": "2026-11-10T14:45:55.355Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "Birthdays & Events",
+            "language": "ru",
+            "message": "Какое время у вас свободно?"
+          },
+          "hint": {
+            "category": "birthdays",
+            "language": "ru"
+          },
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "conversationIds": [
+            "01a1c5eb-70ca-7d21-9204-d0aa6c753a79"
+          ],
+          "dialogSaid": "Received into the existing conversation.",
+          "after": {
+            "waitedMs": 32082,
+            "turnShown": false,
+            "aiTurns": [],
+            "assistantLines": [],
+            "aiState": "left_for_team",
+            "openQuestions": [
+              {
+                "id": "01a1c5eb-8f61-7bd9-bad6-6c633433624a",
+                "slot": "date",
+                "state": "answered",
+                "answer": "2026-11-21",
+                "askedMessageId": "01a1c5eb-8f30-7dd9-b16f-b6f11f66a00a",
+                "answeredMessageId": "01a1c5eb-c755-7952-bc62-ecf4b2a0291c",
+                "askedAt": "2026-11-10T14:45:11.520Z",
+                "closedAt": "2026-11-10T14:45:35.601Z"
+              },
+              {
+                "id": "01a1c5eb-8f6b-7f18-8e4a-1fc7622b88d4",
+                "slot": "guests_count",
+                "state": "answered",
+                "answer": "12",
+                "askedMessageId": "01a1c5eb-8f30-7dd9-b16f-b6f11f66a00a",
+                "answeredMessageId": "01a1c5eb-c755-7952-bc62-ecf4b2a0291c",
+                "askedAt": "2026-11-10T14:45:11.520Z",
+                "closedAt": "2026-11-10T14:45:35.601Z"
+              },
+              {
+                "id": "01a1c5eb-8f7a-71d9-8c43-50c8fdeb2b6b",
+                "slot": "park",
+                "state": "answered",
+                "answer": "central",
+                "askedMessageId": "01a1c5eb-8f30-7dd9-b16f-b6f11f66a00a",
+                "answeredMessageId": "01a1c5eb-c755-7952-bc62-ecf4b2a0291c",
+                "askedAt": "2026-11-10T14:45:11.520Z",
+                "closedAt": "2026-11-10T14:45:35.601Z"
+              }
+            ]
+          }
+        },
+        {
+          "n": 4,
+          "text": "Можно принести свой торт?",
+          "sentAt": "2026-11-10T14:46:55.450Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "Birthdays & Events",
+            "language": "ru",
+            "message": "Можно принести свой торт?"
+          },
+          "hint": {
+            "category": "birthdays",
+            "language": "ru"
+          },
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "conversationIds": [
+            "01a1c5eb-70ca-7d21-9204-d0aa6c753a79"
+          ],
+          "dialogSaid": "Received into the existing conversation.",
+          "after": {
+            "waitedMs": 32165,
+            "turnShown": false,
+            "aiTurns": [],
+            "assistantLines": [],
+            "aiState": "left_for_team",
+            "openQuestions": [
+              {
+                "id": "01a1c5eb-8f61-7bd9-bad6-6c633433624a",
+                "slot": "date",
+                "state": "answered",
+                "answer": "2026-11-21",
+                "askedMessageId": "01a1c5eb-8f30-7dd9-b16f-b6f11f66a00a",
+                "answeredMessageId": "01a1c5eb-c755-7952-bc62-ecf4b2a0291c",
+                "askedAt": "2026-11-10T14:45:11.520Z",
+                "closedAt": "2026-11-10T14:45:35.601Z"
+              },
+              {
+                "id": "01a1c5eb-8f6b-7f18-8e4a-1fc7622b88d4",
+                "slot": "guests_count",
+                "state": "answered",
+                "answer": "12",
+                "askedMessageId": "01a1c5eb-8f30-7dd9-b16f-b6f11f66a00a",
+                "answeredMessageId": "01a1c5eb-c755-7952-bc62-ecf4b2a0291c",
+                "askedAt": "2026-11-10T14:45:11.520Z",
+                "closedAt": "2026-11-10T14:45:35.601Z"
+              },
+              {
+                "id": "01a1c5eb-8f7a-71d9-8c43-50c8fdeb2b6b",
+                "slot": "park",
+                "state": "answered",
+                "answer": "central",
+                "askedMessageId": "01a1c5eb-8f30-7dd9-b16f-b6f11f66a00a",
+                "answeredMessageId": "01a1c5eb-c755-7952-bc62-ecf4b2a0291c",
+                "askedAt": "2026-11-10T14:45:11.520Z",
+                "closedAt": "2026-11-10T14:45:35.601Z"
+              }
+            ]
+          }
+        }
+      ],
+      "finalOpenQuestions": {
+        "route": "GET /api/inbox/conversations/:id → openQuestions",
+        "status": 200,
+        "openQuestions": [
+          {
+            "id": "01a1c5eb-8f61-7bd9-bad6-6c633433624a",
+            "slot": "date",
+            "state": "answered",
+            "answer": "2026-11-21",
+            "askedMessageId": "01a1c5eb-8f30-7dd9-b16f-b6f11f66a00a",
+            "answeredMessageId": "01a1c5eb-c755-7952-bc62-ecf4b2a0291c",
+            "askedAt": "2026-11-10T14:45:11.520Z",
+            "closedAt": "2026-11-10T14:45:35.601Z"
+          },
+          {
+            "id": "01a1c5eb-8f6b-7f18-8e4a-1fc7622b88d4",
+            "slot": "guests_count",
+            "state": "answered",
+            "answer": "12",
+            "askedMessageId": "01a1c5eb-8f30-7dd9-b16f-b6f11f66a00a",
+            "answeredMessageId": "01a1c5eb-c755-7952-bc62-ecf4b2a0291c",
+            "askedAt": "2026-11-10T14:45:11.520Z",
+            "closedAt": "2026-11-10T14:45:35.601Z"
+          },
+          {
+            "id": "01a1c5eb-8f7a-71d9-8c43-50c8fdeb2b6b",
+            "slot": "park",
+            "state": "answered",
+            "answer": "central",
+            "askedMessageId": "01a1c5eb-8f30-7dd9-b16f-b6f11f66a00a",
+            "answeredMessageId": "01a1c5eb-c755-7952-bc62-ecf4b2a0291c",
+            "askedAt": "2026-11-10T14:45:11.520Z",
+            "closedAt": "2026-11-10T14:45:35.601Z"
+          }
+        ]
+      },
+      "finalMessages": {
+        "route": "GET /api/inbox/conversations/:id/messages",
+        "status": 200,
+        "messages": [
+          {
+            "id": "01a1c5eb-70cc-737f-a986-274c0991e491",
+            "direction": "inbound",
+            "authorKind": "customer",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:45:03.000Z",
+            "providerStatus": null,
+            "body": "Хотим отметить день рождения сына (ZZ TEST)"
+          },
+          {
+            "id": "01a1c5eb-8f30-7dd9-b16f-b6f0777645f7",
+            "direction": "outbound",
+            "authorKind": "ai",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:45:11.520Z",
+            "providerStatus": "sent",
+            "body": "Здравствуйте! Как здорово, спасибо, что выбрали нас! С радостью организуем праздник для вашего сына 🎈"
+          },
+          {
+            "id": "01a1c5eb-8f30-7dd9-b16f-b6f11f66a00a",
+            "direction": "outbound",
+            "authorKind": "ai",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:45:11.521Z",
+            "providerStatus": "sent",
+            "body": "Подскажите, какие даты вы рассматриваете, примерно сколько будет гостей и какой филиал вам удобнее, Central Floresta или Robinson Chalong?"
+          },
+          {
+            "id": "01a1c5eb-c755-7952-bc62-ecf4b2a0291c",
+            "direction": "inbound",
+            "authorKind": "customer",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:45:25.000Z",
+            "providerStatus": null,
+            "body": "21 ноября, человек 12, Central Floresta"
+          },
+          {
+            "id": "01a1c5eb-ecfe-7edd-a8e0-808064a0f84b",
+            "direction": "outbound",
+            "authorKind": "ai",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:45:35.601Z",
+            "providerStatus": "sent",
+            "body": "Большое спасибо! Наш менеджер по праздникам скоро свяжется с вами."
+          },
+          {
+            "id": "01a1c5ec-3b96-7502-a4c2-ef6795d20d35",
+            "direction": "inbound",
+            "authorKind": "customer",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:45:55.000Z",
+            "providerStatus": null,
+            "body": "Какое время у вас свободно?"
+          },
+          {
+            "id": "01a1c5ed-2655-7363-8371-b6c5f1ce050e",
+            "direction": "inbound",
+            "authorKind": "customer",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:46:55.000Z",
+            "providerStatus": null,
+            "body": "Можно принести свой торт?"
+          }
+        ]
+      },
+      "aiPills": [
+        {
+          "kind": "ai_replied",
+          "createdAt": "2026-11-10T14:45:11.520Z",
+          "actorKind": "ai",
+          "turnId": "01a1c5eb-70db-7d12-9e15-320b4aa76752",
+          "intent": "birthday_party",
+          "intents": [
+            "birthday_party"
+          ],
+          "reason": null,
+          "rule": null,
+          "destination": null,
+          "templateKey": null,
+          "closingKey": null,
+          "holdingLine": null,
+          "silent": null,
+          "messageIds": [
+            "01a1c5eb-8f30-7dd9-b16f-b6f0777645f7",
+            "01a1c5eb-8f30-7dd9-b16f-b6f11f66a00a"
+          ],
+          "rethink": null
+        },
+        {
+          "kind": "ai_handover",
+          "createdAt": "2026-11-10T14:45:35.601Z",
+          "actorKind": "ai",
+          "turnId": "01a1c5eb-c75b-717d-afa0-f9f951886653",
+          "intent": "birthday_details",
+          "intents": [
+            "birthday_details"
+          ],
+          "reason": "OK",
+          "rule": null,
+          "destination": "birthdays",
+          "templateKey": "closing_birthday",
+          "closingKey": "closing_birthday",
+          "holdingLine": "template",
+          "silent": false,
+          "messageIds": [
+            "01a1c5eb-ecfe-7edd-a8e0-808064a0f84b"
+          ],
+          "rethink": null
+        }
+      ],
+      "audit": {
+        "at": "2026-11-10T14:50:38.272Z",
+        "repeatGuard": {
+          "route": "GET /api/audit?action=inbox.ai.repeat_guard&from=<run start>",
+          "status": 200,
+          "rowsSinceRunStart": 0,
+          "total": 0,
+          "rowsForThisConversation": 0,
+          "rows": [],
+          "error": null
+        },
+        "openQuestion": {
+          "route": "GET /api/audit?action=inbox.ai.open_question&entityType=inbox.conversation&entityId=:id",
+          "status": 200,
+          "rows": 2,
+          "entries": [
+            {
+              "id": "01a1c5eb-8f7d-7765-9fff-4302b35aa6db",
+              "createdAt": "2026-11-10T14:45:11.521Z",
+              "after": {
+                "asked": [
+                  "date",
+                  "guests_count",
+                  "park"
+                ],
+                "turnId": "01a1c5eb-70db-7d12-9e15-320b4aa76752",
+                "answered": [],
+                "withdrawn": []
+              }
+            },
+            {
+              "id": "01a1c5eb-ed05-7185-8bb8-1ff3d183fdd9",
+              "createdAt": "2026-11-10T14:45:35.602Z",
+              "after": {
+                "asked": [],
+                "turnId": "01a1c5eb-c75b-717d-afa0-f9f951886653",
+                "answered": [
+                  "date",
+                  "guests_count",
+                  "park"
+                ],
+                "withdrawn": []
+              }
+            }
+          ],
+          "error": null
+        },
+        "handover": {
+          "route": "GET /api/audit?action=inbox.ai.handover&entityType=inbox.conversation&entityId=:id",
+          "status": 200,
+          "rows": 1,
+          "entries": [
+            {
+              "id": "01a1c5eb-ed07-7629-8736-e58ef7cdb1fc",
+              "createdAt": "2026-11-10T14:45:35.602Z",
+              "turnId": "01a1c5eb-c75b-717d-afa0-f9f951886653",
+              "intent": "birthday_details",
+              "closingKey": "closing_birthday"
+            }
+          ]
+        }
+      }
+    },
+    "C": {
+      "key": "C",
+      "expect": "\"table for 8?\" is no answer; then answered properly",
+      "sender": "its own ZZ TEST simulator number (not kept)",
+      "conversationId": "01a1c5ec-4875-7897-b116-9f068907f42c",
+      "language": "en",
+      "categoryHint": "birthdays",
+      "conversation": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "birthdays",
+        "teamName": "Birthdays & Events",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "en",
+        "aiMode": "live",
+        "aiState": "left_for_team",
+        "aiPaused": false,
+        "handledAt": null,
+        "openQuestionsPresent": true
+      },
+      "lines": [
+        {
+          "n": 1,
+          "text": "We would like a birthday party for our daughter (ZZ TEST)",
+          "sentAt": "2026-11-10T14:45:58.661Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "Birthdays & Events",
+            "language": "en",
+            "message": "We would like a birthday party for our daughter (ZZ TEST)"
+          },
+          "hint": {
+            "category": "birthdays",
+            "language": "en"
+          },
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "conversationIds": [
+            "01a1c5ec-4875-7897-b116-9f068907f42c"
+          ],
+          "dialogSaid": "Received: a new conversation, routed.",
+          "after": {
+            "waitedMs": 13371,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_replied",
+                "turnId": "01a1c5ec-4883-749d-8361-14c50f0f157f",
+                "intent": "birthday_party",
+                "intents": [
+                  "birthday_party"
+                ],
+                "reason": null,
+                "rule": null,
+                "closingKey": null,
+                "rethink": null
+              }
+            ],
+            "assistantLines": [
+              {
+                "id": "01a1c5ec-6811-7684-a40a-e0e707e967ac",
+                "createdAt": "2026-11-10T14:46:07.111Z",
+                "providerStatus": "sent",
+                "body": "Amazing, thank you! We'd love to organize a party for your daughter 🎈"
+              },
+              {
+                "id": "01a1c5ec-6811-7684-a40a-e0e8e5ee0a46",
+                "createdAt": "2026-11-10T14:46:07.112Z",
+                "providerStatus": "sent",
+                "body": "What date(s) are you thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong?"
+              }
+            ],
+            "aiState": "ready",
+            "openQuestions": [
+              {
+                "id": "01a1c5ec-6815-7fc1-a6fe-9f4db6c9437f",
+                "slot": "date",
+                "state": "open",
+                "answer": null,
+                "askedMessageId": "01a1c5ec-6811-7684-a40a-e0e8e5ee0a46",
+                "answeredMessageId": null,
+                "askedAt": "2026-11-10T14:46:07.111Z",
+                "closedAt": null
+              },
+              {
+                "id": "01a1c5ec-6817-70be-ad0a-1e5844b4e1c7",
+                "slot": "guests_count",
+                "state": "open",
+                "answer": null,
+                "askedMessageId": "01a1c5ec-6811-7684-a40a-e0e8e5ee0a46",
+                "answeredMessageId": null,
+                "askedAt": "2026-11-10T14:46:07.111Z",
+                "closedAt": null
+              },
+              {
+                "id": "01a1c5ec-6819-7253-8d0d-d797f409c4d2",
+                "slot": "park",
+                "state": "open",
+                "answer": null,
+                "askedMessageId": "01a1c5ec-6811-7684-a40a-e0e8e5ee0a46",
+                "answeredMessageId": null,
+                "askedAt": "2026-11-10T14:46:07.111Z",
+                "closedAt": null
+              }
+            ]
+          }
+        },
+        {
+          "n": 2,
+          "text": "table for 8? (ZZ TEST)",
+          "sentAt": "2026-11-10T14:46:52.448Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "Birthdays & Events",
+            "language": "en",
+            "message": "table for 8? (ZZ TEST)"
+          },
+          "hint": {
+            "category": "birthdays",
+            "language": "en"
+          },
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "conversationIds": [
+            "01a1c5ec-4875-7897-b116-9f068907f42c"
+          ],
+          "dialogSaid": "Received into the existing conversation.",
+          "after": {
+            "waitedMs": 12264,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_handover",
+                "turnId": "01a1c5ed-1aa9-757a-8626-9893137ce07f",
+                "intent": "birthday_details",
+                "intents": [
+                  "birthday_details"
+                ],
+                "reason": "OK",
+                "rule": null,
+                "closingKey": "closing_birthday",
+                "rethink": null
+              }
+            ],
+            "assistantLines": [
+              {
+                "id": "01a1c5ed-40b3-754a-82ff-7cdcd81963b3",
+                "createdAt": "2026-11-10T14:47:02.569Z",
+                "providerStatus": "sent",
+                "body": "Thank you so much! Our birthday manager will be with you shortly."
+              }
+            ],
+            "aiState": "left_for_team",
+            "openQuestions": [
+              {
+                "id": "01a1c5ec-6815-7fc1-a6fe-9f4db6c9437f",
+                "slot": "date",
+                "state": "withdrawn",
+                "answer": null,
+                "askedMessageId": "01a1c5ec-6811-7684-a40a-e0e8e5ee0a46",
+                "answeredMessageId": null,
+                "askedAt": "2026-11-10T14:46:07.111Z",
+                "closedAt": "2026-11-10T14:47:02.569Z"
+              },
+              {
+                "id": "01a1c5ec-6817-70be-ad0a-1e5844b4e1c7",
+                "slot": "guests_count",
+                "state": "answered",
+                "answer": "8",
+                "askedMessageId": "01a1c5ec-6811-7684-a40a-e0e8e5ee0a46",
+                "answeredMessageId": "01a1c5ed-1aa2-7bc6-9f3f-e641d0c79086",
+                "askedAt": "2026-11-10T14:46:07.111Z",
+                "closedAt": "2026-11-10T14:47:02.569Z"
+              },
+              {
+                "id": "01a1c5ec-6819-7253-8d0d-d797f409c4d2",
+                "slot": "park",
+                "state": "withdrawn",
+                "answer": null,
+                "askedMessageId": "01a1c5ec-6811-7684-a40a-e0e8e5ee0a46",
+                "answeredMessageId": null,
+                "askedAt": "2026-11-10T14:46:07.111Z",
+                "closedAt": "2026-11-10T14:47:02.569Z"
+              }
+            ]
+          }
+        },
+        {
+          "n": 3,
+          "text": "28 November, about 10 kids, Central Floresta",
+          "sentAt": "2026-11-10T14:48:26.289Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "Birthdays & Events",
+            "language": "en",
+            "message": "28 November, about 10 kids, Central Floresta"
+          },
+          "hint": {
+            "category": "birthdays",
+            "language": "en"
+          },
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "conversationIds": [
+            "01a1c5ec-4875-7897-b116-9f068907f42c"
+          ],
+          "dialogSaid": "Received into the existing conversation.",
+          "after": {
+            "waitedMs": 63747,
+            "turnShown": false,
+            "aiTurns": [],
+            "assistantLines": [],
+            "aiState": "left_for_team",
+            "openQuestions": [
+              {
+                "id": "01a1c5ec-6815-7fc1-a6fe-9f4db6c9437f",
+                "slot": "date",
+                "state": "withdrawn",
+                "answer": null,
+                "askedMessageId": "01a1c5ec-6811-7684-a40a-e0e8e5ee0a46",
+                "answeredMessageId": null,
+                "askedAt": "2026-11-10T14:46:07.111Z",
+                "closedAt": "2026-11-10T14:47:02.569Z"
+              },
+              {
+                "id": "01a1c5ec-6817-70be-ad0a-1e5844b4e1c7",
+                "slot": "guests_count",
+                "state": "answered",
+                "answer": "8",
+                "askedMessageId": "01a1c5ec-6811-7684-a40a-e0e8e5ee0a46",
+                "answeredMessageId": "01a1c5ed-1aa2-7bc6-9f3f-e641d0c79086",
+                "askedAt": "2026-11-10T14:46:07.111Z",
+                "closedAt": "2026-11-10T14:47:02.569Z"
+              },
+              {
+                "id": "01a1c5ec-6819-7253-8d0d-d797f409c4d2",
+                "slot": "park",
+                "state": "withdrawn",
+                "answer": null,
+                "askedMessageId": "01a1c5ec-6811-7684-a40a-e0e8e5ee0a46",
+                "answeredMessageId": null,
+                "askedAt": "2026-11-10T14:46:07.111Z",
+                "closedAt": "2026-11-10T14:47:02.569Z"
+              }
+            ]
+          }
+        }
+      ],
+      "finalOpenQuestions": {
+        "route": "GET /api/inbox/conversations/:id → openQuestions",
+        "status": 200,
+        "openQuestions": [
+          {
+            "id": "01a1c5ec-6815-7fc1-a6fe-9f4db6c9437f",
+            "slot": "date",
+            "state": "withdrawn",
+            "answer": null,
+            "askedMessageId": "01a1c5ec-6811-7684-a40a-e0e8e5ee0a46",
+            "answeredMessageId": null,
+            "askedAt": "2026-11-10T14:46:07.111Z",
+            "closedAt": "2026-11-10T14:47:02.569Z"
+          },
+          {
+            "id": "01a1c5ec-6817-70be-ad0a-1e5844b4e1c7",
+            "slot": "guests_count",
+            "state": "answered",
+            "answer": "8",
+            "askedMessageId": "01a1c5ec-6811-7684-a40a-e0e8e5ee0a46",
+            "answeredMessageId": "01a1c5ed-1aa2-7bc6-9f3f-e641d0c79086",
+            "askedAt": "2026-11-10T14:46:07.111Z",
+            "closedAt": "2026-11-10T14:47:02.569Z"
+          },
+          {
+            "id": "01a1c5ec-6819-7253-8d0d-d797f409c4d2",
+            "slot": "park",
+            "state": "withdrawn",
+            "answer": null,
+            "askedMessageId": "01a1c5ec-6811-7684-a40a-e0e8e5ee0a46",
+            "answeredMessageId": null,
+            "askedAt": "2026-11-10T14:46:07.111Z",
+            "closedAt": "2026-11-10T14:47:02.569Z"
+          }
+        ]
+      },
+      "finalMessages": {
+        "route": "GET /api/inbox/conversations/:id/messages",
+        "status": 200,
+        "messages": [
+          {
+            "id": "01a1c5ec-4877-7833-bdb1-cdd66b4e022a",
+            "direction": "inbound",
+            "authorKind": "customer",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:45:59.000Z",
+            "providerStatus": null,
+            "body": "We would like a birthday party for our daughter (ZZ TEST)"
+          },
+          {
+            "id": "01a1c5ec-6811-7684-a40a-e0e707e967ac",
+            "direction": "outbound",
+            "authorKind": "ai",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:46:07.111Z",
+            "providerStatus": "sent",
+            "body": "Amazing, thank you! We'd love to organize a party for your daughter 🎈"
+          },
+          {
+            "id": "01a1c5ec-6811-7684-a40a-e0e8e5ee0a46",
+            "direction": "outbound",
+            "authorKind": "ai",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:46:07.112Z",
+            "providerStatus": "sent",
+            "body": "What date(s) are you thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong?"
+          },
+          {
+            "id": "01a1c5ed-1aa2-7bc6-9f3f-e641d0c79086",
+            "direction": "inbound",
+            "authorKind": "customer",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:46:52.000Z",
+            "providerStatus": null,
+            "body": "table for 8? (ZZ TEST)"
+          },
+          {
+            "id": "01a1c5ed-40b3-754a-82ff-7cdcd81963b3",
+            "direction": "outbound",
+            "authorKind": "ai",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:47:02.569Z",
+            "providerStatus": "sent",
+            "body": "Thank you so much! Our birthday manager will be with you shortly."
+          },
+          {
+            "id": "01a1c5ee-8927-7797-972a-70f34b90aa94",
+            "direction": "inbound",
+            "authorKind": "customer",
+            "source": "channel",
+            "createdAt": "2026-11-10T14:48:26.000Z",
+            "providerStatus": null,
+            "body": "28 November, about 10 kids, Central Floresta"
+          }
+        ]
+      },
+      "aiPills": [
+        {
+          "kind": "ai_replied",
+          "createdAt": "2026-11-10T14:46:07.111Z",
+          "actorKind": "ai",
+          "turnId": "01a1c5ec-4883-749d-8361-14c50f0f157f",
+          "intent": "birthday_party",
+          "intents": [
+            "birthday_party"
+          ],
+          "reason": null,
+          "rule": null,
+          "destination": null,
+          "templateKey": null,
+          "closingKey": null,
+          "holdingLine": null,
+          "silent": null,
+          "messageIds": [
+            "01a1c5ec-6811-7684-a40a-e0e707e967ac",
+            "01a1c5ec-6811-7684-a40a-e0e8e5ee0a46"
+          ],
+          "rethink": null
+        },
+        {
+          "kind": "ai_handover",
+          "createdAt": "2026-11-10T14:47:02.569Z",
+          "actorKind": "ai",
+          "turnId": "01a1c5ed-1aa9-757a-8626-9893137ce07f",
+          "intent": "birthday_details",
+          "intents": [
+            "birthday_details"
+          ],
+          "reason": "OK",
+          "rule": null,
+          "destination": "birthdays",
+          "templateKey": "closing_birthday",
+          "closingKey": "closing_birthday",
+          "holdingLine": "template",
+          "silent": false,
+          "messageIds": [
+            "01a1c5ed-40b3-754a-82ff-7cdcd81963b3"
+          ],
+          "rethink": null
+        }
+      ],
+      "audit": {
+        "at": "2026-11-10T14:50:39.974Z",
+        "repeatGuard": {
+          "route": "GET /api/audit?action=inbox.ai.repeat_guard&from=<run start>",
+          "status": 200,
+          "rowsSinceRunStart": 0,
+          "total": 0,
+          "rowsForThisConversation": 0,
+          "rows": [],
+          "error": null
+        },
+        "openQuestion": {
+          "route": "GET /api/audit?action=inbox.ai.open_question&entityType=inbox.conversation&entityId=:id",
+          "status": 200,
+          "rows": 2,
+          "entries": [
+            {
+              "id": "01a1c5ec-681a-7010-acb3-49a149a73f6f",
+              "createdAt": "2026-11-10T14:46:07.111Z",
+              "after": {
+                "asked": [
+                  "date",
+                  "guests_count",
+                  "park"
+                ],
+                "turnId": "01a1c5ec-4883-749d-8361-14c50f0f157f",
+                "answered": [],
+                "withdrawn": []
+              }
+            },
+            {
+              "id": "01a1c5ed-40b8-76b3-8ce8-b2b3b5194b5c",
+              "createdAt": "2026-11-10T14:47:02.569Z",
+              "after": {
+                "asked": [],
+                "turnId": "01a1c5ed-1aa9-757a-8626-9893137ce07f",
+                "answered": [
+                  "guests_count"
+                ],
+                "withdrawn": [
+                  "date",
+                  "park"
+                ]
+              }
+            }
+          ],
+          "error": null
+        },
+        "handover": {
+          "route": "GET /api/audit?action=inbox.ai.handover&entityType=inbox.conversation&entityId=:id",
+          "status": 200,
+          "rows": 1,
+          "entries": [
+            {
+              "id": "01a1c5ed-40b9-7ed6-adb8-5fa79095ec5a",
+              "createdAt": "2026-11-10T14:47:02.569Z",
+              "turnId": "01a1c5ed-1aa9-757a-8626-9893137ce07f",
+              "intent": "birthday_details",
+              "closingKey": "closing_birthday"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "pictures": [
+    {
+      "file": "831-st-01-opener-asked-lines.png",
+      "shows": "Thread A: the playbook's combined opener, and under it the three open-question entries (the date, how many people, the park) waiting for the answer",
+      "at": "2026-11-10T14:41:11.533Z",
+      "namesMasked": 41,
+      "regionMasks": 1,
+      "note": "list of other conversations masked; phone-like numbers and staff initials masked"
+    },
+    {
+      "file": "831-st-02-answered-lines.png",
+      "shows": "Thread A after the family's answer: under the opener the three entries read answered 2026-11-14, 15 kids, Central Floresta; the assistant handed the details to the birthday team with its closing line",
+      "at": "2026-11-10T14:41:51.238Z",
+      "namesMasked": 41,
+      "regionMasks": 1,
+      "note": "list of other conversations masked; phone-like numbers and staff initials masked"
+    },
+    {
+      "file": "831-st-03-no-repeat.png",
+      "shows": "Thread A, two more lines (time slots, own cake): no assistant line after the hand-over, so nothing is asked again; the answered entries stay answered",
+      "at": "2026-11-10T14:44:37.185Z",
+      "namesMasked": 41,
+      "regionMasks": 1,
+      "note": "list of other conversations masked; phone-like numbers and staff initials masked"
+    },
+    {
+      "file": "831-st-05-looks-like-answer.png",
+      "shows": "Thread C: after the reply 'table for 8?' the guests entry reads answered 8 and the date and park entries read not answered (the assistant handed the thread to the birthday team)",
+      "at": "2026-11-10T14:48:04.665Z",
+      "namesMasked": 42,
+      "regionMasks": 1,
+      "note": "list of other conversations masked; phone-like numbers and staff initials masked"
+    },
+    {
+      "file": "831-st-04-ru-answered.png",
+      "shows": "Thread B (Russian): under the opener the entries read answered 2026-11-21, 12, Central Floresta; after the hand-over two more lines (time, own cake) get no assistant line, so nothing is asked again",
+      "at": "2026-11-10T14:48:17.668Z",
+      "namesMasked": 42,
+      "regionMasks": 1,
+      "note": "list of other conversations masked; phone-like numbers and staff initials masked"
+    },
+    {
+      "file": "831-st-06-extra-after-resume.png",
+      "shows": "Extra, not in the brief: thread A after a person pressed Resume and the family asked about time slots; the assistant's later turn asked nothing again (closing line, hand-over to the birthday team)",
+      "at": "2026-11-10T14:50:33.992Z",
+      "namesMasked": 43,
+      "regionMasks": 1,
+      "note": "list of other conversations masked; phone-like numbers and staff initials masked"
+    }
+  ],
+  "cleanup": {
+    "at": "2026-11-10T14:50:53.290Z",
+    "conversations": {
+      "A": {
+        "id": "01a1c5e7-21a6-79ed-a041-d68236446cd4",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T14:50:54.180Z"
+        }
+      },
+      "B": {
+        "id": "01a1c5eb-70ca-7d21-9204-d0aa6c753a79",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T14:50:55.841Z"
+        }
+      },
+      "C": {
+        "id": "01a1c5ec-4875-7897-b116-9f068907f42c",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T14:50:57.214Z"
+        }
+      }
+    }
+  },
+  "signOut": {
+    "at": "2026-11-10T14:51:11.679Z",
+    "signOut": {
+      "inbox": {
+        "route": "POST /api/auth/sign-out (inbox)",
+        "status": 200
+      },
+      "console": {
+        "route": "POST /api/auth/sign-out (Console)",
+        "status": 200
+      },
+      "launcher": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      }
+    },
+    "readBack": {
+      "inbox": {
+        "route": "GET /api/inbox/me (inbox)",
+        "status": 401
+      },
+      "console": {
+        "route": "GET /api/me (Console)",
+        "status": 401
+      },
+      "launcher": {
+        "route": "GET /api/me (launcher)",
+        "status": 401
+      }
+    }
+  },
+  "notTouched": "No other conversation, setting or key was read or changed. Nothing was sent to a phone: the simulator account is internal, and no hand-over contact was set (the pill read \"manager not notified (no contact)\")."
+}
