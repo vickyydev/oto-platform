@@ -52,6 +52,7 @@ import {
   type PartySettlementCart,
   type PartySettlementCartLine,
   type PricedLine,
+  type SaleActor,
 } from './sale';
 import { withTx, type Exec, type OpContext } from './tx';
 
@@ -468,6 +469,24 @@ export async function previewPartySettlement(
 ): Promise<PartySettlePreviewAnswer> {
   const db = deps.db;
   const { branchId, event, plan } = await partyAndPlan(db, actor, body, partyId);
+  return { quote: await quotePartySettlement(db, actor, { branchId, event, plan, body }, now) };
+}
+
+/**
+ * What settling the party with these counts comes to, priced by the engine
+ * exactly as the settlement will be, and written nowhere: the till's preview,
+ * and (SCRUM-822) the quote the OTO App reads for a party not settled yet
+ * (`party-billing.ts`), so the app's figures are the till's. The caller has
+ * found the party and its plan inside its operator; refused by name (409)
+ * where the counts cannot be priced, as the preview is.
+ */
+export async function quotePartySettlement(
+  db: Exec,
+  actor: SaleActor,
+  q: { branchId: string; event: SeamEvent; plan: PartyPlan; body: PartySettlePreviewBody },
+  now: Date = new Date(),
+): Promise<PartySettleQuote> {
+  const { branchId, event, plan, body } = q;
   // A preview's ids are its own: nothing is written under them.
   const built = await buildSettlement(db, actor, branchId, event, plan, body, deriveId(event.id, 'party-settlement:preview'));
   const priced = await priceCart(db, { ...actor, branchId }, cartInputOf(built, event, { branchId }), now, {
@@ -476,7 +495,7 @@ export async function previewPartySettlement(
   });
   // Answered, not refused: the form shows the walk-ups and why Confirm is off.
   const walkUps = await walkUpsOnTab(db, branchId, event.id);
-  return { quote: quoteOf(built, priced.lines, priced.money.grossSatang, walkUps) };
+  return quoteOf(built, priced.lines, priced.money.grossSatang, walkUps);
 }
 
 // --- The settlement --------------------------------------------------------------------------

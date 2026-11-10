@@ -50,6 +50,7 @@ import { catalogRoutes } from './routes/catalog';
 import { branchCloneRoutes } from './routes/branch-clone';
 import { menuRoutes } from './routes/menu';
 import { otoAppPartyMenuRoutes } from './routes/otoapp-party-menu';
+import { otoAppPartyBillingRoutes } from './routes/otoapp-party-billing';
 import { stockRoutes } from './routes/stock';
 import { auditRoutes } from './routes/audit';
 import { fileRoutes } from './routes/files';
@@ -488,6 +489,9 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // SCRUM-828 — the OTO App server's door for a new menu item added from the
   // BEO, made a BEO-only till product (its provisioning key, not a session).
   await app.register(otoAppPartyMenuRoutes, { prefix: '/otoapp' });
+  // SCRUM-822 — the OTO App server's read of a party's money from the till:
+  // the quote before settlement, the sale after it (its provisioning key).
+  await app.register(otoAppPartyBillingRoutes, { prefix: '/otoapp' });
   // S2-14b — the stock read routes the till and the stock screens read.
   await app.register(stockRoutes);
   // No prefix, like the catalogue: the fleet's branch-scoped resources are

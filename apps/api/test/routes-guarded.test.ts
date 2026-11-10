@@ -188,6 +188,17 @@ describe('route guards (S2-01b)', () => {
     expect(response.statusCode).toBe(401);
   });
 
+  it('binds the OTO App’s read of a party’s money to its operator credential before the params are read (SCRUM-822)', async () => {
+    const url = '/otoapp/parties/:eventId/billing';
+    const route = ctx.app.routeRegistry.find(r => r.method === 'GET' && r.url === url);
+    expect(route?.config.credential).toBe('otoapp-provision');
+    expect(route?.config.public).not.toBe(true);
+    expect(route?.config.permission).toBeUndefined();
+    // Refused as no key before the id is validated: an anonymous probe learns nothing of the shape.
+    const response = await ctx.app.inject({ method: 'GET', url: '/otoapp/parties/not-a-uuid/billing' });
+    expect(response.statusCode).toBe(401);
+  });
+
   it('the Console Teams and routing surface declares actual scoped management guards (SCRUM-626)', () => {
     const routes = ctx.app.routeRegistry.filter(r => /^\/inbox\/(teams|routing-rules)(\/|$)/.test(r.url)
       && r.method !== 'HEAD' && r.method !== 'OPTIONS');

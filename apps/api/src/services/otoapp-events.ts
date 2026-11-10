@@ -321,6 +321,28 @@ export async function getBranchEvent(
   return row && datedSoundly(row) ? toEvent(row) : null;
 }
 
+/**
+ * SCRUM-822 — one event by id, at whichever of these branches holds it,
+ * archived or not; null when none of them does. For the OTO App's server,
+ * which names an event and not a branch: the caller passes every branch of
+ * its key's operator, so the fence is the same tenant fence as every read
+ * here — another operator's event has no row.
+ */
+export async function getEventAtBranches(
+  exec: Exec,
+  q: { branchIds: readonly string[]; eventId: string },
+): Promise<SeamEvent | null> {
+  const branchIds = q.branchIds.filter((id) => UUID.test(id));
+  if (!UUID.test(q.eventId) || branchIds.length === 0) return null;
+  if (!(await otoAppEventsInstalled(exec))) return null;
+  const res = await exec.execute<EventRow>(sql`
+    select ${EVENT_COLUMNS}
+      from otoapp_v.events
+     where id = ${q.eventId}::uuid and branch_id in (${uuidList(branchIds)})`);
+  const row = res.rows[0];
+  return row && datedSoundly(row) ? toEvent(row) : null;
+}
+
 /** The children registered on one of the branch's events. */
 export async function listEventAttendees(
   exec: Exec,

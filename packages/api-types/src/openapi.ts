@@ -8033,6 +8033,128 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/otoapp/parties/{eventId}/billing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description OTO App server only (provisioning key): a party's money as the till holds it, for the BEO's Billing section, its Party Details box, its Day-of Execution view and its Quote PDF. Before the party is settled, the quote (`state: quote`): what the till's Settle form would show today, priced by the sale engine as the settlement will be — the package at the party's day price, the extras, the add-ons and entertainment, the items the BEO added, the free lines at 0, the deposit recorded as paid in advance and the balance, in satang with labels. Once a settlement sale holds it (`state: sale`): the receipt number, the lines, every payment taken (the deposit among them), the totals, when it was settled and at which till. `state: no_quote` with the till's own refusal where it cannot price the party (no package in the OTO App, an extra the package names no price for). The operator is the key's: an event at none of its branches is 404. Read only. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    eventId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            eventId: string;
+                            /** @enum {string} */
+                            state: "quote" | "sale" | "no_quote";
+                            park: {
+                                name: string;
+                                branchName: string;
+                                address: string | null;
+                            };
+                            party: {
+                                title: string;
+                                date: string;
+                                startTime: string | null;
+                                endTime: string | null;
+                                packageName: string | null;
+                                kids: number | null;
+                                adults: number | null;
+                            };
+                            quote: {
+                                partyDate: string;
+                                /** @enum {string} */
+                                rateMode: "weekday" | "weekend";
+                                packageName: string;
+                                lines: {
+                                    /** @enum {string} */
+                                    role: "package" | "included" | "guests" | "extra_children" | "extra_adults" | "socks" | "add_on" | "entertainment";
+                                    label: string;
+                                    quantity: number;
+                                    unitSatang: number;
+                                    totalSatang: number;
+                                }[];
+                                packageSatang: number;
+                                extraChildren: number;
+                                extraChildrenSatang: number;
+                                extraAdults: number;
+                                extraAdultsSatang: number;
+                                freeSocks: number;
+                                paidSocks: number;
+                                socksSatang: number;
+                                addOnsSatang: number;
+                                entertainmentSatang: number;
+                                totalSatang: number;
+                                creditSatang: number;
+                                depositSatang: number;
+                                balanceSatang: number;
+                                walkUps: number;
+                                walkUpsSatang: number;
+                            } | null;
+                            sale: {
+                                saleId: string;
+                                settlementId: string;
+                                /** @enum {string} */
+                                state: "open" | "settled" | "voided" | "refunded";
+                                receiptNumber: string | null;
+                                lines: {
+                                    /** @enum {string|null} */
+                                    role: "package" | "included" | "guests" | "extra_children" | "extra_adults" | "socks" | "add_on" | "entertainment" | null;
+                                    label: string;
+                                    quantity: number;
+                                    unitSatang: number;
+                                    totalSatang: number;
+                                }[];
+                                payments: {
+                                    id: string;
+                                    label: string;
+                                    methodCode: string | null;
+                                    amountSatang: number;
+                                    deposit: boolean;
+                                    paidAt: string | null;
+                                }[];
+                                grossSatang: number;
+                                paidSatang: number;
+                                depositSatang: number;
+                                outstandingSatang: number;
+                                kids: number;
+                                adults: number;
+                                createdAt: string;
+                                settledAt: string | null;
+                                stationName: string | null;
+                            } | null;
+                            noQuote: {
+                                code: string;
+                                message: string;
+                            } | null;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/branches/{branchId}/stock/sellable": {
         parameters: {
             query?: never;

@@ -514,6 +514,16 @@ const NO_DIRECT_WRITE = [
   'POST /box/v1/station/:stationId/lock',
   'POST /sales/quote',
   /**
+   * SCRUM-804 / SCRUM-822 — a party's settlement priced by the sale engine as
+   * the settlement will be, and kept nowhere: the till's preview. Before
+   * SCRUM-822 the walk found a `withTx` by name within three calls of it, in
+   * the engine's own callees; it now prices through `quotePartySettlement`,
+   * which the OTO App's read of the party's money shares, one call further
+   * from them, and the walk measures what it is — a cart quote that writes
+   * nothing (re-derived below like every line).
+   */
+  'POST /parties/:id/settle/preview',
+  /**
    * (`POST /benefits/resolve` was here: a scanned staff benefit QR, resolved,
    * keeping nothing. From S2-17b round 2 a refused QR naming an employee the
    * platform does not have files an `otoapp:employee.sync` case on Failures —

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { newId, partySocksIncludedFor, type PartyPlan, type PartySettleQuote } from '@oto/shared';
+import { newId, partySettleFormDefaults, partySocksIncludedFor, type PartyPlan, type PartySettleQuote } from '@oto/shared';
 import { useOperator } from '@/auth/OperatorContext';
 import { ApiError } from '@/api/client';
 import {
@@ -161,16 +161,13 @@ function CustomerPaymentPane({ amount, qr, method, title }: { amount: number; qr
   );
 }
 
-/** The counts the form opens with: the plan's, else the party's, and the package's socks. */
+/**
+ * The counts the form opens with: the plan's, else the party's, and the
+ * package's socks. One rule in @oto/shared, so the quote the OTO App reads
+ * (SCRUM-822) is priced on the same counts this form opens with.
+ */
 function formOf(party: PartyBooking, plan: PartyPlan): PartySettleForm {
-  const kids = Math.max(1, plan.counts.kidsExpected ?? party.expectedKids ?? 1);
-  return {
-    kids,
-    adults: Math.max(0, plan.counts.adultsExpected ?? party.expectedAdults ?? 0),
-    socksGiven: partySocksIncludedFor(plan.package, kids),
-    addOnIds: plan.addOns.filter((a) => a.qty > 0).map((a) => a.id),
-    entertainmentIds: plan.entertainment.map((e) => e.id),
-  };
+  return partySettleFormDefaults(plan, party);
 }
 
 export function PartySettleModal({ open, onOpenChange, party, plan, stationId, resumeSaleId, displayHandoff, onSettled }: PartySettleModalProps) {

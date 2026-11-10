@@ -349,8 +349,12 @@ function lineNote(line: SalePrintLine): string | undefined {
   return parts.length > 0 ? parts.join('\n  ') : undefined;
 }
 
-/** How a tender reads on the receipt: "Cash", "Card •••• 4242", "QR". */
-function tenderLabel(tender: SalePrintTender): string {
+/**
+ * How a tender reads on the receipt: "Cash", "Card •••• 4242", "QR". Exported
+ * for the OTO App's read of a party's sale (SCRUM-822), so its payments are
+ * worded as the receipt words them.
+ */
+export function receiptTenderLabel(tender: Pick<SalePrintTender, 'method' | 'last4'>): string {
   const token = tender.method;
   const word = token.charAt(0).toUpperCase() + token.slice(1).replace(/_/g, ' ');
   return tender.last4 ? `${word} •••• ${tender.last4}` : word;
@@ -442,7 +446,7 @@ export function saleReceiptDocument(snapshot: SalePrintSnapshot, copy = false): 
   const service = rows.filter((r) => r.kind === 'service').reduce((sum, r) => sum + r.amount, 0);
   const tenders: { label: string; amount: string }[] = [];
   for (const tender of snapshot.tenders) {
-    tenders.push({ label: tenderLabel(tender), amount: formatTHB(tender.amountSatang) });
+    tenders.push({ label: receiptTenderLabel(tender), amount: formatTHB(tender.amountSatang) });
     if (tender.tenderedSatang !== null && tender.changeSatang !== null && tender.changeSatang > 0) {
       tenders.push({ label: 'Cash tendered', amount: formatTHB(tender.tenderedSatang) });
       tenders.push({ label: 'Change', amount: formatTHB(tender.changeSatang) });
