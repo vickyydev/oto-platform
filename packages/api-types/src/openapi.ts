@@ -25305,6 +25305,7 @@ export interface paths {
                                     note: string | null;
                                     /** @enum {string} */
                                     audience?: "kids" | "adults";
+                                    adultsNote?: string;
                                 }[];
                                 barItems: {
                                     productCode: string | null;

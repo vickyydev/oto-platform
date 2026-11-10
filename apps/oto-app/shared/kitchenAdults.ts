@@ -24,14 +24,17 @@
  * How the adults' changes are marked on ONE food list (`kitchenAdultsMarks`):
  * beside each kids' line, "kids only" when the adults' list has no line of
  * that name, "kids N · adults M" when it has one in another count, "adults:
- * <note>" when only its note differs; after the kids' lines, each adults'
- * line with no kids' line of its name, marked "adults only". The BEO PDF
- * prints these; the till's kitchen slip prints the same words from what the
- * plan view hands it (migration 0048, packages/shared/src/party-slips.ts).
+ * <note>" when only its note differs ("adults: no note" when the adults'
+ * copy has none and the kids' line has one); after the kids' lines, each
+ * adults' line with no kids' line of its name, marked "adults only". The BEO
+ * PDF prints these; the till's kitchen slip prints the same words from what
+ * the plan view hands it (migration 0048, packages/shared/src/party-slips.ts).
  *
- * The till's charges do not move: the plan view emits an adults' line only
- * when it is not an unchanged copy of a kids' line, so a coded item copied
- * for the adults is charged once, as a one-list BEO is charged today.
+ * The till's charges do not move: a coded line copied for the adults is the
+ * same dish whatever its note (`sameKitchenDish`: name, count and till code),
+ * so the plan view emits it once and carries the adults' note on that one
+ * line; a one-list BEO is charged exactly so today. Only a copy in another
+ * count, or of another code, is a line of the adults' own.
  */
 
 /** A kitchen plan line as every list holds it; only these fields matter here. */
@@ -50,6 +53,10 @@ export const ADULTS_SAME_AS_KIDS = "Same as the kids' menu";
 /** The marks on the one food list. The till's slip uses the same words. */
 export const KIDS_ONLY_MARK = "kids only";
 export const ADULTS_ONLY_MARK = "adults only";
+/** Beside a kids' line with a note whose adults' copy has none. */
+export const ADULTS_NO_NOTE_MARK = "adults: no note";
+/** "adults: <note>", or the no-note mark for an adults' copy whose note was cleared. */
+export const adultsNoteMark = (note: string): string => (note.trim() ? `adults: ${note.trim()}` : ADULTS_NO_NOTE_MARK);
 
 export const kitchenLinesOf = (value: unknown): KitchenLineLike[] =>
   Array.isArray(value) ? (value.filter((l) => l && typeof l === "object" && !Array.isArray(l)) as KitchenLineLike[]) : [];
@@ -65,9 +72,23 @@ const qtyOf = (line: KitchenLineLike): number => {
 const noteOf = (line: KitchenLineLike): string => (typeof line.notes === "string" ? line.notes.trim() : "");
 const codeOf = (line: KitchenLineLike): string => (typeof line.productCode === "string" ? line.productCode.trim() : "");
 
-/** The same dish, in the same count, with the same note and the same till code: an unchanged copy. */
+/**
+ * The same dish for the kitchen and the till: the same name, count and till
+ * code, its note aside. A coded line copied for the adults and changed only
+ * in its note is this one dish, cooked and charged once, with the adults'
+ * note carried beside it.
+ */
+export function sameKitchenDish(a: KitchenLineLike, b: KitchenLineLike): boolean {
+  return foldDishName(a.itemName) === foldDishName(b.itemName) && qtyOf(a) === qtyOf(b) && codeOf(a) === codeOf(b);
+}
+
+/**
+ * The same dish with the same note: an unchanged copy. A note the staff
+ * changed for the adults is a change of theirs, so the lists are not the
+ * same (the switch reads on) — but the dish is, for the till.
+ */
 export function sameKitchenLine(a: KitchenLineLike, b: KitchenLineLike): boolean {
-  return foldDishName(a.itemName) === foldDishName(b.itemName) && qtyOf(a) === qtyOf(b) && noteOf(a) === noteOf(b) && codeOf(a) === codeOf(b);
+  return sameKitchenDish(a, b) && noteOf(a) === noteOf(b);
 }
 
 /** Line for line the same list (the ids aside). */
@@ -119,10 +140,20 @@ export function kitchenAdultsMarks(kids: unknown, adults: unknown, adultsDiffer:
     taken.add(at);
     const match = a[at]!;
     if (qtyOf(line) !== qtyOf(match)) return adultsCountMark(qtyOf(line), qtyOf(match));
-    if (noteOf(line) !== noteOf(match)) return noteOf(match) ? `adults: ${noteOf(match)}` : null;
+    if (noteOf(line) !== noteOf(match)) return adultsNoteMark(noteOf(match));
     return null;
   });
   return { marks, adultsOnly: a.filter((_, i) => !taken.has(i)) };
+}
+
+/**
+ * The kids' lines copied for the adults' own list, each with an id of its
+ * own (a list's rows are keyed by id). The server copies the set menu's
+ * resolved lines this way so the adults' set menu stays in step with the
+ * kids' when the parent chooses or an approval writes it.
+ */
+export function adultsCopiesOf<T extends KitchenLineLike>(lines: T[]): T[] {
+  return lines.map((line) => ({ ...line, id: `${typeof line.id === "string" && line.id ? line.id : "line"}_adults` }));
 }
 
 /** The list the adults eat: their own while the switch is on, else the kids'. */

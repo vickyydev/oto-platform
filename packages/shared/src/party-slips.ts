@@ -34,14 +34,17 @@ import { PREP_TICKET_TITLE, PRINT_JOB_STATUSES, type PrintingPrepStation } from 
  *     the kitchen works to then is a question for the owner, not a rule here.
  *   - ONE food list, the adults' changes marked (SCRUM-829). The BEO's adults'
  *     menu mirrors the kids' unless its "Different for adults" switch is on;
- *     then the plan marks the lines (`audience`, app migration 0048): a line
- *     the adults do not get prints "kids only"; an adults' line of a name the
- *     slip already lists prints no second line but "kids N · adults M" beside
- *     the first (the counts are each side's own; their sum is what the till
- *     charges), or "adults: <note>" when only its note differs; an adults'
- *     line of a new name prints marked "adults only". The slip prints no
- *     separate totals: how the adults' portions are counted is the owner's
- *     open point, and these two counts are the simplest honest reading of it.
+ *     then the plan marks the lines (`audience` and `adultsNote`, app
+ *     migration 0048): a line the adults do not get prints "kids only"; a
+ *     line the adults get as the same dish with another note prints once, with
+ *     "adults: <note>" beside it ("adults: no note" when theirs was cleared) —
+ *     the dish the till charges once; an adults' line of a name the slip
+ *     already lists prints no second line but "kids N · adults M" beside the
+ *     first (the counts are each side's own; their sum is what the till
+ *     charges); an adults' line of a new name prints marked "adults only". The
+ *     slip prints no separate totals: how the adults' portions are counted is
+ *     the owner's open point, and these two counts are the simplest honest
+ *     reading of it.
  */
 
 /** The two slips, kitchen first: the prep stations that print (`print.ts`). */
@@ -69,6 +72,10 @@ export const PARTY_CHOICE_NOT_MADE = 'Choice not made in the OTO App';
 /** SCRUM-829: the adults' changes, marked on the one food list (the BEO PDF prints the same words). */
 export const PARTY_KIDS_ONLY = 'kids only';
 export const PARTY_ADULTS_ONLY = 'adults only';
+/** Beside a kids' line with a note whose adults' copy has none. */
+export const PARTY_ADULTS_NO_NOTE = 'adults: no note';
+/** "adults: <note>", or the no-note mark when the adults' copy's note was cleared. */
+export const partyAdultsNoteMark = (note: string): string => (note.trim() ? `adults: ${note.trim()}` : PARTY_ADULTS_NO_NOTE);
 /** "kids N · adults M": a dish both eat, in different counts. */
 export const partyCountsMark = (kidsQty: number | null, adultsQty: number): string =>
   kidsQty === null ? `adults ${adultsQty}` : `kids ${kidsQty} · adults ${adultsQty}`;
@@ -182,7 +189,7 @@ export function composePartySlips(input: PartySlipInput): Record<PartySlipStatio
           held.notes.push(partyCountsMark(held.qty, adultsQty));
           held.qty = null;
         } else if (note) {
-          held.notes.push(`adults: ${note}`);
+          held.notes.push(partyAdultsNoteMark(note));
         }
         continue;
       }
@@ -193,6 +200,8 @@ export function composePartySlips(input: PartySlipInput): Record<PartySlipStatio
       item.choiceGroup && !item.chosenOption ? PARTY_CHOICE_NOT_MADE : null,
       note,
       item.audience === 'kids' ? PARTY_KIDS_ONLY : null,
+      // The same dish for the adults with another note: one line, their note beside it.
+      item.adultsNote === undefined ? null : partyAdultsNoteMark(item.adultsNote),
     ].filter((n): n is string => !!n);
     drafts[station].push({ qty: item.qty, name, notes });
   }

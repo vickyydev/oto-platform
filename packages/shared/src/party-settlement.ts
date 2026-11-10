@@ -156,7 +156,7 @@ export type PartyPlanEntertainment = z.infer<typeof PartyPlanEntertainmentSchema
  * kids' — `kids` on a line the adults do not get, `adults` on a line of the
  * adults' own (instead of, beside, or in another count than the kids').
  * Absent on every line of a party whose adults eat the kids' menu, and on
- * every party saved before the switch (the view, app migration 0048).
+ * every party whose BEO holds one list (the view, app migration 0048).
  */
 export const PARTY_MENU_AUDIENCES = ['kids', 'adults'] as const;
 export type PartyMenuAudience = (typeof PARTY_MENU_AUDIENCES)[number];
@@ -170,6 +170,13 @@ export const PartyPlanMenuItemSchema = z.object({
   chosenOption: z.string().nullable(),
   note: z.string().nullable(),
   audience: z.enum(PARTY_MENU_AUDIENCES).optional(),
+  /**
+   * SCRUM-829: on a kids' line the adults get as the same dish (name, count
+   * and code) with another note — the adults' note, "" when theirs was
+   * cleared. The dish is one line, charged once; the slip prints the note
+   * beside it. Absent otherwise.
+   */
+  adultsNote: z.string().optional(),
 });
 export type PartyPlanMenuItem = z.infer<typeof PartyPlanMenuItemSchema>;
 

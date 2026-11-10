@@ -13,6 +13,7 @@ import {
   stationDevice,
 } from '@oto/db';
 import {
+  PARTY_ADULTS_NO_NOTE,
   PARTY_ADULTS_ONLY,
   PARTY_CHOICE_NOT_MADE,
   PARTY_KIDS_ONLY,
@@ -24,6 +25,7 @@ import {
   composePartySlips,
   newId,
   parseDayStart,
+  partyAdultsNoteMark,
   partyCountsMark,
   partyReadyBy,
   partySlipsTime,
@@ -379,6 +381,30 @@ describe('the slip, composed from the plan', () => {
     expect(PARTY_ADULTS_ONLY).toBe('adults only');
   });
 
+  it('the same dish for the adults with another note is one line with their note beside it; a cleared note is said; an uncoded kids’ line takes the two counts', () => {
+    const slips = compose(
+      plan({
+        setMenu: [
+          // The view carries the adults' note on the kids' line (one dish, charged once).
+          { productCode: 'CF-66-1', name: 'Kids juice', qty: 10, choiceGroup: null, chosenOption: null, note: null, adultsNote: 'no ice' },
+          { productCode: 'CF-24', name: 'Pizza', qty: 3, choiceGroup: 'Pizza', chosenOption: 'Margherita', note: 'no cheese', adultsNote: '' },
+          // An uncoded kids' line the adults get in another count: the view emits both, uncharged.
+          { productCode: null, name: 'Fruit skewers', qty: 2, choiceGroup: null, chosenOption: null, note: null },
+          { productCode: null, name: 'Fruit skewers', qty: 4, choiceGroup: null, chosenOption: null, note: null, audience: 'adults' },
+        ],
+        barItems: [],
+      }),
+    );
+    expect(slips.kitchen?.lines).toEqual([
+      { qty: 3, name: 'Margherita', note: `no cheese · ${PARTY_ADULTS_NO_NOTE}` },
+      { name: 'Fruit skewers', note: partyCountsMark(2, 4) },
+    ]);
+    expect(slips.bar?.lines).toEqual([{ qty: 10, name: 'Kids juice', note: 'adults: no ice' }]);
+    expect(partyAdultsNoteMark(' no ice ')).toBe('adults: no ice');
+    expect(partyAdultsNoteMark('')).toBe(PARTY_ADULTS_NO_NOTE);
+    expect(PARTY_ADULTS_NO_NOTE).toBe('adults: no note');
+  });
+
   it('an adults’ line folds only into a line on its own station; a split choice with no count takes the adults’ count alone', () => {
     const slips = compose(
       plan({
@@ -546,6 +572,38 @@ describe('job:parties.slips — at the slip time, once', () => {
       { qty: 10, name: 'Kids juice' },
       { qty: 2, name: 'Juice pitcher' },
     ]);
+  });
+
+  it('SCRUM-829: a coded dish copied for the adults with another note is one slip line and one charge; an uncoded dish in another count folds, through the view (0048)', async () => {
+    const id = await appParty({ id: newId(), title: "Ploy's 5th", date: T, setMenu: false, bar: [] });
+    // No set menu: the kids' list holds a coded juice and the team's own skewers; the adults'
+    // own list copies the juice with a note and takes the skewers in another count.
+    const kids = [
+      { id: 'k1', itemName: 'Kids juice', quantity: 10, notes: '', included: true, price: 0, productCode: 'CF-66-1' },
+      { id: 'k2', itemName: 'Fruit skewers', quantity: 2, notes: 'no melon', included: true, price: 0 },
+    ];
+    const adults = [
+      { id: 'a1', itemName: 'Kids juice', quantity: 10, notes: 'no ice', included: true, price: 0, productCode: 'CF-66-1' },
+      { id: 'a2', itemName: 'Fruit skewers', quantity: 4, notes: 'no melon', included: true, price: 0 },
+    ];
+    await ctx.db.execute(sql`
+      insert into otoapp.beo_kitchen_plans (id, event_id, set_menu_enabled, menus, kitchen_ready_offset_minutes)
+      values (${newId()}, ${id}, false, ${JSON.stringify({ kidsFoodTime: '14:00', kids, adults, adultsDiffer: true })}::jsonb, 20)`);
+    // What the till charges is the plan's coded lines: the juice once, 10, not 20.
+    const shown = await detail(id);
+    expect(shown.status).toBe(200);
+    const codes = new Map<string, number>();
+    for (const m of shown.body.plan?.setMenu ?? []) if (m.productCode) codes.set(m.productCode, (codes.get(m.productCode) ?? 0) + (m.qty ?? 1));
+    expect([...codes]).toEqual([['CF-66-1', 10]]);
+    expect(shown.body.plan?.setMenu.map((m) => [m.name, m.qty, m.audience ?? null, m.adultsNote ?? null])).toEqual([
+      ['Kids juice', 10, null, 'no ice'],
+      ['Fruit skewers', 2, null, null],
+      ['Fruit skewers', 4, 'adults', null],
+    ]);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '11:01'));
+    const rows = await slipsOf(id);
+    expect((rows[0]!.document as PartySlipDocument).lines).toEqual([{ name: 'Fruit skewers', note: `no melon · ${partyCountsMark(2, 4)}` }]);
+    expect((rows[1]!.document as PartySlipDocument).lines).toEqual([{ qty: 10, name: 'Kids juice', note: 'adults: no ice' }]);
   });
 
   it('prints once and not twice: a second tick, and two ticks at once, make no second run', async () => {

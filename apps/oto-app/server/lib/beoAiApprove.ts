@@ -12,6 +12,7 @@ import {
   entertainmentPackageTemplates,
 } from "@shared/schema";
 import type { BeoAiApproveBody, BeoAiSetMenuChoices, BeoAiSetMenuItem } from "@shared/beoAiFill";
+import { adultsCopiesOf, adultsDifferOf } from "@shared/kitchenAdults";
 import type { db as appDb } from "../db";
 import type { ActivityLogInput } from "../storage";
 import { loadBeoCatalogue, type BeoCatalogue } from "./beoCatalogueFill";
@@ -290,14 +291,27 @@ export async function approveBeoAiFill(
       const kidsExtra = kitchenLines.filter((l) => l.menu === "kids").map(lineOf);
       const adultsExtra = kitchenLines.filter((l) => l.menu === "adults").map(lineOf);
       if (kidsExtra.length > 0) kids = [...kids.filter((l) => l.source === "set_menu"), ...kidsExtra];
-      if (adultsExtra.length > 0) adults = [...adults.filter((l) => l.source === "set_menu"), ...adultsExtra];
       written.kitchenLines = kidsExtra.length + adultsExtra.length;
       written.freeKitchenLines = kitchenLines.filter((l) => !l.productCode).length;
 
-      // SCRUM-829: the adults eat the kids' menu unless the chat said otherwise. A line the
-      // review marks for the adults is theirs alone, so the BEO opens with "Different for
-      // adults" on; with none, the switch stays as the BEO holds it (shared/kitchenAdults.ts).
-      const nextMenus = { ...menus, kids, adults, ...(adultsExtra.length > 0 ? { adultsDiffer: true } : {}) };
+      // SCRUM-829: the adults eat the kids' menu unless the chat said otherwise. The review's
+      // "adults" lines are everything the adults eat beyond the set menu (the prompts ask for
+      // the whole of it when it differs), so they are the adults' own list and the BEO opens
+      // with "Different for adults" on; with none, the switch stays as the BEO holds it,
+      // recorded as its readers resolve it (shared/kitchenAdults.ts). While the adults' list
+      // is their own, the set menu's lines in it are copies of the kids' — the parent's choice
+      // as it now stands — so a choice made or changed here never leaves the adults' set menu
+      // stale or missing.
+      const adultsOwn = adultsExtra.length > 0 || adultsDifferOf(menus);
+      if (!adultsOwn) {
+        adults = [];
+      } else {
+        if (adultsExtra.length > 0) adults = [...adults.filter((l) => l.source === "set_menu"), ...adultsExtra];
+        if (body.setMenu || adultsExtra.length > 0) {
+          adults = [...adultsCopiesOf(kids.filter((l) => l.source === "set_menu")), ...adults.filter((l) => l.source !== "set_menu")];
+        }
+      }
+      const nextMenus = { ...menus, kids, adults, adultsDiffer: adultsOwn };
       const values = {
         setMenuEnabled,
         setMenuTemplateId,

@@ -6,34 +6,51 @@
 -- While "Different for adults" is off, the adults' list IS the kids' list and
 -- `menus.adults` is saved empty; on, `menus.adults` is the adults' own list,
 -- started as a copy of the kids' and changed by staff, and `menus.adultsDiffer`
--- is true (apps/oto-app/shared/kitchenAdults.ts). A BEO saved before this has
--- no `adultsDiffer` key and keeps the reading below exactly as 0047 gave it.
+-- is true (apps/oto-app/shared/kitchenAdults.ts). Every write of the plan —
+-- the BEO's Save, the day-of view, the parent link's submit, an AI fill's
+-- approval — records the switch as its readers resolve it (adultsDifferOf),
+-- so a plan written since reads the same way here, in the editor and on the
+-- BEO PDF. A BEO saved before this has no `adultsDiffer` key and keeps the
+-- reading below exactly as 0047 gave it until it is next written.
 --
 -- set_menu, when `menus.adultsDiffer` is true:
 --
 --   - the set menu's own lines and the kids' coded lines, as 0047 emits them,
 --     each with `"audience": "kids"` when the kids' list holds a line of that
 --     name and the adults' list holds none (a dish the adults do not get);
---   - then every adults' line, coded or not, that is NOT an unchanged copy of
---     a kids' line (the same name, count, note and till code), with
+--     with `"adults_note": "<note>"` when the adults' list holds the same
+--     dish (the same name, count and till code) with another note — "" when
+--     the adults' copy has no note — so the slip prints "adults: <note>"
+--     beside the one line and the till charges the dish ONCE;
+--   - a kids' line with no till code too, when the adults' list holds a line
+--     of its name in another count or of another code (never charged: it has
+--     no code), so the slip can print "kids N · adults M" beside it instead
+--     of calling the adults' line theirs alone — unless the set menu's
+--     template names the dish, whose line above is the one the slip folds
+--     the adults' into;
+--   - then every adults' line, coded or not, that is NOT the same dish as a
+--     kids' line (the same name, count and till code — the note aside), with
 --     `"audience": "adults"`: a dish the adults get instead or beside, or in
---     another count. An unchanged copy is left out, so a coded item copied for
---     the adults reaches the till ONCE: the settlement charges what this view
---     emits (party-settlement.ts, partyMenuChargesOf), so its figures are what
---     a one-list BEO is charged today, and an adults-only line is charged as a
---     two-list BEO's adults' line is charged today. The kitchen slip
---     (packages/shared/src/party-slips.ts) folds an "adults" line into the
---     kids' line of the same name — "kids N · adults M" beside it — or prints
---     it marked "adults only", and prints a "kids" line marked "kids only".
+--     another count. A copy of a kids' dish is left out, so a coded item
+--     copied for the adults reaches the till ONCE: the settlement charges what
+--     this view emits (party-settlement.ts, partyMenuChargesOf), so its
+--     figures are what a one-list BEO is charged today, and an adults-only
+--     line is charged as a two-list BEO's adults' line is charged today. The
+--     kitchen slip (packages/shared/src/party-slips.ts) folds an "adults"
+--     line into the kids' line of the same name — "kids N · adults M" beside
+--     it — or prints it marked "adults only", and prints a "kids" line marked
+--     "kids only".
 --
 -- When `menus.adultsDiffer` is absent or false: exactly 0047 — the kitchen
--- plan's coded lines, kids before adults, no `audience` key — so no party
--- saved before this changes its plan, its slips or its settlement.
+-- plan's coded lines, kids before adults, no `audience` or `adults_note` key
+-- — so no party saved before this changes its plan, its slips or its
+-- settlement.
 --
 -- Names are compared folded (trimmed, lower-cased, one space between words);
 -- a count is the line's quantity when it reads as a whole number 1-999999,
--- else 1, as 0047 reads it. `audience` is an extra key on the set_menu
--- entries only where it applies: the view keeps the same columns, in the same
+-- else 1, as 0047 reads it; a note and a code are compared trimmed, a missing
+-- one as "". `audience` and `adults_note` are extra keys on the set_menu
+-- entries only where they apply: the view keeps the same columns, in the same
 -- order, of the same types (CREATE OR REPLACE keeps it and its grants), every
 -- other expression as 0047 wrote it; packages/db declares it unchanged. No
 -- data is written. Expand-only.
@@ -105,7 +122,8 @@ SELECT
     FROM (
       -- The set menu's own lines, as 0042 and 0045 read them; SCRUM-829 marks
       -- one "kids" when the adults' own list has no line of its name while
-      -- the kids' list holds one.
+      -- the kids' list holds one, and carries the adults' note when their
+      -- list holds the kids' dish of that name with another note.
       SELECT
         0 AS part,
         it.ord,
@@ -124,6 +142,7 @@ SELECT
           'chosen_option', o.opt,
           'note', NULLIF(btrim(it.item ->> 'note'), '')
         ) || CASE
+          WHEN an.note IS NOT NULL THEN jsonb_build_object('adults_note', an.note)
           WHEN ad.differ
             AND EXISTS (
               SELECT 1 FROM jsonb_array_elements(ad.kids) AS kk(item)
@@ -163,40 +182,109 @@ SELECT
       CROSS JOIN LATERAL unnest(
         CASE WHEN cardinality(c.chosen) = 0 THEN ARRAY[NULL::text] ELSE c.chosen END
       ) WITH ORDINALITY AS o(opt, sub)
+      -- The adults' note on the kids' dish of this line's name: the first
+      -- adults' line that is the same dish as a kids' line of that name (the
+      -- same count and till code) with another note; "" for a cleared note.
+      LEFT JOIN LATERAL (
+        SELECT btrim(COALESCE(aa.item ->> 'notes', '')) AS note
+        FROM jsonb_array_elements(ad.kids) AS kk(item)
+        JOIN jsonb_array_elements(ad.adults) AS aa(item)
+          ON jsonb_typeof(aa.item) = 'object'
+          AND lower(regexp_replace(btrim(COALESCE(aa.item ->> 'itemName', '')), '\s+', ' ', 'g'))
+            = lower(regexp_replace(btrim(COALESCE(kk.item ->> 'itemName', '')), '\s+', ' ', 'g'))
+          AND (CASE WHEN aa.item ->> 'quantity' ~ '^[1-9][0-9]{0,5}$' THEN (aa.item ->> 'quantity')::integer ELSE 1 END)
+            = (CASE WHEN kk.item ->> 'quantity' ~ '^[1-9][0-9]{0,5}$' THEN (kk.item ->> 'quantity')::integer ELSE 1 END)
+          AND btrim(COALESCE(aa.item ->> 'productCode', '')) = btrim(COALESCE(kk.item ->> 'productCode', ''))
+          AND btrim(COALESCE(aa.item ->> 'notes', '')) <> btrim(COALESCE(kk.item ->> 'notes', ''))
+        WHERE ad.differ
+          AND jsonb_typeof(kk.item) = 'object'
+          AND lower(regexp_replace(btrim(COALESCE(kk.item ->> 'itemName', '')), '\s+', ' ', 'g'))
+            = lower(regexp_replace(btrim(COALESCE(o.opt, it.item ->> 'label', '')), '\s+', ' ', 'g'))
+        LIMIT 1
+      ) an ON true
       WHERE it.item ->> 'type' IN ('always_included', 'choice_group')
       UNION ALL
       -- SCRUM-828: the kids' list's lines the BEO gave a till product code;
-      -- SCRUM-829 marks one "kids" when the adults' own list has no line of its name.
+      -- SCRUM-829 marks one "kids" when the adults' own list has no line of
+      -- its name, carries the adults' note when their list holds the same
+      -- dish with another note, and emits a line with no code too when the
+      -- adults' list holds one of its name in another count or code.
       SELECT
         1 AS part,
         kl.ord,
         1::bigint AS sub,
         jsonb_build_object(
-          'product_code', btrim(kl.item ->> 'productCode'),
+          'product_code', NULLIF(btrim(kl.item ->> 'productCode'), ''),
           'name', kl.item ->> 'itemName',
           'qty', CASE WHEN kl.item ->> 'quantity' ~ '^[1-9][0-9]{0,5}$' THEN (kl.item ->> 'quantity')::integer ELSE 1 END,
           'choice_group', NULL::text,
           'chosen_option', NULL::text,
           'note', NULLIF(btrim(kl.item ->> 'notes'), '')
         ) || CASE
-          WHEN ad.differ
-            AND NOT EXISTS (
-              SELECT 1 FROM jsonb_array_elements(ad.adults) AS aa(item)
-              WHERE jsonb_typeof(aa.item) = 'object'
-                AND lower(regexp_replace(btrim(COALESCE(aa.item ->> 'itemName', '')), '\s+', ' ', 'g'))
-                  = lower(regexp_replace(btrim(COALESCE(kl.item ->> 'itemName', '')), '\s+', ' ', 'g'))
-            )
-          THEN jsonb_build_object('audience', 'kids')
+          WHEN an.note IS NOT NULL THEN jsonb_build_object('adults_note', an.note)
+          WHEN ad.differ AND NOT ka.named THEN jsonb_build_object('audience', 'kids')
           ELSE '{}'::jsonb
         END AS item
       FROM jsonb_array_elements(ad.kids) WITH ORDINALITY AS kl(item, ord)
+      -- Whether the adults' list names this dish, and whether it holds it as the same dish.
+      CROSS JOIN LATERAL (
+        SELECT
+          EXISTS (
+            SELECT 1 FROM jsonb_array_elements(ad.adults) AS aa(item)
+            WHERE jsonb_typeof(aa.item) = 'object'
+              AND lower(regexp_replace(btrim(COALESCE(aa.item ->> 'itemName', '')), '\s+', ' ', 'g'))
+                = lower(regexp_replace(btrim(COALESCE(kl.item ->> 'itemName', '')), '\s+', ' ', 'g'))
+          ) AS named,
+          EXISTS (
+            SELECT 1 FROM jsonb_array_elements(ad.adults) AS aa(item)
+            WHERE jsonb_typeof(aa.item) = 'object'
+              AND lower(regexp_replace(btrim(COALESCE(aa.item ->> 'itemName', '')), '\s+', ' ', 'g'))
+                = lower(regexp_replace(btrim(COALESCE(kl.item ->> 'itemName', '')), '\s+', ' ', 'g'))
+              AND (CASE WHEN aa.item ->> 'quantity' ~ '^[1-9][0-9]{0,5}$' THEN (aa.item ->> 'quantity')::integer ELSE 1 END)
+                = (CASE WHEN kl.item ->> 'quantity' ~ '^[1-9][0-9]{0,5}$' THEN (kl.item ->> 'quantity')::integer ELSE 1 END)
+              AND btrim(COALESCE(aa.item ->> 'productCode', '')) = btrim(COALESCE(kl.item ->> 'productCode', ''))
+          ) AS same_dish
+      ) ka
+      LEFT JOIN LATERAL (
+        SELECT btrim(COALESCE(aa.item ->> 'notes', '')) AS note
+        FROM jsonb_array_elements(ad.adults) AS aa(item)
+        WHERE ad.differ
+          AND jsonb_typeof(aa.item) = 'object'
+          AND lower(regexp_replace(btrim(COALESCE(aa.item ->> 'itemName', '')), '\s+', ' ', 'g'))
+            = lower(regexp_replace(btrim(COALESCE(kl.item ->> 'itemName', '')), '\s+', ' ', 'g'))
+          AND (CASE WHEN aa.item ->> 'quantity' ~ '^[1-9][0-9]{0,5}$' THEN (aa.item ->> 'quantity')::integer ELSE 1 END)
+            = (CASE WHEN kl.item ->> 'quantity' ~ '^[1-9][0-9]{0,5}$' THEN (kl.item ->> 'quantity')::integer ELSE 1 END)
+          AND btrim(COALESCE(aa.item ->> 'productCode', '')) = btrim(COALESCE(kl.item ->> 'productCode', ''))
+          AND btrim(COALESCE(aa.item ->> 'notes', '')) <> btrim(COALESCE(kl.item ->> 'notes', ''))
+        LIMIT 1
+      ) an ON true
       WHERE jsonb_typeof(kl.item) = 'object'
-        AND jsonb_typeof(kl.item -> 'productCode') = 'string'
-        AND btrim(kl.item ->> 'productCode') <> ''
+        AND (
+          (jsonb_typeof(kl.item -> 'productCode') = 'string' AND btrim(kl.item ->> 'productCode') <> '')
+          OR (
+            ad.differ AND btrim(COALESCE(kl.item ->> 'itemName', '')) <> '' AND ka.named AND NOT ka.same_dish
+            -- A dish the set menu's template names is the set menu's own line above, never a second one.
+            AND NOT EXISTS (
+              SELECT 1
+              FROM jsonb_array_elements(CASE WHEN jsonb_typeof(m.items) = 'array' THEN m.items ELSE '[]'::jsonb END) AS ti(item)
+              WHERE ti.item ->> 'type' IN ('always_included', 'choice_group')
+                AND (
+                  lower(regexp_replace(btrim(COALESCE(ti.item ->> 'label', '')), '\s+', ' ', 'g'))
+                    = lower(regexp_replace(btrim(COALESCE(kl.item ->> 'itemName', '')), '\s+', ' ', 'g'))
+                  OR EXISTS (
+                    SELECT 1
+                    FROM jsonb_array_elements_text(CASE WHEN jsonb_typeof(ti.item -> 'options') = 'array' THEN ti.item -> 'options' ELSE '[]'::jsonb END) AS op(opt)
+                    WHERE lower(regexp_replace(btrim(op.opt), '\s+', ' ', 'g'))
+                      = lower(regexp_replace(btrim(COALESCE(kl.item ->> 'itemName', '')), '\s+', ' ', 'g'))
+                  )
+                )
+            )
+          )
+        )
       UNION ALL
-      -- The adults' list. Without the switch (0047): its coded lines, as the
-      -- kids'. With it (SCRUM-829): every line of the adults' own list that is
-      -- not an unchanged copy of a kids' line, marked "adults".
+      -- The adults' list. With the switch off (0047): its coded lines, as the
+      -- kids'. With it on (SCRUM-829): every line of the adults' own list that
+      -- is not the same dish as a kids' line, marked "adults".
       SELECT
         2 AS part,
         al.ord,
@@ -221,7 +309,6 @@ SELECT
                   = lower(regexp_replace(btrim(COALESCE(al.item ->> 'itemName', '')), '\s+', ' ', 'g'))
                 AND (CASE WHEN kk.item ->> 'quantity' ~ '^[1-9][0-9]{0,5}$' THEN (kk.item ->> 'quantity')::integer ELSE 1 END)
                   = (CASE WHEN al.item ->> 'quantity' ~ '^[1-9][0-9]{0,5}$' THEN (al.item ->> 'quantity')::integer ELSE 1 END)
-                AND btrim(COALESCE(kk.item ->> 'notes', '')) = btrim(COALESCE(al.item ->> 'notes', ''))
                 AND btrim(COALESCE(kk.item ->> 'productCode', '')) = btrim(COALESCE(al.item ->> 'productCode', ''))
             )
           ELSE

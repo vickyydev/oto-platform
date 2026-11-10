@@ -1,6 +1,7 @@
 import type { Express, NextFunction, Request, Response } from "express";
 import { and, eq, sql } from "drizzle-orm";
 import { beoKitchenPlans, branches, coreEvents } from "@shared/schema";
+import { adultsDifferOf } from "@shared/kitchenAdults";
 import {
   PartyMenuItemBodySchema,
   partyMenuItemProblem,
@@ -113,6 +114,9 @@ export function registerPartyMenuRoutes(app: Express): void {
         const written = (at < 0 ? fresh : { ...held[at], productCode: made.code }) as PartyMenuLine;
         const lines = at < 0 ? [...held, written] : held.map((l, i) => (i === at ? written : l));
         const nextMenus = { ...menus, [body.menu]: lines };
+        // SCRUM-829: the plan records "Different for adults" as its readers resolve it, so a line
+        // added to the adults' list here reads one way on the till, in the editor and on the PDF.
+        if (typeof nextMenus.adultsDiffer !== "boolean") nextMenus.adultsDiffer = adultsDifferOf(nextMenus);
         const values = {
           menus: nextMenus,
           simplifiedMenus: { kids: asLines(nextMenus.kids), adults: asLines(nextMenus.adults) },

@@ -9,21 +9,32 @@
 //   - the stored shape (shared/kitchenAdults.ts): a BEO saved with the switch
 //     off keeps no adults' list; one saved with it on keeps the adults' own
 //     list and adultsDiffer: true; a BEO saved before the switch opens on
-//     only when its adults' list holds lines that are not the kids' list; an
-//     editor from before the switch leaves the plan without the key; the
-//     day-of view's own write keeps the key;
+//     only when its adults' list holds lines that are not the kids' list;
+//     every server write records the switch as its readers resolve it — an
+//     editor from before the switch, or the day-of view's own route, sending
+//     none gets the key its lists say — so the till, the editor and the PDF
+//     read one plan one way;
 //   - the AI fill: both prompts tell the model the adults eat the kids' menu
-//     unless the message says otherwise, and the required-fields block still
-//     names every line key; a stub model answering one list leaves the form
-//     with no adults' list, one answering the adults' own dish carries it; a
-//     catalogue dish with no list is the kids'; Approve and create turns the
-//     switch on only when it writes an adults' line;
+//     unless the message says otherwise, and that the adults' list is then
+//     everything the adults eat (a shared dish given again); the
+//     required-fields block still names every line key; a stub model
+//     answering one list leaves the form with no adults' list, one answering
+//     the adults' own dish carries it; a catalogue dish with no list is the
+//     kids'; Approve and create turns the switch on only when it writes an
+//     adults' line, and a shared dish answered again is no "kids only";
 //   - the till's plan view (migration 0048): a party saved before the switch
-//     reads exactly as 0047 read it; with the switch on, an unchanged copy of
-//     a coded kids' line reaches the till ONCE (its charge as a one-list BEO's),
-//     a line the adults do not get is marked "kids", an adults' line in another
-//     count or of a new name is marked "adults" (coded or not), and a set-menu
-//     line never written into the kids' list is left unmarked;
+//     and never written since reads exactly as 0047 read it; with the switch
+//     on, a coded kids' line copied for the adults reaches the till ONCE
+//     whatever its note (the adults' note, or its clearing, carried on that
+//     one line), a line the adults do not get is marked "kids", an adults'
+//     line in another count or of a new name is marked "adults" (coded or
+//     not) and an uncoded kids' line the adults get in another count is
+//     emitted beside it, and a set-menu line never written into the kids'
+//     list is left unmarked;
+//   - the set menu's lines stay in step for the adults' own list: the parent
+//     link's submit after the switch writes the same resolved lines into it,
+//     a Save with a stale submission takes the parent's lines for the adults
+//     too, and an approval with a set menu copies the lines for the adults;
 //   - the BEO PDF prints ONE food list: "Adults: same as the kids' menu" with
 //     the switch off; with it on, the adults' changes marked beside the kids'
 //     lines and their own dishes after, marked "adults only" — never a second
@@ -50,8 +61,10 @@ process.env.DEPLOY_ENV ??= "local";
 process.env.SESSION_SECRET ??= randomUUID() + randomUUID();
 process.env.LOG_LEVEL ??= "warn";
 
-const { ADULTS_ONLY_MARK, ADULTS_SAME_AS_KIDS, KIDS_ONLY_MARK, adultsCountMark, adultsDifferOf, adultsListOf, kitchenAdultsMarks, kitchenListsEqual } =
-  await import("../shared/kitchenAdults");
+const {
+  ADULTS_NO_NOTE_MARK, ADULTS_ONLY_MARK, ADULTS_SAME_AS_KIDS, KIDS_ONLY_MARK,
+  adultsCopiesOf, adultsCountMark, adultsDifferOf, adultsListOf, adultsNoteMark, kitchenAdultsMarks, kitchenListsEqual, sameKitchenDish, sameKitchenLine,
+} = await import("../shared/kitchenAdults");
 const { registerAIRoutes } = await import("../server/ai-routes");
 const { registerBeoRoutes } = await import("../server/beo-routes");
 const { BUILT_IN_BEO_PARSING_ADVICE, BeoFillSchema, REQUIRED_FIELDS_HEADING, readModelAnswer, requiredFieldsBlock } = await import("../server/lib/aiFill");
@@ -90,6 +103,13 @@ await check("the stored shape's reading: saved on, or lines that are not the kid
   assert.equal(kitchenListsEqual(kids, [...kids, line("k3", "Cake")]), false);
   assert.deepEqual(adultsListOf({ kids, adults: [] }).map((l) => l.itemName), ["Nuggets", "Fries"]);
   assert.deepEqual(adultsListOf({ kids, adults: [line("a1", "Steak")], adultsDiffer: true }).map((l) => l.itemName), ["Steak"]);
+  // The same dish for the till (name, count, code) is not the same line when its note differs.
+  assert.equal(sameKitchenDish(line("k", "Cake", 1, { productCode: "PARTY-X" }), line("a", "cake ", 1, { productCode: "PARTY-X", notes: "no candles" })), true);
+  assert.equal(sameKitchenLine(line("k", "Cake", 1, { productCode: "PARTY-X" }), line("a", "cake ", 1, { productCode: "PARTY-X", notes: "no candles" })), false);
+  assert.equal(sameKitchenDish(line("k", "Cake", 1), line("a", "Cake", 2)), false, "another count is another dish");
+  assert.equal(sameKitchenDish(line("k", "Cake", 1, { productCode: "PARTY-X" }), line("a", "Cake", 1, { productCode: "PARTY-Y" })), false, "another code is another dish");
+  assert.equal(adultsDifferOf({ kids, adults: [line("a1", "Nuggets", 8), line("a2", "Fries", 2)] }), true, "a note cleared for the adults is a change of theirs");
+  assert.deepEqual(adultsCopiesOf([line("set_x", "A"), { itemName: "B" }]).map((l) => l.id), ["set_x_adults", "line_adults"]);
 });
 
 await check("the adults' changes on one list: kids only, two counts, a note of their own, adults only; none with the switch off", () => {
@@ -97,6 +117,11 @@ await check("the adults' changes on one list: kids only, two counts, a note of t
   const adults = [line("a1", "Fries", 2), line("a2", "Juice", 4), line("a3", "Pasta", 3), line("a4", "Cake", 1, { notes: "no candles" })];
   const marks = kitchenAdultsMarks(kids, adults, true);
   assert.deepEqual(marks.marks, [KIDS_ONLY_MARK, null, adultsCountMark(10, 4), "adults: no candles"]);
+  assert.equal(adultsNoteMark(" no candles "), "adults: no candles");
+  assert.equal(adultsNoteMark(""), ADULTS_NO_NOTE_MARK);
+  assert.equal(ADULTS_NO_NOTE_MARK, "adults: no note");
+  // A note cleared for the adults is marked too, never dropped.
+  assert.deepEqual(kitchenAdultsMarks([line("k1", "Pasta", 10, { notes: "no cheese" })], [line("a1", "Pasta", 10)], true).marks, [ADULTS_NO_NOTE_MARK]);
   assert.equal(adultsCountMark(10, 4), "kids 10 · adults 4");
   assert.deepEqual(marks.adultsOnly.map((l) => l.itemName), ["Pasta"]);
   assert.equal(ADULTS_ONLY_MARK, "adults only");
@@ -113,16 +138,17 @@ await check("the adults' changes on one list: kids only, two counts, a note of t
 
 await check("both prompts tell the model the adults eat the kids' menu unless the message says otherwise; every line key is still required", () => {
   assert.match(BUILT_IN_BEO_PARSING_ADVICE, /The adults eat what the kids eat unless the message says otherwise/);
-  assert.match(BUILT_IN_BEO_PARSING_ADVICE, /never put the same dish in both lists/);
+  assert.match(BUILT_IN_BEO_PARSING_ADVICE, /adultsMenu is everything the adults eat — the dishes they share with the kids included/);
+  assert.match(BUILT_IN_BEO_PARSING_ADVICE, /"nuggets for everyone, and a cheese platter for the adults" gives adultsMenu the nuggets and the cheese platter/);
   const block = beoCatalogueSystemBlock(emptyCatalogue(), { conversation: true });
   assert.match(block, /The adults eat what the kids eat unless the conversation says otherwise/);
-  assert.match(block, /Never give the same dish as a "kids" line and an "adults" line/);
+  assert.match(block, /the "adults" lines are everything the adults eat — a dish they share with the kids given again as an "adults" line/);
   const required = requiredFieldsBlock(BEO_FILL_WITH_CATALOGUE_SHAPE);
   assert.ok(required.startsWith(`\n\n${REQUIRED_FIELDS_HEADING}\n`));
   for (const key of ["kitchenPlan.kidsMenu[].itemName", "kitchenPlan.adultsMenu[].itemName", "kitchenPlan.adultsMenu[].quantity", "catalogue.menuLines[].menu"]) {
     assert.ok(required.includes(`\n- ${key}: `), `the block names ${key}`);
   }
-  assert.match(required, /\n- catalogue\.menuLines\[\]\.menu: one of "kids", "adults", "bar": "kids" for every dish the party eats, "adults" only for a dish the conversation says is the adults' own, "bar" for a drink\n/);
+  assert.match(required, /\n- catalogue\.menuLines\[\]\.menu: one of "kids", "adults", "bar": "kids" for every dish the party eats, "adults" for each dish the adults eat when the conversation says their food differs from the kids', "bar" for a drink\n/);
 });
 
 await check("a stub model's one list leaves the form with no adults' list; its adults' own dish is carried; a catalogue dish with no list is the kids'", () => {
@@ -156,7 +182,10 @@ const setMenuItems = [
   { id: PIZZA, type: "choice_group", label: "Pizza", options: ["Margherita", "Hawaiian"], allowMultiple: false, optionProductCodes: { Margherita: "CF-24", Hawaiian: "CF-27" }, qty: 3 },
   { id: FRIES, type: "always_included", label: "French fries", productCode: "CF-11", qty: 2 },
 ];
-const ev = { plain: randomUUID(), differ: randomUUID(), before: randomUUID(), setMenu: randomUUID(), approve: randomUUID(), approveKids: randomUUID() };
+const ev = {
+  plain: randomUUID(), differ: randomUUID(), before: randomUUID(), setMenu: randomUUID(), approve: randomUUID(), approveKids: randomUUID(),
+  beside: randomUUID(), approveSet: randomUUID(), submit: randomUUID(), submitOff: randomUUID(),
+};
 
 function fakeAuth(req: Request, res: Response, next: NextFunction) {
   if (req.get("x-test-as") !== "manager") return res.status(401).json({ message: "Not signed in" });
@@ -243,7 +272,7 @@ try {
 
   const ADULTS = [line("a1", "Pasta", 7), line("a2", "Fries", 2, { notes: "no salt" }), line("a3", "ZZ unicorn cake", 1, { productCode: "PARTY-ZZ829A" }), line("a4", "Steak", 4, { productCode: "PARTY-ZZ829B" })];
 
-  await check("saved with the switch on: the adults' own list and adultsDiffer true; an editor from before the switch leaves no key; the day-of view's write keeps it", async () => {
+  await check("saved with the switch on: the adults' own list and adultsDiffer true; an editor from before the switch gets the key its lists say; the day-of view's write keeps it", async () => {
     const saved = await saveKitchen(ev.differ, { kids: KIDS, adults: ADULTS, adultsDiffer: true, kidsFoodTime: "14:00", adultsFoodTime: "15:00" });
     assert.equal(saved.status, 200, JSON.stringify(saved.body));
     let plan = await kitchenOf(ev.differ);
@@ -256,12 +285,16 @@ try {
     plan = await kitchenOf(ev.differ);
     assert.equal(plan?.menus.adultsDiffer, true, "the switch survives the day-of view's write");
     assert.equal((plan?.menus.kids as Line[]).length, 4);
-    // A BEO saved before the switch (no key) with two different lists.
+    // An editor from before the switch (no key sent) with two different lists: the plan records
+    // the switch its lists say, so the till reads it as the editor opens it.
     const before = await saveKitchen(ev.before, { kids: KIDS, adults: [line("a1", "Steak", 4, { productCode: "PARTY-ZZ829B" })], kidsFoodTime: "", adultsFoodTime: "" });
     assert.equal(before.status, 200);
     plan = await kitchenOf(ev.before);
-    assert.equal("adultsDiffer" in plan!.menus, false, "no key written for an editor that sent none");
+    assert.equal(plan!.menus.adultsDiffer, true, "the key its lists say, for an editor that sent none");
     assert.equal(adultsDifferOf(plan!.menus), true, "and it opens with the switch on");
+    const sameLists = await saveKitchen(ev.before, { kids: KIDS, adults: KIDS.map((l) => ({ ...l, id: `c_${l.id}` })), kidsFoodTime: "", adultsFoodTime: "" });
+    assert.equal(sameLists.status, 200);
+    assert.equal((await kitchenOf(ev.before))!.menus.adultsDiffer, false, "a duplicate list sent with no key is the kids' menu");
     // Back to the kids' menu: the lists save as the switch says.
     const off = await saveKitchen(ev.differ, { kids: plan!.menus.kids, adults: [], adultsDiffer: false, kidsFoodTime: "14:00", adultsFoodTime: "" });
     assert.equal(off.status, 200);
@@ -270,17 +303,41 @@ try {
     assert.equal(on.status, 200);
   });
 
-  await check("the till's plan view: a party saved before the switch reads as 0047 read it; with the switch off, the kids' coded lines alone", async () => {
+  await check("the till's plan view: a party saved before the switch and never written since reads as 0047 read it; one written since reads as the editor opens it", async () => {
+    // A party of before (no key, never written since) with two different lists: exactly 0047 —
+    // kids before adults, coded lines only, no marks (nothing moves until it is written again).
+    const twoLists = { kids: KIDS, adults: [line("a1", "Steak", 4, { productCode: "PARTY-ZZ829B" })] };
+    await q("update beo_kitchen_plans set menus = $2 where event_id = $1", [ev.before, JSON.stringify(twoLists)]);
     assert.deepEqual(await viewOf(ev.before), [
       { product_code: "PARTY-ZZ829A", name: "ZZ unicorn cake", qty: 1, choice_group: null, chosen_option: null, note: null },
       { product_code: "PARTY-ZZ829B", name: "Steak", qty: 4, choice_group: null, chosen_option: null, note: null },
     ], "kids before adults, coded lines only, no audience");
     assert.deepEqual(await viewOf(ev.plain), [
       { product_code: "PARTY-ZZ829A", name: "ZZ unicorn cake", qty: 1, choice_group: null, chosen_option: null, note: null },
-    ]);
-    // A party of before whose adults' list copies a coded kids' line: twice, as before (nothing moves until it is saved again).
+    ], "the switch off: the kids' coded lines alone, no marks");
+    // A party of before whose adults' list copies a coded kids' line: twice, as before (nothing moves until it is written again).
     await q("update beo_kitchen_plans set menus = $2 where event_id = $1", [ev.before, JSON.stringify({ kids: KIDS, adults: KIDS.map((l) => ({ ...l, id: `c_${l.id}` })) })]);
     assert.equal((await viewOf(ev.before))!.length, 2, "the copied coded line twice, exactly as 0047");
+    // The two-list party of before written once more by the day-of view's route without the key
+    // (what the plan holds, spread): the key its lists say is recorded, and the till now reads it
+    // as the editor opens it — the same lines and charges, the adults' changes marked.
+    const dayOf = await send("PUT", `/api/events/${ev.before}/beo/kitchen-plan`, { menus: twoLists });
+    assert.equal(dayOf.status, 200, JSON.stringify(dayOf.body));
+    assert.equal((await kitchenOf(ev.before))!.menus.adultsDiffer, true);
+    assert.deepEqual(await viewOf(ev.before), [
+      { product_code: "PARTY-ZZ829A", name: "ZZ unicorn cake", qty: 1, choice_group: null, chosen_option: null, note: null, audience: "kids" },
+      { product_code: "PARTY-ZZ829B", name: "Steak", qty: 4, choice_group: null, chosen_option: null, note: null, audience: "adults" },
+    ]);
+    // The same copy with one note changed for the adults, written the same way: a change of theirs,
+    // so the switch is recorded on; the dish is one line with the adults' note beside it, charged once.
+    const noted = await send("PUT", `/api/events/${ev.before}/beo/kitchen-plan`, { menus: {
+      kids: KIDS,
+      adults: KIDS.map((l) => ({ ...l, id: `c_${l.id}`, ...(l.productCode ? { notes: "no candles" } : {}) })),
+    } });
+    assert.equal(noted.status, 200, JSON.stringify(noted.body));
+    assert.deepEqual(await viewOf(ev.before), [
+      { product_code: "PARTY-ZZ829A", name: "ZZ unicorn cake", qty: 1, choice_group: null, chosen_option: null, note: null, adults_note: "no candles" },
+    ]);
   });
 
   await check("with the switch on: an unchanged copy reaches the till once, a line the adults do not get is marked kids, their own lines marked adults", async () => {
@@ -299,14 +356,56 @@ try {
       adults: [line("a1", "Nuggets", 2), line("a2", "Fries", 2, { notes: "no salt" })],
     })]);
     assert.deepEqual(await viewOf(ev.differ), [
+      // The kids' nuggets have no code and never reached the till; the adults get them in another
+      // count, so the line is emitted (uncharged) for the slip to print "kids 8 · adults 2" beside it.
+      { product_code: null, name: "Nuggets", qty: 8, choice_group: null, chosen_option: null, note: null },
       { product_code: "PARTY-ZZ829A", name: "ZZ unicorn cake", qty: 1, choice_group: null, chosen_option: null, note: null, audience: "kids" },
       { product_code: null, name: "Nuggets", qty: 2, choice_group: null, chosen_option: null, note: null, audience: "adults" },
-    ], "the cake is the kids' only; the nuggets in the adults' own count; the fries an unchanged copy");
+    ], "the cake is the kids' only; the nuggets in the adults' own count beside the kids'; the fries an unchanged copy");
     // The same lists with the switch off: exactly the kids' coded line, no marks.
     await q("update beo_kitchen_plans set menus = $2 where event_id = $1", [ev.differ, JSON.stringify({ adultsDiffer: false, kids: KIDS, adults: [] })]);
     assert.deepEqual(await viewOf(ev.differ), [
       { product_code: "PARTY-ZZ829A", name: "ZZ unicorn cake", qty: 1, choice_group: null, chosen_option: null, note: null },
     ]);
+    await q("update beo_kitchen_plans set menus = $2 where event_id = $1", [ev.differ, JSON.stringify({ adultsDiffer: true, kids: KIDS, adults: ADULTS, kidsFoodTime: "14:00", adultsFoodTime: "15:00" })]);
+  });
+
+  await check("a coded line copied for the adults with only its note changed, or cleared, reaches the till once with the adults' note beside it", async () => {
+    const codes = (rows: Array<Record<string, unknown>>, code: string) =>
+      rows.filter((r) => r.product_code === code).reduce((sum, r) => sum + ((r.qty as number | null) ?? 1), 0);
+    // The feature's happy path: the switch on, a note for the adults on the one cake.
+    await q("update beo_kitchen_plans set menus = $2 where event_id = $1", [ev.differ, JSON.stringify({
+      adultsDiffer: true,
+      kids: [line("k1", "ZZ cake", 1, { productCode: "PARTY-ZZ829A" })],
+      adults: [line("a1", "ZZ cake", 1, { productCode: "PARTY-ZZ829A", notes: "no candles" })],
+    })]);
+    let rows = (await viewOf(ev.differ))!;
+    assert.deepEqual(rows, [
+      { product_code: "PARTY-ZZ829A", name: "ZZ cake", qty: 1, choice_group: null, chosen_option: null, note: null, adults_note: "no candles" },
+    ], "one line, the adults' note on it, no second coded line");
+    assert.equal(codes(rows, "PARTY-ZZ829A"), 1, "the till charges the cake once");
+    // The reverse: the kids' note cleared for the adults is a difference the slip must say.
+    await q("update beo_kitchen_plans set menus = $2 where event_id = $1", [ev.differ, JSON.stringify({
+      adultsDiffer: true,
+      kids: [line("k1", "Pasta", 10, { productCode: "PARTY-ZZ829B", notes: "no cheese" })],
+      adults: [line("a1", "Pasta", 10, { productCode: "PARTY-ZZ829B" })],
+    })]);
+    rows = (await viewOf(ev.differ))!;
+    assert.deepEqual(rows, [
+      { product_code: "PARTY-ZZ829B", name: "Pasta", qty: 10, choice_group: null, chosen_option: null, note: "no cheese", adults_note: "" },
+    ], "the kids' note stays, the cleared adults' note is carried as an empty one");
+    assert.equal(codes(rows, "PARTY-ZZ829B"), 10, "charged once, not twice");
+    // An uncoded kids' line the adults get in another count: both lines, neither charged, so the
+    // slip folds them into "kids 2 · adults 4" instead of calling the skewers the adults' alone.
+    await q("update beo_kitchen_plans set menus = $2 where event_id = $1", [ev.differ, JSON.stringify({
+      adultsDiffer: true,
+      kids: [line("k1", "Fruit skewers", 2), line("k2", "Juice", 10)],
+      adults: [line("a1", "Fruit skewers", 4), line("a2", "Juice", 10)],
+    })]);
+    assert.deepEqual(await viewOf(ev.differ), [
+      { product_code: null, name: "Fruit skewers", qty: 2, choice_group: null, chosen_option: null, note: null },
+      { product_code: null, name: "Fruit skewers", qty: 4, choice_group: null, chosen_option: null, note: null, audience: "adults" },
+    ], "the juice, an unchanged copy with no code, is nobody's line on the till");
     await q("update beo_kitchen_plans set menus = $2 where event_id = $1", [ev.differ, JSON.stringify({ adultsDiffer: true, kids: KIDS, adults: ADULTS, kidsFoodTime: "14:00", adultsFoodTime: "15:00" })]);
   });
 
@@ -332,14 +431,64 @@ try {
     assert.deepEqual((await viewOf(ev.setMenu))!.map((r) => [r.name, r.audience ?? null]), [["Pizza", null], ["French fries", null], ["Pasta", "adults"]]);
   });
 
-  await check("Approve and create: an adults' line turns the switch on; kids' lines alone leave it as the BEO holds it", async () => {
+  await check("the set menu stays in step for the adults' own list: the parent's submit after the switch, and a Save with a stale submission", async () => {
+    const stale = [
+      line("set_pizza", "Margherita", 3, { notes: "(Pizza)", source: "set_menu", groupId: PIZZA }),
+      line("set_fries", "French fries", 2, { source: "set_menu", groupId: FRIES }),
+    ];
+    const skewers = line("k1", "Fruit skewers", 2, { source: "additional" });
+    // The switch turned on (the adults' list a copy of the kids', the stale pizza included) before
+    // the family chose through the link; then the family chooses Hawaiian.
+    const token = `zz-829-submit-${run}`;
+    await q("insert into beo_set_menu_selections (id, event_id, template_id, token, is_submitted, selections) values ($1, $2, $3, $4, false, null)", [randomUUID(), ev.submit, setMenuId, token]);
+    await q("insert into beo_kitchen_plans (id, event_id, set_menu_enabled, set_menu_template_id, menus, simplified_menus) values ($1, $2, true, $3, $4, $4)", [
+      randomUUID(), ev.submit, setMenuId,
+      JSON.stringify({ adultsDiffer: true, kids: [...stale, skewers], adults: [...stale.map((l) => ({ ...l, id: `c_${l.id}` })), line("a3", "Fruit skewers", 4, { source: "additional" })] }),
+    ]);
+    const submitted = await fetch(`${base}/api/beo/set-menu-selections/public/${token}/submit`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ selections: [{ groupId: PIZZA, chosenOptions: ["Hawaiian"] }] }),
+    });
+    assert.equal(submitted.status, 200, await submitted.text());
+    let plan = await kitchenOf(ev.submit);
+    assert.deepEqual((plan!.menus.kids as Line[]).map((l) => [l.itemName, l.source ?? null]), [["Hawaiian", "set_menu"], ["French fries", "set_menu"], ["Fruit skewers", "additional"]]);
+    assert.deepEqual((plan!.menus.adults as Line[]).map((l) => [l.id, l.itemName, l.quantity]), [
+      [`set_${PIZZA}_Hawaiian_adults`, "Hawaiian", 3], [`set_${FRIES}_adults`, "French fries", 2], ["a3", "Fruit skewers", 4],
+    ], "the adults' set menu is the family's choice as it now stands; their own skewers stay");
+    assert.equal(plan!.menus.adultsDiffer, true);
+    assert.deepEqual((plan!.simplified_menus!.adults as Line[]).map((l) => l.itemName), ["Hawaiian", "French fries", "Fruit skewers"]);
+    assert.deepEqual((await viewOf(ev.submit))!.map((r) => [r.chosen_option ?? r.name, r.qty, r.audience ?? null]), [
+      ["Hawaiian", 3, null], ["French fries", 2, null], ["Fruit skewers", 2, null], ["Fruit skewers", 4, "adults"],
+    ], "no set-menu line is the kids' only; the skewers in both counts");
+    // Staff who turned the switch on in the open editor before the family chose now Save with the
+    // submission they knew (none): the family's lines win for the kids, and for the adults too.
+    await q("insert into beo_set_menu_selections (id, event_id, template_id, token, is_submitted, submitted_at, selections) values ($1, $2, $3, $4, true, now(), $5)", [
+      randomUUID(), ev.submitOff, setMenuId, `zz-829-off-${run}`, JSON.stringify([{ groupId: PIZZA, chosenOptions: ["Hawaiian"] }]),
+    ]);
+    const chosen = [
+      line(`set_${PIZZA}_Hawaiian`, "Hawaiian", 3, { notes: "(Pizza)", source: "set_menu", groupId: PIZZA }),
+      line(`set_${FRIES}`, "French fries", 2, { source: "set_menu", groupId: FRIES }),
+    ];
+    await q("insert into beo_kitchen_plans (id, event_id, set_menu_enabled, set_menu_template_id, menus, simplified_menus) values ($1, $2, true, $3, $4, $4)", [
+      randomUUID(), ev.submitOff, setMenuId, JSON.stringify({ adultsDiffer: false, kids: [...chosen, skewers], adults: [] }),
+    ]);
+    const saved = await saveKitchen(ev.submitOff, {
+      adultsDiffer: true, kids: [...stale, skewers], adults: [...stale.map((l) => ({ ...l, id: `c_${l.id}` })), line("a3", "Fruit skewers", 4, { source: "additional" })], kidsFoodTime: "", adultsFoodTime: "",
+    }, { setMenuEnabled: true, setMenuTemplateId: setMenuId, setMenuSelectionSubmittedAt: null });
+    assert.equal(saved.status, 200, JSON.stringify(saved.body));
+    plan = await kitchenOf(ev.submitOff);
+    assert.deepEqual((plan!.menus.kids as Line[]).map((l) => l.itemName), ["Hawaiian", "French fries", "Fruit skewers"]);
+    assert.deepEqual((plan!.menus.adults as Line[]).map((l) => [l.id, l.itemName]), [[`set_${PIZZA}_Hawaiian_adults`, "Hawaiian"], [`set_${FRIES}_adults`, "French fries"], ["a3", "Fruit skewers"]], "the family's lines for the adults, not the staff's stale copies");
+    assert.equal(plan!.menus.adultsDiffer, true);
+  });
+
+  await check("Approve and create: an adults' line turns the switch on; kids' lines alone leave it as the BEO holds it, recorded", async () => {
     const body = (menuLines: BeoAiApproveBody["menuLines"]): BeoAiApproveBody => ({
       conversationId: null, messageId: null, package: null, setMenu: null, menuLines, entertainment: [], otherLines: [], event: {}, cake: null, deposit: null, sources: [],
     });
     const kidsOnly = await send("POST", `/api/events/${ev.approveKids}/beo/ai-fill/approve`, body([{ menu: "kids", itemName: "Fruit skewers", quantity: 2, productCode: null, notes: null }]));
     assert.equal(kidsOnly.status, 200, JSON.stringify(kidsOnly.body));
     let plan = await kitchenOf(ev.approveKids);
-    assert.equal("adultsDiffer" in plan!.menus, false, "no adults' line: the switch is not touched");
+    assert.equal(plan!.menus.adultsDiffer, false, "no adults' line: the switch stays off, as the BEO holds it");
     assert.deepEqual((plan!.menus.kids as Line[]).map((l) => l.itemName), ["Fruit skewers"]);
     assert.deepEqual(plan!.menus.adults, []);
     const withAdults = await send("POST", `/api/events/${ev.approve}/beo/ai-fill/approve`, body([
@@ -351,6 +500,31 @@ try {
     assert.equal(plan!.menus.adultsDiffer, true, "the chat said the adults eat something different");
     assert.deepEqual((plan!.menus.adults as Line[]).map((l) => l.itemName), ["Pasta"]);
     assert.deepEqual((await viewOf(ev.approve))!.map((r) => [r.name, r.audience ?? null]), [["Pasta", "adults"]], "and the till's plan marks it");
+    // "Skewers for everyone, and pasta for the adults": the adults' list is everything they eat, so
+    // the shared skewers are nobody's only and the pasta theirs alone.
+    const beside = await send("POST", `/api/events/${ev.beside}/beo/ai-fill/approve`, body([
+      { menu: "kids", itemName: "Fruit skewers", quantity: 2, productCode: null, notes: null },
+      { menu: "adults", itemName: "Fruit skewers", quantity: 2, productCode: null, notes: null },
+      { menu: "adults", itemName: "Pasta", quantity: 4, productCode: null, notes: null },
+    ]));
+    assert.equal(beside.status, 200, JSON.stringify(beside.body));
+    plan = await kitchenOf(ev.beside);
+    assert.equal(plan!.menus.adultsDiffer, true);
+    assert.deepEqual((plan!.menus.adults as Line[]).map((l) => l.itemName), ["Fruit skewers", "Pasta"]);
+    assert.deepEqual(kitchenAdultsMarks(plan!.menus.kids, plan!.menus.adults, true).marks, [null], "no kids-only mark on the shared skewers");
+    assert.deepEqual((await viewOf(ev.beside))!.map((r) => [r.name, r.audience ?? null]), [["Pasta", "adults"]]);
+    // An approval with a set menu and an adults' line: the adults' list takes copies of the set menu's lines.
+    const withSet = await send("POST", `/api/events/${ev.approveSet}/beo/ai-fill/approve`, {
+      ...body([{ menu: "adults", itemName: "Pasta", quantity: 4, productCode: null, notes: null }]),
+      setMenu: { templateId: setMenuId, choices: [{ itemId: PIZZA, options: ["Margherita"] }] },
+    });
+    assert.equal(withSet.status, 200, JSON.stringify(withSet.body));
+    plan = await kitchenOf(ev.approveSet);
+    assert.deepEqual((plan!.menus.kids as Line[]).map((l) => [l.itemName, l.source]), [["Margherita", "set_menu"], ["French fries", "set_menu"]]);
+    assert.deepEqual((plan!.menus.adults as Line[]).map((l) => [l.id, l.itemName, l.source]), [
+      [`set_${PIZZA}_Margherita_adults`, "Margherita", "set_menu"], [`set_${FRIES}_adults`, "French fries", "set_menu"], [(plan!.menus.adults as Line[])[2]!.id, "Pasta", "additional"],
+    ]);
+    assert.deepEqual((await viewOf(ev.approveSet))!.map((r) => [r.chosen_option ?? r.name, r.audience ?? null]), [["Margherita", null], ["French fries", null], ["Pasta", "adults"]], "the set menu is not the kids' only");
   });
 
   await check("AI Fill on a pasted message: the prompt carries the rule; one list when the message names no food of the adults' own, their dish when it does", async () => {
@@ -380,6 +554,9 @@ try {
     assert.ok(on.includes(`ZZ unicorn cake <span class="item-note" style="color:#92400e;font-weight:600;">— ${KIDS_ONLY_MARK}</span>`), "the cake the adults do not get");
     assert.ok(on.includes(`Pasta <span class="item-note" style="color:#92400e;font-weight:600;">— ${ADULTS_ONLY_MARK}</span>`), "the adults' own dish, marked");
     assert.equal(on.split("Fries").length, 2, "the fries once, unmarked");
+    // A note cleared for the adults is marked, never dropped.
+    const cleared = await pdf({ kids: KIDS, adults: [line("a1", "Nuggets", 8), line("a2", "Fries", 2), line("a3", "ZZ unicorn cake", 1, { productCode: "PARTY-ZZ829A" })], adultsDiffer: true });
+    assert.ok(cleared.includes(`Fries <span class="item-note">(no salt)</span> <span class="item-note" style="color:#92400e;font-weight:600;">— ${ADULTS_NO_NOTE_MARK}</span>`), "the kids' note stays, the adults' clearing marked");
     // A set-menu BEO: the marks ride on the set menu's own rows too.
     const set = await pdf({
       kids: [line("s1", "Margherita", 3, { source: "set_menu", notes: "(Pizza)" }), line("k2", "Fruit skewers", 2, { source: "additional" })],
@@ -400,4 +577,4 @@ try {
   await pool.end();
   await appDbPool.end().catch(() => undefined);
 }
-process.exit(checks === 12 ? 0 : 1);
+process.exit(checks === 14 ? 0 : 1);

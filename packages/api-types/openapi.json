@@ -61588,6 +61588,9 @@
                                   "kids",
                                   "adults"
                                 ]
+                              },
+                              "adultsNote": {
+                                "type": "string"
                               }
                             },
                             "required": [

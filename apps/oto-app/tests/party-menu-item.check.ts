@@ -398,9 +398,12 @@ try {
   await check("the till's plan view names the new items by their codes, after the set menu's own lines, kids before adults", async () => {
     const [row] = await q<{ set_menu: unknown[] }>("select set_menu from otoapp_v.event_packages where event_id = $1", [partyA]);
     const adults = ((await kitchenOf(partyA))?.menus?.adults as Array<{ productCode: string }>)[0]!;
+    // SCRUM-829: a BEO whose adults' list is their own (the tea, beside the kids' cake) is read as
+    // "Different for adults" on, so the plan marks the cake the kids' and the tea the adults' —
+    // the same lines, in the same order, charged the same.
     assert.deepEqual(row?.set_menu, [
-      { product_code: cake.code, name: "ZZ TEST unicorn cake", qty: 3, choice_group: null, chosen_option: null, note: null },
-      { product_code: adults.productCode, name: "ZZ TEST bubble tea", qty: 1, choice_group: null, chosen_option: null, note: null },
+      { product_code: cake.code, name: "ZZ TEST unicorn cake", qty: 3, choice_group: null, chosen_option: null, note: null, audience: "kids" },
+      { product_code: adults.productCode, name: "ZZ TEST bubble tea", qty: 1, choice_group: null, chosen_option: null, note: null, audience: "adults" },
     ]);
   });
 

@@ -1348,6 +1348,12 @@ export interface OtoAppEventPackageSetMenuLine {
    * line of the adults' own. Absent otherwise.
    */
   audience?: 'kids' | 'adults';
+  /**
+   * SCRUM-829: on a kids' line the adults get as the same dish (name, count
+   * and code) with another note — the adults' note, `""` when theirs was
+   * cleared. Absent otherwise.
+   */
+  adults_note?: string;
 }
 
 export interface OtoAppEventPackageBarItem {

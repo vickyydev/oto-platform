@@ -44,6 +44,7 @@ import { uploadToObjectStorage } from "./file-storage";
 import { s3PresignedGet } from "./storage/s3Storage";
 import { onStaff } from "./lib/payOnlyAccess";
 import { resolveSetMenuLines } from "./lib/setMenuResolve";
+import { adultsCopiesOf, adultsDifferOf } from "@shared/kitchenAdults";
 
 type KitchenMenuBucket = "kids" | "adults";
 type KitchenMenuLine = { source?: string; [key: string]: unknown };
@@ -82,6 +83,24 @@ function replaceSetMenuItems(
   };
 }
 
+/**
+ * The parent's resolved set-menu lines written into the plan: the kids'
+ * bucket (or the adults', on a plan of before that holds only an adults'
+ * list), and — SCRUM-829 — when the adults' list is their own ("Different
+ * for adults" on, shared/kitchenAdults.ts) copies of the same lines in place
+ * of the adults' set-menu lines, so a choice made or changed after the switch
+ * never leaves the adults' set menu stale or missing.
+ */
+function writeResolvedSetMenu(
+  value: unknown,
+  bucket: KitchenMenuBucket,
+  resolvedItems: KitchenMenuLine[],
+  adultsOwn: boolean,
+): KitchenMenuCollection {
+  const next = replaceSetMenuItems(value, bucket, resolvedItems);
+  return bucket === "kids" && adultsOwn ? replaceSetMenuItems(next, "adults", adultsCopiesOf(resolvedItems)) : next;
+}
+
 function preserveServerSetMenuItems(
   staffValue: unknown,
   persistedValue: unknown,
@@ -93,8 +112,14 @@ function preserveServerSetMenuItems(
   const persistedMenus = asMenuCollection(persistedValue);
   const mergeBucket = (bucket: KitchenMenuBucket) => {
     const staffItems = asMenuItems(staffMenus[bucket]);
-    const persistedSetItems = asMenuItems(persistedMenus[bucket])
+    let persistedSetItems = asMenuItems(persistedMenus[bucket])
       .filter((item) => item.source === "set_menu");
+    // SCRUM-829: the staff's adults' list holds its own copies of the set menu (the switch
+    // turned on before the parent chose) and the persisted adults' bucket none: the adults'
+    // set menu follows the parent's choice as the kids' does, not the staff's stale copies.
+    if (bucket === "adults" && persistedSetItems.length === 0 && staffItems.some((item) => item.source === "set_menu")) {
+      persistedSetItems = adultsCopiesOf(asMenuItems(persistedMenus.kids).filter((item) => item.source === "set_menu"));
+    }
     return [...persistedSetItems, ...staffItems.filter((item) => item.source !== "set_menu")];
   };
 
@@ -103,6 +128,19 @@ function preserveServerSetMenuItems(
     kids: mergeBucket("kids"),
     adults: mergeBucket("adults"),
   };
+}
+
+/**
+ * SCRUM-829: the plan's "Different for adults" switch recorded as every reader
+ * resolves it (adultsDifferOf, shared/kitchenAdults.ts) — a boolean the client
+ * sent stands; a write without one (an editor from before the switch, a
+ * route that spreads the plan) records what its two lists say — so the plan
+ * the till reads (otoapp_v.event_packages, migration 0048) never disagrees
+ * with the editor or the BEO PDF about a plan written since.
+ */
+function withAdultsDiffer(value: unknown): KitchenMenuCollection {
+  const menus = asMenuCollection(value);
+  return { ...menus, adultsDiffer: typeof menus.adultsDiffer === "boolean" ? menus.adultsDiffer : adultsDifferOf(menus) };
 }
 
 function isStaleSetMenuSubmission(
@@ -1178,7 +1216,7 @@ export function registerBeoRoutes(app: Express) {
           }).from(beoSetMenuSelections)
             .where(eq(beoSetMenuSelections.eventId, eventId));
           const preserveSubmittedItems = isStaleSetMenuSubmission(selection, setMenuSelectionSubmittedAt);
-          const menus = preserveServerSetMenuItems(updates.menus ?? existing.menus, existing.menus, preserveSubmittedItems);
+          const menus = withAdultsDiffer(preserveServerSetMenuItems(updates.menus ?? existing.menus, existing.menus, preserveSubmittedItems));
           const simplifiedMenus = preserveServerSetMenuItems(
             updates.simplifiedMenus ?? updates.menus ?? existing.simplifiedMenus ?? existing.menus,
             existing.simplifiedMenus ?? existing.menus,
@@ -1616,7 +1654,8 @@ export function registerBeoRoutes(app: Express) {
             kids: kp.menus?.kids ?? kp.simplifiedMenus?.kids ?? [],
             adults: kp.menus?.adults ?? kp.simplifiedMenus?.adults ?? [],
             // SCRUM-829: "Different for adults", as the editor's switch stands; an editor
-            // from before the switch sends none and the plan keeps none (shared/kitchenAdults.ts).
+            // from before the switch sends none, and the plan records what its lists say
+            // (withAdultsDiffer, below, once the parent's lines are in).
             ...(typeof kp.menus?.adultsDiffer === "boolean" ? { adultsDiffer: kp.menus.adultsDiffer } : {}),
             cakePrice: kp.cakePrice || 0,
             cakeIncluded: kp.cakeIncluded !== false,
@@ -1640,7 +1679,7 @@ export function registerBeoRoutes(app: Express) {
             }).from(beoSetMenuSelections)
               .where(eq(beoSetMenuSelections.eventId, eventId));
             const preserveSubmittedItems = isStaleSetMenuSubmission(selection, kp.setMenuSelectionSubmittedAt);
-            const menus = preserveServerSetMenuItems(kitchenDbData.menus, existingKitchen.menus, preserveSubmittedItems);
+            const menus = withAdultsDiffer(preserveServerSetMenuItems(kitchenDbData.menus, existingKitchen.menus, preserveSubmittedItems));
             const simplifiedMenus = preserveServerSetMenuItems(
               kitchenDbData.simplifiedMenus,
               existingKitchen.simplifiedMenus ?? existingKitchen.menus,
@@ -1651,7 +1690,7 @@ export function registerBeoRoutes(app: Express) {
               .where(eq(beoKitchenPlans.eventId, eventId));
           } else {
             await tx.insert(beoKitchenPlans)
-              .values({ ...kitchenDbData, eventId });
+              .values({ ...kitchenDbData, menus: withAdultsDiffer(kitchenDbData.menus), eventId });
           }
         });
       }
@@ -3001,11 +3040,14 @@ export function registerBeoRoutes(app: Express) {
 
         if (kitchenPlan) {
           const bucket = resolveSetMenuBucket(kitchenPlan.menus);
-          const menus = replaceSetMenuItems(kitchenPlan.menus, bucket, resolvedItems);
-          const simplifiedMenus = replaceSetMenuItems(
+          // SCRUM-829: the adults' own list (the switch on) takes copies of the same lines.
+          const adultsOwn = adultsDifferOf(kitchenPlan.menus);
+          const menus = { ...writeResolvedSetMenu(kitchenPlan.menus, bucket, resolvedItems, adultsOwn), adultsDiffer: adultsOwn };
+          const simplifiedMenus = writeResolvedSetMenu(
             kitchenPlan.simplifiedMenus ?? kitchenPlan.menus,
             bucket,
             resolvedItems,
+            adultsOwn,
           );
           const [updatedKitchenPlan] = await tx.update(beoKitchenPlans)
             .set({ menus, simplifiedMenus, updatedAt: new Date() })

@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
-import { newId, partySettlementLive } from '@oto/shared';
+import { newId, partyAdultsNoteMark, partySettlementLive } from '@oto/shared';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -478,8 +478,10 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
             {plan.setMenu.map((m, i) => (
               <InfoRow
                 key={`${m.productCode ?? m.name}-${i}`}
-                // SCRUM-829: a line the BEO marks as the kids' only or the adults' own says so (the slip prints the same words).
-                label={`${m.name}${m.chosenOption ? ` · ${m.chosenOption}` : ''}${m.audience === 'kids' ? ' · kids only' : m.audience === 'adults' ? ' · adults' : ''}`}
+                // SCRUM-829: a line the BEO marks as the kids' only, the adults' own, or the adults' with another note says so (the slip prints the same words).
+                label={`${m.name}${m.chosenOption ? ` · ${m.chosenOption}` : ''}${m.audience === 'kids' ? ' · kids only' : m.audience === 'adults' ? ' · adults' : ''}${
+                  m.adultsNote === undefined ? '' : ` · ${partyAdultsNoteMark(m.adultsNote)}`
+                }`}
                 value={m.qty === null ? '' : `×${m.qty}`}
               />
             ))}

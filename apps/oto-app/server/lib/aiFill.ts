@@ -94,7 +94,7 @@ Parsing rules:
 - If the same information appears more than once, use the latest confirmed version
 - Cake mode must be one of: INTERNAL (venue provides the cake), EXTERNAL (guest brings their own cake), NONE (no cake), or NOT_SAID when the message gives a cake time or cake details but does not say who brings the cake. Never guess who brings it
 - Menu items included in the package have included: true; extras have included: false, with their price when the message gives one
-- The adults eat what the kids eat unless the message says otherwise: put every dish in kidsMenu, and give adultsMenu only the dishes the message says are for the adults instead of, or beside, the kids' dishes. Leave adultsMenu out when the message names no food of the adults' own; never put the same dish in both lists
+- The adults eat what the kids eat unless the message says otherwise: put every dish in kidsMenu and leave adultsMenu out. When the message says the adults' food differs, adultsMenu is everything the adults eat — the dishes they share with the kids included, each in the adults' own count when the message gives one — and nothing the adults do not get: "nuggets for the kids, pasta for the adults" gives adultsMenu only the pasta; "nuggets for everyone, and a cheese platter for the adults" gives adultsMenu the nuggets and the cheese platter
 - Team: give a person or a role only when the message itself names them (for example "Host: Nok" or "our animator team"), written as the message writes the name itself: leave out a role word, a title or "the" before it ("Host: Nok" is "Nok", "พิธีกร พี่นก" is "พี่นก", "the Event Department" is "Event Department"). Never choose a person yourself
 
 When existing event data is provided: only update fields that are explicitly mentioned or corrected in the new text. Carry all other fields forward from the existing data unchanged. Never invent or clear a field just because it is not mentioned in the new text.`;
@@ -445,9 +445,9 @@ export const BeoFillSchema = z.object({
   }),
   kitchenPlan: section({
     kidsMenu: list(MenuLineSchema),
-    // SCRUM-829: the adults' own dishes only, when the message says the adults eat something
-    // different (the rule is in the advice; a list is not described here, so the required-fields
-    // block keeps naming each entry's keys).
+    // SCRUM-829: everything the adults eat, only when the message says their food differs from
+    // the kids' (the rule is in the advice; a list is not described here, so the required-fields
+    // block keeps naming each entry's keys). The editor opens it as the adults' own list.
     adultsMenu: list(MenuLineSchema),
     // SCRUM-787: NOT_SAID is a cake the message times or describes without saying who brings it;
     // the form's cake type is then left as it was, never guessed.

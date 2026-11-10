@@ -512,9 +512,11 @@ describe('A. fences and seams', () => {
       // BEO's read shows it; where the BEO's documents live is unchanged.
       // SCRUM-822: the BEO PDF route reads the till's figures for the party (readingFor, as the
       // BEO's screens do) and hands them to the PDF; where the BEO's documents live is unchanged.
-      // SCRUM-829: the BEO's Save keeps the kitchen plan's "Different for adults" switch
-      // (menus.adultsDiffer) when the editor sends it; where the BEO's documents live is unchanged.
-      'beo-routes.ts': 'ba2d4bb33cf7fe450113f9d51d5816e410a4e357e4015e6b623e6af304d874d2',
+      // SCRUM-829: the BEO's Save and the kitchen-plan route record the plan's "Different for
+      // adults" switch as its readers resolve it (withAdultsDiffer), and the parent link's submit
+      // keeps the adults' own list's set menu in step with the kids' (writeResolvedSetMenu); where
+      // the BEO's documents live is unchanged.
+      'beo-routes.ts': '4ab69397cb6a47acb55513b82f9ae8aa8961a85ac0b37c457d3d7084097c551b',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);
