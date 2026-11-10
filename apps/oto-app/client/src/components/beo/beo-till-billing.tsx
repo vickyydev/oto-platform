@@ -27,7 +27,8 @@ import { BeoBillingModule } from "./beo-billing-module";
  * Party Details box, the Day-of view's POS section, the view-only page's Party
  * Details (and, on paper, the BEO PDF: server/lib/beoPdfMoney.ts). None of
  * them adds anything up; when the till cannot be reached they say "Till not
- * reachable".
+ * reachable", and for an event the till never settles (a camp, a workshop)
+ * "Not settled at the till" (tillProblemOf).
  */
 
 /** The query every screen shares, so one "Refresh from the till" refreshes them all. */

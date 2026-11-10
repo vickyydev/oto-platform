@@ -17,7 +17,8 @@
 //     package; it reads ฿16,900 now, from the till, and the snapshot's figure
 //     is never shown as baht;
 //   - without the till, every one of them says "Till not reachable" and shows
-//     no figure of its own;
+//     no figure of its own; for an event the till never settles (a camp, a
+//     workshop) they say "Not settled at the till", never "Till not reachable";
 //   - the billing module's Deposit Paid (the party's one deposit, which the
 //     till reads) is sent ONCE: typing 3000 is one write with 3000, never one
 //     per keystroke; an emptied field is never sent as 0, so clearing and
@@ -43,6 +44,8 @@ const QUOTE = ok(quoteAnswer(randomUUID()));
 const SALE = ok(saleAnswer(randomUUID()));
 const NO_QUOTE = ok(noQuoteAnswer(randomUUID()));
 const DOWN: Reading = { status: "not_reachable", message: "The till did not answer. Press Refresh from the till to ask again." };
+const NOT_A_PARTY_WORDS = "The till settles birthdays, private events and school groups, so it holds no money for this event.";
+const NOT_A_PARTY: Reading = { status: "not_a_party", message: NOT_A_PARTY_WORDS };
 
 /** Markup with React's text separators and HTML entities read back as text. */
 const render = (el: React.ReactElement) =>
@@ -183,6 +186,37 @@ await check("the Day-of POS section once settled: the sale's receipt and figures
     }),
   );
   assert.equal(empty, "", "nothing for the POS and nothing from the till: no section");
+});
+
+await check("an event the till never settles: every screen says 'Not settled at the till', never 'Till not reachable', and shows no figure", () => {
+  const notReachable = /till not reachable/i;
+  const panel = render(React.createElement(TillBillingPanel, { eventId: randomUUID(), reading: NOT_A_PARTY, onRefresh: () => {} }));
+  assert.equal(textOf(panel, "text-till-unavailable"), `Not settled at the till ${NOT_A_PARTY_WORDS}`);
+  assert.equal(textOf(panel, "button-quote-pdf"), null);
+  const tiles = render(React.createElement(PartyDetailsTillTiles, { reading: NOT_A_PARTY, deposit: React.createElement("span", null, "0") }));
+  assert.equal(textOf(tiles, "text-package-total"), "Not settled at the till");
+  assert.equal(textOf(tiles, "text-outstanding-balance"), "Not settled at the till");
+  assert.equal(textOf(tiles, "text-party-details-read-at"), null);
+  const rows = render(React.createElement(TillMoneyRows, { reading: NOT_A_PARTY }));
+  assert.match(textOf(rows, "text-till-unavailable")!, /^Not settled at the till The till settles birthdays/);
+  const day = render(
+    React.createElement(DayOfPosSection, {
+      packageName: null,
+      partyDetails: { items: [{ id: "i1", description: "ZZ TEST camp lunch", type: "included", price: 0, notes: "" }] },
+      posOrderRef: null,
+      hasPosData: true,
+      reading: NOT_A_PARTY,
+      expanded: true,
+      onToggle: () => {},
+    }),
+  );
+  assert.equal(textOf(day, "text-pos-not-settled"), "not settled at the till");
+  assert.equal(textOf(day, "text-pos-till-unreachable"), null);
+  assert.match(textOf(day, "text-till-unavailable")!, /^Not settled at the till /);
+  for (const html of [panel, tiles, rows, day]) {
+    assert.ok(!notReachable.test(html), "never 'Till not reachable'");
+    assert.ok(!html.includes("฿"), "no figure");
+  }
 });
 
 await check("the till's figures are read live: stale at once, afresh on every open and window focus, every minute while open", async () => {
@@ -331,4 +365,4 @@ await check("the party's billing writes share one queue: one scope per party", (
 });
 
 console.log(`till-billing-ui.check: ${checks} checks passed`);
-process.exit(checks === 14 ? 0 : 1);
+process.exit(checks === 15 ? 0 : 1);

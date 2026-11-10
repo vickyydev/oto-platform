@@ -23,7 +23,8 @@ import { z } from "zod";
  * arrives in SATANG and is shown in baht by `bahtOfSatang` only: a package
  * snapshot's satang read as baht printed ฿1,690,000 for a ฿16,900 package
  * (SCRUM-833). When the till cannot be reached the screens say so ("Till not
- * reachable"), never a figure of their own.
+ * reachable"), never a figure of their own; for an event the till never
+ * settles (a camp, a workshop) they say "Not settled at the till".
  */
 
 const Int = z.number().int();
@@ -101,13 +102,27 @@ export type TillLine = z.infer<typeof TillLineSchema>;
 /**
  * What `GET /api/events/:eventId/beo/till-billing` answers the browser: the
  * till's figures, or why there are none. Never a figure of the app's own.
+ * `not_a_party`: the event is not one the till settles (see
+ * `TILL_PARTY_EVENT_TYPES`), so the platform is never asked.
  */
 export type TillBillingReading =
   | { status: "ok"; billing: TillBilling; readAt: string }
-  | { status: "not_reachable" | "not_linked" | "unconfigured"; message: string };
+  | { status: "not_reachable" | "not_linked" | "unconfigured" | "not_a_party"; message: string };
+
+/**
+ * The app's event types the till settles as a party: the ones the platform's
+ * events seam reads as a party (`otoapp_v.events`, migration 0045: birthday,
+ * private_event and school_group are 'party'). The platform answers no other
+ * event's money, so the app does not ask it for one.
+ */
+export const TILL_PARTY_EVENT_TYPES = ["birthday", "private_event", "school_group"] as const;
+export const isTillPartyEventType = (eventType: string | null | undefined): boolean =>
+  (TILL_PARTY_EVENT_TYPES as readonly string[]).includes(eventType ?? "");
 
 /** The words every screen shows when it has no figures from the till. */
 export const TILL_NOT_REACHABLE = "Till not reachable";
+/** The words for an event the till never settles (a camp, a workshop, …): nothing is wrong with the till. */
+export const NOT_SETTLED_AT_THE_TILL = "Not settled at the till";
 
 /** The party's money as every screen shows it: from the till, in satang. */
 export interface TillFigures {
@@ -163,11 +178,13 @@ export function tillFiguresOf(reading: TillBillingReading | null | undefined): T
 
 /**
  * Why there are no figures, in words a screen shows under "Till not
- * reachable" (or the till's own refusal, for a party it cannot price); null
- * when there are figures.
+ * reachable" (or the till's own refusal, for a party it cannot price; or "Not
+ * settled at the till", for an event the till never settles); null when there
+ * are figures.
  */
 export function tillProblemOf(reading: TillBillingReading | null | undefined): { headline: string; detail: string } | null {
   if (!reading) return null;
+  if (reading.status === "not_a_party") return { headline: NOT_SETTLED_AT_THE_TILL, detail: reading.message };
   if (reading.status !== "ok") return { headline: TILL_NOT_REACHABLE, detail: reading.message };
   if (reading.billing.state === "no_quote") {
     return { headline: "No quote from the till", detail: reading.billing.noQuote?.message ?? "The till cannot price this party yet." };

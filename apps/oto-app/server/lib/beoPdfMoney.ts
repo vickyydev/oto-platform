@@ -11,7 +11,8 @@ import { TILL_NOT_REACHABLE, bahtOfSatang, tillFiguresOf, tillProblemOf, type Ti
  * extras' prices and "Outstanding Balance" as that less the deposit, so the
  * printed BEO could disagree with the screen beside it (with the base price
  * left at 0, "POS Total 0฿ / Outstanding Balance -3,000฿"). Without the till
- * it prints why there is no figure ("Till not reachable") and no number.
+ * it prints why there is no figure ("Till not reachable", or "Not settled at
+ * the till" for an event the till never settles) and no number.
  */
 
 const esc = (v: string) =>

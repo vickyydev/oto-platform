@@ -25,7 +25,8 @@ export interface DayOfPartyDetails {
  * package price, else the package snapshot's base price, which is SATANG,
  * shown as baht (฿1,690,000 for a ฿16,900 package: SCRUM-833) — and take the
  * Party Details deposit from it. Now no figure here is the app's own: when
- * the till cannot be reached the section says "Till not reachable".
+ * the till cannot be reached the section says "Till not reachable", and for an
+ * event the till never settles, "Not settled at the till".
  *
  * Party Details' own included and extra lines stay as the staff wrote them.
  */
@@ -78,6 +79,10 @@ export function DayOfPosSection({
           {figures ? (
             <Badge variant="outline" className="text-xs shrink-0" data-testid="text-pos-price">
               {bahtOfSatang(figures.expectedSatang)}
+            </Badge>
+          ) : reading?.status === "not_a_party" ? (
+            <Badge variant="outline" className="text-xs shrink-0 text-muted-foreground" data-testid="text-pos-not-settled">
+              not settled at the till
             </Badge>
           ) : reading && !loading ? (
             <Badge variant="outline" className="text-xs shrink-0 text-amber-600" data-testid="text-pos-till-unreachable">

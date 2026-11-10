@@ -946,7 +946,8 @@ jobs:
       # shown as baht one way only (SCRUM-833), the client asking with the
       # provision key and never a session, the till's figures answered for a
       # linked party and a reason (never a figure) without the till, another
-      # park group's party not found, and the Quote PDF of the till's quote
+      # park group's party not found, a camp or a workshop "Not settled at the
+      # till" with the platform never asked, and the Quote PDF of the till's quote
       # (rendered by the runner's Chrome), the BEO PDF's POS section printing
       # the till's figures and never Party Details' typed sum, and the billing's
       # Deposit Paid sent once and in order against the real route; then the

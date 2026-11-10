@@ -16,7 +16,10 @@
 //   - GET /api/events/:eventId/beo/till-billing answers the till's figures for
 //     a linked party, and says why not otherwise (the platform not answering,
 //     the park not linked, this deployment without the key) — never a figure
-//     of its own; another park group's party is not found;
+//     of its own; another park group's party is not found; an event the till
+//     never settles (a camp, a workshop) answers "not_a_party" without asking
+//     the platform, and every screen and the BEO PDF say "Not settled at the
+//     till", never "Till not reachable";
 //   - the Quote PDF's content is the till's quote line by line, the deposit,
 //     the balance and a validity note under the park's name; the PDF is made
 //     for a party with a quote, refused for one settled, one the till cannot
@@ -42,9 +45,11 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import {
+  NOT_SETTLED_AT_THE_TILL,
   TILL_NOT_REACHABLE,
   TillBillingSchema,
   bahtOfSatang,
+  isTillPartyEventType,
   tillFiguresOf,
   tillProblemOf,
   type TillBillingReading,
@@ -219,6 +224,18 @@ await check("the BEO PDF without the till: 'Till not reachable' and no figure; a
   assert.equal(posSection(bare), "", "nothing to say about a party with no Party Details and no till figures");
 });
 
+await check("an event the till never settles: 'Not settled at the till' on screen and on the BEO PDF, never 'Till not reachable', no figure", async () => {
+  for (const type of ["birthday", "private_event", "school_group"]) assert.equal(isTillPartyEventType(type), true, type);
+  for (const type of ["camp", "workshop", "other", "studio_event", "", null, undefined]) assert.equal(isTillPartyEventType(type), false, String(type));
+  const reading: TillBillingReading = { status: "not_a_party", message: "ZZ not a party" };
+  assert.equal(tillFiguresOf(reading), null);
+  assert.deepEqual(tillProblemOf(reading), { headline: "Not settled at the till", detail: "ZZ not a party" });
+  assert.equal(NOT_SETTLED_AT_THE_TILL, "Not settled at the till");
+  const pos = posSection(await beoPdfOf(reading));
+  assert.ok(pos.includes("Not settled at the till"), pos);
+  assert.ok(!pos.includes(TILL_NOT_REACHABLE) && !pos.includes("฿"), `no figure and no "Till not reachable": ${pos}`);
+});
+
 // ─── The stand-in platform ────────────────────────────────────────────────────
 
 type Asked = { url: string; method: string; headers: IncomingMessage["headers"] };
@@ -321,12 +338,12 @@ async function user(g: { tenant: string }, role: string) {
   await q("insert into user_branch_access (tenant_id, user_id, branch_id, access_scope) values ($1, $2, null, 'all_branches')", [g.tenant, id]);
   return { id, email };
 }
-async function party(g: { tenant: string; branch: string }, title: string) {
+async function party(g: { tenant: string; branch: string }, title: string, eventType = "birthday") {
   const id = randomUUID();
   await q(
     `insert into core_events (id, tenant_id, branch_id, event_type, title, event_date, start_time, end_time, num_children, num_adults, status)
-     values ($1, $2, $3, 'birthday', $4, '2026-11-18', '13:00', '16:00', 10, 4, 'upcoming')`,
-    [id, g.tenant, g.branch, `ZZ TEST ${title} ${run}`],
+     values ($1, $2, $3, $5, $4, '2026-11-18', '13:00', '16:00', 10, 4, 'upcoming')`,
+    [id, g.tenant, g.branch, `ZZ TEST ${title} ${run}`, eventType],
   );
   return id;
 }
@@ -342,7 +359,13 @@ const settled = await party(A, "settled");
 const unpriced = await party(A, "unpriced");
 const partyB = await party(B, "b");
 const partyU = await party(unlinked, "unlinked");
+const camp = await party(A, "camp", "camp");
+const workshop = await party(A, "workshop", "workshop");
+const privateEvent = await party(A, "private", "private_event");
+const schoolGroup = await party(A, "school", "school_group");
 answers.set(quoted, quoteAnswer(quoted));
+answers.set(privateEvent, quoteAnswer(privateEvent));
+answers.set(schoolGroup, quoteAnswer(schoolGroup));
 answers.set(settled, saleAnswer(settled));
 answers.set(unpriced, noQuoteAnswer(unpriced));
 
@@ -470,6 +493,32 @@ try {
     assert.equal(asked.length, before);
   });
 
+  await check("a camp or a workshop: 'not_a_party' and the platform never asked; no Quote PDF; the BEO PDF still printed; a private event and a school group are asked", async () => {
+    const before = asked.length;
+    for (const eventId of [camp, workshop]) {
+      const res = await reading(keyed, manager, eventId);
+      assert.equal(res.status, 200, JSON.stringify(res.body));
+      assert.equal(res.body.status, "not_a_party");
+      assert.equal(tillFiguresOf(res.body), null);
+      assert.equal(tillProblemOf(res.body)!.headline, "Not settled at the till");
+    }
+    const noKey = await reading(unkeyed, await signIn(unkeyed, managerA.email), camp);
+    assert.equal(noKey.body.status, "not_a_party", "not a party, whatever this deployment's key");
+    const quote = await get(keyed, `/api/events/${camp}/beo/quote.pdf`, manager);
+    assert.equal(quote.status, 409);
+    assert.equal(quote.body.code, "NOT_A_PARTY");
+    assert.match(quote.body.message, /^Not settled at the till: /);
+    const beo = await get(keyed, `/api/events/${camp}/beo/pdf`, staff);
+    assert.equal(beo.status, 200, beo.bytes.toString("utf8").slice(0, 300));
+    assert.equal(beo.bytes.subarray(0, 5).toString("latin1"), "%PDF-");
+    assert.equal(asked.length, before, "the platform was never asked for a camp or a workshop");
+    for (const eventId of [privateEvent, schoolGroup]) {
+      const res = await reading(keyed, manager, eventId);
+      assert.equal(res.body.status, "ok", JSON.stringify(res.body));
+    }
+    assert.equal(asked.length, before + 2, "a private event and a school group are the till's parties");
+  });
+
   await check("the Quote PDF: a PDF of the till's quote, opened inline under the party's name", async () => {
     const pdf = await get(keyed, `/api/events/${quoted}/beo/quote.pdf`, staff);
     assert.equal(pdf.status, 200, pdf.bytes.toString("utf8").slice(0, 300));
@@ -594,4 +643,4 @@ try {
   platform.close();
   await pool.end();
 }
-process.exit(checks === 16 ? 0 : 1);
+process.exit(checks === 18 ? 0 : 1);

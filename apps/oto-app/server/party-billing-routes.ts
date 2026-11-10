@@ -1,7 +1,7 @@
 import type { Express, NextFunction, Request, Response } from "express";
 import { and, eq } from "drizzle-orm";
 import { branches, coreEvents } from "@shared/schema";
-import type { TillBillingReading } from "@shared/tillBilling";
+import { NOT_SETTLED_AT_THE_TILL, isTillPartyEventType, type TillBillingReading } from "@shared/tillBilling";
 import { requireAuth } from "./auth";
 import { canUserAccessBranch } from "./auth-middleware";
 import { db } from "./db";
@@ -28,7 +28,10 @@ import { readTillBilling } from "./lib/tillBilling";
  * may open. The figures answer 200 with a status the screens read — "ok" with
  * the till's answer, else why not (the platform not answering, the park not
  * linked to the till, this deployment without the key) — so a screen shows
- * "Till not reachable" and never a number of its own.
+ * "Till not reachable" and never a number of its own. An event the till never
+ * settles (a camp, a workshop: not a birthday, private event or school group)
+ * answers "not_a_party" without asking the platform, and the screens say "Not
+ * settled at the till".
  */
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -36,8 +39,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const TILL_PARK_NOT_LINKED = "This party's park is not linked to the till yet, so the till cannot be asked for its money.";
 export const TILL_UNCONFIGURED =
   "This deployment cannot ask the till yet: PLATFORM_API_URL and OTOAPP_PROVISION_KEY are not both set.";
+export const TILL_NOT_A_PARTY = "The till settles birthdays, private events and school groups, so it holds no money for this event.";
 
-type EventRow = { id: string; tenantId: string; branchId: string | null; title: string; eventDate: string };
+type EventRow = { id: string; tenantId: string; branchId: string | null; eventType: string; title: string; eventDate: string };
 
 /** The event as the BEO's own routes read it: the caller's park group, a park they may open; null otherwise. */
 async function eventFor(req: Request): Promise<EventRow | null> {
@@ -45,7 +49,14 @@ async function eventFor(req: Request): Promise<EventRow | null> {
   const eventId = req.params.eventId ?? "";
   if (!tenantId || !UUID.test(eventId)) return null;
   const [event] = await db
-    .select({ id: coreEvents.id, tenantId: coreEvents.tenantId, branchId: coreEvents.branchId, title: coreEvents.title, eventDate: coreEvents.eventDate })
+    .select({
+      id: coreEvents.id,
+      tenantId: coreEvents.tenantId,
+      branchId: coreEvents.branchId,
+      eventType: coreEvents.eventType,
+      title: coreEvents.title,
+      eventDate: coreEvents.eventDate,
+    })
     .from(coreEvents)
     .where(and(eq(coreEvents.id, eventId), eq(coreEvents.tenantId, tenantId)));
   if (!event || !req.userWithAccess || !canUserAccessBranch(req.userWithAccess, event.branchId)) return null;
@@ -66,8 +77,13 @@ async function parkOf(event: Pick<EventRow, "tenantId" | "branchId">) {
  * The till's figures for the event, or why there are none. The BEO PDF reads
  * them here too (beo-routes.ts, `/beo/pdf`), so the printed BEO says what the
  * screens say. The caller has already checked the event is the user's to see.
+ * An event the till never settles is said so, and the platform is not asked.
  */
-export async function readingFor(event: Pick<EventRow, "id" | "tenantId" | "branchId">, requestId?: string): Promise<TillBillingReading> {
+export async function readingFor(
+  event: Pick<EventRow, "id" | "tenantId" | "branchId" | "eventType">,
+  requestId?: string,
+): Promise<TillBillingReading> {
+  if (!isTillPartyEventType(event.eventType)) return { status: "not_a_party", message: TILL_NOT_A_PARTY };
   const park = await parkOf(event);
   const linked = park?.coreBranchId?.trim().toLowerCase() ?? "";
   if (!UUID.test(linked)) return { status: "not_linked", message: TILL_PARK_NOT_LINKED };
@@ -95,6 +111,9 @@ export function registerPartyBillingRoutes(app: Express): void {
       const event = await eventFor(req);
       if (!event) return res.status(404).json({ message: "Event not found" });
       const reading = await readingFor(event, req.requestId);
+      if (reading.status === "not_a_party") {
+        return res.status(409).json({ code: "NOT_A_PARTY", message: `${NOT_SETTLED_AT_THE_TILL}: ${reading.message} No quote was made.` });
+      }
       if (reading.status !== "ok") {
         return res.status(502).json({ code: "TILL_NOT_REACHABLE", message: `Till not reachable: ${reading.message} No quote was made.` });
       }
