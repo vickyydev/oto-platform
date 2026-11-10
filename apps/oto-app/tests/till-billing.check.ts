@@ -20,7 +20,11 @@
 //   - the Quote PDF's content is the till's quote line by line, the deposit,
 //     the balance and a validity note under the park's name; the PDF is made
 //     for a party with a quote, refused for one settled, one the till cannot
-//     price, or when the till is not reachable.
+//     price, or when the till is not reachable;
+//   - the billing module's Deposit Paid against the real billing route: the
+//     party's writes run in one queue, so 300, 3000, 300, 3000 sent together
+//     end at ฿3,000 (sent all at once they could end at ฿300); clearing the
+//     field and retyping is one write and keeps the deposit's day.
 //
 // Usage, from apps/oto-app, with DATABASE_URL set:
 //   npx tsx tests/till-billing.check.ts
@@ -51,6 +55,8 @@ process.env.DEPLOY_ENV ??= "local";
 process.env.LOG_LEVEL ??= "warn";
 const { QUOTE_VALIDITY_NOTE, partyQuoteContent, quoteDayOf } = await import("../server/lib/partyQuote");
 const { readTillBilling } = await import("../server/lib/tillBilling");
+const { DepositBuffer, beoBillingMutationScope } = await import("../client/src/lib/beo-deposit-buffer");
+const { MutationObserver, QueryClient } = await import("@tanstack/react-query");
 
 const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -429,10 +435,89 @@ try {
     assert.equal((await get(keyed, `/api/events/${partyB}/beo/quote.pdf`, manager)).status, 404);
   });
 
+  // ─── The billing module's deposit, against the real billing route ─────────
+  //
+  // The Deposit Paid field is the party's one deposit (SCRUM-813), the figure
+  // the till reads. Its writes used to go one per keystroke, all in flight
+  // together: in a scratch run, 12 rounds of 30 left the party at the older
+  // ฿300 rather than the ฿3,000 typed last, and an emptied field's 0 wiped the
+  // deposit's day. Now the section sends one write per figure, and the
+  // party's writes run in one queue (beoBillingMutationScope).
+  const putBilling = async (eventId: string, body: Record<string, unknown>) => {
+    const res = await fetch(`${keyed}/api/events/${eventId}/beo/billing`, {
+      method: "PUT",
+      headers: { "content-type": "application/json", cookie: manager },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`PUT billing: ${res.status} ${await res.text()}`);
+    return res.json();
+  };
+  const depositOf = async (eventId: string) => {
+    const [row] = await q<{ add_ons: { partyDetails?: { prepaymentReceived?: number; depositDate?: string } } | null; deposit_paid_amount: number | null; deposit_paid_at: Date | null }>(
+      "select add_ons, deposit_paid_amount, deposit_paid_at from beo_event_billing where event_id = $1",
+      [eventId],
+    );
+    const [event] = await q<{ prepayment_amount: number | null; prepayment_date: string | null }>(
+      "select prepayment_amount, prepayment_date::text from core_events where id = $1",
+      [eventId],
+    );
+    return {
+      partyDetails: row?.add_ons?.partyDetails?.prepaymentReceived ?? null,
+      partyDetailsDay: row?.add_ons?.partyDetails?.depositDate ?? null,
+      billing: row?.deposit_paid_amount ?? null,
+      billingDay: row?.deposit_paid_at ? row.deposit_paid_at.toISOString().slice(0, 10) : null,
+      event: event?.prepayment_amount ?? null,
+      eventDay: event?.prepayment_date ?? null,
+    };
+  };
+  const deposited = await party(A, "deposited");
+
+  await check("the party's billing writes run in one queue: 300, 3000, 300, 3000 sent together always end at the ฿3,000 sent last", async () => {
+    await putBilling(deposited, { depositPaidAmount: 30, depositPaid: true, depositPaidAt: "2026-11-01T00:00:00.000Z" });
+    const client = new QueryClient();
+    const write = (amount: number) =>
+      new MutationObserver(client, {
+        scope: beoBillingMutationScope(deposited),
+        mutationFn: (a: number) => putBilling(deposited, { depositPaidAmount: a, depositPaid: a > 0 }),
+      }).mutate(amount);
+    for (let round = 0; round < 10; round += 1) {
+      await Promise.all([write(300), write(3000), write(300), write(3000)]);
+      const now = await depositOf(deposited);
+      assert.deepEqual([now.partyDetails, now.billing, now.event], [3000, 3000, 3000], `round ${round}: ${JSON.stringify(now)}`);
+    }
+    client.clear();
+  });
+
+  await check("clearing the Deposit Paid field and retyping sends one write and keeps the deposit's day everywhere the app keeps it", async () => {
+    await putBilling(deposited, { depositPaidAmount: 3000, depositPaid: true, depositPaidAt: "2026-11-01T00:00:00.000Z" });
+    const sent: Array<Promise<unknown>> = [];
+    const buffer = new DepositBuffer({
+      send: (patch) => {
+        const put = putBilling(deposited, patch as Record<string, unknown>);
+        sent.push(put);
+        return put;
+      },
+      saved: () => 3000,
+    });
+    for (const field of ["300", "30", "3", "", "5", "50", "500", "5000"]) buffer.type(field === "" ? null : Number(field));
+    buffer.flush();
+    assert.equal(sent.length, 1, "one write");
+    await Promise.all(sent);
+    assert.deepEqual(await depositOf(deposited), {
+      partyDetails: 5000,
+      partyDetailsDay: "2026-11-01",
+      billing: 5000,
+      billingDay: "2026-11-01",
+      event: 5000,
+      eventDay: "2026-11-01",
+    });
+    buffer.dispose();
+  });
+
   console.log(`till-billing.check: ${checks} checks passed`);
 } finally {
   for (const child of children) child.kill();
   platform.close();
   await pool.end();
 }
-process.exit(checks === 11 ? 0 : 1);
+process.exit(checks === 13 ? 0 : 1);

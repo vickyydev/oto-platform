@@ -16,7 +16,11 @@
 //     package; it reads ฿16,900 now, from the till, and the snapshot's figure
 //     is never shown as baht;
 //   - without the till, every one of them says "Till not reachable" and shows
-//     no figure of its own.
+//     no figure of its own;
+//   - the billing module's Deposit Paid (the party's one deposit, which the
+//     till reads) is sent ONCE: typing 3000 is one write with 3000, never one
+//     per keystroke; an emptied field is never sent as 0, so clearing and
+//     retyping keeps the deposit's day; the party's writes share one queue.
 //
 // Run from apps/oto-app:
 //   TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/till-billing-ui.check.ts
@@ -59,13 +63,13 @@ function textOf(html: string, testId: string): string | null {
 }
 
 let checks = 0;
-const check = (name: string, fn: () => void) => {
-  fn();
+const check = async (name: string, fn: () => void | Promise<void>) => {
+  await fn();
   checks += 1;
   console.log(`  ok  ${name}`);
 };
 
-check("From the till, before the party: Expected ฿17,025, Deposit ฿3,000, Outstanding ฿14,025, every line, and the Quote PDF", () => {
+await check("From the till, before the party: Expected ฿17,025, Deposit ฿3,000, Outstanding ฿14,025, every line, and the Quote PDF", () => {
   const eventId = randomUUID();
   const html = render(React.createElement(TillBillingPanel, { eventId, reading: QUOTE, onRefresh: () => {} }));
   assert.equal(textOf(html, "text-till-panel-expected"), "฿17,025");
@@ -81,7 +85,7 @@ check("From the till, before the party: Expected ฿17,025, Deposit ฿3,000, Ou
   assert.ok(!html.includes("1,690,000"));
 });
 
-check("From the till, after the party: the receipt and its till, the sale's lines, the deposit and the cash, nothing outstanding, no Quote PDF", () => {
+await check("From the till, after the party: the receipt and its till, the sale's lines, the deposit and the cash, nothing outstanding, no Quote PDF", () => {
   const html = render(React.createElement(TillBillingPanel, { eventId: randomUUID(), reading: SALE }));
   assert.equal(textOf(html, "badge-till-sale-state"), "Settled");
   assert.equal(textOf(html, "text-till-panel-expected"), "฿17,025");
@@ -93,7 +97,7 @@ check("From the till, after the party: the receipt and its till, the sale's line
   assert.equal(textOf(html, "button-quote-pdf"), null);
 });
 
-check("From the till, without the till or a quote: the reason, and no figure at all", () => {
+await check("From the till, without the till or a quote: the reason, and no figure at all", () => {
   const down = render(React.createElement(TillBillingPanel, { eventId: randomUUID(), reading: DOWN }));
   assert.match(textOf(down, "text-till-unavailable")!, /^Till not reachable The till did not answer/);
   assert.ok(!down.includes("฿"), "no number of the app's own");
@@ -102,7 +106,7 @@ check("From the till, without the till or a quote: the reason, and no figure at 
   assert.ok(!none.includes("฿"));
 });
 
-check("the Party Details box: Total and Outstanding from the till, the deposit the BEO's own between them, an unsaved deposit said", () => {
+await check("the Party Details box: Total and Outstanding from the till, the deposit the BEO's own between them, an unsaved deposit said", () => {
   const deposit = React.createElement("span", { "data-testid": "deposit-slot" }, "3000");
   const html = render(React.createElement(PartyDetailsTillTiles, { reading: QUOTE, deposit }));
   assert.equal(textOf(html, "text-package-total"), "฿17,025");
@@ -117,7 +121,7 @@ check("the Party Details box: Total and Outstanding from the till, the deposit t
   assert.ok(!down.includes("฿"));
 });
 
-check("the money rows Party Details and the Day-of view share: the same three figures as the Billing section", () => {
+await check("the money rows Party Details and the Day-of view share: the same three figures as the Billing section", () => {
   const html = render(React.createElement(TillMoneyRows, { reading: QUOTE }));
   assert.equal(textOf(html, "text-till-expected"), "฿17,025");
   assert.equal(textOf(html, "text-till-deposit"), "฿3,000");
@@ -150,7 +154,7 @@ const day833 = (reading: Reading | undefined) =>
     }),
   );
 
-check("SCRUM-833 — the Day-of POS section of a ฿16,900 package reads ฿16,900 from the till, never the snapshot's 1,690,000 as baht", () => {
+await check("SCRUM-833 — the Day-of POS section of a ฿16,900 package reads ฿16,900 from the till, never the snapshot's 1,690,000 as baht", () => {
   const html = day833(QUOTE);
   assert.equal(textOf(html, "text-pos-price"), "฿17,025", "the header: what the party comes to");
   assert.equal(textOf(html, "text-pos-package-price"), "฿16,900", "the package: its day price");
@@ -162,7 +166,7 @@ check("SCRUM-833 — the Day-of POS section of a ฿16,900 package reads ฿16,9
   assert.ok(!html.includes("฿1,690"), "no satang shown as baht");
 });
 
-check("the Day-of POS section once settled: the sale's receipt and figures; without the till: 'till not reachable', never a number", () => {
+await check("the Day-of POS section once settled: the sale's receipt and figures; without the till: 'till not reachable', never a number", () => {
   const sale = day833(SALE);
   assert.equal(textOf(sale, "text-pos-price"), "฿17,025");
   assert.match(textOf(sale, "list-pos-till-lines")!, /^The till's sale · receipt T1-000822/);
@@ -180,5 +184,122 @@ check("the Day-of POS section once settled: the sale's receipt and figures; with
   assert.equal(empty, "", "nothing for the POS and nothing from the till: no section");
 });
 
+// ─── The billing module's deposit, sent once (lib/beo-deposit-buffer.ts) ─────
+//
+// The module calls onBillingChange on every keystroke of Deposit Paid; the
+// Billing section holds the keystrokes and sends ONE write. Driven here with
+// timers of the check's own, so "a pause in typing" is a call.
+
+const { DepositBuffer, DEPOSIT_IDLE_MS, beoBillingMutationScope } = await import("../client/src/lib/beo-deposit-buffer");
+type Patch = import("../client/src/lib/beo-deposit-buffer").BillingPatch;
+
+function typing(saved: number) {
+  const sent: Patch[] = [];
+  const armed = new Map<number, () => void>();
+  let next = 0;
+  let pause = 0;
+  const buffer = new DepositBuffer({
+    send: (patch) => {
+      sent.push(patch);
+    },
+    saved: () => saved,
+    timers: {
+      set: (fn, ms) => {
+        pause = ms;
+        armed.set(++next, fn);
+        return next;
+      },
+      clear: (handle) => {
+        armed.delete(handle as number);
+      },
+    },
+  });
+  /** The pause in typing runs out. */
+  const idle = () => {
+    const due = [...armed.values()];
+    armed.clear();
+    for (const fn of due) fn();
+  };
+  /** Each keystroke as the field reads it: a figure, or "" for an emptied field. */
+  const keys = (...fields: string[]) => {
+    for (const field of fields) buffer.type(field.trim() === "" ? null : parseInt(field, 10) || 0);
+  };
+  return { buffer, sent, idle, keys, armed: () => armed.size, pause: () => pause };
+}
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+await check("typing 3000 over a ฿30 deposit sends exactly one write, with 3000, after the pause — none per keystroke", async () => {
+  const t = typing(30);
+  t.keys("3", "30", "300", "3000");
+  assert.deepEqual(t.sent, [], "nothing goes while the figure is being typed");
+  assert.equal(t.buffer.shown(), 3000, "the field shows what is typed");
+  assert.equal(t.armed(), 1, "one pause pending, re-armed by each keystroke");
+  assert.equal(t.pause(), DEPOSIT_IDLE_MS);
+  t.idle();
+  assert.deepEqual(t.sent, [{ depositPaidAmount: 3000, depositPaid: true }]);
+  assert.equal(t.buffer.shown(), 3000, "shown until the server has answered");
+  await settle();
+  assert.equal(t.buffer.shown(), undefined, "then the saved billing shows");
+  t.idle();
+  assert.equal(t.sent.length, 1, "nothing more");
+});
+
+await check("clearing the field and retyping sends one write with the new figure and never the emptied field's 0, so the deposit keeps its day", () => {
+  const t = typing(3000);
+  t.keys("300", "30", "3", "", "5", "50", "500", "5000");
+  t.buffer.flush();
+  assert.deepEqual(t.sent, [{ depositPaidAmount: 5000, depositPaid: true }], "one write, no depositPaidAt named: the server keeps the day");
+  assert.ok(!t.sent.some((p) => p.depositPaidAmount === 0), "no 0 ever sent");
+});
+
+await check("an emptied field sends nothing — not after a pause, not on blur — and goes back to the saved figure; a deposit is cleared by typing 0", async () => {
+  const t = typing(3000);
+  t.keys("300", "30", "3", "");
+  assert.equal(t.buffer.shown(), 0);
+  t.idle();
+  assert.deepEqual(t.sent, [], "a pause on an emptied field is a field being retyped");
+  assert.equal(t.buffer.shown(), 0, "still being retyped");
+  t.buffer.flush();
+  assert.deepEqual(t.sent, [], "left empty, nothing is sent");
+  assert.equal(t.buffer.shown(), undefined, "the field shows the saved ฿3,000 again");
+  t.keys("0");
+  t.buffer.flush();
+  assert.deepEqual(t.sent, [{ depositPaidAmount: 0, depositPaid: false }], "a typed 0 clears the deposit");
+  await settle();
+});
+
+await check("Enter or blur sends at once and the pause after sends nothing more; the saved figure retyped sends nothing; the day picked carries a pending figure; a closing section keeps what was typed", () => {
+  const enter = typing(30);
+  enter.keys("3", "30", "300");
+  enter.buffer.flush();
+  assert.deepEqual(enter.sent, [{ depositPaidAmount: 300, depositPaid: true }]);
+  assert.equal(enter.armed(), 0);
+  enter.idle();
+  assert.equal(enter.sent.length, 1);
+
+  const same = typing(3000);
+  same.keys("300", "3000");
+  same.idle();
+  assert.deepEqual(same.sent, [], "the figure the field already held");
+
+  const day = typing(0);
+  day.keys("2", "20", "200", "2000");
+  day.buffer.pass({ depositPaidAt: "2026-11-01T00:00:00.000Z" } as Patch);
+  assert.deepEqual(day.sent, [{ depositPaidAmount: 2000, depositPaid: true, depositPaidAt: "2026-11-01T00:00:00.000Z" }], "one write");
+  day.buffer.pass({ depositPaidAt: null } as Patch);
+  assert.deepEqual(day.sent.at(-1), { depositPaidAt: null }, "the day alone, at once");
+
+  const gone = typing(0);
+  gone.keys("1", "15", "150");
+  gone.buffer.dispose();
+  assert.deepEqual(gone.sent, [{ depositPaidAmount: 150, depositPaid: true }]);
+  assert.equal(gone.armed(), 0);
+});
+
+await check("the party's billing writes share one queue: one scope per party", () => {
+  assert.deepEqual(beoBillingMutationScope("e1"), { id: "beo-billing-e1" });
+  assert.notDeepEqual(beoBillingMutationScope("e1"), beoBillingMutationScope("e2"));
+});
+
 console.log(`till-billing-ui.check: ${checks} checks passed`);
-process.exit(checks === 7 ? 0 : 1);
+process.exit(checks === 12 ? 0 : 1);

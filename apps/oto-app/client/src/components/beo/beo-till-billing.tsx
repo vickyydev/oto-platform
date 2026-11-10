@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useReducer, useRef, useState, type FocusEvent, type KeyboardEvent, type ReactNode, type SyntheticEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   type TillFigures,
 } from "@shared/tillBilling";
 import type { BeoEventBilling } from "@shared/schema";
+import { DepositBuffer, type BillingPatch } from "@/lib/beo-deposit-buffer";
 import { BeoBillingModule } from "./beo-billing-module";
 
 /**
@@ -316,10 +317,12 @@ export function BeoBillingSection({
 }: {
   eventId: string;
   billing: BeoEventBilling | null;
-  onBillingChange: (billing: Partial<BeoEventBilling>) => void;
+  /** One billing write; a promise settles when the server has answered. */
+  onBillingChange: (billing: Partial<BeoEventBilling>) => Promise<unknown> | void;
   isManager: boolean;
 }) {
   const till = useTillBilling(eventId);
+  const deposit = useBufferedDeposit(billing, onBillingChange);
   return (
     <div className="space-y-4" data-testid="section-billing">
       <TillBillingPanel
@@ -335,7 +338,60 @@ export function BeoBillingSection({
           Kept for the staff who use them. What the party pays is the till's, above; the deposit paid here is the party's one deposit and the till reads it.
         </p>
       </div>
-      <BeoBillingModule eventId={eventId} billing={billing} onBillingChange={onBillingChange} isManager={isManager} />
+      <div onChangeCapture={deposit.onChangeCapture} onBlur={deposit.onBlur} onKeyDown={deposit.onKeyDown}>
+        <BeoBillingModule eventId={eventId} billing={deposit.billing} onBillingChange={deposit.onBillingChange} isManager={isManager} />
+      </div>
     </div>
   );
+}
+
+/** The billing module's Deposit Paid input (beo-billing-module.tsx, kept whole). */
+const DEPOSIT_INPUT_TEST_ID = "input-deposit-amount";
+const isDepositInput = (target: EventTarget | null): target is HTMLInputElement =>
+  typeof HTMLInputElement !== "undefined" && target instanceof HTMLInputElement && target.dataset.testid === DEPOSIT_INPUT_TEST_ID;
+
+/**
+ * The billing module's deposit, sent once (lib/beo-deposit-buffer.ts): its
+ * keystrokes are held here and shown over the saved billing, and one write
+ * goes on blur, Enter or a pause in typing. The module itself is unchanged:
+ * the wrapper reads the raw field (an emptied field is never sent as 0) and
+ * its blur and Enter as they bubble.
+ */
+function useBufferedDeposit(billing: BeoEventBilling | null, send: (patch: BillingPatch) => Promise<unknown> | void) {
+  const [, rerender] = useReducer((n: number) => n + 1, 0);
+  const sendRef = useRef(send);
+  sendRef.current = send;
+  const savedRef = useRef(0);
+  savedRef.current = billing?.depositPaidAmount || 0;
+  const [buffer] = useState(
+    () => new DepositBuffer({ send: (patch) => sendRef.current(patch), saved: () => savedRef.current, onChange: rerender }),
+  );
+  useEffect(() => () => buffer.dispose(), [buffer]);
+  const raw = useRef<string | null>(null);
+
+  const shown = buffer.shown();
+  const overlaid =
+    shown === undefined ? billing : ({ ...((billing ?? {}) as Partial<BeoEventBilling>), depositPaidAmount: shown, depositPaid: shown > 0 } as BeoEventBilling);
+
+  return {
+    billing: overlaid,
+    onBillingChange: (patch: BillingPatch) => {
+      if ("depositPaidAmount" in patch) {
+        const typed = raw.current;
+        raw.current = null;
+        buffer.type(typed !== null && typed.trim() === "" ? null : Number(patch.depositPaidAmount) || 0);
+        return;
+      }
+      buffer.pass(patch);
+    },
+    onChangeCapture: (e: SyntheticEvent) => {
+      if (isDepositInput(e.target)) raw.current = e.target.value;
+    },
+    onBlur: (e: FocusEvent) => {
+      if (isDepositInput(e.target)) buffer.flush();
+    },
+    onKeyDown: (e: KeyboardEvent) => {
+      if (e.key === "Enter" && isDepositInput(e.target)) buffer.flush();
+    },
+  };
 }

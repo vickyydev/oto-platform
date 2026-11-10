@@ -82,6 +82,7 @@ import { BeoPackageModule } from "./beo-package-module";
 import { BeoParentExperienceModule } from "./beo-parent-experience-module";
 import { PartyMenuItemDialog } from "./beo-party-menu-item";
 import { BeoBillingSection, PartyDetailsTillTiles, tillBillingKey, useTillBilling } from "./beo-till-billing";
+import { beoBillingMutationScope } from "@/lib/beo-deposit-buffer";
 import { bahtOfSatang, tillFiguresOf } from "@shared/tillBilling";
 import type { PartyMenuLine } from "@shared/partyMenuItem";
 import { ONE_OFF_EVENT_COLOR_OPTIONS } from "@/lib/event-types";
@@ -756,6 +757,9 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   /** The newest press of the billing module: an older answer arriving late never overwrites a newer one. */
   const billingPress = useRef(0);
   const billingMutation = useMutation({
+    // The party's billing writes reach the server one at a time, in the order they were sent:
+    // the deposit the till reads is the last one typed (BeoBillingSection sends it once).
+    scope: beoBillingMutationScope(eventId),
     mutationFn: async ({ patch }: { patch: Partial<BeoEventBilling>; press: number }) => {
       const res = await apiRequest("PUT", `/api/events/${eventId}/beo/billing`, patch);
       return (await res.json()) as BeoEventBilling;
@@ -779,9 +783,10 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       void queryClient.invalidateQueries({ queryKey: billingKey });
     },
   });
+  /** One billing write; settles when the server has answered, so the Billing section knows its deposit has landed. */
   const changeBilling = (patch: Partial<BeoEventBilling>) => {
     billingPress.current += 1;
-    billingMutation.mutate({ patch, press: billingPress.current });
+    return billingMutation.mutateAsync({ patch, press: billingPress.current });
   };
 
   const { data: branches } = useQuery<Branch[]>({
