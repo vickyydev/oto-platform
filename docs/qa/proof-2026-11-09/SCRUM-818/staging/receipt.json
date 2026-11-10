@@ -1,0 +1,681 @@
+{
+  "unit": "SCRUM-818",
+  "what": "AI Fill's pasted message is matched to the park's catalogue: the review in edit mode, approved and read back",
+  "pasted": {
+    "event": "main",
+    "text": "Подтверждаем день рождения Миши 21 ноября в 14:00, 12 детей, 6 взрослых. Пакет Birthday package Central Floresta: пицца Маргарита, куриный шницель, картофель фри. Торт в 15:30. Аниматор: Zombie game. Ведущий: ZZ GM. Депозит 3000 бат получен 9 ноября.",
+    "parse": {
+      "route": "POST /api/ai/parse-beo",
+      "status": 200,
+      "seconds": 13.8
+    },
+    "answer": {
+      "hasReview": true,
+      "origin": "pasted",
+      "ruling": {
+        "source": "team",
+        "at": "2026-11-10T07:24:58.235Z",
+        "line": 1
+      },
+      "transcript": {
+        "lines": 1,
+        "cut": false
+      },
+      "replaces": [],
+      "package": {
+        "templateId": "391b269d-159a-4039-89a2-51ac132da747",
+        "said": "Пакет Birthday package Central Floresta",
+        "chatPrice": null,
+        "from": {
+          "source": "team",
+          "at": "2026-11-10T07:24:58.235Z",
+          "line": 1
+        }
+      },
+      "setMenu": {
+        "templateId": "0b1db99d-296a-4418-abb8-9d6071a367c4",
+        "name": null,
+        "choices": [
+          {
+            "itemId": "item_cf_bday_pizza",
+            "option": "Margherita",
+            "said": "пицца Маргарита",
+            "from": {
+              "source": "team",
+              "at": "2026-11-10T07:24:58.235Z",
+              "line": 1
+            }
+          },
+          {
+            "itemId": "item_cf_bday_hot_dish",
+            "option": "Chicken schnitzel",
+            "said": "куриный шницель",
+            "from": {
+              "source": "team",
+              "at": "2026-11-10T07:24:58.235Z",
+              "line": 1
+            }
+          }
+        ],
+        "from": {
+          "source": "team",
+          "at": "2026-11-10T07:24:58.235Z",
+          "line": 1
+        }
+      },
+      "entertainment": [
+        {
+          "templateId": "cebe220b-fd77-48bc-9401-235b18059704",
+          "name": "Zombie game",
+          "said": "Аниматор: Zombie game",
+          "quantity": 1,
+          "chatPrice": null,
+          "notInCatalogue": false,
+          "from": {
+            "source": "team",
+            "at": "2026-11-10T07:24:58.235Z",
+            "line": 1
+          }
+        }
+      ],
+      "deposit": {
+        "amount": 3000,
+        "paid": true,
+        "date": "2026-11-09",
+        "from": {
+          "source": "team",
+          "at": "2026-11-10T07:24:58.235Z",
+          "line": 1
+        }
+      },
+      "cake": {
+        "mode": "INTERNAL",
+        "notes": "Торт в 15:30",
+        "time": "15:30",
+        "from": {
+          "source": "team",
+          "at": "2026-11-10T07:24:58.235Z",
+          "line": 1
+        }
+      }
+    },
+    "review": {
+      "title": "AI Fill — Review, edit and approve",
+      "header": "Read from the pasted message The pasted message is read as the team's confirmation and matched to the park's catalogue. Every field it fills is the team's: from the team changed here — a field you change is marked as changed here.",
+      "pastedLine": "The pasted message is read as the team's confirmation and matched to the park's catalogue.",
+      "fields": [
+        {
+          "testid": "input-ai-review-childName",
+          "label": "Child:",
+          "value": "Миша",
+          "marks": [
+            "team"
+          ]
+        },
+        {
+          "testid": "input-ai-review-numChildren",
+          "label": "Children:",
+          "value": "12",
+          "marks": [
+            "team"
+          ]
+        },
+        {
+          "testid": "input-ai-review-numAdults",
+          "label": "Adults:",
+          "value": "6",
+          "marks": [
+            "team"
+          ]
+        },
+        {
+          "testid": "input-ai-review-startTime",
+          "label": "Start:",
+          "value": "14:00",
+          "marks": [
+            "team"
+          ]
+        },
+        {
+          "testid": "input-ai-review-endTime",
+          "label": "End:",
+          "value": "",
+          "marks": []
+        },
+        {
+          "testid": "select-ai-review-package",
+          "label": "Package:",
+          "value": "Birthday package, Central Floresta",
+          "marks": [
+            "team"
+          ]
+        },
+        {
+          "testid": "input-ai-review-addon-9e6e742b-8b86-400f-9529-40a0dd6f3609",
+          "label": "Add-on:",
+          "value": "0",
+          "marks": []
+        },
+        {
+          "testid": "input-ai-review-addon-0cccd030-b526-404e-974c-9068ee3c321b",
+          "label": "Add-on:",
+          "value": "0",
+          "marks": []
+        },
+        {
+          "testid": "input-ai-review-addon-8bc54d11-0b69-406a-a8a1-052419a51361",
+          "label": "Add-on:",
+          "value": "0",
+          "marks": []
+        },
+        {
+          "testid": "input-ai-review-addon-3ae21db2-8293-40cd-a065-949caad9b38a",
+          "label": "Add-on:",
+          "value": "0",
+          "marks": []
+        },
+        {
+          "testid": "input-ai-review-addon-caa709a0-6b21-4430-8f59-69872ca5215b",
+          "label": "Add-on:",
+          "value": "0",
+          "marks": []
+        },
+        {
+          "testid": "select-ai-review-set-menu",
+          "label": "Set menu:",
+          "value": "Birthday set menu, Central Floresta",
+          "marks": [
+            "team"
+          ]
+        },
+        {
+          "testid": "select-ai-review-choice-item_cf_bday_pizza",
+          "label": "Pizza:",
+          "value": "Margherita",
+          "marks": [
+            "team"
+          ]
+        },
+        {
+          "testid": "select-ai-review-choice-item_cf_bday_hot_dish",
+          "label": "Hot dish:",
+          "value": "Chicken schnitzel",
+          "marks": [
+            "team"
+          ]
+        },
+        {
+          "testid": "select-ai-review-choice-item_cf_bday_waffles_pancakes",
+          "label": "Waffles or pancakes:",
+          "value": "Not chosen yet",
+          "marks": []
+        },
+        {
+          "testid": "select-ai-review-choice-item_cf_bday_fried_rice",
+          "label": "Fried rice:",
+          "value": "Not chosen yet",
+          "marks": []
+        },
+        {
+          "testid": "select-ai-review-choice-item_cf_bday_drinks",
+          "label": "Drinks pitcher:",
+          "value": "Not chosen yet",
+          "marks": []
+        },
+        {
+          "testid": "select-ai-review-cake",
+          "label": "Cake:",
+          "value": "The park's cake",
+          "marks": [
+            "team"
+          ]
+        },
+        {
+          "testid": "select-ai-review-entertainment",
+          "label": null,
+          "value": "Zombie game",
+          "marks": [
+            "team"
+          ]
+        },
+        {
+          "testid": "input-ai-review-deposit",
+          "label": "Deposit paid:",
+          "value": "3000",
+          "marks": [
+            "team"
+          ]
+        }
+      ],
+      "sourceMarks": [
+        "from the team",
+        "changed here",
+        "from the team",
+        "from the team",
+        "from the team",
+        "from the team",
+        "from the team",
+        "from the team",
+        "from the team",
+        "from the team",
+        "from the team",
+        "from the team",
+        "from the team",
+        "from the team"
+      ],
+      "dateLine": [
+        "Date: Sat 21 Nov 2026 — the message says \"21 ноября\" from the team The same day the event is booked for."
+      ],
+      "packageSaid": [
+        "Пакет Birthday package Central Floresta → Birthday package, Central Floresta"
+      ],
+      "prices": [
+        "Catalogue ฿16,900 / ฿20,900",
+        "Catalogue ฿5,000",
+        "Catalogue ฿4,000",
+        "Catalogue ฿8,900",
+        "Catalogue ฿1,000",
+        "Catalogue ฿100",
+        "Catalogue ฿4,000"
+      ],
+      "matches": [
+        "пицца Маргарита → Margherita (CF-24)",
+        "куриный шницель → Chicken schnitzel (CF-37)"
+      ],
+      "entertainment": [
+        "Birthday entertainment program Zombie game Squid games Jurassic park Tesla show Bubble show Crio show Minecraft: Creeper hunt Slime Master Class Cooking Class (pizza/cookies) Ocean in a glass ECO bracelet-making Cookie decorating Mini aquarium / Jurassic Make & Take Workshop Face painting Glitter tattoo Pinata Neon party from the team Catalogue ฿4,000"
+      ],
+      "cakeSelect": "The park's cake",
+      "deposit": "3000",
+      "leaves": [
+        "Approve and create writes the child's name, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment and the deposit. It does not write the title, the booking name, the location, the special requests, the activities, the decoration, the setup plan, the party details, the timeline and the team: what the pasted message says of those opens next, to load into the editor as before and save."
+      ],
+      "approveEnabled": true,
+      "fallbackPresent": true
+    }
+  },
+  "approve": {
+    "approve": {
+      "route": "POST /api/events/:id/beo/ai-fill/approve",
+      "status": 200,
+      "sameEvent": true,
+      "body": {
+        "written": {
+          "event": true,
+          "package": true,
+          "addOns": 0,
+          "setMenu": true,
+          "choices": 2,
+          "kitchenLines": 0,
+          "freeKitchenLines": 0,
+          "cake": true,
+          "entertainment": 1,
+          "deposit": true
+        }
+      }
+    },
+    "restOpened": true,
+    "restClosedWithoutLoading": true,
+    "readBack": {
+      "at": "2026-11-10T07:26:09.421Z",
+      "event": {
+        "route": "GET /api/admin/events/:id",
+        "status": 200,
+        "title": "ZZ TEST 818 party",
+        "eventDate": "2026-11-21",
+        "startTime": "14:00",
+        "numChildren": 12,
+        "numAdults": 6,
+        "prepaymentAmount": 3000,
+        "prepaymentDate": "2026-11-09"
+      },
+      "beo": {
+        "route": "GET /api/events/:id/beo",
+        "status": 200,
+        "partyDetails": {
+          "prepaymentReceived": 3000,
+          "depositDate": "2026-11-09",
+          "packageName": null
+        }
+      },
+      "packageSnapshot": {
+        "route": "GET /api/beo/events/:id/package-snapshot",
+        "status": 200,
+        "packageName": "Birthday package, Central Floresta",
+        "basePrice": 1690000,
+        "priceWeekday": 1690000,
+        "priceWeekend": 2090000,
+        "kidsIncluded": 10,
+        "adultsIncluded": 4,
+        "extraChildWeekday": 130000,
+        "extraChildWeekend": 150000,
+        "extraAdultWeekday": 35000,
+        "extraAdultWeekend": 50000,
+        "items": 11
+      },
+      "kitchenPlan": {
+        "route": "GET /api/events/:id/beo/kitchen-plan",
+        "status": 200,
+        "setMenuEnabled": true,
+        "setMenuTemplateId": "0b1db99d-296a-4418-abb8-9d6071a367c4",
+        "cakeMode": "INTERNAL",
+        "cakeTime": "15:30",
+        "cakeNotes": "Торт в 15:30",
+        "kidsMenu": [],
+        "menus": "{\"kids\":[{\"id\":\"set_item_cf_bday_pizza_Margherita\",\"notes\":\"(Pizza)\",\"price\":0,\"source\":\"set_menu\",\"groupId\":\"item_cf_bday_pizza\",\"included\":true,\"itemName\":\"Margherita\",\"quantity\":1},{\"id\":\"set_item_cf_bday_hot_dish_Chicken_schnitzel\",\"notes\":\"(Hot dish)\",\"price\":0,\"source\":\"set_menu\",\"groupId\":\"item_cf_bday_hot_dish\",\"included\":true,\"itemName\":\"Chicken schnitzel\",\"quantity\":1},{\"id\":\"set_item_cf_bday_fries\",\"notes\":\"\",\"price\":0,\"source\":\"set_menu\",\"groupId\":\"item_cf_bday_fries\",\"included\":true,\"itemName\":\"French fries\",\"quantity\":1},{\"id\":\"set_item_cf_bday_veggie_sticks\",\"notes\":\"\",\"price\":0"
+      },
+      "setMenuSelection": {
+        "route": "GET /api/beo/set-menu-selections/:eventId",
+        "status": 200,
+        "templateId": "0b1db99d-296a-4418-abb8-9d6071a367c4",
+        "choices": [
+          {
+            "groupId": "item_cf_bday_pizza",
+            "chosenOptions": [
+              "Margherita"
+            ]
+          },
+          {
+            "groupId": "item_cf_bday_hot_dish",
+            "chosenOptions": [
+              "Chicken schnitzel"
+            ]
+          }
+        ]
+      },
+      "entertainment": {
+        "route": "GET /api/beo/events/:id/entertainment-selections",
+        "status": 200,
+        "rows": [
+          {
+            "name": "Zombie game",
+            "quantity": null,
+            "price": 400000,
+            "templateId": "cebe220b-fd77-48bc-9401-235b18059704"
+          }
+        ]
+      },
+      "billing": {
+        "route": "GET /api/events/:id/beo/billing",
+        "status": 200,
+        "depositPaid": true,
+        "depositPaidAmount": 3000,
+        "depositPaidAt": "2026-11-09T00:00:00.000Z"
+      }
+    }
+  },
+  "packageModuleAfter": {
+    "at": "2026-11-10T07:31:13.978Z",
+    "section": "accordion-birthday-package",
+    "text": "Birthday Package Birthday package, Central Floresta Applied Change Package Up to 10 children · 4 adults included · Socks for all children · 3 hours · Weekday / weekend ฿16,900.00 / ฿20,900.00 · Extra child ฿1,300.00 / ฿1,500.00 · Extra adult ฿350.00 / ฿500.00 Kitchen & bar slips at PACKAGE BREAKDOWN 6 items setup Kids' table reserved for 3 hours Qty Price Billable food Special birthday set menu Qty Price Billable entertainment Interactive birthday animation program, 30 minutes Qty Price Billable cake Ice-cream cake with candles and birthday song Qty Price Billable play Entry for 4 accompanying adults Qty Price Billable other Socks for all children Qty Price Billable Included in the package price ADD-ONS 5 items setup Reserved table for adults, up to 10 adults Qty Price Billable setup Classic balloon decoration Qty Price Billable setup PRO photo zone with decorations Qty Price Billable entertainment Upgrade or customize your activity program Qty Price Billable entertainment Bracelet Making Qty Price Billable Add-ons Subtotal: ฿0.00 Package price for Saturday (weekend) ฿20,900.00 Extra children: 2 children × ฿1,500.00 ฿3,000.00 Extra adults: 2 adults × ฿500.00 ฿1,000.00 Package Total: ฿24,900.00",
+    "breakdown": [
+      {
+        "id": "text-package-total-package",
+        "text": "Package price for Saturday (weekend) ฿20,900.00"
+      },
+      {
+        "id": "text-package-total-extraChildren",
+        "text": "Extra children: 2 children × ฿1,500.00 ฿3,000.00"
+      },
+      {
+        "id": "text-package-total-extraAdults",
+        "text": "Extra adults: 2 adults × ฿500.00 ฿1,000.00"
+      }
+    ],
+    "total": [
+      "Package Total: ฿24,900.00"
+    ],
+    "includedSubtotal": [
+      "Included in the package price"
+    ],
+    "addonSubtotal": [
+      "Add-ons Subtotal: ฿0.00"
+    ],
+    "facts": [
+      "Up to 10 children · 4 adults included · Socks for all children · 3 hours · Weekday / weekend ฿16,900.00 / ฿20,900.00 · Extra child ฿1,300.00 / ฿1,500.00 · Extra adult ฿350.00 / ฿500.00"
+    ],
+    "packageName": [
+      "Birthday package, Central Floresta"
+    ],
+    "picture": "818-st-08-package-module-after-approve.png"
+  },
+  "kitchenPlanAfter": {
+    "at": "2026-11-10T07:26:32.980Z",
+    "section": "accordion-kitchen-plan",
+    "text": "Kitchen Plan Not Needed Needed Menus Kids Menu (5) Adults Menu (0) Service: Set Time Set Menu Attach a birthday package set menu and send a link to parents for their choices Set Menu Template Birthday set menu, Central Floresta SET MENU Birthday set menu, Central Floresta Selections received INCLUDED ITEMS French fries Always Veggie sticks Always Fruit skewers Always Pizza→ Margherita Choice Hot dish→ Chicken schnitzel Choice Waffles or pancakespending parent selection Choice Fried ricepending parent selection Choice Drinks pitcherpending parent selection Choice RESOLVED ITEMS (EDITABLE) SET 1 Margherita (Pizza) SET 1 Chicken schnitzel (Hot dish) SET 1 French fries SET 1 Veggie sticks SET 1 Fruit skewers + Add item Get Parent Link Reset Selections Received 10/11/2026 ADDITIONAL ITEMS + EXTRA Cake No Cake Our Cake Own Cake Qty 1 2 3 INCL Cake Time 15:30 Торт в 15:30",
+    "picture": "818-st-09-kitchen-plan-after-approve.png"
+  },
+  "pictures": [
+    {
+      "file": "818-st-01-pasted-review-whole.png",
+      "at": "2026-11-10T07:25:15.456Z",
+      "shows": "AI Fill on a pasted message (ru): the catalogue review in edit mode, whole",
+      "namesMasked": 2
+    },
+    {
+      "file": "818-st-02-review-read-from-the-pasted-message.png",
+      "at": "2026-11-10T07:25:15.884Z",
+      "shows": "The review's Read from the pasted message section",
+      "namesMasked": 0
+    },
+    {
+      "file": "818-st-03-review-event-info.png",
+      "at": "2026-11-10T07:25:16.310Z",
+      "shows": "The review's Event Info section",
+      "namesMasked": 0
+    },
+    {
+      "file": "818-st-04-review-package.png",
+      "at": "2026-11-10T07:25:16.727Z",
+      "shows": "The review's Package section",
+      "namesMasked": 0
+    },
+    {
+      "file": "818-st-05-review-kitchen-plan.png",
+      "at": "2026-11-10T07:25:17.166Z",
+      "shows": "The review's Kitchen Plan section",
+      "namesMasked": 0
+    },
+    {
+      "file": "818-st-06-review-entertainment.png",
+      "at": "2026-11-10T07:25:17.591Z",
+      "shows": "The review's Entertainment section",
+      "namesMasked": 0
+    },
+    {
+      "file": "818-st-07-review-deposit.png",
+      "at": "2026-11-10T07:25:18.003Z",
+      "shows": "The review's Deposit section",
+      "namesMasked": 0
+    },
+    {
+      "file": "818-st-09-kitchen-plan-after-approve.png",
+      "at": "2026-11-10T07:26:33.853Z",
+      "shows": "The BEO's kitchen-plan section",
+      "namesMasked": 0
+    },
+    {
+      "file": "818-st-08-package-module-after-approve.png",
+      "at": "2026-11-10T07:31:14.846Z",
+      "shows": "The BEO's birthday-package section",
+      "namesMasked": 2
+    }
+  ],
+  "liveCommit": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6",
+  "liveDeploys": [
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbpcagu417fc739h23ug",
+      "status": "live",
+      "sha": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6",
+      "finishedAt": "2026-11-10T07:20:32.713848Z"
+    },
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbpcagu417fc739h22vg",
+      "status": "live",
+      "sha": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6",
+      "finishedAt": "2026-11-10T07:22:50.749163Z"
+    }
+  ],
+  "appVersion": {
+    "status": 200,
+    "version": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6"
+  },
+  "run": {
+    "startedAt": "2026-11-10T07:23:06.399Z",
+    "endedAt": "2026-11-10T07:31:24.216Z",
+    "browser": "Chromium 153.0.8010.12 headless, 1440 wide, Asia/Bangkok"
+  },
+  "actor": {
+    "who": "the staging administrator (name masked in every picture)",
+    "role": "global_admin"
+  },
+  "park": {
+    "name": "Oto Play Park, Central Floresta",
+    "appBranchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+    "apiBranchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "leftBehindBefore": {
+    "zzTest818Events": [],
+    "zzGmEmployees": []
+  },
+  "events": {
+    "main": {
+      "at": "2026-11-10T07:24:46.821Z",
+      "route": "POST /api/admin/events",
+      "sent": {
+        "eventType": "birthday",
+        "title": "ZZ TEST 818 party",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "eventDate": "2026-11-21",
+        "startTime": "14:00",
+        "endTime": "17:00",
+        "durationMinutes": 180,
+        "numChildren": 12,
+        "numAdults": 6,
+        "status": "upcoming"
+      },
+      "status": 201,
+      "id": "243aa3ad-5615-4808-88d1-029cd1e1eec2",
+      "title": "ZZ TEST 818 party",
+      "eventDate": "2026-11-21",
+      "numChildren": 12,
+      "numAdults": 6
+    },
+    "thai": {
+      "at": "2026-11-10T07:28:27.348Z",
+      "route": "POST /api/admin/events",
+      "sent": {
+        "eventType": "birthday",
+        "title": "ZZ TEST 818 thai",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "eventDate": "2026-11-21",
+        "startTime": "14:00",
+        "endTime": "17:00",
+        "durationMinutes": 180,
+        "numChildren": 10,
+        "numAdults": 4,
+        "status": "upcoming"
+      },
+      "status": 201,
+      "id": "57398ba5-620d-4d2f-a5e4-a164fa3cb1c7",
+      "title": "ZZ TEST 818 thai",
+      "eventDate": "2026-11-21",
+      "numChildren": 10,
+      "numAdults": 4
+    },
+    "cake": {
+      "at": "2026-11-10T07:29:30.935Z",
+      "route": "POST /api/admin/events",
+      "sent": {
+        "eventType": "birthday",
+        "title": "ZZ TEST 818 cake",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "eventDate": "2026-11-21",
+        "startTime": "14:00",
+        "endTime": "17:00",
+        "durationMinutes": 180,
+        "numChildren": 10,
+        "numAdults": 4,
+        "status": "upcoming"
+      },
+      "status": 201,
+      "id": "4ff27e04-c67a-42a9-b7b1-ffd927960dbc",
+      "title": "ZZ TEST 818 cake",
+      "eventDate": "2026-11-21",
+      "numChildren": 10,
+      "numAdults": 4
+    }
+  },
+  "modelCalls": 3,
+  "cleanup": {
+    "at": "2026-11-10T07:31:15.006Z",
+    "events": {
+      "main": {
+        "id": "243aa3ad-5615-4808-88d1-029cd1e1eec2",
+        "title": "ZZ TEST 818 party",
+        "delete": {
+          "route": "DELETE /api/admin/events/:id",
+          "status": 204,
+          "error": null
+        },
+        "readBack": {
+          "event": 404,
+          "beo": 404,
+          "apiParty": 404
+        }
+      },
+      "thai": {
+        "id": "57398ba5-620d-4d2f-a5e4-a164fa3cb1c7",
+        "title": "ZZ TEST 818 thai",
+        "delete": {
+          "route": "DELETE /api/admin/events/:id",
+          "status": 204,
+          "error": null
+        },
+        "readBack": {
+          "event": 404,
+          "beo": 404,
+          "apiParty": 404
+        }
+      },
+      "cake": {
+        "id": "4ff27e04-c67a-42a9-b7b1-ffd927960dbc",
+        "title": "ZZ TEST 818 cake",
+        "delete": {
+          "route": "DELETE /api/admin/events/:id",
+          "status": 204,
+          "error": null
+        },
+        "readBack": {
+          "event": 404,
+          "beo": 404,
+          "apiParty": 404
+        }
+      }
+    },
+    "zzTest818LeftAtCentralFloresta": 0,
+    "employee": {
+      "id": "3f89be2c-0e6f-4171-a977-e22eaf1c47b7",
+      "delete": {
+        "route": "DELETE /api/employees/:id",
+        "status": 204,
+        "error": null
+      },
+      "readBack": {
+        "status": 404
+      },
+      "zzGmActiveLeft": 0
+    }
+  },
+  "signOut": {
+    "at": "2026-11-10T07:31:24.216Z",
+    "app": {
+      "appLogout": 200,
+      "launcherSignOut": 200,
+      "appUserAfter": 401,
+      "launcherMeAfter": 401
+    }
+  }
+}

@@ -1,0 +1,305 @@
+{
+  "unit": "SCRUM-786",
+  "what": "A role word before a team name is not the name: \"Ведущий: ZZ GM\" and \"พิธีกร ZZ GM\" offer the roster person, unticked",
+  "employee": {
+    "at": "2026-11-10T07:24:46.503Z",
+    "route": "POST /api/employees",
+    "sent": {
+      "fullName": "ZZ GM",
+      "nickname": "ZZ GM",
+      "email": "zz-test-818-gm-202611100724@example.invalid",
+      "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+      "primaryDepartmentId": "6a9f8136-3191-470f-ba95-0e2993798258",
+      "status": "active",
+      "employmentBasis": "FULL_TIME"
+    },
+    "departmentName": "Event Department",
+    "eventDepartments": [
+      "Event Department",
+      "Event Department"
+    ],
+    "status": 201,
+    "id": "3f89be2c-0e6f-4171-a977-e22eaf1c47b7",
+    "userId": null,
+    "empStatus": "active",
+    "error": null,
+    "inPartyHosts": {
+      "status": 200,
+      "found": false
+    }
+  },
+  "ru": {
+    "text": "Подтверждаем день рождения Миши 21 ноября в 14:00, 12 детей, 6 взрослых. Пакет Birthday package Central Floresta: пицца Маргарита, куриный шницель, картофель фри. Торт в 15:30. Аниматор: Zombie game. Ведущий: ZZ GM. Депозит 3000 бат получен 9 ноября.",
+    "teamProposals": {
+      "partyHost": {
+        "asked": "ZZ GM",
+        "match": {
+          "kind": "employee",
+          "id": "3f89be2c-0e6f-4171-a977-e22eaf1c47b7",
+          "label": "ZZ GM (ZZ GM)"
+        },
+        "why": null
+      },
+      "entertainmentHost": {
+        "asked": "Zombie game",
+        "match": null,
+        "why": "no_match"
+      },
+      "setupResponsible": null
+    },
+    "restAfterApprove": {
+      "title": "AI Fill — Review & Confirm",
+      "team": [
+        {
+          "field": "partyHost",
+          "text": "Party Host: ZZ GM (ZZ GM) — the message says \"ZZ GM\". Tick to assign.",
+          "checkbox": true,
+          "ticked": false
+        },
+        {
+          "field": "entertainmentHost",
+          "text": "Entertainment Host: \"Zombie game\" matches nobody at this park: choose the host in the form.",
+          "checkbox": false,
+          "ticked": null
+        }
+      ],
+      "fullText": "AI Fill — Review & Confirm Confirmed birthday party for Misha on 21 November 2026 at 14:00 with 12 children and 6 adults under the Birthday package Central Floresta, cake at 15:30 and a 3000 THB deposit received. Saved: the child's name, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment and the deposit. Below is what the same message says of the rest: load it into the editor, then Save. Event Info Title: ZZ TEST 818 party Activities: Zombie game Party Details POS: Birthday package Central Floresta Items: Margherita pizza (incl.) Chicken schnitzel (incl.) French fries (incl.) Team Party Host: ZZ GM (ZZ GM) — the message says \"ZZ GM\". Tick to assign. Entertainment Host: \"Zombie game\" matches nobody at this park: choose the host in the form. Timeline 14:00 Party start 15:30 Cake 17:00 Party end This will replace existing data in the editor. Review the parsed data above, then click \"Load into Editor\" to fill the form. Back Load into Editor Close"
+    }
+  },
+  "th": {
+    "text": "ยืนยันวันเกิดน้องมีชา 21 พ.ย. 14:00 เด็ก 10 คน พิธีกร ZZ GM",
+    "parse": {
+      "route": "POST /api/ai/parse-beo",
+      "status": 200,
+      "seconds": 8.3
+    },
+    "hasReview": true,
+    "teamProposals": {
+      "partyHost": {
+        "asked": "ZZ GM",
+        "match": {
+          "kind": "employee",
+          "id": "3f89be2c-0e6f-4171-a977-e22eaf1c47b7",
+          "label": "ZZ GM (ZZ GM)"
+        },
+        "why": null
+      },
+      "entertainmentHost": null,
+      "setupResponsible": null
+    },
+    "fallbackPreview": {
+      "at": "2026-11-10T07:29:16.574Z",
+      "preview": {
+        "title": "AI Fill — Review & Confirm",
+        "team": [
+          {
+            "field": "partyHost",
+            "text": "Party Host: ZZ GM (ZZ GM) — the message says \"ZZ GM\". Tick to assign.",
+            "checkbox": true,
+            "ticked": false
+          }
+        ],
+        "fullText": "AI Fill — Review & Confirm Confirmed birthday party for Micha on 21 November at 14:00 for 10 children, hosted by ZZ GM. Event Info Title: ZZ TEST 818 thai Child: Micha Date: Sat 21 Nov 2026 — the message says \"21 พ.ย.\" The same day the event is booked for. Children: 10 Adults: 4 Time: 14:00 – 17:00 Setup Plan Kitchen Plan Team Party Host: ZZ GM (ZZ GM) — the message says \"ZZ GM\". Tick to assign. This will replace existing data in the editor. Review the parsed data above, then click \"Load into Editor\" to fill the form. Back Load into Editor Close"
+      },
+      "picture": "786-st-03-th-paste-preview-team.png",
+      "closedWithoutLoading": true
+    }
+  },
+  "pictures": [
+    {
+      "file": "786-st-01-ru-paste-rest-team.png",
+      "at": "2026-11-10T07:26:07.174Z",
+      "shows": "After Approve and create: the rest of the fill in the preview, its Team section",
+      "namesMasked": 0
+    },
+    {
+      "file": "786-st-02-th-paste-review.png",
+      "at": "2026-11-10T07:29:12.425Z",
+      "shows": "AI Fill on a pasted message (th): the catalogue review in edit mode, whole",
+      "namesMasked": 2
+    },
+    {
+      "file": "786-st-03-th-paste-preview-team.png",
+      "at": "2026-11-10T07:29:19.434Z",
+      "shows": "Load into Editor instead: the free-text preview, its Team section (nothing loaded)",
+      "namesMasked": 0
+    }
+  ],
+  "liveCommit": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6",
+  "liveDeploys": [
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbpcagu417fc739h23ug",
+      "status": "live",
+      "sha": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6",
+      "finishedAt": "2026-11-10T07:20:32.713848Z"
+    },
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbpcagu417fc739h22vg",
+      "status": "live",
+      "sha": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6",
+      "finishedAt": "2026-11-10T07:22:50.749163Z"
+    }
+  ],
+  "appVersion": {
+    "status": 200,
+    "version": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6"
+  },
+  "run": {
+    "startedAt": "2026-11-10T07:23:06.399Z",
+    "endedAt": "2026-11-10T07:31:24.216Z",
+    "browser": "Chromium 153.0.8010.12 headless, 1440 wide, Asia/Bangkok"
+  },
+  "actor": {
+    "who": "the staging administrator (name masked in every picture)",
+    "role": "global_admin"
+  },
+  "park": {
+    "name": "Oto Play Park, Central Floresta",
+    "appBranchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+    "apiBranchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "leftBehindBefore": {
+    "zzTest818Events": [],
+    "zzGmEmployees": []
+  },
+  "events": {
+    "main": {
+      "at": "2026-11-10T07:24:46.821Z",
+      "route": "POST /api/admin/events",
+      "sent": {
+        "eventType": "birthday",
+        "title": "ZZ TEST 818 party",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "eventDate": "2026-11-21",
+        "startTime": "14:00",
+        "endTime": "17:00",
+        "durationMinutes": 180,
+        "numChildren": 12,
+        "numAdults": 6,
+        "status": "upcoming"
+      },
+      "status": 201,
+      "id": "243aa3ad-5615-4808-88d1-029cd1e1eec2",
+      "title": "ZZ TEST 818 party",
+      "eventDate": "2026-11-21",
+      "numChildren": 12,
+      "numAdults": 6
+    },
+    "thai": {
+      "at": "2026-11-10T07:28:27.348Z",
+      "route": "POST /api/admin/events",
+      "sent": {
+        "eventType": "birthday",
+        "title": "ZZ TEST 818 thai",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "eventDate": "2026-11-21",
+        "startTime": "14:00",
+        "endTime": "17:00",
+        "durationMinutes": 180,
+        "numChildren": 10,
+        "numAdults": 4,
+        "status": "upcoming"
+      },
+      "status": 201,
+      "id": "57398ba5-620d-4d2f-a5e4-a164fa3cb1c7",
+      "title": "ZZ TEST 818 thai",
+      "eventDate": "2026-11-21",
+      "numChildren": 10,
+      "numAdults": 4
+    },
+    "cake": {
+      "at": "2026-11-10T07:29:30.935Z",
+      "route": "POST /api/admin/events",
+      "sent": {
+        "eventType": "birthday",
+        "title": "ZZ TEST 818 cake",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "eventDate": "2026-11-21",
+        "startTime": "14:00",
+        "endTime": "17:00",
+        "durationMinutes": 180,
+        "numChildren": 10,
+        "numAdults": 4,
+        "status": "upcoming"
+      },
+      "status": 201,
+      "id": "4ff27e04-c67a-42a9-b7b1-ffd927960dbc",
+      "title": "ZZ TEST 818 cake",
+      "eventDate": "2026-11-21",
+      "numChildren": 10,
+      "numAdults": 4
+    }
+  },
+  "modelCalls": 3,
+  "cleanup": {
+    "at": "2026-11-10T07:31:15.006Z",
+    "events": {
+      "main": {
+        "id": "243aa3ad-5615-4808-88d1-029cd1e1eec2",
+        "title": "ZZ TEST 818 party",
+        "delete": {
+          "route": "DELETE /api/admin/events/:id",
+          "status": 204,
+          "error": null
+        },
+        "readBack": {
+          "event": 404,
+          "beo": 404,
+          "apiParty": 404
+        }
+      },
+      "thai": {
+        "id": "57398ba5-620d-4d2f-a5e4-a164fa3cb1c7",
+        "title": "ZZ TEST 818 thai",
+        "delete": {
+          "route": "DELETE /api/admin/events/:id",
+          "status": 204,
+          "error": null
+        },
+        "readBack": {
+          "event": 404,
+          "beo": 404,
+          "apiParty": 404
+        }
+      },
+      "cake": {
+        "id": "4ff27e04-c67a-42a9-b7b1-ffd927960dbc",
+        "title": "ZZ TEST 818 cake",
+        "delete": {
+          "route": "DELETE /api/admin/events/:id",
+          "status": 204,
+          "error": null
+        },
+        "readBack": {
+          "event": 404,
+          "beo": 404,
+          "apiParty": 404
+        }
+      }
+    },
+    "zzTest818LeftAtCentralFloresta": 0,
+    "employee": {
+      "id": "3f89be2c-0e6f-4171-a977-e22eaf1c47b7",
+      "delete": {
+        "route": "DELETE /api/employees/:id",
+        "status": 204,
+        "error": null
+      },
+      "readBack": {
+        "status": 404
+      },
+      "zzGmActiveLeft": 0
+    }
+  },
+  "signOut": {
+    "at": "2026-11-10T07:31:24.216Z",
+    "app": {
+      "appLogout": 200,
+      "launcherSignOut": 200,
+      "appUserAfter": 401,
+      "launcherMeAfter": 401
+    }
+  }
+}

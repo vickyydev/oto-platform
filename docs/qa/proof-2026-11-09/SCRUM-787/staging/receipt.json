@@ -1,0 +1,278 @@
+{
+  "unit": "SCRUM-787",
+  "what": "A cake time with no word of whose cake leaves the cake type: the BEO set to EXTERNAL keeps EXTERNAL after Approve, Load and Save",
+  "setup": {
+    "at": "2026-11-10T07:29:31.195Z",
+    "put": {
+      "route": "PUT /api/events/:id/beo/kitchen-plan",
+      "sent": {
+        "cakeMode": "EXTERNAL"
+      },
+      "status": 201,
+      "error": null
+    },
+    "readBack": {
+      "status": 200,
+      "cakeMode": "EXTERNAL",
+      "cakeTime": null,
+      "cakeNotes": null
+    }
+  },
+  "pasted": {
+    "text": "Подтверждаем день рождения 21 ноября в 14:00, 10 детей. Торт в 15:30.",
+    "parse": {
+      "route": "POST /api/ai/parse-beo",
+      "status": 200,
+      "seconds": 6.4
+    },
+    "answerCake": {
+      "mode": null,
+      "notes": "Торт в 15:30",
+      "time": "15:30",
+      "from": {
+        "source": "team",
+        "at": "2026-11-10T07:29:36.006Z",
+        "line": 1
+      }
+    },
+    "freeTextCake": {
+      "cakeMode": "EXTERNAL",
+      "cakeTime": "15:30"
+    },
+    "reviewCakeSelect": "Not said",
+    "reviewCakeNotSaid": [
+      "Not said who brings the cake: the BEO keeps its own cake type (the family's own cake)."
+    ]
+  },
+  "approve": {
+    "approve": {
+      "route": "POST /api/events/:id/beo/ai-fill/approve",
+      "status": 200,
+      "sameEvent": true,
+      "body": {
+        "written": {
+          "event": true,
+          "kitchenLines": 0,
+          "freeKitchenLines": 0,
+          "cake": true
+        }
+      }
+    },
+    "rest": "AI Fill — Review & Confirm Confirmed birthday party on 21 November at 14:00 for 10 children, with cake served at 15:30. Saved: the child's name, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment and the deposit. Below is what the same message says of the rest: load it into the editor, then Save. Event Info Title: ZZ TEST 818 cake Timeline 14:00 Party start 15:30 Cake This will replace existing data in the editor. Review the parsed data above, then click \"Load into Editor\" to fill the form. Back Load into Editor Close",
+    "restLoaded": true,
+    "kitchenPlanAfterApprove": {
+      "cakeMode": "EXTERNAL",
+      "cakeTime": "15:30",
+      "cakeNotes": "Торт в 15:30"
+    }
+  },
+  "save": {
+    "formTitle": "ZZ TEST 818 cake",
+    "save": {
+      "route": "PUT /api/events/:id/beo",
+      "status": 200
+    },
+    "kitchenPlanAfterSave": {
+      "cakeMode": "EXTERNAL",
+      "cakeTime": "15:30",
+      "cakeNotes": "Торт в 15:30"
+    }
+  },
+  "pictures": [
+    {
+      "file": "787-st-01-cake-review-whole.png",
+      "at": "2026-11-10T07:30:15.219Z",
+      "shows": "AI Fill on a pasted message (cake): the catalogue review in edit mode, whole",
+      "namesMasked": 2
+    },
+    {
+      "file": "787-st-02-cake-after-approve-rest.png",
+      "at": "2026-11-10T07:30:36.528Z",
+      "shows": "After Approve and create: the rest of the fill in the preview, its Team section",
+      "namesMasked": 0
+    },
+    {
+      "file": "787-st-03-kitchen-plan-after-save.png",
+      "at": "2026-11-10T07:30:49.873Z",
+      "shows": "The BEO's kitchen plan after Approve, Load into Editor and Save: the cake type and time",
+      "namesMasked": 0
+    }
+  ],
+  "liveCommit": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6",
+  "liveDeploys": [
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbpcagu417fc739h23ug",
+      "status": "live",
+      "sha": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6",
+      "finishedAt": "2026-11-10T07:20:32.713848Z"
+    },
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbpcagu417fc739h22vg",
+      "status": "live",
+      "sha": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6",
+      "finishedAt": "2026-11-10T07:22:50.749163Z"
+    }
+  ],
+  "appVersion": {
+    "status": 200,
+    "version": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6"
+  },
+  "run": {
+    "startedAt": "2026-11-10T07:23:06.399Z",
+    "endedAt": "2026-11-10T07:31:24.216Z",
+    "browser": "Chromium 153.0.8010.12 headless, 1440 wide, Asia/Bangkok"
+  },
+  "actor": {
+    "who": "the staging administrator (name masked in every picture)",
+    "role": "global_admin"
+  },
+  "park": {
+    "name": "Oto Play Park, Central Floresta",
+    "appBranchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+    "apiBranchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "leftBehindBefore": {
+    "zzTest818Events": [],
+    "zzGmEmployees": []
+  },
+  "events": {
+    "main": {
+      "at": "2026-11-10T07:24:46.821Z",
+      "route": "POST /api/admin/events",
+      "sent": {
+        "eventType": "birthday",
+        "title": "ZZ TEST 818 party",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "eventDate": "2026-11-21",
+        "startTime": "14:00",
+        "endTime": "17:00",
+        "durationMinutes": 180,
+        "numChildren": 12,
+        "numAdults": 6,
+        "status": "upcoming"
+      },
+      "status": 201,
+      "id": "243aa3ad-5615-4808-88d1-029cd1e1eec2",
+      "title": "ZZ TEST 818 party",
+      "eventDate": "2026-11-21",
+      "numChildren": 12,
+      "numAdults": 6
+    },
+    "thai": {
+      "at": "2026-11-10T07:28:27.348Z",
+      "route": "POST /api/admin/events",
+      "sent": {
+        "eventType": "birthday",
+        "title": "ZZ TEST 818 thai",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "eventDate": "2026-11-21",
+        "startTime": "14:00",
+        "endTime": "17:00",
+        "durationMinutes": 180,
+        "numChildren": 10,
+        "numAdults": 4,
+        "status": "upcoming"
+      },
+      "status": 201,
+      "id": "57398ba5-620d-4d2f-a5e4-a164fa3cb1c7",
+      "title": "ZZ TEST 818 thai",
+      "eventDate": "2026-11-21",
+      "numChildren": 10,
+      "numAdults": 4
+    },
+    "cake": {
+      "at": "2026-11-10T07:29:30.935Z",
+      "route": "POST /api/admin/events",
+      "sent": {
+        "eventType": "birthday",
+        "title": "ZZ TEST 818 cake",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "eventDate": "2026-11-21",
+        "startTime": "14:00",
+        "endTime": "17:00",
+        "durationMinutes": 180,
+        "numChildren": 10,
+        "numAdults": 4,
+        "status": "upcoming"
+      },
+      "status": 201,
+      "id": "4ff27e04-c67a-42a9-b7b1-ffd927960dbc",
+      "title": "ZZ TEST 818 cake",
+      "eventDate": "2026-11-21",
+      "numChildren": 10,
+      "numAdults": 4
+    }
+  },
+  "modelCalls": 3,
+  "cleanup": {
+    "at": "2026-11-10T07:31:15.006Z",
+    "events": {
+      "main": {
+        "id": "243aa3ad-5615-4808-88d1-029cd1e1eec2",
+        "title": "ZZ TEST 818 party",
+        "delete": {
+          "route": "DELETE /api/admin/events/:id",
+          "status": 204,
+          "error": null
+        },
+        "readBack": {
+          "event": 404,
+          "beo": 404,
+          "apiParty": 404
+        }
+      },
+      "thai": {
+        "id": "57398ba5-620d-4d2f-a5e4-a164fa3cb1c7",
+        "title": "ZZ TEST 818 thai",
+        "delete": {
+          "route": "DELETE /api/admin/events/:id",
+          "status": 204,
+          "error": null
+        },
+        "readBack": {
+          "event": 404,
+          "beo": 404,
+          "apiParty": 404
+        }
+      },
+      "cake": {
+        "id": "4ff27e04-c67a-42a9-b7b1-ffd927960dbc",
+        "title": "ZZ TEST 818 cake",
+        "delete": {
+          "route": "DELETE /api/admin/events/:id",
+          "status": 204,
+          "error": null
+        },
+        "readBack": {
+          "event": 404,
+          "beo": 404,
+          "apiParty": 404
+        }
+      }
+    },
+    "zzTest818LeftAtCentralFloresta": 0,
+    "employee": {
+      "id": "3f89be2c-0e6f-4171-a977-e22eaf1c47b7",
+      "delete": {
+        "route": "DELETE /api/employees/:id",
+        "status": 204,
+        "error": null
+      },
+      "readBack": {
+        "status": 404
+      },
+      "zzGmActiveLeft": 0
+    }
+  },
+  "signOut": {
+    "at": "2026-11-10T07:31:24.216Z",
+    "app": {
+      "appLogout": 200,
+      "launcherSignOut": 200,
+      "appUserAfter": 401,
+      "launcherMeAfter": 401
+    }
+  }
+}

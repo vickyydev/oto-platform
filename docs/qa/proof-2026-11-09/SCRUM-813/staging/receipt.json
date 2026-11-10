@@ -1,0 +1,333 @@
+{
+  "unit": "SCRUM-813",
+  "what": "One deposit: the approval and a billing change reach the till (api party read), the event and Party Details",
+  "afterApproval": {
+    "at": "2026-11-10T07:27:21.152Z",
+    "party": {
+      "route": "GET /api/parties/:id (api, as the administrator)",
+      "status": 200,
+      "error": null,
+      "planStatus": "ready",
+      "settlement": {
+        "depositSatang": 300000,
+        "posSaleId": null
+      },
+      "package": {
+        "templateId": "391b269d-159a-4039-89a2-51ac132da747",
+        "name": "Birthday package, Central Floresta",
+        "hours": 3,
+        "kidsIncluded": 10,
+        "adultsIncluded": 4,
+        "socksIncluded": -1,
+        "priceWeekdaySatang": 1690000,
+        "priceWeekendSatang": 2090000,
+        "extraChildWeekdaySatang": 130000,
+        "extraChildWeekendSatang": 150000,
+        "extraAdultWeekdaySatang": 35000,
+        "extraAdultWeekendSatang": 50000,
+        "includedLines": [
+          {
+            "label": "Kids' table reserved for 3 hours"
+          },
+          {
+            "label": "Special birthday set menu"
+          },
+          {
+            "label": "Interactive birthday animation program, 30 minutes"
+          },
+          {
+            "label": "Ice-cream cake with candles and birthday song"
+          },
+          {
+            "label": "Entry for 4 accompanying adults"
+          },
+          {
+            "label": "Socks for all children"
+          }
+        ]
+      },
+      "counts": {
+        "kidsExpected": 12,
+        "adultsExpected": 6
+      },
+      "topKeys": [
+        "branchId",
+        "date",
+        "event",
+        "plan",
+        "planStatus",
+        "slips"
+      ]
+    },
+    "event": {
+      "route": "GET /api/admin/events/:id",
+      "status": 200,
+      "title": "ZZ TEST 818 party",
+      "eventDate": "2026-11-21",
+      "startTime": "14:00",
+      "numChildren": 12,
+      "numAdults": 6,
+      "prepaymentAmount": 3000,
+      "prepaymentDate": "2026-11-09"
+    },
+    "partyDetails": {
+      "prepaymentReceived": 3000,
+      "depositDate": "2026-11-09",
+      "packageName": null
+    },
+    "billing": {
+      "route": "GET /api/events/:id/beo/billing",
+      "status": 200,
+      "depositPaid": true,
+      "depositPaidAmount": 3000,
+      "depositPaidAt": "2026-11-09T00:00:00.000Z"
+    }
+  },
+  "change": {
+    "route": "PUT /api/events/:id/beo/billing",
+    "sent": {
+      "depositPaid": true,
+      "depositPaidAmount": 5000
+    },
+    "status": 200,
+    "answer": {
+      "depositPaid": true,
+      "depositPaidAmount": 5000,
+      "depositPaidAt": "2026-11-09T00:00:00.000Z"
+    }
+  },
+  "afterChange": {
+    "party": {
+      "route": "GET /api/parties/:id (api, as the administrator)",
+      "status": 200,
+      "settlement": {
+        "depositSatang": 500000,
+        "posSaleId": null
+      },
+      "error": null
+    },
+    "readBack": {
+      "event": {
+        "route": "GET /api/admin/events/:id",
+        "status": 200,
+        "title": "ZZ TEST 818 party",
+        "eventDate": "2026-11-21",
+        "startTime": "14:00",
+        "numChildren": 12,
+        "numAdults": 6,
+        "prepaymentAmount": 5000,
+        "prepaymentDate": "2026-11-09"
+      },
+      "beo": {
+        "route": "GET /api/events/:id/beo",
+        "status": 200,
+        "partyDetails": {
+          "prepaymentReceived": 5000,
+          "depositDate": "2026-11-09",
+          "packageName": null
+        }
+      },
+      "billing": {
+        "route": "GET /api/events/:id/beo/billing",
+        "status": 200,
+        "depositPaid": true,
+        "depositPaidAmount": 5000,
+        "depositPaidAt": "2026-11-09T00:00:00.000Z"
+      }
+    },
+    "editorPrepayment": "5,000",
+    "editorDepositDate": "November 9th, 2026",
+    "calendarCard": "ZZ TEST 818 party Saturday, November 21, 2026 · Oto Play Park, Central Floresta 14:00 - 17:00 Birthday child: Миша 12 children, 6 adults Deposit: ฿5,000 · Nov 9, 2026 Close Open Full Details Close"
+  },
+  "pictures": [
+    {
+      "file": "813-st-01-beo-party-details-5000.png",
+      "at": "2026-11-10T07:27:59.473Z",
+      "shows": "The BEO's Party Details after the billing deposit was changed to 5,000",
+      "namesMasked": 2
+    },
+    {
+      "file": "813-st-02-events-calendar-card-5000.png",
+      "at": "2026-11-10T07:28:02.366Z",
+      "shows": "Studio > Events > Calendar: the party's preview card, its deposit",
+      "namesMasked": 2
+    }
+  ],
+  "liveCommit": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6",
+  "liveDeploys": [
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbpcagu417fc739h23ug",
+      "status": "live",
+      "sha": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6",
+      "finishedAt": "2026-11-10T07:20:32.713848Z"
+    },
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbpcagu417fc739h22vg",
+      "status": "live",
+      "sha": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6",
+      "finishedAt": "2026-11-10T07:22:50.749163Z"
+    }
+  ],
+  "appVersion": {
+    "status": 200,
+    "version": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6"
+  },
+  "run": {
+    "startedAt": "2026-11-10T07:23:06.399Z",
+    "endedAt": "2026-11-10T07:31:24.216Z",
+    "browser": "Chromium 153.0.8010.12 headless, 1440 wide, Asia/Bangkok"
+  },
+  "actor": {
+    "who": "the staging administrator (name masked in every picture)",
+    "role": "global_admin"
+  },
+  "park": {
+    "name": "Oto Play Park, Central Floresta",
+    "appBranchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+    "apiBranchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "leftBehindBefore": {
+    "zzTest818Events": [],
+    "zzGmEmployees": []
+  },
+  "events": {
+    "main": {
+      "at": "2026-11-10T07:24:46.821Z",
+      "route": "POST /api/admin/events",
+      "sent": {
+        "eventType": "birthday",
+        "title": "ZZ TEST 818 party",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "eventDate": "2026-11-21",
+        "startTime": "14:00",
+        "endTime": "17:00",
+        "durationMinutes": 180,
+        "numChildren": 12,
+        "numAdults": 6,
+        "status": "upcoming"
+      },
+      "status": 201,
+      "id": "243aa3ad-5615-4808-88d1-029cd1e1eec2",
+      "title": "ZZ TEST 818 party",
+      "eventDate": "2026-11-21",
+      "numChildren": 12,
+      "numAdults": 6
+    },
+    "thai": {
+      "at": "2026-11-10T07:28:27.348Z",
+      "route": "POST /api/admin/events",
+      "sent": {
+        "eventType": "birthday",
+        "title": "ZZ TEST 818 thai",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "eventDate": "2026-11-21",
+        "startTime": "14:00",
+        "endTime": "17:00",
+        "durationMinutes": 180,
+        "numChildren": 10,
+        "numAdults": 4,
+        "status": "upcoming"
+      },
+      "status": 201,
+      "id": "57398ba5-620d-4d2f-a5e4-a164fa3cb1c7",
+      "title": "ZZ TEST 818 thai",
+      "eventDate": "2026-11-21",
+      "numChildren": 10,
+      "numAdults": 4
+    },
+    "cake": {
+      "at": "2026-11-10T07:29:30.935Z",
+      "route": "POST /api/admin/events",
+      "sent": {
+        "eventType": "birthday",
+        "title": "ZZ TEST 818 cake",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "eventDate": "2026-11-21",
+        "startTime": "14:00",
+        "endTime": "17:00",
+        "durationMinutes": 180,
+        "numChildren": 10,
+        "numAdults": 4,
+        "status": "upcoming"
+      },
+      "status": 201,
+      "id": "4ff27e04-c67a-42a9-b7b1-ffd927960dbc",
+      "title": "ZZ TEST 818 cake",
+      "eventDate": "2026-11-21",
+      "numChildren": 10,
+      "numAdults": 4
+    }
+  },
+  "modelCalls": 3,
+  "cleanup": {
+    "at": "2026-11-10T07:31:15.006Z",
+    "events": {
+      "main": {
+        "id": "243aa3ad-5615-4808-88d1-029cd1e1eec2",
+        "title": "ZZ TEST 818 party",
+        "delete": {
+          "route": "DELETE /api/admin/events/:id",
+          "status": 204,
+          "error": null
+        },
+        "readBack": {
+          "event": 404,
+          "beo": 404,
+          "apiParty": 404
+        }
+      },
+      "thai": {
+        "id": "57398ba5-620d-4d2f-a5e4-a164fa3cb1c7",
+        "title": "ZZ TEST 818 thai",
+        "delete": {
+          "route": "DELETE /api/admin/events/:id",
+          "status": 204,
+          "error": null
+        },
+        "readBack": {
+          "event": 404,
+          "beo": 404,
+          "apiParty": 404
+        }
+      },
+      "cake": {
+        "id": "4ff27e04-c67a-42a9-b7b1-ffd927960dbc",
+        "title": "ZZ TEST 818 cake",
+        "delete": {
+          "route": "DELETE /api/admin/events/:id",
+          "status": 204,
+          "error": null
+        },
+        "readBack": {
+          "event": 404,
+          "beo": 404,
+          "apiParty": 404
+        }
+      }
+    },
+    "zzTest818LeftAtCentralFloresta": 0,
+    "employee": {
+      "id": "3f89be2c-0e6f-4171-a977-e22eaf1c47b7",
+      "delete": {
+        "route": "DELETE /api/employees/:id",
+        "status": 204,
+        "error": null
+      },
+      "readBack": {
+        "status": 404
+      },
+      "zzGmActiveLeft": 0
+    }
+  },
+  "signOut": {
+    "at": "2026-11-10T07:31:24.216Z",
+    "app": {
+      "appLogout": 200,
+      "launcherSignOut": 200,
+      "appUserAfter": 401,
+      "launcherMeAfter": 401
+    }
+  }
+}

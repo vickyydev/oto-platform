@@ -1,0 +1,396 @@
+{
+  "unit": "SCRUM-808",
+  "what": "The BEO package total reads the package's price for the party's day, its extras and add-ons; billing agrees",
+  "packageModule": {
+    "at": "2026-11-10T07:26:29.549Z",
+    "section": "accordion-birthday-package",
+    "text": "Birthday Package Birthday package, Central Floresta Applied Change Package Up to 10 children · 4 adults included · Socks for all children · 3 hours · Weekday / weekend ฿16,900.00 / ฿20,900.00 · Extra child ฿1,300.00 / ฿1,500.00 · Extra adult ฿350.00 / ฿500.00 Kitchen & bar slips at PACKAGE BREAKDOWN 6 items setup Kids' table reserved for 3 hours Qty Price Billable food Special birthday set menu Qty Price Billable entertainment Interactive birthday animation program, 30 minutes Qty Price Billable cake Ice-cream cake with candles and birthday song Qty Price Billable play Entry for 4 accompanying adults Qty Price Billable other Socks for all children Qty Price Billable Included in the package price ADD-ONS 5 items setup Reserved table for adults, up to 10 adults Qty Price Billable setup Classic balloon decoration Qty Price Billable setup PRO photo zone with decorations Qty Price Billable entertainment Upgrade or customize your activity program Qty Price Billable entertainment Bracelet Making Qty Price Billable Add-ons Subtotal: ฿0.00 Package price for Saturday (weekend) ฿20,900.00 Extra children: 2 children × ฿1,500.00 ฿3,000.00 Extra adults: 2 adults × ฿500.00 ฿1,000.00 Package Total: ฿24,900.00",
+    "breakdown": [
+      {
+        "id": "text-package-total-package",
+        "text": "Package price for Saturday (weekend) ฿20,900.00"
+      },
+      {
+        "id": "text-package-total-extraChildren",
+        "text": "Extra children: 2 children × ฿1,500.00 ฿3,000.00"
+      },
+      {
+        "id": "text-package-total-extraAdults",
+        "text": "Extra adults: 2 adults × ฿500.00 ฿1,000.00"
+      }
+    ],
+    "total": [
+      "Package Total: ฿24,900.00"
+    ],
+    "includedSubtotal": [
+      "Included in the package price"
+    ],
+    "addonSubtotal": [
+      "Add-ons Subtotal: ฿0.00"
+    ],
+    "facts": [
+      "Up to 10 children · 4 adults included · Socks for all children · 3 hours · Weekday / weekend ฿16,900.00 / ฿20,900.00 · Extra child ฿1,300.00 / ฿1,500.00 · Extra adult ฿350.00 / ฿500.00"
+    ],
+    "packageName": [
+      "Birthday package, Central Floresta"
+    ],
+    "picture": "808-st-01-package-module-total.png"
+  },
+  "settingsPackage": {
+    "at": "2026-11-10T07:26:57.998Z",
+    "packageName": "Birthday package, Central Floresta",
+    "weekday": "16900.00",
+    "weekend": "20900.00",
+    "includedTotal": "THB 0.00",
+    "includedInPrice": [
+      "Included in the package price"
+    ],
+    "priceDiffShown": 0,
+    "unallocatedOnPage": false,
+    "cardText": "Package Breakdown Items included in the base price. These should add up to the package price. Add Item Kids' table reserved for 3 hours Setup 1 x @ THB 0.00 = THB 0.00 Special birthday set menu Food 1 x @ THB 0.00 = THB 0.00 Pizza (margherita, hawaiian or pepperoni), hot dish (chicken schnitzel or fish fingers), french fries, waffles or pancakes, fried rice (veggie, chicken or shrimp), veggie sticks, fruit skewers, pitchers of drinks (juice or mors). Set menu template: \"Birthday set menu, Central Floresta\". Interactive birthday animation program, 30 minutes Entertainment 1 x @ THB 0.00 = THB 0.00 Entertainment template: \"Birthday entertainment program\" (included in the package). Ice-cream cake with candles and birthday song Cake 1 x @ THB 0.00 = THB 0.00 Entry for 4 accompanying adults Play 4 adults @ THB 0.00 = THB 0.00 Socks for all children Other 10 pairs @ THB 0.00 = THB 0.00 Socks for all children (up to 10 children in the package). Included Items Total THB 0.00 Included in the package price",
+    "picture": "808-st-02-settings-package-breakdown.png"
+  },
+  "generateFromBeo": {
+    "at": "2026-11-10T07:27:20.353Z",
+    "generate": {
+      "route": "POST /api/events/:id/line-items/generate-from-beo",
+      "sent": {
+        "mode": "replace"
+      },
+      "status": 201,
+      "answerKeys": [
+        "created",
+        "count"
+      ],
+      "error": null
+    },
+    "lineItems": {
+      "route": "GET /api/events/:id/line-items",
+      "status": 200,
+      "count": 16,
+      "lines": [
+        {
+          "name": "Package: Birthday package, Central Floresta (Saturday, weekend price)",
+          "sourceType": "package",
+          "sourceId": "package_price",
+          "qty": 1,
+          "unitPriceIncVat": 20900,
+          "isIncluded": false
+        },
+        {
+          "name": "Package: extra children",
+          "sourceType": "package",
+          "sourceId": "package_extra_children",
+          "qty": 2,
+          "unitPriceIncVat": 1500,
+          "isIncluded": false
+        },
+        {
+          "name": "Package: extra adults",
+          "sourceType": "package",
+          "sourceId": "package_extra_adults",
+          "qty": 2,
+          "unitPriceIncVat": 500,
+          "isIncluded": false
+        },
+        {
+          "name": "Package: Kids' table reserved for 3 hours",
+          "sourceType": "package",
+          "sourceId": "package_item_b64581c1-a902-462a-9764-8419f6c5b1f4",
+          "qty": 1,
+          "unitPriceIncVat": 0,
+          "isIncluded": true
+        },
+        {
+          "name": "Package: Special birthday set menu",
+          "sourceType": "package",
+          "sourceId": "package_item_732d4653-2230-4638-8b40-dcbcabf72d41",
+          "qty": 1,
+          "unitPriceIncVat": 0,
+          "isIncluded": true
+        },
+        {
+          "name": "Package: Interactive birthday animation program, 30 minutes",
+          "sourceType": "package",
+          "sourceId": "package_item_60c20b09-db71-4b7a-be57-736324f3d000",
+          "qty": 1,
+          "unitPriceIncVat": 0,
+          "isIncluded": true
+        },
+        {
+          "name": "Package: Ice-cream cake with candles and birthday song",
+          "sourceType": "package",
+          "sourceId": "package_item_55194109-db84-46a4-a153-fc787ccccffa",
+          "qty": 1,
+          "unitPriceIncVat": 0,
+          "isIncluded": true
+        },
+        {
+          "name": "Package: Entry for 4 accompanying adults",
+          "sourceType": "package",
+          "sourceId": "package_item_d80625bf-f152-46a5-82f3-79bd22fb49bd",
+          "qty": 4,
+          "unitPriceIncVat": 0,
+          "isIncluded": true
+        },
+        {
+          "name": "Package: Socks for all children",
+          "sourceType": "package",
+          "sourceId": "package_item_e7a317ff-a46c-48bd-bd59-4b70a1333468",
+          "qty": 10,
+          "unitPriceIncVat": 0,
+          "isIncluded": true
+        },
+        {
+          "name": "Entertainment: Zombie game",
+          "sourceType": "entertainment",
+          "sourceId": "entertainment_sel_3a3070b3-1c75-4b97-8ba5-934806528bda",
+          "qty": 1,
+          "unitPriceIncVat": 4000,
+          "isIncluded": false
+        },
+        {
+          "name": "Kids: Margherita ((Pizza))",
+          "sourceType": "food",
+          "sourceId": "food_menu_kids_margherita",
+          "qty": 1,
+          "unitPriceIncVat": 0,
+          "isIncluded": false
+        },
+        {
+          "name": "Kids: Chicken schnitzel ((Hot dish))",
+          "sourceType": "food",
+          "sourceId": "food_menu_kids_chicken_schnitzel",
+          "qty": 1,
+          "unitPriceIncVat": 0,
+          "isIncluded": false
+        },
+        {
+          "name": "Kids: French fries",
+          "sourceType": "food",
+          "sourceId": "food_menu_kids_french_fries",
+          "qty": 1,
+          "unitPriceIncVat": 0,
+          "isIncluded": false
+        },
+        {
+          "name": "Kids: Veggie sticks",
+          "sourceType": "food",
+          "sourceId": "food_menu_kids_veggie_sticks",
+          "qty": 1,
+          "unitPriceIncVat": 0,
+          "isIncluded": false
+        },
+        {
+          "name": "Kids: Fruit skewers",
+          "sourceType": "food",
+          "sourceId": "food_menu_kids_fruit_skewers",
+          "qty": 1,
+          "unitPriceIncVat": 0,
+          "isIncluded": false
+        },
+        {
+          "name": "Cake (Provided)",
+          "sourceType": "food",
+          "sourceId": "food_cake",
+          "qty": 1,
+          "unitPriceIncVat": 0,
+          "isIncluded": true
+        }
+      ]
+    },
+    "packageLinesTotalBaht": 24900,
+    "billedTotalBaht": 28900
+  },
+  "pictures": [
+    {
+      "file": "808-st-01-package-module-total.png",
+      "at": "2026-11-10T07:26:30.465Z",
+      "shows": "The BEO's birthday-package section",
+      "namesMasked": 2
+    },
+    {
+      "file": "808-st-02-settings-package-breakdown.png",
+      "at": "2026-11-10T07:26:58.869Z",
+      "shows": "Events > Settings > Packages > the Floresta package: the Package Breakdown card (read only, nothing saved)",
+      "namesMasked": 0
+    }
+  ],
+  "liveCommit": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6",
+  "liveDeploys": [
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbpcagu417fc739h23ug",
+      "status": "live",
+      "sha": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6",
+      "finishedAt": "2026-11-10T07:20:32.713848Z"
+    },
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbpcagu417fc739h22vg",
+      "status": "live",
+      "sha": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6",
+      "finishedAt": "2026-11-10T07:22:50.749163Z"
+    }
+  ],
+  "appVersion": {
+    "status": 200,
+    "version": "608e3c0ba23e385a6ffd0eac34421196a57ca6a6"
+  },
+  "run": {
+    "startedAt": "2026-11-10T07:23:06.399Z",
+    "endedAt": "2026-11-10T07:31:24.216Z",
+    "browser": "Chromium 153.0.8010.12 headless, 1440 wide, Asia/Bangkok"
+  },
+  "actor": {
+    "who": "the staging administrator (name masked in every picture)",
+    "role": "global_admin"
+  },
+  "park": {
+    "name": "Oto Play Park, Central Floresta",
+    "appBranchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+    "apiBranchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "leftBehindBefore": {
+    "zzTest818Events": [],
+    "zzGmEmployees": []
+  },
+  "events": {
+    "main": {
+      "at": "2026-11-10T07:24:46.821Z",
+      "route": "POST /api/admin/events",
+      "sent": {
+        "eventType": "birthday",
+        "title": "ZZ TEST 818 party",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "eventDate": "2026-11-21",
+        "startTime": "14:00",
+        "endTime": "17:00",
+        "durationMinutes": 180,
+        "numChildren": 12,
+        "numAdults": 6,
+        "status": "upcoming"
+      },
+      "status": 201,
+      "id": "243aa3ad-5615-4808-88d1-029cd1e1eec2",
+      "title": "ZZ TEST 818 party",
+      "eventDate": "2026-11-21",
+      "numChildren": 12,
+      "numAdults": 6
+    },
+    "thai": {
+      "at": "2026-11-10T07:28:27.348Z",
+      "route": "POST /api/admin/events",
+      "sent": {
+        "eventType": "birthday",
+        "title": "ZZ TEST 818 thai",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "eventDate": "2026-11-21",
+        "startTime": "14:00",
+        "endTime": "17:00",
+        "durationMinutes": 180,
+        "numChildren": 10,
+        "numAdults": 4,
+        "status": "upcoming"
+      },
+      "status": 201,
+      "id": "57398ba5-620d-4d2f-a5e4-a164fa3cb1c7",
+      "title": "ZZ TEST 818 thai",
+      "eventDate": "2026-11-21",
+      "numChildren": 10,
+      "numAdults": 4
+    },
+    "cake": {
+      "at": "2026-11-10T07:29:30.935Z",
+      "route": "POST /api/admin/events",
+      "sent": {
+        "eventType": "birthday",
+        "title": "ZZ TEST 818 cake",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "eventDate": "2026-11-21",
+        "startTime": "14:00",
+        "endTime": "17:00",
+        "durationMinutes": 180,
+        "numChildren": 10,
+        "numAdults": 4,
+        "status": "upcoming"
+      },
+      "status": 201,
+      "id": "4ff27e04-c67a-42a9-b7b1-ffd927960dbc",
+      "title": "ZZ TEST 818 cake",
+      "eventDate": "2026-11-21",
+      "numChildren": 10,
+      "numAdults": 4
+    }
+  },
+  "modelCalls": 3,
+  "cleanup": {
+    "at": "2026-11-10T07:31:15.006Z",
+    "events": {
+      "main": {
+        "id": "243aa3ad-5615-4808-88d1-029cd1e1eec2",
+        "title": "ZZ TEST 818 party",
+        "delete": {
+          "route": "DELETE /api/admin/events/:id",
+          "status": 204,
+          "error": null
+        },
+        "readBack": {
+          "event": 404,
+          "beo": 404,
+          "apiParty": 404
+        }
+      },
+      "thai": {
+        "id": "57398ba5-620d-4d2f-a5e4-a164fa3cb1c7",
+        "title": "ZZ TEST 818 thai",
+        "delete": {
+          "route": "DELETE /api/admin/events/:id",
+          "status": 204,
+          "error": null
+        },
+        "readBack": {
+          "event": 404,
+          "beo": 404,
+          "apiParty": 404
+        }
+      },
+      "cake": {
+        "id": "4ff27e04-c67a-42a9-b7b1-ffd927960dbc",
+        "title": "ZZ TEST 818 cake",
+        "delete": {
+          "route": "DELETE /api/admin/events/:id",
+          "status": 204,
+          "error": null
+        },
+        "readBack": {
+          "event": 404,
+          "beo": 404,
+          "apiParty": 404
+        }
+      }
+    },
+    "zzTest818LeftAtCentralFloresta": 0,
+    "employee": {
+      "id": "3f89be2c-0e6f-4171-a977-e22eaf1c47b7",
+      "delete": {
+        "route": "DELETE /api/employees/:id",
+        "status": 204,
+        "error": null
+      },
+      "readBack": {
+        "status": 404
+      },
+      "zzGmActiveLeft": 0
+    }
+  },
+  "signOut": {
+    "at": "2026-11-10T07:31:24.216Z",
+    "app": {
+      "appLogout": 200,
+      "launcherSignOut": 200,
+      "appUserAfter": 401,
+      "launcherMeAfter": 401
+    }
+  }
+}
