@@ -4841,7 +4841,7 @@
     },
     "/branches/": {
       "get": {
-        "description": "List branches the caller holds (archived hidden unless includeArchived)",
+        "description": "List branches the caller holds (archived hidden unless includeArchived). SCRUM-823 — the notice contacts (a person's phone) only where the caller holds admin:branch:update; null elsewhere.",
         "parameters": [
           {
             "schema": {
@@ -89963,8 +89963,29 @@
                           "notNotified": {
                             "type": "boolean"
                           },
+                          "notNotifiedWhy": {
+                            "type": "string",
+                            "enum": [
+                              "no_contact",
+                              "ping_logged_only",
+                              "failed"
+                            ],
+                            "nullable": true
+                          },
                           "escalatedAt": {
                             "type": "string",
+                            "nullable": true
+                          },
+                          "gmNotNotified": {
+                            "type": "boolean"
+                          },
+                          "gmNotNotifiedWhy": {
+                            "type": "string",
+                            "enum": [
+                              "no_contact",
+                              "ping_logged_only",
+                              "failed"
+                            ],
                             "nullable": true
                           },
                           "pickedUpAt": {
@@ -89977,7 +89998,10 @@
                           "destination",
                           "notifiedAt",
                           "notNotified",
+                          "notNotifiedWhy",
                           "escalatedAt",
+                          "gmNotNotified",
+                          "gmNotNotifiedWhy",
                           "pickedUpAt"
                         ],
                         "additionalProperties": false

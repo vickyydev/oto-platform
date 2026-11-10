@@ -109,7 +109,9 @@ export async function branchRoutes(app: App): Promise<void> {
     {
       config: { permission: 'admin:branch:read' },
       schema: {
-        description: 'List branches the caller holds (archived hidden unless includeArchived)',
+        description:
+          'List branches the caller holds (archived hidden unless includeArchived). SCRUM-823 — the notice contacts ' +
+          '(a person\'s phone) only where the caller holds admin:branch:update; null elsewhere.',
         querystring: z.object({ includeArchived: z.coerce.boolean().default(false) }),
         response: { 200: z.object({ branches: z.array(z.object({
           id: z.string().uuid(), name: z.string(), code: z.string(), timezone: z.string(),
@@ -119,7 +121,10 @@ export async function branchRoutes(app: App): Promise<void> {
           openingHours: z.unknown().nullable(), businessDayStart: z.string(), archived: z.boolean(),
           /** SCRUM-805 — the station whose kitchen and bar printers receive party slips; null until the park names one. */
           partySlipsStationId: z.string().uuid().nullable(),
-          /** SCRUM-823 — who a Birthdays & Events hand-over tells here; null until the park names them. */
+          /**
+           * SCRUM-823 — who a Birthdays & Events advice hand-over tells here; null until the park names
+           * them, and null for a caller without `admin:branch:update` at the park (a person's own phone).
+           */
           birthdayManagerContact: NoticeContactSchema.nullable(),
           gmContact: NoticeContactSchema.nullable(),
         })) }) },
@@ -134,8 +139,18 @@ export async function branchRoutes(app: App): Promise<void> {
        * work in and the name of a site they have no business knowing about.
        * An operator administrator's reach is every branch and is unchanged.
        */
-      const reach = branchReach(await req.effectivePermissions(), 'admin:branch:read', auth.operatorId);
+      const effective = await req.effectivePermissions();
+      const reach = branchReach(effective, 'admin:branch:read', auth.operatorId);
       if (reach.kind === 'branches' && reach.branchIds.length === 0) return { branches: [] };
+      /**
+       * SCRUM-823 — the notice contacts carry a person's own phone (the
+       * birthday manager's, the GM's). Every till login holds
+       * `admin:branch:read` (READ_COUNTER), so the list gives them only to
+       * whoever may edit them at that park, `admin:branch:update`; anyone else
+       * reads null.
+       */
+      const editReach = branchReach(effective, 'admin:branch:update', auth.operatorId);
+      const mayReadContacts = (branchId: string) => editReach.kind === 'operator' || editReach.branchIds.includes(branchId);
 
       const clauses: SQL[] = [eq(branch.operatorId, auth.operatorId)];
       if (!req.query.includeArchived) clauses.push(isNull(branch.archivedAt));
@@ -159,8 +174,8 @@ export async function branchRoutes(app: App): Promise<void> {
           country: b.country,
           archived: b.archivedAt !== null,
           partySlipsStationId: b.partySlipsStationId,
-          birthdayManagerContact: contactOf(b.birthdayManagerContact),
-          gmContact: contactOf(b.gmContact),
+          birthdayManagerContact: mayReadContacts(b.id) ? contactOf(b.birthdayManagerContact) : null,
+          gmContact: mayReadContacts(b.id) ? contactOf(b.gmContact) : null,
         })),
       };
     },

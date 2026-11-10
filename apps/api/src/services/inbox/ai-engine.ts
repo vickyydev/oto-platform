@@ -1948,14 +1948,14 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
             branchId: routing.branchSet,
           },
         });
-        // SCRUM-823: a Birthdays & Events hand-over tells the birthday manager on duty (handover-notice.ts).
+        // SCRUM-823: a Birthdays & Events advice hand-over tells the birthday manager on duty (handover-notice.ts).
         await queueHandoverNotices(tx, {
           operatorId: conv.operatorId,
           conversationId: conv.id,
           turnId: turn.id,
           branchId: plan.move?.branchId ?? routing.branchSet ?? conv.branchId,
           destination: plan.category,
-          intent: handover.owner ?? v.intent,
+          intents: v.intents,
           at,
         });
       }
@@ -2080,13 +2080,6 @@ export async function runInboxAiJob(db: Db, deps: AiEngineDeps, now: Date): Prom
     }
   }
 
-  // SCRUM-823: the hand-over notices this tick queued go now; a failure waits for the escalation sweep.
-  if (deps.notices) {
-    await deliverHandoverNotices(db, deps.notices, now).catch((err: unknown) => {
-      deps.log?.error({ error: errorName(err) }, 'inbox hand-over notices could not be sent; the escalation sweep retries');
-    });
-  }
-
   // §B.6: the AI lines whose typing time is over leave now, through the one send path.
   const lines = await dueAiMessageIds(db, now);
   if (lines.length > 0) {
@@ -2101,6 +2094,15 @@ export async function runInboxAiJob(db: Db, deps: AiEngineDeps, now: Date): Prom
       lines,
     );
     sweep.aiMessagesSent = sent.filter((o) => o.outcome === 'sent').length;
+  }
+
+  // SCRUM-823: the hand-over notices this tick queued go AFTER the customers'
+  // lines, so a slow OTO App never holds a holding line back; a failure waits
+  // for the escalation sweep.
+  if (deps.notices) {
+    await deliverHandoverNotices(db, deps.notices, now).catch((err: unknown) => {
+      deps.log?.error({ error: errorName(err) }, 'inbox hand-over notices could not be sent; the escalation sweep retries');
+    });
   }
   return sweep;
 }

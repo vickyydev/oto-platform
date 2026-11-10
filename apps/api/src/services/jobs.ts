@@ -273,8 +273,9 @@ export interface JobDeps {
    * SCRUM-823: the OTO App's bell and the notice sender an inbox hand-over
    * tells a person through. Absent, both are built from the env: the
    * directory from `OTOAPP_DIRECTORY_URL` and `OTOAPP_DIRECTORY_KEY`, the
-   * sender `buildNoticeSender` (a log line, never a message, outside a real
-   * adapter). Tests inject a capturing pair.
+   * sender `buildNoticeSender` (a log line, never a message, on every
+   * deployment), with `pingLive: false` so a logged ping is never recorded as
+   * a person told. Tests inject a capturing pair.
    */
   handoverNotices?: HandoverNoticeDeps;
 }
@@ -1080,15 +1081,15 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
      *
      * Every minute: the hand-over notices still to send go (the birthday
      * manager on duty, through the OTO App's bell and a WhatsApp or Telegram
-     * ping that the notice sender logs on staging); then every Birthdays &
-     * Events hand-over nobody has picked up fifteen minutes after it — no
-     * staff reply, no assignment by a person, not handled by a person — is
-     * escalated ONCE to the park's GM contact. Counts only in the detail.
+     * ping that the notice sender only logs, recorded `PING_NOT_LIVE`); then
+     * every Birthdays & Events advice hand-over nobody has picked up fifteen
+     * minutes after it — no person acted on the thread at all — is escalated
+     * ONCE to the park's GM contact. Counts only in the detail.
      */
     {
       name: HANDOVER_ESCALATION_JOB,
       description:
-        "Sends the inbox's hand-over notices to the birthday manager on duty, and tells the GM once when nobody has picked up a Birthdays & Events hand-over within fifteen minutes",
+        "Sends the inbox's advice hand-over notices to the birthday manager on duty, and tells the GM once when nobody has picked up such a hand-over within fifteen minutes",
       intervalSeconds: HANDOVER_ESCALATION_INTERVAL_S,
       graceSeconds: 300,
       run: async ({ db, now }) => ({ detail: await runHandoverEscalationJob(db, handoverNoticesOf(deps), now) }),
@@ -1177,6 +1178,10 @@ function handoverNoticesOf(deps: JobDeps): HandoverNoticeDeps {
     built = {
       directory: buildOtoAppDirectory(deps.env, deps.log),
       sender: buildNoticeSender(deps.log as unknown as Logger),
+      // `buildNoticeSender` writes a log line on every deployment and delivers
+      // to nobody: the ping is recorded skipped (PING_NOT_LIVE), never sent,
+      // until a WhatsApp or Telegram sender that delivers replaces it here.
+      pingLive: false,
       log: deps.log,
     };
     ownHandoverNotices.set(deps, built);

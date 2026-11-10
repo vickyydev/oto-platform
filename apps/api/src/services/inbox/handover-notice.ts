@@ -19,9 +19,11 @@ import { withTx, type Exec, type Tx } from '../tx';
  * A HAND-OVER TELLS A PERSON (SCRUM-823; owner, 10 Nov 2026).
  *
  * Until now an assistant hand-over was a queue entry and an audit row: nobody
- * was told on a phone or in the app. Now a hand-over to Birthdays & Events —
- * the birthday advice question first among them — tells the birthday manager
- * on duty at the thread's park (every park's, when the thread has none):
+ * was told on a phone or in the app. Now the hand-over the owner approved —
+ * a family's ADVICE question in Birthdays & Events (`birthday_advice`), and
+ * only that: never the opener flow's normal end, a cake, the brochure, a camp
+ * or an event fallback — tells the birthday manager on duty at the thread's
+ * park (every park's, when the thread has none):
  *
  *   1. QUEUED IN THE HAND-OVER'S OWN TRANSACTION (`queueHandoverNotices`, the
  *      engine's commit): one `inbox.handover_notification` row per channel —
@@ -33,18 +35,27 @@ import { withTx, type Exec, type Tx } from '../tx';
  *      `job:inbox.ai` tick and of each escalation sweep): the bell through the
  *      app's directory door (`POST /api/directory/notifications`, the row's id
  *      as the notification's, so a retry is a replay there), the ping through
- *      the notice sender (`buildNoticeSender`: on staging and production it
- *      LOGS a hashed recipient and the message's digest and sends nothing).
+ *      the notice sender. Today that sender (`buildNoticeSender`) LOGS a hashed
+ *      recipient and the message's digest on every deployment and delivers to
+ *      nobody, so the job runs with `pingLive: false`: the ping's row is
+ *      recorded `skipped` with `PING_NOT_LIVE`, never `sent`, and the pill
+ *      says "manager not notified (ping logged only)" unless the bell went.
  *   3. ESCALATED ONCE (`runHandoverEscalationJob`, `job:inbox.handover_escalation`,
  *      every minute): a hand-over nobody has picked up fifteen minutes after
- *      it — no staff message, no assignment by a person, not handled by a
- *      person — gets ONE notice to the park's `gm_contact` (the playbook's GM
- *      route), app and phone, and its notices are stamped `escalated_at`. One
- *      that was picked up is stamped `picked_up_at` and never escalates.
+ *      it — no person acted on the thread at all (`pickedUpAt`: a staff
+ *      message, an assignment by a person, any timeline event a person is the
+ *      actor of, the assistant paused by a person included, a note, handled by
+ *      a person) — gets ONE notice to the park's `gm_contact` (the playbook's
+ *      GM route), app and phone, and its notices are stamped `escalated_at`
+ *      (the sweep's once-guard). One that was picked up is stamped
+ *      `picked_up_at` and never escalates; the check is made again under the
+ *      lock that writes the escalation.
  *
  * Nothing here holds a customer's words, name or number: the notice says a
- * family is waiting, at which park, since when, and why (advice asked); the
- * row's `target` is an app user id or a number masked to its last four digits.
+ * Birthdays & Events conversation is waiting, at which park, since when, and
+ * why (advice asked); the row's `target` is an app user id or a number masked
+ * to its last four digits. The pill reports only what reached a person: a
+ * notice that was logged, skipped or failed is never "notified".
  */
 
 export const HANDOVER_ESCALATION_JOB = 'job:inbox.handover_escalation';
@@ -55,6 +66,16 @@ export const HANDOVER_ESCALATION_AFTER_MS = 15 * 60_000;
 /** The destinations whose hand-over tells a person. Birthdays & Events only, for now. */
 export const NOTIFIED_DESTINATIONS: ReadonlySet<InboxCategory> = new Set<InboxCategory>(['birthdays']);
 
+/**
+ * The hand-overs that tell a person: the owner approved the advice question
+ * (10 Nov), measured on the real chats before it shipped. Every other
+ * Birthdays & Events hand-over stays a queue entry, as before.
+ */
+export const NOTIFIED_INTENT = 'birthday_advice';
+
+/** What a ping the notice sender only logged is recorded as: skipped, nobody told. */
+export const PING_NOT_LIVE = 'PING_NOT_LIVE';
+
 /** How many times a notice is tried before it is recorded failed. */
 export const NOTICE_MAX_ATTEMPTS = 3;
 /** A claimed notice whose sender died is taken again after this long. */
@@ -64,8 +85,15 @@ const BATCH = 25;
 export interface HandoverNoticeDeps {
   /** The OTO App's directory: the bell. A directory without `notify` (or unconfigured) records the bell failed. */
   directory: Pick<OtoAppDirectory, 'configured' | 'notify'>;
-  /** The notice sender (`buildNoticeSender`): the ping. Logs, never sends, outside a real adapter. */
+  /** The notice sender (`buildNoticeSender`): the ping. Today it writes a log line and delivers to nobody. */
   sender: SmsSender;
+  /**
+   * Whether `sender` reaches a person's phone. False while it is
+   * `buildNoticeSender` (a log line on every deployment): the ping still
+   * writes its log line, and its row is recorded `skipped` / `PING_NOT_LIVE`,
+   * never `sent`. True only for a sender that delivers WhatsApp or Telegram.
+   */
+  pingLive: boolean;
   log?: FastifyBaseLogger;
 }
 
@@ -155,19 +183,21 @@ export interface QueueHandoverInput {
   branchId: string | null;
   /** The category the thread ends in. */
   destination: InboxCategory;
-  /** The intent that owned the hand-over. */
-  intent: string | null;
+  /** Every part the turn was read as (the verdict's `intents`). */
+  intents: readonly string[];
   at: Date;
 }
 
 /**
  * The engine's hook, inside the hand-over's own transaction: the notices this
- * hand-over owes, written `pending` for the senders. Nothing for a destination
- * that tells nobody. A replayed commit writes nothing twice (the unique key on
- * turn, kind, channel and park). Answers how many rows it wrote.
+ * hand-over owes, written `pending` for the senders. Nothing unless the turn
+ * holds the advice question and ends in a destination that tells a person. A
+ * replayed commit writes nothing twice (the unique key on turn, kind, channel
+ * and park). Answers how many rows it wrote.
  */
 export async function queueHandoverNotices(tx: Tx, input: QueueHandoverInput): Promise<number> {
   if (!NOTIFIED_DESTINATIONS.has(input.destination)) return 0;
+  if (!input.intents.includes(NOTIFIED_INTENT)) return 0;
   const parks = await parksFor(tx, input.operatorId, input.branchId);
   const rows = targetsOf(parks, 'notice', input.branchId).map((t) => ({
     id: newId(),
@@ -176,7 +206,7 @@ export async function queueHandoverNotices(tx: Tx, input: QueueHandoverInput): P
     turnId: input.turnId,
     branchId: t.branchId,
     destination: input.destination,
-    intent: input.intent,
+    intent: NOTIFIED_INTENT,
     kind: 'notice' as const,
     channel: t.channel,
     target: t.target,
@@ -194,7 +224,11 @@ export async function queueHandoverNotices(tx: Tx, input: QueueHandoverInput): P
 const clock = (at: Date, timezone: string) =>
   new Intl.DateTimeFormat('en-GB', { timeZone: timezone || 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(at);
 
-/** The words of a notice: who is waiting, where, since when, and why. Never the customer's words or name. */
+/**
+ * The words of a notice: what is waiting, where, since when, and why. Never
+ * the customer's words or name. Neutral about the matter: a Birthdays & Events
+ * conversation may be a party, an event or a group.
+ */
 export function noticeWords(
   row: Pick<NoticeRow, 'kind' | 'intent' | 'createdAt'>,
   park: { name: string; timezone: string } | null,
@@ -202,18 +236,18 @@ export function noticeWords(
 ): { title: string; body: string; ping: string } {
   const where = park ? ` (${park.name})` : '';
   const when = clock(handedAt, park?.timezone ?? 'Asia/Bangkok');
-  const why = row.intent === 'birthday_advice' ? ', advice asked' : '';
+  const why = row.intent === NOTIFIED_INTENT ? ', advice asked' : '';
   if (row.kind === 'escalation') {
     return {
-      title: 'Nobody has picked up a birthday conversation',
+      title: 'Nobody has picked up a Birthdays & Events conversation',
       body: `A Birthdays & Events conversation was handed to a person at ${when}${where}${why}, and nobody has taken it for 15 minutes. Please open it in the Inbox.`,
-      ping: `OTO Inbox: a birthday family has waited 15 minutes for a person${where}, handed over at ${when}${why}. Please open the Inbox.`,
+      ping: `OTO Inbox: a Birthdays & Events conversation has waited 15 minutes for a person${where}, handed over at ${when}${why}. Please open the Inbox.`,
     };
   }
   return {
-    title: 'Birthday family waiting in the Inbox',
+    title: 'A Birthdays & Events conversation is waiting in the Inbox',
     body: `A Birthdays & Events conversation was handed to a person at ${when}${where}${why}. Please open it in the Inbox.`,
-    ping: `OTO Inbox: a birthday family is waiting for a person${where}, handed over at ${when}${why}. Please open the Inbox.`,
+    ping: `OTO Inbox: a Birthdays & Events conversation is waiting for a person${where}, handed over at ${when}${why}. Please open the Inbox.`,
   };
 }
 
@@ -258,6 +292,16 @@ async function sendOne(deps: HandoverNoticeDeps, row: NoticeRow, park: BranchRow
     return answer.retryable ? { state: 'retry', code: answer.code } : { state: 'failed', code: answer.code };
   }
   if (!contact?.phone) return { state: 'skipped', code: 'NO_CONTACT' };
+  if (!deps.pingLive) {
+    // The sender only writes its log line (hashed recipient, the message's
+    // digest): kept for the record, and nobody is told, so never `sent`.
+    try {
+      await deps.sender.send(contact.phone, words.ping);
+    } catch {
+      // A log line that could not be written changes nothing: nobody was told either way.
+    }
+    return { state: 'skipped', code: PING_NOT_LIVE };
+  }
   try {
     await deps.sender.send(contact.phone, words.ping);
     return { state: 'sent' };
@@ -350,23 +394,35 @@ export async function deliverHandoverNotices(db: Db, deps: HandoverNoticeDeps, n
 // --- The escalation --------------------------------------------------------------------------
 
 /**
- * When a person took the thread after the hand-over, or null: their first
- * reply, an assignment a person made, or the thread marked handled by a
- * person. The assistant's own lines and the router's seating do not count.
+ * When a person first acted on the thread after the hand-over, or null. The
+ * same facts that make the assistant stand back (`aiEligibility`'s
+ * STAFF_ACTED: a staff message, an assignment a person made, any timeline
+ * event a person is the actor of — a date booked, a BEO saved, a move, a
+ * Divert, a branch set, a translation), and the holds it reads apart there,
+ * which here are a person on the thread too: the assistant paused or resumed
+ * by a person, the thread handled by a person. And a note a person wrote. The
+ * assistant's own lines and events and the router's seating never count.
  */
 export async function pickedUpAt(exec: Exec, operatorId: string, conversationId: string, since: Date): Promise<Date | null> {
+  const at = since.toISOString();
   const [row] = (
     await exec.execute<{ picked: Date | string | null }>(sql`
       select least(
         (select min(m.created_at) from inbox.message m
           where m.operator_id = ${operatorId} and m.conversation_id = ${conversationId}
-            and m.author_kind = 'staff' and m.created_at >= ${since}),
+            and m.author_kind = 'staff' and m.created_at >= ${at}::timestamptz),
         (select min(a.assigned_at) from inbox.assignment a
           where a.operator_id = ${operatorId} and a.conversation_id = ${conversationId}
-            and a.assigned_by_kind = 'account' and a.assigned_at >= ${since}),
+            and a.assigned_by_kind = 'account' and a.assigned_at >= ${at}::timestamptz),
+        (select min(e.created_at) from inbox.event e
+          where e.operator_id = ${operatorId} and e.conversation_id = ${conversationId}
+            and e.actor_kind = 'account' and e.created_at >= ${at}::timestamptz),
+        (select min(n.created_at) from inbox.note n
+          where n.operator_id = ${operatorId} and n.conversation_id = ${conversationId}
+            and n.created_at >= ${at}::timestamptz),
         (select c.handled_at from inbox.conversation c
           where c.operator_id = ${operatorId} and c.id = ${conversationId}
-            and c.status = 'handled' and c.handled_by_kind = 'account' and c.handled_at >= ${since})
+            and c.status = 'handled' and c.handled_by_kind = 'account' and c.handled_at >= ${at}::timestamptz)
       ) as picked`)
   ).rows;
   return row?.picked ? new Date(row.picked) : null;
@@ -383,9 +439,10 @@ export interface EscalationSweep extends Record<string, unknown> {
 /**
  * `job:inbox.handover_escalation`: what is still to send goes; then every
  * hand-over fifteen minutes old that nobody has picked up is escalated to the
- * GM's contact ONCE, and one that was picked up is stamped and left. The
- * escalation is written under a lock on the hand-over's notices and only when
- * none is stamped yet, so two sweeps never escalate one hand-over twice.
+ * GM's contact ONCE, and one that was picked up is stamped and left. Both are
+ * decided under a lock on the hand-over's notices, the pickup read inside it,
+ * and only when none is stamped yet, so two sweeps never escalate one
+ * hand-over twice and a person acting a moment before is never missed.
  */
 export async function runHandoverEscalationJob(db: Db, deps: HandoverNoticeDeps, now: Date): Promise<EscalationSweep> {
   const sweep: EscalationSweep = {
@@ -397,12 +454,7 @@ export async function runHandoverEscalationJob(db: Db, deps: HandoverNoticeDeps,
   };
   const due = new Date(now.getTime() - HANDOVER_ESCALATION_AFTER_MS);
   const open = await db
-    .select({
-      operatorId: handoverNotification.operatorId,
-      turnId: handoverNotification.turnId,
-      conversationId: handoverNotification.conversationId,
-      handedAt: sql<Date>`min(${handoverNotification.createdAt})`,
-    })
+    .select({ operatorId: handoverNotification.operatorId, turnId: handoverNotification.turnId })
     .from(handoverNotification)
     .where(
       and(
@@ -412,35 +464,25 @@ export async function runHandoverEscalationJob(db: Db, deps: HandoverNoticeDeps,
         lte(handoverNotification.createdAt, due),
       ),
     )
-    .groupBy(handoverNotification.operatorId, handoverNotification.turnId, handoverNotification.conversationId)
+    .groupBy(handoverNotification.operatorId, handoverNotification.turnId)
     .limit(BATCH);
   for (const h of open) {
     sweep.checked += 1;
-    const handedAt = new Date(h.handedAt);
-    const picked = await pickedUpAt(db, h.operatorId, h.conversationId, handedAt);
-    if (picked) {
-      sweep.pickedUp += 1;
-      await db
-        .update(handoverNotification)
-        .set({ pickedUpAt: picked, updatedAt: now })
-        .where(
-          and(
-            eq(handoverNotification.operatorId, h.operatorId),
-            eq(handoverNotification.turnId, h.turnId),
-            eq(handoverNotification.kind, 'notice'),
-            isNull(handoverNotification.pickedUpAt),
-          ),
-        );
-      continue;
-    }
-    if (await escalate(db, h.operatorId, h.turnId, now)) sweep.escalated += 1;
+    const outcome = await escalate(db, h.operatorId, h.turnId, now);
+    if (outcome === 'picked_up') sweep.pickedUp += 1;
+    else if (outcome === 'escalated') sweep.escalated += 1;
   }
   if (sweep.escalated > 0) sweep.escalationsDelivered = await deliverHandoverNotices(db, deps, now);
   return sweep;
 }
 
-/** One hand-over's escalation, once: the GM's notices queued and the hand-over's notices stamped. */
-async function escalate(db: Db, operatorId: string, turnId: string, now: Date): Promise<boolean> {
+/**
+ * One hand-over, once, under the lock on its notices: picked up (a person
+ * acted since it, read here, inside the lock) and stamped so; or escalated —
+ * the GM's notices queued and the hand-over's notices stamped `escalated_at`,
+ * the sweep's once-guard. `none` when another sweep already decided it.
+ */
+async function escalate(db: Db, operatorId: string, turnId: string, now: Date): Promise<'picked_up' | 'escalated' | 'none'> {
   return withTx(db, { operatorId }, 'inbox.handover.escalate', async (tx) => {
     const notices = await tx
       .select()
@@ -449,7 +491,15 @@ async function escalate(db: Db, operatorId: string, turnId: string, now: Date): 
       .orderBy(asc(handoverNotification.createdAt))
       .for('update');
     const first = notices[0];
-    if (!first || notices.some((n) => n.escalatedAt !== null || n.pickedUpAt !== null)) return false;
+    if (!first || notices.some((n) => n.escalatedAt !== null || n.pickedUpAt !== null)) return 'none';
+    const picked = await pickedUpAt(tx, operatorId, first.conversationId, first.createdAt);
+    if (picked) {
+      await tx
+        .update(handoverNotification)
+        .set({ pickedUpAt: picked, updatedAt: now })
+        .where(and(eq(handoverNotification.operatorId, operatorId), eq(handoverNotification.turnId, turnId), eq(handoverNotification.kind, 'notice')));
+      return 'picked_up';
+    }
     const parkIds = [...new Set(notices.flatMap((n) => (n.branchId ? [n.branchId] : [])))];
     const parks = parkIds.length === 1 ? await parksFor(tx, operatorId, parkIds[0]!) : await parksFor(tx, operatorId, null);
     const scoped = parkIds.length > 1 ? parks.filter((p) => parkIds.includes(p.id)) : parks;
@@ -490,21 +540,37 @@ async function escalate(db: Db, operatorId: string, turnId: string, now: Date): 
         written: written.length,
       },
     });
-    return true;
+    return 'escalated';
   });
 }
 
 // --- The thread's pill -----------------------------------------------------------------------
 
+/** Why nobody was told: no contact named, the phone ping only logged, or the sending failed. */
+export type HandoverNoticeMiss = 'no_contact' | 'ping_logged_only' | 'failed';
+
 export interface HandoverNoticeView {
   turnId: string;
   destination: InboxCategory;
-  /** When the first notice went (the bell or the ping); null when none did. */
+  /** When the birthday manager was first told by a notice that reached a person (`sent`); null when none did. */
   notifiedAt: string | null;
-  /** Nobody to tell, or every notice failed. */
+  /** Every notice to the manager ended without reaching a person (skipped or failed, none still to send). */
   notNotified: boolean;
+  notNotifiedWhy: HandoverNoticeMiss | null;
+  /** When the GM was first told by an escalation that reached a person (`sent`); null when none did. */
   escalatedAt: string | null;
+  /** The hand-over was escalated and every escalation ended without reaching the GM. */
+  gmNotNotified: boolean;
+  gmNotNotifiedWhy: HandoverNoticeMiss | null;
   pickedUpAt: string | null;
+}
+
+/** Why a set of notices told nobody, or null while one reached a person or is still to send. */
+function missOf(rows: readonly NoticeRow[]): HandoverNoticeMiss | null {
+  if (rows.length === 0 || rows.some((r) => r.state === 'sent' || r.state === 'pending')) return null;
+  if (rows.every((r) => r.errorCode === 'NO_CONTACT')) return 'no_contact';
+  if (rows.some((r) => r.state === 'failed')) return 'failed';
+  return 'ping_logged_only';
 }
 
 /** The thread's hand-over notices as its pills read them: one entry per hand-over, oldest first. */
@@ -520,13 +586,21 @@ export async function handoverNoticesOf(exec: Exec, operatorId: string, conversa
   const earliest = (ds: (Date | null)[]) => ds.filter((d): d is Date => d !== null).sort((a, b) => a.getTime() - b.getTime())[0] ?? null;
   return [...byTurn.entries()].map(([turnId, set]) => {
     const notices = set.filter((r) => r.kind === 'notice');
+    const escalations = set.filter((r) => r.kind === 'escalation');
+    // Only what reached a person: a ping the sender only logged is `skipped`, never `sent`.
     const sent = earliest(notices.filter((r) => r.state === 'sent').map((r) => r.sentAt));
+    const gmSent = earliest(escalations.filter((r) => r.state === 'sent').map((r) => r.sentAt));
+    const missed = missOf(notices);
+    const gmMissed = missOf(escalations);
     return {
       turnId,
       destination: set[0]!.destination,
       notifiedAt: iso(sent),
-      notNotified: sent === null && notices.every((r) => r.state === 'skipped' || r.state === 'failed'),
-      escalatedAt: iso(earliest(notices.map((r) => r.escalatedAt))),
+      notNotified: missed !== null,
+      notNotifiedWhy: missed,
+      escalatedAt: iso(gmSent),
+      gmNotNotified: gmMissed !== null,
+      gmNotNotifiedWhy: gmMissed,
       pickedUpAt: iso(earliest(notices.map((r) => r.pickedUpAt))),
     };
   });

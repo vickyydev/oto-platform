@@ -20,7 +20,7 @@ import {
   type DirectoryOutcome,
   type DirectoryNotificationAnswer,
 } from '../src/services/otoapp-directory';
-import { ADMIN, signInAs, teardownAll } from './helpers';
+import { ADMIN, RECEPTION, signInAs, teardownAll } from './helpers';
 import { aiLines, aiWorld, call, customer, decision, kb, nextPhone, simAccount, staff, teamOf, turnsOf, type AiWorld } from './inbox-ai-support';
 
 /**
@@ -35,12 +35,21 @@ import { aiLines, aiWorld, call, customer, decision, kb, nextPhone, simAccount, 
  *     and the birthday manager on duty at the park is told in the bell and by
  *     a WhatsApp ping, each a `handover_notification` row — no customer words
  *     in either;
+ *   - the same advice beside the opener: the opener goes, the line follows,
+ *     and the manager is told;
+ *   - any other Birthdays & Events hand-over (the party's details) tells nobody;
  *   - fifteen minutes on with nobody on the thread, ONE escalation to the GM's
  *     contact; a second sweep escalates nothing more;
- *   - a staff reply, or a person's assignment, before then: no escalation;
- *   - a park that names nobody: the hand-over is recorded "nobody to tell";
+ *   - a staff reply, a person's assignment, a date booked, the assistant
+ *     paused by a person, or a note, before then: no escalation;
+ *   - a park that names nobody: the hand-over is recorded "nobody to tell",
+ *     and the GM "not notified" too;
+ *   - THE JOB'S OWN SENDER (`buildNoticeSender`, which only logs): a phone-only
+ *     contact's ping is recorded skipped `PING_NOT_LIVE`, never sent, and the
+ *     pill says the manager was not notified;
  *   - the thread's detail carries what its pill says;
- *   - the branch setting, edited as the Console edits it;
+ *   - the branch setting, edited as the Console edits it, and never read by a
+ *     till login;
  *   - the directory door: `notify` posts the notice under the directory key.
  *
  * FICTIONAL TEST DATA throughout.
@@ -57,7 +66,7 @@ const BIRTHDAY_MANAGER = { name: 'ZZ TEST Birthday Manager', appUserId: 'zz-app-
 const GM = { name: 'ZZ TEST GM', appUserId: 'zz-app-user-gm', phone: '+66810008232', channel: 'telegram' } as const;
 const ADVICE = 'Hi! Which branch do you recommend for 12 kids?';
 
-/** The bell and the ping, captured. */
+/** The bell and the ping, captured: the capturing sender stands for a live one (`pingLive`). */
 const bell: DirectoryNotificationBody[] = [];
 const pings: Array<{ phone: string; message: string }> = [];
 let bellAnswer: (b: DirectoryNotificationBody) => DirectoryOutcome<DirectoryNotificationAnswer> = (b) => ({
@@ -74,6 +83,7 @@ const notices: HandoverNoticeDeps = {
     },
   },
   sender: { send: async (phone, message) => void pings.push({ phone, message }) },
+  pingLive: true,
 };
 
 /** One tick of `job:inbox.ai` with the captured bell and sender. */
@@ -81,6 +91,13 @@ const tick = (at: Date) =>
   runInboxAiJob(
     w.ctx.db,
     { runtime: w.ctx.app.inboxAi, channels: w.ctx.app.inboxChannels, storage: w.ctx.app.fileStorage, log: w.ctx.app.log, now: () => at, notices },
+    at,
+  );
+/** One tick with no notice senders: the notices wait for `job:inbox.handover_escalation`. */
+const tickWithoutNotices = (at: Date) =>
+  runInboxAiJob(
+    w.ctx.db,
+    { runtime: w.ctx.app.inboxAi, channels: w.ctx.app.inboxChannels, storage: w.ctx.app.fileStorage, log: w.ctx.app.log, now: () => at },
     at,
   );
 const after = (ms: number) => new Date(Date.now() + ms);
@@ -182,6 +199,15 @@ afterAll(async () => {
 });
 
 describe('SCRUM-823: the birthday manager on duty is told', () => {
+  it('a till login (reception) reads GET /branches without anybody’s contact', async () => {
+    const reception = await signInAs(w.ctx.app, RECEPTION.phone, RECEPTION.password);
+    const listed = await call<{ branches: Array<{ id: string; birthdayManagerContact: unknown; gmContact: unknown }> }>(w, reception, 'GET', '/branches');
+    expect(listed.status).toBe(200);
+    expect(listed.body.branches.length).toBeGreaterThan(0);
+    for (const b of listed.body.branches) expect({ bm: b.birthdayManagerContact, gm: b.gmContact }).toEqual({ bm: null, gm: null });
+    expect(JSON.stringify(listed.body)).not.toContain('8231');
+  });
+
   it('the branch setting: saved with the phone in E.164, read back by GET /branches, a non-number refused', async () => {
     const listed = await call<{ branches: Array<{ id: string; birthdayManagerContact: unknown; gmContact: unknown }> }>(w, adminCookie, 'GET', '/branches');
     const central = listed.body.branches.find((b) => b.id === w.central)!;
@@ -229,7 +255,7 @@ describe('SCRUM-823: the birthday manager on duty is told', () => {
     expect(bell).toHaveLength(1);
     expect(bell[0]).toMatchObject({ id: rows[0]!.id, recipientUserId: BIRTHDAY_MANAGER.appUserId, referenceType: 'inbox_conversation', referenceId: conv.id });
     expect(bell[0]!.body).toMatch(/advice asked/);
-    expect(pings).toEqual([{ phone: BIRTHDAY_MANAGER.phone, message: expect.stringMatching(/birthday family is waiting/) }]);
+    expect(pings).toEqual([{ phone: BIRTHDAY_MANAGER.phone, message: expect.stringMatching(/Birthdays & Events conversation is waiting/) }]);
     for (const words of [bell[0]!.title, bell[0]!.body, pings[0]!.message]) expect(words).not.toMatch(/recommend|12 kids|AI Test Guest/i);
     for (const words of [bell[0]!.body, pings[0]!.message]) expect(words).toContain('Central Floresta');
   });
@@ -274,7 +300,10 @@ describe('SCRUM-823: the birthday manager on duty is told', () => {
         destination: 'birthdays',
         notifiedAt: expect.any(String),
         notNotified: false,
+        notNotifiedWhy: null,
         escalatedAt: expect.any(String),
+        gmNotNotified: false,
+        gmNotNotifiedWhy: null,
         pickedUpAt: null,
       },
     ]);
@@ -316,6 +345,79 @@ describe('SCRUM-823: the birthday manager on duty is told', () => {
     expect(rows.every((r) => r.pickedUpAt !== null)).toBe(true);
   });
 
+  it('a date booked, the assistant paused by a person, or a note before then: picked up, no escalation', async () => {
+    const acts: Array<[string, (conversationId: string) => Promise<void>]> = [
+      [
+        'date booked',
+        async (conversationId) => {
+          await w.ctx.db.insert(s.inboxEvent).values({
+            id: newId(),
+            operatorId: w.oto,
+            conversationId,
+            kind: 'date_booked',
+            actorKind: 'account',
+            actorAccountId: agentId,
+            payload: {},
+          });
+        },
+      ],
+      [
+        'assistant paused',
+        async (conversationId) => {
+          const paused = await call(w, agentCookie, 'POST', `/inbox/conversations/${conversationId}/ai-pause`);
+          expect(paused.status, JSON.stringify(paused.body)).toBe(200);
+        },
+      ],
+      [
+        'note',
+        async (conversationId) => {
+          await w.ctx.db.insert(s.inboxNote).values({ id: newId(), operatorId: w.oto, conversationId, authorAccountId: agentId, body: null });
+        },
+      ],
+    ];
+    for (const [what, act] of acts) {
+      await quiet();
+      const { conv } = await handedOver();
+      await handedOverEarlier(conv.id);
+      await act(conv.id);
+      expect(await sweep(after(HANDOVER_ESCALATION_AFTER_MS + 60_000)), what).toMatchObject({ pickedUp: 1, escalated: 0 });
+      const rows = await noticesOf(conv.id);
+      expect(rows.filter((r) => r.kind === 'escalation'), what).toEqual([]);
+      expect(rows.every((r) => r.pickedUpAt !== null), what).toBe(true);
+    }
+  });
+
+  it('advice beside the opener: the opener goes, the birthday manager’s line follows, and the manager is told', async () => {
+    await quiet();
+    bell.length = 0;
+    pings.length = 0;
+    const opener = ["Amazing, thank you! We'd love to organize a party for you 🎈", 'What date are you thinking of, roughly how many people, and which branch?'];
+    const conv = await customer(w, birthdays, nextPhone(), "Hi! We'd like a birthday party for our son. Which branch do you recommend?");
+    w.fake.push({ kind: 'decision', decision: decision({ intent: 'birthday_party', intents: ['birthday_party', 'faq'], reason: 'CLEAR_INTENT', bubbles: opener }) });
+    expect((await tick(after(25_000))).handedOver).toBe(1);
+    const [turn] = await turnsOf(w, conv.id);
+    expect(turn).toMatchObject({ state: 'handed_over' });
+    const closing = await templateRow('closing_birthday', 'en');
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([...opener, closing.body]);
+    const rows = await noticesOf(conv.id);
+    expect(rows.map((r) => ({ kind: r.kind, channel: r.channel, intent: r.intent, state: r.state }))).toEqual([
+      { kind: 'notice', channel: 'app', intent: 'birthday_advice', state: 'sent' },
+      { kind: 'notice', channel: 'whatsapp', intent: 'birthday_advice', state: 'sent' },
+    ]);
+  });
+
+  it('any other Birthdays & Events hand-over (the party’s details) tells nobody: the approved scope is the advice question', async () => {
+    await quiet();
+    bell.length = 0;
+    pings.length = 0;
+    const conv = await customer(w, birthdays, nextPhone(), 'About 12 kids and 8 adults, at Central Floresta please.');
+    w.fake.push({ kind: 'decision', decision: decision({ intent: 'birthday_details', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }) });
+    expect((await tick(after(25_000))).handedOver).toBe(1);
+    expect(await noticesOf(conv.id)).toEqual([]);
+    expect(bell).toEqual([]);
+    expect(pings).toEqual([]);
+  });
+
   it('a park that names nobody: one row says so, the pill says "not notified", and it still escalates (to nobody, recorded)', async () => {
     await quiet();
     bell.length = 0;
@@ -331,7 +433,45 @@ describe('SCRUM-823: the birthday manager on duty is told', () => {
     const escalated = (await noticesOf(conv.id)).filter((r) => r.kind === 'escalation');
     expect(escalated.map((r) => ({ state: r.state, errorCode: r.errorCode }))).toEqual([{ state: 'skipped', errorCode: 'NO_CONTACT' }]);
     const detail = await call<{ handoverNotices: Array<Record<string, unknown>> }>(w, adminCookie, 'GET', `/inbox/conversations/${conv.id}`);
-    expect(detail.body.handoverNotices).toEqual([expect.objectContaining({ notifiedAt: null, notNotified: true, escalatedAt: expect.any(String) })]);
+    // Nobody reached: neither "notified" nor "escalated to GM", each with its reason.
+    expect(detail.body.handoverNotices).toEqual([
+      expect.objectContaining({
+        notifiedAt: null,
+        notNotified: true,
+        notNotifiedWhy: 'no_contact',
+        escalatedAt: null,
+        gmNotNotified: true,
+        gmNotNotifiedWhy: 'no_contact',
+      }),
+    ]);
+  });
+
+  it('the job’s own sender only logs: a phone-only contact’s ping is skipped PING_NOT_LIVE, never sent, and the pill says not notified', async () => {
+    await quiet();
+    const saved = await call(w, adminCookie, 'PATCH', `/branches/${w.chalong}`, {
+      birthdayManagerContact: { name: 'ZZ TEST Phone Only', appUserId: null, phone: '+66810008233', channel: 'telegram' },
+    });
+    expect(saved.status, JSON.stringify(saved.body)).toBe(200);
+    try {
+      const conv = await customer(w, chalongBirthdays, nextPhone(), ADVICE);
+      w.fake.push({ kind: 'decision', decision: recommendsCentral() });
+      expect((await tickWithoutNotices(after(25_000))).handedOver).toBe(1);
+      // The runner's job with its default deps: the env's directory and `buildNoticeSender`.
+      const job = buildDefaultJobs({ db: w.ctx.db, env: w.ctx.app.env, log: w.ctx.app.log, channels: [], inboxAi: w.ctx.app.inboxAi }).find(
+        (j) => j.name === HANDOVER_ESCALATION_JOB,
+      )!;
+      await job.run({ db: w.ctx.db, env: w.ctx.app.env, log: w.ctx.app.log, now: new Date() });
+      const rows = await noticesOf(conv.id);
+      expect(rows.map((r) => ({ channel: r.channel, state: r.state, errorCode: r.errorCode, sentAt: r.sentAt, target: r.target }))).toEqual([
+        { channel: 'telegram', state: 'skipped', errorCode: 'PING_NOT_LIVE', sentAt: null, target: maskPhone('+66810008233') },
+      ]);
+      const detail = await call<{ handoverNotices: Array<Record<string, unknown>> }>(w, adminCookie, 'GET', `/inbox/conversations/${conv.id}`);
+      expect(detail.body.handoverNotices).toEqual([
+        expect.objectContaining({ notifiedAt: null, notNotified: true, notNotifiedWhy: 'ping_logged_only' }),
+      ]);
+    } finally {
+      await call(w, adminCookie, 'PATCH', `/branches/${w.chalong}`, { birthdayManagerContact: null });
+    }
   });
 
   it('the app refusing the bell: that row failed with the app’s word, the ping still went', async () => {

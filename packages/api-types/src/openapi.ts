@@ -2629,7 +2629,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List branches the caller holds (archived hidden unless includeArchived) */
+        /** @description List branches the caller holds (archived hidden unless includeArchived). SCRUM-823 — the notice contacts (a person's phone) only where the caller holds admin:branch:update; null elsewhere. */
         get: {
             parameters: {
                 query?: {
@@ -35031,7 +35031,12 @@ export interface paths {
                                 destination: "birthdays" | "general" | "marketing" | "gm";
                                 notifiedAt: string | null;
                                 notNotified: boolean;
+                                /** @enum {string|null} */
+                                notNotifiedWhy: "no_contact" | "ping_logged_only" | "failed" | null;
                                 escalatedAt: string | null;
+                                gmNotNotified: boolean;
+                                /** @enum {string|null} */
+                                gmNotNotifiedWhy: "no_contact" | "ping_logged_only" | "failed" | null;
                                 pickedUpAt: string | null;
                             }[];
                         };

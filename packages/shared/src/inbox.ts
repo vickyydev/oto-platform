@@ -424,18 +424,30 @@ export type InboxConversationEvent = z.infer<typeof InboxConversationEventSchema
 export const beoPathOf = (eventId: string, opts: { aiFill?: boolean } = {}): string =>
   `/studio/events/kanban?beo=${eventId}${opts.aiFill ? '&fill=inbox' : ''}`;
 
+/**
+ * SCRUM-823 — why a hand-over's notices told nobody: no contact named for the
+ * park, the phone ping only written to the log (the WhatsApp or Telegram
+ * sender is not live yet), or the sending failed.
+ */
+export const InboxHandoverNoticeMissSchema = z.enum(['no_contact', 'ping_logged_only', 'failed']);
+export type InboxHandoverNoticeMiss = z.infer<typeof InboxHandoverNoticeMissSchema>;
+
 /** SCRUM-823 — one assistant hand-over's notices, as the thread's pill reads them. */
 export const InboxHandoverNoticeSchema = z.object({
   /** The assistant turn that handed the thread over (the `ai_handover` pill's `turnId`). */
   turnId: Uuid,
   destination: InboxCategorySchema,
-  /** When the birthday manager on duty was first told (the bell or the ping); null when nobody was. */
+  /** When the birthday manager on duty was first told by a notice that reached a person; null when none did. */
   notifiedAt: Iso.nullable(),
-  /** Nobody to tell (no contact named for the park), or every notice failed. */
+  /** Every notice to the manager ended without reaching a person; `notNotifiedWhy` says why. */
   notNotified: z.boolean(),
-  /** When the GM was told because nobody had picked the thread up within fifteen minutes. */
+  notNotifiedWhy: InboxHandoverNoticeMissSchema.nullable(),
+  /** When the GM was told, by an escalation that reached a person, because nobody had picked the thread up within fifteen minutes. */
   escalatedAt: Iso.nullable(),
-  /** When a person took the thread (a reply, an assignment, handled), as the sweep saw it. */
+  /** The hand-over was escalated and the GM was not reached; `gmNotNotifiedWhy` says why. */
+  gmNotNotified: z.boolean(),
+  gmNotNotifiedWhy: InboxHandoverNoticeMissSchema.nullable(),
+  /** When a person first acted on the thread after the hand-over, as the sweep saw it. */
   pickedUpAt: Iso.nullable(),
 });
 export type InboxHandoverNotice = z.infer<typeof InboxHandoverNoticeSchema>;
@@ -482,7 +494,7 @@ export const InboxConversationDetailSchema = InboxConversationRowSchema.extend({
    * entry per hand-over, oldest first: when the birthday manager on duty was
    * notified (null with nobody to tell, `notNotified`), when the GM was told
    * because nobody picked it up in fifteen minutes, and when a person took it.
-   * Empty for a thread whose hand-overs told nobody (any but Birthdays & Events).
+   * Empty for a thread with no advice hand-over in Birthdays & Events (the only one that tells a person).
    * Optional: an api from before SCRUM-823 sends none, and the pill then says
    * nothing of it.
    */
