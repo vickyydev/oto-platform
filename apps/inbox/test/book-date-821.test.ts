@@ -189,6 +189,57 @@ describe('the pattern reading first, the model after', () => {
   });
 });
 
+// The same with Thai typed fast: "เดก" for เด็ก, "ผูใหญ่" for ผู้ใหญ่, "ธันวา" for
+// ธันวาคม, "บ่าย2โมง" run together. The pattern reading skips the short month, and
+// with no date in the line the time as well; it never reads adults, and its kids
+// come only from "10 คน".
+const THAI_TYPOS = [msg('อยากจัดวันเกิดน้องมะลิ ครบ 5 ขวบ 15 ธันวา บ่าย2โมง เดก 10 คน ผูใหญ่ 6 คน')];
+const THAI_MODEL = answer({
+  date: family('2026-12-15', '15 ธันวา'),
+  startTime: family('14:00', 'บ่าย2โมง'),
+  kids: family(10, 'เดก 10 คน'),
+  adults: family(6, 'ผูใหญ่ 6 คน'),
+  childName: family('มะลิ', 'น้องมะลิ'),
+  childAge: family(5, 'ครบ 5 ขวบ'),
+});
+
+describe('Thai typed with typos reaches the merge', () => {
+  const pattern = draftOf('th', THAI_TYPOS);
+
+  it('the pattern reading alone misses the date, the time, the adults and the child’s name', () => {
+    // 14:00 with no words is the Events module's default, no reading of the chat.
+    expect(pattern).toMatchObject({ date: '', dateFrom: '', startTime: DEFAULT_START_TIME, timeFrom: '', kids: '10', adults: '', childName: '', childAge: '5' });
+  });
+
+  it('the model’s values fill what the pattern missed, each with the family’s words as written; where both read the same, no choice', () => {
+    const merged = mergeBookDateProposal(freshBookDate(pattern), THAI_MODEL, BRANCH_IDS);
+    expect(merged.draft).toMatchObject({
+      date: '2026-12-15',
+      dateFrom: '15 ธันวา',
+      startTime: '14:00',
+      timeFrom: 'บ่าย2โมง',
+      kids: '10',
+      adults: '6',
+      childName: 'มะลิ',
+      childAge: '5',
+      branchId: CENTRAL,
+    });
+    expect(merged.sources.date).toEqual({ text: '15 ธันวา', source: 'family' });
+    expect(merged.sources.startTime).toEqual({ text: 'บ่าย2โมง', source: 'family' });
+    expect(merged.sources.kids).toEqual({ text: 'เดก 10 คน', source: 'family' });
+    expect(merged.sources.adults).toEqual({ text: 'ผูใหญ่ 6 คน', source: 'family' });
+    expect(merged.choices).toEqual({});
+    expect(pendingChoice(merged)).toBeNull();
+    expect(readDraft(merged.draft)).toMatchObject({ values: { date: '2026-12-15', kids: 10, adults: 6, startTime: '14:00' } });
+
+    const html = dialog(pattern, THAI_MODEL);
+    expect(html).toMatch(/aria-label="Adults"[^>]*value="6"/);
+    expect(html).toContain('The chat says “ผูใหญ่ 6 คน”');
+    expect(html).toContain('The chat says “เดก 10 คน”');
+    expect(html).toContain('from the family');
+  });
+});
+
 describe('what the person edited is theirs', () => {
   it('an edited field keeps the person’s value; the others still take the model’s', () => {
     const pattern = draftOf('en', ENGLISH_TYPOS);

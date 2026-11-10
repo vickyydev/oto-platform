@@ -300,6 +300,42 @@ describe('GET /inbox/conversations/{id}/book-date-proposal — three languages, 
     });
   });
 
+  it('Thai with typos: "เดก 10 คน ผูใหญ่ 6 คน", "15 ธันวา", "บ่าย2โมง" come back as the family wrote them', async () => {
+    const text = 'อยากจัดวันเกิดน้องมะลิ ครบ 5 ขวบ 15 ธันวา บ่าย2โมง เดก 10 คน ผูใหญ่ 6 คน';
+    const { conv, first } = await bday(text, 'th');
+    fake.push({
+      kind: 'reading',
+      reading: {
+        date: at(next(12, 15), 1, '15 ธันวา'),
+        startTime: at('14:00', 1, 'บ่าย2โมง'),
+        kids: at(10, 1, 'เดก 10 คน'),
+        adults: at(6, 1, 'ผูใหญ่ 6 คน'),
+        childName: at('มะลิ', 1, 'น้องมะลิ'),
+        childAge: at(5, 1, 'ครบ 5 ขวบ'),
+      },
+    });
+    const res = await propose('gm', conv);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(InboxBookDateProposalSchema.safeParse(res.body).success).toBe(true);
+    const from = { source: 'family', messageId: first };
+    expect(res.body).toMatchObject({
+      conversationId: conv,
+      model: 'ai',
+      proposal: {
+        date: { value: next(12, 15), text: '15 ธันวา', ...from },
+        startTime: { value: '14:00', text: 'บ่าย2โมง', ...from },
+        kids: { value: 10, text: 'เดก 10 คน', ...from },
+        adults: { value: 6, text: 'ผูใหญ่ 6 คน', ...from },
+        childName: { value: 'มะลิ', text: 'น้องมะลิ', ...from },
+        childAge: { value: 5, text: 'ครบ 5 ขวบ', ...from },
+        branchHint: null,
+      },
+    });
+    // The pattern reader skips the short month "ธันวา", and with no date in the line the time as well.
+    expect(res.body.patternReading).toMatchObject({ date: null, startTime: null });
+    expect(fake.requests[0]!.lines).toEqual([{ by: 'family', at: expect.stringMatching(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/), text }]);
+  });
+
   it('English with typos: "12 kds and 4 adust, sat 21 novmber 2pm"', async () => {
     const text = 'hi! party for my daughter Emma turning 7, 12 kds and 4 adust, sat 21 novmber 2pm';
     const { conv, first } = await bday(text);

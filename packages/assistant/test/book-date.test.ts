@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   AnthropicBookDateReader,
+  BOOK_DATE_READER_VERSION,
   BOOK_DATE_SYSTEM_TEXT,
   EMPTY_BOOK_DATE_READING,
   buildBookDatePrompt,
@@ -37,6 +38,19 @@ describe('the prompt', () => {
     expect(content).toContain('{"line":1,"by":"family","at":"2026-11-09 10:12"');
     expect(content).toContain('{"line":2,"by":"team"');
     expect(content).toContain(`{"id":"${CENTRAL}","name":"Central Floresta","code":"hkt-central"}`);
+  });
+
+  it('a misspelling in each of the park’s three languages, read by meaning; the words versioned', () => {
+    // English and Russian.
+    expect(BOOK_DATE_SYSTEM_TEXT).toContain('"adust" and "adlts" are adults');
+    expect(BOOK_DATE_SYSTEM_TEXT).toContain('"novmber" is November');
+    expect(BOOK_DATE_SYSTEM_TEXT).toContain('"детй" is детей');
+    expect(BOOK_DATE_SYSTEM_TEXT).toContain('"ноабря" is ноября');
+    // Thai: a dropped tone or vowel mark, and the month's short forms.
+    expect(BOOK_DATE_SYSTEM_TEXT).toContain('"เดก" is เด็ก');
+    expect(BOOK_DATE_SYSTEM_TEXT).toContain('"ผูใหญ่" is ผู้ใหญ่');
+    expect(BOOK_DATE_SYSTEM_TEXT).toContain('"ธันวา" and "ธ.ค." are ธันวาคม');
+    expect(BOOK_DATE_READER_VERSION).toBe('book-date-2026-11-10.2');
   });
 });
 
