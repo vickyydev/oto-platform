@@ -15,14 +15,16 @@
  */
 
 import { createHash } from 'node:crypto';
-import { formatTHB, isoDateInTz, type Satang } from '@oto/shared';
+import { formatTHB, isoDateInTz, type InboxOpenQuestionState, type Satang } from '@oto/shared';
 import { AI_REASON_CODES, type AiBranchKey, type AiReplyLanguage } from './decision';
-import type { GroundingSource } from './gate';
+import type { GroundingSource, RepeatKind } from './gate';
 import {
+  AI_ASKED_SLOTS,
   AI_INTENTS,
   AI_KB_TOPICS,
   INTENT_TABLE,
   birthdayThreadOf,
+  type AiAskedSlot,
   type AiIntent,
   type AiKbTopic,
   type BirthdayThreadFacts,
@@ -606,7 +608,109 @@ export const BIRTHDAY_THREAD_LINES = {
     'A message here that asks you for advice, a recommendation or a choice ("Which branch is better for us?", "What would you suggest for 15 kids?", "Какой пакет вы посоветуете?", "Можно ли прийти со своим аниматором?", "สาขาไหนดีกว่าคะ", "แนะนำแพ็กเกจไหนคะ") is birthday_advice: no words of your own, the birthday manager advises. A family that only says they want a party still gets birthday_party first, the one combined question.',
 } as const;
 
-function buildUserTurn(episode: readonly EpisodeMessage[], context: TurnContext, rethink?: RethinkHint): string {
+// ---------------------------------------------------------------------------
+// SCRUM-831: the open-question memory, below the breakpoint
+// ---------------------------------------------------------------------------
+
+/** What each slot asks, in the words the model and the hint read. */
+export const SLOT_MEANING: Readonly<Record<AiAskedSlot, string>> = {
+  date: 'the date (of the party or the visit)',
+  time: 'the time',
+  park: 'which park, Central Floresta or Robinson Chalong',
+  kids_count: 'how many children',
+  adults_count: 'how many adults',
+  guests_count: 'roughly how many people',
+  child_age: "the child's age",
+  child_name: "the child's name",
+  package: 'which package',
+  residency: 'whether they live in Thailand or are visiting',
+  other: 'something else',
+};
+
+/**
+ * One question the assistant asked earlier this episode, as the prompt shows
+ * it: what it asked, when, and what the customer's reply was read as.
+ */
+export interface MemoryQuestion {
+  slot: AiAskedSlot;
+  askedAt: Date;
+  state: InboxOpenQuestionState;
+  /** The answer as read; null for a free answer (a name, never kept) and while open. */
+  answer: string | null;
+}
+
+/** SCRUM-831: the episode's questions, the memory the turn is decided with. */
+export interface PromptMemory {
+  /** Oldest first. Empty on a thread where nothing was asked yet: the declaration and age lines still ride. */
+  questions: readonly MemoryQuestion[];
+}
+
+/**
+ * SCRUM-831: the second pass of a turn whose first draft asked again what the
+ * repeat guard refuses (`repeatGuard`): the slot, why, and the customer's
+ * answer when there is one — given as a fact, beside the conversation.
+ */
+export interface RepeatHint {
+  slot: AiAskedSlot;
+  kind: Exclude<RepeatKind, 'asked_twice'>;
+  answer: string | null;
+}
+
+/** "8 years old", "the 2026-11-14", "Central Floresta": an answer as the fact the rethink is given. */
+export function slotFactOf(slot: AiAskedSlot, answer: string | null): string {
+  if (answer === null) return `${SLOT_MEANING[slot]}: they answered it (see the conversation)`;
+  if (slot === 'child_age') return /month/u.test(answer) ? answer : `${answer} years old`;
+  if (slot === 'park') return answer === 'chalong' ? 'Robinson Chalong' : answer === 'central' ? 'Central Floresta' : answer;
+  return `${SLOT_MEANING[slot]}: ${answer}`;
+}
+
+export const MEMORY_LINES = {
+  declare: `askedSlots: when a bubble of yours asks the customer something, list what it asks, from ${AI_ASKED_SLOTS.join(', ')} ("other" for anything else); empty when no bubble asks anything. The combined birthday question lists each part it asks.`,
+  rule:
+    '<asked_before> is what you already asked the customer in this conversation, and how the server read their reply. An open question is what the customer\'s newest message most likely answers: read it as that answer. Never ask an answered question again: use the answer. A question asked twice with no answer is never asked a third time.',
+  age: "Ask the child's age only when the answer changes what you say (the drop-off and nanny age rules, the Golden Ticket by age, a party package's age band, the age rules), and only once: never as a reflex.",
+} as const;
+
+export const REPEAT_LINES: Readonly<Record<RepeatHint['kind'], string>> = {
+  answered:
+    'Your first reply asked the customer again for what <already_answered> names, and they had already answered it. Decide this turn again without asking it: use what they said.',
+  not_needed:
+    "Your first reply asked the child's age, and nothing the customer asked depends on it. Decide this turn again without asking the age.",
+};
+
+function memoryLines(memory: PromptMemory | undefined): string[] {
+  if (!memory) return [];
+  const asked =
+    memory.questions.length === 0
+      ? []
+      : [
+          '<asked_before>',
+          ...memory.questions.map((q) =>
+            inertJson({ slot: q.slot, what: SLOT_MEANING[q.slot], asked: bangkokStamp(q.askedAt), state: q.state, answer: q.answer }),
+          ),
+          '</asked_before>',
+          MEMORY_LINES.rule,
+        ];
+  return [...asked, MEMORY_LINES.declare, MEMORY_LINES.age];
+}
+
+function repeatLines(repeat: RepeatHint | undefined): string[] {
+  if (!repeat) return [];
+  return [
+    '<already_answered>',
+    inertJson({ slot: repeat.slot, what: SLOT_MEANING[repeat.slot], customerAlreadySaid: slotFactOf(repeat.slot, repeat.answer) }),
+    '</already_answered>',
+    REPEAT_LINES[repeat.kind],
+  ];
+}
+
+function buildUserTurn(
+  episode: readonly EpisodeMessage[],
+  context: TurnContext,
+  rethink?: RethinkHint,
+  memory?: PromptMemory,
+  repeat?: RepeatHint,
+): string {
   const ctx = {
     now: `${bangkokStamp(context.now)} (${WEEKDAY_NAME.format(context.now)}, Bangkok)`,
     threadBranch: context.threadBranch,
@@ -638,6 +742,8 @@ function buildUserTurn(episode: readonly EpisodeMessage[], context: TurnContext,
     ...lines,
     '</conversation>',
     ...party,
+    ...memoryLines(memory),
+    ...repeatLines(repeat),
     ...second,
     'Decide this turn.',
   ].join('\n');
@@ -651,6 +757,15 @@ export interface PromptInput {
   rethink?: RethinkHint;
   /** SCRUM-696: approved operator rules that apply to this thread. Empty or absent: the prompt is byte-identical to before. */
   rules?: readonly OperatorRuleInput[];
+  /**
+   * SCRUM-831: the open-question memory — what was asked this episode and how
+   * each reply was read, the askedSlots declaration and the age rule. Rides
+   * below the breakpoint, after the conversation; blocks 1 and 2 and the
+   * persona version are untouched. Absent: the user turn is byte-identical to before.
+   */
+  memory?: PromptMemory;
+  /** SCRUM-831: the second pass of a turn whose first draft asked again (the repeat guard's rethink). */
+  repeat?: RepeatHint;
 }
 
 export function buildPrompt(input: PromptInput): PromptResult {
@@ -678,7 +793,7 @@ export function buildPrompt(input: PromptInput): PromptResult {
           cache_control: { type: 'ephemeral', ttl: '1h' },
         },
       ],
-      messages: [{ role: 'user', content: buildUserTurn(input.episode, input.context, input.rethink) }],
+      messages: [{ role: 'user', content: buildUserTurn(input.episode, input.context, input.rethink, input.memory, input.repeat) }],
       personaVersion: PERSONA_VERSION,
       kbVersion,
       grounding: input.knowledge.grounding,

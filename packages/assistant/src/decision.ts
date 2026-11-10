@@ -7,7 +7,7 @@
  */
 
 import { z } from 'zod/v4';
-import { AI_INTENTS, MAX_INTENTS } from './intents';
+import { AI_ASKED_SLOTS, AI_INTENTS, MAX_ASKED_SLOTS, MAX_INTENTS } from './intents';
 
 /**
  * Languages the model may report. Until the playbook anything but th/en/ru
@@ -71,6 +71,14 @@ export const AiDecisionSchema = z.object({
   branchNamed: z.enum(AI_BRANCH_KEYS).nullable(),
   askBranch: z.boolean(),
   reason: z.enum(AI_REASON_CODES),
+  /**
+   * SCRUM-831: what the bubbles ask the customer for, when they ask anything
+   * (`AI_ASKED_SLOTS`; the combined birthday question names each part).
+   * Empty or absent when nothing is asked. Optional only so a decision
+   * recorded before it existed still parses (the golden replays); the server
+   * also reads the question from the bubbles themselves (`slotsAskedIn`).
+   */
+  askedSlots: z.array(z.enum(AI_ASKED_SLOTS)).max(MAX_ASKED_SLOTS).optional(),
 });
 export type AiDecision = z.infer<typeof AiDecisionSchema>;
 
@@ -133,6 +141,11 @@ export const AI_OUTCOME_REASONS = [
   // else, and the one rethink did not produce a reply it could send: the
   // turn became the unclear hand-over.
   'WRONG_TOPIC',
+  // SCRUM-831: the reply asked the customer again for what they already
+  // answered (or a third time, or the child's age where it changes nothing),
+  // and the one rethink did not drop the question: the turn became the
+  // hand-over to the thread's team with its warm holding line.
+  'REPEAT_QUESTION',
   // SCRUM-220 playbook ("Message sources"): the turn is a silent hand-over
   // (`GateVerdict` `silent_handover`) — a child currently in our care, or
   // lost and found. The gate emits it from the intent table; the engine

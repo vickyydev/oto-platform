@@ -10,6 +10,7 @@
     "./permissions": "./src/permissions.ts",
     "./i18n": "./src/i18n/index.ts",
     "./inbox": "./src/inbox.ts",
+    "./inbox-open-question": "./src/inbox-open-question.ts",
     "./inbox-reply": "./src/inbox-reply.ts",
     "./chat-dates": "./src/chat-dates.ts",
     "./handoff-target": "./src/handoff-target.ts",

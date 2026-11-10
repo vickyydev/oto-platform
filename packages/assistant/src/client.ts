@@ -85,6 +85,12 @@ export type AssistantOutcome =
 
 export interface AssistantRequest {
   prompt: BuiltPrompt;
+  /**
+   * SCRUM-831: this call's reasoning effort, when it is not the client's own
+   * (an open-question turn may run at `medium`, by the engine's config).
+   * Absent: the client's effort, as before.
+   */
+  effort?: AiEffort;
 }
 
 export interface AssistantClient {
@@ -273,7 +279,7 @@ export class AnthropicAssistantClient implements AssistantClient {
    * can read `stop_reason`, so a reply cut off at max_tokens would surface as
    * a parse error. Here the stop reason is read first (`interpretReply`).
    */
-  async decide({ prompt }: AssistantRequest): Promise<AssistantOutcome> {
+  async decide({ prompt, effort }: AssistantRequest): Promise<AssistantOutcome> {
     const started = this.now();
     const fallback = supportsServerFallback(this.model);
     try {
@@ -283,7 +289,7 @@ export class AnthropicAssistantClient implements AssistantClient {
           max_tokens: MAX_OUTPUT_TOKENS,
           system: prompt.system,
           messages: prompt.messages,
-          output_config: { effort: this.effort, format: DECISION_FORMAT },
+          output_config: { effort: effort ?? this.effort, format: DECISION_FORMAT },
           ...(fallback ? { betas: [FALLBACK_BETA], fallbacks: 'default' as const } : {}),
         },
         { timeout: this.timeoutMs, maxRetries: this.maxRetries },

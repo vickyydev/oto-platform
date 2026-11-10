@@ -72,6 +72,8 @@ export * from './display-date';
 export * from './chat-dates';
 export * from './scanner-burst';
 export * from './inbox';
+// SCRUM-831: the assistant's open questions (the slot vocabulary and the inbox's view of them).
+export * from './inbox-open-question';
 export * from './inbox-actions';
 export * from './inbox-reply';
 export * from './inbox-ai';

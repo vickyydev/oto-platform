@@ -60,6 +60,8 @@ export * from './decision';
 export * from './guards';
 export * from './gate';
 export * from './advice';
+// SCRUM-831: the slot reader (what a reply asks, what an answer says).
+export * from './slots';
 export * from './persona';
 export * from './prompt';
 export * from './pacing';

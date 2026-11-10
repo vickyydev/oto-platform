@@ -27,6 +27,8 @@
  */
 
 import type { InboxCategoryKey } from '@oto/shared';
+// A subpath, not the barrel: the inbox imports this file in the browser (`@oto/assistant/intents`).
+import { INBOX_AI_ASKED_SLOTS, type InboxAiAskedSlot } from '@oto/shared/inbox-open-question';
 import type { AiBranchKey } from './decision';
 
 export const AI_INTENTS = [
@@ -479,3 +481,84 @@ export const ASK_FIRST_IGNORED_INTENTS: readonly AiIntent[] = [
   'identity_question',
   'other',
 ];
+
+// ---------------------------------------------------------------------------
+// SCRUM-831: the slots a reply may ask the customer
+// ---------------------------------------------------------------------------
+
+/**
+ * SCRUM-831 (owner, 10 Nov: "the memory is the primary mechanism; the guard
+ * is the last net"): what a reply's question asks the customer for. The model
+ * names it in its decision (`askedSlots`), the server records it as the
+ * conversation's open question, and the customer's next message is read as
+ * its answer. `other` is a question the memory does not track. One list with
+ * the table's CHECK and the inbox (`@oto/shared` `INBOX_AI_ASKED_SLOTS`).
+ */
+export const AI_ASKED_SLOTS = INBOX_AI_ASKED_SLOTS;
+export type AiAskedSlot = InboxAiAskedSlot;
+
+/** The most slots one reply asks: the playbook's combined birthday question asks three (dates, headcount, branch). */
+export const MAX_ASKED_SLOTS = 4;
+
+/**
+ * SCRUM-831: the slots each intent's flow in the playbook may ask, from its
+ * rows (`PLAYBOOK_LINES`, `PRICING_RULE`, the park question):
+ *
+ *   - the birthday open asks dates, roughly how many people and which branch,
+ *     as ONE question; the party packages' age bands make the child's age
+ *     matter there too;
+ *   - the price conversation asks the branch and residency together;
+ *   - a general enquiry may ask which park when the thread has none;
+ *   - the drop-off service's and the nanny's age rules, the Golden Ticket's
+ *     "what is included by age" and the age rules themselves are the places
+ *     the child's age changes the answer; the nanny booking asks the day and
+ *     the time.
+ *
+ * The CHILD'S AGE is asked only where a turn's intent lists it here
+ * (`AGE_SLOT_INTENTS`): never as a reflex (`repeatGuard`, kind `not_needed`).
+ */
+export const INTENT_SLOTS: Readonly<Record<AiIntent, readonly AiAskedSlot[]>> = {
+  greeting: [],
+  hours: ['park'],
+  address: ['park'],
+  directions_parking: ['park'],
+  ticket_prices: ['park', 'residency'],
+  discount_negotiation: [],
+  discount_insist: [],
+  age_rules: ['park', 'child_age'],
+  socks: ['park'],
+  about_oto: ['park'],
+  faq: ['park'],
+  thanks_closing: [],
+  identity_question: [],
+  birthday_party: ['date', 'guests_count', 'kids_count', 'adults_count', 'park', 'child_age'],
+  birthday_details: [],
+  birthday_cake: [],
+  birthday_brochure: ['child_age'],
+  // SCRUM-823: an advice hand-over asks nothing; a person takes the choice.
+  birthday_advice: [],
+  special_event: [],
+  camps: [],
+  special_tickets: ['child_age'],
+  special_tickets_buy: [],
+  events_groups: [],
+  nanny_booking: ['child_age', 'date', 'time'],
+  drop_off_service: ['child_age', 'park'],
+  drop_off_care: [],
+  lost_item: [],
+  complaint_onsite: [],
+  complaint_online: [],
+  refund_request: [],
+  influencer_marketing: [],
+  job_request: [],
+  photography_question: [],
+  custom_request: [],
+  human_requested: [],
+  emotional_or_unclear: [],
+  other: [],
+};
+
+/** SCRUM-831: the intents whose answer the child's age changes (the drop-off and nanny age rules, the party packages' age bands, the Golden Ticket by age, the age rules). */
+export const AGE_SLOT_INTENTS: ReadonlySet<AiIntent> = new Set<AiIntent>(
+  AI_INTENTS.filter((i) => INTENT_SLOTS[i].includes('child_age')),
+);

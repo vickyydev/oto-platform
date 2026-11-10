@@ -37,7 +37,7 @@
  * A silent or a person-first part anywhere in the burst keeps its own verdict.
  */
 
-import { mentionsPartyDate, mentionsPartyTime } from '@oto/shared';
+import { mentionsPartyDate, mentionsPartyTime, type InboxOpenQuestionState } from '@oto/shared';
 import { adviceAfterOpener, adviceAlone, adviceOverruledVerdict, birthdayAdviceOverrule, openerBesideAdvice } from './advice';
 import {
   AI_REPLY_LANGUAGES,
@@ -58,6 +58,7 @@ import {
   type GuardResult,
 } from './guards';
 import {
+  AGE_SLOT_INTENTS,
   BIRTHDAY_DATE_OVERRULED,
   BIRTHDAY_INTENTS,
   BIRTHDAYS_PLAN,
@@ -69,6 +70,7 @@ import {
   birthdayThreadOf,
   intentPartsOf,
   resolvePlan,
+  type AiAskedSlot,
   type AiGroundingTopic,
   type AiHandoverPlan,
   type AiIntent,
@@ -625,3 +627,93 @@ function gate({ decision: d, grounding, episode }: GateInput): GateVerdict {
     languageOffer: offer === 'ru' || offer === 'th' ? offer : null,
   };
 }
+
+// ---------------------------------------------------------------------------
+// SCRUM-831: the repeat guard, the last net
+// ---------------------------------------------------------------------------
+
+/**
+ * One question the assistant asked earlier in the episode, as the memory
+ * holds it (`inbox.conversation_open_question`): its slot, its standing, and
+ * the answer the customer's reply was read as (null for a free answer, a
+ * name, which is never kept, and while it is open).
+ */
+export interface EpisodeQuestion {
+  slot: AiAskedSlot;
+  state: InboxOpenQuestionState;
+  answer: string | null;
+}
+
+/**
+ * Why a draft's question is refused: the customer already ANSWERED it; it
+ * was already asked twice and never answered (`asked_twice`); or it asks the
+ * child's age where the playbook's answer does not depend on it
+ * (`not_needed`: the age only where the drop-off and nanny age rules, the
+ * party packages' age bands, the Golden Ticket or the age rules need it).
+ */
+export const REPEAT_KINDS = ['answered', 'asked_twice', 'not_needed'] as const;
+export type RepeatKind = (typeof REPEAT_KINDS)[number];
+
+export interface RepeatRefusal {
+  slot: AiAskedSlot;
+  kind: RepeatKind;
+  /** What the customer said, as read: the fact the rethink is given. Null when nothing was kept. */
+  answer: string | null;
+  /** How often the slot was asked before this draft, this episode. */
+  asks: number;
+}
+
+/** Asked this often with no answer, the slot is not asked again: a person takes the thread. */
+export const REPEAT_UNANSWERED_ASKS = 2;
+
+const REPEAT_RANK: Readonly<Record<RepeatKind, number>> = { answered: 0, asked_twice: 1, not_needed: 2 };
+
+/**
+ * SCRUM-831, THE REPEAT GUARD (the last net; the memory in the prompt is the
+ * primary mechanism): a draft that asks a slot the customer already answered
+ * this episode, or one asked twice already with no answer, or the child's age
+ * where none of the turn's intents needs it, is refused. Pure: fed the slots
+ * the draft asks (`askedSlotsOf`), the episode's questions and the turn's
+ * intents. Null when the draft may go. With several, the strongest reason
+ * wins: an answer the customer gave, then two unanswered asks, then the age.
+ */
+export function repeatGuard(input: {
+  asked: readonly AiAskedSlot[];
+  questions: readonly EpisodeQuestion[];
+  intents: readonly AiIntent[];
+}): RepeatRefusal | null {
+  let found: RepeatRefusal | null = null;
+  for (const slot of input.asked) {
+    if (slot === 'other') continue;
+    const before = input.questions.filter((q) => q.slot === slot);
+    const answered = before.find((q) => q.state === 'answered');
+    const refusal: RepeatRefusal | null = answered
+      ? { slot, kind: 'answered', answer: answered.answer, asks: before.length }
+      : before.length >= REPEAT_UNANSWERED_ASKS
+        ? { slot, kind: 'asked_twice', answer: null, asks: before.length }
+        : slot === 'child_age' && !input.intents.some((i) => AGE_SLOT_INTENTS.has(i))
+          ? { slot, kind: 'not_needed', answer: null, asks: before.length }
+          : null;
+    if (refusal && (!found || REPEAT_RANK[refusal.kind] < REPEAT_RANK[found.kind])) found = refusal;
+  }
+  return found;
+}
+
+/**
+ * What the engine does with a refusal: decide the turn once more with the
+ * fact given ("the customer already said: 8"), and hand over when the second
+ * draft still asks it. Two unanswered asks hand over at once: there is no
+ * fact to give, and a third ask is what the owner's case was.
+ */
+export function repeatStep(refusal: RepeatRefusal, rethought: boolean): 'rethink' | 'handover' {
+  if (refusal.kind === 'asked_twice') return 'handover';
+  return rethought ? 'handover' : 'rethink';
+}
+
+/**
+ * The hand-over a refused repeat ends in: the thread stays with its own team
+ * (`keep`), and the destination's warm closing line goes (the birthday
+ * manager's on a Birthdays & Events thread), the general line where it has
+ * none. Never silence on a main channel (owner ruling, 28 Oct).
+ */
+export const REPEAT_HANDOVER: AiHandoverPlan = { templateKey: 'handover_general', route: 'keep', brochure: false };
