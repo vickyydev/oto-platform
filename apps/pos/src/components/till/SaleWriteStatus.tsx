@@ -133,6 +133,7 @@ export function SaleWriteFailure({
   // commit, or the counter's box at the money press — took nothing and saved
   // nothing anywhere, whichever call it answered. Its words stand as they came.
   const stockRefused = isStockRefusalCode(state.code);
+  const receiptPrefixInUse = state.code === 'RECEIPT_PREFIX_IN_USE';
   const boxPaymentUnconfirmed = state.stage === 'finalise' && state.heldOn === 'till' && state.cause !== 'refused';
   const headline =
     state.stage === 'commit' || stockRefused
@@ -162,7 +163,9 @@ export function SaleWriteFailure({
           )}
           <p className="mt-1 text-sm text-muted-foreground">{state.message}</p>
           <p className="mt-2 text-sm text-muted-foreground">
-            {stockRefused && state.code ? stockRefusalAdvice(state.code) : advice(state.cause, state.answeredBy)}
+            {receiptPrefixInUse
+              ? 'A manager needs to change this till’s receipt prefix in the Console. Then return to the order and confirm the payment again.'
+              : stockRefused && state.code ? stockRefusalAdvice(state.code) : advice(state.cause, state.answeredBy)}
           </p>
           <p className="mt-2 font-mono text-xs text-muted-foreground">Sale {state.saleId}</p>
           <div className="mt-4 flex items-center gap-3">

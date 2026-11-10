@@ -3954,8 +3954,8 @@ export async function commitSale(
       // sale is refused rather than printed under a number another receipt
       // already carries.
       throw errors.conflict(
-        'RECEIPT_NUMBER_TAKEN',
-        'That receipt number is already used at this station',
+        'RECEIPT_PREFIX_IN_USE',
+        `Receipt prefix ${st.codePrefix} is already in use at this park. Ask a manager to choose a different prefix for this till, then return to the order and confirm the payment again.`,
       );
     }
     throw error;
@@ -5096,17 +5096,21 @@ export async function finaliseSale(
     receipt.number,
   );
 
-  const updated = await tx
-    .update(sale)
-    .set({
-      status: 'finalised',
-      finalisedAt: now,
-      receiptSeries: receipt.series,
-      receiptSeq: receipt.seq,
-      receiptNumber: receipt.number,
-    })
-    .where(eq(sale.id, saleId))
-    .returning();
+  const updated = await tx.update(sale).set({
+    status: 'finalised',
+    finalisedAt: now,
+    receiptSeries: receipt.series,
+    receiptSeq: receipt.seq,
+    receiptNumber: receipt.number,
+  }).where(eq(sale.id, saleId)).returning().catch((error: unknown) => {
+    // SCRUM-809: legacy duplicate prefixes can reach payment even after the
+    // station form is fixed. The whole tender transaction still rolls back.
+    if (violates(error, 'sale_receipt_unique') || violates(error, 'sale_receipt_number_unique')) {
+      throw errors.conflict('RECEIPT_PREFIX_IN_USE',
+        `Receipt prefix ${receipt.series} is already in use at this park. Ask a manager to choose a different prefix for this till, then return to the order and confirm the payment again.`);
+    }
+    throw error;
+  });
   const after = updated[0];
   if (!after) throw new Error('the sale was not finalised');
   // SCRUM-774 — a sale that closes while parked leaves Held sales with its payment.
