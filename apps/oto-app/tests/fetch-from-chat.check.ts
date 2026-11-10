@@ -17,8 +17,9 @@
 //     what the form holds, what the chat says, whose line — a typed value is
 //     OFFERED, never overwritten; a value the chat does not give changes
 //     nothing and no field is ever offered emptied; the date as one row;
-//     whose cake only when said; "no cake" never over a cake; a deposit the
-//     chat only asks for is never offered as received;
+//     whose cake only when said, a cake the chat declines offered as none,
+//     "not said" never moving it; a deposit the chat only asks for is never
+//     offered as received;
 //   - the catalogue section: a package, add-on, set menu or choice, food line,
 //     entertainment or free line the chat names that the BEO lacks is LISTED
 //     (never swallowed), to read; what the BEO holds is not;
@@ -319,11 +320,23 @@ try {
     assert.ok(!changes.some((c) => c.field === "numAdults"), "the fill alone gives no adults here");
   });
 
-  await check("whose cake only when the chat says: NOT_SAID and NONE never move the form's cake; a cake the form has none of takes the chat's", () => {
-    const review = (mode: string | null) => ({ ...fetched.review, proposal: { ...fetched.review.proposal, cake: { mode, notes: null, time: null, from: { source: "family", at: null, line: 1 } } } });
-    assert.ok(!fetchChangesOf({ fill: {}, review: review(null) }, FORM).some((c) => c.field === "cakeMode"));
-    assert.ok(!fetchChangesOf({ fill: {}, review: review("NONE") }, FORM).some((c) => c.field === "cakeMode"));
+  await check("whose cake only when the chat says: NOT_SAID never moves the form's cake; a cake the chat declines (NONE) is offered as No cake over it, whose line said it; a cake the form has none of takes the chat's", () => {
+    const review = (mode: string | null, notes: string | null = null, time: string | null = null) => ({
+      ...fetched.review,
+      proposal: { ...fetched.review.proposal, cake: { mode, notes, time, from: { source: "family", at: null, line: 1 } } },
+    });
+    assert.ok(!fetchChangesOf({ fill: {}, review: review(null) }, FORM).some((c) => c.field === "cakeMode"), "not said: the form's cake stays");
     assert.ok(!fetchChangesOf({ fill: { kitchenPlan: { cakeMode: "NOT_SAID" } }, review: null }, FORM).some((c) => c.field === "cakeMode"));
+    // The chat said there is no cake: one row, the form's cake → No cake, the family's line; the chat's words are no cake notes and a declined cake has no time.
+    const declined = fetchChangesOf({ fill: {}, review: review("NONE", "no cake, thanks", "16:00") }, { ...FORM, numAdults: 6 });
+    assert.deepEqual(
+      declined.map((c) => [c.field, c.label, c.was, c.now, c.value, c.from?.source, c.from?.line]),
+      [["cakeMode", "Cake", "The family's own cake", "No cake", "NONE", "family", 1]],
+      "the chat declined the cake: offered as none over the family's own cake, nothing else of the cake",
+    );
+    assert.deepEqual(applyFetchChanges(declined), { cakeMode: "NONE" }, "accepted, the form says No Cake as its own button does");
+    assert.ok(!fetchChangesOf({ fill: {}, review: review("NONE") }, { ...FORM, cakeMode: "NONE" }).some((c) => c.field === "cakeMode"), "no cake on both sides: no row");
+    assert.ok(!fetchChangesOf({ fill: { kitchenPlan: { cakeMode: "NONE" } }, review: null }, FORM).some((c) => c.field === "cakeMode"), "the fill alone (no catalogue) reads NONE as AI Fill does: nothing to apply");
     const own = fetchChangesOf({ fill: {}, review: review("INTERNAL") }, { ...FORM, numAdults: 6, cakeMode: "NONE" });
     assert.deepEqual(own.map((c) => [c.field, c.was, c.now, c.value, c.from?.source]), [["cakeMode", "No cake", "The park's cake", "INTERNAL", "family"]]);
     const over = fetchChangesOf({ fill: {}, review: review("INTERNAL") }, { ...FORM, numAdults: 6 });

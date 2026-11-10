@@ -223,15 +223,27 @@ export function fetchChangesOf(answer: Pick<FetchAnswer, "fill" | "review">, for
   const responsible = str(setup.responsible);
   if (responsible && !sameText(form.setupResponsible, responsible)) offer("setupResponsible", shownText(form.setupResponsible), responsible, responsible, ruling);
 
-  // The cake: whose it is only when the chat says so (never "no cake" over a cake the form holds), its notes and its time.
+  // The cake: whose it is only when the chat says so, its notes and its time.
+  // The whole conversation's reading leaves the cake out when the chat does
+  // not speak to it and gives no type (SCRUM-787's "not said") when it times
+  // or describes a cake without saying whose: neither moves the form's cake.
+  // It says NONE only when the family or the team said there is no cake, and
+  // that is offered as "No cake" over a cake the form holds, with whose line
+  // said it (its words are no cake notes, and a declined cake has no time).
+  // The fill alone (no catalogue) reads NONE as AI Fill does: nothing to apply.
   const cake = proposal?.cake
     ? { mode: proposal.cake.mode, notes: str(proposal.cake.notes), time: time(proposal.cake.time), from: proposal.cake.from }
     : { mode: str(kitchen.cakeMode)?.toUpperCase() ?? null, notes: str(kitchen.cakeNotes), time: time(kitchen.cakeTime), from: ruling };
-  if ((cake.mode === "INTERNAL" || cake.mode === "EXTERNAL") && cake.mode !== form.cakeMode) {
-    offer("cakeMode", cakeLabel(form.cakeMode), cakeLabel(cake.mode), cake.mode, cake.from);
+  const cakeDeclined = !!proposal?.cake && proposal.cake.mode === "NONE";
+  if (cakeDeclined) {
+    if (form.cakeMode === "INTERNAL" || form.cakeMode === "EXTERNAL") offer("cakeMode", cakeLabel(form.cakeMode), cakeLabel("NONE"), "NONE", cake.from);
+  } else {
+    if ((cake.mode === "INTERNAL" || cake.mode === "EXTERNAL") && cake.mode !== form.cakeMode) {
+      offer("cakeMode", cakeLabel(form.cakeMode), cakeLabel(cake.mode), cake.mode, cake.from);
+    }
+    if (cake.notes && !sameText(form.cakeNotes, cake.notes)) offer("cakeNotes", shownText(form.cakeNotes), cake.notes, cake.notes, cake.from);
+    if (cake.time && cake.time !== form.cakeTime) offer("cakeTime", shownText(form.cakeTime), cake.time, cake.time, cake.from);
   }
-  if (cake.notes && !sameText(form.cakeNotes, cake.notes)) offer("cakeNotes", shownText(form.cakeNotes), cake.notes, cake.notes, cake.from);
-  if (cake.time && cake.time !== form.cakeTime) offer("cakeTime", shownText(form.cakeTime), cake.time, cake.time, cake.from);
 
   // Party Details: the POS package's name, the deposit and its day, the notes.
   const packageName = str(party.packageName);
