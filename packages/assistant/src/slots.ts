@@ -6,7 +6,7 @@
  *                               its own words in Thai, English and Russian —
  *                               the server's check beside the model's
  *                               declared `askedSlots`, never instead of it.
- *   readSlotAnswers(slots, text, today)
+ *   readSlotAnswers(slots, text, today, { bare })
  *                               the customer's message read AS THE ANSWER to
  *                               the slots it follows: a number in words or
  *                               digits in the three languages ("แปดขวบ",
@@ -229,16 +229,45 @@ const AFTER: Array<[Exclude<Unit, null>, RegExp]> = [
   ['people', /^\s*(?:people|persons?|guests?|pax|of us|человек\p{L}*|чел\.|гост\p{L}*|คน|ท่าน)/iu],
   [
     'other',
-    /^\s*(?:baht|thb|฿|บาท|бат\p{L}*|руб\p{L}*|%|percent|hours?|hrs?|h(?![a-z])|час\p{L}*|ชั่วโมง|ชม|a\.?m\.?|p\.?m\.?|o'?clock|โมง|ทุ่ม|นาฬิกา|น\.|:\d|th(?![a-z])|st(?![a-z])|nd(?![a-z])|rd(?![a-z])|-?го(?!\p{L})|числ\p{L}*|minutes?|mins?|минут\p{L}*|นาที|floor|этаж\p{L}*|ชั้น)/iu,
+    /^\s*(?:baht|thb|฿|บาท|бат\p{L}*|руб\p{L}*|%|percent|hours?|hrs?|h(?![a-z])|час\p{L}*|ชั่วโมง|ชม|a\.?m\.?|p\.?m\.?|o'?clock|โมง|ทุ่ม|นาฬิกา|น\.|:\d|th(?![a-z])|st(?![a-z])|nd(?![a-z])|rd(?![a-z])|-?го(?!\p{L})|числ\p{L}*|minutes?|mins?|минут\p{L}*|นาที|floor|этаж\p{L}*|ชั้น|famil(?:y|ies)|cars?(?![a-z])|машин\p{L}*|сем(?:ьи|ей|ья)(?!\p{L})|ครอบครัว|คัน)/iu,
   ],
 ];
-/** Thai writes what is counted before the number ("เด็ก 12 คน", "ผู้ใหญ่ 5 คน", "อายุ 8"); so do "aged 8" and a price sign. */
+/**
+ * The child named, then the number: an age, never a count ("she is 8", "my
+ * daughter is 8", "he turns 6", "she'll be 8", "ей будет 8", "исполнится 8",
+ * "ครบ 8").
+ */
+const AGE_CUE =
+  /(?:(?<![a-z])(?:(?:she|he|daughter|son|boy|girl|kid|child|little one|birthday (?:boy|girl|child))(?:['’]s| is| will be|['’]ll be| turns| is turning| turning| will turn)?|turns|turning|will turn)(?: (?:only|just|almost|nearly))?|(?<!\p{L})(?:(?:ей|ему|дочке|дочери|дочь|дочка|сыну|сын|сынок|имениннику|имениннице|малышу|малышке)(?:\s+(?:будет|исполнится|исполняется|уже|только))?|исполнится|исполняется|исполнилось)|ครบ(?:รอบ)?)\s*$/iu;
+/** A headcount: "we will be 8", "we are 12", "table for 8", "нас 8", "нас будет 8", "เรามา 8". */
+const HEADCOUNT_CUE =
+  /(?:(?<![a-z])(?:we(?:['’]re| are| will be|['’]ll be| would be)?|us|of us|party of|for)|(?<!\p{L})(?:нас|мы|на)(?:\s+(?:будет|будем))?|เรา(?:มา|ไป|มี)?(?:กัน)?(?:ประมาณ)?)\s*$/iu;
+/** A choice, a time or a place, not a count or an age: "package 3", "option 2", "at 8", "from 3", "grade 3", "в 8", "с 3 до 5", "ห้องที่ 3", "ป.3". */
+const CHOICE_OR_TIME_CUE =
+  /(?:(?<![a-z])(?:at|from|to|till|until|by|before|after|between|package|option|grade|year|class|table|number|level)|(?<!\p{L})(?:в|к|с|до|после|пакет\p{L}*|вариант\p{L}*|класс\p{L}*|номер\p{L}*|столик\p{L}*)|ห้อง(?:ที่)?|ที่|ป\.|แพ็[กค]เกจ(?:ที่)?|แพคเกจ(?:ที่)?|ตัวเลือก(?:ที่)?|ตอน|เวลา|โต๊ะ(?:ที่)?)\s*$/iu;
+/** Thai writes what is counted before the number ("เด็ก 12 คน", "ผู้ใหญ่ 5 คน", "อายุ 8"); so do "aged 8", a price sign, and the cues above. */
 const BEFORE: Array<[Exclude<Unit, null>, RegExp]> = [
   ['kids', /(?:เด็ก|น้อง)(?:ๆ)?\s*(?:ประมาณ|ราวๆ?|รวม|จำนวน)?\s*$/u],
   ['adults', /(?:ผู้ใหญ่|ผู้ปกครอง)\s*(?:ประมาณ|ราวๆ?|รวม|จำนวน)?\s*$/u],
-  ['years', /(?:อายุ|aged?)\s*$/iu],
+  // Not the end of another word: "Package 3" is no age.
+  ['years', /(?:อายุ|(?<![a-z])aged?)\s*$/iu],
+  ['years', AGE_CUE],
+  ['people', HEADCOUNT_CUE],
   ['other', /(?:[฿$#]|no\.|room|ราคา|เบอร์)\s*$/iu],
+  ['other', CHOICE_OR_TIME_CUE],
 ];
+
+/**
+ * A reply that says what it counts in words a bare number never answers an
+ * age or a count from (SCRUM-831 review): "we", "table", "package", "option",
+ * "grade", "нас", "будет", "ห้อง"… — "Package 3 please", "we are 2 families",
+ * "нас будет 8" are no age.
+ */
+const BARE_CUE =
+  /(?<![a-z])(?:we|we['’]re|us|for|table|at|package|option|grade|year|class|room|cars?|famil(?:y|ies)|will be)(?![a-z])|(?<!\p{L})(?:нас|мы|будет|будем|столик\p{L}*|пакет\p{L}*|вариант\p{L}*|класс\p{L}*|машин\p{L}*)(?!\p{L})|เรา|โต๊ะ|ห้อง|แพ็[กค]เกจ|แพคเกจ|ครอบครัว/iu;
+/** A bare answer is short: a few words ("8", "eight!", "twins, 6 and 4", "She'll be 8 on Saturday"). */
+const BARE_ANSWER_WORDS = 8;
+const BARE_ANSWER_CHARS = 60;
 
 function unitOf(text: string, n: NumberFound): Unit {
   const after = text.slice(n.end);
@@ -304,23 +333,42 @@ const wordCount = (text: string) => text.trim().split(/\s+/u).filter(Boolean).le
 const asksSomething = (text: string) => /[?？]/u.test(text) || THAI_QUESTION.test(text);
 const clip = (value: string) => [...value].slice(0, INBOX_OPEN_QUESTION_ANSWER_MAX).join('');
 
+/** How a reply is read (`readSlotAnswers`). */
+export interface SlotReadOptions {
+  /**
+   * The slots an answer with no unit may fill — a bare number ("8") or a
+   * free answer ("Mia"): those the line just before the reply asked. Absent:
+   * every slot asked (the customer's first reply to the assistant's own
+   * question). A number with its unit ("8 years", "восемь лет", "แปดขวบ"), a
+   * date, a time, a park and residency are read for every slot asked.
+   */
+  bare?: readonly Slot[];
+}
+
 /**
  * The customer's message read AS THE ANSWER to the slots the assistant asked
  * (SCRUM-831): each slot the reply fills, with the value kept for it; a slot
  * it does not answer is absent. `today` is the park's day (`YYYY-MM-DD`): a
  * date is counted from it. A bare number ("8", "восемь", "แปด") answers the
- * one numeric question asked, never one of several, and never a count it
- * names ("12 kids" is no age).
+ * one numeric question asked, never one of several, never a count it names
+ * ("12 kids" is no age), and only from a short reply that asks nothing and
+ * names no headcount, time or choice ("we will be 8", "table for 8?",
+ * "Package 3 please", "Grade 3", "ห้องที่ 3" are no age; "my daughter is 8",
+ * "she turns 6" are no count).
  */
-export function readSlotAnswers(asked: readonly Slot[], reply: string, today: string): SlotAnswers {
+export function readSlotAnswers(asked: readonly Slot[], reply: string, today: string, opts: SlotReadOptions = {}): SlotAnswers {
   const out: SlotAnswers = {};
   const text = reply.normalize('NFC').trim();
   if (text === '') return out;
   const slots = asked.filter((s) => s !== 'other');
   const plain = asciiDigits(withoutDatesAndTimes(text, today));
   const counted = numbersIn(plain).map((n) => ({ ...n, unit: unitOf(plain, n) }));
-  const numericAsked = slots.filter((s) => NUMERIC.has(s));
-  const bare = numericAsked.length === 1 ? counted.filter((n) => n.unit === null && !n.weak) : [];
+  const bareAllowed = (s: Slot) => opts.bare === undefined || opts.bare.includes(s);
+  const bareReply = !asksSomething(text) && !BARE_CUE.test(plain) && wordCount(plain) <= BARE_ANSWER_WORDS && [...text].length <= BARE_ANSWER_CHARS;
+  const numericBare = slots.filter((s) => NUMERIC.has(s) && bareAllowed(s));
+  const bareSlot = bareReply && numericBare.length === 1 ? numericBare[0]! : null;
+  const bareNumbers = counted.filter((n) => n.unit === null && !n.weak);
+  const bare = (slot: Slot) => (slot === bareSlot ? bareNumbers : []);
   const of = (unit: Unit) => counted.filter((n) => n.unit === unit);
 
   for (const slot of slots) {
@@ -330,20 +378,20 @@ export function readSlotAnswers(asked: readonly Slot[], reply: string, today: st
           ...of('years').filter((n) => n.value <= 17).map((n) => String(n.value)),
           ...of('months').filter((n) => n.value <= 36).map((n) => `${n.value} months`),
         ];
-        if (ages.length === 0) ages.push(...bare.filter((n) => n.value <= 17).map((n) => String(n.value)));
+        if (ages.length === 0) ages.push(...bare(slot).filter((n) => n.value <= 17).map((n) => String(n.value)));
         if (ages.length > 0) out.child_age = clip([...new Set(ages)].join(', '));
         break;
       }
       case 'kids_count':
       case 'adults_count': {
-        const n = of(slot === 'kids_count' ? 'kids' : 'adults')[0] ?? bare.find((b) => b.value >= 1 && b.value <= 300);
+        const n = of(slot === 'kids_count' ? 'kids' : 'adults')[0] ?? bare(slot).find((b) => b.value >= 1 && b.value <= 300);
         if (n) out[slot] = String(n.value);
         break;
       }
       case 'guests_count': {
         const kids = of('kids')[0];
         const adults = of('adults')[0];
-        const people = of('people')[0] ?? bare.find((b) => b.value >= 1 && b.value <= 300);
+        const people = of('people')[0] ?? bare(slot).find((b) => b.value >= 1 && b.value <= 300);
         const parts = [kids ? `${kids.value} kids` : null, adults ? `${adults.value} adults` : null].filter((p): p is string => p !== null);
         if (parts.length > 0) out.guests_count = clip(parts.join(', '));
         else if (people) out.guests_count = String(people.value);
@@ -371,7 +419,7 @@ export function readSlotAnswers(asked: readonly Slot[], reply: string, today: st
         break;
       }
       default:
-        if (FREE.has(slot) && wordCount(text) <= FREE_ANSWER_WORDS && !asksSomething(text)) out[slot] = null;
+        if (FREE.has(slot) && bareAllowed(slot) && wordCount(text) <= FREE_ANSWER_WORDS && !asksSomething(text)) out[slot] = null;
     }
   }
   return out;
@@ -385,24 +433,24 @@ export function readSlotAnswers(asked: readonly Slot[], reply: string, today: st
 const ASKS: ReadonlyArray<[Slot, RegExp]> = [
   [
     'child_age',
-    /how old|what age|age (?:of|is) (?:the|your|her|his)|years old will|сколько (?:лет|годик\p{L}*|исполн\p{L}*)|какой возраст|возраст (?:ребенка|ребёнка|именинни\p{L}*|малыш\p{L}*|детей)|อายุ(?:เท่าไ|กี่|ประมาณ)|กี่ขวบ|ครบกี่/iu,
+    /how old|what age|(?<![a-z])age (?:of|is) (?:the|your|her|his)|years old will|turning|which birthday|(?:her|his|their|the) \d+(?:st|nd|rd|th)(?: or \d+(?:st|nd|rd|th))? birthday|сколько (?:лет|годик\p{L}*|исполн\p{L}*)|сколько (?:ей|ему|ребенку|ребёнку|имениннику|имениннице|малышу|малышке) (?:лет|исполн\p{L}*)|какой возраст|возраст (?:ребенка|ребёнка|именинни\p{L}*|малыш\p{L}*|детей)|อายุ(?:เท่าไ|กี่|ประมาณ)|(?:บอก|แจ้ง|ขอทราบ)อายุ|กี่ขวบ|ครบ(?:รอบ)?\s*กี่/iu,
   ],
   [
     'kids_count',
-    /how many (?:kids|children|little ones|child)|сколько (?:детей|деток|ребят\p{L}*|малыш\p{L}*)|เด็ก(?:ๆ)?(?:ประมาณ)?(?:กี่|จำนวน)|เด็ก[^?]{0,12}กี่คน|น้อง(?:ๆ)?(?:ประมาณ)?กี่คน/iu,
+    /how many (?:kids|children|little ones|child)|number of (?:kids|children)|сколько (?:детей|деток|ребят\p{L}*|малыш\p{L}*)|เด็ก(?:ๆ)?(?:ประมาณ)?(?:กี่|จำนวน)|เด็ก[^?]{0,12}กี่คน|น้อง(?:ๆ)?(?:ประมาณ)?กี่คน/iu,
   ],
   ['adults_count', /how many (?:adults|grown-?ups|parents)|сколько (?:взрослых|родителей)|ผู้ใหญ่(?:ประมาณ)?(?:กี่|จำนวน)|ผู้ใหญ่[^?]{0,12}กี่/iu],
   [
     'guests_count',
-    /how many (?:people|guests|persons|of you)|roughly how many|about how many|headcount|number of (?:guests|people)|сколько (?:человек|гостей|вас)|сколько будет (?:гостей|человек)|กี่ท่าน|กี่คน|จำนวนแขก|แขกประมาณ/iu,
+    /how many (?:(?:little|young|small) )?(?:people|guests|persons|friends|of you)|roughly how many|about how many|headcount|number of (?:guests|people)|сколько (?:человек|гостей|вас)|сколько будет (?:гостей|человек)|กี่ท่าน|กี่คน|จำนวนแขก|แขกประมาณ/iu,
   ],
   [
     'park',
-    /which (?:park|branch|location)|central floresta (?:or|หรือ|или) (?:robinson )?chalong|robinson chalong (?:or|หรือ|или) central|какой (?:парк|филиал)|в каком (?:парке|филиале)|สาขาไหน|สาขาใด/iu,
+    /which (?:park|branch|location)|which of (?:our|the) (?:parks|branches|locations)|what (?:park|branch|location)|central floresta (?:or|หรือ|или) (?:robinson )?chalong|robinson chalong (?:or|หรือ|или) central|какой (?:парк|филиал)|какой из (?:наших )?(?:парков|филиалов)|в каком (?:парке|филиале)|в какой (?:парк|филиал)|สาขาไหน|สาขาใด/iu,
   ],
   [
     'date',
-    /what date|which date|which day|what day|what dates|dates? (?:are you|you're) thinking|when (?:would|will|is|are|do) (?:you|the party|it)|какую дату|какого числа|на какое число|на какую дату|в какой день|какой день|когда (?:планиру\p{L}*|хотите|будет|вы)|วันไหน|วันที่เท่าไ|วันอะไร|สะดวกวัน/iu,
+    /what date|which date|which day|what day|what dates|dates? (?:are you|you're) thinking|when (?:would|will|is|are|do) (?:you|the party|it)|when(?:['’]s| is) (?:her|his|their|the|your)(?: \p{L}+)? birthday|(?:picked|chosen|set|got|have|found) (?:a|the) date|dates? in mind|(?<![a-z])(?:the|your|a|preferred) (?:party |event |preferred )?dates?(?![a-z])|какую дату|какого числа|на какое число|на какую дату|в какой день|какой день|(?<!\p{L})дат[уаы](?!\p{L})|когда (?:у (?:неё|нее|него|вас|ребенка|ребёнка) )?(?:день рождения|праздник|др(?!\p{L}))|когда (?:планиру\p{L}*|хотите|будет|вы)|วันไหน|วันที่เท่าไ|วันที่สะดวก|(?:แจ้ง|บอก)วันที่|วันอะไร|สะดวกวัน|วันเกิด\S{0,12}?(?:วันไหน|วันที่|เมื่อไ)/iu,
   ],
   ['time', /what time|which time|at what time|во сколько|в какое время|какое время|กี่โมง|เวลาไหน|ช่วงเวลาไหน/iu],
   [
@@ -416,13 +464,21 @@ const ASKS: ReadonlyArray<[Slot, RegExp]> = [
   ],
 ];
 
-/** A reply's questions: each sentence that ends in a question mark, or that holds a Thai interrogative. */
+/**
+ * An ask written as a request, with no question mark (SCRUM-831 review): "Let
+ * me know how old she is 😊", "Напишите, пожалуйста, сколько лет ребёнку.",
+ * "Подскажите возраст именинника", "รบกวนแจ้งวันที่ค่ะ", "บอกอายุน้องหน่อยค่ะ".
+ */
+const IMPERATIVE_ASK =
+  /(?<![a-z])(?:let (?:me|us) know|tell (?:me|us)|please (?:share|send|confirm|tell)|share with us|could you (?:share|tell|confirm|send)|drop (?:me|us) a (?:line|message))(?![a-z])|(?<!\p{L})(?:напишите|подскажите|сообщите|уточните|скажите|расскажите|дайте знать)(?!\p{L})|(?:บอก|แจ้ง)[^\n.!?]{0,40}?หน่อย|(?<!ที่)รบกวน|ขอทราบ/iu;
+
+/** A reply's questions: each sentence that ends in a question mark, holds a Thai interrogative, or asks as a request ("let me know…", "напишите…", "รบกวน…"). */
 export function questionsIn(bubbles: readonly string[]): string[] {
   const out: string[] = [];
   for (const b of bubbles) {
     for (const piece of b.split(/(?<=[?？!.。])\s+|\n+/u)) {
       const s = piece.trim();
-      if (s && (/[?？]/u.test(s) || THAI_QUESTION.test(s))) out.push(s);
+      if (s && (/[?？]/u.test(s) || THAI_QUESTION.test(s) || IMPERATIVE_ASK.test(s))) out.push(s);
     }
   }
   return out;

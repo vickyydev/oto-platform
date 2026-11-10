@@ -86,6 +86,45 @@ describe('the slot reader: the reply read as the answer to the question it follo
     expect(readSlotAnswers(['child_age', 'kids_count'], '8 years, 12 kids', TODAY)).toEqual({ child_age: '8', kids_count: '12' });
   });
 
+  it('a number that is a headcount, a time or a choice is no age (the review probes)', () => {
+    for (const reply of [
+      'we will be 8',
+      'нас будет 8',
+      'table for 8?',
+      'Can we come at 8?',
+      'Package 3 please',
+      'option 2',
+      'we are 2 families',
+      'Do you have parking? we have 2 cars',
+      'Grade 3',
+      'ห้องที่ 3',
+      '8 kids',
+    ]) {
+      expect(readSlotAnswers(['child_age'], reply, TODAY), reply).toEqual({});
+    }
+    // "we are N", "нас N": people, read as the headcount where that was asked.
+    expect(readSlotAnswers(['guests_count'], 'we will be 8', TODAY)).toEqual({ guests_count: '8' });
+    expect(readSlotAnswers(['guests_count'], 'нас будет 8', TODAY)).toEqual({ guests_count: '8' });
+  });
+
+  it('a child named with a number is an age, never a count; a time range is no count (the review probes)', () => {
+    for (const reply of ['my daughter is 8', 'she turns 6', 'from 3 to 5 pm']) {
+      expect(readSlotAnswers(['kids_count'], reply, TODAY), reply).toEqual({});
+    }
+    expect(readSlotAnswers(['child_age'], 'my daughter is 8', TODAY)).toEqual({ child_age: '8' });
+    expect(readSlotAnswers(['child_age'], 'she is five', TODAY)).toEqual({ child_age: '5' });
+    expect(readSlotAnswers(['child_age'], 'ей будет восемь', TODAY)).toEqual({ child_age: '8' });
+  });
+
+  it('a bare answer fills only the slots the line before it asked', () => {
+    expect(readSlotAnswers(['child_age'], '8', TODAY, { bare: [] })).toEqual({});
+    expect(readSlotAnswers(['child_age', 'kids_count'], '8', TODAY, { bare: ['child_age'] })).toEqual({ child_age: '8' });
+    expect(readSlotAnswers(['child_name'], 'Mia', TODAY, { bare: [] })).toEqual({});
+    // An answer with its unit is read whoever asked.
+    expect(readSlotAnswers(['child_age'], '8 years old', TODAY, { bare: [] })).toEqual({ child_age: '8' });
+    expect(readSlotAnswers(['park'], 'Chalong please', TODAY, { bare: [] })).toEqual({ park: 'chalong' });
+  });
+
   it('a date, a time, a park and residency in the three languages', () => {
     expect(readSlotAnswers(['date'], 'в субботу', TODAY)).toEqual({ date: '2026-10-24' });
     expect(readSlotAnswers(['date'], 'วันเสาร์หน้าค่ะ', TODAY)).toEqual({ date: '2026-10-24' });
@@ -134,6 +173,33 @@ describe('the question detector: what a reply asks, read from its own questions'
     expect(slotsAskedIn(['How many children are coming? And how many adults?'])).toEqual(['kids_count', 'adults_count']);
   });
 
+  it('an ask written as a request counts as a question: the declaration is kept, the slot is read', () => {
+    expect(askedSlotsOf(['child_age'], ['Let me know how old she is 😊'])).toEqual(['child_age']);
+    expect(askedSlotsOf(['date', 'guests_count'], ['Just let me know the date and the number of guests 😊']).sort()).toEqual(['date', 'guests_count']);
+    expect(askedSlotsOf(['child_age'], ['Напишите, пожалуйста, сколько лет ребёнку.'])).toEqual(['child_age']);
+    expect(askedSlotsOf(['child_age'], ['Подскажите возраст именинника'])).toEqual(['child_age']);
+    expect(askedSlotsOf(undefined, ['บอกอายุน้องหน่อยค่ะ'])).toEqual(['child_age']);
+    expect(askedSlotsOf(undefined, ['รบกวนแจ้งวันที่ค่ะ'])).toEqual(['date']);
+    // A request that asks nothing tracked, and a statement, still ask nothing.
+    expect(askedSlotsOf(undefined, ['Let me know if you have any other questions 😊'])).toEqual([]);
+    expect(askedSlotsOf(['date'], ['Our team will confirm the date with you soon 😊'])).toEqual([]);
+  });
+
+  it('the reworded asks the review found, with no declaration', () => {
+    const cases: Array<[string, AiAskedSlot]> = [
+      ['When is her birthday?', 'date'],
+      ['Have you picked a date yet?', 'date'],
+      ['Do you already have a date in mind?', 'date'],
+      ['Когда день рождения?', 'date'],
+      ['How many little guests are you expecting?', 'guests_count'],
+      ['Which of our parks suits you better?', 'park'],
+      ['น้องจะครบรอบกี่ปีคะ', 'child_age'],
+      ['Is it her 5th or 6th birthday?', 'child_age'],
+      ['Let me know how old she is 😊', 'child_age'],
+    ];
+    for (const [q, slot] of cases) expect(askedSlotsOf(undefined, [q]), q).toEqual([slot]);
+  });
+
   it('a statement asks nothing; a greeting asks nothing the memory tracks', () => {
     expect(slotsAskedIn(["We're open every day 10:00–20:00 😊"])).toEqual([]);
     expect(slotsAskedIn(['Hi! 👋 Welcome to OTO Play Park, how can we help?'])).toEqual([]);
@@ -177,6 +243,26 @@ describe('the repeat guard: the last net', () => {
     expect(repeatGuard({ asked: ['child_age'], questions: [], intents: ['hours', 'drop_off_service'] })).toBeNull();
     // The table says where: the drop-off and nanny age rules, the party packages, the Golden Ticket, the age rules.
     expect([...AGE_SLOT_INTENTS].sort()).toEqual(['age_rules', 'birthday_brochure', 'birthday_party', 'drop_off_service', 'nanny_booking', 'special_tickets']);
+  });
+
+  it('a reworded re-ask with no declaration is refused, in each language', () => {
+    const answeredAge = [asked('child_age', 'answered', '8')];
+    const answeredDate = [asked('date', 'answered', '2026-11-14')];
+    const cases: Array<[string, EpisodeQuestion[]]> = [
+      ['Let me know how old she is 😊', answeredAge],
+      ['Is it her 5th or 6th birthday?', answeredAge],
+      ['When is her birthday?', answeredDate],
+      ['Напишите, пожалуйста, сколько лет ребёнку.', answeredAge],
+      ['Подскажите возраст именинника', answeredAge],
+      ['Когда день рождения?', answeredDate],
+      ['น้องจะครบรอบกี่ปีคะ', answeredAge],
+      ['บอกอายุน้องหน่อยค่ะ', answeredAge],
+      ['รบกวนแจ้งวันที่ค่ะ', answeredDate],
+    ];
+    for (const [draft, questions] of cases) {
+      const slots = askedSlotsOf(undefined, [draft]);
+      expect(repeatGuard({ asked: slots, questions, intents: ['birthday_party'] }), draft).toMatchObject({ slot: questions[0]!.slot, kind: 'answered' });
+    }
   });
 
   it('the strongest reason wins; other slots and a first ask pass', () => {
