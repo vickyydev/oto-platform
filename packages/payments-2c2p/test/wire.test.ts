@@ -33,11 +33,13 @@ describe('money on the wire is D(12,5), and never a float', () => {
    * IEEE 754 and `toFixed(5)` on that is right by luck. This asserts that the
    * luck is not being relied on across the range a park takes in a day.
    */
+  // 28,572 values through two conversions and an assertion each: about 5 s on a loaded CI runner, so the timeout
+  // is set rather than left at vitest's 5 s default (it went red once by 191 ms on 10 November).
   it('round-trips every satang value a sale can carry', () => {
     for (let satang = 0; satang <= 200_000; satang += 7) {
       expect(fromWireAmount(toWireAmount(satang)), String(satang)).toBe(satang);
     }
-  });
+  }, 30_000);
 
   it('reads a JSON number as well as a string, because both arrive', () => {
     expect(fromWireAmount('1440.00000')).toBe(144000);
