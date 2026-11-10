@@ -382,6 +382,8 @@ export async function dryRun(
       contactCountryCode: null,
       languageOffered: false,
     },
+    // SCRUM-832: the park-first step reads the message for a park the curator named.
+    openLines: [customerMessage],
   });
   const fired =
     rules.length > 0
