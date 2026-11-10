@@ -391,7 +391,12 @@ export function ChatPanel({
   );
 
   const items = useMemo(
-    () => timeline(thread.messages, thread.detail?.events ?? [], thread.olderCursor === null, { me }),
+    () =>
+      timeline(thread.messages, thread.detail?.events ?? [], thread.olderCursor === null, {
+        me,
+        // SCRUM-823: the hand-over pill says who was told, and when the GM was.
+        handoverNotices: thread.detail?.handoverNotices ?? [],
+      }),
     [thread.messages, thread.detail, thread.olderCursor, me],
   );
   const withdrawn = useMemo(

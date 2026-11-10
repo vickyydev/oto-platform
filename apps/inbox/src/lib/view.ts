@@ -432,6 +432,31 @@ export function archiveFrom(range: ArchiveRange, now: Date = new Date()): string
 
 export interface PillContext {
   me: Pick<InboxMe, 'people' | 'teams'>;
+  /** SCRUM-823: who each hand-over told (`ConversationDetail['handoverNotices']`); absent, the pill says nothing of it. */
+  handoverNotices?: readonly HandoverNoticePill[];
+}
+
+/** One hand-over's notices, as the thread detail carries them (SCRUM-823). */
+export interface HandoverNoticePill {
+  turnId: string;
+  notifiedAt: string | null;
+  notNotified: boolean;
+  escalatedAt: string | null;
+}
+
+/**
+ * SCRUM-823: what a hand-over's pill adds about who was told — "manager
+ * notified 14:05", "manager not notified" when the park names nobody, and
+ * "escalated to GM 14:20" when nobody picked it up within fifteen minutes.
+ */
+export function handoverNoticeNotes(ctx: PillContext, turnId: unknown): string[] {
+  const n = typeof turnId === 'string' ? ctx.handoverNotices?.find((x) => x.turnId === turnId) : undefined;
+  if (!n) return [];
+  const notes: string[] = [];
+  if (n.notifiedAt) notes.push(`manager notified ${clock(new Date(n.notifiedAt))}`);
+  else if (n.notNotified) notes.push('manager not notified');
+  if (n.escalatedAt) notes.push(`escalated to GM ${clock(new Date(n.escalatedAt))}`);
+  return notes;
 }
 
 function personName(ctx: PillContext, accountId: unknown): string | null {
@@ -547,7 +572,7 @@ export function eventText(e: InboxEvent, ctx: PillContext): string | null {
       const team = teamName(ctx, p.reroutedTeamId);
       // SCRUM-824: a voice note nobody could read carries no intent worth naming.
       const intent = p.reason === 'VOICE_UNREAD' ? null : str(p.intent);
-      const notes = turnNotes(p);
+      const notes = [...turnNotes(p), ...handoverNoticeNotes(ctx, p.turnId)];
       return `AI handed over to ${team ?? 'the team'}${intent ? ` · ${intentWords(intent)}` : ''}${notes.map((n) => ` · ${n}`).join('')}`;
     }
     case 'ai_silent':
@@ -811,7 +836,7 @@ export function groupSummary(run: readonly { item: Pick<PillItem, 'text'>; event
     const team = teamName(ctx, p.reroutedTeamId) ?? 'the team';
     const parts: string[] = [];
     if (Array.isArray(p.brochureFileIds) && p.brochureFileIds.length > 0) parts.push('brochure sent');
-    parts.push(...turnNotes(p));
+    parts.push(...turnNotes(p), ...handoverNoticeNotes(ctx, p.turnId));
     const primary = run.find((r) => r.event.kind === 'assigned' && r.event.payload.slot === 'primary');
     const primaryName = primary ? seatName(primary.event.payload) : null;
     if (primaryName) parts.push(`${primaryName} primary`);
