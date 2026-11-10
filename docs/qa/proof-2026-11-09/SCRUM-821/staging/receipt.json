@@ -1,0 +1,1220 @@
+{
+  "unit": "SCRUM-821",
+  "what": "Book Date proposes the party's date, time, kids, adults, child's name and age from the whole chat with the model, tolerant of typos, each with the chat's words and whose line they are",
+  "liveCommit": "c48f8aaa5d42b5cfcc647638545f8bed1843a9a8",
+  "run": {
+    "startedAt": "2026-11-10T08:20:29.460Z",
+    "endedAt": "2026-11-10T08:24:10.686Z",
+    "parkToday": "2026-11-10 (Tuesday, Asia/Bangkok)",
+    "browser": "Chromium 153.0.8010.12 headless, Asia/Bangkok, en-GB, 1440 wide"
+  },
+  "liveBefore": {
+    "at": "2026-11-10T08:20:35.263Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbpd4dom7kps73ajb230",
+        "status": "live",
+        "sha": "c48f8aaa5d42b5cfcc647638545f8bed1843a9a8",
+        "finishedAt": "2026-11-10T08:17:50.438415Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbpd4eetlv9c73f8hfig",
+        "status": "live",
+        "sha": "c48f8aaa5d42b5cfcc647638545f8bed1843a9a8",
+        "finishedAt": "2026-11-10T08:14:29.517034Z"
+      }
+    ],
+    "allLiveOnSha": true
+  },
+  "liveAfter": {
+    "at": "2026-11-10T08:24:01.157Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbpd4dom7kps73ajb230",
+        "status": "live",
+        "sha": "c48f8aaa5d42b5cfcc647638545f8bed1843a9a8",
+        "finishedAt": "2026-11-10T08:17:50.438415Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbpd4eetlv9c73f8hfig",
+        "status": "live",
+        "sha": "c48f8aaa5d42b5cfcc647638545f8bed1843a9a8",
+        "finishedAt": "2026-11-10T08:14:29.517034Z"
+      }
+    ],
+    "allLiveOnSha": true
+  },
+  "actor": "the staging administrator (owner view in the inbox); name and initials masked in every picture, never kept",
+  "channel": "Demo WhatsApp · Central Floresta (simulator account 01a156bb-6778-72b0-8237-6028f8874503): nothing reaches a real phone; ZZ TEST simulator numbers only (not kept here)",
+  "inboxViewer": {
+    "roles": [
+      "owner"
+    ],
+    "capabilities": {
+      "writes": true,
+      "dashboard": true,
+      "assign": true,
+      "move": true,
+      "reopen": true,
+      "templates": true,
+      "kb": true,
+      "ai": true
+    }
+  },
+  "conversations": {
+    "en": {
+      "id": "01a1c48b-ac54-7c44-ae01-a4552f7c7cf2",
+      "contact": "ZZ TEST 821 EN typos",
+      "language": "en",
+      "lines": [
+        {
+          "by": "customer",
+          "text": "hi, bday for my son Misha (6 yo) on sat 21 novmber at 2pm pls, 12 kds and 4 adust",
+          "at": "2026-11-10T08:20:50.332Z",
+          "route": "POST /api/inbox/simulator/inbound",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "authorKind": null,
+          "providerStatus": null
+        },
+        {
+          "by": "team",
+          "text": "Great! 21 November at 14:00 works, 12 children and 4 adults noted.",
+          "at": "2026-11-10T08:21:00.211Z",
+          "route": "the inbox composer (POST /api/inbox/conversations/:id/messages)",
+          "status": 200,
+          "outcome": null,
+          "conversationsCreated": null,
+          "authorKind": "staff",
+          "providerStatus": "sent"
+        }
+      ]
+    },
+    "ru": {
+      "id": "01a1c48b-ae5e-7088-997e-1bd547d0bd66",
+      "contact": "ZZ TEST 821 RU typos",
+      "language": "ru",
+      "lines": [
+        {
+          "by": "customer",
+          "text": "Хотим день рождения дочки Ани, 5 лет, 15 ноабря в 15:00, 8 детй и 6 взрослх",
+          "at": "2026-11-10T08:20:50.956Z",
+          "route": "POST /api/inbox/simulator/inbound",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "authorKind": null,
+          "providerStatus": null
+        }
+      ]
+    },
+    "th": {
+      "id": "01a1c48b-b229-7c2d-b585-6dda555407d6",
+      "contact": "ZZ TEST 821 TH",
+      "language": "th",
+      "lines": [
+        {
+          "by": "customer",
+          "text": "อยากจัดวันเกิดน้องมีน่า 7 ขวบ วันที่ 22 พ.ย. บ่ายสอง เด็ก 10 คน ผู้ใหญ่ 5 คน",
+          "at": "2026-11-10T08:20:51.843Z",
+          "route": "POST /api/inbox/simulator/inbound",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "authorKind": null,
+          "providerStatus": null
+        }
+      ]
+    },
+    "dis": {
+      "id": "01a1c48b-b457-769a-a1c8-337dd671e3d9",
+      "contact": "ZZ TEST 821 EN two dates",
+      "language": "en",
+      "lines": [
+        {
+          "by": "customer",
+          "text": "Hello, we would like a birthday party on 21 November for 10 kids",
+          "at": "2026-11-10T08:20:52.382Z",
+          "route": "POST /api/inbox/simulator/inbound",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "authorKind": null,
+          "providerStatus": null
+        },
+        {
+          "by": "team",
+          "text": "sorry, 22 November is what we have",
+          "at": "2026-11-10T08:21:05.745Z",
+          "route": "the inbox composer (POST /api/inbox/conversations/:id/messages)",
+          "status": 200,
+          "outcome": null,
+          "conversationsCreated": null,
+          "authorKind": "staff",
+          "providerStatus": "sent"
+        }
+      ]
+    },
+    "dis2": {
+      "id": "01a1c48d-cc21-7fbd-846a-0b93ce28fbe2",
+      "contact": "ZZ TEST 821 EN day after",
+      "language": "en",
+      "lines": [
+        {
+          "by": "customer",
+          "text": "Hi, a birthday party on 21 November please, 10 kids",
+          "at": "2026-11-10T08:23:09.552Z",
+          "route": "POST /api/inbox/simulator/inbound",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "authorKind": null,
+          "providerStatus": null
+        },
+        {
+          "by": "team",
+          "text": "Sorry, 21 November is full. We have the day after free.",
+          "at": "2026-11-10T08:23:13.144Z",
+          "route": "the inbox composer (POST /api/inbox/conversations/:id/messages)",
+          "status": 200,
+          "outcome": null,
+          "conversationsCreated": null,
+          "authorKind": "staff",
+          "providerStatus": "sent"
+        },
+        {
+          "by": "customer",
+          "text": "ok, the day after then",
+          "at": "2026-11-10T08:23:15.655Z",
+          "route": "POST /api/inbox/simulator/inbound",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "authorKind": null,
+          "providerStatus": null
+        }
+      ]
+    }
+  },
+  "heldForPicture": "Step 1 only: the page's own GET …/book-date-proposal was fetched from the server at once (serverMs is the real wait) and handed to the page after the “before” picture, so the “Reading the whole chat…” state could be pictured. The other steps ran at natural speed.",
+  "bookDate": {
+    "en": {
+      "conversationId": "01a1c48b-ac54-7c44-ae01-a4552f7c7cf2",
+      "chatLines": [
+        {
+          "authorKind": "customer",
+          "body": "hi, bday for my son Misha (6 yo) on sat 21 novmber at 2pm pls, 12 kds and 4 adust",
+          "createdAt": "2026-11-10T08:20:50.000Z"
+        },
+        {
+          "authorKind": "ai",
+          "body": "(the inbox assistant’s own line: not read by Book Date, left out)",
+          "createdAt": "2026-11-10T08:20:57.995Z"
+        },
+        {
+          "authorKind": "staff",
+          "body": "Great! 21 November at 14:00 works, 12 children and 4 adults noted.",
+          "createdAt": "2026-11-10T08:21:00.268Z"
+        }
+      ],
+      "pageProposalCall": {
+        "path": "GET /api/inbox/conversations/01a1c48b-ac54-7c44-ae01-a4552f7c7cf2/book-date-proposal",
+        "status": 200,
+        "model": "ai",
+        "proposal": {
+          "date": {
+            "value": "2026-11-21",
+            "text": "21 November",
+            "source": "team",
+            "messageId": "01a1c48b-d0bc-76fe-8779-39db90791f89"
+          },
+          "startTime": {
+            "value": "14:00",
+            "text": "14:00",
+            "source": "team",
+            "messageId": "01a1c48b-d0bc-76fe-8779-39db90791f89"
+          },
+          "kids": {
+            "value": 12,
+            "text": "12 children",
+            "source": "team",
+            "messageId": "01a1c48b-d0bc-76fe-8779-39db90791f89"
+          },
+          "adults": {
+            "value": 4,
+            "text": "4 adults",
+            "source": "team",
+            "messageId": "01a1c48b-d0bc-76fe-8779-39db90791f89"
+          },
+          "childName": {
+            "value": "Misha",
+            "text": "Misha",
+            "source": "family",
+            "messageId": "01a1c48b-ac56-7d36-bec1-1fdfea311379"
+          },
+          "childAge": {
+            "value": 6,
+            "text": "6 yo",
+            "source": "family",
+            "messageId": "01a1c48b-ac56-7d36-bec1-1fdfea311379"
+          },
+          "branchHint": null
+        },
+        "patternReading": {
+          "date": "2026-11-21",
+          "dateText": "21 November",
+          "source": "team",
+          "startTime": "14:00",
+          "timeText": "at 14:00"
+        },
+        "answeredMsAfterClick": 5487,
+        "serverMs": 5433,
+        "heldForPicture": true
+      },
+      "dialogBeforeModelAnswer": {
+        "date": {
+          "value": "2026-11-21",
+          "chatWords": "21 November",
+          "mark": null,
+          "twoReadings": null
+        },
+        "startTime": {
+          "value": "14:00",
+          "chatWords": "at 14:00",
+          "mark": null,
+          "twoReadings": null
+        },
+        "park": {
+          "value": "Central Floresta",
+          "chatWords": null,
+          "mark": null,
+          "twoReadings": null
+        },
+        "kids": {
+          "value": "",
+          "chatWords": null,
+          "mark": null,
+          "twoReadings": null
+        },
+        "adults": {
+          "value": "",
+          "chatWords": null,
+          "mark": null,
+          "twoReadings": null
+        },
+        "childName": {
+          "value": "",
+          "chatWords": null,
+          "mark": null,
+          "twoReadings": null
+        },
+        "childAge": {
+          "value": "",
+          "chatWords": null,
+          "mark": null,
+          "twoReadings": null
+        },
+        "readingNote": true
+      },
+      "dialogAfterModelAnswer": {
+        "date": {
+          "value": "2026-11-21",
+          "chatWords": "21 November",
+          "mark": "from the team",
+          "twoReadings": null
+        },
+        "startTime": {
+          "value": "14:00",
+          "chatWords": "14:00",
+          "mark": "from the team",
+          "twoReadings": null
+        },
+        "park": {
+          "value": "Central Floresta",
+          "chatWords": null,
+          "mark": null,
+          "twoReadings": null
+        },
+        "kids": {
+          "value": "12",
+          "chatWords": "12 children",
+          "mark": "from the team",
+          "twoReadings": null
+        },
+        "adults": {
+          "value": "4",
+          "chatWords": "4 adults",
+          "mark": "from the team",
+          "twoReadings": null
+        },
+        "childName": {
+          "value": "Misha",
+          "chatWords": "Misha",
+          "mark": "from the family",
+          "twoReadings": null
+        },
+        "childAge": {
+          "value": "6",
+          "chatWords": "6 yo",
+          "mark": "from the family",
+          "twoReadings": null
+        },
+        "readingNote": false
+      },
+      "checks": {
+        "date": {
+          "expected": "2026-11-21",
+          "expectedMark": "from the team",
+          "shown": "2026-11-21",
+          "chatWords": "21 November",
+          "mark": "from the team",
+          "pass": true
+        },
+        "startTime": {
+          "expected": "14:00",
+          "expectedMark": "from the team",
+          "shown": "14:00",
+          "chatWords": "14:00",
+          "mark": "from the team",
+          "pass": true
+        },
+        "kids": {
+          "expected": "12",
+          "expectedMark": "from the team",
+          "shown": "12",
+          "chatWords": "12 children",
+          "mark": "from the team",
+          "pass": true
+        },
+        "adults": {
+          "expected": "4",
+          "expectedMark": "from the team",
+          "shown": "4",
+          "chatWords": "4 adults",
+          "mark": "from the team",
+          "pass": true
+        },
+        "childName": {
+          "expected": "Misha",
+          "expectedMark": "from the family",
+          "shown": "Misha",
+          "chatWords": "Misha",
+          "mark": "from the family",
+          "pass": true
+        },
+        "childAge": {
+          "expected": "6",
+          "expectedMark": "from the family",
+          "shown": "6",
+          "chatWords": "6 yo",
+          "mark": "from the family",
+          "pass": true
+        }
+      },
+      "status": "PASS",
+      "cancelled": true,
+      "eventAfterCancel": null,
+      "pictures": [
+        "821-st-01-en-chat-typos.png",
+        "821-st-02-en-book-date-reading-the-whole-chat.png",
+        "821-st-03-en-book-date-model-21-nov-14-00-12-kids-4-adults-misha-6.png"
+      ]
+    },
+    "ru": {
+      "conversationId": "01a1c48b-ae5e-7088-997e-1bd547d0bd66",
+      "chatLines": [
+        {
+          "authorKind": "customer",
+          "body": "Хотим день рождения дочки Ани, 5 лет, 15 ноабря в 15:00, 8 детй и 6 взрослх",
+          "createdAt": "2026-11-10T08:20:50.000Z"
+        },
+        {
+          "authorKind": "ai",
+          "body": "(the inbox assistant’s own line: not read by Book Date, left out)",
+          "createdAt": "2026-11-10T08:21:00.638Z"
+        }
+      ],
+      "pageProposalCall": {
+        "path": "GET /api/inbox/conversations/01a1c48b-ae5e-7088-997e-1bd547d0bd66/book-date-proposal",
+        "status": 200,
+        "model": "ai",
+        "proposal": {
+          "date": {
+            "value": "2026-11-15",
+            "text": "15 ноабря",
+            "source": "family",
+            "messageId": "01a1c48b-ae60-7f22-a6c3-acece4f6aa6b"
+          },
+          "startTime": {
+            "value": "15:00",
+            "text": "в 15:00",
+            "source": "family",
+            "messageId": "01a1c48b-ae60-7f22-a6c3-acece4f6aa6b"
+          },
+          "kids": {
+            "value": 8,
+            "text": "8 детй",
+            "source": "family",
+            "messageId": "01a1c48b-ae60-7f22-a6c3-acece4f6aa6b"
+          },
+          "adults": {
+            "value": 6,
+            "text": "6 взрослх",
+            "source": "family",
+            "messageId": "01a1c48b-ae60-7f22-a6c3-acece4f6aa6b"
+          },
+          "childName": {
+            "value": "Ани",
+            "text": "дочки Ани",
+            "source": "family",
+            "messageId": "01a1c48b-ae60-7f22-a6c3-acece4f6aa6b"
+          },
+          "childAge": {
+            "value": 5,
+            "text": "5 лет",
+            "source": "family",
+            "messageId": "01a1c48b-ae60-7f22-a6c3-acece4f6aa6b"
+          },
+          "branchHint": null
+        },
+        "patternReading": {
+          "date": null,
+          "dateText": "",
+          "source": null,
+          "startTime": "15:00",
+          "timeText": "в 15:00"
+        },
+        "answeredMsAfterClick": 3851,
+        "serverMs": null,
+        "heldForPicture": false
+      },
+      "dialogBeforeModelAnswer": null,
+      "dialogAfterModelAnswer": {
+        "date": {
+          "value": "2026-11-15",
+          "chatWords": "15 ноабря",
+          "mark": "from the family",
+          "twoReadings": null
+        },
+        "startTime": {
+          "value": "15:00",
+          "chatWords": "в 15:00",
+          "mark": "from the family",
+          "twoReadings": null
+        },
+        "park": {
+          "value": "Central Floresta",
+          "chatWords": null,
+          "mark": null,
+          "twoReadings": null
+        },
+        "kids": {
+          "value": "8",
+          "chatWords": "8 детй",
+          "mark": "from the family",
+          "twoReadings": null
+        },
+        "adults": {
+          "value": "6",
+          "chatWords": "6 взрослх",
+          "mark": "from the family",
+          "twoReadings": null
+        },
+        "childName": {
+          "value": "Ани",
+          "chatWords": "дочки Ани",
+          "mark": "from the family",
+          "twoReadings": null
+        },
+        "childAge": {
+          "value": "5",
+          "chatWords": "5 лет",
+          "mark": "from the family",
+          "twoReadings": null
+        },
+        "readingNote": false
+      },
+      "checks": {
+        "date": {
+          "expected": "2026-11-15",
+          "expectedMark": "from the family",
+          "shown": "2026-11-15",
+          "chatWords": "15 ноабря",
+          "mark": "from the family",
+          "pass": true
+        },
+        "startTime": {
+          "expected": "15:00",
+          "expectedMark": "from the family",
+          "shown": "15:00",
+          "chatWords": "в 15:00",
+          "mark": "from the family",
+          "pass": true
+        },
+        "kids": {
+          "expected": "8",
+          "expectedMark": "from the family",
+          "shown": "8",
+          "chatWords": "8 детй",
+          "mark": "from the family",
+          "pass": true
+        },
+        "adults": {
+          "expected": "6",
+          "expectedMark": "from the family",
+          "shown": "6",
+          "chatWords": "6 взрослх",
+          "mark": "from the family",
+          "pass": true
+        },
+        "childName": {
+          "expected": [
+            "Аня",
+            "Ани"
+          ],
+          "expectedMark": "from the family",
+          "shown": "Ани",
+          "chatWords": "дочки Ани",
+          "mark": "from the family",
+          "pass": true
+        },
+        "childAge": {
+          "expected": "5",
+          "expectedMark": "from the family",
+          "shown": "5",
+          "chatWords": "5 лет",
+          "mark": "from the family",
+          "pass": true
+        }
+      },
+      "status": "PASS",
+      "cancelled": true,
+      "eventAfterCancel": null,
+      "pictures": [
+        "821-st-04-ru-chat-typos.png",
+        "821-st-05-ru-book-date-model-15-nov-15-00-8-kids-6-adults-5.png"
+      ]
+    },
+    "th": {
+      "conversationId": "01a1c48b-b229-7c2d-b585-6dda555407d6",
+      "chatLines": [
+        {
+          "authorKind": "customer",
+          "body": "อยากจัดวันเกิดน้องมีน่า 7 ขวบ วันที่ 22 พ.ย. บ่ายสอง เด็ก 10 คน ผู้ใหญ่ 5 คน",
+          "createdAt": "2026-11-10T08:20:51.000Z"
+        },
+        {
+          "authorKind": "ai",
+          "body": "(the inbox assistant’s own line: not read by Book Date, left out)",
+          "createdAt": "2026-11-10T08:21:04.340Z"
+        }
+      ],
+      "pageProposalCall": {
+        "path": "GET /api/inbox/conversations/01a1c48b-b229-7c2d-b585-6dda555407d6/book-date-proposal",
+        "status": 200,
+        "model": "ai",
+        "proposal": {
+          "date": {
+            "value": "2026-11-22",
+            "text": "วันที่ 22 พ.ย.",
+            "source": "family",
+            "messageId": "01a1c48b-b22c-7271-ac74-721af050ee42"
+          },
+          "startTime": {
+            "value": "14:00",
+            "text": "บ่ายสอง",
+            "source": "family",
+            "messageId": "01a1c48b-b22c-7271-ac74-721af050ee42"
+          },
+          "kids": {
+            "value": 10,
+            "text": "เด็ก 10 คน",
+            "source": "family",
+            "messageId": "01a1c48b-b22c-7271-ac74-721af050ee42"
+          },
+          "adults": {
+            "value": 5,
+            "text": "ผู้ใหญ่ 5 คน",
+            "source": "family",
+            "messageId": "01a1c48b-b22c-7271-ac74-721af050ee42"
+          },
+          "childName": {
+            "value": "มีน่า",
+            "text": "น้องมีน่า",
+            "source": "family",
+            "messageId": "01a1c48b-b22c-7271-ac74-721af050ee42"
+          },
+          "childAge": {
+            "value": 7,
+            "text": "7 ขวบ",
+            "source": "family",
+            "messageId": "01a1c48b-b22c-7271-ac74-721af050ee42"
+          },
+          "branchHint": null
+        },
+        "patternReading": {
+          "date": "2026-11-22",
+          "dateText": "22 พ.ย.",
+          "source": "family",
+          "startTime": "14:00",
+          "timeText": "บ่ายสอง"
+        },
+        "answeredMsAfterClick": 3287,
+        "serverMs": null,
+        "heldForPicture": false
+      },
+      "dialogBeforeModelAnswer": null,
+      "dialogAfterModelAnswer": {
+        "date": {
+          "value": "2026-11-22",
+          "chatWords": "วันที่ 22 พ.ย.",
+          "mark": "from the family",
+          "twoReadings": null
+        },
+        "startTime": {
+          "value": "14:00",
+          "chatWords": "บ่ายสอง",
+          "mark": "from the family",
+          "twoReadings": null
+        },
+        "park": {
+          "value": "Central Floresta",
+          "chatWords": null,
+          "mark": null,
+          "twoReadings": null
+        },
+        "kids": {
+          "value": "10",
+          "chatWords": "เด็ก 10 คน",
+          "mark": "from the family",
+          "twoReadings": null
+        },
+        "adults": {
+          "value": "5",
+          "chatWords": "ผู้ใหญ่ 5 คน",
+          "mark": "from the family",
+          "twoReadings": null
+        },
+        "childName": {
+          "value": "มีน่า",
+          "chatWords": "น้องมีน่า",
+          "mark": "from the family",
+          "twoReadings": null
+        },
+        "childAge": {
+          "value": "7",
+          "chatWords": "7 ขวบ",
+          "mark": "from the family",
+          "twoReadings": null
+        },
+        "readingNote": false
+      },
+      "checks": {
+        "date": {
+          "expected": "2026-11-22",
+          "expectedMark": "from the family",
+          "shown": "2026-11-22",
+          "chatWords": "วันที่ 22 พ.ย.",
+          "mark": "from the family",
+          "pass": true
+        },
+        "startTime": {
+          "expected": "14:00",
+          "expectedMark": "from the family",
+          "shown": "14:00",
+          "chatWords": "บ่ายสอง",
+          "mark": "from the family",
+          "pass": true
+        },
+        "kids": {
+          "expected": "10",
+          "expectedMark": "from the family",
+          "shown": "10",
+          "chatWords": "เด็ก 10 คน",
+          "mark": "from the family",
+          "pass": true
+        },
+        "adults": {
+          "expected": "5",
+          "expectedMark": "from the family",
+          "shown": "5",
+          "chatWords": "ผู้ใหญ่ 5 คน",
+          "mark": "from the family",
+          "pass": true
+        },
+        "childName": {
+          "expected": [
+            "มีน่า",
+            "น้องมีน่า"
+          ],
+          "expectedMark": "from the family",
+          "shown": "มีน่า",
+          "chatWords": "น้องมีน่า",
+          "mark": "from the family",
+          "pass": true
+        },
+        "childAge": {
+          "expected": "7",
+          "expectedMark": "from the family",
+          "shown": "7",
+          "chatWords": "7 ขวบ",
+          "mark": "from the family",
+          "pass": true
+        }
+      },
+      "status": "PASS",
+      "cancelled": true,
+      "eventAfterCancel": null,
+      "pictures": [
+        "821-st-06-th-chat.png",
+        "821-st-07-th-book-date-model-22-nov-14-00-10-kids-5-adults-7.png"
+      ]
+    },
+    "dis": {
+      "conversationId": "01a1c48b-b457-769a-a1c8-337dd671e3d9",
+      "chatLines": [
+        {
+          "authorKind": "customer",
+          "body": "Hello, we would like a birthday party on 21 November for 10 kids",
+          "createdAt": "2026-11-10T08:20:52.000Z"
+        },
+        {
+          "authorKind": "staff",
+          "body": "sorry, 22 November is what we have",
+          "createdAt": "2026-11-10T08:21:05.793Z"
+        }
+      ],
+      "pageProposalCall": {
+        "path": "GET /api/inbox/conversations/01a1c48b-b457-769a-a1c8-337dd671e3d9/book-date-proposal",
+        "status": 200,
+        "model": "ai",
+        "proposal": {
+          "date": {
+            "value": "2026-11-22",
+            "text": "22 November",
+            "source": "team",
+            "messageId": "01a1c48b-e65a-7559-8080-9b6b43390a4e"
+          },
+          "startTime": null,
+          "kids": {
+            "value": 10,
+            "text": "10 kids",
+            "source": "family",
+            "messageId": "01a1c48b-b459-7f2b-bf49-7ea9f2d4efb8"
+          },
+          "adults": null,
+          "childName": null,
+          "childAge": null,
+          "branchHint": null
+        },
+        "patternReading": {
+          "date": "2026-11-22",
+          "dateText": "22 November",
+          "source": "team",
+          "startTime": null,
+          "timeText": ""
+        },
+        "answeredMsAfterClick": 3209,
+        "serverMs": null,
+        "heldForPicture": false
+      },
+      "dialogBeforeModelAnswer": null,
+      "dialogAfterModelAnswer": {
+        "date": {
+          "value": "2026-11-22",
+          "chatWords": "22 November",
+          "mark": "from the team",
+          "twoReadings": null
+        },
+        "startTime": {
+          "value": "14:00",
+          "chatWords": null,
+          "mark": null,
+          "twoReadings": null
+        },
+        "park": {
+          "value": "Central Floresta",
+          "chatWords": null,
+          "mark": null,
+          "twoReadings": null
+        },
+        "kids": {
+          "value": "10",
+          "chatWords": "10 kids",
+          "mark": "from the family",
+          "twoReadings": null
+        },
+        "adults": {
+          "value": "",
+          "chatWords": null,
+          "mark": null,
+          "twoReadings": null
+        },
+        "childName": {
+          "value": "",
+          "chatWords": null,
+          "mark": null,
+          "twoReadings": null
+        },
+        "childAge": {
+          "value": "",
+          "chatWords": null,
+          "mark": null,
+          "twoReadings": null
+        },
+        "readingNote": false
+      },
+      "checks": null,
+      "status": "SHOWN (see readout)",
+      "cancelled": true,
+      "eventAfterCancel": null,
+      "pictures": [
+        "821-st-08-dis-chat-family-21-team-22.png",
+        "821-st-09-dis-book-date-team-22-nov-wins-no-choice.png"
+      ],
+      "readout": "Both readings took the team's 22 November (the model: “22 November” from the team; the pattern reading: the same), so no choice was shown and the family's 21 November appears nowhere in the dialog. Date 22/11/2026 “22 November” from the team; kids 10 “10 kids” from the family; start time the Events module's 14:00 with no words; adults, name and age empty."
+    },
+    "dis2": {
+      "conversationId": "01a1c48d-cc21-7fbd-846a-0b93ce28fbe2",
+      "chatLines": [
+        {
+          "authorKind": "customer",
+          "body": "Hi, a birthday party on 21 November please, 10 kids",
+          "createdAt": "2026-11-10T08:23:09.000Z"
+        },
+        {
+          "authorKind": "staff",
+          "body": "Sorry, 21 November is full. We have the day after free.",
+          "createdAt": "2026-11-10T08:23:13.112Z"
+        },
+        {
+          "authorKind": "customer",
+          "body": "ok, the day after then",
+          "createdAt": "2026-11-10T08:23:15.000Z"
+        }
+      ],
+      "pageProposalCall": {
+        "path": "GET /api/inbox/conversations/01a1c48d-cc21-7fbd-846a-0b93ce28fbe2/book-date-proposal",
+        "status": 200,
+        "model": "ai",
+        "proposal": {
+          "date": {
+            "value": "2026-11-22",
+            "text": "the day after then",
+            "source": "family",
+            "messageId": "01a1c48d-e415-70cd-afd5-3c238aaf26e9"
+          },
+          "startTime": null,
+          "kids": {
+            "value": 10,
+            "text": "10 kids",
+            "source": "family",
+            "messageId": "01a1c48d-cc23-71d0-8cf6-3eb4dc12cf87"
+          },
+          "adults": null,
+          "childName": null,
+          "childAge": null,
+          "branchHint": null
+        },
+        "patternReading": {
+          "date": "2026-11-21",
+          "dateText": "21 November",
+          "source": "team",
+          "startTime": null,
+          "timeText": ""
+        },
+        "answeredMsAfterClick": 2620,
+        "serverMs": null,
+        "heldForPicture": false
+      },
+      "dialogBeforeModelAnswer": null,
+      "dialogAfterModelAnswer": {
+        "date": {
+          "value": "",
+          "chatWords": null,
+          "mark": null,
+          "twoReadings": [
+            "Sun 22 Nov 2026 “the day after then” from the family",
+            "Sat 21 Nov 2026 “21 November”"
+          ]
+        },
+        "startTime": {
+          "value": "14:00",
+          "chatWords": null,
+          "mark": null,
+          "twoReadings": null
+        },
+        "park": {
+          "value": "Central Floresta",
+          "chatWords": null,
+          "mark": null,
+          "twoReadings": null
+        },
+        "kids": {
+          "value": "10",
+          "chatWords": "10 kids",
+          "mark": "from the family",
+          "twoReadings": null
+        },
+        "adults": {
+          "value": "",
+          "chatWords": null,
+          "mark": null,
+          "twoReadings": null
+        },
+        "childName": {
+          "value": "",
+          "chatWords": null,
+          "mark": null,
+          "twoReadings": null
+        },
+        "childAge": {
+          "value": "",
+          "chatWords": null,
+          "mark": null,
+          "twoReadings": null
+        },
+        "readingNote": false
+      },
+      "checks": null,
+      "status": "SHOWN (see readout)",
+      "cancelled": true,
+      "eventAfterCancel": null,
+      "pictures": [
+        "821-st-10-dis2-chat-the-day-after.png",
+        "821-st-11-dis2-book-date-two-readings-choose-one.png"
+      ],
+      "readout": "Added to show the two-reading choice: the model read Sun 22 Nov from “the day after then” (from the family); the pattern reading read Sat 21 Nov from “21 November” (the team's line that says the 21st is full). The Date field was emptied and showed “The chat reads two ways: choose one” with both. The pattern's option carries no source mark in the dialog, though the api's patternReading names the team. Kids 10 “10 kids” from the family."
+    }
+  },
+  "apiRead": {
+    "en": {
+      "at": "2026-11-10T08:23:48.474Z",
+      "key": "en",
+      "path": "GET /api/inbox/conversations/01a1c48b-ac54-7c44-ae01-a4552f7c7cf2/book-date-proposal",
+      "status": 200,
+      "ms": 2970,
+      "conversationId": "01a1c48b-ac54-7c44-ae01-a4552f7c7cf2",
+      "model": "ai",
+      "proposal": {
+        "date": {
+          "value": "2026-11-21",
+          "text": "21 November",
+          "source": "team",
+          "messageId": "01a1c48b-d0bc-76fe-8779-39db90791f89"
+        },
+        "startTime": {
+          "value": "14:00",
+          "text": "14:00",
+          "source": "team",
+          "messageId": "01a1c48b-d0bc-76fe-8779-39db90791f89"
+        },
+        "kids": {
+          "value": 12,
+          "text": "12 children",
+          "source": "team",
+          "messageId": "01a1c48b-d0bc-76fe-8779-39db90791f89"
+        },
+        "adults": {
+          "value": 4,
+          "text": "4 adults",
+          "source": "team",
+          "messageId": "01a1c48b-d0bc-76fe-8779-39db90791f89"
+        },
+        "childName": {
+          "value": "Misha",
+          "text": "Misha",
+          "source": "family",
+          "messageId": "01a1c48b-ac56-7d36-bec1-1fdfea311379"
+        },
+        "childAge": {
+          "value": 6,
+          "text": "6 yo",
+          "source": "family",
+          "messageId": "01a1c48b-ac56-7d36-bec1-1fdfea311379"
+        },
+        "branchHint": null
+      },
+      "patternReading": {
+        "date": "2026-11-21",
+        "dateText": "21 November",
+        "source": "team",
+        "startTime": "14:00",
+        "timeText": "at 14:00"
+      },
+      "error": null
+    }
+  },
+  "cleanup": {
+    "at": "2026-11-10T08:24:01.199Z",
+    "conversations": {
+      "en": {
+        "id": "01a1c48b-ac54-7c44-ae01-a4552f7c7cf2",
+        "handle": {
+          "path": "POST /api/inbox/conversations/01a1c48b-ac54-7c44-ae01-a4552f7c7cf2/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T08:24:01.716Z",
+          "event": null
+        }
+      },
+      "ru": {
+        "id": "01a1c48b-ae5e-7088-997e-1bd547d0bd66",
+        "handle": {
+          "path": "POST /api/inbox/conversations/01a1c48b-ae5e-7088-997e-1bd547d0bd66/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T08:24:02.692Z",
+          "event": null
+        }
+      },
+      "th": {
+        "id": "01a1c48b-b229-7c2d-b585-6dda555407d6",
+        "handle": {
+          "path": "POST /api/inbox/conversations/01a1c48b-b229-7c2d-b585-6dda555407d6/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T08:24:03.654Z",
+          "event": null
+        }
+      },
+      "dis": {
+        "id": "01a1c48b-b457-769a-a1c8-337dd671e3d9",
+        "handle": {
+          "path": "POST /api/inbox/conversations/01a1c48b-b457-769a-a1c8-337dd671e3d9/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T08:24:04.627Z",
+          "event": null
+        }
+      },
+      "dis2": {
+        "id": "01a1c48d-cc21-7fbd-846a-0b93ce28fbe2",
+        "handle": {
+          "path": "POST /api/inbox/conversations/01a1c48d-cc21-7fbd-846a-0b93ce28fbe2/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T08:24:05.962Z",
+          "event": null
+        }
+      }
+    }
+  },
+  "signOut": {
+    "at": "2026-11-10T08:24:10.686Z",
+    "inbox": {
+      "inboxSignOut": 200,
+      "launcherSignOut": 200,
+      "inboxMeAfter": 401,
+      "launcherMeAfter": 401
+    }
+  },
+  "notDone": [
+    "Book Date Save (cancelled every time: nothing booked)",
+    "No setting read or changed; nothing deployed; no SMS; no real phone"
+  ],
+  "pictures": [
+    {
+      "file": "821-st-01-en-chat-typos.png",
+      "at": "2026-11-10T08:21:20.387Z",
+      "shows": "The ZZ TEST conversation (en) as the team member reads it, before Book Date",
+      "namesMasked": 44,
+      "masks": 0
+    },
+    {
+      "file": "821-st-02-en-book-date-reading-the-whole-chat.png",
+      "at": "2026-11-10T08:21:20.730Z",
+      "shows": "Book Date on en while the model reads the whole chat: the pattern reading only",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "821-st-03-en-book-date-model-21-nov-14-00-12-kids-4-adults-misha-6.png",
+      "at": "2026-11-10T08:21:27.633Z",
+      "shows": "Book Date on en after the model's reading of the whole chat, not saved",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "821-st-04-ru-chat-typos.png",
+      "at": "2026-11-10T08:21:46.594Z",
+      "shows": "The ZZ TEST conversation (ru) as the team member reads it, before Book Date",
+      "namesMasked": 43,
+      "masks": 0
+    },
+    {
+      "file": "821-st-05-ru-book-date-model-15-nov-15-00-8-kids-6-adults-5.png",
+      "at": "2026-11-10T08:21:52.217Z",
+      "shows": "Book Date on ru after the model's reading of the whole chat, not saved",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "821-st-06-th-chat.png",
+      "at": "2026-11-10T08:21:59.296Z",
+      "shows": "The ZZ TEST conversation (th) as the team member reads it, before Book Date",
+      "namesMasked": 43,
+      "masks": 0
+    },
+    {
+      "file": "821-st-07-th-book-date-model-22-nov-14-00-10-kids-5-adults-7.png",
+      "at": "2026-11-10T08:22:04.333Z",
+      "shows": "Book Date on th after the model's reading of the whole chat, not saved",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "821-st-08-dis-chat-family-21-team-22.png",
+      "at": "2026-11-10T08:22:26.335Z",
+      "shows": "The ZZ TEST conversation (dis) as the team member reads it, before Book Date",
+      "namesMasked": 44,
+      "masks": 0
+    },
+    {
+      "file": "821-st-09-dis-book-date-team-22-nov-wins-no-choice.png",
+      "at": "2026-11-10T08:22:31.299Z",
+      "shows": "Book Date on dis: both readings took the team's 22 November, so no two-reading choice; the family's 21 November is not shown",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "821-st-10-dis2-chat-the-day-after.png",
+      "at": "2026-11-10T08:23:25.662Z",
+      "shows": "The ZZ TEST conversation (dis2) as the team member reads it, before Book Date",
+      "namesMasked": 45,
+      "masks": 0
+    },
+    {
+      "file": "821-st-11-dis2-book-date-two-readings-choose-one.png",
+      "at": "2026-11-10T08:23:30.025Z",
+      "shows": "Book Date on dis2: the date reads two ways (the model: Sun 22 Nov, the day after, from the family; the pattern: Sat 21 Nov), the field emptied until one is chosen",
+      "namesMasked": 0,
+      "masks": 0
+    }
+  ]
+}
