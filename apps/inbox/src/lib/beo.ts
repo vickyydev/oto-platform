@@ -1,6 +1,6 @@
 import { readChatPartyDate, readPartyDate, type PartyChatLine } from '@oto/shared/chat-dates';
 import { INBOX_DAY_TIMEZONE } from '@oto/shared/inbox';
-import type { ConversationRow, Message } from '@/api/inbox';
+import type { BookDateProposal, ConversationRow, Message } from '@/api/inbox';
 
 /**
  * BOOK DATE'S READING OF THE CHAT (SCRUM-775, the date and time SCRUM-814).
@@ -196,6 +196,189 @@ export function bookDateDraft(data: BeoData, today: string, branchId: string | n
     childName: '',
     childAge: data.age,
   };
+}
+
+// --- The model's reading merged in (SCRUM-821) -----------------------------------------
+
+/**
+ * BOOK DATE'S VALUES FROM THE MODEL (SCRUM-821). The dialog opens at once with
+ * the pattern reading above, then asks the api to read the whole chat with
+ * the model (`GET …/book-date-proposal`), which reads typos and the three
+ * languages. When it answers:
+ *   - a field the person has typed in or chosen is theirs: never changed;
+ *   - a field the pattern reading left empty (or, for the time, at the Events
+ *     module's default) takes the model's value, with the chat's words and a
+ *     mark of whose line it was;
+ *   - a field both read the same keeps its value and gains the words and mark;
+ *   - a field they read differently is emptied and shows both readings: the
+ *     person picks one (or types their own) before Save;
+ *   - the park the chat names that is none the person can choose is shown as
+ *     the chat's words only;
+ *   - `unavailable`, or no answer at all, changes nothing: the pattern reading
+ *     stands and the dialog says nothing more.
+ * Nothing is saved until Save, as before.
+ */
+
+/** The fields a reading of the chat proposes. */
+export const PROPOSED_FIELDS = ['date', 'startTime', 'branchId', 'kids', 'adults', 'childName', 'childAge'] as const;
+export type ProposedField = (typeof PROPOSED_FIELDS)[number];
+
+/** How a pending choice is named when Save asks for it. */
+export const PROPOSED_FIELD_LABELS: Record<ProposedField, string> = {
+  date: 'date',
+  startTime: 'start time',
+  branchId: 'park',
+  kids: 'number of kids',
+  adults: 'number of adults',
+  childName: "child's name",
+  childAge: 'age',
+};
+
+export type ChatSource = 'team' | 'family';
+
+/** Where a value is in the chat: its words, and whose line (null when the pattern reading does not say). */
+export interface FieldSource {
+  text: string;
+  source: ChatSource | null;
+}
+
+/** One reading of a field the person may pick. */
+export interface FieldOption extends FieldSource {
+  value: string;
+  by: 'model' | 'pattern';
+}
+
+export interface BookDateState {
+  draft: BookDateDraft;
+  /** The fields the person typed in or chose: a reading never changes them. */
+  edited: readonly ProposedField[];
+  /** The chat's words and whose line, per field the model read. */
+  sources: Partial<Record<ProposedField, FieldSource>>;
+  /** The fields the two readings disagree on: the person picks. */
+  choices: Partial<Record<ProposedField, readonly FieldOption[]>>;
+  /** The park the chat names when it is none the person can choose: its words only. */
+  parkHint: FieldSource | null;
+  /** The answer already merged, so the same one is never merged twice. */
+  merged: BookDateProposal | null;
+}
+
+/** The dialog's state as it opens: the pattern reading, nothing edited. */
+export function freshBookDate(draft: BookDateDraft): BookDateState {
+  return { draft, edited: [], sources: {}, choices: {}, parkHint: null, merged: null };
+}
+
+const sameName = (a: string, b: string) => a.normalize('NFC').trim().toLowerCase() === b.normalize('NFC').trim().toLowerCase();
+
+/** The pattern reading of a field, when it read one: its value and the chat's words for it. */
+function patternOf(draft: BookDateDraft, field: ProposedField): { value: string; text: string } | null {
+  switch (field) {
+    case 'date':
+      return draft.date ? { value: draft.date, text: draft.dateFrom } : null;
+    case 'startTime':
+      // The Events module's 14:00 is no reading of the chat.
+      return draft.timeFrom ? { value: draft.startTime, text: draft.timeFrom } : null;
+    case 'branchId':
+      return draft.branchId ? { value: draft.branchId, text: '' } : null;
+    default:
+      return draft[field].trim() ? { value: draft[field].trim(), text: '' } : null;
+  }
+}
+
+function agree(field: ProposedField, a: string, b: string): boolean {
+  if (field === 'kids' || field === 'adults' || field === 'childAge') return Number(a) === Number(b);
+  if (field === 'childName') return sameName(a, b);
+  return a === b;
+}
+
+/** A field's value set, and the words shown beside the date and the time. */
+function withValue(draft: BookDateDraft, field: ProposedField, value: string, text: string): BookDateDraft {
+  const next = { ...draft, [field]: value };
+  if (field === 'date') next.dateFrom = text;
+  if (field === 'startTime') next.timeFrom = text;
+  return next;
+}
+
+/**
+ * The model's answer merged into the dialog, by the rules above. `branchIds`
+ * are the parks the person can choose in the dialog.
+ */
+export function mergeBookDateProposal(
+  state: BookDateState,
+  answer: BookDateProposal | null,
+  branchIds: readonly string[],
+): BookDateState {
+  if (!answer || answer.model !== 'ai' || !answer.proposal || state.merged === answer) return state;
+  const p = answer.proposal;
+  const read: Record<ProposedField, { value: string; text: string; source: ChatSource } | null> = {
+    date: p.date && { value: p.date.value, text: p.date.text, source: p.date.source },
+    startTime: p.startTime && { value: p.startTime.value, text: p.startTime.text, source: p.startTime.source },
+    branchId:
+      p.branchHint && p.branchHint.value !== null && branchIds.includes(p.branchHint.value)
+        ? { value: p.branchHint.value, text: p.branchHint.text, source: p.branchHint.source }
+        : null,
+    kids: p.kids && { value: String(p.kids.value), text: p.kids.text, source: p.kids.source },
+    adults: p.adults && { value: String(p.adults.value), text: p.adults.text, source: p.adults.source },
+    childName: p.childName && { value: p.childName.value, text: p.childName.text, source: p.childName.source },
+    childAge: p.childAge && { value: String(p.childAge.value), text: p.childAge.text, source: p.childAge.source },
+  };
+  let draft = state.draft;
+  const sources = { ...state.sources };
+  const choices = { ...state.choices };
+  for (const field of PROPOSED_FIELDS) {
+    const model = read[field];
+    if (!model || state.edited.includes(field) || choices[field]) continue;
+    const pattern = patternOf(draft, field);
+    if (pattern && !agree(field, pattern.value, model.value)) {
+      choices[field] = [
+        { value: model.value, text: model.text, source: model.source, by: 'model' },
+        { value: pattern.value, text: pattern.text, source: null, by: 'pattern' },
+      ];
+      delete sources[field];
+      draft = withValue(draft, field, '', '');
+      continue;
+    }
+    sources[field] = { text: model.text, source: model.source };
+    draft = withValue(draft, field, pattern ? pattern.value : model.value, model.text);
+  }
+  const parkHint =
+    p.branchHint && read.branchId === null ? { text: p.branchHint.text, source: p.branchHint.source } : state.parkHint;
+  return { ...state, draft, sources, choices, parkHint, merged: answer };
+}
+
+/** The person typed in a field: it is theirs, and a choice on it is settled. */
+export function editBookDate<K extends keyof BookDateDraft>(state: BookDateState, key: K, value: BookDateDraft[K]): BookDateState {
+  const field = (PROPOSED_FIELDS as readonly string[]).includes(key) ? (key as ProposedField) : null;
+  if (!field) return { ...state, draft: { ...state.draft, [key]: value } };
+  const choices = { ...state.choices };
+  delete choices[field];
+  return {
+    ...state,
+    draft: { ...state.draft, [key]: value },
+    edited: state.edited.includes(field) ? state.edited : [...state.edited, field],
+    choices,
+  };
+}
+
+/** The person picked one of two readings: its value, its words, and the choice settled. */
+export function pickBookDateChoice(state: BookDateState, field: ProposedField, option: FieldOption): BookDateState {
+  const choices = { ...state.choices };
+  delete choices[field];
+  const sources = { ...state.sources };
+  if (option.text) sources[field] = { text: option.text, source: option.source };
+  else delete sources[field];
+  return {
+    ...state,
+    draft: withValue(state.draft, field, option.value, option.text),
+    edited: state.edited.includes(field) ? state.edited : [...state.edited, field],
+    sources,
+    choices,
+  };
+}
+
+/** What Save says while a field still has two readings to pick from; null when none has. */
+export function pendingChoice(state: BookDateState): string | null {
+  const field = PROPOSED_FIELDS.find((f) => state.choices[f]);
+  return field ? `The chat reads two ways for the ${PROPOSED_FIELD_LABELS[field]}: choose one.` : null;
 }
 
 /** A whole number from a field, or null when it is empty; NaN when it is not one. */

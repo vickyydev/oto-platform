@@ -23,6 +23,7 @@ import { ApiError } from '@/api/client';
 import { assistantApi } from '@/api/assistant';
 import {
   inboxApi,
+  type BookDateProposal,
   type ConversationDetail,
   type ConversationEvent,
   type ConversationRow,
@@ -194,6 +195,33 @@ export function ChatPanel({
     setBooking(null);
     setBookError(null);
   }, [conv.id]);
+
+  // SCRUM-821: Book Date opens with the pattern reading, then asks the model to
+  // read the whole chat; whatever it answers (or fails to) belongs to that one
+  // opening. A failure says nothing: the pattern reading stands.
+  const [bookReading, setBookReading] = useState<{ eventId: string; answer: BookDateProposal | null; reading: boolean } | null>(null);
+  const bookingEventId = booking?.eventId ?? null;
+  const bookingConversationId = booking?.conversationId ?? null;
+  useEffect(() => {
+    if (!bookingEventId || !bookingConversationId) {
+      setBookReading(null);
+      return;
+    }
+    let gone = false;
+    setBookReading({ eventId: bookingEventId, answer: null, reading: true });
+    inboxApi.bookDateProposal(bookingConversationId).then(
+      (answer) => {
+        if (!gone) setBookReading({ eventId: bookingEventId, answer, reading: false });
+      },
+      () => {
+        if (!gone) setBookReading({ eventId: bookingEventId, answer: null, reading: false });
+      },
+    );
+    return () => {
+      gone = true;
+    };
+  }, [bookingEventId, bookingConversationId]);
+  const bookProposal = bookReading && bookReading.eventId === bookingEventId ? bookReading : null;
 
   // SCRUM-590 A3: the assistant's pause on this thread (§A.3 kill switch 3),
   // for whoever acts on it; and "Correct the assistant" for anyone who may write.
@@ -984,6 +1012,8 @@ export function ChatPanel({
           thenOpensBeo={booking?.thenBeo ?? false}
           onCancel={() => setBooking(null)}
           onSave={(values) => void saveBooking(values)}
+          proposal={bookProposal?.answer ?? null}
+          reading={bookProposal?.reading ?? false}
         />
       )}
       <DetailsDialog

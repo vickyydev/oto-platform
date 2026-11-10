@@ -1,8 +1,21 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Calendar, Clock3, Hash, Loader2, MapPin, Phone, Users, Wand2, type LucideIcon } from 'lucide-react';
 import { Dialog } from '@/components/Dialog';
 import { Refusal } from '@/components/confirms';
-import { countOf, type BookDateDraft } from '@/lib/beo';
+import type { BookDateProposal } from '@/api/inbox';
+import {
+  countOf,
+  editBookDate,
+  freshBookDate,
+  mergeBookDateProposal,
+  pendingChoice,
+  pickBookDateChoice,
+  type BookDateDraft,
+  type BookDateState,
+  type FieldOption,
+  type FieldSource,
+  type ProposedField,
+} from '@/lib/beo';
 
 const CANCEL =
   'rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-1.5 text-[13px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60';
@@ -49,6 +62,76 @@ export function readDraft(d: BookDateDraft): { values: BookDateValues } | { prob
   };
 }
 
+/** "from the family" / "from the team": whose line the chat's words are. */
+export function SourceMark({ source }: { source: FieldSource['source'] }) {
+  if (!source) return null;
+  return (
+    <span className="ml-1 inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-1.5 py-px text-[10px] font-medium text-slate-600 dark:text-slate-300">
+      {source === 'team' ? 'from the team' : 'from the family'}
+    </span>
+  );
+}
+
+const HINT = 'text-[11px] text-slate-500 dark:text-slate-400';
+
+/** The chat's own words for a value, and whose line they are. */
+function Says({ text, source }: { text: string; source: FieldSource['source'] }) {
+  return (
+    <span className={HINT}>
+      The chat says “{text}”
+      <SourceMark source={source} />
+    </span>
+  );
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/** A reading's value as a person reads it: "Sat 21 Nov 2026", a park's name, the number. */
+function shown(field: ProposedField, value: string, branches: readonly { value: string; label: string }[]): string {
+  if (field === 'date') {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (!m) return value;
+    const day = new Date(`${value}T12:00:00Z`).getUTCDay();
+    return `${DAYS[day] ?? ''} ${Number(m[3])} ${MONTHS[Number(m[2]) - 1] ?? ''} ${m[1]}`.trim();
+  }
+  if (field === 'branchId') return branches.find((b) => b.value === value)?.label ?? 'The conversation’s park';
+  return value;
+}
+
+/** Two readings of one field: the person picks one, or types their own. */
+function Choice({
+  field,
+  options,
+  branches,
+  onPick,
+}: {
+  field: ProposedField;
+  options: readonly FieldOption[];
+  branches: readonly { value: string; label: string }[];
+  onPick: (option: FieldOption) => void;
+}) {
+  return (
+    <span className="flex flex-col gap-1" data-choice={field}>
+      <span className="text-[11px] font-medium text-amber-700 dark:text-amber-300">The chat reads two ways: choose one</span>
+      <span className="flex flex-wrap gap-1.5">
+        {options.map((o) => (
+          <button
+            key={`${o.by}-${o.value}`}
+            type="button"
+            onClick={() => onPick(o)}
+            className="inline-flex max-w-full items-center gap-1 rounded-lg border border-amber-200 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/10 px-2 py-1 text-left text-[12px] text-slate-800 dark:text-slate-100 hover:bg-amber-100 dark:hover:bg-amber-500/20"
+          >
+            <span className="font-medium">{shown(field, o.value, branches)}</span>
+            {o.text && <span className="truncate text-slate-500 dark:text-slate-400">“{o.text}”</span>}
+            <SourceMark source={o.source} />
+          </button>
+        ))}
+      </span>
+    </span>
+  );
+}
+
 function Field({
   icon: Icon,
   label,
@@ -93,6 +176,8 @@ export function BookDateDialog({
   thenOpensBeo,
   onCancel,
   onSave,
+  proposal = null,
+  reading = false,
 }: {
   open: boolean;
   /** The contact's name, for the title. */
@@ -106,20 +191,49 @@ export function BookDateDialog({
   thenOpensBeo: boolean;
   onCancel: () => void;
   onSave: (values: BookDateValues) => void;
+  /**
+   * SCRUM-821: the model's reading of the whole chat, once the api answers
+   * (null while it reads, or when it could not). Merged into the fields the
+   * person has not touched; `unavailable` changes nothing.
+   */
+  proposal?: BookDateProposal | null;
+  /** The model is still reading the chat. */
+  reading?: boolean;
 }) {
-  const [draft, setDraft] = useState<BookDateDraft>(initial);
+  const branchIds = useMemo(() => branches.map((b) => b.value), [branches]);
+  const [state, setState] = useState<BookDateState>(() => mergeBookDateProposal(freshBookDate(initial), proposal, branchIds));
   const [problem, setProblem] = useState<string | null>(null);
   // A fresh reading each time it opens (another conversation, newer lines).
   useEffect(() => {
     if (open) {
-      setDraft(initial);
+      setState(mergeBookDateProposal(freshBookDate(initial), proposal, branchIds));
       setProblem(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
-  const set = <K extends keyof BookDateDraft>(k: K, v: BookDateDraft[K]) => setDraft((d) => ({ ...d, [k]: v }));
+  // The model's reading, when it answers while the dialog is open.
+  useEffect(() => {
+    if (open && proposal) setState((s) => mergeBookDateProposal(s, proposal, branchIds));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proposal]);
+  const draft = state.draft;
+  const set = <K extends keyof BookDateDraft>(k: K, v: BookDateDraft[K]) => setState((s) => editBookDate(s, k, v));
+  const pick = (field: ProposedField, option: FieldOption) => setState((s) => pickBookDateChoice(s, field, option));
+  /** A field's line under it: the two readings to pick from, else the chat's words for its value. */
+  const hint = (field: ProposedField, otherwise?: ReactNode): ReactNode => {
+    const options = state.choices[field];
+    if (options) return <Choice field={field} options={options} branches={branches} onPick={(o) => pick(field, o)} />;
+    const source = state.sources[field];
+    if (source) return <Says text={source.text} source={source.source} />;
+    return otherwise;
+  };
 
   const save = () => {
+    const pending = pendingChoice(state);
+    if (pending) {
+      setProblem(pending);
+      return;
+    }
     const read = readDraft(draft);
     if ('problem' in read) {
       setProblem(read.problem);
@@ -155,29 +269,31 @@ export function BookDateDialog({
         </>
       }
     >
-      <div className="mb-3 inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-200 dark:ring-indigo-500/30">
-        <Wand2 className="h-3 w-3" /> Read from the chat
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-200 dark:ring-indigo-500/30">
+          <Wand2 className="h-3 w-3" /> Read from the chat
+        </span>
+        {reading && (
+          <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+            <Loader2 className="h-3 w-3 animate-spin" /> Reading the whole chat…
+          </span>
+        )}
       </div>
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
         <Field
           icon={Calendar}
           label="Date"
-          hint={
-            draft.dateFrom ? (
-              <span className="text-[11px] text-slate-500 dark:text-slate-400">The chat says “{draft.dateFrom}”</span>
-            ) : (
-              <span className="text-[11px] text-slate-500 dark:text-slate-400">The chat names no date</span>
-            )
-          }
+          hint={hint(
+            'date',
+            draft.dateFrom ? <Says text={draft.dateFrom} source={null} /> : <span className={HINT}>The chat names no date</span>,
+          )}
         >
           <input type="date" value={draft.date} onChange={(e) => set('date', e.target.value)} aria-label="Date" className={INPUT} />
         </Field>
         <Field
           icon={Clock3}
           label="Start time"
-          hint={
-            draft.timeFrom ? <span className="text-[11px] text-slate-500 dark:text-slate-400">The chat says “{draft.timeFrom}”</span> : undefined
-          }
+          hint={hint('startTime', draft.timeFrom ? <Says text={draft.timeFrom} source={null} /> : undefined)}
         >
           <input
             type="time"
@@ -187,7 +303,12 @@ export function BookDateDialog({
             className={INPUT}
           />
         </Field>
-        <Field icon={MapPin} label="Park" full>
+        <Field
+          icon={MapPin}
+          label="Park"
+          full
+          hint={hint('branchId', state.parkHint ? <Says text={state.parkHint.text} source={state.parkHint.source} /> : undefined)}
+        >
           <select value={draft.branchId} onChange={(e) => set('branchId', e.target.value)} aria-label="Park" className={INPUT}>
             <option value="">Choose the park</option>
             {branches.map((b) => (
@@ -197,10 +318,10 @@ export function BookDateDialog({
             ))}
           </select>
         </Field>
-        <Field icon={Hash} label="# of kids">
+        <Field icon={Hash} label="# of kids" hint={hint('kids')}>
           <input inputMode="numeric" value={draft.kids} onChange={(e) => set('kids', e.target.value)} placeholder="0" aria-label="Kids" className={INPUT} />
         </Field>
-        <Field icon={Hash} label="# of adults">
+        <Field icon={Hash} label="# of adults" hint={hint('adults')}>
           <input inputMode="numeric" value={draft.adults} onChange={(e) => set('adults', e.target.value)} placeholder="0" aria-label="Adults" className={INPUT} />
         </Field>
         <Field icon={Users} label="Booking name">
@@ -209,10 +330,10 @@ export function BookDateDialog({
         <Field icon={Phone} label="Phone">
           <input value={draft.phone} onChange={(e) => set('phone', e.target.value)} placeholder="+66…" aria-label="Phone" className={INPUT} />
         </Field>
-        <Field icon={Users} label="Child's name">
+        <Field icon={Users} label="Child's name" hint={hint('childName')}>
           <input value={draft.childName} onChange={(e) => set('childName', e.target.value)} placeholder="If the chat says it" aria-label="Child's name" className={INPUT} />
         </Field>
-        <Field icon={Hash} label="Turning (age)">
+        <Field icon={Hash} label="Turning (age)" hint={hint('childAge')}>
           <input inputMode="numeric" value={draft.childAge} onChange={(e) => set('childAge', e.target.value)} placeholder="—" aria-label="Turning age" className={INPUT} />
         </Field>
       </div>
