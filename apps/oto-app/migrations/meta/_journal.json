@@ -309,6 +309,13 @@
       "when": 1794286265516,
       "tag": "0045_otoapp_v_event_packages_one_deposit",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1794309450385,
+      "tag": "0046_inbox_handover_notification",
+      "breakpoints": true
     }
   ]
 }

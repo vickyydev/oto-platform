@@ -44,6 +44,8 @@ interface NotificationItem {
 const notificationMeta: Record<string, { icon: typeof Bell; label: string; color: string }> = {
   timekeeping_ping: { icon: CalendarClock, label: "Clock-in", color: "text-amber-500 dark:text-amber-400" },
   fix_report_urgent: { icon: AlertTriangle, label: "Urgent fix", color: "text-red-500 dark:text-red-400" },
+  // SCRUM-823: a Birthdays & Events conversation handed to a person in the platform's inbox.
+  inbox_handover: { icon: MessageSquare, label: "Inbox", color: "text-amber-500 dark:text-amber-400" },
   task_comment: { icon: MessageSquare, label: "Comment", color: "text-blue-500 dark:text-blue-400" },
   task_assigned: { icon: UserPlus, label: "Assigned", color: "text-violet-500 dark:text-violet-400" },
   task_status_changed: { icon: RefreshCw, label: "Status", color: "text-amber-500 dark:text-amber-400" },

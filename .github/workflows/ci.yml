@@ -870,6 +870,13 @@ jobs:
       - name: The app's inbox birthday booking checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/directory-inbox-event.check.ts
+      # SCRUM-823: the inbox telling a person in the bell (migration 0046) —
+      # only a notifications:write key; an inbox_handover row for a user of the
+      # key's park group; another park group's user is not found; a login in
+      # pay only or switched off is addressed nothing; a replay is one row.
+      - name: The app's inbox hand-over notification checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/directory-notifications.check.ts
       # SCRUM-660: Create BEO's AI Fill on the inbox confirmation — Thai,
       # English and Russian into the same preview with the message beside it;
       # the platform read as the person (their session's cookie) and each of

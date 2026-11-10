@@ -170,6 +170,7 @@ import {
 } from "./leave-types";
 import { directoryEventRouter } from "./directory/eventRoutes";
 import { directoryJobRouter } from "./directory/jobRoutes";
+import { directoryNotificationRouter } from "./directory/notificationRoutes";
 import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeOffboarding, employeeEngagements, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, timekeepingIssues, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, dutyBlocks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, sickLeavePolicies, type LeaveType, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, employeePayrollProfiles, payslips, accessPolicies, accessItems, userPreferences, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, requireKioskPermission, requireKioskPermissionIfKiosk, requireKioskSession, validateKioskSession } from "./kiosk-auth";
 import { hashPin, verifyEmployeePin } from "./pin-utils";
@@ -15421,6 +15422,11 @@ OTO Company Limited`,
   // A tenant-bound directory key, not the shared HR key above
   // (server/directory/eventRoutes.ts).
   app.use(directoryEventRouter(pool));
+
+  // SCRUM-823: the platform's inbox telling the birthday manager on duty (and
+  // the GM) in the bell, under a `notifications:write` key
+  // (server/directory/notificationRoutes.ts).
+  app.use(directoryNotificationRouter(pool));
 
   // The platform's job runner running this app's night batches for one park
   // group at a time, under a `jobs:run` key; refused while OTOAPP_JOBS is

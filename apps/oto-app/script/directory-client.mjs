@@ -3,7 +3,7 @@
  * (`directory_clients`, migration 0003; checked by
  * server/directory/clientAuth.ts).
  *
- *   npm run directory:client -- create --tenant <tenant uuid> --name <who> [--scope events:write] [--scope jobs:run] [--scope hr:read]
+ *   npm run directory:client -- create --tenant <tenant uuid> --name <who> [--scope events:write] [--scope jobs:run] [--scope hr:read] [--scope notifications:write]
  *   npm run directory:client -- list [--tenant <tenant uuid>]
  *   npm run directory:client -- revoke --id <client uuid>
  *
@@ -24,6 +24,10 @@
  *                 branch roster, roles, departments, branches), answered for
  *                 this park group only (S2-17b round 4a), sent as
  *                 Authorization: Bearer <key>.
+ *   notifications:write  the platform's inbox putting a hand-over notice in
+ *                 a person's bell (SCRUM-823), on the same key the
+ *                 platform holds as OTOAPP_DIRECTORY_KEY (issue it with
+ *                 both --scope events:write and --scope notifications:write).
  *
  * DATABASE_URL in the environment.
  */
@@ -31,7 +35,7 @@ import { createHash, randomBytes } from "node:crypto";
 import pg from "pg";
 
 const SCHEMA = "otoapp";
-const SCOPES = ["events:write", "jobs:run", "hr:read"];
+const SCOPES = ["events:write", "jobs:run", "hr:read", "notifications:write"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function fail(message) {

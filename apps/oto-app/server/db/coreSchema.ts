@@ -244,7 +244,11 @@ export type DirectoryCache = typeof directoryCache.$inferSelect;
 // (server/directory/hrReadAuth.ts) answer for the key's park group only. The
 // shared HR_DIRECTORY_API_KEY still works where it is set, for the default
 // park group only (plan Q13).
-export const DIRECTORY_CLIENT_SCOPES = ["events:write", "jobs:run", "hr:read"] as const;
+//
+// `notifications:write` (SCRUM-823): the platform's inbox puts a hand-over
+// notice in a person's bell through `POST /api/directory/notifications`
+// (server/directory/notificationRoutes.ts).
+export const DIRECTORY_CLIENT_SCOPES = ["events:write", "jobs:run", "hr:read", "notifications:write"] as const;
 export type DirectoryClientScope = (typeof DIRECTORY_CLIENT_SCOPES)[number];
 
 export const directoryClients = pgTable(
@@ -3686,6 +3690,8 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "task_priority_changed",
   "timekeeping_ping",
   "fix_report_urgent",
+  // SCRUM-823, migration 0046: an inbox hand-over the platform tells a person of.
+  "inbox_handover",
 ]);
 
 export const notifications = pgTable(
