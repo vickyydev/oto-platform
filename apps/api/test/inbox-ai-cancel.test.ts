@@ -119,10 +119,16 @@ describe('a staff reply (§A.3)', () => {
 
   it('during typing time withdraws the unsent assistant lines; they never leave', async () => {
     const { conv } = await pendingThread();
-    w.fake.push({ kind: 'decision', decision: decision({ bubbles: [`Hi ${SENTINEL}!`, 'How can we help today?'] }) });
-    expect((await tick(w, later(25_000))).answered).toBe(1);
+    // SCRUM-832: the answer is one message, so two lines are the answer and the closing line after it
+    // (a request the knowledge does not cover: the branch's unclear line).
+    w.fake.push({
+      kind: 'decision',
+      decision: decision({ intents: ['greeting', 'custom_request'], bubbles: [`Hi ${SENTINEL}!`, 'How can we help today?'] }),
+    });
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
     const lines = await aiLines(w, conv.id);
     expect(lines.map((l) => l.providerStatus)).toEqual(['queued', 'queued']);
+    expect(lines[0]!.body).toBe(`Hi ${SENTINEL}!\n\nHow can we help today?`);
 
     expect((await reply(agentCookie, conv.id, 'Hello! This is reception.')).status).toBe(200);
     const after = await aiLines(w, conv.id);

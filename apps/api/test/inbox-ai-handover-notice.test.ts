@@ -398,7 +398,8 @@ describe('SCRUM-823: the birthday manager on duty is told', () => {
     const [turn] = await turnsOf(w, conv.id);
     expect(turn).toMatchObject({ state: 'handed_over' });
     const closing = await templateRow('closing_birthday', 'en');
-    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([...opener, closing.body]);
+    // SCRUM-832: the opener is one message; the birthday manager's line follows on its own.
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([opener.join('\n\n'), closing.body]);
     const rows = await noticesOf(conv.id);
     expect(rows.map((r) => ({ kind: r.kind, channel: r.channel, intent: r.intent, state: r.state }))).toEqual([
       { kind: 'notice', channel: 'app', intent: 'birthday_advice', state: 'sent' },

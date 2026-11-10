@@ -157,9 +157,12 @@ describe("the owner's case: the age asked once, answered, never asked again", ()
     // A thread with nothing asked yet: the declaration and the age rule ride, no memory block.
     expect(t.prompts[0]).toContain('askedSlots: when a bubble of yours asks');
     expect(t.prompts[0]).not.toContain('<asked_before>');
+    // SCRUM-832: the open and the question are one message; the question is recorded on it.
     const lines = await aiLines(w, convId);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]!.body).toContain(ask);
     const [q] = await questionsOf(convId);
-    expect(q).toMatchObject({ slot: 'child_age', state: 'open', answer: null, askedMessageId: lines[1]!.id, closedAt: null });
+    expect(q).toMatchObject({ slot: 'child_age', state: 'open', answer: null, askedMessageId: lines[0]!.id, closedAt: null });
     expect(await guardTrips(convId)).toEqual([]);
   });
 
@@ -226,7 +229,8 @@ describe("the owner's case: the age asked once, answered, never asked again", ()
       `/inbox/conversations/${convId}`,
     );
     expect(res.status).toBe(200);
-    expect(res.body.openQuestions[0]).toMatchObject({ slot: 'child_age', state: 'answered', answer: '8', askedMessageId: lines[1]!.id });
+    // SCRUM-832: the first reply was one message, the age asked in it.
+    expect(res.body.openQuestions[0]).toMatchObject({ slot: 'child_age', state: 'answered', answer: '8', askedMessageId: lines[0]!.id });
     expect(res.body.openQuestions.map((q) => q.slot)).toEqual(expect.arrayContaining(['child_age', 'date', 'guests_count', 'park']));
   });
 

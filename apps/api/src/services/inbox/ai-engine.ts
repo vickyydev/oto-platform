@@ -3,6 +3,7 @@ import {
   AI_INTENTS,
   AI_REPLY_LANGUAGES,
   BY_BRANCH,
+  PART_JOIN,
   REVIEW_THREAD_LINES,
   REVIEW_VERSION,
   applyGates,
@@ -723,7 +724,16 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
   // SCRUM-823: the gate reads them too — the opener beside an advice hand-over
   // is asked once — and every line the family wrote this episode, so it never
   // asks a date, a headcount or a park they gave in an earlier message.
-  const episodeState: EpisodeState = { ...facts.state, questions: memory.questions, customerLines: customerLinesOf(episode) };
+  // SCRUM-832: the park question reads the same (a park the family gave is
+  // never asked again, and sets the thread's park), and the assistant's own
+  // lines this episode (once the park is known, what was said about it while
+  // it was being resolved is not said again).
+  const episodeState: EpisodeState = {
+    ...facts.state,
+    questions: memory.questions,
+    customerLines: customerLinesOf(episode),
+    aiLines: episode.flatMap((m) => (m.from === 'ai' && m.text !== null ? [m.text] : [])),
+  };
   const promptInput: PromptInput = {
     knowledge: knowledge.knowledge,
     episode,
@@ -1423,6 +1433,25 @@ interface OutLine extends LineItem {
   origin: ReviewOrigin;
   /** The template a fixed line came from; null for the model's words. */
   templateKey: InboxTemplateKey | null;
+  /** SCRUM-832: a part of the answer's one message (the gate's `parts`): sent side by side with the parts next to it. */
+  part?: true;
+}
+
+/**
+ * SCRUM-832, ONE MESSAGE PER TURN: the answer's parts that survived the
+ * coherence review, side by side, as ONE line — the gate's one bubble when
+ * the review changed nothing. A closing line, a brochure and a line the
+ * review merged stay their own.
+ */
+function oneMessage(lines: readonly LineItem[]): LineItem[] {
+  const out: LineItem[] = [];
+  const isPart = (l: LineItem | undefined): l is OutLine => l !== undefined && (l as OutLine).part === true && l.body !== null;
+  for (const l of lines) {
+    const prev = out.at(-1);
+    if (isPart(l) && isPart(prev)) out[out.length - 1] = { ...prev, body: `${prev.body}${PART_JOIN}${l.body}` };
+    else out.push(l);
+  }
+  return out;
 }
 
 /** The reply a verdict makes on this thread, and everything the commit needs to send it. */
@@ -1461,7 +1490,8 @@ async function composeReply(exec: Exec, conv: ConversationRow, account: AccountR
   // A hand-over the number's policy silences says nothing at all, its
   // answer included (the nanny on Central's own number is the desk's).
   const replied = v.action === 'answer' && !handover?.silenced;
-  const lines: OutLine[] = replied ? v.bubbles.map((b) => ({ body: b, origin: 'model', templateKey: null })) : [];
+  // SCRUM-832: the one message's parts, each its own item for the review; `oneMessage` joins what survives.
+  const lines: OutLine[] = replied ? (v.parts ?? v.bubbles).map((b) => ({ body: b, origin: 'model', templateKey: null, part: true })) : [];
   let brochure: string[] = [];
   let holding: HoldingLine = NO_LINE;
   if (handover && !handover.silenced) {
@@ -1939,6 +1969,8 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       const turnResult: TurnResult = composed.fallback ? { ...r, verdict: v } : r;
       const finalReason = handoverReason(handover, reason);
       const settled = settleReview(composed.lines, r.review);
+      // SCRUM-832: what goes is one message per turn — the parts the review kept, side by side.
+      const outgoing = oneMessage(settled.lines);
       // SCRUM-678: a rethought turn keeps the reviewer's reading for staff, and says how it ended.
       const rethink = r.rethink ? await rethinkRecordOf(tx, conv, r, composed, at) : null;
       const records = { coherence: settled.record, rethink };
@@ -1954,7 +1986,7 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
         let messageIds: string[] = [];
         if (v && v.action !== 'silent') {
           const holding = composed.holding;
-          const lines = settled.lines.flatMap((l) => (l.body ? [l.body] : []));
+          const lines = outgoing.flatMap((l) => (l.body ? [l.body] : []));
           const id = await writeShadowLine(tx, conv, v.language, lines, at);
           messageIds = id ? [id] : [];
           await tx.insert(inboxEvent).values(
@@ -2024,7 +2056,7 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       // Composed above, before anything was written; a non-silent verdict always has its routing read.
       const plan = composed.routing!;
       const { replied, brochure, holding } = composed;
-      const items = settled.lines;
+      const items = outgoing;
       // SCRUM-638: the operator's saved typing pace, the same fresh-read rule
       // as the caps; the document's two fields map onto the native ceilings.
       const pace = (await assistantSettingOverridesOf(tx, conv.operatorId)).inbox;
@@ -2064,6 +2096,8 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
             rethink,
             // SCRUM-696: the operator rule whose question this was, so it is asked once per episode.
             ...(r.askFirst ? { askFirstRuleId: r.askFirst.ruleId } : {}),
+            // SCRUM-832: how the one message was composed (the park question alone, the bubbles joined, the repeats dropped): counts only.
+            ...(v.composition ? { composition: v.composition } : {}),
           }, at),
         );
       }

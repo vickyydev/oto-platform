@@ -360,10 +360,14 @@ export interface RepeatStageInput {
   now: Date;
 }
 
-/** The refusal a draft earns: only a reply that is sent asks anything. */
+/**
+ * The refusal a draft earns: only a reply that is sent asks anything. A
+ * server line (SCRUM-832's park question) asks what the verdict declares, not
+ * what the model declared for words that never go.
+ */
 export function refusalOf(d: AiDecision, v: GateVerdict, memory: OpenQuestionMemory): RepeatRefusal | null {
   if (v.action !== 'answer') return null;
-  const asked = askedSlotsOf(d.askedSlots, v.bubbles);
+  const asked = askedSlotsOf(v.askedSlots ?? d.askedSlots, v.bubbles);
   if (asked.length === 0) return null;
   return repeatGuard({ asked, questions: memory.questions, intents: v.intents });
 }
@@ -647,7 +651,8 @@ export async function commitOpenQuestions(
   const v = a.verdict;
   if (!a.handover && v?.action === 'answer' && a.decision) {
     const sent = a.lines.filter((l): l is { id: string; body: string } => l.body !== null && l.body.trim() !== '');
-    for (const slot of askedSlotsOf(a.decision.askedSlots, sent.map((l) => l.body))) {
+    // SCRUM-832: a server line (the park question) is recorded as what the verdict declares it asks.
+    for (const slot of askedSlotsOf(v.askedSlots ?? a.decision.askedSlots, sent.map((l) => l.body))) {
       const line =
         sent.find((l) => slotsAskedIn([l.body]).includes(slot)) ?? [...sent].reverse().find((l) => questionsIn([l.body]).length > 0) ?? sent.at(-1);
       if (!line) continue;

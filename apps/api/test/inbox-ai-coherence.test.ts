@@ -1,6 +1,6 @@
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { FAKE_USAGE, FakeCoherenceReviewer, REVIEW_VERSION, reviewOps, type FakeReviewScriptEntry } from '@oto/assistant';
+import { FAKE_USAGE, FakeCoherenceReviewer, PART_JOIN, REVIEW_VERSION, reviewOps, type FakeReviewScriptEntry } from '@oto/assistant';
 import { schema as s } from '@oto/db';
 import { INBOX_TEMPLATE_BODIES } from '@oto/db/seed';
 import { newId } from '@oto/shared';
@@ -52,6 +52,12 @@ const COVERED = 'A colleague at Central Floresta will message you to confirm it.
 const GOODBYE = 'Have a lovely day!';
 
 const nanny = (bubbles: string[]) => decision({ intent: 'nanny_booking', grounding: ['nanny'], reason: 'FACT_IN_KB', bubbles });
+
+/**
+ * SCRUM-832, one message per turn: the reviewer still reads the model's parts
+ * one by one, and the parts it keeps go side by side as ONE message.
+ */
+const message = (...parts: string[]) => parts.join(PART_JOIN);
 
 beforeAll(async () => {
   w = await aiWorld();
@@ -120,7 +126,7 @@ describe('the owner’s case: a nanny answer that wraps up, and the closing line
     await fresh({ kind: 'review', decision: reviewOps({ drop: [2] }) });
     const t = await nannyTurn([FACTS, COVERED]);
     expect(t.sweep.handedOver).toBe(1);
-    expect(t.lines.map((l) => l.body)).toEqual([FACTS, COVERED]);
+    expect(t.lines.map((l) => l.body)).toEqual([message(FACTS, COVERED)]);
     // The reviewer saw the items in order, with their origins, nothing locked.
     expect(reviewer.requests).toHaveLength(1);
     expect(reviewer.requests[0]!.items).toEqual([
@@ -162,7 +168,7 @@ describe('the owner’s case: a nanny answer that wraps up, and the closing line
       ['template', BOOKING_LINE, false],
     ]);
     // Dropped: the follow-up is said once, in the model's own words; nothing is lost.
-    expect(t.lines.map((l) => l.body)).toEqual([FACTS, LIVE]);
+    expect(t.lines.map((l) => l.body)).toEqual([message(FACTS, LIVE)]);
     expect(t.events.find((e) => e.kind === 'ai_handover')!.payload).toMatchObject({
       closingKey: 'closing_booking',
       coherence: { state: 'reviewed', sent: 2, dropped: [{ index: 2, origin: 'template', key: 'closing_booking' }] },
@@ -182,7 +188,7 @@ describe('the owner’s case: a nanny answer that wraps up, and the closing line
   it('the review’s tokens are the turn’s: the daily caps count them; its run is an ops row of its own', async () => {
     await fresh({ kind: 'keep_all' });
     const t = await nannyTurn([FACTS, GOODBYE]);
-    expect(t.lines.map((l) => l.body)).toEqual([FACTS, GOODBYE, BOOKING_LINE]);
+    expect(t.lines.map((l) => l.body)).toEqual([message(FACTS, GOODBYE), BOOKING_LINE]);
     expect(t.turn).toMatchObject({
       inputTokens: FAKE_USAGE.inputTokens * 2,
       outputTokens: FAKE_USAGE.outputTokens * 2,
@@ -216,7 +222,7 @@ describe('fail open: the reply is never blocked', () => {
     const started = Date.now();
     const t = await nannyTurn([FACTS, GOODBYE]);
     expect(Date.now() - started).toBeLessThan(20_000);
-    expect(t.lines.map((l) => l.body)).toEqual([FACTS, GOODBYE, BOOKING_LINE]);
+    expect(t.lines.map((l) => l.body)).toEqual([message(FACTS, GOODBYE), BOOKING_LINE]);
     expect(t.turn.state).toBe('handed_over');
     expect(t.events.find((e) => e.kind === 'ai_handover')!.payload).toMatchObject({ coherence: { state, reason } });
     expect(await decideAudit(t.turn.id)).toMatchObject({ coherence: { state, reason } });
@@ -260,7 +266,7 @@ describe('fail open: the reply is never blocked', () => {
     });
     try {
       const t = await nannyTurn([FACTS, GOODBYE]);
-      expect(t.lines.map((l) => l.body)).toEqual([FACTS, GOODBYE, edited]);
+      expect(t.lines.map((l) => l.body)).toEqual([message(FACTS, GOODBYE), edited]);
       expect(t.events.find((e) => e.kind === 'ai_handover')!.payload).toMatchObject({ coherence: { state: 'stale', reason: 'CHANGED' } });
     } finally {
       await w.ctx.db.update(s.template).set({ body: row!.body }).where(eq(s.template.id, row!.id));
@@ -304,7 +310,7 @@ describe('only a mixed send is reviewed', () => {
     w.ctx.app.inboxAi.reviewer = null;
     try {
       const t = await nannyTurn([FACTS, GOODBYE]);
-      expect(t.lines.map((l) => l.body)).toEqual([FACTS, GOODBYE, BOOKING_LINE]);
+      expect(t.lines.map((l) => l.body)).toEqual([message(FACTS, GOODBYE), BOOKING_LINE]);
       expect(t.events.find((e) => e.kind === 'ai_handover')!.payload).toMatchObject({ coherence: { state: 'skipped', reason: 'NO_REVIEWER' } });
     } finally {
       w.ctx.app.inboxAi.reviewer = reviewer;
@@ -343,7 +349,7 @@ describe('the kill switch: the live-tunable setting', () => {
     await fresh({ kind: 'review', decision: reviewOps({ drop: [1] }) });
     const t = await nannyTurn([FACTS, GOODBYE]);
     expect(reviewer.requests).toHaveLength(0);
-    expect(t.lines.map((l) => l.body)).toEqual([FACTS, GOODBYE, BOOKING_LINE]);
+    expect(t.lines.map((l) => l.body)).toEqual([message(FACTS, GOODBYE), BOOKING_LINE]);
     expect(t.events.find((e) => e.kind === 'ai_handover')!.payload).toMatchObject({ coherence: { state: 'skipped', reason: 'SWITCHED_OFF' } });
 
     const on = await save({}, off.json().revision);
