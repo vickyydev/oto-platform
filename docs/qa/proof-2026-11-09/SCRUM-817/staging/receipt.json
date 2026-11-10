@@ -1,0 +1,415 @@
+{
+  "unit": "SCRUM-817",
+  "run": "staging proof",
+  "liveCommit": "17d16c9d26a86bf8a610d6fbc6fe90a16f62bffe",
+  "startedAt": "2026-11-10T05:38:02.746Z",
+  "browser": "Chromium 153.0.8010.12",
+  "liveBefore": {
+    "at": "2026-11-10T05:38:09.053Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbpao5h42hec73c3rojg",
+        "status": "live",
+        "sha": "17d16c9d26a86bf8a610d6fbc6fe90a16f62bffe",
+        "finishedAt": "2026-11-10T05:34:42.578081Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbp488h42hec73d2el60",
+        "status": "live",
+        "sha": "8b3e36741279a52e87a1fb8723077f02eba0a096",
+        "finishedAt": "2026-11-09T22:08:32.854739Z"
+      }
+    ],
+    "apiLiveOnSha": true
+  },
+  "liveAfter": {
+    "at": "2026-11-10T05:42:53.228Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbpao5h42hec73c3rojg",
+        "status": "live",
+        "sha": "17d16c9d26a86bf8a610d6fbc6fe90a16f62bffe",
+        "finishedAt": "2026-11-10T05:34:42.578081Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbp488h42hec73d2el60",
+        "status": "live",
+        "sha": "8b3e36741279a52e87a1fb8723077f02eba0a096",
+        "finishedAt": "2026-11-09T22:08:32.854739Z"
+      }
+    ],
+    "apiLiveOnSha": true
+  },
+  "simulatorAccount": "Demo WhatsApp · Central Floresta (simulator channel, nothing reaches a phone)",
+  "viewer": {
+    "roles": [
+      "owner"
+    ],
+    "nameMaskedInPictures": true
+  },
+  "conversations": {
+    "step1-ru-birthday-thread": {
+      "conversationId": "01a1c3f7-1b9a-7469-93b5-dfea36d06db3",
+      "simulatorHint": {
+        "language": "ru",
+        "category": "birthdays"
+      },
+      "turns": [
+        {
+          "customerLine": "Здравствуйте! Хотим отметить день рождения дочери, 8 детей",
+          "playedAt": "2026-11-10T05:38:34.099Z",
+          "route": "POST /api/inbox/simulator/inbound",
+          "status": 200,
+          "newConversation": true,
+          "assistantWithinS": 12,
+          "assistantTimedOut": false,
+          "assistantPills": [
+            {
+              "kind": "ai_replied",
+              "intents": [
+                "birthday_party"
+              ],
+              "reason": null,
+              "rule": null,
+              "destination": null,
+              "closingKey": null
+            }
+          ],
+          "assistantReplies": [
+            "Здравствуйте! Как здорово, спасибо, что выбрали нас! Мы с радостью организуем праздник для вашей дочери 🎈",
+            "Подскажите, на какую дату (или даты) вы планируете и какой филиал вам удобнее, Central Floresta или Robinson Chalong?"
+          ]
+        },
+        {
+          "customerLine": "Можно в субботу в 2 часа дня?",
+          "playedAt": "2026-11-10T05:39:00.403Z",
+          "route": "POST /api/inbox/simulator/inbound",
+          "status": 200,
+          "newConversation": false,
+          "assistantWithinS": 12,
+          "assistantTimedOut": false,
+          "assistantPills": [
+            {
+              "kind": "ai_handover",
+              "intents": [
+                "birthday_details"
+              ],
+              "reason": "OK",
+              "rule": null,
+              "destination": "birthdays",
+              "closingKey": "closing_birthday"
+            }
+          ],
+          "assistantReplies": [
+            "Большое спасибо! Наш менеджер по праздникам скоро свяжется с вами."
+          ]
+        }
+      ],
+      "finalRead": {
+        "category": "birthdays",
+        "team": "Birthdays & Events",
+        "intent": "birthday_details",
+        "language": "ru",
+        "aiMode": "live",
+        "aiState": "left_for_team",
+        "aiPills": [
+          {
+            "kind": "ai_replied",
+            "intents": [
+              "birthday_party"
+            ],
+            "reason": null,
+            "rule": null
+          },
+          {
+            "kind": "ai_handover",
+            "intents": [
+              "birthday_details"
+            ],
+            "reason": "OK",
+            "rule": null
+          }
+        ]
+      }
+    },
+    "step2-control-ru-general-thread": {
+      "conversationId": "01a1c3f8-ac24-751a-988c-015e7d047ad2",
+      "simulatorHint": {
+        "language": "ru"
+      },
+      "turns": [
+        {
+          "customerLine": "Вы открыты в субботу в 2 часа дня?",
+          "playedAt": "2026-11-10T05:40:16.628Z",
+          "route": "POST /api/inbox/simulator/inbound",
+          "status": 200,
+          "newConversation": true,
+          "assistantWithinS": 12,
+          "assistantTimedOut": false,
+          "assistantPills": [
+            {
+              "kind": "ai_replied",
+              "intents": [
+                "hours"
+              ],
+              "reason": null,
+              "rule": null,
+              "destination": null,
+              "closingKey": null
+            }
+          ],
+          "assistantReplies": [
+            "Здравствуйте! Да, в субботу мы открыты, работаем каждый день с 10:00 до 20:00 😊"
+          ]
+        }
+      ],
+      "finalRead": {
+        "category": "general",
+        "team": "Reception · Central Floresta",
+        "intent": "hours",
+        "language": "ru",
+        "aiMode": "live",
+        "aiState": "ready",
+        "aiPills": [
+          {
+            "kind": "ai_replied",
+            "intents": [
+              "hours"
+            ],
+            "reason": null,
+            "rule": null
+          }
+        ]
+      }
+    },
+    "step3-th-birthday-thread": {
+      "conversationId": "01a1c3f9-17c1-7846-9128-bd3faac46d50",
+      "simulatorHint": {
+        "language": "th",
+        "category": "birthdays"
+      },
+      "turns": [
+        {
+          "customerLine": "สวัสดีค่ะ อยากจัดวันเกิดให้ลูก",
+          "playedAt": "2026-11-10T05:40:44.159Z",
+          "route": "POST /api/inbox/simulator/inbound",
+          "status": 200,
+          "newConversation": true,
+          "assistantWithinS": 12,
+          "assistantTimedOut": false,
+          "assistantPills": [
+            {
+              "kind": "ai_replied",
+              "intents": [
+                "birthday_party"
+              ],
+              "reason": null,
+              "rule": null,
+              "destination": null,
+              "closingKey": null
+            }
+          ],
+          "assistantReplies": [
+            "สวัสดีค่ะ ยินดีมากเลยค่ะ แอดมินอยากช่วยจัดงานวันเกิดให้น้องนะคะ 🎈",
+            "ไม่ทราบว่าสนใจจัดวันไหน มากันประมาณกี่ท่าน และสะดวกสาขาไหนคะ Central Floresta หรือ Robinson Chalong"
+          ]
+        },
+        {
+          "customerLine": "เสาร์นี้บ่ายสองได้ไหมคะ",
+          "playedAt": "2026-11-10T05:41:09.309Z",
+          "route": "POST /api/inbox/simulator/inbound",
+          "status": 200,
+          "newConversation": false,
+          "assistantWithinS": 12,
+          "assistantTimedOut": false,
+          "assistantPills": [
+            {
+              "kind": "ai_replied",
+              "intents": [
+                "birthday_party"
+              ],
+              "reason": null,
+              "rule": null,
+              "destination": null,
+              "closingKey": null
+            }
+          ],
+          "assistantReplies": [
+            "ขอบคุณมากค่ะ แอดมินรับทราบวันที่สนใจแล้วนะคะ 😊",
+            "รบกวนแจ้งจำนวนแขกโดยประมาณ และสาขาที่สะดวกเพิ่มอีกนิดได้ไหมคะ Central Floresta หรือ Robinson Chalong"
+          ]
+        }
+      ],
+      "finalRead": {
+        "category": "birthdays",
+        "team": "Birthdays & Events",
+        "intent": "birthday_party",
+        "language": "th",
+        "aiMode": "live",
+        "aiState": "ready",
+        "aiPills": [
+          {
+            "kind": "ai_replied",
+            "intents": [
+              "birthday_party"
+            ],
+            "reason": null,
+            "rule": null
+          },
+          {
+            "kind": "ai_replied",
+            "intents": [
+              "birthday_party"
+            ],
+            "reason": null,
+            "rule": null
+          }
+        ]
+      }
+    },
+    "extra-ru-birthday-thread-date-only": {
+      "conversationId": "01a1c3fa-7065-7846-ad63-8a43626e81c3",
+      "simulatorHint": {
+        "language": "ru",
+        "category": "birthdays"
+      },
+      "turns": [
+        {
+          "customerLine": "Можно в субботу в 2 часа дня?",
+          "playedAt": "2026-11-10T05:42:12.378Z",
+          "route": "POST /api/inbox/simulator/inbound",
+          "status": 200,
+          "newConversation": true,
+          "assistantWithinS": 12,
+          "assistantTimedOut": false,
+          "assistantPills": [
+            {
+              "kind": "ai_replied",
+              "intents": [
+                "birthday_party"
+              ],
+              "reason": null,
+              "rule": null,
+              "destination": null,
+              "closingKey": null
+            }
+          ],
+          "assistantReplies": [
+            "Здравствуйте! Спасибо, будем рады организовать для вас праздник 🎈 Подскажите, примерно сколько будет гостей?"
+          ]
+        }
+      ],
+      "finalRead": {
+        "category": "birthdays",
+        "team": "Birthdays & Events",
+        "intent": "birthday_party",
+        "language": "ru",
+        "aiMode": "live",
+        "aiState": "ready",
+        "aiPills": [
+          {
+            "kind": "ai_replied",
+            "intents": [
+              "birthday_party"
+            ],
+            "reason": null,
+            "rule": null
+          }
+        ]
+      }
+    }
+  },
+  "pictures": [
+    {
+      "file": "817-st-01-ru-birthday-thread-saturday-2pm-stays-birthday.png",
+      "shows": "Birthdays & Events thread, RU: the birthday opener, then the Saturday 2 pm question answered by the birthday team's closing line",
+      "namesMasked": 41
+    },
+    {
+      "file": "817-st-02-ru-general-thread-saturday-2pm-gets-hours.png",
+      "shows": "Control: a General thread, RU, no birthday words: Saturday 2 pm is answered with the opening hours as before",
+      "namesMasked": 31
+    },
+    {
+      "file": "817-st-03-th-birthday-thread-saturday-2pm-stays-birthday.png",
+      "shows": "Birthdays & Events thread, TH: the birthday opener, then 'this Saturday at 2 pm' answered by the birthday flow",
+      "namesMasked": 41
+    },
+    {
+      "file": "817-st-04-th-birthday-thread-reply-end.png",
+      "shows": "The same TH thread scrolled to its end: the birthday flow's next question (guests and branch) after the Saturday 2 pm line",
+      "namesMasked": 41
+    },
+    {
+      "file": "817-st-05-ru-birthday-thread-date-only-first-line.png",
+      "shows": "Extra, the staging case as first seen: a Birthdays & Events thread whose only line is the Saturday 2 pm question",
+      "namesMasked": 41
+    }
+  ],
+  "cleanup": {
+    "at": "2026-11-10T05:42:47.366Z",
+    "conversations": {
+      "step1-ru-birthday-thread": {
+        "handle": {
+          "path": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T05:42:48.148Z"
+        }
+      },
+      "step2-control-ru-general-thread": {
+        "handle": {
+          "path": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T05:42:49.089Z"
+        }
+      },
+      "step3-th-birthday-thread": {
+        "handle": {
+          "path": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T05:42:50.001Z"
+        }
+      },
+      "extra-ru-birthday-thread-date-only": {
+        "handle": {
+          "path": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-10T05:42:50.933Z"
+        }
+      }
+    }
+  },
+  "signOut": {
+    "at": "2026-11-10T05:42:55.487Z",
+    "inbox": {
+      "inboxSignOut": 200,
+      "launcherSignOut": 200,
+      "inboxMeAfter": 401,
+      "launcherMeAfter": 401
+    }
+  }
+}
