@@ -51,6 +51,10 @@ export const AI_INTENTS = [
   'birthday_details',
   'birthday_cake',
   'birthday_brochure',
+  // SCRUM-823 (owner, 10 Nov): advice, a recommendation or a choice in a
+  // birthday conversation goes to a person at once; the opener stays
+  // `birthday_party`.
+  'birthday_advice',
   'special_event',
   // SCRUM-676 (real-chat replay, 2 Nov): a kids' camp is its own matter, not a
   // birthday or a group: handed to the Birthday & events team with a neutral
@@ -249,7 +253,8 @@ export type AiIntentRule =
        * In a burst with several parts (test night 2026-10-21, D1a), the
        * answerable parts are answered first and this holding line follows.
        * False for the person-first intents — a complaint, a refund, an upset
-       * message, a request for a person — whose holding line stands alone.
+       * message, a request for a person, and since SCRUM-823 a birthday
+       * family asking for advice — whose holding line stands alone.
        */
       answerAlongside: boolean;
       /**
@@ -339,6 +344,11 @@ export const INTENT_TABLE: Readonly<Record<AiIntent, AiIntentRule>> = {
   birthday_brochure: answer(null, {
     thenHandover: { templateKey: 'handover_birthday', route: 'birthdays', brochure: true },
   }),
+  // SCRUM-823: which park is better for us, what do you suggest, which
+  // package would you recommend, can we…, is it possible to… — anything beyond
+  // the brochure's facts. The birthday manager advises: the closing line
+  // alone, whatever else the burst asked, and the manager is notified.
+  birthday_advice: alone(BIRTHDAYS_PLAN),
   // Loaded: sold right away (description and booking link). Not loaded: the
   // closing line and the Birthday & events inbox.
   special_event: answer(['faq', 'about_oto', 'prices_note'], { fallback: { plan: BIRTHDAYS_PLAN, lead: false } }),
@@ -410,6 +420,7 @@ export const BIRTHDAY_INTENTS: ReadonlySet<AiIntent> = new Set<AiIntent>([
   'birthday_party',
   'birthday_details',
   'birthday_cake',
+  'birthday_advice',
 ]);
 
 /**
@@ -462,6 +473,7 @@ export const ASK_FIRST_IGNORED_INTENTS: readonly AiIntent[] = [
   'birthday_details',
   'birthday_cake',
   'birthday_brochure',
+  'birthday_advice',
   'greeting',
   'thanks_closing',
   'identity_question',

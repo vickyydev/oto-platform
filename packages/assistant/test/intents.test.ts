@@ -60,6 +60,8 @@ describe('the intent table (PLAN §B.2, SCRUM-220 playbook)', () => {
     );
     expect(handoverIntents.sort()).toEqual(
       [
+        // SCRUM-823: advice in a birthday conversation is the birthday manager's.
+        'birthday_advice',
         'birthday_cake',
         'birthday_details',
         'camps',
@@ -122,7 +124,10 @@ describe('the intent table (PLAN §B.2, SCRUM-220 playbook)', () => {
       const r = INTENT_TABLE[i];
       return r.action === 'handover' && !r.answerAlongside;
     });
-    expect(alone.sort()).toEqual(['complaint_online', 'complaint_onsite', 'emotional_or_unclear', 'human_requested', 'refund_request'].sort());
+    // SCRUM-823: a birthday advice question stands alone too (the birthday manager advises).
+    expect(alone.sort()).toEqual(
+      ['birthday_advice', 'complaint_online', 'complaint_onsite', 'emotional_or_unclear', 'human_requested', 'refund_request'].sort(),
+    );
     expect(leadIntents.filter((i) => alone.includes(i)).sort()).toEqual(['complaint_online', 'complaint_onsite']);
   });
 

@@ -111,6 +111,8 @@ export const AI_OUTCOME_REASONS = [
   // SCRUM-817: in a birthday thread, a message naming a day, a date or a
   // time the model labelled hours, faq, greeting or address: the gate read it
   // as the party's (`birthday_details`) and handed it to the Birthday & events team.
+  // SCRUM-823: the same word, rule `birthday_advice`, for an advice question
+  // labelled details or faq there, handed over as `birthday_advice` (advice.ts).
   'OVERRULED_BIRTHDAY',
   'IDENTITY_SECOND_ASK',
   'CAP_EPISODE',

@@ -215,6 +215,8 @@ export const INTENT_MEANING: Readonly<Record<AiIntent, string>> = {
   birthday_details: 'gives the party basics, after your question or all at once',
   birthday_cake: 'asks about bringing a birthday cake',
   birthday_brochure: 'asks for the birthday packages or brochure',
+  birthday_advice:
+    'about a birthday or an event, asks you for advice, a recommendation or a choice, anything beyond the brochure\'s facts ("Which branch is better for 12 kids?", "Какой пакет вы посоветуете?", "สาขาไหนเหมาะกับเด็กเล็กคะ", "Can we decorate the room ourselves?")',
   special_event: 'a special or seasonal event (Halloween, Easter...)',
   camps: "a kids' camp (a holiday or day camp): whether one runs today or on a date, what it includes",
   special_tickets: 'the Golden Ticket: what it is, what is included',
@@ -595,6 +597,13 @@ export const BIRTHDAY_THREAD_LINES = {
   earlier: 'Earlier in this conversation the customer asked about a birthday party.',
   rule:
     'A message here that names a day, a date or a time ("Can we do Saturday at 2 pm?", "Можно в субботу в 2 часа дня?", "เสาร์นี้บ่ายสองได้ไหมคะ") is about the party, never the park\'s opening hours or a walk-in visit. Follow the playbook lines for the birthday flow: birthday_party while the party\'s basics are still to ask (the one combined question, skipping what they already said), birthday_details once they are in. Never label it hours, faq, greeting or address, and never answer it with the opening hours or "no booking needed".',
+  /**
+   * SCRUM-823: advice is the birthday manager's, beside the opener rule. The
+   * gate overrules an advice question labelled details or faq anyway
+   * (advice.ts `birthdayAdviceOverrule`).
+   */
+  advice:
+    'A message here that asks you for advice, a recommendation or a choice ("Which branch is better for us?", "What would you suggest for 15 kids?", "Какой пакет вы посоветуете?", "Можно ли прийти со своим аниматором?", "สาขาไหนดีกว่าคะ", "แนะนำแพ็กเกจไหนคะ") is birthday_advice: no words of your own, the birthday manager advises. A family that only says they want a party still gets birthday_party first, the one combined question.',
 } as const;
 
 function buildUserTurn(episode: readonly EpisodeMessage[], context: TurnContext, rethink?: RethinkHint): string {
@@ -619,7 +628,8 @@ function buildUserTurn(episode: readonly EpisodeMessage[], context: TurnContext,
     ? ['<second_reading>', inertJson({ reading: rethink.reading, suggestedIntent: rethink.suggestedIntent }), '</second_reading>', RETHINK_LINE]
     : [];
   const birthday = birthdayThreadOf(context);
-  const party = birthday === null ? [] : [`${BIRTHDAY_THREAD_LINES[birthday]} ${BIRTHDAY_THREAD_LINES.rule}`];
+  const party =
+    birthday === null ? [] : [`${BIRTHDAY_THREAD_LINES[birthday]} ${BIRTHDAY_THREAD_LINES.rule} ${BIRTHDAY_THREAD_LINES.advice}`];
   return [
     '<context>',
     inertJson(ctx),

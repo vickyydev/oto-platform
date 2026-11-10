@@ -19,6 +19,8 @@
  *   guards.ts     the persona guard and the traceability guard; bubble shape.
  *   gate.ts       the server's gates and the per-episode cap: the model
  *                 proposes, the table and the guards dispose.
+ *   advice.ts     SCRUM-823: the birthday advice question's safety net, a
+ *                 word list in three languages the gate overrules with.
  *   persona/      the voice per language and the absolute prohibitions.
  *   prompt.ts     block 1 (static), block 2 (knowledge, cached), the episode
  *                 below the breakpoint; the KB size refusal.
@@ -57,6 +59,7 @@ export * from './intents';
 export * from './decision';
 export * from './guards';
 export * from './gate';
+export * from './advice';
 export * from './persona';
 export * from './prompt';
 export * from './pacing';

@@ -38,6 +38,7 @@
  */
 
 import { mentionsPartyDate, mentionsPartyTime } from '@oto/shared';
+import { adviceOverruledVerdict, birthdayAdviceOverrule } from './advice';
 import {
   AI_REPLY_LANGUAGES,
   type AiDecision,
@@ -288,6 +289,10 @@ const isBirthdaysPlan = (p: AiHandoverPlan) =>
  */
 export function applyGates(input: GateInput): GateVerdict {
   const overruled = birthdayDateOverrule(input);
+  // SCRUM-823: then an advice question the model labelled details or faq in a
+  // birthday thread is `birthday_advice`, handed over alone (advice.ts).
+  const advice = birthdayAdviceOverrule(overruled === null ? input : { ...input, decision: overruled });
+  if (advice !== null) return adviceOverruledVerdict(gate({ ...input, decision: advice }));
   if (overruled === null) return gate(input);
   const v = gate({ ...input, decision: overruled });
   if (v.action !== 'handover' || !isBirthdaysPlan(v.plan)) return v;
