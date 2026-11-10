@@ -1,0 +1,70 @@
+{
+  "source": "1fb2157f61182239b6ef35ab8f0796e16ffb5157",
+  "candidate": "2e15a895a2924cf931c5c8a107dd70fbe723ea8f",
+  "gateScope": "Local touched-package gates; full hosted gate pending",
+  "checks": [
+    {
+      "log": "api-related.log",
+      "command": "pnpm exec vitest run test/s809-receipt-prefix-review.test.ts test/fleet-api.test.ts test/sales.test.ts test/payments-cash.test.ts test/receipt-hwm.test.ts test/s747-till-code-review.test.ts",
+      "cwd": "apps/api",
+      "result": "6 files; 179 passed",
+      "sha256": "56864b73efbdf668f470a892068f02cdcc3d86b96c405b0c759b28dc97c0ff6a"
+    },
+    {
+      "log": "pos-tests.log",
+      "command": "pnpm --filter @oto/pos test",
+      "cwd": ".",
+      "result": "167 files; 2319 passed",
+      "sha256": "7eaccf3d73e955b767fd8933b00e21bb4f0321d0cf51b6e58b77b78d1dce7bb9"
+    },
+    {
+      "log": "console-tests.log",
+      "command": "pnpm --filter @oto/console test",
+      "cwd": ".",
+      "result": "63 files; 611 passed; 3 todo",
+      "sha256": "d55b4a476de9f8f2251647dbf526e9a9b572d23824cb7b4e3e4e8a44385da4a7"
+    },
+    {
+      "log": "api-typecheck.log",
+      "command": "pnpm --filter @oto/api typecheck",
+      "cwd": ".",
+      "result": "zero diagnostics; output read whole",
+      "sha256": "34e2ea5031c2b725191f9e2520e4010e25be501d712a7d9955172d1093035e2d"
+    },
+    {
+      "log": "pos-typecheck.log",
+      "command": "pnpm --filter @oto/pos typecheck",
+      "cwd": ".",
+      "result": "zero diagnostics; output read whole",
+      "sha256": "54d6894e51cc4008996fe5c53990e7e626c154757212f746d410cfc3f5264497"
+    },
+    {
+      "log": "console-typecheck.log",
+      "command": "pnpm --filter @oto/console typecheck",
+      "cwd": ".",
+      "result": "zero diagnostics; output read whole",
+      "sha256": "372923ac1a60d0b282e38aabfcd9da51449dafe295f7d6ade299052c98081113"
+    },
+    {
+      "log": "eslint.log",
+      "command": "pnpm exec eslint [six changed platform files]",
+      "cwd": ".",
+      "result": "zero diagnostics",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "log": "pos-build.log",
+      "command": "pnpm --filter @oto/pos build",
+      "cwd": ".",
+      "result": "passed; bundle-size warning",
+      "sha256": "6447997d712a580f1ba69957b6f823affb23c9684fac4fbb2ffd76fea4e8517a"
+    },
+    {
+      "log": "console-build.log",
+      "command": "pnpm --filter @oto/console build",
+      "cwd": ".",
+      "result": "passed; bundle-size warning",
+      "sha256": "13733ecb4c75b91f2bb43fd8637f54cd28b734158859f751b6295ffa2b14db44"
+    }
+  ]
+}

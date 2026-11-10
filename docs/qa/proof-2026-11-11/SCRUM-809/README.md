@@ -18,7 +18,7 @@ till keeps the order and explains how to return and confirm after correction.
 
 ## Local verification
 
-Commands ran unpiped, each to its own ignored log under `local/`.
+Commands ran unpiped, each to its own uncommitted log under `local/`.
 
 - API review plus fleet, sales, cash, receipt high-water and longer-code suites:
   6 files, 179 passing tests. The six adversarial review cases cover archived
