@@ -33,7 +33,7 @@ not a generator.
 - **Never print or record secret values** (tokens, PINs, claim codes, passwords, database
   URLs, box secrets). Variable names, file locations and sha256 fingerprints only.
 - **Migrations are forward-only and immutable once applied.** Platform migrations live in
-  `packages/db/migrations` (applied through 0094; read the journal before numbering). The
+  `packages/db/migrations` (applied through 0114; read the journal before numbering). The
   OTO App has its own under `apps/oto-app/migrations` (read its `meta/_journal.json` before
   numbering). A lane builds under a provisional number and renumbers at landing,
   regenerating the snapshot and diffing the SQL identical. Never edit an applied migration.
@@ -58,8 +58,8 @@ not a generator.
   never by grepping run titles. No feature pushes and no staging deploys while main is
   red; report a red run before anything else; reproduce locally on the exact SHA and
   re-run once if local is green (the known setup-flake class is SCRUM-510).
-- **Typecheck output is read whole:** the api must print zero lines; the OTO App inherits
-  exactly 467 errors and that count may never rise (compared per file). Eslint every
+- **Typecheck output is read whole:** the api must print zero lines; the OTO App's ratchet
+  (`npm run check:ratchet`) holds at 418/418 errors and that count may never rise. Eslint every
   touched file. Never use `vitest -t` on serial suites.
 - **Be honest about lost or partial work.** Never claim something is built, tested or
   deployed that you did not see built, tested or deployed. Three answers only to "is X
@@ -89,26 +89,29 @@ raced cross-service call is Retry on the Failures page.
   `https://github.com/vickyydev/oto-platform`, branch `main`; `gh` is signed in.
 - **Helpers in `scripts/agent/`** (they read `.env` at the repo root; never print values):
   `jira.mjs` (comment, attach, commentWithImages, walkTo, statusOf, createInSprint —
-  project SCRUM, sprint 3), `render.mjs` (status, deploy name|all <sha>, job "<cmd>" —
-  one-off jobs run on the api image from the repo root), `watch-ci.sh <full-sha> <min>`,
+  project SCRUM, sprints 3 and 69), `render.mjs` (deploys <svc>, deploy <svc> <sha> — by
+  service name, never "all", never the qa worker; job "<cmd>" — one-off jobs run on the api
+  image from the repo root), `watch-ci.sh <full-sha> <min>`,
   `evidence.mjs` (staging sign-in + screenshot cards; Playwright from `apps/pos`).
   The older `scripts/session/` helpers still work but the `scripts/agent/` set is current.
-- **Staging (Render): six services** — api, pos, console, launcher, booth, and
-  `oto-app-staging` (the lifted app; its pre-deploy runs its own migrator). The dashboard
+- **Staging (Render):** oto-api-staging, oto-pos-staging and oto-pos-web-staging (the till),
+  oto-console-staging, oto-launcher-staging, oto-inbox-staging, oto-radar-staging, the booth,
+  and `oto-app-staging` (the lifted app; its pre-deploy runs its own migrator). The dashboard
   settings are what runs; `render.yaml` documents them. Seeded staging sign-ins live in
   `packages/db/src/seed` (dev-only credentials); the app is entered through the launcher —
   its old password form is off on staging (`OTOAPP_LEGACY_LOGIN` absent).
 - **Jira browsing** can also use the Atlassian MCP configured in
   `C:\Users\waqar\.codex\config.toml`; writes go through `scripts/agent/jira.mjs`.
 
-## Current direction (28 October 2026)
+## Current direction (11 November 2026)
 
-The open work for Codex is **closing out the Super Admin Console story (SCRUM-642, P5)**:
-the walkthroughs and remaining tickets listed in the newest resume note at the top of
-`docs/handover/CODEX_HANDOVER.md` — that note is the brief; read it first. The planner
-session concurrently works the **Unified Inbox** (SCRUM-220) on its own lanes; keep to the
-admin/console surface, rebase onto `origin/main` before every push, and never force-push.
-SCRUM-223 (the bench/Pi story) stays paused at its freeze — its brief is further down in
-the handover file; do not touch it unless the owner schedules bench time. Docker stays off
-(owner preference): api/db tests use the embedded Postgres, console e2e the embedded
-built server.
+The open work for Codex is **the till and platform defect round** —
+`docs/progress/plans/codex-till-round/PLAN.md` is the brief (eight units, in order, each with
+its cause, what is wanted, the tests and the staging proof); the newest resume note at the top
+of `docs/handover/CODEX_HANDOVER.md` says where it stands. The planner session concurrently
+lands the **Unified Inbox / birthday BEO round** (SCRUM-822 … SCRUM-832) on its own lanes: the
+plan's section 1 lists the files that are not yours; keep to the till, the station/display/
+app-identity services and the OTO App's non-BEO code; work in a worktree of your own under
+`C:/oto-lanes`; rebase onto `origin/main` before every push; never force-push; read the newest
+`STATUS.md` block before every landing and respect the slot it names. SCRUM-223 (the bench/Pi
+story) stays paused at its freeze. Docker stays off: api/db tests use the embedded Postgres.
