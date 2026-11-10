@@ -108,10 +108,10 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
   const free = Boolean(paymentStage ? total === 0 : nothingToPay) && !unpriced && total === 0;
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-300">
+    <div data-testid="payment-step" className="flex flex-col min-w-0 w-full h-full overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-300">
       <div className="mb-8 text-center">
         <h2 className="text-4xl font-bold tracking-tight mb-2">Amount Due</h2>
-        <div className="text-6xl font-black text-primary">{unpriced ? '—' : `฿${total}`}</div>
+        <div className="text-5xl sm:text-6xl break-words font-black text-primary">{unpriced ? '—' : `฿${total}`}</div>
       </div>
 
       {free ? (
@@ -132,8 +132,8 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
         <>
           <h3 className="text-xl font-bold mb-4">Select Payment Method</h3>
           <div
-            className="grid gap-4"
-            style={{ gridTemplateColumns: `repeat(${Math.max(1, Math.min(methods.length, 4))}, minmax(0, 1fr))` }}
+            className={cn('grid gap-3 sm:gap-4', methods.length > 1 ? 'grid-cols-2' : 'grid-cols-1',
+              methods.length >= 4 ? 'sm:grid-cols-4' : methods.length === 3 ? 'sm:grid-cols-3' : '')}
           >
             {methods.map((m) => {
               const Icon = paymentMethodIcon(m.kind);
@@ -143,7 +143,7 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
                 <Card
                   key={m.id}
                   className={cn(
-                    'relative flex flex-col items-center justify-center p-6 cursor-pointer transition-all',
+                    'relative min-w-0 flex flex-col items-center justify-center p-3 sm:p-6 cursor-pointer transition-all',
                     selected ? style.ring : style.hover
                   )}
                   onClick={() => { if (paymentStage?.locked) return; paymentStage?.selectMethod(m.id); onSelectMethod(m.id); }}
@@ -154,10 +154,10 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
                       <Check className="w-4 h-4" />
                     </div>
                   )}
-                  <div className={cn('h-20 w-20 rounded-full flex items-center justify-center mb-4', style.iconBg)}>
+                  <div className={cn('h-14 w-14 sm:h-20 sm:w-20 rounded-full flex items-center justify-center mb-3 sm:mb-4', style.iconBg)}>
                     <Icon className={cn('h-10 w-10', style.iconColor)} />
                   </div>
-                  <h3 className="text-2xl font-bold">{m.label}</h3>
+                  <h3 className="max-w-full text-center break-words text-lg sm:text-2xl font-bold">{m.label}</h3>
                 </Card>
               );
             })}
@@ -176,17 +176,17 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
       {paymentStage && !unpriced && <PaymentTenderPanel stage={paymentStage} showSubmit={false} {...(fixedAmount ? { fixedAmount } : {})} />}
       {holdControls}
 
-      <div className="mt-auto pt-6 flex items-center justify-between gap-4">
+      <div className="mt-auto pt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
         {/* While a gateway QR is pending, Back is the way out of it: the QR is
             cancelled and this step stays, back at "Select Payment Method". */}
-        <Button variant="outline" size="lg" className="w-32 h-16"
+        <Button variant="outline" size="lg" className="w-full sm:w-32 shrink-0 h-16"
           onClick={paymentStage?.canCancel ? () => { void paymentStage.cancel(); } : onBack}
           disabled={busy || (paymentStage && !paymentStage.canBack && !paymentStage.canCancel)}>
           Back
         </Button>
         <Button
           size="lg"
-          className="flex-1 h-16 text-xl font-bold"
+          className="min-w-0 sm:flex-1 min-h-16 h-auto py-3 whitespace-normal text-lg sm:text-xl font-bold"
           disabled={(paymentStage ? !paymentStage.canSubmit : (!selectedMethod && !free)) || busy || unpriced}
           onClick={paymentStage ? () => { void paymentStage.submit(); } : onComplete}
         >
