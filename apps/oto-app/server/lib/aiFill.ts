@@ -94,7 +94,7 @@ Parsing rules:
 - If the same information appears more than once, use the latest confirmed version
 - Cake mode must be one of: INTERNAL (venue provides the cake), EXTERNAL (guest brings their own cake), NONE (no cake)
 - Menu items included in the package have included: true; extras have included: false, with their price when the message gives one
-- Team: give a person or a role only when the message itself names them (for example "Host: Nok" or "our animator team"), written exactly as the message writes it. Never choose a person yourself
+- Team: give a person or a role only when the message itself names them (for example "Host: Nok" or "our animator team"), written as the message writes the name itself: leave out a role word, a title or "the" before it ("Host: Nok" is "Nok", "พิธีกร พี่นก" is "พี่นก", "the Event Department" is "Event Department"). Never choose a person yourself
 
 When existing event data is provided: only update fields that are explicitly mentioned or corrected in the new text. Carry all other fields forward from the existing data unchanged. Never invent or clear a field just because it is not mentioned in the new text.`;
 
@@ -119,7 +119,7 @@ export const BUILT_IN_BEO_PARSING_OUTPUT_FORMAT = `Parse the message and return 
   },
   "setupPlan": {
     "readyBy": "HH:MM time the room must be ready by",
-    "responsible": "Name or role responsible for setup, exactly as written",
+    "responsible": "Name or role responsible for setup, as written, without a role word or \"the\" before it",
     "simplifiedTasks": [
       { "itemLabel": "Task name", "notes": "Additional notes" }
     ]
@@ -152,8 +152,8 @@ export const BUILT_IN_BEO_PARSING_OUTPUT_FORMAT = `Parse the message and return 
     { "time": "HH:MM", "label": "Activity or milestone label" }
   ],
   "team": {
-    "partyHost": "The party host's name or role, exactly as written",
-    "entertainmentHost": "The entertainment host's name or role, exactly as written"
+    "partyHost": "The party host's name or role, as written, without a role word or \"the\" before it",
+    "entertainmentHost": "The entertainment host's name or role, as written, without a role word or \"the\" before it"
   }
 }
 
@@ -379,7 +379,8 @@ const readPartyDay = z.preprocess((v) => {
 
 /** A person or a role the message itself names: the review proposes a real one of the park from it. */
 const namedPerson = optText(200).describe(
-  "a person or a role only as the message itself names them, written exactly as it writes them; never one you choose",
+  // SCRUM-786: the bare name, so it can match the park's roster exactly.
+  "a person or a role only as the message itself names them, their name as it writes it without a role word, a title or \"the\" before it (host, MC, พิธีกร, ведущий, аниматор); never one you choose",
 );
 
 /** A list: null is none; blank entries (null, or with every value empty) are dropped, as a person would. */

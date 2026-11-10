@@ -454,6 +454,30 @@ try {
     assert.deepEqual(proposeTeam({}, people), { partyHost: null, entertainmentHost: null, setupResponsible: null });
     assert.equal(normaliseName('  "Nok"  '), "nok");
     assert.equal(normaliseName("Kitchen Department"), "kitchen");
+
+    // SCRUM-786: a role word, "the" or a Thai honorific before the name is not the name.
+    const roster: TeamCandidates = {
+      ...people,
+      employees: [...people.employees, { id: "e-gm", names: ["ZZ GM", "ZZ TEST General Manager"], label: "ZZ GM (ZZ TEST General Manager)" }, { id: "e-theo", names: ["Theo"], label: "Theo" }],
+      departments: [...people.departments, { id: "d-event", names: ["Event Department"], label: "Event Department (Dept)" }],
+    };
+    const host = (asked: string) => proposeTeam({ team: { partyHost: asked } }, roster).partyHost;
+    const who = (asked: string) => proposeTeam({ setupPlan: { responsible: asked } }, roster).setupResponsible;
+    assert.deepEqual(host("พิธีกร ZZ GM"), { asked: "พิธีกร ZZ GM", match: { kind: "employee", id: "e-gm", label: "ZZ GM (ZZ TEST General Manager)" }, why: null });
+    assert.deepEqual(who("the Event Department")?.match, { kind: "department", id: "d-event", label: "Event Department (Dept)" });
+    for (const asked of ["Host: Nok", "host Nok", "MC Nok", "the host Nok", "พิธีกร: Nok", "พิธีกรน้องนก", "คุณนก", "พี่นก", "ведущий Nok", "аниматор Nok", "Аниматор: Nok"]) {
+      assert.equal(host(asked)?.match?.id, "e-nok", `${asked}: Nok`);
+    }
+    assert.equal(who("the Entertainment team")?.match?.id, "d-ent");
+    // Only before a name: "Theo" is a name, and a role word alone names nobody.
+    assert.equal(host("Theo")?.match?.id, "e-theo");
+    assert.equal(normaliseName("Host"), "host");
+    assert.equal(normaliseName("the"), "the");
+    // Still an exact match after the clean-up: a near name, or a name in another script than the roster's, is none.
+    assert.deepEqual(host("พิธีกร ZZ G"), { asked: "พิธีกร ZZ G", match: null, why: "no_match" });
+    assert.deepEqual(host("ведущий Нок"), { asked: "ведущий Нок", match: null, why: "no_match" });
+    assert.equal(host("the animator")?.match, null, "a role with no name is no match");
+    assert.equal(normaliseName("พิธีกร พี่นก"), "นก");
   });
 
   await check("beoPromptKnowsTheParksToday", async () => {

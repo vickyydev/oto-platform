@@ -19,6 +19,9 @@
 //     from the inbox, and the platform's conversation still names it;
 //   - the team a fill proposes is the event's park's real people and
 //     departments only; an unmatched name is flagged, never guessed;
+//     SCRUM-786: a role word, "the" or a Thai honorific before the name
+//     ("พิธีกร ZZ GM", "the Event Department") is not the name, and the
+//     prompt asks for the bare name; still an exact match, never fuzzy;
 //   - each run writes one beo_ai_fill activity row, never the text, and the
 //     log carries no text either;
 //   - the saved park-group settings win over the built-in defaults on the
@@ -82,12 +85,12 @@ const parkA1 = randomUUID();
 const parkA2 = randomUUID();
 const parkB1 = randomUUID();
 const user = { a: randomUUID(), b: randomUUID() };
-const staff = { nok: randomUUID(), ploy: randomUUID(), bee1: randomUUID(), bee2: randomUUID(), ying: randomUUID() };
-const dept = { ent: randomUUID(), kitchen: randomUUID() };
-const conv = { th: randomUUID(), en: randomUUID(), ru: randomUUID(), none: randomUUID(), moved: randomUUID(), hidden: randomUUID(), bad: randomUUID() };
+const staff = { nok: randomUUID(), ploy: randomUUID(), bee1: randomUUID(), bee2: randomUUID(), ying: randomUUID(), gm: randomUUID(), ann: randomUUID() };
+const dept = { ent: randomUUID(), kitchen: randomUUID(), event: randomUUID() };
+const conv = { th: randomUUID(), en: randomUUID(), ru: randomUUID(), none: randomUUID(), moved: randomUUID(), hidden: randomUUID(), bad: randomUUID(), role: randomUUID() };
 const ev = {
   th: randomUUID(), en: randomUUID(), ru: randomUUID(), none: randomUUID(), moved: randomUUID(), hidden: randomUUID(), bad: randomUUID(),
-  plain: randomUUID(), otherPark: randomUUID(),
+  plain: randomUUID(), otherPark: randomUUID(), role: randomUUID(),
 };
 
 // The three confirmations a manager sends. Each carries a phrase found nowhere else.
@@ -95,6 +98,7 @@ const MESSAGES = {
   th: "ยืนยันงานวันเกิดน้องมะลิ วันเสาร์ที่ 21 มีนาคม เวลา 14.00-16.00 น. เด็ก 15 คน เมนูเด็ก: นักเก็ตไก่ พิธีกร: น้องนก TH-ONLY-660",
   en: "Confirming Emma's 6th birthday on Saturday 21 March, 14:00 to 16:00. 15 kids. Kids menu: nuggets. Host: Nok, disco with Ploy, setup by Ying. EN-ONLY-660",
   ru: "Подтверждаем день рождения Маши 21 марта в 14:00. 15 детей. Меню: наггетсы. Аниматор: Нок. RU-ONLY-660",
+  role: "ยืนยันงานวันเกิด 21 มีนาคม 14.00 น. เด็ก 12 คน พิธีกร ZZ GM, Host: Ann, setup by the Event Department ROLE-786",
 };
 const ANSWERS: Record<string, unknown> = {
   th: {
@@ -135,7 +139,7 @@ const ai = {
 const message = (id: string, body: string) => ({
   id, body, bodyLanguage: null, authorName: "ZZ TEST Manager", sentAt: "2026-11-05T07:30:00.000Z", createdAt: "2026-11-05T07:30:00.000Z",
 });
-const msgIds = { th: randomUUID(), en: randomUUID(), ru: randomUUID() };
+const msgIds = { th: randomUUID(), en: randomUUID(), ru: randomUUID(), role: randomUUID() };
 const inboxAnswers = new Map<string, InboxRead>([
   [conv.th, { ok: true, confirmation: { conversationId: conv.th, eventId: ev.th, message: message(msgIds.th, MESSAGES.th), scanned: 3 } }],
   [conv.en, { ok: true, confirmation: { conversationId: conv.en, eventId: ev.en, message: message(msgIds.en, MESSAGES.en), scanned: 2 } }],
@@ -358,6 +362,48 @@ try {
     assert.deepEqual(candidates.departments.map((d) => d.id), [dept.ent]);
     assert.equal(candidates.hostSource, "employee");
     assert.equal((await loadTeamCandidates(db, { tenantId: tenantB, branchId: parkB1 })).hostSource, "user");
+  });
+
+  await check("aRoleWordOrTheBeforeTheNameIsNotTheName", async () => {
+    // SCRUM-786: park A1's roster gains "ZZ GM", Ann and the "Event Department"; the
+    // confirmation writes the role word before the name, and the model kept it.
+    await employee(staff.gm, parkA1, "ZZ TEST General Manager", "ZZ GM");
+    await employee(staff.ann, parkA1, "ZZ TEST Ann", "Ann");
+    await pool.query(`insert into departments (id, tenant_id, name) values ($1, $2, 'Event Department')`, [dept.event, tenantA]);
+    await pool.query(`insert into department_branch_assignments (department_id, branch_id) values ($1, $2)`, [dept.event, parkA1]);
+    await event(ev.role, tenantA, parkA1, conv.role, "ZZ TEST Role Words");
+    inboxAnswers.set(conv.role, { ok: true, confirmation: { conversationId: conv.role, eventId: ev.role, message: message(msgIds.role, MESSAGES.role), scanned: 1 } });
+    const was = modelReply;
+    modelReply = () =>
+      JSON.stringify({
+        summary: "ZZ role words",
+        event: { childName: "ZZ Mali", numChildren: 12 },
+        team: { partyHost: "พิธีกร ZZ GM", entertainmentHost: "Host: Ann" },
+        setupPlan: { responsible: "the Event Department" },
+      });
+    try {
+      const before = modelCalls.length;
+      const res = await fillFromInbox(ev.role);
+      assert.equal(res.status, 200, JSON.stringify(res.body));
+      // The prompt asks for the bare name, the role word left out, wherever a saved format says otherwise.
+      const call = modelCalls[before]!;
+      assert.ok(call.system.includes('leave out a role word, a title or "the" before it'), "the built-in advice asks for the bare name");
+      assert.ok(call.system.includes("\n- team.partyHost: ") && call.system.includes('without a role word, a title or "the" before it (host, MC, พิธีกร, ведущий, аниматор)'));
+      const p = res.body.fill.proposals;
+      assert.deepEqual(p.partyHost, { asked: "พิธีกร ZZ GM", match: { kind: "employee", id: staff.gm, label: "ZZ GM (ZZ TEST General Manager)" }, why: null });
+      assert.deepEqual(p.entertainmentHost, { asked: "Host: Ann", match: { kind: "employee", id: staff.ann, label: "Ann (ZZ TEST Ann)" }, why: null });
+      assert.deepEqual(p.setupResponsible, { asked: "the Event Department", match: { kind: "department", id: dept.event, label: "Event Department (Dept)" }, why: null });
+      // A suggestion only: the fill writes no assignment (the preview starts every one unticked).
+      const [host] = (await pool.query("select id from beo_party_host_assignments where event_id = $1", [ev.role])).rows;
+      assert.equal(host, undefined, "nothing assigned by the fill");
+      // A role word before a name that is nobody here is still no match; nothing fuzzy.
+      modelReply = () => JSON.stringify({ summary: "x", team: { partyHost: "พิธีกร ZZ G", entertainmentHost: "ведущий ZZ GM" } });
+      const near = (await fillFromInbox(ev.role)).body.fill.proposals;
+      assert.deepEqual(near.partyHost, { asked: "พิธีกร ZZ G", match: null, why: "no_match" }, "a near name is no match");
+      assert.equal(near.entertainmentHost.match?.id, staff.gm, "a Russian role word before the roster's own name");
+    } finally {
+      modelReply = was;
+    }
   });
 
   await check("noConfirmationOpensAsBefore", async () => {
@@ -615,4 +661,4 @@ try {
 
 console.log(JSON.stringify({ results, failures }, null, 2));
 // The app's modules loaded here keep handles of their own open; the verdict is final.
-process.exit(Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 13 ? 1 : 0);
+process.exit(Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 14 ? 1 : 0);

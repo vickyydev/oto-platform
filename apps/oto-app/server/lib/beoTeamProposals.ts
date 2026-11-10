@@ -59,15 +59,38 @@ export interface TeamProposals {
 
 export const NO_TEAM_PROPOSALS: TeamProposals = { partyHost: null, entertainmentHost: null, setupResponsible: null };
 
-/** Lower case, one space, no punctuation around the name, no trailing "team"/"department". */
+/**
+ * SCRUM-786: what may stand before a name without being part of it — an
+ * article or a role word ("the Event Department", "Host: Nok", "พิธีกร ZZ GM",
+ * "ведущий Иван") — and the Thai honorifics ("พี่นก", "คุณนก", "น้องนก").
+ * A Latin or Cyrillic word needs a space or a colon after it ("Theo" is a
+ * name); a Thai one may be written on to the name. Only ever taken off when
+ * a name is left after it.
+ */
+const LEADING_WORD = /^(?:the|host|mc|ведущий|аниматор)(?:\s*[:\-–]\s*|\s+)(?=\S)/u;
+const LEADING_THAI = /^(?:พิธีกร|คุณ|พี่|น้อง)(?:\s*[:\-–]\s*|\s*)(?=\S)/u;
+
+/**
+ * Lower case, one space, no punctuation around the name, no trailing
+ * "team"/"department", and (SCRUM-786) no leading article, role word or Thai
+ * honorific. The match stays exact after that: no fuzzy matching, and a name
+ * in another script than the roster's is no match.
+ */
 export function normaliseName(raw: string): string {
-  return raw
+  let name = raw
     .normalize("NFC")
     .toLowerCase()
     .replace(/[\s ]+/g, " ")
     .replace(/^[\s"'“”«»@(\[\-:.,]+|[\s"'“”«»)\]\-:.,!]+$/g, "")
     .replace(/\s+(team|department|dept|команда|отдел|ทีม|แผนก)$/u, "")
     .trim();
+  // "the host Nok", "พิธีกร พี่นก": each word before the name, one at a time.
+  for (let i = 0; i < 4; i += 1) {
+    const next = name.replace(LEADING_WORD, "").replace(LEADING_THAI, "").trim();
+    if (next === name) break;
+    name = next;
+  }
+  return name;
 }
 
 function find(asked: string, candidates: TeamCandidate[], kind: TeamMatch["kind"]): TeamMatch[] {
