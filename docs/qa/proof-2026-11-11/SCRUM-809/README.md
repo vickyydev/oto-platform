@@ -1,7 +1,8 @@
 # SCRUM-809: a receipt prefix stays with its earlier till
 
 Unit 2 of the till round. Built in `C:/oto-lanes/codex-receipt-prefix-20261111`,
-branch `lane/codex-receipt-prefix-20261111`. Not landed or proved on staging yet.
+branch `lane/codex-receipt-prefix-20261111`. Landed fast-forward as
+`acb096f723131ffbc3b9b2b461193242f70a79ce`; staging proof is pending.
 
 The station service is `apps/api/src/services/fleet.ts` (the plan calls it
 `stations.ts`). Its create and update transactions now refuse a till or kiosk
@@ -44,10 +45,20 @@ all nine local gate-log hashes were intact; no implementation was lost.
 The latest main source `fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3` also has
 all-six-job green CI 42918309961, watched by full SHA.
 
-Main landing, named API/Console/both-till deploys and Console screen proof
-remain pending. SCRUM-809 remains In Progress. STATUS and Jira still reserve
-source/API/proof for SCRUM-829, with no release recorded. The owner was asked
-whether that planner proof is still active; this lane has not claimed it.
+The planner released its slot in `c554fac85642f296437f44c8e276c199fa0a9881`;
+the owner also confirmed release. Unit 2 claimed source/API/proof in
+`89611072b096a67ed0f86f7d8cdcc10e2f6ea942`. The five rebased commits were
+checked, with runtime/tests/workflow identical to the green candidate.
+Main CI 42965931065 is running on the landed SHA, watched by the full SHA.
+Named API, Console and both-till deploys are building; screen proof waits
+until all four are live at that SHA. SCRUM-809 remains In Progress.
+
+The first push attempt at `263f30d729548801550580f056f929104a240534` was
+rejected because a concurrent documentation push arrived. Its premature
+Jira landing comment was explicitly corrected. All four deploy requests
+for that unpushed SHA were refused; no service changed. Rebase and the
+successful push above replaced it. The planner also repaired an unrelated
+API startup setting; the preceding API deploy at `c554fac85` is now live.
 
 ## Staging proof to run after the slot is available
 
