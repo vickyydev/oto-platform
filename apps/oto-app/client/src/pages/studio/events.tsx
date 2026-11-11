@@ -74,6 +74,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { format, parseISO } from "date-fns";
 import type { Event, InsertEvent, Department, Branch, EventStatus, BeoLocation } from "@shared/schema";
+import type { DepositSaveNote, OneDeposit } from "@shared/partyDeposit";
 import { AIEventAssistant } from "@/components/ai-event-assistant";
 import { BeoEventEditor, BeoTimelineEditor, BeoDayOfView } from "@/components/beo";
 import { getCountries, getCountryCallingCode } from "libphonenumber-js";
@@ -557,7 +558,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data, newTasks, deletedTaskIds }: { 
       id: string; 
-      data: Partial<EventFormData> & { branchId?: string | null }; 
+      data: Partial<EventFormData> & { branchId?: string | null; expectedPrepayment?: OneDeposit };
       newTasks: PendingTask[];
       deletedTaskIds: string[];
     }) => {
@@ -586,8 +587,8 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
       
       return updatedEvent;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ predicate: (query) => 
+    onSuccess: (updatedEvent: unknown) => {
+      queryClient.invalidateQueries({ predicate: (query) =>
         Array.isArray(query.queryKey) && (query.queryKey[0] === "/api/admin/events" || query.queryKey[0] === "/api/events")
       });
       queryClient.invalidateQueries({ queryKey: ["/api/tasks/today"] });
@@ -596,7 +597,14 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
       setFormData(defaultFormData);
       setPendingTasks([]);
       setTasksToDelete([]);
-      toast({ title: "Event updated successfully" });
+      // SCRUM-840: a deposit that moved while this form was open (the family paid through the
+      // chat) is kept as stored; the server says so, and the list read again shows it.
+      const depositSave = (updatedEvent as { depositSave?: DepositSaveNote } | null)?.depositSave;
+      if (depositSave) {
+        toast({ title: "Event updated. The deposit was not changed", description: depositSave.message });
+      } else {
+        toast({ title: "Event updated successfully" });
+      }
     },
     onError: (error: Error) => {
       toast({ title: "Failed to update event", description: error.message, variant: "destructive" });
@@ -1222,7 +1230,13 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
       const newTasks = pendingTasks.filter(t => !t.isExisting);
       updateMutation.mutate({ 
         id: editingEvent.id, 
-        data: { ...submitData, branchId: selectedBranchId || editingEvent.branchId }, 
+        // SCRUM-840: the deposit this form was opened with travels with the Save, so a deposit
+        // paid through the chat meanwhile is never written over (server/lib/depositSaveGuard.ts).
+        data: {
+          ...submitData,
+          branchId: selectedBranchId || editingEvent.branchId,
+          expectedPrepayment: { amountThb: editingEvent.prepaymentAmount ?? 0, date: editingEvent.prepaymentDate ?? null },
+        },
         newTasks,
         deletedTaskIds: tasksToDelete,
       });

@@ -93,7 +93,8 @@ import { BeoPackageModule } from "./beo-package-module";
 import { BeoParentExperienceModule } from "./beo-parent-experience-module";
 import { PartyMenuItemDialog } from "./beo-party-menu-item";
 import { BeoBillingSection, PartyDetailsTillTiles, tillBillingKey, useTillBilling } from "./beo-till-billing";
-import { eventDepositOf, type EventDeposit } from "@/lib/beo-deposit-buffer";
+import { DEPOSIT_READ_AGAIN_MS, billingNamesDeposit, depositChangedIn, eventDepositOf, loadedDepositOf, sameOneDeposit, type EventDeposit } from "@/lib/beo-deposit-buffer";
+import { depositMovedWords, type DepositSaveNote, type OneDeposit } from "@shared/partyDeposit";
 import { beoBillingMutationScope } from "@/lib/beo-deposit-buffer";
 import { bahtOfSatang, tillFiguresOf } from "@shared/tillBilling";
 import type { PartyMenuLine } from "@shared/partyMenuItem";
@@ -744,6 +745,12 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const canManageBilling = !readOnly && ["global_admin", "operator_admin", "admin", "manager"].includes(user?.role ?? "");
   const billingKey = ["/api/events", eventId, "beo", "billing"] as const;
   const { data: billingRow = null } = useQuery<BeoEventBilling | null>({ queryKey: billingKey, enabled: !!eventId });
+  /**
+   * SCRUM-840: the party's one deposit as this form last read it from the server (the BEO's read,
+   * a billing write's answer, the deposit read again). Save and the Billing section send it back,
+   * and Save says the person changed the deposit only when Party Details' is no longer this one.
+   */
+  const loadedDeposit = useRef<OneDeposit>({ amountThb: 0, date: null });
   /** The newest press of the billing module: an older answer arriving late never overwrites a newer one. */
   const billingPress = useRef(0);
   const billingMutation = useMutation({
@@ -751,16 +758,32 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     // the deposit the till reads is the last one typed (BeoBillingSection sends it once).
     scope: beoBillingMutationScope(eventId),
     mutationFn: async ({ patch }: { patch: Partial<BeoEventBilling>; press: number }) => {
-      const res = await apiRequest("PUT", `/api/events/${eventId}/beo/billing`, patch);
-      return (await res.json()) as BeoEventBilling;
+      // SCRUM-840: a deposit typed here travels with the deposit this BEO last read, so one that
+      // moved meanwhile (the family paid through the chat) is kept and said, never written over.
+      const body = billingNamesDeposit(patch) ? { ...patch, expectedDeposit: loadedDeposit.current } : patch;
+      const res = await apiRequest("PUT", `/api/events/${eventId}/beo/billing`, body);
+      return (await res.json()) as BeoEventBilling & { oneDeposit?: OneDeposit; depositSave?: DepositSaveNote };
     },
     onMutate: ({ patch }) => {
       queryClient.setQueryData<BeoEventBilling | null>(billingKey, (was) => (was ? { ...was, ...patch } : was));
     },
-    onSuccess: (row, { patch, press }) => {
+    onSuccess: (answer, { patch, press }) => {
+      const { oneDeposit: depositNow, depositSave, ...written } = answer;
+      const row = written as BeoEventBilling;
+      // The deposit as the server holds it after this write is the one a later Save is judged by.
+      if (depositNow) loadedDeposit.current = loadedDepositOf({ oneDeposit: depositNow });
+      if (depositSave) {
+        setPrepaymentReceived(depositSave.amountThb);
+        setDepositDate(depositSave.date ?? "");
+        setDepositReadAgain(depositSave.amountThb > 0 ? { amountThb: depositSave.amountThb, date: depositSave.date } : null);
+        toast({ title: "The deposit was not changed", description: depositSave.message });
+        void queryClient.invalidateQueries({ queryKey: billingKey, exact: true });
+        void queryClient.invalidateQueries({ queryKey: tillBillingKey(eventId) });
+        return;
+      }
       if (press !== billingPress.current) return;
       queryClient.setQueryData(billingKey, row);
-      if ("depositPaidAmount" in patch || "depositPaid" in patch || "depositPaidAt" in patch) {
+      if (billingNamesDeposit(patch)) {
         // SCRUM-813: one deposit. Party Details shows what the billing just wrote, so a later Save keeps it.
         setPrepaymentReceived(row.depositPaid ? (row.depositPaidAmount ?? 0) : 0);
         const paidAt: unknown = row.depositPaidAt;
@@ -784,7 +807,11 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   // is read again on its own (no other field of the form is reloaded): the summary and Party
   // Details take the paid figure, so a later Save keeps it.
   const [depositReadAgain, setDepositReadAgain] = useState<EventDeposit | null | undefined>(undefined);
-  useEffect(() => setDepositReadAgain(undefined), [beoData]);
+  useEffect(() => {
+    setDepositReadAgain(undefined);
+    // SCRUM-840: the deposit this form was opened with (the party's one deposit as the read says it).
+    if (beoData) loadedDeposit.current = loadedDepositOf(beoData as Parameters<typeof loadedDepositOf>[0]);
+  }, [beoData]);
   const eventDeposit = depositReadAgain !== undefined ? depositReadAgain : eventDepositOf(beoData);
   const readDepositAgain = async () => {
     void queryClient.invalidateQueries({ queryKey: billingKey, exact: true });
@@ -794,20 +821,49 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       const read = (await res.json()) as {
         prepaymentAmount?: unknown;
         prepaymentDate?: unknown;
+        oneDeposit?: { amountThb?: unknown; date?: unknown } | null;
         partyDetails?: { prepaymentReceived?: unknown; depositDate?: unknown } | null;
       };
+      // A Save or a billing write of this screen's own on its way: its answer says the deposit, not this read.
+      if (billingMutation.isPending || saveMutation.isPending) return;
       setDepositReadAgain(eventDepositOf(read));
-      const paid = Number(read.partyDetails?.prepaymentReceived) || 0;
-      const had = Number((beoData as { partyDetails?: { prepaymentReceived?: unknown } | null } | undefined)?.partyDetails?.prepaymentReceived) || 0;
-      // Party Details takes the figure only when the saved deposit moved since the form was read.
-      if (paid > 0 && paid !== had) {
-        setPrepaymentReceived(paid);
-        setDepositDate(typeof read.partyDetails?.depositDate === "string" ? read.partyDetails.depositDate : "");
+      // SCRUM-840: Party Details takes the stored deposit whenever it is no longer the one this
+      // form last read, whatever the field holds (a paid deposit is a fact, not a draft), and
+      // says so. The deposit a later Save is judged by moves with it.
+      const now = loadedDepositOf(read);
+      if (!sameOneDeposit(now, loadedDeposit.current)) {
+        loadedDeposit.current = now;
+        setPrepaymentReceived(now.amountThb);
+        setDepositDate(now.date ?? "");
+        toast({ title: "Deposit updated", description: depositMovedWords(now.amountThb, "BEO") });
       }
     } catch {
       // The next read of the BEO shows it.
     }
   };
+  // SCRUM-840: the stored deposit is read again while the BEO is open, the Billing section open
+  // or not: when the window comes back, and when the till's figures (read every minute) show a
+  // deposit that is not the one this form last read.
+  const readDepositAgainRef = useRef(readDepositAgain);
+  readDepositAgainRef.current = readDepositAgain;
+  const beoRead = !!beoData;
+  const tillDepositSatang = tillFigures && tillFigures.kind === "quote" ? tillFigures.depositSatang : null;
+  const depositReadAt = useRef(0);
+  useEffect(() => {
+    if (readOnly || !beoRead) return;
+    const onFocus = () => {
+      // A window flicked back and forth asks once.
+      if (Date.now() - depositReadAt.current < DEPOSIT_READ_AGAIN_MS) return;
+      depositReadAt.current = Date.now();
+      void readDepositAgainRef.current();
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [readOnly, beoRead]);
+  useEffect(() => {
+    if (readOnly || !beoRead || tillDepositSatang === null) return;
+    if (tillDepositSatang !== loadedDeposit.current.amountThb * 100) void readDepositAgainRef.current();
+  }, [readOnly, beoRead, tillDepositSatang]);
 
   const { data: branches } = useQuery<Branch[]>({
     queryKey: ["/api/branches"],
@@ -1093,15 +1149,29 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
           depositDate,
           notes: packageNotes,
         },
+        // SCRUM-840: Save says whether the person changed the deposit in this form, and which
+        // deposit the form last read. The server writes the deposit only when it was changed, and
+        // keeps one that moved meanwhile (the family paid through the chat), saying so
+        // (server/lib/depositSaveGuard.ts).
+        depositChanged: depositChangedIn({ prepaymentReceived, depositDate }, loadedDeposit.current),
+        expectedDeposit: loadedDeposit.current,
       };
       const res = await apiRequest("PUT", `/api/events/${eventId}/beo`, payload);
       if (!res.ok) throw new Error("Failed to save BEO data");
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (saved: { oneDeposit?: OneDeposit; depositSave?: DepositSaveNote } | null) => {
+      // The deposit as it stands after the Save: the field shows it at once, and the read that
+      // follows brings the rest of the form.
+      if (saved?.oneDeposit) {
+        loadedDeposit.current = loadedDepositOf({ oneDeposit: saved.oneDeposit });
+        setPrepaymentReceived(loadedDeposit.current.amountThb);
+        setDepositDate(loadedDeposit.current.date ?? "");
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/events", eventId, "beo"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/events"] });
-      toast({ title: "BEO data saved successfully" });
+      if (saved?.depositSave) toast({ title: "BEO saved. The deposit was not changed", description: saved.depositSave.message });
+      else toast({ title: "BEO data saved successfully" });
       onSave?.();
     },
     onError: (error: Error) => {
