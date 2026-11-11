@@ -1,0 +1,21 @@
+{
+  "run": 42978766224,
+  "sha": "6d4553cf581f0047df826fe516aa7ba7f0d81c53",
+  "jobId": 130383963747,
+  "jobConclusion": "success",
+  "summary": "typecheck: 418/418 errors in 54 files",
+  "lines": 667,
+  "readWhole": true,
+  "log": "local/followup-app-typecheck.log",
+  "sha256": "b3f6d2e2450e0f488eadc597853a5416ffcf0be16ae80e833bc4a6c03cb9f658",
+  "readAt": "2026-11-11T07:37:05.379Z",
+  "readRanges": [
+    "1-100",
+    "101-200",
+    "201-300",
+    "301-400",
+    "401-500",
+    "501-600",
+    "601-667"
+  ]
+}
