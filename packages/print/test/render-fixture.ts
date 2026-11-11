@@ -8,7 +8,7 @@
 
 import { renderJob, layoutSummary, previewPng, RENDERER_VERSION } from '../src/index';
 import type { PrintJob, RenderedJob } from '../src/index';
-import { FIXTURES, PROFILES, TEMPLATES } from './fixtures';
+import { FIXTURES, PROFILES, SLIP_FIXTURES, TEMPLATES } from './fixtures';
 import type { Fixture } from './fixtures';
 
 export interface FixtureArtefacts {
@@ -48,10 +48,10 @@ export function buildFixture(fixture: Fixture, profileKey: string): FixtureArtef
   };
 }
 
-/** Every fixture on every profile it names, in a stable order. */
+/** Every fixture on every profile it names, in a stable order; the void and updated slips (SCRUM-861) after the nine. */
 export function allFixtures(): FixtureArtefacts[] {
   const out: FixtureArtefacts[] = [];
-  for (const fixture of FIXTURES) {
+  for (const fixture of [...FIXTURES, ...SLIP_FIXTURES]) {
     for (const profile of fixture.profiles) out.push(buildFixture(fixture, profile));
   }
   return out;

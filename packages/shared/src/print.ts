@@ -322,6 +322,8 @@ export const PRINT_SUBJECT_TYPES = [
   'end_of_day',
   /** SCRUM-805 — a party's kitchen or bar slip prints one `pos.party_slip_print` row. */
   'party_slip',
+  /** SCRUM-861 — a void or updated-items slip prints one `pos.prep_slip_print` row. */
+  'prep_slip',
 ] as const;
 export type PrintSubjectType = (typeof PRINT_SUBJECT_TYPES)[number];
 

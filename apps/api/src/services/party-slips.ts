@@ -4,6 +4,7 @@ import {
   branch,
   employee,
   partySlipPrint,
+  prepSlipPrint,
   printJob,
   product,
   station,
@@ -28,6 +29,10 @@ import {
   type PartySlipsPrintAnswer,
   type PartySlipsView,
   type PrintJobStatus,
+  partyPrepSlips,
+  partySlipFingerprint,
+  prepSlipTargets,
+  type PartySlipDocument,
 } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
@@ -36,6 +41,7 @@ import { resolveItemPrepStations } from './menu';
 import { getBranchEvent, listEventPackagesOn, OtoAppSeamNotGrantedError, type SeamEvent } from './otoapp-events';
 import { partyPlanOfRow, readPartyPlan } from './party-plan';
 import { overlayPartyEdits, partyLedgersOf } from './party-tab';
+import { nextPartyChangeRun, partySlipsLastGiven, writePrepSlips } from './prep-slips';
 import { routeOnBox } from './print';
 import { writeJob, type JobScope } from './sale-printing';
 import { withTx, type Exec, type OpContext, type Tx } from './tx';
@@ -415,6 +421,134 @@ export async function printPartySlipsNow(
   });
 }
 
+// --- A plan changed after the slips printed (SCRUM-861) ---------------------------------
+
+type PrepSlipRow = typeof prepSlipPrint.$inferSelect;
+
+export interface PrintPartySlipChangesInput {
+  operatorId: string;
+  branchId: string;
+  eventId: string;
+  /** The day the slips printed for, as the record dates it. */
+  partyDate: string;
+  /** The job's tick. */
+  actionId: string;
+  now: Date;
+}
+
+export type PrintPartySlipChangesResult =
+  /** No slip of the party's has printed for the day: the slip time will print the plan as it then is. */
+  | { outcome: 'not_printed_yet' }
+  /** Every station holds the slip the plan would print now. */
+  | { outcome: 'unchanged' }
+  | { outcome: 'printed'; run: number; cancelled: boolean; slips: PrepSlipRow[] };
+
+/**
+ * ONE LOOK at a party whose slips printed today (the owner, 12 November:
+ * "when an order, or an item in a birthday package, is cancelled, send a void
+ * receipt and an updated-items receipt to the kitchen and bar"): the slips
+ * the plan would print now are composed exactly as the slip time composed
+ * them, and each station holding something else is sent a VOID slip of what
+ * it lost and an UPDATED slip of what it now makes (`partyPrepSlips`). A
+ * cancelled, archived, deleted or moved party sends every station holding
+ * lines its VOID slip and nothing else. The slips go to the printers of the
+ * station the branch names, as the party's own slips did.
+ *
+ * ONE PAIR PER STATION PER CHANGE, never a storm: the job looks once a
+ * minute, so however many saves the BEO makes in between, the kitchen gets
+ * one correction; the row keeps the fingerprint of the slip the station now
+ * holds, and the next look finds it unchanged and writes nothing. Under the
+ * same lock as the slip time's run and a press of "Print party slips now".
+ */
+export async function printPartySlipChanges(
+  tx: Tx,
+  input: PrintPartySlipChangesInput,
+): Promise<PrintPartySlipChangesResult> {
+  const eventId = input.eventId.toLowerCase();
+  const partyDate = input.partyDate;
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`party-slips:${eventId}:${partyDate}`}, 0))`);
+  const [given] = await tx
+    .select({ id: partySlipPrint.id })
+    .from(partySlipPrint)
+    .where(and(eq(partySlipPrint.eventId, eventId), eq(partySlipPrint.partyDate, partyDate)))
+    .limit(1);
+  if (!given) return { outcome: 'not_printed_yet' };
+
+  const read = await readPartyPlan(tx, { branchId: input.branchId, eventId });
+  if (read.status === 'seam_not_granted') {
+    const missing = new OtoAppSeamNotGrantedError(['SELECT on the OTO App event packages view']);
+    throw new AppError(503, 'EVENTS_SEAM_NOT_GRANTED', missing.message, { missing: missing.missing });
+  }
+  const plan = read.plan;
+  const party = await partyShown(tx, input.branchId, eventId);
+  // No package any more, moved to another day, cancelled, archived or gone:
+  // whatever the kitchen holds for today is not to be made.
+  const cancelled =
+    !plan || plan.partyDate !== partyDate || !party || party.archived || party.status === 'cancelled';
+  const b = await branchOf(tx, input.operatorId, input.branchId);
+  const time = clockAt(input.now, b.timezone);
+  let after: Record<PartySlipStation, PartySlipDocument | null> = { kitchen: null, bar: null };
+  if (!cancelled && plan && party) {
+    const codes = plan.setMenu.map((m) => m.productCode).filter((c): c is string => !!c);
+    const prep = await prepStationsByCode(tx, input.operatorId, codes);
+    after = composePartySlips({
+      plan,
+      partyName: party.title,
+      location: party.location,
+      prepStationOf: (code) => prep.get(code) ?? null,
+      printedAt: time,
+    });
+  }
+  const before = await partySlipsLastGiven(tx, { eventId, partyDate });
+  const targets = prepSlipTargets(partyPrepSlips({ before, after, cancelled, time }));
+  if (targets.length === 0) return { outcome: 'unchanged' };
+
+  const named = await slipStationOf(tx, b);
+  const run = await nextPartyChangeRun(tx, { eventId, partyDate });
+  const { rows } = await writePrepSlips(
+    tx,
+    {
+      operatorId: input.operatorId,
+      branchId: input.branchId,
+      source: 'party',
+      eventId,
+      partyDate,
+      run,
+      planFingerprintOf: (st) => partySlipFingerprint(cancelled ? null : after[st]),
+      actorAccountId: null,
+      actionId: input.actionId,
+      now: input.now,
+    },
+    targets.map((t) => ({ ...t, stationRow: named })),
+  );
+  await audit.record(tx, {
+    actorAccountId: null,
+    operatorId: input.operatorId,
+    branchId: input.branchId,
+    action: 'party.slips_change',
+    entityType: 'party',
+    entityId: eventId,
+    actionId: input.actionId,
+    after: {
+      partyDate,
+      run,
+      cancelled,
+      stationId: named?.id ?? null,
+      slips: rows.map((s) => ({ id: s.id, station: s.station, variant: s.variant, status: s.status, printJobId: s.printJobId })),
+    },
+  });
+  return { outcome: 'printed', run, cancelled, slips: rows };
+}
+
+/** The branch's parties whose slips printed for a day, by the OTO App's id. */
+async function partiesWithSlipsOn(db: Exec, q: { branchId: string; date: string }): Promise<string[]> {
+  const rows = await db
+    .selectDistinct({ eventId: partySlipPrint.eventId })
+    .from(partySlipPrint)
+    .where(and(eq(partySlipPrint.branchId, q.branchId), eq(partySlipPrint.partyDate, q.date)));
+  return rows.map((r) => r.eventId).sort();
+}
+
 // --- The job -------------------------------------------------------------------------
 
 export interface PartySlipsJobSummary extends Record<string, unknown> {
@@ -427,6 +561,11 @@ export interface PartySlipsJobSummary extends Record<string, unknown> {
   printed: number;
   noPrinter: number;
   nothingToPrint: number;
+  /** SCRUM-861 — the parties whose slips printed today that were looked at, and the changes found. */
+  changesLooked: number;
+  changes: number;
+  changePrinted: number;
+  changeNoPrinter: number;
   failed: number;
 }
 
@@ -459,6 +598,10 @@ export async function runPartySlipsJob(db: Db, now: Date): Promise<PartySlipsJob
     printed: 0,
     noPrinter: 0,
     nothingToPrint: 0,
+    changesLooked: 0,
+    changes: 0,
+    changePrinted: 0,
+    changeNoPrinter: 0,
     failed: 0,
   };
   for (const b of branches) {
@@ -516,6 +659,35 @@ export async function runPartySlipsJob(db: Db, now: Date): Promise<PartySlipsJob
             else if (s.status === 'no_printer') summary.noPrinter += 1;
             else summary.nothingToPrint += 1;
           }
+        }
+      } catch {
+        summary.failed += 1;
+      }
+    }
+    // SCRUM-861 — the parties whose slips printed today: a plan that changed
+    // since sends its stations VOID and UPDATED slips, one pair per change.
+    for (const eventId of await partiesWithSlipsOn(db, { branchId: b.id, date })) {
+      summary.changesLooked += 1;
+      try {
+        const result = await withTx(
+          db,
+          { actorAccountId: null, operatorId: b.operatorId, branchId: b.id },
+          'party.slips_change',
+          (tx) =>
+            printPartySlipChanges(tx, {
+              operatorId: b.operatorId,
+              branchId: b.id,
+              eventId,
+              partyDate: date,
+              actionId: newId(),
+              now,
+            }),
+        );
+        if (result.outcome !== 'printed') continue;
+        summary.changes += 1;
+        for (const s of result.slips) {
+          if (s.status === 'printed') summary.changePrinted += 1;
+          else summary.changeNoPrinter += 1;
         }
       } catch {
         summary.failed += 1;

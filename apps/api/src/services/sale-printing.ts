@@ -14,6 +14,7 @@ import {
   operator,
   partySlipPrint,
   paymentAttempt,
+  prepSlipPrint,
   printJob,
   printTemplate,
   product,
@@ -212,7 +213,7 @@ export interface SalePrintingResult {
 export interface JobRequest {
   kind: PrintKind;
   /** SCRUM-805 — `party_slip`: one row of `pos.party_slip_print`, a party's kitchen or bar slip. */
-  subjectType: 'sale' | 'band' | 'sale_line' | 'wallet' | 'end_of_day' | 'party_slip';
+  subjectType: 'sale' | 'band' | 'sale_line' | 'wallet' | 'end_of_day' | 'party_slip' | 'prep_slip';
   subjectId: string;
   reprintOf?: string | null;
   reprintReason?: string | null;
@@ -1586,6 +1587,24 @@ export async function buildPrintDocument(
     const data = await endOfDayReceiptDocumentOf(db, row.subjectId, copy);
     if (!data) throw noDocument();
     return { ...base, job: data as RenderJob };
+  }
+  /**
+   * SCRUM-861 — a void or updated-items slip prints the slip its record keeps
+   * (`pos.prep_slip_print`, composed when the refund was made or the party's
+   * change was seen), as a party's slip does below.
+   */
+  if (
+    row.subjectType === 'prep_slip' &&
+    row.subjectId &&
+    (row.kind === 'kitchen_ticket' || row.kind === 'bar_ticket')
+  ) {
+    const [slip] = await db
+      .select({ document: prepSlipPrint.document })
+      .from(prepSlipPrint)
+      .where(and(eq(prepSlipPrint.id, row.subjectId), eq(prepSlipPrint.operatorId, row.operatorId)))
+      .limit(1);
+    if (!slip?.document) throw noDocument();
+    return { ...base, job: { kind: row.kind, data: slip.document } as RenderJob };
   }
   /**
    * SCRUM-805 — a party's kitchen or bar slip prints the slip its record keeps:

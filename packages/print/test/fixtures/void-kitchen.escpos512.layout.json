@@ -1,0 +1,192 @@
+{
+  "widthDots": 512,
+  "heightDots": 364,
+  "overflow": [],
+  "items": [
+    {
+      "k": "text",
+      "x": 174,
+      "baselineY": 22,
+      "w": 165,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "VOID — KITCHEN"
+    },
+    {
+      "k": "text",
+      "x": 199,
+      "baselineY": 67,
+      "w": 114,
+      "sizeDots": 40,
+      "weight": "bold",
+      "text": "VOID"
+    },
+    {
+      "k": "invert",
+      "x": 8,
+      "y": 30,
+      "w": 496,
+      "h": 49
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 86,
+      "w": 496,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 112,
+      "w": 114,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "#F-2207"
+    },
+    {
+      "k": "text",
+      "x": 427,
+      "baselineY": 112,
+      "w": 77,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "14:52"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 133,
+      "w": 149,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Voided by Nok"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 159,
+      "w": 208,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Refund T1-R-000003"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 180,
+      "w": 40,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "For "
+    },
+    {
+      "k": "text",
+      "x": 48,
+      "baselineY": 180,
+      "w": 242,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "Mali (Band 3) · Привет"
+    },
+    {
+      "k": "warning",
+      "x": 12,
+      "y": 196,
+      "size": 22
+    },
+    {
+      "k": "text",
+      "x": 42,
+      "baselineY": 212,
+      "w": 365,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "ALLERGY (Mali (Band 3) · Привет):"
+    },
+    {
+      "k": "text",
+      "x": 42,
+      "baselineY": 239,
+      "w": 371,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "Peanuts, shellfish · สวัสดี OTO Park"
+    },
+    {
+      "k": "stroke",
+      "x": 8,
+      "y": 191,
+      "w": 496,
+      "h": 58
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 252,
+      "w": 496,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 273,
+      "w": 31,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "1× "
+    },
+    {
+      "k": "text",
+      "x": 39,
+      "baselineY": 273,
+      "w": 175,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Chicken Nuggets"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 296,
+      "w": 65,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "  No dip"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 321,
+      "w": 31,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "1× "
+    },
+    {
+      "k": "text",
+      "x": 39,
+      "baselineY": 321,
+      "w": 173,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Margherita Pizza"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 330,
+      "w": 496,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 348,
+      "w": 319,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Bring everything out together, please."
+    }
+  ]
+}

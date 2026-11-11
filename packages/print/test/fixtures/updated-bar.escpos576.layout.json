@@ -1,0 +1,154 @@
+{
+  "widthDots": 576,
+  "heightDots": 334,
+  "overflow": [],
+  "items": [
+    {
+      "k": "text",
+      "x": 209,
+      "baselineY": 21,
+      "w": 158,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "UPDATED — BAR"
+    },
+    {
+      "k": "text",
+      "x": 184,
+      "baselineY": 66,
+      "w": 207,
+      "sizeDots": 40,
+      "weight": "bold",
+      "text": "UPDATED"
+    },
+    {
+      "k": "invert",
+      "x": 8,
+      "y": 29,
+      "w": 560,
+      "h": 49
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 107,
+      "w": 252,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "BIRTHDAY PARTY"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 110,
+      "w": 560,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 139,
+      "w": 238,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "Mali's 6th · สวัสดี"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 166,
+      "w": 140,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "OTO Park"
+    },
+    {
+      "k": "text",
+      "x": 491,
+      "baselineY": 136,
+      "w": 77,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "11:32"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 187,
+      "w": 303,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Plan changed in the OTO App"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 212,
+      "w": 206,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Room: Party room 1"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 238,
+      "w": 124,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Children: 10"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 266,
+      "w": 229,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "READY BY 13:40"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 270,
+      "w": 560,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 291,
+      "w": 31,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "1× "
+    },
+    {
+      "k": "text",
+      "x": 39,
+      "baselineY": 291,
+      "w": 127,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Juice pitcher"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 317,
+      "w": 43,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "10× "
+    },
+    {
+      "k": "text",
+      "x": 51,
+      "baselineY": 317,
+      "w": 192,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Kids juice · Привет"
+    }
+  ]
+}

@@ -90,6 +90,14 @@ export interface PrepTicketData {
   details?: string[];
   readyBy?: string;
   readyByNote?: string;
+  /**
+   * SCRUM-861 — a void slip or an updated-items slip for an order the station
+   * already has (`PrepSlipDocument` in `@oto/shared`): the renderer draws the
+   * word as an inverted band under the header and always prints the order
+   * line. Absent on a first ticket. A box whose renderer predates this field
+   * prints the rest, and the `title` the api sends carries the word for it.
+   */
+  variant?: 'void' | 'updated';
 }
 
 /** A prep ticket's line: a party's set menu may print a dish with no count. */

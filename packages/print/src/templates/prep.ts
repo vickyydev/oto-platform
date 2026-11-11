@@ -42,8 +42,27 @@ export interface PrepInput {
   device: DeviceProfile;
 }
 
+/** SCRUM-861 — the word a void or updated slip is banded with. */
+const SLIP_WORD: Record<NonNullable<PrepTicketData['variant']>, string> = {
+  void: 'VOID',
+  updated: 'UPDATED',
+};
+
 export function buildPrepTicket({ template, type, data, device }: PrepInput): PrintDocument {
   const blocks: Block[] = [...headerBlocks(template, data.title)];
+
+  // SCRUM-861 — a void or updated slip wears its word as a white-on-black
+  // band the width of the paper, before anything else: a cook reading the
+  // ticket from the rail must see it is not an order before the dishes.
+  if (data.variant) {
+    blocks.push(space(4));
+    blocks.push({
+      k: 'invert',
+      padDots: 8,
+      children: [text(SLIP_WORD[data.variant], { sizeDots: 40, weight: 'bold', tracking: 4 }, 'center')],
+    });
+    blocks.push(space(4));
+  }
 
   // SCRUM-805 — a party's slip says so first.
   if (data.heading) {
@@ -51,8 +70,9 @@ export function buildPrepTicket({ template, type, data, device }: PrepInput): Pr
   }
 
   // On a party's slip this row is the party's name and when it printed — the
-  // slip's own header — so it prints whatever the order-ref toggle says.
-  if (data.heading || fieldOn(template, type, 'orderRefTime')) {
+  // slip's own header — so it prints whatever the order-ref toggle says; a
+  // void or updated slip must name the order it corrects, so it prints too.
+  if (data.heading || data.variant || fieldOn(template, type, 'orderRefTime')) {
     blocks.push(divider());
     blocks.push({
       k: 'columns',

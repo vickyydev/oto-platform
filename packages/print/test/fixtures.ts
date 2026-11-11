@@ -272,3 +272,56 @@ export const FIXTURES: Fixture[] = [
     },
   },
 ];
+
+/**
+ * SCRUM-861 — the void slip and the updated-items slip, on the prep ticket:
+ * a sale's kitchen void (the order's `#` line, the cancelled dishes, who
+ * voided it, on both heads) and a party's updated bar slip (the party's
+ * heading, its name, its room and READY BY over what the bar still makes).
+ * Kept beside `FIXTURES` rather than in it: that list is the one-of-each
+ * contract `fixtures.test.ts` counts, and these are two more of two kinds
+ * already in it.
+ */
+export const SLIP_FIXTURES: Fixture[] = [
+  {
+    name: 'void-kitchen',
+    profiles: ['escpos576', 'escpos512'],
+    job: {
+      kind: 'kitchen_ticket',
+      data: {
+        title: 'VOID — Kitchen',
+        variant: 'void',
+        orderRef: 'F-2207',
+        time: '14:52',
+        holderName: `Mali (Band 3) · ${CYRILLIC_HELLO}`,
+        allergiesMedical: `Peanuts, shellfish · ${THAI_HELLO}`,
+        details: ['Voided by Nok', 'Refund T1-R-000003'],
+        lines: [
+          { qty: 1, name: 'Chicken Nuggets', note: 'No dip' },
+          { qty: 1, name: 'Margherita Pizza' },
+        ],
+        orderNote: 'Bring everything out together, please.',
+      },
+    },
+  },
+  {
+    name: 'updated-bar',
+    profiles: ['escpos576'],
+    job: {
+      kind: 'bar_ticket',
+      data: {
+        title: 'UPDATED — Bar',
+        variant: 'updated',
+        heading: 'Birthday party',
+        orderRef: `Mali's 6th · ${THAI_HELLO}`,
+        time: '11:32',
+        details: ['Plan changed in the OTO App', 'Room: Party room 1', 'Children: 10'],
+        readyBy: '13:40',
+        lines: [
+          { qty: 1, name: 'Juice pitcher' },
+          { qty: 10, name: `Kids juice · ${CYRILLIC_HELLO}` },
+        ],
+      },
+    },
+  },
+];

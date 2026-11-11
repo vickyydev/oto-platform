@@ -38,6 +38,7 @@ import { allocateReceipt, saleViewOf, type SaleView } from './sale';
 import { restoreForRefund, takeBackPrepaidForRefund, walletTenderOf } from './wallet';
 import { restockForRefund } from './stock';
 import { releaseOpenHold } from './sale-hold-release';
+import { queueRefundPrepSlips } from './prep-slips';
 import { withTx, type Exec, type OpContext, type Tx } from './tx';
 import { voidSoldVouchersForRefund } from './voucher-sale-issue';
 
@@ -638,6 +639,27 @@ export async function refundSale(
         accountId: actor.accountId,
       })
     : [];
+
+  /**
+   * SCRUM-861 — the kitchen and the bar are told: each station that printed
+   * a ticket for this sale gets a VOID slip of the lines this refund
+   * cancelled there and, when some of its lines stand, an UPDATED slip of what
+   * is still to make. Under its own savepoint, never throwing: a slip that
+   * cannot be queued is an audit row, and the refund stands.
+   */
+  await queueRefundPrepSlips(tx, {
+    saleRow: after,
+    refund: {
+      id: refundId,
+      number: finalRow.number,
+      coveredLineIds: covered.map((l) => l.id),
+      earlierLineIds: [...earlierLines],
+      full,
+    },
+    actor: { accountId: actor.accountId, operatorId: actor.operatorId, requestId: actor.requestId },
+    actionId: input.actionId ?? null,
+    now,
+  });
 
   await audit.record(tx, {
     actorAccountId: actor.accountId,

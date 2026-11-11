@@ -67,3 +67,6 @@ export * from './assistant';
 // A party's kitchen and bar slips (SCRUM-805): keyed on the tenancy and the
 // OTO App's party, printed through the print record above.
 export * from './party-slips';
+// The void and updated-items slips (SCRUM-861): after the sales ledger, whose
+// sale and refund a refund's slip names, and beside the party slips.
+export * from './prep-slips';

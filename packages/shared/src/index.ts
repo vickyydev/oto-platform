@@ -92,5 +92,7 @@ export * from './station-readiness';
 export * from './screen-presence';
 export * from './party-slips';
 export * from './party-menu';
+// SCRUM-861: the void and updated-items slips a refund or a party's plan change sends.
+export * from './prep-slips';
 
 export { trustedBoxBridgeOrigin } from './box-bridge-origin';
