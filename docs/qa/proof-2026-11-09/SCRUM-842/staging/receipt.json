@@ -64,7 +64,7 @@
   },
   "signedInAs": "the staging administrator through the launcher (name never kept)",
   "simulator": "Demo WhatsApp · Central Floresta (inbox Settings › Simulator · test only)",
-  "verdict": "NOT PASSED: the English line and the Russian line were both answered with the question about the age",
+  "verdict": "PASSED on the re-check after the rule fix (see recheckAfterTheRuleFix); the first run, kept below, did not pass",
   "conversations": {
     "english": {
       "name": "ZZ TEST 842",
@@ -935,6 +935,674 @@
       "readBack": {
         "appUser": 401,
         "launcherMe": 401
+      }
+    }
+  },
+  "verdictOfTheFirstRun": "NOT PASSED: the English line and the Russian line were both answered with the question about the age",
+  "recheckAfterTheRuleFix": {
+    "writtenAt": "2026-11-11T14:24:46.639Z",
+    "liveCommit": "8d4a846813224738847366aa3c6657fffe1c9a56",
+    "liveDeploy": {
+      "how": "the deploy read by its id from the host control API, one request every 90 s; the first line sent 90 s and more after it went live",
+      "readings": [
+        {
+          "at": "2026-11-11T14:16:30.327Z",
+          "service": "oto-api-staging",
+          "deploy": "dep-dbq7haegekts73el5rug",
+          "http": 200,
+          "status": "build_in_progress",
+          "sha": "8d4a846813224738847366aa3c6657fffe1c9a56",
+          "finishedAt": null,
+          "tookMs": 458
+        },
+        {
+          "at": "2026-11-11T14:18:00.793Z",
+          "service": "oto-api-staging",
+          "deploy": "dep-dbq7haegekts73el5rug",
+          "http": 200,
+          "status": "build_in_progress",
+          "sha": "8d4a846813224738847366aa3c6657fffe1c9a56",
+          "finishedAt": null,
+          "tookMs": 444
+        },
+        {
+          "at": "2026-11-11T14:19:31.180Z",
+          "service": "oto-api-staging",
+          "deploy": "dep-dbq7haegekts73el5rug",
+          "http": 200,
+          "status": "update_in_progress",
+          "sha": "8d4a846813224738847366aa3c6657fffe1c9a56",
+          "finishedAt": null,
+          "tookMs": 379
+        },
+        {
+          "at": "2026-11-11T14:21:01.600Z",
+          "service": "oto-api-staging",
+          "deploy": "dep-dbq7haegekts73el5rug",
+          "http": 200,
+          "status": "live",
+          "sha": "8d4a846813224738847366aa3c6657fffe1c9a56",
+          "finishedAt": "2026-11-11T14:20:51.503891Z",
+          "tookMs": 414
+        }
+      ]
+    },
+    "verdict": "PASSED: English, Russian and Thai answered with no age question; the control line still gets the rule question",
+    "ruleUnchanged": "rule 01a1a56c-b079-7e76-bebc-82406b0a5b47 was not edited by this run (the control reply names it as askFirstRuleId)",
+    "conversations": {
+      "english": {
+        "name": "ZZ TEST 842",
+        "id": "01a1cafd-3c4e-7928-83f6-cce3e87e247a",
+        "language": "en",
+        "categoryHint": "(none: as the channel routes it)",
+        "lines": [
+          {
+            "by": "customer",
+            "text": "ZZ TEST do you have drop-off for a six year old?",
+            "at": "2026-11-11T14:22:33.330Z",
+            "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+            "formState": {
+              "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+              "category": "As the channel routes it",
+              "language": "en",
+              "message": "ZZ TEST do you have drop-off for a six year old?"
+            },
+            "status": 200,
+            "outcome": "processed",
+            "conversationsCreated": 1,
+            "reopened": 0
+          }
+        ],
+        "turns": {
+          "1": {
+            "afterLine": 1,
+            "waitedMs": 6198,
+            "turnShown": true,
+            "turns": [
+              {
+                "kind": "ai_replied",
+                "turnId": "01a1cafd-3c64-76f9-999f-f24efc7c04f1",
+                "intent": "drop_off_service",
+                "intents": [
+                  "drop_off_service"
+                ],
+                "reason": null,
+                "rule": null,
+                "closingKey": null,
+                "rethink": null
+              }
+            ],
+            "assistantLines": [
+              {
+                "id": "01a1cafd-5b2e-7a2a-a7b4-afbd2bccbbfd",
+                "createdAt": "2026-11-11T14:22:43.986Z",
+                "providerStatus": "queued",
+                "body": "Yes! Our drop-off service is for kids from their 5th birthday, so your little one is all set 😊 It's 225 baht per visit, with our child supervisors on the floor the whole time, regular photo updates for you, help ordering food and a contact person you can call anytime.\n\nIf you'd prefer a more private experience, our nanny service gives one-on-one care just for your child, 330 baht per hour at Central Floresta. Best booked ahead!"
+              }
+            ],
+            "aiState": "ready",
+            "openQuestions": []
+          }
+        },
+        "pillPayloads": [
+          {
+            "kind": "ai_replied",
+            "createdAt": "2026-11-11T14:22:43.986Z",
+            "payload": {
+              "intent": "drop_off_service",
+              "turnId": "01a1cafd-3c64-76f9-999f-f24efc7c04f1",
+              "intents": [
+                "drop_off_service"
+              ],
+              "rethink": null,
+              "askBranch": false,
+              "coherence": {
+                "state": "skipped",
+                "reason": "NOT_MIXED"
+              },
+              "messageIds": [
+                "01a1cafd-5b2e-7a2a-a7b4-afbd2bccbbfd"
+              ],
+              "composition": {
+                "joined": true,
+                "bubbles": 2,
+                "repeats": 0,
+                "parkFirst": false,
+                "duplicates": 0,
+                "parkQuestions": 0
+              },
+              "languageOffer": null,
+              "brochureFileIds": [],
+              "askFirstSatisfied": [
+                {
+                  "slots": [
+                    "child_age"
+                  ],
+                  "reason": "already_said",
+                  "ruleId": "01a1a56c-b079-7e76-bebc-82406b0a5b47"
+                }
+              ]
+            }
+          }
+        ],
+        "audit": {
+          "first": {
+            "at": "2026-11-11T14:22:58.351Z",
+            "repeatGuard": {
+              "route": "GET /api/audit?action=inbox.ai.repeat_guard&from=<run start>",
+              "status": 200,
+              "rowsSinceRunStart": 0,
+              "total": 0,
+              "rowsForThisConversation": 0,
+              "rows": [],
+              "error": null
+            },
+            "openQuestion": {
+              "route": "GET /api/audit?action=inbox.ai.open_question&entityType=inbox.conversation&entityId=:id",
+              "status": 200,
+              "rows": 0,
+              "entries": [],
+              "error": null
+            },
+            "handover": {
+              "route": "GET /api/audit?action=inbox.ai.handover&entityType=inbox.conversation&entityId=:id",
+              "status": 200,
+              "rows": 0,
+              "entries": []
+            }
+          }
+        }
+      },
+      "russian": {
+        "name": "ZZ TEST 842",
+        "id": "01a1cafd-463f-774c-8a44-c2c9971d664b",
+        "language": "ru",
+        "categoryHint": "(none: as the channel routes it)",
+        "lines": [
+          {
+            "by": "customer",
+            "text": "ZZ TEST у вас есть drop-off для ребёнка 6 лет?",
+            "at": "2026-11-11T14:22:35.858Z",
+            "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+            "formState": {
+              "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+              "category": "As the channel routes it",
+              "language": "ru",
+              "message": "ZZ TEST у вас есть drop-off для ребёнка 6 лет?"
+            },
+            "status": 200,
+            "outcome": "processed",
+            "conversationsCreated": 1,
+            "reopened": 0
+          }
+        ],
+        "turns": {
+          "1": {
+            "afterLine": 1,
+            "waitedMs": 6484,
+            "turnShown": true,
+            "turns": [
+              {
+                "kind": "ai_replied",
+                "turnId": "01a1cafd-464d-7063-8340-d39e2bdecc12",
+                "intent": "drop_off_service",
+                "intents": [
+                  "drop_off_service"
+                ],
+                "reason": null,
+                "rule": null,
+                "closingKey": null,
+                "rethink": null
+              }
+            ],
+            "assistantLines": [
+              {
+                "id": "01a1cafd-7df2-785a-a71d-7691421a0742",
+                "createdAt": "2026-11-11T14:22:52.892Z",
+                "providerStatus": "sent",
+                "body": "Здравствуйте! Да, конечно 😊 Drop-off — с 5-летия, 225 бат за визит. Наши детские супервайзеры присматривают за ребёнком всё время, помогают с заказом еды и присылают вам фото.\n\nА если хочется индивидуального присмотра только для вашего ребёнка, в Central Floresta есть ещё услуга няни один на один, 330 бат в час, лучше бронировать заранее."
+              }
+            ],
+            "aiState": "ready",
+            "openQuestions": []
+          }
+        },
+        "pillPayloads": [
+          {
+            "kind": "ai_replied",
+            "createdAt": "2026-11-11T14:22:52.892Z",
+            "payload": {
+              "intent": "drop_off_service",
+              "turnId": "01a1cafd-464d-7063-8340-d39e2bdecc12",
+              "intents": [
+                "drop_off_service"
+              ],
+              "rethink": null,
+              "askBranch": false,
+              "coherence": {
+                "state": "skipped",
+                "reason": "NOT_MIXED"
+              },
+              "messageIds": [
+                "01a1cafd-7df2-785a-a71d-7691421a0742"
+              ],
+              "composition": {
+                "joined": true,
+                "bubbles": 2,
+                "repeats": 0,
+                "parkFirst": false,
+                "duplicates": 0,
+                "parkQuestions": 0
+              },
+              "languageOffer": null,
+              "brochureFileIds": [],
+              "askFirstSatisfied": [
+                {
+                  "slots": [
+                    "child_age"
+                  ],
+                  "reason": "already_said",
+                  "ruleId": "01a1a56c-b079-7e76-bebc-82406b0a5b47"
+                }
+              ]
+            }
+          }
+        ],
+        "audit": {
+          "first": {
+            "at": "2026-11-11T14:23:07.234Z",
+            "repeatGuard": {
+              "route": "GET /api/audit?action=inbox.ai.repeat_guard&from=<run start>",
+              "status": 200,
+              "rowsSinceRunStart": 0,
+              "total": 0,
+              "rowsForThisConversation": 0,
+              "rows": [],
+              "error": null
+            },
+            "openQuestion": {
+              "route": "GET /api/audit?action=inbox.ai.open_question&entityType=inbox.conversation&entityId=:id",
+              "status": 200,
+              "rows": 0,
+              "entries": [],
+              "error": null
+            },
+            "handover": {
+              "route": "GET /api/audit?action=inbox.ai.handover&entityType=inbox.conversation&entityId=:id",
+              "status": 200,
+              "rows": 0,
+              "entries": []
+            }
+          }
+        }
+      },
+      "control": {
+        "name": "ZZ TEST 842",
+        "id": "01a1cafd-501f-7b6d-9542-967a3bda7f6d",
+        "language": "en",
+        "categoryHint": "(none: as the channel routes it)",
+        "lines": [
+          {
+            "by": "customer",
+            "text": "ZZ TEST do you have drop-off?",
+            "at": "2026-11-11T14:22:38.385Z",
+            "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+            "formState": {
+              "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+              "category": "As the channel routes it",
+              "language": "en",
+              "message": "ZZ TEST do you have drop-off?"
+            },
+            "status": 200,
+            "outcome": "processed",
+            "conversationsCreated": 1,
+            "reopened": 0
+          }
+        ],
+        "turns": {
+          "1": {
+            "afterLine": 1,
+            "waitedMs": 6213,
+            "turnShown": true,
+            "turns": [
+              {
+                "kind": "ai_replied",
+                "turnId": "01a1cafd-502c-7582-b85b-fdd468cf96df",
+                "intent": "drop_off_service",
+                "intents": [
+                  "drop_off_service"
+                ],
+                "reason": null,
+                "rule": null,
+                "closingKey": null,
+                "rethink": null
+              }
+            ],
+            "assistantLines": [
+              {
+                "id": "01a1cafd-9196-7d57-94bc-e2f1f37b36bf",
+                "createdAt": "2026-11-11T14:22:57.910Z",
+                "providerStatus": "sent",
+                "body": "Happy to help! How old is your child?"
+              }
+            ],
+            "aiState": "ready",
+            "openQuestions": [
+              {
+                "id": "01a1cafd-91b1-777f-8a2e-08b8f4df5ccd",
+                "slot": "child_age",
+                "state": "open",
+                "answer": null,
+                "askedMessageId": "01a1cafd-9196-7d57-94bc-e2f1f37b36bf",
+                "answeredMessageId": null,
+                "askedAt": "2026-11-11T14:22:57.910Z",
+                "closedAt": null
+              }
+            ]
+          }
+        },
+        "pillPayloads": [
+          {
+            "kind": "ai_replied",
+            "createdAt": "2026-11-11T14:22:57.910Z",
+            "payload": {
+              "intent": "drop_off_service",
+              "turnId": "01a1cafd-502c-7582-b85b-fdd468cf96df",
+              "intents": [
+                "drop_off_service"
+              ],
+              "rethink": null,
+              "askBranch": false,
+              "coherence": {
+                "state": "skipped",
+                "reason": "NOT_MIXED"
+              },
+              "messageIds": [
+                "01a1cafd-9196-7d57-94bc-e2f1f37b36bf"
+              ],
+              "languageOffer": null,
+              "askFirstRuleId": "01a1a56c-b079-7e76-bebc-82406b0a5b47",
+              "brochureFileIds": []
+            }
+          }
+        ],
+        "audit": {
+          "first": {
+            "at": "2026-11-11T14:23:15.854Z",
+            "repeatGuard": {
+              "route": "GET /api/audit?action=inbox.ai.repeat_guard&from=<run start>",
+              "status": 200,
+              "rowsSinceRunStart": 0,
+              "total": 0,
+              "rowsForThisConversation": 0,
+              "rows": [],
+              "error": null
+            },
+            "openQuestion": {
+              "route": "GET /api/audit?action=inbox.ai.open_question&entityType=inbox.conversation&entityId=:id",
+              "status": 200,
+              "rows": 1,
+              "entries": [
+                {
+                  "id": "01a1cafd-91b3-7c66-bf30-612f83b8a0e8",
+                  "createdAt": "2026-11-11T14:22:57.910Z",
+                  "after": {
+                    "asked": [
+                      "child_age"
+                    ],
+                    "turnId": "01a1cafd-502c-7582-b85b-fdd468cf96df",
+                    "answered": [],
+                    "withdrawn": []
+                  }
+                }
+              ],
+              "error": null
+            },
+            "handover": {
+              "route": "GET /api/audit?action=inbox.ai.handover&entityType=inbox.conversation&entityId=:id",
+              "status": 200,
+              "rows": 0,
+              "entries": []
+            }
+          }
+        }
+      },
+      "thai": {
+        "name": "ZZ TEST 842",
+        "id": "01a1cafd-5b9b-7f94-a8a3-918358f64b7e",
+        "language": "th",
+        "categoryHint": "(none: as the channel routes it)",
+        "lines": [
+          {
+            "by": "customer",
+            "text": "ZZ TEST มี drop-off สำหรับลูก 6 ขวบไหมคะ",
+            "at": "2026-11-11T14:22:41.337Z",
+            "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+            "formState": {
+              "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+              "category": "As the channel routes it",
+              "language": "th",
+              "message": "ZZ TEST มี drop-off สำหรับลูก 6 ขวบไหมคะ"
+            },
+            "status": 200,
+            "outcome": "processed",
+            "conversationsCreated": 1,
+            "reopened": 0
+          }
+        ],
+        "turns": {
+          "1": {
+            "afterLine": 1,
+            "waitedMs": 6315,
+            "turnShown": true,
+            "turns": [
+              {
+                "kind": "ai_replied",
+                "turnId": "01a1cafd-5ba9-72ed-9d3b-e3f1f78f658c",
+                "intent": "drop_off_service",
+                "intents": [
+                  "drop_off_service"
+                ],
+                "reason": null,
+                "rule": null,
+                "closingKey": null,
+                "rethink": null
+              }
+            ],
+            "assistantLines": [
+              {
+                "id": "01a1cafd-a500-7efd-b71f-1a94755d9fff",
+                "createdAt": "2026-11-11T14:23:02.900Z",
+                "providerStatus": "sent",
+                "body": "มีค่ะ 😊 บริการฝากเด็ก (drop-off) สำหรับเด็กตั้งแต่อายุครบ 5 ขวบ 225 บาทต่อครั้ง มีผู้ดูแลเด็กประจำพื้นที่เล่นคอยดูแลตลอดเวลา ส่งรูปอัปเดตให้ผู้ปกครองเป็นระยะ ช่วยสั่งอาหารและช่วยป้อนถ้าจำเป็น และมีผู้ติดต่อประจำที่ผู้ปกครองโทรหาได้ตลอดเวลาค่ะ\n\nถ้าอยากให้น้องมีพี่เลี้ยงดูแลแบบตัวต่อตัวเป็นส่วนตัว ที่ Central Floresta มีบริการพี่เลี้ยง 330 บาทต่อชั่วโมงด้วยนะคะ แนะนำให้จองล่วงหน้าค่ะ"
+              }
+            ],
+            "aiState": "ready",
+            "openQuestions": []
+          }
+        },
+        "pillPayloads": [
+          {
+            "kind": "ai_replied",
+            "createdAt": "2026-11-11T14:23:02.900Z",
+            "payload": {
+              "intent": "drop_off_service",
+              "turnId": "01a1cafd-5ba9-72ed-9d3b-e3f1f78f658c",
+              "intents": [
+                "drop_off_service"
+              ],
+              "rethink": null,
+              "askBranch": false,
+              "coherence": {
+                "state": "skipped",
+                "reason": "NOT_MIXED"
+              },
+              "messageIds": [
+                "01a1cafd-a500-7efd-b71f-1a94755d9fff"
+              ],
+              "composition": {
+                "joined": true,
+                "bubbles": 2,
+                "repeats": 0,
+                "parkFirst": false,
+                "duplicates": 0,
+                "parkQuestions": 0
+              },
+              "languageOffer": null,
+              "brochureFileIds": [],
+              "askFirstSatisfied": [
+                {
+                  "slots": [
+                    "child_age"
+                  ],
+                  "reason": "already_said",
+                  "ruleId": "01a1a56c-b079-7e76-bebc-82406b0a5b47"
+                }
+              ]
+            }
+          }
+        ],
+        "audit": {
+          "first": {
+            "at": "2026-11-11T14:23:24.541Z",
+            "repeatGuard": {
+              "route": "GET /api/audit?action=inbox.ai.repeat_guard&from=<run start>",
+              "status": 200,
+              "rowsSinceRunStart": 0,
+              "total": 0,
+              "rowsForThisConversation": 0,
+              "rows": [],
+              "error": null
+            },
+            "openQuestion": {
+              "route": "GET /api/audit?action=inbox.ai.open_question&entityType=inbox.conversation&entityId=:id",
+              "status": 200,
+              "rows": 0,
+              "entries": [],
+              "error": null
+            },
+            "handover": {
+              "route": "GET /api/audit?action=inbox.ai.handover&entityType=inbox.conversation&entityId=:id",
+              "status": 200,
+              "rows": 0,
+              "entries": []
+            }
+          }
+        }
+      }
+    },
+    "images": [
+      {
+        "file": "842-04-english-answered.png",
+        "at": "2026-11-11T14:23:37.963Z",
+        "shows": "Re-check: the English line answered with the drop-off price, no age question",
+        "covered": {
+          "names": 19,
+          "numbers": 12,
+          "initials": 21,
+          "fields": 1
+        },
+        "note": "names, initials and phone-like numbers covered by boxes over the page; the list of other conversations masked by the screenshot; the page itself not rewritten"
+      },
+      {
+        "file": "842-05-russian-answered.png",
+        "at": "2026-11-11T14:23:43.310Z",
+        "shows": "Re-check: the Russian line answered, no age question",
+        "covered": {
+          "names": 19,
+          "numbers": 12,
+          "initials": 21,
+          "fields": 1
+        },
+        "note": "names, initials and phone-like numbers covered by boxes over the page; the list of other conversations masked by the screenshot; the page itself not rewritten"
+      },
+      {
+        "file": "842-06-control-rule-still-asks.png",
+        "at": "2026-11-11T14:23:49.091Z",
+        "shows": "Re-check control: no age in the line, the rule question still goes",
+        "covered": {
+          "names": 19,
+          "numbers": 12,
+          "initials": 21,
+          "fields": 1
+        },
+        "note": "names, initials and phone-like numbers covered by boxes over the page; the list of other conversations masked by the screenshot; the page itself not rewritten"
+      },
+      {
+        "file": "842-07-thai-answered.png",
+        "at": "2026-11-11T14:23:54.926Z",
+        "shows": "Re-check: the Thai line answered, no age question",
+        "covered": {
+          "names": 19,
+          "numbers": 12,
+          "initials": 21,
+          "fields": 1
+        },
+        "note": "names, initials and phone-like numbers covered by boxes over the page; the list of other conversations masked by the screenshot; the page itself not rewritten"
+      }
+    ],
+    "cleanup": {
+      "conversations": {
+        "E4": {
+          "id": "01a1cafd-3c4e-7928-83f6-cce3e87e247a",
+          "handle": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T14:24:20.278Z"
+        },
+        "R5": {
+          "id": "01a1cafd-463f-774c-8a44-c2c9971d664b",
+          "handle": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T14:24:21.700Z"
+        },
+        "C6": {
+          "id": "01a1cafd-501f-7b6d-9542-967a3bda7f6d",
+          "handle": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T14:24:22.692Z"
+        },
+        "T7": {
+          "id": "01a1cafd-5b9b-7f94-a8a3-918358f64b7e",
+          "handle": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T14:24:24.055Z"
+        }
+      }
+    },
+    "signOut": {
+      "at": "2026-11-11T14:24:26.038Z",
+      "inboxContext": {
+        "inboxSignOut": {
+          "route": "POST /api/auth/sign-out (inbox)",
+          "status": 200
+        },
+        "beoTabAppLogout": {
+          "route": "POST /api/logout (OTO App, the BEO tab)",
+          "status": 200
+        },
+        "launcherSignOut": {
+          "route": "POST /api/auth/sign-out (launcher)",
+          "status": 200
+        },
+        "readBack": {
+          "inboxMe": 401,
+          "appUser": 401,
+          "launcherMe": 401
+        }
+      },
+      "appContext": {
+        "appLogout": {
+          "route": "POST /api/logout (OTO App)",
+          "status": 200
+        },
+        "launcherSignOut": {
+          "route": "POST /api/auth/sign-out (launcher)",
+          "status": 200
+        },
+        "readBack": {
+          "appUser": 401,
+          "launcherMe": 401
+        }
       }
     }
   }
