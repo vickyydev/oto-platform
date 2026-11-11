@@ -148,3 +148,31 @@ null), and the deposit is copied into that module only where a row exists (SCRUM
 ## Files
 
 `receipt.json` (every status, figure and read-back), `825-02` … `825-15` (fourteen pictures; there is no `825-01`).
+
+## Re-check, 11 November 18:04–18:09 Bangkok (11:04:36Z–11:09:17Z) — PASSED
+
+The gap above (the chat link without a host) was fixed at `3cf7846e1` ("give a deposit link in the chat this api's
+own address"). The api was live at it as `dep-dbq4kn6k1f9s73djrdc0` at 11:03:01Z; the re-check began 94 s later.
+The inbox was live at c60d80e9 and the app at e01476a1. No setting was changed.
+
+- A fresh thread "ZZ TEST 825 recheck" (Saturday 5 December, 14:00, 10 kids, 4 adults), Book Date (one POST, 200:
+  "ZZ Test Child's 8th Birthday"), Create BEO (open-beo 200, hand-off 200).
+- **Request deposit 2000** → `POST /api/events/:eventId/beo/deposit-request` **200**, requested, 200000 satang, the
+  line sent. The link on the request and in the assistant's line in the chat: **absolute, https, host
+  `oto-api-staging.onrender.com`** (path `/webhooks/2c2p/hosted/<attempt id>`).
+- The link **opened exactly as posted** (nothing put in front of it) in a browser with no session: 200, the simulated
+  page, ฿2,000, Pay / Fail. **Pay** → 200 → "Thank you — your deposit is being confirmed…".
+- Read back: the request **paid** at 11:08:20Z, deposit before 0, **after 200000 satang**, write-back **synced**; the
+  event's prepayment **2000**, dated 2026-11-11. The till has no quote for this party (no package on it), so the
+  till's panel was not read here; it was read on the first party above.
+- The chat: "Thank you! We have received your deposit of ฿2,000 — your party on Saturday 5 December 2026 is
+  confirmed. See you then! 🎉", the pills **Deposit requested ฿2,000** and **Deposit paid ฿2,000**, the chip
+  "Event: 5 Dec 2026 at Central Floresta · Deposit paid ฿2,000" → `825-16-recheck-link-opens-as-posted.png`
+  (the link covered after its host).
+- The Billing panel after a fresh load: badge **Paid**, "Deposit paid · ฿2,000 — Paid 11 Nov, 18:08 through the chat.
+  The deposit figure is updated here and at the till."
+- Clean-up: the re-check party archived (200, read back archived), its thread handled (200, read back handled);
+  sessions signed out (200; read back 401); the driver stopped. The first party and its ฿5,000 request were not
+  touched. Two other live ZZ TEST parties at the park (6 and 12 December) are not this proof's.
+
+Still not shown: 2C2P's real sandbox page and QR — it waits for the merchant settings on the staging api.

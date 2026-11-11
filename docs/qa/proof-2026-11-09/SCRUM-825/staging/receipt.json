@@ -1521,6 +1521,13 @@
       "shows": "After \"Send the menu choice link\": the panel",
       "namesMasked": 0,
       "masks": 0
+    },
+    {
+      "file": "825-16-recheck-link-opens-as-posted.png",
+      "at": "2026-11-11T11:08:46.501Z",
+      "shows": "Re-check: the thread with the request line (a full link on the api's own host, covered after the host), the confirmation line and the pill Deposit paid",
+      "namesMasked": 0,
+      "masks": 1
     }
   ],
   "notShown": [
@@ -1531,5 +1538,356 @@
     "A gateway redelivery of the paid notification (as distinct from a second press on the page).",
     "The birthday manager's bell, the Quote PDF, Party Details and the Day-of view.",
     "The till's own Settle preview on a till screen: the till's party billing was read through the app's \"From the till\" panel instead (the same reading)."
-  ]
+  ],
+  "recheck": {
+    "why": "The first run found the chat link without a host. Fixed at 3cf7846e1 (the link falls back to the api's own public address); this is the re-check.",
+    "result": "PASSED: the link in the chat is a full https address on the api's own host and opened exactly as posted",
+    "deploys": {
+      "before": {
+        "at": "2026-11-11T11:04:39.536Z",
+        "services": [
+          {
+            "name": "oto-api-staging",
+            "deployId": "dep-dbq4kn6k1f9s73djrdc0",
+            "status": "live",
+            "sha": "3cf7846e1bafd14ef9833bd338ebcfb6652e9081",
+            "finishedAt": "2026-11-11T11:03:01.891041Z"
+          },
+          {
+            "name": "oto-inbox-staging",
+            "deployId": "dep-dbq4hubl550s739i4n70",
+            "status": "live",
+            "sha": "c60d80e996b052bc383e7130383509d8213ba5a9",
+            "finishedAt": "2026-11-11T10:53:37.465677Z"
+          },
+          {
+            "name": "oto-app-staging",
+            "deployId": "dep-dbq4lp3ncjis73cmrbpg",
+            "status": "live",
+            "sha": "e01476a18be0c15d3ac56653ebe7f11263b09ca9",
+            "finishedAt": "2026-11-11T11:03:32.223825Z"
+          }
+        ],
+        "appLiveOnFixSha": false,
+        "inboxLive": true
+      },
+      "after": {
+        "at": "2026-11-11T11:09:14.070Z",
+        "services": [
+          {
+            "name": "oto-api-staging",
+            "deployId": "dep-dbq4kn6k1f9s73djrdc0",
+            "status": "live",
+            "sha": "3cf7846e1bafd14ef9833bd338ebcfb6652e9081",
+            "finishedAt": "2026-11-11T11:03:01.891041Z"
+          },
+          {
+            "name": "oto-inbox-staging",
+            "deployId": "dep-dbq4hubl550s739i4n70",
+            "status": "live",
+            "sha": "c60d80e996b052bc383e7130383509d8213ba5a9",
+            "finishedAt": "2026-11-11T10:53:37.465677Z"
+          },
+          {
+            "name": "oto-app-staging",
+            "deployId": "dep-dbq4lp3ncjis73cmrbpg",
+            "status": "live",
+            "sha": "e01476a18be0c15d3ac56653ebe7f11263b09ca9",
+            "finishedAt": "2026-11-11T11:03:32.223825Z"
+          }
+        ],
+        "appLiveOnFixSha": false,
+        "inboxLive": true
+      },
+      "apiLiveAt": "2026-11-11T11:03:01.891041Z (dep-dbq4kn6k1f9s73djrdc0 at 3cf7846e); the run began 11:04:36Z"
+    },
+    "thread": {
+      "conversationId": "01a1ca48-5cc9-7509-8fd4-affb22733c23",
+      "name": "ZZ TEST 825 recheck",
+      "line": "Hi! A birthday party for ZZ Test Child turning 8, 10 kids and 4 adults, Saturday 5 December at 2pm (ZZ TEST 825 recheck)"
+    },
+    "bookDate": {
+      "status": 200,
+      "event": {
+        "id": "01a1ca48-aa87-798b-93d4-620eb492b083",
+        "title": "ZZ Test Child's 8th Birthday",
+        "date": "2026-12-05",
+        "startTime": "14:00",
+        "bookedAt": "2026-11-11T11:07:38.313Z"
+      },
+      "posts": 1
+    },
+    "createBeo": {
+      "openBeo": {
+        "route": "POST /api/inbox/conversations/:id/open-beo",
+        "status": 200,
+        "aiFillAsked": true
+      },
+      "appHandoff": {
+        "route": "POST /api/auth/handoff (OTO App)",
+        "status": 200
+      },
+      "aiFill": {
+        "status": 409,
+        "note": "no team confirmation in the thread, so no review"
+      }
+    },
+    "request": {
+      "route": "POST /api/events/:eventId/beo/deposit-request",
+      "status": 200,
+      "sent": {
+        "amount": 2000,
+        "hasActionId": true
+      },
+      "replayed": false,
+      "request": {
+        "id": "01a0bbdc-8c41-7450-a1a3-3411d9de79c4",
+        "state": "requested",
+        "amountSatang": 200000,
+        "currency": "THB",
+        "link": {
+          "absolute": true,
+          "host": "oto-api-staging.onrender.com",
+          "pathShape": "/webhooks/2c2p/hosted/<attempt id>"
+        },
+        "linkExpiresAt": "2026-11-14T11:08:03.824Z",
+        "invoiceNo": "(present)",
+        "requestedAt": "2026-11-11T11:08:03.799Z",
+        "remindedAt": null,
+        "handedOverAt": null,
+        "paidAt": null,
+        "closedAt": null,
+        "closeReason": null,
+        "depositBeforeSatang": null,
+        "depositAfterSatang": null,
+        "writeBack": null,
+        "requestLineStatus": "sent"
+      },
+      "error": null
+    },
+    "panelAfterRequest": "Deposit requested · ฿2,000",
+    "chatLineLink": {
+      "absolute": true,
+      "host": "oto-api-staging.onrender.com",
+      "pathShape": "/webhooks/2c2p/hosted/<attempt id>"
+    },
+    "pay": {
+      "link": {
+        "absolute": true,
+        "host": "oto-api-staging.onrender.com",
+        "pathShape": "/webhooks/2c2p/hosted/<attempt id>"
+      },
+      "opened": {
+        "asGiven": true,
+        "note": "the link as the chat carries it"
+      },
+      "page": {
+        "status": 200,
+        "host": "oto-api-staging.onrender.com",
+        "title": "Payment — simulator",
+        "text": "Simulated payment page — no real money moves. The real one is 2C2P's. ฿2,000 OTO Park party deposit 2026-12-05 Invoice <no> · PPQR, CC Pay Fail"
+      },
+      "kind": "simulator hosted page",
+      "payPress": {
+        "route": "POST /webhooks/2c2p/hosted/:attemptId (action=pay)",
+        "status": 200
+      },
+      "returned": {
+        "host": "oto-api-staging.onrender.com",
+        "path": "/public/parties/deposit/return",
+        "title": "Thank you",
+        "text": "Thank you Thank you — your deposit is being confirmed. You will get a message in the chat as soon as it is in. OTO Play Park"
+      }
+    },
+    "readBack": {
+      "depositRequest": {
+        "id": "01a0bbdc-8c41-7450-a1a3-3411d9de79c4",
+        "state": "paid",
+        "amountSatang": 200000,
+        "currency": "THB",
+        "link": {
+          "absolute": true,
+          "host": "oto-api-staging.onrender.com",
+          "pathShape": "/webhooks/2c2p/hosted/<attempt id>"
+        },
+        "linkExpiresAt": "2026-11-14T11:08:03.824Z",
+        "invoiceNo": "(present)",
+        "requestedAt": "2026-11-11T11:08:03.799Z",
+        "remindedAt": null,
+        "handedOverAt": null,
+        "paidAt": "2026-11-11T11:08:20.351Z",
+        "closedAt": null,
+        "closeReason": null,
+        "depositBeforeSatang": 0,
+        "depositAfterSatang": 200000,
+        "writeBack": {
+          "syncState": "synced",
+          "syncError": null
+        },
+        "requestLineStatus": "sent"
+      },
+      "event": {
+        "route": "GET /api/admin/events/:id",
+        "status": 200,
+        "prepaymentAmount": 2000,
+        "prepaymentDate": "2026-11-11",
+        "inboxConversationLinked": true,
+        "keysWithPrepay": [
+          "prepaymentAmount",
+          "prepaymentDate",
+          "prepaymentMethod"
+        ]
+      },
+      "tillBilling": {
+        "state": "no_quote",
+        "noQuote": {
+          "code": "PARTY_NO_PACKAGE",
+          "message": "This party has no package in the OTO App, so it cannot be settled here"
+        }
+      }
+    },
+    "threadAfter": {
+      "pills": [
+        {
+          "kind": "ai_handover",
+          "amountSatang": null,
+          "createdAt": "2026-11-11T11:05:11.613Z"
+        },
+        {
+          "kind": "date_booked",
+          "amountSatang": null,
+          "createdAt": "2026-11-11T11:07:40.819Z"
+        },
+        {
+          "kind": "deposit_requested",
+          "amountSatang": 200000,
+          "createdAt": "2026-11-11T11:08:03.799Z"
+        },
+        {
+          "kind": "deposit_paid",
+          "amountSatang": 200000,
+          "createdAt": "2026-11-11T11:08:20.351Z"
+        }
+      ],
+      "confirmation": "Thank you! We have received your deposit of ฿2,000 — your party on Saturday 5 December 2026 is confirmed. See you then! 🎉",
+      "chip": "Event: 5 Dec 2026 at Central Floresta · Deposit paid ฿2,000",
+      "pillsOnScreen": [
+        "Event: 5 Dec 2026 at Central Floresta · Deposit paid ฿2,000",
+        "Deposit requested ฿2,000",
+        "Deposit paid ฿2,000"
+      ],
+      "picture": "825-16-recheck-link-opens-as-posted.png"
+    },
+    "panelAfterPay": {
+      "badge": "Paid",
+      "state": "Deposit paid · ฿2,000 Paid 11 Nov, 18:08 through the chat. The deposit figure is updated here and at the till."
+    },
+    "cleanup": {
+      "event": {
+        "id": "01a1ca48-aa87-798b-93d4-620eb492b083",
+        "title": "ZZ Test Child's 8th Birthday",
+        "openRequestBefore": null,
+        "cancelled": null,
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "archivedAt": "2026-11-11T11:09:12.647Z",
+          "isArchived": true
+        }
+      },
+      "conversation": {
+        "id": "01a1ca48-5cc9-7509-8fd4-affb22733c23",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T11:09:13.008Z",
+          "eventArchived": true
+        }
+      },
+      "left": {
+        "P": {
+          "eventId": "01a1ca2f-2ee7-7e10-9853-423b65326894",
+          "title": "ZZ Test Child's 7th Birthday",
+          "conversationId": "01a1ca2e-2d19-72d4-b702-2565eff63a7b",
+          "openRequest": {
+            "id": "01a0bbdc-8c41-7ba1-b821-cf2fe22a50b5",
+            "amountSatang": 500000,
+            "requestedAt": "2026-11-11T10:48:50.406Z",
+            "madeByThisRun": false
+          },
+          "why": "an open deposit request this run did not make is on the party: nothing of it was pressed, the party and its thread are left as they are"
+        },
+        "Q": {
+          "eventId": "01a1ca36-0b6a-7863-9cb6-c52a6553ca79",
+          "title": "ZZ Test Child's 6th Birthday",
+          "conversationId": "01a1ca2e-3959-72c3-89d3-1ce5673adcc2",
+          "openRequest": null,
+          "why": "not asked"
+        }
+      },
+      "otherZzTestLive": [
+        {
+          "id": "01a1ca2f-2ee7-7e10-9853-423b65326894",
+          "title": "ZZ Test Child's 7th Birthday",
+          "eventDate": "2026-11-28"
+        },
+        {
+          "id": "01a1ca45-e0b1-75b8-aa57-5e54f3e570d3",
+          "title": "ZZ Test Child's 7th Birthday",
+          "eventDate": "2026-12-06"
+        },
+        {
+          "id": "01a1ca48-52b4-72c7-a264-e5976b54c70a",
+          "title": "ZZ Test Child's 6th Birthday",
+          "eventDate": "2026-12-12"
+        }
+      ]
+    },
+    "signOut": {
+      "at": "2026-11-11T11:09:17.876Z",
+      "inboxContext": {
+        "inboxSignOut": {
+          "route": "POST /api/auth/sign-out (inbox)",
+          "status": 200
+        },
+        "beoTabAppLogout": {
+          "route": "POST /api/logout (OTO App, the BEO tab)",
+          "status": 200
+        },
+        "launcherSignOut": {
+          "route": "POST /api/auth/sign-out (launcher)",
+          "status": 200
+        },
+        "readBack": {
+          "inboxMe": 401,
+          "appUser": 401,
+          "launcherMe": 401
+        }
+      },
+      "appContext": {
+        "appLogout": {
+          "route": "POST /api/logout (OTO App)",
+          "status": 200
+        },
+        "launcherSignOut": {
+          "route": "POST /api/auth/sign-out (launcher)",
+          "status": 200
+        },
+        "readBack": {
+          "appUser": 401,
+          "launcherMe": 401
+        }
+      }
+    }
+  }
 }
