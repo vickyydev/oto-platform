@@ -1,0 +1,793 @@
+{
+  "ticket": "SCRUM-819",
+  "sha": "bfd04cd2fc9387a61c13eb822978ba40bd0a7cb0",
+  "ci": {
+    "conclusion": "",
+    "databaseId": 43005809520,
+    "headSha": "bfd04cd2fc9387a61c13eb822978ba40bd0a7cb0",
+    "status": "pending"
+  },
+  "startedAt": "2026-11-11T10:47:04.347Z",
+  "phase": "cut only the test display and wait for real silence",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/01a1ca38-1824-74bf-9130-a7890f2693ea",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/01a1ca38-2e49-7785-b6ae-943666b9ca7c/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/credentials",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/01a1ca38-1824-74bf-9130-a7890f2693ea",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/auth/sign-out",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "status": 401
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1ca38-1824-74bf-9130-a7890f2693ea"
+    },
+    {
+      "kind": "display",
+      "id": "01a1ca38-2e49-7785-b6ae-943666b9ca7c"
+    }
+  ],
+  "samples": [
+    {
+      "at": "2026-11-11T10:47:23.866Z",
+      "generatedAt": "2026-11-11T10:47:25.520Z",
+      "watchdogAgeSeconds": 12,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:47:23.754Z",
+        "lastSeenAgeSeconds": 3,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:47:55.415Z",
+      "generatedAt": "2026-11-11T10:47:57.492Z",
+      "watchdogAgeSeconds": 44,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:47:53.793Z",
+        "lastSeenAgeSeconds": 4,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:48:27.623Z",
+      "generatedAt": "2026-11-11T10:48:29.341Z",
+      "watchdogAgeSeconds": 14,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:48:28.793Z",
+        "lastSeenAgeSeconds": 1,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:48:59.105Z",
+      "generatedAt": "2026-11-11T10:49:01.195Z",
+      "watchdogAgeSeconds": 46,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:48:58.798Z",
+        "lastSeenAgeSeconds": 3,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:49:36.806Z",
+      "generatedAt": "2026-11-11T10:49:32.668Z",
+      "watchdogAgeSeconds": 17,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:49:38.801Z",
+        "lastSeenAgeSeconds": 1,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:50:08.349Z",
+      "generatedAt": "2026-11-11T10:50:10.376Z",
+      "watchdogAgeSeconds": 55,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:50:08.805Z",
+        "lastSeenAgeSeconds": 2,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:50:39.841Z",
+      "generatedAt": "2026-11-11T10:50:41.923Z",
+      "watchdogAgeSeconds": 26,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:50:38.810Z",
+        "lastSeenAgeSeconds": 4,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:51:11.791Z",
+      "generatedAt": "2026-11-11T10:51:13.758Z",
+      "watchdogAgeSeconds": 58,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:51:13.811Z",
+        "lastSeenAgeSeconds": 1,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:51:43.328Z",
+      "generatedAt": "2026-11-11T10:51:45.352Z",
+      "watchdogAgeSeconds": 29,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:51:43.814Z",
+        "lastSeenAgeSeconds": 2,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:52:14.877Z",
+      "generatedAt": "2026-11-11T10:52:16.910Z",
+      "watchdogAgeSeconds": 1,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:52:13.816Z",
+        "lastSeenAgeSeconds": 4,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:52:47.243Z",
+      "generatedAt": "2026-11-11T10:52:49.150Z",
+      "watchdogAgeSeconds": 34,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:52:48.822Z",
+        "lastSeenAgeSeconds": 1,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:53:18.734Z",
+      "generatedAt": "2026-11-11T10:53:20.808Z",
+      "watchdogAgeSeconds": 5,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:53:18.824Z",
+        "lastSeenAgeSeconds": 3,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:53:50.239Z",
+      "generatedAt": "2026-11-11T10:53:52.308Z",
+      "watchdogAgeSeconds": 37,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:53:48.832Z",
+        "lastSeenAgeSeconds": 4,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:54:21.757Z",
+      "generatedAt": "2026-11-11T10:54:23.837Z",
+      "watchdogAgeSeconds": 8,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:54:23.838Z",
+        "lastSeenAgeSeconds": 1,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:54:53.287Z",
+      "generatedAt": "2026-11-11T10:54:55.330Z",
+      "watchdogAgeSeconds": 40,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:54:53.839Z",
+        "lastSeenAgeSeconds": 2,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:55:29.838Z",
+      "generatedAt": "2026-11-11T10:55:31.578Z",
+      "watchdogAgeSeconds": 16,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:55:28.844Z",
+        "lastSeenAgeSeconds": 4,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:56:01.353Z",
+      "generatedAt": "2026-11-11T10:56:03.411Z",
+      "watchdogAgeSeconds": 48,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:56:03.851Z",
+        "lastSeenAgeSeconds": 0,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:56:32.963Z",
+      "generatedAt": "2026-11-11T10:56:34.995Z",
+      "watchdogAgeSeconds": 19,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:56:33.854Z",
+        "lastSeenAgeSeconds": 2,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:57:05.108Z",
+      "generatedAt": "2026-11-11T10:57:06.989Z",
+      "watchdogAgeSeconds": 51,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:57:03.858Z",
+        "lastSeenAgeSeconds": 4,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:57:22.419Z",
+      "generatedAt": "2026-11-11T10:57:24.204Z",
+      "watchdogAgeSeconds": 9,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:57:23.862Z",
+        "lastSeenAgeSeconds": 1,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:57:39.130Z",
+      "generatedAt": "2026-11-11T10:57:41.180Z",
+      "watchdogAgeSeconds": 26,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:57:23.862Z",
+        "lastSeenAgeSeconds": 18,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:57:55.729Z",
+      "generatedAt": "2026-11-11T10:57:57.779Z",
+      "watchdogAgeSeconds": 42,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:57:23.862Z",
+        "lastSeenAgeSeconds": 34,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:58:12.343Z",
+      "generatedAt": "2026-11-11T10:58:14.372Z",
+      "watchdogAgeSeconds": 59,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:57:23.862Z",
+        "lastSeenAgeSeconds": 51,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:58:28.982Z",
+      "generatedAt": "2026-11-11T10:58:30.984Z",
+      "watchdogAgeSeconds": 75,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:57:23.862Z",
+        "lastSeenAgeSeconds": 68,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:58:45.545Z",
+      "generatedAt": "2026-11-11T10:58:47.602Z",
+      "watchdogAgeSeconds": 92,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:57:23.862Z",
+        "lastSeenAgeSeconds": 84,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:59:02.170Z",
+      "generatedAt": "2026-11-11T10:59:04.207Z",
+      "watchdogAgeSeconds": 10,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:57:23.862Z",
+        "lastSeenAgeSeconds": 101,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:59:18.892Z",
+      "generatedAt": "2026-11-11T10:59:20.844Z",
+      "watchdogAgeSeconds": 27,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:57:23.862Z",
+        "lastSeenAgeSeconds": 118,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:59:35.882Z",
+      "generatedAt": "2026-11-11T10:59:37.930Z",
+      "watchdogAgeSeconds": 44,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:57:23.862Z",
+        "lastSeenAgeSeconds": 135,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T10:59:52.553Z",
+      "generatedAt": "2026-11-11T10:59:54.624Z",
+      "watchdogAgeSeconds": 1,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:57:23.862Z",
+        "lastSeenAgeSeconds": 151,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T11:00:09.647Z",
+      "generatedAt": "2026-11-11T11:00:11.707Z",
+      "watchdogAgeSeconds": 18,
+      "presence": {
+        "state": "online",
+        "lastSeenAt": "2026-11-11T10:57:23.862Z",
+        "lastSeenAgeSeconds": 168,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T11:00:26.222Z",
+      "generatedAt": "2026-11-11T11:00:28.286Z",
+      "watchdogAgeSeconds": 34,
+      "presence": {
+        "state": "offline",
+        "lastSeenAt": "2026-11-11T10:57:23.862Z",
+        "lastSeenAgeSeconds": 185,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T11:00:42.817Z",
+      "generatedAt": "2026-11-11T11:00:44.876Z",
+      "watchdogAgeSeconds": 51,
+      "presence": {
+        "state": "offline",
+        "lastSeenAt": "2026-11-11T10:57:23.862Z",
+        "lastSeenAgeSeconds": 202,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": []
+    },
+    {
+      "at": "2026-11-11T11:01:00.401Z",
+      "generatedAt": "2026-11-11T11:01:01.782Z",
+      "watchdogAgeSeconds": 8,
+      "presence": {
+        "state": "offline",
+        "lastSeenAt": "2026-11-11T10:57:23.862Z",
+        "lastSeenAgeSeconds": 219,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": [
+        {
+          "id": "01a1ca44-9209-7375-9e0b-01ac9a0b75ab",
+          "key": "display.offline:01a1ca38-2e49-7785-b6ae-943666b9ca7c",
+          "openedAt": "2026-11-11T11:00:53.896Z",
+          "count": 1,
+          "resolvedAt": null
+        }
+      ]
+    },
+    {
+      "at": "2026-11-11T11:01:37.131Z",
+      "generatedAt": "2026-11-11T11:01:39.200Z",
+      "watchdogAgeSeconds": 45,
+      "presence": {
+        "state": "offline",
+        "lastSeenAt": "2026-11-11T10:57:23.862Z",
+        "lastSeenAgeSeconds": 256,
+        "offlineAfterSeconds": 180,
+        "box": null
+      },
+      "alerts": [
+        {
+          "id": "01a1ca44-9209-7375-9e0b-01ac9a0b75ab",
+          "key": "display.offline:01a1ca38-2e49-7785-b6ae-943666b9ca7c",
+          "openedAt": "2026-11-11T11:00:53.896Z",
+          "count": 1,
+          "resolvedAt": null
+        }
+      ]
+    }
+  ],
+  "checks": {
+    "firstSighting": {
+      "pairedAt": "2026-11-11T10:47:21.929Z",
+      "lastSeenAt": "2026-11-11T10:47:21.929Z",
+      "state": "online",
+      "beforeFirstProtectedRead": true
+    },
+    "onlineWindow": {
+      "elapsedMs": 601896,
+      "sampleCount": 20,
+      "alerts": 0
+    },
+    "realSilence": {
+      "alertId": "01a1ca44-9209-7375-9e0b-01ac9a0b75ab",
+      "openedAt": "2026-11-11T11:00:53.896Z",
+      "offlineAfterSeconds": 180
+    },
+    "repeatedSweepSameAlert": true
+  },
+  "cleanup": [
+    {
+      "kind": "display",
+      "id": "01a1ca38-2e49-7785-b6ae-943666b9ca7c",
+      "revoked": true
+    },
+    {
+      "kind": "station",
+      "id": "01a1ca38-1824-74bf-9130-a7890f2693ea",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "alert",
+      "closed": true
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "deployments": {
+    "oto-api-staging": {
+      "id": "dep-dbq4d03rjlhs73b7cdp0",
+      "status": "live",
+      "sha": "bfd04cd2fc9387a61c13eb822978ba40bd0a7cb0"
+    },
+    "oto-console-staging": {
+      "id": "dep-dbq48s3ncjis73cm96c0",
+      "status": "live",
+      "sha": "7a1e2aada300f544d182a5991397800a311bc3db"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbq48sbncjis73cm96t0",
+      "status": "live",
+      "sha": "7a1e2aada300f544d182a5991397800a311bc3db"
+    }
+  },
+  "cutAt": "2026-11-11T10:57:22.524Z",
+  "passed": false,
+  "failure": {
+    "phase": "cut only the test display and wait for real silence",
+    "kind": "AssertionError",
+    "frames": [
+      "proof.mjs:33:12",
+      "proof.mjs:174:30"
+    ]
+  },
+  "finishedAt": "2026-11-11T11:01:53.694Z"
+}

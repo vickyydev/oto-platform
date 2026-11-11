@@ -1,0 +1,44 @@
+{
+  "ticket": "SCRUM-819",
+  "source": "bfd04cd2fc9387a61c13eb822978ba40bd0a7cb0",
+  "behaviorChecksPassed": true,
+  "cleanupPassed": true,
+  "originalReceiptPassed": false,
+  "receipt": "receipt.json",
+  "runtimeComparison": "runtime-comparison.json",
+  "reason": "Original final deployment check met a newer deployment in progress; behavior and cleanup passed. Independent readback verifies unchanged display/alert code and client source trees.",
+  "pictures": [
+    {
+      "name": "s819-paired-online.png",
+      "sha256": "fb99e0d23c0ee15d27ff6b589e9a1405e93ed6083b29861cf7b14523c79fd5ce",
+      "inspected": true
+    },
+    {
+      "name": "s819-ten-minutes-no-alert.png",
+      "sha256": "789471e8b66f021ed5e8d2b17ea16e4c685e787bc3b7538eebc21baa33e18aea",
+      "inspected": true
+    },
+    {
+      "name": "s819-real-silence-one-alert.png",
+      "sha256": "a35389bba9e482e48693753c5bd5354246aab8994f7a989b4377e3649748d699",
+      "inspected": true
+    },
+    {
+      "name": "s819-final-observation-card.png",
+      "sha256": "274d7a0a3409565bacd0ddb33ddec0a03086b17986e108fae5fdcb9e5579052a",
+      "inspected": true
+    }
+  ],
+  "limits": [
+    "No external notification is claimed; integration checks verify delivery.",
+    "Later Console read preserved one alert ID; a second watchdog sweep is not proved.",
+    "Exact-source CI and original full local API run are still pending."
+  ],
+  "ci": {
+    "replacedMainRun": 43005809520,
+    "validationRun": 43007759803,
+    "state": "running",
+    "immutableRef": "lane/codex-s819-landed-ci-20261111"
+  },
+  "localApiSession": 38357
+}

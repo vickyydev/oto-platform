@@ -1,0 +1,105 @@
+{
+  "checkedAt": "2026-11-11T11:04:05.994Z",
+  "source": "bfd04cd2fc9387a61c13eb822978ba40bd0a7cb0",
+  "live": {
+    "oto-api-staging": {
+      "id": "dep-dbq4kn6k1f9s73djrdc0",
+      "sha": "3cf7846e1bafd14ef9833bd338ebcfb6652e9081",
+      "status": "live"
+    },
+    "oto-console-staging": {
+      "id": "dep-dbq4lorncjis73cmrbdg",
+      "sha": "e01476a18be0c15d3ac56653ebe7f11263b09ca9",
+      "status": "live"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbq48sbncjis73cm96t0",
+      "sha": "7a1e2aada300f544d182a5991397800a311bc3db",
+      "status": "live"
+    }
+  },
+  "changedRuntimeFiles": [
+    "apps/api/src/env.ts",
+    "apps/api/src/routes/inbox-actions.ts",
+    "apps/api/src/services/inbox/book-date.ts",
+    "apps/api/src/services/otoapp-events.ts",
+    "apps/api/src/services/party-deposit.ts",
+    "packages/shared/src/inbox-actions.ts",
+    "packages/shared/src/inbox.ts"
+  ],
+  "unchangedDisplayAndAlertBlobs": [
+    {
+      "path": "apps/api/src/services/display.ts",
+      "before": "000105edb92fd34ee81185433a5302ec512c5373",
+      "after": "000105edb92fd34ee81185433a5302ec512c5373"
+    },
+    {
+      "path": "apps/api/src/services/screen-presence.ts",
+      "before": "3f213f834d17243f6a7de3b8f849247af0c63f34",
+      "after": "3f213f834d17243f6a7de3b8f849247af0c63f34"
+    },
+    {
+      "path": "apps/api/src/services/jobs.ts",
+      "before": "41f78a54a8ac17e767d820a292572efb9841b54c",
+      "after": "41f78a54a8ac17e767d820a292572efb9841b54c"
+    },
+    {
+      "path": "apps/api/src/services/ops.ts",
+      "before": "bcf07233a9093780a8165363e8ffebaf1375804b",
+      "after": "bcf07233a9093780a8165363e8ffebaf1375804b"
+    },
+    {
+      "path": "apps/api/src/services/alert-routing.ts",
+      "before": "f33db3b365851282ad63049d7721b0f5f33f97b4",
+      "after": "f33db3b365851282ad63049d7721b0f5f33f97b4"
+    },
+    {
+      "path": "apps/api/src/services/device-credential.ts",
+      "before": "48eb261b92b7101e22e994045b0f60f940ab2af1",
+      "after": "48eb261b92b7101e22e994045b0f60f940ab2af1"
+    },
+    {
+      "path": "apps/api/src/routes/display.ts",
+      "before": "f3b0ac384a157bf5c71ff1f892e53d7700c67d0c",
+      "after": "f3b0ac384a157bf5c71ff1f892e53d7700c67d0c"
+    },
+    {
+      "path": "apps/api/src/routes/ops.ts",
+      "before": "cba016eaabcf14fe6cd6fbfc18c84b7b78d27211",
+      "after": "cba016eaabcf14fe6cd6fbfc18c84b7b78d27211"
+    },
+    {
+      "path": "packages/shared/src/screen-presence.ts",
+      "before": "a76d196bf2f57a1fd83da2df932bed7ced5f46c9",
+      "after": "a76d196bf2f57a1fd83da2df932bed7ced5f46c9"
+    }
+  ],
+  "clients": [
+    {
+      "service": "oto-console-staging",
+      "before": "7a1e2aada300f544d182a5991397800a311bc3db",
+      "after": "e01476a18be0c15d3ac56653ebe7f11263b09ca9",
+      "sourceTree": "68ce4e1126a5a9526f323c628fba1d80c38394df",
+      "sourceUnchanged": true
+    },
+    {
+      "service": "oto-pos-web-staging",
+      "before": "7a1e2aada300f544d182a5991397800a311bc3db",
+      "after": "7a1e2aada300f544d182a5991397800a311bc3db",
+      "sourceTree": "5c047425d15253c43ede3284e04c44f0aa6fd909",
+      "sourceUnchanged": true
+    }
+  ],
+  "checksPassed": true,
+  "cleanupPassed": true,
+  "originalReceiptPassed": false,
+  "originalFailure": {
+    "phase": "cut only the test display and wait for real silence",
+    "kind": "AssertionError",
+    "frames": [
+      "proof.mjs:33:12",
+      "proof.mjs:174:30"
+    ]
+  },
+  "limit": "The API changed during the observation. The recorded display, presence, watchdog and alert code is identical; other API behavior is not claimed identical."
+}

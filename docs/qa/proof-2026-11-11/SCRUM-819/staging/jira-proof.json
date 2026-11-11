@@ -1,0 +1,24 @@
+{
+  "statusReadBack": "Deployed",
+  "pictures": [
+    {
+      "id": "13080",
+      "filename": "s819-final-observation-card.png"
+    },
+    {
+      "id": "13077",
+      "filename": "s819-paired-online.png"
+    },
+    {
+      "id": "13079",
+      "filename": "s819-real-silence-one-alert.png"
+    },
+    {
+      "id": "13078",
+      "filename": "s819-ten-minutes-no-alert.png"
+    }
+  ],
+  "ciPending": true,
+  "ownerDirection": "STATUS 11 November 2026 17:32",
+  "ownerAcceptancePending": true
+}
