@@ -40,7 +40,7 @@ How to read each topic:
 - **Our reading.** The photo button sits on the customer display. Reception no
   longer takes the picture.
 - **Details from the owner.** _(to be given)_
-- **How it works today.** _(to be checked)_
+- **How it works today.** PARTLY (read from the code, 12 Nov). On the till's own split screen the customer half already has the camera button. On a separate paired display there is no camera: it says "Reception will take the photo" and staff take it in the till's child-details dialog. Missing: a camera on the paired display and a way to carry the picture to the till.
 - **Ticket.** SCRUM-857 (tracking story, filed 12 November; details still to be given).
 
 ### A2. Care details: the two phone numbers
@@ -53,7 +53,7 @@ How to read each topic:
   the messaging API can tell us the number is registered, we check and show
   the result.
 - **Details from the owner.** _(to be given)_
-- **How it works today.** _(to be checked)_
+- **How it works today.** PARTLY. The form, the registration and the member each hold ONE number plus a channel choice (WhatsApp, LINE or Telegram), picked on the first screen. There is no second number, no "is this your WhatsApp or Telegram?" question, and no check that a number is reachable anywhere in the code. Today's confirmation is a logged message that staff tick by hand on the board.
 - **Ticket.** SCRUM-857 (tracking story, filed 12 November; details still to be given).
 
 ### A3. No staff confirmation at the end
@@ -65,7 +65,7 @@ How to read each topic:
   itself once every field and every confirmation is in. The till step that
   confirms it is removed.
 - **Details from the owner.** _(to be given)_
-- **How it works today.** _(to be checked)_
+- **How it works today.** NOT BUILT. The family's Done is enabled only after a photo exists for each child, and with a paired display staff take that photo. After Done the display says to wait for the team, and staff press "Continue to payment"; registration is written only on that press. After payment staff also choose "Check in now" or "Leave as booked".
 - **Ticket.** SCRUM-857 (tracking story, filed 12 November; details still to be given).
 
 ### A4. Live sync of the forms
@@ -75,7 +75,7 @@ How to read each topic:
 - **Our reading.** What is typed on either screen appears on the other at
   once, for both the drop-off and the nanny form.
 - **Details from the owner.** _(to be given)_
-- **How it works today.** _(to be checked)_
+- **How it works today.** PARTLY (SCRUM-764). The till's changes reach the display within about a second. The family's entries reach the till per step (on Continue or a tab change), not per keystroke. Not mirrored: the photo, the food and drinks choice, waivers, the nanny assignment, the contact channel, and a saved child's care notes. On the split screen both halves are one state and everything is instant.
 - **Ticket.** SCRUM-857 (tracking story, filed 12 November; details still to be given).
 
 ### A5. Drop-off in the unified inbox
@@ -84,7 +84,7 @@ How to read each topic:
 - **Our reading.** An open question. The likely use is messaging the guardian
   from the inbox while the child is in care.
 - **Details from the owner.** _(to be given)_
-- **How it works today.** _(to be checked)_
+- **How it works today.** PARTLY. The check-in notice is copied into the guardian's inbox thread as a read-only record; it is not delivered to any phone (SCRUM-776 waits for the Meta credentials). The assistant answers drop-off service questions and hands a child-in-care message silently to the park's desk. Nothing links a thread to the child's stay.
 - **Ticket.** SCRUM-857 (tracking story, filed 12 November; details still to be given).
 
 ### A6. Non-members check in right away
@@ -94,7 +94,7 @@ How to read each topic:
 - **Our reading.** A walk-in family without membership gets the same check in
   now option that members have.
 - **Details from the owner.** _(to be given)_
-- **How it works today.** _(to be checked)_
+- **How it works today.** NOT BUILT, and the premise needs the owner: members have no automatic check-in today. Members and walk-ins get the same choice after payment, "Check in now" or "Leave as booked", pressed by staff. An automatic check-in would be new for both.
 - **Ticket.** SCRUM-857 (tracking story, filed 12 November; details still to be given).
 
 ## B. Tiers and ticket types
@@ -108,7 +108,7 @@ How to read each topic:
   The other tiers are hidden until the tier document expires, then the full
   list comes back.
 - **Details from the owner.** _(to be given)_
-- **How it works today.** _(to be checked)_
+- **How it works today.** NOT BUILT. Every sale shows a card for every tier; a verified member's rate is pre-selected with a "verified" badge but the other cards stay clickable. A passed document expiry does not end a rate today: it only shows a "re-verify" button. The Thai rate has no expiry at all.
 - **Ticket.** SCRUM-858 (tracking story, filed 12 November; details still to be given).
 
 ### B2. Thai rate: a two-button verification, no documents
@@ -119,7 +119,7 @@ How to read each topic:
 - **Our reading.** The Thai tier has no document type and no expiry. Staff see
   a small confirmation with two buttons. Who confirmed and when is recorded.
 - **Details from the owner.** _(to be given)_
-- **How it works today.** _(to be checked)_
+- **How it works today.** WORKS (SCRUM-772, Deployed): the Thai rate is one confirmation with two buttons, Cancel and Confirm Thai rate, no document list and no expiry; who confirmed, the park, the till and the time are recorded. Expat keeps its documents and expiry.
 - **Ticket.** SCRUM-858 (tracking story, filed 12 November; details still to be given).
 
 ## C. Customer display
@@ -131,7 +131,7 @@ How to read each topic:
 - **Our reading.** Every line with quantity and price, discounts, then the
   total.
 - **Details from the owner.** _(to be given)_
-- **How it works today.** _(to be checked)_
+- **How it works today.** NOT BUILT. At payment the customer screen shows "Please pay", the total and the method (for QR: the code, the amount and a timer). The full list of lines with prices is shown one stage earlier, on the order stage. Same on the split screen, the paired display, F&B and the shop.
 - **Ticket.** SCRUM-859 (tracking story, filed 12 November; details still to be given).
 
 ## D. Unified inbox
@@ -162,7 +162,7 @@ How to read each topic:
 - **Our reading.** New contact from a thread, and the contact's name editable
   from the inbox.
 - **Details from the owner.** _(to be given)_
-- **How it works today.** _(to be checked)_
+- **How it works today.** NOT BUILT. A contact comes to exist only from an incoming message, a till notice or the simulator. Its name is the channel's profile name, filled once and never changed; no route or screen creates or renames a contact. The only contact action is erase.
 - **Ticket.** SCRUM-860 (tracking story, filed 12 November; details still to be given).
 
 ## E. Kitchen, bar and wristband printing
@@ -175,7 +175,7 @@ How to read each topic:
 - **Our reading.** Two prints at each destination: a void slip for what was
   cancelled, and a fresh slip with what remains.
 - **Details from the owner.** _(to be given)_
-- **How it works today.** _(to be checked)_
+- **How it works today.** NOT BUILT. Kitchen and bar tickets print once, when the sale closes. A refund or void prints nothing; there is no void slip. Party slips (SCRUM-805) print once at the slip time; nothing prints when the plan changes or an item is removed.
 - **Ticket.** SCRUM-861 (tracking story, filed 12 November; details still to be given). Related: SCRUM-805 (kitchen and bar slips for the day's parties, Deployed).
 
 ### E2. Separate wristbands and printer for drop-off children
@@ -185,7 +185,7 @@ How to read each topic:
 - **Our reading.** The till picks the printer from the child's service. No
   manual choice.
 - **Details from the owner.** _(to be given)_
-- **How it works today.** _(to be checked)_
+- **How it works today.** PARTLY. A station already has two band printers, but split kids and adults. A drop-off or nanny child's band is an ordinary kids band with a DROP-OFF or NANNY badge, printed on the kids printer. There is no printer role for drop-off.
 - **Ticket.** SCRUM-861 (tracking story, filed 12 November; details still to be given). Related: SCRUM-805 (kitchen and bar slips for the day's parties, Deployed).
 
 ### E3. Right print, right place, right person
@@ -197,7 +197,7 @@ How to read each topic:
 - **Our reading.** Routing by category (drink, food) and by person (child,
   adult) for every new or changed order and every band update.
 - **Details from the owner.** _(to be given)_
-- **How it works today.** _(to be checked)_
+- **How it works today.** PARTLY. At the sale, food goes to the kitchen and drinks to the bar by each item's category, and one band prints per child and per adult. Nothing reprints when a visit changes (details edited, an extra hour, a nanny change), and an F&B order is never amended on paper: more items are a new sale with its own tickets.
 - **Ticket.** SCRUM-861 (tracking story, filed 12 November; details still to be given). Related: SCRUM-805 (kitchen and bar slips for the day's parties, Deployed).
 
 ## F. Data
