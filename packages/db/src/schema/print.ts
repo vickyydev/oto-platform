@@ -307,7 +307,7 @@ export const printJob = edge.table(
     ),
     check(
       'print_job_role_check',
-      sql`${t.role} is null or ${t.role} in ('receipt','kids_band','adult_band','kitchen','bar','scanner','card_terminal','qr_terminal','gate','cash_drawer')`,
+      sql`${t.role} is null or ${t.role} in ('receipt','kids_band','adult_band','dropoff_band','kitchen','bar','scanner','card_terminal','qr_terminal','gate','cash_drawer')`,
     ),
     check(
       'print_job_subject_check',

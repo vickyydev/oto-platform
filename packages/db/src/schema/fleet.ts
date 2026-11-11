@@ -625,11 +625,19 @@ export const device = core.table(
  * fields (`receiptPrinterId`, `kidsBraceletPrinterId`, `adultBraceletPrinterId`,
  * `kitchenPrinterId`, `barPrinterId`, `scannerId`) as rows instead of columns,
  * plus the tender routing targets and the drawer.
+ *
+ * `dropoff_band` (SCRUM-861) is the third band printer: the one loaded with
+ * the stock a dropped-off child wears, which the park keeps apart from
+ * everybody else's. A station with none prints its drop-off bands on the kids
+ * band printer exactly as before (`writeJob` in `sale-printing.ts`), so the
+ * role can be assigned the day the second printer is plugged in and no band
+ * is lost until then.
  */
 export const STATION_DEVICE_ROLES = [
   'receipt',
   'kids_band',
   'adult_band',
+  'dropoff_band',
   'kitchen',
   'bar',
   'scanner',
@@ -664,7 +672,7 @@ export const stationDevice = core.table(
     index('station_device_device_idx').on(t.deviceId),
     check(
       'station_device_role_check',
-      sql`${t.role} in ('receipt','kids_band','adult_band','kitchen','bar','scanner','card_terminal','qr_terminal','gate','cash_drawer')`,
+      sql`${t.role} in ('receipt','kids_band','adult_band','dropoff_band','kitchen','bar','scanner','card_terminal','qr_terminal','gate','cash_drawer')`,
     ),
   ],
 );
