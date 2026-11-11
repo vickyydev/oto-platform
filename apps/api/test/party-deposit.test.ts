@@ -8,7 +8,7 @@ import { otoAppProvisionKeyDigest } from '../src/lib/otoapp-provision-keys';
 import { conversationEventOf } from '../src/services/inbox/book-date';
 import { runInboxSendJob, sendQueuedMessage } from '../src/services/inbox/send';
 import type { DirectoryEventEditAnswer, DirectoryEventEditBody, DirectoryNotificationBody, DirectoryOutcome, OtoAppDirectory } from '../src/services/otoapp-directory';
-import { configurePartyDeposit, partyDepositReturnUrlOf, runPartyDepositFollowUpJob } from '../src/services/party-deposit';
+import { configurePartyDeposit, partyDepositLinkOf, partyDepositReturnUrlOf, runPartyDepositFollowUpJob } from '../src/services/party-deposit';
 import { gatewayFor, pollPendingAttempts } from '../src/services/payments/gateway';
 import {
   CENTRAL_BRANCH_CODE,
@@ -1116,5 +1116,14 @@ describe('the family’s browser return is a page, never a payment', () => {
     expect(forged.body).toContain('Checking your payment');
     expect(await requestRow(made.request.id)).toEqual(before);
     expect((await attemptRow(before.paymentAttemptId)).status).not.toBe('approved');
+  });
+});
+
+describe('the link a chat carries always has an address', () => {
+  const envOf = (backend: string, own: string) => ({ PGW_BACKEND_RETURN_URL: backend, RENDER_EXTERNAL_URL: own }) as unknown as Parameters<typeof partyDepositLinkOf>[0];
+  it('an absolute page is left alone; a relative one takes the webhook’s origin, else this api’s own address', () => {
+    expect(partyDepositLinkOf(envOf('', ''), 'https://pay.example/p/1')).toBe('https://pay.example/p/1');
+    expect(partyDepositLinkOf(envOf('https://api.example/webhooks/2c2p', 'https://own.example'), '/webhooks/2c2p/hosted/a1')).toBe('https://api.example/webhooks/2c2p/hosted/a1');
+    expect(partyDepositLinkOf(envOf('', 'https://own.example'), '/webhooks/2c2p/hosted/a1')).toBe('https://own.example/webhooks/2c2p/hosted/a1');
   });
 });

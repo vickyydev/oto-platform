@@ -361,7 +361,8 @@ export function partyDepositReturnUrlOf(env: Env, provider: '2c2p' | 'simulator'
  */
 export function partyDepositLinkOf(env: Env, webPaymentUrl: string): string {
   if (/^https?:\/\//i.test(webPaymentUrl)) return webPaymentUrl;
-  const base = env.PGW_BACKEND_RETURN_URL.trim();
+  // The webhook's address first; else this api's own public address, so a chat never carries a bare path.
+  const base = env.PGW_BACKEND_RETURN_URL.trim() || env.RENDER_EXTERNAL_URL.trim();
   if (!base) return webPaymentUrl;
   try {
     return new URL(webPaymentUrl, new URL(base).origin).toString();

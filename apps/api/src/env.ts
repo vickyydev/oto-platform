@@ -564,6 +564,12 @@ const EnvSchema = z.object({
   PGW_CURRENCY_CODE: z.string().length(3).default('THB'),
   /** The public HTTPS URL 2C2P posts notifications to — this api's own webhook. */
   PGW_BACKEND_RETURN_URL: z.string().default(''),
+  /**
+   * This api's own public address as the host names it (Render sets it on a
+   * web service). Read only to make a simulated payment page's relative
+   * link absolute for a chat when `PGW_BACKEND_RETURN_URL` is unset.
+   */
+  RENDER_EXTERNAL_URL: z.string().default(''),
   /** Where a browser comes back to after the booking site's hosted page (S2-12). */
   PGW_FRONTEND_RETURN_URL: z.string().default(''),
   /**
