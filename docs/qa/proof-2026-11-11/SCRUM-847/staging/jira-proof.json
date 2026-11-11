@@ -1,0 +1,36 @@
+{
+  "ticket": "SCRUM-847",
+  "statusBefore": "In Progress",
+  "attached": [
+    {
+      "id": "13161",
+      "name": "847-a2-waiting-staff-screen-display-paired.png"
+    },
+    {
+      "id": "13162",
+      "name": "847-a3-separate-display-follow-staff.png"
+    },
+    {
+      "id": "13163",
+      "name": "847-b1-priced-zero-both-halves.png"
+    },
+    {
+      "id": "13164",
+      "name": "847-c1-refused-both-halves.png"
+    },
+    {
+      "id": "13165",
+      "name": "847-e1-plain-sale-please-pay.png"
+    },
+    {
+      "id": "13166",
+      "name": "847-d1-offline-staff-screen.png"
+    }
+  ],
+  "commentId": "14074",
+  "walked": [
+    "Testing",
+    "Deployed"
+  ],
+  "statusAfter": "Deployed"
+}

@@ -1,0 +1,529 @@
+{
+  "ticket": "SCRUM-847",
+  "sha": "8bb78f578a836feb6d1eece2690afff51fda5e4e",
+  "till": "https://oto-pos-web-staging.onrender.com",
+  "deployments": {
+    "before": {
+      "oto-pos-staging": {
+        "id": "dep-dbq99ctg1s2s7380osu0",
+        "status": "live",
+        "sha": "8bb78f578a836feb6d1eece2690afff51fda5e4e",
+        "createdAt": "2026-11-11T16:15:47.745651Z",
+        "finishedAt": "2026-11-11T16:16:43.783721Z",
+        "readAt": "2026-11-11T16:17:04.217Z"
+      },
+      "oto-pos-web-staging": {
+        "id": "dep-dbq99dajnfac73d8eu8g",
+        "status": "live",
+        "sha": "8bb78f578a836feb6d1eece2690afff51fda5e4e",
+        "createdAt": "2026-11-11T16:15:49.26442Z",
+        "finishedAt": "2026-11-11T16:19:01.150436Z",
+        "readAt": "2026-11-11T16:20:05.409Z"
+      }
+    },
+    "after": {
+      "oto-pos-staging": {
+        "id": "dep-dbq99ctg1s2s7380osu0",
+        "status": "live",
+        "sha": "8bb78f578a836feb6d1eece2690afff51fda5e4e",
+        "finishedAt": "2026-11-11T16:16:43.783721Z",
+        "readAt": "2026-11-11T16:35:08.202Z"
+      },
+      "oto-pos-web-staging": {
+        "id": "dep-dbq99dajnfac73d8eu8g",
+        "status": "live",
+        "sha": "8bb78f578a836feb6d1eece2690afff51fda5e4e",
+        "finishedAt": "2026-11-11T16:19:01.150436Z",
+        "readAt": "2026-11-11T16:35:08.517Z"
+      }
+    }
+  },
+  "ci": {
+    "run": 43056567671,
+    "status": "in_progress when the proof finished; not waited for"
+  },
+  "result": {
+    "a": "pass",
+    "b": "pass",
+    "c": "pass",
+    "d": "not as expected (optional step)",
+    "e": "pass"
+  },
+  "steps": {
+    "a": {
+      "pass": true,
+      "seen": {
+        "staffLine": "Waiting for the voucher price...",
+        "amountDue": "Amount Due —",
+        "confirmDisabled": true,
+        "salesWrittenWhileWaiting": 0,
+        "separateDisplayText": "Welcome to OTO Park Please follow the staff screen. ZZ TEST SCRUM-847 voucher wait 1794414780712 · ZZ TEST SCRUM-847 voucher wait 1794414780712",
+        "separateDisplay": {
+          "words": "Please follow the staff screen.",
+          "baht": false,
+          "pleasePay": false
+        },
+        "customerHalf": "English Customer ZZ TEST SCRUM-847 guardian Waiting for the cashier to confirm…"
+      },
+      "heldQuotes": [
+        {
+          "status": 200,
+          "heldAt": "2026-11-11T16:33:27.364Z"
+        }
+      ]
+    },
+    "b": {
+      "pass": true,
+      "seen": {
+        "amountDue": "Amount Due ฿0",
+        "staffCard": "No payment needed This sale is fully covered — nothing to collect.",
+        "customerHalf": "English Customer ZZ TEST SCRUM-847 guardian Golden Ticket ฿0 Complimentary — enjoy!",
+        "savedSale": {
+          "id": "01a1cb74-f888-7798-925e-57ee189770fd",
+          "status": "tendering",
+          "totalSatang": 0
+        },
+        "completed": {
+          "saleId": "01a1cb74-f888-7798-925e-57ee189770fd",
+          "status": "finalised",
+          "totalSatang": 0,
+          "child": "in_park"
+        },
+        "voucherAfter": {
+          "status": "redeemed"
+        }
+      }
+    },
+    "c": {
+      "pass": true,
+      "seen": {
+        "staffBox": "The voucher price could not be fetched: Scan the voucher at this till first — it is not held for this sale. Go Back to change the order, or Cancel the sale.",
+        "boxRole": "alert",
+        "amountDue": "Amount Due —",
+        "confirmDisabled": true,
+        "backEnabled": true,
+        "waitingLineGone": true,
+        "separateDisplay": {
+          "followStaff": true,
+          "baht": false,
+          "pleasePay": false
+        },
+        "customerHalf": "English Customer ZZ TEST SCRUM-847 guardian Waiting for the cashier to confirm…",
+        "redemptionSalesWritten": 0,
+        "quotePostsAfterTheRefusal": 0,
+        "stillRefusedAfter4s": true,
+        "afterCancel": {
+          "newSales": [],
+          "registration": {
+            "id": "01a1cb73-436f-7db0-8a9b-cb6c237001fd",
+            "children": [
+              {
+                "id": "01a1cb73-436f-7db0-8a9b-cb6d512f8e29",
+                "name": "ZZ TEST SCRUM-847 child",
+                "status": "registered"
+              }
+            ]
+          }
+        }
+      },
+      "quoteAnsweredByTest": {
+        "status": 409,
+        "code": "VOUCHER_NOT_HELD",
+        "at": "2026-11-11T16:31:32.565Z"
+      }
+    },
+    "d": {
+      "pass": false,
+      "seen": {
+        "staffBox": "The voucher price could not be fetched: Member not found. Go Back to change the order, or Cancel the sale.",
+        "amountDue": "Amount Due —"
+      },
+      "quoteAbortedByTest": {
+        "at": "2026-11-11T16:33:13.866Z"
+      },
+      "failedAt": "d: Continue to payment with the first quote aborted (nothing answers)",
+      "failure": "AssertionError: Expected values to be strictly equal:"
+    },
+    "e": {
+      "pass": true,
+      "seen": {
+        "amountDue": "Amount Due ฿1040",
+        "customerHalf": "English Please pay ฿1040.00 to our staff",
+        "customerFigure": "฿1040.00",
+        "saleWritten": {
+          "id": "01a1cb75-2867-77a2-84b5-88639b51a198",
+          "status": "tendering"
+        },
+        "afterCancel": {
+          "id": "01a1cb75-2867-77a2-84b5-88639b51a198",
+          "status": "voided"
+        }
+      }
+    }
+  },
+  "pictures": {
+    "a": [
+      "847-a2-waiting-staff-screen-display-paired.png",
+      "847-a3-separate-display-follow-staff.png"
+    ],
+    "b": [
+      "847-b1-priced-zero-both-halves.png",
+      "847-b2-completed-zero-sale.png"
+    ],
+    "c": [
+      "847-c1-refused-both-halves.png",
+      "847-c2-refused-separate-display.png"
+    ],
+    "d": [
+      "847-d1-offline-staff-screen.png"
+    ],
+    "e": [
+      "847-e1-plain-sale-please-pay.png"
+    ]
+  },
+  "attempts": {
+    "attempt-01": {
+      "startedAt": "2026-11-11T16:31:16.949Z",
+      "finishedAt": "2026-11-11T16:32:10.535Z",
+      "stepsRun": [
+        "c",
+        "d",
+        "ab",
+        "e",
+        "848"
+      ],
+      "checks": {
+        "testNumbersUnusedBefore": true,
+        "bundle": {
+          "files": 1,
+          "priceUnavailable": true,
+          "pricePending": true
+        }
+      },
+      "created": [
+        {
+          "kind": "station",
+          "id": "01a1cb73-1b61-7499-9111-8748a1477a20",
+          "name": "ZZ TEST SCRUM-847 voucher wait 1794414676958",
+          "prefix": "Z84701"
+        },
+        {
+          "kind": "voucher-sale",
+          "id": "01a1cb73-22d9-7e43-ae2f-b1b4d97fdd69",
+          "paidBy": "cash"
+        },
+        {
+          "kind": "voucher",
+          "id": "01a1cb73-2ff1-7ee3-8225-09a90bc6c970"
+        },
+        {
+          "kind": "display",
+          "id": "01a1cb73-34dc-7865-8cd8-0fccf84ee9c9"
+        },
+        {
+          "kind": "registration",
+          "id": "01a1cb73-436f-7db0-8a9b-cb6c237001fd",
+          "step": "c"
+        },
+        {
+          "kind": "display",
+          "id": "01a1cb73-6d46-799a-93e6-c7b89165902f"
+        },
+        {
+          "kind": "display",
+          "id": "01a1cb73-92f0-7a88-bf46-de19af37d6a6"
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "display",
+          "id": "01a1cb73-34dc-7865-8cd8-0fccf84ee9c9",
+          "revoked": true
+        },
+        {
+          "kind": "display",
+          "id": "01a1cb73-6d46-799a-93e6-c7b89165902f",
+          "revoked": true
+        },
+        {
+          "kind": "display",
+          "id": "01a1cb73-92f0-7a88-bf46-de19af37d6a6",
+          "revoked": true
+        },
+        {
+          "kind": "registration",
+          "step": "c",
+          "id": "01a1cb73-436f-7db0-8a9b-cb6c237001fd",
+          "children": [
+            {
+              "id": "01a1cb73-436f-7db0-8a9b-cb6d512f8e29",
+              "name": "ZZ TEST SCRUM-847 child",
+              "status": "registered"
+            }
+          ],
+          "inPark": 0
+        },
+        {
+          "kind": "finalised-test-sale",
+          "id": "01a1cb73-22d9-7e43-ae2f-b1b4d97fdd69",
+          "retained": true,
+          "printJobs": [
+            {
+              "id": "01a1cb73-3007-713f-a124-6766fb63f1e4",
+              "status": "printed"
+            }
+          ]
+        },
+        {
+          "kind": "sales-read-back",
+          "sales": [
+            {
+              "id": "01a1cb73-22d9-7e43-ae2f-b1b4d97fdd69",
+              "status": "finalised",
+              "grossSatang": 150000
+            }
+          ]
+        },
+        {
+          "kind": "station",
+          "id": "01a1cb73-1b61-7499-9111-8748a1477a20",
+          "archived": true,
+          "devices": 0
+        },
+        {
+          "kind": "member",
+          "id": "01a1cb73-4241-7fbf-8122-a47a7ae2cd1b",
+          "archived": true
+        },
+        {
+          "kind": "test-number",
+          "key": "guest",
+          "member": null
+        },
+        {
+          "kind": "till-session",
+          "signedOut": true,
+          "me": 401
+        },
+        {
+          "kind": "admin-session",
+          "signedOut": true,
+          "me": 401
+        }
+      ],
+      "cleanupFailures": [],
+      "requestCount": 36,
+      "refusedRequests": [],
+      "note": "Step c and the SCRUM-848 step passed. Steps d, a, b and e stopped at the member lookup: the family form of step c had saved the guardian as a member under the one ZZ TEST number, so the next passes were greeted as a returning family. Nothing was written by the stopped passes.",
+      "stoppedSteps": {
+        "d": {
+          "pass": false,
+          "seen": {},
+          "failedAt": "pair own customer display",
+          "failure": "Error: expect(locator).toContainText(expected) failed"
+        },
+        "a": {
+          "pass": false,
+          "seen": {},
+          "failedAt": "pair own customer display",
+          "failure": "Error: expect(locator).toContainText(expected) failed"
+        },
+        "b": {
+          "pass": false,
+          "seen": {},
+          "failedAt": "pair own customer display",
+          "failure": "Error: expect(locator).toContainText(expected) failed"
+        },
+        "e": {
+          "pass": false,
+          "seen": {},
+          "failedAt": "e: plain walk-in ticket sale on the same till (no display paired)",
+          "failure": "Error: expect(locator).toContainText(expected) failed"
+        }
+      }
+    },
+    "attempt-02": {
+      "startedAt": "2026-11-11T16:33:00.702Z",
+      "finishedAt": "2026-11-11T16:33:39.235Z",
+      "stepsRun": [
+        "d",
+        "ab",
+        "e"
+      ],
+      "checks": {
+        "testNumbersUnusedBefore": true,
+        "bundle": {
+          "files": 1,
+          "priceUnavailable": true,
+          "pricePending": true
+        },
+        "voucherReused": {
+          "saleId": "01a1cb73-22d9-7e43-ae2f-b1b4d97fdd69",
+          "voucherId": "01a1cb73-2ff1-7ee3-8225-09a90bc6c970",
+          "statusBefore": "issued"
+        }
+      },
+      "created": [
+        {
+          "kind": "station",
+          "id": "01a1cb74-b104-7e5a-8271-5aaa46d2d790",
+          "name": "ZZ TEST SCRUM-847 voucher wait 1794414780712",
+          "prefix": "Z84702"
+        },
+        {
+          "kind": "display",
+          "id": "01a1cb74-c108-7f7c-992f-266c51f82512"
+        },
+        {
+          "kind": "registration",
+          "id": "01a1cb74-d06a-7430-beef-25fb90f5fda3",
+          "step": "d"
+        },
+        {
+          "kind": "display",
+          "id": "01a1cb74-f47e-78fb-949f-a2931119a85c"
+        },
+        {
+          "kind": "registration",
+          "id": "01a1cb75-045c-71ad-b4db-de9f963fd077",
+          "step": "a"
+        },
+        {
+          "kind": "redemption-sale",
+          "id": "01a1cb74-f888-7798-925e-57ee189770fd"
+        },
+        {
+          "kind": "plain-ticket-sale",
+          "id": "01a1cb75-2867-77a2-84b5-88639b51a198"
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "display",
+          "id": "01a1cb74-c108-7f7c-992f-266c51f82512",
+          "revoked": true
+        },
+        {
+          "kind": "display",
+          "id": "01a1cb74-f47e-78fb-949f-a2931119a85c",
+          "revoked": true
+        },
+        {
+          "kind": "sale",
+          "id": "01a1cb75-2867-77a2-84b5-88639b51a198",
+          "status": "voided",
+          "by": "Cancel on the till"
+        },
+        {
+          "kind": "registration",
+          "step": "d",
+          "id": "01a1cb74-d06a-7430-beef-25fb90f5fda3",
+          "children": [
+            {
+              "id": "01a1cb74-d06a-7430-beef-25fc043f34a1",
+              "name": "ZZ TEST SCRUM-847 child",
+              "status": "registered"
+            }
+          ],
+          "inPark": 0
+        },
+        {
+          "kind": "registration",
+          "step": "a",
+          "id": "01a1cb75-045c-71ad-b4db-de9f963fd077",
+          "children": [
+            {
+              "id": "01a1cb75-045c-71ad-b4db-dea08c088a5c",
+              "name": "ZZ TEST SCRUM-847 child",
+              "status": "out"
+            }
+          ],
+          "inPark": 0
+        },
+        {
+          "kind": "finalised-test-sale",
+          "id": "01a1cb74-f888-7798-925e-57ee189770fd",
+          "retained": true,
+          "printJobs": [
+            {
+              "id": "01a1cb75-2568-7e22-976e-e8194efeb4db",
+              "status": "printed"
+            },
+            {
+              "id": "01a1cb75-23de-7b60-afd5-b03634125a28",
+              "status": "printed"
+            }
+          ]
+        },
+        {
+          "kind": "sales-read-back",
+          "sales": [
+            {
+              "id": "01a1cb75-2867-77a2-84b5-88639b51a198",
+              "status": "voided",
+              "grossSatang": 104000
+            },
+            {
+              "id": "01a1cb74-f888-7798-925e-57ee189770fd",
+              "status": "finalised",
+              "grossSatang": 0
+            }
+          ]
+        },
+        {
+          "kind": "station",
+          "id": "01a1cb74-b104-7e5a-8271-5aaa46d2d790",
+          "archived": true,
+          "devices": 0
+        },
+        {
+          "kind": "test-number",
+          "key": "c",
+          "member": null
+        },
+        {
+          "kind": "member",
+          "id": "01a1cb74-cf5d-7cb9-aea6-26ff6e115f9d",
+          "archived": true
+        },
+        {
+          "kind": "member",
+          "id": "01a1cb75-02d4-7c2d-91e0-06a020e36828",
+          "archived": true
+        },
+        {
+          "kind": "test-number",
+          "key": "e",
+          "member": null
+        },
+        {
+          "kind": "test-number",
+          "key": "guest",
+          "member": null
+        },
+        {
+          "kind": "till-session",
+          "signedOut": true,
+          "me": 401
+        },
+        {
+          "kind": "admin-session",
+          "signedOut": true,
+          "me": 401
+        }
+      ],
+      "cleanupFailures": [],
+      "requestCount": 49,
+      "refusedRequests": [],
+      "note": "One unused ZZ TEST number per pass. The Golden Ticket bought on attempt 1 (never redeemed there) was redeemed once here."
+    }
+  },
+  "leftOnStaging": [
+    "voucher purchase sale 01a1cb73-22d9-7e43-ae2f-b1b4d97fdd69 (cash, finalised, ZZ TEST till, audit record)",
+    "redemption sale 01a1cb74-f888-7798-925e-57ee189770fd (zero total, finalised; its voucher reads redeemed)",
+    "plain ticket sale 01a1cb75-2867-77a2-84b5-88639b51a198 (voided by Cancel on the till)",
+    "registrations of steps c and d with the ZZ TEST child still \"registered\" (never checked in; the platform has no call that removes a registration)",
+    "registration of step a with the ZZ TEST child \"out\" (picked up)",
+    "three ZZ TEST guardian members, archived; two ZZ TEST tills, archived with no devices; five displays, revoked"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "ticket": "SCRUM-848",
+  "statusBefore": "In Progress",
+  "attached": [
+    {
+      "id": "13167",
+      "name": "848-1-new-guest-dialog.png"
+    }
+  ],
+  "commentId": "14076",
+  "walked": [
+    "Testing",
+    "Deployed"
+  ],
+  "statusAfter": "Deployed"
+}

@@ -1,0 +1,107 @@
+{
+  "ticket": "SCRUM-848",
+  "sha": "8bb78f578a836feb6d1eece2690afff51fda5e4e",
+  "till": "https://oto-pos-web-staging.onrender.com",
+  "deployments": {
+    "before": {
+      "oto-pos-staging": {
+        "id": "dep-dbq99ctg1s2s7380osu0",
+        "status": "live",
+        "sha": "8bb78f578a836feb6d1eece2690afff51fda5e4e",
+        "createdAt": "2026-11-11T16:15:47.745651Z",
+        "finishedAt": "2026-11-11T16:16:43.783721Z",
+        "readAt": "2026-11-11T16:17:04.217Z"
+      },
+      "oto-pos-web-staging": {
+        "id": "dep-dbq99dajnfac73d8eu8g",
+        "status": "live",
+        "sha": "8bb78f578a836feb6d1eece2690afff51fda5e4e",
+        "createdAt": "2026-11-11T16:15:49.26442Z",
+        "finishedAt": "2026-11-11T16:19:01.150436Z",
+        "readAt": "2026-11-11T16:20:05.409Z"
+      }
+    },
+    "after": {
+      "oto-pos-staging": {
+        "id": "dep-dbq99ctg1s2s7380osu0",
+        "status": "live",
+        "sha": "8bb78f578a836feb6d1eece2690afff51fda5e4e",
+        "finishedAt": "2026-11-11T16:16:43.783721Z",
+        "readAt": "2026-11-11T16:35:08.202Z"
+      },
+      "oto-pos-web-staging": {
+        "id": "dep-dbq99dajnfac73d8eu8g",
+        "status": "live",
+        "sha": "8bb78f578a836feb6d1eece2690afff51fda5e4e",
+        "finishedAt": "2026-11-11T16:19:01.150436Z",
+        "readAt": "2026-11-11T16:35:08.517Z"
+      }
+    }
+  },
+  "ci": {
+    "run": 43056567671,
+    "status": "in_progress when the proof finished; not waited for"
+  },
+  "result": {
+    "dialog": "pass"
+  },
+  "step": {
+    "pass": true,
+    "seen": {
+      "dialog": "New guest — enter name Phone +66 89 802 0048 is not recognised. Enter the guest's name to register them so they're remembered next time. Name / nickname Cancel Register & continue Close",
+      "number": "+66 89 802 0048",
+      "afterCancel": {
+        "memberWrites": 0,
+        "lookup": "no member"
+      }
+    },
+    "stagingPassesToday": 0,
+    "passCard": "supplied by the test in the browser (staging has no event on sale); nothing written"
+  },
+  "number": {
+    "typed": "0898020048",
+    "shown": "+66 89 802 0048",
+    "unusedBefore": true,
+    "memberAfter": null
+  },
+  "picture": "848-1-new-guest-dialog.png",
+  "run": {
+    "startedAt": "2026-11-11T16:31:16.949Z",
+    "finishedAt": "2026-11-11T16:32:10.535Z",
+    "station": {
+      "kind": "station",
+      "id": "01a1cb73-1b61-7499-9111-8748a1477a20",
+      "name": "ZZ TEST SCRUM-847 voucher wait 1794414676958",
+      "prefix": "Z84701"
+    },
+    "bundle": {
+      "files": 1,
+      "priceUnavailable": true,
+      "pricePending": true
+    },
+    "cleanup": [
+      {
+        "kind": "station",
+        "id": "01a1cb73-1b61-7499-9111-8748a1477a20",
+        "archived": true,
+        "devices": 0
+      },
+      {
+        "kind": "test-number",
+        "key": "guest",
+        "member": null
+      },
+      {
+        "kind": "till-session",
+        "signedOut": true,
+        "me": 401
+      },
+      {
+        "kind": "admin-session",
+        "signedOut": true,
+        "me": 401
+      }
+    ]
+  },
+  "harness": "../../SCRUM-847/staging/proof.mjs and flow.mjs (stepNewGuestDialog)"
+}
