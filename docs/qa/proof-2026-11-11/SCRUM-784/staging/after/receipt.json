@@ -1,0 +1,231 @@
+{
+  "mode": "after",
+  "expectedSha": "22263520da3218805bf520d300966e9a739c3b41",
+  "startedAt": "2026-11-11T12:46:01.780Z",
+  "phase": "clean own fixture graph and sign out",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/employees",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/accounts/01a1caa5-8227-7d35-ac4e-48a171cd4e1f",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/apps/oto_app/users/01a1caa5-8227-7d35-ac4e-48a171cd4e1f",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/employees/f76af9d9-0902-4084-b1fe-c44dad656cd8",
+      "status": 204
+    },
+    {
+      "method": "GET",
+      "path": "/api/employees/f76af9d9-0902-4084-b1fe-c44dad656cd8",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/sops/97432cfa-7936-4b4f-9e04-c52a6482cb18",
+      "status": 204
+    },
+    {
+      "method": "GET",
+      "path": "/api/sops/97432cfa-7936-4b4f-9e04-c52a6482cb18",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/knowledge-files/76e72e95-2754-45d9-b78e-b677b85d314f",
+      "status": 204
+    },
+    {
+      "method": "GET",
+      "path": "/api/knowledge-files/76e72e95-2754-45d9-b78e-b677b85d314f",
+      "status": 404
+    },
+    {
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/user",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401
+    }
+  ],
+  "created": {
+    "employeeId": "f76af9d9-0902-4084-b1fe-c44dad656cd8",
+    "userId": "b359f855-7401-49fa-976f-76d089b2f367",
+    "personId": "631dae05-ab02-42c8-aa4b-e71a420d19e0",
+    "accessPolicyId": "1c99bd40-77a2-4ea3-810f-6d0faf0dcca1",
+    "accountId": "01a1caa5-8227-7d35-ac4e-48a171cd4e1f",
+    "fileId": "76e72e95-2754-45d9-b78e-b677b85d314f",
+    "sopId": "97432cfa-7936-4b4f-9e04-c52a6482cb18"
+  },
+  "cleanup": [
+    {
+      "label": "deactivate own core account",
+      "passed": true
+    },
+    {
+      "label": "unlink own app grant",
+      "passed": true
+    },
+    {
+      "label": "delete own employee graph",
+      "passed": true
+    },
+    {
+      "label": "delete own generated SOP",
+      "passed": true
+    },
+    {
+      "label": "delete own uploaded PDF",
+      "passed": true
+    },
+    {
+      "label": "sign out app",
+      "passed": true
+    },
+    {
+      "label": "sign out launcher",
+      "passed": true
+    },
+    {
+      "label": "sign out console",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "controlPlaneReadFailures": [
+    {
+      "service": "oto-api-staging",
+      "name": "TimeoutError"
+    },
+    {
+      "service": "oto-app-staging",
+      "name": "TimeoutError"
+    }
+  ],
+  "appVersionBefore": {
+    "status": 200,
+    "sha": "22263520da3218805bf520d300966e9a739c3b41"
+  },
+  "login": {
+    "status": 200,
+    "requestKeys": [
+      "accessLevel",
+      "actionId",
+      "branchIds",
+      "branchScope",
+      "email",
+      "enableCoreModule",
+      "enableEventsModule",
+      "enableHrModule",
+      "enableOpsModule",
+      "enableSetupModule",
+      "enableStudioModule",
+      "phone"
+    ],
+    "success": true,
+    "userId": "b359f855-7401-49fa-976f-76d089b2f367",
+    "personId": "631dae05-ab02-42c8-aa4b-e71a420d19e0",
+    "accessPolicyId": "1c99bd40-77a2-4ea3-810f-6d0faf0dcca1",
+    "accountId": "01a1caa5-8227-7d35-ac4e-48a171cd4e1f",
+    "replayed": false,
+    "platformManaged": false,
+    "temporaryPasswordShown": true
+  },
+  "upload": {
+    "status": 201,
+    "responseKeys": [
+      "branchId",
+      "createdAt",
+      "createdByUserId",
+      "departmentId",
+      "description",
+      "fileType",
+      "filename",
+      "id",
+      "indexError",
+      "indexStatus",
+      "isActive",
+      "language",
+      "mimeType",
+      "pageCount",
+      "sizeBytes",
+      "storageUrl",
+      "tags",
+      "tenantId",
+      "thumbnailUrl",
+      "title",
+      "updatedAt",
+      "version"
+    ]
+  },
+  "sop": {
+    "status": 201,
+    "sopId": "97432cfa-7936-4b4f-9e04-c52a6482cb18",
+    "stepsCount": 4,
+    "message": "SOP created successfully",
+    "visibleSteps": 4
+  },
+  "behaviorRecorded": true,
+  "appVersionAfter": {
+    "status": 200,
+    "sha": "22263520da3218805bf520d300966e9a739c3b41"
+  },
+  "runtimePathsUnchanged": [
+    "apps/oto-app/server/routes.ts",
+    "apps/oto-app/server/lib/anthropic.ts",
+    "apps/oto-app/server/lib/employeeSuiteProvision.ts",
+    "apps/oto-app/client/src/pages/employee-editor-page.tsx",
+    "apps/oto-app/client/src/pages/studio/sops.tsx",
+    "apps/oto-app/client/src/components/studio/knowledge-files.tsx",
+    "apps/oto-app/package-lock.json",
+    "apps/oto-app/shared/schema.ts"
+  ],
+  "finishedAt": "2026-11-11T12:46:58.459Z"
+}

@@ -4,21 +4,28 @@ import { createRequire } from 'node:module';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { execFileSync } from 'node:child_process';
 const root = resolve(import.meta.dirname, '../../../../..');
 const helper = 'C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos';
 const { need } = await import(pathToFileURL(resolve(helper, 'scripts/agent/env.mjs')));
 const { service, render } = await import(pathToFileURL(resolve(helper, 'scripts/agent/render.mjs')));
 const { chromium, expect } = createRequire(resolve(root, 'apps/pos/package.json'))('@playwright/test');
+// Bound control-plane reads; the authenticated app version is also verified.
+const nativeFetch = globalThis.fetch;
+globalThis.fetch = (url, options) => nativeFetch(url, { ...options, signal: AbortSignal.timeout(10000) });
 const mode = process.argv[2] ?? 'before';
+const expectedSha = mode.startsWith('before') ? undefined : '22263520da3218805bf520d300966e9a739c3b41';
 const out = resolve(import.meta.dirname, mode); mkdirSync(out, { recursive: true });
 const origins = { console: 'https://oto-console-staging.onrender.com', launcher: 'https://oto-launcher-staging.onrender.com', app: 'https://oto-app-staging.onrender.com' };
-const receipt = { mode, startedAt: new Date().toISOString(), phase: 'preflight', requests: [], created: {}, cleanup: [], passed: false };
+const receipt = { mode, expectedSha, startedAt: new Date().toISOString(), phase: 'preflight', requests: [], created: {}, cleanup: [], passed: false };
 const save = () => writeFileSync(resolve(out, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n');
 const phase = s => { receipt.phase = s; save(); console.log(s); };
 for (const name of ['oto-api-staging', 'oto-app-staging']) {
+  try {
   const svc = await service(name), list = await render('GET', `/services/${svc.id}/deploys?limit=5`);
   const live = list.map(x => x.deploy).find(x => x.status === 'live'); assert.ok(live);
   (receipt.deployments ??= {})[name] = { id: live.id, sha: live.commit.id }; save();
+  } catch (error) { (receipt.controlPlaneReadFailures ??= []).push({ service: name, name: error.name }); save(); }
 }
 const browser = await chromium.launch({ channel: 'msedge' });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
@@ -54,6 +61,14 @@ try {
   await app.waitForURL(url => url.origin === origins.app && !url.hash.includes('handoff'));
   const exchanged = await handoff; await exchanged.finished(); assert.equal(exchanged.status(), 200);
   await expect.poll(() => app.evaluate(async () => (await fetch('/api/user')).status)).toBe(200);
+  if (expectedSha) {
+    phase('verify the authenticated app reports the exact landed source');
+    await expect.poll(async () => {
+      const response = await call(origins.app, '/api/qa-reports/config');
+      const body = await response.json(); receipt.appVersionBefore = { status: response.status(), sha: body.version }; save();
+      return body.version;
+    }, { timeout: 300000, intervals: [15000] }).toBe(expectedSha);
+  }
   phase('create own ZZ TEST employee');
   const branches = await (await call(origins.app, '/api/branches')).json();
   const branch = branches.find(b => b.isActive !== false); assert.ok(branch);
@@ -120,6 +135,17 @@ try {
     await picture('s785-sop-steps.png', true);
   }
   receipt.behaviorRecorded = true;
+  if (expectedSha) {
+    const response = await call(origins.app, '/api/qa-reports/config'), body = await response.json();
+    assert.equal(response.status(), 200);
+    receipt.appVersionAfter = { status: response.status(), sha: body.version }; save();
+    execFileSync('git', ['merge-base', '--is-ancestor', expectedSha, body.version], { cwd: root });
+    const paths = ['apps/oto-app/server/routes.ts', 'apps/oto-app/server/lib/anthropic.ts', 'apps/oto-app/server/lib/employeeSuiteProvision.ts',
+      'apps/oto-app/client/src/pages/employee-editor-page.tsx', 'apps/oto-app/client/src/pages/studio/sops.tsx', 'apps/oto-app/client/src/components/studio/knowledge-files.tsx',
+      'apps/oto-app/package-lock.json', 'apps/oto-app/shared/schema.ts'];
+    assert.equal(execFileSync('git', ['diff', '--name-only', expectedSha, body.version, '--', ...paths], { cwd: root, encoding: 'utf8' }).trim(), '');
+    receipt.runtimePathsUnchanged = paths; save();
+  }
 } catch (error) {
   failed = true; receipt.failure = { phase: receipt.phase, name: error.name, message: String(error.message).split('\n')[0].replace(/https?:\/\/\S+/g, '[URL omitted]').slice(0, 180), path: new URL(app.url()).pathname,
     visibleTestIds: await app.locator('[data-testid]:visible').evaluateAll(nodes => nodes.map(n => n.getAttribute('data-testid'))) }; save();

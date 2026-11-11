@@ -1,0 +1,23 @@
+{
+  "at": "2026-11-11T12:48:37.616Z",
+  "pictures": [
+    {
+      "key": "SCRUM-784",
+      "name": "s784-login-created.png",
+      "sha256": "da31f7df99068a6bb7e51c0ada81978dd835c7adb3c10ad33a351b99c3c94588",
+      "inspected": true
+    },
+    {
+      "key": "SCRUM-785",
+      "name": "s785-sop-result.png",
+      "sha256": "7dd057645e3e113cf6510f40e35f92e7cbffe2a83574e4a5de954712d83af2b8",
+      "inspected": true
+    },
+    {
+      "key": "SCRUM-785",
+      "name": "s785-sop-steps.png",
+      "sha256": "30494504a9b1f801a50359a474ed97a594f3e5cbd9be1c0a3593b28af1c3238a",
+      "inspected": true
+    }
+  ]
+}
