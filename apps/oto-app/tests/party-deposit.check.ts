@@ -133,6 +133,11 @@ await check("the amount rule: whole baht from ฿1 to ฿1,000,000; the field re
   assert.equal(notMade.headline, "Request not made · ฿3,000");
   assert.match(notMade.detail, /The payment page could not be opened/);
   assert.equal(notMade.tone, "closed");
+  // SCRUM-838: closed by the platform because the party was removed in the Events module.
+  const removed = depositStateWordsOf(request("cancelled", { closeReason: "party_removed" }));
+  assert.equal(removed.headline, "Request closed · ฿3,000");
+  assert.match(removed.detail, /removed in the Events module.*Nothing was said to the family/);
+  assert.equal(removed.tone, "closed");
 });
 
 // ─── The stand-in platform ────────────────────────────────────────────────────

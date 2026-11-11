@@ -182,6 +182,9 @@ export function depositStateWordsOf(r: PartyDepositRequest): DepositStateWords {
       if (r.closeReason === "gateway_refused") {
         return { headline: `Request not made · ${amount}`, detail: "The payment page could not be opened, so nothing was sent to the family. Press Request deposit to try again.", tone: "closed" };
       }
+      if (r.closeReason === "party_removed") {
+        return { headline: `Request closed · ${amount}`, detail: "This party was removed in the Events module, so the payment link was closed. Nothing was said to the family.", tone: "closed" };
+      }
       return { headline: `Request cancelled · ${amount}`, detail: "Withdrawn from the BEO. Press Request deposit to ask again.", tone: "closed" };
   }
 }
