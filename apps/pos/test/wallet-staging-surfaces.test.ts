@@ -128,7 +128,10 @@ describe('F2 — the guest displays: left to pay is the order less the credit', 
     for (const [out, ns] of [[fnb(360, pay(36_000, 35_000)), 'fnb'], [merch(360, pay(36_000, 35_000)), 'merch']] as const) {
       expect(out).toContain(`${ns}.payment.leftToPay`);
       expect(out).toContain('฿10<');
-      expect(out).not.toContain('฿360<');
+      // SCRUM-859 — the payment stage now draws the order's own Total row
+      // (฿360) beside the amount block; the whole order must still never be
+      // what the guest is ASKED for, so the check reads the amount block alone.
+      expect(out.slice(out.indexOf('data-testid="payment-amount"'))).not.toContain('฿360<');
       expect(out).toContain(`${ns}.payment.confirmWithStaff`);
     }
   });
