@@ -1,0 +1,941 @@
+{
+  "unit": "SCRUM-842 staging proof",
+  "liveCommit": "266830f9b5b0d624325bfcd362a13a1b56009f46",
+  "startedAt": "2026-11-11T13:25:18.846Z",
+  "writtenAt": "2026-11-11T13:47:14.879Z",
+  "browser": "Chromium 153.0.8010.12",
+  "liveDeploys": {
+    "how": "each deploy read by its id from the host control API (GET /v1/services/:serviceId/deploys/:deployId), one request every 90 s",
+    "readings": [
+      {
+        "at": "2026-11-11T13:23:32.962Z",
+        "service": "oto-api-staging",
+        "deploy": "dep-dbq6np2jnfac73etva9g",
+        "http": 200,
+        "status": "build_in_progress",
+        "sha": "266830f9b5b0d624325bfcd362a13a1b56009f46",
+        "finishedAt": null,
+        "tookMs": 1486
+      },
+      {
+        "at": "2026-11-11T13:25:03.392Z",
+        "service": "oto-app-staging",
+        "deploy": "dep-dbq6nr6i0phs73bg2ekg",
+        "http": 200,
+        "status": "live",
+        "sha": "266830f9b5b0d624325bfcd362a13a1b56009f46",
+        "finishedAt": "2026-11-11T13:24:28.588636Z",
+        "tookMs": 422
+      },
+      {
+        "at": "2026-11-11T13:26:33.840Z",
+        "service": "oto-api-staging",
+        "deploy": "dep-dbq6np2jnfac73etva9g",
+        "http": 200,
+        "status": "live",
+        "sha": "266830f9b5b0d624325bfcd362a13a1b56009f46",
+        "finishedAt": "2026-11-11T13:26:13.785104Z",
+        "tookMs": 438
+      }
+    ],
+    "established": {
+      "oto-app-staging": {
+        "at": "2026-11-11T13:25:03.392Z",
+        "service": "oto-app-staging",
+        "deploy": "dep-dbq6nr6i0phs73bg2ekg",
+        "http": 200,
+        "status": "live",
+        "sha": "266830f9b5b0d624325bfcd362a13a1b56009f46",
+        "finishedAt": "2026-11-11T13:24:28.588636Z",
+        "tookMs": 422
+      },
+      "oto-api-staging": {
+        "at": "2026-11-11T13:26:33.840Z",
+        "service": "oto-api-staging",
+        "deploy": "dep-dbq6np2jnfac73etva9g",
+        "http": 200,
+        "status": "live",
+        "sha": "266830f9b5b0d624325bfcd362a13a1b56009f46",
+        "finishedAt": "2026-11-11T13:26:13.785104Z",
+        "tookMs": 438
+      }
+    },
+    "behaviour": "the app: GET /api/events/:id/beo and the Save answer carry oneDeposit / depositSave (see the SCRUM-840 receipt). The api: no behavioural confirmation, the English line of SCRUM-842 did not pass."
+  },
+  "signedInAs": "the staging administrator through the launcher (name never kept)",
+  "simulator": "Demo WhatsApp · Central Floresta (inbox Settings › Simulator · test only)",
+  "verdict": "NOT PASSED: the English line and the Russian line were both answered with the question about the age",
+  "conversations": {
+    "english": {
+      "name": "ZZ TEST 842",
+      "id": "01a1cad6-5372-7d1e-9314-8ac58a0059a1",
+      "language": "en",
+      "categoryHint": "(none: as the channel routes it)",
+      "lines": [
+        {
+          "by": "customer",
+          "text": "ZZ TEST do you have drop-off for a six year old?",
+          "at": "2026-11-11T13:40:03.386Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "As the channel routes it",
+            "language": "en",
+            "message": "ZZ TEST do you have drop-off for a six year old?"
+          },
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "reopened": 0
+        }
+      ],
+      "turns": {
+        "1": {
+          "afterLine": 1,
+          "waitedMs": 6294,
+          "turnShown": true,
+          "turns": [
+            {
+              "kind": "ai_replied",
+              "turnId": "01a1cad6-5380-74a5-b146-fc2339b5f688",
+              "intent": "drop_off_service",
+              "intents": [
+                "drop_off_service"
+              ],
+              "reason": null,
+              "rule": null,
+              "closingKey": null,
+              "rethink": null
+            }
+          ],
+          "assistantLines": [
+            {
+              "id": "01a1cad6-7344-735b-b619-220d50d3c4de",
+              "createdAt": "2026-11-11T13:40:14.246Z",
+              "providerStatus": "queued",
+              "body": "Happy to help! How old is your child?"
+            }
+          ],
+          "aiState": "ready",
+          "openQuestions": [
+            {
+              "id": "01a1cad6-736d-7ff5-874c-95186765edd3",
+              "slot": "child_age",
+              "state": "open",
+              "answer": null,
+              "askedMessageId": "01a1cad6-7344-735b-b619-220d50d3c4de",
+              "answeredMessageId": null,
+              "askedAt": "2026-11-11T13:40:14.246Z",
+              "closedAt": null
+            }
+          ]
+        }
+      },
+      "audit": {
+        "first": {
+          "at": "2026-11-11T13:40:51.810Z",
+          "repeatGuard": {
+            "route": "GET /api/audit?action=inbox.ai.repeat_guard&from=<run start>",
+            "status": 200,
+            "rowsSinceRunStart": 0,
+            "total": 0,
+            "rowsForThisConversation": 0,
+            "rows": [],
+            "error": null
+          },
+          "openQuestion": {
+            "route": "GET /api/audit?action=inbox.ai.open_question&entityType=inbox.conversation&entityId=:id",
+            "status": 200,
+            "rows": 1,
+            "entries": [
+              {
+                "id": "01a1cad6-736f-7ea9-90ff-37b03f0e6f39",
+                "createdAt": "2026-11-11T13:40:14.247Z",
+                "after": {
+                  "asked": [
+                    "child_age"
+                  ],
+                  "turnId": "01a1cad6-5380-74a5-b146-fc2339b5f688",
+                  "answered": [],
+                  "withdrawn": []
+                }
+              }
+            ],
+            "error": null
+          },
+          "handover": {
+            "route": "GET /api/audit?action=inbox.ai.handover&entityType=inbox.conversation&entityId=:id",
+            "status": 200,
+            "rows": 0,
+            "entries": []
+          }
+        }
+      },
+      "threadAfterTheTurn": {
+        "conversation": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "active",
+          "category": "general",
+          "teamName": "Reception · Central Floresta",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "language": "en",
+          "aiMode": "live",
+          "aiState": "ready",
+          "aiPaused": false,
+          "handledAt": null,
+          "openQuestionsPresent": true
+        },
+        "openQuestions": [
+          {
+            "id": "01a1cad6-736d-7ff5-874c-95186765edd3",
+            "slot": "child_age",
+            "state": "open",
+            "answer": null,
+            "askedMessageId": "01a1cad6-7344-735b-b619-220d50d3c4de",
+            "answeredMessageId": null,
+            "askedAt": "2026-11-11T13:40:14.246Z",
+            "closedAt": null
+          }
+        ],
+        "messages": [
+          {
+            "id": "01a1cad6-5374-7e77-ab1e-e01ca8900488",
+            "direction": "inbound",
+            "authorKind": "customer",
+            "source": "channel",
+            "createdAt": "2026-11-11T13:40:06.000Z",
+            "providerStatus": null,
+            "body": "ZZ TEST do you have drop-off for a six year old?"
+          },
+          {
+            "id": "01a1cad6-7344-735b-b619-220d50d3c4de",
+            "direction": "outbound",
+            "authorKind": "ai",
+            "source": "channel",
+            "createdAt": "2026-11-11T13:40:14.246Z",
+            "providerStatus": "queued",
+            "body": "Happy to help! How old is your child?"
+          }
+        ],
+        "aiPills": [
+          {
+            "kind": "ai_replied",
+            "createdAt": "2026-11-11T13:40:14.246Z",
+            "actorKind": "ai",
+            "turnId": "01a1cad6-5380-74a5-b146-fc2339b5f688",
+            "intent": "drop_off_service",
+            "intents": [
+              "drop_off_service"
+            ],
+            "reason": null,
+            "rule": null,
+            "destination": null,
+            "templateKey": null,
+            "closingKey": null,
+            "holdingLine": null,
+            "silent": null,
+            "messageIds": [
+              "01a1cad6-7344-735b-b619-220d50d3c4de"
+            ],
+            "rethink": null,
+            "askBranch": false,
+            "askedSlots": null,
+            "composition": null,
+            "branchNamed": null
+          }
+        ],
+        "otherPills": [
+          {
+            "kind": "routed",
+            "actorKind": "system",
+            "createdAt": "2026-11-11T13:40:06.000Z"
+          },
+          {
+            "kind": "classified",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T13:40:14.246Z"
+          },
+          {
+            "kind": "moved_team",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T13:40:14.246Z"
+          },
+          {
+            "kind": "routed",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T13:40:14.246Z"
+          },
+          {
+            "kind": "assigned",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T13:40:14.246Z"
+          }
+        ]
+      }
+    },
+    "russian": {
+      "name": "ZZ TEST 842",
+      "id": "01a1cad6-63e5-7f76-9ee5-9b5fdb1194a1",
+      "language": "ru",
+      "categoryHint": "(none: as the channel routes it)",
+      "lines": [
+        {
+          "by": "customer",
+          "text": "ZZ TEST у вас есть drop-off для ребёнка 6 лет?",
+          "at": "2026-11-11T13:40:07.597Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "As the channel routes it",
+            "language": "ru",
+            "message": "ZZ TEST у вас есть drop-off для ребёнка 6 лет?"
+          },
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "reopened": 0
+        }
+      ],
+      "turns": {
+        "1": {
+          "afterLine": 1,
+          "waitedMs": 6163,
+          "turnShown": true,
+          "turns": [
+            {
+              "kind": "ai_replied",
+              "turnId": "01a1cad6-63f0-7eec-8648-3376ba597151",
+              "intent": "drop_off_service",
+              "intents": [
+                "drop_off_service"
+              ],
+              "reason": null,
+              "rule": null,
+              "closingKey": null,
+              "rethink": null
+            }
+          ],
+          "assistantLines": [
+            {
+              "id": "01a1cad6-9477-7435-b4ff-e375c0f19b7d",
+              "createdAt": "2026-11-11T13:40:22.766Z",
+              "providerStatus": "sent",
+              "body": "С удовольствием подскажу! Сколько лет ребёнку?"
+            }
+          ],
+          "aiState": "ready",
+          "openQuestions": [
+            {
+              "id": "01a1cad6-9483-7ec7-bc06-b5f08d81ddef",
+              "slot": "child_age",
+              "state": "open",
+              "answer": null,
+              "askedMessageId": "01a1cad6-9477-7435-b4ff-e375c0f19b7d",
+              "answeredMessageId": null,
+              "askedAt": "2026-11-11T13:40:22.766Z",
+              "closedAt": null
+            }
+          ]
+        }
+      },
+      "audit": {
+        "first": {
+          "at": "2026-11-11T13:41:49.840Z",
+          "repeatGuard": {
+            "route": "GET /api/audit?action=inbox.ai.repeat_guard&from=<run start>",
+            "status": 200,
+            "rowsSinceRunStart": 0,
+            "total": 0,
+            "rowsForThisConversation": 0,
+            "rows": [],
+            "error": null
+          },
+          "openQuestion": {
+            "route": "GET /api/audit?action=inbox.ai.open_question&entityType=inbox.conversation&entityId=:id",
+            "status": 200,
+            "rows": 1,
+            "entries": [
+              {
+                "id": "01a1cad6-9484-7909-bbb5-02b6e94a7e62",
+                "createdAt": "2026-11-11T13:40:22.767Z",
+                "after": {
+                  "asked": [
+                    "child_age"
+                  ],
+                  "turnId": "01a1cad6-63f0-7eec-8648-3376ba597151",
+                  "answered": [],
+                  "withdrawn": []
+                }
+              }
+            ],
+            "error": null
+          },
+          "handover": {
+            "route": "GET /api/audit?action=inbox.ai.handover&entityType=inbox.conversation&entityId=:id",
+            "status": 200,
+            "rows": 0,
+            "entries": []
+          }
+        }
+      },
+      "threadAfterTheTurn": {
+        "conversation": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "active",
+          "category": "general",
+          "teamName": "Reception · Central Floresta",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "language": "ru",
+          "aiMode": "live",
+          "aiState": "ready",
+          "aiPaused": false,
+          "handledAt": null,
+          "openQuestionsPresent": true
+        },
+        "openQuestions": [
+          {
+            "id": "01a1cad6-9483-7ec7-bc06-b5f08d81ddef",
+            "slot": "child_age",
+            "state": "open",
+            "answer": null,
+            "askedMessageId": "01a1cad6-9477-7435-b4ff-e375c0f19b7d",
+            "answeredMessageId": null,
+            "askedAt": "2026-11-11T13:40:22.766Z",
+            "closedAt": null
+          }
+        ],
+        "messages": [
+          {
+            "id": "01a1cad6-63e7-769c-b2e8-0c94fcb9fe7b",
+            "direction": "inbound",
+            "authorKind": "customer",
+            "source": "channel",
+            "createdAt": "2026-11-11T13:40:10.000Z",
+            "providerStatus": null,
+            "body": "ZZ TEST у вас есть drop-off для ребёнка 6 лет?"
+          },
+          {
+            "id": "01a1cad6-9477-7435-b4ff-e375c0f19b7d",
+            "direction": "outbound",
+            "authorKind": "ai",
+            "source": "channel",
+            "createdAt": "2026-11-11T13:40:22.766Z",
+            "providerStatus": "sent",
+            "body": "С удовольствием подскажу! Сколько лет ребёнку?"
+          }
+        ],
+        "aiPills": [
+          {
+            "kind": "ai_replied",
+            "createdAt": "2026-11-11T13:40:22.766Z",
+            "actorKind": "ai",
+            "turnId": "01a1cad6-63f0-7eec-8648-3376ba597151",
+            "intent": "drop_off_service",
+            "intents": [
+              "drop_off_service"
+            ],
+            "reason": null,
+            "rule": null,
+            "destination": null,
+            "templateKey": null,
+            "closingKey": null,
+            "holdingLine": null,
+            "silent": null,
+            "messageIds": [
+              "01a1cad6-9477-7435-b4ff-e375c0f19b7d"
+            ],
+            "rethink": null,
+            "askBranch": false,
+            "askedSlots": null,
+            "composition": null,
+            "branchNamed": null
+          }
+        ],
+        "otherPills": [
+          {
+            "kind": "routed",
+            "actorKind": "system",
+            "createdAt": "2026-11-11T13:40:10.000Z"
+          },
+          {
+            "kind": "classified",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T13:40:22.766Z"
+          },
+          {
+            "kind": "moved_team",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T13:40:22.766Z"
+          },
+          {
+            "kind": "routed",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T13:40:22.766Z"
+          },
+          {
+            "kind": "assigned",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T13:40:22.766Z"
+          }
+        ]
+      }
+    },
+    "control": {
+      "name": "ZZ TEST 842",
+      "id": "01a1cad6-6e73-7498-9be7-51c68819bfef",
+      "language": "en",
+      "categoryHint": "(none: as the channel routes it)",
+      "lines": [
+        {
+          "by": "customer",
+          "text": "ZZ TEST do you have drop-off? we are 6 people",
+          "at": "2026-11-11T13:40:10.313Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "As the channel routes it",
+            "language": "en",
+            "message": "ZZ TEST do you have drop-off? we are 6 people"
+          },
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "reopened": 0
+        }
+      ],
+      "turns": {
+        "1": {
+          "afterLine": 1,
+          "waitedMs": 6620,
+          "turnShown": true,
+          "turns": [
+            {
+              "kind": "ai_replied",
+              "turnId": "01a1cad6-6e80-75e3-a4a6-376932826669",
+              "intent": "drop_off_service",
+              "intents": [
+                "drop_off_service"
+              ],
+              "reason": null,
+              "rule": null,
+              "closingKey": null,
+              "rethink": null
+            }
+          ],
+          "assistantLines": [
+            {
+              "id": "01a1cad6-ae74-7c14-a0db-832743f54e7a",
+              "createdAt": "2026-11-11T13:40:29.417Z",
+              "providerStatus": "sent",
+              "body": "Happy to help! How old is your child?"
+            }
+          ],
+          "aiState": "ready",
+          "openQuestions": [
+            {
+              "id": "01a1cad6-ae7e-7951-a7d8-e33910c3072d",
+              "slot": "child_age",
+              "state": "open",
+              "answer": null,
+              "askedMessageId": "01a1cad6-ae74-7c14-a0db-832743f54e7a",
+              "answeredMessageId": null,
+              "askedAt": "2026-11-11T13:40:29.417Z",
+              "closedAt": null
+            }
+          ]
+        }
+      },
+      "audit": {
+        "first": {
+          "at": "2026-11-11T13:41:52.299Z",
+          "repeatGuard": {
+            "route": "GET /api/audit?action=inbox.ai.repeat_guard&from=<run start>",
+            "status": 200,
+            "rowsSinceRunStart": 0,
+            "total": 0,
+            "rowsForThisConversation": 0,
+            "rows": [],
+            "error": null
+          },
+          "openQuestion": {
+            "route": "GET /api/audit?action=inbox.ai.open_question&entityType=inbox.conversation&entityId=:id",
+            "status": 200,
+            "rows": 1,
+            "entries": [
+              {
+                "id": "01a1cad6-ae7f-7bf5-bfc2-a099f3d629b4",
+                "createdAt": "2026-11-11T13:40:29.417Z",
+                "after": {
+                  "asked": [
+                    "child_age"
+                  ],
+                  "turnId": "01a1cad6-6e80-75e3-a4a6-376932826669",
+                  "answered": [],
+                  "withdrawn": []
+                }
+              }
+            ],
+            "error": null
+          },
+          "handover": {
+            "route": "GET /api/audit?action=inbox.ai.handover&entityType=inbox.conversation&entityId=:id",
+            "status": 200,
+            "rows": 0,
+            "entries": []
+          }
+        }
+      },
+      "threadAfterTheTurn": {
+        "conversation": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "active",
+          "category": "general",
+          "teamName": "Reception · Central Floresta",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "language": "en",
+          "aiMode": "live",
+          "aiState": "ready",
+          "aiPaused": false,
+          "handledAt": null,
+          "openQuestionsPresent": true
+        },
+        "openQuestions": [
+          {
+            "id": "01a1cad6-ae7e-7951-a7d8-e33910c3072d",
+            "slot": "child_age",
+            "state": "open",
+            "answer": null,
+            "askedMessageId": "01a1cad6-ae74-7c14-a0db-832743f54e7a",
+            "answeredMessageId": null,
+            "askedAt": "2026-11-11T13:40:29.417Z",
+            "closedAt": null
+          }
+        ],
+        "messages": [
+          {
+            "id": "01a1cad6-6e75-70bb-88d1-3311fda9fdf3",
+            "direction": "inbound",
+            "authorKind": "customer",
+            "source": "channel",
+            "createdAt": "2026-11-11T13:40:13.000Z",
+            "providerStatus": null,
+            "body": "ZZ TEST do you have drop-off? we are 6 people"
+          },
+          {
+            "id": "01a1cad6-ae74-7c14-a0db-832743f54e7a",
+            "direction": "outbound",
+            "authorKind": "ai",
+            "source": "channel",
+            "createdAt": "2026-11-11T13:40:29.417Z",
+            "providerStatus": "sent",
+            "body": "Happy to help! How old is your child?"
+          }
+        ],
+        "aiPills": [
+          {
+            "kind": "ai_replied",
+            "createdAt": "2026-11-11T13:40:29.417Z",
+            "actorKind": "ai",
+            "turnId": "01a1cad6-6e80-75e3-a4a6-376932826669",
+            "intent": "drop_off_service",
+            "intents": [
+              "drop_off_service"
+            ],
+            "reason": null,
+            "rule": null,
+            "destination": null,
+            "templateKey": null,
+            "closingKey": null,
+            "holdingLine": null,
+            "silent": null,
+            "messageIds": [
+              "01a1cad6-ae74-7c14-a0db-832743f54e7a"
+            ],
+            "rethink": null,
+            "askBranch": false,
+            "askedSlots": null,
+            "composition": null,
+            "branchNamed": null
+          }
+        ],
+        "otherPills": [
+          {
+            "kind": "routed",
+            "actorKind": "system",
+            "createdAt": "2026-11-11T13:40:13.000Z"
+          },
+          {
+            "kind": "classified",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T13:40:29.417Z"
+          },
+          {
+            "kind": "moved_team",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T13:40:29.417Z"
+          },
+          {
+            "kind": "routed",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T13:40:29.417Z"
+          },
+          {
+            "kind": "assigned",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T13:40:29.417Z"
+          }
+        ]
+      }
+    }
+  },
+  "ruleNamedByThePill": {
+    "at": "2026-11-11T13:41:32.126Z",
+    "route": "GET /api/inbox/ai/rules",
+    "status": 200,
+    "rules": 12,
+    "withAskFirst": [
+      {
+        "id": "01a1a5c7-ca56-7ba9-9897-f8f144f2218d",
+        "intent": "drop_off_service",
+        "state": "approved",
+        "branchId": null
+      },
+      {
+        "id": "01a1a5c7-ca3d-725f-bb71-8edd1dbe8ca3",
+        "intent": "age_rules",
+        "state": "approved",
+        "branchId": null
+      },
+      {
+        "id": "01a1a5c0-cd04-76c5-a9fe-a5fc868ea782",
+        "intent": "nanny_booking",
+        "state": "approved",
+        "branchId": null
+      },
+      {
+        "id": "01a1a5b7-185b-73ca-b8d5-99ed9aa97151",
+        "intent": "nanny_booking",
+        "state": "approved",
+        "branchId": null
+      },
+      {
+        "id": "01a1a56c-b079-7e76-bebc-82406b0a5b47",
+        "intent": "drop_off_service",
+        "state": "approved",
+        "branchId": null
+      },
+      {
+        "id": "01a1a56c-b05d-7930-9993-3fcb95f60fab",
+        "intent": "age_rules",
+        "state": "approved",
+        "branchId": null
+      }
+    ],
+    "rule": {
+      "id": "01a1a56c-b079-7e76-bebc-82406b0a5b47",
+      "intent": "drop_off_service",
+      "state": "approved",
+      "branchId": null,
+      "createdAt": "2026-11-04T07:18:34.316Z",
+      "approvedAt": "2026-11-04T07:19:18.772Z",
+      "updatedAt": "2026-11-04T07:19:18.772Z",
+      "askFirst": {
+        "condition": "always",
+        "question": {
+          "en": "Happy to help! How old is your child?",
+          "th": "ยินดีช่วยค่ะ น้องอายุเท่าไหร่คะ?",
+          "ru": "С удовольствием подскажу! Сколько лет ребёнку?"
+        }
+      },
+      "textLength": null,
+      "text": null,
+      "keys": [
+        "id",
+        "intent",
+        "branchId",
+        "instruction",
+        "askFirst",
+        "status",
+        "taughtFrom",
+        "source",
+        "approvedByAccountId",
+        "approvedAt",
+        "updatedByAccountId",
+        "canManage",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "finding": "Every first reply carries askFirstRuleId on its ai_replied pill: the reply is the ask-first question of an approved team rule for drop_off_service (condition always). That question replaces the gated reply (apps/api/src/services/inbox/ai-engine.ts, askFirstOf) and the repeat guard is skipped for it (apps/api/src/services/inbox/open-question.ts, repeatStage returns at once when askFirst). The age the customer said is not consulted on that path.",
+  "images": [
+    {
+      "file": "842-01-english-line-age-asked.png",
+      "at": "2026-11-11T13:42:26.699Z",
+      "shows": "The English line 'do you have drop-off for a six year old?' and the assistant's first reply: it asks the child's age",
+      "namesMasked": 34,
+      "masks": 1
+    },
+    {
+      "file": "842-02-russian-line-age-asked.png",
+      "at": "2026-11-11T13:42:32.062Z",
+      "shows": "The Russian line and the assistant's first reply: it asks the child's age",
+      "namesMasked": 34,
+      "masks": 1
+    },
+    {
+      "file": "842-03-control-six-people-age-asked.png",
+      "at": "2026-11-11T13:42:37.432Z",
+      "shows": "The control line 'we are 6 people': the assistant asks the age and invents none",
+      "namesMasked": 34,
+      "masks": 1
+    }
+  ],
+  "cleanup": {
+    "at": "2026-11-11T13:46:28.568Z",
+    "events": {
+      "P1": {
+        "id": "01a1cac9-71b5-7e93-b26e-311069b3799a",
+        "title": "ZZ Test Child's 6th Birthday",
+        "alreadyArchived": false,
+        "archive": {
+          "status": 200
+        },
+        "readBack": {
+          "status": 200,
+          "archivedAt": "2026-11-11T13:46:31.699Z"
+        }
+      },
+      "P2": {
+        "id": "01a1cad2-d560-70e3-b9f7-bbca8968fc8b",
+        "title": "ZZ Test Child's 8th Birthday",
+        "alreadyArchived": false,
+        "archive": {
+          "status": 200
+        },
+        "readBack": {
+          "status": 200,
+          "archivedAt": "2026-11-11T13:46:31.948Z"
+        }
+      },
+      "P3": {
+        "id": "01a1cad9-218d-7f0d-bf75-5d3ad54c567b",
+        "title": "ZZ Test Child's 7th Birthday",
+        "alreadyArchived": false,
+        "archive": {
+          "status": 200
+        },
+        "readBack": {
+          "status": 200,
+          "archivedAt": "2026-11-11T13:46:32.199Z"
+        }
+      }
+    },
+    "conversations": {
+      "P1": {
+        "id": "01a1cac9-5d47-700e-a53f-daaec893e7bb",
+        "handle": 200,
+        "state": "handled",
+        "handledAt": "2026-11-11T13:46:32.565Z"
+      },
+      "P2": {
+        "id": "01a1cac9-6750-70b3-9a67-00d47770a2c9",
+        "handle": 200,
+        "state": "handled",
+        "handledAt": "2026-11-11T13:46:34.354Z"
+      },
+      "E1": {
+        "id": "01a1cad6-5372-7d1e-9314-8ac58a0059a1",
+        "handle": 200,
+        "state": "handled",
+        "handledAt": "2026-11-11T13:46:35.402Z"
+      },
+      "R2": {
+        "id": "01a1cad6-63e5-7f76-9ee5-9b5fdb1194a1",
+        "handle": 200,
+        "state": "handled",
+        "handledAt": "2026-11-11T13:46:36.459Z"
+      },
+      "N3": {
+        "id": "01a1cad6-6e73-7498-9be7-51c68819bfef",
+        "handle": 200,
+        "state": "handled",
+        "handledAt": "2026-11-11T13:46:37.567Z"
+      },
+      "P3": {
+        "id": "01a1cad9-1e66-7018-8076-a1200b62ab96",
+        "handle": 200,
+        "state": "handled",
+        "handledAt": "2026-11-11T13:46:38.611Z"
+      }
+    },
+    "madeDuringRun": [
+      {
+        "id": "01a1cac9-71b5-7e93-b26e-311069b3799a",
+        "title": "ZZ Test Child's 6th Birthday",
+        "eventDate": "2026-12-12",
+        "archived": true,
+        "mine": true
+      },
+      {
+        "id": "01a1cad2-d560-70e3-b9f7-bbca8968fc8b",
+        "title": "ZZ Test Child's 8th Birthday",
+        "eventDate": "2026-12-13",
+        "archived": true,
+        "mine": true
+      },
+      {
+        "id": "01a1cad9-218d-7f0d-bf75-5d3ad54c567b",
+        "title": "ZZ Test Child's 7th Birthday",
+        "eventDate": "2026-12-19",
+        "archived": true,
+        "mine": true
+      }
+    ],
+    "othersLeftUntouched": [
+      {
+        "title": "ZZ Test Child's 7th Birthday",
+        "eventDate": "2026-11-28"
+      }
+    ]
+  },
+  "signOut": {
+    "at": "2026-11-11T13:46:40.384Z",
+    "inboxContext": {
+      "inboxSignOut": {
+        "route": "POST /api/auth/sign-out (inbox)",
+        "status": 200
+      },
+      "beoTabAppLogout": {
+        "route": "POST /api/logout (OTO App, the BEO tab)",
+        "status": 200
+      },
+      "launcherSignOut": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      },
+      "readBack": {
+        "inboxMe": 401,
+        "appUser": 401,
+        "launcherMe": 401
+      }
+    },
+    "appContext": {
+      "appLogout": {
+        "route": "POST /api/logout (OTO App)",
+        "status": 200
+      },
+      "launcherSignOut": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      },
+      "readBack": {
+        "appUser": 401,
+        "launcherMe": 401
+      }
+    }
+  }
+}
