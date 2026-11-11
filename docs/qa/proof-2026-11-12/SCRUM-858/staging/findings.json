@@ -1,0 +1,76 @@
+{
+  "ticket": "SCRUM-858",
+  "servedCommit": "d255250bf86532bb5ddf5dc0c121dcb3a8f2d159",
+  "readOn": "2026-11-12 (Bangkok), staging, runs 01 and 02 of proof.mjs",
+  "notCoveredOnStaging": "A member whose document has expired (every card again, beside the re-verify prompt): it needs a stored expiry moved into the past, which no route allows. Covered by apps/pos/e2e/member-tier.spec.ts and apps/pos/test/s858-member-tier-only.test.ts only.",
+  "noted": [
+    {
+      "id": "N1",
+      "fromThisTicket": false,
+      "what": "After a Thai sale of one child and one adult, the customer half's thank-you screen shows \"Credit Grants — Credit ฿350\" with a QR, while the platform granted no credit for that sale and the staff half shows no \"Credit Grants to Print\" block.",
+      "picture": "03-thai-sale-paid-cash-receipt.png",
+      "compare": "08-walk-in-tourist-sale-paid-cash.png (Tourist: the adult pays ฿350, one grant, both halves agree)",
+      "read": "GET /sales/:id of the Thai sale: lines kids 1 x 42000 and adults_free 1 x 0, grants []. The package on staging: adultRules.thai set_price 35000, freebies [{kind: adult, tiers: [thai], quantity: 1}], creditRule {appliesTo: adults, basis: full_price}.",
+      "cause": "The till builds the sale's own grant list from the adult rule alone (apps/pos/src/lib/sale.ts:66-102, resolveAdultLine at :73) and does not take off the adult a free-items rule lets in (packages/shared/src/pricing.ts:116), so it counts that adult as paying ฿350 and earning ฿350. The customer screen reads that list (apps/pos/src/components/till/CustomerDisplay.tsx:869-906) and the till mints its own wallet for it (apps/pos/src/pages/Till.tsx:3111-3115). The platform reads the ledger, where the adult is adults_free at 0, and grants nothing (packages/shared/src/wallet.ts:186-203). The staff half follows the platform (apps/pos/src/components/till/StepConfirmation.tsx:296-299)."
+    },
+    {
+      "id": "N2",
+      "fromThisTicket": false,
+      "what": "Payment step in the split view at 1440 wide: the method names break letter by letter (Ca/sh, Car/d, Pro/mp/tPa/y), and \"Confirm Payment Received\" and Back run below the 900-high window (the button's bottom edge is at 926).",
+      "picture": "10b-payment-step-split-view-1440.png, 03c-thai-sale-payment-step.png",
+      "compare": "10c-payment-step-customer-display-hidden.png (the same step with the customer display hidden reads normally)",
+      "cause": "The method grid's columns follow the window's width, not the panel's: apps/pos/src/components/till/StepPayment.tsx:150-151 (sm:grid-cols-3 in a 310 px panel). The customer type step already uses a container query for the same reason (apps/pos/src/components/till/StepCustomerType.tsx:132-136)."
+    },
+    {
+      "id": "N3",
+      "fromThisTicket": false,
+      "what": "Split view at 1440 wide: the member banner on the customer type step has 47 px for the name and the number, so \"ZZ TEST 858 Thai\" reads \"ZZ …\" and the number \"+66 …\" (\"Z…\" beside the wider \"No verified rate\" pill). The order panel and the customer half show the name whole; with the customer display hidden the banner shows both whole.",
+      "picture": "02b-banner-and-control-close.png, 01a-new-member-as-the-900-high-window-shows-it.png",
+      "compare": "02c-same-screen-customer-display-hidden.png",
+      "cause": "apps/pos/src/components/till/StepCustomerType.tsx:86-118: the pill is shrink-0 and the name block takes what is left of a 310 px banner. The same room as before this ticket (the lane's e2e pins it)."
+    },
+    {
+      "id": "N4",
+      "fromThisTicket": false,
+      "what": "Split view at 1440 x 900: with the two notice bars above, the customer type step shows one card and the top of the second; Expat and Thai are reached by scrolling the list. (So is the 5th ticket on the ticket step.)",
+      "picture": "01a-new-member-as-the-900-high-window-shows-it.png, 06a-walk-in-as-the-900-high-window-shows-it.png",
+      "compare": "01-new-member-all-three-cards.png (the same screen in a 1500-high window)"
+    },
+    {
+      "id": "N5",
+      "fromThisTicket": false,
+      "what": "Ticket step in the split view at 1440 wide: \"Add Another Ticket\" is wider than its button and runs past its left edge; the participant captions are cut (\"Require…\", \"Receiv…\"), the order panel's \"Adults\" reads \"Ad…\" at the Thai rate, and the add-on cards are squeezed to \"Out / of / stock\" over the controls.",
+      "picture": "03b-thai-one-child-one-adult.png",
+      "cause": "apps/pos/src/components/till/StepAddTicket.tsx:183-186 (two h-16 text-lg buttons in a 310 px panel)."
+    },
+    {
+      "id": "N6",
+      "fromThisTicket": false,
+      "what": "The \"Before payment\" list on the drop-off step is pale yellow on a pale yellow box on the light theme and is very hard to read; the same colours make \"Hide customer display\" / \"Show customer display\" in the top bar faint.",
+      "picture": "08b-dropoff-form-phone-number-field.png, 02c-same-screen-customer-display-hidden.png (top right)",
+      "cause": "apps/pos/src/components/till/SupervisionGate.tsx:269-272 (text-amber-300 / text-amber-200) and apps/pos/src/pages/Till.tsx:4014, 4027."
+    },
+    {
+      "id": "N7",
+      "fromThisTicket": false,
+      "what": "A member created a moment ago at the \"New member?\" box is greeted \"Welcome back, <name>! Great to see you again.\" on the customer half.",
+      "picture": "01-new-member-all-three-cards.png",
+      "cause": "apps/pos/src/components/till/CustomerDisplay.tsx:405-409 greets any member on the sale the same way."
+    },
+    {
+      "id": "N8",
+      "fromThisTicket": false,
+      "forTheOwnerToJudge": true,
+      "what": "A Thai rate confirmed at the till reads \"Approved by hand — no proof needed\" on the member's card.",
+      "picture": "10a-thai-card-line-approved-by-hand.png, 02-returning-thai-member-one-card.png",
+      "cause": "apps/pos/src/components/till/StepCustomerType.tsx:182 prints the stored evidence name, which for a till confirmation is \"Approved by hand\" (packages/shared/src/tier-approval.ts:66)."
+    },
+    {
+      "id": "N9",
+      "fromThisTicket": false,
+      "what": "Phone-width till: a member reaches a sale only through a paired customer display (the phone till has no number entry or \"New member?\" of its own); the header's \"no gate\" pill is cut to \"no ga\".",
+      "picture": "09-phone-till-thai-member-one-card.png"
+    }
+  ],
+  "consoleAndRequests": "No page error and no refused request during the flows. The only entries: GET /api/me 401 before sign-in (expected) and one 404 from the harness's own read of /version.json (the till serves no such file)."
+}

@@ -1,0 +1,135 @@
+{
+  "readAt": "2026-11-11T22:23:34.495Z",
+  "runs": [
+    {
+      "receipt": "receipt-run-01.json",
+      "till": "Z85801",
+      "sales": [
+        {
+          "receipt": "Z85801-000002",
+          "status": "finalised",
+          "baht": 1040,
+          "tier": "tourist"
+        },
+        {
+          "receipt": "Z85801-000001",
+          "status": "finalised",
+          "baht": 420,
+          "tier": "thai"
+        }
+      ],
+      "walletGrants": [
+        {
+          "sale": "Z85801-000002",
+          "role": "adult",
+          "creditSatang": 35000
+        }
+      ],
+      "numbers": [
+        {
+          "key": "thai",
+          "number": "0898580011",
+          "liveMember": false
+        },
+        {
+          "key": "expat",
+          "number": "0898580012",
+          "liveMember": false
+        },
+        {
+          "key": "walkin",
+          "number": "0898580013",
+          "liveMember": false
+        },
+        {
+          "key": "plain",
+          "number": "0898580014",
+          "liveMember": false
+        },
+        {
+          "key": "sale",
+          "number": "0898580015",
+          "liveMember": false
+        },
+        {
+          "key": "dropoff",
+          "number": "0898580016",
+          "liveMember": false
+        }
+      ]
+    },
+    {
+      "receipt": "receipt.json",
+      "till": "Z85802",
+      "sales": [
+        {
+          "receipt": "Z85802-000002",
+          "status": "finalised",
+          "baht": 1040,
+          "tier": "tourist"
+        },
+        {
+          "receipt": "Z85802-000001",
+          "status": "finalised",
+          "baht": 420,
+          "tier": "thai"
+        }
+      ],
+      "walletGrants": [
+        {
+          "sale": "Z85802-000002",
+          "role": "adult",
+          "creditSatang": 35000
+        }
+      ],
+      "numbers": [
+        {
+          "key": "thai",
+          "number": "0898580021",
+          "liveMember": false
+        },
+        {
+          "key": "expat",
+          "number": "0898580022",
+          "liveMember": false
+        },
+        {
+          "key": "walkin",
+          "number": "0898580023",
+          "liveMember": false
+        },
+        {
+          "key": "plain",
+          "number": "0898580024",
+          "liveMember": false
+        },
+        {
+          "key": "sale",
+          "number": "0898580025",
+          "liveMember": false
+        },
+        {
+          "key": "dropoff",
+          "number": "0898580026",
+          "liveMember": false
+        }
+      ]
+    }
+  ],
+  "waitingRegistrationsOfThisProof": 0,
+  "tills": [
+    {
+      "name": "ZZ TEST SCRUM-858 proof till 1794433503946",
+      "prefix": "Z85801",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "name": "ZZ TEST SCRUM-858 proof till 1794434478652",
+      "prefix": "Z85802",
+      "archived": true,
+      "devices": 0
+    }
+  ],
+  "adminSignedOut": true
+}

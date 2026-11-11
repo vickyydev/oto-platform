@@ -1,0 +1,1134 @@
+{
+  "ticket": "SCRUM-858",
+  "sha": "d255250bf86532bb5ddf5dc0c121dcb3a8f2d159",
+  "startedAt": "2026-11-11T21:45:03.903Z",
+  "phase": "finished",
+  "deployments": {
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqdutk9v7es73ca8lcg",
+        "status": "live",
+        "sha": "d255250bf86532bb5ddf5dc0c121dcb3a8f2d159",
+        "createdAt": "2026-11-11T21:34:46.458861Z",
+        "finishedAt": "2026-11-11T21:35:45.273734Z"
+      },
+      "serving": {
+        "id": "dep-dbqdutk9v7es73ca8lcg",
+        "status": "live",
+        "sha": "d255250bf86532bb5ddf5dc0c121dcb3a8f2d159",
+        "createdAt": "2026-11-11T21:34:46.458861Z",
+        "finishedAt": "2026-11-11T21:35:45.273734Z"
+      },
+      "readAt": "2026-11-11T21:38:52.594Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqduu2fngtc73fad4vg",
+        "status": "live",
+        "sha": "d255250bf86532bb5ddf5dc0c121dcb3a8f2d159",
+        "createdAt": "2026-11-11T21:34:48.483602Z",
+        "finishedAt": "2026-11-11T21:38:19.897054Z"
+      },
+      "serving": {
+        "id": "dep-dbqduu2fngtc73fad4vg",
+        "status": "live",
+        "sha": "d255250bf86532bb5ddf5dc0c121dcb3a8f2d159",
+        "createdAt": "2026-11-11T21:34:48.483602Z",
+        "finishedAt": "2026-11-11T21:38:19.897054Z"
+      },
+      "readAt": "2026-11-11T21:38:53.223Z"
+    }
+  },
+  "passes": [
+    "t",
+    "x",
+    "w",
+    "u",
+    "r",
+    "m"
+  ],
+  "points": {
+    "1": {
+      "pass": true,
+      "picture": "01-new-member-all-three-cards.png",
+      "shows": "A new member (no verified rate) is offered Tourist, Expat and Thai; Thai is confirmed with the two-button dialog (01b) and the sale cancelled",
+      "seen": {
+        "first": {
+          "cards": [
+            "Tourist",
+            "Expat",
+            "Thai"
+          ],
+          "selected": [
+            "Tourist"
+          ],
+          "showAllRates": 0,
+          "badge": "No verified rate",
+          "cardLines": [
+            "Proof required — verify now",
+            "Proof required — verify now"
+          ],
+          "reverify": false,
+          "welcome": "Welcome back, ZZ TEST 858 Thai!",
+          "memberRateApplied": 0
+        },
+        "dialog": {
+          "buttons": [
+            "Cancel",
+            "Confirm Thai rate"
+          ],
+          "documentList": 0,
+          "expiryField": 0
+        },
+        "afterConfirm": {
+          "onTicketStep": true,
+          "stored": {
+            "found": true,
+            "nickname": "ZZ TEST 858 Thai",
+            "tier": "thai",
+            "evidence": "Approved by hand",
+            "expires": null,
+            "reverifyDue": false
+          }
+        },
+        "saleLeftBy": "Cancel button"
+      }
+    },
+    "2": {
+      "pass": true,
+      "picture": "02-returning-thai-member-one-card.png",
+      "shows": "The same number again: only the Thai card, pre-selected, \"Thai · verified\", \"Show all rates\" under the card; the customer half greets the member and says \"Member rate applied\"",
+      "seen": {
+        "second": {
+          "cards": [
+            "Thai"
+          ],
+          "selected": [
+            "Thai"
+          ],
+          "showAllRates": 1,
+          "badge": "Thai · verified",
+          "cardLines": [
+            "Verified Thai Local pricing Approved by hand — no proof needed"
+          ],
+          "reverify": false,
+          "welcome": "Welcome back, ZZ TEST 858 Thai!",
+          "memberRateApplied": 1
+        },
+        "layout": {
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "control": {
+            "x": 24,
+            "y": 766,
+            "width": 130,
+            "height": 32,
+            "right": 154,
+            "bottom": 798,
+            "textCut": false,
+            "text": "Show all rates"
+          },
+          "card": {
+            "x": 24,
+            "y": 468,
+            "width": 310,
+            "height": 286,
+            "right": 334,
+            "bottom": 754,
+            "textCut": false,
+            "text": "VerifiedThaiLocal pricingApproved by hand — no proof needed"
+          },
+          "banner": {
+            "x": 24,
+            "y": 354,
+            "width": 310,
+            "height": 82,
+            "right": 334,
+            "bottom": 436,
+            "textCut": false,
+            "text": "ZZZ TEST 858 Thai+66 89 858 0011Thai · verified"
+          },
+          "badge": {
+            "x": 168,
+            "y": 377,
+            "width": 149,
+            "height": 36,
+            "right": 317,
+            "bottom": 413,
+            "textCut": false,
+            "text": "Thai · verified"
+          },
+          "name": {
+            "x": 41,
+            "y": 371,
+            "width": 48,
+            "height": 48,
+            "right": 89,
+            "bottom": 419,
+            "textCut": false,
+            "text": "Z"
+          },
+          "phone": {
+            "x": 105,
+            "y": 399,
+            "width": 47,
+            "height": 20,
+            "right": 152,
+            "bottom": 419,
+            "textCut": true,
+            "text": "+66 89 858 0011"
+          },
+          "staffPanel": {
+            "x": 0,
+            "y": 206,
+            "width": 720,
+            "height": 694,
+            "right": 720,
+            "bottom": 900,
+            "textCut": false,
+            "text": "Select Customer TypeChoose the pricing tier to start the sal"
+          },
+          "cardLine": {
+            "x": 57,
+            "y": 681,
+            "width": 244,
+            "height": 40,
+            "right": 301,
+            "bottom": 721,
+            "textCut": false,
+            "text": "Approved by hand — no proof needed"
+          },
+          "controlInsidePanel": true,
+          "controlBelowCard": true,
+          "controlOnScreen": true,
+          "badgeInsideBanner": true
+        }
+      }
+    },
+    "3": {
+      "pass": true,
+      "picture": "03-thai-sale-paid-cash-receipt.png",
+      "shows": "Tapping the one card opens the ticket step at the Thai prices (03a); one child and one adult paid in cash, the sale closes at the Thai rate",
+      "seen": {
+        "tickets": {
+          "oneHourPlayCard": "1 Hour Play 1 Hour ฿420 per person",
+          "staffHalf": "Add to Sale Add drop-off child Add ticket — select a play ticket for kids and adults 1 Hour Play 1 Hour ฿420 per person 2 Hours Play 2 Hours ฿520 per person Full Day Pass All Day ฿620 per person Eat & Play Kids Pass All Day + Meal ฿1300 per person 1 Kid + 1 Adult (1 hour) 1 Hour ฿500 per person Current Order THAI ZZ TEST 858 Thai No items added yet Apply Redeem Issue a voucher… Add manual discount Subtotal ฿0 Total ฿0 Cancel Pay ฿0"
+        },
+        "built": {
+          "orderPanelTotal": "Total ฿420"
+        },
+        "memberRateSaidOnCustomerHalf": 1,
+        "sale": {
+          "id": "01a1cc92-bec9-7f49-8f0d-701b468f523f",
+          "status": "finalised",
+          "receipt": "Z85801-000001",
+          "grossSatang": 42000,
+          "tierFields": {
+            "customerTier": "thai",
+            "tierClaim": null
+          },
+          "lines": []
+        },
+        "sentByTheTill": {
+          "at": "t: tap the Thai card — the ticket step at Thai prices",
+          "method": "POST",
+          "path": "/api/sales",
+          "tier": "thai",
+          "memberIdSent": true,
+          "tierKeys": [
+            "tier"
+          ]
+        },
+        "storedAfter": {
+          "found": true,
+          "nickname": "ZZ TEST 858 Thai",
+          "tier": "thai",
+          "evidence": "Approved by hand",
+          "expires": null,
+          "reverifyDue": false
+        }
+      }
+    },
+    "4": {
+      "pass": true,
+      "picture": "04-returning-expat-member-one-card.png",
+      "shows": "Expat recorded on a passport valid to 2030-01-01 (04a); on the next lookup only the Expat card is offered",
+      "seen": {
+        "first": {
+          "cards": [
+            "Tourist",
+            "Expat",
+            "Thai"
+          ],
+          "selected": [
+            "Tourist"
+          ],
+          "showAllRates": 0,
+          "badge": "No verified rate",
+          "cardLines": [
+            "Proof required — verify now",
+            "Proof required — verify now"
+          ],
+          "reverify": false,
+          "welcome": "Welcome back, ZZ TEST 858 Expat!",
+          "memberRateApplied": 0
+        },
+        "choices": [
+          "Passport",
+          "Driving licence",
+          "School card",
+          "Other",
+          "Choose proof to verify",
+          "Close"
+        ],
+        "afterVerify": {
+          "onTicketStep": true,
+          "stored": {
+            "found": true,
+            "nickname": "ZZ TEST 858 Expat",
+            "tier": "expat",
+            "evidence": "Passport",
+            "expires": "2030-01-01",
+            "reverifyDue": false
+          }
+        },
+        "saleLeftBy": "Cancel button",
+        "second": {
+          "cards": [
+            "Expat"
+          ],
+          "selected": [
+            "Expat"
+          ],
+          "showAllRates": 1,
+          "badge": "Expat · verified",
+          "cardLines": [
+            "Verified Expat Resident pricing Passport — no proof needed"
+          ],
+          "reverify": false,
+          "welcome": "Welcome back, ZZ TEST 858 Expat!",
+          "memberRateApplied": 1
+        }
+      }
+    },
+    "5": {
+      "pass": true,
+      "picture": "05-expat-member-again-one-card.png",
+      "shows": "\"Show all rates\" brings the three cards back and the control goes (05a); Tourist opens the ticket step at Tourist prices and the customer half no longer says \"Member rate applied\" (05b); the next lookup shows only Expat again and the stored rate is still expat",
+      "seen": {
+        "all": {
+          "cards": [
+            "Tourist",
+            "Expat",
+            "Thai"
+          ],
+          "selected": [
+            "Expat"
+          ],
+          "showAllRates": 0,
+          "badge": "Expat · verified",
+          "cardLines": [
+            "Tourist Standard pricing Verified Expat Resident pricing Passport — no proof needed",
+            "Proof required — verify now"
+          ],
+          "reverify": false,
+          "welcome": "Welcome back, ZZ TEST 858 Expat!",
+          "memberRateApplied": 1
+        },
+        "tickets": {
+          "oneHourPlayCard": "1 Hour Play 1 Hour ฿690 per person",
+          "staffHalf": "Add to Sale Add drop-off child Add ticket — select a play ticket for kids and adults 1 Hour Play 1 Hour ฿690 per person 2 Hours Play 2 Hours ฿890 per person Full Day Pass All Day ฿1090 per person Eat & Play Kids Pass All Day + Meal ฿1300 per person 1 Kid + 1 Adult (1 hour) 1 Hour ฿500 per person Current Order TOURIST ZZ TEST 858 Expat No items added yet Apply Redeem Issue a voucher… Add manual discount Subtotal ฿0 Total ฿0 Cancel Pay ฿0"
+        },
+        "memberRateSaidAtTourist": 0,
+        "customerHalf": [
+          "Your Order"
+        ],
+        "storedDuring": {
+          "found": true,
+          "nickname": "ZZ TEST 858 Expat",
+          "tier": "expat",
+          "evidence": "Passport",
+          "expires": "2030-01-01",
+          "reverifyDue": false
+        },
+        "saleLeftBy": "Cancel button",
+        "third": {
+          "cards": [
+            "Expat"
+          ],
+          "selected": [
+            "Expat"
+          ],
+          "showAllRates": 1,
+          "badge": "Expat · verified",
+          "cardLines": [
+            "Verified Expat Resident pricing Passport — no proof needed"
+          ],
+          "reverify": false,
+          "welcome": "Welcome back, ZZ TEST 858 Expat!",
+          "memberRateApplied": 1
+        },
+        "storedAfter": {
+          "found": true,
+          "nickname": "ZZ TEST 858 Expat",
+          "tier": "expat",
+          "evidence": "Passport",
+          "expires": "2030-01-01",
+          "reverifyDue": false
+        }
+      }
+    },
+    "6": {
+      "pass": true,
+      "picture": "06-walk-in-all-three-cards-no-control.png",
+      "shows": "A fresh number continued as a walk-in: Tourist, Expat and Thai, no \"Show all rates\" control",
+      "seen": {
+        "cards": [
+          "Tourist",
+          "Expat",
+          "Thai"
+        ],
+        "selected": [
+          "Tourist"
+        ],
+        "showAllRates": 0,
+        "badge": "Walk-in (no member)",
+        "cardLines": [
+          "Proof required — verify now",
+          "Proof required — verify now"
+        ],
+        "reverify": false,
+        "welcome": "Welcome to Oto",
+        "memberRateApplied": 0
+      }
+    },
+    "7": {
+      "pass": true,
+      "picture": "07-unverified-member-all-three-cards.png",
+      "shows": "A member with no verified rate, just created (07a) and found again: every card, \"No verified rate\", no control",
+      "seen": {
+        "first": {
+          "cards": [
+            "Tourist",
+            "Expat",
+            "Thai"
+          ],
+          "selected": [
+            "Tourist"
+          ],
+          "showAllRates": 0,
+          "badge": "No verified rate",
+          "cardLines": [
+            "Proof required — verify now",
+            "Proof required — verify now"
+          ],
+          "reverify": false,
+          "welcome": "Welcome back, ZZ TEST 858 Plain!",
+          "memberRateApplied": 0
+        },
+        "second": {
+          "cards": [
+            "Tourist",
+            "Expat",
+            "Thai"
+          ],
+          "selected": [
+            "Tourist"
+          ],
+          "showAllRates": 0,
+          "badge": "No verified rate",
+          "cardLines": [
+            "Proof required — verify now",
+            "Proof required — verify now"
+          ],
+          "reverify": false,
+          "welcome": "Welcome back, ZZ TEST 858 Plain!",
+          "memberRateApplied": 0
+        }
+      }
+    },
+    "8": {
+      "pass": true,
+      "picture": "08-walk-in-tourist-sale-paid-cash.png",
+      "shows": "A walk-in Tourist sale with one adult and one child is paid in cash; for a child with no adult the drop-off form still shows its phone number field with the three channels (08b), left without a registration",
+      "seen": {
+        "sale": {
+          "id": "01a1cc93-c6ce-78be-92c0-e161f7c06f16",
+          "status": "finalised",
+          "receipt": "Z85801-000002",
+          "grossSatang": 104000,
+          "tierFields": {
+            "customerTier": "tourist",
+            "tierClaim": null
+          },
+          "lines": []
+        },
+        "sentByTheTill": {
+          "at": "r: walk-in Tourist sale, one adult and one child, cash",
+          "method": "POST",
+          "path": "/api/sales",
+          "tier": "tourist",
+          "memberIdSent": false,
+          "tierKeys": [
+            "tier"
+          ]
+        },
+        "tickets": {
+          "oneHourPlayCard": "1 Hour Play 1 Hour ฿690 per person",
+          "staffHalf": "Add to Sale Add drop-off child Add ticket — select a play ticket for kids and adults 1 Hour Play 1 Hour ฿690 per person 2 Hours Play 2 Hours ฿890 per person Full Day Pass All Day ฿1090 per person Eat & Play Kids Pass All Day + Meal ฿1300 per person 1 Kid + 1 Adult (1 hour) 1 Hour ฿500 per person Current Order TOURIST No items added yet Apply Redeem Issue a voucher… Add manual discount Subtotal ฿0 Total ฿0 Cancel Pay ฿0"
+        },
+        "built": {
+          "orderPanelTotal": "Total ฿1040"
+        },
+        "dropOffForm": {
+          "phoneNumberLabel": true,
+          "numberFields": 1,
+          "fieldHolds": true,
+          "channels": [
+            "WhatsApp",
+            "Telegram",
+            "LINE"
+          ],
+          "waitingRegistrationsBefore": 15,
+          "waitingRegistrationsAfter": 15,
+          "saleLeftBy": "Cancel button",
+          "registrationsWrittenByTheTill": 0
+        }
+      }
+    },
+    "9": {
+      "pass": true,
+      "picture": "09-phone-till-thai-member-one-card.png",
+      "shows": "The phone-width till (390 wide), number given on its paired display: only the Thai card with a readable \"Show all rates\"; pressing it brings the three cards back (09b)",
+      "seen": {
+        "before": {
+          "cards": [
+            "Tourist",
+            "Expat",
+            "Thai"
+          ],
+          "selected": [
+            "Tourist"
+          ],
+          "showAllRates": 0,
+          "badge": "Walk-in (no member)",
+          "cardLines": [
+            "Proof required — verify now",
+            "Proof required — verify now"
+          ],
+          "reverify": false,
+          "welcome": null,
+          "memberRateApplied": 0
+        },
+        "seen": {
+          "cards": [
+            "Thai"
+          ],
+          "selected": [
+            "Thai"
+          ],
+          "showAllRates": 1,
+          "badge": "Thai · verified",
+          "cardLines": [
+            "Verified Thai Local pricing Approved by hand — no proof needed"
+          ],
+          "reverify": false,
+          "welcome": null,
+          "memberRateApplied": 0
+        },
+        "layout": {
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "control": {
+            "x": 16,
+            "y": 624,
+            "width": 130,
+            "height": 32,
+            "right": 146,
+            "bottom": 656,
+            "textCut": false,
+            "text": "Show all rates"
+          },
+          "card": {
+            "x": 16,
+            "y": 346,
+            "width": 358,
+            "height": 266,
+            "right": 374,
+            "bottom": 612,
+            "textCut": false,
+            "text": "VerifiedThaiLocal pricingApproved by hand — no proof needed"
+          },
+          "banner": {
+            "x": 16,
+            "y": 232,
+            "width": 358,
+            "height": 82,
+            "right": 374,
+            "bottom": 314,
+            "textCut": false,
+            "text": "ZZZ TEST 858 Thai+66 89 858 0011Thai · verified"
+          },
+          "badge": {
+            "x": 208,
+            "y": 255,
+            "width": 149,
+            "height": 36,
+            "right": 357,
+            "bottom": 291,
+            "textCut": false,
+            "text": "Thai · verified"
+          },
+          "name": {
+            "x": 33,
+            "y": 249,
+            "width": 48,
+            "height": 48,
+            "right": 81,
+            "bottom": 297,
+            "textCut": false,
+            "text": "Z"
+          },
+          "pageScrollsSideways": false,
+          "controlInsideScreen": true,
+          "controlBelowCard": true
+        },
+        "displaySays": {
+          "welcome": "Welcome back, ZZ TEST 858 Thai!",
+          "memberRate": 1
+        },
+        "all": {
+          "cards": [
+            "Tourist",
+            "Expat",
+            "Thai"
+          ],
+          "selected": [
+            "Thai"
+          ],
+          "showAllRates": 0,
+          "badge": "Thai · verified",
+          "cardLines": [
+            "Proof required — verify now",
+            "Verified Thai Local pricing Approved by hand — no proof needed"
+          ],
+          "reverify": false,
+          "welcome": null,
+          "memberRateApplied": 0
+        }
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1cc92-bec9-7f49-8f0d-701b468f523f",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1cc93-c6ce-78be-92c0-e161f7c06f16",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/01a1cc92-665d-7bc4-b39a-c67859f813ab/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/01a1cc94-352b-7f2e-a2e9-f483681947f0/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/01a1cc92-665d-7bc4-b39a-c67859f813ab",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1cc93-c6ce-78be-92c0-e161f7c06f16",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1cc92-bec9-7f49-8f0d-701b468f523f",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/01a1cc92-665d-7bc4-b39a-c67859f813ab",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/01a1cc92-665d-7bc4-b39a-c67859f813ab",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/01a1cc92-90ce-7b18-a59a-c1a2763c7124",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/01a1cc92-ead0-7dad-9731-abd127ba8384",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/01a1cc93-8084-7d4e-b4aa-82584ec96316",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1cc92-665d-7bc4-b39a-c67859f813ab",
+      "name": "ZZ TEST SCRUM-858 proof till 1794433503946",
+      "prefix": "Z85801"
+    },
+    {
+      "kind": "member",
+      "name": "ZZ TEST 858 Thai",
+      "number": "0898580011"
+    },
+    {
+      "kind": "thai-ticket-sale",
+      "id": "01a1cc92-bec9-7f49-8f0d-701b468f523f"
+    },
+    {
+      "kind": "member",
+      "name": "ZZ TEST 858 Expat",
+      "number": "0898580012"
+    },
+    {
+      "kind": "member",
+      "name": "ZZ TEST 858 Plain",
+      "number": "0898580014"
+    },
+    {
+      "kind": "tourist-ticket-sale",
+      "id": "01a1cc93-c6ce-78be-92c0-e161f7c06f16"
+    },
+    {
+      "kind": "display",
+      "id": "01a1cc94-352b-7f2e-a2e9-f483681947f0"
+    }
+  ],
+  "checks": {
+    "testNumbersUnusedBefore": true,
+    "staffNameMasks": 2,
+    "bundle": {
+      "files": 1,
+      "names": [
+        "index-HZLw3xCY.js"
+      ],
+      "showAllRates": 1
+    },
+    "served": null,
+    "thaiCardWording": {
+      "line": [
+        "Verified Thai Local pricing Approved by hand — no proof needed"
+      ],
+      "picture": "10a-thai-card-line-approved-by-hand.png",
+      "size": {
+        "width": 310,
+        "height": 286
+      }
+    },
+    "bannerAt1440": {
+      "picture": "02b-banner-and-control-close.png",
+      "size": {
+        "width": 720,
+        "height": 694
+      }
+    },
+    "thaiSale": {
+      "id": "01a1cc92-bec9-7f49-8f0d-701b468f523f",
+      "status": "finalised",
+      "receipt": "Z85801-000001",
+      "grossSatang": 42000,
+      "tierFields": {
+        "customerTier": "thai",
+        "tierClaim": null
+      },
+      "lines": [],
+      "ticketCard": "1 Hour Play 1 Hour ฿420 per person",
+      "orderPanelTotal": "Total ฿420",
+      "sentByTheTill": {
+        "at": "t: tap the Thai card — the ticket step at Thai prices",
+        "method": "POST",
+        "path": "/api/sales",
+        "tier": "thai",
+        "memberIdSent": true,
+        "tierKeys": [
+          "tier"
+        ]
+      }
+    },
+    "touristTicketCard": "1 Hour Play 1 Hour ฿690 per person",
+    "touristSale": {
+      "id": "01a1cc93-c6ce-78be-92c0-e161f7c06f16",
+      "status": "finalised",
+      "receipt": "Z85801-000002",
+      "grossSatang": 104000,
+      "tierFields": {
+        "customerTier": "tourist",
+        "tierClaim": null
+      },
+      "lines": [],
+      "ticketCard": "1 Hour Play 1 Hour ฿690 per person",
+      "orderPanelTotal": "Total ฿1040",
+      "sentByTheTill": {
+        "at": "r: walk-in Tourist sale, one adult and one child, cash",
+        "method": "POST",
+        "path": "/api/sales",
+        "tier": "tourist",
+        "memberIdSent": false,
+        "tierKeys": [
+          "tier"
+        ]
+      }
+    }
+  },
+  "odd": [
+    {
+      "at": "t: the same number again — one card",
+      "what": "at 1440 wide the member's number in the staff banner is cut with an ellipsis",
+      "phone": {
+        "x": 105,
+        "y": 399,
+        "width": 47,
+        "height": 20,
+        "right": 152,
+        "bottom": 419,
+        "textCut": true,
+        "text": "+66 89 858 0011"
+      }
+    }
+  ],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "read the fresh bundle",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 404 ()"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "display",
+      "id": "01a1cc94-352b-7f2e-a2e9-f483681947f0",
+      "revoked": true
+    },
+    {
+      "kind": "waiting-registrations",
+      "ofThisProof": 0
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cc93-c6ce-78be-92c0-e161f7c06f16",
+      "retained": true,
+      "printJobs": [
+        {
+          "id": "01a1cc93-daf8-71ff-8d4a-c09869ad84ba",
+          "status": "printed"
+        },
+        {
+          "id": "01a1cc93-daf3-728c-a19f-b104c6da234a",
+          "status": "printed"
+        },
+        {
+          "id": "01a1cc93-daed-7e8d-912f-ee7751a8ae3f",
+          "status": "printed"
+        }
+      ]
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cc92-bec9-7f49-8f0d-701b468f523f",
+      "retained": true,
+      "printJobs": [
+        {
+          "id": "01a1cc92-d3b0-7c2b-b5be-60c000dc4cc1",
+          "status": "printed"
+        },
+        {
+          "id": "01a1cc92-d3aa-7c7e-8651-685f82bf299b",
+          "status": "printed"
+        },
+        {
+          "id": "01a1cc92-d3a4-710d-8161-19bc6be08a81",
+          "status": "printed"
+        }
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "id": "01a1cc93-c6ce-78be-92c0-e161f7c06f16",
+          "status": "finalised",
+          "grossSatang": 104000
+        },
+        {
+          "id": "01a1cc92-bec9-7f49-8f0d-701b468f523f",
+          "status": "finalised",
+          "grossSatang": 42000
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1cc92-665d-7bc4-b39a-c67859f813ab",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "member",
+      "key": "thai",
+      "id": "01a1cc92-90ce-7b18-a59a-c1a2763c7124",
+      "archived": true
+    },
+    {
+      "kind": "member",
+      "key": "expat",
+      "id": "01a1cc92-ead0-7dad-9731-abd127ba8384",
+      "archived": true
+    },
+    {
+      "kind": "test-number",
+      "key": "walkin",
+      "member": null
+    },
+    {
+      "kind": "member",
+      "key": "plain",
+      "id": "01a1cc93-8084-7d4e-b4aa-82584ec96316",
+      "archived": true
+    },
+    {
+      "kind": "test-number",
+      "key": "sale",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "dropoff",
+      "member": null
+    },
+    {
+      "kind": "till-session",
+      "signedInBefore": true,
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "numbers": {
+    "thai": "0898580011",
+    "expat": "0898580012",
+    "walkin": "0898580013",
+    "plain": "0898580014",
+    "sale": "0898580015",
+    "dropoff": "0898580016"
+  },
+  "passed": true,
+  "finishedAt": "2026-11-11T21:47:43.755Z"
+}
