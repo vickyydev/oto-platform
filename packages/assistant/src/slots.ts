@@ -546,3 +546,178 @@ export function askedSlotsOf(declared: readonly Slot[] | undefined, bubbles: rea
   for (const s of [...(declared ?? []), ...slotsAskedIn(bubbles)]) if (s !== 'other' && !out.includes(s)) out.push(s);
   return out;
 }
+
+// ---------------------------------------------------------------------------
+// SCRUM-842: the child's age the customer said unasked
+// ---------------------------------------------------------------------------
+
+/** "six year old", "6-year-old", "6 yrs old", "6yo", "6 y.o.", "6 y/o": an age and nothing else. */
+const SAID_YEARS_OLD = /^\s*-?\s*(?:(?:years?|yrs?)[\s-]*olds?|y\.?\s?\/?o\.?)(?![a-z])/iu;
+const SAID_MONTHS_OLD = /^\s*-?\s*(?:months?|mos?)[\s-]*olds?(?![a-z])/iu;
+/** "6 лет", "3 года", "годик". */
+const SAID_RU_YEARS = /^\s*(?:лет|год(?:а|ик|ика|иков)?)(?!\p{L})/iu;
+/** "6 ขวบ": Thai counts only a child's years in ขวบ. */
+const SAID_TH_YEARS = /^\s*ขวบ/u;
+/** Years or months with no "old": an age only after a word for the child ("she is 6 years", "ей 10 месяцев", "อายุ 6 ปี"). */
+const SAID_LOOSE_YEARS = /^\s*(?:-?\s*years?(?![a-z])|yrs?(?![a-z])|ปี)/iu;
+const SAID_LOOSE_MONTHS = /^\s*(?:months?(?![a-z])|mos?(?![a-z])|мес(?:яц\p{L}*)?|เดือน)/iu;
+/** The child, then the number: "she is six", "my son turns 6", "aged six", "age: 6", "ей шесть", "ему 6", "сыну исполнится 6", "อายุ 6". */
+const SAID_CHILD_CUE =
+  /(?:(?<![a-z])(?:(?:she|he|daughter|son|boy|girl|kid|child|little one|toddler|baby|brother|sister|one)(?:['’]s| is| will be|['’]ll be| turns| is turning| turning| will turn| just turned| turned)|aged|age(?: is|:)?|turns|turning|turned)(?: (?:only|just|almost|nearly|now|already))?|(?<!\p{L})(?:(?:ей|ему|дочке|дочери|доче|сыну|сыночку|ребенку|ребёнку|малышу|малышке|имениннику|имениннице|девочке|мальчику)(?:\s+(?:будет|исполнится|исполняется|исполнилось|уже|только|скоро|почти))*|исполнится|исполняется|исполнилось)|อายุ)\s*$/iu;
+/** After a number with no unit, the age ends there: the line's end, a mark, or a word that starts something else ("she is six and loves slides"). */
+const SAID_BARE_END =
+  /^\s*(?:$|[.,!?;:)…]|(?:and|but|so|now|already|today|this|next|on|in|soon)(?![a-z])|(?:и|а|но)(?!\p{L})|ค่ะ|คะ|ครับ|แล้ว)/iu;
+/** A limit or a range, not a child: "from 4 years old", "under 6", "up to 12 years", "4 to 12 years old", "от 3 лет", "до 12 лет", "ตั้งแต่ 4 ขวบ". */
+const SAID_BOUND_BEFORE =
+  /(?:(?<![a-z])(?:from|under|over|above|below|up to|until|till|to|than|least|most|min(?:imum)?|max(?:imum)?|between|ages)|(?<!\p{L})(?:от|до|с|старше|младше|больше|меньше|минимум|максимум)|ตั้งแต่|ต่ำกว่า|ไม่เกิน|เกิน|ถึง|มากกว่า|น้อยกว่า)\s*$/iu;
+const SAID_BOUND_AFTER = /^\s*(?:\+|and (?:up|over|above|older)|or (?:older|younger|over|under|above|more|less)|и (?:старше|младше)|ขึ้นไป|ลงมา)/iu;
+/** Years that are no age: "живём тут 6 лет"; and a time gone by, in any language: "6 лет назад", "she turned 6 months ago", "6 ปีที่แล้ว". */
+const SAID_DURATION_BEFORE = /(?<!\p{L})(?:жив\p{L}*|работа\p{L}*|через|течение|последни\p{L}*|кажд\p{L}*)(?:\s+\p{L}+)?\s*$/iu;
+const SAID_AGO_AFTER = /^\s*(?:ago(?![a-z])|назад|ที่แล้ว|ก่อน)/iu;
+/** "6 and 9 years old", "6, 4 and 2 years old", "6 и 9 лет", "6 กับ 9 ขวบ": the numbers before the one with the unit are ages too. */
+const SAID_LIST_JOIN = /^\s*(?:,\s*(?:and|и)?|and|&|и|และ|กับ)\s*$/iu;
+
+/** "шестилетний", "шестилетняя", "трёхлетка", "6-летний". */
+const RU_AGE_STEMS: Array<[string, number]> = [
+  ['двух', 2],
+  ['тр[её]х', 3],
+  ['четыр[её]х', 4],
+  ['пяти', 5],
+  ['шести', 6],
+  ['семи', 7],
+  ['восьми', 8],
+  ['девяти', 9],
+  ['десяти', 10],
+  ['одиннадцати', 11],
+  ['двенадцати', 12],
+  ['тринадцати', 13],
+  ['четырнадцати', 14],
+  ['пятнадцати', 15],
+  ['шестнадцати', 16],
+  ['семнадцати', 17],
+];
+const RU_AGE_WORD = new RegExp(`(?<![\\p{L}\\d])(?:(${RU_AGE_STEMS.map(([s]) => s).join('|')})|(\\d{1,2})\\s?-?\\s?(?:х\\s?-?\\s?)?)лет[нк]\\p{L}*`, 'giu');
+/** "годовалый": one year old. */
+const RU_ONE_YEAR_OLD = /(?<!\p{L})годовал\p{L}*/iu;
+
+/**
+ * Another child comes into the line: a brother, a sister, a friend, "another
+ * one". Their age was not said, so asking it is no repeat.
+ */
+const OTHER_CHILD =
+  /(?<![a-z])(?:brothers?|sisters?|siblings?|cousins?|friends?|(?:another|other|second|third) (?:child|kid|one|boy|girl|son|daughter)|(?:younger|older|elder|eldest|youngest) (?:one|child|kid|son|daughter))(?![a-z])|(?<!\p{L})(?:брат\p{L}*|сестр\p{L}*|ещ[её] (?:один|одна|одного|одну)|втор\p{L}* (?:реб[её]н\p{L}*|сын\p{L}*|доч\p{L}*)|младш\p{L}*|старш\p{L}*|друг(?:а|ом|у)?|друзья|друзей|подруг\p{L}*)(?!\p{L})|อีกคน|พี่ชาย|พี่สาว|น้องชาย|น้องสาว|เพื่อน/iu;
+
+/** The reply's age question is about another child than the one whose age was said ("And how old is her brother?", "How old is your other child?"). */
+const OTHER_CHILD_ASKED =
+  /(?<![a-z])(?:others?|another|second|third|younger|older|youngest|eldest|oldest|each|both|brothers?|sisters?|siblings?|friends?|cousins?)(?![a-z])|(?<!\p{L})(?:втор\p{L}*|друг\p{L}*|ещ[её]|брат\p{L}*|сестр\p{L}*|младш\p{L}*|старш\p{L}*|кажд\p{L}*|остальн\p{L}*|подруг\p{L}*)(?!\p{L})|อีกคน|คนอื่น|พี่|แต่ละคน|เพื่อน/iu;
+
+const MAX_CHILD_YEARS = 17;
+const MAX_CHILD_MONTHS = 36;
+/** A family's own children counted in a line ("my two kids", "двое детей"): up to this many; more is a party's guest list. */
+const MAX_SIBLINGS = 4;
+
+/** The family's children a line counts ("I have 2 kids", "трое детей" as "3 детей"), 2 to `MAX_SIBLINGS`; 0 when it counts none. */
+function siblingsCountedIn(line: string): number {
+  const text = asciiDigits(line.normalize('NFC'));
+  const asking = asksSomething(text);
+  const counts = numbersIn(text)
+    .filter((n) => !n.weak && unitOf(text, n, asking) === 'kids' && n.value >= 2 && n.value <= MAX_SIBLINGS)
+    .map((n) => n.value);
+  return Math.max(0, ...counts);
+}
+
+/** The ages one line states, as kept values ("6", "10 months"), in the line's order. */
+function agesStatedIn(line: string): string[] {
+  const text = asciiDigits(line.normalize('NFC'));
+  const numbers = numbersIn(text);
+  const found: Array<{ at: number; value: string }> = [];
+  const years = (n: NumberFound) => n.value >= 1 && n.value <= MAX_CHILD_YEARS;
+  const lead = (n: NumberFound) => text.slice(Math.max(0, n.start - 40), n.start);
+  numbers.forEach((n, i) => {
+    const after = text.slice(n.end);
+    const before = lead(n);
+    if (SAID_BOUND_BEFORE.test(before)) return;
+    const cue = SAID_CHILD_CUE.test(before);
+    const months = [SAID_MONTHS_OLD, ...(cue ? [SAID_LOOSE_MONTHS] : [])].map((re) => re.exec(after)).find((m) => m !== null);
+    if (months) {
+      const fits = n.value >= 1 && n.value <= MAX_CHILD_MONTHS;
+      const rest = after.slice(months[0].length);
+      if (fits && !SAID_BOUND_AFTER.test(rest) && !SAID_AGO_AFTER.test(rest)) found.push({ at: n.start, value: `${n.value} months` });
+      return;
+    }
+    const russian = SAID_RU_YEARS.exec(after);
+    const unit = SAID_YEARS_OLD.exec(after) ?? SAID_TH_YEARS.exec(after) ?? russian ?? (cue ? SAID_LOOSE_YEARS.exec(after) : null);
+    if (unit) {
+      const rest = after.slice(unit[0].length);
+      if (!years(n) || SAID_BOUND_AFTER.test(rest) || SAID_AGO_AFTER.test(rest)) return;
+      // Russian "лет" counts any years: no age after "живём тут".
+      if (unit === russian && !cue && SAID_DURATION_BEFORE.test(before)) return;
+      found.push({ at: n.start, value: String(n.value) });
+      // "6 and 9 years old": the numbers listed before it.
+      for (let k = i - 1; k >= 0; k--) {
+        const prev = numbers[k]!;
+        if (prev.weak || !years(prev) || !SAID_LIST_JOIN.test(text.slice(prev.end, numbers[k + 1]!.start))) break;
+        if (SAID_BOUND_BEFORE.test(lead(prev))) break;
+        found.push({ at: prev.start, value: String(prev.value) });
+      }
+      return;
+    }
+    // No unit: only right after the child ("she is six", "ему 6", "อายุ 6"), and only where the age ends there.
+    if (cue && !n.weak && years(n) && SAID_BARE_END.test(after) && !SAID_BOUND_AFTER.test(after)) found.push({ at: n.start, value: String(n.value) });
+  });
+  for (const m of text.matchAll(RU_AGE_WORD)) {
+    const stem = m[1]?.toLowerCase();
+    const value = stem ? (RU_AGE_STEMS.find(([s]) => new RegExp(`^${s}$`, 'u').test(stem))?.[1] ?? null) : Number(m[2]);
+    if (value !== null && value >= 1 && value <= MAX_CHILD_YEARS) found.push({ at: m.index, value: String(value) });
+  }
+  const one = RU_ONE_YEAR_OLD.exec(text);
+  if (one) found.push({ at: one.index, value: '1' });
+  return [...new Set(found.sort((a, b) => a.at - b.at).map((f) => f.value))];
+}
+
+/**
+ * SCRUM-842 (staging, 9 Nov 2026: "do you have drop-off for a six year old?"
+ * was answered with "how old is your child?"): THE CHILD'S AGE THE CUSTOMER
+ * SAID IN THEIR OWN LINES this episode, unasked — the value kept as the
+ * answer reader keeps it ("6", "6, 9", "10 months"), or null.
+ *
+ * Stricter than the reply reader (`readSlotAnswers`), because nothing was
+ * asked: a number is an age only with an age's own unit ("six year old",
+ * "6yo", "6 лет", "шестилетняя", "6 ขวบ") or right after the child ("she is
+ * six", "my son turns 6", "ему 6", "อายุ 6 ปี") — never a count, a time, a
+ * price or a limit ("6 kids", "at 6 pm", "6 tickets", "600 baht", "from 4
+ * years old"), and never an adult's (over 17).
+ *
+ * A later line that brings in ANOTHER CHILD whose age it does not give ("can
+ * her brother come too?") makes the age unknown again, and so does a family
+ * that counts more children than ages ("I have two kids, one is six"): asking
+ * it is no repeat.
+ */
+export function childAgeSaidIn(lines: readonly string[]): string | null {
+  let known: string[] = [];
+  let siblings = 0;
+  for (const line of lines) {
+    const ages = agesStatedIn(line);
+    siblings = Math.max(siblings, siblingsCountedIn(line));
+    if (OTHER_CHILD.test(line.normalize('NFC'))) {
+      known = ages.length >= 2 || (ages.length === 1 && known.length > 0) ? [...new Set([...known, ...ages])] : [];
+    } else if (ages.length > 0) {
+      known = [...new Set([...known, ...ages])];
+    }
+  }
+  return known.length === 0 || known.length < siblings ? null : clip(known.join(', '));
+}
+
+/**
+ * A question of the reply asks the age of ANOTHER child than the one the
+ * customer told us about ("And how old is her brother?", "А сколько лет
+ * старшему?"): no repeat of what was said — it is neither cut nor refused.
+ */
+export function asksAnotherChildsAge(bubbles: readonly string[]): boolean {
+  return questionsIn(bubbles).some((q) => asksChildAge(q) && OTHER_CHILD_ASKED.test(q));
+}
+
+/** The text asks the child's age, in any of the three languages (the question detector's own words). */
+export function asksChildAge(text: string): boolean {
+  return ASKS.some(([slot, re]) => slot === 'child_age' && re.test(text));
+}

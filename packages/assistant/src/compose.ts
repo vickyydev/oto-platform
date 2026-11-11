@@ -79,7 +79,7 @@ import {
   type AiIntent,
 } from './intents';
 import { EN_PERSONA, RU_PERSONA, TH_PERSONA } from './persona';
-import { askedSlotsOf, parksNamedIn, questionsIn, slotsAskedIn } from './slots';
+import { askedSlotsOf, asksAnotherChildsAge, asksChildAge, childAgeSaidIn, parksNamedIn, questionsIn, slotsAskedIn } from './slots';
 
 type AnswerVerdict = Extract<GateVerdict, { action: 'answer' }>;
 
@@ -97,6 +97,8 @@ export interface TurnComposition {
   repeats: number;
   /** Sentences asking only which park, dropped once the park was known; and, on a thread with its park, the park clause cut from the birthday's question. */
   parkQuestions: number;
+  /** SCRUM-842: sentences asking only the child's age, and age clauses of a combined question, cut once the customer had said the age. Absent: none. */
+  ageQuestions?: number;
 }
 
 /** Between the parts of the one message: a blank line, in every language. */
@@ -732,6 +734,140 @@ function birthdayParkCut(v: AnswerVerdict, input: GateInput, branchNamed: AiBran
 }
 
 // ---------------------------------------------------------------------------
+// SCRUM-842: the age question, once the customer said the age
+// ---------------------------------------------------------------------------
+
+/** Where a sentence's clauses part: a comma, "and" / "и", a dash, a semicolon. Thai is not split (no word spaces to trust). */
+const AGE_CLAUSE_BREAK: Readonly<Record<Exclude<AiReplyLanguage, 'th'>, RegExp>> = {
+  en: /,\s*(?:and\s+)?|\s+and\s+|\s+[—–-]\s+|;\s+/giu,
+  ru: /,\s*(?:[иа]\s+)?|\s+и\s+|\s+[—–-]\s+|;\s+/giu,
+};
+/** A clause that opens the request for everything after it ("Could you tell me how old she is and…"): cutting it would leave the rest headless. */
+const ASK_LEAD_IN =
+  /^(?:could|can|may|would|will|please|let|tell|share|just|so|to|и|а|можете|можно|могли|подскажите|напишите|скажите|уточните|сообщите|расскажите|пожалуйста)(?![\p{L}])/iu;
+
+const sameSlots = (a: readonly AiAskedSlot[], b: readonly AiAskedSlot[]) => a.length === b.length && a.every((s) => b.includes(s));
+const capitalized = (s: string) => s.replace(/^\p{Ll}/u, (c) => c.toUpperCase());
+
+/**
+ * One sentence without its question for the child's age, once the customer
+ * had said the age (SCRUM-842):
+ *
+ *   - '' — the sentence asks the age and nothing else, and states nothing
+ *     beside it ("How old is your little one?", "น้องอายุกี่ขวบคะ"): it goes;
+ *   - the rest — the age was one clause: of a combined question ("Which day
+ *     would you like, and how old is she?" → "Which day would you like?"),
+ *     or after a statement ("It's 225 baht a visit, how old is she?" → "It's
+ *     225 baht a visit.");
+ *   - null — it asks no age, it asks another child's age, or the age cannot
+ *     be cut without breaking the sentence (the age clause opens the request
+ *     or sits in its middle, a Thai combined question, the rest would ask
+ *     something else than before): it stays as written, and the repeat guard
+ *     decides the turn again with the fact.
+ */
+export function withoutAgeQuestion(sentence: string, language: AiReplyLanguage): string | null {
+  const text = sentence.normalize('NFC').trim();
+  if (!isQuestion(text)) return null;
+  const before = slotsAskedIn([text]);
+  if (!before.includes('child_age')) return null;
+  // Another child's age ("And how old is her brother?") was never said: it is asked.
+  if (asksAnotherChildsAge([text])) return null;
+  const others = before.filter((s) => s !== 'child_age');
+  // A sentence that is the age question and nothing more: no other ask, no number of its own.
+  const whole = others.length === 0 && !/\p{N}/u.test(text) ? '' : null;
+  if (language === 'th') return whole;
+
+  const clauses: Array<{ text: string; lead: string; age: boolean }> = [];
+  let from = 0;
+  let lead = '';
+  for (const m of text.matchAll(AGE_CLAUSE_BREAK[language])) {
+    clauses.push({ text: text.slice(from, m.index), lead, age: false });
+    lead = m[0];
+    from = m.index + m[0].length;
+  }
+  clauses.push({ text: text.slice(from), lead, age: false });
+  for (const c of clauses) c.age = asksChildAge(c.text);
+  const kept = clauses.filter((c) => !c.age);
+  if (kept.length === clauses.length) return null;
+  if (kept.length === 0) return whole;
+  const joined = (cs: typeof clauses) => cs.map((c, i) => (i === 0 ? c.text : `${c.lead}${c.text}`)).join('');
+
+  if (others.length === 0) {
+    // A statement, then the age: the statement stays, closed as one. Anything after the age clause hangs on it and goes with it.
+    const head = joined(clauses.slice(0, clauses.findIndex((c) => c.age))).replace(/[\s,;:—–-]+$/u, '');
+    if (!substantive(head) || isQuestion(`${head}.`) || DANGLING_HEAD.test(head) || ASK_LEAD_IN.test(head)) return whole;
+    return /[.!…]$/u.test(head) ? head : `${head}.`;
+  }
+
+  // A combined question: the other asks stay, word for word. The age is cut only from its end, or from
+  // its start when it does not open the request ("Could you tell me how old she is and…"); never from the middle.
+  const firstKept = clauses.findIndex((c) => !c.age);
+  const lastKept = clauses.length - 1 - [...clauses].reverse().findIndex((c) => !c.age);
+  const trailing = clauses.slice(lastKept + 1);
+  const leading = clauses.slice(0, firstKept);
+  if (clauses.slice(firstKept, lastKept + 1).some((c) => c.age)) return null;
+  if (leading.length > 0 && (trailing.length > 0 || ASK_LEAD_IN.test(clauses[0]!.text.trim()))) return null;
+  let rest = joined(kept)
+    .replace(/[\s,;:—–.!…?？-]+$/u, '')
+    .trim();
+  if (rest === '' || DANGLING_HEAD.test(rest)) return null;
+  const and = language === 'ru' ? /(?<![\p{L}])и(?![\p{L}])/u : /(?<![\p{L}])and(?![\p{L}])/iu;
+  // "What date, roughly how many people, and how old…": the "and" the age clause carried goes back before the last ask.
+  if (trailing.some((c) => and.test(c.lead)) && !and.test(rest) && rest.includes(', ')) {
+    const at = rest.lastIndexOf(', ');
+    rest = `${rest.slice(0, at)}${language === 'ru' ? ' и ' : ' and '}${rest.slice(at + 2)}`;
+  }
+  rest = `${capitalized(rest)}?`;
+  return sameSlots(slotsAskedIn([rest]), others) ? rest : null;
+}
+
+/** A bubble with the age question cut out of each sentence that asks it (`withoutAgeQuestion`), the rest as written. `cuts` counts the sentences changed. */
+export function withoutAgeQuestions(text: string, language: AiReplyLanguage): { text: string; cuts: number } {
+  const normal = text.normalize('NFC');
+  let out = normal;
+  let cuts = 0;
+  for (const s of [...spansOf(normal)].reverse()) {
+    const cut = withoutAgeQuestion(s.text, language);
+    if (cut === null) continue;
+    out = `${out.slice(0, s.start)}${cut}${out.slice(s.end)}`;
+    cuts += 1;
+  }
+  if (cuts === 0) return { text, cuts };
+  const was = normal.split('\n');
+  const lines = out
+    .split('\n')
+    .map((l) => l.replace(/\s{2,}/gu, ' ').trim())
+    .filter((l, i) => l !== '' || was[i]!.trim() === '');
+  return { text: lines.join('\n').trim(), cuts };
+}
+
+/** The child's age the customer said in their own lines this episode, the burst's included (`childAgeSaidIn`). */
+export function childAgeSaidByFamily(input: GateInput): string | null {
+  const earlier = input.episode.customerLines ?? [];
+  const open = (input.openLines ?? []).filter((l) => !earlier.includes(l));
+  return childAgeSaidIn([...earlier, ...open]);
+}
+
+/**
+ * SCRUM-842 (staging, 9 Nov 2026: "do you have drop-off for a six year old?"
+ * answered with "how old is your child?"). The owner's rule: the assistant
+ * never asks what it already knows. Once the customer said the child's age
+ * in their own lines (`childAgeSaidByFamily`), a reply's bubbles lose the age
+ * question (`withoutAgeQuestions`), everything else as written. Null: no age
+ * said, nothing to cut — or nothing with something to say would be left to
+ * send (never silence): that reply is the repeat guard's, which decides the
+ * turn again with the fact ("the customer already said: 6 years old").
+ */
+function knownAgeCut(v: AnswerVerdict, input: GateInput, from: readonly string[]): { bubbles: string[]; cuts: number } | null {
+  if (childAgeSaidByFamily(input) === null) return null;
+  const cut = from.map((b) => withoutAgeQuestions(b, v.language));
+  const cuts = cut.reduce((n, c) => n + c.cuts, 0);
+  const bubbles = cut.map((c) => c.text).filter((t) => t.trim() !== '');
+  if (cuts === 0 || !bubbles.some((b) => substantive(b))) return null;
+  return { bubbles, cuts };
+}
+
+// ---------------------------------------------------------------------------
 // The one message
 // ---------------------------------------------------------------------------
 
@@ -927,7 +1063,10 @@ export function composeTurn(v: GateVerdict, input: GateInput): GateVerdict {
   // Once the park is known (the thread's, or the one the model just read), the birthday's question loses only its park clause (`birthdayParkCut`).
   const ownQuestion = v.intents.some((i) => OWN_PARK_QUESTION_INTENTS.has(i));
   const parkless = birthdayParkCut(v, input, branchNamed);
-  const bubbles = parkless?.bubbles ?? v.bubbles;
+  // SCRUM-842: the age the customer already said is never asked: its question is cut, the rest as written.
+  const ageless = knownAgeCut(v, input, parkless?.bubbles ?? v.bubbles);
+  const ageQuestions = ageless?.cuts ?? 0;
+  const bubbles = ageless?.bubbles ?? parkless?.bubbles ?? v.bubbles;
   const parkClauses = parkless?.cuts ?? 0;
   const join = topicsOfIntents(v.intents).length <= 1;
   const composed = composeMessage(bubbles, {
@@ -936,11 +1075,20 @@ export function composeTurn(v: GateVerdict, input: GateInput): GateVerdict {
     ...(known && !ownQuestion ? { dropQuestion: asksOnlyThePark } : {}),
   });
   const parkQuestions = composed.parkQuestions + parkClauses;
-  const dropped = composed.duplicates + composed.repeats + parkQuestions;
+  const dropped = composed.duplicates + composed.repeats + parkQuestions + ageQuestions;
   const joined = join && bubbles.length > 1;
   if (dropped === 0 && !joined && familyPark === null) return v;
+  // A cut question is no longer asked: the memory records, and the repeat guard reads, what the message still asks.
+  const ageUnasked = ageQuestions > 0 && !slotsAskedIn(composed.bubbles).includes('child_age');
   const unasked: Partial<AnswerVerdict> =
-    parkQuestions > 0 ? { askBranch: false, askedSlots: (input.decision.askedSlots ?? []).filter((s): s is AiAskedSlot => s !== 'park') } : {};
+    parkQuestions > 0 || ageUnasked
+      ? {
+          ...(parkQuestions > 0 ? { askBranch: false } : {}),
+          askedSlots: (input.decision.askedSlots ?? []).filter(
+            (s): s is AiAskedSlot => !(parkQuestions > 0 && s === 'park') && !(ageUnasked && s === 'child_age'),
+          ),
+        }
+      : {};
   return {
     ...v,
     branchNamed,
@@ -954,6 +1102,7 @@ export function composeTurn(v: GateVerdict, input: GateInput): GateVerdict {
       duplicates: composed.duplicates,
       repeats: composed.repeats,
       parkQuestions,
+      ...(ageQuestions > 0 ? { ageQuestions } : {}),
     },
   };
 }

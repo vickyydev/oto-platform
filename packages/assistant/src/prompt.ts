@@ -643,6 +643,12 @@ export interface MemoryQuestion {
 export interface PromptMemory {
   /** Oldest first. Empty on a thread where nothing was asked yet: the declaration and age lines still ride. */
   questions: readonly MemoryQuestion[];
+  /**
+   * SCRUM-842: what the customer said unasked in their own lines this
+   * episode (the child's age), by slot. Absent or empty: nothing is added to
+   * the prompt.
+   */
+  said?: Partial<Record<AiAskedSlot, string>>;
 }
 
 /**
@@ -668,6 +674,8 @@ export const MEMORY_LINES = {
   declare: `askedSlots: when a bubble of yours asks the customer something, list what it asks, from ${AI_ASKED_SLOTS.join(', ')} ("other" for anything else); empty when no bubble asks anything. The combined birthday question lists each part it asks.`,
   rule:
     '<asked_before> is what you already asked the customer in this conversation, and how the server read their reply. answered = they answered it (answer is what they said; null when it is not kept, such as a name). open = no answer was read from their reply yet: when the customer\'s newest message is that reply, read it as the answer; when the conversation shows they said it later, use that. withdrawn = a person took the thread before an answer was read: read the conversation for the answer they gave. Never ask an answered question again: use the answer. A question asked twice with no answer is never asked a third time.',
+  /** SCRUM-842: rides only on a turn where the server read such a fact. */
+  said: '<customer_said> is what the customer already told you in their own messages in this conversation, before you asked, as the server read it. It is known: never ask for it, use it in your answer.',
   age: "Ask the child's age only when the answer changes what you say (the drop-off and nanny age rules, the Golden Ticket by age, a party package's age band, the age rules), and only once: never as a reflex.",
 } as const;
 
@@ -691,7 +699,11 @@ function memoryLines(memory: PromptMemory | undefined): string[] {
           '</asked_before>',
           MEMORY_LINES.rule,
         ];
-  return [...asked, MEMORY_LINES.declare, MEMORY_LINES.age];
+  const facts = (Object.entries(memory.said ?? {}) as Array<[AiAskedSlot, string]>).map(([slot, value]) =>
+    inertJson({ slot, what: SLOT_MEANING[slot], customerSaid: slotFactOf(slot, value) }),
+  );
+  const said = facts.length === 0 ? [] : ['<customer_said>', ...facts, '</customer_said>', MEMORY_LINES.said];
+  return [...asked, ...said, MEMORY_LINES.declare, MEMORY_LINES.age];
 }
 
 function repeatLines(repeat: RepeatHint | undefined): string[] {

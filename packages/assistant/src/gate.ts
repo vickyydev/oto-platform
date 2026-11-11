@@ -776,6 +776,13 @@ export interface RepeatRefusal {
   asks: number;
 }
 
+/**
+ * SCRUM-842: what the customer said in their own lines this episode before
+ * anyone asked, by slot, as the answer reader keeps a value ("6", "6, 9",
+ * "10 months"). Today only the child's age is read this way.
+ */
+export type SaidUnasked = Partial<Record<AiAskedSlot, string>>;
+
 /** Asked this often with no answer, the slot is not asked again: a person takes the thread. */
 export const REPEAT_UNANSWERED_ASKS = 2;
 
@@ -789,20 +796,28 @@ const REPEAT_RANK: Readonly<Record<RepeatKind, number>> = { answered: 0, asked_t
  * the draft asks (`askedSlotsOf`), the episode's questions and the turn's
  * intents. Null when the draft may go. With several, the strongest reason
  * wins: an answer the customer gave, then two unanswered asks, then the age.
+ *
+ * SCRUM-842: what the customer said UNASKED (`said`: the child's age read
+ * from their own lines, `childAgeSaidIn`) is an answer they gave too — a
+ * draft that asks it is refused the same way, with the fact for the rethink.
  */
 export function repeatGuard(input: {
   asked: readonly AiAskedSlot[];
   questions: readonly EpisodeQuestion[];
   intents: readonly AiIntent[];
+  said?: SaidUnasked;
 }): RepeatRefusal | null {
   let found: RepeatRefusal | null = null;
   for (const slot of input.asked) {
     if (slot === 'other') continue;
     const before = input.questions.filter((q) => q.slot === slot);
     const answered = before.find((q) => q.state === 'answered');
+    const said = input.said?.[slot] ?? null;
     const refusal: RepeatRefusal | null = answered
-      ? { slot, kind: 'answered', answer: answered.answer, asks: before.length }
-      : before.length >= REPEAT_UNANSWERED_ASKS
+      ? { slot, kind: 'answered', answer: answered.answer ?? said, asks: before.length }
+      : said !== null
+        ? { slot, kind: 'answered', answer: said, asks: before.length }
+        : before.length >= REPEAT_UNANSWERED_ASKS
         ? { slot, kind: 'asked_twice', answer: null, asks: before.length }
         : slot === 'child_age' && !input.intents.some((i) => AGE_SLOT_INTENTS.has(i))
           ? { slot, kind: 'not_needed', answer: null, asks: before.length }

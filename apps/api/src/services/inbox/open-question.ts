@@ -2,7 +2,9 @@ import { and, asc, eq, gte, inArray, isNotNull, sql } from 'drizzle-orm';
 import {
   REPEAT_HANDOVER,
   askedSlotsOf,
+  asksAnotherChildsAge,
   buildPrompt,
+  childAgeSaidIn,
   questionsIn,
   readSlotAnswers,
   repeatGuard,
@@ -20,6 +22,7 @@ import {
   type PromptMemory,
   type RepeatKind,
   type RepeatRefusal,
+  type SaidUnasked,
   type TurnUsage,
 } from '@oto/assistant';
 import { aiTurn, conversationOpenQuestion, message, type Db } from '@oto/db';
@@ -113,6 +116,12 @@ export interface OpenQuestionMemory {
   withdrawals: Array<{ id: string; slot: AiAskedSlot }>;
   /** This burst is the customer's reply to a question still waiting for one: the turn reads it as the answer. */
   hadOpen: boolean;
+  /**
+   * SCRUM-842: what the customer said unasked in their own lines this episode
+   * (the child's age: "drop-off for a six year old"). The prompt names it and
+   * the guard refuses a draft that asks it. Never stored: read again each turn.
+   */
+  said?: SaidUnasked;
 }
 
 // --- 1. The memory -------------------------------------------------------------------------
@@ -296,12 +305,18 @@ export async function loadOpenQuestionMemory(
       answeredMessageId: seen ? seen.answeredMessageId : r.answeredMessageId,
     });
   }
+  // SCRUM-842: the child's age the customer gave in their own lines, asked or not.
+  const age = childAgeSaidIn(episode.flatMap((m) => (m.from === 'customer' && m.text !== null ? [m.text] : [])));
+  if (age !== null) memory.said = { child_age: age };
   return memory;
 }
 
 /** The memory as the prompt shows it (`@oto/assistant` `PromptMemory`). */
 export function promptMemoryOf(memory: OpenQuestionMemory): PromptMemory {
-  return { questions: memory.questions.map((q) => ({ slot: q.slot, askedAt: q.askedAt, state: q.state, answer: q.answer })) };
+  return {
+    questions: memory.questions.map((q) => ({ slot: q.slot, askedAt: q.askedAt, state: q.state, answer: q.answer })),
+    ...(memory.said ? { said: memory.said } : {}),
+  };
 }
 
 /**
@@ -369,7 +384,9 @@ export function refusalOf(d: AiDecision, v: GateVerdict, memory: OpenQuestionMem
   if (v.action !== 'answer') return null;
   const asked = askedSlotsOf(v.askedSlots ?? d.askedSlots, v.bubbles);
   if (asked.length === 0) return null;
-  return repeatGuard({ asked, questions: memory.questions, intents: v.intents });
+  // SCRUM-842: what the customer said unasked is never asked — but another child's age ("and her brother?") was never said.
+  const said = memory.said && !asksAnotherChildsAge(v.bubbles) ? memory.said : undefined;
+  return repeatGuard({ asked, questions: memory.questions, intents: v.intents, ...(said ? { said } : {}) });
 }
 
 /** The hand-over a refused repeat ends in: the thread's own team, its warm closing line, none of the model's words. */
