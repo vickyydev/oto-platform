@@ -480,7 +480,7 @@ export function AddDropOffModal({
               <DialogTitle>Cancel this waiting booking</DialogTitle>
               <DialogDescription>
                 {cancelling
-                  ? `${cancelling.parentName || 'This'}'s booking: ${cancelling.children.map((c) => c.childName).join(', ')} ` +
+                  ? `${cancelling.parentName || 'Booking'}'s booking: ${cancelling.children.map((c) => c.childName).join(', ')} ` +
                     "leave the waiting list and can't be added to a sale. The signed form stays on record."
                   : ''}
               </DialogDescription>
