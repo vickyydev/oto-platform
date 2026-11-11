@@ -1,0 +1,16 @@
+{
+  "sha": "869a73add71fe4b41550dd4370e6cfcd487a8e48",
+  "run": 42971207054,
+  "job": 130359863620,
+  "conclusion": "success",
+  "typecheck": {
+    "readWhole": true,
+    "lines": 667,
+    "errors": 418,
+    "ceiling": 418,
+    "files": 54,
+    "file": "local/candidate-app-typecheck.log",
+    "sha256": "de3c869d46e523f9af7dd421042b04fa418132909e5158c6de261097ed927401"
+  },
+  "checkedAt": "2026-11-11T06:32:50.411Z"
+}

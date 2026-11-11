@@ -30,6 +30,13 @@ The first dependency-build command found no build script in the two source
 packages and did no build; it is not counted as a pass. The actual POS build
 above passed. `local-gates.json` retains log hashes and the checked source.
 
+Full candidate CI `42971207054` runs at
+`869a73add71fe4b41550dd4370e6cfcd487a8e48`. The saved source and local
+gate logs survived the interruption. The staging harness is prepared and
+syntax-checked at `staging/proof.mjs`; it has not run and has created no
+fixtures. Its cleanup attempts each independent step even if a prior step
+fails, and records failures without discarding the other cleanup receipts.
+
 Next: full hosted candidate gate, an explicitly released slot, main landing,
 both named till deploys and real staging screen proof. Proof must show a
 pasted ZZ TEST band opening History, a paid Add time receipt appearing without
