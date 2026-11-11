@@ -1,7 +1,10 @@
 # SCRUM-802 / SCRUM-783: History and the shown phone number
 
 Unit 3 is built in `C:/oto-lanes/codex-history-phone-20261111`, branch
-`lane/codex-history-phone-20261111`. It has not landed or been deployed.
+`lane/codex-history-phone-20261111`. It landed fast-forward at
+`1774278145af7a37b6d4855f87eacff7710d5f21`. Both named till deployments
+are building; main CI `42975235170` is running. Staging proof is not run.
+`landing.json` records the source and deploy requests.
 
 Both History layouts now use the F&B field's existing paste and scanner
 timing rule through `useScanField`. Hand typing still waits for Enter or
@@ -44,8 +47,7 @@ Workspace typechecks were read whole: 16 successful tasks, zero API
 diagnostics. All 667 lines of the app typecheck were read: 418/418 in 54
 files. `candidate-ci.json` and `candidate-app-check.json` retain the receipts.
 
-Next: an explicitly released slot, main landing,
-both named till deploys and real staging screen proof. Proof must show a
+Next: both named till deploys live and real staging screen proof. Proof must show a
 pasted ZZ TEST band opening History, a paid Add time receipt appearing without
 leaving History, and the leading-zero ZZ TEST number correctly shown in the
 three reported places. Use an own till and paired display, retire the exact

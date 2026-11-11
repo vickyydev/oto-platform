@@ -1,0 +1,41 @@
+{
+  "sha": "1774278145af7a37b6d4855f87eacff7710d5f21",
+  "candidate": "869a73add71fe4b41550dd4370e6cfcd487a8e48",
+  "candidateRun": 42971207054,
+  "mainRun": 42975235170,
+  "mainCi": "in_progress",
+  "sourceCommits": 1,
+  "ownFiles": 17,
+  "protectedOwnFiles": 0,
+  "tillApiAndBuildInputsIdenticalToCandidate": true,
+  "unrelatedAppChanges": [
+    "apps/oto-app/client/src/components/beo/beo-event-editor.tsx",
+    "apps/oto-app/server/lib/aiFill.ts",
+    "apps/oto-app/server/lib/beoAiApprove.ts",
+    "apps/oto-app/shared/kitchenAdults.ts",
+    "apps/oto-app/tests/ai-fill.check.ts",
+    "apps/oto-app/tests/kitchen-adults-ui.check.ts",
+    "apps/oto-app/tests/kitchen-adults.check.ts"
+  ],
+  "appMainGate": {
+    "sha": "8e4c41ee35713ac248fc087871637b8bf1c4e234",
+    "run": 42971539004,
+    "conclusion": "success"
+  },
+  "deployRequests": [
+    {
+      "service": "oto-pos-staging",
+      "id": "dep-dbq10ioae00c73cvvivg",
+      "sha": "1774278145af7a37b6d4855f87eacff7710d5f21",
+      "status": "build_in_progress"
+    },
+    {
+      "service": "oto-pos-web-staging",
+      "id": "dep-dbq10ion74is739crqig",
+      "sha": "1774278145af7a37b6d4855f87eacff7710d5f21",
+      "status": "build_in_progress"
+    }
+  ],
+  "stagingProof": "not run",
+  "checkedAt": "2026-11-11T06:52:17.619Z"
+}
