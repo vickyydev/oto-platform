@@ -475,7 +475,7 @@ const ASKS: ReadonlyArray<[Slot, RegExp]> = [
   ['adults_count', /how many (?:adults|grown-?ups|parents)|сколько (?:взрослых|родителей)|ผู้ใหญ่(?:ประมาณ)?(?:กี่|จำนวน)|ผู้ใหญ่[^?]{0,12}กี่/iu],
   [
     'guests_count',
-    /how many (?:(?:little|young|small) )?(?:people|guests|persons|friends|of you)|roughly how many|about how many|headcount|number of (?:guests|people)|сколько (?:человек|гостей|вас)|сколько будет (?:гостей|человек)|กี่ท่าน|กี่คน|จำนวนแขก|แขกประมาณ/iu,
+    /how many (?:(?:little|young|small) )?(?:people|guests|persons|friends|of you)|roughly how many|about how many|headcount|number of (?:guests|people)|сколько (?:примерно |приблизительно )?(?:будет )?(?:человек|гостей|вас)|กี่ท่าน|กี่คน|จำนวนแขก|แขกประมาณ/iu,
   ],
   [
     'park',

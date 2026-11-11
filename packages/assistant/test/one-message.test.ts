@@ -894,7 +894,17 @@ describe('SCRUM-832 follow-up: on a thread with its park the birthday question a
     expect(withoutParkClause('Let me know what date you are thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong.', 'en')).toBe(
       'Let me know what date you are thinking of, and roughly how many people.',
     );
-    // The slot reader sees only the park in these, yet each asks the headcount too: the sentence stays, less the park.
+    // A preposition before the park's clause goes with it, never left dangling ("…, and at?"), in a sentence and inside a bubble of two lines.
+    for (const prep of ['at which branch', 'in which park', 'for which branch', 'from which branch']) {
+      expect(withoutParkClause(`What date are you thinking of, roughly how many people, and ${prep}, Central Floresta or Robinson Chalong?`, 'en'), prep).toBe(
+        'What date are you thinking of, and roughly how many people?',
+      );
+    }
+    expect(withoutParkClauses(`${OPEN.en}\nWhat date are you thinking of, roughly how many people, and at which branch, Central Floresta or Robinson Chalong?`, 'en')).toEqual({
+      text: `${OPEN.en}\nWhat date are you thinking of, and roughly how many people?`,
+      cuts: 1,
+    });
+    // Each asks the headcount too: the sentence stays, less the park.
     expect(withoutParkClause('Сколько примерно будет гостей и в каком парке, Central Floresta или Robinson Chalong?', 'ru')).toBe('Сколько примерно будет гостей?');
     expect(withoutParkClause('Какую дату и сколько гостей вы планируете, и какой из наших парков вам удобнее?', 'ru')).toBe('Какую дату и сколько гостей вы планируете?');
     // A clause already closed by its particle stays as it is; the next clause gets its own.
@@ -921,6 +931,21 @@ describe('SCRUM-832 follow-up: on a thread with its park the birthday question a
     expect(withoutParkClause('What date are you thinking of, and roughly how many people?', 'en')).toBeNull();
     expect(withoutParkClause('Which branch, Central Floresta or Robinson Chalong, and what date are you thinking of?', 'en')).toBeNull();
     expect(withoutParkClauses('We have two parks, Central Floresta and Robinson Chalong.', 'en')).toEqual({ text: 'We have two parks, Central Floresta and Robinson Chalong.', cuts: 0 });
+    // The parks' names as the object of a verb or a preposition the pattern does not know: cutting them would leave "…would you prefer?" — the sentence stays whole.
+    for (const s of [
+      'What date are you thinking of, roughly how many people, and would you prefer Central Floresta or Robinson Chalong?',
+      'What date are you thinking of, roughly how many people, and do you want to celebrate at Central Floresta or Robinson Chalong?',
+      'What date are you thinking of, roughly how many people, and would you like it at Central Floresta or Robinson Chalong?',
+      'Would you prefer Central Floresta or Robinson Chalong?',
+    ]) {
+      expect(withoutParkClause(s, 'en'), s).toBeNull();
+    }
+    expect(withoutParkClause('Какую дату вы рассматриваете, примерно сколько будет гостей и где вам удобнее — в Central Floresta или Robinson Chalong?', 'ru')).toBeNull();
+    // A clause joined to the park's without a comma ("…and whether you would like a cake?"): the park's clause never runs across the "and" into it, so the sentence stays whole.
+    expect(withoutParkClause('What date are you thinking of, and which branch you prefer and whether you would like a cake?', 'en')).toBeNull();
+    expect(withoutParkClause('Какую дату вы рассматриваете и какой филиал вам удобнее и сколько примерно будет гостей?', 'ru')).toBeNull();
+    expect(withoutParkClause('Какую дату вы рассматриваете, в каком парке вам удобнее и сколько примерно гостей?', 'ru')).toBeNull();
+    expect(withoutParkClause('สนใจจัดวันไหน และสะดวกสาขาไหน และประมาณกี่ท่านคะ', 'th')).toBeNull();
     // Only the park asked, nothing else in the reply: as written (never silence); the repeat guard owns it.
     const only = party('en', [EN_PERSONA.branchQuestion], { ...GENERAL, threadHasBranch: true }, { askedSlots: ['park'] });
     expect(only.bubbles).toEqual([EN_PERSONA.branchQuestion]);

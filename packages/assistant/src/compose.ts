@@ -571,11 +571,21 @@ const PARK_NAME = String.raw`(?:central(?:\s+floresta)?|floresta|robinson(?:\s+c
 const PARK_PAIR = String.raw`${PARK_NAME}\s*,?\s*(?:or|или|หรือ)\s*${PARK_NAME}`;
 /** What may sit between "which branch" and the parks' names: a comma, a colon, a dash, a bracket, or a space. */
 const BEFORE_NAMES = String.raw`(?:\s*[,:;(—–-]\s*|\s+)`;
-/** The clause's own words up to the next clause: never across a comma, a dash, a bracket or a sentence mark. */
-const CLAUSE_TAIL = String.raw`[^,?!.;:()—–\n]*?`;
+/** The clause's own words up to the next clause: never across a comma, a dash, a bracket, a sentence mark — or a standalone "and"/"и" (the next clause joined without a comma: "…and which branch you prefer and whether you would like a cake?" is left whole, never cut to the park's clause and the cake's). */
+const CLAUSE_TAIL = String.raw`(?:(?!\s(?:and|or|и|а|или)\s)[^,?!.;:()—–\n])*?`;
 /** The sentence's end after the clause: a closing bracket, its question mark (or full stop). */
 const CLAUSE_END = String.raw`\s*\)?\s*[?？.!]?\s*$`;
 const TH_PARTICLE = String.raw`(?:นะคะ|คะ|ค่ะ|ครับ)`;
+/**
+ * The parks' names alone as the clause ("…, and Central Floresta or Robinson
+ * Chalong?"): only after the sentence's start, a comma, a colon, a dash, a
+ * bracket or a conjunction. After any other word ("would you prefer Central
+ * Floresta or Robinson Chalong?", "celebrate at …", "где вам удобнее — в …")
+ * the pair is that word's object, and cutting it leaves a dangling clause:
+ * such a sentence stays as written (the park asked, never a broken sentence).
+ */
+const BARE_EN = String.raw`(?<=^|[,;:(—–-]\s*|${L}(?:and|or)\s+)${PARK_PAIR}`;
+const BARE_RU = String.raw`(?<=^|[,;:(—–-]\s*|${L}(?:и|а|или)\s+)${PARK_PAIR}`;
 
 /**
  * The park's own clause at the END of the combined birthday question, with
@@ -587,14 +597,15 @@ const TH_PARTICLE = String.raw`(?:นะคะ|คะ|ค่ะ|ครับ)`;
  */
 const PARK_CLAUSE: Readonly<Record<AiReplyLanguage, RegExp>> = {
   en: new RegExp(
-    String.raw`(?:\s*,)?\s*(?:${L}(?:and|or|plus|also|then)${R})?\s*[(—–-]?\s*` +
-      String.raw`(?:(?:${L}(?:which|what|the|your|preferred)\s+(?:park|branch|location)${R}|${L}which\s+of\s+(?:our|the)\s+(?:parks|branches|locations)${R}|${L}whether\s+you(?:['’]d|\s+would)\s+(?:prefer|like)${R})${CLAUSE_TAIL}(?:${BEFORE_NAMES}${PARK_PAIR})?|${PARK_PAIR})` +
+    // "…, and at which branch" / "in which park" / "for which branch": the preposition goes with the clause, never left dangling in the head.
+    String.raw`(?:\s*,)?\s*(?:${L}(?:and|or|plus|also|then)${R})?\s*[(—–-]?\s*(?:${L}(?:at|in|for|to|from)\s+)?` +
+      String.raw`(?:(?:${L}(?:which|what|the|your|preferred)\s+(?:park|branch|location)${R}|${L}which\s+of\s+(?:our|the)\s+(?:parks|branches|locations)${R}|${L}whether\s+you(?:['’]d|\s+would)\s+(?:prefer|like)${R})${CLAUSE_TAIL}(?:${BEFORE_NAMES}${PARK_PAIR})?|${BARE_EN})` +
       CLAUSE_END,
     'iu',
   ),
   ru: new RegExp(
     String.raw`(?:\s*,)?\s*(?:${L}(?:и|а|или|а\s+также|ну\s+и)${R})?\s*[(—–-]?\s*` +
-      String.raw`(?:${L}(?:в\s+|на\s+)?(?:как(?:ой|ая|ое|ую|ом|им)|котор\p{L}+)\s+(?:из\s+)?(?:наших\s+|ваших\s+)?(?:парк\p{L}*|филиал\p{L}*|площадк\p{L}*|локаци\p{L}*)${R}${CLAUSE_TAIL}(?:${BEFORE_NAMES}${PARK_PAIR})?|${PARK_PAIR})` +
+      String.raw`(?:${L}(?:в\s+|на\s+)?(?:как(?:ой|ая|ое|ую|ом|им)|котор\p{L}+)\s+(?:из\s+)?(?:наших\s+|ваших\s+)?(?:парк\p{L}*|филиал\p{L}*|площадк\p{L}*|локаци\p{L}*)${R}${CLAUSE_TAIL}(?:${BEFORE_NAMES}${PARK_PAIR})?|${BARE_RU})` +
       CLAUSE_END,
     'iu',
   ),
@@ -608,6 +619,8 @@ const PARK_CLAUSE: Readonly<Record<AiReplyLanguage, RegExp>> = {
 
 /** A head of fewer letters than this is no question of its own ("Hi, which branch…?"): the whole sentence goes. */
 const MIN_HEAD_LETTERS = 4;
+/** A head left ending in a conjunction or a preposition ("…, and at?") is a broken sentence: it never goes. */
+const DANGLING_HEAD = /(?<![\p{L}])(?:and|or|at|in|for|to|и|а|или|в|на)$/iu;
 const TH_QUESTION_END = /(?:นะคะ|คะ|ค่ะ|ครับ|ไหม|มั้ย|[?？])$/u;
 
 /**
@@ -645,7 +658,9 @@ function headAsQuestion(head: string, language: AiReplyLanguage, mark: string): 
  * (the whole sentence goes); null when it asks no park, when its park clause
  * cannot be told from the rest, or when cutting it would also cut a date or
  * a headcount question the sentence asked (read by `slotsAskedIn` before and
- * after: those are never cut) — the sentence then stays as written.
+ * after: those are never cut), or when the head would end in a dangling
+ * conjunction or preposition (`DANGLING_HEAD`: a wording the clause pattern
+ * did not foresee) — the sentence then stays as written.
  */
 export function withoutParkClause(sentence: string, language: AiReplyLanguage): string | null {
   const text = sentence.normalize('NFC').trim();
@@ -658,6 +673,7 @@ export function withoutParkClause(sentence: string, language: AiReplyLanguage): 
     .replace(/[\s,;:—–-]+$/u, '')
     .replace(/(?:(?<![\p{L}])(?:and|or|и|а|или)|และ|หรือ|แล้วก็|กับ)$/iu, '')
     .trimEnd();
+  if (DANGLING_HEAD.test(head)) return null;
   const mark = /\.\s*$/u.test(text) && !/[?？]/u.test(text) ? '.' : '?';
   const rest = letterCount(head) < MIN_HEAD_LETTERS ? '' : headAsQuestion(head, language, mark);
   const after = rest === '' ? [] : slotsAskedIn([rest]);

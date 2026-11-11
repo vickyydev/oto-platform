@@ -183,6 +183,11 @@ describe('the question detector: what a reply asks, read from its own questions'
       ]),
     ).toEqual(['park', 'residency']);
     expect(slotsAskedIn(['How many children are coming? And how many adults?'])).toEqual(['kids_count', 'adults_count']);
+    // The Russian headcount with "примерно"/"приблизительно" and "будет" in any of their places.
+    for (const q of ['Сколько примерно будет гостей?', 'Сколько примерно гостей?', 'Сколько приблизительно человек будет?', 'Сколько будет человек?']) {
+      expect(slotsAskedIn([q]), q).toEqual(['guests_count']);
+    }
+    expect(slotsAskedIn(['Какую дату вы рассматриваете, в каком парке вам удобнее и сколько примерно гостей?']).sort()).toEqual(['date', 'guests_count', 'park']);
   });
 
   it('an ask written as a request counts as a question: the declaration is kept, the slot is read', () => {
