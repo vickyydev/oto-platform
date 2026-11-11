@@ -1,3 +1,4 @@
+import { formatStoredPhone } from '@/lib/phoneUtils';
 import { useId, useMemo } from 'react';
 import { SupervisionPolicy, ChildFoodProvision, ContactChannel } from '@/types';
 import { cn } from '@/lib/utils';
@@ -361,7 +362,7 @@ export function ConsentCapture({
                 {parentPhoneKept && !staffScreen && parentPhone ? (
                   <div data-testid="consent-kept-phone">
                     <div className="flex h-14 items-center rounded-md border border-foreground/10 bg-foreground/5 px-4 text-2xl font-semibold tabular-nums">
-                      {parentPhone}
+                      {formatStoredPhone(parentPhone)}
                     </div>
                     <p className="mt-2 text-base text-foreground/50">{t('till.input.phoneKept')}</p>
                   </div>

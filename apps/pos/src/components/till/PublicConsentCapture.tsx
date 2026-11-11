@@ -1,3 +1,4 @@
+import { formatStoredPhone } from '@/lib/phoneUtils';
 import { useEffect, useRef, useState } from 'react';
 import type { ConsentAction, ConsentPrompt, FilledConsentSlot } from '@oto/shared';
 import { ShieldCheck, ShieldAlert, UserCheck, ClipboardCheck, Baby, HeartPulse, UtensilsCrossed, Camera, Phone, Users } from 'lucide-react';
@@ -278,7 +279,7 @@ export function PublicConsentCapture({ prompt, busy, onAction }: {
           <div>
             <label className="flex items-center gap-2 text-lg text-foreground/70"><Phone className="h-5 w-5" /> {t('superviseConsent.phoneNumber')}</label>
             {phoneKept ? <div data-testid="consent-kept-phone">
-              <div className="mt-2 flex h-14 items-center rounded-md border border-foreground/10 bg-foreground/5 px-4 text-2xl font-semibold tabular-nums">{prompt.guardianPhone}</div>
+              <div className="mt-2 flex h-14 items-center rounded-md border border-foreground/10 bg-foreground/5 px-4 text-2xl font-semibold tabular-nums">{formatStoredPhone(prompt.guardianPhone ?? '')}</div>
               <p className="mt-2 text-base text-foreground/50">{t('till.input.phoneKept')}</p>
             </div> : <PhoneInput value={draft.guardianPhone} onChange={(guardianPhone) => setDraft((current) => ({ ...current, guardianPhone }))}
               label="" showKeypad={kioskFlags.screenKeyboard} disabled={locked} translate

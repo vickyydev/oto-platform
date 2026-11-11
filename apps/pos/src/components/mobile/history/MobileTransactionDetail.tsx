@@ -62,6 +62,7 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
     offline,
     fmt,
     compact: true,
+    onPaid: props.onExtensionPaid,
   });
   if (state.refundOpen)
     return (
