@@ -108,6 +108,15 @@ export interface SalePrintBand {
    */
   supervisionBadge?: 'DROP-OFF' | 'NANNY' | null;
   nannyName?: string | null;
+  /**
+   * SCRUM-861 — the extra play paid for THIS band after the sale (SCRUM-797's
+   * Add time), in minutes: every applied extension that named the band and
+   * was not taken back by a void or a refund. The band's "valid until" moves
+   * by it, so the copy printed when the time is added — and any reprint after
+   * — reads the leave time the family paid for. Absent on a band with none,
+   * and on a snapshot written before it existed, which then prints as it did.
+   */
+  extraMinutes?: number | null;
 }
 
 /** A child on the order, for the kitchen's allergy line. */
@@ -514,14 +523,29 @@ export function salePrepDocument(
   };
 }
 
+/** "1 hour", "2 hours", "90 min" — the extra play a band carries, as its paper says it. */
+function extraPlayLabel(minutes: number): string {
+  if (minutes % 60 === 0) {
+    const hours = minutes / 60;
+    return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+  }
+  return `${minutes} min`;
+}
+
 /** One band's paper: who wears it, for how long, what the gate reads. */
 export function saleBandDocument(snapshot: SalePrintSnapshot, band: SalePrintBand): SaleBandDocument {
   const line = band.saleLineId ? snapshot.lines.find((l) => l.id === band.saleLineId) : undefined;
   const start = new Date(snapshot.at);
+  // SCRUM-861 — the extra play paid later moves the leave time, and the label
+  // says so ("2 hours + 1 hour"), so a band printed after an Add time is not
+  // mistaken for the one it replaces.
+  const extraMinutes = band.extraMinutes && band.extraMinutes > 0 ? band.extraMinutes : 0;
   const duration =
     line?.stayHours && line.stayHours > 0
-      ? `${line.stayDurationLabel ?? `${line.stayHours} hours`} · valid until ${hhmm(
-          new Date(start.getTime() + line.stayHours * 3_600_000),
+      ? `${line.stayDurationLabel ?? `${line.stayHours} hours`}${
+          extraMinutes > 0 ? ` + ${extraPlayLabel(extraMinutes)}` : ''
+        } · valid until ${hhmm(
+          new Date(start.getTime() + line.stayHours * 3_600_000 + extraMinutes * 60_000),
           snapshot.timezone,
         )}`
       : (line?.stayDurationLabel ?? undefined);

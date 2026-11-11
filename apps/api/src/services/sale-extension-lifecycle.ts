@@ -3,6 +3,7 @@ import { band, checkin, sale, saleExtension, saleExtensionBand, saleLine } from 
 import { isExtraHourLine } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
+import { queueExtensionBandReprints, type SalePrintJobView } from './sale-printing';
 import type { Tx } from './tx';
 
 // SCRUM-774: a null account is the platform itself (the midnight void of a held sale).
@@ -66,16 +67,23 @@ export async function assertExtensionRefund(tx: Tx, chargeSaleId: string, amount
   }
 }
 
-/** Called inside paid finalisation, never by a UI promise or a terminal acknowledgement. */
+/**
+ * Called inside paid finalisation, never by a UI promise or a terminal
+ * acknowledgement. Answers the band copies it queued (SCRUM-861: a band
+ * prints its leave time, so the bands the extension named print again with
+ * the new one, `queueExtensionBandReprints`), for the finalise answer to
+ * show beside the charge's own paper; null when no pending extension was
+ * applied.
+ */
 export async function applySaleExtension(
   tx: Tx,
   charge: typeof sale.$inferSelect,
   // A device-rung sale (S2-20 K1) applies none, and the audit row names nobody.
   actor: { accountId: string | null; requestId?: string | null },
   now: Date,
-) {
+): Promise<{ jobs: SalePrintJobView[]; notes: string[] } | null> {
   const extension = await assertSaleExtensionCollectable(tx, charge.id);
-  if (!extension || extension.status !== 'pending') return;
+  if (!extension || extension.status !== 'pending') return null;
   const source = { id: extension.sourceSaleId };
   await tx.update(saleExtension).set({ status: 'applied', appliedAt: now }).where(eq(saleExtension.id, extension.id));
   await tx.update(saleExtensionBand).set({ appliedAt: now }).where(and(eq(saleExtensionBand.extensionId, extension.id), isNull(saleExtensionBand.appliedAt)));
@@ -83,6 +91,8 @@ export async function applySaleExtension(
     branchId: extension.branchId, requestId: actor.requestId, action: 'sale.extension.apply', entityType: 'sale_extension', entityId: extension.id,
     after: { sourceSaleId: source.id, chargeSaleId: charge.id, minutesAdded: extension.minutesAdded, braceletCount: extension.braceletCount, selection: extension.selection } });
   await moveExtraHourClocks(tx, extension, 1, actor, now);
+  // After the clocks and the rows above: the copies read the ledger as it now stands.
+  return queueExtensionBandReprints(tx, { extension, charge, actorAccountId: actor.accountId, requestId: actor.requestId ?? null, now });
 }
 
 /** Voids/refunds preserve the extension and its band rows as financial history. */

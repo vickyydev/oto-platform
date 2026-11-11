@@ -310,6 +310,7 @@ const ROLE_ACCEPTS: Record<StationDeviceRole, DeviceKind[]> = {
   receipt: ['receipt_printer'],
   kids_band: ['band_printer'],
   adult_band: ['band_printer'],
+  dropoff_band: ['band_printer'],
   kitchen: ['kitchen_printer', 'receipt_printer'],
   bar: ['bar_printer', 'receipt_printer'],
   scanner: ['scanner'],

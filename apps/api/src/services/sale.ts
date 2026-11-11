@@ -5192,7 +5192,9 @@ export async function finaliseSale(
   if (!after) throw new Error('the sale was not finalised');
   // SCRUM-774 — a sale that closes while parked leaves Held sales with its payment.
   await releaseOpenHold(tx, saleId, 'paid', actor, now);
-  await applySaleExtension(tx, after, actor, now);
+  // SCRUM-861 — the bands an Add time names print again with their new time;
+  // what that queued joins this answer's `printing` below.
+  const extended = await applySaleExtension(tx, after, actor, now);
   // SCRUM-732 — a pass waiting for this money lands on the roster with it.
   await applyEventPassHold(tx, after, actor, now);
   // SCRUM-804 — a party settled by this sale is settled, and the OTO App is told which sale.
@@ -5297,6 +5299,10 @@ export async function finaliseSale(
           // S2-20 K1 — the kiosk prints its own jobs before it commits.
           ...(input.printing === 'direct' ? { dispatch: 'caller' as const } : {}),
         });
+  if (printing && extended) {
+    printing.jobs.push(...extended.jobs);
+    printing.notes.push(...extended.notes);
+  }
 
   return {
     replay: replayedCall,

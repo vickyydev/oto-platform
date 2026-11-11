@@ -469,6 +469,7 @@ const ROLE_TAKES: Record<string, string> = {
   bar: 'bar tickets',
   kids_band: 'kids bands',
   adult_band: 'adult bands',
+  dropoff_band: 'drop-off bands',
 };
 
 /**

@@ -10317,7 +10317,7 @@ export interface paths {
                                 offlineWalletCapSatang: number | null;
                                 devices: {
                                     /** @enum {string} */
-                                    role: "receipt" | "kids_band" | "adult_band" | "kitchen" | "bar" | "scanner" | "card_terminal" | "qr_terminal" | "gate" | "cash_drawer";
+                                    role: "receipt" | "kids_band" | "adult_band" | "dropoff_band" | "kitchen" | "bar" | "scanner" | "card_terminal" | "qr_terminal" | "gate" | "cash_drawer";
                                     /** Format: uuid */
                                     deviceId: string;
                                     label: string;
@@ -10420,7 +10420,7 @@ export interface paths {
                                 offlineWalletCapSatang: number | null;
                                 devices: {
                                     /** @enum {string} */
-                                    role: "receipt" | "kids_band" | "adult_band" | "kitchen" | "bar" | "scanner" | "card_terminal" | "qr_terminal" | "gate" | "cash_drawer";
+                                    role: "receipt" | "kids_band" | "adult_band" | "dropoff_band" | "kitchen" | "bar" | "scanner" | "card_terminal" | "qr_terminal" | "gate" | "cash_drawer";
                                     /** Format: uuid */
                                     deviceId: string;
                                     label: string;
@@ -10485,7 +10485,7 @@ export interface paths {
                         /** @default [] */
                         devices?: {
                             /** @enum {string} */
-                            role: "receipt" | "kids_band" | "adult_band" | "kitchen" | "bar" | "scanner" | "card_terminal" | "qr_terminal" | "gate" | "cash_drawer";
+                            role: "receipt" | "kids_band" | "adult_band" | "dropoff_band" | "kitchen" | "bar" | "scanner" | "card_terminal" | "qr_terminal" | "gate" | "cash_drawer";
                             /** Format: uuid */
                             deviceId: string;
                         }[];
@@ -10541,7 +10541,7 @@ export interface paths {
                                 offlineWalletCapSatang: number | null;
                                 devices: {
                                     /** @enum {string} */
-                                    role: "receipt" | "kids_band" | "adult_band" | "kitchen" | "bar" | "scanner" | "card_terminal" | "qr_terminal" | "gate" | "cash_drawer";
+                                    role: "receipt" | "kids_band" | "adult_band" | "dropoff_band" | "kitchen" | "bar" | "scanner" | "card_terminal" | "qr_terminal" | "gate" | "cash_drawer";
                                     /** Format: uuid */
                                     deviceId: string;
                                     label: string;
@@ -10634,7 +10634,7 @@ export interface paths {
                                 offlineWalletCapSatang: number | null;
                                 devices: {
                                     /** @enum {string} */
-                                    role: "receipt" | "kids_band" | "adult_band" | "kitchen" | "bar" | "scanner" | "card_terminal" | "qr_terminal" | "gate" | "cash_drawer";
+                                    role: "receipt" | "kids_band" | "adult_band" | "dropoff_band" | "kitchen" | "bar" | "scanner" | "card_terminal" | "qr_terminal" | "gate" | "cash_drawer";
                                     /** Format: uuid */
                                     deviceId: string;
                                     label: string;
@@ -10728,7 +10728,7 @@ export interface paths {
                         /** @default [] */
                         devices?: {
                             /** @enum {string} */
-                            role: "receipt" | "kids_band" | "adult_band" | "kitchen" | "bar" | "scanner" | "card_terminal" | "qr_terminal" | "gate" | "cash_drawer";
+                            role: "receipt" | "kids_band" | "adult_band" | "dropoff_band" | "kitchen" | "bar" | "scanner" | "card_terminal" | "qr_terminal" | "gate" | "cash_drawer";
                             /** Format: uuid */
                             deviceId: string;
                         }[];
@@ -10782,7 +10782,7 @@ export interface paths {
                                 offlineWalletCapSatang: number | null;
                                 devices: {
                                     /** @enum {string} */
-                                    role: "receipt" | "kids_band" | "adult_band" | "kitchen" | "bar" | "scanner" | "card_terminal" | "qr_terminal" | "gate" | "cash_drawer";
+                                    role: "receipt" | "kids_band" | "adult_band" | "dropoff_band" | "kitchen" | "bar" | "scanner" | "card_terminal" | "qr_terminal" | "gate" | "cash_drawer";
                                     /** Format: uuid */
                                     deviceId: string;
                                     label: string;
@@ -11678,7 +11678,7 @@ export interface paths {
                                 stationId: string;
                                 stationName: string;
                                 /** @enum {string} */
-                                role: "receipt" | "kids_band" | "adult_band" | "kitchen" | "bar" | "scanner" | "card_terminal" | "qr_terminal" | "gate" | "cash_drawer";
+                                role: "receipt" | "kids_band" | "adult_band" | "dropoff_band" | "kitchen" | "bar" | "scanner" | "card_terminal" | "qr_terminal" | "gate" | "cash_drawer";
                             }[];
                         };
                     };
@@ -13850,7 +13850,7 @@ export interface paths {
                          */
                         kind?: "receipt" | "kitchen_ticket" | "bar_ticket" | "kids_wristband" | "adult_wristband" | "credit_voucher" | "item_voucher" | "booth_voucher" | "test_page";
                         /** @enum {string} */
-                        role?: "receipt" | "kids_band" | "adult_band" | "kitchen" | "bar" | "scanner" | "card_terminal" | "qr_terminal" | "gate" | "cash_drawer";
+                        role?: "receipt" | "kids_band" | "adult_band" | "dropoff_band" | "kitchen" | "bar" | "scanner" | "card_terminal" | "qr_terminal" | "gate" | "cash_drawer";
                         copies?: number;
                     };
                 };

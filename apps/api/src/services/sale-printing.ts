@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, or } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, isNull, or } from 'drizzle-orm';
 import {
   account,
   band,
@@ -19,6 +19,8 @@ import {
   product,
   sale,
   saleDiscount,
+  saleExtension,
+  saleExtensionBand,
   saleLine,
   station,
   visitChild,
@@ -109,7 +111,12 @@ type SaleLineRow = typeof saleLine.$inferSelect;
 type StationRow = typeof station.$inferSelect;
 type PrintJobRow = typeof printJob.$inferSelect;
 
-/** The station-device role each kind prints on (`ROLE_FOR_KIND` in the box agent). */
+/**
+ * The station-device role each kind prints on (`ROLE_FOR_KIND` in the box
+ * agent). A kids band is the one kind with a second answer: a dropped-off
+ * child's goes to `dropoff_band` when the station has that printer
+ * (`routeJob` below).
+ */
 const ROLE_OF: Record<PrintKind, string> = {
   receipt: 'receipt',
   kitchen_ticket: 'kitchen',
@@ -243,6 +250,63 @@ export interface JobScope {
   dispatch?: 'box' | 'caller';
 }
 
+/** The station-device role of the printer loaded with drop-off band stock (SCRUM-861). */
+export const DROPOFF_BAND_ROLE = 'dropoff_band';
+
+/**
+ * SCRUM-861 — WHICH PRINTER A JOB GOES TO, and the role the row records.
+ *
+ * Every kind prints on `ROLE_OF`'s role, as before, except a dropped-off
+ * child's band: "drop-off children and everyone else use separate bracelets",
+ * so a `kids_wristband` whose band is a drop-off stay's goes to the station's
+ * `dropoff_band` printer. Three things are deliberate about how:
+ *
+ *   - THE BAND, NOT THE SALE, SAYS WHAT IT IS. The stay that owns the band
+ *     (`checkin.band_id`, the same join the band's paper reads its badge
+ *     through in `salePrintSnapshotOf`) is read at the moment the job is
+ *     written, so a reprint from History after the stay changed — a drop-off
+ *     child moved to a nanny, say — goes where the band's CURRENT type says,
+ *     which is the owner's "each operation must select the correct person,
+ *     type and category".
+ *   - ONLY DROP-OFF. A nanny child's band keeps the kids band printer: the
+ *     code has always told the two services apart (`SUPERVISION_SERVICES`,
+ *     the DROP-OFF and NANNY badges), and the owner named drop-off alone.
+ *     Whether a nanny child's band belongs on the same stock is his to say.
+ *   - THE FALLBACK IS THE KIDS PRINTER. A station with no `dropoff_band`
+ *     assignment prints the band on `kids_band`, as it did before this role
+ *     existed, with the same document and the same badge: the second printer
+ *     is connected later, and a demo must never lose a band to a role nobody
+ *     has filled yet. A `dropoff_band` printer that IS assigned but does not
+ *     answer is the box's business, exactly as for the other two roles: the
+ *     job is queued to it and retried (`queue.ts` in the box agent), never
+ *     redirected.
+ *
+ * The box is told nothing new: the command carries `role` and `deviceId` as
+ * strings, as it always has, and routes by the role against the bundle the
+ * platform sends it (`routeTo`). A box from before this role prints the band
+ * on the printer the command names; a station without the printer never sees
+ * the role at all.
+ */
+async function routeJob(
+  tx: Tx,
+  boxId: string,
+  stationId: string,
+  request: JobRequest,
+): Promise<{ role: string; routed: { deviceId: string; stationId: string } | null }> {
+  if (request.kind === 'kids_wristband' && request.subjectType === 'band' && (await isDropOffBand(tx, request.subjectId))) {
+    const dropoff = await routeOnBox(tx, boxId, DROPOFF_BAND_ROLE, stationId);
+    if (dropoff) return { role: DROPOFF_BAND_ROLE, routed: dropoff };
+  }
+  const role = ROLE_OF[request.kind];
+  return { role, routed: await routeOnBox(tx, boxId, role, stationId) };
+}
+
+/** Whether a band is a dropped-off child's: the stay it was issued for says `drop_off` today. */
+async function isDropOffBand(db: Exec, bandId: string): Promise<boolean> {
+  const [stay] = await db.select({ service: checkin.service }).from(checkin).where(eq(checkin.bandId, bandId)).limit(1);
+  return stay?.service === 'drop_off';
+}
+
 /**
  * Write one job: the row, and — when the station has a printer for its role —
  * the box command that makes the box print it. With no printer the row is
@@ -259,10 +323,9 @@ export interface JobScope {
  * which queue to a station's prep printers exactly as a sale's tickets do.
  */
 export async function writeJob(tx: Tx, scope: JobScope, request: JobRequest, offsetMs: number): Promise<SalePrintJobView> {
-  const role = ROLE_OF[request.kind];
   const boxId = scope.stationRow.boxId;
   if (!boxId) throw new Error('the station has no box');
-  const routed = await routeOnBox(tx, boxId, role, scope.stationRow.id);
+  const { role, routed } = await routeJob(tx, boxId, scope.stationRow.id, request);
   const templateType = templateTypeFor(request.kind);
   const [template] = templateType
     ? await tx
@@ -677,6 +740,125 @@ export async function queueEventBandPrints(
     return await tx.transaction(queueBands);
   } catch {
     return { jobs: [], notes: ['Bands could not be queued for printing — reprint them from the roster'] };
+  }
+}
+
+/**
+ * SCRUM-861 — THE BANDS AN ADD TIME PRINTS AGAIN, with their new leave time.
+ *
+ * A band prints "2 hours · valid until 16:05" (`saleBandDocument`), so once
+ * extra play is paid for it (SCRUM-797) the band on the child's wrist reads a
+ * time that is no longer true, and a band with the wrong time is a wrong
+ * band. Every band the extension named is printed again here, inside the
+ * charge's finalisation, at the station that took the money: a copy that
+ * names the original job (`reprintRootOf`) and a `reprinted` band event, the
+ * band itself, its id and its code unchanged (`recordBandReprint`). Each
+ * copy goes to its own printer — adult band, kids band, or the drop-off band
+ * printer for a dropped-off child (`routeJob`) — and its paper, built from
+ * the ledger when it prints, carries the added minutes
+ * (`SalePrintBand.extraMinutes`).
+ *
+ * An extension by COUNT names no band (`selection.mode === 'count'`), so
+ * there is nothing to print again and the till's own words say nothing
+ * either; the owner has the question. Under a savepoint like a sale's own
+ * printing: a copy that cannot be queued never undoes the paid extension,
+ * and the note says to reprint from History.
+ */
+export async function queueExtensionBandReprints(
+  tx: Tx,
+  input: {
+    extension: typeof saleExtension.$inferSelect;
+    /** The charge sale that paid the extension: where the copies print. */
+    charge: SaleRow;
+    actorAccountId: string | null;
+    requestId?: string | null;
+    now?: Date;
+  },
+): Promise<{ jobs: SalePrintJobView[]; notes: string[] }> {
+  const now = input.now ?? new Date();
+  const { extension, charge } = input;
+  const selection = extension.selection;
+  if (selection.mode !== 'bands' || selection.bandIds.length === 0) return { jobs: [], notes: [] };
+  const reason = `Extra time added (+${extension.minutesAdded} min)`;
+  try {
+    return await tx.transaction(async (sp) => {
+      const [source] = await sp.select().from(sale).where(eq(sale.id, extension.sourceSaleId)).limit(1);
+      const [stationRow] = await sp.select().from(station).where(eq(station.id, charge.stationId)).limit(1);
+      if (!source || !stationRow?.boxId) {
+        return { jobs: [], notes: ['Bands not printed again — this station is not attached to a box'] };
+      }
+      const bands = await sp
+        .select()
+        .from(band)
+        .where(and(inArray(band.id, selection.bandIds), eq(band.saleId, source.id), eq(band.status, 'active')))
+        .orderBy(asc(band.createdAt), asc(band.id));
+      const scope: JobScope = {
+        operatorId: source.operatorId,
+        branchId: source.branchId,
+        saleId: source.id,
+        stationRow,
+        actorAccountId: input.actorAccountId,
+        actionId: charge.actionId ?? newId(),
+        requestId: input.requestId ?? undefined,
+        now,
+      };
+      const jobs: SalePrintJobView[] = [];
+      const notes: string[] = [];
+      for (const [index, b] of bands.entries()) {
+        const original = b.printedJobId
+          ? await sp.select().from(printJob).where(eq(printJob.id, b.printedJobId)).limit(1)
+          : [];
+        const root = original[0] ? reprintRootOf({ id: original[0].id, reprintOf: original[0].reprintOf }) : null;
+        // Queued a second behind the charge's own receipt, so a box that polls
+        // the oldest first hands the receipt over before the bands.
+        const job = await writeJob(
+          sp,
+          scope,
+          {
+            kind: b.kind === 'kid' ? 'kids_wristband' : 'adult_wristband',
+            subjectType: 'band',
+            subjectId: b.id,
+            reprintOf: root,
+            reprintReason: reason,
+          },
+          1_000 + index,
+        );
+        jobs.push(job);
+        const note = noteFor(job);
+        if (note) notes.push(note);
+        if (input.actorAccountId) {
+          await recordBandReprint(sp, b, {
+            printJobId: job.id,
+            reason,
+            stationId: stationRow.id,
+            boxId: stationRow.boxId,
+            accountId: input.actorAccountId,
+          });
+        } else {
+          await sp.update(band).set({ printedJobId: job.id, updatedAt: now }).where(eq(band.id, b.id));
+        }
+      }
+      await audit.record(sp, {
+        actorAccountId: input.actorAccountId,
+        operatorId: source.operatorId,
+        branchId: source.branchId,
+        action: 'sale.extension.reprint',
+        entityType: 'sale_extension',
+        entityId: extension.id,
+        actionId: scope.actionId,
+        requestId: input.requestId ?? undefined,
+        after: {
+          sourceSaleId: source.id,
+          chargeSaleId: charge.id,
+          minutesAdded: extension.minutesAdded,
+          jobs: jobs.map((j) => ({ id: j.id, kind: j.kind, role: j.role, status: j.status, subjectId: j.subjectId })),
+          notes,
+        },
+      });
+      return { jobs, notes };
+    });
+  } catch {
+    return { jobs: [], notes: ['Bands could not be printed again with the new time — reprint them from History'] };
   }
 }
 
@@ -1155,6 +1337,29 @@ export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<S
     .where(eq(band.saleId, saleRow.id))
     .orderBy(asc(band.createdAt), asc(band.id));
   /**
+   * SCRUM-861 — the extra play each band was paid after the sale (Add time,
+   * SCRUM-797): the applied extensions that name it, less any taken back.
+   * The band's "valid until" moves by it (`saleBandDocument`).
+   */
+  const extraMinutesByBand = new Map<string, number>();
+  if (bandRows.length > 0) {
+    const paid = await db
+      .select({ bandId: saleExtensionBand.bandId, minutes: saleExtensionBand.minutesAdded })
+      .from(saleExtensionBand)
+      .where(
+        and(
+          inArray(saleExtensionBand.bandId, bandRows.map((r) => r.band.id)),
+          isNotNull(saleExtensionBand.appliedAt),
+          isNull(saleExtensionBand.revokedAt),
+        ),
+      );
+    for (const row of paid) extraMinutesByBand.set(row.bandId, (extraMinutesByBand.get(row.bandId) ?? 0) + row.minutes);
+  }
+  const extraOf = (bandId: string): { extraMinutes: number } | Record<string, never> => {
+    const minutes = extraMinutesByBand.get(bandId) ?? 0;
+    return minutes > 0 ? { extraMinutes: minutes } : {};
+  };
+  /**
    * SCRUM-798 — the gift vouchers this sale sold, by the item that sold them,
    * so each code prints under its own item's line, a line's quantity at a time.
    */
@@ -1225,6 +1430,7 @@ export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<S
           dietary: stay.foodRestrictions ?? (b.childId ? dietary : null),
           supervisionBadge: badge,
           nannyName: badge === 'NANNY' ? (nannyName ?? null) : null,
+          ...extraOf(b.id),
         };
       }
       return {
@@ -1236,6 +1442,7 @@ export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<S
         allergies: b.childId ? allergies : null,
         medicalNotes: b.childId ? medicalNotes : null,
         dietary: b.childId ? dietary : null,
+        ...extraOf(b.id),
       };
     }),
     orderChildren: await orderChildren(db, saleRow),
