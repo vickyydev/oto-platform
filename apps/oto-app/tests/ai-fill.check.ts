@@ -36,6 +36,13 @@
 //     Load into Editor applies the time and notes and leaves the form's cake
 //     type; the catalogue review proposes the cake with no type and the
 //     approval sends none; an empty Party Details box is not shown.
+//   - SCRUM-829: the adults eat what the kids eat unless the message says
+//     otherwise, whatever the model answers: an adults' list that only names
+//     the kids' dishes again (in the adults' headcount, noted "adults eat the
+//     same as the kids", as the staging proof saw) is folded away by the read,
+//     so the preview shows one list and the editor opens with the switch off;
+//     a dish of the adults' own, or one of the kids' left out, is their own
+//     list, kept as answered.
 import assert from "node:assert/strict";
 import { z } from "zod";
 import {
@@ -73,6 +80,7 @@ import { aiFillDateLine, dayLabel } from "../client/src/lib/beo-ai-date";
 import { aiFillCakeApply, aiFillCakeLine, aiFillCakeNotSaidNote, aiFillPartyDetailsShown, aiReviewCakeNotSaidNote, cakeUnderNoCakeNote } from "../client/src/lib/beo-ai-preview";
 import { approveBodyOf, initialReviewState } from "../client/src/lib/beo-ai-review";
 import { BeoAiApproveBodySchema } from "../shared/beoAiFill";
+import { sameKitchenDishNames } from "../shared/kitchenAdults";
 
 const results: Record<string, boolean> = {};
 const failures: Record<string, string> = {};
@@ -754,9 +762,69 @@ try {
     assert.deepEqual(approveBodyOf(review, state, { conversationId: null, messageId: null }).cake, { mode: null, notes: null, time: "15:30" });
     assert.equal(BeoAiApproveBodySchema.shape.cake.safeParse({ mode: null, notes: null, time: "15:30" }).success, true);
   });
+
+  await check("theAdultsListFoldsIntoTheKidsUnlessItIsTheirOwn", async () => {
+    // SCRUM-829: the model is told the adults eat what the kids eat unless the message says
+    // otherwise, and on staging it still split the lists — the kids' dishes again as adultsMenu,
+    // in the adults' headcount, each noted "Adults eat the same as the kids". This stub answers
+    // exactly that, so what is proved is the read's fold, not the model's obedience.
+    const kids = [{ itemName: "Nuggets", quantity: 10 }, { itemName: "Juice", quantity: 10 }];
+    const splitting = (adults: unknown[]) =>
+      stubModel(() => JSON.stringify({ event: { numChildren: 10, numAdults: 4 }, kitchenPlan: { kidsMenu: kids, adultsMenu: adults } })).complete;
+    const theSame = [
+      { itemName: "Nuggets", quantity: 4, notes: "Adults eat the same as the kids" },
+      { itemName: "Juice", quantity: 4, notes: "Adults eat the same as the kids" },
+    ];
+    // "The adults will eat the same": the adults' list is the kids' in other words — folded, one list.
+    const same = await beoRun(deps(splitting(theSame)), "Confirmed: nuggets and juice for the kids, and the adults will eat the same.");
+    assert.equal(same.ok, true, JSON.stringify(same.ok ? null : same.reason));
+    if (!same.ok) return;
+    assert.deepEqual(same.value.kitchenPlan?.kidsMenu?.map((l) => [l.itemName, l.quantity]), [["Nuggets", 10], ["Juice", 10]], "the kids' list as answered");
+    assert.equal(same.value.kitchenPlan?.adultsMenu, undefined, "no adults' list: the preview shows one list and the editor opens with the switch off");
+    assert.equal("adultsMenu" in (same.value.kitchenPlan ?? {}), false, "the key is gone, as when the model obeys");
+    // Nothing said of the adults' food and the model still writes them the kids' dishes: the same,
+    // whatever the order, the case, the spacing or the count.
+    const silent = await beoRun(deps(splitting([{ itemName: "juice", quantity: 4 }, { itemName: " NUGGETS", quantity: 2 }])), "Confirmed: nuggets and juice for the kids.");
+    assert.equal(silent.ok, true);
+    if (!silent.ok) return;
+    assert.equal(silent.value.kitchenPlan?.adultsMenu, undefined, "folded");
+    // "Pasta for the adults": a dish of their own — the adults' list, kept as answered, the switch on.
+    const differ = await beoRun(deps(splitting([{ itemName: "Pasta", quantity: 4 }])), "Confirmed: nuggets and juice for the kids, pasta for the adults.");
+    assert.equal(differ.ok, true);
+    if (!differ.ok) return;
+    assert.deepEqual(differ.value.kitchenPlan?.adultsMenu?.map((l) => [l.itemName, l.quantity]), [["Pasta", 4]], "their own dish is kept");
+    // "Nuggets and juice for everyone, and a cheese platter for the adults": everything the adults eat, kept.
+    const beside = await beoRun(
+      deps(splitting([{ itemName: "Nuggets", quantity: 4 }, { itemName: "Juice", quantity: 4 }, { itemName: "Cheese platter", quantity: 1 }])),
+      "Confirmed: nuggets and juice for everyone, and a cheese platter for the adults.",
+    );
+    assert.equal(beside.ok, true);
+    if (!beside.ok) return;
+    assert.deepEqual(beside.value.kitchenPlan?.adultsMenu?.map((l) => l.itemName), ["Nuggets", "Juice", "Cheese platter"], "a shared dish beside their own is not folded");
+    // The adults get only some of the kids' dishes: less is a difference, so their list is kept.
+    const fewer = await beoRun(deps(splitting([{ itemName: "Nuggets", quantity: 4 }])), "Confirmed: nuggets and juice for the kids; nuggets only for the adults.");
+    assert.equal(fewer.ok, true);
+    if (!fewer.ok) return;
+    assert.deepEqual(fewer.value.kitchenPlan?.adultsMenu?.map((l) => l.itemName), ["Nuggets"]);
+    // An empty adults' list, or none, reads as before.
+    assert.deepEqual(BeoFillSchema.parse({ kitchenPlan: { kidsMenu: kids, adultsMenu: [] } }).kitchenPlan?.adultsMenu, []);
+    assert.equal(BeoFillSchema.parse({ kitchenPlan: { kidsMenu: kids, adultsMenu: null } }).kitchenPlan?.adultsMenu, undefined);
+    // The rule itself, shared with Load into Editor and the review's approval: the same dish names, nothing else.
+    assert.equal(sameKitchenDishNames(kids, theSame), true);
+    assert.equal(sameKitchenDishNames(kids, [{ itemName: "Pasta", quantity: 4 }]), false);
+    assert.equal(sameKitchenDishNames(kids, [{ itemName: "Nuggets" }]), false, "one of the kids' dishes left out");
+    assert.equal(sameKitchenDishNames(kids, [...theSame, { itemName: "Wine" }]), false, "a dish of their own beside the kids'");
+    assert.equal(sameKitchenDishNames(kids, []), false, "nothing is not the same");
+    assert.equal(sameKitchenDishNames([], [{ itemName: "Pasta" }]), false, "a list of the adults' own over no kids' list");
+    // The prompt's rule stands beside the fold; the required-fields block still names the adults' line keys.
+    const model = splitting(theSame);
+    await beoRun(deps(model), "a message");
+    assert.match(BUILT_IN_BEO_PARSING_ADVICE, /The adults eat what the kids eat unless the message says otherwise/);
+    assert.ok(requiredFieldsBlock(BeoFillSchema).includes("- kitchenPlan.adultsMenu[].itemName: text (in every entry)"), "the transform is unwrapped for the block");
+  });
 } finally {
   // Nothing to clean: no database, no network.
 }
 
 console.log(JSON.stringify({ results, failures }, null, 2));
-if (Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 14) process.exit(1);
+if (Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 15) process.exit(1);

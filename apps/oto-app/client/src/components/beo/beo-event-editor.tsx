@@ -87,7 +87,7 @@ import { BeoBillingSection, PartyDetailsTillTiles, tillBillingKey, useTillBillin
 import { beoBillingMutationScope } from "@/lib/beo-deposit-buffer";
 import { bahtOfSatang, tillFiguresOf } from "@shared/tillBilling";
 import type { PartyMenuLine } from "@shared/partyMenuItem";
-import { ADULTS_SAME_AS_KIDS, adultsDifferOf, kitchenListsEqual } from "@shared/kitchenAdults";
+import { ADULTS_SAME_AS_KIDS, adultsDifferOf, kitchenListsEqual, sameKitchenDishNames } from "@shared/kitchenAdults";
 import { ONE_OFF_EVENT_COLOR_OPTIONS } from "@/lib/event-types";
 import { aiFillDateLine, dayLabel } from "@/lib/beo-ai-date";
 import AssignmentSearchBar, { type AssignmentValue } from "@/components/core/AssignmentSearchBar";
@@ -1613,6 +1613,12 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     if (p.kitchenPlan) {
       const kp = p.kitchenPlan;
       setKitchenRequired(true);
+      // SCRUM-829: the adults eat the kids' menu unless the message says otherwise. The server's
+      // read already folds an adults' list that only names the kids' dishes again (the model's
+      // "adults eat the same as the kids" in their headcount); the same rule holds here for an
+      // answer that still carries one (shared/kitchenAdults.ts). The adults' own list is only
+      // one naming a dish of theirs, or leaving one of the kids' out.
+      const adultsOwn = kp.adultsMenu?.length > 0 && !sameKitchenDishNames(kp.kidsMenu, kp.adultsMenu);
       if (kp.kidsMenu?.length > 0) {
         setKidsMenu(kp.kidsMenu.map((m: any) => ({
           id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -1622,9 +1628,14 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
           included: m.included !== false,
           price: m.price || 0,
         })));
+        if (!adultsOwn) {
+          // The message's food, with nothing of the adults' own: the adults eat it too, the switch off.
+          setAdultsMenu([]);
+          setAdultsDiffer(false);
+        }
       }
-      if (kp.adultsMenu?.length > 0) {
-        // SCRUM-829: the message said the adults eat something different: their own list, the switch on.
+      if (adultsOwn) {
+        // The message said the adults eat something different: their own list, the switch on.
         setAdultsMenu(kp.adultsMenu.map((m: any) => ({
           id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           itemName: m.itemName || "",

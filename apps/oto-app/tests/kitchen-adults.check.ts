@@ -19,9 +19,12 @@
 //     everything the adults eat (a shared dish given again); the
 //     required-fields block still names every line key; a stub model
 //     answering one list leaves the form with no adults' list, one answering
-//     the adults' own dish carries it; a catalogue dish with no list is the
-//     kids'; Approve and create turns the switch on only when it writes an
-//     adults' line, and a shared dish answered again is no "kids only";
+//     the adults' own dish carries it, and one answering the kids' dishes
+//     again as the adults' (the staging proof's answer) is folded to one list
+//     by the route; a catalogue dish with no list is the kids'; Approve and
+//     create turns the switch on only when it writes an adults' line of
+//     their own — the kids' dishes marked "adults" again leave it off — and
+//     a shared dish answered again is no "kids only";
 //   - the till's plan view (migration 0048): a party saved before the switch
 //     and never written since reads exactly as 0047 read it; with the switch
 //     on, a coded kids' line copied for the adults reaches the till ONCE
@@ -184,7 +187,7 @@ const setMenuItems = [
 ];
 const ev = {
   plain: randomUUID(), differ: randomUUID(), before: randomUUID(), setMenu: randomUUID(), approve: randomUUID(), approveKids: randomUUID(),
-  beside: randomUUID(), approveSet: randomUUID(), submit: randomUUID(), submitOff: randomUUID(),
+  beside: randomUUID(), approveSet: randomUUID(), approveSame: randomUUID(), submit: randomUUID(), submitOff: randomUUID(),
 };
 
 function fakeAuth(req: Request, res: Response, next: NextFunction) {
@@ -202,12 +205,17 @@ const ai = {
   complete: async (call: AiCompleteOptions) => {
     modelCalls.push(call);
     const adultsDiffer = call.user.includes("ADULTS-829");
+    // SPLIT-829: the model ignoring the rule, as on staging — the kids' dishes again for the adults.
+    const splits = call.user.includes("SPLIT-829");
     return JSON.stringify({
       summary: "ZZ 829",
       event: { childName: "Mali", numChildren: 10, numAdults: 4 },
       kitchenPlan: {
         kidsMenu: [{ itemName: "Nuggets", quantity: 8 }, { itemName: "Fries", quantity: 2 }],
         ...(adultsDiffer ? { adultsMenu: [{ itemName: "Pasta", quantity: 4 }] } : {}),
+        ...(splits
+          ? { adultsMenu: [{ itemName: "Nuggets", quantity: 4, notes: "Adults eat the same as the kids" }, { itemName: "Fries", quantity: 4, notes: "Adults eat the same as the kids" }] }
+          : {}),
       },
     });
   },
@@ -513,6 +521,20 @@ try {
     assert.deepEqual((plan!.menus.adults as Line[]).map((l) => l.itemName), ["Fruit skewers", "Pasta"]);
     assert.deepEqual(kitchenAdultsMarks(plan!.menus.kids, plan!.menus.adults, true).marks, [null], "no kids-only mark on the shared skewers");
     assert.deepEqual((await viewOf(ev.beside))!.map((r) => [r.name, r.audience ?? null]), [["Pasta", "adults"]]);
+    // The kids' dishes marked "adults" again and nothing of their own (a model told "the adults eat
+    // the same" still marking them): the kids' list in other words, so the switch stays off.
+    const sameAgain = await send("POST", `/api/events/${ev.approveSame}/beo/ai-fill/approve`, body([
+      { menu: "kids", itemName: "Fruit skewers", quantity: 2, productCode: null, notes: null },
+      { menu: "kids", itemName: "Juice", quantity: 10, productCode: null, notes: null },
+      { menu: "adults", itemName: "Fruit skewers", quantity: 4, productCode: null, notes: "Adults eat the same as the kids" },
+      { menu: "adults", itemName: "juice", quantity: 4, productCode: null, notes: null },
+    ]));
+    assert.equal(sameAgain.status, 200, JSON.stringify(sameAgain.body));
+    plan = await kitchenOf(ev.approveSame);
+    assert.equal(plan!.menus.adultsDiffer, false, "the same dishes again are not the adults' own");
+    assert.deepEqual(plan!.menus.adults, []);
+    assert.deepEqual((plan!.menus.kids as Line[]).map((l) => l.itemName), ["Fruit skewers", "Juice"]);
+    assert.deepEqual((await viewOf(ev.approveSame))!.map((r) => [r.name, r.audience ?? null]), [], "no coded line, nothing for the till; no adults' mark");
     // An approval with a set menu and an adults' line: the adults' list takes copies of the set menu's lines.
     const withSet = await send("POST", `/api/events/${ev.approveSet}/beo/ai-fill/approve`, {
       ...body([{ menu: "adults", itemName: "Pasta", quantity: 4, productCode: null, notes: null }]),
@@ -536,6 +558,11 @@ try {
     const differ = await send("POST", "/api/ai/parse-beo", { text: "Confirmed: nuggets for the kids, pasta for the adults. ADULTS-829", existingData: {} });
     assert.equal(differ.status, 200, JSON.stringify(differ.body));
     assert.deepEqual(differ.body.kitchenPlan.adultsMenu.map((l: Line) => [l.itemName, l.quantity]), [["Pasta", 4]]);
+    // The model ignoring the rule (the staging proof's answer): the route's answer is still one list.
+    const split = await send("POST", "/api/ai/parse-beo", { text: "Confirmed: nuggets and fries for the kids, and the adults will eat the same. SPLIT-829", existingData: {} });
+    assert.equal(split.status, 200, JSON.stringify(split.body));
+    assert.deepEqual(split.body.kitchenPlan.kidsMenu.map((l: Line) => l.itemName), ["Nuggets", "Fries"]);
+    assert.equal(split.body.kitchenPlan.adultsMenu, undefined, "the adults' list that only repeats the kids' dishes is folded before it reaches the preview");
   });
 
   await check("the BEO PDF prints one food list: the adults' line with the switch off; their changes marked and their own dishes after with it on", async () => {

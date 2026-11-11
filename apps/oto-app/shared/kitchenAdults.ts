@@ -110,6 +110,24 @@ export function adultsDifferOf(menus: unknown): boolean {
   return !kitchenListsEqual(m.kids, adults);
 }
 
+/**
+ * The same dishes by name, however counted or annotated: the kids' list said
+ * again in the adults' own words. An AI fill told "the adults eat what the
+ * kids eat unless the message says otherwise" has still answered the kids'
+ * dishes a second time as the adults' list, in the adults' headcount and
+ * noted "adults eat the same as the kids" (the SCRUM-829 staging proof).
+ * Such a list IS the kids' list: the fill's read, Load into Editor and the
+ * review's approval fold it away and the switch stays off. A list naming a
+ * dish of the adults' own, or leaving one of the kids' out, is the adults'
+ * own and is kept.
+ */
+export function sameKitchenDishNames(kids: unknown, adults: unknown): boolean {
+  const namesOf = (lines: unknown) => new Set(kitchenLinesOf(lines).map((l) => foldDishName(l.itemName)).filter(Boolean));
+  const k = namesOf(kids);
+  const a = namesOf(adults);
+  return a.size > 0 && a.size === k.size && [...a].every((name) => k.has(name));
+}
+
 /** One kids' line's mark, or null when the adults eat it as it is. */
 export type AdultsMark = string | null;
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sameKitchenDishNames } from "@shared/kitchenAdults";
 import { DEFAULT_AI_MODEL, resolveAiModel, stripJsonFences, type AiCompleteOptions } from "./anthropic";
 
 /**
@@ -401,6 +402,23 @@ const list = <T extends z.ZodTypeAny>(item: T, max = 100) =>
 const section = <T extends z.ZodRawShape>(shape: T) =>
   z.preprocess((v) => (v === null ? undefined : v), z.object(shape).optional());
 
+/**
+ * SCRUM-829: the adults eat what the kids eat unless the message says otherwise. The advice
+ * tells the model so, and the model does not always obey: told "the adults will eat the
+ * same", it has answered the kids' dishes a second time as adultsMenu, in the adults'
+ * headcount and noted "adults eat the same as the kids". The read holds the rule whatever
+ * the model answers: an adults' list naming the kids' dishes and no other is dropped — the
+ * shape the answer has when the model does obey — so the preview shows one list and the
+ * editor opens with "Different for adults" off. A list naming a dish of the adults' own, or
+ * leaving one of the kids' out, is kept as their own list (shared/kitchenAdults.ts).
+ */
+function foldAdultsMenu<T extends { kidsMenu?: unknown[]; adultsMenu?: unknown[] }>(plan: T): T {
+  if (!plan.adultsMenu?.length || !sameKitchenDishNames(plan.kidsMenu, plan.adultsMenu)) return plan;
+  const folded = { ...plan };
+  delete folded.adultsMenu;
+  return folded;
+}
+
 const MenuLineSchema = z.object({
   itemName: reqText(300),
   quantity: z.preprocess((v) => (blank(v) ? 1 : v), optCount).transform((n) => (n && n > 0 ? n : 1)),
@@ -443,24 +461,30 @@ export const BeoFillSchema = z.object({
     responsible: namedPerson,
     simplifiedTasks: list(z.object({ itemLabel: reqText(300), notes: optText(1000) })),
   }),
-  kitchenPlan: section({
-    kidsMenu: list(MenuLineSchema),
-    // SCRUM-829: everything the adults eat, only when the message says their food differs from
-    // the kids' (the rule is in the advice; a list is not described here, so the required-fields
-    // block keeps naming each entry's keys). The editor opens it as the adults' own list.
-    adultsMenu: list(MenuLineSchema),
-    // SCRUM-787: NOT_SAID is a cake the message times or describes without saying who brings it;
-    // the form's cake type is then left as it was, never guessed.
-    cakeMode: z.preprocess(
-      (v) => (blank(v) ? undefined : typeof v === "string" ? v.trim().toUpperCase().replace(/[\s-]+/g, "_") : v),
-      z.enum(["INTERNAL", "EXTERNAL", "NONE", "NOT_SAID"]).optional(),
-    ),
-    cakeNotes: optText(1000),
-    cakeTime: optTime,
-    cakeIncluded: optBool,
-    cakePrice: optAmount,
-    cakeQuantity: optCount,
-  }),
+  kitchenPlan: z.preprocess(
+    (v) => (v === null ? undefined : v),
+    z
+      .object({
+        kidsMenu: list(MenuLineSchema),
+        // SCRUM-829: everything the adults eat, only when the message says their food differs from
+        // the kids' (the rule is in the advice; a list is not described here, so the required-fields
+        // block keeps naming each entry's keys). The editor opens it as the adults' own list.
+        adultsMenu: list(MenuLineSchema),
+        // SCRUM-787: NOT_SAID is a cake the message times or describes without saying who brings it;
+        // the form's cake type is then left as it was, never guessed.
+        cakeMode: z.preprocess(
+          (v) => (blank(v) ? undefined : typeof v === "string" ? v.trim().toUpperCase().replace(/[\s-]+/g, "_") : v),
+          z.enum(["INTERNAL", "EXTERNAL", "NONE", "NOT_SAID"]).optional(),
+        ),
+        cakeNotes: optText(1000),
+        cakeTime: optTime,
+        cakeIncluded: optBool,
+        cakePrice: optAmount,
+        cakeQuantity: optCount,
+      })
+      .transform(foldAdultsMenu)
+      .optional(),
+  ),
   partyDetails: section({
     packageName: optText(300),
     packageBasePrice: optAmount,

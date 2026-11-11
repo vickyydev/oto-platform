@@ -12,7 +12,7 @@ import {
   entertainmentPackageTemplates,
 } from "@shared/schema";
 import type { BeoAiApproveBody, BeoAiSetMenuChoices, BeoAiSetMenuItem } from "@shared/beoAiFill";
-import { adultsCopiesOf, adultsDifferOf } from "@shared/kitchenAdults";
+import { adultsCopiesOf, adultsDifferOf, sameKitchenDishNames } from "@shared/kitchenAdults";
 import type { db as appDb } from "../db";
 import type { ActivityLogInput } from "../storage";
 import { loadBeoCatalogue, type BeoCatalogue } from "./beoCatalogueFill";
@@ -301,8 +301,12 @@ export async function approveBeoAiFill(
       // recorded as its readers resolve it (shared/kitchenAdults.ts). While the adults' list
       // is their own, the set menu's lines in it are copies of the kids' — the parent's choice
       // as it now stands — so a choice made or changed here never leaves the adults' set menu
-      // stale or missing.
-      const adultsOwn = adultsExtra.length > 0 || adultsDifferOf(menus);
+      // stale or missing. "Adults" lines that only name the kids' dishes again (a model told
+      // "the adults eat the same" still marking them, as the free-text fill did) are the kids'
+      // list in other words: they are not the adults' own, and the switch stays as the BEO holds it.
+      const adultsSaid =
+        adultsExtra.length > 0 && !sameKitchenDishNames(kids, [...adultsCopiesOf(kids.filter((l) => l.source === "set_menu")), ...adultsExtra]);
+      const adultsOwn = adultsSaid || adultsDifferOf(menus);
       if (!adultsOwn) {
         adults = [];
       } else {

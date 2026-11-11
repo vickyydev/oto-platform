@@ -19,7 +19,13 @@
 //      and its adults' list as saved; one whose adults' list equals the kids'
 //      opens with the switch off; one with no adults' list opens off;
 //   5. the kids' tab keeps its own editing: a line added to the kids' list
-//      shows in the adults' mirror at once.
+//      shows in the adults' mirror at once;
+//   6. AI Fill from a pasted message, Load into Editor: an answer whose
+//      adults' list only names the kids' dishes again (the model's "adults
+//      eat the same as the kids" in their headcount, as the staging proof
+//      saw) loads as one list with the switch off; an adults' dish of their
+//      own loads as their list with the switch on; "the same" loaded over
+//      it turns the switch off again.
 //
 // Run from apps/oto-app:
 //   TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/kitchen-adults-ui.check.ts
@@ -119,12 +125,15 @@ const beoOf = (eventId: string) => ({
   timeline: [],
   beoTasks: [],
 });
+/** What POST /api/ai/parse-beo answers (the server's read, folded or not): set per case. */
+let parseAnswer: Record<string, unknown> = {};
 g.fetch = async (input: string | URL | Request, init?: RequestInit) => {
   const url = new URL(input instanceof Request ? input.url : String(input), "http://localhost");
   assert.equal(url.origin, "http://localhost", "the editor asks only its own server");
   const method = init?.method ?? "GET";
   const body = typeof init?.body === "string" ? (JSON.parse(init.body) as Record<string, unknown>) : {};
   asked.push({ method, path: url.pathname, body });
+  if (url.pathname === "/api/ai/parse-beo" && method === "POST") return json(parseAnswer);
   const beo = /^\/api\/events\/([^/]+)\/beo$/.exec(url.pathname);
   if (beo && method === "GET") return json(beoOf(beo[1]!));
   if (beo && method === "PUT") return json({ ok: true });
@@ -293,6 +302,72 @@ await check("a BEO saved before whose adults' list equals the kids' opens with t
   assert.deepEqual(adultsRows(), ["Chicken nuggets", "French fries", "ZZ unicorn cake"]);
 });
 
+await check("AI Fill from a pasted message: an adults' list that only repeats the kids' dishes loads as the kids' menu, the switch off; their own dish loads with it on", async () => {
+  const E5 = "55555555-5555-4555-8555-555555555829";
+  EVENTS.set(E5, { kids: [], adults: [], kidsFoodTime: "", adultsFoodTime: "" });
+  await open(E5);
+  assert.equal(switchOn(), false);
+  const NO_TEAM = { partyHost: null, entertainmentHost: null, setupResponsible: null };
+  const answerLine = (itemName: string, quantity: number, notes = "") => ({ itemName, quantity, notes, included: true, price: 0 });
+  const KIDS_ANSWER = [answerLine("Nuggets", 10), answerLine("Juice", 10)];
+  const pasteAndLoad = async (message: string) => {
+    await click("button-ai-fill-beo");
+    const area = required("textarea-ai-fill-beo") as HTMLTextAreaElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype, "value")!.set!.call(area, message);
+      area.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+    });
+    await settle();
+    await click("button-ai-parse-beo");
+    await settle(10);
+    const asked829 = asked.filter((a) => a.method === "POST" && a.path === "/api/ai/parse-beo").at(-1);
+    assert.equal(asked829?.body.text, message, "the pasted message is what the server read");
+    await click("button-ai-fill-confirm");
+    await settle(10);
+    assert.equal(byTestId("button-ai-fill-confirm"), null, "Load into Editor closed the dialog");
+    await click("button-menu-tab-adults");
+  };
+
+  // The staging proof's answer, unfolded (an older server, or whatever reaches the client): the
+  // kids' dishes again for the adults, in their headcount, noted. Load into Editor folds it.
+  parseAnswer = {
+    summary: "ZZ 829 the same",
+    kitchenPlan: {
+      kidsMenu: KIDS_ANSWER,
+      adultsMenu: [answerLine("Nuggets", 4, "Adults eat the same as the kids"), answerLine("Juice", 4, "Adults eat the same as the kids")],
+    },
+    proposals: NO_TEAM,
+  };
+  await pasteAndLoad("Confirmed: nuggets and juice for the kids, and the adults will eat the same.");
+  assert.equal(switchOn(), false, "the adults eat the kids' menu");
+  assert.equal(text("text-adults-same-as-kids"), "Same as the kids' menu");
+  assert.deepEqual(mirrorRows(), ["10 Nuggets", "10 Juice"], "the kids' lines, in the kids' count");
+  assert.equal(doc.querySelectorAll('[data-testid^="input-menu-name-adults-"]').length, 0, "no adults' line of their own");
+  let saved = await savedMenus();
+  assert.deepEqual(saved.adults, []);
+  assert.equal(saved.adultsDiffer, false);
+  assert.deepEqual((saved.kids as Line[]).map((l) => [l.itemName, l.quantity]), [["Nuggets", 10], ["Juice", 10]]);
+
+  // "Pasta for the adults": their own list, the switch on.
+  parseAnswer = { summary: "ZZ 829 pasta", kitchenPlan: { kidsMenu: KIDS_ANSWER, adultsMenu: [answerLine("Pasta", 4)] }, proposals: NO_TEAM };
+  await pasteAndLoad("Confirmed: nuggets and juice for the kids, pasta for the adults.");
+  assert.equal(switchOn(), true, "the message said the adults eat something different");
+  assert.deepEqual(adultsRows(), ["Pasta"]);
+  assert.equal(text("text-menu-qty-adults-0"), "4");
+  saved = await savedMenus();
+  assert.equal(saved.adultsDiffer, true);
+  assert.deepEqual((saved.adults as Line[]).map((l) => [l.itemName, l.quantity]), [["Pasta", 4]]);
+
+  // "The same" loaded over the adults' own list: the message's food is everybody's, the switch off again.
+  parseAnswer = { summary: "ZZ 829 the same again", kitchenPlan: { kidsMenu: KIDS_ANSWER }, proposals: NO_TEAM };
+  await pasteAndLoad("Confirmed: nuggets and juice for the kids, and the adults will eat the same.");
+  assert.equal(switchOn(), false);
+  assert.deepEqual(mirrorRows(), ["10 Nuggets", "10 Juice"]);
+  saved = await savedMenus();
+  assert.deepEqual(saved.adults, []);
+  assert.equal(saved.adultsDiffer, false);
+});
+
 await act(async () => { root.unmount(); });
 console.log(`kitchen-adults-ui.check: ${checks} checks passed`);
-process.exit(checks === 6 ? 0 : 1);
+process.exit(checks === 7 ? 0 : 1);
