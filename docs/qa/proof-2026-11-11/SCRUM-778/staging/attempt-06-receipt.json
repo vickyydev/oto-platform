@@ -1,0 +1,242 @@
+{
+  "tickets": [
+    "SCRUM-778",
+    "SCRUM-781",
+    "SCRUM-810"
+  ],
+  "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d",
+  "startedAt": "2026-11-11T12:03:35.940Z",
+  "phase": "sign out both native sessions",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/admin/login-lifecycle",
+      "actor": "anonymous",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/handoff",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/user",
+      "actor": "native browser",
+      "status": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/user",
+      "actor": "native browser",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/user",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/login-lifecycle?userId=0fc76a98-325a-4745-98f9-f98065b2195a",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/login-lifecycle?userId=57b8850c-9575-4d73-a41b-121e5ba91887",
+      "status": 200
+    }
+  ],
+  "subjects": [
+    {
+      "ticket": "SCRUM-769",
+      "userId": "0fc76a98-325a-4745-98f9-f98065b2195a"
+    },
+    {
+      "ticket": "SCRUM-795",
+      "userId": "57b8850c-9575-4d73-a41b-121e5ba91887"
+    }
+  ],
+  "before": [
+    {
+      "ticket": "SCRUM-769",
+      "userId": "0fc76a98-325a-4745-98f9-f98065b2195a",
+      "events": [
+        {
+          "id": "64948019-0a5b-4fd0-bf8e-d82df60ed0ab",
+          "kind": "deactivate",
+          "state": "superseded",
+          "settledAt": "2026-11-11T11:55:47.490Z",
+          "attemptCount": 5458,
+          "lastErrorCode": "LOGIN_DELETED",
+          "nextAttemptAt": null
+        },
+        {
+          "id": "0c22cd61-5749-4fd1-89b0-69064a761a2d",
+          "kind": "restrict",
+          "state": "delivered",
+          "settledAt": "2026-11-09T15:03:03.397Z",
+          "attemptCount": 1,
+          "lastErrorCode": null,
+          "nextAttemptAt": null
+        }
+      ]
+    },
+    {
+      "ticket": "SCRUM-795",
+      "userId": "57b8850c-9575-4d73-a41b-121e5ba91887",
+      "events": [
+        {
+          "id": "5133dfa0-7b45-47a1-bcd5-3e488af7aa76",
+          "kind": "deactivate",
+          "state": "superseded",
+          "settledAt": "2026-11-11T11:55:47.490Z",
+          "attemptCount": 6291,
+          "lastErrorCode": "LOGIN_DELETED",
+          "nextAttemptAt": null
+        }
+      ]
+    }
+  ],
+  "after": [],
+  "samples": [],
+  "cleanup": [
+    {
+      "label": "app",
+      "logout": 200,
+      "signedOut": 401
+    },
+    {
+      "label": "launcher",
+      "logout": 200,
+      "signedOut": 401
+    },
+    {
+      "label": "console",
+      "logout": 200,
+      "signedOut": 401
+    }
+  ],
+  "createdRecords": [],
+  "passed": false,
+  "deploymentsBefore": {
+    "oto-api-staging": {
+      "id": "dep-dbq5g4v13mps73f3u76g",
+      "status": "live",
+      "sha": "33e54e3f1ca1c4ed3093838d2793e9595561be19",
+      "latestStatus": "live",
+      "latestSha": "33e54e3f1ca1c4ed3093838d2793e9595561be19",
+      "sourceComparison": {
+        "descendant": true,
+        "criticalPathsUnchanged": [
+          "apps/api/src/services/oto-app-users.ts",
+          "apps/api/src/services/otoapp-provision.ts",
+          "apps/api/src/services/otoapp-lifecycle-restriction.ts",
+          "apps/api/src/services/tx.ts",
+          "apps/api/src/services/audit.ts",
+          "apps/api/src/routes/app-identities.ts",
+          "packages/db/src",
+          "pnpm-lock.yaml"
+        ],
+        "changedFiles": [
+          "apps/api/src/routes/inbox-read.ts",
+          "apps/api/src/services/inbox/actions.ts",
+          "apps/api/src/services/inbox/ai-engine.ts",
+          "apps/api/src/services/inbox/ingest.ts",
+          "apps/api/src/services/inbox/placement.ts",
+          "apps/api/src/services/inbox/read.ts",
+          "apps/api/src/services/inbox/router.ts",
+          "apps/api/test/inbox-ai-cancel.test.ts",
+          "apps/api/test/inbox-ai-engine.test.ts",
+          "apps/api/test/inbox-ai-golden.ts",
+          "apps/api/test/inbox-ai-kb.test.ts",
+          "apps/api/test/inbox-ai-playbook.test.ts",
+          "apps/api/test/inbox-ai-support.ts",
+          "apps/api/test/inbox-routing-general.test.ts",
+          "apps/inbox/src/components/ChatPanel.tsx",
+          "apps/inbox/src/components/Rail.tsx",
+          "apps/inbox/src/components/dialogs.tsx",
+          "apps/inbox/src/lib/inboxes.ts",
+          "apps/inbox/src/lib/query.ts",
+          "apps/inbox/src/lib/view.ts",
+          "apps/inbox/test/playbook-ui.test.ts",
+          "apps/inbox/test/view.test.ts",
+          "docs/features/inbox.md",
+          "docs/handover/CLOUD_HANDOVER.md",
+          "docs/handover/CODEX_HANDOVER.md",
+          "docs/progress/STATUS.md",
+          "packages/api-types/openapi.json",
+          "packages/api-types/src/openapi.ts",
+          "packages/shared/src/inbox.ts",
+          "packages/shared/test/inbox.test.ts"
+        ]
+      }
+    },
+    "oto-app-staging": {
+      "id": "dep-dbq5ejajnfac73f5tc1g",
+      "status": "live",
+      "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d",
+      "latestStatus": "live",
+      "latestSha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d",
+      "sourceComparison": {
+        "descendant": true,
+        "criticalPathsUnchanged": [
+          "apps/oto-app/server",
+          "apps/oto-app/shared/schema.ts",
+          "apps/oto-app/migrations",
+          "apps/oto-app/package-lock.json"
+        ],
+        "changedFiles": []
+      }
+    },
+    "oto-console-staging": {
+      "id": "dep-dbq5324s728c7393m3q0",
+      "status": "live",
+      "sha": "3cf7846e1bafd14ef9833bd338ebcfb6652e9081",
+      "latestStatus": "live",
+      "latestSha": "3cf7846e1bafd14ef9833bd338ebcfb6652e9081"
+    },
+    "oto-launcher-staging": {
+      "id": "dep-dbq5324s728c7393m3u0",
+      "status": "live",
+      "sha": "3cf7846e1bafd14ef9833bd338ebcfb6652e9081",
+      "latestStatus": "live",
+      "latestSha": "3cf7846e1bafd14ef9833bd338ebcfb6652e9081"
+    }
+  },
+  "ciAtStart": [
+    {
+      "conclusion": "",
+      "databaseId": 43016530898,
+      "headSha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d",
+      "status": "in_progress"
+    },
+    {
+      "conclusion": "cancelled",
+      "databaseId": 43015685363,
+      "headSha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d",
+      "status": "completed"
+    }
+  ],
+  "appCookieMetadata": [],
+  "observationStartedAt": "2026-11-11T12:03:55.000Z",
+  "filterFrom": "2026-11-11T12:03:00.000Z",
+  "lastActivityResponse": {
+    "status": 200,
+    "from": "2026-11-11T12:03:00.000Z",
+    "keys": [
+      "entries",
+      "masked",
+      "nextCursor"
+    ],
+    "masked": false,
+    "nextCursor": null,
+    "count": 0
+  },
+  "failure": {
+    "phase": "ten real minutes in Console Activity",
+    "name": "AssertionError",
+    "message": "Expected values to be strictly equal:"
+  },
+  "finishedAt": "2026-11-11T12:04:00.124Z"
+}

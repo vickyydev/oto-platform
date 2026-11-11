@@ -1,0 +1,125 @@
+{
+  "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d",
+  "samples": [
+    {
+      "at": "2026-11-11T11:55:38.179Z",
+      "services": {
+        "oto-api-staging": {
+          "id": "dep-dbq5eiuk1f9s73dm17qg",
+          "status": "pre_deploy_in_progress",
+          "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d"
+        },
+        "oto-app-staging": {
+          "id": "dep-dbq5ejajnfac73f5tc1g",
+          "status": "pre_deploy_in_progress",
+          "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d"
+        }
+      }
+    },
+    {
+      "at": "2026-11-11T11:56:00.079Z",
+      "services": {
+        "oto-api-staging": {
+          "id": "dep-dbq5eiuk1f9s73dm17qg",
+          "status": "pre_deploy_in_progress",
+          "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d"
+        },
+        "oto-app-staging": {
+          "id": "dep-dbq5ejajnfac73f5tc1g",
+          "status": "pre_deploy_in_progress",
+          "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d"
+        }
+      }
+    },
+    {
+      "at": "2026-11-11T11:56:22.031Z",
+      "services": {
+        "oto-api-staging": {
+          "id": "dep-dbq5eiuk1f9s73dm17qg",
+          "status": "pre_deploy_in_progress",
+          "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d"
+        },
+        "oto-app-staging": {
+          "id": "dep-dbq5ejajnfac73f5tc1g",
+          "status": "update_in_progress",
+          "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d"
+        }
+      }
+    },
+    {
+      "at": "2026-11-11T11:56:43.782Z",
+      "services": {
+        "oto-api-staging": {
+          "id": "dep-dbq5eiuk1f9s73dm17qg",
+          "status": "update_in_progress",
+          "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d"
+        },
+        "oto-app-staging": {
+          "id": "dep-dbq5ejajnfac73f5tc1g",
+          "status": "live",
+          "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d"
+        }
+      }
+    },
+    {
+      "at": "2026-11-11T11:57:05.624Z",
+      "services": {
+        "oto-api-staging": {
+          "id": "dep-dbq5eiuk1f9s73dm17qg",
+          "status": "update_in_progress",
+          "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d"
+        },
+        "oto-app-staging": {
+          "id": "dep-dbq5ejajnfac73f5tc1g",
+          "status": "live",
+          "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d"
+        }
+      }
+    },
+    {
+      "at": "2026-11-11T11:57:27.481Z",
+      "services": {
+        "oto-api-staging": {
+          "id": "dep-dbq5eiuk1f9s73dm17qg",
+          "status": "update_in_progress",
+          "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d"
+        },
+        "oto-app-staging": {
+          "id": "dep-dbq5ejajnfac73f5tc1g",
+          "status": "live",
+          "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d"
+        }
+      }
+    },
+    {
+      "at": "2026-11-11T11:57:49.254Z",
+      "services": {
+        "oto-api-staging": {
+          "id": "dep-dbq5eiuk1f9s73dm17qg",
+          "status": "update_in_progress",
+          "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d"
+        },
+        "oto-app-staging": {
+          "id": "dep-dbq5ejajnfac73f5tc1g",
+          "status": "live",
+          "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d"
+        }
+      }
+    },
+    {
+      "at": "2026-11-11T11:58:10.980Z",
+      "services": {
+        "oto-api-staging": {
+          "id": "dep-dbq5eiuk1f9s73dm17qg",
+          "status": "live",
+          "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d"
+        },
+        "oto-app-staging": {
+          "id": "dep-dbq5ejajnfac73f5tc1g",
+          "status": "live",
+          "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d"
+        }
+      }
+    }
+  ]
+}

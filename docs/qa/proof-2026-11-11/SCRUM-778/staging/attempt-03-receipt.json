@@ -1,0 +1,105 @@
+{
+  "tickets": [
+    "SCRUM-778",
+    "SCRUM-781",
+    "SCRUM-810"
+  ],
+  "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d",
+  "startedAt": "2026-11-11T12:00:37.057Z",
+  "phase": "sign out both native sessions",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/admin/login-lifecycle",
+      "actor": "anonymous",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/handoff",
+      "status": 200
+    }
+  ],
+  "subjects": [
+    {
+      "ticket": "SCRUM-769",
+      "userId": "0fc76a98-325a-4745-98f9-f98065b2195a"
+    },
+    {
+      "ticket": "SCRUM-795",
+      "userId": "57b8850c-9575-4d73-a41b-121e5ba91887"
+    }
+  ],
+  "before": [],
+  "after": [],
+  "samples": [],
+  "cleanup": [
+    {
+      "label": "app",
+      "logout": 200,
+      "signedOut": 401
+    },
+    {
+      "label": "launcher",
+      "logout": 200,
+      "signedOut": 401
+    },
+    {
+      "label": "console",
+      "logout": 200,
+      "signedOut": 401
+    }
+  ],
+  "createdRecords": [],
+  "passed": false,
+  "deploymentsBefore": {
+    "oto-api-staging": {
+      "id": "dep-dbq5eiuk1f9s73dm17qg",
+      "status": "live",
+      "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d",
+      "latestStatus": "pre_deploy_in_progress",
+      "latestSha": "33e54e3f1ca1c4ed3093838d2793e9595561be19"
+    },
+    "oto-app-staging": {
+      "id": "dep-dbq5ejajnfac73f5tc1g",
+      "status": "live",
+      "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d",
+      "latestStatus": "live",
+      "latestSha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d"
+    },
+    "oto-console-staging": {
+      "id": "dep-dbq5324s728c7393m3q0",
+      "status": "live",
+      "sha": "3cf7846e1bafd14ef9833bd338ebcfb6652e9081",
+      "latestStatus": "live",
+      "latestSha": "3cf7846e1bafd14ef9833bd338ebcfb6652e9081"
+    },
+    "oto-launcher-staging": {
+      "id": "dep-dbq5324s728c7393m3u0",
+      "status": "live",
+      "sha": "3cf7846e1bafd14ef9833bd338ebcfb6652e9081",
+      "latestStatus": "live",
+      "latestSha": "3cf7846e1bafd14ef9833bd338ebcfb6652e9081"
+    }
+  },
+  "ciAtStart": [
+    {
+      "conclusion": "",
+      "databaseId": 43016530898,
+      "headSha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d",
+      "status": "in_progress"
+    },
+    {
+      "conclusion": "cancelled",
+      "databaseId": 43015685363,
+      "headSha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d",
+      "status": "completed"
+    }
+  ],
+  "failure": {
+    "phase": "native Console and launcher sign-in",
+    "name": "Error",
+    "message": "response.json: Protocol error (Network.getResponseBody): No resource with given identifier found"
+  },
+  "finishedAt": "2026-11-11T12:00:53.400Z"
+}

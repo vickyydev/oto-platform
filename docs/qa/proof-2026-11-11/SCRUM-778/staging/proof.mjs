@@ -29,9 +29,22 @@ async function deployments(initial = false) {
     const svc = await service(name), entries = await render('GET', `/services/${svc.id}/deploys?limit=5`);
     const live = entries.map(item => item.deploy).find(item => item.status === 'live');
     assert.ok(live, `${name} live deployment missing`);
-    if (initial && ['oto-api-staging', 'oto-app-staging'].includes(name)) assert.equal(live.commit.id, sha);
+    let sourceComparison;
+    if (['oto-api-staging', 'oto-app-staging'].includes(name)) {
+      execFileSync('git', ['merge-base', '--is-ancestor', sha, live.commit.id], { cwd: root });
+      const critical = name === 'oto-api-staging' ? [
+        'apps/api/src/services/oto-app-users.ts', 'apps/api/src/services/otoapp-provision.ts',
+        'apps/api/src/services/otoapp-lifecycle-restriction.ts', 'apps/api/src/services/tx.ts',
+        'apps/api/src/services/audit.ts', 'apps/api/src/routes/app-identities.ts',
+        'packages/db/src', 'pnpm-lock.yaml',
+      ] : ['apps/oto-app/server', 'apps/oto-app/shared/schema.ts', 'apps/oto-app/migrations', 'apps/oto-app/package-lock.json'];
+      const changed = execFileSync('git', ['diff', '--name-only', sha, live.commit.id, '--', ...critical], { cwd: root, encoding: 'utf8' }).trim();
+      assert.equal(changed, '', `${name} lifecycle runtime changed during concurrent rollout`);
+      sourceComparison = { descendant: true, criticalPathsUnchanged: critical,
+        changedFiles: execFileSync('git', ['diff', '--name-only', sha, live.commit.id], { cwd: root, encoding: 'utf8' }).trim().split('\n').filter(Boolean) };
+    }
     result[name] = { id: live.id, status: live.status, sha: live.commit.id,
-      latestStatus: entries[0].deploy.status, latestSha: entries[0].deploy.commit.id };
+      latestStatus: entries[0].deploy.status, latestSha: entries[0].deploy.commit.id, sourceComparison };
   }
   return result;
 }
@@ -68,12 +81,19 @@ async function readReceipts(destination) {
 }
 async function activity() {
   const answer = page.waitForResponse(response => new URL(response.url()).pathname === '/api/audit'
-    && new URL(response.url()).searchParams.get('action') === 'app_identity.lifecycle_deactivation.failed');
+    && new URL(response.url()).searchParams.get('action') === 'app_identity.lifecycle_deactivation.failed'
+    && new URL(response.url()).searchParams.get('from') === receipt.filterFrom);
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
-  const response = await answer; assert.equal(response.status(), 200);
-  assert.equal(new URL(response.url()).searchParams.get('from'), receipt.observationStartedAt);
+  const response = await answer;
   const body = await response.json();
-  assert.equal(body.masked, true); assert.equal(body.nextCursor, null);
+  receipt.lastActivityResponse = { status: response.status(), from: new URL(response.url()).searchParams.get('from'),
+    keys: Object.keys(body).sort(), masked: body.masked, nextCursor: body.nextCursor,
+    count: Array.isArray(body.entries) ? body.entries.length : null }; save();
+  assert.equal(response.status(), 200, 'Activity read must succeed');
+  assert.equal(new URL(response.url()).searchParams.get('from'), receipt.filterFrom, 'Activity must apply the recorded minute filter');
+  // The seeded administrator may read sensitive rows. This observation must
+  // contain no rows at all; record the API flag honestly and mask the picture.
+  assert.equal(typeof body.masked, 'boolean'); assert.equal(body.nextCursor, null);
   assert.ok(Array.isArray(body.entries)); assert.equal(body.entries.length, 0);
   receipt.samples.push({ at: new Date().toISOString(), status: response.status(), count: body.entries.length,
     masked: body.masked, nextCursor: body.nextCursor }); save();
@@ -91,9 +111,22 @@ try {
   phase('native Console and launcher sign-in');
   await login(page, origins.console); await page.waitForURL(/\/overview$/);
   await login(app, origins.launcher);
+  const handoff = app.waitForResponse(response => new URL(response.url()).pathname === '/api/auth/handoff');
   await app.getByRole('button', { name: 'Open OTO App', exact: true }).click();
   await app.waitForURL(url => url.origin === origins.app && !url.hash.includes('handoff'));
-  const user = await appContext.request.get(origins.app + '/api/user'); assert.equal(user.status(), 200);
+  const exchanged = await handoff;
+  await exchanged.finished();
+  receipt.requests.push({ method: 'POST', path: '/api/auth/handoff', status: exchanged.status() }); save();
+  assert.equal(exchanged.status(), 200, 'native app handoff must complete');
+  receipt.appCookieMetadata = (await appContext.cookies(origins.app)).map(({ name, domain, path, secure, httpOnly, sameSite }) => ({ name, domain, path, secure, httpOnly, sameSite })); save();
+  await expect.poll(async () => {
+    const status = await app.evaluate(async () => (await fetch('/api/user')).status);
+    receipt.requests.push({ method: 'GET', path: '/api/user', actor: 'native browser', status }); save();
+    return status;
+  }, { timeout: 15000 }).toBe(200);
+  const user = await appContext.request.get(origins.app + '/api/user');
+  receipt.requests.push({ method: 'GET', path: '/api/user', status: user.status() }); save();
+  assert.equal(user.status(), 200, 'app sign-in must be ready');
   phase('read both old ZZ TEST lifecycle receipts through the app route');
   await readReceipts(receipt.before);
   for (const subject of subjects) {
@@ -103,9 +136,11 @@ try {
   phase('ten real minutes in Console Activity');
   await page.goto(origins.console + '/activity');
   await page.getByLabel('Action', { exact: true }).fill('app_identity.lifecycle_deactivation.failed');
-  // Include seconds so earlier failures in the same minute are not the observation.
+  // The native filter has minute precision. Include that whole minute, then
+  // observe ten real minutes from now; earlier rows would also fail the check.
   const started = Math.floor(Date.now() / 1000) * 1000; receipt.observationStartedAt = new Date(started).toISOString(); save();
-  await page.getByLabel('From', { exact: true }).fill(new Date(started + 7 * 3600000).toISOString().slice(0, 19));
+  receipt.filterFrom = new Date(Math.floor(started / 60000) * 60000).toISOString(); save();
+  await page.getByLabel('From', { exact: true }).fill(new Date(Date.parse(receipt.filterFrom) + 7 * 3600000).toISOString().slice(0, 16));
   await page.getByRole('button', { name: 'Refresh', exact: true }).waitFor();
   await expect(page.getByRole('button', { name: 'Refresh', exact: true })).toBeEnabled();
   await activity(); await screenshot('s778-activity-start.png');
@@ -134,8 +169,8 @@ try {
   phase('sign out both native sessions');
   for (const [context, origin, logout, read, label] of [
     [appContext, origins.app, '/api/logout', '/api/user', 'app'],
-    [appContext, origins.launcher, '/api/auth/logout', '/api/me', 'launcher'],
-    [consoleContext, origins.console, '/api/auth/logout', '/api/me', 'console'],
+    [appContext, origins.launcher, '/api/auth/sign-out', '/api/me', 'launcher'],
+    [consoleContext, origins.console, '/api/auth/sign-out', '/api/me', 'console'],
   ]) {
     try {
       const response = await context.request.post(origin + logout, { headers: { origin } });
