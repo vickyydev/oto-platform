@@ -64,3 +64,21 @@ most once per 90 seconds; staging's simulated payment pages live in the api's me
   go-live.
 - Not started, need a decision or hardware: SCRUM-733 (till Messages tab), SCRUM-513,
   SCRUM-274, SCRUM-705, SCRUM-482, SCRUM-485, SCRUM-709, SCRUM-714.
+
+## 4. Outcome (12 November 2026)
+
+Deployed, each on its staging proof or its check output: SCRUM-846, 847, 848, 849, 850,
+851, 852, 853, 854, 855, 856 (the parent SCRUM-845 with them), SCRUM-788, SCRUM-782,
+SCRUM-811. Proof folders: `docs/qa/proof-2026-11-11/SCRUM-<n>/`.
+
+Open: SCRUM-780 (fixed and deployed; its proof with a local box agent waits for the
+owner's go on four temporary settings).
+
+Follow-ups the proofs themselves produced and closed: SCRUM-853 (the reason shown when
+the box answers for a voucher price), SCRUM-854 (the left-unpaid notice), SCRUM-855 (a
+video with no length), SCRUM-856 (the upload waits for measuring).
+
+Left on staging by the proofs and not removable through any route: one 8.7 MB synthetic
+video in the app's storage bucket; a few ZZ TEST child registrations; four unused ZZ TEST
+voucher codes; archived ZZ TEST tills and their prefixes; inactive ZZ TEST platform
+accounts without roles.

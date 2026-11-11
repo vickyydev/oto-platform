@@ -1,0 +1,13 @@
+The follow-ups of the till and platform round, read from Jira on 12 November 2026
+
+SCRUM-846  Deployed  A till keeps its receipt prefix when its other details are edited; a receipt-number clash keeps its own wording
+SCRUM-847  Deployed  Golden Ticket drop-off: the customer screen waits with the staff screen, and the waiting line says why when the 
+SCRUM-848  Deployed  The New guest dialog shows the phone number in the same format as the other till screens
+SCRUM-849  Deployed  The phone till payment end-to-end check keeps its pictures out of the committed proof folder
+SCRUM-850  Deployed  Checklist media: a video sent through the app server is streamed to storage, shows its progress, and is proved o
+SCRUM-851  Deployed  SOP from a document: when the AI provider refuses, staff see a plain line, not the provider's raw answer
+SCRUM-852  Deployed  A login switch-off that could not reach the platform keeps trying through an outage, and one that was refused is
+SCRUM-853  Deployed  Voucher price wait: the reason shown when the till falls back to its box, the Hold sale line, and the member car
+SCRUM-854  Deployed  After a left-unpaid sale is voided from the voucher refusal, its own left-unpaid notice goes too
+SCRUM-855  Deployed  Checklist media: a video whose length the browser cannot read is accepted, and a failed save leaves no file behi
+SCRUM-856  Deployed  Checklist media: the upload waits for the picture or video to be measured, so its size and length are saved
