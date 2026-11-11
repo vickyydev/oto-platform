@@ -1,4 +1,4 @@
-// SCRUM-802/783. Run only after this unit owns the source/proof slot.
+// SCRUM-802/783. Run on the named live source; proof does not hold the landing slot.
 // No credentials, pairing code, phone or raw response bodies enter the receipt.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -65,7 +65,6 @@ const formatted = index => `+66 89 802 001${index + 1}`;
 const fixtureName = `ZZ TEST SCRUM-802 phone ${Date.now()}`;
 let failed = false;
 const shot = async (page, name) => {
-  for (const close of await page.locator('[toast-close]').all()) await close.click();
   await page.screenshot({ path: resolve(out, name), animations: 'disabled',
     mask: [page.getByLabel('Lock screen').locator('..'), page.locator('input[type="password"]'),
       page.getByTestId('display-pairing-code'), page.locator('svg:not(.lucide), canvas'), page.getByText(/^QR-[A-Z0-9]+$/)] });
@@ -82,7 +81,8 @@ const identify = async index => {
   phase(`guest ${index + 1}: member offer`);
   const offer = till.getByRole('dialog', { name: 'New member?', exact: true });
   await expect(offer).toContainText(formatted(index));
-  if (index === 0) await shot(till, 's783-new-member-offer.png');
+  if (index === 0) { phase('member offer: screenshot'); await shot(till, 's783-new-member-offer.png'); }
+  phase(`guest ${index + 1}: continue as walk-in`);
   await offer.getByRole('button', { name: 'Continue as walk-in', exact: true }).click();
 };
 const quantity = async (label, target) => {
@@ -249,7 +249,7 @@ try {
   receipt.deploymentsAfter = await deployments();
   receipt.passed = true;
 } catch (error) {
-  failed = true; receipt.passed = false; receipt.failure = { phase: receipt.phase, kind: error.name };
+  failed = true; receipt.passed = false; receipt.failure = { phase: receipt.phase, kind: error.name, frames: (error.stack ?? '').split('\n').filter(l => l.includes('proof.mjs:')).map(l => l.match(/proof.mjs:\d+:\d+/)?.[0]) };
   // No exception text: a browser call log can include the value being typed.
   if (till) await shot(till, 'failed-attempt.png').catch(() => {});
   if (display) await shot(display, 'failed-display.png').catch(() => {});

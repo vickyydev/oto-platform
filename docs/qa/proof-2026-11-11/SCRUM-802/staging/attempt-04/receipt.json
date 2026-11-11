@@ -1,0 +1,219 @@
+{
+  "tickets": [
+    "SCRUM-802",
+    "SCRUM-783"
+  ],
+  "sha": "1bd870dcfad18fdafc62d7e244a324d7e047afc2",
+  "ci": {
+    "conclusion": "",
+    "databaseId": 42988870929,
+    "headSha": "1bd870dcfad18fdafc62d7e244a324d7e047afc2",
+    "status": "pending"
+  },
+  "candidate": {
+    "sha": "6d4553cf581f0047df826fe516aa7ba7f0d81c53",
+    "run": 42978766224,
+    "scope": "POS, phone helpers and dependency inputs",
+    "inheritedChanges": [
+      ".github/workflows/ci.yml",
+      "apps/api/src/app.ts",
+      "apps/api/src/routes/inbox-dictation.ts",
+      "apps/api/src/routes/inbox-read.ts",
+      "apps/api/src/services/inbox/ai-engine.ts",
+      "apps/api/src/services/inbox/dictation.ts",
+      "apps/api/src/services/inbox/reply.ts",
+      "apps/api/src/services/inbox/transcription.ts",
+      "apps/api/test/fixtures/inbox-ai-rules/prompt-no-rules.json",
+      "apps/api/test/inbox-ai-birthday-date.test.ts",
+      "apps/api/test/inbox-ai-engine.test.ts",
+      "apps/api/test/inbox-ai-handover-notice.test.ts",
+      "apps/api/test/inbox-ai-one-message.test.ts",
+      "apps/api/test/inbox-ai-open-question.test.ts",
+      "apps/api/test/inbox-dictation.test.ts",
+      "apps/api/test/inbox-read.test.ts",
+      "apps/api/test/route-write-conformance.test.ts",
+      "apps/inbox/src/api/inbox.ts",
+      "apps/inbox/src/components/Composer.tsx",
+      "apps/inbox/src/components/Dictation.tsx",
+      "apps/inbox/src/components/Recorder.ts",
+      "apps/inbox/src/components/Simulator.tsx",
+      "apps/inbox/src/lib/dictation.ts",
+      "apps/inbox/test/dictation.test.ts",
+      "apps/inbox/test/simulator-record.test.ts",
+      "apps/oto-app/client/src/components/beo/beo-ai-review.tsx",
+      "apps/oto-app/client/src/components/beo/beo-event-editor.tsx",
+      "apps/oto-app/client/src/components/beo/beo-timeline-editor.tsx",
+      "apps/oto-app/client/src/lib/beo-ai-review.ts",
+      "apps/oto-app/client/src/lib/beo-fetch-from-chat.ts",
+      "apps/oto-app/server/ai-routes.ts",
+      "apps/oto-app/server/lib/beoAiApprove.ts",
+      "apps/oto-app/server/lib/beoCatalogueFill.ts",
+      "apps/oto-app/shared/beoAiFill.ts",
+      "apps/oto-app/tests/ai-fill.check.ts",
+      "apps/oto-app/tests/beo-catalogue-fill.check.ts",
+      "apps/oto-app/tests/beo-inbox-fill.check.ts",
+      "apps/oto-app/tests/beo-prefill-ui.check.ts",
+      "apps/oto-app/tests/fetch-from-chat-ui.check.ts",
+      "apps/oto-app/tests/fetch-from-chat.check.ts",
+      "packages/api-types/openapi.json",
+      "packages/api-types/src/openapi.ts",
+      "packages/assistant/src/compose.ts",
+      "packages/assistant/src/persona/rules.ts",
+      "packages/assistant/src/slots.ts",
+      "packages/assistant/test/one-message.test.ts",
+      "packages/assistant/test/open-question.test.ts",
+      "packages/shared/src/inbox.ts"
+    ]
+  },
+  "startedAt": "2026-11-11T08:46:26.771Z",
+  "phase": "guest 1: member offer",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/01a1c9c9-91c8-7f76-8a74-e80c19f7c009/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/01a1c9c9-91c8-7f76-8a74-e80c19f7c009",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/01a1c9c9-a12b-7774-a3e1-5e48afe91bc9/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/01a1c9c9-91c8-7f76-8a74-e80c19f7c009/displays",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/01a1c9c9-91c8-7f76-8a74-e80c19f7c009",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/01a1c9c9-91c8-7f76-8a74-e80c19f7c009",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1c9c9-91c8-7f76-8a74-e80c19f7c009"
+    },
+    {
+      "kind": "display",
+      "id": "01a1c9c9-a12b-7774-a3e1-5e48afe91bc9"
+    }
+  ],
+  "checks": {},
+  "cleanup": [
+    {
+      "kind": "display",
+      "id": "01a1c9c9-a12b-7774-a3e1-5e48afe91bc9",
+      "revoked": true
+    },
+    {
+      "kind": "station",
+      "id": "01a1c9c9-91c8-7f76-8a74-e80c19f7c009",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "deployments": {
+    "oto-pos-staging": {
+      "id": "dep-dbq2jvrrjlhs73b1urjg",
+      "status": "live",
+      "sha": "1bd870dcfad18fdafc62d7e244a324d7e047afc2"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbq2k0e7bikc73brvvng",
+      "status": "live",
+      "sha": "1bd870dcfad18fdafc62d7e244a324d7e047afc2"
+    },
+    "oto-api-staging": {
+      "id": "dep-dbq2ei8n74is739h1uqg",
+      "status": "live",
+      "sha": "601dc16495c0f3d51bbf1d227b644419634fd7de"
+    }
+  },
+  "passed": false,
+  "failure": {
+    "phase": "guest 1: member offer",
+    "kind": "TimeoutError"
+  },
+  "finishedAt": "2026-11-11T08:47:09.708Z"
+}

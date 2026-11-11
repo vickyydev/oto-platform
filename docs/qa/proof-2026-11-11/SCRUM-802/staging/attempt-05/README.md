@@ -1,0 +1,1 @@
+The helper tried to dismiss a toast behind an open modal and timed out at proof.mjs:68. Cleanup passed. No fresh failure screenshot was made in this attempt. The screenshot helper now captures the screen without clicking a toast.
