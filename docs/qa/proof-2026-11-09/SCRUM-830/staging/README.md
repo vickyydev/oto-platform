@@ -1,8 +1,11 @@
 # SCRUM-830 — staging proof: the first message decides the inbox queue
 
-**Verdict: FAILED** — steps 1 to 6 passed; step 7 failed on both of its lines
-(an edge word routed a plain question away from the channel's default). The
-ticket was not walked to Testing.
+**Verdict of the first run (at 3ac4658cd): FAILED** — steps 1 to 6 passed;
+step 7 failed on both of its lines (an edge word routed a plain question away
+from the channel's default). The ticket was not walked to Testing then.
+**Re-checked after the fix b37f06334** (the last section below): step 7
+passes on all three lines, so every step of the proof passes; the ticket was
+walked to Testing on the re-check.
 
 ## When and what was live
 
@@ -123,3 +126,59 @@ said "Received: a new conversation, routed."); the later lines of steps 5 and
 
 Names, initials and the list of other conversations are masked in every
 picture; the seats shown are the seed's demo people.
+
+## Re-check of step 7 after the fix (b37f06334)
+
+**Verdict: PASSED** — all three lines route at ingest as the fix intends.
+With the first run's steps 1–6, every step of the proof now passes.
+
+- Run: 11 November 2026, 13:11–13:13 Bangkok (06:11:11Z – 06:13:29Z).
+- `oto-api-staging` deploy `dep-dbq0bjlg1s2s73bg32n0`, **live** at
+  `b37f063343102808456733501925e0284501a3b8` (finished 06:10:16Z; polled
+  from `build_in_progress` through `pre_deploy` and `update_in_progress` to
+  `live`, never `update_failed`) — read before and after, unchanged.
+- `oto-inbox-staging` unchanged: `dep-dbq00f6k1f9s73d6j4l0` at `3ac4658c`
+  (no inbox code in the fix).
+- Same method as above: the driver restarted on the same `work.json`, the
+  administrator signed in again through the launcher, three fresh ZZ TEST
+  numbers on Demo Instagram, the Category left on "As the channel routes it"
+  (no `hint` in the request), the Language "Not given"; each thread read
+  about a second after the POST (0 assistant pills) and again after the
+  assistant's turn.
+
+| Line (ZZ TEST) | At send: category · team | Routed `source` / `cue` | Pill at ingest (exact) | Audit at send | After the assistant | Verdict |
+|---|---|---|---|---|---|---|
+| What happens in the event of rain? | `general` · Reception · Central Floresta | `default` / — | "Language: EN · Routed to Reception · Central Floresta" — **no "from the message"** (collapsed "… · 1 more", the seat) | `inbox.conversation.create` `categorySource: default` only; **no classify row** | `ai_handover` intent `faq`, reason `GROUNDING_TOPIC`, destination gm → the assistant itself moved it ("Moved from Reception · Central Floresta → GM by AI", "Language: EN · Routed to GM", no source) | **Pass** (the reader left it on the default) — picture 06 |
+| Is the deposit refundable? | `general` · Reception · Central Floresta | `default` / — | "Language: EN · Routed to Reception · Central Floresta" — no "from the message" | create `categorySource: default` only; **no classify row** | `ai_handover` intent `refund_request` → the assistant moved it to the GM ("Moved from Reception · Central Floresta → GM by AI") | **Pass** (the reader left it on the default) |
+| Can I get a refund for yesterday? (control) | `gm` · GM | `message` / `refund` / `en` | "Language: EN · Routed to GM · from the message" | classify `cue: refund, cueLanguage: en`; create `categorySource: message` | `ai_handover` (refund_request, destination gm), no move; "AI handed over to the team · refund request" | **Pass** |
+
+Each was a new conversation (`conversationsCreated: 1`, "Received: a new
+conversation, routed.").
+
+### Findings of the re-check
+
+1. **The reader is fixed.** Neither edge line produced a `classify` row or a
+   "from the message" pill; the control still does. Reproduced locally
+   against b37f06334 with `firstMessageCategory()` before the run (null,
+   null, gm/refund).
+2. **The assistant then moved both edge threads to the GM on its own** — the
+   second opinion this ticket leaves unchanged. "Is the deposit refundable?"
+   it read as a refund request; "What happens in the event of rain?" it
+   handed over as an `faq` it could not ground (`GROUNDING_TOPIC`) and the
+   hand-over's destination for that is the GM. So the threads' end state is
+   the GM, by the assistant, not by the first-message reader. Whether a
+   weather question or a deposit-policy question should reach the GM is the
+   assistant's routing, outside SCRUM-830; raised here so it is seen.
+
+### Clean-up and sign-out of the re-check
+
+- The three ZZ TEST threads marked handled through
+  `POST /api/inbox/conversations/:id/handle` (200 each), read back `handled`
+  (06:13:23Z – 06:13:25Z).
+- Sign-out on the inbox, the Console and the launcher: 200 each; read back
+  `GET /api/inbox/me` 401, `GET /api/me` (Console) 401, `GET /api/me`
+  (launcher) 401 (06:13:29Z).
+- Record: `receipt-recheck.json` (the three threads; checked for digit runs
+  of nine or more outside git SHAs and for "+66") and
+  `06-step7-recheck-event-of-rain-default-no-from-the-message.png` (names,
+  initials and the list of other conversations masked).

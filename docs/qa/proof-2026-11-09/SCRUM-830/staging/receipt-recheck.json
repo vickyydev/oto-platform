@@ -1,0 +1,880 @@
+{
+  "unit": "SCRUM-830 staging re-check of step 7 after the fix (b37f06334): the api at the fix, the inbox at 3ac4658c",
+  "apiCommit": "b37f063343102808456733501925e0284501a3b8",
+  "inboxCommit": "3ac4658cdd5f00a965c004db027cfac775495a19",
+  "runWindowUtc": {
+    "start": "2026-11-11T06:11:11.576Z",
+    "end": "2026-11-11T06:13:29.106Z"
+  },
+  "browser": "Chromium 153.0.8010.12 (headless), 1440×900, light, en-GB, Asia/Bangkok",
+  "liveBefore": {
+    "at": "2026-11-11T06:11:11.576Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbq0bjlg1s2s73bg32n0",
+        "status": "live",
+        "sha": "b37f063343102808456733501925e0284501a3b8",
+        "finishedAt": "2026-11-11T06:10:16.12554Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbq00f6k1f9s73d6j4l0",
+        "status": "live",
+        "sha": "3ac4658cdd5f00a965c004db027cfac775495a19",
+        "finishedAt": "2026-11-11T05:43:11.967543Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dbq08sijnfac739lghk0",
+        "status": "live",
+        "sha": "acb096f723131ffbc3b9b2b461193242f70a79ce",
+        "finishedAt": "2026-11-11T06:01:41.840581Z"
+      }
+    ],
+    "apiLiveOnSha": true
+  },
+  "liveAfter": {
+    "at": "2026-11-11T06:13:26.246Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbq0bjlg1s2s73bg32n0",
+        "status": "live",
+        "sha": "b37f063343102808456733501925e0284501a3b8",
+        "finishedAt": "2026-11-11T06:10:16.12554Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbq00f6k1f9s73d6j4l0",
+        "status": "live",
+        "sha": "3ac4658cdd5f00a965c004db027cfac775495a19",
+        "finishedAt": "2026-11-11T05:43:11.967543Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dbq08sijnfac739lghk0",
+        "status": "live",
+        "sha": "acb096f723131ffbc3b9b2b461193242f70a79ce",
+        "finishedAt": "2026-11-11T06:01:41.840581Z"
+      }
+    ],
+    "apiLiveOnSha": true
+  },
+  "viewer": {
+    "roles": [
+      "owner"
+    ],
+    "via": "the launcher, handed into the inbox and the Console (staging administrator)"
+  },
+  "assistant": {
+    "route": "GET /api/inbox/ai/channel-accounts",
+    "status": 200,
+    "account": {
+      "id": "01a156bb-677e-728c-acc3-35daa8e43d0b",
+      "displayName": "Demo Instagram",
+      "channel": "instagram",
+      "aiMode": "live"
+    }
+  },
+  "threads": {
+    "R7a": {
+      "key": "R7a",
+      "expect": "after the fix: the default (General / Reception), no classify row, the pill without \"from the message\"",
+      "verdict": "PASS: the default at ingest, no classify row, no from-the-message; the assistant later handed over to the GM on its own (faq / GROUNDING_TOPIC)",
+      "sender": "its own fresh ZZ TEST simulator number (not kept)",
+      "simulatorAccount": "Demo Instagram (simulator, no park; default category general)",
+      "conversationId": "01a1c93b-bc23-7c42-ae34-77612eb1db17",
+      "categoryHint": "none (\"As the channel routes it\")",
+      "languageHint": "none (\"Not given\")",
+      "lines": [
+        {
+          "n": 1,
+          "text": "What happens in the event of rain? (ZZ TEST)",
+          "sentAt": "2026-11-11T06:11:35.266Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo Instagram · Instagram",
+            "category": "As the channel routes it",
+            "categoryValue": "",
+            "language": "Not given",
+            "languageValue": "",
+            "message": "What happens in the event of rain? (ZZ TEST)"
+          },
+          "hintSent": null,
+          "hintPresent": false,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "dialogSaid": "Received: a new conversation, routed.",
+          "afterAssistantTurn": {
+            "waitedMs": 5894,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_handover",
+                "turnId": "01a1c93b-bc34-7715-b9ee-37c43dc4228e",
+                "intent": "faq",
+                "intents": [
+                  "faq"
+                ],
+                "reason": "GROUNDING_TOPIC",
+                "rule": "GROUNDING_TOPIC",
+                "closingKey": "closing_unclear"
+              }
+            ],
+            "assistantBubbles": 1,
+            "aiState": "left_for_team"
+          }
+        }
+      ],
+      "atSend": {
+        "readAt": "2026-11-11T06:11:36.256Z",
+        "route": "GET /api/inbox/conversations/:id",
+        "conversation": {
+          "category": "general",
+          "teamName": "Reception · Central Floresta",
+          "language": "en",
+          "aiState": "ready",
+          "eventCount": 2,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T06:11:37.000Z",
+            "actorKind": "system",
+            "teamId": "01a1562e-64ef-7998-a3de-4b3af63c5fe3",
+            "category": "general",
+            "language": "en",
+            "branchId": null,
+            "ruleId": null,
+            "fallback": true,
+            "source": "default",
+            "cue": null,
+            "cueLanguage": null,
+            "payloadKeys": [
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language"
+            ]
+          }
+        ],
+        "aiPillsThen": 0,
+        "messagesThen": 1
+      },
+      "final": {
+        "readAt": "2026-11-11T06:12:11.331Z",
+        "conversation": {
+          "category": "gm",
+          "teamName": "GM",
+          "language": "en",
+          "aiState": "left_for_team",
+          "eventCount": 8,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T06:11:37.000Z",
+            "actorKind": "system",
+            "teamId": "01a1562e-64ef-7998-a3de-4b3af63c5fe3",
+            "category": "general",
+            "language": "en",
+            "branchId": null,
+            "ruleId": null,
+            "fallback": true,
+            "source": "default",
+            "cue": null,
+            "cueLanguage": null,
+            "payloadKeys": [
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language"
+            ]
+          },
+          {
+            "createdAt": "2026-11-11T06:11:46.013Z",
+            "actorKind": "ai",
+            "teamId": "01a1824e-b6b9-7fd3-85b6-c10bfaf747be",
+            "category": "gm",
+            "language": "en",
+            "branchId": null,
+            "ruleId": "01a1824e-b6c5-7a7d-8156-fe7b885c00c3",
+            "fallback": false,
+            "source": null,
+            "cue": null,
+            "cueLanguage": null,
+            "payloadKeys": [
+              "ruleId",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language"
+            ]
+          }
+        ],
+        "otherPills": [
+          {
+            "kind": "assigned",
+            "actorKind": "system",
+            "createdAt": "2026-11-11T06:11:37.000Z",
+            "slot": "primary",
+            "assigneeKind": "team"
+          },
+          {
+            "kind": "classified",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T06:11:46.013Z"
+          },
+          {
+            "kind": "released",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T06:11:46.013Z",
+            "slot": "primary",
+            "assigneeKind": "team"
+          },
+          {
+            "kind": "moved_team",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T06:11:46.013Z",
+            "fromTeamId": "01a1562e-64ef-7998-a3de-4b3af63c5fe3",
+            "toTeamId": "01a1824e-b6b9-7fd3-85b6-c10bfaf747be"
+          },
+          {
+            "kind": "assigned",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T06:11:46.013Z",
+            "slot": "primary",
+            "assigneeKind": "team"
+          }
+        ],
+        "aiPills": [
+          {
+            "kind": "ai_handover",
+            "createdAt": "2026-11-11T06:11:46.013Z",
+            "actorKind": "ai",
+            "turnId": "01a1c93b-bc34-7715-b9ee-37c43dc4228e",
+            "intent": "faq",
+            "intents": [
+              "faq"
+            ],
+            "reason": "GROUNDING_TOPIC",
+            "rule": "GROUNDING_TOPIC",
+            "destination": "gm",
+            "reroutedTeamId": "01a1824e-b6b9-7fd3-85b6-c10bfaf747be",
+            "templateKey": "handover_general",
+            "closingKey": "closing_unclear",
+            "silent": false,
+            "messageIds": [
+              "01a1c93b-dcec-702d-a16b-1ab866b6b8c3"
+            ]
+          }
+        ]
+      },
+      "pillWords": {
+        "final": {
+          "at": "2026-11-11T06:13:07.685Z",
+          "closed": [
+            "AI handed over · Resume",
+            "Language: EN · Routed to Reception · Central Floresta · 1 more",
+            "AI handed over to GM — GM primary"
+          ],
+          "groupSummaries": [
+            "Language: EN · Routed to Reception · Central Floresta · 1 more",
+            "AI handed over to GM — GM primary"
+          ],
+          "open": [
+            "AI handed over · Resume",
+            "Language: EN · Routed to Reception · Central Floresta · 1 more",
+            "Language: EN · Routed to Reception · Central Floresta",
+            "Assigned Reception · Central Floresta as primary",
+            "AI handed over to GM — GM primary",
+            "AI · Language: EN · Intent: faq",
+            "Moved from Reception · Central Floresta → GM by AI",
+            "Language: EN · Routed to GM",
+            "Assigned GM as primary",
+            "AI handed over to GM · faq"
+          ]
+        }
+      },
+      "audit": {
+        "route": "GET /api/audit?entityType=inbox.conversation&entityId=:id",
+        "status": 200,
+        "atSend": [
+          {
+            "action": "inbox.conversation.create",
+            "after": {
+              "category": "general",
+              "categorySource": "default",
+              "language": "en"
+            }
+          }
+        ],
+        "classifyRow": "none",
+        "afterAssistant": [
+          "inbox.ai.handover",
+          "inbox.conversation.create"
+        ]
+      }
+    },
+    "R7b": {
+      "key": "R7b",
+      "expect": "after the fix: the default, no classify row",
+      "verdict": "PASS: the default at ingest, no classify row; the assistant later handed over to the GM on its own (refund_request)",
+      "sender": "its own fresh ZZ TEST simulator number (not kept)",
+      "simulatorAccount": "Demo Instagram (simulator, no park; default category general)",
+      "conversationId": "01a1c93b-cdbf-742f-99e5-9f732d1326ba",
+      "categoryHint": "none (\"As the channel routes it\")",
+      "languageHint": "none (\"Not given\")",
+      "lines": [
+        {
+          "n": 1,
+          "text": "Is the deposit refundable? (ZZ TEST)",
+          "sentAt": "2026-11-11T06:11:39.780Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo Instagram · Instagram",
+            "category": "As the channel routes it",
+            "categoryValue": "",
+            "language": "Not given",
+            "languageValue": "",
+            "message": "Is the deposit refundable? (ZZ TEST)"
+          },
+          "hintSent": null,
+          "hintPresent": false,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "dialogSaid": "Received: a new conversation, routed.",
+          "afterAssistantTurn": {
+            "waitedMs": 5917,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_handover",
+                "turnId": "01a1c93b-cdcd-7b28-9ede-fa08a94ed1d1",
+                "intent": "refund_request",
+                "intents": [
+                  "refund_request"
+                ],
+                "reason": "OK",
+                "rule": null,
+                "closingKey": "closing_gm"
+              }
+            ],
+            "assistantBubbles": 1,
+            "aiState": "left_for_team"
+          }
+        }
+      ],
+      "atSend": {
+        "readAt": "2026-11-11T06:11:40.752Z",
+        "route": "GET /api/inbox/conversations/:id",
+        "conversation": {
+          "category": "general",
+          "teamName": "Reception · Central Floresta",
+          "language": "en",
+          "aiState": "ready",
+          "eventCount": 2,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T06:11:42.000Z",
+            "actorKind": "system",
+            "teamId": "01a1562e-64ef-7998-a3de-4b3af63c5fe3",
+            "category": "general",
+            "language": "en",
+            "branchId": null,
+            "ruleId": null,
+            "fallback": true,
+            "source": "default",
+            "cue": null,
+            "cueLanguage": null,
+            "payloadKeys": [
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language"
+            ]
+          }
+        ],
+        "aiPillsThen": 0,
+        "messagesThen": 1
+      },
+      "final": {
+        "readAt": "2026-11-11T06:12:20.574Z",
+        "conversation": {
+          "category": "gm",
+          "teamName": "GM",
+          "language": "en",
+          "aiState": "left_for_team",
+          "eventCount": 8,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T06:11:42.000Z",
+            "actorKind": "system",
+            "teamId": "01a1562e-64ef-7998-a3de-4b3af63c5fe3",
+            "category": "general",
+            "language": "en",
+            "branchId": null,
+            "ruleId": null,
+            "fallback": true,
+            "source": "default",
+            "cue": null,
+            "cueLanguage": null,
+            "payloadKeys": [
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language"
+            ]
+          },
+          {
+            "createdAt": "2026-11-11T06:11:49.591Z",
+            "actorKind": "ai",
+            "teamId": "01a1824e-b6b9-7fd3-85b6-c10bfaf747be",
+            "category": "gm",
+            "language": "en",
+            "branchId": null,
+            "ruleId": "01a1824e-b6c5-7a7d-8156-fe7b885c00c3",
+            "fallback": false,
+            "source": null,
+            "cue": null,
+            "cueLanguage": null,
+            "payloadKeys": [
+              "ruleId",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language"
+            ]
+          }
+        ],
+        "otherPills": [
+          {
+            "kind": "assigned",
+            "actorKind": "system",
+            "createdAt": "2026-11-11T06:11:42.000Z",
+            "slot": "primary",
+            "assigneeKind": "team"
+          },
+          {
+            "kind": "classified",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T06:11:49.591Z"
+          },
+          {
+            "kind": "released",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T06:11:49.591Z",
+            "slot": "primary",
+            "assigneeKind": "team"
+          },
+          {
+            "kind": "moved_team",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T06:11:49.591Z",
+            "fromTeamId": "01a1562e-64ef-7998-a3de-4b3af63c5fe3",
+            "toTeamId": "01a1824e-b6b9-7fd3-85b6-c10bfaf747be"
+          },
+          {
+            "kind": "assigned",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T06:11:49.591Z",
+            "slot": "primary",
+            "assigneeKind": "team"
+          }
+        ],
+        "aiPills": [
+          {
+            "kind": "ai_handover",
+            "createdAt": "2026-11-11T06:11:49.591Z",
+            "actorKind": "ai",
+            "turnId": "01a1c93b-cdcd-7b28-9ede-fa08a94ed1d1",
+            "intent": "refund_request",
+            "intents": [
+              "refund_request"
+            ],
+            "reason": "OK",
+            "rule": null,
+            "destination": "gm",
+            "reroutedTeamId": "01a1824e-b6b9-7fd3-85b6-c10bfaf747be",
+            "templateKey": "closing_gm",
+            "closingKey": "closing_gm",
+            "silent": false,
+            "messageIds": [
+              "01a1c93b-eae3-765b-b24a-8965f34d194a"
+            ]
+          }
+        ]
+      },
+      "pillWords": {
+        "final": {
+          "at": "2026-11-11T06:13:16.322Z",
+          "closed": [
+            "AI handed over · Resume",
+            "Language: EN · Routed to Reception · Central Floresta · 1 more",
+            "AI handed over to GM — GM primary"
+          ],
+          "groupSummaries": [
+            "Language: EN · Routed to Reception · Central Floresta · 1 more",
+            "AI handed over to GM — GM primary"
+          ],
+          "open": [
+            "AI handed over · Resume",
+            "Language: EN · Routed to Reception · Central Floresta · 1 more",
+            "Language: EN · Routed to Reception · Central Floresta",
+            "Assigned Reception · Central Floresta as primary",
+            "AI handed over to GM — GM primary",
+            "AI · Language: EN · Intent: refund_request",
+            "Moved from Reception · Central Floresta → GM by AI",
+            "Language: EN · Routed to GM",
+            "Assigned GM as primary",
+            "AI handed over to GM · refund request"
+          ]
+        }
+      },
+      "audit": {
+        "route": "GET /api/audit?entityType=inbox.conversation&entityId=:id",
+        "status": 200,
+        "atSend": [
+          {
+            "action": "inbox.conversation.create",
+            "after": {
+              "category": "general",
+              "categorySource": "default",
+              "language": "en"
+            }
+          }
+        ],
+        "classifyRow": "none",
+        "afterAssistant": [
+          "inbox.ai.handover",
+          "inbox.conversation.create"
+        ]
+      }
+    },
+    "R7c": {
+      "key": "R7c",
+      "expect": "control: the GM with cue refund, \"from the message\"",
+      "verdict": "PASS: the GM at ingest with cue refund, from the message",
+      "sender": "its own fresh ZZ TEST simulator number (not kept)",
+      "simulatorAccount": "Demo Instagram (simulator, no park; default category general)",
+      "conversationId": "01a1c93b-e07e-79b0-933f-cc6f4a21974d",
+      "categoryHint": "none (\"As the channel routes it\")",
+      "languageHint": "none (\"Not given\")",
+      "lines": [
+        {
+          "n": 1,
+          "text": "Can I get a refund for yesterday? (ZZ TEST)",
+          "sentAt": "2026-11-11T06:11:44.598Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo Instagram · Instagram",
+            "category": "As the channel routes it",
+            "categoryValue": "",
+            "language": "Not given",
+            "languageValue": "",
+            "message": "Can I get a refund for yesterday? (ZZ TEST)"
+          },
+          "hintSent": null,
+          "hintPresent": false,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "dialogSaid": "Received: a new conversation, routed.",
+          "afterAssistantTurn": {
+            "waitedMs": 6244,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_handover",
+                "turnId": "01a1c93b-e08b-7411-be31-8df55093041d",
+                "intent": "refund_request",
+                "intents": [
+                  "refund_request"
+                ],
+                "reason": "OK",
+                "rule": null,
+                "closingKey": "closing_gm"
+              }
+            ],
+            "assistantBubbles": 1,
+            "aiState": "left_for_team"
+          }
+        }
+      ],
+      "atSend": {
+        "readAt": "2026-11-11T06:11:45.611Z",
+        "route": "GET /api/inbox/conversations/:id",
+        "conversation": {
+          "category": "gm",
+          "teamName": "GM",
+          "language": "en",
+          "aiState": "ready",
+          "eventCount": 2,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T06:11:46.000Z",
+            "actorKind": "system",
+            "teamId": "01a1824e-b6b9-7fd3-85b6-c10bfaf747be",
+            "category": "gm",
+            "language": "en",
+            "branchId": null,
+            "ruleId": "01a1824e-b6c5-7a7d-8156-fe7b885c00c3",
+            "fallback": false,
+            "source": "message",
+            "cue": "refund",
+            "cueLanguage": "en",
+            "payloadKeys": [
+              "cue",
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language",
+              "cueLanguage"
+            ]
+          }
+        ],
+        "aiPillsThen": 0,
+        "messagesThen": 1
+      },
+      "final": {
+        "readAt": "2026-11-11T06:12:29.985Z",
+        "conversation": {
+          "category": "gm",
+          "teamName": "GM",
+          "language": "en",
+          "aiState": "left_for_team",
+          "eventCount": 4,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T06:11:46.000Z",
+            "actorKind": "system",
+            "teamId": "01a1824e-b6b9-7fd3-85b6-c10bfaf747be",
+            "category": "gm",
+            "language": "en",
+            "branchId": null,
+            "ruleId": "01a1824e-b6c5-7a7d-8156-fe7b885c00c3",
+            "fallback": false,
+            "source": "message",
+            "cue": "refund",
+            "cueLanguage": "en",
+            "payloadKeys": [
+              "cue",
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language",
+              "cueLanguage"
+            ]
+          }
+        ],
+        "otherPills": [
+          {
+            "kind": "assigned",
+            "actorKind": "system",
+            "createdAt": "2026-11-11T06:11:46.000Z",
+            "slot": "primary",
+            "assigneeKind": "team"
+          },
+          {
+            "kind": "classified",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T06:11:53.892Z"
+          }
+        ],
+        "aiPills": [
+          {
+            "kind": "ai_handover",
+            "createdAt": "2026-11-11T06:11:53.892Z",
+            "actorKind": "ai",
+            "turnId": "01a1c93b-e08b-7411-be31-8df55093041d",
+            "intent": "refund_request",
+            "intents": [
+              "refund_request"
+            ],
+            "reason": "OK",
+            "rule": null,
+            "destination": "gm",
+            "reroutedTeamId": null,
+            "templateKey": "closing_gm",
+            "closingKey": "closing_gm",
+            "silent": false,
+            "messageIds": [
+              "01a1c93b-fbb2-72d4-acff-baadbcca1795"
+            ]
+          }
+        ]
+      },
+      "pillWords": {
+        "final": {
+          "at": "2026-11-11T06:13:19.703Z",
+          "closed": [
+            "AI handed over · Resume",
+            "Language: EN · Routed to GM · from the message · 1 more",
+            "AI handed over to the team"
+          ],
+          "groupSummaries": [
+            "Language: EN · Routed to GM · from the message · 1 more",
+            "AI handed over to the team"
+          ],
+          "open": [
+            "AI handed over · Resume",
+            "Language: EN · Routed to GM · from the message · 1 more",
+            "Language: EN · Routed to GM · from the message",
+            "Assigned GM as primary",
+            "AI handed over to the team",
+            "AI · Language: EN · Intent: refund_request",
+            "AI handed over to the team · refund request"
+          ]
+        }
+      },
+      "audit": {
+        "route": "GET /api/audit?entityType=inbox.conversation&entityId=:id",
+        "status": 200,
+        "atSend": [
+          {
+            "action": "inbox.conversation.classify",
+            "after": {
+              "cue": "refund",
+              "source": "message",
+              "category": "gm",
+              "cueLanguage": "en"
+            }
+          },
+          {
+            "action": "inbox.conversation.create",
+            "after": {
+              "category": "gm",
+              "categorySource": "message",
+              "language": "en"
+            }
+          }
+        ],
+        "afterAssistant": [
+          "inbox.ai.handover",
+          "inbox.conversation.classify",
+          "inbox.conversation.create"
+        ]
+      }
+    }
+  },
+  "pictures": [
+    {
+      "file": "06-step7-recheck-event-of-rain-default-no-from-the-message.png",
+      "shows": "Step 7 re-check on the fix: What happens in the event of rain? with no hint stays on the channel default (Reception Central Floresta) at ingest, the routing pill without from the message and no classify row; the assistant then handed over on its own",
+      "at": "2026-11-11T06:13:13.292Z",
+      "namesMasked": 29,
+      "regionMasks": 1,
+      "note": "list of other conversations masked; phone-like numbers, names and initials masked"
+    }
+  ],
+  "cleanup": {
+    "at": "2026-11-11T06:13:20.135Z",
+    "conversations": {
+      "R7a": {
+        "id": "01a1c93b-bc23-7c42-ae34-77612eb1db17",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T06:13:23.359Z"
+        }
+      },
+      "R7b": {
+        "id": "01a1c93b-cdbf-742f-99e5-9f732d1326ba",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T06:13:24.305Z"
+        }
+      },
+      "R7c": {
+        "id": "01a1c93b-e07e-79b0-933f-cc6f4a21974d",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T06:13:25.245Z"
+        }
+      }
+    }
+  },
+  "signOut": {
+    "at": "2026-11-11T06:13:29.106Z",
+    "signOut": {
+      "inbox": {
+        "route": "POST /api/auth/sign-out (inbox)",
+        "status": 200
+      },
+      "console": {
+        "route": "POST /api/auth/sign-out (Console)",
+        "status": 200
+      },
+      "launcher": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      }
+    },
+    "readBack": {
+      "inbox": {
+        "route": "GET /api/inbox/me (inbox)",
+        "status": 401
+      },
+      "console": {
+        "route": "GET /api/me (Console)",
+        "status": 401
+      },
+      "launcher": {
+        "route": "GET /api/me (launcher)",
+        "status": 401
+      }
+    }
+  },
+  "notTouched": "No other conversation, setting or key was read or changed. Nothing was sent to a phone or a page: the simulator account is internal."
+}
