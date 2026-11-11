@@ -42,7 +42,10 @@
  *      which park is dropped (`asksOnlyThePark`), and the reply no longer
  *      declares the park asked — never the whole reply, and never in the
  *      price conversation or the birthday, which ask the park inside their
- *      own one question (`OWN_PARK_QUESTION_INTENTS`).
+ *      own one question (`OWN_PARK_QUESTION_INTENTS`). On a thread that has
+ *      its park (a park's own number), the birthday's combined question
+ *      loses its park CLAUSE alone (`birthdayParkCut`): the date and the
+ *      headcount are still asked, the park is not.
  *   4. NO REPETITION (`repeatRule`): once the family answered the park
  *      question this episode, a sentence about the park (where it is, the way
  *      in, the parking, the hours: read against the knowledge,
@@ -64,6 +67,7 @@ import { AI_BRANCH_KEYS, type AiBranchKey, type AiReplyLanguage } from './decisi
 import type { EpisodeQuestion, EpisodeState, GateInput, GateVerdict, GroundingSource } from './gate';
 import {
   ASIDE_INTENTS,
+  BIRTHDAY_INTENTS,
   INTENT_TABLE,
   OWN_PARK_QUESTION_INTENTS,
   PARK_FIRST_INTENTS,
@@ -90,7 +94,7 @@ export interface TurnComposition {
   duplicates: number;
   /** Sentences already sent this episode about the park, dropped once the family gave it. */
   repeats: number;
-  /** Sentences asking only which park, dropped once the park was known. */
+  /** Sentences asking only which park, dropped once the park was known; and, on a thread with its park, the park clause cut from the birthday's question. */
   parkQuestions: number;
 }
 
@@ -464,7 +468,7 @@ export function sameSentence(a: string, b: string): boolean {
 
 const isQuestion = (s: string) => questionsIn([s]).length > 0;
 
-/** A sentence that asks which park and nothing else ("Which branch are you thinking of…?"); the birthday's combined question asks more, and stays. */
+/** A sentence that asks which park and nothing else ("Which branch are you thinking of…?"); the birthday's combined question asks more, and stays (`withoutParkClause` cuts its park clause on a thread with its park). */
 export function asksOnlyThePark(sentence: string): boolean {
   if (!isQuestion(sentence)) return false;
   const slots = slotsAskedIn([sentence]);
@@ -552,6 +556,159 @@ function customerAsksAbout(lines: string, sentence: string): boolean {
     for (let i = 0; i + 4 <= run.length; i += 1) if (sentence.includes(run.slice(i, i + 4))) return true;
   }
   return false;
+}
+
+// ---------------------------------------------------------------------------
+// The birthday question on a thread with its park
+// ---------------------------------------------------------------------------
+
+/** A Latin or Cyrillic word's own edges (JavaScript's `\b` is ASCII only). */
+const L = String.raw`(?<![\p{L}])`;
+const R = String.raw`(?![\p{L}])`;
+/** A park's name as the combined question lists them: the mall's, the park's, or both, in the three scripts. */
+const PARK_NAME = String.raw`(?:central(?:\s+floresta)?|floresta|robinson(?:\s+chalong)?|chalong|เซ็นทรัล(?:\s*ฟลอเรสต[้า]*)?|เซนทรัล\S*|ฟลอเรส\S*|โรบินสัน(?:\s*ฉลอง)?|ฉลอง|централ\p{L}*(?:\s+флорест\p{L}*)?|флорест\p{L}*|робинсон\p{L}*(?:\s+чалонг\p{L}*)?|чалонг\p{L}*)`;
+/** "Central Floresta or Robinson Chalong", either order, "or" in the three languages. */
+const PARK_PAIR = String.raw`${PARK_NAME}\s*,?\s*(?:or|или|หรือ)\s*${PARK_NAME}`;
+/** What may sit between "which branch" and the parks' names: a comma, a colon, a dash, a bracket, or a space. */
+const BEFORE_NAMES = String.raw`(?:\s*[,:;(—–-]\s*|\s+)`;
+/** The clause's own words up to the next clause: never across a comma, a dash, a bracket or a sentence mark. */
+const CLAUSE_TAIL = String.raw`[^,?!.;:()—–\n]*?`;
+/** The sentence's end after the clause: a closing bracket, its question mark (or full stop). */
+const CLAUSE_END = String.raw`\s*\)?\s*[?？.!]?\s*$`;
+const TH_PARTICLE = String.raw`(?:นะคะ|คะ|ค่ะ|ครับ)`;
+
+/**
+ * The park's own clause at the END of the combined birthday question, with
+ * the conjunction or comma that joins it to the rest ("…, and which branch,
+ * Central Floresta or Robinson Chalong?"; "… и какой филиал вам удобнее —
+ * Central Floresta или Robinson Chalong?"; "… และสะดวกสาขาไหนคะ Central
+ * Floresta หรือ Robinson Chalong"), or the parks' names alone. The playbook
+ * puts the park last; a question that puts it first is left as it is.
+ */
+const PARK_CLAUSE: Readonly<Record<AiReplyLanguage, RegExp>> = {
+  en: new RegExp(
+    String.raw`(?:\s*,)?\s*(?:${L}(?:and|or|plus|also|then)${R})?\s*[(—–-]?\s*` +
+      String.raw`(?:(?:${L}(?:which|what|the|your|preferred)\s+(?:park|branch|location)${R}|${L}which\s+of\s+(?:our|the)\s+(?:parks|branches|locations)${R}|${L}whether\s+you(?:['’]d|\s+would)\s+(?:prefer|like)${R})${CLAUSE_TAIL}(?:${BEFORE_NAMES}${PARK_PAIR})?|${PARK_PAIR})` +
+      CLAUSE_END,
+    'iu',
+  ),
+  ru: new RegExp(
+    String.raw`(?:\s*,)?\s*(?:${L}(?:и|а|или|а\s+также|ну\s+и)${R})?\s*[(—–-]?\s*` +
+      String.raw`(?:${L}(?:в\s+|на\s+)?(?:как(?:ой|ая|ое|ую|ом|им)|котор\p{L}+)\s+(?:из\s+)?(?:наших\s+|ваших\s+)?(?:парк\p{L}*|филиал\p{L}*|площадк\p{L}*|локаци\p{L}*)${R}${CLAUSE_TAIL}(?:${BEFORE_NAMES}${PARK_PAIR})?|${PARK_PAIR})` +
+      CLAUSE_END,
+    'iu',
+  ),
+  th: new RegExp(
+    String.raw`\s*(?:และ|หรือ|แล้วก็|กับ|แล้ว)?\s*(?:จะ)?(?:สะดวก|สนใจ|อยาก|ต้องการ|เลือก|มา|จัด|ไป|ใช้|ที่|กัน){0,4}\s*` +
+      String.raw`(?:สาขา(?:ไหน|ใด)(?:ดี(?:กว่า)?)?(?:\s*${TH_PARTICLE})?(?:${BEFORE_NAMES}${PARK_PAIR})?|(?:ที่ไหน|สาขา|พาร์ค)(?:ดี)?(?:\s*${TH_PARTICLE})?\s*[,:;(—–-]?\s*${PARK_PAIR}|${PARK_PAIR})` +
+      String.raw`\s*\)?\s*(?:ดี)?${TH_PARTICLE}?\s*[?？]?\s*$`,
+    'iu',
+  ),
+};
+
+/** A head of fewer letters than this is no question of its own ("Hi, which branch…?"): the whole sentence goes. */
+const MIN_HEAD_LETTERS = 4;
+const TH_QUESTION_END = /(?:นะคะ|คะ|ค่ะ|ครับ|ไหม|มั้ย|[?？])$/u;
+
+/**
+ * The question's head as a question of its own, in the language's way: in
+ * English and Russian the sentence mark put back, and a list of two joined
+ * as the opener template words it ("What date are you thinking of, and
+ * roughly how many people?", "Какую дату вы рассматриваете и примерно
+ * сколько будет гостей?"); in Thai a polite particle to close it and "และ"
+ * between two clauses ("สนใจจัดวันไหน และประมาณกี่ท่านคะ").
+ */
+function headAsQuestion(head: string, language: AiReplyLanguage, mark: string): string {
+  // The question is the head's last clause group: after its last sentence mark, polite particle or emoji.
+  const split = head.search(/(?:(?<=[.!?…。！？])|(?<=นะคะ|คะ|ค่ะ|ครับ)|(?<=\p{Extended_Pictographic}\uFE0F?))\s+(?!.*(?:(?<=[.!?…。！？])|(?<=นะคะ|คะ|ค่ะ|ครับ)|(?<=\p{Extended_Pictographic}\uFE0F?))\s+)/su);
+  const lead = split === -1 ? '' : head.slice(0, split + 1);
+  let last = split === -1 ? head : head.slice(split + 1);
+  if (language === 'th') {
+    if (!/และ/u.test(last) && (last.match(/\s+/gu) ?? []).length === 1) last = last.replace(/\s+/u, ' และ');
+    const out = `${lead}${last}`;
+    return TH_QUESTION_END.test(out) ? out : `${out}คะ`;
+  }
+  last = last.replace(/[.!…]+$/u, '');
+  const and = language === 'ru' ? /(?<![\p{L}])и(?![\p{L}])/u : /(?<![\p{L}])and(?![\p{L}])/iu;
+  if (!and.test(last) && last.includes(', ')) {
+    const at = last.lastIndexOf(', ');
+    last = `${last.slice(0, at)}${language === 'ru' ? ' и ' : ', and '}${last.slice(at + 2)}`;
+  }
+  const out = `${lead}${last}`;
+  return /[?？.!]$/u.test(out) ? out : `${out}${mark}`;
+}
+
+/**
+ * The sentence without the park's clause of the combined birthday question
+ * (`PARK_CLAUSE`): the date and headcount parts as they were, closed as a
+ * question (`headAsQuestion`); '' when the sentence asked only the park
+ * (the whole sentence goes); null when it asks no park, when its park clause
+ * cannot be told from the rest, or when cutting it would also cut a date or
+ * a headcount question the sentence asked (read by `slotsAskedIn` before and
+ * after: those are never cut) — the sentence then stays as written.
+ */
+export function withoutParkClause(sentence: string, language: AiReplyLanguage): string | null {
+  const text = sentence.normalize('NFC').trim();
+  const before = slotsAskedIn([text]);
+  if (!before.includes('park')) return null;
+  const m = PARK_CLAUSE[language].exec(text);
+  if (!m) return null;
+  const head = text
+    .slice(0, m.index)
+    .replace(/[\s,;:—–-]+$/u, '')
+    .replace(/(?:(?<![\p{L}])(?:and|or|и|а|или)|และ|หรือ|แล้วก็|กับ)$/iu, '')
+    .trimEnd();
+  const mark = /\.\s*$/u.test(text) && !/[?？]/u.test(text) ? '.' : '?';
+  const rest = letterCount(head) < MIN_HEAD_LETTERS ? '' : headAsQuestion(head, language, mark);
+  const after = rest === '' ? [] : slotsAskedIn([rest]);
+  if (after.includes('park')) return null;
+  if (before.some((s) => s !== 'park' && !after.includes(s))) return null;
+  return rest;
+}
+
+/**
+ * A bubble with the park's clause cut out of each sentence that asks it
+ * (`withoutParkClause`), the rest as written: a sentence that asked only the
+ * park goes, and a line left empty by it goes with it. `cuts` counts the
+ * sentences changed.
+ */
+export function withoutParkClauses(text: string, language: AiReplyLanguage): { text: string; cuts: number } {
+  const normal = text.normalize('NFC');
+  let out = normal;
+  let cuts = 0;
+  for (const s of [...spansOf(normal)].reverse()) {
+    const cut = withoutParkClause(s.text, language);
+    if (cut === null) continue;
+    out = `${out.slice(0, s.start)}${cut}${out.slice(s.end)}`;
+    cuts += 1;
+  }
+  if (cuts === 0) return { text, cuts };
+  const was = normal.split('\n');
+  const lines = out
+    .split('\n')
+    .map((l) => l.replace(/\s{2,}/gu, ' ').trim())
+    .filter((l, i) => l !== '' || was[i]!.trim() === '');
+  return { text: lines.join('\n').trim(), cuts };
+}
+
+/**
+ * SCRUM-832 (staging, 10 Nov 2026, a park's own WhatsApp number): the
+ * model's combined birthday question still asked "which branch, Central
+ * Floresta or Robinson Chalong?" on a thread that has its park. The owner's
+ * rule: the assistant never asks what it already knows. On such a thread a
+ * birthday reply's bubbles lose the park's clause (`withoutParkClauses`),
+ * the date and headcount parts kept; `askedSlots` then no longer says the
+ * park was asked (SCRUM-831's memory records the date and the headcount).
+ * Null: no park on the thread, not a birthday reply, nothing to cut — or
+ * nothing would be left to send (never silence).
+ */
+function birthdayParkCut(v: AnswerVerdict, input: GateInput): { bubbles: string[]; cuts: number } | null {
+  if (!input.episode.threadHasBranch || !v.intents.some((i) => BIRTHDAY_INTENTS.has(i))) return null;
+  const cut = v.bubbles.map((b) => withoutParkClauses(b, v.language));
+  const cuts = cut.reduce((n, c) => n + c.cuts, 0);
+  const bubbles = cut.map((c) => c.text).filter((t) => t.trim() !== '');
+  if (cuts === 0 || bubbles.length === 0) return null;
+  return { bubbles, cuts };
 }
 
 // ---------------------------------------------------------------------------
@@ -746,21 +903,24 @@ export function composeTurn(v: GateVerdict, input: GateInput): GateVerdict {
   const branchNamed = v.branchNamed ?? familyPark;
   const known = parkKnown(branchNamed, input.episode) || parkNamedByFamily(input) !== null;
   // The price conversation and the birthday ask the park inside their own one question, which is
-  // theirs to word (and the repeat guard's to refuse): never cut from it, whatever the slot reader sees.
+  // theirs to word (and the repeat guard's to refuse): never cut as a whole, whatever the slot reader sees.
+  // On a thread that has its park, the birthday's question loses only its park clause (`birthdayParkCut`).
   const ownQuestion = v.intents.some((i) => OWN_PARK_QUESTION_INTENTS.has(i));
+  const parkless = birthdayParkCut(v, input);
+  const bubbles = parkless?.bubbles ?? v.bubbles;
+  const parkClauses = parkless?.cuts ?? 0;
   const join = topicsOfIntents(v.intents).length <= 1;
-  const composed = composeMessage(v.bubbles, {
+  const composed = composeMessage(bubbles, {
     join,
     ...(repeatRule(v, input) ?? {}),
     ...(known && !ownQuestion ? { dropQuestion: asksOnlyThePark } : {}),
   });
-  const dropped = composed.duplicates + composed.repeats + composed.parkQuestions;
-  const joined = join && v.bubbles.length > 1;
+  const parkQuestions = composed.parkQuestions + parkClauses;
+  const dropped = composed.duplicates + composed.repeats + parkQuestions;
+  const joined = join && bubbles.length > 1;
   if (dropped === 0 && !joined && familyPark === null) return v;
   const unasked: Partial<AnswerVerdict> =
-    composed.parkQuestions > 0
-      ? { askBranch: false, askedSlots: (input.decision.askedSlots ?? []).filter((s): s is AiAskedSlot => s !== 'park') }
-      : {};
+    parkQuestions > 0 ? { askBranch: false, askedSlots: (input.decision.askedSlots ?? []).filter((s): s is AiAskedSlot => s !== 'park') } : {};
   return {
     ...v,
     branchNamed,
@@ -773,7 +933,7 @@ export function composeTurn(v: GateVerdict, input: GateInput): GateVerdict {
       joined: join,
       duplicates: composed.duplicates,
       repeats: composed.repeats,
-      parkQuestions: composed.parkQuestions,
+      parkQuestions,
     },
   };
 }

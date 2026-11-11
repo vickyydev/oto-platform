@@ -48,6 +48,7 @@ import {
 
 let w: AiWorld;
 let birthdays: string; // a Birthdays & Events number at Central, live
+let birthdaysWide: string; // a Birthdays & Events number with no park: the park is still to ask (SCRUM-832 follow-up)
 let general: string; // a general number at Central, live
 let adminCookie: string;
 
@@ -56,6 +57,7 @@ beforeAll(async () => {
   // Due at once: each tick decides the burst just written, so the lines interleave as in a real chat.
   w.ctx.app.inboxAi.config.debounceMs = 0;
   birthdays = await simAccount(w, { branchId: w.central, defaultCategory: 'birthdays' });
+  birthdaysWide = await simAccount(w, { branchId: null, defaultCategory: 'birthdays' });
   general = await simAccount(w, { branchId: w.central });
   const receptionCentral = await teamOf(w, 'reception', w.central);
   const [approver] = await staff(w, '+66810083101', 'Open Question Test Approver', 'inbox_agent', {
@@ -146,8 +148,9 @@ describe("the owner's case: the age asked once, answered, never asked again", ()
     await drain();
     const phone = nextPhone();
     const ask = 'How old will the birthday boy be?';
+    // On a number with no park: the combined question below asks the park too (a park's own number never does).
     const t = await turn(
-      birthdays,
+      birthdaysWide,
       phone,
       `Hi! We'd like a birthday party for our son ${SENTINEL}`,
       decision({ intent: 'birthday_party', reason: 'CLEAR_INTENT', bubbles: ["Amazing, thank you! We'd love to organize a party for you 🎈", ask], askedSlots: ['child_age'] }),
@@ -171,7 +174,7 @@ describe("the owner's case: the age asked once, answered, never asked again", ()
     const phone = (await w.ctx.db.select({ handle: s.contact.externalHandle }).from(s.contact).where(eq(s.contact.id, conv!.contactId)))[0]!.handle!.slice(1);
     const next = 'Lovely! What date are you thinking of, roughly how many people, and which park, Central Floresta or Robinson Chalong?';
     const t = await turn(
-      birthdays,
+      birthdaysWide,
       phone,
       '8',
       decision({ intent: 'birthday_party', reason: 'CLEAR_INTENT', bubbles: [next], askedSlots: ['date', 'guests_count', 'park'] }),
@@ -192,7 +195,7 @@ describe("the owner's case: the age asked once, answered, never asked again", ()
     const [conv] = await w.ctx.db.select().from(s.conversation).where(eq(s.conversation.id, convId));
     const phone = (await w.ctx.db.select({ handle: s.contact.externalHandle }).from(s.contact).where(eq(s.contact.id, conv!.contactId)))[0]!.handle!.slice(1);
     const t = await turn(
-      birthdays,
+      birthdaysWide,
       phone,
       '14 November, about 15 kids at Central Floresta',
       // The owner's case: the model asks the age again…

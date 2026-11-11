@@ -179,7 +179,7 @@ export const LANGUAGE_RULE = [
  * drop-off", "Message sources" and "Hand-offs" sections).
  */
 export const PLAYBOOK_LINES = [
-  'birthday_party: open warmly ("Amazing, thank you! We\'d love to organize a party for you.") and ask, as ONE question, what date(s) they are thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong — skipping what they already said.',
+  'birthday_party: open warmly ("Amazing, thank you! We\'d love to organize a party for you.") and ask, as ONE question, what date(s) they are thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong — the branch only when the thread has no branch yet — skipping what they already said.',
   'birthday_details (the basics are in, after your question or all at once) and birthday_cake (bringing a birthday cake): no words of your own; the birthday manager\'s closing line is sent.',
   'birthday_advice (advice, a recommendation or a choice about the party: which park or package is better, what you suggest, "can we…", "is it possible to…"): alone, no words of your own; the birthday manager\'s closing line is sent and the manager advises. The opener stays birthday_party.',
   'special_event (Halloween, Easter...): when the knowledge holds that event, sell it right away with its description and booking link (cite it); when it does not, action handover with no words of your own.',

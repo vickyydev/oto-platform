@@ -169,6 +169,8 @@ describe('SCRUM-817: a day, a date or a time in a birthday thread is the party�
     // which is what this scenario (a birthday reply EARLIER in a general thread) is about.
     const conv = await customer(w, general, phone, 'Хотим отметить день рождения сына у вас', ON_DEFAULT_QUEUE);
     const ask = 'Как здорово, спасибо! Будем рады организовать праздник. Сколько примерно будет гостей и в каком парке, Central Floresta или Robinson Chalong?';
+    // SCRUM-832 follow-up: the number is Central's own, so the question goes without its park clause.
+    const askSent = 'Как здорово, спасибо! Будем рады организовать праздник. Сколько примерно будет гостей?';
     w.fake.push({ kind: 'decision', decision: decision({ language: 'ru', intent: 'birthday_party', reason: 'CLEAR_INTENT', bubbles: [ask] }) });
     expect((await tick(w, later(25_000))).answered).toBe(1);
     expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'general' });
@@ -185,7 +187,7 @@ describe('SCRUM-817: a day, a date or a time in a birthday thread is the party�
     expect(seen.users.at(-1)).toContain(`${BIRTHDAY_THREAD_LINES.earlier} ${BIRTHDAY_THREAD_LINES.rule}`);
 
     const closing = await closingBirthdayRu();
-    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([ask, closing.body]);
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([askSent, closing.body]);
     expect((await turnsOf(w, conv.id))[1]).toMatchObject({ state: 'handed_over', reason: 'OVERRULED_BIRTHDAY', intent: 'birthday_details' });
     const team = await teamOf(w, 'birthdays');
     expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'birthdays', teamId: team.id });
@@ -209,7 +211,8 @@ describe('SCRUM-817: a day, a date or a time in a birthday thread is the party�
     const ask = 'Как здорово, спасибо! Будем рады организовать праздник. Сколько примерно будет гостей и в каком парке, Central Floresta или Robinson Chalong?';
     w.fake.push({ kind: 'decision', decision: decision({ language: 'ru', intent: 'birthday_party', reason: 'CLEAR_INTENT', bubbles: [ask] }) });
     expect((await tick(w, later(25_000))).answered).toBe(1);
-    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([ask]);
+    // Nothing overruled; on Central's own number the question goes without its park clause (SCRUM-832 follow-up).
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual(['Как здорово, спасибо! Будем рады организовать праздник. Сколько примерно будет гостей?']);
     expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'answered', reason: 'OK', intent: 'birthday_party' });
   });
 });

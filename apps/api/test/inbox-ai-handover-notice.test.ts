@@ -392,6 +392,8 @@ describe('SCRUM-823: the birthday manager on duty is told', () => {
     bell.length = 0;
     pings.length = 0;
     const opener = ["Amazing, thank you! We'd love to organize a party for you 🎈", 'What date are you thinking of, roughly how many people, and which branch?'];
+    // SCRUM-832 follow-up: Central's own number — the opener goes without its park clause, the date and headcount kept.
+    const sent = [opener[0], 'What date are you thinking of, and roughly how many people?'];
     const conv = await customer(w, birthdays, nextPhone(), "Hi! We'd like a birthday party for our son. Which branch do you recommend?");
     w.fake.push({ kind: 'decision', decision: decision({ intent: 'birthday_party', intents: ['birthday_party', 'faq'], reason: 'CLEAR_INTENT', bubbles: opener }) });
     expect((await tick(after(25_000))).handedOver).toBe(1);
@@ -399,7 +401,7 @@ describe('SCRUM-823: the birthday manager on duty is told', () => {
     expect(turn).toMatchObject({ state: 'handed_over' });
     const closing = await templateRow('closing_birthday', 'en');
     // SCRUM-832: the opener is one message; the birthday manager's line follows on its own.
-    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([opener.join('\n\n'), closing.body]);
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([sent.join('\n\n'), closing.body]);
     const rows = await noticesOf(conv.id);
     expect(rows.map((r) => ({ kind: r.kind, channel: r.channel, intent: r.intent, state: r.state }))).toEqual([
       { kind: 'notice', channel: 'app', intent: 'birthday_advice', state: 'sent' },

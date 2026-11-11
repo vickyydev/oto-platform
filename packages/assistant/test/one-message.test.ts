@@ -12,6 +12,8 @@ import {
   parksDiffer,
   sameSentence,
   sentencesOf,
+  withoutParkClause,
+  withoutParkClauses,
 } from '../src/compose';
 import type { AiDecision } from '../src/decision';
 import { applyGates, type EpisodeQuestion, type EpisodeState, type GateInput, type GateVerdict } from '../src/gate';
@@ -583,11 +585,13 @@ describe('SCRUM-832: the park question asked once — a park the model asks for 
     expect(v).toMatchObject({ askBranch: false, askedSlots: [] });
   });
 
-  it('the birthday’s and the price conversation’s own one question are never cut, the park known or not', () => {
-    // The Russian combined question: the slot reader sees only the park in it, yet it asks how many guests too.
+  it('the birthday’s and the price conversation’s own one question are never cut as a whole; on a thread with its park the birthday’s loses only its park clause', () => {
+    // The Russian combined question: the slot reader sees only the park in it, yet it asks how many guests too —
+    // so the sentence stays, less the park clause (SCRUM-832 follow-up), never dropped as the park question.
     const ru = 'Как здорово, спасибо! Будем рады организовать праздник. Сколько примерно будет гостей и в каком парке, Central Floresta или Robinson Chalong?';
     const party = compose(verdict({ intent: 'birthday_party', intents: ['birthday_party'], language: 'ru', bubbles: [ru] }), { ...BIRTHDAYS, threadHasBranch: true });
-    expect(party.bubbles).toEqual([ru]);
+    expect(party.bubbles).toEqual(['Как здорово, спасибо! Будем рады организовать праздник. Сколько примерно будет гостей?']);
+    expect(compose(verdict({ intent: 'birthday_party', intents: ['birthday_party'], language: 'ru', bubbles: [ru] }), BIRTHDAYS).bubbles).toEqual([ru]);
     const price = compose(
       verdict({ intent: 'ticket_prices', intents: ['ticket_prices'], bubbles: [EN_PERSONA.branchResidencyQuestion] }),
       { ...GENERAL, threadHasBranch: true },
@@ -799,5 +803,129 @@ describe('SCRUM-832: the sentence reader', () => {
     expect(sameSentence('ราคาวันธรรมดาเริ่มต้น 690 บาทค่ะ', 'ราคาวันหยุดเริ่มต้น 690 บาทค่ะ')).toBe(false);
     expect(sameSentence('Easy!', 'Easy!')).toBe(true);
     expect(sameSentence('Easy!', 'Easy peasy!')).toBe(false);
+  });
+});
+
+/**
+ * SCRUM-832 follow-up (staging, 10 Nov 2026, the Demo WhatsApp · Central
+ * Floresta number): on a park's OWN number the model's combined birthday
+ * question still asked "which branch, Central Floresta or Robinson
+ * Chalong?". The owner's rule stands: the assistant never asks what it
+ * already knows. On a thread that has its park the question loses its park
+ * clause alone — the date and the headcount are still asked, in en, th and
+ * ru — and SCRUM-831's memory records those two. A thread with no park keeps
+ * the whole question.
+ */
+describe('SCRUM-832 follow-up: on a thread with its park the birthday question asks the date and the headcount, never the park', () => {
+  const OPEN = {
+    en: "Amazing, thank you! We'd love to organize a party for your son 🎈",
+    th: 'ยินดีมากเลยค่ะ เรายินดีจัดปาร์ตี้ให้นะคะ 🎈',
+    ru: 'Замечательно, спасибо! Мы с радостью организуем для вас праздник 🎈',
+  } as const;
+  /** The model's combined question, worded as the opener template is. */
+  const ASK = {
+    en: 'What date(s) are you thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong?',
+    th: 'สนใจจัดวันไหน ประมาณกี่ท่าน และสะดวกสาขาไหนคะ Central Floresta หรือ Robinson Chalong',
+    ru: 'Какую дату вы рассматриваете, примерно сколько будет гостей и какой филиал вам удобнее — Central Floresta или Robinson Chalong?',
+  } as const;
+  /** The same without the park: the `opener_birthday_advice_park_known` template's own wording. */
+  const PARK_KNOWN = {
+    en: 'What date(s) are you thinking of, and roughly how many people?',
+    th: 'สนใจจัดวันไหน และประมาณกี่ท่านคะ',
+    ru: 'Какую дату вы рассматриваете и примерно сколько будет гостей?',
+  } as const;
+  const LANGS = ['en', 'th', 'ru'] as const;
+  const DECLARED: AiDecision['askedSlots'] = ['date', 'guests_count', 'park'];
+  const party = (lang: (typeof LANGS)[number], bubbles: string[], e: Partial<EpisodeState>, d: Partial<AiDecision> = {}) =>
+    compose(verdict({ intent: 'birthday_party', intents: ['birthday_party'], language: lang, bubbles }), e, [], d);
+
+  it('en, th, ru: the park clause goes, the date and the headcount stay as one message, and the memory records those two', () => {
+    for (const lang of LANGS) {
+      const v = party(lang, [OPEN[lang], ASK[lang]], { ...GENERAL, threadHasBranch: true }, { askedSlots: DECLARED });
+      expect(v.bubbles, lang).toEqual([[OPEN[lang], PARK_KNOWN[lang]].join(PART_JOIN)]);
+      expect(v, lang).toMatchObject({ askBranch: false, askedSlots: ['date', 'guests_count'], parts: [OPEN[lang], PARK_KNOWN[lang]] });
+      expect(v.composition, lang).toMatchObject({ parkFirst: false, bubbles: 2, joined: true, parkQuestions: 1 });
+      expect(askedSlotsOf(v.askedSlots, v.bubbles).sort(), lang).toEqual(['date', 'guests_count']);
+      expect(v.bubbles[0], lang).not.toMatch(/central|chalong|branch|สาขา|филиал|парк/iu);
+      // A Birthdays & Events thread on the park's number: the same.
+      expect(party(lang, [OPEN[lang], ASK[lang]], { ...BIRTHDAYS, threadHasBranch: true }, { askedSlots: DECLARED }).bubbles, lang).toEqual([
+        [OPEN[lang], PARK_KNOWN[lang]].join(PART_JOIN),
+      ]);
+    }
+  });
+
+  it('a thread with no park keeps the whole question, the park among the slots asked', () => {
+    for (const lang of LANGS) {
+      const v = party(lang, [OPEN[lang], ASK[lang]], BIRTHDAYS, { askedSlots: DECLARED });
+      expect(v.bubbles, lang).toEqual([[OPEN[lang], ASK[lang]].join(PART_JOIN)]);
+      expect(v.composition, lang).toMatchObject({ parkQuestions: 0 });
+      expect(askedSlotsOf(v.askedSlots, v.bubbles), lang).toContain('park');
+    }
+  });
+
+  it('through the whole gate on a park’s own number (en and th): the cut question, nothing else changed', () => {
+    const en = answer(
+      gate({ intent: 'birthday_party', bubbles: [OPEN.en, ASK.en], askedSlots: DECLARED, reason: 'CLEAR_INTENT' }, { ...GENERAL, threadHasBranch: true }, [
+        'Hi, we would like a birthday party for our son',
+      ]),
+    );
+    expect(en.bubbles).toEqual([[OPEN.en, PARK_KNOWN.en].join(PART_JOIN)]);
+    expect(en).toMatchObject({ intent: 'birthday_party', thenHandover: null, sendBrochure: false, askBranch: false, askedSlots: ['date', 'guests_count'] });
+    const th = answer(
+      gate({ language: 'th', intent: 'birthday_party', bubbles: [OPEN.th, ASK.th], askedSlots: DECLARED, reason: 'CLEAR_INTENT' }, { ...BIRTHDAYS, threadHasBranch: true }, [
+        'อยากจัดปาร์ตี้วันเกิดให้ลูกชายค่ะ',
+      ]),
+    );
+    expect(th.bubbles).toEqual([[OPEN.th, PARK_KNOWN.th].join(PART_JOIN)]);
+  });
+
+  it('the model’s other wordings: no Oxford comma, a bracketed pair, the headcount alone, a request with no question mark, the staging lines', () => {
+    expect(withoutParkClause('What date(s), roughly how many people and which branch, Central Floresta or Robinson Chalong?', 'en')).toBe('What date(s), and roughly how many people?');
+    expect(withoutParkClause('What date or dates are you thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong?', 'en')).toBe(
+      'What date or dates are you thinking of, and roughly how many people?',
+    );
+    expect(withoutParkClause('What date are you thinking of, roughly how many people, and which park would you prefer (Central Floresta or Robinson Chalong)?', 'en')).toBe(
+      'What date are you thinking of, and roughly how many people?',
+    );
+    expect(withoutParkClause("And we'd love to organize a party for you! Roughly how many people, and which branch, Central Floresta or Robinson Chalong?", 'en')).toBe(
+      "And we'd love to organize a party for you! Roughly how many people?",
+    );
+    expect(withoutParkClause('Roughly how many people, and Central Floresta or Robinson Chalong?', 'en')).toBe('Roughly how many people?');
+    expect(withoutParkClause('Let me know what date you are thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong.', 'en')).toBe(
+      'Let me know what date you are thinking of, and roughly how many people.',
+    );
+    // The slot reader sees only the park in these, yet each asks the headcount too: the sentence stays, less the park.
+    expect(withoutParkClause('Сколько примерно будет гостей и в каком парке, Central Floresta или Robinson Chalong?', 'ru')).toBe('Сколько примерно будет гостей?');
+    expect(withoutParkClause('Какую дату и сколько гостей вы планируете, и какой из наших парков вам удобнее?', 'ru')).toBe('Какую дату и сколько гостей вы планируете?');
+    // A clause already closed by its particle stays as it is; the next clause gets its own.
+    expect(withoutParkClause('สนใจจัดวันไหนคะ ประมาณกี่ท่าน และสาขาไหนคะ Central Floresta หรือ Robinson Chalong คะ', 'th')).toBe('สนใจจัดวันไหนคะ ประมาณกี่ท่านคะ');
+    expect(withoutParkClause('ประมาณกี่ท่านคะ และสนใจจัดที่สาขาไหน Central Floresta หรือ Robinson Chalong คะ', 'th')).toBe('ประมาณกี่ท่านคะ');
+    expect(withoutParkClause('อยากทราบวันที่และจำนวนแขกประมาณกี่ท่าน และสะดวกสาขาไหนคะ', 'th')).toBe('อยากทราบวันที่และจำนวนแขกประมาณกี่ท่านคะ');
+  });
+
+  it('the park as a sentence of its own goes whole, and a line it leaves empty goes with it', () => {
+    expect(withoutParkClause(EN_PERSONA.branchQuestion, 'en')).toBe('');
+    expect(withoutParkClause(TH_PERSONA.branchQuestion, 'th')).toBe('');
+    expect(withoutParkClause(RU_PERSONA.branchQuestion, 'ru')).toBe('');
+    expect(withoutParkClauses(`${OPEN.en}\n${EN_PERSONA.branchQuestion}\nWhat date and roughly how many people?`, 'en')).toEqual({
+      text: `${OPEN.en}\nWhat date and roughly how many people?`,
+      cuts: 1,
+    });
+    expect(withoutParkClauses('What date are you thinking of and roughly how many people? And which branch, Central Floresta or Robinson Chalong?', 'en')).toEqual({
+      text: 'What date are you thinking of and roughly how many people?',
+      cuts: 1,
+    });
+  });
+
+  it('never cut: a sentence asking no park, the park put first (its clause cannot be told from the rest), a statement naming both parks, and a reply with nothing else', () => {
+    expect(withoutParkClause('What date are you thinking of, and roughly how many people?', 'en')).toBeNull();
+    expect(withoutParkClause('Which branch, Central Floresta or Robinson Chalong, and what date are you thinking of?', 'en')).toBeNull();
+    expect(withoutParkClauses('We have two parks, Central Floresta and Robinson Chalong.', 'en')).toEqual({ text: 'We have two parks, Central Floresta and Robinson Chalong.', cuts: 0 });
+    // Only the park asked, nothing else in the reply: as written (never silence); the repeat guard owns it.
+    const only = party('en', [EN_PERSONA.branchQuestion], { ...GENERAL, threadHasBranch: true }, { askedSlots: ['park'] });
+    expect(only.bubbles).toEqual([EN_PERSONA.branchQuestion]);
+    // Not a birthday: a general reply on a park's number keeps SCRUM-832's own rule (the bare park question dropped, the rest kept).
+    const general = compose(verdict({ intent: 'faq', intents: ['faq'], bubbles: ['Yes, we have a café at both parks 😊', EN_PERSONA.branchQuestion] }), { ...GENERAL, threadHasBranch: true });
+    expect(general.bubbles).toEqual(['Yes, we have a café at both parks 😊']);
   });
 });

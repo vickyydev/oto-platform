@@ -336,6 +336,8 @@ async function attachBrochure(objectKey: string): Promise<string> {
 /** The playbook's birthday open and its ONE combined question (owner D1). */
 const PARTY_OPEN = "Amazing, thank you! We'd love to organize a party for you 🎈";
 const PARTY_ASK = 'What date(s) are you thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong?';
+/** SCRUM-832 follow-up: on a park's own number (`central`) the question goes without its park clause — the thread has its park. */
+const PARTY_ASK_PARK_KNOWN = 'What date(s) are you thinking of, and roughly how many people?';
 
 describe('a handover (§B.5, §C.5)', () => {
   it('a birthday (owner D1): the open and the one question first; once the basics are in, the birthday manager’s line verbatim, and the thread moves to Birthdays as the assistant', async () => {
@@ -356,9 +358,10 @@ describe('a handover (§B.5, §C.5)', () => {
     expect((await tick(w, later(25_000))).answered).toBe(1);
 
     // The question turn: the open and the question, nothing else, as one message (SCRUM-832); the thread stays.
+    // On Central's own number the question asks the date and the headcount, never the park the thread has.
     expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'answered', intent: 'birthday_party', action: 'answer' });
     expect((await aiLines(w, conv.id)).map((l) => ({ body: l.body, mediaFileIds: l.mediaFileIds }))).toEqual([
-      { body: `${PARTY_OPEN}${PART_JOIN}${PARTY_ASK}`, mediaFileIds: [] },
+      { body: `${PARTY_OPEN}${PART_JOIN}${PARTY_ASK_PARK_KNOWN}`, mediaFileIds: [] },
     ]);
     expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'general', teamId: reception.id });
     expect((await eventsOf(w, conv.id)).some((e) => e.kind === 'ai_handover')).toBe(false);
@@ -1027,13 +1030,15 @@ describe('several questions at once (test night 2026-10-21, D1a, W2)', () => {
     const conv = await customer(w, central, phone, `what are your hours and can I book a party for the 20th? ${SENTINEL}`, ON_DEFAULT_QUEUE);
     const hours = `We're open every day 10:00–20:00 😊 ${SENTINEL}`;
     const ask = "And we'd love to organize a party for you! Roughly how many people, and which branch, Central Floresta or Robinson Chalong?";
+    // SCRUM-832 follow-up: Central's own number — the park clause is cut, the headcount still asked.
+    const askParkKnown = "And we'd love to organize a party for you! Roughly how many people?";
     w.fake.push({
       kind: 'decision',
       decision: decision({ intent: 'hours', intents: ['hours', 'birthday_party'], grounding: ['fact.hours.central'], reason: 'FACT_IN_KB', bubbles: [hours, ask] }),
     });
     expect((await tick(w, later(25_000))).answered).toBe(1);
     expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'answered', reason: 'OK', intent: 'hours', action: 'answer' });
-    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([hours, ask]);
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([hours, askParkKnown]);
     expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'general', teamId: reception.id });
     expect((await eventsOf(w, conv.id)).find((e) => e.kind === 'ai_replied')!.payload).toMatchObject({
       intents: ['hours', 'birthday_party'],

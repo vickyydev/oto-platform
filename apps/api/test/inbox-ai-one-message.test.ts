@@ -59,12 +59,14 @@ const BOTH_PARKS = [
 
 let w: AiWorld;
 let wide: string; // an operator-wide general number: a thread with no park
+let central: string; // Central Floresta's own number: the thread has its park
 
 beforeAll(async () => {
   w = await aiWorld();
   // Due at once: each tick decides the burst just written.
   w.ctx.app.inboxAi.config.debounceMs = 0;
   wide = await simAccount(w, { branchId: null });
+  central = await simAccount(w, { branchId: w.central });
   const reception = await teamOf(w, 'reception', w.central);
   const [approver] = await staff(w, '+66810083201', 'One Message Test Approver', 'inbox_agent', {
     scopeType: 'department',
@@ -457,5 +459,44 @@ describe('SCRUM-832 follow-up: the coherence record counts the messages that wen
       expect(t.lines.map((l) => l.body)).toEqual([FACTS, SOCKS, BOOKING_LINE]);
       expect((await recordsOf(t.conv.id)).replied).toMatchObject({ items: 3, sent: 3, messages: 3, merged: 0, dropped: [] });
     });
+  }, 60_000);
+});
+
+/**
+ * SCRUM-832 follow-up (staging, 10 Nov 2026, the Demo WhatsApp · Central
+ * Floresta number): the model's combined birthday question asked "which
+ * branch, Central Floresta or Robinson Chalong?" on the park's own number.
+ * Through the engine: the question goes without its park clause, the date
+ * and the headcount are recorded as asked (SCRUM-831), the park is not.
+ */
+describe('SCRUM-832 follow-up: the birthday question on a park’s own number', () => {
+  const OPEN = "Amazing, thank you! We'd love to organize a party for your son 🎈";
+  const ASK = 'What date(s) are you thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong?';
+  const ASK_PARK_KNOWN = 'What date(s) are you thinking of, and roughly how many people?';
+  const opener = () => decision({ intent: 'birthday_party', reason: 'CLEAR_INTENT', bubbles: [OPEN, ASK], askedSlots: ['date', 'guests_count', 'park'] });
+
+  it('on Central’s number: ONE message without "which branch"; the date and the headcount open on it, no park question', async () => {
+    await drain();
+    const t = await say(nextPhone(), `Hi, we would like a birthday party for our son ${SENTINEL}`, opener(), central);
+    expect(t.sweep.answered).toBe(1);
+    expect(t.lines.map((l) => l.body)).toEqual([[OPEN, ASK_PARK_KNOWN].join(PART_JOIN)]);
+    expect(t.lines[0]!.body).not.toMatch(/which branch|Central Floresta or Robinson Chalong/i);
+    const qs = await questionsOf(t.conv.id);
+    expect(qs.map((q) => ({ slot: q.slot, state: q.state, askedMessageId: q.askedMessageId }))).toEqual([
+      { slot: 'date', state: 'open', askedMessageId: t.lines[0]!.id },
+      { slot: 'guests_count', state: 'open', askedMessageId: t.lines[0]!.id },
+    ]);
+    expect((await repliedPayloads(t.conv.id))[0]).toMatchObject({ askBranch: false, composition: { parkFirst: false, bubbles: 2, joined: true, parkQuestions: 1 } });
+    expect((await conversationRow(w, t.conv.id)).branchId).toBe(w.central);
+    expect((await turnsOf(w, t.conv.id)).map((x) => x.messageIds.length)).toEqual([1]);
+  }, 60_000);
+
+  it('on the number with no park: the whole question, the park among the three questions recorded', async () => {
+    await drain();
+    const t = await say(nextPhone(), `Hi, we would like a birthday party for our son ${SENTINEL}`, opener());
+    expect(t.sweep.answered).toBe(1);
+    expect(t.lines.map((l) => l.body)).toEqual([[OPEN, ASK].join(PART_JOIN)]);
+    expect((await questionsOf(t.conv.id)).map((q) => q.slot).sort()).toEqual(['date', 'guests_count', 'park']);
+    expect((await repliedPayloads(t.conv.id))[0]).toMatchObject({ composition: { parkQuestions: 0 } });
   }, 60_000);
 });
