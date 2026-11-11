@@ -43,7 +43,7 @@ import { SlotPicker } from '@/components/SlotPicker';
 import { PendingControl } from '@/components/writes';
 import { sourceLabel } from '@/lib/inboxes';
 import { openQuestionsByMessage } from '@/lib/open-question';
-import { bookDateDraft, eventChipLabel, parseBeoFromConversation } from '@/lib/beo';
+import { PARTY_REMOVED_LABEL, bookDateDraft, eventChipLabel, eventLinkOf, parseBeoFromConversation } from '@/lib/beo';
 import {
   BOOK_DATE_NOT_YOURS_REASON,
   CHANNEL_LABEL,
@@ -326,7 +326,9 @@ export function ChatPanel({
   };
 
   // Book Date and Create BEO (SCRUM-775).
-  const event: ConversationEvent | null = detail?.event ?? null;
+  // SCRUM-820: a party deleted or archived in the Events module is no event to
+  // open; the thread says so and the date can be booked again.
+  const { event, removed: removedEvent } = eventLinkOf<ConversationEvent>(detail?.event);
   const mayBook = live && mayBookDate(me);
   const askBookDate = (thenBeo: boolean) => {
     setBookError(null);
@@ -346,6 +348,8 @@ export function ChatPanel({
       await openConversationBeo(conversationId, tab, { aiFill });
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : 'The BEO could not be opened here.');
+      // SCRUM-820: the party was removed in the Events module since the thread was read.
+      if (err instanceof ApiError && err.code === 'EVENT_REMOVED') await onChanged();
     } finally {
       setBusy(null);
     }
@@ -835,6 +839,17 @@ export function ChatPanel({
                     <Calendar className="h-3 w-3" />
                     {eventChipLabel(eventChipOf(event))}
                   </button>
+                )}
+                {removedEvent && (
+                  // SCRUM-820: said, never pressed — there is no BEO to open.
+                  <span
+                    title={`${removedEvent.title} was deleted or archived in the Events calendar. Book Date books the date again.`}
+                    data-testid="event-chip-removed"
+                    className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-200 ring-1 ring-amber-200 dark:ring-amber-500/30"
+                  >
+                    <Calendar className="h-3 w-3" />
+                    {PARTY_REMOVED_LABEL}
+                  </span>
                 )}
               </>
             )}

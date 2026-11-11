@@ -521,6 +521,20 @@ export function depositChipWords(deposit: EventChipDeposit | null | undefined): 
   }
 }
 
+/** SCRUM-820: what the thread says of a party the Events module deleted or archived. */
+export const PARTY_REMOVED_LABEL = 'Party removed in the Events module';
+
+/**
+ * SCRUM-820: the conversation's event as the panel uses it. A party the Events
+ * module no longer has (`removed`: deleted there, or archived) is not an event
+ * to open: `event` is null, so Book Date and Create BEO are offered as on a
+ * conversation with no date yet, and `removed` is what the thread names.
+ */
+export function eventLinkOf<E extends { removed?: boolean }>(event: E | null | undefined): { event: E | null; removed: E | null } {
+  if (!event) return { event: null, removed: null };
+  return event.removed === true ? { event: null, removed: event } : { event, removed: null };
+}
+
 /**
  * "Event: 21 Mar 2027 at Central Floresta", the conversation's chip; "· Archived"
  * once the Events module archived it; "· Deposit requested ฿3,000" (and the

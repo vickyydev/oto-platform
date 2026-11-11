@@ -12,8 +12,10 @@ import { ChatPanel, type Thread } from '@/components/ChatPanel';
 import { Dashboard } from '@/components/Dashboard';
 import {
   DEFAULT_START_TIME,
+  PARTY_REMOVED_LABEL,
   bookDateDraft,
   eventChipLabel,
+  eventLinkOf,
   parseBeoFromConversation,
   resolveEventDate,
   type BookDateDraft,
@@ -370,6 +372,41 @@ describe('Book Date and Create BEO in the conversation', () => {
     const chip = buttonNamed(html, 'Event: 21 Mar 2099 at Central Floresta · Archived');
     expect(chip).not.toBeNull();
     expect(chip).toContain('Archived in the Events calendar');
+  });
+
+  it('a party removed in the Events module: the thread says so, nothing opens a BEO, Book Date is offered again (SCRUM-820)', () => {
+    for (const gone of [{ ...event, removed: true }, { ...event, archived: true, removed: true }]) {
+      const html = panel(me(), gone);
+      // Said, never pressed: no button carries the words, and no event chip is left to open.
+      expect(html).toContain(PARTY_REMOVED_LABEL);
+      expect(html).toContain('data-testid="event-chip-removed"');
+      expect(buttonNamed(html, PARTY_REMOVED_LABEL)).toBeNull();
+      expect(html).not.toContain('data-testid="event-chip"');
+      expect(html).not.toContain('Event: ');
+      // As on a conversation with no date yet.
+      expect(buttonNamed(html, 'Date Booked')).toBeNull();
+      expect(buttonNamed(html, 'Event archived')).toBeNull();
+      expect(buttonNamed(html, 'Book Date')).not.toMatch(DISABLED);
+      const beo = buttonNamed(html, 'Create BEO');
+      expect(beo).not.toMatch(DISABLED);
+      expect(beo).toContain('Book the date, then open its BEO in the OTO App');
+    }
+    // A person who may not book sees the same words, and Book Date off with why.
+    const viewer = me({ member: false, assign: false });
+    const html = panel(viewer, { ...event, removed: true });
+    expect(html).toContain(PARTY_REMOVED_LABEL);
+    expect(buttonNamed(html, 'Book Date')).toMatch(DISABLED);
+    expect(html).toContain(`title="${BOOK_DATE_NOT_YOURS_REASON}"`);
+  });
+
+  it('the event link: removed is no event; live, or from an api that says nothing, is the event', () => {
+    expect(PARTY_REMOVED_LABEL).toBe('Party removed in the Events module');
+    expect(eventLinkOf(null)).toEqual({ event: null, removed: null });
+    expect(eventLinkOf(undefined)).toEqual({ event: null, removed: null });
+    expect(eventLinkOf(event)).toEqual({ event, removed: null });
+    expect(eventLinkOf({ ...event, removed: false })).toEqual({ event: { ...event, removed: false }, removed: null });
+    const gone = { ...event, removed: true };
+    expect(eventLinkOf(gone)).toEqual({ event: null, removed: gone });
   });
 
   it('a conversation outside Birthdays & Events has neither', () => {
