@@ -194,10 +194,16 @@ await q("insert into locations (id, tenant_id, name) values ($1, $2, $3)", [loca
 
 const BUCKET = `zz-cc-${run}`;
 const bucketDeletes: string[] = [];
+const bucketPuts: { path: string; bytes: number }[] = [];
 const bucketServer = createServer((req, res) => {
   if (req.method === "DELETE") bucketDeletes.push(decodeURIComponent(new URL(req.url ?? "/", "http://bucket").pathname));
-  res.writeHead(204);
-  res.end();
+  let bytes = 0;
+  req.on("data", chunk => { bytes += chunk.length; });
+  req.on("end", () => {
+    if (req.method === "PUT") bucketPuts.push({ path: decodeURIComponent(new URL(req.url ?? "/", "http://bucket").pathname), bytes });
+    res.writeHead(204);
+    res.end();
+  });
 });
 await new Promise<void>((resolve) => bucketServer.listen(0, "127.0.0.1", resolve));
 const BUCKET_PORT = (bucketServer.address() as AddressInfo).port;
@@ -1364,6 +1370,78 @@ try {
     bucketDeletes.length = 0;
     assert.equal((await api("admin", "DELETE", `/api/checklists/templates/${copy.body.id}`)).status, 200);
     assert.deepEqual([...bucketDeletes].sort(), inBucket([...new Set(copyKeys)]), "the last checklist naming a file did not remove it");
+  });
+
+  // SCRUM-748 adversarial upload review. HIGH finding: the old proxy refuses
+  // pending targets. Fix: validate and store their creator/index, then use the
+  // existing guarded association. Refusals must reach neither bucket nor DB.
+  const uploadTemplate = await fullChecklist("Upload fallback");
+  const fileBytes = Buffer.from("ZZ TEST isolated upload");
+  async function multipart(who: Who | null, fields: Record<string, string>, mime = "image/jpeg", bytes: Uint8Array = fileBytes) {
+    const form = new FormData();
+    form.append("file", new Blob([bytes], { type: mime }), "ZZ TEST upload.jpg");
+    for (const [key, value] of Object.entries(fields)) form.append(key, value);
+    const res = await fetch(`${ORIGIN}/api/checklist-media/upload`, {
+      method: "POST", headers: who ? { cookie: cookies.get(who)! } : {}, body: form,
+    });
+    return { status: res.status, body: await res.json() as any };
+  }
+  const savedItem = { target: "item", checklistTemplateItemId: uploadTemplate.items[0].id };
+  await check("SCRUM-748 PIN: saved item photo and header video store once through multipart", async () => {
+    for (const [fields, mime, type] of [[savedItem, "image/jpeg", "image"], [{ target: "checklist", checklistTemplateId: uploadTemplate.id }, "video/mp4", "video"]] as const) {
+      const before = bucketPuts.length;
+      const result = await multipart("managerHkt", fields, mime);
+      assert.equal(result.status, 200); assert.ok(result.body.id); assert.equal(result.body.attachment, undefined);
+      assert.equal(result.body.type, type); assert.equal(result.body.tenantId, tenant);
+      assert.equal(result.body.fileSize, fileBytes.length); assert.equal(bucketPuts.length, before + 1);
+      assert.ok(bucketPuts.at(-1)!.bytes >= fileBytes.length);
+      assert.equal((await q("select id from checklist_attachments where id=$1", [result.body.id])).length, 1);
+    }
+  });
+  await check("SCRUM-748 HIGH: unsaved header and first item retain creator and associate correctly", async () => {
+    const pendingChecklistId = randomUUID();
+    const header = await multipart("managerHkt", { target: "checklist", pendingChecklistId });
+    const item = await multipart("managerHkt", { target: "item", pendingChecklistId, pendingItemIndex: "0" });
+    for (const result of [header, item]) {
+      assert.equal(result.status, 200); assert.equal(result.body.pendingChecklistId, pendingChecklistId);
+      assert.equal(result.body.createdByUserId, people.managerHkt.id);
+      assert.equal(result.body.checklistTemplateId, null); assert.equal(result.body.checklistTemplateItemId, null);
+      assert.equal((await api("managerRobinson", "GET", `/api/checklist-media/url?s3Key=${encodeURIComponent(result.body.s3Key)}`)).status, 404);
+    }
+    assert.equal(header.body.pendingItemIndex, null); assert.equal(item.body.pendingItemIndex, 0);
+    const associated = await api("managerHkt", "POST", "/api/checklist-media/associate-pending", {
+      pendingChecklistId, checklistTemplateId: uploadTemplate.id,
+      itemIdMappings: [{ pendingItemIndex: 0, checklistTemplateItemId: uploadTemplate.items[0].id }],
+    });
+    assert.equal(associated.status, 200); assert.equal(associated.body.updated, 2);
+    assert.ok((await headerMediaOf(uploadTemplate.id)).some(row => row.id === header.body.id));
+    assert.ok((await itemMediaOf(uploadTemplate.items[0].id)).some(row => row.id === item.body.id));
+  });
+  await check("SCRUM-748 HIGH: park, branch, role and anonymous refusals write no object or row", async () => {
+    const before = bucketPuts.length;
+    const count = (await q("select count(*) as n from checklist_attachments"))[0].n;
+    for (const [who, expected] of [["managerForeign", 404], ["managerRobinson", 404], ["staffPatong", 403], [null, 401]] as const) {
+      assert.equal((await multipart(who, savedItem)).status, expected);
+    }
+    assert.equal(bucketPuts.length, before);
+    assert.equal((await q("select count(*) as n from checklist_attachments"))[0].n, count);
+  });
+  await check("SCRUM-748 HIGH: invalid or mixed pending targets cannot bypass access", async () => {
+    const before = bucketPuts.length;
+    const pendingChecklistId = randomUUID();
+    const invalid: Record<string, string>[] = [
+      { target: "unknown" }, { target: "item", checklistTemplateItemId: "invalid" },
+      { ...savedItem, pendingChecklistId }, { target: "item", pendingChecklistId },
+      ...["-1", "", "1.5", "bad"].map(pendingItemIndex => ({ target: "item", pendingChecklistId, pendingItemIndex })),
+    ];
+    for (const fields of invalid) assert.equal((await multipart("managerHkt", fields)).status, 400);
+    assert.equal(bucketPuts.length, before);
+  });
+  await check("SCRUM-748 PIN: existing file type and image size refusals remain before bucket writes", async () => {
+    const before = bucketPuts.length;
+    assert.equal((await multipart("managerHkt", savedItem, "text/plain")).status, 400);
+    assert.equal((await multipart("managerHkt", savedItem, "image/jpeg", new Uint8Array(10 * 1024 * 1024 + 1))).status, 400);
+    assert.equal(bucketPuts.length, before);
   });
 
   console.log(`checklist-copies.check: ${checks} checks passed`);

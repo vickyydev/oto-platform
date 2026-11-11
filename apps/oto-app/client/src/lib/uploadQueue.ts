@@ -178,36 +178,48 @@ class UploadQueue {
       const { uploadUrl, s3Key } = await presignResponse.json();
       this.updateItem(item.id, { s3Key, progress: 10 });
 
-      await this.uploadToS3(item, uploadUrl);
-
-      this.updateItem(item.id, { status: "confirming", progress: 95 });
-
-      const confirmResponse = await fetch("/api/checklist-media/confirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          type: item.file.type.startsWith("image/") ? "image" : "video",
-          s3Key,
-          mimeType: item.file.type,
-          fileSize: item.file.size,
-          originalFilename: item.file.name,
-          checklistTemplateId: item.isPending ? undefined : item.checklistTemplateId,
-          checklistTemplateItemId: item.isPending ? undefined : item.checklistTemplateItemId,
-          pendingChecklistId: item.pendingChecklistId,
-          pendingItemIndex: item.pendingItemIndex,
-          width: item.width && item.width > 0 ? item.width : undefined,
-          height: item.height && item.height > 0 ? item.height : undefined,
-          durationSeconds: item.durationSeconds && item.durationSeconds > 0 ? item.durationSeconds : undefined,
-        }),
-      });
-
-      if (!confirmResponse.ok) {
-        const err = await confirmResponse.json();
-        throw new Error(err.error || "Failed to confirm upload");
+      let directUploaded = false;
+      let attachment: any;
+      try {
+        await this.uploadToS3(item, uploadUrl);
+        directUploaded = true;
+      } catch {
+        // SCRUM-748: a bucket CORS/network refusal can use the app's own route.
+        // Presign and confirmation refusals keep their existing failure path.
+        attachment = await this.uploadViaServer(item);
       }
 
-      const { attachment } = await confirmResponse.json();
+      if (directUploaded) {
+
+        this.updateItem(item.id, { status: "confirming", progress: 95 });
+
+        const confirmResponse = await fetch("/api/checklist-media/confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            type: item.file.type.startsWith("image/") ? "image" : "video",
+            s3Key,
+            mimeType: item.file.type,
+            fileSize: item.file.size,
+            originalFilename: item.file.name,
+            checklistTemplateId: item.isPending ? undefined : item.checklistTemplateId,
+            checklistTemplateItemId: item.isPending ? undefined : item.checklistTemplateItemId,
+            pendingChecklistId: item.pendingChecklistId,
+            pendingItemIndex: item.pendingItemIndex,
+            width: item.width && item.width > 0 ? item.width : undefined,
+            height: item.height && item.height > 0 ? item.height : undefined,
+            durationSeconds: item.durationSeconds && item.durationSeconds > 0 ? item.durationSeconds : undefined,
+          }),
+        });
+
+        if (!confirmResponse.ok) {
+          const err = await confirmResponse.json();
+          throw new Error(err.error || "Failed to confirm upload");
+        }
+
+        ({ attachment } = await confirmResponse.json());
+      }
       
       this.updateItem(item.id, {
         status: "completed",
@@ -230,6 +242,35 @@ class UploadQueue {
         error: error instanceof Error ? error.message : "Upload failed",
       });
     }
+  }
+
+  private async uploadViaServer(item: UploadItem) {
+    const form = new FormData();
+    form.append("file", item.file);
+    form.append("target", item.target);
+    const fields = {
+      checklistTemplateId: item.isPending ? undefined : item.checklistTemplateId,
+      checklistTemplateItemId: item.isPending ? undefined : item.checklistTemplateItemId,
+      pendingChecklistId: item.pendingChecklistId,
+      pendingItemIndex: item.pendingItemIndex,
+      width: item.width && item.width > 0 ? item.width : undefined,
+      height: item.height && item.height > 0 ? item.height : undefined,
+      durationSeconds: item.durationSeconds && item.durationSeconds > 0 ? item.durationSeconds : undefined,
+    };
+    for (const [key, value] of Object.entries(fields)) {
+      if (value !== undefined) form.append(key, String(value));
+    }
+    const response = await fetch("/api/checklist-media/upload", {
+      method: "POST",
+      credentials: "include",
+      body: form,
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Failed to upload file");
+    }
+    // This route stores the attachment itself and returns it without a wrapper.
+    return response.json();
   }
 
   private uploadToS3(item: UploadItem, uploadUrl: string): Promise<void> {
