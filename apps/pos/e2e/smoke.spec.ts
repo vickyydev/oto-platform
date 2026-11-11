@@ -777,6 +777,10 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     for (const channel of ['WhatsApp', 'Telegram', 'LINE']) await expect(consent.getByTitle(channel, { exact: true })).toBeVisible();
     await consent.locator('input[type="tel"]').fill(FORM_PHONE.slice(1));
     await consent.getByTitle('Telegram', { exact: true }).click();
+    // SCRUM-857 — the family confirms that the number is the one for the channel
+    // they chose: the line names it, and the check-all below gives the tick.
+    await expect(consent.getByTestId('public-consent-contact-confirm')).not.toBeChecked();
+    await expect(consent.getByText('This is my Telegram number — send messages about my child here.', { exact: true })).toBeVisible();
     for (const checkbox of await consent.getByRole('checkbox').all()) await checkbox.check();
     await page.getByLabel('Lock screen').click();
     await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeVisible();
@@ -836,6 +840,8 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     const valid = (await (await ready).json()).document;
     expect(valid.prompt.guardianPhone).toBe(`+66${FORM_PHONE.slice(1)}`);
     expect(valid.prompt.contactChannel).toBe('telegram');
+    // SCRUM-857 — the tick reached the till for this number and channel.
+    expect(valid.prompt.contactConfirmed).toBe(true);
     expect(valid.prompt.staffReady === true && valid.prompt.consentAcknowledged === true
       && valid.prompt.confirmations.every((item: { required: boolean; acknowledged: boolean }) => !item.required || item.acknowledged)).toBe(true);
     expect(/Private local health marker|childPhotoUrl|data:image|medical|foodRestrictions|waived/.test(JSON.stringify(valid))).toBe(false);
