@@ -1,0 +1,27 @@
+######## BEFORE the fix: the new check on the till as it was ########
+   × SCRUM-780: the display line right after an unlock on the box > HIGH: a till unlocked on its box a moment ago is never told to unlock on its box 25ms
+     → expected [ 'Unlock this till on its box first' ] to deeply equal [ null ]
+   × SCRUM-780: the display line right after an unlock on the box > HIGH: a read the box did not answer leaves no line once the next is answered with no display 4ms
+     → expected 'Unlock this till on its box first' to be null
+   ✓ SCRUM-780: a till that is not unlocked on its box is still told so > HIGH: no unlock at all — the line stays for as long as the box refuses 7ms
+   ✓ SCRUM-780: a till that is not unlocked on its box is still told so > HIGH: the box refuses the unlock — the line comes back 5ms
+   ✓ SCRUM-780: a till that is not unlocked on its box is still told so > HIGH: the box never answers the unlock — the line comes back 4ms
+   × SCRUM-780: no separate display reads the same on every till screen > HIGH: after an unlock, Tickets and the other screens report no fault and no display 4ms
+     → expected [ 'Unlock this till on its box first' ] to deeply equal [ null ]
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  test/s780-unlock-display-line.test.ts > SCRUM-780: the display line right after an unlock on the box > HIGH: a till unlocked on its box a moment ago is never told to unlock on its box
+AssertionError: expected [ 'Unlock this till on its box first' ] to deeply equal [ null ]
++   "Unlock this till on its box first",
+ FAIL  test/s780-unlock-display-line.test.ts > SCRUM-780: the display line right after an unlock on the box > HIGH: a read the box did not answer leaves no line once the next is answered with no display
+AssertionError: expected 'Unlock this till on its box first' to be null
+"Unlock this till on its box first"
+ FAIL  test/s780-unlock-display-line.test.ts > SCRUM-780: no separate display reads the same on every till screen > HIGH: after an unlock, Tickets and the other screens report no fault and no display
+AssertionError: expected [ 'Unlock this till on its box first' ] to deeply equal [ null ]
++   "Unlock this till on its box first",
+ Test Files  1 failed (1)
+      Tests  3 failed | 3 passed (6)
+
+######## AFTER the fix ########
+ ✓ test/s780-unlock-display-line.test.ts (6 tests) 51ms
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
