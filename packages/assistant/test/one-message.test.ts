@@ -836,8 +836,8 @@ describe('SCRUM-832 follow-up: on a thread with its park the birthday question a
   } as const;
   const LANGS = ['en', 'th', 'ru'] as const;
   const DECLARED: AiDecision['askedSlots'] = ['date', 'guests_count', 'park'];
-  const party = (lang: (typeof LANGS)[number], bubbles: string[], e: Partial<EpisodeState>, d: Partial<AiDecision> = {}) =>
-    compose(verdict({ intent: 'birthday_party', intents: ['birthday_party'], language: lang, bubbles }), e, [], d);
+  const party = (lang: (typeof LANGS)[number], bubbles: string[], e: Partial<EpisodeState>, d: Partial<AiDecision> = {}, o: Partial<Answer> = {}) =>
+    compose(verdict({ intent: 'birthday_party', intents: ['birthday_party'], language: lang, bubbles, ...o }), e, [], d);
 
   it('en, th, ru: the park clause goes, the date and the headcount stay as one message, and the memory records those two', () => {
     for (const lang of LANGS) {
@@ -861,6 +861,33 @@ describe('SCRUM-832 follow-up: on a thread with its park the birthday question a
       expect(v.composition, lang).toMatchObject({ parkQuestions: 0 });
       expect(askedSlotsOf(v.askedSlots, v.bubbles), lang).toContain('park');
     }
+  });
+
+  it('en, th, ru: the park the model just read on a thread with none ("we’re coming to Central for a party") is not asked back — the same cut, the park kept as read', () => {
+    const SAYS = {
+      en: "Hi, we're coming to Central for a party for our son",
+      th: 'สวัสดีค่ะ จะไปจัดปาร์ตี้ให้ลูกชายที่ Central ค่ะ',
+      ru: 'Здравствуйте, мы едем в Central на праздник для сына',
+    } as const;
+    for (const lang of LANGS) {
+      for (const thread of [GENERAL, BIRTHDAYS]) {
+        const v = party(lang, [OPEN[lang], ASK[lang]], thread, { askedSlots: DECLARED, branchNamed: 'central' }, { branchNamed: 'central' });
+        expect(v.bubbles, lang).toEqual([[OPEN[lang], PARK_KNOWN[lang]].join(PART_JOIN)]);
+        expect(v, lang).toMatchObject({ branchNamed: 'central', askBranch: false, askedSlots: ['date', 'guests_count'], parts: [OPEN[lang], PARK_KNOWN[lang]] });
+        expect(v.composition, lang).toMatchObject({ parkFirst: false, bubbles: 2, joined: true, parkQuestions: 1 });
+        expect(askedSlotsOf(v.askedSlots, v.bubbles).sort(), lang).toEqual(['date', 'guests_count']);
+      }
+      // Through the whole gate, the family's line naming the park: the same message, the park read.
+      const v = answer(
+        gate({ language: lang, intent: 'birthday_party', bubbles: [OPEN[lang], ASK[lang]], askedSlots: DECLARED, branchNamed: 'central', reason: 'CLEAR_INTENT' }, GENERAL, [SAYS[lang]]),
+      );
+      expect(v.bubbles, lang).toEqual([[OPEN[lang], PARK_KNOWN[lang]].join(PART_JOIN)]);
+      expect(v, lang).toMatchObject({ branchNamed: 'central', askBranch: false, askedSlots: ['date', 'guests_count'], thenHandover: null });
+    }
+    // The family answered the park question earlier this episode (the memory), the model naming none: known too, the same cut.
+    const answered = party('en', [OPEN.en, ASK.en], { ...BIRTHDAYS, questions: parkAnswered('Central') }, { askedSlots: DECLARED });
+    expect(answered.bubbles).toEqual([[OPEN.en, PARK_KNOWN.en].join(PART_JOIN)]);
+    expect(answered).toMatchObject({ askBranch: false, askedSlots: ['date', 'guests_count'] });
   });
 
   it('through the whole gate on a park’s own number (en and th): the cut question, nothing else changed', () => {

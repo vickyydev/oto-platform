@@ -5,6 +5,7 @@ import { INBOX_TEMPLATE_BODIES } from '@oto/db/seed';
 import { schema as s } from '@oto/db';
 import { teardownAll } from './helpers';
 import {
+  ON_DEFAULT_QUEUE,
   SENTINEL,
   aiLines,
   aiWorld,
@@ -107,9 +108,9 @@ async function drain(): Promise<void> {
 const nextSecond = () => new Promise((resolve) => setTimeout(resolve, 1_100));
 
 /** The customer writes after a pause; one tick decides the burst with the scripted decision; the lines are marked sent. */
-async function say(phone: string, text: string, d: AiDecision, account = wide) {
+async function say(phone: string, text: string, d: AiDecision, account = wide, opts: Parameters<typeof customer>[4] = {}) {
   await nextSecond();
-  const conv = await customer(w, account, phone, text);
+  const conv = await customer(w, account, phone, text, opts);
   const before = (await aiLines(w, conv.id)).length;
   w.fake.push({ kind: 'decision', decision: d });
   const sweep = await tick(w, new Date());
@@ -499,4 +500,36 @@ describe('SCRUM-832 follow-up: the birthday question on a park’s own number', 
     expect((await questionsOf(t.conv.id)).map((q) => q.slot).sort()).toEqual(['date', 'guests_count', 'park']);
     expect((await repliedPayloads(t.conv.id))[0]).toMatchObject({ composition: { parkQuestions: 0 } });
   }, 60_000);
+
+  it('on the number with no park, the model read the park the family named ("coming to Central"): no "which branch" back, the date and the headcount open; the park set on a general thread', async () => {
+    await drain();
+    const line = `Hi, we're coming to Central for a birthday party for our son ${SENTINEL}`;
+    const read = (): AiDecision => ({ ...opener(), branchNamed: 'central' });
+    // The first line says "birthday party": the ingest lands the thread on the birthdays queue, whose park is the
+    // birthday manager's to set (the assistant sets a park from the model's reading on a general thread only).
+    const t = await say(nextPhone(), line, read());
+    expect(t.conv.category).toBe('birthdays');
+    expect(t.sweep.answered).toBe(1);
+    expect(t.lines.map((l) => l.body)).toEqual([[OPEN, ASK_PARK_KNOWN].join(PART_JOIN)]);
+    expect(t.lines[0]!.body).not.toMatch(/which branch|Central Floresta or Robinson Chalong/i);
+    const qs = await questionsOf(t.conv.id);
+    expect(qs.map((q) => ({ slot: q.slot, state: q.state, askedMessageId: q.askedMessageId }))).toEqual([
+      { slot: 'date', state: 'open', askedMessageId: t.lines[0]!.id },
+      { slot: 'guests_count', state: 'open', askedMessageId: t.lines[0]!.id },
+    ]);
+    expect((await repliedPayloads(t.conv.id))[0]).toMatchObject({ askBranch: false, composition: { parkFirst: false, bubbles: 2, joined: true, parkQuestions: 1 } });
+    expect((await conversationRow(w, t.conv.id)).branchId).toBeNull();
+    expect((await turnsOf(w, t.conv.id)).map((x) => x.messageIds.length)).toEqual([1]);
+
+    // The same line kept on the general queue (the simulator's hint): the same message, and the park the model
+    // read sets the thread's park, as on any general thread with none — the question asked what was about to be known.
+    const g = await say(nextPhone(), line, read(), wide, ON_DEFAULT_QUEUE);
+    expect(g.conv.category).toBe('general');
+    expect(g.sweep.answered).toBe(1);
+    expect(g.lines.map((l) => l.body)).toEqual([[OPEN, ASK_PARK_KNOWN].join(PART_JOIN)]);
+    expect((await questionsOf(g.conv.id)).map((q) => q.slot).sort()).toEqual(['date', 'guests_count']);
+    expect((await conversationRow(w, g.conv.id)).branchId).toBe(w.central);
+    expect((await eventsOf(w, g.conv.id)).find((e) => e.kind === 'branch_set')!.payload).toMatchObject({ toBranchId: w.central, byAi: true });
+    expect((await turnsOf(w, g.conv.id)).map((x) => x.messageIds.length)).toEqual([1]);
+  }, 90_000);
 });

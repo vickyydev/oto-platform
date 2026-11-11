@@ -42,10 +42,11 @@
  *      which park is dropped (`asksOnlyThePark`), and the reply no longer
  *      declares the park asked — never the whole reply, and never in the
  *      price conversation or the birthday, which ask the park inside their
- *      own one question (`OWN_PARK_QUESTION_INTENTS`). On a thread that has
- *      its park (a park's own number), the birthday's combined question
- *      loses its park CLAUSE alone (`birthdayParkCut`): the date and the
- *      headcount are still asked, the park is not.
+ *      own one question (`OWN_PARK_QUESTION_INTENTS`). Once the park is
+ *      known (a park's own number, or the park the model just read in this
+ *      burst: `parkKnown`), the birthday's combined question loses its park
+ *      CLAUSE alone (`birthdayParkCut`): the date and the headcount are
+ *      still asked, the park is not.
  *   4. NO REPETITION (`repeatRule`): once the family answered the park
  *      question this episode, a sentence about the park (where it is, the way
  *      in, the parking, the hours: read against the knowledge,
@@ -711,15 +712,18 @@ export function withoutParkClauses(text: string, language: AiReplyLanguage): { t
  * SCRUM-832 (staging, 10 Nov 2026, a park's own WhatsApp number): the
  * model's combined birthday question still asked "which branch, Central
  * Floresta or Robinson Chalong?" on a thread that has its park. The owner's
- * rule: the assistant never asks what it already knows. On such a thread a
- * birthday reply's bubbles lose the park's clause (`withoutParkClauses`),
- * the date and headcount parts kept; `askedSlots` then no longer says the
- * park was asked (SCRUM-831's memory records the date and the headcount).
- * Null: no park on the thread, not a birthday reply, nothing to cut — or
- * nothing would be left to send (never silence).
+ * rule: the assistant never asks what it already knows. Once the park is
+ * known (`parkKnown`: the thread has it, the model read it in this burst —
+ * "we're coming to Central for a party", which sets a branchless thread's
+ * park — or the family answered the park question this episode), a birthday
+ * reply's bubbles lose the park's clause (`withoutParkClauses`), the date
+ * and headcount parts kept; `askedSlots` then no longer says the park was
+ * asked (SCRUM-831's memory records the date and the headcount). Null: no
+ * park known, not a birthday reply, nothing to cut — or nothing would be
+ * left to send (never silence).
  */
-function birthdayParkCut(v: AnswerVerdict, input: GateInput): { bubbles: string[]; cuts: number } | null {
-  if (!input.episode.threadHasBranch || !v.intents.some((i) => BIRTHDAY_INTENTS.has(i))) return null;
+function birthdayParkCut(v: AnswerVerdict, input: GateInput, branchNamed: AiBranchKey | null): { bubbles: string[]; cuts: number } | null {
+  if (!parkKnown(branchNamed, input.episode) || !v.intents.some((i) => BIRTHDAY_INTENTS.has(i))) return null;
   const cut = v.bubbles.map((b) => withoutParkClauses(b, v.language));
   const cuts = cut.reduce((n, c) => n + c.cuts, 0);
   const bubbles = cut.map((c) => c.text).filter((t) => t.trim() !== '');
@@ -920,9 +924,9 @@ export function composeTurn(v: GateVerdict, input: GateInput): GateVerdict {
   const known = parkKnown(branchNamed, input.episode) || parkNamedByFamily(input) !== null;
   // The price conversation and the birthday ask the park inside their own one question, which is
   // theirs to word (and the repeat guard's to refuse): never cut as a whole, whatever the slot reader sees.
-  // On a thread that has its park, the birthday's question loses only its park clause (`birthdayParkCut`).
+  // Once the park is known (the thread's, or the one the model just read), the birthday's question loses only its park clause (`birthdayParkCut`).
   const ownQuestion = v.intents.some((i) => OWN_PARK_QUESTION_INTENTS.has(i));
-  const parkless = birthdayParkCut(v, input);
+  const parkless = birthdayParkCut(v, input, branchNamed);
   const bubbles = parkless?.bubbles ?? v.bubbles;
   const parkClauses = parkless?.cuts ?? 0;
   const join = topicsOfIntents(v.intents).length <= 1;
