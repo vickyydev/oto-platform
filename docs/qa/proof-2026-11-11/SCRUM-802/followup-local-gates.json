@@ -1,0 +1,47 @@
+{
+  "checkedAt": "2026-11-11T07:19:17.000Z",
+  "base": "df5860c87432d9b8bbbbbb61433f3cd2981cec1f",
+  "posTests": 2333,
+  "posTestFiles": 169,
+  "reviewPins": 5,
+  "apiDiagnostics": 0,
+  "posDiagnostics": 0,
+  "typechecksReadWhole": true,
+  "lint": "four touched platform files passed",
+  "build": "POS passed; existing bundle-size warning",
+  "firstPosAttempt": "Three unchanged suites timed out while other local gates were running; complete rerun passed with unchanged timeouts",
+  "logs": [
+    {
+      "file": "local/followup-adversarial-before.log",
+      "sha256": "c8813d0d30f97778260aace81d52f41e1f41b4212d53c230a1ab3c324824e80b"
+    },
+    {
+      "file": "local/followup-api-review.log",
+      "sha256": "c8555fd8ab8da95a02424a1c2cd28bc7a0f4897e06716d48c909cf0a5e0cb0c0"
+    },
+    {
+      "file": "local/followup-pos-typecheck.log",
+      "sha256": "eb9aa772628de9592c191b22b25edfc67f7ff36079562fc0b92a02fdb785c189"
+    },
+    {
+      "file": "local/followup-api-typecheck.log",
+      "sha256": "bb79497bb747adb06452344ac1bf0685c75741250d6d47b56b78bf8cd51fc5c4"
+    },
+    {
+      "file": "local/followup-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "local/followup-pos-build.log",
+      "sha256": "98124828477a6e6403d90948ac5d8f367e44afce3bbf9f9cb9081c79a10825a5"
+    },
+    {
+      "file": "local/followup-pos-tests.log",
+      "sha256": "77206d074fb5f3d4f4eda1531d75ee57669c28bb223f82b35e52a41989ee05fb"
+    },
+    {
+      "file": "local/followup-pos-tests-retry.log",
+      "sha256": "31ae349349698248281729333283ec6b8b3295704138bb665a605920f9c65cca"
+    }
+  ]
+}
