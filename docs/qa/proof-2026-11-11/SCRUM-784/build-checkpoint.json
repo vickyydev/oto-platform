@@ -1,0 +1,50 @@
+{
+  "at": "2026-11-11T12:35:44.531Z",
+  "base": "8622d08bcca5689b9248ee36078262b243132852",
+  "reproduced": {
+    "legacyCheck": "400 Invalid login request on original source; own database removed",
+    "loginScreen": "200 and launcher sign-in shown; temporary password and phone masked",
+    "sopScreen": "500; upstream 400 temperature deprecated"
+  },
+  "review": {
+    "before": "2/9; seven findings reproduced",
+    "after": "9/9"
+  },
+  "fingerprints": {
+    "s784-before-check": {
+      "path": "C:/oto-lanes/s784-before-check.log",
+      "sha256": "2604ae9477569edc52a68e8491d7f1830a05e03cfefc75865cff2433a8769780",
+      "bytes": 12952
+    },
+    "s785-before-review": {
+      "path": "C:/oto-lanes/s785-before-review.log",
+      "sha256": "206f5228d890aee22659c491bc2d1ddc647b6786da973a593930d875c338281c",
+      "bytes": 1782
+    },
+    "s785-after-review": {
+      "path": "C:/oto-lanes/s785-after-review.log",
+      "sha256": "58f8c2382be76d7fe0298cd714c010b03ab2712e664b87984d6592e1e18ab0d9",
+      "bytes": 1206
+    },
+    "s778-candidate-vouchers": {
+      "path": "C:/oto-lanes/s778-candidate-vouchers.log",
+      "sha256": "f4394f482740915b0ab7cc9664412ede9314e2e6e95c849ee1574c4a38e72141",
+      "bytes": 12054
+    }
+  },
+  "pending": {
+    "legacyCheck": 39359,
+    "appTypecheck": 74987,
+    "appBuild": 20873,
+    "apiTextPins": 13139,
+    "apiTypecheck": 8550,
+    "contracts": 38047
+  },
+  "candidateCi": {
+    "run": "43014729134",
+    "sha": "902c0deb6d638bd752f2cdf7c40d097bd5cf735f",
+    "initial": "voucher audit row assertion at vouchers.test.ts:2522",
+    "localExactSha": "108/108",
+    "retry": "one failed-job retry requested"
+  }
+}
