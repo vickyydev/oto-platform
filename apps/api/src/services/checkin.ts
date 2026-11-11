@@ -1,9 +1,10 @@
-import { and, asc, desc, eq, gt, gte, inArray, isNull, lte, ne, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, gte, inArray, isNull, lte, ne, notInArray, or, sql } from 'drizzle-orm';
 import {
   account,
   auditLog,
   employee,
   band,
+  booking,
   branch,
   branchHoliday,
   checkin,
@@ -22,6 +23,7 @@ import {
   supervisionPolicy,
   supervisionWaiver,
   visit,
+  type CheckinStatus,
 } from '@oto/db';
 import {
   DEFAULT_DROP_OFF_PRICING,
@@ -184,7 +186,7 @@ export async function nannyRosterOf(db: Exec, branchId: string, now: Date = new 
   const covered = await db
     .select({ nannyId: checkin.nannyId, childName: checkin.childName })
     .from(checkin)
-    .where(and(inArray(checkin.nannyId, ids), ne(checkin.status, 'out')))
+    .where(and(inArray(checkin.nannyId, ids), notInArray(checkin.status, ['out', 'cancelled'])))
     .orderBy(asc(checkin.createdAt));
   return nannies.map((n) => {
     const names = covered.filter((c) => c.nannyId === n.id).map((c) => c.childName);
@@ -206,7 +208,8 @@ export interface CheckinView {
   mayOrderFood: boolean;
   foodProvision: FoodProvisionInput | null;
   service: SupervisionRequirement;
-  status: 'registered' | 'in_park' | 'out';
+  /** SCRUM-862 — `cancelled` only ever reaches a registration read; the board and the waiting list leave it out. */
+  status: CheckinStatus;
   scheduledFor: string | null;
   bookedMinutes: number | null;
   nannyId: string | null;
@@ -307,28 +310,106 @@ export async function getRegistration(db: Exec, operatorId: string, id: string):
   return registrationViewOf(db, await loadRegistration(db, operatorId, id));
 }
 
+/** The branch's trading day `now` falls in: its date, its timezone and its `business_day_start`. */
+async function tradingDayOf(
+  db: Exec,
+  branchId: string,
+  now: Date,
+): Promise<{ date: string; timezone: string; dayStartMinutes: number }> {
+  const [br] = await db
+    .select({ timezone: branch.timezone, businessDayStart: branch.businessDayStart })
+    .from(branch)
+    .where(eq(branch.id, branchId))
+    .limit(1);
+  if (!br) throw errors.notFound('Branch not found');
+  const dayStartMinutes = parseDayStart(br.businessDayStart);
+  return { date: businessDate(now, br.timezone, dayStartMinutes), timezone: br.timezone, dayStartMinutes };
+}
+
+/**
+ * SCRUM-862 — the visit date each online booking's registration is FOR, by
+ * registration id (the booking names its registration in its payload, as
+ * `paidOnlineStaysOf` reads it). Paid or redeemed only.
+ */
+async function bookingDatesOf(db: Exec, operatorId: string, registrationIds: readonly string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (registrationIds.length === 0) return out;
+  const rows = await db
+    .select({ registrationId: sql<string>`${booking.payload} ->> 'registrationId'`, bookingDate: booking.bookingDate })
+    .from(booking)
+    .where(
+      and(
+        eq(booking.operatorId, operatorId),
+        inArray(booking.status, ['paid', 'redeemed']),
+        inArray(sql`${booking.payload} ->> 'registrationId'`, [...registrationIds]),
+      ),
+    );
+  for (const r of rows) if (!out.has(r.registrationId)) out.set(r.registrationId, r.bookingDate);
+  return out;
+}
+
 /**
  * The registrations still waiting for their children to be checked in, for
  * the AddDropOffModal (prototype `getRegistrationsAwaitingCheckIn`): every
  * registration at the branch with at least one child `registered`.
+ *
+ * SCRUM-862 — ON THE BRANCH'S TRADING DAY ONLY. The prototype's list had no
+ * day: a booking signed on Monday was still offered on Friday, and leftovers
+ * piled up with nothing to clear them. A waiting child is offered on the day
+ * their stay is FOR — the booked start when one was chosen ("Leave as
+ * booked"), the visit date of the online booking that made the registration,
+ * otherwise the day they were registered — in the branch's timezone, on the
+ * trading day the board's Out tab and the cash day use (`business_day_start`).
+ * An advance booking appears on its date; yesterday's leaves the list by
+ * itself. Nothing is deleted or scheduled: the rule is in the read. The board
+ * is not filtered — a family still waiting there is the board's business, and
+ * `cancelWaitingRegistration` is the way to clear one for good.
  */
 export async function registrationsAwaitingCheckIn(
   db: Exec,
   operatorId: string,
   branchId: string,
+  now: Date = new Date(),
 ): Promise<RegistrationView[]> {
   const waiting = await db
-    .selectDistinct({ id: checkin.registrationId })
+    .select({
+      id: checkin.id,
+      registrationId: checkin.registrationId,
+      scheduledFor: checkin.scheduledFor,
+      createdAt: checkin.createdAt,
+    })
     .from(checkin)
     .where(and(eq(checkin.operatorId, operatorId), eq(checkin.branchId, branchId), eq(checkin.status, 'registered')));
   if (waiting.length === 0) return [];
+  const day = await tradingDayOf(db, branchId, now);
   const rows = await db
     .select()
     .from(registration)
-    .where(inArray(registration.id, waiting.map((w) => w.id)))
+    .where(inArray(registration.id, [...new Set(waiting.map((w) => w.registrationId))]))
     .orderBy(desc(registration.createdAt), desc(registration.id));
+  const bookingDates = await bookingDatesOf(
+    db,
+    operatorId,
+    rows.filter((r) => r.source === 'booking').map((r) => r.id),
+  );
+  const forToday = new Set(
+    waiting
+      .filter(
+        (s) =>
+          (bookingDates.get(s.registrationId) ??
+            businessDate(s.scheduledFor ?? s.createdAt, day.timezone, day.dayStartMinutes)) === day.date,
+      )
+      .map((s) => s.id),
+  );
   const out: RegistrationView[] = [];
-  for (const row of rows) out.push(await registrationViewOf(db, row));
+  for (const row of rows) {
+    const view = await registrationViewOf(db, row);
+    // A waiting child whose day is not today is left off; the family is listed
+    // while one of their children is for today.
+    const children = view.children.filter((c) => c.status !== 'registered' || forToday.has(c.id));
+    if (!children.some((c) => c.status === 'registered')) continue;
+    out.push({ ...view, children });
+  }
   const paidOnline = await paidOnlineStaysOf(db, operatorId, out.flatMap((r) => r.children));
   const paidAtTill = await paidAtTillStaysOf(db, operatorId, out.flatMap((r) => r.children.filter((c) => c.status === 'registered')));
   return out.map((r) => ({
@@ -665,6 +746,94 @@ export async function addRegistrationChildren(
  * replaced (prototype `setCheckInPhoto`): the first one the counter took is the
  * one a pickup is checked against.
  */
+// --- Cancel a waiting booking (SCRUM-862) ------------------------------------------
+
+export const CHECKIN_CANCEL_CHECKED_IN = 'CHECKIN_CANCEL_CHECKED_IN';
+export const CHECKIN_CANCEL_PAID = 'CHECKIN_CANCEL_PAID';
+
+/**
+ * CANCEL A WAITING BOOKING — the till's "Cancel booking" on the Add drop-off
+ * picker. Every child on the registration still `registered` moves to
+ * `cancelled`, with when, who and the reason the counter gave; the
+ * registration and the signed consent stay exactly as they are, for the
+ * record. No prototype logic: the prototype's picker had no way to take a
+ * booking off the list (`getRegistrationsAwaitingCheckIn`, mockApi.ts:4510).
+ *
+ * Refused as a whole, before anything is written, when any child on the
+ * booking is already checked in or collected, or already paid for — online
+ * (SCRUM-730) or by a till sale still holding the money (SCRUM-740): that is
+ * the sale's refund or void path, and this press is never a way around it. A
+ * stay linked to a sale since voided or refunded IS cancellable: nothing can
+ * ever sell it again (`loadChoice` refuses any other sale), so cancelling is
+ * the only way off the list.
+ *
+ * Idempotent on state, beside the request's Idempotency-Key: a booking whose
+ * children are all cancelled already answers the same view and writes no
+ * second audit row.
+ */
+export async function cancelWaitingRegistration(
+  tx: Tx,
+  actor: Actor,
+  reg: RegistrationRow,
+  input: { reason: string },
+  now: Date = new Date(),
+): Promise<RegistrationView> {
+  const stays = await tx
+    .select()
+    .from(checkin)
+    .where(eq(checkin.registrationId, reg.id))
+    .orderBy(asc(checkin.createdAt), asc(checkin.id))
+    .for('update');
+  const inOrOut = stays.filter((s) => s.status === 'in_park' || s.status === 'out');
+  if (inOrOut.length > 0) {
+    throw errors.conflict(
+      CHECKIN_CANCEL_CHECKED_IN,
+      `${nameList(inOrOut.map((s) => s.childName))} ${inOrOut.length === 1 ? 'was' : 'were'} already checked in — ` +
+        'a paid or checked-in booking is handled through its sale (refund or void), not cancelled here. Nothing was changed.',
+    );
+  }
+  const waiting = stays.filter((s) => s.status === 'registered');
+  const paidOnline = await paidOnlineStaysOf(tx, actor.operatorId, waiting);
+  const paidAtTill = await paidAtTillStaysOf(tx, actor.operatorId, waiting);
+  const paid = waiting.filter((s) => paidOnline.has(s.id) || paidAtTill.has(s.id));
+  if (paid.length > 0) {
+    const first = paid[0]!;
+    const online = paidOnline.get(first.id);
+    const receipt = paidAtTill.get(first.id)?.receiptNumber;
+    const how = online ? `online on booking ${online.reference}` : `at the till${receipt ? ` on receipt ${receipt}` : ''}`;
+    throw errors.conflict(
+      CHECKIN_CANCEL_PAID,
+      `${nameList(paid.map((s) => s.childName))} ${paid.length === 1 ? 'is' : 'are'} already paid for ${how} — ` +
+        "refund or void that sale instead; a paid booking can't be cancelled here. Nothing was changed.",
+      online ? { ...online } : { saleId: paidAtTill.get(first.id)!.saleId },
+    );
+  }
+  if (waiting.length === 0) {
+    if (stays.length === 0) throw errors.conflict('CHECKIN_NOTHING_WAITING', 'Nothing is waiting on this booking.');
+    // Every child is cancelled already: the same answer, and nothing written twice.
+    return registrationViewOf(tx, reg);
+  }
+  for (const s of waiting) {
+    await tx
+      .update(checkin)
+      .set({ status: 'cancelled', cancelledAt: now, cancelledByAccountId: actor.accountId, cancelReason: input.reason, updatedAt: now })
+      .where(eq(checkin.id, s.id));
+    await audit.record(tx, {
+      actorAccountId: actor.accountId,
+      operatorId: actor.operatorId,
+      branchId: s.branchId,
+      action: 'checkin.update',
+      entityType: 'checkin',
+      entityId: s.id,
+      requestId: actor.requestId,
+      actionId: actor.actionId ?? null,
+      before: { status: s.status, saleId: s.saleId, cancelledAt: null, cancelReason: null },
+      after: { status: 'cancelled', saleId: s.saleId, cancelledAt: now.toISOString(), cancelReason: input.reason, event: 'cancel' },
+    });
+  }
+  return registrationViewOf(tx, reg);
+}
+
 export async function attachRegistrationPhoto(
   tx: Tx,
   actor: Actor,
@@ -850,9 +1019,7 @@ async function loadChoice(
   }
   for (const s of stays) {
     if (s.branchId !== saleRow.branchId) throw errors.conflict('CHECKIN_OTHER_PARK', `${s.childName} was registered at another park.`);
-    if (s.status !== 'registered') {
-      throw errors.conflict('CHECKIN_NOT_REGISTERED', `${s.childName} is already ${s.status === 'in_park' ? 'checked in' : 'checked out'}.`);
-    }
+    if (s.status !== 'registered') throw notWaitingRefusal(s);
     if (s.saleId && s.saleId !== saleRow.id) {
       throw errors.conflict('CHECKIN_OTHER_SALE', `${s.childName} was paid for on another sale.`);
     }
@@ -863,6 +1030,16 @@ async function loadChoice(
     }
   }
   return { saleRow, stays, lineOf };
+}
+
+/** The refusal for a child who is no longer waiting, in the counter's words (SCRUM-862 adds the cancelled booking). */
+function notWaitingRefusal(s: Pick<CheckinRow, 'childName' | 'status'>): AppError {
+  return errors.conflict(
+    'CHECKIN_NOT_REGISTERED',
+    s.status === 'cancelled'
+      ? `${s.childName}'s drop-off booking was cancelled — register them again if they are staying.`
+      : `${s.childName} is already ${s.status === 'in_park' ? 'checked in' : 'checked out'}.`,
+  );
 }
 
 export interface CheckInNowResult {
@@ -1169,7 +1346,9 @@ export interface ContactConnection {
   confirmedAt: string | null;
 }
 
-export interface BoardChild extends CheckinView {
+export interface BoardChild extends Omit<CheckinView, 'status'> {
+  /** Never `cancelled`: `boardOf` leaves a cancelled stay out, so the box's copy never meets one (SCRUM-862). */
+  status: Exclude<CheckinStatus, 'cancelled'>;
   nannyName: string | null;
   checkedOutAt: string | null;
 }
@@ -1218,8 +1397,11 @@ function boardChildOf(
   paidOnline?: PaidOnlineBooking | null,
   paidAtTill?: PaidAtTill | null,
 ): BoardChild {
+  const view = checkinViewOf(row);
+  if (view.status === 'cancelled') throw new Error(`A cancelled stay (${row.id}) is never on the board`);
   return {
-    ...checkinViewOf(row),
+    ...view,
+    status: view.status,
     nannyName,
     checkedOutAt: row.checkedOutAt?.toISOString() ?? null,
     ...(paidOnline !== undefined ? { paidOnline } : {}),
@@ -1350,6 +1532,8 @@ export async function boardOf(db: Exec, operatorId: string, branchId: string, no
       and(
         eq(checkin.operatorId, operatorId),
         eq(checkin.branchId, branchId),
+        // SCRUM-862 — a cancelled stay is on no board, whatever the day.
+        ne(checkin.status, 'cancelled'),
         or(ne(checkin.status, 'out'), gte(checkin.checkedOutAt, dayStart)),
       ),
     )
@@ -1421,7 +1605,7 @@ export async function dropOffToday(
   const rows = await db
     .select({ status: checkin.status, n: sql<number>`count(*)::int` })
     .from(checkin)
-    .where(and(eq(checkin.operatorId, operatorId), eq(checkin.branchId, branchId), ne(checkin.status, 'out')))
+    .where(and(eq(checkin.operatorId, operatorId), eq(checkin.branchId, branchId), notInArray(checkin.status, ['out', 'cancelled'])))
     .groupBy(checkin.status);
   const of = (s: string) => Number(rows.find((r) => r.status === s)?.n ?? 0);
   return { inPark: of('in_park'), upcoming: of('registered') };
@@ -1467,7 +1651,7 @@ async function checkNannyFor(
   const [load] = await db
     .select({ n: sql<number>`count(*)::int` })
     .from(checkin)
-    .where(and(eq(checkin.nannyId, nannyId), ne(checkin.status, 'out'), ne(checkin.id, excludeCheckinId)));
+    .where(and(eq(checkin.nannyId, nannyId), notInArray(checkin.status, ['out', 'cancelled']), ne(checkin.id, excludeCheckinId)));
   const config = await supervisionConfigOf(db, branchId);
   const softMax = config.pricing.nannyRatioSoftMax;
   const after = Number(load?.n ?? 0) + 1;
@@ -1524,6 +1708,7 @@ export async function assignNanny(
   if (stay.status === 'out') {
     throw errors.conflict('CHECKIN_OUT', `${stay.childName} has already been collected — no nanny is needed.`);
   }
+  if (stay.status === 'cancelled') throw notWaitingRefusal(stay);
   const { name, warning } = await checkNannyFor(tx, stay.branchId, nannyId, stay.id, now);
   if (stay.nannyId === nannyId && stay.service === 'nanny') {
     return { checkin: await boardChildById(tx, stay.id), warnings: warning ? [warning] : [] };
@@ -1796,9 +1981,10 @@ const FIELD_LABELS: Record<string, string> = {
   nannyName: 'Nanny',
   status: 'Status',
   scheduledFor: 'Booked start',
+  cancelReason: 'Cancel reason',
 };
 
-const STATUS_LABEL: Record<string, string> = { registered: 'Upcoming', in_park: 'In Park', out: 'Out' };
+const STATUS_LABEL: Record<string, string> = { registered: 'Upcoming', in_park: 'In Park', out: 'Out', cancelled: 'Cancelled' };
 const SERVICE_LABEL: Record<string, string> = { nanny: 'Nanny', drop_off: 'Drop-Off', none: 'None' };
 
 function formatField(key: string, value: unknown): string {
@@ -1931,12 +2117,7 @@ export async function checkInBooked(
 
   // --- Validate all before committing any ---
   for (const s of stays) {
-    if (s.status !== 'registered') {
-      throw errors.conflict(
-        'CHECKIN_NOT_REGISTERED',
-        `${s.childName} is already ${s.status === 'in_park' ? 'checked in' : 'checked out'}.`,
-      );
-    }
+    if (s.status !== 'registered') throw notWaitingRefusal(s);
     // SCRUM-730 — booked and paid: the sale the band is minted on is the
     // redemption's, so the counter is sent there and never told it is unpaid.
     const paid = paidOnline.get(s.id);

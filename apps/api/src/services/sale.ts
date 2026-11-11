@@ -3625,6 +3625,22 @@ async function refusePaidOnlineStays(tx: Tx, operatorId: string, lines: readonly
   }
 }
 
+/** SCRUM-862 — refused before anything is priced or written: no line may stand under a stay staff cancelled. */
+async function refuseCancelledStays(tx: Tx, operatorId: string, lines: readonly { id: string }[]): Promise<void> {
+  if (lines.length === 0) return;
+  const [stay] = await tx
+    .select({ childName: checkin.childName })
+    .from(checkin)
+    .where(and(inArray(checkin.id, lines.map((line) => line.id)), eq(checkin.operatorId, operatorId), eq(checkin.status, 'cancelled')))
+    .limit(1);
+  if (stay) {
+    throw errors.conflict(
+      'CHECKIN_CANCELLED',
+      `${stay.childName}'s drop-off booking was cancelled, so it can't be sold — register them again if they are staying. Nothing was saved.`,
+    );
+  }
+}
+
 /**
  * SCRUM-740 — refused before anything is priced or written, as SCRUM-730 is
  * for a child paid online: no new sale may carry a line under a waiting stay a
@@ -3729,11 +3745,13 @@ export async function commitSale(
 
   // SCRUM-730 — a child paid for online is on no till's sale but their own
   // booking's redemption; SCRUM-740 — a child a till sale already paid for is
-  // on no second one. A box's replay is not asked: its money was taken with
-  // nobody to ask, and the box refuses the check-in before it gets this far.
+  // on no second one; SCRUM-862 — nor is a child whose booking staff cancelled.
+  // A box's replay is not asked: its money was taken with nobody to ask, and
+  // the box refuses the check-in before it gets this far.
   if (!input.bookingId && options.printing !== 'skip') {
     await refusePaidOnlineStays(tx, actor.operatorId, input.lines ?? []);
     await refuseStaysPaidAtTill(tx, actor.operatorId, saleId, input.lines ?? []);
+    await refuseCancelledStays(tx, actor.operatorId, input.lines ?? []);
   }
 
   const [st] = await tx.select().from(station).where(eq(station.id, input.stationId)).limit(1);

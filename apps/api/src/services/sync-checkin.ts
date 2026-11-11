@@ -564,7 +564,7 @@ async function applyCheckinUpdated(
       await alertCheckinTwice(scope, event, stay, payload);
       throw conflict(
         'SYNC_CHECKIN_TWICE',
-        `${stay.childName} was already ${stay.status === 'in_park' ? 'checked in' : 'collected'} on the platform; this box's check-in was not applied`,
+        `${stay.childName} was already ${stay.status === 'in_park' ? 'checked in' : stay.status === 'cancelled' ? 'cancelled' : 'collected'} on the platform; this box's check-in was not applied`,
         { checkinId: stay.id },
       );
     }
@@ -757,7 +757,7 @@ async function alertCheckinTwice(
         subject: `Check-in for ${stay.childName}`,
         summary:
           `${stay.childName} was checked in offline on ${scope.auth.name} (${scope.auth.slot}) at ${payload.at}, ` +
-          `but the platform already has them ${stay.status === 'in_park' ? 'in the park' : 'collected'}. ` +
+          `but the platform already has them ${stay.status === 'in_park' ? 'in the park' : stay.status === 'cancelled' ? 'cancelled' : 'collected'}. ` +
           'The box’s check-in and its band were not applied — check which band the child is wearing.',
         detail: {
           checkinId: stay.id,
@@ -964,6 +964,11 @@ async function applyRelease(tx: Tx, scope: BatchScope, event: PreparedEvent, pay
   }
   if (stay.status === 'out') {
     throw conflict('SYNC_RELEASE_ALREADY_OUT', `${stay.childName} has already left the park on the platform`);
+  }
+  if (stay.status === 'cancelled') {
+    // SCRUM-862 — cancelled online while this box held the child: the check-in
+    // fact before this one already raised the alert; the release is not applied.
+    throw conflict('SYNC_RELEASE_CANCELLED', `${stay.childName}'s booking was cancelled on the platform; this box's release was not applied`);
   }
   const reg = await registrationOf(tx, scope, stay.registrationId);
   const actor = actorOf(event);

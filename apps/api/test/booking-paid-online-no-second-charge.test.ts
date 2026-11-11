@@ -3,6 +3,7 @@ import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { auditLog, band, booking, branch, checkin, station, ticketPackage } from '@oto/db';
 import { newId } from '@oto/shared';
+import { registrationsAwaitingCheckIn } from '../src/services/checkin';
 import { checkinCacheItem } from '../src/services/sync-checkin';
 import {
   CENTRAL_BRANCH_CODE,
@@ -136,15 +137,15 @@ async function paidBooking(
   };
 }
 
-/** What the till's `waitingStaysOf` reads: a family's waiting children. */
+/**
+ * What the till's `waitingStaysOf` reads: a family's waiting children, read
+ * on the booking's VISIT DAY. SCRUM-862: the picker lists a booking on the day
+ * it is for, so a visit booked for next week is not on today's list; this
+ * reads the route's own service with that day as now (the route itself is
+ * covered by checkin.test.ts and s862-cancel-waiting-booking.test.ts).
+ */
 async function waitingList(registrationId: string) {
-  const res = await ctx.app.inject({
-    method: 'GET',
-    url: `/checkin/registrations?branchId=${branchId}`,
-    headers: { cookie: reception },
-  });
-  expect(res.statusCode, res.body).toBe(200);
-  const regs = res.json().registrations as Array<{ id: string; children: Array<Record<string, unknown>> }>;
+  const regs = await registrationsAwaitingCheckIn(ctx.db, operatorId, branchId, new Date(`${WEEKDAY}T12:00:00+07:00`));
   return regs.find((r) => r.id === registrationId)?.children ?? [];
 }
 

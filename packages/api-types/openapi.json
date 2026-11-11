@@ -52824,6 +52824,48 @@
         }
       }
     },
+    "/checkin/registrations/{id}/cancel": {
+      "post": {
+        "description": "Cancel a booking still waiting to be checked in: every registered, unpaid child moves to cancelled with the reason given; the registration and its signed consent stay. A paid or checked-in child refuses the whole press.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
     "/checkin/registrations/{id}/photo": {
       "post": {
         "description": "Attach the uploaded child-and-guardian photo to the registration",

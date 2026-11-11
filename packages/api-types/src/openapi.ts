@@ -22062,6 +22062,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/checkin/registrations/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Cancel a booking still waiting to be checked in: every registered, unpaid child moves to cancelled with the reason given; the registration and its signed consent stay. A paid or checked-in child refuses the whole press. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        reason: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/checkin/registrations/{id}/photo": {
         parameters: {
             query?: never;

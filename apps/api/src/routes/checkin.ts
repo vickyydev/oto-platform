@@ -4,6 +4,7 @@ import { branch, registration, sale, supervisionWaiver } from '@oto/db';
 import {
   AddRegistrationChildrenSchema,
   AttachRegistrationPhotoSchema,
+  CancelRegistrationSchema,
   CheckInNowSchema,
   CreateRegistrationSchema,
   CreateWaiverSchema,
@@ -19,6 +20,7 @@ import {
   assignNanny,
   attachRegistrationPhoto,
   boardOf,
+  cancelWaitingRegistration,
   checkInBooked,
   checkInNow,
   checkinHistory,
@@ -169,6 +171,30 @@ export async function checkinRoutes(app: App): Promise<void> {
       await req.requirePermission('pos:checkin:create', { branchId: reg.branchId });
       return withTx(app.db, { ...opCtx(req), branchId: reg.branchId }, 'checkin.create', (tx) =>
         addRegistrationChildren(tx, actor, reg, req.body.children),
+      );
+    },
+  );
+
+  app.post(
+    '/registrations/:id/cancel',
+    {
+      // SCRUM-862 — whoever may register a drop-off child may cancel a waiting
+      // booking (the owner's call to widen or narrow; no new role was added).
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Cancel a booking still waiting to be checked in: every registered, unpaid child moves to cancelled with the ' +
+          'reason given; the registration and its signed consent stay. A paid or checked-in child refuses the whole press.',
+        params: z.object({ id: z.string().uuid() }),
+        body: CancelRegistrationSchema,
+      },
+    },
+    async (req) => {
+      const actor = actorOf(req);
+      const reg = await loadRegistration(app.db, actor.operatorId, req.params.id);
+      await req.requirePermission('pos:checkin:create', { branchId: reg.branchId });
+      return withTx(app.db, { ...opCtx(req), branchId: reg.branchId }, 'checkin.cancel', (tx) =>
+        cancelWaitingRegistration(tx, actor, reg, req.body),
       );
     },
   );
