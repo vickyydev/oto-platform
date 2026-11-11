@@ -30,14 +30,21 @@ The first dependency-build command found no build script in the two source
 packages and did no build; it is not counted as a pass. The actual POS build
 above passed. `local-gates.json` retains log hashes and the checked source.
 
-Full candidate CI `42971207054` runs at
+Full candidate CI `42971207054` passed all six jobs at
 `869a73add71fe4b41550dd4370e6cfcd487a8e48`. The saved source and local
 gate logs survived the interruption. The staging harness is prepared and
-syntax-checked at `staging/proof.mjs`; it has not run and has created no
+syntax-checked at `staging/proof.mjs`; it asserts the automatic list reread
+contains the paid charge before searching the screen. It has not run and has created no
 fixtures. Its cleanup attempts each independent step even if a prior step
 fails, and records failures without discarding the other cleanup receipts.
 
-Next: full hosted candidate gate, an explicitly released slot, main landing,
+The full candidate passed 6,798 API tests, 2,332 POS tests and 357 Console
+browser checks, plus the workspace build, tests and built-till journeys.
+Workspace typechecks were read whole: 16 successful tasks, zero API
+diagnostics. All 667 lines of the app typecheck were read: 418/418 in 54
+files. `candidate-ci.json` and `candidate-app-check.json` retain the receipts.
+
+Next: an explicitly released slot, main landing,
 both named till deploys and real staging screen proof. Proof must show a
 pasted ZZ TEST band opening History, a paid Add time receipt appearing without
 leaving History, and the leading-zero ZZ TEST number correctly shown in the

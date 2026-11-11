@@ -164,9 +164,11 @@ try {
   await till.getByRole('button', { name: 'Add time', exact: true }).click();
   const extension = till.getByRole('dialog', { name: 'Add time', exact: true });
   await extension.getByRole('button', { name: /^\+1 hour/ }).click();
-  const prepared = till.waitForResponse(r => new URL(r.url()).pathname === `/api/sales/${admission.id}/extensions` && r.request().method() === 'POST');
-  await extension.getByRole('button', { name: 'Continue to payment', exact: true }).click();
-  const chargeResponse = await prepared; assert.equal(chargeResponse.status(), 200);
+  const [chargeResponse] = await Promise.all([
+    till.waitForResponse(r => new URL(r.url()).pathname === `/api/sales/${admission.id}/extensions` && r.request().method() === 'POST'),
+    extension.getByRole('button', { name: 'Continue to payment', exact: true }).click(),
+  ]);
+  assert.equal(chargeResponse.status(), 200);
   const chargeId = (await chargeResponse.json()).sale.id;
   receipt.created.push({ kind: 'time-charge', id: chargeId }); save();
   await extension.getByRole('button', { name: 'Cash', exact: true }).click();
@@ -174,9 +176,14 @@ try {
   let navigations = 0;
   const navigated = frame => { if (frame === till.mainFrame()) navigations++; };
   till.on('framenavigated', navigated);
-  await extension.getByRole('button', { name: 'Record cash', exact: true }).click();
+  const [refreshedResponse] = await Promise.all([
+    till.waitForResponse(r => new URL(r.url()).pathname === '/api/sales' && r.request().method() === 'GET'),
+    extension.getByRole('button', { name: 'Record cash', exact: true }).click(),
+  ]);
   await expect(extension).toHaveCount(0);
   await expect(till.getByText(/Added \+1 hour to/)).toBeVisible();
+  assert.equal(refreshedResponse.status(), 200);
+  assert.ok((await refreshedResponse.json()).sales.some(s => s.id === chargeId && s.status === 'finalised'), 'the paid charge is in the automatic list reread');
   const charge = (await call('GET', `/sales/${chargeId}`)).body.sale;
   assert.equal(charge.status, 'finalised');
   await shot(till, 's802-time-paid.png');
@@ -185,7 +192,7 @@ try {
   await till.getByPlaceholder(/^Search by name, receipt number/).fill(prefix);
   await expect(till.getByText(charge.receiptNumber, { exact: true })).toBeVisible();
   assert.equal(navigations, 0); till.off('framenavigated', navigated);
-  receipt.checks.refresh = { chargeSaleId: chargeId, status: charge.status, receiptVisibleWithoutNavigation: true }; save();
+  receipt.checks.refresh = { chargeSaleId: chargeId, status: charge.status, automaticListRead: 200, receiptVisibleWithoutNavigation: true }; save();
   await shot(till, 's802-new-receipt-in-history.png');
 
   phase('leading zero on customer details');
