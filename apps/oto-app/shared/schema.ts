@@ -217,8 +217,12 @@ export const loginLifecycleEvents = pgTable("login_lifecycle_events", {
   attemptCount: integer("attempt_count").notNull().default(0),
   lastErrorCode: text("last_error_code"),
   kind: text("kind", { enum: loginLifecycleKinds }).notNull().default("deactivate"),
+  // SCRUM-778/810: identity survives deletion; null due time parks exhausted retries.
+  tenantId: uuid("tenant_id"),
+  nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).defaultNow(),
 }, (table) => [
   index("idx_login_lifecycle_pending").on(table.state, table.createdAt, table.id),
+  index("idx_login_lifecycle_due").on(table.state, table.nextAttemptAt, table.id),
   check("login_lifecycle_events_state_check", sql`${table.state} IN ('pending', 'delivered', 'superseded')`),
   check("login_lifecycle_events_attempt_count_check", sql`${table.attemptCount} >= 0`),
   check("login_lifecycle_events_kind_check", sql`${table.kind} IN ('deactivate', 'restrict')`),

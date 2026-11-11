@@ -34,7 +34,8 @@ await check('durable queue is installed with private immutable identity snapshot
   const { rows } = await pool.query(`SELECT column_name,data_type,is_nullable FROM information_schema.columns
     WHERE table_schema='otoapp' AND table_name='login_lifecycle_events' ORDER BY ordinal_position`);
   // SCRUM-769 (migration 0044): the kind of request, a switch-off or a restriction to pay only.
-  assert.deepEqual(rows.map(row => row.column_name), ['id','user_id','platform_account_id','created_at','state','settled_at','attempt_count','last_error_code','kind']);
+  // SCRUM-778/810: durable tenant identity and due time survive restart/deletion.
+  assert.deepEqual(rows.map(row => row.column_name), ['id','user_id','platform_account_id','created_at','state','settled_at','attempt_count','last_error_code','kind','tenant_id','next_attempt_at']);
   assert.equal(rows[0].data_type, 'uuid'); assert.equal(rows[2].data_type, 'uuid');
   assert.equal(rows[3].data_type, 'timestamp with time zone'); assert.equal(rows[5].data_type, 'timestamp with time zone');
 });
@@ -86,12 +87,13 @@ await check('a switch-off is a deactivate event; a pay-only move queues one rest
 await check('an unlinked pay-only move queues nothing', () => fixture(async (client,userId) => {
   await client.query("UPDATE users SET access_mode='pay_only' WHERE id=$1",[userId]); assert.equal((await events(client,userId)).length,0);
 }, {linked:false}));
-await check('unlink followed by an otherwise allowed user delete retains the pending identity snapshot without an FK side effect', () => fixture(async (client,userId,accountId) => {
+await check('SCRUM-810: unlink and allowed deletion retain the identity snapshot but settle it in the delete transaction', () => fixture(async (client,userId,accountId) => {
   await client.query('UPDATE users SET is_active=false WHERE id=$1',[userId]); const [before] = await events(client,userId);
   await client.query('UPDATE users SET platform_user_id=null WHERE id=$1',[userId]);
   await client.query('DELETE FROM users WHERE id=$1',[userId]);
   const [after] = await events(client,userId); assert.equal(after.id,before.id); assert.equal(after.user_id,userId);
-  assert.equal(after.platform_account_id,accountId); assert.equal(after.state,'pending');
+  assert.equal(after.platform_account_id,accountId); assert.equal(after.state,'superseded');
+  assert.ok(after.settled_at); assert.equal(after.last_error_code,'LOGIN_DELETED'); assert.equal(after.next_attempt_at,null);
 }));
 
 const modulePath = new URL('../server/lib/platformLifecycle.ts', import.meta.url);

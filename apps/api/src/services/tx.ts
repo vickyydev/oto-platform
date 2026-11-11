@@ -1,5 +1,5 @@
-import { and, eq } from 'drizzle-orm';
-import { idempotencyKey, type Db } from '@oto/db';
+import { and, eq, sql } from 'drizzle-orm';
+import { auditLog, idempotencyKey, type Db } from '@oto/db';
 import type { FastifyBaseLogger, FastifyRequest } from 'fastify';
 import { carriesSecret, type IdempotencyClaim } from '../plugins/idempotency';
 import { audit } from './audit';
@@ -46,6 +46,8 @@ export interface OpContext {
    * retry re-running work that already succeeded.
    */
   idempotency?: IdempotencyClaim;
+  /** SCRUM-778: durable lifecycle event; dedupe its failures by cause, not HTTP attempt. */
+  failureEventId?: string;
 }
 
 /** A request's first successful transaction owns its answer, including nested calls. */
@@ -105,16 +107,32 @@ export async function withTx<T>(
     // After rollback, use the pool for a standalone operation or the enclosing
     // transaction for a failed savepoint; never the transaction that rolled back.
     try {
-      await audit.record(db, {
+      const cause = errorCode(err);
+      const entry = {
         actorAccountId: ctx.actorAccountId ?? null,
         operatorId: ctx.operatorId ?? null,
         branchId: ctx.branchId ?? null,
         action: `${opName}.failed`,
         entityType: 'operation',
-        entityId: ctx.requestId ?? opName,
-        after: { error: errorCode(err) },
+        entityId: ctx.failureEventId ?? ctx.requestId ?? opName,
+        actionId: ctx.failureEventId,
+        after: { error: cause },
         requestId: ctx.requestId,
-      });
+      };
+      if (ctx.failureEventId) {
+        // The failure survives rollback, just as before. Serialize only this
+        // event/cause so concurrent delivery attempts cannot both append it.
+        await db.transaction(async tx => {
+          const key = `${ctx.operatorId ?? ''}:${opName}:${ctx.failureEventId}:${cause}`;
+          await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${key}, 778))`);
+          const [recorded] = await tx.select({ id: auditLog.id }).from(auditLog).where(and(
+            eq(auditLog.action, entry.action), eq(auditLog.entityId, ctx.failureEventId!),
+            sql`${auditLog.operatorId} is not distinct from ${ctx.operatorId ?? null}::uuid`,
+            sql`${auditLog.after}->>'error' = ${cause}`,
+          )).limit(1);
+          if (!recorded) await audit.record(tx, entry);
+        });
+      } else await audit.record(db, entry);
     } catch (auditErr) {
       // Never let the record of a failure replace the failure itself.
       ctx.log?.error({ err: auditErr, op: opName }, 'failure audit could not be written');

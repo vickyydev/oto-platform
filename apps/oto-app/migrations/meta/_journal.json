@@ -330,6 +330,13 @@
       "when": 1794338418244,
       "tag": "0048_otoapp_v_event_packages_adults_mirror",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1794396393107,
+      "tag": "0049_login_lifecycle_retries",
+      "breakpoints": true
     }
   ]
 }
