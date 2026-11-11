@@ -495,6 +495,16 @@ function actorOf(e: InboxEvent, ctx: PillContext): string {
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null);
 
+/** Satang as the till writes money ("฿3,000", "฿125.50"); a figure that is not one reads as nothing. */
+export function bahtOf(satang: unknown): string {
+  if (typeof satang !== 'number' || !Number.isFinite(satang)) return '';
+  const sign = satang < 0 ? '-' : '';
+  const abs = Math.abs(Math.round(satang));
+  const whole = Math.floor(abs / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const cents = abs % 100;
+  return `${sign}฿${whole}${cents ? `.${cents.toString().padStart(2, '0')}` : ''}`;
+}
+
 /**
  * A system event as its grey pill reads (:2019-2023), in the prototype's
  * wording where it has one ("Routed to …", "Marked as Handled by …",
@@ -595,6 +605,27 @@ export function eventText(e: InboxEvent, ctx: PillContext): string | null {
       const notes = [...turnNotes(p), ...handoverNoticeNotes(ctx, p.turnId)];
       return `AI handed over to ${team ?? 'the team'}${intent ? ` · ${intentWords(intent)}` : ''}${notes.map((n) => ` · ${n}`).join('')}`;
     }
+    // SCRUM-825: a party's deposit asked from the BEO and watched by the
+    // platform, and the parent's set-menu link. Payloads carry ids and figures
+    // (`party-deposit.ts` pillPayload), never the link or a line's words.
+    case 'deposit_requested':
+      return `Deposit requested ${bahtOf(p.amountSatang)}${p.resend === true ? ' · resent' : ''}`;
+    case 'deposit_reminded':
+      return `Deposit reminder sent · ${bahtOf(p.amountSatang)} still unpaid`;
+    case 'deposit_paid':
+      return `Deposit paid ${bahtOf(p.amountSatang)}${p.late === true ? ' · after the request was closed' : ''}`;
+    case 'deposit_expired':
+      return `Deposit link ran out unpaid · ${bahtOf(p.amountSatang)}`;
+    case 'deposit_cancelled':
+      return `Deposit request cancelled by ${actorOf(e, ctx)} · ${bahtOf(p.amountSatang)}`;
+    case 'deposit_overdue': {
+      const team = teamName(ctx, p.reroutedTeamId);
+      return `Deposit overdue ${bahtOf(p.amountSatang)} · handed to ${team ?? 'the team'}`;
+    }
+    case 'menu_link_sent':
+      return 'Menu choice link sent';
+    case 'menu_received':
+      return 'Menu choices received from the family';
     case 'ai_silent':
       // §B.3: the pill says only that the assistant left this one for a person.
       return 'AI left this one for the team';
@@ -808,7 +839,10 @@ function actorKeyOf(e: InboxEvent): string {
 }
 
 /** The pill that heads a group's line when it is not a hand-over, most telling first. */
-const HEADLINE_ORDER = ['ai_handover', 'ai_shadow', 'moved_team', 'diverted', 'branch_set', 'handled', 'reopened', 'routed', 'assigned', 'released'];
+const HEADLINE_ORDER = [
+  'ai_handover', 'deposit_paid', 'deposit_overdue', 'deposit_requested', 'deposit_expired', 'deposit_cancelled', 'deposit_reminded',
+  'menu_received', 'menu_link_sent', 'ai_shadow', 'moved_team', 'diverted', 'branch_set', 'handled', 'reopened', 'routed', 'assigned', 'released',
+];
 
 /**
  * One AI hand-over put about seven pills in a thread (classified, released,

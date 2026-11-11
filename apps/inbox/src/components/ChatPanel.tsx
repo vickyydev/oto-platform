@@ -380,6 +380,8 @@ export function ChatPanel({
     date: ev.date,
     branchName: branchOptionLabel(ev.branchId) ?? ev.branchName,
     archived: ev.archived,
+    // SCRUM-825: the deposit's state beside the date; an api from before it sends none.
+    deposit: ev.deposit ?? null,
   });
   const branchOptionLabel = (branchId: string) => branchSelectOptions(me.teams).find((b) => b.value === branchId)?.label ?? null;
   const bookDraft = useMemo(

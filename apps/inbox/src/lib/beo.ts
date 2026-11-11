@@ -1,4 +1,5 @@
 import { readChatPartyDate, readPartyDate, type PartyChatLine } from '@oto/shared/chat-dates';
+import { bahtOf } from '@/lib/view';
 import { INBOX_DAY_TIMEZONE } from '@oto/shared/inbox';
 import type { BookDateProposal, ConversationRow, Message } from '@/api/inbox';
 
@@ -491,10 +492,44 @@ export function countOf(field: string): number | null {
   return /^\d+$/.test(t) ? Number(t) : Number.NaN;
 }
 
-/** "Event: 21 Mar 2027 at Central Floresta", the conversation's chip; "· Archived" once the Events module archived it. */
-export function eventChipLabel(event: { date: string; branchName: string | null; archived?: boolean }): string {
+/** SCRUM-825: the party's newest deposit request as the api sends it on the conversation's event. */
+export interface EventChipDeposit {
+  state: 'requested' | 'paid' | 'expired' | 'cancelled';
+  amountSatang: number;
+  /** A `requested` one the thread was handed to a person for. */
+  overdue: boolean;
+}
+
+/**
+ * The deposit's word on the chip (SCRUM-825): "Deposit requested ฿3,000"
+ * while the family can pay, "Deposit overdue ฿3,000" once a person has it,
+ * "Deposit paid ฿3,000" when the money landed, "Deposit link expired" when it
+ * ran out; a cancelled request says nothing, as none was asked.
+ */
+export function depositChipWords(deposit: EventChipDeposit | null | undefined): string | null {
+  if (!deposit) return null;
+  const amount = bahtOf(deposit.amountSatang);
+  switch (deposit.state) {
+    case 'requested':
+      return deposit.overdue ? `Deposit overdue ${amount}` : `Deposit requested ${amount}`;
+    case 'paid':
+      return `Deposit paid ${amount}`;
+    case 'expired':
+      return 'Deposit link expired';
+    default:
+      return null;
+  }
+}
+
+/**
+ * "Event: 21 Mar 2027 at Central Floresta", the conversation's chip; "· Archived"
+ * once the Events module archived it; "· Deposit requested ฿3,000" (and the
+ * deposit's other words) while a deposit request stands (SCRUM-825).
+ */
+export function eventChipLabel(event: { date: string; branchName: string | null; archived?: boolean; deposit?: EventChipDeposit | null }): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(event.date);
   const names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const day = m ? `${Number(m[3])} ${names[Number(m[2]) - 1]} ${m[1]}` : event.date;
-  return `Event: ${day}${event.branchName ? ` at ${event.branchName}` : ''}${event.archived ? ' · Archived' : ''}`;
+  const deposit = depositChipWords(event.deposit);
+  return `Event: ${day}${event.branchName ? ` at ${event.branchName}` : ''}${event.archived ? ' · Archived' : ''}${deposit ? ` · ${deposit}` : ''}`;
 }
