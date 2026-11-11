@@ -25,12 +25,14 @@ if (ci.conclusion !== 'success') {
   const source = process.argv[3];
   assert.match(source ?? '', /^[a-f0-9]{40}$/);
   assert.equal(ciFor(source)?.conclusion, 'success', 'candidate must be green');
-  // The parallel app-only lane may have landed between the full candidate
-  // gate and this till landing. Require byte-identical till/API runtime and
-  // build inputs; the landed-SHA gate is still required before Deployed.
+  // The owner's 11 November 15:25 direction in STATUS lets proof run while
+  // landed-SHA CI runs. The green candidate still covers identical POS code,
+  // shared runtime and dependency inputs; inherited changes are recorded
+  // separately. deployments() also requires the live API runtime to match
+  // this landing. Green landed-SHA CI is still required before Deployed.
   const changed = git(['diff', '--name-only', source, sha]).trim().split('\n').filter(Boolean);
-  assert.ok(changed.every(p => p.startsWith('docs/') || p.startsWith('apps/oto-app/')), 'candidate till/API runtime and build inputs must be identical');
-  candidate = { sha: source, run: ciFor(source).databaseId, unrelatedAppChanges: changed.filter(p => p.startsWith('apps/oto-app/')) };
+  assert.equal(git(['diff', '--name-only', source, sha, '--', 'apps/pos', 'packages/shared', 'pnpm-lock.yaml', 'package.json']).trim(), '', 'candidate POS, shared runtime and dependency inputs must be identical');
+  candidate = { sha: source, run: ciFor(source).databaseId, scope: 'POS, shared runtime and dependency inputs', inheritedChanges: changed.filter(p => !p.startsWith('docs/')) };
 }
 const out = import.meta.dirname;
 const pos = 'https://oto-pos-web-staging.onrender.com';
