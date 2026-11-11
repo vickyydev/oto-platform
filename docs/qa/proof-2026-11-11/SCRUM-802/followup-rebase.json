@@ -1,0 +1,38 @@
+{
+  "checkedAt": "2026-11-11T07:54:47.434Z",
+  "candidate": "6d4553cf581f0047df826fe516aa7ba7f0d81c53",
+  "head": "34e3013164dba9e393770daa8f4582cd19349a92",
+  "base": "0e101e6a6e78108ab5e82ab9da8d35a0d49d60b7",
+  "ownCommits": [
+    "34e3013164dba9e393770daa8f4582cd19349a92 fix(pos): format the staff phone mirrors"
+  ],
+  "changedFromCandidate": [
+    ".github/workflows/ci.yml",
+    "apps/oto-app/client/src/components/beo/beo-ai-review.tsx",
+    "apps/oto-app/client/src/components/beo/beo-event-editor.tsx",
+    "apps/oto-app/client/src/components/beo/beo-timeline-editor.tsx",
+    "apps/oto-app/client/src/lib/beo-ai-review.ts",
+    "apps/oto-app/client/src/lib/beo-fetch-from-chat.ts",
+    "apps/oto-app/server/ai-routes.ts",
+    "apps/oto-app/server/lib/beoAiApprove.ts",
+    "apps/oto-app/server/lib/beoCatalogueFill.ts",
+    "apps/oto-app/shared/beoAiFill.ts",
+    "apps/oto-app/tests/ai-fill.check.ts",
+    "apps/oto-app/tests/beo-catalogue-fill.check.ts",
+    "apps/oto-app/tests/beo-inbox-fill.check.ts",
+    "apps/oto-app/tests/beo-prefill-ui.check.ts",
+    "apps/oto-app/tests/fetch-from-chat-ui.check.ts",
+    "apps/oto-app/tests/fetch-from-chat.check.ts",
+    "docs/handover/CLOUD_HANDOVER.md",
+    "docs/handover/CODEX_HANDOVER.md",
+    "docs/progress/STATUS.md",
+    "docs/progress/plans/beo-inbox/PLAN.md",
+    "docs/qa/proof-2026-11-11/SCRUM-802/README.md",
+    "docs/qa/proof-2026-11-11/SCRUM-802/followup-app-check.json",
+    "docs/qa/proof-2026-11-11/SCRUM-802/followup-ci.json"
+  ],
+  "platformRuntimeAndBuildInputsIdentical": true,
+  "incomingWorkflowChange": "Only SCRUM-827 app job prefill UI check; no platform job or build change",
+  "duplicateProofCommitDropped": "9e4f33dd019e92487a1cda774b695cf36a602293; all proof files compared identical upstream first",
+  "slot": "SCRUM-827 held; no claim"
+}

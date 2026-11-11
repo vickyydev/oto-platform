@@ -215,7 +215,8 @@ try {
   await expect(display.getByTestId('input-kept-phone')).toContainText(formatted(1));
   await display.getByTestId('input-kept-phone').scrollIntoViewIfNeeded();
   await shot(display, 's783-customer-details.png');
-  await expect(till.getByText(formatted(1), { exact: true })).toBeVisible();
+  const staffDetails = till.getByRole('heading', { name: 'Customer Details', exact: true }).locator('..').locator('..');
+  await expect(staffDetails.getByText(formatted(1), { exact: true })).toBeVisible();
   await shot(till, 's783-staff-customer-details.png');
   receipt.checks.customerDetails = { formatted: true, paymentNotTaken: true }; save();
   receipt.checks.staffCustomerDetails = { formatted: true }; save();
