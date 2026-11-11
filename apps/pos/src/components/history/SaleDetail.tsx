@@ -872,11 +872,17 @@ export function useSaleDetail({ txn, timeZone, onRefunded }: SaleDetailProps) {
    * from the detail's own attempts, so nothing is offered before they are known;
    * the platform checks the same again when the void is sent.
    */
-  const tookNoMoney =
-    detail !== null &&
-    status === 'tendering' &&
-    !attempts.some((a) => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status)) &&
-    attempts.every((a) => PAYMENT_ATTEMPT_TERMINAL_STATUSES.includes(a.status));
+  /**
+   * SCRUM-876 — a party's deposit on its settlement sale (`partyDeposit`, named
+   * by the platform) is not money this sale's till took: a settlement left at
+   * its balance step with only the deposit on it is voided here, as the
+   * platform's void treats it — the deposit stays the party's, nothing is
+   * refunded.
+   */
+  const tookMoney = (a: PaymentAttemptView) =>
+    PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status) && !a.partyDeposit;
+  const noneInFlight = attempts.every((a) => PAYMENT_ATTEMPT_TERMINAL_STATUSES.includes(a.status));
+  const tookNoMoney = detail !== null && status === 'tendering' && !attempts.some(tookMoney) && noneInFlight;
   const mayVoid = can('pos:sale:void');
   /**
    * THE VOID ON THIS SALE, from whichever side knows it (SCRUM-430): the one
@@ -918,7 +924,21 @@ export function useSaleDetail({ txn, timeZone, onRefunded }: SaleDetailProps) {
    * closed sale refunded in full; it can still be reprinted.
    */
   const closed = detail !== null && (status === 'finalised' || status === 'refunded');
-  const remainingSatang = refundRemainingSatang(detail, totals);
+  /**
+   * SCRUM-877 — A PART-PAID SALE: rung up, still `tendering`, money taken on
+   * it and no tender in flight. It cannot be voided (the platform refuses
+   * `SALE_HAS_PAYMENT`); History refunds it WHOLE — everything taken goes back
+   * the way the platform decides, credit to its wallet, cash as cash — and the
+   * platform closes the sale as void in the same call. That is the way out the
+   * End of Day names for a restaurant or shop order; a settlement part-paid
+   * in cash goes the same way, its deposit untouched.
+   */
+  const partPaidOpen = detail !== null && status === 'tendering' && attempts.some(tookMoney) && noneInFlight;
+  const refundable = closed || partPaidOpen;
+  const takenSatang = attempts.filter(tookMoney).reduce((sum, a) => sum + a.amountSatang, 0);
+  const remainingSatang = partPaidOpen
+    ? Math.max(0, takenSatang - totals.refundedSatang)
+    : refundRemainingSatang(detail, totals);
   const mayRefund = can('pos:refund:create');
   const mayReprint = can('pos:print:reprint');
   /**
@@ -928,7 +948,8 @@ export function useSaleDetail({ txn, timeZone, onRefunded }: SaleDetailProps) {
    * online only, so offline the dialog notes the request instead.
    */
   const offline = browserOffline() || offlineUnlock !== null || stationOffline;
-  const refundOptions = detail
+  // A part-paid sale is refunded whole only: no lines to pick, no custom amount.
+  const refundOptions = detail && !partPaidOpen
     ? refundItemOptions(detail, (line) => packageName(line.ticketPackageId))
     : [];
   const reprintItems = detail && closed ? reprintOptions(detail, txn.kind) : [];
@@ -1155,6 +1176,8 @@ export function useSaleDetail({ txn, timeZone, onRefunded }: SaleDetailProps) {
     taxName,
     closed,
     remainingSatang,
+    partPaidOpen,
+    refundable,
     mayRefund,
     mayReprint,
     offline,
@@ -1215,6 +1238,8 @@ export function SaleDetail(props: SaleDetailProps) {
     taxName,
     closed,
     remainingSatang,
+    partPaidOpen,
+    refundable,
     mayRefund,
     mayReprint,
     offline,
@@ -1603,18 +1628,23 @@ export function SaleDetail(props: SaleDetailProps) {
                     className={`w-full h-14 text-lg gap-2 text-white ${
                       offline ? 'bg-amber-600 hover:bg-amber-700' : 'bg-rose-500 hover:bg-rose-600'
                     }`}
-                    disabled={!closed || !mayRefund}
+                    disabled={!refundable || !mayRefund}
                     onClick={openRefund}
                     data-testid="refund-sale"
                   >
                     {offline ? <WifiOff className="w-5 h-5" /> : <Undo2 className="w-5 h-5" />}
-                    {!closed
+                    {!refundable
                       ? 'Refund'
                       : offline
                         ? `Refund — online only (฿${baht(remainingSatang)} left)`
                         : `Refund (฿${baht(remainingSatang)} left)`}
                   </Button>
-                  {closed && !mayRefund && (
+                  {partPaidOpen && (
+                    <p className="text-sm text-muted-foreground" data-testid="refund-part-paid-note">
+                      Partly paid — the refund gives back everything taken and closes the sale.
+                    </p>
+                  )}
+                  {refundable && !mayRefund && (
                     <p className="text-sm text-muted-foreground">
                       Refunding a sale needs the till&apos;s refund permission.
                     </p>
@@ -1665,6 +1695,7 @@ export function SaleDetail(props: SaleDetailProps) {
         reasons={getDiscountReasons()}
         operatorName={operator?.name ?? 'this account'}
         {...(refundHint ? { refundMode: refundHint } : {})}
+        wholeOnly={partPaidOpen}
         onConfirm={(result) => void confirmRefund(result)}
         closeOnConfirm={false}
         busy={refundBusy}

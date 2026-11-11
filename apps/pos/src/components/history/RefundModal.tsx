@@ -71,6 +71,12 @@ interface RefundModalProps {
    * the caller keeps the note (`lib/refundRequests.ts`).
    */
   offline?: boolean;
+  /**
+   * SCRUM-877 — A PART-PAID SALE IS REFUNDED WHOLE ONLY: everything taken on
+   * it goes back and the platform closes the sale. By item and Amount stay
+   * in view, off, so the dialog keeps its shape and says why.
+   */
+  wholeOnly?: boolean;
 }
 
 type Mode = 'full' | 'item' | 'custom';
@@ -92,6 +98,7 @@ export function RefundModal({
   busy = false,
   error = null,
   offline = false,
+  wholeOnly = false,
 }: RefundModalProps) {
   const [mode, setMode] = useState<Mode>('full');
   const [selectedLineIds, setSelectedLineIds] = useState<string[]>([]);
@@ -194,7 +201,7 @@ export function RefundModal({
                 type="button"
                 variant={mode === 'item' ? 'default' : 'outline'}
                 className="h-12"
-                disabled={lines.length === 0}
+                disabled={wholeOnly || lines.length === 0}
                 onClick={() => setMode('item')}
               >
                 By item
@@ -203,11 +210,17 @@ export function RefundModal({
                 type="button"
                 variant={mode === 'custom' ? 'default' : 'outline'}
                 className="h-12"
+                disabled={wholeOnly}
                 onClick={() => setMode('custom')}
               >
                 Amount
               </Button>
             </div>
+            {wholeOnly && (
+              <p className="text-sm text-muted-foreground" data-testid="refund-whole-only">
+                This sale was never fully paid — everything taken goes back and the sale is closed.
+              </p>
+            )}
           </div>
 
           {/* By-item picker */}

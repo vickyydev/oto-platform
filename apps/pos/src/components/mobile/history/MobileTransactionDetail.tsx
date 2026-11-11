@@ -52,6 +52,7 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
     groups,
     attempts,
     closed,
+    refundable,
     remainingSatang,
     offline,
   } = state;
@@ -396,14 +397,19 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
               ) : (
                 <Button
                   className={`w-full h-14 gap-2 ${offline ? 'bg-amber-600' : 'bg-rose-500'}`}
-                  disabled={!closed || !state.mayRefund}
+                  disabled={!refundable || !state.mayRefund}
                   onClick={state.openRefund}
                 >
                   <Undo2 className="w-4 h-4" />
                   {offline ? 'Refund — online only' : 'Refund'} (฿{baht(remainingSatang)} left)
                 </Button>
               )}
-              {closed && !state.mayRefund && (
+              {state.partPaidOpen && (
+                <p className="text-xs text-muted-foreground">
+                  Partly paid — the refund gives back everything taken and closes the sale.
+                </p>
+              )}
+              {refundable && !state.mayRefund && (
                 <p className="text-xs text-muted-foreground">
                   Refunding a sale needs the till's refund permission.
                 </p>
