@@ -102,18 +102,25 @@ try {
   owned.set(oldId, oldName); receipt.created.push({ kind: 'station', id: oldId }); save();
   assert.equal((await call('DELETE', `/stations/${oldId}`)).status, 200);
   assert.equal((await list()).find(s => s.id === oldId)?.archived, true);
-  phase('Console reused-prefix refusal');
+  phase('open Console Devices');
   await page.getByRole('navigation', { name: 'Admin', exact: true }).getByRole('link', { name: 'Devices', exact: true }).click();
-  await page.getByLabel('Branch', { exact: true }).selectOption(branchId);
+  phase('select proof park');
+  // The native select's wrapping label also contains its option text.
+  await page.getByLabel('Branch').selectOption(branchId);
+  phase('show Stations');
   await page.getByRole('button', { name: 'Stations', exact: true }).click();
+  phase('filter own test stations');
   await page.getByPlaceholder('Name, identifier or type').fill('ZZ TEST SCRUM-809');
+  phase('open New station');
   await page.getByRole('button', { name: 'New station', exact: true }).click();
   const drawer = page.getByRole('dialog', { name: 'New station', exact: true });
+  phase('fill new station');
   await drawer.getByLabel(/^Box/).selectOption(box.id);
   await drawer.getByLabel(/^Name/).fill(nextName);
   await drawer.getByLabel(/^Code prefix/).fill(oldPrefix);
   const creating = () => page.waitForResponse(r => new URL(r.url()).pathname === `/api/branches/${branchId}/stations` && r.request().method() === 'POST');
   const firstResponse = creating();
+  phase('submit reused prefix');
   await drawer.getByRole('button', { name: 'Create the station', exact: true }).click();
   const refusal = await firstResponse;
   assert.equal(refusal.status(), 409);
@@ -144,7 +151,8 @@ try {
 } catch (error) {
   failed = true;
   // Browser errors may contain input values; retain only the kind and phase.
-  receipt.failure = { kind: error.name }; save();
+  receipt.failure = { kind: error.name, callsite: error.stack?.split('\n').filter(line => /^\s+at .*proof\.mjs:\d+:\d+/.test(line)) };
+  await shot('failed-attempt.png').catch(() => {}); save();
 } finally {
   for (const [id, name] of owned) {
     try {

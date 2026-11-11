@@ -2,7 +2,7 @@
 
 Unit 2 of the till round. Built in `C:/oto-lanes/codex-receipt-prefix-20261111`,
 branch `lane/codex-receipt-prefix-20261111`. Landed fast-forward as
-`acb096f723131ffbc3b9b2b461193242f70a79ce`; staging proof is pending.
+`acb096f723131ffbc3b9b2b461193242f70a79ce`; staging screen proof passed.
 
 The station service is `apps/api/src/services/fleet.ts` (the plan calls it
 `stations.ts`). Its create and update transactions now refuse a till or kiosk
@@ -50,8 +50,11 @@ the owner also confirmed release. Unit 2 claimed source/API/proof in
 `89611072b096a67ed0f86f7d8cdcc10e2f6ea942`. The five rebased commits were
 checked, with runtime/tests/workflow identical to the green candidate.
 Main CI 42965931065 is running on the landed SHA, watched by the full SHA.
-Named API, Console and both-till deploys are building; screen proof waits
-until all four are live at that SHA. SCRUM-809 remains In Progress.
+Named API, Console and both-till deploys were live at that SHA throughout
+the successful Console screen proof. The named refusal and corrected save
+passed, both test tills were archived, and sign-out read back 401. Two
+earlier harness selector timeouts also cleaned up; their receipts remain
+under `staging/`. Deployed still waits for the landed-SHA main CI gate.
 
 The first push attempt at `263f30d729548801550580f056f929104a240534` was
 rejected because a concurrent documentation push arrived. Its premature

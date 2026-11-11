@@ -1,0 +1,114 @@
+{
+  "ticket": "SCRUM-809",
+  "sha": "acb096f723131ffbc3b9b2b461193242f70a79ce",
+  "ci": 42965931065,
+  "ciAtStart": "in_progress",
+  "candidateGate": {
+    "sha": "2e15a895a2924cf931c5c8a107dd70fbe723ea8f",
+    "ci": 42922557530,
+    "runtimeIdentical": true
+  },
+  "startedAt": "2026-11-11T05:35:29.364Z",
+  "deployments": {
+    "oto-api-staging": {
+      "id": "dep-dbpvpq3d642c73aa4q70",
+      "status": "live",
+      "sha": "acb096f723131ffbc3b9b2b461193242f70a79ce"
+    },
+    "oto-console-staging": {
+      "id": "dep-dbpvpt8ae00c73cs8bm0",
+      "status": "live",
+      "sha": "acb096f723131ffbc3b9b2b461193242f70a79ce"
+    },
+    "oto-pos-staging": {
+      "id": "dep-dbpvptoae00c73cs8cu0",
+      "status": "live",
+      "sha": "acb096f723131ffbc3b9b2b461193242f70a79ce"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbpvpuajnfac73el2q9g",
+      "status": "live",
+      "sha": "acb096f723131ffbc3b9b2b461193242f70a79ce"
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/01a1c91a-d1af-7d52-8314-5ffcf5c1fe9c",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/auth/sign-out",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "status": 401
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1c91a-d1af-7d52-8314-5ffcf5c1fe9c"
+    }
+  ],
+  "checks": {},
+  "cleanup": [
+    {
+      "kind": "station",
+      "id": "01a1c91a-d1af-7d52-8314-5ffcf5c1fe9c",
+      "archived": true
+    },
+    {
+      "kind": "session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "phase": "select proof park",
+  "failure": {
+    "kind": "TimeoutError",
+    "callsite": [
+      "    at C:\\oto-lanes\\codex-receipt-prefix-20261111\\docs\\qa\\proof-2026-11-11\\SCRUM-809\\staging\\proof.mjs:108:52"
+    ]
+  },
+  "passed": false,
+  "finishedAt": "2026-11-11T05:36:11.223Z"
+}
