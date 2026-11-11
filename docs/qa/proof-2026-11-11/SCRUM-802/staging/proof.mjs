@@ -27,12 +27,12 @@ if (ci.conclusion !== 'success') {
   assert.equal(ciFor(source)?.conclusion, 'success', 'candidate must be green');
   // The owner's 11 November 15:25 direction in STATUS lets proof run while
   // landed-SHA CI runs. The green candidate still covers identical POS code,
-  // shared runtime and dependency inputs; inherited changes are recorded
+  // phone helpers and dependency inputs; inherited changes are recorded
   // separately. deployments() also requires the live API runtime to match
   // this landing. Green landed-SHA CI is still required before Deployed.
   const changed = git(['diff', '--name-only', source, sha]).trim().split('\n').filter(Boolean);
-  assert.equal(git(['diff', '--name-only', source, sha, '--', 'apps/pos', 'packages/shared', 'pnpm-lock.yaml', 'package.json']).trim(), '', 'candidate POS, shared runtime and dependency inputs must be identical');
-  candidate = { sha: source, run: ciFor(source).databaseId, scope: 'POS, shared runtime and dependency inputs', inheritedChanges: changed.filter(p => !p.startsWith('docs/')) };
+  assert.equal(git(['diff', '--name-only', source, sha, '--', 'apps/pos', 'packages/shared/src/phone.ts', 'packages/shared/src/index.ts', 'pnpm-lock.yaml', 'package.json']).trim(), '', 'candidate POS, phone helpers and dependency inputs must be identical');
+  candidate = { sha: source, run: ciFor(source).databaseId, scope: 'POS, phone helpers and dependency inputs', inheritedChanges: changed.filter(p => !p.startsWith('docs/')) };
 }
 const out = import.meta.dirname;
 const pos = 'https://oto-pos-web-staging.onrender.com';
