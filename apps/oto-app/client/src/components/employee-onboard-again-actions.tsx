@@ -121,6 +121,14 @@ const PLATFORM_SIGN_IN_OFF =
   "The suite sign-in was switched off on the platform when the last contract ended, and the app cannot switch it back on. " +
   "A platform administrator reactivates the account on the Console's Login users page before the start date; that switches this login back on too, so the new shifts show in the app.";
 
+/**
+ * SCRUM-811: the roles the platform withdrew when the person left (SCRUM-769)
+ * stay withdrawn after Onboard Again starts the new employment; the app gives
+ * back only its own reach.
+ */
+const PLATFORM_ROLES_WITHDRAWN =
+  "Their till and Console roles were taken back when they left; a Console administrator gives them back on Login users.";
+
 const plannedKey = (employeeId: string) => ["/api/employees", employeeId, "onboard-again"];
 
 const rematchWords = (rematch: RematchAnswer | undefined) => {
@@ -293,6 +301,7 @@ export function OnboardAgainAction({ employee, branches, departments, defaultTem
         started: boolean;
         login?: string;
         platformDeactivationDelivered?: boolean;
+        platformRestrictionDelivered?: boolean;
         platformSignInOff?: boolean;
         rematch?: RematchAnswer;
       }>;
@@ -309,7 +318,8 @@ export function OnboardAgainAction({ employee, branches, departments, defaultTem
         const platform = answer.platformDeactivationDelivered
           ? " The suite sign-in was switched off on the platform; if it is still off, a platform administrator reactivates it there."
           : "";
-        toast({ title: "Onboarded again", description: `The new employment has started.${login}${platform}${rematchWords(answer.rematch)}` });
+        const roles = answer.platformRestrictionDelivered ? ` ${PLATFORM_ROLES_WITHDRAWN}` : "";
+        toast({ title: "Onboarded again", description: `The new employment has started.${login}${platform}${roles}${rematchWords(answer.rematch)}` });
       } else {
         toast({
           title: "Onboard Again planned",

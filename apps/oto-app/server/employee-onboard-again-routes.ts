@@ -322,6 +322,12 @@ export function registerEmployeeOnboardAgainRoutes(app: Express, deps: EmployeeO
         ...(done.activation ? {
           login: done.activation.login,
           platformDeactivationDelivered: done.activation.platformDeactivationDelivered,
+          // SCRUM-811: the platform had withdrawn the account's roles outside
+          // the OTO App when the person left (SCRUM-769), and this start does
+          // not give them back; the screen says who does. False when the
+          // restriction never reached the platform (withdrawn here while it
+          // waited) and when the login was never limited to My pay.
+          platformRestrictionDelivered: done.activation.platformRestrictionDelivered,
           rematch,
         } : {}),
       });

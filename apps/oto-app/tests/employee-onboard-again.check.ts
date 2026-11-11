@@ -54,6 +54,12 @@
 //      limited to My pay (never switched off) and an administrator then
 //      switched off is switched back on with the whole app, and both of the
 //      platform's pending requests withdrawn.
+//      SCRUM-811 — what the started answer says of the roles the platform
+//      withdrew when the person left (`platformRestrictionDelivered`): true
+//      when the platform had had the restriction (the roles stay withdrawn
+//      there, and the activity log says who gives them back); false when the
+//      restriction was still waiting (withdrawn here, nothing taken back) and
+//      for a login with no platform account; absent while only planned.
 //   7. Rematch: staff are refused; a manager's rematch resolves exactly the
 //      pending item whose day now has a shift.
 //   8. The new contract ends too: the earlier offboarding is kept as the
@@ -174,6 +180,9 @@ const leaverLogin = await user("staff", "leaver", ONLY_A, randomUUID());
 const pastLogin = await user("staff", "past", ONLY_A, randomUUID());
 const cancelLogin = await user("staff", "cancel", ONLY_A, randomUUID());
 const deliveredLogin = await user("staff", "delivered", ONLY_A, randomUUID());
+/** SCRUM-811: a login whose restriction the platform has had, and one with no platform account. */
+const rolesLogin = await user("staff", "roles", ONLY_A, randomUUID());
+const unlinkedLogin = await user("staff", "unlinked", ONLY_A);
 
 async function employee(label: string, branchId: string, opts: { userId?: string | null; department?: string } = {}): Promise<string> {
   const id = randomUUID();
@@ -196,6 +205,8 @@ const sameDay = await employee("same-day", BRANCH_A);
 const pastCase = await employee("past", BRANCH_A, { userId: pastLogin.id });
 const cancelled = await employee("cancelled", BRANCH_A, { userId: cancelLogin.id });
 const delivered = await employee("delivered", BRANCH_A, { userId: deliveredLogin.id });
+const rolesCase = await employee("roles", BRANCH_A, { userId: rolesLogin.id });
+const unlinkedCase = await employee("unlinked", BRANCH_A, { userId: unlinkedLogin.id });
 
 // ─── The rota: a Reception and a Promotion row in branch A, one past week ────
 
@@ -884,6 +895,8 @@ try {
     assert.deepEqual(await access(leaverLogin.id), { is_active: true, access_mode: "pay_only" });
     // Nothing was switched off, so there is no sign-in for a platform administrator to reactivate.
     assert.equal(res.body.platformSignInOff, false);
+    // SCRUM-811: nothing has started, so the answer carries no word on the roles yet.
+    assert.equal("platformRestrictionDelivered" in res.body, false, show(res));
   });
   await check("a Left profile whose login an administrator switched off, the platform having had it: the plan says a platform administrator reactivates the sign-in", async () => {
     const off = await offboard(delivered, plus(-2));
@@ -957,6 +970,46 @@ try {
     assert.deepEqual(await access(pastLogin.id), { is_active: true, access_mode: "full" });
     // Both requests still waiting for the platform are withdrawn: the restriction and the switch-off.
     assert.deepEqual(await lifecycle(pastLogin.id), ["restrict:superseded", "deactivate:superseded"]);
+    // SCRUM-811: the platform never had either, so nothing was taken back there and the answer says so.
+    assert.deepEqual([res.body.platformRestrictionDelivered, res.body.platformDeactivationDelivered], [false, false], show(res));
+  });
+  await check("a start at once after the platform had withdrawn the roles: the answer says they stay withdrawn, as the activity log does", async () => {
+    const off = await offboard(rolesCase, plus(-3));
+    assert.equal(off.status, 201, show(off));
+    assert.deepEqual(await access(rolesLogin.id), { is_active: true, access_mode: "pay_only" });
+    assert.deepEqual(await lifecycle(rolesLogin.id), ["restrict:pending"]);
+    // What the platform's consumer marks once it has had the restriction (the harness runs no transport).
+    await q("update login_lifecycle_events set state = 'delivered', settled_at = now() where user_id = $1 and state = 'pending'", [rolesLogin.id]);
+    const res = await call("POST", `/api/employees/${rolesCase}/onboard-again`, as.admin, { ...onboardBody, startDate: plus(-1) });
+    assert.equal(res.status, 201, show(res));
+    assert.deepEqual(
+      [res.body.started, res.body.login, res.body.platformRestrictionDelivered, res.body.platformDeactivationDelivered],
+      [true, "already_on", true, false],
+      show(res),
+    );
+    // What Onboard Again does is unchanged: the whole app again, and nothing asked of the platform.
+    assert.deepEqual(await access(rolesLogin.id), { is_active: true, access_mode: "full" });
+    assert.deepEqual(await lifecycle(rolesLogin.id), ["restrict:delivered"]);
+    const [logged] = await q<{ summary_text: string }>(
+      "select summary_text from activity_log where employee_id = $1 and summary_text like 'Onboard Again:%' order by created_at desc limit 1",
+      [rolesCase],
+    );
+    assert.match(logged!.summary_text, /The platform had withdrawn the suite roles outside the OTO App .* a platform administrator gives them back on the Console's Login users page$/);
+  });
+  await check("a start at once for a login with no platform account: nothing was withdrawn, and the answer says so", async () => {
+    const off = await offboard(unlinkedCase, plus(-3));
+    assert.equal(off.status, 201, show(off));
+    assert.deepEqual(await access(unlinkedLogin.id), { is_active: true, access_mode: "pay_only" });
+    assert.deepEqual(await lifecycle(unlinkedLogin.id), []);
+    const res = await call("POST", `/api/employees/${unlinkedCase}/onboard-again`, as.admin, { ...onboardBody, startDate: plus(-1) });
+    assert.equal(res.status, 201, show(res));
+    assert.deepEqual([res.body.started, res.body.login, res.body.platformRestrictionDelivered], [true, "already_on", false], show(res));
+    assert.deepEqual(await access(unlinkedLogin.id), { is_active: true, access_mode: "full" });
+    const [logged] = await q<{ summary_text: string }>(
+      "select summary_text from activity_log where employee_id = $1 and summary_text like 'Onboard Again:%' order by created_at desc limit 1",
+      [unlinkedCase],
+    );
+    assert.doesNotMatch(logged!.summary_text, /withdrawn the suite roles/);
   });
 
   // ── 7. Rematch ────────────────────────────────────────────────────────────

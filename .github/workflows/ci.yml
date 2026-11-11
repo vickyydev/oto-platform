@@ -640,6 +640,17 @@ jobs:
         env:
           PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
         run: npx tsx tests/employee-onboard-again.check.ts
+      # SCRUM-811: the profile page's Onboard Again button, its dialog and the
+      # toaster under jsdom against the real routes. A profile whose roles the
+      # platform took back when it left (SCRUM-769) is onboarded again: the
+      # toast says a Console administrator gives them back on Login users. A
+      # restriction that never reached the platform, a login with no platform
+      # account and a plan for a later start say nothing of roles.
+      - name: The app's Onboard Again screen check
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/employee-onboard-again-ui.check.ts
       # SCRUM-794: the fold of a duplicate that is the one working, in the
       # shape of the staging case — a Left original with the login, a face
       # and an old contract; an active duplicate with a signed contract, a
