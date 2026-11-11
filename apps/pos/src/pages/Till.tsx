@@ -4199,7 +4199,7 @@ export default function Till() {
               New guest — enter name
             </DialogTitle>
             <DialogDescription>
-              Phone <span className="font-medium text-foreground">{customerPhone}</span> is not
+              Phone <span className="font-medium text-foreground">{formatStoredPhone(customerPhone)}</span> is not
               recognised. Enter the guest's name to register them so they're remembered next time.
             </DialogDescription>
           </DialogHeader>
