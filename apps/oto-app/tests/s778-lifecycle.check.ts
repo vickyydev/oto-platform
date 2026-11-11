@@ -14,7 +14,7 @@ import { createRequire, Module } from 'node:module';
 import { dirname, join } from 'node:path';
 import { mock } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { buildSync } from 'esbuild';
+import { buildSync, stop as stopBundler } from 'esbuild';
 import pg from 'pg';
 import {
   classifyLifecycleRefusal, drainPlatformLifecycleEvents, lifecycleWarnGate, readPlatformLifecycleEvents,
@@ -416,7 +416,7 @@ await check('HIGH (852): a day-long outage writes one log line an hour for its c
 
 // ─── SCRUM-852: the line and the button ──────────────────────────────────────
 
-await check('HIGH (852): the panel says one plain line per parked event with a Send again button, and nothing otherwise', () => {
+await check('HIGH (852): the panel says one plain line per parked event with a Send again button, and nothing otherwise', async () => {
   const at = (kind: 'deactivate' | 'restrict', lastErrorCode: string | null, parked = true) =>
     ({ id: randomUUID(), kind, state: 'pending' as const, lastErrorCode, parked });
   assert.equal(parkedLifecycleNotices([at('deactivate', 'RETRY_LIMIT:LAST_OPERATOR_ADMIN')])[0].line,
@@ -441,6 +441,8 @@ await check('HIGH (852): the panel says one plain line per parked event with a S
       export { renderToStaticMarkup } from 'react-dom/server';
       export { LoginLifecycleNoticeLines } from './client/src/components/login-lifecycle-notice';` },
   });
+  // The bundle is in memory: the bundler's worker thread, started by the call above, is ended here.
+  await stopBundler();
   const nativeRequire = createRequire(join(APP_DIR, 'package.json'));
   const compiled = new Module(join(APP_DIR, 'tests', 's778-lifecycle-ui.native.cjs')) as any; // eslint-disable-line @typescript-eslint/no-explicit-any -- a Module compiled from source
   compiled.filename = join(APP_DIR, 'tests', 's778-lifecycle-ui.native.cjs');
@@ -470,18 +472,44 @@ await check('HIGH (852): the panel says one plain line per parked event with a S
 
 // ─── SCRUM-852: the route, over HTTP on the routes as registered ─────────────
 
-let harness: ChildProcess | undefined;
-function stopHarness() {
-  if (!harness?.pid) return;
-  if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(harness.pid), '/T', '/F'], { stdio: 'ignore' });
-  else harness.kill('SIGKILL');
+let harness: { child: ChildProcess; closed: Promise<void> } | undefined;
+const HARNESS_GRACE_MS = 5_000;
+/**
+ * Ends the harness and lets go of everything this file holds of it, so the
+ * file can end by itself as its siblings do.
+ *
+ * tsx runs the server as a child of its own and passes on SIGTERM and SIGINT,
+ * nothing else. A SIGKILL ends tsx alone: on Linux the server lives on with
+ * the stdout and stderr pipes it inherited, this file keeps listening on
+ * their other ends, and the process never exits (CI killed it at the suite's
+ * limit, every check passed). So it is stopped the way the other route checks
+ * stop theirs — `kill()`, the SIGTERM tsx passes on — and on Windows, where
+ * no signal is passed on, by ending the whole tree. Then it waits for the
+ * child's `close` (exited AND both pipes at their end). Should that not come,
+ * the pipes are dropped from this side and the child unreferenced, so nothing
+ * a descendant still holds can keep this process alive.
+ */
+async function stopHarness(): Promise<void> {
+  const current = harness;
   harness = undefined;
+  if (!current) return;
+  const { child, closed } = current;
+  if (child.pid && child.exitCode === null && child.signalCode === null) {
+    if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
+    else child.kill();
+  }
+  let timer: NodeJS.Timeout | undefined;
+  const ended = await Promise.race([closed.then(() => true),
+    new Promise<boolean>(resolve => { timer = setTimeout(() => resolve(false), HARNESS_GRACE_MS); })]);
+  clearTimeout(timer);
+  if (!ended) child.kill('SIGKILL');
+  child.stdout?.destroy(); child.stderr?.destroy(); child.unref();
 }
 async function serve(): Promise<string> {
   const child = spawn(process.execPath, [join(APP_DIR, 'node_modules', 'tsx', 'dist', 'cli.mjs'), 'tests/harness/serve-routes.ts'], {
     cwd: APP_DIR, env: { ...process.env, OTOAPP_LEGACY_LOGIN: 'true' }, stdio: ['ignore', 'pipe', 'pipe'],
   });
-  harness = child;
+  harness = { child, closed: new Promise(resolve => child.once('close', () => resolve())) };
   let output = '';
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('harness did not start')), 80_000);
@@ -492,6 +520,7 @@ async function serve(): Promise<string> {
     };
     child.stdout!.on('data', seen); child.stderr!.on('data', seen);
     child.on('exit', () => { clearTimeout(timer); reject(new Error('harness exited')); });
+    child.on('error', () => { clearTimeout(timer); reject(new Error('harness did not spawn')); });
   });
 }
 await check('HIGH (852): the Send again route — signed in, an administrator, their own park group, a parked event; two presses at once send one', async () => {
@@ -582,12 +611,12 @@ await check('HIGH (852): the Send again route — signed in, an administrator, t
     assert.equal((await q('SELECT is_active FROM users WHERE id=$1', [leaver.id]))[0].is_active, false);
     assert.equal((await q('SELECT count(*)::int AS n FROM activity_log WHERE tenant_id=$1', [tenant]))[0].n, 1);
   } finally {
-    stopHarness();
+    await stopHarness();
     // No pending row of this check outlives it.
     await q("UPDATE login_lifecycle_events SET state='superseded',settled_at=now(),next_attempt_at=NULL WHERE user_id=$1 AND state='pending'", [leaver.id]).catch(() => {});
   }
 });
-stopHarness();
+await stopHarness();
 await pool.end();
 const passed = results.filter(Boolean).length;
 console.log(`s778-lifecycle.check: ${passed}/${results.length} checks passed`);

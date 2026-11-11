@@ -42,23 +42,41 @@ function stopChild() {
   if (process.platform !== "win32") { try { process.kill(-activeChild.pid, "SIGKILL"); return; } catch { /* already closed */ } }
   activeChild.kill("SIGKILL");
 }
+// SCRUM-852: a check prints its summary when its checks are over; only its
+// own clean-up follows (a harness stopped, a pool ended), which takes a moment.
+// A child still running fifteen seconds later is holding something open — a
+// server it started, a pipe, a pool. It is stopped and fails as `lingered`,
+// in seconds and under its own name, instead of sitting out the whole limit
+// as a timeout. `afterSummaryMs` is how long each child really took to end.
+const SUMMARY_LINE = /^s(?:633|778)-[a-z-]+\.check: \d+\/\d+ (?:checks )?passed\r?$/m;
+const LINGER_LIMIT_MS = 15_000;
 async function command(label: string, argv: string[], expectedChecks?: number) {
-  let stdout = "", bytes = 0, timedOut = false, failedToSpawn = false, outputLimited = false;
+  let stdout = "", bytes = 0, timedOut = false, failedToSpawn = false, outputLimited = false, lingered = false;
+  let lingerTimer: NodeJS.Timeout | undefined, summaryAt: number | undefined;
+  const started = Date.now();
   const child = spawn(process.execPath, argv, { cwd: APP_DIR, env: environment, detached: process.platform !== "win32", stdio: ["ignore", "pipe", "pipe"] });
   activeChild = child;
-  child.stdout.on("data", (chunk: Buffer) => { bytes += chunk.length; if (bytes > 4_000_000) { outputLimited = true; stopChild(); } else stdout += chunk; });
+  child.stdout.on("data", (chunk: Buffer) => {
+    bytes += chunk.length; if (bytes > 4_000_000) { outputLimited = true; stopChild(); } else stdout += chunk;
+    if (!lingerTimer && SUMMARY_LINE.test(stdout)) {
+      summaryAt = Date.now();
+      lingerTimer = setTimeout(() => { lingered = true; stopChild(); }, LINGER_LIMIT_MS);
+    }
+  });
   // Child errors can contain request bodies or credentials: never forward them.
   child.stderr.on("data", (chunk: Buffer) => { bytes += chunk.length; if (bytes > 4_000_000) { outputLimited = true; stopChild(); } });
   child.on("error", () => { failedToSpawn = true; });
   const timer = setTimeout(() => { timedOut = true; stopChild(); }, 120_000);
   let exitCode: number | null = null, signal: NodeJS.Signals | null = null;
   try { ({ exitCode, signal } = await new Promise<{ exitCode: number | null; signal: NodeJS.Signals | null }>((resolve) => child.on("close", (code, reason) => resolve({ exitCode: code, signal: reason })))); }
-  finally { clearTimeout(timer); stopChild(); activeChild = undefined; }
+  finally { clearTimeout(timer); clearTimeout(lingerTimer); stopChild(); activeChild = undefined; }
+  const ended = Date.now();
   const summaries = stdout.split(/\r?\n/).filter(line => /^s(?:633|778)-[a-z-]+\.check: \d+\/\d+ (?:checks )?passed$/.test(line));
   const summary = summaries.length === 1 ? summaries[0].match(/: (\d+)\/(\d+) (?:checks )?passed$/) : null;
   const countsMatch = expectedChecks === undefined || (summary !== null && Number(summary[1]) === expectedChecks && Number(summary[2]) === expectedChecks);
-  const passed = exitCode === 0 && signal === null && !timedOut && !failedToSpawn && !outputLimited && countsMatch;
-  console.log(JSON.stringify({ stage: label, passed, exitCode, signal, timedOut, failedToSpawn, outputLimited,
+  const passed = exitCode === 0 && signal === null && !timedOut && !failedToSpawn && !outputLimited && !lingered && countsMatch;
+  console.log(JSON.stringify({ stage: label, passed, exitCode, signal, timedOut, failedToSpawn, outputLimited, lingered, ms: ended - started,
+    afterSummaryMs: summaryAt === undefined ? null : ended - summaryAt,
     ...(expectedChecks === undefined ? {} : { expectedChecks, checksPassed: summary ? Number(summary[1]) : null, checksTotal: summary ? Number(summary[2]) : null }),
     stdoutSha256: createHash("sha256").update(stdout).digest("hex") }));
   if (!passed) throw new Error("SCRUM_633_CHILD_CHECK_FAILED");
