@@ -1,0 +1,52 @@
+{
+  "before": {
+    "status": "In Progress",
+    "summary": "Onboard Again does not say that the roles withdrawn on the platform stay withdrawn"
+  },
+  "attach": {
+    "status": 200,
+    "files": [
+      {
+        "id": "13155",
+        "name": "811-02-toast.png"
+      },
+      {
+        "id": "13156",
+        "name": "811-03-toast-on-profile.png"
+      },
+      {
+        "id": "13157",
+        "name": "811-05-control-toast.png"
+      },
+      {
+        "id": "13158",
+        "name": "811-01-onboard-again-dialog.png"
+      },
+      {
+        "id": "13159",
+        "name": "811-04-control-dialog.png"
+      },
+      {
+        "id": "13160",
+        "name": "811-06-control-toast-on-profile.png"
+      }
+    ]
+  },
+  "comment": {
+    "status": 201
+  },
+  "images": [
+    "811-01-onboard-again-dialog.png",
+    "811-02-toast.png",
+    "811-03-toast-on-profile.png",
+    "811-04-control-dialog.png",
+    "811-05-control-toast.png",
+    "811-06-control-toast-on-profile.png"
+  ],
+  "afterTesting": "Testing",
+  "afterDeployed": "Deployed",
+  "final": {
+    "status": "Deployed",
+    "summary": "Onboard Again does not say that the roles withdrawn on the platform stay withdrawn"
+  }
+}
