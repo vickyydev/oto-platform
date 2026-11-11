@@ -12,7 +12,8 @@ import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { ScreenKeyboard } from './ScreenKeyboard';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { consentFormPhone } from '@/lib/consentForm';
+import { consentFormPhone, messagingPhoneProblem } from '@/lib/consentForm';
+import { CHANNEL_LABEL } from '@/lib/contactChannel';
 import { kioskFlags } from '@/lib/kioskFlags';
 import { cn } from '@/lib/utils';
 
@@ -38,6 +39,14 @@ import { cn } from '@/lib/utils';
  * it starts from the number and channel given on the first screen, the family
  * confirms or changes them, and both go to the till with every step. Asking
  * the number once (SCRUM-762) is the ordinary sale's rule, not this form's.
+ *
+ * SCRUM-857 — the family must explicitly confirm that the number is the one
+ * for the chosen channel (the owner's ruling of 8 November): a tick-box line
+ * under the number that names the channel, cleared when the number or the
+ * channel changes, carried to the till with every step, and required before
+ * Done. Shown only on a form whose till asks for it (`contactConfirmed` in
+ * the prompt): a till from before the tick, or a station between that drops
+ * the field, gets a form that asks for nothing and sends nothing new.
  */
 
 interface ChildDraft {
@@ -53,6 +62,8 @@ interface FormDraft {
   guardianPhone: string;
   /** SCRUM-863 — absent on a form whose till does not take the number and channel back. */
   contactChannel?: NonNullable<ConsentPrompt['contactChannel']>;
+  /** SCRUM-857 — the family's tick that the number is the one for the channel; absent on a form whose till does not ask. */
+  contactConfirmed?: boolean;
   consentAcknowledged: boolean;
   confirmations: string[];
 }
@@ -66,6 +77,7 @@ function draftOf(prompt: ConsentPrompt): FormDraft {
     guardianName: prompt.guardianName,
     guardianPhone: prompt.guardianPhone ?? '',
     ...(prompt.contactChannel ? { contactChannel: prompt.contactChannel } : {}),
+    ...(prompt.contactConfirmed !== undefined ? { contactConfirmed: prompt.contactConfirmed } : {}),
     consentAcknowledged: prompt.consentAcknowledged,
     confirmations: prompt.confirmations.filter((item) => item.acknowledged).map((item) => item.id),
   };
@@ -112,6 +124,7 @@ export function mergeConsentDraft(local: FormDraft, base: FormDraft, next: FormD
     // field follows the till again, so a correction staff make later shows here.
     guardianPhone: consentFormPhone(local.guardianPhone) === consentFormPhone(base.guardianPhone) ? next.guardianPhone : local.guardianPhone,
     ...(next.contactChannel ? { contactChannel: pick(local.contactChannel, base.contactChannel, next.contactChannel) } : {}),
+    ...(next.contactConfirmed !== undefined ? { contactConfirmed: pick(local.contactConfirmed, base.contactConfirmed, next.contactConfirmed) } : {}),
     consentAcknowledged: pick(local.consentAcknowledged, base.consentAcknowledged, next.consentAcknowledged),
     confirmations: pick(local.confirmations, base.confirmations, next.confirmations),
   };
@@ -177,6 +190,14 @@ export function PublicConsentCapture({ prompt, busy, onAction }: {
   // the parent's block shows only when a child needs consent.
   const takesContact = prompt.contactChannel !== undefined && prompt.consentRequired;
   const phoneKept = !takesContact && !!prompt.guardianPhone?.trim();
+  // SCRUM-857 — a till that sends the tick asks for it: the family confirms
+  // the number is the one for the channel, and the step carries the tick
+  // back. A form without it (an older till, or a station that drops the
+  // field) asks for nothing and sends nothing new, so an older station's
+  // strict reading of the step is never tripped.
+  const asksConfirm = takesContact && prompt.contactConfirmed !== undefined;
+  const contactProblem = asksConfirm ? messagingPhoneProblem(draft.guardianPhone) : null;
+  const contactChannel = draft.contactChannel ?? prompt.contactChannel ?? 'whatsapp';
   const childrenComplete = prompt.slots.every((slot) => {
     const child = draft.slots[slot.id];
     return !!child && child.name.trim().length > 0 && child.ageYears !== null;
@@ -195,6 +216,9 @@ export function PublicConsentCapture({ prompt, busy, onAction }: {
     ...(takesContact
       ? { guardianPhone: consentFormPhone(form.guardianPhone), contactChannel: form.contactChannel ?? prompt.contactChannel }
       : !phoneKept && form.guardianPhone.trim() ? { guardianPhone: form.guardianPhone.trim().slice(0, 32) } : {}),
+    // SCRUM-857 — the tick, only on a form that asked for it, and only for a
+    // number that can take messages (the till refuses the rest anyway).
+    ...(asksConfirm ? { contactConfirmed: form.contactConfirmed === true && messagingPhoneProblem(form.guardianPhone) === null } : {}),
     // A tick without a name is not one the till can take; it is kept here until the name is in.
     consentAcknowledged: form.consentAcknowledged && !!form.guardianName.trim(),
     acknowledgedConfirmationIds: form.confirmations,
@@ -308,11 +332,20 @@ export function PublicConsentCapture({ prompt, busy, onAction }: {
             {phoneKept ? <div data-testid="consent-kept-phone">
               <div className="mt-2 flex h-14 items-center rounded-md border border-foreground/10 bg-foreground/5 px-4 text-2xl font-semibold tabular-nums">{formatStoredPhone(prompt.guardianPhone ?? '')}</div>
               <p className="mt-2 text-base text-foreground/50">{t('till.input.phoneKept')}</p>
-            </div> : <PhoneInput value={draft.guardianPhone} onChange={(guardianPhone) => { if (!locked) setDraft((current) => ({ ...current, guardianPhone })); }}
+            </div> : <PhoneInput value={draft.guardianPhone} onChange={(guardianPhone) => { if (!locked) setDraft((current) => ({ ...current, guardianPhone, ...(current.contactConfirmed !== undefined ? { contactConfirmed: false } : {}) })); }}
               label="" showKeypad={kioskFlags.screenKeyboard} disabled={locked} translate
               channel={takesContact ? draft.contactChannel ?? prompt.contactChannel : undefined}
-              onChannelChange={takesContact ? (contactChannel) => { if (!locked) setDraft((current) => ({ ...current, contactChannel })); } : undefined}
+              onChannelChange={takesContact ? (contactChannel) => { if (!locked) setDraft((current) => ({ ...current, contactChannel, ...(current.contactConfirmed !== undefined ? { contactConfirmed: false } : {}) })); } : undefined}
               inputClassName="h-14 border-foreground/10 bg-foreground/5 px-4 text-2xl text-foreground" />}
+            {/* SCRUM-857 — the family confirms that this is the number for the
+                channel they chose; a changed number or channel asks again. */}
+            {asksConfirm && contactProblem === 'empty' && <p className="mt-3 text-base text-foreground/60" data-testid="consent-contact-needed">{t('superviseConsent.phoneNeeded')}</p>}
+            {asksConfirm && contactProblem === 'invalid' && <p className="mt-3 text-base text-(--cd-amber)" data-testid="consent-contact-invalid">{t('superviseConsent.phoneInvalid')}</p>}
+            {asksConfirm && <label className="mt-3 flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left">
+              <Checkbox checked={draft.contactConfirmed === true} disabled={locked || contactProblem !== null} data-testid="public-consent-contact-confirm"
+                onCheckedChange={(value) => setDraft((current) => ({ ...current, contactConfirmed: value === true }))}
+                className="mt-1 h-6 w-6 border-foreground/30 data-[state=checked]:bg-primary" />
+              <span className="text-lg leading-snug text-foreground/80">{t('superviseConsent.confirmContact', { channel: CHANNEL_LABEL[contactChannel] })}</span></label>}
           </div>
           {prompt.consentRequired && <label className="flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left">
             <Checkbox checked={draft.consentAcknowledged} disabled={locked} data-testid="public-consent-ack"
@@ -341,7 +374,7 @@ export function PublicConsentCapture({ prompt, busy, onAction }: {
         {step !== 'agreements'
           ? <Button disabled={locked || step === 'children' && !childrenComplete} onClick={next}>{t('common.continue')}</Button>
           : saved
-            ? <Button disabled={locked || !prompt.canContinue} onClick={() => onAction({ ...fence, action: 'done' })}>{t('common.done')}</Button>
+            ? <Button disabled={locked || !prompt.canContinue || asksConfirm && !prompt.contactConfirmed} onClick={() => onAction({ ...fence, action: 'done' })}>{t('common.done')}</Button>
             : <Button disabled={locked || prompt.consentRequired && draft.consentAcknowledged && !draft.guardianName.trim()} onClick={next}>{t('common.continue')}</Button>}
       </>}
     </div>

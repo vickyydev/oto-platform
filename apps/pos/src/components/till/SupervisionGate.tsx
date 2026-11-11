@@ -98,6 +98,14 @@ interface SupervisionGateProps {
   // True while Continue's work is in flight — the children are being saved to
   // the member's record (SCRUM-233), which is a round trip that can fail.
   busy?: boolean;
+  /**
+   * SCRUM-857 — the family's confirmation that the number on the form is the
+   * one for the chosen channel, and whether the number can take messages at
+   * all. Given by the counter till; a till that does not pass them (the
+   * phone till) is gated as before.
+   */
+  contactConfirmed?: boolean;
+  contactPhoneProblem?: 'empty' | 'invalid' | null;
 }
 
 /**
@@ -120,6 +128,8 @@ export function SupervisionGate({
   onBack,
   onContinue,
   busy = false,
+  contactConfirmed,
+  contactPhoneProblem,
 }: SupervisionGateProps) {
   // Only resolve children with a valid age — feeding a placeholder age for a
   // not-yet-typed child would trip the policy's "no band" warning on every
@@ -179,9 +189,22 @@ export function SupervisionGate({
   if (!confirmationsOk) {
     blockers.push('Parent must accept every required confirmation on the customer screen.');
   }
+  // SCRUM-857 — the number the child's messages go to must be one that can
+  // take them, and the family must have confirmed it is the one for the
+  // channel (the owner's ruling of 8 November). Only when the till passes
+  // these, and only for a registration that will be written (consent needed).
+  const contactAsked = anyNeedsConsent && (contactConfirmed !== undefined || contactPhoneProblem !== undefined);
+  const contactOk = !contactAsked || contactPhoneProblem == null && contactConfirmed === true;
+  if (contactAsked && contactPhoneProblem === 'empty') {
+    blockers.push('Parent must give the number for messages about their child on the customer screen.');
+  } else if (contactAsked && contactPhoneProblem === 'invalid') {
+    blockers.push("The parent's number doesn't look like a mobile that can receive messages — check it with them.");
+  } else if (contactAsked && contactConfirmed !== true) {
+    blockers.push('Parent must confirm that the number is the one for their messaging channel on the customer screen.');
+  }
   // De-dupe the generic "needs a name" line.
   const uniqueBlockers = Array.from(new Set(blockers));
-  const canContinue = allIdentified && consentOk && confirmationsOk;
+  const canContinue = allIdentified && consentOk && confirmationsOk && contactOk;
 
   return (
     <div className="flex h-full flex-col">

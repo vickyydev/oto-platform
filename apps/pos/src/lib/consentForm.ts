@@ -1,4 +1,4 @@
-import { normalizePhone, type ConsentAction, type FilledConsentSlot } from '@oto/shared';
+import { normalizePhone, validateMessagingPhone, type ConsentAction, type FilledConsentSlot } from '@oto/shared';
 import type { SupervisedSlot } from '@/components/till/SupervisionGate';
 import type { ContactChannel } from '@/types';
 
@@ -42,6 +42,47 @@ export function consentFormPhone(typed: string): string {
 }
 
 /**
+ * SCRUM-857 — THE FAMILY'S CONFIRMATION THAT THE NUMBER IS THE ONE FOR THE
+ * CHANNEL (the owner's ruling of 8 November).
+ *
+ * Kept with the number and the channel it was given for, so the till never
+ * has to clear it by hand: a confirmation stands only while the form still
+ * holds that number and that channel (`contactConfirmationStands`), and an
+ * edit to either — by the family on their screen, by staff on the till — is
+ * what un-confirms it. `by` says who gave the tick: the family on their own
+ * screen (the till's customer half, or the paired display), or staff on the
+ * till with the family beside them, where the display could not show the
+ * tick. The time is the till's clock, taken when the tick arrived.
+ */
+export interface ContactConfirmation {
+  at: string;
+  by: 'family' | 'staff';
+  /** The number as the form keeps it (`consentFormPhone`). */
+  phone: string;
+  channel: ContactChannel;
+}
+
+/** True while the form still holds the number and channel the confirmation was given for. */
+export function contactConfirmationStands(
+  confirmation: ContactConfirmation | null,
+  phone: string,
+  channel: ContactChannel,
+): boolean {
+  return !!confirmation && !!confirmation.phone && confirmation.phone === consentFormPhone(phone) && confirmation.channel === channel;
+}
+
+/**
+ * SCRUM-857 — why the number on the form cannot be confirmed yet, in the
+ * form's own terms: nothing typed, or something that cannot take a family's
+ * messages (the shared check, which the api repeats). Null when it can.
+ */
+export function messagingPhoneProblem(phone: string): 'empty' | 'invalid' | null {
+  const checked = validateMessagingPhone(phone);
+  if (checked.ok) return null;
+  return checked.problem === 'empty' ? 'empty' : 'invalid';
+}
+
+/**
  * The till's side of the form, as `takeConsentAction` changes it. The setters
  * are the till's own state; `answered` moves the customer screen on to a new
  * request (`TicketDisplayState.answerRevision`).
@@ -63,6 +104,24 @@ export interface ConsentFormTill {
   setCompletedSignature: (signature: string | null) => void;
   askedForHelp: () => void;
   answered: () => void;
+  /**
+   * SCRUM-857 — the till's side of the number confirmation. All optional, so
+   * a till (or a test's model of one) from before the field is unchanged.
+   */
+  /** The channel the till holds now, for a step that sends none. */
+  contactChannel?: ContactChannel;
+  /** The form the till published asks for the tick (`contactConfirmed` was sent). */
+  asksContactConfirmation?: boolean;
+  /** The tick stands on the till for the number and channel the form holds. */
+  contactConfirmed?: boolean;
+  /** The family's tick (or its removal) for this number and channel, as the step carried it. */
+  setContactConfirmed?: (confirmed: boolean, contact: { phone: string; channel: ContactChannel }) => void;
+  /**
+   * A step arrived without the tick although the form asked for it: the
+   * display, or the station between, is from before the field and cannot
+   * show it. Staff confirm the number with the family on the till instead.
+   */
+  contactConfirmationUnsupported?: () => void;
 }
 
 /**
@@ -102,9 +161,26 @@ export function takeConsentAction(action: ConsentAction, till: ConsentFormTill):
       if (phone !== till.guardianPhone.trim()) till.setGuardianPhone(phone);
     }
     if (action.contactChannel !== undefined) till.setContactChannel(action.contactChannel);
+    // SCRUM-857 — the family's tick that this number is the one for the
+    // channel comes with the step, for the number and channel the step
+    // carries (the till's own when the step carries none). A step without
+    // the tick on a form that asked for it means the display, or the station
+    // between, does not know the field: staff confirm with the family here.
+    if (action.contactConfirmed !== undefined) {
+      till.setContactConfirmed?.(action.contactConfirmed, {
+        phone: action.guardianPhone !== undefined ? consentFormPhone(action.guardianPhone) : consentFormPhone(till.guardianPhone),
+        channel: action.contactChannel ?? till.contactChannel ?? 'whatsapp',
+      });
+    } else if (till.asksContactConfirmation) till.contactConfirmationUnsupported?.();
     till.setConsentAcknowledged(action.consentAcknowledged);
     till.setAcknowledgedConfirmationIds(action.acknowledgedConfirmationIds);
     till.setCompletedSignature(null);
+  } else if (till.asksContactConfirmation && !till.contactConfirmed) {
+    // SCRUM-857 — a `done` while the number is unconfirmed can only come
+    // through a display or station from before the field (a form that shows
+    // the tick never offers Done without it): the form is not finished, and
+    // staff confirm the number with the family on the till.
+    till.contactConfirmationUnsupported?.();
   } else till.setCompletedSignature(till.signature);
   till.answered();
 }

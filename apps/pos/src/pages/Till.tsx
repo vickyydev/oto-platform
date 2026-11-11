@@ -27,7 +27,7 @@ import { savedRateSummary } from '@/lib/tierApproval';
 import { confirmTierAtTill } from '@/lib/thaiRateConfirmation';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { routeToPayment } from '@/lib/customerContact';
-import { staffTicksAgreements, takeConsentAction } from '@/lib/consentForm';
+import { consentFormPhone, contactConfirmationStands, messagingPhoneProblem, staffTicksAgreements, takeConsentAction, type ContactConfirmation } from '@/lib/consentForm';
 import { setSaleOpen } from '@/pwa/openSale';
 import { getAddOns } from '@/store/catalogStore';
 import { refreshSellableStock } from '@/api/stock';
@@ -542,6 +542,19 @@ export default function Till() {
   const [superParentName, setSuperParentName] = useState<string>('');
   const [superParentPhone, setSuperParentPhone] = useState<string>('');
   const [superParentContactMethod, setSuperParentContactMethod] = useState<ContactChannel>('whatsapp');
+  /**
+   * SCRUM-857 — the family's confirmation that the number is the one for the
+   * channel, kept with the number and channel it was given for: it stands
+   * only while the form still holds both (`contactConfirmationStands`), so
+   * an edit to either, on any screen, un-confirms it without a hand-off.
+   */
+  const [superContactConfirmation, setSuperContactConfirmation] = useState<ContactConfirmation | null>(null);
+  /**
+   * SCRUM-857 — the paired display (or the station between) is from before
+   * the confirmation field: a step came back without it, or a Done came while
+   * unconfirmed. Staff then confirm the number with the family on the till.
+   */
+  const [consentContactLegacy, setConsentContactLegacy] = useState(false);
   const [superConsentAck, setSuperConsentAck] = useState<boolean>(false);
   // Confirmations checklist ticked on the customer screen (admin-configurable,
   // policy.confirmations) — required for ANY unaccompanied registration, not
@@ -2045,6 +2058,10 @@ export default function Till() {
     // asks; that is the registration's contact, never the sale's own number.
     setSuperParentPhone(customerPhone.trim() || member?.phone || '');
     setSuperParentContactMethod(customerContactChannel);
+    // SCRUM-857 — every gate starts unconfirmed: the family confirms the
+    // number for this registration, on this form.
+    setSuperContactConfirmation(null);
+    setConsentContactLegacy(false);
     gateRegistrationIdRef.current = null;
     gateStayIdsRef.current = new Map();
     gateWaiverIdsRef.current = new Map();
@@ -2458,6 +2475,11 @@ export default function Till() {
           contactChannel: superParentContactMethod,
           consentAcknowledged: superConsentAck,
           acknowledgedConfirmationIds: superAcknowledgedConfirmationIds,
+          // SCRUM-857 — the family's confirmation of the number for the
+          // channel, when it stands for the number and channel sent above.
+          contactConfirmation: superContactConfirmation && contactConfirmationStands(superContactConfirmation, superParentPhone, superParentContactMethod)
+            ? { confirmedAt: superContactConfirmation.at, by: superContactConfirmation.by }
+            : null,
           children: supervised.map(({ slot, service }, i) => ({
             checkinId: stayIds[i]!,
             childId: guardian ? (childIdBySlot.get(slot.id) ?? null) : null,
@@ -3488,6 +3510,18 @@ export default function Till() {
   const consentConfirmations = sortedConfirmations(supervisionPolicy).map(item => ({ id: item.id, text: item.text,
     required: item.required, acknowledged: superAcknowledgedConfirmationIds.includes(item.id) }));
   /**
+   * SCRUM-857 — THE NUMBER CONFIRMED FOR THE CHANNEL (the owner's ruling of
+   * 8 November). The form shows the number the child's messages go to; the
+   * family must confirm it is the one for the chosen channel before the form
+   * is finished, on the till's customer half and on the paired display alike,
+   * and the registration is not written without it. The confirmation stands
+   * for the number and channel it was given for, so an edit to either, by
+   * anyone, un-confirms it. Asked only when a registration will be written
+   * (a child needs consent); a group that needs none has no number to confirm.
+   */
+  const contactConfirmed = contactConfirmationStands(superContactConfirmation, superParentPhone, superParentContactMethod);
+  const consentContactProblem = messagingPhoneProblem(superParentPhone);
+  /**
    * SCRUM-764 — THE DROP-OFF AND NANNY FORMS ON THE CUSTOMER SCREEN.
    *
    * The family fills each child's name, age and care notes, their own name,
@@ -3522,6 +3556,10 @@ export default function Till() {
     canContinue: consentStaffReady && consentSlotsComplete(consentRows.map(({ slot }) => ({ name: slot.name, ageYears: slotAgeOf(slot) })))
       && (!consentRequired || !!superParentName.trim() && superConsentAck)
       && consentConfirmations.every(item => !item.required || item.acknowledged),
+    // SCRUM-857 — the tick, asked on a form that will be registered. Not part
+    // of canContinue (an older station cross-checks that against what it
+    // knows); it gates Done on the display and on this till instead.
+    ...(consentRequired ? { contactConfirmed } : {}),
   };
   const consentSignature = JSON.stringify(consentBase);
   const consentCandidate = { ...consentBase, completed: consentCompletedScope === consentSignature };
@@ -3557,13 +3595,31 @@ export default function Till() {
       if (reviewEpoch !== saleEpochRef.current || staffLocked.current || current.scope !== consentScope
         || current.step !== 7 || !current.online || !current.consent || !action.success) return false;
       const prompt = ConsentPromptSchema.safeParse({ ...current.consent, kind: 'consent', requestId: action.data.requestId });
-      if (!prompt.success || !consentActionAllowed(prompt.data, action.data)) return false;
+      if (!prompt.success) return false;
+      // SCRUM-857 — a Done while the number is unconfirmed is never offered by
+      // a display that shows the tick, so it comes through a display or station
+      // from before the field. It is taken, not refused (a refusal would be
+      // retried for ever): the form stays unfinished and staff confirm the
+      // number with the family here (`contactConfirmationUnsupported`).
+      const unconfirmedDone = action.data.action === 'done' && prompt.data.contactConfirmed === false
+        && consentActionAllowed({ ...prompt.data, contactConfirmed: true }, action.data);
+      if (!unconfirmedDone && !consentActionAllowed(prompt.data, action.data)) return false;
       // SCRUM-764 — the family's step, mirrored here; every answer taken moves
       // their screen on to a new request, even one that changed nothing.
       takeConsentAction(action.data, {
         slots: superSlots, guardianPhone: superParentPhone, signature: current.signature,
         updateSlot: handleUpdateSlot, setGuardianName: setSuperParentName, setGuardianPhone: setSuperParentPhone,
         setContactChannel: setSuperParentContactMethod,
+        // SCRUM-857 — the tick, for the number and channel the step carried;
+        // the time is this till's clock, taken as the step arrived.
+        contactChannel: superParentContactMethod,
+        asksContactConfirmation: prompt.data.contactConfirmed !== undefined,
+        contactConfirmed: prompt.data.contactConfirmed === true,
+        setContactConfirmed: (confirmed, contact) => {
+          setSuperContactConfirmation(confirmed ? { at: new Date().toISOString(), by: 'family', ...contact } : null);
+          setConsentContactLegacy(false);
+        },
+        contactConfirmationUnsupported: () => setConsentContactLegacy(true),
         setConsentAcknowledged: setSuperConsentAck, setAcknowledgedConfirmationIds: setSuperAcknowledgedConfirmationIds,
         setCompletedSignature: setConsentCompletedScope, askedForHelp: () => setConsentStaffOnly(true),
         answered: () => setDisplayAnswerRevision(previous => previous + 1),
@@ -3816,13 +3872,17 @@ export default function Till() {
                   ? 'The display cannot show the form right now: open Private child details and go through it with the family, agreements included.'
                   : consentCandidate.completed
                   ? 'The family has finished the form on the display. Check the photo and details before Continue.'
+                  : consentContactLegacy && consentRequired && !contactConfirmed
+                    ? 'The display cannot show the number confirmation: open Private child details and confirm the messaging number with the family here.'
                   : consentStaffOnly
                     ? 'The family asked for help: fill the form here with them. The agreement ticks stay theirs, on the display.'
                     : 'The family is filling in the form on the display; it appears here as they go. Help with the details here if they ask.'}</p>
                 <Button size="sm" variant="outline" disabled={gateSaving} onClick={() => setConsentPrivateOpen(true)}>Private child details</Button>
               </div>}
               <ConsentTicksStatus consentRequired={consentRequired} consentAcknowledged={superConsentAck}
-                confirmations={consentConfirmations} />
+                confirmations={consentConfirmations}
+                contact={consentRequired ? { phone: superParentPhone, channel: superParentContactMethod, confirmed: contactConfirmed,
+                  by: contactConfirmed ? superContactConfirmation?.by ?? null : null, problem: consentContactProblem } : undefined} />
               <div className="flex-1 min-h-0"><SupervisionGate
               slots={superSlots}
               parentName={superParentName}
@@ -3834,6 +3894,8 @@ export default function Till() {
               onBack={handleSupervisionBack}
               onContinue={handleSupervisionContinue}
               busy={gateSaving}
+              contactConfirmed={contactConfirmed}
+              contactPhoneProblem={consentContactProblem}
               /></div>
             </div>
           )}
@@ -4050,6 +4112,10 @@ export default function Till() {
               onParentNameChange={setSuperParentName}
               onParentPhoneChange={setSuperParentPhone}
               onParentContactMethodChange={setSuperParentContactMethod}
+              contactConfirmed={contactConfirmed}
+              onContactConfirmedChange={(confirmed) => setSuperContactConfirmation(confirmed
+                ? { at: new Date().toISOString(), by: 'family', phone: consentFormPhone(superParentPhone), channel: superParentContactMethod }
+                : null)}
               onConsentAckChange={setSuperConsentAck}
               onUpdateChild={handleUpdateSlot}
               acknowledgedConfirmationIds={superAcknowledgedConfirmationIds}
@@ -4115,6 +4181,13 @@ export default function Till() {
               parentPhone={superParentPhone} parentContactMethod={superParentContactMethod}
               onParentNameChange={setSuperParentName} onParentPhoneChange={setSuperParentPhone}
               onParentContactMethodChange={setSuperParentContactMethod} onConsentAckChange={setSuperConsentAck}
+              // SCRUM-857 — staff see whether the family confirmed the number; they tick
+              // it here, with the family beside them, only when the display cannot show
+              // the form or does not know the tick (an older display or station).
+              contactConfirmed={contactConfirmed} contactConfirmTickable={staffTicks || consentContactLegacy}
+              onContactConfirmedChange={(confirmed) => setSuperContactConfirmation(confirmed
+                ? { at: new Date().toISOString(), by: 'staff', phone: consentFormPhone(superParentPhone), channel: superParentContactMethod }
+                : null)}
               onUpdateChild={handleUpdateSlot} acknowledgedConfirmationIds={superAcknowledgedConfirmationIds}
               onToggleConfirmation={handleToggleConfirmation} />
           </div>

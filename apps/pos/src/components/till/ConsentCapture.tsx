@@ -1,6 +1,9 @@
 import { useId, useMemo } from 'react';
 import { SupervisionPolicy, ChildFoodProvision, ContactChannel } from '@/types';
 import { cn } from '@/lib/utils';
+import { CHANNEL_LABEL } from '@/lib/contactChannel';
+import { messagingPhoneProblem } from '@/lib/consentForm';
+import { formatStoredPhone } from '@/lib/phoneUtils';
 import { getDropOffPricing } from '@/mockApi';
 import { resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
@@ -72,6 +75,18 @@ interface ConsentCaptureProps {
    * screen. Staff see whether each one is ticked; they cannot tick it.
    */
   ticksReadOnly?: boolean;
+  /**
+   * SCRUM-857 — the family's confirmation that the number above is the one
+   * for the chosen channel (the owner's ruling of 8 November). The line is
+   * shown when the till takes the tick (`onContactConfirmedChange`), beside
+   * the number; it cannot be ticked while the number is missing or cannot
+   * take messages. On the staff copy the tick is read-only unless the till
+   * says staff may give it with the family beside them (`contactConfirmTickable`):
+   * when the display cannot show the form, or does not know the tick.
+   */
+  contactConfirmed?: boolean;
+  onContactConfirmedChange?: (v: boolean) => void;
+  contactConfirmTickable?: boolean;
 }
 
 /**
@@ -82,10 +97,22 @@ export function ConsentTicksStatus({
   consentRequired,
   consentAcknowledged,
   confirmations,
+  contact,
 }: {
   consentRequired: boolean;
   consentAcknowledged: boolean;
   confirmations: { id: string; text: string; required: boolean; acknowledged: boolean }[];
+  /**
+   * SCRUM-857 — the number the child's messages go to, and whether the family
+   * has confirmed it is the one for the channel (and who gave the tick).
+   */
+  contact?: {
+    phone: string;
+    channel: ContactChannel;
+    confirmed: boolean;
+    by: 'family' | 'staff' | null;
+    problem: 'empty' | 'invalid' | null;
+  };
 }) {
   if (!consentRequired && confirmations.length === 0) return null;
   const Tick = ({ on }: { on: boolean }) =>
@@ -97,6 +124,13 @@ export function ConsentTicksStatus({
         {consentRequired && (
           <li className="flex items-center gap-2"><Tick on={consentAcknowledged} />
             Supervision and photo consent · {consentAcknowledged ? 'ticked' : 'not ticked yet'}</li>
+        )}
+        {consentRequired && contact && (
+          <li className="flex items-center gap-2" data-testid="consent-contact-status"><Tick on={contact.confirmed} />
+            <span className="min-w-0 truncate">{CHANNEL_LABEL[contact.channel]} number{contact.problem === 'empty' ? '' : ` ${formatStoredPhone(contact.phone)}`}</span>
+            <span className="shrink-0 text-muted-foreground">· {contact.problem === 'empty' ? 'no number yet'
+              : contact.problem === 'invalid' ? "doesn't look like a mobile that can receive messages"
+              : contact.confirmed ? `confirmed by ${contact.by === 'staff' ? 'staff with the family' : 'the family'}` : 'not confirmed yet'}</span></li>
         )}
         {confirmations.map((item) => (
           <li key={item.id} className="flex items-center gap-2"><Tick on={item.acknowledged} />
@@ -136,6 +170,9 @@ export function ConsentCapture({
   onToggleConfirmation,
   staffScreen = false,
   ticksReadOnly = false,
+  contactConfirmed = false,
+  onContactConfirmedChange,
+  contactConfirmTickable = true,
 }: ConsentCaptureProps) {
   const customer = useLanguage();
   // The till draws this form twice at once (the customer's half and the staff's
@@ -362,6 +399,42 @@ export function ConsentCapture({
                   onChannelChange={onParentContactMethodChange}
                   translate={!staffScreen}
                 />
+                {/* SCRUM-857 — the family confirms that this number is the one for
+                    the chosen channel; the line names the channel. Not tickable
+                    while the number is missing or cannot take messages, and the
+                    form says which. */}
+                {onContactConfirmedChange && (() => {
+                  const problem = messagingPhoneProblem(parentPhone ?? '');
+                  const tickable = contactConfirmTickable && problem === null;
+                  return (
+                    <>
+                      {problem === 'empty' && (
+                        <p className="text-base text-foreground/60" data-testid="consent-contact-needed">{t('superviseConsent.phoneNeeded')}</p>
+                      )}
+                      {problem === 'invalid' && (
+                        <p className="text-base text-(--cd-amber)" data-testid="consent-contact-invalid">{t('superviseConsent.phoneInvalid')}</p>
+                      )}
+                      <label
+                        htmlFor={`${lineId}-contact`}
+                        className={cn(LINE, tickable ? 'cursor-pointer' : 'cursor-default')}
+                      >
+                        <Checkbox
+                          id={`${lineId}-contact`}
+                          checked={contactConfirmed}
+                          disabled={!tickable}
+                          onCheckedChange={(v) => onContactConfirmedChange(v === true)}
+                          className="mt-1 h-6 w-6 border-foreground/30 data-[state=checked]:bg-primary"
+                          data-testid="consent-contact-confirm"
+                        />
+                        <span className="text-lg leading-snug text-foreground/80">
+                          {t('superviseConsent.confirmContact', { channel: CHANNEL_LABEL[parentContactMethod] })}
+                          {staffScreen && !contactConfirmTickable && <span className="ml-2 text-sm text-foreground/50">({contactConfirmed ? 'confirmed by the family' : 'the family confirms this on their screen'})</span>}
+                          {staffScreen && contactConfirmTickable && <span className="ml-2 text-sm text-foreground/50">({contactConfirmed ? 'confirmed' : 'ask the family, then tick with them'})</span>}
+                        </span>
+                      </label>
+                    </>
+                  );
+                })()}
               </div>
             )}
             {/* SCRUM-767: the whole line is the checkbox's label, and the box's
