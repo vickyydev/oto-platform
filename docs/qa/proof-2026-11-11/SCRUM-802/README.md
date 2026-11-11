@@ -1,8 +1,11 @@
 # SCRUM-802 / SCRUM-783: History and the shown phone number
 
-Unit 3 is partially proved on staging. Both tickets remain In Progress.
-Units 1-2 are Deployed; Units 4-8 are unbuilt. The SCRUM-827 planner lane
-currently holds the source/API/proof slot. This lane makes no claim.
+SCRUM-802 is Deployed on its completed counter History proof and green main CI.
+The three inspected pictures are attached as 13018/13019/13020; see
+history-closeout.json. SCRUM-783 remains In Progress, so Unit 3 is incomplete.
+Units 1-2 are Deployed; Units 4-8 are unbuilt. The SCRUM-832 follow-up planner lane currently holds the landing/deploy slot.
+This lane makes no claim. The owner's 15:25 direction now permits proof and
+CI to run alongside later landings; Deployed still requires green landed CI.
 
 The original source is 1774278145af7a37b6d4855f87eacff7710d5f21, live on
 both named tills. All six main CI jobs in 42975235170 passed; the full-SHA

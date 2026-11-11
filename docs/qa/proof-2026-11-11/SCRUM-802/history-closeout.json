@@ -1,0 +1,48 @@
+{
+  "checkedAt": "2026-11-11T08:29:12.994Z",
+  "ticket": "SCRUM-802",
+  "status": "Deployed",
+  "proofSource": "1774278145af7a37b6d4855f87eacff7710d5f21",
+  "ciRun": 42975235170,
+  "ciConclusion": "success",
+  "evidence": "staging/attempt-02/receipt.json",
+  "checks": [
+    "paste opens History without Find",
+    "automatic list response contains the paid Add time charge",
+    "new receipt visible without navigation"
+  ],
+  "attachments": [
+    {
+      "id": "13020",
+      "filename": "s802-new-receipt-in-history-original-staging.png"
+    },
+    {
+      "id": "13018",
+      "filename": "s802-paste-opens-history-original-staging.png"
+    },
+    {
+      "id": "13019",
+      "filename": "s802-time-paid-original-staging.png"
+    }
+  ],
+  "comments": [
+    {
+      "id": "13838",
+      "created": "2026-11-11T14:52:27.703+0700"
+    },
+    {
+      "id": "13845",
+      "created": "2026-11-11T15:26:53.272+0700"
+    },
+    {
+      "id": "13846",
+      "created": "2026-11-11T15:26:59.378+0700"
+    }
+  ],
+  "limits": [
+    "Counter layout proved on staging; phone layout covered by component tests",
+    "Combined attempt later stopped in SCRUM-783 phone flow; SCRUM-802 checks and cleanup completed",
+    "Paid synthetic receipts retained; all print jobs printed",
+    "SCRUM-783 remains In Progress and Unit 3 is incomplete"
+  ]
+}
