@@ -420,7 +420,7 @@ export function DepositRequestPanel({
   reading: PartyDepositReading | undefined;
   loading?: boolean;
   isManager: boolean;
-  /** After a press the platform answered: the state and the till's figures are read again. */
+  /** After a press the platform answered — made, or refused: the state and the till's figures are read again. */
   onChanged?: () => void;
 }) {
   const [amount, setAmount] = useState("");
@@ -449,8 +449,13 @@ export function DepositRequestPanel({
       onChanged?.();
     } catch (err) {
       // A refusal ends the press; a lost connection, or the till out of reach, keeps it for the retry.
-      if (pressRefused(err)) press.spend();
       setError(refusalWords(err, fallback));
+      if (pressRefused(err)) {
+        press.spend();
+        // SCRUM-841: a refusal can mean the request moved on the platform (its party was removed,
+        // it was paid or closed elsewhere), so the state is read again at once; the refusal's words stay.
+        onChanged?.();
+      }
     } finally {
       setBusy(null);
     }

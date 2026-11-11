@@ -337,6 +337,67 @@ await check("the Billing section mounts the panel under 'From the till', reading
   assert.equal(text("text-deposit-request-headline"), "Deposit requested · ฿3,000");
 });
 
+// SCRUM-841 — the request moved on the platform while the panel showed it open.
+for (const what of ["resend", "cancel"] as const) {
+  await check(`${what} refused because the party was removed: the panel reads the request again at once and shows it closed, the refusal's words still there`, async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { queryFn: getQueryFn({ on401: "throw" }), retry: false, staleTime: Infinity } } });
+    reading = ok(request("requested"));
+    await act(async () => { root.render(null); });
+    asked.length = 0;
+    await act(async () => {
+      root.render(
+        React.createElement(
+          QueryClientProvider,
+          { client },
+          React.createElement(BeoBillingSection, { eventId: EVENT, billing: null, onBillingChange: () => undefined, isManager: true }),
+        ),
+      );
+    });
+    await settle();
+    assert.equal(text("badge-deposit-request-open"), "Requested");
+    assert.ok(byTestId("button-deposit-resend") && byTestId("button-deposit-cancel") && byTestId("link-deposit-payment"));
+    const readsBefore = asked.filter((a) => a.method === "GET" && a.path === `/api/events/${EVENT}/beo/deposit-request`).length;
+    // The press closes the request on the platform and is refused by name.
+    const refusal = "This party was removed in the Events module, so its deposit request was closed and nothing was sent to the family.";
+    answerPress = () => {
+      reading = ok(request("cancelled", { closeReason: "party_removed" }));
+      return json({ code: "DEPOSIT_PARTY_REMOVED", message: refusal }, 409);
+    };
+    await click(`button-deposit-${what}`);
+    await settle();
+    assert.equal(presses().length, 1);
+    assert.equal(presses()[0]!.path, `/api/events/${EVENT}/beo/deposit-request/${REQUEST}/${what}`);
+    const readsAfter = asked.filter((a) => a.method === "GET" && a.path === `/api/events/${EVENT}/beo/deposit-request`).length;
+    assert.ok(readsAfter > readsBefore, "the request is read again after the refusal, without a reload");
+    assert.equal(text("text-deposit-request-headline"), "Request closed · ฿3,000");
+    assert.match(text("text-deposit-request-state")!, /the payment link was closed/);
+    assert.equal(byTestId("badge-deposit-request-open"), null);
+    assert.equal(byTestId("button-deposit-resend"), null);
+    assert.equal(byTestId("button-deposit-cancel"), null);
+    assert.equal(byTestId("link-deposit-payment"), null);
+    assert.equal(text("text-deposit-request-error"), refusal, "the refusal's words stay on the panel");
+    await act(async () => { root.render(null); });
+    client.clear();
+  });
+}
+
+await check("a press that got no answer (the till out of reach) does not read the request again: nothing is known to have moved", async () => {
+  let reads = 0;
+  await act(async () => { root.render(null); });
+  asked.length = 0;
+  await act(async () => {
+    root.render(React.createElement(DepositRequestPanel, { eventId: EVENT, reading: ok(request("requested")), isManager: true, onChanged: () => { reads += 1; } }));
+  });
+  await settle();
+  answerPress = () => json({ code: "PLATFORM_UNREACHABLE", message: "The till did not answer." }, 502);
+  await click("button-deposit-resend");
+  assert.equal(reads, 0);
+  answerPress = () => json({ code: "DEPOSIT_PARTY_REMOVED", message: "closed" }, 409);
+  await click("button-deposit-resend");
+  assert.equal(reads, 1, "a refusal reads it again");
+  answerPress = () => json({ request: request("requested"), replayed: false });
+});
+
 await act(async () => { root.unmount(); });
 console.log(`party-deposit-ui.check: ${checks} checks passed`);
-process.exit(checks === 8 ? 0 : 1);
+process.exit(checks === 11 ? 0 : 1);

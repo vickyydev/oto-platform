@@ -188,6 +188,28 @@ export function summaryBillingOf(billing: BeoEventBilling | null, eventDeposit: 
 }
 
 /**
+ * SCRUM-841 — A DEPOSIT WITH NO INVOICE YET. With no invoice lines there is
+ * no total to be paid against, so a deposit is neither "PAID" nor "Overpaid":
+ * it is held. The summary then says "Deposit held: ฿3,000 · 11 Nov 2026"
+ * (the day when one is known) and nothing about paid. Null when there is an
+ * invoice line, or no deposit: the summary's own wording stands.
+ */
+export function depositHeldWordsOf(
+  lineCount: number,
+  billing: Pick<BeoEventBilling, "depositPaidAmount" | "depositPaidAt"> | null | undefined,
+  formatAmount: (thb: number) => string,
+): string | null {
+  const amount = billing?.depositPaidAmount || 0;
+  if (lineCount > 0 || amount <= 0) return null;
+  // The record's day arrives as the server's JSON string; the schema types it a Date.
+  const paidAt: unknown = billing?.depositPaidAt;
+  const day = typeof paidAt === "string" ? paidAt.slice(0, 10) : paidAt instanceof Date && !Number.isNaN(paidAt.getTime()) ? paidAt.toISOString().slice(0, 10) : "";
+  const at = DAY.test(day) ? new Date(`${day}T00:00:00.000Z`) : null;
+  const on = at && !Number.isNaN(at.getTime()) ? at.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : null;
+  return `Deposit held: ${formatAmount(amount)}${on ? ` · ${on}` : ""}`;
+}
+
+/**
  * A write from the summary while it shows the event's deposit: a patch that
  * names the deposit's day and no amount carries the amount shown, so the new
  * record says the deposit is paid. Without it the route would read a record

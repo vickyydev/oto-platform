@@ -48,6 +48,7 @@ import {
   type BillingTotals,
 } from "@shared/vat-utils";
 import { DatePicker } from "@/components/ui/date-picker";
+import { depositHeldWordsOf } from "@/lib/beo-deposit-buffer";
 import type { EventLineItem, EventLineItemTemplate, BeoEventBilling } from "@shared/schema";
 
 interface BeoBillingModuleProps {
@@ -282,7 +283,17 @@ export function BeoBillingModule({
     }
   };
 
+  // SCRUM-841: a deposit with no invoice lines is held, not "paid" against a total of nothing.
+  const depositHeld = depositHeldWordsOf(lineItems.length, billing, formatThb);
+
   const getPaymentStatusBadge = () => {
+    if (depositHeld) {
+      return (
+        <Badge variant="secondary" data-testid="badge-deposit-held">
+          DEPOSIT HELD
+        </Badge>
+      );
+    }
     switch (billingTotals.paymentStatus) {
       case "PAID":
         return <Badge className="bg-green-600">PAID</Badge>;
@@ -322,8 +333,14 @@ export function BeoBillingModule({
               <p className={`text-xl font-bold ${billingTotals.outstandingAmount > 0 ? "text-destructive" : "text-green-600"}`}>
                 {formatThb(billingTotals.outstandingAmount)}
               </p>
-              {billingTotals.overpaidAmount > 0 && (
-                <p className="text-xs text-green-600">Overpaid: {formatThb(billingTotals.overpaidAmount)}</p>
+              {depositHeld ? (
+                <p className="text-xs text-muted-foreground" data-testid="text-deposit-held">
+                  {depositHeld}
+                </p>
+              ) : (
+                billingTotals.overpaidAmount > 0 && (
+                  <p className="text-xs text-green-600">Overpaid: {formatThb(billingTotals.overpaidAmount)}</p>
+                )
               )}
             </div>
           </div>

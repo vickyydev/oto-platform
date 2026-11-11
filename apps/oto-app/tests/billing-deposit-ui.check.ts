@@ -305,6 +305,49 @@ await check("no billing record and no deposit: 0 and no day", async () => {
   assert.deepEqual(summaryBillingOf(null, { amountThb: 3000, date: null }), { depositPaid: true, depositPaidAmount: 3000, depositPaidAt: null });
 });
 
+// ─── SCRUM-841: a deposit with no invoice lines is held, not paid ────────────
+
+await check("a deposit with NO invoice lines: 'Deposit held: ฿3,000' and its day, no PAID, PART PAID or Overpaid; with a line the summary's own wording is back", async () => {
+  const held = () => doc.querySelector('[data-testid="text-deposit-held"]')?.textContent ?? null;
+  const summary = () => (doc.querySelector('[data-testid="input-deposit-amount"]') as HTMLElement).closest(".border-2")!.textContent ?? "";
+  // From the event's own deposit (the family paid through the chat), and from a billing record.
+  for (const from of ["event", "record"] as const) {
+    row = from === "record" ? { eventId: EVENT, depositPaid: true, depositPaidAmount: 3000, depositPaidAt: "2026-11-11T00:00:00.000Z" } : null;
+    eventRead = from === "event" ? { prepaymentAmount: 3000, prepaymentDate: "2026-11-11" } : { prepaymentAmount: null, prepaymentDate: null };
+    lineItems = [];
+    await mount();
+    assert.equal(held(), "Deposit held: ฿3,000 · 11 Nov 2026", from);
+    assert.ok(doc.querySelector('[data-testid="badge-deposit-held"]'), "the badge says held");
+    assert.doesNotMatch(summary(), /Overpaid|PART PAID|PAID/, `no paid wording beside totals of nothing: ${summary()}`);
+    assert.equal(field().value, "3000", "the Deposit Paid field is as it was");
+    assert.deepEqual(puts(), [], "reading writes nothing");
+  }
+  // No day known: the amount alone.
+  row = null;
+  eventRead = { prepaymentAmount: 3000, prepaymentDate: null };
+  await mount();
+  assert.equal(held(), "Deposit held: ฿3,000");
+  // An invoice line: the wording SCRUM-839 pinned, unchanged — part paid under the total …
+  eventRead = { prepaymentAmount: 3000, prepaymentDate: "2026-11-11" };
+  lineItems = [{ id: "li-1", name: "Package", category: "PACKAGE", qty: 1, unitPriceIncVat: 10000, isIncluded: false, isManual: true }];
+  await mount();
+  assert.equal(held(), null);
+  assert.equal(doc.querySelector('[data-testid="badge-deposit-held"]'), null);
+  assert.match(summary(), /PART PAID/);
+  // … and paid, with "Overpaid", over it.
+  lineItems = [{ id: "li-1", name: "Package", category: "PACKAGE", qty: 1, unitPriceIncVat: 2000, isIncluded: false, isManual: true }];
+  await mount();
+  assert.equal(held(), null);
+  assert.match(summary(), /Financial SummaryPAID/);
+  assert.match(summary(), /Overpaid: ฿1,000/);
+  // No deposit and no lines: NOT PAID as before, nothing held.
+  lineItems = [];
+  eventRead = { prepaymentAmount: null, prepaymentDate: null };
+  await mount();
+  assert.equal(held(), null);
+  assert.match(summary(), /NOT PAID/);
+});
+
 await check("a day picked over the event's deposit carries the amount; with a record, or an amount named, the patch goes as it is", () => {
   const event = { amountThb: 3000, date: "2026-11-11" };
   const day = { depositPaidAt: "2026-11-12T00:00:00.000Z" };
@@ -341,4 +384,4 @@ await check("the family pays while the section is open: the editor is told once;
 
 await act(async () => { root.unmount(); });
 console.log(`billing-deposit-ui.check: ${checks} checks passed`);
-process.exit(checks === 8 ? 0 : 1);
+process.exit(checks === 9 ? 0 : 1);
