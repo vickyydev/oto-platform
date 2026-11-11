@@ -127,7 +127,7 @@ function buildWarningData(mergeDataJson?: any) {
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
-import { aiComplete, aiConfigured, FAST_AI_MODEL } from "./lib/anthropic";
+import { aiComplete, aiConfigured, aiFailureForLog, FAST_AI_MODEL } from "./lib/anthropic";
 import multer from "multer";
 import * as XLSX from "xlsx";
 import { evaluateForEmployee, evaluateForContract, evaluateRuleForEmployee, getRuleDefinitions, getLastCalculatedAt, runAttentionEngine } from "./attention-engine";
@@ -23920,7 +23920,17 @@ Focus on actionable steps that staff can follow. If the document contains multip
 Return ONLY valid JSON, no markdown or explanation.`,
         user: `Please extract structured steps from this document:\n\n${fullText.substring(0, 8000)}`,
         maxTokens: 2000,
+      }).catch((error: unknown) => {
+        // SCRUM-851: what the provider answered is for the log, where it can
+        // be traced by its request id, and for the error report it always
+        // reached. Staff read a plain line, not its JSON.
+        console.error("[GenerateSOP] The AI provider did not answer:", aiFailureForLog(error));
+        Sentry.captureException(error);
+        return null;
       });
+      if (aiResponse === null) {
+        return res.status(500).json({ message: "The steps could not be generated just now. Please try again." });
+      }
 
       // Parse the JSON response
       let parsedSteps;

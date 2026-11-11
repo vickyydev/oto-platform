@@ -68,6 +68,38 @@ export async function aiComplete(opts: AiCompleteOptions): Promise<string> {
   return text;
 }
 
+/**
+ * What a failed model call may say in the server log (SCRUM-851): the
+ * provider's status, its kind of refusal, its own sentence and the request id
+ * it can be traced by on the provider's side. Never the key, the prompt or
+ * the document, and never a line for a screen: a route answers the person in
+ * words of its own.
+ */
+export function aiFailureForLog(error: unknown): {
+  status?: number;
+  type?: string;
+  providerRequestId?: string;
+  detail: string;
+} {
+  const failure = (error ?? {}) as {
+    status?: unknown;
+    type?: unknown;
+    requestID?: unknown;
+    error?: { error?: { type?: unknown; message?: unknown }; request_id?: unknown };
+    message?: unknown;
+  };
+  const text = (value: unknown) => (typeof value === "string" && value ? value : undefined);
+  const body = failure.error;
+  return {
+    ...(typeof failure.status === "number" ? { status: failure.status } : {}),
+    ...(text(failure.type) ?? text(body?.error?.type) ? { type: text(failure.type) ?? text(body?.error?.type) } : {}),
+    ...(text(failure.requestID) ?? text(body?.request_id)
+      ? { providerRequestId: text(failure.requestID) ?? text(body?.request_id) }
+      : {}),
+    detail: (text(body?.error?.message) ?? text(failure.message) ?? "The model call failed").slice(0, 300),
+  };
+}
+
 /** Strip the markdown fences a model may wrap around requested JSON. */
 export function stripJsonFences(text: string): string {
   return text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
