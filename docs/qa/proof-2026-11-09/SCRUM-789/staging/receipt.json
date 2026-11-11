@@ -1,0 +1,899 @@
+{
+  "unit": "SCRUM-789 Inbox: general questions stay out of the park inboxes; a park inbox holds only what its local team must handle",
+  "commit": "33e54e3f1ca1c4ed3093838d2793e9595561be19",
+  "startedAt": "2026-11-11T11:58:19.765Z",
+  "browser": "Chromium 153.0.8010.12 (headless), 1440x900, light, en-GB, Asia/Bangkok",
+  "liveBefore": {
+    "at": "2026-11-11T12:03:48.243Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbq5g4v13mps73f3u76g",
+        "status": "live",
+        "sha": "33e54e3f1ca1c4ed3093838d2793e9595561be19",
+        "finishedAt": "2026-11-11T12:02:00.621648Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbq5g53l550s739kn0e0",
+        "status": "live",
+        "sha": "33e54e3f1ca1c4ed3093838d2793e9595561be19",
+        "finishedAt": "2026-11-11T11:58:00.863008Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dbq5324s728c7393m3q0",
+        "status": "live",
+        "sha": "3cf7846e1bafd14ef9833bd338ebcfb6652e9081",
+        "finishedAt": "2026-11-11T11:30:25.29329Z"
+      }
+    ],
+    "apiLiveOnSha": true
+  },
+  "liveAfter": {
+    "at": "2026-11-11T12:09:11.227Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbq5g4v13mps73f3u76g",
+        "status": "live",
+        "sha": "33e54e3f1ca1c4ed3093838d2793e9595561be19",
+        "finishedAt": "2026-11-11T12:02:00.621648Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbq5g53l550s739kn0e0",
+        "status": "live",
+        "sha": "33e54e3f1ca1c4ed3093838d2793e9595561be19",
+        "finishedAt": "2026-11-11T11:58:00.863008Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dbq5l5oae00c73fqs2c0",
+        "status": "live",
+        "sha": "3410a7344834cdd6e383e25c2cb02ed14a670f6b",
+        "finishedAt": "2026-11-11T12:09:02.5074Z"
+      }
+    ],
+    "apiLiveOnSha": true
+  },
+  "firstLineSentAfterApiLiveSeconds": 110,
+  "viewer": {
+    "roles": [
+      "owner"
+    ],
+    "via": "the launcher, handed into the inbox (staging administrator, owner view)"
+  },
+  "precondition": {
+    "assistant": {
+      "at": "2026-11-11T11:58:31.105Z",
+      "route": "GET /api/inbox/ai/channel-accounts",
+      "status": 200,
+      "account": {
+        "id": "01a156bb-6778-72b0-8237-6028f8874503",
+        "displayName": "Demo WhatsApp · Central Floresta",
+        "channel": "whatsapp",
+        "aiMode": "live"
+      },
+      "keys": [
+        "id",
+        "channel",
+        "provider",
+        "displayName",
+        "branchId",
+        "status",
+        "canReply",
+        "aiMode"
+      ]
+    },
+    "openingHours": "The number's stored hours are not exposed by any read route used here. Observed instead: every line (19:03 to 19:07 Bangkok, Wednesday) came back from the simulator with outOfHours: [] (no closed-hours reply queued) and got an assistant turn, which the engine only schedules inside opening hours. The repo seed gives the parks 10:00 to 20:00 daily (seed, not read from staging)."
+  },
+  "keys": {
+    "P1": "thread 1 (steps 1 and 3)",
+    "D2": "thread 2 (step 2)",
+    "P4": "thread 3 (step 4)",
+    "B5": "control (step 5)"
+  },
+  "threads": {
+    "P1": {
+      "role": "thread 1 (steps 1 and 3)",
+      "conversationId": "01a1ca7e-3ecf-70c5-8dcd-d45a4aa5d896",
+      "sender": "its own ZZ TEST simulator number (not kept)",
+      "name": "ZZ TEST 789",
+      "customerLines": [
+        {
+          "text": "ZZ TEST how much is a ticket for one child?",
+          "at": "2026-11-11T12:03:51.015Z",
+          "status": 200,
+          "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+          "categoryHint": "As the channel routes it",
+          "outOfHours": [],
+          "dialogSaid": "Received: a new conversation, routed."
+        },
+        {
+          "text": "ZZ TEST we are tourists visiting Phuket",
+          "at": "2026-11-11T12:04:22.116Z",
+          "status": 200,
+          "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+          "categoryHint": "As the channel routes it",
+          "outOfHours": [],
+          "dialogSaid": "Received into the existing conversation."
+        },
+        {
+          "text": "ZZ TEST I think I left my bag there yesterday",
+          "at": "2026-11-11T12:06:56.889Z",
+          "status": 200,
+          "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+          "categoryHint": "As the channel routes it",
+          "outOfHours": [],
+          "dialogSaid": "Received into the existing conversation."
+        }
+      ],
+      "turns": [
+        {
+          "afterLine": 1,
+          "turns": [
+            {
+              "kind": "ai_replied",
+              "intents": [
+                "ticket_prices"
+              ],
+              "reason": null
+            }
+          ],
+          "assistantLines": [
+            "Happy to help with prices for Central Floresta! Are you visiting Phuket or living in Thailand? Residents get a discount at Central 😊"
+          ]
+        },
+        {
+          "afterLine": 2,
+          "turns": [
+            {
+              "kind": "ai_replied",
+              "intents": [
+                "ticket_prices"
+              ],
+              "reason": null
+            }
+          ],
+          "assistantLines": [
+            "Prices start from 500 baht per hour at Central Floresta, that's our 1 Kid + 1 Adult (1 hour) ticket. A single child for 1 hour is 690 baht.\n\nParent tickets are 350 baht on weekdays and 500 on weekends, and the full amount is food and drink credit in our restaurant. Kids need anti-slip socks, parents any socks 😊\n\nFor exact totals, check our price calculator: https://phuket.otoplay.co/prices?branch=floresta&rate=tourist&calculator=open"
+          ]
+        },
+        {
+          "afterLine": 3,
+          "turns": [
+            {
+              "kind": "ai_handover",
+              "intents": [
+                "lost_item"
+              ],
+              "reason": "SILENCE_POLICY"
+            }
+          ],
+          "assistantLines": []
+        }
+      ],
+      "finalBeforeCleanup": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "general",
+        "teamName": "Reception · Central Floresta",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "en",
+        "aiMode": "live",
+        "aiState": "left_for_team",
+        "aiPaused": false,
+        "handledAt": null,
+        "openQuestionsPresent": true
+      },
+      "events": [
+        {
+          "kind": "routed",
+          "at": "2026-11-11T12:03:53.000Z",
+          "actorKind": "system"
+        },
+        {
+          "kind": "classified",
+          "at": "2026-11-11T12:04:01.706Z",
+          "actorKind": "ai"
+        },
+        {
+          "kind": "classified",
+          "at": "2026-11-11T12:04:35.194Z",
+          "actorKind": "ai"
+        },
+        {
+          "kind": "classified",
+          "at": "2026-11-11T12:07:04.402Z",
+          "actorKind": "ai"
+        },
+        {
+          "kind": "moved_team",
+          "at": "2026-11-11T12:07:04.402Z",
+          "actorKind": "ai"
+        },
+        {
+          "kind": "routed",
+          "at": "2026-11-11T12:07:04.402Z",
+          "actorKind": "ai"
+        },
+        {
+          "kind": "assigned",
+          "at": "2026-11-11T12:07:04.402Z",
+          "actorKind": "ai"
+        }
+      ],
+      "pillsDrawnInTheInbox": [
+        "AI handed over · Resume",
+        "Language: EN · Kept in General · no park inbox",
+        "AI ASSISTANT",
+        "AI · Language: EN · Intent: ticket_prices",
+        "AI ASSISTANT",
+        "AI · Language: EN · Intent: ticket_prices",
+        "AI handed over to Reception · Central Floresta — Reception · Central Floresta primary",
+        "AI · Language: EN · Intent: lost_item",
+        "Moved from General → Reception · Central Floresta by AI · needs the local team",
+        "Language: EN · Routed to Reception · Central Floresta",
+        "Assigned Reception · Central Floresta as primary",
+        "AI handed over to Reception · Central Floresta · lost item"
+      ]
+    },
+    "D2": {
+      "role": "thread 2 (step 2)",
+      "conversationId": "01a1ca7e-c3f7-702f-b445-9fc682361d18",
+      "sender": "its own ZZ TEST simulator number (not kept)",
+      "name": "ZZ TEST 789",
+      "customerLines": [
+        {
+          "text": "ZZ TEST do you have drop-off for a six year old?",
+          "at": "2026-11-11T12:04:25.187Z",
+          "status": 200,
+          "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+          "categoryHint": "As the channel routes it",
+          "outOfHours": [],
+          "dialogSaid": "Received: a new conversation, routed."
+        },
+        {
+          "text": "ZZ TEST she is six years old",
+          "at": "2026-11-11T12:05:45.285Z",
+          "status": 200,
+          "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+          "categoryHint": "As the channel routes it",
+          "outOfHours": [],
+          "dialogSaid": "Received into the existing conversation."
+        }
+      ],
+      "turns": [
+        {
+          "afterLine": 1,
+          "turns": [
+            {
+              "kind": "ai_replied",
+              "intents": [
+                "drop_off_service"
+              ],
+              "reason": null
+            }
+          ],
+          "assistantLines": [
+            "Happy to help! How old is your child?"
+          ]
+        },
+        {
+          "afterLine": 2,
+          "turns": [
+            {
+              "kind": "ai_replied",
+              "intents": [
+                "drop_off_service"
+              ],
+              "reason": null
+            }
+          ],
+          "assistantLines": [
+            "Yes! Our drop-off service is perfect for her age, 225 baht per visit at both branches. Our child supervisors look after her on the floor the whole time, help her order food and send you regular photo updates 😊\n\nAnd if you'd prefer a more private experience, our nanny service at Central Floresta gives her one-on-one care just for her, 330 baht per hour."
+          ]
+        }
+      ],
+      "finalBeforeCleanup": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "general",
+        "teamName": "Reception · Central Floresta",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "en",
+        "aiMode": "live",
+        "aiState": "ready",
+        "aiPaused": false,
+        "handledAt": null,
+        "openQuestionsPresent": true
+      },
+      "events": [
+        {
+          "kind": "routed",
+          "at": "2026-11-11T12:04:27.000Z",
+          "actorKind": "system"
+        },
+        {
+          "kind": "classified",
+          "at": "2026-11-11T12:04:38.365Z",
+          "actorKind": "ai"
+        },
+        {
+          "kind": "moved_team",
+          "at": "2026-11-11T12:04:38.365Z",
+          "actorKind": "ai"
+        },
+        {
+          "kind": "routed",
+          "at": "2026-11-11T12:04:38.365Z",
+          "actorKind": "ai"
+        },
+        {
+          "kind": "assigned",
+          "at": "2026-11-11T12:04:38.365Z",
+          "actorKind": "ai"
+        },
+        {
+          "kind": "classified",
+          "at": "2026-11-11T12:05:55.196Z",
+          "actorKind": "ai"
+        }
+      ],
+      "pillsDrawnInTheInbox": [
+        "AI on · Pause",
+        "Language: EN · Kept in General · no park inbox",
+        "AI ASSISTANT",
+        "Moved from General → Reception · Central Floresta by AI · needs the local team · 3 more",
+        "AI · Language: EN · Intent: drop_off_service",
+        "Moved from General → Reception · Central Floresta by AI · needs the local team",
+        "Language: EN · Routed to Reception · Central Floresta",
+        "Assigned Reception · Central Floresta as primary",
+        "AI ASSISTANT",
+        "AI · Language: EN · Intent: drop_off_service"
+      ]
+    },
+    "P4": {
+      "role": "thread 3 (step 4)",
+      "conversationId": "01a1ca7e-cfb3-7957-b126-d707cea24c2d",
+      "sender": "its own ZZ TEST simulator number (not kept)",
+      "name": "ZZ TEST 789",
+      "customerLines": [
+        {
+          "text": "ZZ TEST how much is a ticket for one child?",
+          "at": "2026-11-11T12:04:28.089Z",
+          "status": 200,
+          "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+          "categoryHint": "As the channel routes it",
+          "outOfHours": [],
+          "dialogSaid": "Received: a new conversation, routed."
+        }
+      ],
+      "turns": [
+        {
+          "afterLine": 1,
+          "turns": [
+            {
+              "kind": "ai_replied",
+              "intents": [
+                "ticket_prices"
+              ],
+              "reason": null
+            }
+          ],
+          "assistantLines": [
+            "Happy to help with prices for Central Floresta! Are you visiting Phuket or living in Thailand? Residents get a discount at Central 😊"
+          ]
+        }
+      ],
+      "finalBeforeCleanup": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "general",
+        "teamName": null,
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "en",
+        "aiMode": "live",
+        "aiState": "ready",
+        "aiPaused": false,
+        "handledAt": null,
+        "openQuestionsPresent": true
+      },
+      "events": [
+        {
+          "kind": "routed",
+          "at": "2026-11-11T12:04:30.000Z",
+          "actorKind": "system"
+        },
+        {
+          "kind": "classified",
+          "at": "2026-11-11T12:04:46.416Z",
+          "actorKind": "ai"
+        }
+      ],
+      "pillsDrawnInTheInbox": [
+        "General",
+        "General",
+        "Assign primary",
+        "AI on · Pause",
+        "Language: EN · Kept in General · no park inbox",
+        "AI ASSISTANT",
+        "AI · Language: EN · Intent: ticket_prices"
+      ]
+    },
+    "B5": {
+      "role": "control (step 5)",
+      "conversationId": "01a1ca81-20c9-71e5-91c5-cc59b0bbb40e",
+      "sender": "its own ZZ TEST simulator number (not kept)",
+      "name": "ZZ TEST 789",
+      "customerLines": [
+        {
+          "text": "ZZ TEST I would like to book a birthday party for my son",
+          "at": "2026-11-11T12:06:59.960Z",
+          "status": 200,
+          "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+          "categoryHint": "As the channel routes it",
+          "outOfHours": [],
+          "dialogSaid": "Received: a new conversation, routed."
+        }
+      ],
+      "turns": [
+        {
+          "afterLine": 1,
+          "turns": [
+            {
+              "kind": "ai_replied",
+              "intents": [
+                "birthday_party"
+              ],
+              "reason": null
+            }
+          ],
+          "assistantLines": [
+            "Amazing, thank you! We'd love to organize a party for your son 🎈\n\nWhat date(s) are you thinking of, and roughly how many people will be coming?"
+          ]
+        }
+      ],
+      "finalBeforeCleanup": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "birthdays",
+        "teamName": "Birthdays & Events",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "en",
+        "aiMode": "live",
+        "aiState": "ready",
+        "aiPaused": false,
+        "handledAt": null,
+        "openQuestionsPresent": true
+      },
+      "events": [
+        {
+          "kind": "routed",
+          "at": "2026-11-11T12:07:02.000Z",
+          "actorKind": "system"
+        },
+        {
+          "kind": "assigned",
+          "at": "2026-11-11T12:07:02.000Z",
+          "actorKind": "system"
+        },
+        {
+          "kind": "assigned",
+          "at": "2026-11-11T12:07:02.000Z",
+          "actorKind": "system"
+        },
+        {
+          "kind": "classified",
+          "at": "2026-11-11T12:07:09.656Z",
+          "actorKind": "ai"
+        }
+      ],
+      "pillsDrawnInTheInbox": [
+        "AI on · Pause",
+        "Language: EN · Routed to Birthdays & Events · from the message · 2 more",
+        "Language: EN · Routed to Birthdays & Events · from the message",
+        "Assigned (a demo birthdays person) as primary",
+        "Assigned (a demo birthdays person) as support",
+        "AI ASSISTANT",
+        "AI · Language: EN · Intent: birthday_party"
+      ]
+    }
+  },
+  "railViews": {
+    "tab": "Team Inbox 100",
+    "viewsInRail": [
+      "All conversations",
+      "General",
+      "Birthdays & Events",
+      "GM",
+      "Central Floresta",
+      "Robinson Chalong",
+      "Demo Branch 2",
+      "ZZ TEST Print Bare"
+    ],
+    "afterSteps1and2": {
+      "at": "2026-11-11T12:06:02.298Z",
+      "views": {
+        "General": {
+          "uiRequestQuery": "?tab=team&inbox=general&limit=50",
+          "uiRequestReturned": [
+            "P1",
+            "P4"
+          ],
+          "apiSameQueryReturned": [
+            "P1",
+            "P4"
+          ],
+          "zzRowsDrawn": 2,
+          "picture": "789-1-general-view.png"
+        },
+        "Birthdays & Events": {
+          "uiRequestQuery": "?tab=team&category=birthdays&limit=50",
+          "uiRequestReturned": [],
+          "apiSameQueryReturned": [],
+          "zzRowsDrawn": 0,
+          "picture": null
+        },
+        "GM": {
+          "uiRequestQuery": "?tab=team&category=gm&limit=50",
+          "uiRequestReturned": [],
+          "apiSameQueryReturned": [],
+          "zzRowsDrawn": 0,
+          "picture": null
+        },
+        "Central Floresta": {
+          "uiRequestQuery": "?tab=team&branchId=<the park>&limit=50",
+          "uiRequestReturned": [
+            "D2"
+          ],
+          "apiSameQueryReturned": [
+            "D2"
+          ],
+          "zzRowsDrawn": 1,
+          "picture": "789-2-central-floresta-view-dropoff.png"
+        },
+        "Robinson Chalong": {
+          "uiRequestQuery": "?tab=team&branchId=<the park>&limit=50",
+          "uiRequestReturned": [],
+          "apiSameQueryReturned": [],
+          "zzRowsDrawn": 0,
+          "picture": "789-1-robinson-chalong-view.png"
+        },
+        "Demo Branch 2": {
+          "uiRequestQuery": "?tab=team&branchId=<the park>&limit=50",
+          "uiRequestReturned": [],
+          "apiSameQueryReturned": [],
+          "zzRowsDrawn": 0,
+          "picture": null
+        },
+        "ZZ TEST Print Bare": {
+          "uiRequestQuery": "?tab=team&branchId=<the park>&limit=50",
+          "uiRequestReturned": [],
+          "apiSameQueryReturned": [],
+          "zzRowsDrawn": 0,
+          "picture": null
+        },
+        "All conversations": {
+          "uiRequestQuery": "?tab=team&limit=50",
+          "uiRequestReturned": [
+            "D2",
+            "P1",
+            "P4"
+          ],
+          "apiSameQueryReturned": [
+            "D2",
+            "P1",
+            "P4"
+          ],
+          "zzRowsDrawn": 3,
+          "picture": "789-1-all-conversations.png"
+        }
+      }
+    },
+    "afterStep3andControl": {
+      "at": "2026-11-11T12:07:27.426Z",
+      "views": {
+        "General": {
+          "uiRequestQuery": "?tab=team&inbox=general&limit=50",
+          "uiRequestReturned": [
+            "P4"
+          ],
+          "apiSameQueryReturned": [
+            "P4"
+          ],
+          "zzRowsDrawn": 1,
+          "picture": "789-3-general-view-after-bag.png"
+        },
+        "Birthdays & Events": {
+          "uiRequestQuery": "?tab=team&category=birthdays&limit=50",
+          "uiRequestReturned": [
+            "B5"
+          ],
+          "apiSameQueryReturned": [
+            "B5"
+          ],
+          "zzRowsDrawn": 1,
+          "picture": null
+        },
+        "GM": {
+          "uiRequestQuery": "?tab=team&category=gm&limit=50",
+          "uiRequestReturned": [],
+          "apiSameQueryReturned": [],
+          "zzRowsDrawn": 0,
+          "picture": null
+        },
+        "Central Floresta": {
+          "uiRequestQuery": "?tab=team&branchId=<the park>&limit=50",
+          "uiRequestReturned": [
+            "B5",
+            "D2",
+            "P1"
+          ],
+          "apiSameQueryReturned": [
+            "B5",
+            "D2",
+            "P1"
+          ],
+          "zzRowsDrawn": 3,
+          "picture": "789-3-central-floresta-view-lost-bag.png"
+        },
+        "Robinson Chalong": {
+          "uiRequestQuery": "?tab=team&branchId=<the park>&limit=50",
+          "uiRequestReturned": [],
+          "apiSameQueryReturned": [],
+          "zzRowsDrawn": 0,
+          "picture": null
+        },
+        "Demo Branch 2": {
+          "uiRequestQuery": "?tab=team&branchId=<the park>&limit=50",
+          "uiRequestReturned": [],
+          "apiSameQueryReturned": [],
+          "zzRowsDrawn": 0,
+          "picture": null
+        },
+        "ZZ TEST Print Bare": {
+          "uiRequestQuery": "?tab=team&branchId=<the park>&limit=50",
+          "uiRequestReturned": [],
+          "apiSameQueryReturned": [],
+          "zzRowsDrawn": 0,
+          "picture": null
+        },
+        "All conversations": {
+          "uiRequestQuery": "?tab=team&limit=50",
+          "uiRequestReturned": [
+            "B5",
+            "D2",
+            "P1",
+            "P4"
+          ],
+          "apiSameQueryReturned": [
+            "B5",
+            "D2",
+            "P1",
+            "P4"
+          ],
+          "zzRowsDrawn": 4,
+          "picture": null
+        }
+      }
+    }
+  },
+  "step4": {
+    "at": "2026-11-11T12:06:54.267Z",
+    "key": "P4",
+    "picker": {
+      "value": "",
+      "selectedText": "General",
+      "options": [
+        {
+          "text": "General",
+          "disabled": true,
+          "selected": true
+        },
+        {
+          "text": "Birthdays & Events",
+          "disabled": false,
+          "selected": false
+        },
+        {
+          "text": "Reception · Central Floresta",
+          "disabled": false,
+          "selected": false
+        },
+        {
+          "text": "Reception · Robinson Chalong",
+          "disabled": false,
+          "selected": false
+        },
+        {
+          "text": "Reception · Demo Branch 2",
+          "disabled": false,
+          "selected": false
+        },
+        {
+          "text": "Reception · ZZ TEST Print Bare",
+          "disabled": false,
+          "selected": false
+        },
+        {
+          "text": "Marketing",
+          "disabled": false,
+          "selected": false
+        },
+        {
+          "text": "GM",
+          "disabled": false,
+          "selected": false
+        }
+      ]
+    },
+    "badgeText": "GeneralGeneralBirthdays & EventsReception · Central FlorestaReception · Robinson ChalongReception · Demo Branch 2Reception · ZZ TEST Print BareMarketingGM",
+    "badgeOwnText": "General",
+    "threadPills": [
+      "General",
+      "General",
+      "Language: EN · Kept in General · no park inbox"
+    ],
+    "pictureBadge": "789-4-held-thread-move-picker-badge.png",
+    "picturePicker": "789-4-held-thread-move-picker.png"
+  },
+  "verdicts": {
+    "step1": "PASS: price answered for Central Floresta; pill \"Kept in General · no park inbox\"; listed under All conversations and General; not under Central Floresta, Robinson Chalong or any other park view (the UI request and the same query through the API agree)",
+    "step2": "PASS: drop-off answered; listed under Central Floresta; pills \"Moved from General → Reception · Central Floresta by AI · needs the local team\", \"Routed to Reception · Central Floresta\", \"Assigned Reception · Central Floresta as primary\"",
+    "step3": "PASS: thread 1 left General and is listed under Central Floresta with the same moved pill; the assistant stayed silent (hand-over, reason SILENCE_POLICY, no message to the customer)",
+    "step4": "PASS: the badge reads General; the picker offers Reception · Central Floresta (nothing chosen)",
+    "step5": "PASS (record only): the birthday line went to Birthdays & Events from the message"
+  },
+  "observations": [
+    "The birthday control thread also shows under the Central Floresta view (the park filter includes that park's birthday conversations); it is not held in General, so the new rule does not touch it.",
+    "A price question is first answered with the resident/visitor question; the price itself came on the customer's second line. Both turns stayed in General.",
+    "The drop-off thread was held for about 11 seconds (the \"Kept in General\" pill, 19:04:27) until the assistant’s turn read the topic and placed it (19:04:38).",
+    "In the step-4 picture the picker options are a copy of the page’s own drop-down drawn as an open list, because a headless browser cannot draw a native drop-down. The options were also read from the page (step4.picker)."
+  ],
+  "pictures": [
+    {
+      "file": "789-1-general-view.png",
+      "shows": "the \"General\" view",
+      "at": "2026-11-11T12:06:08.074Z"
+    },
+    {
+      "file": "789-2-central-floresta-view-dropoff.png",
+      "shows": "the \"Central Floresta\" view",
+      "at": "2026-11-11T12:06:21.787Z"
+    },
+    {
+      "file": "789-1-robinson-chalong-view.png",
+      "shows": "the \"Robinson Chalong\" view",
+      "at": "2026-11-11T12:06:27.175Z"
+    },
+    {
+      "file": "789-1-all-conversations.png",
+      "shows": "the \"All conversations\" view",
+      "at": "2026-11-11T12:06:36.703Z"
+    },
+    {
+      "file": "789-4-held-thread-move-picker-badge.png",
+      "shows": "a held thread: the team badge reads General",
+      "at": "2026-11-11T12:06:54.720Z"
+    },
+    {
+      "file": "789-4-held-thread-move-picker.png",
+      "shows": "a held thread: the badge reads General; the move picker's options shown as a list (nothing chosen)",
+      "at": "2026-11-11T12:06:55.119Z"
+    },
+    {
+      "file": "789-3-general-view-after-bag.png",
+      "shows": "the \"General\" view",
+      "at": "2026-11-11T12:07:30.665Z"
+    },
+    {
+      "file": "789-3-central-floresta-view-lost-bag.png",
+      "shows": "the \"Central Floresta\" view",
+      "at": "2026-11-11T12:07:42.253Z"
+    },
+    {
+      "file": "789-3-lost-bag-moved-pill.png",
+      "shows": "thread 1 after the lost-bag line: moved from General to Reception · Central Floresta",
+      "at": "2026-11-11T12:08:50.804Z"
+    }
+  ],
+  "cleanup": {
+    "at": "2026-11-11T12:09:04.534Z",
+    "conversations": {
+      "P1": {
+        "id": "01a1ca7e-3ecf-70c5-8dcd-d45a4aa5d896",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T12:09:07.689Z"
+        }
+      },
+      "D2": {
+        "id": "01a1ca7e-c3f7-702f-b445-9fc682361d18",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T12:09:08.652Z"
+        }
+      },
+      "P4": {
+        "id": "01a1ca7e-cfb3-7957-b126-d707cea24c2d",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T12:09:09.632Z"
+        }
+      },
+      "B5": {
+        "id": "01a1ca81-20c9-71e5-91c5-cc59b0bbb40e",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T12:09:10.619Z"
+        }
+      }
+    }
+  },
+  "signOut": {
+    "at": "2026-11-11T12:09:14.350Z",
+    "signOut": {
+      "inbox": {
+        "route": "POST /api/auth/sign-out (inbox)",
+        "status": 200
+      },
+      "console": {
+        "route": "POST /api/auth/sign-out (Console)",
+        "status": 200
+      },
+      "launcher": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      }
+    },
+    "readBack": {
+      "inbox": {
+        "route": "GET /api/inbox/me (inbox)",
+        "status": 401
+      },
+      "console": {
+        "route": "GET /api/me (Console)",
+        "status": 401
+      },
+      "launcher": {
+        "route": "GET /api/me (launcher)",
+        "status": 401
+      }
+    }
+  },
+  "notTouched": "No other conversation, setting, notice or key was read or changed. Nothing was sent to a phone: the simulator accounts are internal."
+}
