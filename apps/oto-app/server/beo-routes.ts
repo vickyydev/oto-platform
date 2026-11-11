@@ -38,7 +38,18 @@ import { eq, and, asc, desc, sql, inArray } from "drizzle-orm";
 import { generateBeoPdf, type BeoPdfData } from "./pdf";
 import { readingFor } from "./party-billing-routes";
 import { partyPackageTotal } from "@shared/partyPackageTotal";
-import { currentDeposit, depositOfBillingColumns, depositOfPartyDetails, sameDeposit, writePartyDeposit } from "./lib/partyDeposit";
+import { currentDeposit, depositOfBillingColumns, sameDeposit, writePartyDeposit } from "./lib/partyDeposit";
+import {
+  decideDepositSave,
+  depositNamedBy,
+  expectedDepositOf,
+  lowersDeliberately,
+  oneDepositOf,
+  partyDetailsWithDeposit,
+  type GatewayFloor,
+} from "./lib/depositSaveGuard";
+import { gatewayDepositFloor } from "./party-deposit-routes";
+import type { DepositSaveNote } from "@shared/partyDeposit";
 import { OBJECT_STORAGE } from "./config/env";
 import { uploadToObjectStorage } from "./file-storage";
 import { s3PresignedGet } from "./storage/s3Storage";
@@ -976,8 +987,11 @@ export function registerBeoRoutes(app: Express) {
         partyDetails: partyDetails,
         beoTasks: beoTasks || [],
       };
-      
-      res.json(result);
+
+      // SCRUM-840: the party's one deposit as this read saw it. The form sends it back with its
+      // Save (`expectedDeposit`), so a deposit that moved while the form was open is never
+      // written over (server/lib/depositSaveGuard.ts).
+      res.json({ ...result, oneDeposit: oneDepositOf(deposit) });
     } catch (error) {
       next(error);
     }
@@ -1292,20 +1306,42 @@ export function registerBeoRoutes(app: Express) {
         return res.status(404).json({ error: "Event not found" });
       }
       
-      const [existing] = await db.select().from(beoEventBilling)
-        .where(eq(beoEventBilling.eventId, eventId));
-      const body = { ...((req.body ?? {}) as Record<string, unknown>) };
+      // SCRUM-840: `expectedDeposit` is the deposit the Billing section showed when the figure was
+      // typed, where the screen says so; it and the answer's own two keys are no columns.
+      const { expectedDeposit: expectedRaw, oneDeposit: _read, depositSave: _note, ...body } = { ...((req.body ?? {}) as Record<string, unknown>) };
       // The day paid arrives as the billing module sends it ("2099-03-01T00:00:00.000Z"), as the BEO's Save reads it.
       if (typeof body.depositPaidAt === "string") body.depositPaidAt = body.depositPaidAt ? new Date(body.depositPaidAt) : null;
-      const namesDeposit = ["depositPaid", "depositPaidAmount", "depositPaidAt"].some((k) => k in body);
+      const DEPOSIT_KEYS = ["depositPaid", "depositPaidAmount", "depositPaidAt"];
+      let namesDeposit = DEPOSIT_KEYS.some((k) => k in body);
+      const expected = expectedDepositOf(expectedRaw);
 
       // SCRUM-813: a deposit paid written here is the party's one deposit: the
       // event's Prepayment and Party Details take the same figure, in the same
       // transaction, so the till, the Events page and the BEO all read it.
       const written = await db.transaction(async (tx) => {
-        let row: typeof beoEventBilling.$inferSelect;
+        // SCRUM-840: the event's row is held while the deposit is read and written, as the
+        // platform's gateway fact holds it (server/directory/eventWrites.ts): one after the other.
+        const [ev] = await tx.select({ prepaymentAmount: coreEvents.prepaymentAmount, prepaymentDate: coreEvents.prepaymentDate })
+          .from(coreEvents).where(eq(coreEvents.id, eventId)).for("update");
+        const [existing] = await tx.select().from(beoEventBilling)
+          .where(eq(beoEventBilling.eventId, eventId));
+        const was = currentDeposit(existing, ev);
+        // A deposit typed over a figure that is no longer the stored one (the family paid through
+        // the chat meanwhile) is not written: the stored deposit stays and the answer says so. The
+        // rest of the write is kept. A deliberate figure typed here is written as before.
+        let depositSave: DepositSaveNote | null = null;
+        if (namesDeposit && expected) {
+          depositSave = decideDepositSave({ was, said: null, expected }).note;
+          if (depositSave) {
+            for (const k of DEPOSIT_KEYS) delete body[k];
+            namesDeposit = false;
+          }
+        }
+        let row: typeof beoEventBilling.$inferSelect | null = existing ?? null;
         let status = 200;
-        if (existing) {
+        if (depositSave && Object.keys(body).length === 0) {
+          // Nothing left to write: the deposit was all the write carried.
+        } else if (existing) {
           [row] = await tx.update(beoEventBilling)
             .set({ ...body, eventId, updatedAt: new Date() })
             .where(eq(beoEventBilling.eventId, eventId))
@@ -1314,11 +1350,15 @@ export function registerBeoRoutes(app: Express) {
           const parsed = insertBeoEventBillingSchema.parse({ ...body, eventId });
           [row] = await tx.insert(beoEventBilling).values(parsed).returning();
           status = 201;
+          if (!namesDeposit && was.amountThb > 0) {
+            // SCRUM-840: the row made here takes the deposit the party already holds (the event's
+            // own, paid through the chat or typed on the Events page), so the Billing section
+            // reads the party's one deposit from its first write on. The event's own is left as it is.
+            await writePartyDeposit(tx, { eventId, deposit: was, now: new Date(), event: false });
+            [row] = await tx.select().from(beoEventBilling).where(eq(beoEventBilling.eventId, eventId));
+          }
         }
-        if (namesDeposit) {
-          const [ev] = await tx.select({ prepaymentAmount: coreEvents.prepaymentAmount, prepaymentDate: coreEvents.prepaymentDate })
-            .from(coreEvents).where(eq(coreEvents.id, eventId));
-          const was = currentDeposit(existing, ev);
+        if (namesDeposit && row) {
           const paid = depositOfBillingColumns(row);
           // A write that names no day keeps the day the deposit already has.
           const deposit = "depositPaidAt" in body ? paid : { ...paid, date: paid.date ?? was.date };
@@ -1327,9 +1367,15 @@ export function registerBeoRoutes(app: Express) {
             [row] = await tx.select().from(beoEventBilling).where(eq(beoEventBilling.eventId, eventId));
           }
         }
-        return { row, status };
+        const [after] = await tx.select({ prepaymentAmount: coreEvents.prepaymentAmount, prepaymentDate: coreEvents.prepaymentDate })
+          .from(coreEvents).where(eq(coreEvents.id, eventId));
+        return { row, status, depositSave, oneDeposit: oneDepositOf(currentDeposit(row, after)) };
       });
-      res.status(written.status).json(written.row);
+      res.status(written.status).json({
+        ...(written.row ?? {}),
+        oneDeposit: written.oneDeposit,
+        ...(written.depositSave ? { depositSave: written.depositSave } : {}),
+      });
     } catch (error) {
       next(error);
     }
@@ -1581,6 +1627,13 @@ export function registerBeoRoutes(app: Express) {
         }
       }
       
+      // SCRUM-840: the party's deposit is never written from the event's own fields here. The
+      // BEO's deposit is Party Details' (below), written under the rule of depositSaveGuard.ts.
+      if (eventUpdates) {
+        delete (eventUpdates as Record<string, unknown>).prepaymentAmount;
+        delete (eventUpdates as Record<string, unknown>).prepaymentDate;
+      }
+
       // Update event if provided
       if (eventUpdates) {
         await db.update(coreEvents)
@@ -1724,6 +1777,8 @@ export function registerBeoRoutes(app: Express) {
 
       // Upsert billing (also stores partyDetails in addOns)
       const partyDetails = rawBody.partyDetails;
+      let depositSave: DepositSaveNote | null = null;
+      let oneDeposit: ReturnType<typeof oneDepositOf> | null = null;
       if (billing !== undefined || partyDetails !== undefined) {
         const billingData = { ...(billing || {}) } as Record<string, unknown>;
         if (billingData.depositPaidAt && typeof billingData.depositPaidAt === "string") {
@@ -1732,36 +1787,77 @@ export function registerBeoRoutes(app: Express) {
         if (billingData.depositPaidAt === null) {
           billingData.depositPaidAt = null;
         }
-        if (partyDetails !== undefined) {
-          billingData.addOns = { partyDetails };
-        }
-        const [existingBilling] = await db.select().from(beoEventBilling)
-          .where(eq(beoEventBilling.eventId, eventId));
-        
-        if (existingBilling) {
-          await db.update(beoEventBilling)
-            .set({ ...billingData, updatedAt: new Date() })
-            .where(eq(beoEventBilling.eventId, eventId));
-        } else if (Object.keys(billingData).length > 0) {
-          await db.insert(beoEventBilling)
-            .values({ ...billingData, eventId } as any);
-        }
-
         // SCRUM-813: the deposit the BEO now says, when it is not the party's
         // one deposit already (the figure its read showed), is written to every
         // place the app keeps it: the event's Prepayment (the till's and the
         // Events page's) and the billing's deposit paid. A Save that leaves the
         // deposit as it was writes nothing more.
-        const was = currentDeposit(existingBilling, existingEvent);
-        const namesPaid = billing && ["depositPaid", "depositPaidAmount", "depositPaidAt"].some((k) => k in billingData);
-        const said = partyDetails !== undefined && partyDetails !== null
-          ? depositOfPartyDetails(partyDetails)
-          : namesPaid
-            ? depositOfBillingColumns({ ...(existingBilling ?? {}), ...billingData })
-            : null;
-        if (said && !sameDeposit(said, was)) {
-          await writePartyDeposit(db, { eventId, deposit: said, now: new Date(), userId: user.id });
-        }
+        //
+        // SCRUM-840: and a Save never lowers or clears a deposit it did not
+        // deliberately change (server/lib/depositSaveGuard.ts). The form names
+        // the deposit only when the person changed it, and says which deposit
+        // it was opened with (`expectedDeposit`); a deposit that moved since
+        // (the family paid through the chat) stays as stored, the rest of the
+        // Save is written, and the answer says so (`depositSave`).
+        const DEPOSIT_KEYS = ["depositPaid", "depositPaidAmount", "depositPaidAt"];
+        const namesPaid = !!billing && DEPOSIT_KEYS.some((k) => k in billingData);
+        const expected = expectedDepositOf(rawBody.expectedDeposit);
+        type BillingRow = typeof beoEventBilling.$inferSelect;
+        // The form sends Party Details' deposit with every Save and says whether the person
+        // changed it (`depositChanged`): one it did not change is not a deposit this Save names.
+        const formNamesDeposit = rawBody.depositChanged !== false;
+        const saidOver = (was: ReturnType<typeof currentDeposit>, row: BillingRow | undefined) =>
+          (formNamesDeposit ? depositNamedBy(partyDetails, was) : null)
+            ?? (namesPaid ? depositOfBillingColumns({ ...(row ?? {}), ...billingData }) : null);
+        // What the family paid through the chat is asked of the platform only when this Save
+        // deliberately lowers the deposit, and before the event's row is held.
+        const [billingRead] = await db.select().from(beoEventBilling)
+          .where(eq(beoEventBilling.eventId, eventId));
+        const [eventRead] = await db.select({ prepaymentAmount: coreEvents.prepaymentAmount, prepaymentDate: coreEvents.prepaymentDate })
+          .from(coreEvents).where(eq(coreEvents.id, eventId));
+        const depositRead = currentDeposit(billingRead, eventRead);
+        const floor: GatewayFloor | undefined = lowersDeliberately(depositRead, saidOver(depositRead, billingRead), expected)
+          ? await gatewayDepositFloor(existingEvent, req.requestId)
+          : undefined;
+
+        const saved = await db.transaction(async (tx) => {
+          // The event's row is held while the deposit is read, decided and written: the
+          // platform's gateway fact holds the same row, so the two never cross.
+          const [ev] = await tx.select({ prepaymentAmount: coreEvents.prepaymentAmount, prepaymentDate: coreEvents.prepaymentDate })
+            .from(coreEvents).where(eq(coreEvents.id, eventId)).for("update");
+          const [existingBilling] = await tx.select().from(beoEventBilling)
+            .where(eq(beoEventBilling.eventId, eventId));
+          const was = currentDeposit(existingBilling, ev);
+          const decision = decideDepositSave({ was, said: saidOver(was, existingBilling), expected, floor });
+          const stands = decision.write ?? was;
+          let madeRow = false;
+          // A deposit that is not written is not written through the billing's own columns either.
+          if (!decision.write) for (const k of DEPOSIT_KEYS) delete billingData[k];
+          if (partyDetails !== undefined) {
+            billingData.addOns = { partyDetails: partyDetails === null ? null : partyDetailsWithDeposit(partyDetails, stands) };
+          }
+          if (existingBilling) {
+            await tx.update(beoEventBilling)
+              .set({ ...billingData, updatedAt: new Date() })
+              .where(eq(beoEventBilling.eventId, eventId));
+          } else if (Object.keys(billingData).length > 0) {
+            await tx.insert(beoEventBilling)
+              .values({ ...billingData, eventId } as any);
+            madeRow = true;
+          }
+          if (decision.write && !sameDeposit(decision.write, was)) {
+            await writePartyDeposit(tx, { eventId, deposit: decision.write, now: new Date(), userId: user.id });
+          } else if (madeRow && stands.amountThb > 0) {
+            // The billing row this Save made takes the deposit the party already holds (the
+            // event's own, paid through the chat or typed on the Events page), so the Billing
+            // section reads the same figure as Party Details from its first Save on. The
+            // event's own Prepayment is left exactly as it is.
+            await writePartyDeposit(tx, { eventId, deposit: stands, now: new Date(), event: false });
+          }
+          return { note: decision.note, oneDeposit: oneDepositOf(stands) };
+        });
+        depositSave = saved.note;
+        oneDeposit = saved.oneDeposit;
       }
 
       await generateTimelineFromBeo(eventId);
@@ -1793,8 +1889,14 @@ export function registerBeoRoutes(app: Express) {
         location,
         beoTasks: [],
       };
-      
-      res.json(result);
+
+      // SCRUM-840: the party's one deposit as it stands after this Save, and, when the Save
+      // carried a deposit that was not written, why (the form shows the words and the figure).
+      res.json({
+        ...result,
+        oneDeposit: oneDeposit ?? oneDepositOf(currentDeposit(bl, event)),
+        ...(depositSave ? { depositSave } : {}),
+      });
     } catch (error) {
       next(error);
     }

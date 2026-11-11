@@ -1,4 +1,5 @@
 import type { BeoEventBilling } from "@shared/schema";
+import type { OneDeposit } from "@shared/partyDeposit";
 
 /**
  * THE BILLING MODULE'S DEPOSIT, SENT ONCE (SCRUM-822).
@@ -197,3 +198,48 @@ export function patchOverEventDeposit(patch: BillingPatch, billing: BeoEventBill
   if (!("depositPaidAt" in patch) || "depositPaidAmount" in patch) return patch;
   return { depositPaidAmount: eventDeposit.amountThb, depositPaid: true, ...patch };
 }
+
+// --- The deposit a form was opened with, and what its Save carries (SCRUM-840) ------------
+
+const NO_DEPOSIT: OneDeposit = { amountThb: 0, date: null };
+const oneDeposit = (amount: unknown, date: unknown): OneDeposit => {
+  const n = typeof amount === "number" ? amount : Number(amount);
+  if (!Number.isFinite(n) || n <= 0) return NO_DEPOSIT;
+  const day = typeof date === "string" ? date.trim().slice(0, 10) : "";
+  return { amountThb: Math.round(n), date: DAY.test(day) ? day : null };
+};
+
+export const sameOneDeposit = (a: OneDeposit, b: OneDeposit) => a.amountThb === b.amountThb && (a.date ?? null) === (b.date ?? null);
+
+/**
+ * THE DEPOSIT THE FORM WAS OPENED WITH: the party's one deposit as the BEO's
+ * read (or a Save's answer) says it (`oneDeposit`); from a server before the
+ * rule, Party Details' own figure and day. The form sends it back with its
+ * Save, so the server can tell a deposit that moved while the form was open
+ * (the family paid through the chat) from one the person changed
+ * (server/lib/depositSaveGuard.ts).
+ */
+export function loadedDepositOf(
+  read: { oneDeposit?: { amountThb?: unknown; date?: unknown } | null; partyDetails?: { prepaymentReceived?: unknown; depositDate?: unknown } | null } | null | undefined,
+): OneDeposit {
+  if (read?.oneDeposit && typeof read.oneDeposit === "object") return oneDeposit(read.oneDeposit.amountThb, read.oneDeposit.date);
+  return oneDeposit(read?.partyDetails?.prepaymentReceived, read?.partyDetails?.depositDate);
+}
+
+/**
+ * WHETHER THE PERSON CHANGED THE DEPOSIT IN THE FORM: Party Details' figure
+ * and day are no longer the deposit the form was opened with. The Save says
+ * so (`depositChanged`), and the server takes Party Details' deposit only
+ * then; a form that did not touch it leaves the stored deposit alone. (The
+ * fields themselves travel with every Save, as they always did, so a server
+ * from before the rule reads the Save as it used to.)
+ */
+export function depositChangedIn(form: { prepaymentReceived: number; depositDate: string }, loaded: OneDeposit): boolean {
+  return !sameOneDeposit(oneDeposit(form.prepaymentReceived, form.depositDate), loaded);
+}
+
+/** Whether a billing write names the deposit paid: the writes that travel with the deposit this form last read. */
+export const billingNamesDeposit = (patch: BillingPatch): boolean => "depositPaidAmount" in patch || "depositPaid" in patch || "depositPaidAt" in patch;
+
+/** The least time between two reads of the deposit asked by the window coming back. */
+export const DEPOSIT_READ_AGAIN_MS = 5_000;

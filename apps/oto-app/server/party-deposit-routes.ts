@@ -7,6 +7,7 @@ import { isTillPartyEventType } from "@shared/tillBilling";
 import { requireAuth } from "./auth";
 import { canUserAccessBranch, requireManager } from "./auth-middleware";
 import { db } from "./db";
+import { gatewayPaidThbOf, type GatewayFloor } from "./lib/depositSaveGuard";
 import { log } from "./lib/logger";
 import {
   actOnPartyDeposit,
@@ -85,6 +86,27 @@ async function platformFor(event: Pick<EventRow, "tenantId" | "branchId" | "even
   const config = suiteProvisionConfig();
   if (!config) return { ok: false, reading: { status: "unconfigured", message: TILL_UNCONFIGURED } };
   return { ok: true, config };
+}
+
+/**
+ * SCRUM-840 — what the family paid through the chat for an event, asked of the
+ * platform before a Save may lower the party's deposit
+ * (server/lib/depositSaveGuard.ts). An event the till never settles, a park
+ * not linked to the till, a deployment without the key and a party the
+ * platform does not hold have no gateway payment: 0. A platform that does not
+ * answer is not a 0: the amount is not known, and the deposit is not lowered.
+ */
+export async function gatewayDepositFloor(
+  event: Pick<EventRow, "id" | "tenantId" | "branchId" | "eventType">,
+  requestId?: string,
+): Promise<GatewayFloor> {
+  const platform = await platformFor(event);
+  if (!platform.ok) return { known: true, amountThb: 0 };
+  const read = await readPartyDeposit(platform.config, event.id, requestId);
+  if (read.ok) return { known: true, amountThb: gatewayPaidThbOf(read.answer) };
+  if (read.status === 404) return { known: true, amountThb: 0 };
+  log().warn({ eventId: event.id, code: read.code }, "what was paid through the chat could not be read before a deposit was lowered");
+  return { known: false };
 }
 
 /** A refusal as the screen reads it: the platform's words, its status. */

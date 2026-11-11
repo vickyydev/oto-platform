@@ -198,3 +198,43 @@ export function depositProblemOf(reading: PartyDepositReading | null | undefined
 
 /** The words when the party has no chat the assistant can post in. */
 export const NO_CONVERSATION_WORDS = "This party is not linked to an inbox chat, so the assistant has nowhere to post. Book the date from the family's chat, or link the chat first.";
+
+// --- A Save that did not write the deposit it carried (SCRUM-840) --------------------------
+
+/** The party's one deposit (SCRUM-813) as a read hands it to a form: whole baht (0 for none) and its day. */
+export interface OneDeposit {
+  amountThb: number;
+  date: string | null;
+}
+
+/**
+ * Why a Save left the party's deposit as it was stored:
+ *   - `moved`: the stored deposit is not the one the form was opened with (the
+ *     family paid through the chat, or another screen changed it, meanwhile);
+ *   - `unconfirmed`: the Save would lower the deposit and did not say which
+ *     deposit its form was opened with (a page from before this rule);
+ *   - `gateway`: the Save would lower the deposit below what the family paid
+ *     through the chat;
+ *   - `unchecked`: the Save would lower the deposit and the till could not be
+ *     asked what was paid through the chat.
+ */
+export type DepositSaveReason = "moved" | "unconfirmed" | "gateway" | "unchecked";
+
+/** What a Save answers when the deposit it carried was not written: the deposit as it stays, and the words for the person. */
+export interface DepositSaveNote extends OneDeposit {
+  kept: true;
+  reason: DepositSaveReason;
+  message: string;
+}
+
+/** Whole baht as the screens write a deposit: "฿3,000"; "none" for 0. */
+export const depositWordsOf = (amountThb: number): string => (amountThb > 0 ? bahtOfSatang(Math.round(amountThb) * 100) : "none");
+
+/**
+ * The words when the party's deposit moved while a form was open (the family
+ * paid through the chat, or another screen changed it): said by the Save that
+ * kept the stored deposit (`saved`), and by the BEO when it reads the deposit
+ * again on its own.
+ */
+export const depositMovedWords = (amountThb: number, screen: "BEO" | "event" = "BEO", saved = false): string =>
+  `The deposit changed while this ${screen} was open (now ${depositWordsOf(amountThb)}).${saved ? " Your other changes were saved." : ""}`;

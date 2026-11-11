@@ -518,7 +518,11 @@ describe('A. fences and seams', () => {
       // the BEO's documents live is unchanged.
       // SCRUM-836: the BEO's Save refuses a start time that is no clock time (null, "" or malformed) in
       // words instead of writing it (shared/eventStartTime.ts); where the BEO's documents live is unchanged.
-      'beo-routes.ts': '05279c73264b0885565629bdf158bc40216476dd22596c3807a41385c27762d0',
+      // SCRUM-840: the BEO's Save and the billing route keep a deposit that moved while the form was open (the
+      // family paid through the chat) instead of writing the form's old figure over it, decided under the event's
+      // row lock (server/lib/depositSaveGuard.ts); the read and both answers carry the party's one deposit; where
+      // the BEO's documents live is unchanged.
+      'beo-routes.ts': '441624ba42dd1ec342f32d92e8bf61ba00ca1d235aefc664dcf77d3dabe98df4',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);

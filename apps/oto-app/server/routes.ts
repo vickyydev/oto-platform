@@ -214,6 +214,9 @@ import { generateInstanceForDefinition } from "./core/taskGeneration";
 import { personFence, fenceAllows, fenceRows, EMPLOYEE_DENIED } from "./core/personScope";
 import { resolveSelfEmployeeId } from "./core/selfEmployee";
 import { currentDeposit, dayOf, sameDeposit, wholeBahtOf, writePartyDeposit } from "./lib/partyDeposit";
+import { decideDepositSave, expectedDepositOf, lowersDeliberately, noDepositDay, type GatewayFloor } from "./lib/depositSaveGuard";
+import { gatewayDepositFloor } from "./party-deposit-routes";
+import type { DepositSaveNote } from "@shared/partyDeposit";
 import { requestedChecklistAssignees, setChecklistAssignees, withChecklistAssignees } from "./core/checklistAssignees";
 import { canReachChecklistTemplate, checklistCopyBranchRefusal, checklistCopyRequest, checklistEditChangesOriginal, checklistTemplateBranches, createChecklistCopies, createPreparedChecklistTemplates, loadChecklistCopySource, planBranchCopies, prepareChecklistTemplates, type PreparedChecklistTemplates } from "./core/checklistCopies";
 
@@ -18326,26 +18329,74 @@ OTO Company Limited`,
       ) {
         return res.status(400).json({ message: "Other Event color must be selected from the available calendar colors" });
       }
-      const eventData = {
-        ...req.body,
+      // SCRUM-840: `expectedPrepayment` is the deposit the form was opened with ({ amountThb, date }); no column.
+      const { expectedPrepayment: expectedRaw, depositSave: _note, ...fields } = (req.body ?? {}) as Record<string, unknown>;
+      const eventData: Record<string, unknown> = {
+        ...fields,
         ...(req.body.eventType === "workshop" ? { color: null } : {}),
         tenantId: existingEvent.tenantId,
         branchId,
         updatedByUserId: user.id,
       };
-      
-      const event = await storage.updateStudioEvent(id, eventData);
+
       // SCRUM-813: the event's Prepayment is the party's one deposit: a change of it
       // here is the BEO's deposit too (its billing's deposit paid and Party Details),
       // where the BEO keeps a billing row. A form saved with the deposit unchanged
       // writes nothing more, so a deposit only the BEO holds is never cleared by it.
-      const prepaymentNamed = "prepaymentAmount" in req.body || "prepaymentDate" in req.body;
-      const after = { amountThb: wholeBahtOf(event?.prepaymentAmount), date: dayOf(event?.prepaymentDate) };
-      const before = { amountThb: wholeBahtOf(existingEvent.prepaymentAmount), date: dayOf(existingEvent.prepaymentDate) };
-      if (event && prepaymentNamed && !sameDeposit(after, before)) {
-        await writePartyDeposit(db, { eventId: id, deposit: after, now: new Date(), event: false, billing: "existing" });
+      //
+      // SCRUM-840: and a Save never lowers or clears a deposit it did not deliberately
+      // change (server/lib/depositSaveGuard.ts). The form says which deposit it was opened
+      // with; one that moved since (the family paid through the chat) stays as stored, the
+      // rest of the Save is written, and the answer says so (`depositSave`). The deposit is
+      // read, decided and written while the event's row is held, as the platform's gateway
+      // fact holds it.
+      const prepaymentNamed = "prepaymentAmount" in fields || "prepaymentDate" in fields;
+      const expected = expectedDepositOf(expectedRaw);
+      let depositSave: DepositSaveNote | null = null;
+      if (prepaymentNamed || expected !== undefined) {
+        const saidOver = (was: { amountThb: number; date: string | null }) =>
+          prepaymentNamed
+            ? noDepositDay({
+                amountThb: "prepaymentAmount" in fields ? wholeBahtOf(fields.prepaymentAmount) : was.amountThb,
+                date: "prepaymentDate" in fields ? dayOf(fields.prepaymentDate) : was.date,
+              })
+            : null;
+        // What the family paid through the chat is asked of the platform only when this Save
+        // deliberately lowers the deposit, and before the event's row is held.
+        const [billingRead] = await db.select().from(beoEventBilling).where(eq(beoEventBilling.eventId, id));
+        const depositRead = currentDeposit(billingRead, existingEvent);
+        const floor: GatewayFloor | undefined = lowersDeliberately(depositRead, saidOver(depositRead), expected)
+          ? await gatewayDepositFloor(existingEvent, req.requestId)
+          : undefined;
+        depositSave = await db.transaction(async (tx) => {
+          const [ev] = await tx.select({ prepaymentAmount: coreEventsTable.prepaymentAmount, prepaymentDate: coreEventsTable.prepaymentDate })
+            .from(coreEventsTable).where(eq(coreEventsTable.id, id)).for("update");
+          const [billing] = await tx.select().from(beoEventBilling).where(eq(beoEventBilling.eventId, id));
+          const was = currentDeposit(billing, ev);
+          const decision = decideDepositSave({ was, said: saidOver(was), expected, floor, screen: "event" });
+          if (decision.note || !prepaymentNamed) return decision.note;
+          // The event's own Prepayment as the form says it, and the BEO's deposit where it changed.
+          const before = { amountThb: wholeBahtOf(ev?.prepaymentAmount), date: dayOf(ev?.prepaymentDate) };
+          const [written] = await tx.update(coreEventsTable)
+            .set({
+              ...("prepaymentAmount" in fields ? { prepaymentAmount: fields.prepaymentAmount as number | null } : {}),
+              ...("prepaymentDate" in fields ? { prepaymentDate: fields.prepaymentDate as string | null } : {}),
+            })
+            .where(eq(coreEventsTable.id, id))
+            .returning({ prepaymentAmount: coreEventsTable.prepaymentAmount, prepaymentDate: coreEventsTable.prepaymentDate });
+          const after = { amountThb: wholeBahtOf(written?.prepaymentAmount), date: dayOf(written?.prepaymentDate) };
+          if (written && !sameDeposit(after, before)) {
+            await writePartyDeposit(tx, { eventId: id, deposit: after, now: new Date(), event: false, billing: "existing" });
+          }
+          return null;
+        });
+        // Written above under the lock, or kept as stored: never by the update below.
+        delete eventData.prepaymentAmount;
+        delete eventData.prepaymentDate;
       }
-      res.json(event);
+
+      const event = await storage.updateStudioEvent(id, eventData);
+      res.json(depositSave ? { ...event, depositSave } : event);
     } catch (error) {
       next(error);
     }

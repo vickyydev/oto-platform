@@ -875,7 +875,10 @@ try {
     assert.equal(pd.notes, "ZZ TEST note");
 
     // 6. Cleared in the BEO: no deposit anywhere, the till reads none.
-    const cleared = await call("PUT", `/api/events/${party813}/beo`, { cookie, body: { billing: {}, partyDetails: { ...again.partyDetails, prepaymentReceived: 0, depositDate: "" } } });
+    //    (SCRUM-840: a Save lowers the deposit only from a form that says which deposit it was opened with.)
+    const cleared = await call("PUT", `/api/events/${party813}/beo`, {
+      cookie, body: { billing: {}, partyDetails: { ...again.partyDetails, prepaymentReceived: 0, depositDate: "" }, expectedDeposit: again.oneDeposit },
+    });
     assert.equal(cleared.status, 200, show(cleared));
     const none = await homes(party813);
     assert.deepEqual([none.view, none.event, none.billing], [null, [null, null], [false, null, null]]);

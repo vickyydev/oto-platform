@@ -1090,6 +1090,17 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/party-deposit-ui.check.ts
+      # SCRUM-840: a Save never lowers or clears a deposit it did not
+      # deliberately change — the BEO open with no deposit, the gateway fact
+      # lands, the stale form is saved: the deposit stays in every place, the
+      # other fields are saved and the answer says so; a deliberate change
+      # from a fresh form is written, a lowering only down to what the chat
+      # paid; the Billing section's Deposit Paid and the Events page's Save
+      # under the same rule; a till's party edit and the fact itself as
+      # before.
+      - name: The app's deposit save checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/deposit-save.check.ts
       # SCRUM-567: the company payroll's R2 (migrations 0021-0022) — two park
       # groups' separate paying config, rule sets and profiles; every route
       # refused to manager and staff, writes to anyone below admin, HR-data
