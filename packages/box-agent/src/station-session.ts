@@ -612,6 +612,17 @@ export class StationSessionManager {
    * is the ordinary case for a tab closing after a takeover. Being refused IS
    * one: a screen that is not the holder ending somebody else's sale is the
    * same displacement a takeover is, without the name on it.
+   *
+   * SCRUM-870 — THE SCREEN GOES WITH THE LEASE. A till that leaves the Tickets
+   * tab releases and publishes nothing on the way out, so the display kept the
+   * previous family's thank-you or the old phone prompt — and a display's own
+   * intents need no lease, so the next family's answer to that leftover prompt
+   * was taken by the box and then dropped when the till came back under a new
+   * request. The release now writes the idle screen in the same statement as
+   * the lease (`screen` in `LeaseWrite`): nobody driving the station means
+   * nothing of a sale on its display, and nothing there to answer. A release
+   * that finds the lease moved on writes nothing, so a new holder's screen is
+   * never reset by the old holder's late cleanup.
    */
   async release(
     stationId: string,
@@ -624,7 +635,7 @@ export class StationSessionManager {
     if (current.lease && current.lease.leaseId === leaseId && !heldBy(current.lease, by.accountId)) {
       return { ok: false, refusal: 'not_permitted', message: NOT_THE_HOLDER, document: current };
     }
-    const document = await this.store.applyLease(stationId, { leaseId }, { lease: null }, nowIso);
+    const document = await this.store.applyLease(stationId, { leaseId }, { lease: null, screen: IDLE_SCREEN }, nowIso);
     if (!document) return { ok: true, released: false };
     await this.store.recordStationEvent(
       {
@@ -636,6 +647,8 @@ export class StationSessionManager {
         leaseId,
         outcome: 'released',
         actionId,
+        // The tape says the screen was cleared by the release, not by a till.
+        payload: { screen: 'reset' },
       },
       nowIso,
     );
@@ -979,6 +992,22 @@ const DISPLAY_AND_TILL: readonly StationEventSource[] = ['till', 'display', 'kio
  */
 const LEASE_FREE_FIELDS: ReadonlyArray<keyof SessionWrite> = ['language', 'prompt'];
 
+/**
+ * The screen with nobody's sale on it: what `session.reset` writes, and what
+ * a release writes with the lease (SCRUM-870). Every display draws it as its
+ * welcome screen, and with no prompt there is nothing on it to answer. The
+ * language is not in it — it is the guest's, and stays.
+ */
+const IDLE_SCREEN: Readonly<SessionWrite> = Object.freeze({
+  stage: 'identify',
+  step: null,
+  cart: null,
+  member: null,
+  totals: null,
+  payment: null,
+  prompt: null,
+});
+
 function ok(write: SessionWrite): IntentOutcome {
   return { ok: true, write };
 }
@@ -1277,15 +1306,7 @@ export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
     sources: TILL_ONLY,
     requiresLease: true,
     apply() {
-      return ok({
-        stage: 'identify',
-        step: null,
-        cart: null,
-        member: null,
-        totals: null,
-        payment: null,
-        prompt: null,
-      });
+      return ok({ ...IDLE_SCREEN });
     },
   },
 

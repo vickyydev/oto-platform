@@ -187,6 +187,13 @@ export interface LeaseWrite {
   lease: StationLease | null;
   /** Set when a manager displaced a LIVE lease, so the row's counter moves. */
   incrementTakeover?: boolean;
+  /**
+   * SCRUM-870 — what the screen shows once this write lands, in the same
+   * statement as the lease: a release clears the previous sale from the
+   * display with the lease that was driving it, so nothing is left on the
+   * screen with nobody behind it.
+   */
+  screen?: SessionWrite;
 }
 
 export const STATION_EVENT_KINDS = ['intent', 'snapshot', 'lease', 'scan', 'error'] as const;

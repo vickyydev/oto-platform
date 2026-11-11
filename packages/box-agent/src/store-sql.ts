@@ -239,6 +239,23 @@ create table if not exists "edge"."box_runtime" (
 `;
 
 /** The one `box_runtime` key so far: see `markTimeSeen`. */
+/**
+ * The station session's screen columns as a `SessionWrite` names them, and
+ * which of them hold JSON. One table, read by `applySession` and by the lease
+ * write that clears the screen (SCRUM-870), so the two cannot drift.
+ */
+const SESSION_COLUMNS: ReadonlyArray<[keyof SessionWrite, string, boolean]> = [
+  ['stage', 'stage', false],
+  ['step', 'step', false],
+  ['cart', 'cart', true],
+  ['member', 'member', true],
+  ['totals', 'totals', true],
+  ['payment', 'payment', true],
+  ['prompt', 'prompt', true],
+  ['language', 'language', false],
+  ['lastActionId', 'last_action_id', false],
+];
+
 const LAST_GOOD_TIME_KEY = 'last_good_time';
 
 export class SqlBoxStore implements BoxStore {
@@ -930,18 +947,7 @@ export class SqlBoxStore implements BoxStore {
     // Built from the keys actually present, so "set the cart to null" and
     // "leave the cart alone" stay two different requests. A COALESCE would
     // collapse them into one and make clearing a cart impossible.
-    const columns: Array<[keyof SessionWrite, string, boolean]> = [
-      ['stage', 'stage', false],
-      ['step', 'step', false],
-      ['cart', 'cart', true],
-      ['member', 'member', true],
-      ['totals', 'totals', true],
-      ['payment', 'payment', true],
-      ['prompt', 'prompt', true],
-      ['language', 'language', false],
-      ['lastActionId', 'last_action_id', false],
-    ];
-    for (const [key, column, isJson] of columns) {
+    for (const [key, column, isJson] of SESSION_COLUMNS) {
       if (!(key in write)) continue;
       const value = write[key];
       sets.push(`${column} = ?`);
@@ -984,6 +990,16 @@ export class SqlBoxStore implements BoxStore {
       write.incrementTakeover ? 1 : 0,
       now,
     ];
+    // SCRUM-870 — the screen's fields go in the same statement as the lease,
+    // keyed as `applySession` keys them, so a release and the reset of what
+    // the display shows are one write and one move of the sequence.
+    const screen: string[] = [];
+    for (const [key, column, isJson] of SESSION_COLUMNS) {
+      if (!write.screen || !(key in write.screen)) continue;
+      const value = write.screen[key];
+      screen.push(`${column} = ?`);
+      params.push(isJson && value !== null && value !== undefined ? JSON.stringify(value) : value);
+    }
 
     // A renewal every fifteen seconds must not move the sequence, or two tabs
     // could never agree on a number for longer than one heartbeat. A claim, a
@@ -1029,15 +1045,15 @@ export class SqlBoxStore implements BoxStore {
       tail.push(expect.expiredBefore, pastAnyLease);
     }
 
+    const sets = [
+      'lease_id = ?', 'lease_holder = ?', 'lease_holder_kind = ?', 'lease_account_id = ?',
+      'lease_started_at = ?', 'lease_heartbeat_at = ?', 'lease_expires_at = ?',
+      'takeover_count = takeover_count + ?', 'updated_at = ?',
+      ...screen,
+      ...(bumpSequence ? ['sequence = sequence + 1'] : []),
+    ];
     const rows = await this.driver.query(
-      `update ${this.table('station_session')}
-          set lease_id = ?, lease_holder = ?, lease_holder_kind = ?, lease_account_id = ?,
-              lease_started_at = ?, lease_heartbeat_at = ?, lease_expires_at = ?,
-              takeover_count = takeover_count + ?,
-              ${bumpSequence ? 'sequence = sequence + 1,' : ''}
-              updated_at = ?
-        where ${predicate}
-        returning *`,
+      `update ${this.table('station_session')} set ${sets.join(', ')} where ${predicate} returning *`,
       [...params, ...tail],
     );
     const row = rows[0];
