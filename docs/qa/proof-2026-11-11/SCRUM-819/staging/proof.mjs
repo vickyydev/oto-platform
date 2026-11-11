@@ -42,7 +42,7 @@ const browser = await chromium.launch({ channel: 'msedge' });
 const ctx = await browser.newContext({ baseURL: origin, viewport: { width: 1440, height: 1000 }, timezoneId: 'Asia/Bangkok' });
 ctx.setDefaultTimeout(30000);
 const page = await ctx.newPage();
-let displayContext, display, station, displayId, branchId, releaseSession;
+let displayContext, display, station, displayId, branchId;
 let failed = false;
 const fixtureName = `ZZ TEST SCRUM-819 ${Date.now()}`;
 const call = async (method, path, data) => {
@@ -101,14 +101,15 @@ try {
   receipt.created.push({ kind: 'station', id: station.id }); save();
   displayContext = await browser.newContext({ baseURL: pos, viewport: { width: 1024, height: 900 }, timezoneId: 'Asia/Bangkok' });
   displayContext.setDefaultTimeout(30000);
-  // Hold only this browser's first protected read, to inspect pairing before a poll.
-  const firstRead = new Promise(resolveRead => { releaseSession = resolveRead; });
-  await displayContext.route('**/api/display/session', async route => { await firstRead; await route.continue().catch(() => {}); });
   display = await displayContext.newPage();
   await display.goto(`${pos}/display`);
   await display.getByTestId('display-pairing-code').waitFor();
   const pairingCode = (await display.getByTestId('display-pairing-code').textContent()).trim();
   assert.match(pairingCode, /^\d{6}$/);
+  // Pairing-status GET also authenticates an already paired display. Hold all
+  // calls from only this browser before claiming, not just /display/session.
+  await displayContext.setOffline(true);
+  await display.waitForTimeout(1000);
   phase('pair display through Console');
   await page.goto(`${origin}/devices`);
   await page.getByLabel('Branch').selectOption(branchId);
@@ -126,7 +127,7 @@ try {
   const first = await ownCredential();
   assert.equal(first.lastSeenAt, first.pairedAt); assert.equal(first.presence.state, 'online');
   receipt.checks.firstSighting = { pairedAt: first.pairedAt, lastSeenAt: first.lastSeenAt, state: first.presence.state, beforeFirstProtectedRead: true }; save();
-  releaseSession();
+  await displayContext.setOffline(false);
   await dialog.getByRole('button', { name: 'Done', exact: true }).click();
   const ownRow = page.locator('li').filter({ hasText: fixtureName }).first();
   await expect(ownRow).toContainText('Online');
@@ -176,7 +177,6 @@ try {
   receipt.failure = { phase: receipt.phase, kind: error.name, frames: (error.stack ?? '').split('\n').filter(line => /proof\.mjs:/.test(line)).map(line => line.match(/proof\.mjs:\d+:\d+/)?.[0]) };
   await shot('failed-attempt.png').catch(() => {});
 } finally {
-  releaseSession?.();
   const clean = async (step, action) => { try { await action(); } catch (error) { failed = true; receipt.passed = false; (receipt.cleanupFailures ??= []).push({ step, kind: error.name }); } save(); };
   await clean('close own display', async () => { await displayContext?.close(); });
   if (station) await clean('retire own display and till', async () => {
