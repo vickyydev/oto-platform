@@ -465,6 +465,34 @@ describe('a proposal is checked before anyone sees it', () => {
   });
 });
 
+describe('the cake’s time is not the party’s start (SCRUM-836)', () => {
+  // Thread G of the SCRUM-827 staging proof: no party time in the chat, the cake at 16:00. Book Date
+  // proposed 16:00 as the start. Neither reading may: the start is left for the person to give.
+  const chats: Array<['en' | 'ru' | 'th', string, string]> = [
+    ['en', "a birthday for ZZ Test Child turning 6 on 22 December, 10 kids and 3 adults. We have not decided the start time yet, but we want the park's cake at 16:00", 'at 16:00'],
+    ['ru', 'День рождения ZZ Test 22 декабря, 10 детей и 3 взрослых. Время начала пока не решили, но торт хотим в 16:00', 'в 16:00'],
+    ['th', 'งานวันเกิด ZZ Test วันที่ 22 ธันวาคม เด็ก 10 คน ผู้ใหญ่ 3 คน ยังไม่ได้ตัดสินใจเวลาเริ่มงานค่ะ แต่อยากได้เค้กตอน 16.00 น.', '16.00 น.'],
+  ];
+  it.each(chats)('%s: a model that reads the cake’s 16:00 as the start is not believed, and the patterns read no start', async (language, text, said) => {
+    const { conv, first } = await bday(text, language);
+    fake.push({ kind: 'reading', reading: { date: at(next(12, 22), 1, '22'), startTime: at('16:00', 1, said), kids: at(10, 1, '10') } });
+    const res = await propose('gm', conv);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(InboxBookDateProposalSchema.safeParse(res.body).success).toBe(true);
+    expect(res.body.model).toBe('ai');
+    expect(res.body.proposal).toMatchObject({ date: { value: next(12, 22), messageId: first }, startTime: null, kids: { value: 10 } });
+    expect(res.body.patternReading).toMatchObject({ date: next(12, 22), startTime: null, timeText: '' });
+  });
+
+  it('the party’s own time beside the cake’s is proposed by both readings', async () => {
+    const { conv, first } = await bday("a birthday on 22 December at 14:00, 10 kids, the park's cake at 16:00");
+    fake.push({ kind: 'reading', reading: { startTime: at('14:00', 1, 'at 14:00') } });
+    const res = await propose('gm', conv);
+    expect(res.body.proposal).toMatchObject({ startTime: { value: '14:00', text: 'at 14:00', source: 'family', messageId: first } });
+    expect(res.body.patternReading).toMatchObject({ startTime: '14:00', timeText: 'at 14:00' });
+  });
+});
+
 describe('the model unavailable: the pattern reading stands', () => {
   it('no model configured here: unavailable, no proposal, the pattern reading of the chat', async () => {
     ctx.app.inboxAi.bookDateReader = null;

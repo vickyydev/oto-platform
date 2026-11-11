@@ -6,8 +6,10 @@ import {
   mentionsPartyTime,
   readChatPartyDate,
   readPartyDate,
+  readPartyStartPhrase,
   readPartyTime,
   readPartyTimePhrase,
+  readPartyTimeRoles,
 } from '../src/chat-dates';
 
 /**
@@ -251,6 +253,76 @@ describe('readPartyTime: the first clock time, 24-hour', () => {
   });
 });
 
+describe('readPartyStartPhrase: a time for the cake, the food, the setup or the end is not the start (SCRUM-836)', () => {
+  const none: string[] = [
+    // The cake, in the park's three languages (the staging chat's own line first).
+    "We have not decided the start time yet, but we want the park's cake at 16:00",
+    'cake cutting around 16:00',
+    'Время начала пока не решили, но торт хотим в 16:00',
+    'торт подадим в 16:00',
+    'ยังไม่ได้ตัดสินใจเวลาเริ่มงานค่ะ แต่อยากได้เค้กตอน 16.00 น.',
+    'ตัดเค้ก 4 โมงเย็น',
+    // The food and the setup.
+    'pizza at 15:00 please',
+    'food should arrive around 15:30',
+    'еда в 15:00',
+    'อาหารเสิร์ฟตอน 15.00 น.',
+    'Setup ready by 13:30: balloon arch',
+    'оформление к 13:30, шары',
+    // The end.
+    'the party ends at 17:00',
+    'we must finish by 5pm',
+    'until 17:00',
+    'закончим в 17:00',
+    'เลิกงาน 17.00 น.',
+    // A time written before what it is the time of.
+    '16:00 cake',
+    '16:00 — торт',
+    '16.00 น. เค้ก',
+  ];
+  it.each(none)('%s: no start', (text) => {
+    expect(readPartyStartPhrase(text), text).toBeNull();
+    // The clock time is still a clock time for whoever asks only that.
+    expect(readPartyTimePhrase(text), text).not.toBeNull();
+  });
+
+  const starts: Array<[string, string]> = [
+    ['Saturday 21 November 2026, 14:00 to 16:30, 12 kids and 4 adults', '14:00'],
+    ["the park's cake at 16:00, the party starts at 14:00", '14:00'],
+    ['торт в 16:00, начало в 14:00', '14:00'],
+    ['เค้กตอน 16.00 น. เริ่มงาน 14.00 น.', '14:00'],
+    ['from 14:00 to 16:00, cake at 15:30', '14:00'],
+    ['с 14:00 до 16:30', '14:00'],
+    ['14:00 - 16:30', '14:00'],
+    // The party named between the thing and the time, or a break between them: the time is the party's.
+    ['we want a cake and the party at 14:00', '14:00'],
+    ['we come with a cake, Saturday at 14:00', '14:00'],
+    ['Cake is included. See you at 14:00', '14:00'],
+    ['birthday cake party on Saturday at 14:00', '14:00'],
+    ['Можно 15 ноября в 14:00?', '14:00'],
+    ['งานเริ่ม บ่าย 2 โมง ค่ะ', '14:00'],
+    ['at 14:00 with cake and pizza', '14:00'],
+    ['we bring our own cake and we will arrive at 14:00', '14:00'],
+    // A thing that comes with the party is not what the time is of.
+    ['a birthday party with pizza at 14:00', '14:00'],
+    ['party with a birthday cake at 3pm', '15:00'],
+    ['праздник с тортом в 14:00', '14:00'],
+    ['งานวันเกิดพร้อมเค้ก 14.00 น.', '14:00'],
+  ];
+  it.each(starts)('%s: the start is %s', (text, time) => {
+    expect(readPartyStartPhrase(text)?.time, text).toBe(time);
+  });
+
+  it('every time of a line with what it is', () => {
+    expect(readPartyTimeRoles("Sunday at 14:00 to 16:30, the park's cake at 16:00")).toEqual([
+      { time: '14:00', phrase: 'at 14:00', start: true },
+      { time: '16:30', phrase: '16:30', start: false },
+      { time: '16:00', phrase: 'at 16:00', start: false },
+    ]);
+    expect(readPartyTimeRoles('no time here')).toEqual([]);
+  });
+});
+
 describe('mentionsPartyDate / mentionsPartyTime: what the BEO confirmation picker asks', () => {
   it('a day or a weekday is a date; "today" and "tomorrow" alone are not', () => {
     for (const text of ['21 марта', '15 พ.ย.', 'Saturday', 'วันอาทิตย์', '21/03', '2027-03-21', '21-го ноября']) {
@@ -360,6 +432,28 @@ describe('readChatPartyDate: a whole chat, its lines in order', () => {
     }
     // A real date beside them is read.
     expect(readChatPartyDate([line('Hello! How can I help you today?', true), line('21 November please')], TUE).date).toBe('2026-11-21');
+  });
+
+  it('the cake’s time is not the party’s start: the start stays empty (SCRUM-836)', () => {
+    const chats: string[][] = [
+      [
+        "Hi! We are planning a birthday for ZZ Test Child turning 6 on Sunday 22 November, 10 kids and 3 adults. We have not decided the start time yet, but we want the park's cake at 16:00",
+        'Confirmed: Sunday 22 November, 10 kids and 3 adults, Birthday package, the park’s cake.',
+      ],
+      ['День рождения 22 ноября, 10 детей и 3 взрослых. Время начала пока не решили, но торт хотим в 16:00', 'Подтверждаем 22 ноября, 10 детей.'],
+      ['งานวันเกิดวันที่ 22 พฤศจิกายน เด็ก 10 คน ผู้ใหญ่ 3 คน ยังไม่ได้ตัดสินใจเวลาเริ่มงานค่ะ แต่อยากได้เค้กตอน 16.00 น.', 'ยืนยันวันที่ 22 พฤศจิกายน เด็ก 10 คนค่ะ'],
+    ];
+    for (const [family, team] of chats) {
+      const r = readChatPartyDate([line(family!), line(team!, true)], TUE);
+      expect(r, family).toMatchObject({ date: '2026-11-22', time: null, timePhrase: '' });
+    }
+    // On a line of its own too, whoever wrote it.
+    expect(readChatPartyDate([line('22 November please'), line('The cake will be served at 16:00', true)], TUE)).toMatchObject({ time: null });
+    // The party's own time beside the cake's is still read.
+    expect(
+      readChatPartyDate([line("Sunday 22 November at 14:00, 10 kids, the park's cake at 16:00")], TUE),
+    ).toMatchObject({ date: '2026-11-22', time: '14:00', timePhrase: 'at 14:00' });
+    expect(readChatPartyDate([line('22 ноября, торт в 16:00, начало в 14:00')], TUE)).toMatchObject({ time: '14:00' });
   });
 
   it('a chat that names no date or time', () => {

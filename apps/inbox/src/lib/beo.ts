@@ -184,15 +184,20 @@ export function resolveEventDate(phrase: string, today: string): string | null {
 
 // --- The Book Date dialog's first values -----------------------------------------------
 
-/** The Events module's own default start for a new event (its New event form: 14:00). */
-export const DEFAULT_START_TIME = '14:00';
+/**
+ * The start the dialog opens with when the chat names none: empty, for the
+ * person to type (SCRUM-836). It was the Events module's 14:00, which stood in
+ * the field looking like a reading of a chat that said "not decided yet"; a
+ * party has a start time, and Save asks for it ("Enter the start time as HH:MM.").
+ */
+export const DEFAULT_START_TIME = '';
 
 export interface BookDateDraft {
   date: string;
   /** The chat's phrase the date came from, shown beside it; empty when the chat named none. */
   dateFrom: string;
   startTime: string;
-  /** The chat's words for the start time, shown beside it; empty when the chat named none (the Events module's default). */
+  /** The chat's words for the start time, shown beside it; empty when the chat named none (the start is then empty too). */
   timeFrom: string;
   branchId: string;
   kids: string;
@@ -205,8 +210,10 @@ export interface BookDateDraft {
 
 /**
  * What the dialog opens with: the parser's reading of the chat (its date and
- * time, each with the chat's words), the conversation's park, and the Events
- * module's start time only when the chat names none.
+ * time, each with the chat's words) and the conversation's park. A time the
+ * chat gives to the cake, the food, the setup or the end is not the start
+ * (`@oto/shared` chat-dates, SCRUM-836): with no party time in the chat the
+ * start opens empty.
  */
 export function bookDateDraft(data: BeoData, today: string, branchId: string | null): BookDateDraft {
   return {
@@ -232,9 +239,8 @@ export function bookDateDraft(data: BeoData, today: string, branchId: string | n
  * the model (`GET …/book-date-proposal`), which reads typos and the three
  * languages. When it answers:
  *   - a field the person has typed in or chosen is theirs: never changed;
- *   - a field the pattern reading left empty (or, for the time, at the Events
- *     module's default) takes the model's value, with the chat's words and a
- *     mark of whose line it was;
+ *   - a field the pattern reading left empty takes the model's value, with
+ *     the chat's words and a mark of whose line it was;
  *   - a field both read the same keeps its value and gains the words and mark;
  *   - a field they read differently is emptied and shows both readings: the
  *     person picks one (or types their own) before Save;
@@ -313,7 +319,7 @@ function patternOf(draft: BookDateDraft, field: ProposedField): { value: string;
     case 'date':
       return draft.date ? { value: draft.date, text: draft.dateFrom } : null;
     case 'startTime':
-      // The Events module's 14:00 is no reading of the chat.
+      // A start with no words of the chat beside it is no reading of the chat.
       return draft.timeFrom ? { value: draft.startTime, text: draft.timeFrom } : null;
     case 'branchId':
       return draft.branchId ? { value: draft.branchId, text: '' } : null;

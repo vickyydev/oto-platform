@@ -760,7 +760,13 @@ function russianHour(h: number, part: string | undefined): string | null {
  */
 export function readPartyTimePhrase(text: string): PartyTimeReading | null {
   const { original, scan: t } = prepared(text);
-  let best: TimeFound | null = null;
+  const best = timesIn(t)[0];
+  return best ? { time: best.time, phrase: original.slice(best.start, best.end).trim() } : null;
+}
+
+/** Every clock time a prepared text names, in order; of two readings of the same words the earlier, then the longer. */
+function timesIn(t: string): TimeFound[] {
+  const found: TimeFound[] = [];
   for (const { re, read, numberAt } of TIME_PATTERNS) {
     re.lastIndex = 0;
     let m: RegExpExecArray | null;
@@ -771,13 +777,121 @@ export function readPartyTimePhrase(text: string): PartyTimeReading | null {
       if (time) {
         // A prefix word glued to a word before it ("that 14:00") is not the prefix: start at the number.
         const start = m.index < digits && isLetter(t[m.index - 1]) ? digits : m.index;
-        const end = m.index + m[0].length;
-        if (!best || start < best.start || (start === best.start && end > best.end)) best = { start, end, time };
+        found.push({ start, end: m.index + m[0].length, time });
       }
       re.lastIndex = at > m.index ? at : m.index + 1;
     }
   }
-  return best ? { time: best.time, phrase: original.slice(best.start, best.end).trim() } : null;
+  found.sort((a, b) => a.start - b.start || b.end - a.end);
+  const kept: TimeFound[] = [];
+  for (const f of found) {
+    const last = kept[kept.length - 1];
+    if (!last || f.start >= last.end) kept.push(f);
+  }
+  return kept;
+}
+
+// --- A time that is not the start (SCRUM-836) -------------------------------------------
+
+/**
+ * A chat gives times that are not when the party starts: "we want the park's
+ * cake at 16:00", "food at 15:00", "setup ready by 13:30", "ends at 17:00",
+ * "14:00 to 16:30". Book Date once proposed the cake's 16:00 as the start of
+ * a party whose family had "not decided the start time yet". A time is NOT
+ * the start when the words right before it, with no break between, name the
+ * cake, the food or the setup, or say it is the end; or when the cake, the
+ * food or the setup is named right after it ("16:00 cake"). The party, its
+ * day or a word for the start in between makes it the party's again ("cake
+ * and the party at 14:00", "with a cake, Saturday at 14:00"), and so does a
+ * thing that only comes WITH what is said before it ("a party with pizza at
+ * 14:00", "праздник с тортом в 14:00").
+ */
+const TIED_THING =
+  /(?:^|[^\p{L}])(?:cakes?|candles?|food|meals?|lunch|dinner|pizzas?|snacks?|buffet|catering|drinks?|set[\s-]?up|decor\p{L}*|balloons?)(?!\p{L})|торт|свеч|(?:^|[^\p{L}])(?:ед[аыуе]|обед\p{L}*|ужин\p{L}*|меню)(?!\p{L})|пицц|угощен|закуск|фуршет|оформлен|декор|украшен|подготовк|เค้ก|เทียน|อาหาร|พิซซ่า|ของว่าง|ขนม|เครื่องดื่ม|บุฟเฟ่ต์|ตกแต่ง|จัดสถานที่|จัดเตรียม|เซ็?ตอัพ|ลูกโป่ง/giu;
+/** The party itself, named between the thing and the time: the time is the party's. */
+const PARTY_WORD =
+  /(?:^|[^\p{L}])(?:party|birthday|b-?day|celebration|event|guests?|(?:we|they|everyone|kids|children)(?:['’]ll)?(?:\s+(?:will|all|can|would|should))*\s+(?:arrive|come|be\s+there))(?!\p{L})|праздник|вечеринк|рождени|гост|приход|прид[её]м|ปาร์ตี้|วันเกิด|งาน|มาถึง|แขก/iu;
+/** The words between a thing and its time hold no break: one clause. */
+const CLAUSE_BREAK = /[.!?;,\n]/;
+/** The time is the end: "to 16:30", "until 17:00", "ends at 17:00", "до 16:30", "ถึง 16.30 น.". */
+const END_BEFORE =
+  /(?:(?:^|[^\p{L}])(?:to|till|til|until|ends?|ending|ended|finish\p{L}*|over)(?:\s+(?:at|by|around))?|(?:^|[^\p{L}])(?:до|по)|заканчива\p{L}*(?:\s+(?:в|к))?|закончи\p{L}*(?:\s+(?:в|к))?|(?:^|[^\p{L}])конец(?:\s+(?:в|к))?|окончани\p{L}*(?:\s+(?:в|к))?|ถึง|จบ(?:งาน)?|เลิก(?:งาน)?|สิ้นสุด)\s*(?:ตอน|เวลา)?\s*$/iu;
+/** A range written with a dash: the second time is the end ("14:00 - 16:30"). */
+const RANGE_DASH = /^\s*[-–—~]\s*$/;
+/** Right after the time, before the thing it is the time of ("16:00 cake", "16:00 — торт", "16.00 เค้ก"). */
+const THING_AFTER = /^\s*[-–—:]?\s*(?:for\s+)?(?:the\s+)?(?:park'?s\s+)?(?:birthday\s+)?/iu;
+/** Right before a thing: it comes with what was said before it ("with a cake", "с тортом", "พร้อมเค้ก"). */
+const COMES_WITH =
+  /(?:(?:^|[^\p{L}])(?:with|plus|including|includes?|incl\.?)\s+(?:(?:a|an|the|our|own|some|park'?s|birthday|big|small)\s+)*|(?:^|[^\p{L}])(?:с|со|включая)\s+|(?:พร้อม|รวม)\s*)$/iu;
+/** A thing is tied to a time at most this far before it. */
+const TIED_REACH = 48;
+
+/** The last thing a text names: where its word starts and ends; null when it names none. */
+function lastThing(text: string): { start: number; end: number } | null {
+  TIED_THING.lastIndex = 0;
+  let last: { start: number; end: number } | null = null;
+  let m: RegExpExecArray | null;
+  while ((m = TIED_THING.exec(text)) !== null) {
+    // The pattern's own leading non-letter (a space) is not the word.
+    const lead = Math.max(m[0].search(/\p{L}/u), 0);
+    last = { start: m.index + lead, end: m.index + m[0].length };
+  }
+  return last;
+}
+
+function thingStartsAt(text: string): boolean {
+  TIED_THING.lastIndex = 0;
+  const m = TIED_THING.exec(text);
+  // The pattern's own leading non-letter (a space) may be its first character.
+  return m !== null && m.index === 0 && m[0].search(/\p{L}/u) <= 1;
+}
+
+/** Is the time at `found` in `t` something other than the party's start? `prev`: the time before it, if any. */
+function isNotTheStart(t: string, found: TimeFound, prev: TimeFound | undefined): boolean {
+  const lead = t.slice(prev ? prev.end : 0, found.start);
+  // The end: an end word right before it, or a dash after another time.
+  if (END_BEFORE.test(lead) || (prev !== undefined && RANGE_DASH.test(lead))) return true;
+  const partys = (between: string) => PARTY_WORD.test(between) || START_WORD.test(between) || mentionsPartyDate(between);
+  // The cake, the food or the setup right before it, in one clause.
+  const thing = lastThing(lead);
+  if (thing && !COMES_WITH.test(lead.slice(0, thing.start))) {
+    const between = lead.slice(thing.end);
+    if (between.length <= TIED_REACH && !CLAUSE_BREAK.test(between) && !partys(between)) return true;
+  }
+  // The same named right after it, when nothing before it in its sentence makes the time the party's.
+  const tail = t.slice(found.end);
+  const after = tail.slice(THING_AFTER.exec(tail)?.[0].length ?? 0);
+  if (thingStartsAt(after)) {
+    const sentence = /[^.!?;\n]*$/.exec(lead)?.[0] ?? '';
+    if (!partys(sentence)) return true;
+  }
+  return false;
+}
+
+export interface PartyTimeRole extends PartyTimeReading {
+  /** False when the text ties the time to the cake, the food, the setup or the end: not the party's start. */
+  start: boolean;
+}
+
+/** Every clock time a text names, in order, each with whether it can be the party's start. */
+export function readPartyTimeRoles(text: string): PartyTimeRole[] {
+  const { original, scan: t } = prepared(text);
+  const times = timesIn(t);
+  return times.map((f, i) => ({
+    time: f.time,
+    phrase: original.slice(f.start, f.end).trim(),
+    start: !isNotTheStart(t, f, times[i - 1]),
+  }));
+}
+
+/**
+ * The party's start in a text, with its own words: the first clock time that
+ * is not the cake's, the food's, the setup's or the end's; null when the text
+ * names no time, or only such times.
+ */
+export function readPartyStartPhrase(text: string): PartyTimeReading | null {
+  const first = readPartyTimeRoles(text).find((r) => r.start);
+  return first ? { time: first.time, phrase: first.phrase } : null;
 }
 
 /** The first clock time a text names, `HH:MM`, or null. */
@@ -850,7 +964,9 @@ export interface PartyChatReading extends PartyDateReading {
  * The time is the one written with that date, else the team's latest, else the
  * customer's latest, from a line that names the party's day or its start or
  * gives the time as a point ("в 14:00"); a deadline ("до 18:00") or the opening
- * hours leave it empty, and the Events module's start stands.
+ * hours leave it empty. A time the chat ties to the cake, the food, the setup
+ * or the party's end is never the start (SCRUM-836, `readPartyStartPhrase`):
+ * with no other time in the chat the start stays empty for a person to give.
  */
 export function readChatPartyDate(
   lines: readonly PartyChatLine[],
@@ -878,7 +994,7 @@ export function readChatPartyDate(
     const found = bestDate(l.text, from, { notBefore: todayIso, minTier: WEEKDAY });
     if (found && (!chosen || found.tier >= chosen.found.tier)) chosen = { line: i, team: l.team, found };
   }
-  let time: PartyTimeReading | null = chosen ? readPartyTimePhrase(lines[chosen.line]!.text) : null;
+  let time: PartyTimeReading | null = chosen ? readPartyStartPhrase(lines[chosen.line]!.text) : null;
   /** Another line names another party: a day that has gone, or a different day ("Подтверждаем ваш праздник 15 марта в 14:00"). */
   const anotherParty = (l: PartyChatLine, from: Day): boolean => {
     if (!mentionsPartyDate(l.text)) return false;
@@ -890,7 +1006,7 @@ export function readChatPartyDate(
       const l = lines[i]!;
       const from = lineDays[i];
       if (l.team !== team || !from || anotherParty(l, from)) continue;
-      const found = readPartyTimePhrase(l.text);
+      const found = readPartyStartPhrase(l.text);
       if (found && isPartyTimeLine(l.text, found)) time = found;
     }
   }

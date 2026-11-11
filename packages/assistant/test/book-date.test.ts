@@ -50,7 +50,7 @@ describe('the prompt', () => {
     expect(BOOK_DATE_SYSTEM_TEXT).toContain('"เดก" is เด็ก');
     expect(BOOK_DATE_SYSTEM_TEXT).toContain('"ผูใหญ่" is ผู้ใหญ่');
     expect(BOOK_DATE_SYSTEM_TEXT).toContain('"ธันวา" and "ธ.ค." are ธันวาคม');
-    expect(BOOK_DATE_READER_VERSION).toBe('book-date-2026-11-10.2');
+    expect(BOOK_DATE_READER_VERSION).toBe('book-date-2026-11-11.1');
   });
 });
 
@@ -101,6 +101,45 @@ describe('a proposal is checked against the chat', () => {
     expect(
       readBookDateProposal({ ...EMPTY_BOOK_DATE_READING, startTime: { value: '9.30', line: 1, said: '2pm' } }, request).startTime?.value,
     ).toBe('09:30');
+  });
+});
+
+describe('the start is the party’s, never the cake’s (SCRUM-836)', () => {
+  const chat = (text: string, by: 'family' | 'team' = 'family'): BookDateRequest => ({
+    ...request,
+    lines: [{ by, at: '2026-11-09 10:12', text }],
+  });
+  const start = (text: string, value: string, said: string) =>
+    readBookDateProposal({ ...EMPTY_BOOK_DATE_READING, startTime: { value, line: 1, said } }, chat(text)).startTime;
+
+  it('the prompt says a time for the cake, the food, the setup or the end is no start, in the three languages', () => {
+    expect(BOOK_DATE_SYSTEM_TEXT).toContain('a time the chat gives for the cake, the food, the setup, the entertainment or the end of the party is not the start');
+    expect(BOOK_DATE_SYSTEM_TEXT).toContain('"the cake at 16:00", "торт в 16:00", "เค้กตอน 16.00 น." give no start');
+    expect(BOOK_DATE_SYSTEM_TEXT).toContain('or says it is not decided yet, startTime is null');
+  });
+
+  it.each([
+    ['en', "a birthday on Sunday 22 November, 10 kids and 3 adults. We have not decided the start time yet, but we want the park's cake at 16:00", '16:00', 'at 16:00'],
+    ['ru', 'День рождения 22 ноября, 10 детей и 3 взрослых. Время начала пока не решили, но торт хотим в 16:00', '16:00', 'в 16:00'],
+    ['th', 'งานวันเกิดวันอาทิตย์ที่ 22 พฤศจิกายน เด็ก 10 คน ผู้ใหญ่ 3 คน ยังไม่ได้ตัดสินใจเวลาเริ่มงานค่ะ แต่อยากได้เค้กตอน 16.00 น.', '16:00', '16.00 น.'],
+  ])('%s: the model’s start that is the cake’s time is left out', (_lang, text, value, said) => {
+    expect(start(text, value, said)).toBeNull();
+  });
+
+  it('the food’s, the setup’s and the end’s time are left out too', () => {
+    expect(start('Sunday 22 November, pizza at 15:00 please', '15:00', 'at 15:00')).toBeNull();
+    expect(start('Confirmed for Sunday 22 November. Setup ready by 13:30', '13:30', '13:30')).toBeNull();
+    expect(start('Sunday 22 November, the party ends at 17:00', '17:00', 'at 17:00')).toBeNull();
+  });
+
+  it('the party’s own time stands, also beside the cake’s and on a line the patterns cannot read', () => {
+    expect(start("Sunday 22 November at 14:00, the park's cake at 16:00", '14:00', 'at 14:00')).toMatchObject({ value: '14:00', text: 'at 14:00' });
+    expect(start('торт в 16:00, начало в 14:00', '14:00', 'в 14:00')).toMatchObject({ value: '14:00' });
+    expect(start('we come with a cake, Saturday at 14:00', '14:00', 'at 14:00')).toMatchObject({ value: '14:00' });
+    // The line does not spell the time the model read: nothing ties it, the model's reading stands.
+    expect(start('sat 21 novmber two oclock', '14:00', 'two oclock')).toMatchObject({ value: '14:00' });
+    // The cake's time on the line, the model reading ANOTHER time: untouched.
+    expect(start('cake at 16:00', '14:00', 'cake')).toMatchObject({ value: '14:00' });
   });
 });
 

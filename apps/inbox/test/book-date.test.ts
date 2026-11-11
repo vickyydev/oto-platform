@@ -255,7 +255,8 @@ describe('the dialog opens with the reading and checks before it saves', () => {
     '2026-11-04',
     CENTRAL,
   );
-  it('fills the date, the park, the guests, the contact and the age; the Events module’s start time', () => {
+  it('fills the date, the park, the guests, the contact and the age; the start empty when the chat names none (SCRUM-836)', () => {
+    expect(DEFAULT_START_TIME).toBe('');
     expect(draft).toEqual<BookDateDraft>({
       date: '2027-03-21',
       dateFrom: '21/mar',
@@ -281,11 +282,13 @@ describe('the dialog opens with the reading and checks before it saves', () => {
     expect(data.phone).toBe('');
     const d = bookDateDraft(data, '2026-11-04', CENTRAL);
     expect(d.phone).toBe('');
-    expect(readDraft(d)).toMatchObject({ values: { phone: null } });
+    expect(readDraft({ ...d, startTime: '14:00' })).toMatchObject({ values: { phone: null } });
   });
 
   it('reads the draft into the route’s fields, or says what is missing', () => {
-    expect(readDraft(draft)).toEqual({
+    // The chat named no start: Save asks for it, and nothing stands in for it.
+    expect(readDraft(draft)).toEqual({ problem: 'Enter the start time as HH:MM.' });
+    expect(readDraft({ ...draft, startTime: '14:00' })).toEqual({
       values: {
         branchId: CENTRAL,
         date: '2027-03-21',
@@ -298,10 +301,11 @@ describe('the dialog opens with the reading and checks before it saves', () => {
         childAge: 6,
       },
     });
-    expect(readDraft({ ...draft, date: '' })).toEqual({ problem: 'Choose the date.' });
-    expect(readDraft({ ...draft, branchId: '' })).toEqual({ problem: 'Choose the park.' });
-    expect(readDraft({ ...draft, kids: 'ten' })).toEqual({ problem: 'Kids is a whole number.' });
-    expect(readDraft({ ...draft, contactName: '  ' })).toEqual({ problem: 'Enter who is booking.' });
+    const typed = { ...draft, startTime: '14:00' };
+    expect(readDraft({ ...typed, date: '' })).toEqual({ problem: 'Choose the date.' });
+    expect(readDraft({ ...typed, branchId: '' })).toEqual({ problem: 'Choose the park.' });
+    expect(readDraft({ ...typed, kids: 'ten' })).toEqual({ problem: 'Kids is a whole number.' });
+    expect(readDraft({ ...typed, contactName: '  ' })).toEqual({ problem: 'Enter who is booking.' });
   });
   it('renders the fields, the chat’s phrase beside the date, and the save', () => {
     const html = renderToStaticMarkup(

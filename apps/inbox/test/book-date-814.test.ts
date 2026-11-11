@@ -244,4 +244,19 @@ describe('Book Date reads the chat’s latest date, and not an old one', () => {
     // A line older than the window is not read.
     expect(draftOf('en', [msg('Party on 21 December please', 'customer', '2026-08-01T03:00:00.000Z')])).toMatchObject({ date: '', dateFrom: '' });
   });
+
+  it('a time the chat gives to the cake is not the start: the start opens empty, in the three languages (SCRUM-836)', () => {
+    const chats: Array<['en' | 'ru' | 'th', string]> = [
+      ['en', "a birthday on 21 November, 10 kids and 3 adults. We have not decided the start time yet, but we want the park's cake at 16:00"],
+      ['ru', 'День рождения 21 ноября, 10 детей и 3 взрослых. Время начала пока не решили, но торт хотим в 16:00'],
+      ['th', 'อยากจัดงานวันที่ 21 พฤศจิกายน เด็ก 10 คน ผู้ใหญ่ 3 คน ยังไม่ได้ตัดสินใจเวลาเริ่มงานค่ะ แต่อยากได้เค้กตอน 16.00 น.'],
+    ];
+    for (const [language, text] of chats) {
+      const d = draftOf(language, [msg(text)]);
+      expect(d, text).toMatchObject({ date: '2026-11-21', startTime: '', timeFrom: '' });
+      expect(readDraft(d), text).toEqual({ problem: 'Enter the start time as HH:MM.' });
+    }
+    // The party's own time beside the cake's is still the start.
+    expect(draftOf('en', [msg("21 November at 14:00, the park's cake at 16:00")])).toMatchObject({ startTime: '14:00', timeFrom: 'at 14:00' });
+  });
 });

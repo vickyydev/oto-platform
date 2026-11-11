@@ -354,7 +354,14 @@ export function BookDateDialog({
         <Field
           icon={Clock3}
           label="Start time"
-          hint={hint('startTime', draft.timeFrom ? <Says text={draft.timeFrom} source={null} /> : undefined)}
+          hint={hint(
+            'startTime',
+            draft.timeFrom ? (
+              <Says text={draft.timeFrom} source={null} />
+            ) : draft.startTime ? undefined : (
+              <span className={HINT}>The chat names no start time</span>
+            ),
+          )}
         >
           <input
             type="time"

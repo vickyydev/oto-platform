@@ -13,7 +13,9 @@
  * What the model returns is a PROPOSAL, checked here before anyone sees it
  * (`readBookDateProposal`): a value with no line of the chat behind it, a date
  * that is no calendar day or has gone by, a time that is no clock time, a
- * count out of range or a park the operator does not have is left out. The
+ * count out of range or a park the operator does not have is left out. So is
+ * a start time its line gives to the cake, the food, the setup or the end of
+ * the party (SCRUM-836): the start is then left for the person to give. The
  * line, not the model, says whose words they were (the family's or the
  * team's), and the words shown are the line's own: when the model's quote is
  * not in its line, the line itself is quoted.
@@ -25,6 +27,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { z } from 'zod/v4';
+import { readPartyTimeRoles } from '@oto/shared';
 import {
   DEFAULT_EFFORT,
   DEFAULT_MODEL,
@@ -41,7 +44,7 @@ import {
 import { inertJson } from './prompt';
 
 /** Bump with any change to the reader's words or schema. */
-export const BOOK_DATE_READER_VERSION = 'book-date-2026-11-10.2';
+export const BOOK_DATE_READER_VERSION = 'book-date-2026-11-11.1';
 
 /** The person is waiting with the pattern reading on screen: past this, it stands. */
 export const BOOK_DATE_TIMEOUT_MS = 20_000;
@@ -132,7 +135,7 @@ export const BOOK_DATE_SYSTEM_TEXT = [
   '',
   'The fields:',
   '- date: the party\'s date, YYYY-MM-DD. A day and month with no year is its next occurrence on or after the day the line was written. A weekday alone ("sat", "в субботу", "วันเสาร์") is the next such day after the line was written. Never a date before today.',
-  '- startTime: when the party starts, HH:MM on the 24-hour clock ("2pm" and "บ่าย 2 โมง" are 14:00). Not a deadline, a deposit time, a call-back time or the opening hours.',
+  '- startTime: when the party starts, HH:MM on the 24-hour clock ("2pm" and "บ่าย 2 โมง" are 14:00). Not a deadline, a deposit time, a call-back time or the opening hours. Only the time the party itself starts: a time the chat gives for the cake, the food, the setup, the entertainment or the end of the party is not the start ("the cake at 16:00", "торт в 16:00", "เค้กตอน 16.00 น." give no start). When the chat gives no time for the start, or says it is not decided yet, startTime is null.',
   '- kids: how many children come to the party, a whole number.',
   '- adults: how many adults come, a whole number.',
   '- childName: the name of the child whose birthday it is, as the chat writes it.',
@@ -252,12 +255,24 @@ export function readBookDateProposal(reading: BookDateReading, request: BookDate
     const text = said && fold(line.text).includes(fold(said)) ? clip(said) : clip(line.text);
     return { value, text, source: line.by, line: index };
   };
+  /**
+   * SCRUM-836: the start is not a time its own line gives to the cake, the food, the setup or the end.
+   * The line is read by the shared pattern reader: when it names this time, and every place it names it
+   * is such a time, the value is left out. A line the patterns cannot read (a typo) is the model's to say.
+   */
+  const startOf = (at: { value: string; line: number }): string | undefined => {
+    const time = clockTime(at.value);
+    const line = Number.isInteger(at.line) ? request.lines[at.line - 1] : undefined;
+    if (time === undefined || !line) return time;
+    const named = readPartyTimeRoles(line.text).filter((r) => r.time === time);
+    return named.length > 0 && named.every((r) => !r.start) ? undefined : time;
+  };
   const day = reading.date?.value.trim() ?? '';
   const name = reading.childName?.value.replace(/\s+/g, ' ').trim() ?? '';
   const parkId = reading.park?.parkId ?? null;
   return {
     date: reading.date && isCalendarDay(day) && day >= request.today ? place(reading.date, day) : null,
-    startTime: reading.startTime ? place(reading.startTime, clockTime(reading.startTime.value)) : null,
+    startTime: reading.startTime ? place(reading.startTime, startOf(reading.startTime)) : null,
     kids: reading.kids ? place(reading.kids, wholeIn(reading.kids.value, 0, BOOK_DATE_MAX_GUESTS)) : null,
     adults: reading.adults ? place(reading.adults, wholeIn(reading.adults.value, 0, BOOK_DATE_MAX_GUESTS)) : null,
     childName:
