@@ -25,6 +25,8 @@ import {
   supportsOf,
   writeMode,
   type MoveOption,
+  HELD_IN_GENERAL_LABEL,
+  MOVE_VALUE_GENERAL,
 } from '@/lib/view';
 
 /** What a manager sees in the details (test night U7): the support places are theirs to fill. */
@@ -125,6 +127,12 @@ export function DetailsDialog({
                   }}
                   className={FIELD}
                 >
+                  {/* SCRUM-789: held in the General inbox — no team is the current one, every team is offered. */}
+                  {phoneActions.currentMove === MOVE_VALUE_GENERAL && (
+                    <option value={MOVE_VALUE_GENERAL} disabled>
+                      {HELD_IN_GENERAL_LABEL}
+                    </option>
+                  )}
                   {phoneActions.moves.map((m) => (
                     <option key={m.value} value={m.value}>
                       {m.label}

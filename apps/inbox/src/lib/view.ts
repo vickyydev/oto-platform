@@ -332,13 +332,30 @@ export function handleLabel(channel: InboxChannelKey): string | null {
 }
 
 /**
+ * SCRUM-789: the General inbox's name where a team's would stand — the badge
+ * and the move picker of a conversation held there.
+ */
+export const HELD_IN_GENERAL_LABEL = 'General';
+
+/**
+ * SCRUM-789: held in the General inbox, as a list row says it — a general
+ * conversation on no team (a general question the assistant is answering).
+ * A row that does not say its team (`teamId` absent) is not read as held.
+ */
+export function heldInGeneral(row: { category: InboxCategoryKey; teamId?: string | null }): boolean {
+  return row.category === 'general' && row.teamId === null;
+}
+
+/**
  * The move picker's current value (`CategoryBadge`, :994): the team the
- * conversation sits with, by `teamDestOf` from the shared rules.
+ * conversation sits with, by `teamDestOf` from the shared rules. SCRUM-789: a
+ * conversation held in the General inbox sits with no team, and says so.
  */
 export function teamDestLabel(
-  row: { category: InboxCategoryKey; branchId: string | null },
+  row: { category: InboxCategoryKey; branchId: string | null; teamId?: string | null },
   me: Pick<InboxMe, 'teams' | 'defaultReceptionBranchId'>,
 ): string {
+  if (heldInGeneral(row)) return HELD_IN_GENERAL_LABEL;
   const dest = teamDestOf(row, me.defaultReceptionBranchId);
   const team = me.teams.find(
     (t) => t.kind === dest.kind && (dest.kind !== 'reception' || t.branchId === dest.branchId),
@@ -531,11 +548,17 @@ export function eventText(e: InboxEvent, ctx: PillContext): string | null {
     }
     case 'routed': {
       const lang = str(p.language);
+      // SCRUM-789: a general question the assistant is answering is held in
+      // the General inbox, seated at no park.
+      if (p.held === 'general') return `${lang ? `Language: ${langLabel(lang)} · ` : ''}Kept in General · no park inbox`;
       const team = teamName(ctx, p.teamId) ?? 'the team';
       // SCRUM-830: the first message decided the queue (the api's `source`);
       // the assistant's later move still says "1 more" beside it.
       const fromMessage = p.source === 'message' ? ' · from the message' : '';
-      return `${lang ? `Language: ${langLabel(lang)} · ` : ''}Routed to ${team}${fromMessage}`;
+      // SCRUM-789: a held conversation seated at its park, and why.
+      const placed =
+        p.placed === 'local' ? ' · needs the local team' : p.placed === 'assistant_away' ? ' · the assistant is not answering' : '';
+      return `${lang ? `Language: ${langLabel(lang)} · ` : ''}Routed to ${team}${fromMessage}${placed}`;
     }
     case 'assigned':
     case 'released':
@@ -554,6 +577,8 @@ export function eventText(e: InboxEvent, ctx: PillContext): string | null {
       // The prototype's pill when a cross-team primary took it (:1158).
       if (p.followsPrimary === true && from && to) return `Auto-moved from ${from} → ${to} (follows primary owner)`;
       if (from && to) return `Moved from ${from} → ${to} by ${actorOf(e, ctx)}`;
+      // SCRUM-789: out of the General inbox, into the park's.
+      if (p.fromGeneral === true && to) return `Moved from General → ${to} by ${actorOf(e, ctx)} · needs the local team`;
       return `Moved${to ? ` to ${to}` : ''} by ${actorOf(e, ctx)}`;
     }
     case 'branch_set': {
@@ -1020,11 +1045,22 @@ export function moveOptions(me: Pick<InboxMe, 'teams'>): MoveOption[] {
   return out;
 }
 
-/** The picker's current value: where `teamDestOf` puts the conversation. */
+/**
+ * What the pickers show for a conversation that sits with no team: the
+ * General inbox (SCRUM-789). Not a destination — every team is offered, its
+ * own park's desk included.
+ */
+export const MOVE_VALUE_GENERAL = '';
+
+/**
+ * The picker's current value: where `teamDestOf` puts the conversation; for
+ * one held in the General inbox, none of the teams (`MOVE_VALUE_GENERAL`).
+ */
 export function moveValue(
-  row: { category: InboxCategoryKey; branchId: string | null },
+  row: { category: InboxCategoryKey; branchId: string | null; teamId?: string | null },
   me: Pick<InboxMe, 'defaultReceptionBranchId'>,
 ): string {
+  if (heldInGeneral(row)) return MOVE_VALUE_GENERAL;
   const dest = teamDestOf(row, me.defaultReceptionBranchId);
   return dest.kind === 'reception' ? `reception:${dest.branchId}` : dest.kind;
 }

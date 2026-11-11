@@ -57,6 +57,8 @@ import {
   branchOutcome,
   branchSelectOptions,
   canHandle,
+  HELD_IN_GENERAL_LABEL,
+  MOVE_VALUE_GENERAL,
   categoryTitle,
   contactName,
   dayOf,
@@ -516,6 +518,12 @@ export function ChatPanel({
                   aria-label="Move to team"
                   className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-wait"
                 >
+                  {/* SCRUM-789: held in the General inbox — no team is the current one, every team is offered. */}
+                  {currentMove === MOVE_VALUE_GENERAL && (
+                    <option value={MOVE_VALUE_GENERAL} disabled>
+                      {HELD_IN_GENERAL_LABEL}
+                    </option>
+                  )}
                   {moves.map((m) => (
                     <option key={m.value} value={m.value}>
                       {m.label}

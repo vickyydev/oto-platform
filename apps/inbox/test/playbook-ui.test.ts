@@ -282,8 +282,9 @@ describe('the chip filters in place of the dropdowns', () => {
 describe('the named inbox views above the filters', () => {
   const views = namedViews(hana);
 
-  it('offers All, Birthdays & Events, GM, then one per park, in that order', () => {
-    expect(views.map((v) => v.label)).toEqual(['All conversations', 'Birthdays & Events', 'GM', 'Central Floresta', 'Robinson Chalong']);
+  it('offers All, General, Birthdays & Events, GM, then one per park, in that order', () => {
+    // SCRUM-789: General — the general questions held out of the park inboxes.
+    expect(views.map((v) => v.label)).toEqual(['All conversations', 'General', 'Birthdays & Events', 'GM', 'Central Floresta', 'Robinson Chalong']);
     // The GM view needs the GM team; an operator without it has no GM view.
     expect(namedViews({ teams: teams.filter((t) => t.kind !== 'gm') }).map((v) => v.key)).not.toContain('gm');
   });
@@ -291,11 +292,13 @@ describe('the named inbox views above the filters', () => {
   it('each view applies its own filter set and clears the other chips', () => {
     const busy: Filters = { ...EMPTY_FILTERS, language: 'ru', status: 'active', channelAccountId: IG, q: 'cake', unanswered: true };
     const expected: Record<string, Partial<Filters>> = {
-      all: { category: '', branchId: '' },
-      birthdays: { category: 'birthdays', branchId: '' },
-      gm: { category: 'gm', branchId: '' },
-      [`branch:${CENTRAL}`]: { category: '', branchId: CENTRAL },
-      [`branch:${CHALONG}`]: { category: '', branchId: CHALONG },
+      all: { category: '', branchId: '', inbox: '' },
+      // SCRUM-789: the General inbox is its own filter, not the General topic chip.
+      general: { category: '', branchId: '', inbox: 'general' },
+      birthdays: { category: 'birthdays', branchId: '', inbox: '' },
+      gm: { category: 'gm', branchId: '', inbox: '' },
+      [`branch:${CENTRAL}`]: { category: '', branchId: CENTRAL, inbox: '' },
+      [`branch:${CHALONG}`]: { category: '', branchId: CHALONG, inbox: '' },
     };
     for (const v of views) {
       const f = tap(busy, applyView(v));
@@ -308,12 +311,33 @@ describe('the named inbox views above the filters', () => {
       const html = fields(f);
       if (f.category) expect(pressed(html, `category:${f.category}`)).toBe(true);
       if (f.branchId) expect(pressed(html, `branchId:${f.branchId}`)).toBe(true);
-      expect((html.match(/aria-pressed="true"/g) ?? []).length).toBe(v.key === 'all' ? 0 : 1);
+      // The General view has no chip of its own (SCRUM-789): the rail's view row is its mark.
+      expect((html.match(/aria-pressed="true"/g) ?? []).length).toBe(v.key === 'all' || v.key === 'general' ? 0 : 1);
       // And the rail marks the view as the one open.
       const rail = renderToStaticMarkup(createElement(InboxViews, { me: hana, filters: f, onChange: noop }));
       expect(current(rail, v.key)).toBe(true);
       expect((rail.match(/aria-current="true"/g) ?? []).length).toBe(1);
     }
+  });
+
+  it('SCRUM-789: the General view asks the list for the General inbox, and a park view never does', () => {
+    const general = tap(EMPTY_FILTERS, applyView(views.find((v) => v.key === 'general')!));
+    expect(listQuery('team', general)).toMatchObject({ inbox: 'general' });
+    expect(listQuery('team', general)).not.toHaveProperty('category');
+    const park = tap(general, applyView(views.find((v) => v.key === `branch:${CENTRAL}`)!));
+    expect(listQuery('team', park)).toMatchObject({ branchId: CENTRAL });
+    expect(listQuery('team', park)).not.toHaveProperty('inbox');
+    // On the phone the applied view shows as a removable pill.
+    expect(filterPills(general, teams).map((p) => p.label)).toEqual(['General']);
+    expect(activeFilterCount(general)).toBe(1);
+  });
+
+  it('SCRUM-789: a conversation held in General says so on its team badge, and every desk is offered as a move', () => {
+    const held = panel(row({ category: 'general', teamId: null }));
+    expect(held).toMatch(/<option value="" disabled=""[^>]*>General<\/option>/);
+    expect(held).toContain(`<option value="reception:${CENTRAL}">`);
+    // Seated at its park: no General entry in the picker.
+    expect(panel(row({ category: 'general', teamId: T_CENTRAL }))).not.toMatch(/<option value="" disabled=""[^>]*>General<\/option>/);
   });
 
   it('changing a chip away from a view moves to a modified All', () => {

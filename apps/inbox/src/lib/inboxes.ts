@@ -5,7 +5,8 @@
  *
  * The rail's dropdowns became rows of toggle chips (Branch, Source, Topic,
  * Status, Language), and above them sit the named inboxes the playbook works
- * in: All conversations, Birthdays & Events, GM and one per park. A named
+ * in: All conversations, General (SCRUM-789), Birthdays & Events, GM and one
+ * per park. A named
  * view is nothing but a saved set of chips: opening one sets the chips, and
  * the view the rail marks is read back off the chips, so a chip changed by
  * hand (or by the dashboard's category legend) lands on a "modified All"
@@ -23,8 +24,9 @@ import { CATEGORY_LABEL, CHANNEL_LABEL, branchOptions } from './view';
 // --- The chips -----------------------------------------------------------------------
 
 /** The filters a chip row holds, in the rail's order. */
-export type ChipDim = 'branchId' | 'channelAccountId' | 'category' | 'status' | 'language';
-export const CHIP_DIMS: readonly ChipDim[] = ['branchId', 'channelAccountId', 'category', 'status', 'language'];
+export type ChipDim = 'branchId' | 'channelAccountId' | 'category' | 'status' | 'language' | 'inbox';
+/** `inbox` has no chip row of its own: only the General view sets it (SCRUM-789). */
+export const CHIP_DIMS: readonly ChipDim[] = ['branchId', 'channelAccountId', 'category', 'status', 'language', 'inbox'];
 
 /** A chip's press: on when it was off (in place of its row's other chip), off when it was on. */
 export function toggleChip(f: Pick<Filters, ChipDim>, dim: ChipDim, value: string): Partial<Filters> {
@@ -85,10 +87,10 @@ export function sourcesOfRows(rows: readonly Pick<ConversationRow, 'channel' | '
 // --- The named views ----------------------------------------------------------------------------
 
 export interface NamedView {
-  /** `all`, `birthdays`, `gm`, or `branch:<id>`. */
+  /** `all`, `general`, `birthdays`, `gm`, or `branch:<id>`. */
   key: string;
   label: string;
-  kind: 'all' | 'category' | 'branch';
+  kind: 'all' | 'general' | 'category' | 'branch';
   /** The chips the view sets; every other chip row is cleared. */
   chips: Partial<Pick<Filters, ChipDim>>;
 }
@@ -96,12 +98,24 @@ export interface NamedView {
 export const ALL_VIEW_LABEL = 'All conversations';
 
 /**
- * The playbook's inboxes, in its order: All conversations; Birthdays & Events
+ * SCRUM-789: the General inbox — the general questions (prices, hours, how to
+ * get there, age rules) the assistant is answering, held out of every park's
+ * inbox. A park's view (the Branch chip) never shows them; All does.
+ */
+export const GENERAL_INBOX_LABEL = 'General';
+
+/**
+ * The playbook's inboxes, in its order: All conversations; General (SCRUM-789,
+ * the general questions held out of the park inboxes); Birthdays & Events
  * and GM, each while the operator has that team; then one per park, named as
- * the park's reception desk names it (`branchOptions`).
+ * the park's reception desk names it (`branchOptions`) — a park's view holds
+ * only what its local team must handle.
  */
 export function namedViews(me: Pick<InboxMe, 'teams'>): NamedView[] {
-  const out: NamedView[] = [{ key: 'all', label: ALL_VIEW_LABEL, kind: 'all', chips: {} }];
+  const out: NamedView[] = [
+    { key: 'all', label: ALL_VIEW_LABEL, kind: 'all', chips: {} },
+    { key: 'general', label: GENERAL_INBOX_LABEL, kind: 'general', chips: { inbox: 'general' } },
+  ];
   for (const category of ['birthdays', 'gm'] as const) {
     if (me.teams.some((t) => t.kind === category)) {
       out.push({ key: category, label: CATEGORY_LABEL[category], kind: 'category', chips: { category } });

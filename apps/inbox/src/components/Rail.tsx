@@ -136,12 +136,13 @@ export function FilterFields({
   );
 }
 
-const VIEW_ICON: Record<NamedView['kind'], LucideIcon> = { all: MessagesSquare, category: Tag, branch: MapPin };
+const VIEW_ICON: Record<NamedView['kind'], LucideIcon> = { all: MessagesSquare, general: MessageCircle, category: Tag, branch: MapPin };
 const CATEGORY_VIEW_ICON: Record<string, LucideIcon> = { birthdays: PartyPopper, gm: Briefcase };
 
 /**
  * The playbook's named inboxes (SCRUM-220), above the filters: All
- * conversations, Birthdays & Events, GM, one per park. Each is a saved set of
+ * conversations, General (SCRUM-789: the general questions held out of the
+ * park inboxes), Birthdays & Events, GM, one per park. Each is a saved set of
  * chips — opening one sets them — and the one marked is read back off the
  * chips (`currentView`): a chip changed by hand lands on All, marked
  * "Filtered". No counts: nothing the shell already reads counts unread or

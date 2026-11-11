@@ -41,6 +41,7 @@ import {
   writeMode,
   moveOptions,
   moveValue,
+  teamDestLabel,
   slotOptions,
   branchSelectOptions,
 } from '@/lib/view';
@@ -153,6 +154,15 @@ describe('the write controls’ choices (I3b)', () => {
     // A general thread with no branch sits with the first park's desk (`teamDestOf`).
     expect(moveValue({ category: 'general', branchId: null }, me)).toBe(`reception:${CENTRAL}`);
     expect(moveValue({ category: 'birthdays', branchId: CHALONG }, me)).toBe('birthdays');
+    // SCRUM-789: a conversation held in the General inbox sits with no team — the badge says
+    // General and the picker offers every desk, its own park's included.
+    expect(moveValue({ category: 'general', branchId: CENTRAL, teamId: null }, me)).toBe('');
+    expect(teamDestLabel({ category: 'general', branchId: CENTRAL, teamId: null }, me)).toBe('General');
+    expect(moveOptions(me).map((o) => o.value)).toContain(`reception:${CENTRAL}`);
+    // Seated, it is its desk's again; another queue's thread is never read as held.
+    expect(moveValue({ category: 'general', branchId: CENTRAL, teamId: T_CENTRAL }, me)).toBe(`reception:${CENTRAL}`);
+    expect(teamDestLabel({ category: 'general', branchId: CENTRAL, teamId: T_CENTRAL }, me)).not.toBe('General');
+    expect(moveValue({ category: 'gm', branchId: null, teamId: null }, me)).toBe('gm');
   });
 
   it('the move badge offers the GM queue last when the operator has the GM team (SCRUM-220 playbook)', () => {
@@ -677,6 +687,20 @@ describe('the timeline', () => {
     );
     expect(eventText(event({ payload: { teamId: T_CENTRAL, language: 'en', source: 'default' } }), ctx)).toBe('Language: EN · Routed to Reception · Central');
     expect(eventText(event({ payload: { teamId: T_BIRTHDAYS, source: 'hint' } }), ctx)).toBe('Routed to Birthdays & Events');
+    // SCRUM-789: a general question is held in the General inbox; it is seated at its park
+    // when it becomes the local team's work, or when the assistant is not answering it.
+    expect(eventText(event({ payload: { teamId: null, held: 'general', language: 'en', source: 'default' } }), ctx)).toBe(
+      'Language: EN · Kept in General · no park inbox',
+    );
+    expect(eventText(event({ payload: { teamId: T_CENTRAL, language: 'en', placed: 'local' } }), ctx)).toBe(
+      'Language: EN · Routed to Reception · Central · needs the local team',
+    );
+    expect(eventText(event({ payload: { teamId: T_CENTRAL, placed: 'assistant_away' } }), ctx)).toBe(
+      'Routed to Reception · Central · the assistant is not answering',
+    );
+    expect(
+      eventText(event({ kind: 'moved_team', actorKind: 'ai', payload: { byAi: true, fromGeneral: true, fromTeamId: null, toTeamId: T_CENTRAL } }), ctx),
+    ).toMatch(/^Moved from General → Reception · Central by .+ · needs the local team$/);
     expect(eventText(event({ kind: 'assigned', payload: { slot: 'primary', accountId: ALINA } }), ctx)).toBe(
       'Assigned Alina as primary',
     );

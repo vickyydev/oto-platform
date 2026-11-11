@@ -1,6 +1,6 @@
 import type { InboxCategoryKey, InboxStatusKey, InboxTab } from '@oto/shared/inbox';
 import type { ListQuery, Team } from '@/api/inbox';
-import { sourceLabel, type SourceOption } from './inboxes';
+import { GENERAL_INBOX_LABEL, sourceLabel, type SourceOption } from './inboxes';
 import { archiveFrom, branchLabel, CATEGORY_OPTIONS, CATEGORY_TINT, LANGUAGE_OPTIONS, STATUS_OPTIONS, type ArchiveRange } from './view';
 
 /**
@@ -18,6 +18,12 @@ export interface Filters {
   branchId: string;
   /** The number (channel account) the conversation came in on; '' is every number. */
   channelAccountId: string;
+  /**
+   * SCRUM-789: `general` is the General inbox — the general questions held
+   * out of the park inboxes while the assistant answers them. Set by the
+   * rail's General view, not by a chip; '' is every conversation.
+   */
+  inbox: 'general' | '';
   status: InboxStatusKey | '';
   language: string;
   q: string;
@@ -30,6 +36,7 @@ export const EMPTY_FILTERS: Filters = {
   category: '',
   branchId: '',
   channelAccountId: '',
+  inbox: '',
   status: '',
   language: '',
   q: '',
@@ -41,12 +48,12 @@ export const EMPTY_FILTERS: Filters = {
 
 /** How many filters differ from the empty set — the phone's filter button shows it. */
 export function activeFilterCount(f: Filters): number {
-  return [f.category, f.branchId, f.channelAccountId, f.status, f.language].filter((v) => v !== '').length;
+  return [f.category, f.branchId, f.channelAccountId, f.inbox, f.status, f.language].filter((v) => v !== '').length;
 }
 
 /** One applied filter as a removable pill: its label, and the patch that clears it — exactly that one. */
 export interface FilterPill {
-  key: 'category' | 'branchId' | 'channelAccountId' | 'status' | 'language';
+  key: 'category' | 'branchId' | 'channelAccountId' | 'inbox' | 'status' | 'language';
   label: string;
   clear: Partial<Filters>;
   /** The topic's own colour (`CATEGORY_TINT`), so the GM queue reads amber here as on the badge. */
@@ -74,6 +81,8 @@ export function filterPills(f: Filters, teams: readonly Team[], sources: readonl
       clear: { channelAccountId: '' },
     });
   }
+  // SCRUM-789: the General inbox, as the rail's view names it.
+  if (f.inbox !== '') out.push({ key: 'inbox', label: GENERAL_INBOX_LABEL, clear: { inbox: '' } });
   if (f.status !== '') out.push({ key: 'status', label: label(STATUS_OPTIONS, f.status), clear: { status: '' } });
   if (f.language !== '') out.push({ key: 'language', label: label(LANGUAGE_OPTIONS, f.language), clear: { language: '' } });
   return out;
@@ -92,6 +101,7 @@ export function listQuery(
   if (f.category) q.category = f.category;
   if (f.branchId) q.branchId = f.branchId;
   if (f.channelAccountId) q.channelAccountId = f.channelAccountId;
+  if (f.inbox) q.inbox = f.inbox;
   if (f.status) q.status = f.status;
   if (f.language) q.language = f.language;
   const search = f.q.trim();
