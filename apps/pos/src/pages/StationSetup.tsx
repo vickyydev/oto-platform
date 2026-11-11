@@ -31,6 +31,7 @@ import {
   type ApiDevice,
   type StaffCandidate,
   type StationAccessScope,
+  type StationDeviceRole,
   type StationInput,
   type StationKind,
 } from '@/api/platform';
@@ -458,6 +459,12 @@ function StationEditor({ wizard }: { wizard: boolean }) {
    * The set is sent whole and replaces what was there, so a role that is not in
    * it is a role with nothing assigned: clearing a printer is leaving it out,
    * and a role the capabilities hid is left out for the same reason.
+   *
+   * A role this screen has no slot for — the drop-off band printer the Console
+   * assigns (SCRUM-861), the terminals, the gate, the drawer — is sent back as
+   * the station holds it, on the same box: this form never showed it, so a
+   * save from here must not take it away. A change of box clears everything,
+   * because those devices are the old box's.
    */
   const deviceAssignments = (): StationInput['devices'] => {
     const chosen: Array<[DeviceRole, string | undefined]> = [
@@ -477,6 +484,12 @@ function StationEditor({ wizard }: { wizard: boolean }) {
     // scanner paired to the iPad do not, and are kept on the device instead.
     if (scannerMode === 'box' && scannerId) {
       assignments.push({ role: 'scanner', deviceId: scannerId });
+    }
+    const managed = new Set<string>([...Object.values(ROLE_TO_API), 'scanner']);
+    if (seedStation && seedStation.boxId === boxId) {
+      for (const held of seedStation.devices ?? []) {
+        if (!managed.has(held.role)) assignments.push({ role: held.role as StationDeviceRole, deviceId: held.deviceId });
+      }
     }
     return assignments;
   };

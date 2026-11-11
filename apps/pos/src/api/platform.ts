@@ -680,6 +680,7 @@ export type StationDeviceRole =
   | 'receipt'
   | 'kids_band'
   | 'adult_band'
+  | 'dropoff_band'
   | 'kitchen'
   | 'bar'
   | 'scanner'
