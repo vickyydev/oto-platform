@@ -1,4 +1,5 @@
 import { CustomerTier, Member, OtoEvent } from '@/types';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -108,18 +109,6 @@ export function StepCustomerType({
                   <BadgeCheck className="w-4 h-4" />
                   {tierLabel(verification.tier)} · verified
                 </div>
-                {/* SCRUM-858 — only this member's rate is on offer below; the
-                    way back to every rate for this sale, and nothing else. */}
-                {soleTier && (
-                  <button
-                    type="button"
-                    onClick={onShowAllTiers}
-                    className="flex items-center gap-2 rounded-full bg-muted text-muted-foreground px-4 py-2 text-sm font-semibold shrink-0 hover:bg-muted/80 hover:text-foreground"
-                  >
-                    <LayoutGrid className="w-4 h-4" />
-                    Show all rates
-                  </button>
-                )}
               </>
             ) : (
               <div className="flex items-center gap-2 rounded-full bg-muted text-muted-foreground px-4 py-2 text-sm font-semibold shrink-0">
@@ -197,6 +186,20 @@ export function StepCustomerType({
           );
         })}
       </div>
+
+      {/* SCRUM-858 — only this member's rate is on offer above; the way back
+          to every rate for this sale, and nothing else. It sits under the
+          card, not in the banner: in the split view the staff panel is too
+          narrow for a second pill beside the badge, and the member's name
+          and number must stay readable there. */}
+      {soleTier && (
+        <div className="mt-3">
+          <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={onShowAllTiers}>
+            <LayoutGrid className="w-4 h-4" />
+            Show all rates
+          </Button>
+        </div>
+      )}
 
       {/* Event passes — flat-priced camp/event entry sold to this identified
           customer without a tier. Reuses the same sell flow as the identify step. */}

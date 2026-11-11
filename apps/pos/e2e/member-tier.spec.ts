@@ -94,6 +94,8 @@ const key = () => `s858-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 test('a verified expat with a valid document sees only Expat; "Show all rates" is for this sale and changes nothing stored', async ({ page }) => {
   requireFixture();
+  // A laptop in the split view: the staff panel is at its narrowest here.
+  await page.setViewportSize({ width: 1440, height: 900 });
   await signIn(page);
   try {
     expect(await storedTier(page, '0822222222')).toBe('expat');
@@ -108,6 +110,16 @@ test('a verified expat with a valid document sees only Expat; "Show all rates" i
     // The one way back: every rate for this sale, the control gone, the stored rate untouched.
     const showAll = page.getByRole('button', { name: 'Show all rates', exact: true });
     await expect(showAll).toBeVisible();
+    // Readable at this width: the control ends inside the member banner (so
+    // inside the staff panel, which clips what overflows it), and the
+    // member's name keeps its room beside the badge.
+    const banner = page.getByText('Expat · verified').locator('xpath=ancestor::div[contains(@class, "rounded-xl")][1]');
+    const bannerBox = await banner.boundingBox();
+    const showAllBox = await showAll.boundingBox();
+    const nameBox = await banner.getByText('James', { exact: true }).boundingBox();
+    expect(bannerBox && showAllBox && nameBox).toBeTruthy();
+    expect(showAllBox!.x + showAllBox!.width).toBeLessThanOrEqual(bannerBox!.x + bannerBox!.width);
+    expect(nameBox!.width).toBeGreaterThan(40);
     await showAll.click();
     await expect.poll(() => tierCards(page)).toEqual(['Tourist', 'Expat', 'Thai']);
     await expect(showAll).toHaveCount(0);
