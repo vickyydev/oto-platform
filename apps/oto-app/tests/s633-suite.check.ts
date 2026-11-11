@@ -86,7 +86,8 @@ try {
     ["s633-lifecycle.check.ts", 14],
     ["s633-lifecycle-privileges.check.ts", 4],
     // SCRUM-778/810 runs in the existing oto-app CI job through suite-sign-in.
-    ["s778-lifecycle.check.ts", 9],
+    // SCRUM-852 added eleven: outages never park, Send again, its line and its route.
+    ["s778-lifecycle.check.ts", 20],
   ] as const) await command(file, [tsx, join(APP_DIR, "tests", file)], expected);
   completed = true;
 } catch {
@@ -101,6 +102,6 @@ try {
     }
   } catch { process.exitCode = 1; }
   finally { await admin.end().catch(() => {}); }
-  console.log(JSON.stringify({ suite: "s633", passed: completed && removed, checks: completed ? 51 : null, ownDatabaseRemoved: removed }));
+  console.log(JSON.stringify({ suite: "s633", passed: completed && removed, checks: completed ? 62 : null, ownDatabaseRemoved: removed }));
   if (!completed || !removed) process.exitCode = 1;
 }

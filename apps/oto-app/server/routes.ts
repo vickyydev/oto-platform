@@ -132,7 +132,7 @@ import multer from "multer";
 import * as XLSX from "xlsx";
 import { evaluateForEmployee, evaluateForContract, evaluateRuleForEmployee, getRuleDefinitions, getLastCalculatedAt, runAttentionEngine } from "./attention-engine";
 import { holdNightBatch } from "./lib/nightBatchLock";
-import { readPlatformLifecycleEvents } from "./lib/platformLifecycle";
+import { LIFECYCLE_SEND_AGAIN_REFUSALS, readPlatformLifecycleEvents, requeueParkedLifecycleEvent } from "./lib/platformLifecycle";
 import { ATTENTION_REFRESH_RUNNING } from "./lib/nightJobs";
 import { ATTENTION_WRITES_READY } from "./attention-availability";
 import { getEmployeeDisplayName } from "./lib/employeeDisplayName";
@@ -1037,6 +1037,21 @@ export async function registerRoutes(
     try {
       res.set("Cache-Control", "no-store");
       res.json({ events: await readPlatformLifecycleEvents(pool, parkGroupOf(res), parsed.data.userId) });
+    } catch (error) { next(error); }
+  });
+
+  // SCRUM-852: "Send again" for ONE event the platform refused and the queue
+  // parked. The same three guards as the read above; the re-queue and its
+  // activity row are one statement. It changes delivery only: no event is
+  // created here and no login is touched.
+  app.post("/api/admin/login-lifecycle/send-again", requireAuth, requireAdmin, parkGroupOnly(userManagementTenant), async (req, res, next) => {
+    const parsed = z.object({ eventId: z.string().uuid() }).strict().safeParse(req.body);
+    if (!parsed.success || !req.user?.id) return res.status(400).json({ message: "Invalid lifecycle event" });
+    try {
+      res.set("Cache-Control", "no-store");
+      const answer = await requeueParkedLifecycleEvent(pool, parkGroupOf(res), parsed.data.eventId, req.user.id);
+      if (answer.outcome === "requeued") return res.json({ ok: true, eventId: answer.eventId, kind: answer.kind });
+      res.status(answer.outcome === "not_found" ? 404 : 409).json({ message: LIFECYCLE_SEND_AGAIN_REFUSALS[answer.outcome] });
     } catch (error) { next(error); }
   });
 

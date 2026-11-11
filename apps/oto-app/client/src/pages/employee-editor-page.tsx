@@ -6,6 +6,7 @@ import { Employee, Branch, insertEmployeeSchema, EmployeeChange, ContractInstanc
 import { useToast } from "@/hooks/use-toast";
 import { useLegacyLoginOff } from "@/lib/sign-in-options";
 import { LauncherPasswordNote } from "@/components/suite-sign-in";
+import { LoginLifecycleNotice, loginLifecycleKey, useParkedLoginLifecycle } from "@/components/login-lifecycle-notice";
 import { useAuth } from "@/hooks/use-auth";
 import { ApiError, apiRequest, queryClient } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
@@ -138,6 +139,11 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
     queryKey: [`/api/employees/${employeeId}/login-provisioning`],
     enabled: legacyOff && isManager && !!employee.userId,
   });
+  // SCRUM-852: a switch-off the platform refused is said here, and opens the panel so it is seen.
+  const parkedLifecycle = useParkedLoginLifecycle(employee.userId, isAdmin);
+  useEffect(() => {
+    if (parkedLifecycle.length > 0) setIsOpen(true);
+  }, [parkedLifecycle.length]);
   const [showPassword, setShowPassword] = useState(false);
   const [accessLevel, setAccessLevel] = useState<"STAFF" | "MANAGER" | "ADMIN">("STAFF");
   const [enableCoreModule, setEnableCoreModule] = useState(true);
@@ -465,6 +471,7 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
       });
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
+      if (employee.userId) queryClient.invalidateQueries({ queryKey: loginLifecycleKey(employee.userId) });
     },
     onError: (error: Error) => {
       toast({
@@ -526,6 +533,7 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
                   </Button>
                 </div>
               )}
+              {employee.userId && <LoginLifecycleNotice userId={employee.userId} notices={parkedLifecycle} />}
               {!hasLogin && !hasSimpleLogin ? (
                 <div className="space-y-6">
                   <div className="text-center py-4 space-y-4">
